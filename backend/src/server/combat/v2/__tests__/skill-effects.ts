@@ -172,4 +172,35 @@ assert.ok(focusFight.events.some(x=>x.type==='resource_spend'&&x.resource==='foc
 assert.ok(focusFight.events.filter(x=>x.type.startsWith('resource_'))
   .every(x=>x.resourceAfter!==undefined&&x.resourceAfter>=0&&x.resourceAfter<=3));
 
-console.log('PASS: all nine classes, 18 profiles, 54 variants of 18 existing techniques, deterministic runtime, trust and legacy parity');
+
+// Polish checks: conditional healing, precise support targeting and proper
+// execute-only damage must be represented in the actual compiled effects.
+function abilityFor(classId:ClassIdV2,skillName:string,variant:number){
+  const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
+  const spec=SPECIALIZATIONS_V2.find(s=>s.classId===classId)!;
+  const skill=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName)!;
+  const chosen:VerifiedSkillBuildV2={
+    actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
+    selected:{specializationId:spec.id,capstoneId:spec.capstoneId,equipment:{},
+      activeSkills:[{skillId:skill.id,variantId:skill.variants[variant].id}],
+      talentRanks:{},signaturePassiveIds:[]},
+    ownedItemsById:{},setsById:{},
+  };
+  const compiled=compileServerSkillBuildV2(true,chosen);
+  assert.equal(compiled.combatV2?.capstoneId,spec.capstoneId);
+  return compiled.abilities[0];
+}
+const mercy=abilityFor('DAWNKEEPER','Dawn Mend',0);
+assert.ok(mercy.effects.some(e=>e.kind==='heal'&&e.healBelowHpPct===.35&&e.healBonus===.25));
+const spring=abilityFor('STONECALLER','River Stone',0);
+assert.ok(spring.effects.some(e=>e.kind==='heal'&&e.healBelowHpPct===.40&&e.healBonus===.25));
+const shared=abilityFor('DAWNKEEPER','Sunthread',1);
+assert.equal(shared.target,'two_lowest_hp_allies');
+const execution=abilityFor('WAYFINDER','Heartseeker',0);
+assert.ok(execution.effects.some(e=>e.executeBelowHpPct===.35&&e.executeBonus===.30));
+assert.ok(execution.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
+const finisher=abilityFor('RAVAGER','Overpower',0);
+assert.ok(finisher.effects.some(e=>e.executeBelowHpPct===.35&&e.executeBonus===.30));
+assert.ok(finisher.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
+
+console.log('PASS: all nine classes, 18 profiles, 162 variants across 54 skills, deterministic runtime, trust and legacy parity');

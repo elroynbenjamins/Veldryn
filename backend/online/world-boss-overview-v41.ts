@@ -14,6 +14,7 @@ type Boss='hollowroot'|'sunscar'|'frostmarch';
 type Status='draft'|'active'|'closed';
 type Phase='upcoming'|'preparation'|'raid'|'cooldown'|'expired';
 export interface WorldBossOverviewRowV41 {
+ schema:'world-boss-overview-v41';
  eventId:string;accountId:string;bossId:Boss;status:Status;phase:Phase;
  startsAtUtcMs:number;endsAtUtcMs:number;readAtUtcMs:number;
  maxHp:number;remainingHp:number;eventRevision:number;
@@ -34,7 +35,7 @@ const TRACKS=['fortifications','fieldProvisions','siegecraft'] as const;
 export function verifyWorldBossOverviewV41(
  raw:WorldBossOverviewRowV41,expectedEvent:string,expectedAccount:string,
 ):WorldBossOverviewV41{
- if(!raw||raw.eventId!==expectedEvent||raw.accountId!==expectedAccount||
+ if(!raw||raw.schema!=='world-boss-overview-v41'||raw.eventId!==expectedEvent||raw.accountId!==expectedAccount||
   !validId(raw.eventId)||!validId(raw.accountId)||
   !['hollowroot','sunscar','frostmarch'].includes(raw.bossId)||
   !['draft','active','closed'].includes(raw.status)||

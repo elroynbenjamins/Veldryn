@@ -12,7 +12,7 @@ function creditAll(state:GameState,units:number,nowMs:number):GameState{
 }
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const date=new Date('2026-09-05T12:00:00Z'),daily=seasonalQuestBoard(state,'daily',date),a=seasonalQuestBoard(state,'weekly',date),b=seasonalQuestBoard(state,'weekly',date),m=seasonalQuestBoard(state,'monthly',date);
-if(daily.length!==2||a.length!==3||m.length!==4)throw new Error('Seasonal board sizes are incorrect');
+if(daily.length!==3||a.length!==4||m.length!==5)throw new Error('Seasonal board sizes are incorrect');
 if([...daily,...a,...m].some(q=>q.required<1))throw new Error('Seasonal targets must require positive verified actions');
 if([...daily,...a,...m].some(q=>q.tag==='combat'&&q.required!==({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Combat goals should retain familiar pacing');
 if([...daily,...a,...m].some(q=>q.tag==='crafting'&&q.required>=({daily:30,weekly:150,monthly:450}[q.period])))throw new Error('Crafting goals should be smaller than raw gathering goals');
@@ -93,6 +93,27 @@ const improvedAfterStart={...frozen,character:{...frozen.character!,level:70,equ
 check(JSON.stringify(seasonalQuestBoard(frozen,'monthly',date).map(q=>q.tag))===JSON.stringify(initiallyOffered.map(q=>q.tag)),'First verified action should freeze selection');
 check(JSON.stringify(seasonalQuestBoard(improvedAfterStart,'monthly',date).map(q=>q.tag))===JSON.stringify(initiallyOffered.map(q=>q.tag)),'Level-ups must not replace active monthly objectives');
 check(!!normalizeSave(frozen).account.seasonalContractProgress?.monthly?.tags,'Frozen selections should survive save normalization');
+// Saves created before the extra daily/weekly/monthly slot must keep every
+// in-progress quest, its index-based claim ID and previously earned progress.
+const legacyProgress=Object.fromEntries((['daily','weekly','monthly'] as const).map(period=>{
+ const row=frozen.character!.personalSeasonal!.progress[period]!;
+ return [period,{...row,tags:row.tags!.slice(0,-1)}];
+})) as NonNullable<GameState['account']['seasonalContractProgress']>;
+const legacyState={...frozen,character:{...frozen.character!,personalSeasonal:{...frozen.character!.personalSeasonal!,progress:legacyProgress}}} as GameState;
+const normalizedLegacy=normalizeSave(legacyState);
+for(const period of ['daily','weekly','monthly'] as const){
+ const originalTags=legacyProgress[period]!.tags!,board=seasonalQuestBoard(normalizedLegacy,period,date);
+ check(board.length===({daily:3,weekly:4,monthly:5}[period]),'Legacy quest boards must grow by exactly one slot');
+ check(JSON.stringify(board.slice(0,-1).map(q=>q.tag))===JSON.stringify(originalTags),'Existing quests must keep their order and IDs after upgrade');
+ check(board[0].progress===1||board[0].tag!=='combat','Existing combat quest progress must survive upgrade');
+ check(new Set(board.map(q=>q.tag)).size===board.length,'Appended quest may not duplicate an existing objective');
+}
+const expandedLegacy=recordSeasonalActivity(normalizedLegacy,'combat',1,date.getTime());
+for(const period of ['daily','weekly','monthly'] as const){
+ const oldTags=legacyProgress[period]!.tags!;
+ const updatedTags=expandedLegacy.character!.personalSeasonal!.progress[period]!.tags!;
+ check(updatedTags.length===oldTags.length+1&&JSON.stringify(updatedTags.slice(0,-1))===JSON.stringify(oldTags),'A settled action must persist only the appended quest slot');
+}
 let bossEverOffered=false;
 for(let day=1;day<=35;day++){
  const dt=new Date(Date.UTC(2026,8,day,12)),board=seasonalQuestBoard(highLevel,'weekly',dt);

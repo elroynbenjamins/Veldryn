@@ -66,7 +66,8 @@ async function runTests(){
  check(privatePartyActivityKeyV43(idle)!==privatePartyActivityKeyV43(craft),
  'different_receipts_independent');
  check(privatePartyActivityKeyV43(coop)!==privatePartyActivityKeyV43(
-  {...coop,actorAccountId:'66666666-6666-4666-8666-666666666666'}),
+  {kind:'coop_node',runId:run,nodeId:'BOSS:ALPHA_02',
+   actorAccountId:'66666666-6666-4666-8666-666666666666'}),
  'multi_member_coop_distinct');
  pending={credit:{...validCredit,replayed:true,creditId:existingCreditId}};
  const replay=await worker.creditCommittedSource(idle);

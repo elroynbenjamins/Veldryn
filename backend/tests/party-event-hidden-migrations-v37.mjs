@@ -21,6 +21,8 @@ const files={
  v46:'20261118173000_party_event_source_outbox_v46.sql',
  v47:'20261118183000_party_event_source_leases_v47.sql',
  v48:'20261118194500_party_event_server_gateway_v48.sql',
+ v49Source:'20261118212000_party_event_coop_node_attestation_v49.sql',
+ v49Credit:'20261118213000_party_event_v14_coop_attestation_patch_v49.sql',
 };
 const sql=Object.fromEntries(Object.entries(files).map(([key,path])=>
  [key,read(base+path)]));
@@ -82,6 +84,18 @@ assert.match(sql.v46,/private\.party_event_source_outbox_v46/i);
 assert.match(sql.v47,/private\.lease_party_event_sources_v47/i);
 assert.match(sql.v48,/public\.commit_online_game_party_sources_server_v48/i);
 assert.match(sql.v48,/grant execute on function public\.commit_online_game_party_sources_server_v48\([\s\S]*?\)\s*to service_role/i);
+assert.match(sql.v49Source,/after insert on public\.coop_node_results/i);
+assert.match(sql.v49Source,/private\.party_event_coop_node_actors_v49/i);
+assert.match(sql.v49Source,/m\.member_kind='human'/);
+assert.match(sql.v49Source,/m\.echo_profile_version is null/);
+assert.match(sql.v49Source,/access\.active/);
+assert.match(sql.v49Credit,/create or replace function private\.credit_party_event_activity_v14/i);
+assert.match(sql.v49Credit,/private\.party_event_coop_node_actors_v49 witness/i);
+assert.doesNotMatch(sql.v49Credit,/join public\.coop_run_access_memberships access/i,
+ 'Co-op credit must never depend on mutable live access status');
+assert.doesNotMatch(sql.v49Credit,/join public\.expedition_run_members/i,
+ 'Co-op credit must use committed human witnesses, not live roster');
+
 const commitPreview=read('backend/online/party-event-gameplay-commit-v48.ts');
 const gameplay=read('backend/online/gameplay.ts');
 assert.match(commitPreview,/export const PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED=false;/,
@@ -97,4 +111,4 @@ for(const filename of executable){
  assert.ok(!/20261113|20261115|20261118/.test(filename)||!filename.includes('party_event_'),
   'draft hidden Party Event migration mistakenly added to live migration path '+filename);
 }
-console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: 28 columns align, RLS/private grants, V45–V47 drafts hidden, V48 runtime OFF, source content aligned');
+console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: schema/RLS, V45–V49 unpromoted, immutable co-op witness, V48 runtime OFF, source content aligned');

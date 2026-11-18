@@ -1,6 +1,7 @@
 import type {GameState,ItemStack,SkillState,CharacterState} from './types';
 import {ITEMS} from '../content/items';
 import {equipmentV2LegacyPreservationAudit} from './equipment-crafting-v2-legacy-audit';
+import {equipmentCraftSlotBreakdown} from './equipment-crafting-queue';
 import type {V2DraftSnapshot,V2DraftCharacter} from '../../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
 
 /** READ ONLY: design for adapting the ACTUAL GameState persisted by online
@@ -102,6 +103,7 @@ export function equipmentV2AuthoritativeReadiness(input:V2AuthoritativeReadiness
   */
  const projection:V2DraftSnapshot|null=blocked?null:{
   accountId,activeCharacterId:state.character!.id,version:onlineVersion,
+  forgeSlotCapacity:equipmentCraftSlotBreakdown(state).capacity,
   characters:Object.fromEntries(owned),
   bank:bank.materials,jobs:[],equipment:[],skillAwards:[],receipts:[],
  };

@@ -740,10 +740,10 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
     ],
     "variants": [
       {
-        "adds": [
+        "replaces": [
           {
             "kind": "damage",
-            "coeff": 0.18,
+            "coeff": 1.95,
             "damageType": "physical",
             "executeBelowHpPct": 0.35,
             "executeBonus": 0.3
@@ -885,10 +885,10 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
     ],
     "variants": [
       {
-        "adds": [
+        "replaces": [
           {
             "kind": "damage",
-            "coeff": 0.15,
+            "coeff": 1.8,
             "damageType": "physical",
             "executeBelowHpPct": 0.35,
             "executeBonus": 0.3

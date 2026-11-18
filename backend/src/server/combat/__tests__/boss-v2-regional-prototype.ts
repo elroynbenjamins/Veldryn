@@ -7,9 +7,9 @@ import {ENEMY_V2_RULESET} from '../enemy-v2-prototype';
 import {prepareRegionalBossV2} from '../boss-v2-regional-prototype';
 
 const profiles=[
-  ['BOSS_EXP_SOLAR','The Buried Heliarch','SOLAR_V2_PRISM_WARD'],
+  ['BOSS_EXP_SOLAR','The Buried Heliarch','SOLAR_V2_SUNFALL'],
   ['BOSS_EXP_SPHINX','The Veiled Sphinx','SPHINX_V2_MIRAGE'],
-  ['BOSS_EXP_BELLBEAST','The Bellbeast of Shiverlake','BELLBEAST_V2_FROST_HIDE'],
+  ['BOSS_EXP_BELLBEAST','The Bellbeast of Shiverlake','BELLBEAST_V2_SHATTER'],
   ['BOSS_EXP_CANTOR','The Frozen Cantor','CANTOR_V2_DISSONANCE'],
 ] as const;
 for(const [id,name,uniqueAbility] of profiles){
@@ -27,6 +27,7 @@ for(const [id,name,uniqueAbility] of profiles){
   assert.deepEqual(tuned.stats,boss.stats,'do not alter base boss stats');
   assert.deepEqual(tuned.abilities.slice(0,boss.abilities.length),boss.abilities,'do not replace the live skill kit');
   assert.ok(tuned.abilities.some(a=>a.id===uniqueAbility));
+  assert.ok(tuned.abilities.length<=4,`${id}: keep boss actions readable on mobile`);
   assert.deepEqual(tuned.phases?.map(p=>p.hpPct),[.7,.35]);
   assert.equal(prepareRegionalBossV2(tuned,ENEMY_V2_RULESET),tuned,'no double application');
   assert.equal(JSON.stringify(boss),original,'base factory must remain unchanged');

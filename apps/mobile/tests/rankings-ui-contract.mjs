@@ -43,9 +43,9 @@ includes('Server-ranked · Privacy protected','trust note must remain visible wi
 const flags=readFileSync(new URL('../src/core/release-flags.ts',import.meta.url),'utf8');
 assert.ok(flags.includes('export const RANKINGS_RELEASED=false;'),'Rankings must remain hidden from all player navigation');
 includes('setLoadedPage(page)','a response must be bound to its source page');
-includes('const inFlight=useRef<','Rankings must retain a request-ownership slot');
+includes('const inFlight=useRef<PendingRankingRead|null>(null)','Rankings must retain a request-ownership slot');
 includes("const scope=board+':'+page",'request dedupe must be scoped to the selected board and page');
-includes('Date.now()-inFlight.current.startedAt<30000','background polling must not overlap active reads indefinitely');
+includes('rankingCanStartRead(inFlight.current,scope,Date.now())','background polling must obey the tested single-flight policy');
 includes('if(inFlight.current?.version===version)inFlight.current=null','only the owned request may release the single-flight slot');
 includes('if(version===request.current)setLoading(false)','stale reads must never clear a newer spinner');
 includes('Showing last verified standings. Retry to update.','failed refresh must distinguish stale but valid standings from a successful update');
@@ -54,4 +54,5 @@ includes('accessibilityLiveRegion="polite"','pagination announces page changes a
 includes('Entries {first}–{last}','pagination displays an entry range');
 includes('Live rankings can change while players progress.','live rankings must not imply frozen snapshots');
 assert.ok(pager.includes('Number.isSafeInteger')&&pager.includes('RANKING_MAX_OFFSET'),'pagination input is bounded');
+assert.ok(pager.includes('export function rankingCanStartRead(')&&pager.includes('elapsed>=staleAfterMs'),'single-flight guard has an expiry bound');
 console.log('rankings UI/navigation contract PASS');

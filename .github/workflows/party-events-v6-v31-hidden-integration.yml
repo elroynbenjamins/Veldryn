@@ -69,7 +69,8 @@ jobs:
             party-event-atomic-packet-v29 \
             party-event-locked-snapshot-v30 \
             party-event-receipt-recovery-v31 \
-            party-event-readonly-status-v33
+            party-event-readonly-status-v33 \
+            party-event-authenticated-read-v34
           do
             node "dist/online/backend/online/tests/${suite}.js"
           done

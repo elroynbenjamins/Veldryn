@@ -121,6 +121,24 @@ export async function bindAuthenticatedBuildRequestV2(
    characterId:(value.characterId as string).toLowerCase(),
    action:{kind:'mutate',mutation}};
 }
+/**
+ * Internal-only dispatch after authenticate() has independently verified the
+ * bearer token. The edge router NEVER mounts this while transport is disabled.
+ * Build-service featureEnabled requires a server-controlled rollout approval.
+ */
+export async function dispatchVerifiedBuildRequestV2(
+ bound:BoundBuildRequestV2,
+ service:{
+   read(accountId:string,characterId:string,serverEnabled:boolean):Promise<unknown>;
+   mutate(accountId:string,characterId:string,mutation:BuildMutationV2,serverEnabled:boolean):Promise<unknown>;
+ },
+ serverEnabled=false,
+):Promise<unknown>{
+ if(!serverEnabled)throw new BuildRequestErrorV2('feature_disabled',404);
+ if(bound.action.kind==='read')
+   return service.read(bound.trustedAccountId,bound.characterId,true);
+ return service.mutate(bound.trustedAccountId,bound.characterId,bound.action.mutation,true);
+}
 /** Transport remains 404 even when called directly; no auth/RPC side effects. */
 export function createHiddenCombatV2BuildHandler(_services:V2BuildAuthServices){
  return async(_request:Request):Promise<Response>=>

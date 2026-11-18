@@ -68,6 +68,8 @@ jobs:
         run: pnpm --dir backend test:enemy-v2-isolation
       - name: Run canonical gem and effect-trigger combat tests
         run: pnpm --dir backend test:gems
+      - name: Audit Enemy 2.0 boss variants across synthetic combat builds
+        run: pnpm --dir backend test:enemy-v2-balance
       - name: Run unique-role and Echo/Q-mode composition
         run: pnpm --dir backend test:coop-composition
       - name: Verify dungeon tier difficulty and rewards

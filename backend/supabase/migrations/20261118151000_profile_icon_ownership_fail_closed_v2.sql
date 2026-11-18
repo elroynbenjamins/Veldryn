@@ -10,3 +10,8 @@ begin
  if position(v_old in v_def)=0 then raise exception 'profile_icon_ownership_guard_drift';end if;
  execute replace(v_def,v_old,v_new);
 end $patch$;
+
+-- Internal trigger functions are not authenticated RPC entrypoints. Explicitly
+-- revoke PUBLIC/anon/authenticated EXECUTE after their triggers have been created.
+revoke all on function public.store_character_showcase_from_extension_v1() from public,anon,authenticated;
+revoke all on function public.protect_social_name_v1() from public,anon,authenticated;

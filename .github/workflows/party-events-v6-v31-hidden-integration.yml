@@ -72,10 +72,13 @@ jobs:
             party-event-readonly-status-v33 \
             party-event-authenticated-read-v34 \
             party-event-schema-readiness-v35 \
-            party-event-day8-audit-v36
+            party-event-day8-audit-v36 \
+            party-event-staging-assessment-v37
           do
             node "dist/online/backend/online/tests/${suite}.js"
           done
+      - name: Verify hidden Party Event V37 SQL definitions, canonical starter gathering and migration isolation
+        run: node tests/party-event-hidden-migrations-v37.mjs
       - name: Verify flexible Party Event V32 roster and receipt SQL in disposable PGlite
         run: node tests/party-event-flexible-sql-v32.mjs
       - name: Verify private V33 read-only account isolation in disposable PGlite

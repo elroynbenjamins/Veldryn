@@ -54,6 +54,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
   assert.equal(upgraded.abilities.length,2,'3 active slots but only selected abilities execute');
   assert.ok(upgraded.abilities.every(a=>a.id.includes(':v2:0')));
   assert.ok(upgraded.abilities.every(a=>Number.isFinite(a.cooldownMs)&&a.cooldownMs>0));
+  assert.ok(upgraded.tags?.includes('combat-v2'));
   assert.equal(upgraded.role,actor.role);
   assert.equal(upgraded.classId,actor.classId);
   assert.equal(upgraded.level,actor.level);

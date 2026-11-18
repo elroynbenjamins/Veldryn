@@ -17,6 +17,7 @@
     "src/server/combat/__tests__/pve-balance-batch.ts",
     "src/server/combat/__tests__/role-offense-scaling.ts",
     "src/server/combat/__tests__/enemy-v2-prototype.ts",
-    "src/server/combat/__tests__/boss-v2-asterfall-prototype.ts"
+    "src/server/combat/__tests__/boss-v2-asterfall-prototype.ts",
+    "src/server/combat/__tests__/enemy-v2-legacy-dungeons.ts"
   ]
 }

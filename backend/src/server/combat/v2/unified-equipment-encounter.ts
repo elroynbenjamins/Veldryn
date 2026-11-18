@@ -19,6 +19,8 @@ import {resolveVerifiedEquipmentBaseV2,
   type ApprovedEquipmentBasePolicyV2,type BaseEquipmentSourceV2} from './equipment-base-stats';
 import {applyVerifiedSetBonusesV2,
   type ApprovedSetPolicyV2,type ResolvedSetEffectV2} from './equipment-set-effects';
+import {evaluatePowerCompositionV2,
+  type ApprovedPowerCompositionPolicyV2,type PowerCompositionDiagnosticV2} from './power-composition';
 import {compileTrustedEquipmentAffixesV2,
   type TrustedEquipmentItemAffixesV2,type ServerAffixPolicyV2,
   type AppliedEquipmentAffixV2} from './equipment-affixes';
@@ -34,12 +36,15 @@ export interface TrustedEquipmentRuntimeV2 {
  readonly basePolicy:ApprovedEquipmentBasePolicyV2;
  readonly setsPolicy:ApprovedSetPolicyV2;
  readonly affixPolicy:ServerAffixPolicyV2;
+ /** Optional until canonical CP weights are approved; no invented shares. */
+ readonly compositionPolicy?:ApprovedPowerCompositionPolicyV2;
 }
 export interface EquipmentEncounterEvidenceV2 {
  readonly actorId:string;
  readonly baseSources:readonly BaseEquipmentSourceV2[];
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
+ readonly composition?:PowerCompositionDiagnosticV2;
 }
 export interface UnifiedEquipmentEncounterResultV2 {
  readonly combat:CombatResult;
@@ -90,7 +95,11 @@ function compileEquippedActor(
  return {
   actor:affixes.actor,
   evidence:{actorId:actor.id,baseSources:base.sources,
-    setEffects:set.applied,affixSources:affixes.sources},
+    setEffects:set.applied,affixSources:affixes.sources,
+    ...(runtime.compositionPolicy?{
+      composition:evaluatePowerCompositionV2(base.classLevelStats,affixes.actor.stats,
+        base.sources.length,runtime.compositionPolicy),
+    }:{}),},
  };
 }
 export function simulateUnifiedEquipmentCombatV2(

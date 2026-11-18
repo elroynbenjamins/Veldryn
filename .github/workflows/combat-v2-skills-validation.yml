@@ -22,6 +22,10 @@ on:
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'backend/online/combat-v2-build-auth-boundary.ts'
       - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
+      - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
+      - 'apps/mobile/src/content/skills-v2-preview.ts'
+      - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
+      - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
@@ -64,6 +68,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
       - name: Validate hidden database migration permissions
         run: node backend/tests/combat-v2-build-sql-contract.cjs
+      - name: Validate class identity, 18 styles and nine early resource loops
+        run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
+      - name: Capture deterministic 18-spec balance baseline
+        run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
 

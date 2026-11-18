@@ -6,12 +6,12 @@ import {triggerCapstoneV2,type CapstoneTriggerV2} from '../capstone-runtime';
 import type {ClassIdV2} from '../build-contract';
 
 type Scenario={classId:ClassIdV2;capstone:string;trigger:CapstoneTriggerV2;
-  stacks?:number;spentTotal?:number;repeats?:number;ctx?:{spent?:number;amount?:number;healedAlly?:boolean};expects:boolean};
+  stacks?:number;spentTotal?:number;repeats?:number;ctx?:{spent?:number;amount?:number;healedAlly?:boolean;isPartyShield?:boolean};expects:boolean};
 const tests:Scenario[]=[
  {classId:'IRONWARDEN',capstone:'Oathkeeper',trigger:'spend',spentTotal:3,ctx:{spent:3},expects:true},
  {classId:'IRONWARDEN',capstone:'Runic Retribution',trigger:'interrupt',expects:true},
  {classId:'BASTION',capstone:'Immovable',trigger:'shield',stacks:3,ctx:{amount:100},expects:true},
- {classId:'BASTION',capstone:'Sheltering Wall',trigger:'shield',ctx:{amount:100},expects:true},
+ {classId:'BASTION',capstone:'Sheltering Wall',trigger:'shield',ctx:{amount:100,isPartyShield:true},expects:true},
  {classId:'DREADGUARD',capstone:'Blood Oath',trigger:'spend',ctx:{spent:3},expects:true},
  {classId:'DREADGUARD',capstone:'Dread Dominion',trigger:'gain',stacks:5,expects:true},
  {classId:'WAYFINDER',capstone:'Perfect Aim',trigger:'spend',ctx:{spent:3},expects:true},
@@ -64,6 +64,8 @@ for(const scenario of tests){
  if(event&&scenario.repeats!==5){
   const next=triggerCapstoneV2(state,scenario.trigger,1000,scenario.ctx);
   assert.equal(next.event,undefined,scenario.capstone+' proc must not duplicate at same time');
+  if(scenario.capstone==='Sheltering Wall')assert.equal(next.actions.length,1,
+    'same party-wide cast still shields every recipient');
  }
 }
 console.log('PASS: all 18 capstone triggers, threshold counters, cooldowns and queued effects');

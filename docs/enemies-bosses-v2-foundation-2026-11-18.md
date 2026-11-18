@@ -33,3 +33,21 @@ The authoritative `simulateCombat` engine already implements boss HP phases, tel
 Run `pnpm --dir backend test:gems`. The opt-in Enemy 2.0 and Asterfall Boss 2.0 regression tests were added to this existing combat suite. CI executes it for PRs touching `backend/src/server/combat/**`.
 
 No database migration or release toggle is necessary for the pure modules in this pass; introducing an authoritative persisted ruleset on live reservations will require a separate migration and explicit rollout review.
+
+## Coordinated 2.0 release lock (approved 2026-11-18)
+
+**Do not apply Enemy 2.0 to ANY current dungeon until the complete Equipment 2.0 + Classes & Skills 2.0 + Enemies & Bosses 2.0 update ships.** Development and prototype simulation are allowed on feature branches only; the installed live dungeon catalogue, difficulty tiers, boss selection and rewards remain as-is.
+
+Enforced by:
+- `tools/validate-enemy-v2-isolation.mjs` scans gameplay sources for imports or invocation of the 2.0 prototype and fails if found.
+- `backend/src/server/combat/__tests__/enemy-v2-legacy-dungeons.ts` verifies current dungeon content factories remain unchanged with 2.0 disabled.
+- The existing CI gem/dungeon workflow executes the isolation guard and the regression tests.
+
+Release activation prerequisites:
+1. Finish the shared Equipment/Skills/Enemy 2.0 combat contract and verify all active class/role loadouts.
+2. Finalize real regional bosses and enemy families, with accepted balance and reward simulations.
+3. Define a **versioned, server-owned** combat ruleset on new encounter reservations; freeze it on creation. Existing saved/in-flight runs must use their original ruleset forever, including on reconnect.
+4. Deploy migrations, server, and mobile client with explicit minimum-version and rollback policy; never silently adopt 2.0 for old receipts.
+5. Only then replace the isolation guard with tests that prove the version gate and legacy receipt replay. Enable the new ruleset deliberately, with an immediate rollback switch for **new** runs.
+
+Current status: development-only, no gameplay route references, no migrations, no deployment.

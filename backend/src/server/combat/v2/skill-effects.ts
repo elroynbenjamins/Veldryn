@@ -223,7 +223,6 @@ function modifiersFor(verified:VerifiedCharacterV2,selected:BuildSelectionV2):Mu
     addMods(out,passiveMods[key],rank);
   }
   // Signature slots only select already-invested passives; no double benefit.
-  if(selected.capstoneId)throw Error('combat_v2_capstone_effect_unimplemented');
   return out;
 }
 /** Construct an immutable encounter-ready actor with server-owned effects. */
@@ -259,7 +258,7 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
   });
   const s=actor.stats;
   return {...actor,
-    combatV2:{version:2,resource:RESOURCE_BY_CLASS_V2[verified.classId],specializationId:selected.specializationId!},
+    combatV2:{version:2,resource:RESOURCE_BY_CLASS_V2[verified.classId],specializationId:selected.specializationId!,...(selected.capstoneId?{capstoneId:selected.capstoneId}:{})},
     tags:[...new Set([...(actor.tags??[]),'combat-v2'])],
     stats:{
       ...s,maxHp:round(s.maxHp*(1+finite(mods.hp,-.1,.15))),

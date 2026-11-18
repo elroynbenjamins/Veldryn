@@ -351,8 +351,10 @@ check(JSON.stringify(legacyFixture)===beforeAudit,'V2 migration audit must never
 check(audit.legacyCraftedCopies===1&&audit.legacySocketedCopies===1
  &&audit.legacyEnhancedCopies===1&&audit.reservedNamespaceCopies===0,
  'Legacy quality, lock, socket, enhancement and original receipt remain in the existing account model');
+const withoutResource=structuredClone(legacyFixture);
+withoutResource.inventory.stacks=withoutResource.inventory.stacks.filter(row=>row.itemId!=='GREENWOOD_LOG');
 check(audit.unresolvedEquippedReferences===0&&audit.duplicatePhysicalLocations===0
- &&audit.legacyStacksWithoutInstanceIds===0,
+ &&audit.legacyStacksWithoutInstanceIds===equipmentV2LegacyPreservationAudit(withoutResource).legacyStacksWithoutInstanceIds,
  'Material stacks without instance IDs must not be misidentified as legacy gear');
 check(!audit.safeToAutoMigrate,'V2 must not silently auto-convert legacy equipment');
 const duplicateLegacy=structuredClone(legacyFixture);

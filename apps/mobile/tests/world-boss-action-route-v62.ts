@@ -108,17 +108,23 @@ async function main(){
   },
  });
  await privateGate.assertGates(EVENT);
- await assert.rejects(async()=>privateGate.assertGates('malicious event'));
- await assert.rejects(async()=>createWorldBossGateAttestationPgV63({
+ const reject=async(job:()=>Promise<unknown>,expected:string)=>{
+  let error='';
+  try{await job();}catch(e){error=String(e);}
+  assert.ok(error.includes(expected),'expected '+expected+' got '+error);
+ };
+ await reject(()=>privateGate.assertGates('malicious event'),
+  'world_boss_v63_invalid_event');
+ await reject(()=>createWorldBossGateAttestationPgV63({
   async query<T extends object>(){
    return {rows:[{ok:false} as unknown as T]};
   },
- }).assertGates(EVENT));
- await assert.rejects(async()=>createWorldBossGateAttestationPgV63({
+ }).assertGates(EVENT),'world_boss_v63_controls_unavailable');
+ await reject(()=>createWorldBossGateAttestationPgV63({
   async query<T extends object>(){
    return {rows:[] as T[]};
   },
- }).assertGates(EVENT));
+ }).assertGates(EVENT),'world_boss_v63_controls_unavailable');
  const forge={action:'claim',requestId,eventId:EVENT,accountId:OTHER};
  const denied=await handleWorldBossActionV62(mk(forge),base);
  assert.equal(denied.status,400);

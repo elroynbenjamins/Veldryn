@@ -44,7 +44,7 @@ const validTime=(v:unknown)=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT/.test(v)
 const candidate=(v:unknown,arr:readonly unknown[])=>arr.includes(v);
 
 /** Accept only the private, release-disabled projection shape; fail closed. */
-export function decodePartyEventReadOnlySnapshot(raw:unknown):PartyEventScreenSnapshot|null{
+export function decodePartyEventReadOnlySnapshot(raw:unknown,nowMs:number=Date.now()):PartyEventScreenSnapshot|null{
  if(!isRecord(raw)||raw.schema!=='party-event-readonly-status-v33'
   ||!boundedString(raw.family,3,50)||!stories[raw.family]
   ||!boundedString(raw.variation,3,80)
@@ -54,6 +54,13 @@ export function decodePartyEventReadOnlySnapshot(raw:unknown):PartyEventScreenSn
   ||raw.canClaim!==false||raw.canContribute!==false||raw.canFight!==false
   ||!validTime(raw.eventStartsAt)||!validTime(raw.eventEndsAt)||!validTime(raw.serverTime)
   ||Date.parse(raw.eventEndsAt as string)-Date.parse(raw.eventStartsAt as string)!==604800000
+  ||!Number.isFinite(nowMs)
+  ||nowMs-Date.parse(raw.serverTime as string)>120000
+  ||Date.parse(raw.serverTime as string)-nowMs>30000
+  ||(raw.status==='active'&&(Date.parse(raw.serverTime as string)<Date.parse(raw.eventStartsAt as string)
+   ||Date.parse(raw.serverTime as string)>=Date.parse(raw.eventEndsAt as string)))
+  ||(raw.status==='closed'&&Date.parse(raw.serverTime as string)<Date.parse(raw.eventEndsAt as string))
+  ||(raw.status==='settled'&&Date.parse(raw.serverTime as string)<Date.parse(raw.eventEndsAt as string)+3600000)
   ||!Array.isArray(raw.completedActions)||raw.completedActions.length>4
   ||!Array.isArray(raw.orders)||raw.orders.length>120
   ||!isRecord(raw.votes))return null;
@@ -102,4 +109,23 @@ export function partyEventSupplyProgress(
  const target=values.reduce((n,o)=>n+o.target,0);
  return {donated,target,percent:target===0?0:Math.min(100,Math.floor(donated/target*100)),
   orders:values.length};
+}
+
+/**
+ * V39 is a server-only GET response. The QA UI accepts no old sample
+ * status as a live feed, no writable capability and no expired lease.
+ */
+export type PartyEventReadTransportV39={
+ readonly kind:'ready'|'empty'|'invalid';
+ readonly event:PartyEventScreenSnapshot|null;
+};
+export function decodePartyEventReadTransportV39(raw:unknown,nowMs:number=Date.now()):PartyEventReadTransportV39{
+ const invalid:PartyEventReadTransportV39={kind:'invalid',event:null};
+ if(!isRecord(raw)||raw.schema!=='party-event-status-http-v39'
+  ||raw.claimsEnabled!==false||raw.donationsEnabled!==false||raw.combatEnabled!==false
+  ||!('event' in raw)||'error' in raw)
+  return invalid;
+ if(raw.event===null)return {kind:'empty',event:null};
+ const event=decodePartyEventReadOnlySnapshot(raw.event,nowMs);
+ return event===null?invalid:{kind:'ready',event};
 }

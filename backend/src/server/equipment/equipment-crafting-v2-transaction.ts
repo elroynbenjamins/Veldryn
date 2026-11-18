@@ -99,10 +99,13 @@ function fingerprint(c:V2DraftCommand){
 }
 function consumption(state:V2DraftSnapshot,owner:V2DraftCharacter,inputs:readonly {itemId:string;quantity:number}[]){
  const plan:{itemId:string;quantity:number;fromInventory:number;fromBank:number}[]=[];
+ const seen=new Set<string>();
  for(const input of inputs){
-  if(!input.itemId||!Number.isSafeInteger(input.quantity)||input.quantity<1)fail('invalid_canonical_recipe');
+  if(!input.itemId||!Number.isSafeInteger(input.quantity)||input.quantity<1
+   ||seen.has(input.itemId))fail('invalid_canonical_recipe');
+  seen.add(input.itemId);
   const inv=owner.inventory[input.itemId]??0,bank=state.bank[input.itemId]??0;
-  if(!safeCount(inv)||!safeCount(bank))fail('invalid_material_inventory');
+  if(!safeCount(inv)||!safeCount(bank)||!safeCount(inv+bank))fail('invalid_material_inventory');
   if(inv+bank<input.quantity)fail('insufficient_materials');
   const fromInventory=Math.min(inv,input.quantity);
   plan.push({...input,fromInventory,fromBank:input.quantity-fromInventory});

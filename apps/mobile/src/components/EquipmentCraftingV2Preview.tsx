@@ -4,12 +4,15 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {EquipmentV2RecipePreviewInput} from '../core/equipment-crafting-v2-screen';
 import {equipmentV2HiddenRecipeScreen} from '../core/equipment-crafting-v2-screen';
+import type {V2PreparationResult} from '../core/equipment-crafting-v2-preparation';
 
 /** Internal-only read-only preview; deliberately unmounted from every player route.
  * No crafting, currency, inventory or Market mutations exist in this component.
  */
 export interface EquipmentCraftingV2PreviewVariant extends EquipmentV2RecipePreviewInput{
- key:string;methodName:string;setBonuses?:readonly {pieces:number;description:string}[];
+ key:string;methodName:string;recommended?:boolean;
+ preparation?:V2PreparationResult;
+ setBonuses?:readonly {pieces:number;description:string}[];
 }
 type Tab='materials'|'outcomes';
 const format=(value:number)=>Math.round(value).toLocaleString('en-US');
@@ -28,7 +31,7 @@ function nextStep(action:ReturnType<typeof equipmentV2HiddenRecipeScreen>['actio
 export function EquipmentCraftingV2Preview({variants}:{variants:readonly EquipmentCraftingV2PreviewVariant[]}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [methodId,setMethodId]=useState(''),[tab,setTab]=useState<Tab>('materials');
- const method=variants.find(row=>row.key===methodId)??variants.find(row=>(row as EquipmentCraftingV2PreviewVariant & {recommended?:boolean}).recommended)??variants[0];
+ const method=variants.find(row=>row.key===methodId)??variants.find(row=>row.recommended)??variants[0];
  if(!method)return null;
  const preview=equipmentV2HiddenRecipeScreen(method);
  const stats=([['ATK',preview.baseStats.attack],['DEF',preview.baseStats.defense],['HP',preview.baseStats.hp]] as const).filter(([,n])=>n>0);
@@ -54,13 +57,16 @@ export function EquipmentCraftingV2Preview({variants}:{variants:readonly Equipme
    <View style={s.summaryCell}><Text style={s.statLabel}>BASE XP</Text><Text style={s.summaryValue}>+{format(preview.draftXp)}</Text></View>
    <View style={s.summaryCell}><Text style={s.statLabel}>CRAFT TIME</Text><Text style={s.summaryValue}>{method.craftSeconds?duration(method.craftSeconds):'—'}</Text></View>
   </View>
-  <Text style={s.note}>Known Gold subtotal: {format(preview.cost.knownGold)}. {method.profession?method.profession[0].toUpperCase()+method.profession.slice(1)+' · ':''}Processing not yet priced where missing. Market prices are never fabricated.</Text>
+  <Text style={s.note}>Known Gold subtotal: {format(method.preparation?.knownGoldSubtotal??preview.cost.knownGold)}
+   {' '}({format(preview.cost.assemblyGold)} assembly + {format(method.preparation?.processingGold??0)} planned processing).
+   {method.preparation?.requiresExternalSources?' External materials must still be gathered or purchased.':''}
+   {' '}No speculative Market prices are included.</Text>
   {variants.length>1?<View style={s.section}>
    <Text style={s.sectionTitle}>Crafting method</Text>
    <View style={s.segmentRow}>
     {variants.map(row=><Pressable key={row.key} accessibilityRole="button" accessibilityState={{selected:method.key===row.key}}
       onPress={()=>setMethodId(row.key)} style={[s.segment,method.key===row.key&&s.selected]}>
-     <Text style={[s.segmentText,method.key===row.key&&s.selectedText]}>{row.methodName}</Text>
+     <Text style={[s.segmentText,method.key===row.key&&s.selectedText]}>{row.methodName}{row.recommended?' · Suggested':''}</Text>
     </Pressable>)}
    </View>
    <Text style={s.note}>Methods use different materials but do not alter the finished item's rarity or quality odds.</Text>
@@ -85,6 +91,27 @@ export function EquipmentCraftingV2Preview({variants}:{variants:readonly Equipme
        <Text accessibilityLabel={row.missing?'Missing material':'Material ready'} style={{color:row.missing?C.warning:C.good}}>{row.missing?'!':'✓'}</Text>
       </View>
     </View>)}
+    {method.preparation?<View style={s.footerInfo}>
+      <Text style={s.sectionTitle}>Prerequisite preparation</Text>
+      <View style={s.row}><Text style={s.body}>Processing Gold</Text><Text style={s.body}>{format(method.preparation.processingGold)}</Text></View>
+      <View style={s.row}><Text style={s.body}>Processing time (sequential)</Text><Text style={s.body}>{duration(method.preparation.processingSeconds)}</Text></View>
+      {method.preparation.steps.map(step=><View key={step.recipeId} style={s.material}>
+       <View style={s.heading}>
+        <Text style={s.materialName}>{step.name} ×{step.batches}</Text>
+        <Text style={s.subtle}>{step.skillId} · {format(step.gold)} Gold</Text>
+       </View>
+       <Text style={s.amount}>+{format(step.xp)} XP</Text>
+      </View>)}
+      {!!method.preparation.shortages.length&&<View style={s.footerInfo}>
+       <Text style={s.sectionTitle}>Materials still to obtain</Text>
+       {method.preparation.shortages.map(item=><Text key={item.itemId} style={s.note}>
+        {item.quantity} × {item.itemId.replace(/_/g,' ')}
+        {item.reason==='recipe_locked'?' · recipe locked':item.reason==='recipe_cycle'?' · dependency cycle':' · gather or buy'}
+       </Text>)}
+      </View>}
+      <Text style={s.note}>Preparation costs and XP assume the listed crafts are performed.
+       Materials already owned are not double-counted. Recipes requiring unlocks or external stock are shown as incomplete.</Text>
+     </View>:null}
     <View style={s.footerInfo}>
      <Text style={s.sectionTitle}>Next step</Text>
      <Text style={s.body}>{nextStep(preview.action)}</Text>

@@ -99,7 +99,9 @@ function traitAbility(id:EnemyV2TraitId,power:number,enemy:CombatantDefinition):
   const base={id:`ENEMY_V2_${id.toUpperCase()}`,name:ENEMY_V2_TRAITS[id].label,priority:45};
   switch(id) {
     case 'fortified':
-      return {...base,cooldownMs:45000,castTimeMs:0,target:'self',effects:[{kind:'shield',flat:Math.round(enemy.stats.maxHp*power)}]};
+      // The base engine has no one-shot ability flag yet; a 24h cooldown is
+      // longer than any supported encounter and prevents repeat shield farming.
+      return {...base,cooldownMs:86400000,castTimeMs:0,target:'self',effects:[{kind:'shield',flat:Math.round(enemy.stats.maxHp*power)}]};
     case 'regenerating':
       return {...base,cooldownMs:24000,castTimeMs:0,target:'self',aiCondition:'self_below_50',effects:[{kind:'hot',flat:enemy.stats.maxHp*power,durationMs:6000,tickMs:1000,tag:'regeneration'}]};
     case 'rending':

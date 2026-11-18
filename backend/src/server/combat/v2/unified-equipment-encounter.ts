@@ -9,7 +9,7 @@
  */
 import {simulateCombat} from '../engine';
 import type {CombatInput,CombatResult,CombatantDefinition} from '../types';
-import type {ClassIdV2,GearSlotV2} from './build-contract';
+import type {GearSlotV2} from './build-contract';
 import {validateBuildV2} from './build-contract';
 import {serverBuildCatalogV2} from './skill-catalog';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';

@@ -116,8 +116,11 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   // Party Events V48 remains DEFAULT-OFF. The existing online commit is
   // returned unchanged until approved staging migrations and E2E gates pass.
+  const verifiedRequestId=body?.requestId;
+  if(typeof verifiedRequestId!=='string'||typeof requestHash!=='string')
+   throw new GameplayError('invalid_verified_game_request');
   const normalCommitArgs={p_account_id:accountId,p_expected_version:loaded.version,
-   p_expected_gold:loaded.walletGold,p_request_id:body.requestId,
+   p_expected_gold:loaded.walletGold,p_request_id:verifiedRequestId,
    p_request_hash:requestHash,p_response:response,p_contributions:contributions,
    ...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})};
   const partyCommit=planHiddenPartyGameCommitV48({

@@ -2,7 +2,7 @@ import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../engine';
 import {launchPlayer} from '../content/launch-combat';
 import type {CombatantDefinition} from '../types';
-import {ENEMY_V2_RULESET,ENEMY_V2_TRAITS,prepareEnemyV2} from '../enemy-v2-prototype';
+import {ENEMY_V2_RULESET,ENEMY_V2_TRAITS,prepareEnemyV2,type EnemyV2ServerOptions} from '../enemy-v2-prototype';
 
 const stats={maxHp:30000,attackPower:200,healingPower:0,defense:500,accuracy:1200,evasion:100,critChance:.08,critMultiplier:1.5,haste:0};
 const enemy:CombatantDefinition={
@@ -11,7 +11,7 @@ const enemy:CombatantDefinition={
   tags:['pve:archetype:assassin','pve:mechanic:focus'],
 };
 const baseline=JSON.stringify(enemy);
-const options={ruleset:ENEMY_V2_RULESET,serverSeed:'server-only-reservation-seed',
+const options:EnemyV2ServerOptions={ruleset:ENEMY_V2_RULESET,serverSeed:'server-only-reservation-seed',
   encounterId:'TEST_ASTERFALL',region:'asterfall' as const,equipmentTier:2 as const};
 assert.equal(Object.keys(ENEMY_V2_TRAITS).length,18,'the entire planned trait catalogue stays registered');
 assert.equal(Object.values(ENEMY_V2_TRAITS).filter(trait=>trait.implemented).length,9,'only engine-backed traits are eligible');

@@ -14,6 +14,7 @@ DECLARE
  e record;
  pre jsonb;
  after_data jsonb;
+ owner_exists boolean;
 BEGIN
  IF p_account IS NULL THEN RAISE EXCEPTION 'WB55_INVALID_OWNER'; END IF;
  -- The actual Auth erasure service must first fence all World Boss writes,
@@ -37,11 +38,12 @@ BEGIN
    WHERE id=r.id FOR UPDATE;
  END LOOP;
  PERFORM 1 FROM auth.users WHERE id=p_account FOR UPDATE;
+ owner_exists:=FOUND;
  pre:=private.world_boss_v36_erasure_preflight(p_account);
  IF (pre->>'externalReplayReviewRequired')::boolean IS TRUE
    AND p_external_replay_purged IS DISTINCT FROM true
  THEN RAISE EXCEPTION 'WB55_EXTERNAL_REPLAY_PURGE_REQUIRED'; END IF;
- IF NOT FOUND AND (pre->>'requiresReconciliation')::boolean
+ IF NOT owner_exists AND (pre->>'requiresReconciliation')::boolean
  THEN RAISE EXCEPTION 'WB55_ORPHANED_ACCOUNT_RECEIPTS'; END IF;
  -- Remove child replay proofs BEFORE immutable parent battle attempts.
  DELETE FROM private.world_boss_replay_proofs_v28 WHERE account_id=p_account;

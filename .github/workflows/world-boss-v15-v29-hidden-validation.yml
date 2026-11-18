@@ -26,6 +26,7 @@ on:
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
       - 'docs/roadmap/world-boss-overview-v41*.sql'
       - 'docs/roadmap/world-boss-incident-controls-v61*.sql'
+      - 'docs/roadmap/world-boss-incident-controls-v61-race-ci.sh'
       - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
@@ -215,6 +216,9 @@ jobs:
           # contract checks. No World Boss event is scheduled or played here.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61-smoke.sql
+          # Distinct connections verify emergency pauses serialize against
+          # already admitted writes and block newly arriving reads. No battle.
+          bash docs/roadmap/world-boss-incident-controls-v61-race-ci.sh
           # Preflight checks that V61 receipt triggers/privileges are installed
           # before a future World Boss action host may accept real requests.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-gate-attestation-v63.sql

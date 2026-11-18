@@ -154,6 +154,24 @@ test('bosses and party adventures show distinct preview cues without implying li
  assert.match(screen,/No combat, event points or claims can be initiated/);
 });
 
+test('World Boss codex offers mobile-safe region switching, phase timing and no fictitious event progress',()=>{
+ assert.match(screen,/function BossRegionPicker/);
+ assert.match(screen,/bossRegionButton:\{flex:1,minHeight:46/);
+ assert.match(screen,/accessibilityLabel=\{'Inspect '\+entry\.name\+' in '\+entry\.region\}/);
+ assert.match(screen,/No availability implied/);
+ assert.match(screen,/function BossContents/);
+ assert.match(screen,/phaseEnd=active\?/);
+ assert.match(screen,/toISOString\(\)\.slice\(0,16\)\.replace\('T',' '\)\+' UTC'/);
+ assert.match(screen,/NEXT CALENDAR BOUNDARY/);
+ assert.match(screen,/bossTracks\.map\(track=>/);
+ assert.match(screen,/goal\.tier1At/);
+ assert.match(screen,/Projected'\)\+' tier '/);
+ assert.match(screen,/progressbar/);
+ assert.match(screen,/Squad not verified/);
+ assert.match(screen,/Already claimed this event/);
+ assert.doesNotMatch(screen,/EXAMPLE WAR SUPPLY METER|value=\{65\}/);
+});
+
 test('market browsing offers safe item inspection, reset and equipment gem trade rules',()=>{
  assert.match(screen,/Example T3 Forged Blade/);
  assert.match(screen,/requiredLevel:30/);

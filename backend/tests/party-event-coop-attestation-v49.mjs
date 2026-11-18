@@ -145,6 +145,81 @@ try{
 
  // Account erasure cascades its private human witness, unlike an ordinary
  // disconnect. This proof holds no loot, EP or account-wide social reward.
+
+ // Execute the actual full V14 override, NOT a nonpaying stub. The test
+ // private schema exists only in disposable PGlite and source events are
+ // still unreleased. Credit is granted to an ephemeral fake account only.
+ await db.exec(`
+ create table private.party_event_weeks_v11(
+  party_id uuid,event_starts_at timestamptz,event_ends_at timestamptz,
+  status text,active_stage smallint,primary key(party_id,event_starts_at));
+ create table private.party_event_stages_v11(
+  party_id uuid,event_starts_at timestamptz,stage smallint,opened_at timestamptz);
+ create table private.party_event_roster_v11(
+  party_id uuid,event_starts_at timestamptz,account_id uuid,
+  character_id uuid,joined_at timestamptz);
+ create table private.party_event_member_progress_v14(
+  party_id uuid,event_starts_at timestamptz,account_id uuid,
+  activity_points integer not null default 0,
+  carried_seconds integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key(party_id,event_starts_at,account_id));
+ create table private.party_event_activity_credits_v14(
+  id uuid primary key default gen_random_uuid(),
+  source_event_id text unique,request_id text unique,
+  party_id uuid,event_starts_at timestamptz,account_id uuid,
+  stage smallint,source_type text,source_ref uuid,node_id text,
+  verified_seconds integer,points_credited integer,
+  carried_seconds_after integer,committed_at timestamptz);
+ create table private.party_event_gathering_activities_v13(
+  activity_id text,enabled boolean,min_elapsed_sec integer);
+ create table public.craft_receipts(
+  receipt_id uuid,character_id uuid,created_at timestamptz,
+  recipe_id text,quantity integer);
+ create table public.idle_claim_receipts(
+  claim_id uuid,character_id uuid,created_at timestamptz,elapsed_sec integer,
+  resource_amount bigint,xp_amount bigint,activity_id text);
+ `);
+ await db.exec(override);
+ const party='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+ const period=await db.query(`select clock_timestamp()-interval '1 day' as start_at,
+  clock_timestamp()+interval '6 days' as end_at`);
+ const start=period.rows[0].start_at,end=period.rows[0].end_at;
+ await db.query(`insert into private.party_event_weeks_v11 values
+ ($1::uuid,$2::timestamptz,$3::timestamptz,'active',2)`,[party,start,end]);
+ await db.query(`insert into private.party_event_stages_v11 values
+ ($1::uuid,$2::timestamptz,2,clock_timestamp()-interval '12 hours')`,[party,start]);
+ await db.query(`insert into private.party_event_roster_v11 values
+ ($1::uuid,$2::timestamptz,$3::uuid,$4::uuid,clock_timestamp()-interval '12 hours'),
+ ($1::uuid,$2::timestamptz,$5::uuid,$6::uuid,clock_timestamp()-interval '12 hours')`,
+ [party,start,a,charA,b,charB]);
+ const credit=async(account,key)=>db.query(`
+ select private.credit_party_event_activity_v14(
+ $1::uuid,$2::timestamptz,'coop_node',$3::uuid,'COMBAT_A',$4::uuid,$5::text) credit`,
+ [party,start,live,account,key]);
+ const requestKey='pe49:'+live+':a';
+ const firstCredit=await credit(a,requestKey);
+ assert.equal(firstCredit.rows[0].credit.replayed,false);
+ assert.equal(firstCredit.rows[0].credit.eventPointsGranted,1,
+  'first late-delivered verified co-op node earns one EP even after disconnect');
+ const exactReplay=await credit(a,requestKey);
+ assert.equal(exactReplay.rows[0].credit.replayed,true);
+ assert.equal(exactReplay.rows[0].credit.eventPointsGranted,1,
+  'replay reports original points, not new points');
+ let echoDenied=false;
+ try{await credit(echo,'pe49:'+live+':echo');}catch{echoDenied=true;}
+ assert.equal(echoDenied,true,'Echo account cannot take human credit');
+ let laterDenied=false;
+ try{await credit(later,'pe49:'+live+':later');}catch{laterDenied=true;}
+ assert.equal(laterDenied,true,'post-commit join cannot claim past node');
+ const otherCredit=await credit(b,'pe49:'+live+':b');
+ assert.equal(otherCredit.rows[0].credit.eventPointsGranted,1,
+  'second verified human on same event may independently credit');
+ const totals=await db.query(`select count(*)::int receipts,
+  coalesce(sum(points_credited),0)::int total from private.party_event_activity_credits_v14`);
+ assert.deepEqual(totals.rows[0],{receipts:2,total:2},
+  'at most one credit per actor and canonical node identity');
+
  await db.query('delete from auth.users where id=$1::uuid',[a]);
  assert.equal(await count(live),1,'user erasure deletes attributed witness');
 

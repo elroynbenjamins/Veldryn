@@ -72,6 +72,7 @@ jobs:
             party-event-readonly-status-v33 \
             party-event-authenticated-read-v34 \
             party-event-read-route-v39 \
+            party-event-current-read-v40 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37

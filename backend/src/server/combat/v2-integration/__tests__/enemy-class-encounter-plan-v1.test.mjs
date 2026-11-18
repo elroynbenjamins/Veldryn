@@ -12,7 +12,7 @@ const roles={
 };
 const original=()=>({
  version:2,ruleset:ENEMY_V2_RULESET,source:'server-persisted-v2',
- mode:'solo',encounterId:'run-v2-17',serverSeed:'private-snapshot-seed',
+ mode:'solo',region:'sunscar',equipmentTier:3,encounterId:'run-v2-17',serverSeed:'private-snapshot-seed',
  snapshotRevision:1,
  actors:[{
   actorId:'player-1',characterId:'char-1',classId:'IRONWARDEN',role:'tank',
@@ -60,6 +60,8 @@ rejects(f=>f.ruleset='normal','invalid_server_snapshot');
 rejects(f=>f.source='client','invalid_server_snapshot');
 rejects(f=>f.mode='dungeon','invalid_server_snapshot');
 rejects(f=>f.mode='world_boss','invalid_server_snapshot');
+rejects(f=>f.region='unknown','invalid_server_snapshot');
+rejects(f=>f.equipmentTier=1,'invalid_server_snapshot');
 rejects(f=>f.serverSeed='','invalid_server_snapshot');
 rejects(f=>f.snapshotRevision=0,'invalid_server_snapshot');
 rejects(f=>f.legacyReplay={},'legacy_state_requires_versioned_migration');
@@ -80,10 +82,15 @@ rejects(f=>f.enemies[0].tags=['enemy-v2:trait:stonehide'],'enemy_identity_or_dup
 rejects(f=>f.enemies[0].preparedByAnotherCompiler=true,'enemy_identity_or_duplicate_compiler');
 rejects(f=>f.enemies[0].pveArchetypeTag='pve:archetype:mystery','unsupported_pve_archetype');
 rejects(f=>f.enemies[0].traits=['warded'],'unimplemented_or_duplicate_trait');
-rejects(f=>f.enemies[0].traits=['stonehide','stonehide'],'unimplemented_or_duplicate_trait');
-rejects(f=>f.enemies[0].traits=['stonehide','fortified'],'multiple_major_trait_groups');
+rejects(f=>{f.enemies[0].kind='elite';f.enemies[0].traits=['stonehide','stonehide'];},'unimplemented_or_duplicate_trait');
+rejects(f=>{f.enemies[0].kind='elite';f.enemies[0].traits=['stonehide','fortified'];},'multiple_major_trait_groups');
+rejects(f=>f.enemies[0].traits=['stonehide','fortified'],'trait_count_exceeds_tier_policy');
+rejects(f=>{f.equipmentTier=2;f.enemies[0].kind='elite';f.enemies[0].traits=['stonehide','fortified'];},'trait_count_exceeds_tier_policy');
 rejects(f=>f.enemies[0].traits=[12],'unimplemented_or_duplicate_trait');
-assert.equal(denied,31);
+const elite=original();
+elite.enemies[0]={id:'mob-2',team:'enemies',kind:'elite',pveArchetypeTag:'pve:archetype:bruiser',traits:['savage','rending']};
+assert.deepEqual(plan(elite,verified).enemies[0].traitIds,['savage','rending']);
+assert.equal(denied,35);
 const next=(tag,sourceId='e1',kind='dot',expiresAt=4500)=>({sourceId,kind,tag,expiresAt});
 const args=(existing,newEffect,nowMs=1000)=>({
  existing,next:newEffect,nowMs,targetTeam:'players',sourceTeam:'enemies',
@@ -126,4 +133,4 @@ assert.equal(shield({targetTeam:'enemies',maxHp:1000,currentShield:95,requested:
 assert.equal(shield({targetTeam:'enemies',maxHp:1000,currentShield:110,requested:50}),0);
 assert.throws(()=>shield({targetTeam:'players',maxHp:1000,currentShield:0,requested:5}),/shield_target_must_be_enemy/);
 assert.throws(()=>shield({targetTeam:'enemies',maxHp:1000,currentShield:0,requested:Infinity}),/invalid_shield_amount/);
-console.log('PASS: 8 archetype mappings, nine classes, 31 fail-closed encounter cases, status caps/replay and enemy shield ceilings');
+console.log('PASS: 8 archetype mappings, nine classes, 35 fail-closed encounter cases, status caps/replay and enemy shield ceilings');

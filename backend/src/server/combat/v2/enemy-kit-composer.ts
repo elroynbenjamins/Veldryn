@@ -9,7 +9,7 @@
  */
 import type {CombatantDefinition} from '../types';
 import {
- ENEMY_V2_RULESET,prepareEnemyV2,
+ ENEMY_V2_RULESET,ENEMY_V2_TRAITS,prepareEnemyV2,
  type EnemyV2ServerOptions,type EnemyV2Region,type EnemyV2Tier,
 } from '../enemy-v2-prototype';
 import {prepareAsterfallBossV2} from '../boss-v2-asterfall-prototype';
@@ -65,6 +65,11 @@ const duplicateAbility=(entry:CombatantDefinition)=>{
  const ids=entry.abilities.map(x=>x.id);
  const phases=(entry.phases??[]).map(x=>x.id);
  return !distinct(ids)||!distinct(phases);
+};
+const originalArchetypes:Readonly<Record<string,string>>={
+ guardian:'bulwark',bruiser:'berserker',executioner:'berserker',
+ assassin:'predator',swarm:'predator',caster:'spellcaster',
+ hexer:'hexer',support:'mender',
 };
 const baseIsUncompiled=(enemy:CombatantDefinition)=>(
  enemy.team==='enemies'&&enemy.role==='enemy'&&validId(enemy.id)&&
@@ -220,15 +225,37 @@ export function verifyPersistedEnemyKitsV2(
   assert((base.boss===true)===(p.kind==='boss')&&
    (!base.boss||next.tags?.some(t=>t.startsWith('enemy-v2:boss-profile:'))),
    'invalid_stored_enemy_profile');
-  assert(!base.boss&&(p.kind==='normal'||p.kind==='elite')?
-     p.kind===(snapshot.eliteEnemyIds.includes(base.id)?'elite':'normal'):true,
-    'invalid_stored_elite_kind');
+  if(!base.boss){
+   assert((p.kind==='normal'||p.kind==='elite')&&
+     p.kind===(snapshot.eliteEnemyIds.includes(base.id)?'elite':'normal'),
+     'invalid_stored_elite_kind');
+  }
   assert(p.traitIds.length<=(p.kind==='elite'&&snapshot.equipmentTier>=3?2:1)&&
     distinct(p.traitIds),'invalid_stored_trait_count');
   if(!base.boss){
    const actual=(next.tags??[]).filter(t=>t.startsWith('enemy-v2:trait:'))
      .map(t=>t.slice('enemy-v2:trait:'.length));
-   assert(JSON.stringify(actual)===JSON.stringify(p.traitIds),'stored_trait_evidence_mismatch');
+   const archetypes=(next.tags??[]).filter(t=>t.startsWith('enemy-v2:archetype:'))
+     .map(t=>t.slice('enemy-v2:archetype:'.length));
+   const old=(base.tags??[]).find(t=>t.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
+   const group=new Set<string>();
+   for(const trait of actual){
+    const spec=ENEMY_V2_TRAITS[trait as keyof typeof ENEMY_V2_TRAITS];
+    assert(spec?.implemented===true,'stored_unimplemented_trait');
+    if(spec.group!=='control'){
+     assert(!group.has(spec.group),'stored_incompatible_trait_groups');
+     group.add(spec.group);
+    }
+   }
+   assert(JSON.stringify(actual)===JSON.stringify(p.traitIds)&&
+     p.profile===(archetypes[0]??'unrolled')&&archetypes.length<2&&
+     (archetypes.length===0||originalArchetypes[old??'']===archetypes[0]),
+     'stored_trait_evidence_mismatch');
+  }else{
+   assert(p.profile===snapshot.region+'-boss-v1'&&
+    p.traitIds.length===0&&
+    (next.tags??[]).filter(t=>t.startsWith('enemy-v2:boss-profile:')).length===1,
+    'stored_boss_profile_mismatch');
   }
  }
  return {

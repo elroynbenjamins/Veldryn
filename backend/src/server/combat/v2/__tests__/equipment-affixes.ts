@@ -15,6 +15,7 @@ const limits=Object.fromEntries(Object.keys(EQUIPMENT_AFFIXES_V2).map(x=>[x,{min
 const policy:ServerAffixPolicyV2={
  limits:limits as unknown as ServerAffixPolicyV2['limits'],
  countsByTierRarity:{'T3:epic':2},
+ maxFinalHaste:.75,maxFinalCritChance:.85,maxFinalCritMultiplier:3.5,
 };
 const item=(id:string,slot:TrustedEquipmentItemAffixesV2['slot'],affixes:TrustedEquipmentItemAffixesV2['affixes']):TrustedEquipmentItemAffixesV2=>({
  instanceId:id,slot,tier:'T3',rarity:'epic',quality:86,affixes,
@@ -57,6 +58,12 @@ assert.throws(()=>validateTrustedAffixesV2(item('x','weapon',[{id:'attack_pct',v
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,[
  item('x','weapon',[{id:'penetration_pp',value:.02}]),
 ],policy,true),/affix_effect_unimplemented/);
+assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,items,{
+ ...policy,maxFinalCritChance:ready.stats.critChance+.01,
+},true),/affix_exceeds_approved_stat_caps/);
+assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,items,{
+ ...policy,maxFinalCritChance:NaN,
+},true),/missing_approved_stat_caps/);
 assert.throws(()=>compileTrustedEquipmentAffixesV2(ready,[items[0],items[0]],policy,true),
  /affix_item_duplicate/);
 assert.throws(()=>validateTrustedAffixesV2({...items[0],quality:101},policy),

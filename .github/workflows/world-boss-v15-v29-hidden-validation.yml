@@ -32,6 +32,7 @@ on:
       - 'backend/online/world-boss-current-read-route-v52.ts'
       - 'backend/online/world-boss-current-action-v62.ts'
       - 'backend/online/world-boss-gate-attestation-v63.ts'
+      - 'backend/online/world-boss-action-runtime-v64.ts'
       - 'docs/roadmap/world-boss-gate-attestation-v63*.sql'
       - 'backend/online/world-boss-account-erasure-v56.ts'
       - 'backend/online/world-boss-readiness-audit-v43.ts'
@@ -129,6 +130,7 @@ jobs:
             world-boss-overview-v41 \
             world-boss-current-overview-v51 \
             world-boss-action-route-v62 \
+            world-boss-action-runtime-v64 \
             world-boss-account-erasure-v56 \
             world-boss-readiness-audit-v43
           do

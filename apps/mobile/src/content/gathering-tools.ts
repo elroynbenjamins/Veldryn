@@ -30,7 +30,8 @@ export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75;
 export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.001;
 export function roundDownToolBlueprintDropChance(chance:number):number{
  if(!Number.isFinite(chance)||chance<0||chance>1)throw new Error('invalid_tool_blueprint_chance');
- return Math.floor(chance/TOOL_BLUEPRINT_DROP_ROUNDING_STEP+1e-10)*TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
+ const ticksPerUnit=Math.round(1/TOOL_BLUEPRINT_DROP_ROUNDING_STEP);
+ return Math.floor(chance*ticksPerUnit+1e-10)/ticksPerUnit;
 }
 /** Tool investment rises sharply by tier. These replace the old flat 2x
  * multiplier and apply to both Gold and every material input. Starter tools

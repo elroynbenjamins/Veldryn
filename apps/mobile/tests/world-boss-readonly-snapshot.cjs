@@ -104,8 +104,16 @@ test('verified-format Saturday raid data is informative, not action-authorizing'
 test('FeaturePreviewScreen consumes optional QA-only props, never creates a live route',()=>{
  const screen=read('src/screens/FeaturePreviewScreen.tsx');
  const app=read('App.tsx');
- assert.match(screen,/decodeWorldBossReadOnlyStatusV46\(worldBossStatus,worldBossAccountId,statusNowMs\)/);
+ assert.match(screen,/decodeWorldBossReadOnlyStatusV46\(displayBossStatus,worldBossAccountId,statusNowMs\)/);
  assert.match(screen,/PRIVATE READ-ONLY SNAPSHOT/);
+ assert.match(screen,/worldBossReadCurrent\?:\(\)=>Promise<unknown>/);
+ assert.match(screen,/loadedBoss\?\.accountId===worldBossAccountId/);
+ assert.match(screen,/Promise\.resolve\(\)\.then\(\(\)=>worldBossReadCurrent\(\)\)/);
+ assert.match(screen,/return \(\)=>\{alive=false;clearInterval\(refreshTimer\)\}/);
+ assert.match(screen,/setLoadedBoss\(null\);setBossReadState\('error'\)/);
+ assert.match(screen,/Refresh read-only status/);
+ assert.match(screen,/World Boss status expired or rejected/);
+ assert.doesNotMatch(app,/worldBossReadCurrent=\{/);
  assert.match(screen,/leaseTimer=setInterval\(\(\)=>setStatusNowMs\(Date.now\(\)\),15000\)/);
  assert.match(screen,/clearInterval\(leaseTimer\)/);
  assert.match(screen,/No verified War Camp progress/);

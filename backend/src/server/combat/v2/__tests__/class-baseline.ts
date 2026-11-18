@@ -3,6 +3,7 @@ import {launchPlayer} from '../../content/launch-combat';
 import {CLASS_NAMES_V2} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from '../class-baseline';
+import {auditApprovedClassBaselinesV2,assertApprovedClassBaselineCoverageV2} from '../class-baseline-audit';
 
 const keys=Object.keys(CLASS_NAMES_V2) as ClassIdV2[];
 assert.equal(keys.length,9);
@@ -69,4 +70,38 @@ for(const cls of keys){
   tags:['combat-v2-class-base-only'],
  },verified,policy),/source_already_compiled/);
 }
-console.log('PASS: nine class-only baseline profiles discard legacy stats, gems, alchemy and forged tags');
+const allProfiles=Object.fromEntries(keys.map(cls=>{
+ const fixture=launchPlayer(CLASS_NAMES_V2[cls],25);
+ return [cls,{classId:cls,minLevel:1,maxLevel:75,
+  statsAtLevel:(level:number)=>({...syntheticStats,maxHp:1200+level*10}),
+  basicAttackMs:2100,basicAttackCoeff:.55,abilities:fixture.abilities}];
+})) as ApprovedClassBaselinePolicyV2['profiles'];
+const approved:ApprovedClassBaselinePolicyV2={
+ version:'test-all-nine-levels',profiles:allProfiles,
+};
+const required=[1,10,20,30,50,75];
+const audit=auditApprovedClassBaselinesV2(approved,required);
+assert.equal(audit.valid,true,JSON.stringify(audit.issues));
+assert.equal(audit.classesChecked,9);
+assert.equal(audit.levelsChecked,54);
+assert.equal(audit.issues.length,0);
+assert.doesNotThrow(()=>assertApprovedClassBaselineCoverageV2(approved,required));
+const incomplete:ApprovedClassBaselinePolicyV2={...approved,profiles:{
+ ...allProfiles,IRONWARDEN:undefined,
+}};
+const missing=auditApprovedClassBaselinesV2(incomplete,required);
+assert.equal(missing.valid,false);
+assert.ok(missing.issues.some(x=>x.code==='missing_class_profile'));
+assert.throws(()=>assertApprovedClassBaselineCoverageV2(incomplete,required),
+ /class_baseline_coverage_failed/);
+const shortCurve:ApprovedClassBaselinePolicyV2={...approved,profiles:{
+ ...allProfiles,BASTION:{...allProfiles.BASTION!,maxLevel:50},
+}};
+const shortAudit=auditApprovedClassBaselinesV2(shortCurve,required);
+assert.ok(shortAudit.issues.some(x=>x.classId==='BASTION'&&x.level===75&&
+ x.code==='missing_level_curve'));
+assert.throws(()=>auditApprovedClassBaselinesV2(approved,[1,1]),
+ /invalid_levels/);
+assert.throws(()=>auditApprovedClassBaselinesV2(approved,[]),
+ /invalid_levels/);
+console.log('PASS: nine class-only baseline profiles and complete 9-class/54-point audit discard legacy stats, gems, alchemy and forged tags');

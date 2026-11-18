@@ -68,9 +68,9 @@ try{
  ($1::uuid,$3::timestamptz,$4::timestamptz),
  ($2::uuid,$3::timestamptz,$4::timestamptz)`,[partyA,partyB,joined,ends]);
  await db.query(`insert into private.party_event_roster_v11 values
- ($1::uuid,$3::timestamptz,$5::uuid,$7::uuid,$3::timestamptz),
- ($2::uuid,$3::timestamptz,$6::uuid,$8::uuid,$3::timestamptz)`,
- [partyA,partyB,joined,ends,accountA,accountB,characterA,characterB]);
+ ($1::uuid,$3::timestamptz,$4::uuid,$6::uuid,$3::timestamptz),
+ ($2::uuid,$3::timestamptz,$5::uuid,$7::uuid,$3::timestamptz)`,
+ [partyA,partyB,joined,accountA,accountB,characterA,characterB]);
  await db.query('insert into public.idle_claim_receipts values ($1::uuid,$2::uuid,$3::timestamptz)',
   [sourceClaim,characterA,sourceAt]);
  await db.query('insert into public.craft_receipts values ($1::uuid,$2::uuid,$3::timestamptz)',

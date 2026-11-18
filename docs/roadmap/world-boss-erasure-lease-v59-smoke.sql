@@ -5,14 +5,14 @@ BEGIN;
 INSERT INTO auth.users(id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
--- Synthetic immutable battle receipt for the OTHER account. Its replay
--- locator intentionally differs from the V59 manifest; the stage transition
--- must detect it without changing the other account's durable state.
+-- Three synthetic committed battle receipts across two accounts, ALL
+-- inserted BEFORE either owner is fenced. One second-account locator is
+-- deliberately absent from its otherwise valid owned-key manifest.
 INSERT INTO private.world_boss_events_v17
- (id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp)
+ (id,boss_id,status,starts_at,ends_at,rules_version,max_hp,remaining_hp,revision)
 VALUES('30000000-0000-4000-8000-000000000159','hollowroot','closed',
  '2036-02-04 00:00:00+00','2036-02-11 00:00:00+00',
- 'wb59-fixture',100000,80000);
+ 'wb59-fixture',100000,79850,3);
 INSERT INTO private.world_boss_attempts_v17(
  event_id,account_id,request_id,ordinal,character_id,war_order,phase,
  rules_version,engine_version,server_seed,squad_digest,frozen_squad,
@@ -21,15 +21,35 @@ INSERT INTO private.world_boss_attempts_v17(
  hp_before,hp_after,credited_hp,residual_echo)
 VALUES
  ('30000000-0000-4000-8000-000000000159',
-  '10000000-0000-4000-8000-000000000060',
-  'WB59_MISSING_REPLAY',1,'20000000-0000-4000-8000-000000000060',
+  '10000000-0000-4000-8000-000000000059',
+  'WB59_OWNER_REPLAY',1,'20000000-0000-4000-8000-000000000059',
   'hold_line','armored','wb59-fixture','wb59-test-engine',
   repeat('S',32),repeat('a',64),
   jsonb_build_object('trustedFrozenRoster',repeat('X',160)),
+  'WB59_OWNER_WORKER',clock_timestamp()+interval '2 minutes',
+  clock_timestamp()+interval '15 minutes','committed',clock_timestamp(),
+  repeat('c',64),'synthetic/private/replays/owner059',
+  50,10,80000,79950,50,false),
+ ('30000000-0000-4000-8000-000000000159',
+  '10000000-0000-4000-8000-000000000060',
+  'WB59_OTHER_REPLAY',1,'20000000-0000-4000-8000-000000000060',
+  'hold_line','armored','wb59-fixture','wb59-test-engine',
+  repeat('T',32),repeat('b',64),
+  jsonb_build_object('trustedFrozenRoster',repeat('Y',160)),
   'WB59_OTHER_WORKER',clock_timestamp()+interval '2 minutes',
   clock_timestamp()+interval '15 minutes','committed',clock_timestamp(),
-  repeat('c',64),'synthetic/private/replays/missing060',
-  50,10,80000,79950,50,false);
+  repeat('d',64),'synthetic/private/replays/other060',
+  50,10,79950,79900,50,false),
+ ('30000000-0000-4000-8000-000000000159',
+  '10000000-0000-4000-8000-000000000060',
+  'WB59_MISSING_REPLAY',2,'20000000-0000-4000-8000-000000000060',
+  'hold_line','armored','wb59-fixture','wb59-test-engine',
+  repeat('U',32),repeat('c',64),
+  jsonb_build_object('trustedFrozenRoster',repeat('Z',160)),
+  'WB59_MISSING_WORKER',clock_timestamp()+interval '2 minutes',
+  clock_timestamp()+interval '15 minutes','committed',clock_timestamp(),
+  repeat('e',64),'synthetic/private/replays/missing060',
+  50,10,79900,79850,50,false);
 INSERT INTO private.world_boss_erasure_fences_v57(account_id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
@@ -74,10 +94,10 @@ BEGIN
   WHERE oid='private.world_boss_erasure_objects_v59'::regclass)
  THEN RAISE EXCEPTION 'WB59_MISSING_PRIVATE_RLS'; END IF;
 
- -- Explicit V36 review must recognize exactly the two recovery identities;
- -- the recovery job itself is NOT a gameplay receipt.
+ -- V36 must recognize exactly the two new recovery identity columns
+ -- and still count the owner's committed battle as an outstanding receipt.
  IF (private.world_boss_v36_erasure_preflight(acct)->>'status')
-    IS DISTINCT FROM 'no_world_boss_rows'
+    IS DISTINCT FROM 'blocked_pending_reconciliation'
  THEN RAISE EXCEPTION 'WB59_V36_UNREVIEWED_ERASURE_STATE'; END IF;
 
  blocked:=false;
@@ -141,6 +161,16 @@ BEGIN
   blocked:=SQLERRM LIKE '%WB59_REPLAY_MANIFEST_INCOMPLETE%';
  END;
  IF NOT blocked THEN RAISE EXCEPTION 'WB59_MISSING_EXTERNAL_REPLAY_UNDETECTED'; END IF;
+
+ -- A replay key proven to belong to the OTHER owner cannot be added
+ -- to the current owner's deletion manifest, even before sealing.
+ blocked:=false;
+ BEGIN
+  INSERT INTO private.world_boss_erasure_objects_v59(account_id,object_key)
+  VALUES(acct,'synthetic/private/replays/other060');
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_MANIFEST_KEY_NOT_OWNED%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_FOREIGN_REPLAY_OBJECT_ENQUEUED'; END IF;
 
  -- ONLY in this synthetic rolled-back fixture, simulate policy approval.
  UPDATE private.world_boss_erasure_jobs_v59
@@ -218,6 +248,16 @@ BEGIN
  IF NOT blocked THEN RAISE EXCEPTION 'WB59_ILLEGAL_STAGE_SKIP_ALLOWED'; END IF;
  PERFORM private.world_boss_v59_advance(
   acct,'WB59_WORKER_NEW',gen,'fenced','replays_purged');
+ blocked:=false;
+ BEGIN
+  PERFORM private.world_boss_v59_advance(
+   acct,'WB59_WORKER_NEW',gen,'replays_purged','rows_purged');
+ EXCEPTION WHEN raise_exception THEN
+  blocked:=SQLERRM LIKE '%WB59_ACCOUNT_GAMEPLAY_RECEIPTS_STILL_PRESENT%'; END;
+ IF NOT blocked THEN RAISE EXCEPTION 'WB59_ERASURE_STAGE_SKIPPED_GAMEPLAY_CLEANUP'; END IF;
+ -- The V59 fixture's replay was already synthetically acknowledged above.
+ -- Real workers would delete private child replay proofs and receipts first.
+ DELETE FROM private.world_boss_attempts_v17 WHERE account_id=acct;
  PERFORM private.world_boss_v59_advance(
   acct,'WB59_WORKER_NEW',gen,'replays_purged','rows_purged');
 

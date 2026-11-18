@@ -6,6 +6,7 @@ import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {simulateUnifiedEquipmentCombatV2,type TrustedEquipmentRuntimeV2} from '../unified-equipment-encounter';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
 import type {ServerAffixPolicyV2} from '../equipment-affixes';
+import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 
 const statKeys:readonly (keyof CombatStats)[]=[
  'maxHp','attackPower','healingPower','defense','accuracy','evasion','critChance','critMultiplier','haste',
@@ -65,7 +66,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    affixesByInstanceId:{[instanceId]:{
      instanceId,slot:'helmet',tier:'T1',rarity:'common',quality:50,affixes:[],
    }},
-   basePolicy:{rarityMultipliers:{common:1},qualityMultiplier:()=>1,ceilings},
+   basePolicy:{rarityMultipliers:{common:1,rare:1.05},
+     qualityMultiplier:equipmentQualityMultiplierV2,ceilings},
+   rarityPolicy:{version:'synthetic-role-matrix',order:['common','rare'],
+     multipliers:{common:1,rare:1.05}},
    setsPolicy:{effectsByThreshold:{},ceilings},
    affixPolicy:{limits:affine,countsByTierRarity:{'T1:common':0},
      maxFinalHaste:1,maxFinalCritChance:1,maxFinalCritMultiplier:10},

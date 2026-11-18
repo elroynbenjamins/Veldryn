@@ -175,7 +175,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1,abilityDamage:0,healingPower:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -213,7 +213,9 @@ export function effectiveStats(state:GameState){
     // Stack equipment and class wards multiplicatively.
     ward:1-(1-setStats.ward)*(1-mastery.ward),
     tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
-    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
+    penetration:setStats.penetration+mastery.penetration,
+     classHealing:mastery.classHealing*(1+setStats.healingPower),
+     abilityDamage:setStats.abilityDamage,healingPower:setStats.healingPower,
   }
 }
 
@@ -695,7 +697,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
    const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
-   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,abilityDamageBonus:runtime.stats.abilityDamage,
      companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
    const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});

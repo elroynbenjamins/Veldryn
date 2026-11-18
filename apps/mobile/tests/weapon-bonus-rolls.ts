@@ -5,7 +5,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,equippedWeaponBonusStats} from '../src/core/equipment-set-runtime';
 import {draftCraftedGearInstance,normalizeCraftedGearInstances,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM} from '../src/core/crafted-gear-instances';
 import {planCraftedGearRetention} from '../src/core/crafted-gear-retention';
-import {moveCraftedGearInstance,equipCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
+import {moveCraftedGearInstance,equipCraftedGearInstance,unequipCraftedGearInstance,disposeCraftedGearInstance} from '../src/core/crafted-gear-ownership';
 import {previewEquipment} from '../src/core/equipment-preview';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
@@ -256,5 +256,25 @@ const atCopyCap=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,index
 const careful=planCraftedGearRetention(atCopyCap,normalized,'keep_best_seven');
 ok(careful.action==='manual_review'&&careful.reason==='weapon_bonus_choice',
   'The auto-sell policy must never discard a rolled weapon based on quality alone');
+
+// Integrated post-merge contract: rolled gear transferred through shared Bank is
+// still an exact copy, and permanent socketed gems are destroyed on manual salvage.
+const socketedRoll:CraftedGearInstance={...normalized,enhancement:{
+  ...normalized.enhancement,rank:1,statGemId:'WARD_SHARD',gemIds:['WARD_SHARD'],
+}};
+const transferredSocketed:GameState={...fromBank,account:{
+  ...fromBank.account,craftedGearInstances:[socketedRoll],
+}};
+const salvagedSocketed=disposeCraftedGearInstance(transferredSocketed,normalized.id,'salvage');
+ok(!salvagedSocketed.account.craftedGearInstances?.some(row=>row.id===normalized.id),
+  'Salvaging a transferred rolled weapon must consume its exact Forge receipt');
+ok(!salvagedSocketed.character?.equipmentPouch?.stacks.some(row=>row.instanceId===normalized.id),
+  'Salvaging the transferred weapon must destroy its physical pouch copy');
+ok(!salvagedSocketed.inventory.stacks.some(row=>row.itemId==='WARD_SHARD')
+  &&!salvagedSocketed.bank.stacks.some(row=>row.itemId==='WARD_SHARD')
+  &&!salvagedSocketed.account.gemPouch?.stacks.some(row=>row.itemId==='WARD_SHARD'),
+  'Permanent socketed gem must not be refunded by salvage after Bank transfer');
+ok(Object.keys(equippedWeaponBonusStats(salvagedSocketed)).length===0,
+  'Destroyed rolled weapons must not leave active bonus stats');
 
 console.log('PASS: T3+ weapon bonus rolls, two-stat eligibility, persistence, combat and legacy safety');

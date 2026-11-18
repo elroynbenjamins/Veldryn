@@ -3,6 +3,7 @@ import {itemDef} from '../src/content/items';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
+import {itemInspectModel} from '../src/core/item-inspect';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -70,8 +71,9 @@ close(stats10.armor??0,.07,'Effective stats must surface live Armor');
 close(stats10.tenacity??0,.02,'Effective stats must surface live Tenacity');
 
 const t5Set=EQUIPMENT_SETS.find(row=>row.id==='T5_001');if(!t5Set)throw new Error('Missing T5_001 set');
-let t5State=createCharacter(newGame(0),'IRONWARDEN','Affix Test','male');
+let t5State=createCharacter(newGame(0),'IRONWARDEN','No Fixed Affixes','male');
 t5State=withSetPieces(t5State,'T5_001',10);
+const t5Runtime=activeEquipmentSetRuntime(t5State);
 const t5Build=activeEquipmentBuildStats(t5State);
 const fixedSetStats=activeEquipmentSetRuntime(t5State).stats;
 close(t5Build.haste,fixedSetStats.haste,'Legacy T5 equipment no longer gets an invented Gloves Haste affix');

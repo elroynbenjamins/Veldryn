@@ -88,6 +88,9 @@ ensure(hit.gearDropped&&hit.piece?.id===pieces[4]!.id,
  'new_piece_preferred_when_only_one_missing');
 ensure(hit.gearTier===3&&hit.affixes==='defer_to_equipment_2_0_server_roller',
  'equipment_2_0_resolves_rolls_not_chest');
+rejects(()=>resolvePartyChestGearDraftV51({...first,gearChanceBps:10000},{
+ gearRoll:8000,pieceRoll:0,ownedPieceIds:[],
+}), 'invalid_chest_preview');
 const allOwned=resolvePartyChestGearDraftV51(first,{
  gearRoll:0,pieceRoll:0,ownedPieceIds:pieces.map(x=>x.id),
 });
@@ -99,7 +102,7 @@ rejects(()=>resolvePartyChestGearDraftV51(first,{
 rejects(()=>resolvePartyChestGearDraftV51(first,{
  gearRoll:0,pieceRoll:10000,ownedPieceIds:[]}),
  'invalid_server_roll');
-rejects(()=>previewVerifiedPartyChestsV51({...base,eligibleGearTier:10 as 3}),
+rejects(()=>previewVerifiedPartyChestsV51({...base,eligibleGearTier:10 as unknown as 3}),
  'invalid_trusted_evidence');
 rejects(()=>previewVerifiedPartyChestsV51({...base,
  eventStartsAtUtcMs:week+86400000}), 'invalid_trusted_evidence');

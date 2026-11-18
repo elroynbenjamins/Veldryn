@@ -14,7 +14,6 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
-import {isT5EquipmentAffixSlot,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -58,8 +57,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const tier=recipe.v33EquipmentTier,skill=recipe.skillId;
   const primaryId=primaryByTier[tier][skill];
-  const affixMultiplier=tier==='T5'&&isT5EquipmentAffixSlot(slot)?T5_AFFIX_MATERIAL_MULTIPLIER:1;
-  const scale=materialTierMultiplier[tier]*originalSlotGold[slot]*affixMultiplier;
+  const scale=materialTierMultiplier[tier]*originalSlotGold[slot];
   const basicQuantity=Math.max(1,Math.round(primaryBase[tier][skill]*scale));
   const undiscountedQuantity=tier==='T3'&&skill==='smithing'
     ?Math.max(1,Math.round(basicQuantity*3*T3_SMITHING_DUNEWOOD_FINAL_FACTOR))
@@ -92,9 +90,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
   const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
-  // Three of the ten T5 slots carry a secondary stat and pay for it in profession XP.
-  const t5Affix=recipe.v33EquipmentTier==='T5'&&isT5EquipmentAffixSlot(slot);
-  ok(recipe.xp===(t5Affix?Math.round(improvedXp*T5_AFFIX_XP_MULTIPLIER):improvedXp),recipe.id+' must preserve the existing T2–T4 25% XP increase, the subsequent 20% T2–T4 increase, the T3/T4 flat +20 baseline, and the T5 affix-only bonus');
+  // All T5 slots can now roll two attributes: no three-slot XP surcharge remains.
+  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without obsolete fixed T5 affix premiums');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -134,11 +131,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T5
   const slot=itemDef(recipe.output.itemId).slot!;
   const fixative=recipe.inputs.find(input=>input.itemId==='SUNFUSED_FIXATIVE');
   ok(fixative,'T5 '+recipe.id+' must require Sunfused Fixative');
-  if(isT5EquipmentAffixSlot(slot)){
-    ok(fixative!.quantity===2,recipe.id+' affix slot must require 2 Sunfused Fixative (base + extra)');
-  }else{
-    ok(fixative!.quantity===1,recipe.id+' non-affix slot must require exactly 1 Sunfused Fixative');
-  }
+  ok(fixative!.quantity===1,recipe.id+' must require one Sunfused Fixative with no retired fixed-affix surcharge');
 }
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');

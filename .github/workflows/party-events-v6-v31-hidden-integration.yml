@@ -42,6 +42,8 @@ jobs:
         run: node tests/party-event-activity-credit-sql-v43.mjs
       - name: Prove V49 source-time humans and full V14 credit after disconnect in disposable PGlite
         run: node tests/party-event-coop-attestation-v49.mjs
+      - name: Prove V50 co-op actor source queue, scoped enrollment, lease and rollback
+        run: node tests/party-event-coop-outbox-v50.mjs
       - name: Ensure hidden migrations and disabled V48 gate are not promoted
         run: node tests/party-event-hidden-migrations-v37.mjs
   party-events-online-sources:
@@ -139,6 +141,7 @@ jobs:
             party-event-canonical-source-packet-v44 \
             party-event-source-outbox-worker-v47 \
             party-event-gameplay-commit-v48 \
+            party-event-coop-source-dispatcher-v50 \
             party-event-schema-readiness-v35 \
             party-event-day8-audit-v36 \
             party-event-staging-assessment-v37
@@ -163,6 +166,8 @@ jobs:
         run: node tests/party-event-activity-credit-sql-v43.mjs
       - name: Verify V49 human co-op attestation and V14 frozen-source credit
         run: node tests/party-event-coop-attestation-v49.mjs
+      - name: Verify V50 durable co-op actor outbox and rollback
+        run: node tests/party-event-coop-outbox-v50.mjs
       - name: Verify hidden SQL paid-receipt and locked claim contracts in disposable PGlite
         run: |
           node tests/party-event-paid-schema-v29.mjs

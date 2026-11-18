@@ -16,8 +16,11 @@ const accountB='22222222-2222-4222-8222-222222222222';
 const accountOther='33333333-3333-4333-8333-333333333333';
 const partyA='44444444-4444-4444-8444-444444444444';
 const partyOther='55555555-5555-4555-8555-555555555555';
-const starts='2026-11-09T00:00:00+00:00';
-const ends='2026-11-16T00:00:00+00:00';
+const dayMs=86400000;
+const testNow=Date.now();
+const starts=new Date(testNow-dayMs).toISOString();
+const ends=new Date(testNow+6*dayMs).toISOString();
+const ballotAt=new Date(testNow-3600000).toISOString();
 const db=await PGlite.create();
 try{
  await db.exec(`
@@ -57,7 +60,7 @@ try{
  await db.query(`insert into private.party_event_stages_v11 values
  ($1::uuid,$3::timestamptz,2,'safe_pass',$4::timestamptz),
  ($2::uuid,$3::timestamptz,2,'deep_passage',$4::timestamptz)`,
- [partyA,partyOther,starts,'2026-11-10T00:00:00Z']);
+ [partyA,partyOther,starts,ballotAt]);
  await db.query(`insert into private.party_event_ballots_v17 values
  ($1::uuid,$3::timestamptz,2,$2::uuid),
  ($4::uuid,$3::timestamptz,2,$5::uuid)`,
@@ -80,5 +83,34 @@ try{
  must(absent.rows.length===0,'unknown_account_no_data');
  const c=await db.query(sql,[accountOther]);
  must(c.rows.length===1&&c.rows[0].snapshot.family==='lost_reliquary','separate_party_visible_to_owner');
- console.log('PARTY_EVENTS_V33_PGLITE_OK: private owner-scope, frozen roster, isolated receipts/votes, supply totals, no writes');
+
+ // A future enrollment must not conceal the actual current one just
+ // because it has the later event_starts_at timestamp.
+ const partyFuture='66666666-6666-4666-8666-666666666666';
+ const futureStart=new Date(testNow+14*dayMs).toISOString();
+ const futureEnd=new Date(testNow+21*dayMs).toISOString();
+ await db.query(`insert into private.party_event_weeks_v11 values
+ ($1::uuid,$2::timestamptz,$3::timestamptz,'broken_wards','future_variant','standard','active',1)`,
+ [partyFuture,futureStart,futureEnd]);
+ await db.query(`insert into private.party_event_roster_v11 values
+ ($1::uuid,$2::timestamptz,$3::uuid)`,[partyFuture,futureStart,accountA]);
+ const stillCurrent=await db.query(sql,[accountA]);
+ must(stillCurrent.rows.length===1&&stillCurrent.rows[0].snapshot.family==='broken_caravan',
+  'future_enrollment_cannot_mask_current_event');
+ // The v11 unique eventStartsAt/account constraint cannot prevent
+ // overlapping weeks with *different* starts: reject both in one MVCC read.
+ const overlappingParty='77777777-7777-4777-8777-777777777777';
+ const overlapStart=new Date(testNow-12*3600000).toISOString();
+ const overlapEnd=new Date(testNow-12*3600000+7*dayMs).toISOString();
+ await db.query(`insert into private.party_event_weeks_v11 values
+ ($1::uuid,$2::timestamptz,$3::timestamptz,'nightfall_hunt','overlap_variant','standard','active',1)`,
+ [overlappingParty,overlapStart,overlapEnd]);
+ await db.query(`insert into private.party_event_roster_v11 values
+ ($1::uuid,$2::timestamptz,$3::uuid)`,[overlappingParty,overlapStart,accountA]);
+ const ambiguous=await db.query(sql,[accountA]);
+ must(ambiguous.rows.length===0,'overlapping_account_enrollment_fails_closed');
+ const unaffected=await db.query(sql,[accountOther]);
+ must(unaffected.rows.length===1,'other_account_not_affected_by_overlap');
+
+ console.log('PARTY_EVENTS_V33_V42_PGLITE_OK: current-only owner reads, future/overlap suppression, private receipts/votes, zero writes');
 }finally{await db.close();}

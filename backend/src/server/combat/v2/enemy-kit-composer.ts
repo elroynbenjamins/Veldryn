@@ -209,6 +209,16 @@ export function verifyPersistedEnemyKitsV2(
  assert(snapshot.baseEnemyDigest===enemyV2SnapshotDigest(baseEnemies)&&
    snapshot.preparedEnemyDigest===enemyV2SnapshotDigest(snapshot.preparedEnemies),
    'stored_kit_digest_mismatch');
+ assert(snapshot.preview.every(p=>p&&typeof p==='object'&&validId(p.enemyId)&&
+   ['normal','elite','boss'].includes(p.kind)&&
+   typeof p.profile==='string'&&p.profile.length<=80&&
+   Array.isArray(p.traitIds)&&p.traitIds.length<=2&&
+   p.traitIds.every(id=>typeof id==='string'&&id.length<=40)&&
+   Array.isArray(p.abilityNames)&&p.abilityNames.length<=32&&
+   Array.isArray(p.phaseNames)&&p.phaseNames.length<=16&&
+   [...p.abilityNames,...p.phaseNames].every(name=>
+     typeof name==='string'&&name.length>0&&name.length<=120)),
+   'invalid_stored_preview');
  assert(snapshot.enemyIds.every((id,i)=>id===baseEnemies[i].id&&
    id===snapshot.preparedEnemies[i].id&&id===snapshot.preview[i].enemyId),
    'stored_kit_order_mismatch');

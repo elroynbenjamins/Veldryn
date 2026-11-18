@@ -282,6 +282,12 @@ const completion=equipmentV2ResultPresentation(verifiedResult,{
 check(completion.tier===3&&completion.setName==='Sunscar Thornhide'
  &&completion.qualityVsQ50Percent>18&&completion.qualityVsQ50Percent<19,
  'The completion view distinguishes verified rarity from Q87 quality');
+const legacyComparison=equipmentV2ResultPresentation(verifiedResult,{
+ baseStats:{attack:6,defense:24,hp:140},
+});
+check(legacyComparison.statDifference?.attack===-6
+ &&legacyComparison.statDifference?.defense===3&&legacyComparison.statDifference?.hp===-5,
+ 'Legacy three-stat equipment must remain comparable to a V2 one/two-stat result');
 check(completion.statDifference?.defense===3&&completion.statDifference.hp===-5
  &&completion.lostAffixes.length===1&&completion.lostAffixes[0].stat==='haste',
  'The comparison must expose both added base stats and lost equipped attributes');

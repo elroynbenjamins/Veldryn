@@ -37,6 +37,7 @@ const patterns=[
   /\benemy-v2-prototype\b/,
   /\bboss-v2-asterfall-prototype\b/,
   /\bboss-v2-regional-prototype\b/,
+  /\bexperimentalRuleset\s*:/,
 ];
 const failures=[];
 let checked=0;
@@ -44,7 +45,7 @@ function walk(relative){
   const absolute=join(root,relative);
   if(relative.includes('/__tests__/')||relative.includes('/tests/')||
      allowedPrototypePaths.has(relative))return;
-  const statOrFile=relative.endsWith('.tsx')||relative.endsWith('.ts')||relative.endsWith('.js');
+  const statOrFile=sourceExtensions.test(relative);
   if(statOrFile){
     if(!sourceExtensions.test(relative))return;
     checked++;

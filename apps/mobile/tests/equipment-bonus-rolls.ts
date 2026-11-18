@@ -68,6 +68,14 @@ ok(equipmentBonusRange(2,'healingPower','gloves','mythic')![1]<
   'T2 Mythic support rolls must stay below T5 Common tier ceiling');
 
 ok(equipmentBonusConfig(t5,'common')?.count===2,'T5 Common has two bonuses');
+ok(!equipmentBonusConfig(t5,'common')?.pool.includes('abilityDamage'),
+  'The early-release armor pool excludes the combat-incomplete Ability Damage affix');
+ok(equipmentBonusConfig(t5,'common',2)?.pool.includes('abilityDamage'),
+  'Prior v2 nonweapon development receipts retain their original pool');
+ok(!equipmentBonusRange(5,'abilityDamage','gloves','uncommon',3),
+  'New v3 nonweapon receipts cannot mint Ability Damage');
+ok(equipmentBonusRange(5,'abilityDamage','gloves','uncommon',2)!==undefined,
+  'Old v2 nonweapon receipts retain their original stat-specific range');
 ok(equipmentBonusRange(2,'critRate','gloves')![1]<equipmentBonusRange(5,'critRate','gloves')![1],
   'Early T2 must have lower caps than T5');
 ok(!normalizeEquipmentBonuses(t2,'common',[{stat:'critRate',basisPoints:9000}],2),
@@ -80,9 +88,11 @@ ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'
 
 const initial=createCharacter(newGame(1),'WAYFINDER','Roll Tester','male');
 const crafted=draftCraftedGearInstance({itemId:t2,ownerCharacterId:initial.character!.id,jobId:'t2-gloves-receipt',createdAtMs:1,roll:.3});
-ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===2,
+ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===3,
   'A fresh T2 forged glove must gain a persistent single bonus');
 const loaded=normalizeCraftedGearInstances([crafted])[0];
+ok(!crafted.equipmentBonuses?.some(b=>b.stat==='abilityDamage'),
+  'Fresh nonweapon rolls must never include the deferred Ability Damage attribute');
 const previousV1={...crafted,equipmentBonusRollVersion:1 as const,
   equipmentBonuses:[{stat:'evasion' as const,basisPoints:30}]};
 const preservedV1=normalizeCraftedGearInstances([previousV1])[0];
@@ -110,6 +120,18 @@ ok(Object.keys(equippedEquipmentBonusStats(withEquipped(legacy))).length===0,
 
 const high=draftCraftedGearInstance({itemId:t5,ownerCharacterId:initial.character!.id,jobId:'t5-gloves-receipt',createdAtMs:2,roll:.4});
 ok(high.equipmentBonuses?.length===2,'New T5 gloves should have two random stat rolls');
+const preDeferV2={
+  ...high,id:'v2-ability-development-receipt',equipmentBonusRollVersion:2 as const,
+  equipmentBonuses:[
+    {stat:'abilityDamage' as const,basisPoints:equipmentBonusRange(5,'abilityDamage','gloves',high.rarity,2)![0]},
+    {stat:'critRate' as const,basisPoints:equipmentBonusRange(5,'critRate','gloves',high.rarity,2)![0]},
+  ],
+};
+const preservedV2=normalizeCraftedGearInstances([preDeferV2])[0];
+ok(preservedV2.equipmentBonusRollVersion===2&&preservedV2.equipmentBonuses?.[0]?.stat==='abilityDamage',
+  'Existing version 2 nonweapon development receipts must remain readable');
+ok(!normalizeEquipmentBonuses(t5,high.rarity,preDeferV2.equipmentBonuses,3),
+  'Old Ability Damage values cannot be minted as new nonweapon v3 receipts');
 const noRoll={...high,equipmentBonuses:undefined,equipmentBonusRollVersion:undefined};
 const clean=withEquipped(noRoll),rolled=withEquipped(high);
 const cleanStats=activeEquipmentBuildStats(clean),rolledStats=activeEquipmentBuildStats(rolled);

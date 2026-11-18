@@ -750,20 +750,6 @@ function roundEquipmentCraftingGoldCost(gold) {
   return gold === 0 ? 0 : Math.max(100, Math.round(gold / 100) * 100);
 }
 
-// ../apps/mobile/src/content/t5-equipment-affix-spec.ts
-var T5_EQUIPMENT_AFFIX_BY_SLOT = Object.freeze({
-  gloves: "haste",
-  amulet: "critRate",
-  boots: "evasion"
-});
-var T5_AFFIX_MATERIAL_MULTIPLIER = 1.15;
-var T5_AFFIX_TIME_MULTIPLIER = 1.1;
-var T5_AFFIX_XP_MULTIPLIER = 1.2;
-var T5_AFFIX_EXTRA_FIXATIVE = 1;
-function isT5EquipmentAffixSlot(slot) {
-  return Boolean(T5_EQUIPMENT_AFFIX_BY_SLOT[slot]);
-}
-
 // ../apps/mobile/src/content/equipment-recipes-v33.ts
 init_progression();
 
@@ -42460,25 +42446,22 @@ var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piec
   const setId = String(piece["Set ID"]), set = setById.get(setId);
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
   const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
-  const t5Affix = tier === "T5" && isT5EquipmentAffixSlot(slot);
   const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   const baseCraftXp = q(tierXp[tier] ?? 120, multiplier) + (["T3", "T4"].includes(tier) ? 20 : 0);
   const standardCraftXp = ["T2", "T3", "T4"].includes(tier) ? Math.round(baseCraftXp * T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER) : baseCraftXp;
   const boostedCraftXp = tier === "T2" ? Math.round(standardCraftXp * T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : ["T3", "T4"].includes(tier) ? Math.round(standardCraftXp * T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER) : standardCraftXp;
-  const craftXp = t5Affix ? Math.round(boostedCraftXp * T5_AFFIX_XP_MULTIPLIER) : boostedCraftXp;
-  const infusion = { ...infusionByTier[tier], quantity: infusionByTier[tier].quantity + (t5Affix ? T5_AFFIX_EXTRA_FIXATIVE : 0) };
   const baseSeconds = clamp(Math.round(range.base * multiplier), range.min, range.max);
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
     skillId,
     level,
-    xp: craftXp,
+    xp: boostedCraftXp,
     gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier] ?? 120, multiplier) * EQUIPMENT_FORGE_GOLD_MULTIPLIER) * (["T3", "T4"].includes(tier) ? 2 : 1)),
-    seconds: clamp(Math.round(baseSeconds * (t5Affix ? T5_AFFIX_TIME_MULTIPLIER : 1)), range.min, range.max),
-    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier * (t5Affix ? T5_AFFIX_MATERIAL_MULTIPLIER : 1), skillId)), ...crossProfessionAssemblyInput(tier, skillId, multiplier, String(piece.Path)), infusion]),
+    seconds: baseSeconds,
+    inputs: mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier, String(piece.Path), multiplier, skillId)), ...crossProfessionAssemblyInput(tier, skillId, multiplier, String(piece.Path)), infusionByTier[tier]]),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
     classId,
     characterLevel: rebasedCombatLevelFromLegacyLevel(characterLevel),
@@ -46868,38 +46851,6 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
-// ../apps/mobile/src/core/t5-equipment-affixes.ts
-var RARITY_SCORE = Object.freeze({
-  common: 0,
-  uncommon: 1,
-  rare: 2,
-  epic: 3,
-  legendary: 4,
-  mythic: 5
-});
-function t5EquipmentAffixPercent(rarity, quality) {
-  const q2 = Math.max(0, Math.min(100, Math.floor(quality)));
-  const qualityScore = q2 >= 90 ? 4 : q2 >= 75 ? 3 : q2 >= 50 ? 2 : q2 >= 25 ? 1 : 0;
-  const score = RARITY_SCORE[rarity] + qualityScore;
-  return score >= 8 ? 0.05 : score >= 6 ? 0.04 : score >= 3 ? 0.03 : 0.02;
-}
-function t5EquipmentAffixForItem(itemId, instance) {
-  const item = itemDef(itemId), stat = item.slot ? T5_EQUIPMENT_AFFIX_BY_SLOT[item.slot] : void 0;
-  if (item.type !== "gear" || !item.equipmentSetId?.startsWith("T5_") || !stat) return void 0;
-  const rarity = instance?.rarity ?? itemRarity(item), quality = craftedGearDisplayQuality(instance ?? {});
-  return { stat, percent: t5EquipmentAffixPercent(rarity, quality), rarity, quality };
-}
-function equippedT5EquipmentAffixStats(state) {
-  const stats6 = { haste: 0, critRate: 0, evasion: 0 };
-  if (!state.character) return stats6;
-  for (const itemId of Object.values(state.character.equipment)) {
-    if (!itemId) continue;
-    const affix = t5EquipmentAffixForItem(itemId, equippedCraftedInstance(state, itemId));
-    if (affix) stats6[affix.stat] += affix.percent;
-  }
-  return stats6;
-}
-
 // ../apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
@@ -46998,7 +46949,6 @@ function activeEquipmentSetRuntime(state) {
 function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
-  const t5Affixes = equippedT5EquipmentAffixStats(state);
   const weapon = equippedWeaponBonusStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
@@ -47007,14 +46957,14 @@ function activeEquipmentBuildStats(state) {
     armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
     ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
     tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
-    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste + (weapon.haste ?? 0),
+    haste: multiplied(sets.haste, p.haste) + (weapon.haste ?? 0),
     power: multiplied(sets.power, p.power),
     accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
     penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
     potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
-    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate + (weapon.critRate ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + (weapon.critRate ?? 0),
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
+    evasion: sets.evasion + (pp.evasion ?? 0)
   };
 }
 

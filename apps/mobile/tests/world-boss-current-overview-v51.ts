@@ -122,10 +122,12 @@ async function main(){
    lookups.push(sql);
    assert.ok(sql.includes('FROM private.world_boss_events_v17'));
    assert.ok(sql.includes('LIMIT 2'));
-   assert.ok(sql.includes('WHERE starts_at < $2::timestamptz'));
-   assert.ok(sql.includes('starts_at+interval'));
-   assert.deepEqual(values,[new Date(LAUNCH).toISOString(),
-    new Date(LAUNCH+14*DAY).toISOString()]);
+   assert.ok(sql.includes('WHERE starts_at > $1::timestamptz'));
+   assert.ok(sql.includes('AND starts_at < $2::timestamptz'));
+   assert.ok(sql.includes('$3::double precision'));
+   assert.ok(!sql.includes('interval'), 'UTC bounds must ignore local DST');
+   assert.deepEqual(values,[new Date(LAUNCH-14*DAY).toISOString(),
+    new Date(LAUNCH+14*DAY).toISOString(),14*DAY]);
    return {rows:[event() as unknown as T]};
   },
  });
@@ -136,6 +138,17 @@ async function main(){
  });
  await rejection(()=>duplicates.findByCycleStart(LAUNCH),'duplicate_global_event');
  await rejection(()=>database.findByCycleStart(LAUNCH+DAY),'invalid_cycle_start');
+ // DST-sensitive sessions must not alter either boundary. Query parameters
+ // are computed solely from the trusted UTC cycle start, not PG timezone.
+ const springMonday=Date.UTC(2027,2,29);
+ const springDb=createWorldBossCurrentEventPgV51({
+  async query<T extends object>(_sql:string,values:readonly unknown[]){
+   assert.deepEqual(values,[new Date(springMonday-14*DAY).toISOString(),
+    new Date(springMonday+14*DAY).toISOString(),14*DAY]);
+   return {rows:[] as T[]};
+  },
+ });
+ assert.equal(await springDb.findByCycleStart(springMonday),null);
 
 
  assert.equal(WORLD_BOSS_V52_READ_ROUTE_LIVE,false);

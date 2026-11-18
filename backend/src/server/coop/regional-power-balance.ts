@@ -34,13 +34,15 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .759:tier===2 ? .768:.77):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'?(tier===3?1.017:tier===2?1.015:1):
   expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'?(tier===3?1.025:tier===2?1.06:1):1;
- // With extra utility-room boon prompts removed, Asterfall Tier III bosses
- // need a small, boss-only durability correction at the minimum entry CP.
- // This does not weaken normal rooms, earlier tiers, Sunscar, or legacy runs.
- const dedicatedBoonBalance=expeditionId==='EXP_001'&&tier===3&&encounterId?.startsWith('BOSS_');
+ // When utility rooms stop stacking bonus boons, final-boss durability needs
+ // a small Tier III-only correction at minimum entry CP. Keep all regular
+ // encounters, earlier tiers and saved legacy runs on their established scale.
+ const bossTierThree=tier===3&&encounterId?.startsWith('BOSS_');
+ const bossHpAdjustment=bossTierThree?(expeditionId==='EXP_001'?0.965:expeditionId==='EXP_003'?0.98:1):1;
+ const bossDefenseAdjustment=bossTierThree?(expeditionId==='EXP_001'?0.985:expeditionId==='EXP_003'?0.99:1):1;
  return {attack:row.attack[tier-1]*rootCorrection*bossCorrection,
-  hp:row.hp[tier-1]*bossCorrection*(dedicatedBoonBalance?0.965:1),
-  defense:row.defense[tier-1]*bossCorrection*(dedicatedBoonBalance?0.985:1),enemyLevel:row.enemyLevel};
+  hp:row.hp[tier-1]*bossCorrection*bossHpAdjustment,
+  defense:row.defense[tier-1]*bossCorrection*bossDefenseAdjustment,enemyLevel:row.enemyLevel};
 }
 
 /** Power beyond each region's entry baseline retains a bounded, meaningful

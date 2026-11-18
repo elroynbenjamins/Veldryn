@@ -88,6 +88,14 @@ async function run(){
   'stage_1_supplies_not_verified');
  denies({...base,snapshot:{...base.snapshot,orders:orders.filter(o=>o.stage!==3)}},
   'stage_3_supplies_not_verified');
+ // Three finished wood orders are not the three distinct starter categories.
+ // V33's itemId uniqueness alone does not prove category completeness.
+ denies({...base,snapshot:{...base.snapshot,orders:orders.map((o,i)=>
+  o.stage===2&&o.category==='ore'?{...o,category:'wood',itemId:'WOOD_ALT'}:o)}},
+  'stage_2_supplies_not_verified');
+ denies({...base,snapshot:{...base.snapshot,orders:orders.filter(o=>
+  !(o.stage===1&&o.category==='herb'))}},
+  'stage_1_supplies_not_verified');
  denies({...base,schema:{...base.schema,ready:false}},
   'private_schema_not_verified');
  denies({...base,schema:{...base.schema,unsafeGrants:['anon_execute']}},
@@ -107,6 +115,6 @@ async function run(){
  try{await settlePartyEventDay8V36();throw Error('unexpected_payout');}
  catch(e){must(String(e).includes('atomic_settlement_unreleased'),
   'explicitly_blocked_live_writer');}
- console.log('PARTY_EVENTS_V36_DAY8_OK: 18 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
+ console.log('PARTY_EVENTS_V36_DAY8_OK: 20 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
 }
 void run().catch(e=>{console.error(e);process.exitCode=1;});

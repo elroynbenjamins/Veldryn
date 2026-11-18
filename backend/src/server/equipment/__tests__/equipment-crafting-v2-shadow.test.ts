@@ -8,7 +8,7 @@ const recipe=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FO
 assert.ok(recipe);
 const accountId='11111111-1111-4111-8111-111111111111';
 function snapshot():V2DraftSnapshot{return {
- accountId,activeCharacterId:'hero-1',version:0,
+ accountId,activeCharacterId:'hero-1',version:0,forgeSlotCapacity:3,
  characters:{
   'hero-1':{level:40,gold:100000,professionLevels:{smithing:50,tailoring:50},
    inventory:Object.fromEntries(recipe.inputs.map(row=>[row.itemId,row.quantity]))},

@@ -4,6 +4,7 @@
  *
  * Input accountId MUST come from server-authenticated identity, not a request
  * parameter. A single SELECT projects a coherent MVCC snapshot.
+ * V42 additionally suppresses future, expired and overlapping live enrollments.
  */
 export const PARTY_EVENT_READONLY_STATUS_V33_RELEASED=false;
 
@@ -60,6 +61,21 @@ from private.party_event_roster_v11 r
 join private.party_event_weeks_v11 w
  on w.party_id=r.party_id and w.event_starts_at=r.event_starts_at
 where r.account_id=$1::uuid
+  -- V42: only the current 7-day event + Day 8 read-only results window.
+  -- The full-history newest enrollment could otherwise mask an active week.
+  and w.event_starts_at <= now()
+  and w.event_ends_at + interval '1 day' > now()
+  -- V11 prevents duplicate account/week, but a different event start time
+  -- could still overlap. Ambiguous active enrollments must fail closed.
+  and (
+    select count(*) from private.party_event_roster_v11 overlap_roster
+    join private.party_event_weeks_v11 overlap_week
+      on overlap_week.party_id=overlap_roster.party_id
+      and overlap_week.event_starts_at=overlap_roster.event_starts_at
+    where overlap_roster.account_id=r.account_id
+      and overlap_week.event_starts_at <= now()
+      and overlap_week.event_ends_at + interval '1 day' > now()
+  )=1
 order by w.event_starts_at desc
 limit 1
 ` as const;

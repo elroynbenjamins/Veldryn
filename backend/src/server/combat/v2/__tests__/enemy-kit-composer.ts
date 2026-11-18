@@ -51,7 +51,7 @@ rejects(()=>prepareSoloEnemyKitsV2([{...enemies[0],abilities:[
 ]},enemies[1]],options),/unverified_or_already_compiled_enemy/);
 rejects(()=>verifyPersistedEnemyKitsV2([base('OTHER'),enemies[1]],persisted),/stored_kit_digest_mismatch/);
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,preparedEnemyDigest:'forged'}),/stored_kit_digest_mismatch/);
-rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,region:'frostmarch'}),/invalid_stored_kit|stored_trait_evidence_mismatch|invalid_stored_boss_profile/);
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,region:'untrusted' as never}),/invalid_stored_region_or_tier/);
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,revision:0}),/invalid_stored_kit/);
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,preview:[]}),/invalid_stored_kit_size/);
 const badTrait=persisted.preparedEnemies.map(e=>({...e,tags:[...(e.tags??[])]}));

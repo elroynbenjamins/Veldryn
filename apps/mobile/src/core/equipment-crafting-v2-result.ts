@@ -46,6 +46,8 @@ export function equipmentV2ResultPresentation(
    throw new Error('Invalid V2 result affix');
   const bounds=equipmentV2AffixBounds(item.tier,result.rarity,affix.stat);
   if(affix.percent<bounds.minimum-.011||affix.percent>bounds.maximum+.011)throw new Error('Affix outside V2 rarity band');
+  const expectedGrade=Math.max(0,Math.min(100,Math.round((affix.percent-bounds.fullMinimum)/(bounds.fullMaximum-bounds.fullMinimum)*100)));
+  if(Math.abs(expectedGrade-affix.grade)>1)throw new Error('Affix grade does not match rolled strength');
   const previous=equipped?.affixes?.find(old=>old.stat===affix.stat)?.percent??0;
   return {...affix,minimum:bounds.minimum,maximum:bounds.maximum,
    fullMinimum:bounds.fullMinimum,fullMaximum:bounds.fullMaximum,

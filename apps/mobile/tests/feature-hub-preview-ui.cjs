@@ -173,7 +173,15 @@ test('World Boss displays only the server-selected rotating event, never a manua
  assert.match(screen,/const heroSceneId=feature==='boss'\?cycleBoss\.scene/);
  assert.match(screen,/scene:'KINGS_ROAD'/);
  assert.match(screen,/The current boss and next event date are unknown until the server announces/);
- assert.match(screen,/Rotation: Hollowroot → Solbrand → Rimewarden → repeat/);
+ assert.match(screen,/Rotation: \{bosses\.map\(entry=>entry\.name\)\.join\(' → '\)\} → repeat/);
+ assert.match(screen,/const phaseBrief=active\?\.phase==='upcoming'/);
+ for(const label of ['WHAT HAPPENS NEXT','War Camp is the current event phase','Weekend battle phase','Recovery and results','Awaiting the next realm event']){
+  assert.ok(screen.includes(label),'missing phase guidance '+label);
+ }
+ assert.match(screen,/phaseBrief\.target!=='overview'/);
+ assert.match(screen,/onPress=\{\(\)=>onTab\(phaseBrief\.target\)\}/);
+ assert.match(screen,/This developer preview cannot open an actual event/);
+ assert.match(screen,/Rotation','One global World Boss every 14 days/);
  assert.doesNotMatch(screen,/BossRegionPicker|bossRegionButton|setBossId|onSelect=\{setBossId\}/);
  assert.match(screen,/phaseEnd=active\?/);
  assert.match(screen,/NEXT CALENDAR BOUNDARY/);

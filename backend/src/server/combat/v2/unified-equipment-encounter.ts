@@ -8,7 +8,7 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat} from '../engine';
-import type {CombatInput,CombatResult,CombatantDefinition} from '../types';
+import type {CombatInput,CombatResult,CombatantDefinition,CombatStats} from '../types';
 import type {GearSlotV2} from './build-contract';
 import {validateBuildV2} from './build-contract';
 import {serverBuildCatalogV2} from './skill-catalog';
@@ -44,6 +44,15 @@ export interface TrustedEquipmentRuntimeV2 {
 }
 export interface EquipmentEncounterEvidenceV2 {
  readonly actorId:string;
+ /** QA-only source trace. Not public CP, player stat UI, or untrusted input. */
+ readonly classPolicyVersion:string;
+ readonly statStages:Readonly<{
+   classOnly:CombatStats;
+   afterSkills:CombatStats;
+   afterItemBase:CombatStats;
+   afterSets:CombatStats;
+   afterAffixes:CombatStats;
+ }>;
  readonly baseSources:readonly BaseEquipmentSourceV2[];
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
@@ -105,7 +114,13 @@ function compileEquippedActor(
   set.actor,ids.map(id=>runtime.affixesByInstanceId[id]),runtime.affixPolicy,true);
  return {
   actor:affixes.actor,
-  evidence:{actorId:actor.id,baseSources:base.sources,
+  evidence:{actorId:actor.id,classPolicyVersion:runtime.classBaselinePolicy.version,
+    statStages:{
+     classOnly:{...classOnly.stats},afterSkills:{...skills.stats},
+     afterItemBase:{...base.actor.stats},afterSets:{...set.actor.stats},
+     afterAffixes:{...affixes.actor.stats},
+    },
+    baseSources:base.sources,
     setEffects:set.applied,affixSources:affixes.sources,
     ...(runtime.compositionPolicy?{
       composition:evaluatePowerCompositionV2(base.classLevelStats,affixes.actor.stats,

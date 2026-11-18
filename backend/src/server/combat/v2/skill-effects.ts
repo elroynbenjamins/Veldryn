@@ -5,13 +5,14 @@
  * Damage, cooldown, passives and variant definitions below are SERVER AUTHORED.
  * Existing runtime remains unchanged unless a server-controlled flag is on.
  *
- * Supported: 18 existing class techniques, each with 3 variants; 18
- * specialization stat/ability profiles; a conservative subset of numerical
- * passives. Unsupported designs fail closed, never silently grant fake effects.
+ * Supports 54 authored class techniques and 162 variants, 18 specialization
+ * profiles, 25 numerical passives and 25 authored passive-to-ability rules.
+ * Remaining reactive passives fail closed until exact mechanics are available.
  */
 import {simulateCombat} from '../engine';
 import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
 import {extraAbilityDefinitionV2,extraVariantRecipesV2} from './extra-active-skills';
+import {applyPassiveAbilityRulesV2,passiveAbilityRuleIdsV2} from './passive-ability-rules';
 import type {AbilityDefinition,AbilityEffect,CombatInput,CombatResult,CombatantDefinition} from '../types';
 import {
   CLASS_ROLES_V2,validateBuildV2,buildMayAffectCombatV2,
@@ -71,6 +72,7 @@ const passiveMods:Readonly<Record<string,Modifiers>>={
 };
 // Passive procs requiring resources, conditional triggers or extra duration are deliberately gated.
 const supportedPassiveKeys=new Set(Object.keys(passiveMods));
+const supportedPassiveAbilityIds=passiveAbilityRuleIdsV2();
 type VariantRecipe={
   damage?:number;heal?:number;shield?:number;dot?:number;hot?:number;
   cooldownDelta?:number;cooldownMult?:number;target?:AbilityDefinition['target'];
@@ -224,8 +226,9 @@ function modifiersFor(verified:VerifiedCharacterV2,selected:BuildSelectionV2):Mu
       const i=label.indexOf(':');
       return label.slice(0,i)===verified.classId&&passiveIdV2(verified.classId,label.slice(i+1))===id;
     });
-    if(!key||!supportedPassiveKeys.has(key))throw Error('combat_v2_passive_effect_unimplemented:'+id);
-    addMods(out,passiveMods[key],rank);
+    if(key&&supportedPassiveKeys.has(key)){addMods(out,passiveMods[key],rank);continue;}
+    if(supportedPassiveAbilityIds.has(id))continue;
+    throw Error('combat_v2_passive_effect_unimplemented:'+id);
   }
   // Signature slots only select already-invested passives; no double benefit.
   return out;
@@ -251,7 +254,8 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
     if(index<0||index>=recipes.length)throw Error('combat_v2_variant_effect_unimplemented');
     const base=actor.abilities.find(a=>a.name===record.name)??extraAbilityDefinitionV2(record.name,verified.classId);
     if(!base)throw Error('combat_v2_missing_authoritative_technique:'+record.name);
-    const upgraded=applyRecipe(base,recipes[index],mods);
+    const upgraded=applyPassiveAbilityRulesV2(verified.classId,record.name,
+      applyRecipe(base,recipes[index],mods),selected.talentRanks);
     const spenders:Record<string,number|'all'>={
       'Perfect Quarry':3,'Runic Judgment':'all','Citadel Slam':'all',
       'Harbinger Strike':'all','Heartseeker':'all','Overpower':'all',

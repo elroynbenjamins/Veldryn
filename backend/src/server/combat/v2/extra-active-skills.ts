@@ -456,11 +456,13 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
     "variants": [
       {
         "damage": 0.85,
-        "adds": [
+        "adds": [],
+        "replaces": [
           {
-            "kind": "heal",
-            "coeff": 0.45,
-            "target": "self"
+            "kind": "damage",
+            "coeff": 1.25,
+            "damageType": "physical",
+            "lifestealPct": 0.12
           }
         ]
       },
@@ -1096,11 +1098,13 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
       },
       {
         "damage": 0.82,
-        "adds": [
+        "adds": [],
+        "replaces": [
           {
-            "kind": "heal",
-            "coeff": 0.35,
-            "target": "self"
+            "kind": "damage",
+            "coeff": 1.68,
+            "damageType": "shadow",
+            "lifestealPct": 0.1
           }
         ]
       },

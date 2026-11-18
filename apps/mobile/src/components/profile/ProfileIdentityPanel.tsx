@@ -30,7 +30,7 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const {value,busy,guest,dirty,error,notice}=draft;
+ const {value,busy,guest,identityDirty:dirty,error,notice}=draft;
  const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} draft={nameStyle} onDraftChange={onNameStyleChange}
   onSaveNameStyle={onSaveNameStyle} onInputDirtyChange={onNameInputDirtyChange} resetVersion={nameResetVersion} active={active}/></Panel>;
 
@@ -82,7 +82,7 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
 
   <View style={s.saveBar}>
    <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revert}/></View>
-   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save profile"):profileT(language,"Profile saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.save()}/></View>
+   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save profile"):profileT(language,"Profile saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.saveIdentity()}/></View>
   </View>
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{profileText(language,notice)}</Text>:null}
   {error?<Text accessibilityRole="alert" style={s.error}>{profileText(language,error)}</Text>:null}

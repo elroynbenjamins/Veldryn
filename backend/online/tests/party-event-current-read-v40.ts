@@ -34,6 +34,7 @@ async function run(){
  check(checkPartyEventCurrentStatusV40({...base,serverTime:new Date(futureDate).toISOString()},futureDate)===null,'future_week_hidden');
  const day8=Date.parse(end)+2*3600000;
  const settled={...base,status:'settled' as const,stage:3 as const,
+  votes:{stage2:'safe_pass',stage3:'brace_wagons',myStage2Ballot:true,myStage3Ballot:true},
   serverTime:new Date(day8).toISOString()};
  check(checkPartyEventCurrentStatusV40(settled,day8)?.status==='settled','day8_results_readonly');
  const close={...settled,status:'closed' as const};

@@ -12,6 +12,7 @@ import type {ClassId} from '../core/types';
 import {classSkillsFor} from '../content/class-skills';
 import {skillsV2PreviewFor} from '../content/skills-v2-preview';
 import {Panel} from '../components/Panel';
+import {ClassResourceMeterV2} from '../components/ClassResourceMeterV2';
 import {GameButton} from '../components/GameButton';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -320,9 +321,7 @@ export function SkillsV2PreviewScreen({
   </View>
   <View style={s.previewNote}><Text style={s.previewText}>DEVELOPMENT PREVIEW · No live character changes</Text></View>
   <Panel style={s.resource}>
-   <View style={s.between}><Text style={s.sectionLabel}>{data.resource.toUpperCase()}</Text>
-    <Text style={s.mutedSmall}>0 / {data.cap} · Starts empty each battle</Text></View>
-   <View style={s.pips}>{Array.from({length:data.cap},(_,i)=><View key={i} style={s.pip}/>)}</View>
+   <ClassResourceMeterV2 value={{label:data.resource,current:0,max:data.cap}} preview/>
    <Text style={s.helper}>Gain stacks: {resourceHelp[classId].gain}</Text>
    <Text style={s.skillName}>Early spender: {data.coreSpender} · up to 1 stack</Text>
    <Text style={s.helper}>Advanced spenders: {resourceHelp[classId].spend}</Text>
@@ -341,8 +340,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  title:{...typography.hero,color:C.text},subtitle:{...typography.caption,color:C.muted},
  previewNote:{borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,padding:8,backgroundColor:C.warningSurface},
  previewText:{...typography.caption,color:C.warning,fontWeight:'700',textAlign:'center'},
- resource:{gap:8},pips:{flexDirection:'row',gap:5,flexWrap:'wrap'},
- pip:{width:20,height:12,borderRadius:3,borderColor:C.lineStrong,borderWidth:1,backgroundColor:C.panel2},
+ resource:{gap:8},
  tabs:{flexDirection:'row',gap:5,flexWrap:'wrap'},
  compactTabs:{gap:4},tabCell:{flex:1,minWidth:72},
  section:{gap:spacing.md},panel:{gap:spacing.sm},

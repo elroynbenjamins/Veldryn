@@ -13,6 +13,7 @@ import {simulateCombat} from '../engine';
 import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
 import {extraAbilityDefinitionV2,extraVariantRecipesV2} from './extra-active-skills';
 import {applyPassiveAbilityRulesV2,passiveAbilityRuleIdsV2} from './passive-ability-rules';
+import {REACTIVE_PASSIVES_V2} from './reactive-passive-runtime';
 import type {AbilityDefinition,AbilityEffect,CombatInput,CombatResult,CombatantDefinition} from '../types';
 import {
   CLASS_ROLES_V2,validateBuildV2,buildMayAffectCombatV2,
@@ -73,6 +74,8 @@ const passiveMods:Readonly<Record<string,Modifiers>>={
 // Passive procs requiring resources, conditional triggers or extra duration are deliberately gated.
 const supportedPassiveKeys=new Set(Object.keys(passiveMods));
 const supportedPassiveAbilityIds=passiveAbilityRuleIdsV2();
+const reactivePassiveIds=new Set(Object.entries(REACTIVE_PASSIVES_V2).flatMap(([classId,nodes])=>
+  nodes.map(node=>passiveIdV2(classId as ClassIdV2,node))));
 type VariantRecipe={
   damage?:number;heal?:number;shield?:number;dot?:number;hot?:number;
   cooldownDelta?:number;cooldownMult?:number;target?:AbilityDefinition['target'];
@@ -227,7 +230,7 @@ function modifiersFor(verified:VerifiedCharacterV2,selected:BuildSelectionV2):Mu
       return label.slice(0,i)===verified.classId&&passiveIdV2(verified.classId,label.slice(i+1))===id;
     });
     if(key&&supportedPassiveKeys.has(key)){addMods(out,passiveMods[key],rank);continue;}
-    if(supportedPassiveAbilityIds.has(id))continue;
+    if(supportedPassiveAbilityIds.has(id)||reactivePassiveIds.has(id))continue;
     throw Error('combat_v2_passive_effect_unimplemented:'+id);
   }
   // Signature slots only select already-invested passives; no double benefit.
@@ -267,7 +270,9 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
   });
   const s=actor.stats;
   return {...actor,
-    combatV2:{version:2,resource:RESOURCE_BY_CLASS_V2[verified.classId],specializationId:selected.specializationId!,...(selected.capstoneId?{capstoneId:selected.capstoneId}:{})},
+    combatV2:{version:2,resource:RESOURCE_BY_CLASS_V2[verified.classId],specializationId:selected.specializationId!,
+      passiveRanks:{...selected.talentRanks},
+      ...(selected.capstoneId?{capstoneId:selected.capstoneId}:{})},
     tags:[...new Set([...(actor.tags??[]),'combat-v2'])],
     stats:{
       ...s,maxHp:round(s.maxHp*(1+finite(mods.hp,-.1,.15))),

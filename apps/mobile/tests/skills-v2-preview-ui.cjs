@@ -4,6 +4,7 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'..');
 const content=fs.readFileSync(path.join(root,'src/content/skills-v2-preview.ts'),'utf8');
 const screen=fs.readFileSync(path.join(root,'src/screens/SkillsV2PreviewScreen.tsx'),'utf8');
+const detail=fs.readFileSync(path.join(root,'src/content/skills-v2-preview-descriptions.ts'),'utf8');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
 assert.match(content,/SKILLS_V2_PUBLIC_ENABLED=false/,'Preview must default to private');
 assert.doesNotMatch(app,/SkillsV2PreviewScreen/,'Preview must not be routed in live app');
@@ -13,6 +14,8 @@ assert.match(screen,/accessibilityRole="tablist"/);
 assert.match(screen,/minHeight:44/);
 assert.match(screen,/signatureIds/,'Signature slots must be represented');
 assert.match(screen,/talentRanks/);
+assert.match(screen,/skill\.variantEffects/);
+assert.match(screen,/branch\.nodeDescriptions/);
 assert.match(screen,/setSaved/,'Preset edits remain in component state');
 assert.doesNotMatch(screen,/\bonCommand\b|\bfetch\(|\bAsyncStorage\b|supabase\./,'No live writes or API access from the preview');
 const match=content.match(/export const SKILLS_V2_DESIGN_CATALOGUE=([\s\S]*?) as const;/);
@@ -30,4 +33,10 @@ for(const [name,cls] of Object.entries(data)){
  assert.ok(cls.p.every(nodes=>nodes.length===3),name+' has three nodes per branch');
  assert.ok(cls.a.every(skill=>skill[2].length===3),name+' has three variants per skill');
 }
+const copyMatch=detail.match(/export const SKILLS_V2_PREVIEW_DESCRIPTIONS=([\s\S]*?) as const;/);
+assert.ok(copyMatch,'Detailed design copy is required for UX validation');
+const copy=JSON.parse(copyMatch[1]);
+assert.equal(Object.keys(copy).length,9);
+assert.equal(Object.values(copy).reduce((n,row)=>n+row.skills.reduce((m,skill)=>m+skill.variantEffects.length,0),0),162);
+assert.equal(Object.values(copy).reduce((n,row)=>n+row.passiveBranches.reduce((m,branch)=>m+branch.descriptions.length,0),0),81);
 console.log('PASS: hidden Skills 2.0 preview has nine classes, 162 variants, 81 passives, accessible UI and no live writes');

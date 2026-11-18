@@ -22,6 +22,7 @@ type Draft={
  equipped:(number|null)[];
  variants:Record<number,number>;
  talentRanks:Record<string,number>;
+ signatureIds:string[];
 };
 type Saved={name:string;draft:Draft}|null;
 const TABS:readonly {id:Tab;label:string}[]=[
@@ -34,11 +35,11 @@ const TALENT_LEVELS=[10,15,20,25,30,35,40,45,50];
 const tpoints=(level:number)=>TALENT_LEVELS.filter(x=>level>=x).length;
 const newDraft=(level:number):Draft=>({
  specialization:0,equipped:level>=10?[0,1,2]:[0,1],
- variants:{},talentRanks:{},
+ variants:{},talentRanks:{},signatureIds:[],
 });
 const clone=(draft:Draft):Draft=>({
  specialization:draft.specialization,equipped:[...draft.equipped],
- variants:{...draft.variants},talentRanks:{...draft.talentRanks},
+ variants:{...draft.variants},talentRanks:{...draft.talentRanks},signatureIds:[...draft.signatureIds],
 });
 const resourceHelp:Record<ClassId,{gain:string;spend:string}>={
  IRONWARDEN:{gain:'Taunts, interrupts and blocked shield damage',spend:'Runic Judgment and defensive finishers'},
@@ -68,7 +69,7 @@ function Chip({title,active,disabled=false,hint,onPress,C}:ChipProps){
      minHeight:44,justifyContent:'center',alignItems:'center',borderRadius:radii.sm,
      paddingHorizontal:12,paddingVertical:8,borderWidth:1,
      borderColor:active?C.selectionLine:C.lineStrong,
-     backgroundColor:active?C.selection:C.panel2,opacity:disabled?.48:pressed?.74:1,
+     backgroundColor:active?C.selection:C.panel2,opacity:disabled ? .48 : pressed ? .74 : 1,
    }]}>
    <Text style={[typography.bodyStrong,{color:active?C.accent:C.text,textAlign:'center'}]}>{title}</Text>
  </Pressable>;
@@ -129,8 +130,22 @@ export function SkillsV2PreviewScreen({
   }else if(!canSubtract(branch,index))return;
   setDraft(current=>{
    const next=clone(current),n=(next.talentRanks[key]??0)+delta;
-   if(n)next.talentRanks[key]=n;else delete next.talentRanks[key];
+   if(n)next.talentRanks[key]=n;else{
+      delete next.talentRanks[key];next.signatureIds=next.signatureIds.filter(id=>id!==key);
+   }
    return next;
+  });
+ };
+ const toggleSignature=(key:string)=>{
+  if(level<30||(draft.talentRanks[key]??0)===0)return;
+  setDraft(current=>{
+    const next=clone(current);
+    if(next.signatureIds.includes(key)){
+      next.signatureIds=next.signatureIds.filter(id=>id!==key);
+    }else if(next.signatureIds.length<2){
+      next.signatureIds=[...next.signatureIds,key];
+    }
+    return next;
   });
  };
  const savePreview=()=>{
@@ -206,7 +221,7 @@ export function SkillsV2PreviewScreen({
   <Panel style={s.panel}>
     <Text style={s.sectionLabel}>CLASS TRAINING (UNCHANGED)</Text>
     <Text style={s.skillName}>{discipline[0].name}  ·  {discipline[1].name}</Text>
-    <Text style={s.helper}>Your existing combat-discipline XP is separate from specialization and talent points.</Text>
+    <Text style={s.helper}>Your existing combat-discipline XP is separate from specialization and talent points. Two signature passive slots unlock at Lv 30.</Text>
   </Panel>
  </View>;
  const renderSkills=()=><View style={s.section}>
@@ -225,9 +240,10 @@ export function SkillsV2PreviewScreen({
   <Panel style={s.panel}>
    <View style={s.between}><Text style={s.sectionLabel}>TALENT POINTS</Text>
     <Text style={s.pointCount}>{available} available / {points} earned</Text></View>
-   <Text style={s.helper}>Unlock 1 point every 5 levels from level 10 to 50. Rank up to 3. Branch progression requires preceding nodes.</Text>
+   <Text style={s.helper}>One point every 5 levels from Lv 10–50, up to 3 ranks per node. Slots for two invested signature passives unlock at Lv 30.</Text>
+   <Text style={s.mutedSmall}>Signature passives: {draft.signatureIds.length}/2 equipped</Text>
    <GameButton title="Reset preview talents" tone="secondary" disabled={used===0}
-     onPress={()=>{setDraft(old=>({...old,talentRanks:{}}));setNotice('Preview talents reset. No Gold was spent.');}}/>
+     onPress={()=>{setDraft(old=>({...old,talentRanks:{},signatureIds:[]}));setNotice('Preview talents reset. No Gold was spent.');}}/>
   </Panel>
   {data.branches.map((branch,branchIndex)=><Panel key={branchIndex} style={s.panel}>
    <Text style={s.branchName}>{branch.name}</Text>
@@ -239,12 +255,16 @@ export function SkillsV2PreviewScreen({
     return <View key={key} style={s.talentRow}>
      <View style={s.flex}><Text style={s.skillName}>{node}</Text>
       <Text style={s.mutedSmall}>Rank {rank}/3 · Lv {UNLOCK_NODE[index]}{prereq?'':' · Earlier node required'}</Text></View>
+     <Chip title={draft.signatureIds.includes(key)?'Slotted':'Slot'}
+       hint={level<30?'Unlocks at Lv 30':rank===0?'Invest first':undefined}
+       disabled={level<30||rank===0||(!draft.signatureIds.includes(key)&&draft.signatureIds.length>=2)}
+       active={draft.signatureIds.includes(key)} onPress={()=>toggleSignature(key)} C={C}/>
      <Chip title="−" disabled={!canSubtract(branchIndex,index)} onPress={()=>changeTalent(branchIndex,index,-1)} C={C}/>
      <Chip title="+" disabled={!unlocked||rank>=3||available<=0} onPress={()=>changeTalent(branchIndex,index,1)} C={C}/>
     </View>;
    })}
   </Panel>)}
-  <Panel style={s.panel}><Text style={s.helper}>Talent descriptions and exact bonuses will be sourced from the server when final 2.0 combat effects are complete.</Text></Panel>
+  <Panel style={s.panel}><Text style={s.helper}>Signature slots alter your saved build, but do not double passive power. Final descriptions and values will come from the server.</Text></Panel>
  </View>;
  const renderBuilds=()=><View style={s.section}>
   <Panel style={s.panel}>

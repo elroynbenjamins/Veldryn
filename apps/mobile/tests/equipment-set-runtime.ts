@@ -2,6 +2,7 @@ import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
 import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
+import {itemInspectModel} from '../src/core/item-inspect';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -69,16 +70,22 @@ close(stats10.armor??0,.07,'Effective stats must surface live Armor');
 close(stats10.tenacity??0,.02,'Effective stats must surface live Tenacity');
 
 const t5Set=EQUIPMENT_SETS.find(row=>row.id==='T5_001');if(!t5Set)throw new Error('Missing T5_001 set');
-let t5State=createCharacter(newGame(0),'IRONWARDEN','Affix Test','male');
+let t5State=createCharacter(newGame(0),'IRONWARDEN','No Fixed Affixes','male');
 t5State=withSetPieces(t5State,'T5_001',10);
+const t5Runtime=activeEquipmentSetRuntime(t5State);
 const t5Build=activeEquipmentBuildStats(t5State);
-ok(t5Build.haste>.01,'Full T5 build stats must include Haste from Gloves affix slot');
-ok(activeEquipmentSetRuntime(t5State).activeSets[0]?.sixPieceStatus==='trigger-hook-pending','T5 conditional 6pc remains pending');
-ok(t5Build.critRate>.01,'Full T5 build stats must include Crit Rate from Amulet affix slot');
-ok(t5Build.evasion>.01,'Full T5 build stats must include Evasion from Boots affix slot');
+ok(t5Runtime.activeSets[0]?.sixPieceStatus==='trigger-hook-pending','T5 conditional 6pc remains pending');
+close(t5Build.haste,t5Runtime.stats.haste,'T5 Gloves must not add fixed Haste beyond set bonuses');
+close(t5Build.critRate,t5Runtime.stats.critRate,'T5 Amulet must not add fixed Crit Rate beyond set bonuses');
+close(t5Build.evasion,t5Runtime.stats.evasion,'T5 Boots must not add fixed Evasion beyond set bonuses');
 const t5Combat=equipmentSetCombatModifiers(t5State);
-ok(t5Combat.speedMultiplier>1,'T5 Haste affix must increase combat speed multiplier');
-ok(t5Combat.incomingDamageMultiplier<1,'T5 Evasion affix must reduce incoming damage multiplier');
-ok(t5Combat.critExpectedMultiplier>1,'T5 Crit Rate affix must increase expected crit multiplier');
+close(t5Combat.speedMultiplier,1+t5Runtime.stats.haste,'T5 combat speed must derive only from legitimate build bonuses');
+close(t5Combat.incomingDamageMultiplier,Math.max(.5,(1-t5Runtime.stats.ward)*(1-t5Runtime.stats.evasion)),'T5 mitigation must not include a fixed Boots bonus');
+for(const slot of ['gloves','amulet','boots'] as const){
+  const itemId=t5Set.itemIds.find(id=>itemDef(id).slot===slot);
+  if(!itemId)throw new Error('Missing T5 '+slot);
+  ok(!itemInspectModel(t5State,itemId).effectLines.some(line=>line.includes('T5 forged affix')),
+    'T5 '+slot+' inspection must not advertise a retired fixed bonus');
+}
 
-console.log('PASS: T1–T4 6pc static bonuses apply live, T5+ 6pc stays pending, and build stats reach combat');
+console.log('PASS: set bonuses reach combat, T5 fixed slot affixes are absent, and T5+ 6pc stays pending');

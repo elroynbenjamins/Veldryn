@@ -1,6 +1,5 @@
 import type {ClassId,GearSlot} from '../core/types';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from './crafting-gold-cost';
-import {isT5EquipmentAffixSlot,T5_AFFIX_EXTRA_FIXATIVE,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_TIME_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from './t5-equipment-affix-spec';
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../core/progression';
 import catalog from './equipment_catalog_t1_t9_v33.json';
 
@@ -178,7 +177,6 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const setId=String(piece['Set ID']),set=setById.get(setId);
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
-  const t5Affix=tier==='T5'&&isT5EquipmentAffixSlot(slot);
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
   const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
@@ -186,18 +184,16 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;
   const boostedCraftXp=tier==='T2'?Math.round(standardCraftXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
     :['T3','T4'].includes(tier)?Math.round(standardCraftXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardCraftXp;
-  const craftXp=t5Affix?Math.round(boostedCraftXp*T5_AFFIX_XP_MULTIPLIER):boostedCraftXp;
-  const infusion={...infusionByTier[tier],quantity:infusionByTier[tier].quantity+(t5Affix?T5_AFFIX_EXTRA_FIXATIVE:0)};
   const baseSeconds=clamp(Math.round(range.base*multiplier),range.min,range.max);
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
     name:String(piece['Item Name']),
     skillId,
     level,
-    xp:craftXp,
+    xp:boostedCraftXp,
     gold:roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(q(tierGold[tier]??120,multiplier)*EQUIPMENT_FORGE_GOLD_MULTIPLIER)*(['T3','T4'].includes(tier)?2:1)),
-    seconds:clamp(Math.round(baseSeconds*(t5Affix?T5_AFFIX_TIME_MULTIPLIER:1)),range.min,range.max),
-    inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier*(t5Affix?T5_AFFIX_MATERIAL_MULTIPLIER:1),skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusion]),
+    seconds:baseSeconds,
+    inputs:mergeInputs([...reducePrimaryEquipmentMaterial(ingredients(tier,String(piece.Path),multiplier,skillId)),...crossProfessionAssemblyInput(tier,skillId,multiplier,String(piece.Path)),infusionByTier[tier]]),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel:rebaseLevel(characterLevel),

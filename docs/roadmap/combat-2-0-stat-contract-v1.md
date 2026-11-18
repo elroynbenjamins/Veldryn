@@ -2,7 +2,7 @@
 
 **Status:** Design/isolated TypeScript reference. No existing combat engine imports this prototype.  
 **Epic:** #1379  
-**Earlier independent small release:** T2–T5 stat-roll PR #1374 (13 stats, existing combat), release gate #1367.
+**Separate early stat-roll update (not yet released):** T2–T5 PR #1374 proposes 11 active bonus attributes on existing combat; Ability Damage and Tenacity are deferred to coordinated 2.0. The small-update release gate remains open (#1367).
 
 ## Purpose
 

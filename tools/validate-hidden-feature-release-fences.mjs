@@ -48,11 +48,13 @@ function check(read,migrations){
   if(!/export\s+const\s+FEATURE_HUB_QA_ENABLED\s*=\s*typeof\s+__DEV__\s*!==\s*['"]undefined['"]\s*&&\s*__DEV__\s*===\s*true\s*;/.test(source('routes')))
     failures.push('Feature hub preview navigation must remain __DEV__ only');
   const app=source('app');
+  if(!/if\s*\(\s*isFeatureHubPreviewRoute\(destination\)\s*&&\s*!FEATURE_HUB_QA_ENABLED\s*\)\s*return\s*;/.test(app))
+    failures.push('Feature hub navigation must reject non-QA routes');
   if(!/\{\s*FEATURE_HUB_QA_ENABLED\s*&&\s*isFeatureHubPreviewRoute\(tab\)\s*&&\s*<FeaturePreviewScreen\b/.test(app))
     failures.push('FeaturePreviewScreen render must retain the QA and route guards');
   const component=app.match(/<FeaturePreviewScreen\b([\s\S]*?)\/>/);
   if(!component)failures.push('FeaturePreviewScreen usage missing');
-  else if(/\b(?:partyEventReadCurrent|partyEventAccountId|partyEventStatus|worldBossReadCurrent|worldBossAccountId|worldBossStatus)\s*=/.test(component[1]))
+  else if(/\{\s*\.\.\./.test(component[1])||/\b(?:partyEventReadCurrent|partyEventAccountId|partyEventStatus|worldBossReadCurrent|worldBossAccountId|worldBossStatus)\s*=/.test(component[1]))
     failures.push('Live provider/account/status props must not be bound to hidden feature previews');
 
   if(!/if\s*\(\s*!\s*WORLD_BOSS_V56_ERASURE_LIVE\s*\)/.test(source('worldErasure'))||
@@ -83,6 +85,8 @@ function selfTest(){
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
     ['guild-claim-release',paths.guildProof,'canClaim:false,proposedTokenAmount:null','canClaim:true,proposedTokenAmount:5'],
     ['provider-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen worldBossReadCurrent={readWorldBoss} key={tab}'],
+    ['spread-wiring',paths.app,'<FeaturePreviewScreen key={tab}','<FeaturePreviewScreen {...provider} key={tab}'],
+    ['preview-nav-bypass',paths.app,'if(isFeatureHubPreviewRoute(destination)&&!FEATURE_HUB_QA_ENABLED)return;','if(isFeatureHubPreviewRoute(destination))return;'],
   ];
   for(const [label,path,before,after] of mutations){
     const original=fixtures.get(path);
@@ -95,7 +99,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects eight unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects ten unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

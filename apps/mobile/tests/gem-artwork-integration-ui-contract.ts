@@ -1,5 +1,5 @@
 export {};
-const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string;statSync:(path:string)=>{size:number}};
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
@@ -15,6 +15,23 @@ const pouch=read('src/components/GemPouchPanel.tsx');
 const gemAssets=read('src/theme/gem-assets.ts');
 
 ok(artwork.includes('gemArtworkCellV1'),'GemArtwork must resolve canonical atlas cells');
+// Dedicated progression materials must bypass the legacy gem atlas everywhere
+// GemArtwork is used (inventory, inspect, reward receipts and other item UI).
+ok(artwork.includes('if(!identity&&resourceIconSource(itemId))return <ResourceArtwork itemId={itemId} size={size} framed={framed}/>'),
+  'Gem Dust and catalysts must use their dedicated resource icons, not an empty atlas cell');
+const ingredientAssets=read('src/theme/ingredient-assets.ts');
+const resourceAssets=read('src/theme/resource-assets.ts');
+ok(resourceAssets.includes('...ingredientIcons'),'Standalone ingredient icons must be registered as resources');
+for(const [id,file] of [
+  ['GEM_DUST','gem_dust.webp'],
+  ['REGIONAL_CATALYST','regional_catalyst.webp'],
+  ['RADIANT_CATALYST','radiant_catalyst_runtime.webp'],
+]){
+  ok(ingredientAssets.includes(`${id}:require('../../assets/ingredient-icons-v1/${file}')`),
+    `Missing dedicated material icon registration for ${id}`);
+  ok(fs.statSync(`assets/ingredient-icons-v1/${file}`).size>1000,
+    `Missing or suspiciously small art for ${id}`);
+}
 ok(artwork.includes('gemVisualIdentityV1(itemId)')&&artwork.includes("identity?.raw")&&artwork.includes('G{identity.grade}'),'Gem artwork must use distinct family art, raw marker, and grade indicator');
 ok(gemAssets.includes('gemVisualIdentityV1'),'Gem asset resolver must expose raw/refined tier identity');
 ok(itemArtwork.includes('if(hasRawGemArtworkV1(itemId))return <GemArtwork'),'Unrefined items must not use one identical raw gem illustration');

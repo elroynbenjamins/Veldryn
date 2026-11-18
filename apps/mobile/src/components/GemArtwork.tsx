@@ -2,6 +2,8 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {visualText} from '../i18n/visuals';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import {C,radii} from '../theme/theme';
+import {ResourceArtwork} from './ResourceArtwork';
+import {resourceIconSource} from '../theme/resource-assets';
 import {GEM_GRADE_RARITY_V1} from '../content/gems-v1';
 import {rarityMeta} from '../core/item-rarity';
 import {
@@ -18,6 +20,10 @@ export function GemArtwork({itemId,size=58,framed=true}:{itemId:string;size?:num
   const identity=gemVisualIdentityV1(itemId);
   const cell=gemArtworkCellV1(identity?.artworkId??itemId);
   if(!cell)return null;
+  // The three gem progression materials have standalone icons. Prefer them to
+  // the legacy atlas cells, which can render as empty tiles on Android.
+  // Raw/refined gems still use distinct atlas art and grade markers.
+  if(!identity&&resourceIconSource(itemId))return <ResourceArtwork itemId={itemId} size={size} framed={framed}/>;
   const inset=.06,displaySize=size*(1-inset*2),scale=displaySize/GEM_SPRITE_V1_CELL,offset=size*inset;
   const sheetSize=GEM_SPRITE_V1_SIZE*scale;
   const gradeColor=identity?rarityMeta(GEM_GRADE_RARITY_V1[identity.grade]).color:undefined;

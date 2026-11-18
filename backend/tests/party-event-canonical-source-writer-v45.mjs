@@ -97,9 +97,17 @@ try{
  const idMismatch='valid_game_request_456';
  await denied(idMismatch,packet(idMismatch,{characterId:'33333333-3333-4333-8333-333333333333'}));
  await denied(idMismatch,packet(idMismatch,{writesAuthorized:true}));
+ await denied(idMismatch,packet(idMismatch,{writesAuthorized:null}));
+ await denied(idMismatch,packet(idMismatch,{rewardsGranted:null}));
+ await denied(idMismatch,packet(idMismatch,{kind:null}));
+ await denied(idMismatch,packet(idMismatch,{craft:null}));
+ await denied(idMismatch,packet(idMismatch,{idle:null}));
  await denied(idMismatch,packet(idMismatch,{eventPointsGranted:10}));
  await denied(idMismatch,packet(idMismatch,{craft:[{kind:'craft',idempotencyKey:'pe44:'+idMismatch+':craft:0',recipeId:'DIFFERENT_RECIPE',quantity:1}]}));
  await denied(idMismatch,packet(idMismatch,{idle:[{...packet(idMismatch).idle[0],resourceAmount:500}]}));
+ await denied(idMismatch,packet(idMismatch,{idle:[{...packet(idMismatch).idle[0],elapsedSec:null}]}));
+ await denied(idMismatch,packet(idMismatch,{idle:[{...packet(idMismatch).idle[0],resourceAmount:null}]}));
+ await denied(idMismatch,packet(idMismatch,{idle:[{...packet(idMismatch).idle[0],xpAmount:null}]}));
  assert.deepEqual(await counts(),{actions:1,crafts:1,idle:1});
  // Failure after the ordinary online commit MUST roll back the online
  // receipt and the first craft write as part of one SQL transaction.

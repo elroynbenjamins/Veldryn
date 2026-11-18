@@ -6,7 +6,7 @@ import {usePartySocial} from '../online/PartySocialProvider';
 import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
-import {decodePartyEventReadOnlySnapshot,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
+import {decodePartyEventReadOnlySnapshot,decodePartyEventReadTransportV39,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
@@ -14,7 +14,7 @@ import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;partyEventAccountId?:string;partyEventReadCurrent?:()=>Promise<unknown>;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -34,7 +34,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,partyEventAccountId='',partyEventReadCurrent,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -77,6 +77,43 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
   const refreshTimer=setInterval(()=>setBossRetry(v=>v+1),60000);
   return ()=>{alive=false;clearInterval(refreshTimer)};
  },[feature,worldBossAccountId,worldBossReadCurrent,bossRetry]);
+ // Developer-only bridge for a future approved authenticated V39 GET route.
+ // It cannot issue any votes, donations, fights or claims. No endpoint is
+ // instantiated here; account identity is supplied by the trusted host.
+ const [partyRetry,setPartyRetry]=useState(0);
+ const [loadedParty,setLoadedParty]=useState<{accountId:string;raw:unknown}|null>(null);
+ const [partyReadState,setPartyReadState]=useState<'idle'|'loading'|'ready'|'empty'|'error'>('idle');
+ useEffect(()=>{
+  if(feature!=='party'||!partyEventAccountId||!partyEventReadCurrent){
+   setLoadedParty(null);setPartyReadState('idle');return;
+  }
+  let alive=true;
+  setLoadedParty(null);setPartyReadState('loading');
+  Promise.resolve().then(()=>partyEventReadCurrent()).then(raw=>{
+   if(!alive)return;
+   const result=decodePartyEventReadTransportV39(raw,Date.now());
+   if(result.kind==='invalid'){
+    setLoadedParty(null);setPartyReadState('error');return;
+   }
+   setLoadedParty(result.kind==='ready'?{accountId:partyEventAccountId,raw:(raw as {event:unknown}).event}:null);
+   setPartyReadState(result.kind==='ready'?'ready':'empty');
+   setStatusNowMs(Date.now());
+  }).catch(()=>{
+   if(!alive)return;
+   setLoadedParty(null);setPartyReadState('error');
+  });
+  const refreshTimer=setInterval(()=>setPartyRetry(v=>v+1),60000);
+  return ()=>{alive=false;clearInterval(refreshTimer)};
+ },[feature,partyEventAccountId,partyEventReadCurrent,partyRetry]);
+ const partyProviderReady=feature==='party'&&Boolean(partyEventAccountId)&&Boolean(partyEventReadCurrent);
+ const displayPartyStatus=partyProviderReady?
+  (loadedParty?.accountId===partyEventAccountId?loadedParty.raw:null):partyEventStatus;
+ useEffect(()=>{
+  if(feature!=='party'||!partyProviderReady||displayPartyStatus==null)return;
+  setStatusNowMs(Date.now());
+  const leaseTimer=setInterval(()=>setStatusNowMs(Date.now()),15000);
+  return ()=>clearInterval(leaseTimer);
+ },[feature,partyProviderReady,displayPartyStatus]);
  const bossProviderReady=feature==='boss'&&Boolean(worldBossAccountId)&&Boolean(worldBossReadCurrent);
  const displayBossStatus=bossProviderReady?
   (loadedBoss?.accountId===worldBossAccountId?loadedBoss.raw:null):worldBossStatus;
@@ -140,11 +177,16 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       <Text style={s.bodyText}>{bossReadState==='loading'?'Checking the server-owned current cycle and this account.':bossReadState==='error'?'No previous data is displayed. You can try the authenticated read again.':bossReadState==='empty'?'The server has not supplied an event row for the current cycle.':'No raid, donation, claim or reward permission is available from this QA screen.'}</Text>
       {bossReadState!=='loading'?<Action label="Refresh read-only status" s={s} secondary onPress={()=>setBossRetry(v=>v+1)}/>:null}
      </View>:null}
+    {feature==='party'&&partyProviderReady?<View style={s.warning} accessibilityLiveRegion="polite">
+      <Text style={s.warningTitle}>{partyReadState==='loading'?'Reading the Party Event…':partyReadState==='error'?'Party Event read failed':partyReadState==='empty'?'No enrolled Party Event':partyReadState==='ready'&&!decodePartyEventReadOnlySnapshot(displayPartyStatus,statusNowMs)?'Party Event status expired or rejected':'Private Party Event · Read only'}</Text>
+      <Text style={s.bodyText}>{partyReadState==='loading'?'Verifying this account’s current adventure.':partyReadState==='error'?'The response was unavailable or invalid; previous progress has been cleared.':partyReadState==='empty'?'There is no verified adventure for this account.':'This preview cannot contribute, vote, fight or claim rewards.'}</Text>
+      {partyReadState!=='loading'?<Action label="Refresh read-only Party Event" s={s} secondary onPress={()=>setPartyRetry(v=>v+1)}/>:null}
+     </View>:null}
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
-    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={partyEventStatus}/>:null}
+    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
@@ -325,11 +367,11 @@ const partyStoryGuides={
 } as const;
 const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
 /** Only Party Events subscribes to live Party state; market and boss QA never rerender for Party updates. */
-function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown}){
+function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus,nowMs}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown;nowMs:number}){
  const social=usePartySocial();
  // App deliberately does not supply a live payload while the private service
  // and event migrations are unreleased. Malformed payloads fail closed.
- const status=useMemo(()=>decodePartyEventReadOnlySnapshot(partyEventStatus),[partyEventStatus]);
+ const status=useMemo(()=>decodePartyEventReadOnlySnapshot(partyEventStatus,nowMs),[partyEventStatus,nowMs]);
  return <PartyContents s={s} C={C} accent={accent} tab={tab} onTab={onTab} storyId={storyId} onStoryChange={onStoryChange}
   hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status}/>;
 }

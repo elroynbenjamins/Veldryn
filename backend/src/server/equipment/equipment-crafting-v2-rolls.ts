@@ -26,7 +26,7 @@ export const V2_SERVER_RARITY_BASE_MULTIPLIER:Readonly<Record<V2Rarity,number>>=
 /** Percentage values, with T3 and T4 sharing provisional affix magnitudes.
  * Separate T4 ranges may be considered after actual combat projection.
  */
-const AFFIX_FULL_RANGES:Readonly<Record<V2Affix,readonly [readonly [number,number],readonly [number,number],readonly [number,number],readonly [number,number]]>>={
+export const V2_SERVER_AFFIX_RANGES:Readonly<Record<V2Affix,readonly [readonly [number,number],readonly [number,number],readonly [number,number],readonly [number,number]]>>={
  armor:[[.6,1.2],[1,2],[1.5,3],[1.5,3]],
  maxHp:[[.8,1.6],[1.2,2.5],[2,4],[2,4]],
  ward:[[.2,.7],[.3,1],[.5,1.5],[.5,1.5]],
@@ -106,7 +106,7 @@ export function draftEquipmentV2Outcome(input:V2TrustedRecipeTemplate,drawInt:Se
  const affixCount=input.tier>=3?band.affixesHighTier:band.affixesLowTier;
  const kinds=chooseAffixes(input.role,input.slot,affixCount,drawInt);
  const affixes=kinds.map(stat=>{
-  const full=AFFIX_FULL_RANGES[stat][input.tier-1];
+  const full=V2_SERVER_AFFIX_RANGES[stat][input.tier-1];
   const unit=draw(drawInt,10001)/10000;
   const scaled=band.low+(band.high-band.low)*unit;
   const raw=full[0]+(full[1]-full[0])*scaled;

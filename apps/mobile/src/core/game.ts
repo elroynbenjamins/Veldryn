@@ -559,7 +559,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
  const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
- const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(1+stats.healingPower)*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // Healers reduce attrition, but exertion always retains a small food cost.
  const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
@@ -607,7 +607,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
- const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour*(1+runtime.stats.healingPower);
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;

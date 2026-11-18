@@ -4,7 +4,7 @@ import {equipmentV2PreviewBaseStats,EQUIPMENT_V2_RARITIES,equipmentV2AffixCount}
 import {equipmentV2DraftAssembly,equipmentV2SourcePlan,equipmentV2CostSummary,type EquipmentV2Ingredient,type EquipmentV2SourceStrategy} from './equipment-crafting-v2-economy';
 import {EQUIPMENT_CRAFTING_V2_RELEASED} from './release-flags';
 
-export type EquipmentV2PrimaryAction='craft'|'unlock'|'prepare_components'|'find_materials'|'free_queue_slot'|'obtain_gold';
+export type EquipmentV2PrimaryAction='craft'|'unlock'|'prepare_components'|'find_materials'|'review_market_purchase'|'free_queue_slot'|'obtain_gold';
 export interface EquipmentV2RecipePreviewInput {
  name:string;tier:EquipmentV2Tier;slot:GearSlot;profile:EquipmentV2Profile;setPiece:boolean;
  rarityMultiplier?:number;quality?:number;
@@ -23,10 +23,12 @@ export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInpu
  const locked=input.characterLevel<requiredCharacter||input.professionLevel<requiredProfession;
  const missingMaterial=source.ingredients.some(row=>row.gatherOrProcess>0);
  const missingComponents=source.ingredients.some(row=>row.gatherOrProcess>0&&input.ingredients.find(v=>v.itemId===row.itemId)?.kind==='component');
+ const pendingMarketPurchase=source.ingredients.some(row=>row.bought>0);
  const cannotAfford=input.goldAvailable<cost.knownGold;
  const action:EquipmentV2PrimaryAction=locked?'unlock'
   :missingComponents?'prepare_components'
   :missingMaterial?'find_materials'
+  :pendingMarketPurchase?'review_market_purchase'
   :cannotAfford?'obtain_gold'
   :!input.queueHasCapacity?'free_queue_slot':'craft';
  const canCraftNow=action==='craft'&&source.fullySupplied;

@@ -50,6 +50,15 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  },[route,defaultTab]);
  const changeTab=(next:string)=>{if(!tabs.some(item=>item.id===next))return;setTab(next);scrollRef.current?.scrollTo({y:0,animated:false});};
  const [bossId,setBossId]=useState<(typeof bosses)[number]['id']>('hollow');
+ // A private status is a short lease, not persistent presence. Expire it
+ // while the QA screen stays open; no network request or action is mounted.
+ const [statusNowMs,setStatusNowMs]=useState(()=>Date.now());
+ useEffect(()=>{
+  if(feature!=='boss'||!worldBossAccountId||worldBossStatus==null)return;
+  setStatusNowMs(Date.now());
+  const leaseTimer=setInterval(()=>setStatusNowMs(Date.now()),15000);
+  return ()=>clearInterval(leaseTimer);
+ },[feature,worldBossAccountId,worldBossStatus]);
  const [storyId,setStoryId]=useState<(typeof stories)[number]['id']>('caravan');
  const C=useGameTheme(),{width,fontScale}=useWindowDimensions();
  const compact=width<360||fontScale>=1.25;
@@ -60,7 +69,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  // A future authenticated host may inject the private V41 result. No RPC
  // is mounted here and no account selector is accepted from player input.
  const bossStatus=feature==='boss'&&worldBossAccountId?
-  decodeWorldBossReadOnlyStatusV46(worldBossStatus,worldBossAccountId):null;
+  decodeWorldBossReadOnlyStatusV46(worldBossStatus,worldBossAccountId,statusNowMs):null;
  const accent=feature==='boss'?selectedBoss.color:feature==='party'?selectedStory.accent:title.accent;
  const heroSceneId=feature==='boss'?selectedBoss.scene:feature==='party'?selectedStory.scene:null;
  const guideTopics=feature==='boss'?[
@@ -97,7 +106,8 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId} status={bossStatus}/>:null}
+    {feature==='boss'?<BossRegionPicker s={s} C={C} selected={bossId} onSelect={setBossId}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} status={bossStatus}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={partyEventStatus}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
@@ -132,7 +142,12 @@ function Action({label,onPress,s,disabled=false,secondary=false}:{label:string;o
  </Pressable>;
 }
 function Stat({s,label,value,hint}:{s:Shared['s'];label:string;value:string;hint?:string}){return <View style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{value}</Text>{hint?<Text style={s.statHint}>{hint}</Text>:null}</View>;}
-function Progress({s,value,accent}:{s:Shared['s'];value:number;accent:string}){return <View style={s.track}><View style={[s.progress,{width:((Math.max(0,Math.min(100,value)))+'%') as import('react-native').DimensionValue,backgroundColor:accent}]}/></View>;}
+function Progress({s,value,accent,label='Progress'}:{s:Shared['s'];value:number;accent:string;label?:string}){
+ const percent=Math.round(Math.max(0,Math.min(100,Number.isFinite(value)?value:0)));
+ return <View style={s.track} accessibilityRole="progressbar" accessibilityLabel={label} accessibilityValue={{min:0,max:100,now:percent}}>
+  <View style={[s.progress,{width:(percent+'%') as import('react-native').DimensionValue,backgroundColor:accent}]}/>
+ </View>;
+}
 function Tag({s,label,accent}:{s:Shared['s'];label:string;accent?:string}){return <View style={[s.tag,accent&&{borderColor:accent}]}><Text style={[s.tagText,accent&&{color:accent}]}>{label}</Text></View>;}
 
 const bosses=[
@@ -149,64 +164,93 @@ const bosses=[
   mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
   threat:'Visibility and freezing attacks test the whole account squad.'},
 ] as const;
-function BossContents({s,C,accent,tab,onTab,selected,onSelect,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void;status:WorldBossScreenSnapshotV46|null}){
+/** Inspecting a boss never selects a live event or changes the account. */
+function BossRegionPicker({s,C,selected,onSelect}:{s:Shared['s'];C:ThemeColors;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void}){
+ return <View style={s.bossRegionPanel}>
+  <View style={s.detailRow}><Text style={s.detailLabel}>BOSS CODEX</Text><Text style={s.finePrint}>Preview regions · No availability implied</Text></View>
+  <View style={s.bossRegionButtons}>{bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button"
+   accessibilityLabel={'Inspect '+entry.name+' in '+entry.region}
+   accessibilityState={{selected:selected===entry.id}}
+   onPress={()=>onSelect(entry.id)}
+   style={[s.bossRegionButton,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
+    <Text style={[s.bossRegionName,selected===entry.id&&{color:entry.color}]}>{entry.name}</Text>
+   </Pressable>)}</View>
+ </View>;
+}
+const phaseTitles={upcoming:'Upcoming',preparation:'War Camp',raid:'Battle',cooldown:'Recovery',expired:'Ended'} as const;
+const bossTracks=['fortifications','fieldProvisions','siegecraft'] as const;
+function BossContents({s,C,accent,tab,onTab,selected,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];status:WorldBossScreenSnapshotV46|null}){
  const boss=bosses.find(item=>item.id===selected)??bosses[0];
  const active=status?.bossId===(selected==='hollow'?'hollowroot':selected==='frost'?'frostmarch':'sunscar')?status:null;
+ const phaseEnd=active?(active.phase==='upcoming'?active.startsAtUtcMs:active.phase==='preparation'?active.startsAtUtcMs+5*86400000:active.phase==='raid'?active.endsAtUtcMs:active.phase==='cooldown'?active.startsAtUtcMs+14*86400000:null):null;
+ const phaseNext=active?(active.phase==='upcoming'?'Preparation opens':active.phase==='preparation'?'Weekend battle opens':active.phase==='raid'?'Battle closes':active.phase==='cooldown'?'Cycle completes':'Event ended'):null;
+ const phaseDate=phaseEnd==null?null:new Date(phaseEnd).toISOString().slice(0,16).replace('T',' ')+' UTC';
  if(tab==='overview')return <>
-  <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="The next great encounter" sub="Five days to prepare. One continuous weekend battle. A week to recover."/>
-   <View style={s.statRow}><Stat s={s} label="PREPARATION" value="5 days"/><Stat s={s} label="BATTLE" value="48 hours"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
-   <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={accent}/><Tag s={s} label="02 Battle"/><Tag s={s} label="03 Results"/></View>
+  <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="Prepare together. Fight on the weekend." sub="Five days of War Camp preparation, one continuous 48-hour battle, then seven days of recovery."/>
+   <View style={s.statRow}><Stat s={s} label="PREPARATION" value="Mon–Fri"/><Stat s={s} label="BATTLE" value="Sat–Sun"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
+   <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={active?.phase==='preparation'?accent:undefined}/><Tag s={s} label="02 Battle" accent={active?.phase==='raid'?accent:undefined}/><Tag s={s} label="03 Recovery" accent={active?.phase==='cooldown'?accent:undefined}/></View>
   </Card>
-  {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+active.phase.toUpperCase()} sub="Verified-format event data only. No attacks, donations, claims or release actions are connected."/>
-   <View style={s.statRow}><Stat s={s} label="BOSS HP" value={active.remainingHp.toLocaleString('en-US')+' / '+active.maxHp.toLocaleString('en-US')}/><Stat s={s} label="ATTEMPTS LEFT" value={String(active.attemptsRemaining)+' / 3'}/><Stat s={s} label="DONATIONS LEFT" value={String(active.donationsRemaining)+' / 2'}/></View>
-   <Progress s={s} value={active.remainingHp/active.maxHp*100} accent={accent}/>
-   <Text style={s.finePrint}>Snapshot is short-lived. Combat, spending and rewards remain unavailable in Design QA.</Text>
-  </Card>:<Card s={s}><SectionHeading s={s} kicker="ACCOUNT STATUS" title="No verified World Boss loaded" sub="This preview has no authenticated World Boss feed. Boss availability and personal attempts are not implied by example values."/></Card>}
-  <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="Choose a region to preview its encounter. No boss availability is implied."/>
-   {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>onSelect(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
-     <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><UiIcon name="world" size={28}/></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
-   </Pressable>)}
-   <Action label={'Inspect '+boss.name+' War Camp'} s={s} onPress={()=>onTab('camp')}/>
+  {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+phaseTitles[active.phase]} sub="This validated-format snapshot is for QA only. It does not enable gameplay or verify that the event is released."/>
+   <View style={s.detailRow}><Tag s={s} label={active.status.toUpperCase()+' · '+phaseTitles[active.phase]} accent={accent}/><Text style={s.finePrint}>Read {new Date(active.readAtUtcMs).toISOString().slice(0,16).replace('T',' ')} UTC</Text></View>
+   <View style={s.statRow}><Stat s={s} label="BOSS HP REMAINING" value={active.remainingHp.toLocaleString('en-US')+' / '+active.maxHp.toLocaleString('en-US')}/><Stat s={s} label="ATTEMPTS LEFT" value={String(active.attemptsRemaining)+' / 3'}/><Stat s={s} label="DONATIONS LEFT" value={String(active.donationsRemaining)+' / 2'}/></View>
+   <Progress s={s} value={active.remainingHp/active.maxHp*100} accent={accent} label="Verified-format boss health remaining"/>
+   {phaseDate?<View style={s.nextStep}><Text style={s.detailLabel}>NEXT CALENDAR BOUNDARY</Text><Text style={s.choiceTitle}>{phaseNext} · {phaseDate}</Text></View>:<Text style={s.finePrint}>This event's cycle has ended; a new event requires another verified snapshot.</Text>}
+   <Text style={s.finePrint}>Snapshot expires after two minutes. Combat, spending and rewards remain unavailable in Design QA.</Text>
+  </Card>:<Card s={s}><SectionHeading s={s} kicker="ACCOUNT STATUS" title="No verified World Boss loaded" sub="The event service is not connected. No real boss HP, event date, donation count, attempts or rewards can be shown."/>
+   <View style={s.empty}><UiIcon name="world" size={30}/><Text style={s.choiceTitle}>Encounter preview only</Text><Text style={s.bodyText}>Explore each regional boss below. Their artwork and mechanics are not proof that an event is open.</Text></View>
+  </Card>}
+  <Card s={s}><SectionHeading s={s} kicker={'ENCOUNTER BRIEFING · '+boss.region.toUpperCase()} title={boss.name} sub={boss.motif}/>
+   <Text style={s.bodyText}>{boss.threat}</Text>
+   <View style={s.twoActions}><View style={s.flex}><Action label="Inspect War Camp" s={s} onPress={()=>onTab('camp')} secondary/></View><View style={s.flex}><Action label="Battle briefing" s={s} onPress={()=>onTab('battle')}/></View></View>
   </Card>
  </>;
  if(tab==='camp')return <>
-  <Card s={s}><SectionHeading s={s} kicker={'WAR CAMP · '+boss.region.toUpperCase()} title={'Prepare for '+boss.name} sub="Donations are account-wide and consume real resources only after a verified server transaction."/>
-   <View style={s.statRow}><Stat s={s} label="DONATION LIMIT" value="2 per event"/><Stat s={s} label="FREEZE" value="Saturday"/><Stat s={s} label="BONUSES" value="Server verified"/></View>
+  <Card s={s}><SectionHeading s={s} kicker={'WAR CAMP · '+boss.region.toUpperCase()} title={'Prepare for '+boss.name} sub="Account-wide donations require verified active-character inventory and a server transaction. The camp closes before battle."/>
+   <View style={s.statRow}><Stat s={s} label="DONATION LIMIT" value={active?active.donationsRemaining+' / 2 left':'2 per event'}/><Stat s={s} label="FREEZE" value="Sat 00:00 UTC"/><Stat s={s} label="TRACKS" value="3 communal"/></View>
    {active?<><Text style={s.detailLabel}>PRIVATE VERIFIED-FORMAT SUPPLY TOTALS · READ ONLY</Text>
-    {(['fortifications','fieldProvisions','siegecraft'] as const).map(track=><View key={track} style={s.sectionHead}>
-     <View style={s.detailRow}><Text style={s.choiceTitle}>{track==='fieldProvisions'?'Field Provisions':track==='fortifications'?'Fortifications':'Siegecraft'}</Text><Text style={s.choiceSub}>{active.warCamp.contributions[track]} / {active.warCamp.goals[track].tier2At}</Text></View>
-     <Progress s={s} value={active.warCamp.contributions[track]/active.warCamp.goals[track].tier2At*100} accent={boss.color}/>
-    </View>)}
-    <Tag s={s} label={active.warCamp.frozen?'Frozen bonuses · Server record':'Bonuses not yet frozen'} accent={accent}/>
-    <Text style={s.finePrint}>{active.donationsRemaining} account donations remaining. No inventory resources can be spent here.</Text>
-   </>:<><Text style={s.detailLabel}>EXAMPLE WAR SUPPLY METER</Text><Progress s={s} value={65} accent={boss.color}/><Text style={s.finePrint}>Illustrative progress only. No current donation total is available in this preview.</Text></>}
+    {bossTracks.map(track=>{
+     const count=active.warCamp.contributions[track],goal=active.warCamp.goals[track];
+     const level=active.warCamp.frozen?(active.warCamp.levels?.[track]??0):(count>=goal.tier2At?2:count>=goal.tier1At?1:0);
+     const label=track==='fieldProvisions'?'Field Provisions':track==='fortifications'?'Fortifications':'Siegecraft';
+     return <View key={track} style={s.campTrack}>
+      <View style={s.detailRow}><Text style={s.choiceTitle}>{label}</Text><Tag s={s} label={(active.warCamp.frozen?'Frozen':'Projected')+' tier '+level+' / 2'} accent={level>0?accent:undefined}/></View>
+      <View style={s.detailRow}><Text style={s.finePrint}>Tier 1 · {goal.tier1At.toLocaleString('en-US')}     Tier 2 · {goal.tier2At.toLocaleString('en-US')}</Text><Text style={s.choiceSub}>{count.toLocaleString('en-US')} / {goal.tier2At.toLocaleString('en-US')}</Text></View>
+      <Progress s={s} value={count/goal.tier2At*100} accent={boss.color} label={label+' War Camp progress'}/>
+     </View>;
+    })}
+    <Text style={s.finePrint}>{active.warCamp.frozen?'Saturday bonuses are frozen in this record.':'Projected tiers can change until Saturday freeze.'} {active.donationsRemaining} account donations remaining; this QA screen cannot consume resources.</Text>
+   </>:<View style={s.empty}><UiIcon name="world" size={30}/><Text style={s.choiceTitle}>No verified War Camp progress</Text><Text style={s.bodyText}>No current donation total is available in this preview. Progress bars appear only with a valid private status.</Text></View>}
   </Card>
-  <Card s={s}><SectionHeading s={s} kicker="PREPARATION TASKS" title="Support the war effort"/>
-   {boss.supplies.map((name,i)=><View key={name} style={s.detailRow}><Text style={s.index}>{'0'+(i+1)}</Text><View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>Pending authenticated stock and cost check</Text></View><Tag s={s} label="Locked"/></View>)}
+  <Card s={s}><SectionHeading s={s} kicker="ILLUSTRATIVE PREPARATION TASKS" title="Support the war effort" sub="Scouting notes, not real recipes or checked inventory quantities."/>
+   {boss.supplies.map((name,i)=><View key={name} style={s.detailRow}><Text style={s.index}>{'0'+(i+1)}</Text><View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>Material cost and eligibility unavailable</Text></View><Tag s={s} label="Locked"/></View>)}
    <Action label="Donate supplies · Awaiting server" s={s} disabled/>
   </Card>
  </>;
  if(tab==='battle')return <>
-  <Card s={s}><SectionHeading s={s} kicker="CONTINUOUS WEEKEND BATTLE" title={'Face '+boss.name} sub="Up to five eligible owned characters can contribute in a single account-wide battle."/>
-   <View style={s.statRow}><Stat s={s} label="ATTEMPTS" value={active?active.attemptsRemaining+' / 3 left':'3 shared'}/><Stat s={s} label="COMBAT" value="14 rounds"/><Stat s={s} label="WINDOW" value={active?active.phase.toUpperCase():'Sat–Sun'}/></View>
-   <View style={s.warning}><Text style={s.warningTitle}>Battle not connected</Text><Text style={s.bodyText}>The server must reserve attempts, verify your actual roster, record combat and settle HP exactly once. This preview cannot start a fight.</Text></View>
+  <Card s={s}><SectionHeading s={s} kicker="CONTINUOUS WEEKEND BATTLE" title={'Face '+boss.name} sub="Your eligible owned characters fight as one account squad. More characters never grant extra attempts or separate payouts."/>
+   <View style={s.statRow}><Stat s={s} label="ATTEMPTS LEFT" value={active?active.attemptsRemaining+' / 3':'Not verified'}/><Stat s={s} label="COMBAT" value="14 rounds"/><Stat s={s} label="WINDOW" value={active?phaseTitles[active.phase]:'Sat–Sun'}/></View>
+   {active&&phaseDate?<View style={s.nextStep}><Text style={s.detailLabel}>{phaseNext?.toUpperCase()}</Text><Text style={s.choiceTitle}>{phaseDate}</Text></View>:null}
+   <View style={s.warning}><Text style={s.warningTitle}>Battle not connected</Text><Text style={s.bodyText}>The server must reserve one shared attempt, verify your roster, record the 14 rounds and settle global boss HP exactly once. This preview cannot start a fight.</Text></View>
    <Action label="Begin account raid · Not available" s={s} disabled/>
   </Card>
-  <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER MECHANICS" title="Watch the boss, not a timer"/>
+  <Card s={s}><SectionHeading s={s} kicker="ACCOUNT RAID ROSTER" title="Bring your owned heroes" sub="One to five eligible characters can enter together. This screen never invents fighter slots or equipment."/>
+   <View style={s.empty}><UiIcon name="character" size={30}/><Text style={s.choiceTitle}>Squad not verified</Text><Text style={s.bodyText}>Character eligibility, roles, equipment and combat power must come from the authenticated game state.</Text></View>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER MECHANICS" title="Read the warning. Make the counterplay."/>
    <Text style={s.bodyText}>{boss.threat} Encounter descriptions are illustrative; the battle engine remains disconnected.</Text>
-   {boss.mechanics.map((label,i)=><View key={label} style={s.timelineRow}><View style={[s.timelineDot,{borderColor:boss.color}]}><Text style={[s.timelineNumber,{color:boss.color}]}>{i+1}</Text></View><Text style={s.choiceTitle}>{label}</Text></View>)}
+   {boss.mechanics.map((label,i)=><View key={label} style={s.timelineRow}><View style={[s.timelineDot,{borderColor:boss.color}]}><Text style={[s.timelineNumber,{color:boss.color}]}>{i+1}</Text></View><Text style={[s.choiceTitle,s.flex]}>{label}</Text></View>)}
   </Card>
  </>;
  if(tab==='rewards')return <>
-  <Card s={s}><SectionHeading s={s} kicker="ACCOUNT-WIDE REWARDS" title="Earn World Sigils" sub="Contribution and eligibility determine rewards; owning more characters does not multiply payout."/>
-   <View style={s.rewardPanel}><Text style={[s.rewardGlyph,{color:accent}]}>✧</Text><View style={s.flex}><Text style={s.choiceTitle}>World Sigils</Text><Text style={s.choiceSub}>Future shop currency · quantities not yet approved</Text></View></View>
-   <View style={s.detailRow}><Text style={s.choiceSub}>Earned in event</Text><Text style={s.choiceTitle}>{active?active.rewards.claimedThisEvent.toLocaleString('en-US')+' Sigils':'No live record'}</Text></View>
-   {active?<View style={s.detailRow}><Text style={s.choiceSub}>Private wallet balance</Text><Text style={s.choiceTitle}>{active.rewards.balance.toLocaleString('en-US')} Sigils</Text></View>:null}
-   <View style={s.detailRow}><Text style={s.choiceSub}>Claim status</Text><Text style={s.choiceTitle}>Unavailable</Text></View>
+  <Card s={s}><SectionHeading s={s} kicker="ACCOUNT-WIDE REWARDS" title="World Sigils" sub="Battles, War Camp contributions and milestones use server-verified receipts. Extra characters do not multiply rewards."/>
+   <View style={s.rewardPanel}><UiIcon name="rewards" size={28}/><View style={s.flex}><Text style={s.choiceTitle}>World Sigils</Text><Text style={s.choiceSub}>Future account-wide boss reward currency · shop not released</Text></View></View>
+   <View style={s.detailRow}><Text style={s.choiceSub}>Already claimed this event</Text><Text style={s.choiceTitle}>{active?active.rewards.claimedThisEvent.toLocaleString('en-US')+' Sigils':'No verified record'}</Text></View>
+   <View style={s.detailRow}><Text style={s.choiceSub}>Current spendable wallet</Text><Text style={s.choiceTitle}>{active?active.rewards.balance.toLocaleString('en-US')+' Sigils':'No verified record'}</Text></View>
+   <Text style={s.finePrint}>A claimed-event total is not an unclaimed reward balance. Pending eligibility and claimable amounts are not exposed by this private snapshot.</Text>
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>
  </>;
- return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Real ranks must come from immutable server-verified contribution ledgers, not client-reported damage."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution and fair power-bracket views will appear here after verification.</Text></View></Card>;
+ return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Official ranks must come from finalized server-verified account contributions, with a consistent power bracket and privacy checks."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution, final placements and account-wide rewards cannot be inferred from a boss health snapshot.</Text></View><Action label="Review battle rules" s={s} secondary onPress={()=>onTab('battle')}/></Card>;
 }
 
 const stories=[
@@ -443,6 +487,7 @@ function makeStyles(C:ThemeColors,compact=false){
   tabs:{gap:7,paddingVertical:2},tab:{minHeight:44,justifyContent:'center',paddingHorizontal:13,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},tabText:{color:C.muted,fontSize:12,fontWeight:'800'},
   card:{gap:12,padding:spacing.md,borderRadius:radii.md,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},sectionHead:{gap:4},kicker:{color:C.accent,fontSize:10,fontWeight:'900',letterSpacing:1.5},cardTitle:{...typography.title,color:C.text},bodyText:{...typography.body,color:C.muted,fontSize:12,lineHeight:18},finePrint:{color:C.muted,fontSize:11,lineHeight:16},
   statRow:{flexDirection:'row',gap:8,flexWrap:'wrap'},stat:{flexGrow:1,flexBasis:compact?'46%':'29%',minWidth:compact?110:0,padding:9,borderRadius:radii.sm,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.line,gap:3},statLabel:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:C.muted},statValue:{fontSize:15,lineHeight:21,fontWeight:'900',color:C.text},statHint:{color:C.muted,fontSize:10},
+  bossRegionPanel:{gap:7},bossRegionButtons:{flexDirection:'row',gap:6},bossRegionButton:{flex:1,minHeight:46,paddingHorizontal:4,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:radii.sm,borderColor:C.lineStrong,backgroundColor:C.panel},bossRegionName:{fontSize:compact?10:11,fontWeight:'900',color:C.muted,textAlign:'center'},twoActions:{flexDirection:'row',gap:8},campTrack:{gap:5,paddingVertical:6},nextStep:{gap:3,paddingVertical:8,paddingHorizontal:10,backgroundColor:C.panelRaised,borderRadius:radii.sm},
   stepRow:{flexDirection:'row',gap:6,flexWrap:'wrap'},tag:{paddingHorizontal:9,paddingVertical:5,borderRadius:radii.sm,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,alignSelf:'flex-start'},tagText:{color:C.muted,fontSize:10,fontWeight:'800'},choice:{flexDirection:'row',alignItems:'center',gap:10,padding:10,minHeight:60,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},choiceTitle:{color:C.text,fontSize:13,lineHeight:19,fontWeight:'800'},choiceSub:{fontSize:11,lineHeight:16,color:C.muted},choiceArrow:{fontSize:20,fontWeight:'900'},motif:{width:43,height:43,justifyContent:'center',alignItems:'center',borderWidth:1,borderRadius:radii.sm},motifGlyph:{fontSize:27,fontWeight:'900'},flex:{flex:1,minWidth:0},action:{minHeight:46,paddingHorizontal:14,paddingVertical:11,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.primaryButton,borderColor:C.primaryButtonBorder,borderWidth:1},actionText:{color:C.primaryButtonText,fontWeight:'900',fontSize:12,textAlign:'center'},secondaryAction:{backgroundColor:C.secondaryButton,borderColor:C.secondaryButtonBorder},secondaryActionText:{color:C.secondaryButtonText},disabledAction:{opacity:.56},disabledText:{color:C.muted},
   detailLabel:{color:C.muted,fontSize:10,fontWeight:'900',letterSpacing:.8},detailRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},index:{color:C.muted,fontSize:15,fontWeight:'900',width:28},track:{height:9,borderRadius:radii.sm,backgroundColor:C.line,overflow:'hidden'},progress:{height:'100%',borderRadius:radii.sm},warning:{gap:4,padding:11,borderRadius:radii.sm,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},warningTitle:{color:C.warning,fontSize:12,fontWeight:'900'},
   rewardPanel:{flexDirection:'row',alignItems:'center',gap:10,padding:12,borderRadius:radii.sm,backgroundColor:C.panelRaised,borderWidth:1,borderColor:C.line},rewardGlyph:{fontSize:30},timelineRow:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:5},timelineDot:{width:30,height:30,alignItems:'center',justifyContent:'center',borderRadius:15,borderWidth:1},timelineNumber:{fontSize:12,fontWeight:'900'},

@@ -6,7 +6,7 @@ import {rarityAdjustedBonusRange} from './bonus-roll-rarity';
 
 /** Basis points: 100 = +1.0 percentage point. One decimal place is displayed. */
 type LegacyWeaponBonusStat='maxHp'|'armor'|'ward'|'tenacity'|'critRate'|'haste'|'penetration'|'accuracy'|'potency';
-export type WeaponBonusStat=LegacyWeaponBonusStat|'evasion'|'critDamage'|'abilityDamage'|'healingPower'|'power';
+export type WeaponBonusStat=LegacyWeaponBonusStat|'evasion'|'critDamage'|'abilityDamage'|'healingPower';
 type NewBonusStat=Exclude<WeaponBonusStat,LegacyWeaponBonusStat>;
 export interface WeaponBonusRoll{stat:WeaponBonusStat;basisPoints:number;}
 export const WEAPON_BONUS_ROLL_VERSION=3;
@@ -15,7 +15,7 @@ export const WEAPON_BONUS_LABELS:Readonly<Record<WeaponBonusStat,string>>={
   maxHp:'Max HP',armor:'Armor',ward:'Ward',tenacity:'Tenacity',
   critRate:'Crit Rate',haste:'Haste',penetration:'Penetration',
   accuracy:'Accuracy',potency:'Potency',evasion:'Evasion',critDamage:'Crit Damage',
-  abilityDamage:'Ability Damage',healingPower:'Healing Power',power:'Power',
+  abilityDamage:'Ability Damage',healingPower:'Healing Power',
 };
 const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly LegacyWeaponBonusStat[]>>={
   Tank:['armor','maxHp','ward','tenacity'],
@@ -23,9 +23,9 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Legacy
   Support:['potency','haste','ward','maxHp'],
 };
 const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
-  Tank:['armor','maxHp','ward','tenacity','evasion','power','haste'],
-  Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','power','evasion'],
-  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate','power'],
+  Tank:['armor','maxHp','ward','tenacity','evasion','haste'],
+  Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','evasion'],
+  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
 };
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
  * HP and Tenacity have wider budgets than combat tempo/crit/avoidance stats. */
@@ -55,11 +55,11 @@ export const WEAPON_BONUS_BPS_BY_BAND:Readonly<Record<WeaponTierBand,Readonly<Re
 /** Additional equipment 2.0 attributes. The seven player-selected T5
  * baseline ranges are used without a rarity multiplier for Uncommon. */
 const V3_EXTRA_BPS_BY_BAND:Readonly<Record<WeaponTierBand,Readonly<Record<NewBonusStat,readonly [number,number]>>>>={
-  2:{evasion:[20,70],critDamage:[100,280],abilityDamage:[80,200],healingPower:[80,200],power:[80,180]},
-  3:{evasion:[40,120],critDamage:[200,450],abilityDamage:[120,300],healingPower:[120,300],power:[120,280]},
-  5:{evasion:[60,150],critDamage:[300,700],abilityDamage:[200,500],healingPower:[200,500],power:[200,400]},
-  7:{evasion:[80,180],critDamage:[400,850],abilityDamage:[260,600],healingPower:[260,600],power:[260,500]},
-  9:{evasion:[100,200],critDamage:[500,1000],abilityDamage:[320,700],healingPower:[320,700],power:[320,600]},
+  2:{evasion:[20,70],critDamage:[100,280],abilityDamage:[80,200],healingPower:[80,200]},
+  3:{evasion:[40,120],critDamage:[200,450],abilityDamage:[120,300],healingPower:[120,300]},
+  5:{evasion:[60,150],critDamage:[300,700],abilityDamage:[200,500],healingPower:[200,500]},
+  7:{evasion:[80,180],critDamage:[400,850],abilityDamage:[260,600],healingPower:[260,600]},
+  9:{evasion:[100,200],critDamage:[500,1000],abilityDamage:[320,700],healingPower:[320,700]},
 };
 /** Version 1 is retained for any older test/staging receipts. Never reinterpret a
  * previously minted percentage under a newly tuned range. */

@@ -6,8 +6,23 @@ export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interru
 
 /** Server-owned, opt-in Combat 2.0 encounter resource state. */
 export type CombatV2Resource='guard'|'barrier'|'dread'|'focus'|'fury'|'threads'|'rhythm'|'radiance'|'resonance';
+export interface CombatV2EquipmentEffects {
+  /** Percentage-point changes to hit and evade probability. */
+  accuracyPp:number;
+  evasionPp:number;
+  /** Fraction of target defense bypassed by direct hits. */
+  penetrationPp:number;
+  /** Reduction to incoming nonphysical, nontrue damage. */
+  wardPp:number;
+  /** Fractional outgoing shield strength bonus. */
+  shieldStrengthPct:number;
+  /** Fractional outgoing shadow/arcane/nature DoT strength bonus. */
+  hexPotencyPct:number;
+}
 export interface CombatV2LoadoutMeta {
   version:2;
+  /** Added only by the verified 2.0 equipment compiler. */
+  equipmentEffects?:Readonly<CombatV2EquipmentEffects>;
   resource:CombatV2Resource;
   specializationId:string;
   capstoneId?:string;

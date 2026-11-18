@@ -56,6 +56,10 @@ export function createWorldBossActionDepsV64(
   typeof input.serverNowUtcMs!=='function'||
   !input.rulesSource||!input.bracketPolicy||
   typeof input.randomSeed!=='function'||
+  !Number.isSafeInteger(input.minimumCharacterLevel)||
+  input.minimumCharacterLevel<1||input.minimumCharacterLevel>100||
+  typeof input.workerId!=='string'||
+  !/^[A-Za-z0-9:_-]{8,160}$/.test(input.workerId)||
   !input.replayStore||
   typeof input.replayStore.putImmutable!=='function'||
   typeof input.replayStore.readImmutable!=='function')

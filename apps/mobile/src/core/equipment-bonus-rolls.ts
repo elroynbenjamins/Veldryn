@@ -84,8 +84,8 @@ export function normalizeEquipmentBonuses(itemId:string,rarity:ItemRarity,raw:un
     const {stat,basisPoints}=entry as Partial<EquipmentBonusRoll>;
     if(!stat||!cfg.pool.includes(stat)||seen.has(stat))return undefined;
     const range=equipmentBonusRange(cfg.tier,stat,cfg.slot);
-    if(!range||!Number.isInteger(basisPoints)||basisPoints!<range[0]||basisPoints!>range[1]
-      ||(basisPoints!-range[0])%STEP_BPS!==0)return undefined;
+    if(!range||typeof basisPoints!=='number'||!Number.isInteger(basisPoints)
+      ||basisPoints<range[0]||basisPoints>range[1]||(basisPoints-range[0])%STEP_BPS!==0)return undefined;
     seen.add(stat);
     result.push({stat,basisPoints:basisPoints!});
   }

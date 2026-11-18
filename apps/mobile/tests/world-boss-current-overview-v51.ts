@@ -65,7 +65,7 @@ async function main(){
  assert.equal(Object.hasOwn(result,'canDonate'),false);
  assert.equal(Object.hasOwn(result,'attemptsRemaining'),false);
  assert.equal(Object.hasOwn(result,'donationsRemaining'),false);
- assert.equal(authCount,1);assert.equal(privacyCount,1);
+ assert.equal(authCount,1);assert.equal(privacyCount,2);
  assert.equal(selectionCount,1);assert.equal(overviewCount,1);
 
  await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token:'bad'},deps),
@@ -87,7 +87,15 @@ async function main(){
  } as unknown as WorldBossCurrentOverviewDepsV51), 'invalid_auth_reader');
  assert.equal(selectionCount,1,'missing privacy gate must fail closed');
  // Invalid or unverified Auth must not probe the account privacy gate.
- assert.equal(privacyCount,1);
+ assert.equal(privacyCount,2);
+
+ // An erasure lock appearing *while* the database read is in flight must
+ // prevent any status payload from being returned to a now-deleted account.
+ let stillReadable=true;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:{allowRead:async()=>stillReadable},
+  overview:{read:async()=>{stillReadable=false;return row();}},
+ }), 'account_privacy_hold');
 
  // Missing event and time before launch fail closed without claiming a boss.
  assert.equal(await readAuthenticatedCurrentWorldBossOverviewV51({token},{

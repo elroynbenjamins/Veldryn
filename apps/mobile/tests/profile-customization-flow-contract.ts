@@ -13,6 +13,7 @@ const unlock=fs.readFileSync('src/components/profile/ProfileUnlockSheet.tsx','ut
 const identity=fs.readFileSync('src/components/profile/ProfileIdentityPanel.tsx','utf8');
 const showcase=fs.readFileSync('src/components/profile/ProfileShowcasePanel.tsx','utf8');
 const draft=fs.readFileSync('src/online/useProfileExtensionDraft.ts','utf8');
+const releaseFlags=fs.readFileSync('src/core/release-flags.ts','utf8');
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
@@ -69,6 +70,7 @@ const staleSaveGuards=(draft.match(/if\(!mounted\.current\|\|version!==requestVe
 const scopedBusyReleases=(draft.match(/if\(mounted\.current&&version===requestVersion\.current\)setBusy\(false\)/g)??[]).length;
 ok(staleSaveGuards>=4&&scopedBusyReleases>=5,'Async identity, showcase and featured-hero saves must never overwrite a newer account or selection after a stale completion');
 ok(draft.includes('current?.selectedCharacterId===characterId'),'Character showcase saves must not update another selected hero');
+ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false')&&draft.includes('saveLegacyProfile(')&&draft.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED&&selected')&&identity.includes('active&&ACCOUNT_SOCIAL_IDENTITY_RELEASED')&&showcase.includes('!ACCOUNT_SOCIAL_IDENTITY_RELEASED'),'Social V2 must remain hidden and preserve legacy account-profile writes until the production RPC rollout');
 ok(draft.includes('const revertIdentity=useCallback(')&&draft.includes('const revertShowcase=useCallback(')&&identity.includes('onPress={draft.revertIdentity}')&&showcase.includes('onPress={draft.revertShowcase}'),'Revert in either profile tab must preserve edits in the other');
 ok(identity.includes('accessibilityRole="radiogroup"')&&identity.includes("{id:'guild'")&&identity.includes("{id:'public'"),'Identity must expose the three profile audiences as a single-choice control');
 ok(identity.includes('<PlayerNameStyleEditor'),'Identity must host the player name-style editor');

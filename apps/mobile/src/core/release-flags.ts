@@ -27,3 +27,6 @@ export const ONLINE_PLAYER_ROSTER_RELEASED=true;
 
 /** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
 export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
+
+/** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
+export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;

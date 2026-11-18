@@ -57,7 +57,7 @@ async function main(){
  // Caller cannot choose event ID, account ID, region or internal clock.
  const result=await readAuthenticatedCurrentWorldBossOverviewV51(
   {token,eventId:'forged',accountId:OTHER,bossId:'frostmarch'} as {token:string},deps);
- assert.ok(result);
+ if(result===null)throw Error('world_boss_v51_expected_verified_overview');
  assert.equal(result.eventId,EVENT);
  assert.equal(result.accountId,ACCOUNT);
  assert.equal(result.bossId,'hollowroot');

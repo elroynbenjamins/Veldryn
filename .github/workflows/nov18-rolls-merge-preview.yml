@@ -1,0 +1,33 @@
+name: Temporary T2-T5 roll merge conflict review
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/nov18-rolls-merge-preview.yml'
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/nov18-t2-t5-rolls
+          fetch-depth: 0
+      - name: Review original T2-T5 rolls branch against freshly repaired main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin feature/equipment-stat-rolls-t3-t5
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          echo '--- merge without unsafe conflict overrides ---'
+          if git merge --no-commit --no-ff origin/feature/equipment-stat-rolls-t3-t5; then
+            echo 'MERGE_PREVIEW_CLEAN'
+            git diff --cached --stat
+            git merge --abort || true
+          else
+            echo 'MERGE_PREVIEW_CONFLICTS'
+            git diff --name-only --diff-filter=U
+            git diff --cc -- apps/mobile/src/content/equipment-recipes-v33.ts apps/mobile/src/core/equipment-set-runtime.ts apps/mobile/src/core/item-inspect.ts apps/mobile/tests/equipment-crafting-source-v33.ts apps/mobile/tests/equipment-set-runtime.ts apps/mobile/tests/weapon-bonus-rolls.ts .github/workflows/unique-gear-validation.yml | head -c 50000 || true
+            git merge --abort
+          fi

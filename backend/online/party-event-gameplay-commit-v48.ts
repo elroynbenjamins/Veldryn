@@ -25,7 +25,7 @@ export type OnlineGameCanonicalCommitArgsV48=Readonly<{
  p_deleted_character_id?:string;
 }>;
 export type OnlineGameCanonicalCommitV48=Readonly<{
- rpc:'commit_online_game_guild_pve_v1'|'commit_online_game_party_sources_v45';
+ rpc:'commit_online_game_guild_pve_v1'|'commit_online_game_party_sources_server_v48';
  args:OnlineGameCanonicalCommitArgsV48 & {p_packet?:ReturnType<typeof preparePartySourcePacketV44>};
  sourceCount:number;
  hidden:true;
@@ -77,6 +77,6 @@ export function planHiddenPartyGameCommitV48(
  const sourceCount=packet.craft.length+packet.idle.length;
  if(sourceCount===0)return fallback(args);
  // The old commit remains inside V45's single PostgreSQL transaction.
- return {rpc:'commit_online_game_party_sources_v45',
+ return {rpc:'commit_online_game_party_sources_server_v48',
   args:{...args,p_packet:packet},sourceCount,hidden:true};
 }

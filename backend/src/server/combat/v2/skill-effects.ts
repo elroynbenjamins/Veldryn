@@ -10,6 +10,7 @@
  * passives. Unsupported designs fail closed, never silently grant fake effects.
  */
 import {simulateCombat} from '../engine';
+import {RESOURCE_BY_CLASS_V2} from './resource-runtime';
 import type {AbilityDefinition,AbilityEffect,CombatInput,CombatResult,CombatantDefinition} from '../types';
 import {
   CLASS_ROLES_V2,validateBuildV2,buildMayAffectCombatV2,
@@ -246,10 +247,18 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
     const base=actor.abilities.find(a=>a.name===record.name);
     if(!base)throw Error('combat_v2_missing_authoritative_technique:'+record.name);
     const upgraded=applyRecipe(base,recipes[index],mods);
-    return {...upgraded,id:base.id+':v2:'+index};
+    const spenders:Record<string,number|'all'>={
+      'Perfect Quarry':3,'Runic Judgment':'all','Citadel Slam':'all',
+      'Harbinger Strike':'all','Heartseeker':'all','Overpower':'all',
+      'Hex Detonation':'all','Final Dance':'all','Solar Hymn':'all',
+      'Resonance Burst':'all',
+    };
+    return {...upgraded,id:base.id+':v2:'+index,
+      ...(spenders[record.name]?{combatV2:{spend:spenders[record.name],bonusPerStack:.055}}:{})};
   });
   const s=actor.stats;
   return {...actor,
+    combatV2:{version:2,resource:RESOURCE_BY_CLASS_V2[verified.classId],specializationId:selected.specializationId!},
     tags:[...new Set([...(actor.tags??[]),'combat-v2'])],
     stats:{
       ...s,maxHp:round(s.maxHp*(1+finite(mods.hp,-.1,.15))),

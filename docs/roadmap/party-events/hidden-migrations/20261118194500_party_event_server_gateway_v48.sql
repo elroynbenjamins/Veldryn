@@ -17,12 +17,9 @@ create or replace function public.commit_online_game_party_sources_server_v48(
 ) returns jsonb
 language plpgsql security definer set search_path='' as $$
 begin
- -- PostgREST executes as service_role for the trusted gameplay Edge service.
- -- The caller MUST NOT be the user's JWT. SQL rights below are deny-by-default.
- if current_user <> 'service_role' and
-    current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
- then raise exception 'party_event_v48_service_role_only';end if;
-
+ -- PostgREST checks EXECUTE on this public RPC as the caller before entering
+ -- this SECURITY DEFINER body. Only service_role has EXECUTE (see below).
+ -- Never forward a mobile player's JWT as the RPC service credential.
  return private.commit_online_game_party_sources_v45(
   p_account_id,p_expected_version,p_expected_gold,p_request_id,p_request_hash,
   p_response,p_contributions,p_packet,p_deleted_character_id);

@@ -1,48 +1,74 @@
-# World Boss V64 — gathering loot and three ten-piece sets (hidden)
+# World Boss V64/V65 — milestone chests and Equipment 2.0-style gathering rolls (hidden)
 
-**18 November 2026. Design/isolated server contract only. NOT DEPLOYED, NOT GRANTING LOOT, no production flag, no inventory writes or mobile claims.** The new V64 contract sits alongside the existing V26 authored raid, V28 replay-proven World Sigils, and V50 single rotating boss. It does **not** replace or alter Sigil payouts, attempts, or boss combat.
+**18 November 2026 — hidden source-level draft; NOT DEPLOYED.** No World Boss event, item grants, database migration, server route, chest opening, equipment catalog registration, live gathering modifier or production flag is enabled. World Boss V26/V28 receipt security, V57 erasure, V61–V63 emergency stops and all launch approvals remain prerequisites.
 
-## Themed per-boss sets
+## Product rule: maximum THREE gathering chests per account, per boss event
 
-One boss per 14-day cycle; Hollowroot (Asterfall) → Solbrand (Sunscar; protocol id `sunscar`) → Rimewarden (Frostmarch; protocol id `frostmarch`). The same set returns roughly every six weeks. Each set contains exactly ten **Epic, class-neutral gathering-focused** pieces in existing equipment slots: helmet, chest, gloves, legs, boots, weapon, offhand, cape, amulet and ring. No belt/tool slot is created. Gathering implements do **not** replace the separately equipped gathering tool system, and their zero-combat-stats design must be reconciled with class weapon compatibility before enabling.
+The former **1% per-successful-attack RNG chest chance is fully removed** from the V64 per-attempt material loot planner. Three *earned milestones* now govern chests. One immutable, unique receipt per `eventId/accountId/bossId/source` (never per character or per retry).
 
-| Boss | Set | Only affected skill | Guaranteed victory materials | Bonus 20% roll | Gold per won attack |
-|---|---|---|---|---|---|
-| Hollowroot | Rootbound Harvester | Woodcutting | 8–16 Ironwood Logs | 1–3 Crownwood Logs | 500–900 |
-| Solbrand | Sunforged Prospector | Mining | 8–14 Sunstone Ore | 1–2 Blackglass Ore | 700–1,200 |
-| Rimewarden | Rimebound Angler | Fishing | 8–14 Icefin | 1–2 Bellfin Scale | 900–1,500 |
+| Source | Server-verifiable conditions | Reward |
+|---|---|---|
+| **War Camp** (`donations`) | **At least two** of the realm's three shared War Camp tracks (Fortifications / Field Provisions / Siegecraft) reach **Tier I**, **and** this account completes **at least one** verified V27 resource donation before the Saturday freeze | 1 themed chest |
+| **Perseverance** (`three_attempts`) | **Three** account-wide V26/V28 committed, replay-proven attacks completed within the event; wins and losses both count, no extra chest for a 4th character | 1 themed chest |
+| **Community Assault** (`community_damage`) | Global world-boss HP reaches **30% remaining or less** (≥70% total HP dealt, V18 server fact) **and** this account has ≥1 committed, replay-proven attack | 1 themed chest |
 
-All three: 35% independently for 2–4 Companion Essence; one independent **1% chest chance per completed, replay-proven victorious account attack**. A chest holds exactly **one uniformly random piece of that boss's set** (10% of chest openings per piece; 0.1% per won attack for any *specific* piece). Failed committed attacks earn half Gold and roughly half primary materials, with the same optional side resource/Essence rolls but **no chest**. Distinct 10,000-tick random thresholds; no cosmetic/sigil/market reward is implicitly changed.
+All conditions are monotonic server evidence across the event, not independent client counters or button presses. Server-issued chest receipts may be claimed/opened after the event closes, but no late donations or new attack reservations count. Zero or one chest is valid if a goal is not met. A new return of the same boss six weeks later creates a **new event ID** and its own maximum three chests, not a lifetime cap. No duplicate source grants even after crash/retry, multi-character login, concurrent claim/open, or read-after-write failure.
 
-### Equipment bonus proposal (per skill only, not combat)
+**Crucial distinction:** these are **three chests, not three equipment pieces guaranteed for every player**; participation and community milestones must actually be reached. All three are explicitly account-wide.
 
-- Each worn piece: +0.5% XP in **its own** gathering skill (up to +5%).
-- 2 pieces: additional +3% gathering XP.
-- 4 pieces: +4% base resource yield.
-- 6 pieces: +10% **relative** rare-resource probability (e.g. base 1.00% → 1.10%, not 11%).
-- 8 pieces: −4% action time.
-- 10 pieces: additional +5% gathering XP and +3% resource yield.
-- Complete set: +13% skill XP, +7% gathering yield, 10% relative rare-chance uplift and 4% faster actions. No bonuses to unrelated skills, no combat CP, no duplicate-slot stacking. Existing gathering tool efficiency remains independent and must be tested for combined caps.
+## Boss themes and common attack rewards
 
-All bonuses and material/Gold/Essence amounts are first-pass balancing hypotheses. Server-side gathering stat sources must remain authoritative; client display alone must not enable these.
+One world boss every 14 days, global rotation Hollowroot → Solbrand → Rimewarden. Each boss has a unique set of ten pieces in the already-defined slots Helmet, Chest, Gloves, Legs, Boots, Weapon, Offhand, Cape, Amulet and Ring. These are conceptual, class-neutral identities; class weapon/offhand compatibility must be reconciled with Equipment 2.0 before equip authority can be enabled. The gathering tool slot remains separate.
 
-### Why a second acquisition path is essential
+| Boss / region | Set / affected skill | Proven successful attack: always | 20% regional bonus | Gold |
+|---|---|---|---|---|
+| Hollowroot / Asterfall | Rootbound Harvester / Woodcutting | 8–16 Ironwood Logs | 1–3 Crownwood Logs | 500–900 |
+| Solbrand / Sunscar | Sunforged Prospector / Mining | 8–14 Sunstone Ore | 1–2 Blackglass Ore | 700–1,200 |
+| Rimewarden / Frostmarch | Rimebound Angler / Fishing | 8–14 Icefin | 1–2 Bellfin Scales | 900–1,500 |
 
-Three account-wide attempts each event and each boss recurring only once per six weeks means a 1% chest rate yields **0.03 expected chests per themed boss cycle**. Expected wait for a single chest is ~33 cycles (~200 weeks); finishing ten distinct pieces through RNG alone would be prohibitively slow. To preserve a meaningful rare drop *and* a viable 10-piece collection, propose a **targeted choice piece from the featured World Sigil shop for 90 Sigils**, with exact selectable slot, normal once-owned/dup ownership checks, and shop visibility only for the active boss's theme. This is a provisional shop price, **not currently purchasable**. Players may also retain/spend Sigils from other World Boss cycles, as designed by V28. Shop selections do not affect the 1% RNG.
+Each attempt also separately has a draft **35% chance to grant 2–4 Companion Essence**. Failed, committed attacks grant half-rounded-down Gold/primary materials, still may roll the 20% secondary material and 35% Essence, but do **not** grant an extra RNG chest. These values are first-pass economy hypotheses. The existing World Sigil ledger remains unchanged.
 
-## Honest release integration plan
+## Each chest opens one individually rolled exact equipment instance
 
-1. Only run the V64 drop roll after a **V26 committed battle + V28 verified replay proof**. Derive account/event/boss and outcome from immutable private server records, not client fields. Use cryptographically secure unbiased server RNG; the exported test callback is *not* a grant authority. Set roll version once per committed attempt, never re-roll on retry, replay, chest claim, crash or account reconnect.
-2. Add private immutable `event/account/attempt/loot_v64` source and transactionally consistent claim ledger. Atomic custody grants Gold, existing item IDs, Companion Essence currency, and a single account-bound unopened chest. Need bounded failure recovery; no partial double grants. If chest opened, store exact one-time chest-open source and resolved item ID in the account equipment custody system.
-3. Reconcile three all-class equipment sets with v33 `ItemDef`, 10 `GearSlot` fields, 2.0 hidden equipment and crafting migration, exact owned instance custody, bank transfers between the account's **three** current character slots, equipment pouch limit, protection/favorite, cosmetics and item artwork; **do not add them to production `ITEMS` yet**. Do not allow combat stats to be forged by setting equipment IDs.
-4. Server-only gathering XP/yield/rare/action-time modifiers, with cross-skill isolation and correct relative probability math; check against equipped pickaxe/hatchet/rod and cap accumulated time/yield bonuses.
-5. Add read-only loot table panel and inspectable 10-slot collection in World Boss Rewards and a clearly disabled placeholder in the featured shop. Show 1.00% chest chance transparently; do not show fabricated item inventory, balances or current events. All claims, chest openings, purchases and item equip buttons remain disabled until Auth, DB migration, economy proof, device QA and security sign-off.
-6. Run exactly-once concurrent settlement/open/claim tests, bad RNG/forged bonus tests, three-character fixture, full ownership, reward inflation simulations, 320dp Android accessibility and final realm balance check. Keep existing V61–V63 emergency stop gates and V57 erasure fences intact. Do not mount V64 on a route or turn on World Boss gameplay without its separate launch approval.
+**Main/base stat: only +Gathering Speed for that boss's one skill.** No Attack, Armor, HP, Haste, combat class affix, CP, or cross-profession effect; no flat gathering XP is provided merely by wearing a single piece.
 
-## Code (source-only)
+The gear instance must persist exact `itemId, slot, setId, bossId/skill, rarity, quality, gatheringSpeedBasisPoints, bonusStats[], rollVersion=65, chest receipt source, instanceId`. No reroll on reopen/retry; any copied/tampered client roll must be ignored. Distinct physical copies of the same item may carry different rarity/quality/affixes and should be compared by their actual instance receipts.
 
-- `backend/online/world-boss-gathering-loot-v64.ts` — immutable thematic catalog; ten-piece collection; independent material/Essence/Gold/chest rolls; slot-specific chest preview and skill-only set bonuses.
-- `apps/mobile/tests/world-boss-gathering-loot-v64.ts` — test-only correctness/threshold, no-world-HP/no-Sigil/no-live checks.
-- Hidden World Boss CI typechecks and executes the V64 focused test. Latest-head CI must pass before merge; branch/test code alone is **not** a production loot table.
+- **Rarity:** six-grade standard Veldryn Forge-style ladder, sampled once per chest and not fixed to Epic. Common 89.1%, Uncommon 7%, Rare 3%, Epic 0.6%, Legendary 0.2%, Mythic 0.1%. Reference shared source `crafted-gear-rarity.ts`; release must cross-check against then-current Equipment 2.0 rarity authority rather than silently forking it.
+- **Quality:** Q0–Q100 following the existing crafted `u^1.25` quality distribution. The base-speed stat multiplies by the existing Q formula **0.75 + 0.005×Q**, so Q0 is −25%, Q50 neutral, Q100 +25%. Quality is not secretly applied twice to affixes.
+- **Base Gathering Speed:** **+0.80% at Common/Q50** (80 basis points) before rarity/quality scaling. Existing rarity stat multipliers: Common 1×, Uncommon 1.12×, Rare 1.28×, Epic 1.5×, Legendary 1.8×, Mythic 2×. Result is rounded to integer basis points; Mythic/Q100 = **+2.00% speed per piece**.
+- **Bonus stats:** only **Gathering XP**, **Additional Yield**, **Rare Material Find**. Exactly one for Common/Uncommon/Rare, **two unique** rolled bonus types for Epic/Legendary/Mythic. There is NO random speed affix: speed is already the piece's single base stat.
+- Bonus roll base ranges before rarity affix scaling: Gathering XP **+0.8–2.2%**; Additional Yield **+0.4–1.3%**; Rare Material Find **+2.0–5.5% relative**. Affix rarity multipliers match the current early-release gear table: Common .85×, Uncommon 1×, Rare 1.20×, Epic 1.35×, Legendary 1.45×, Mythic 1.50×. Quality does not affect the bonus stats.
 
-**Not implemented in this PR:** migrations, private reward proof/storage/ledger integration, actual inventory or currency grants, real equip/effect activation, chest inventory art/opening UI, shop checkout, live event UI or production enablement.
+**Rare Find math:** a base 1.00% rare resource probability with +10% *relative* chance becomes 1.10%, **not 11%**. Yield and XP use their own percent semantics; any extra yield per action must be rounded and conserved through authoritative gathering save updates.
+
+### Existing set thresholds (still draft, separate from rolled item stats)
+
+| Worn set pieces | Additional set bonus (own skill only) |
+|---|---|
+| 2 | +3% Gathering XP |
+| 4 | +4% Resource Yield |
+| 6 | +10% relative rare-material chance |
+| 8 | −4% action duration |
+| 10 | +5% Gathering XP, +3% Resource Yield |
+
+A full 10-piece set adds **+8% XP, +7% Yield, +10% relative Rare Find, −4% time** on top of the *individually rolled* Gathering Speed primary stats and bonus affixes. Previous static +0.5% XP **per piece is retired**; every individual piece's base stat is now Gathering Speed.
+
+Balance and source cap rules: gathering speed from rolled pieces must combine **multiplicatively with** the independent equipped gathering tool time reduction, without becoming negative or producing zero-duration actions; rare chance has a server-side global cap and must always remain a valid probability. Reconcile the 8pc speed threshold, tools and future 2.0 equipment speed sources before release. No duplicate equipped-slot count, off-skill benefit or bonuses from merely owned-but-unequipped gear.
+
+## Hidden pure functions and tests
+
+- `backend/online/world-boss-gathering-loot-v64.ts`: thematic sets; per-attack material, Essence and Gold plan (**no chest**); private-proof milestone eligibility; uniform random piece, six-rarity + Q0–Q100 quality + gathering-only affix roll preview; read-model validation; exact set thresholds and rolled stat inspection.
+- `apps/mobile/tests/world-boss-gathering-loot-v64.ts`: each of 3 sets has exactly 10 unique item slots, exact 3 milestone receipt sources, partial/complete goal edges, no extra chest from a fourth character or repeated claim, rarity boundaries, quality extremes, unique gathering affixes, zero combat bonus, invalid/forged payload rejection, cross-skill isolation. Typechecked and executed from hidden World Boss CI (actual run success to be verified).
+- The existing draft `WORLD_BOSS_GATHERING_TARGETED_PIECE_PRICE_SIGILS=90` remains **an unapproved, disabled shop-only concept**. It must not bypass a 3-chest rule by appearing as a live claim source. With three milestone chests per boss, reconsider any targeted shop purchase only after balance testing. Duplicates remain possible; they have meaningful differing rarity/quality/affix rolls.
+
+## Remaining before real release
+
+1. Authenticate authoritative V27 contribution and global War Camp track tier receipts plus V26/V28 replay-proven account attempts; evaluate global V18 HP from DB at a consistent server time. Never accept evidence from the app. Resolve at most one event globally each cycle (V50), no boss ID from client.
+2. Add transactional `world_boss_gathering_chest_sources` unique event/account/boss/source, unopened chest inventory and a **one-time** chest-opening transaction that creates exact owned per-instance equipment. User can open after event close. Preserve durable receipt + exact contents on retry, with no partial grants or double-rolls.
+3. Wire item identities to Equipment 2.0 source, class weapon/offhand role safety, quality/rarity type authority, 10-slot set tally, equipment/bank custody, Market restrictions, inventory protection, no bonus from unverified/expired/wrong-account receipts. Never treat a temporary item ID, rarity label or frontend stat total as proof of ownership.
+4. Wire real gathering action speed, XP, yield, rare-find modifiers server-side; cross-skill isolation, queue/AFK pacing, tool multipliers, rate ceilings, never faster than server min duration.
+5. Build World Boss **Rewards** tab with three progress rows and chest icons; open and gear inspect panels with quality meter, rarity border, base Gathering Speed, skill-only bonus affixes, 2/4/6/8/10 set context. Keep buttons disabled until secure transaction routes and launch gates pass.
+6. Test crash/concurrent claims, duplicate retries, late global threshold, refund/cancel, losing all 3 attacks, cross-event rotation, 3-character account proof, equipment equipped before and after bank moves, 320dp Android UI/TalkBack, rarity economy and 2.0 stat parity. Preserve V57 and V61–V63 stop-control gates.
+
+**Not completed by this draft:** production/staging migrations, real milestone receipts, server-derived battle reward grants, real random chest inventory, equipped stat authority, artwork, live chest-opening UI, approved shop or final device/CI gate. No production release.

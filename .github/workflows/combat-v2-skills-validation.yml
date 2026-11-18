@@ -34,5 +34,7 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/build-contract.js
       - name: Validate Combat 2.0 set catalogue
         run: node backend/dist/server/combat/v2/__tests__/set-catalog.js
+      - name: Validate nine Combat 2.0 resource meters
+        run: node backend/dist/server/combat/v2/__tests__/resource-runtime.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js

@@ -24,6 +24,12 @@ begin
  return new;
 end $$;
 
+-- Legacy services may update display_name directly. Keep it pinned to the social name.
+drop trigger if exists sync_active_profile_display_name_v1 on public.player_profiles;
+create trigger sync_active_profile_display_name_v1
+ before insert or update of active_character_id,display_name on public.player_profiles
+ for each row execute function public.sync_active_profile_display_name_v1();
+
 -- Client updates must go through the validated, cooldown-limited RPC.
 create or replace function public.protect_social_name_v1()
 returns trigger language plpgsql set search_path='' as $$

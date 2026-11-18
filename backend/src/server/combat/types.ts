@@ -18,6 +18,12 @@ export interface CombatV2State {
   maxStacks:number;
   lastEarnedAt:Record<string,number>;
   spentTotal:number;
+  procCounters:Record<string,number>;
+  procCooldownAt:Record<string,number>;
+  pendingDamageBonus:number;
+  pendingCritMultiplierBonus:number;
+  pendingHealingBonus:number;
+  scheduledTotemAt:number[];
 }
 export interface CombatV2AbilityMeta {
   spend?:'all'|number;
@@ -124,6 +130,7 @@ export interface ActivePeriodicEffect {
   nextTickAt: number;
   expiresAt: number;
   tickMs: number;
+  extendedV2?:boolean;
 }
 
 export interface ActiveTimedModifier {
@@ -158,7 +165,7 @@ export interface CombatantState {
 
 export interface CombatGemStateSnapshot{ targetId:string; tag:string; expiriesAtMs:number[]; }
 
-export type CombatEventType = 'resource_gain'|'resource_spend'|'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export type CombatEventType = 'capstone_trigger'|'resource_gain'|'resource_spend'|'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
   resource?:CombatV2Resource;
   resourceBefore?:number;

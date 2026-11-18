@@ -238,3 +238,21 @@ BEGIN
  RAISE NOTICE 'WORLD_BOSS_V57_NINE_OWNER_WRITE_FENCES=PASS';
 END $test$;
 ROLLBACK;
+-- Under REPEATABLE READ a transaction could see a snapshot from before
+-- the erasure marker even after waiting on the advisory lock; fail closed.
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+DO $isolation$
+DECLARE rejected boolean:=false;
+BEGIN
+ BEGIN
+  PERFORM private.world_boss_v57_assert_write_open(
+   '10000000-0000-4000-8000-000000000057'::uuid);
+ EXCEPTION WHEN raise_exception THEN
+  rejected:=SQLERRM LIKE '%WB57_READ_COMMITTED_REQUIRED%';
+ END;
+ IF NOT rejected THEN
+  RAISE EXCEPTION 'WB57_REPEATABLE_READ_SNAPSHOT_BYPASS';
+ END IF;
+ RAISE NOTICE 'WORLD_BOSS_V57_NON_READ_COMMITTED_REJECTED=PASS';
+END $isolation$;
+ROLLBACK;

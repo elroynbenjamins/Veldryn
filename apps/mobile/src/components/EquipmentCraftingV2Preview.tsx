@@ -20,7 +20,8 @@ const duration=(seconds:number)=>{const minutes=Math.ceil(seconds/60);return min
 function nextStep(action:ReturnType<typeof equipmentV2HiddenRecipeScreen>['action']){
  switch(action){
   case 'craft':return 'Materials ready — crafting unavailable in preview';
-  case 'unlock':return 'View level or profession requirements';
+  case 'unlock':return 'View equipment level or profession requirements';
+  case 'unlock_prerequisite':return 'Unlock the required component or binder recipe, or acquire that material elsewhere';
   case 'prepare_components':return 'Prepare missing components';
   case 'find_materials':return 'Gather or find missing materials';
   case 'review_market_purchase':return 'Review verified market listing purchases';

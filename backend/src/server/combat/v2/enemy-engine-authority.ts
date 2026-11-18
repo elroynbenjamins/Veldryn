@@ -23,6 +23,8 @@ export interface ServerEnemyV2Snapshot {
  readonly seed:string;
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
+ /** Explicitly authored solo boss IDs, never inferred from client flags. */
+ readonly bossIds?:readonly string[];
 }
 interface ImmutableScope{
  readonly encounterId:string;
@@ -31,6 +33,7 @@ interface ImmutableScope{
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
  readonly inputDigest:string;
+ readonly bossIds:readonly string[];
 }
 const issued=new WeakMap<object,ImmutableScope>();
 const validId=(x:unknown):x is string=>
@@ -50,19 +53,49 @@ const utf8=(value:string):Uint8Array=>{
  }
  return new Uint8Array(bytes);
 };
-/** Hash the full post-compilation encounter input, not just actor IDs. A
- * persisted verifier must match this against the original sealed snapshot. */
-const fingerprint=(input:CombatInput):string=>{
- try{
-  const value=JSON.stringify(input,(_key,field)=>{
-    if(typeof field==='number'&&!Number.isFinite(field))invalid('nonfinite_combat_input');
-    if(typeof field==='function'||typeof field==='bigint')invalid('invalid_combat_input');
-    return field;
-  });
-  if(!value)invalid('invalid_combat_input');
-  return bytesToHex(sha256(utf8(value)));
- }catch{invalid('invalid_combat_input');}
-};
+/** Canonical digest over *all* post-compilation actor, skill and enemy fields.
+ * Key sorting makes JSONB/persistence reorder safe. Reject hidden executable
+ * values, cycles and nonfinite numeric state instead of omitting them. */
+export function enemyV2SnapshotDigest(value:unknown):string{
+ const visited=new WeakSet<object>();
+ const canonical=(entry:unknown,depth:number):unknown=>{
+  if(depth>24)invalid('invalid_combat_input');
+  if(entry===null||typeof entry==='string'||typeof entry==='boolean')return entry;
+  if(typeof entry==='number'){
+   if(!Number.isFinite(entry))invalid('nonfinite_combat_input');
+   return entry;
+  }
+  if(Array.isArray(entry)){
+   if(visited.has(entry)||entry.length>1024)invalid('invalid_combat_input');
+   visited.add(entry);
+   const result=entry.map(child=>{
+    if(child===undefined)invalid('invalid_combat_input');
+    return canonical(child,depth+1);
+   });
+   visited.delete(entry);
+   return result;
+  }
+  if(entry&&typeof entry==='object'){
+   if(visited.has(entry)||Object.keys(entry).length>256||
+      (Object.getPrototypeOf(entry)!==Object.prototype&&Object.getPrototypeOf(entry)!==null))
+     invalid('invalid_combat_input');
+   visited.add(entry);
+   const result:Record<string,unknown>={};
+   for(const key of Object.keys(entry).sort()){
+    if(key==='__proto__'||key==='prototype'||key==='constructor')invalid('invalid_combat_input');
+    const child=(entry as Record<string,unknown>)[key];
+    if(child!==undefined)result[key]=canonical(child,depth+1);
+   }
+   visited.delete(entry);
+   return result;
+  }
+  invalid('invalid_combat_input');
+ };
+ const serialized=JSON.stringify(canonical(value,0));
+ if(!serialized||serialized.length>1000000)invalid('invalid_combat_input');
+ return bytesToHex(sha256(utf8(serialized)));
+}
+const fingerprint=(input:CombatInput):string=>enemyV2SnapshotDigest(input);
 
 export function issueEnemyV2EngineAuthority(
  snapshot:ServerEnemyV2Snapshot,
@@ -77,7 +110,10 @@ export function issueEnemyV2EngineAuthority(
    !Array.isArray(snapshot.playerIds)||snapshot.playerIds.length!==1||
    !Array.isArray(snapshot.enemyIds)||snapshot.enemyIds.length<1||snapshot.enemyIds.length>4||
    [...snapshot.playerIds,...snapshot.enemyIds].some(id=>!validId(id))||
-   !unique([...snapshot.playerIds,...snapshot.enemyIds]))
+   !unique([...snapshot.playerIds,...snapshot.enemyIds])||
+   (snapshot.bossIds!==undefined&&(
+     !Array.isArray(snapshot.bossIds)||snapshot.bossIds.length>1||
+     !unique(snapshot.bossIds)||snapshot.bossIds.some(id=>!snapshot.enemyIds.includes(id)))))
   invalid('invalid_persisted_scope');
  if(!input||input.seed!==snapshot.seed||
     input.players.length!==snapshot.playerIds.length||
@@ -93,7 +129,8 @@ export function issueEnemyV2EngineAuthority(
  issued.set(token,Object.freeze({
   encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
   playerIds:Object.freeze([...snapshot.playerIds]),
-  enemyIds:Object.freeze([...snapshot.enemyIds]),inputDigest,
+  enemyIds:Object.freeze([...snapshot.enemyIds]),
+  bossIds:Object.freeze([...(snapshot.bossIds??[])]),inputDigest,
  }));
  return token;
 }
@@ -118,7 +155,7 @@ export function authorizeEnemyV2EngineExecution(
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||
     input.enemyDamageProfile!==undefined||
     input.players.some(p=>p.team!=='players'||!p.combatV2||p.combatV2.version!==2)||
-    input.enemies.some(e=>e.team!=='enemies'||e.boss===true))
+    input.enemies.some(e=>e.team!=='enemies'||Boolean(e.boss)!==saved.bossIds.includes(e.id)))
   invalid('nonfresh_or_nonv2_encounter');
  return true;
 }

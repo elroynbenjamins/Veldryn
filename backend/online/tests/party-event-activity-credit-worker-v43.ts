@@ -46,9 +46,10 @@ async function runTests(){
   &&PARTY_EVENT_COOP_CREDIT_SQL_V43.includes('public.coop_node_results'),
  'canonical_server_receipts_only');
  check(!PARTY_EVENT_IDLE_CREDIT_SQL_V43.includes('client')
-  &&PARTY_EVENT_COOP_CREDIT_SQL_V43.includes("actor.member_kind='human'")
-  &&PARTY_EVENT_COOP_CREDIT_SQL_V43.includes('actor.echo_profile_version is null'),
- 'reject_echo_actor');
+  &&PARTY_EVENT_COOP_CREDIT_SQL_V43.includes('private.party_event_coop_node_actors_v49')
+  &&PARTY_EVENT_COOP_CREDIT_SQL_V43.includes('witness.account_id=$3::uuid')
+  &&!PARTY_EVENT_COOP_CREDIT_SQL_V43.includes('access.active'),
+ 'coop_requires_committed_human_witness_not_mutable_access');
  const first=await worker.creditCommittedSource(idle);
  check(first.status==='credited'&&first.credited&&first.eventPointsGranted===1
   &&first.pointsAddedThisInvocation===1,'idle_verified');

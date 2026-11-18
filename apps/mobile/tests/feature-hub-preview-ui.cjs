@@ -158,6 +158,9 @@ test('World Boss displays only the server-selected rotating event, never a manua
  assert.match(screen,/serverId:'hollowroot'/);
  assert.match(screen,/serverId:'sunscar'/);
  assert.match(screen,/serverId:'frostmarch'/);
+ assert.match(screen,/serverId:'sunscar',name:'Solbrand',region:'Sunscar'/);
+ assert.match(screen,/serverId:'frostmarch',name:'Rimewarden',region:'Frostmarch'/);
+ assert.match(screen,/serverId:'hollowroot',name:'Hollowroot',region:'Asterfall'/);
  assert.match(screen,/One shared boss every 14 days/);
  assert.match(screen,/const cycleBoss=bosses\.find\(entry=>entry\.serverId===bossStatus\?\.bossId\)\?\?unverifiedBoss/);
  assert.match(screen,/const boss=bosses\.find\(item=>item\.serverId===status\?\.bossId\)\?\?unverifiedBoss/);
@@ -165,7 +168,7 @@ test('World Boss displays only the server-selected rotating event, never a manua
  assert.match(screen,/const heroSceneId=feature==='boss'\?cycleBoss\.scene/);
  assert.match(screen,/scene:'KINGS_ROAD'/);
  assert.match(screen,/The current boss and next event date are unknown until the server announces/);
- assert.match(screen,/Rotation: Hollowroot → Sunscar → Frostmarch → repeat/);
+ assert.match(screen,/Rotation: Hollowroot → Solbrand → Rimewarden → repeat/);
  assert.doesNotMatch(screen,/BossRegionPicker|bossRegionButton|setBossId|onSelect=\{setBossId\}/);
  assert.match(screen,/phaseEnd=active\?/);
  assert.match(screen,/NEXT CALENDAR BOUNDARY/);

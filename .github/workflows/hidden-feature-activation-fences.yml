@@ -1,0 +1,45 @@
+name: Hidden feature activation fences
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/App.tsx'
+      - 'apps/mobile/src/core/feature-hub-routes.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
+      - 'backend/online/world-boss-current-read-route-v52.ts'
+      - 'backend/online/world-boss-account-erasure-v56.ts'
+      - 'backend/online/party-event-read-route-v39.ts'
+      - 'backend/src/server/combat/guild-pve-reward-proof-v14.ts'
+      - 'backend/supabase/migrations/**'
+      - 'tools/validate-hidden-feature-release-fences.mjs'
+      - '.github/workflows/hidden-feature-activation-fences.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/App.tsx'
+      - 'apps/mobile/src/core/feature-hub-routes.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
+      - 'backend/online/world-boss-current-read-route-v52.ts'
+      - 'backend/online/world-boss-account-erasure-v56.ts'
+      - 'backend/online/party-event-read-route-v39.ts'
+      - 'backend/src/server/combat/guild-pve-reward-proof-v14.ts'
+      - 'backend/supabase/migrations/**'
+      - 'tools/validate-hidden-feature-release-fences.mjs'
+      - '.github/workflows/hidden-feature-activation-fences.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hidden-release-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm hidden systems remain disabled
+        run: node tools/validate-hidden-feature-release-fences.mjs
+      - name: Verify the fence fails for unsafe mutations
+        run: node tools/validate-hidden-feature-release-fences.mjs --self-test

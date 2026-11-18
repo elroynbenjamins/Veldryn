@@ -12,6 +12,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,type ThemeColors} from '../theme/theme';
 import {ActivityArtwork} from './ActivityArtwork';
+import {activityIconId} from '../core/activity-icon';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {ActivityCard} from './ActivityCard';
 import {GameButton} from './GameButton';
@@ -50,7 +51,7 @@ export function HomeActivityFocus(props:Props){
  const progress=stopped||capped?100:Math.max(0,Math.min(100,100*(preview.nextProgressFraction??((preview.elapsedSeconds%Math.max(1,props.cycleSeconds))/Math.max(1,props.cycleSeconds)))));
  const remaining=Math.max(1,Math.ceil(props.cycleSeconds*(1-progress/100)));
  const monster=kind==='combat'?MONSTERS.find(row=>row.id===activity.targetId):undefined;
- const iconId=(kind==='processing'?'cooking':kind==='training'?'combat':kind==='faith'?'faith':kind) as Parameters<typeof ActivityArtwork>[0]['id'];
+ const iconId=activityIconId(activity);
  const stop=preview.stoppedReason?activityStopPresentation(preview.stoppedReason):undefined;
  const act=()=>{if(stopFor!==activityKey){setStopOpen(false);return;}setStopOpen(false);setStopFor(null);setDetailOpen(false);props.onStop()};
  return <>

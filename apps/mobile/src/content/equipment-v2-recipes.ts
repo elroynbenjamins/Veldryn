@@ -2,6 +2,7 @@ import type {GearSlot} from '../core/types';
 import type {EquipmentV2Tier} from '../core/equipment-crafting-v2-foundation';
 import {equipmentV2DraftAssembly,EQUIPMENT_V2_COMPONENTS_BY_TIER} from '../core/equipment-crafting-v2-economy';
 import {EQUIPMENT_V2_PIECES,type EquipmentV2PieceDescriptor} from './equipment-v2-catalog';
+import {EQUIPMENT_V2_CRAFTABLE_ARMAMENTS} from './equipment-v2-armaments';
 
 /** PREVIEW-ONLY recipes for Equipment/Crafting 2.0. These must not be added to
  * live RECIPES until server authority, item migration and release approval.
@@ -90,6 +91,13 @@ export function equipmentV2RecipeMethods(piece:EquipmentV2PieceDescriptor):reado
   };
  });
 }
-export const EQUIPMENT_V2_RECIPES:readonly EquipmentV2Recipe[]=EQUIPMENT_V2_PIECES.flatMap(piece=>equipmentV2RecipeMethods(piece));
+/** 66 set/standalone pieces + 52 class armaments = 118 distinct new item IDs.
+ * Every item has two market-neutral material methods, 236 drafts total.
+ */
+export const EQUIPMENT_V2_ALL_CRAFTABLE_PIECES:readonly EquipmentV2PieceDescriptor[]=[
+ ...EQUIPMENT_V2_PIECES,...EQUIPMENT_V2_CRAFTABLE_ARMAMENTS,
+];
+export function equipmentV2CraftablePiece(id:string){return EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.find(piece=>piece.id===id);}
+export const EQUIPMENT_V2_RECIPES:readonly EquipmentV2Recipe[]=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.flatMap(piece=>equipmentV2RecipeMethods(piece));
 export function equipmentV2RecipeById(id:string){return EQUIPMENT_V2_RECIPES.find(r=>r.id===id);}
 export function equipmentV2RecipesForItem(itemId:string){return EQUIPMENT_V2_RECIPES.filter(recipe=>recipe.outputId===itemId);}

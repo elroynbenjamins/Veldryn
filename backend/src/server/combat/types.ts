@@ -47,6 +47,8 @@ export interface AbilityEffect {
   executeBonus?:number;
   /** Optional bounded bonus to direct hits against targets already carrying a debuff. */
   bonusVsDebuffed?:number;
+  /** Server-authored one-shot critical multiplier bonus for Combat 2.0. */
+  critMultiplierBonus?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   /** Optional per-effect target for Combat 2.0 compound abilities. Existing effects keep ability target. */

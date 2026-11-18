@@ -8,6 +8,9 @@ import {
  WORLD_BOSS_V22_SCHEDULE_LIVE,WORLD_BOSS_V22_MAX_ATTEMPTS,
  worldBossWindowsV22,worldBossScheduleAtV22,assertWorldBossAttackWindowV22,
  nextWorldBossCycleV22,
+ WORLD_BOSS_V50_ROTATION_LIVE,WORLD_BOSS_V50_ORDER,
+ worldBossRotationForCycleV50,worldBossRotationAtV50,
+ assertWorldBossCanonicalEventV50,
 } from '../../../backend/src/server/combat/world-boss-weekend-v22';
 import {
  WORLD_BOSS_V22_ACCOUNT_RAID_LIVE,freezeWorldBossAccountRosterV22,
@@ -39,6 +42,32 @@ async function main(){
  assert.equal(WORLD_BOSS_V22_SCHEDULE_LIVE,false);
  assert.equal(WORLD_BOSS_V22_ACCOUNT_RAID_LIVE,false);
  assert.equal(WORLD_BOSS_V22_MAX_ATTEMPTS,3);
+ assert.equal(WORLD_BOSS_V50_ROTATION_LIVE,false);
+ assert.deepEqual([...WORLD_BOSS_V50_ORDER],['hollowroot','sunscar','frostmarch']);
+ // All accounts must be offered one globally selected boss per cycle.
+ const rotation=['hollowroot','sunscar','frostmarch','hollowroot','sunscar','frostmarch'];
+ for(let index=0;index<rotation.length;index++){
+  const cycle=worldBossRotationForCycleV50(MONDAY,index);
+  assert.equal(cycle.index,index);
+  assert.equal(cycle.bossId,rotation[index]);
+  assert.equal(cycle.startsAtUtcMs,MONDAY+index*14*DAY);
+  assert.equal(cycle.battleStartsAtUtcMs,cycle.startsAtUtcMs+5*DAY);
+  assert.equal(cycle.battleEndsAtUtcMs,cycle.startsAtUtcMs+7*DAY);
+  assert.equal(cycle.cycleEndsAtUtcMs,cycle.startsAtUtcMs+14*DAY);
+  assert.deepEqual(worldBossRotationAtV50(MONDAY,cycle.startsAtUtcMs),cycle);
+  assert.deepEqual(worldBossRotationAtV50(MONDAY,cycle.cycleEndsAtUtcMs-1),cycle);
+  assert.deepEqual(assertWorldBossCanonicalEventV50(MONDAY,cycle),cycle);
+  reject(()=>assertWorldBossCanonicalEventV50(MONDAY,{...cycle,bossId:'sunscar'}),'noncanonical_event');
+  reject(()=>assertWorldBossCanonicalEventV50(MONDAY,{...cycle,startsAtUtcMs:cycle.startsAtUtcMs+DAY}),'noncanonical_event');
+ }
+ assert.equal(worldBossRotationAtV50(MONDAY,MONDAY-1).bossId,'hollowroot');
+ assert.equal(worldBossRotationAtV50(MONDAY,MONDAY+14*DAY).bossId,'sunscar');
+ assert.equal(worldBossRotationAtV50(MONDAY,MONDAY+28*DAY).bossId,'frostmarch');
+ reject(()=>worldBossRotationForCycleV50(MONDAY,-1),'invalid_cycle_index');
+ reject(()=>worldBossRotationForCycleV50(MONDAY,1.5),'invalid_cycle_index');
+ reject(()=>worldBossRotationForCycleV50(MONDAY,Number.MAX_SAFE_INTEGER),'invalid_cycle_index');
+ reject(()=>worldBossRotationAtV50(MONDAY,NaN),'invalid_clock');
+ reject(()=>worldBossRotationAtV50(MONDAY+DAY,MONDAY),'invalid_monday_start_utc');
  const windows=worldBossWindowsV22(MONDAY);
  assert.equal(windows.length,1);
  const [weekend]=windows;
@@ -76,6 +105,8 @@ async function main(){
  assert.equal(springWeekend.startsAtUtcMs,spring+5*DAY);
  assert.equal(springWeekend.endsAtUtcMs,spring+7*DAY);
  assert.equal(assertWorldBossAttackWindowV22(spring,spring+6*DAY+12*HOUR).index,0);
+ assert.equal(worldBossRotationAtV50(spring,spring+6*DAY+12*HOUR).bossId,'hollowroot');
+ assert.equal(worldBossRotationAtV50(spring,spring+14*DAY).bossId,'sunscar');
  reject(()=>worldBossWindowsV22(MONDAY+DAY),'invalid_monday_start_utc');
  reject(()=>worldBossScheduleAtV22(MONDAY,NaN),'invalid_clock');
 

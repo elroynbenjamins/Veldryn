@@ -18,7 +18,8 @@ create index if not exists combat_v2_character_builds_v1_account_idx
 alter table private.combat_v2_character_builds_v1 enable row level security;
 revoke all on private.combat_v2_character_builds_v1 from public,anon,authenticated;
 -- No policies, and no direct table grants. Only service-role-only RPC is reachable.
-revoke all on schema private from public,anon,authenticated;
+-- Do not revoke schema-wide permissions: existing private functions may depend
+-- on their present grants. This migration only locks down its own table/RPCs.
 
 -- Privileged authenticated-server projection. This is NOT callable by a
 -- client JWT. A verified edge/backend service supplies the account ID; the

@@ -103,17 +103,26 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   setNotice('');setError('');
   setValue(current=>current&&savedValue?{
    ...current,...showcaseSnapshot(savedValue),
+   selectedCharacterId:ACCOUNT_SOCIAL_IDENTITY_RELEASED?current.selectedCharacterId:savedValue.selectedCharacterId,
   }:current);
  },[savedValue]);
 
  const identityDirty=!!value&&!!savedValue&&
   JSON.stringify(identitySnapshot(value,bio))!==JSON.stringify(identitySnapshot(savedValue,savedValue.bio));
- const showcaseDirty=!!value&&!!savedValue&&
-  JSON.stringify(showcaseSnapshot(value))!==JSON.stringify(showcaseSnapshot(savedValue));
+ const showcaseDirty=!!value&&!!savedValue&&(
+  JSON.stringify(showcaseSnapshot(value))!==JSON.stringify(showcaseSnapshot(savedValue))||
+  (!ACCOUNT_SOCIAL_IDENTITY_RELEASED&&value.selectedCharacterId!==savedValue.selectedCharacterId));
  const dirty=identityDirty||showcaseDirty;
 
  const selectCharacter=useCallback(async(characterId:string)=>{
-  if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!value||busy)return false;
+  if(!value||busy)return false;
+  if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED){
+   // Legacy editor already supported choosing a featured character. Preserve
+   // that draft+Save behavior while the independent V2 showcases are hidden.
+   setError('');setNotice('');
+   setValue(current=>current?{...current,selectedCharacterId:characterId}:current);
+   return true;
+  }
   if(showcaseDirty){
    setError('Save or revert this hero’s showcase before opening another hero.');
    return false;

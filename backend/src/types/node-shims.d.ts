@@ -14,7 +14,7 @@ declare module 'node:assert' {
     ok(value: unknown, message?: string): void;
     notEqual(actual: unknown, expected: unknown, message?: string): void;
     throws(block: () => unknown, expected?: RegExp, message?: string): void;
-    rejects(block: () => Promise<unknown>, expected?: RegExp, message?: string): Promise<void>;
+    rejects(block: Promise<unknown> | (() => Promise<unknown>), expected?: RegExp, message?: string): Promise<void>;
     match(actual: string, expected: RegExp, message?: string): void;
   };
 }

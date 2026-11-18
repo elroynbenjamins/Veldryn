@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {
   bindAuthenticatedBuildRequestV2,createHiddenCombatV2BuildHandler,
-  BuildRequestErrorV2,COMBAT_V2_BUILDS_TRANSPORT_RELEASED,
+  BuildRequestErrorV2,COMBAT_V2_BUILDS_TRANSPORT_RELEASED,dispatchVerifiedBuildRequestV2,
 } from '../combat-v2-build-auth-boundary';
 
 const account='11111111-1111-4111-8111-111111111111';
@@ -43,9 +43,22 @@ async function main(){
   assert.equal(bound.action.mutation.action,'save');
   assert.deepEqual(bound.action.mutation.slot,0);
  }
+ const dispatchService={
+   read:async(a:string,c:string,enabled:boolean)=>({kind:'read',a,c,enabled}),
+   mutate:async(a:string,c:string,mutation:unknown,enabled:boolean)=>({kind:'mutation',a,c,mutation,enabled}),
+ };
+ try{
+   await dispatchVerifiedBuildRequestV2(bound,dispatchService,false);
+   assert.fail('disabled internal dispatch must reject');
+ }catch(e){assert.ok(e instanceof BuildRequestErrorV2);assert.equal(e.code,'feature_disabled');}
+ const dispatched=await dispatchVerifiedBuildRequestV2(bound,dispatchService,true) as {kind:string;a:string;c:string;enabled:boolean};
+ assert.equal(dispatched.kind,'mutation');assert.equal(dispatched.a,account);
+ assert.equal(dispatched.c,character);assert.equal(dispatched.enabled,true);
  const read=await bindAuthenticatedBuildRequestV2(req('read',undefined,{'x-veldryn-character-id':character}),service);
  assert.equal(read.action.kind,'read');
  assert.equal(read.characterId,character);
+ const readDispatch=await dispatchVerifiedBuildRequestV2(read,dispatchService,true) as {kind:string;a:string};
+ assert.equal(readDispatch.kind,'read');assert.equal(readDispatch.a,account);
  for(const key of ['accountId','ownerCharacterId','classId','level','rarity',
     'statRolls','damage','attack','baseStats','serverEnabled','isAdmin']){
   await rejects('save',payload({[key]:'spoofed'}),'build_invalid_fields');

@@ -132,7 +132,7 @@ jobs:
       - name: Ensure production migration path has no hidden Party Event V11–V30 SQL
         run: |
           set -euo pipefail
-          if find supabase/migrations -maxdepth 1 -type f -name '*party_event*' | grep -E '20261113|20261115'; then
+          if find supabase/migrations -maxdepth 1 -type f -name '*party_event*' | grep -E '20261113|20261115|20261118'; then
             echo 'Unapproved Party Event schema was copied into the executable migration path.'
             exit 1
           fi

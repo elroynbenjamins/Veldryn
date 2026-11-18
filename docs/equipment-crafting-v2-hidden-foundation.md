@@ -31,3 +31,15 @@ Compile mobile core using the repository's TypeScript tooling, then run:
 node .core-build/apps/mobile/tests/equipment-crafting-v2-hidden.js
 
 The test asserts feature secrecy, budget conservation, one/two stats, rarity odds, quality behavior, affix bands, Gold/XP candidates, and no synthetic market prices.
+
+## Continued pass: T1–T4 catalogue, recipes, armaments, server rolls and UX
+
+- Hidden `equipment-v2-catalog.ts` defines 15 compact sets, 42 set pieces, 24 standalone pieces with stable `EQ2_*` IDs and two-stat-safe slot profiles. It does NOT replace legacy V33 ten-piece sets.
+- Hidden `equipment-v2-recipes.ts` defines two material methods for each of 66 pieces: 132 unreleased route recipes. Methods keep Gold, XP, time, output and rarity odds identical while trading off primary and secondary regional materials. Accessories may use Smithing or Tailoring.
+- Hidden `equipment-v2-armaments.ts` defines all nine class weapon archetypes across T1–T4, including class-specific optional offhands: 52 armament templates. **They do not have sellable/craftable recipes yet.** Two/dual-handed weapons absorb the offhand flat-stat budget; one-hand+offhand is budget equivalent.
+- Hidden `equipment-crafting-v2-adapter.ts` reads existing Inventory, Bank, levels and queue for internal UI previews. It recommends the method with fewer unavailable material types, without silently changing a player's explicit choice.
+- Unmounted `EquipmentCraftingV2Preview.tsx` renders stats, material shortages, Gold, profession XP, time, method choice, set bonuses and rarity possibilities with 44px interaction targets. It has no gameplay mutations.
+- Hidden backend `equipment-crafting-v2-rolls.ts` contains an unmounted cryptographically secure server candidate generator, weighted role/slot pools, independent rarity/quality draws and nonduplicate affixes. It does **not** write a persisted receipt, authorize ownership, or debit currency.
+- Client/server rarity odds, tier-specific affix counts and affix ranges are parity-tested. Unique gear CI also compiles and runs the new model test. Mobile UX CI checks hidden UI safety.
+
+**Open requirements**: transactional server-side receipt persistence and replay, signed/verified recipe and character authorization, authoritative economy validation and market escrow, finished class weapon recipes, full migration audit, native player-facing screens with translation, combat simulations and staging parity. The independent market release flag remains off. Do not merge or enable any 2.0 release gate until these are complete.

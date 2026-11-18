@@ -40,6 +40,10 @@ function check(read,migrations){
   };
   for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY'])
     requireExportFalse('flags',name);
+  // This gate is added by the Social Name candidate; keep existing main compatible
+  // until that candidate is merged, then forbid an unapproved early activation.
+  if(source('flags').includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED'))
+    requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');
   requireExportFalse('partyRead','PARTY_EVENT_READ_ROUTE_V39_MOUNTED');

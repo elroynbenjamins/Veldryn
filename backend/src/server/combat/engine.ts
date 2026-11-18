@@ -1,5 +1,7 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
 import { CombatRng } from './deterministic-rng';
+import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
+import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
 import {
@@ -87,8 +89,10 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
   }
 }
 
-export function simulateCombat(input: CombatInput): CombatResult {
+/** Optional server-issued second parameter is never parsed from CombatInput JSON. */
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
+  const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -289,9 +293,12 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){const amt=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+    if(effect.kind==='shield'){const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
-      (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
+      (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1));
+      const amt=enemyV2Effects&&target.definition.team==='enemies'
+        ?enemyV2AllowedShieldAmount(target.definition.stats.maxHp,target.shield,requested):requested;
+      target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});gemOnShieldAppliedV1(now,source,target);gemConsumeSupportChargeV1(now,source);emitGemState(now);events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});if(amt>0&&source.definition.team==='players'){
       resource(source,'shield_granted',now,abilityId);
       if(!abilityId.startsWith('V2_CAPSTONE')){
         const ability=source.definition.abilities.find(a=>a.id===abilityId);
@@ -305,10 +312,14 @@ export function simulateCombat(input: CombatInput): CombatResult {
       const hexBonus=isHex&&v2Encounter?
         clamp(source.definition.combatV2?.equipmentEffects?.hexPotencyPct??0,0,1):0;
       const expiresAt=now+(effect.durationMs??3000);
-      target.periodic.push({sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
+      const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
         coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
-        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
+        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000};
+      if(enemyV2Effects&&source.definition.team==='enemies')
+        target.periodic=applyEnemyV2Periodic(target.periodic,periodic).entries;
+      else target.periodic.push(periodic);
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
       // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,
       // shield amounts, buffs or boss phase state. The replay identifies the cure.
@@ -332,8 +343,12 @@ export function simulateCombat(input: CombatInput): CombatResult {
       }}return;}
     if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',expiresAt=now+(effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
-      target.modifiers.push({sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
-        ...(capstoneId?{v2CapstoneId:capstoneId}:{})});events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:tag,expiresAtMs:expiresAt});if(effect.kind==='debuff')gemOnDebuffAppliedV1(now,source,target);else gemOnBuffAppliedV1(now,source,target);emitGemState(now);return;}
+      const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
+        ...(capstoneId?{v2CapstoneId:capstoneId}:{})};
+      if(enemyV2Effects&&source.definition.team==='enemies')
+        target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
+      else target.modifiers.push(modifierEntry);
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:tag,expiresAtMs:expiresAt});if(effect.kind==='debuff')gemOnDebuffAppliedV1(now,source,target);else gemOnBuffAppliedV1(now,source,target);emitGemState(now);return;}
   };
 
   runCapstone=(actor,kind,now,target,ctx={})=>{

@@ -7,6 +7,7 @@ import {EQUIPMENT_CRAFTING_V2_RELEASED} from './release-flags';
 export type EquipmentV2PrimaryAction='craft'|'unlock'|'prepare_components'|'find_materials'|'review_market_purchase'|'free_queue_slot'|'obtain_gold';
 export interface EquipmentV2RecipePreviewInput {
  name:string;tier:EquipmentV2Tier;slot:GearSlot;profile:EquipmentV2Profile;setPiece:boolean;
+ craftSeconds?:number;profession?:'smithing'|'tailoring';
  rarityMultiplier?:number;quality?:number;
  ingredients:readonly EquipmentV2Ingredient[];
  strategy:EquipmentV2SourceStrategy;marketReleased?:boolean;

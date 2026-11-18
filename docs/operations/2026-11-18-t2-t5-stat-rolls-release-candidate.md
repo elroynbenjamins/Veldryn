@@ -25,11 +25,15 @@ New **forged** equipment only, by class/role:
 - Inspect, Compare, Forge result and bulk claim clearly display saved stat, rarity-scaled range and roll strength. Conservative copy retention does not auto-sell rolled gear merely for lower Quality.
 - New Healing Power rolls are also projected into a server-derived co-op `healingPower` snapshot (PR #1374), with regression test for frozen combatant and exactly one multiplicative application. This is NOT a claim that all secondary stats have identical effects in every mode.
 
-## Integration checkpoint (Nov 18)
+## Integration checkpoint (Nov 18, reconciled candidate #1404)
 
-- Source PR #1374 synced to main at commit `b9f6a393` through `487207f3`; comparison confirms **0 commits behind** and 29 scoped files with no overlapping changes in the prior integration base.
-- `backend/online/coop-loadout.ts` now applies exact-copy Healing Power once to the server-owned co-op healing snapshot. `backend/online/tests/coop-loadout.ts` validates a legal Dawnkeeper mixed novice/T2 outfit, same saved glove with/without a valid version-4 healing roll, snapshot/hash invalidation and wrong-receipt rejection; the unique-gear CI workflow runs the test.
-- The regenerated Edge bundles remain a **required and unverified** gate after these source changes. A source-level merge is not a passing build.
+- **Integration branch:** `integration/1-0-11-stat-rolls-main-parity`, branched from `main` at `7943b3ab`; source draft remains #1374. The branch is a **draft validation candidate**, not yet merged or released.
+- Integrated 19 nonconflicting source/tests/docs files; manually reconciled seven conflicting gear/runtime/test files. Preserved main's retired-item recovery, finite claim-roll validation, bounded crit chance, missing-roll version safety, dismantling source and regression coverage. Existing main World Boss and Party Event test fixes are retained unchanged.
+- `backend/online/coop-loadout.ts` applies exact-copy Healing Power once to the server-owned co-op healing snapshot; its focused test checks snapshot/hash consistency.
+- **Edge status:** regenerate gameplay and co-op bundles from this combined branch through the temporary guarded PR workflow. The generated artifacts from old source #1374 alone are **not** acceptable for this integrated branch.
+- **Latest read-only state audit:** production has 457 online game-state rows and 230 crafted-copy records across 22 rows exposing the current path; staging has 9 game-state rows but no crafted-copy arrays. Counts are point-in-time, not a substitute for staged mint/reload QA.
+- **Android:** the repository's native AAB/emulator-startup workflow now includes these release-candidate files in its PR triggers. It is not a signed EAS build or physical-device validation.
+- Review/remove temporary generation workflow before final main merge; do not ship early rolls while installed 1.0.10 clients lack version-5/4 support.
 
 ## Version deferral QA (Nov 18)
 
@@ -43,7 +47,7 @@ New **forged** equipment only, by class/role:
 - [ ] Exact-final-head **Mobile Core** 400+ tests and TypeScript/Expo compatibility.
 - [ ] **Unique forged equipment** (including online gameplay + co-op loadout tests), rarity/version migrations, exact-copy Bank and storage, class/slot restrictions and retention.
 - [ ] Mobile UX, Gem/Dungeon, Combat Balance, Regional Enemies, Market/Guild Shop, v1.0.9 regression checks, **Edge bundle parity** for both gameplay and coop.
-- [ ] Remove `temporary-12-stat-edge-regeneration.yml` (still the temporary workflow filename; the workflow itself now regenerates 11-stat artifacts) after a successful regeneration and commit **both** canonical bundles, then rerun full exact-head validation.
+- [ ] Remove `temporary-11-stat-integration-edge-sync.yml` from the integration PR after successful regeneration of **both** canonical bundles, then rerun exact-head validation.
 - [ ] Audit every new stat's actual effect in solo combat, server-side co-op/dungeon and boss modes. Mode-dependent effects must be accurately disclosed; reject misleading tooltips. Issue #1383 remains open for genuine Ability Damage in 2.0.
 - [ ] **Staging**: deploy only the new validated `gameplay` and `coop` artifacts to Veldryn Staging. Test with a dedicated QA account and new T2/T3/T4/T5 Forge actions: idempotent retry, reload, cross-character Bank, ownership, slot invalidation, disabled/locked auto-sell, failed network acknowledgments, dungeon-ready frozen loadout, test all classes/rarities. Leave production untouched.
 - [ ] **Android staging APK** via EAS profile `staging`; `preview` points at **production Supabase** and is **not** a staging substitute.

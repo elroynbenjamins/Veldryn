@@ -23,6 +23,8 @@ export interface ServerEnemyV2Snapshot {
  readonly seed:string;
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
+ /** Explicitly authored solo boss IDs, never inferred from client flags. */
+ readonly bossIds?:readonly string[];
 }
 interface ImmutableScope{
  readonly encounterId:string;
@@ -31,6 +33,7 @@ interface ImmutableScope{
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
  readonly inputDigest:string;
+ readonly bossIds:readonly string[];
 }
 const issued=new WeakMap<object,ImmutableScope>();
 const validId=(x:unknown):x is string=>
@@ -77,7 +80,10 @@ export function issueEnemyV2EngineAuthority(
    !Array.isArray(snapshot.playerIds)||snapshot.playerIds.length!==1||
    !Array.isArray(snapshot.enemyIds)||snapshot.enemyIds.length<1||snapshot.enemyIds.length>4||
    [...snapshot.playerIds,...snapshot.enemyIds].some(id=>!validId(id))||
-   !unique([...snapshot.playerIds,...snapshot.enemyIds]))
+   !unique([...snapshot.playerIds,...snapshot.enemyIds])||
+   (snapshot.bossIds!==undefined&&(
+     !Array.isArray(snapshot.bossIds)||snapshot.bossIds.length>1||
+     !unique(snapshot.bossIds)||snapshot.bossIds.some(id=>!snapshot.enemyIds.includes(id)))))
   invalid('invalid_persisted_scope');
  if(!input||input.seed!==snapshot.seed||
     input.players.length!==snapshot.playerIds.length||
@@ -93,7 +99,8 @@ export function issueEnemyV2EngineAuthority(
  issued.set(token,Object.freeze({
   encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
   playerIds:Object.freeze([...snapshot.playerIds]),
-  enemyIds:Object.freeze([...snapshot.enemyIds]),inputDigest,
+  enemyIds:Object.freeze([...snapshot.enemyIds]),
+  bossIds:Object.freeze([...(snapshot.bossIds??[])]),inputDigest,
  }));
  return token;
 }
@@ -118,7 +125,7 @@ export function authorizeEnemyV2EngineExecution(
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||
     input.enemyDamageProfile!==undefined||
     input.players.some(p=>p.team!=='players'||!p.combatV2||p.combatV2.version!==2)||
-    input.enemies.some(e=>e.team!=='enemies'||e.boss===true))
+    input.enemies.some(e=>e.team!=='enemies'||Boolean(e.boss)!==saved.bossIds.includes(e.id)))
   invalid('nonfresh_or_nonv2_encounter');
  return true;
 }

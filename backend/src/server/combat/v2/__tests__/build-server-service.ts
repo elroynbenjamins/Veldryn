@@ -140,6 +140,23 @@ async function main(){
     action:'activate',slot:0,expectedRevision:2,
   },true);
   assert.equal(duringFight.issues[0].code,'build_switch_blocked_combat');
+  let guardChecks=0;
+  const raceService=new CharacterBuildServiceV2({
+    storage:repository,
+    equipment:{helmet_t2:{itemId:'helmet_t2',slot:'helmet',
+      requiredLevel:18,eligibleClasses:['IRONWARDEN'],tier:'T2'}},
+    sets:{},
+    activityGuard:async()=>++guardChecks===1?null:'combat',
+  });
+  const commitsBefore=calls.filter(c=>c.name==='combat_v2_build_cas_server_v1').length;
+  const raceLock=await raceService.mutate(account,character,{
+    action:'activate',slot:0,expectedRevision:2,
+  },true);
+  assert.equal(raceLock.ok,false);
+  assert.equal(raceLock.issues[0].code,'build_switch_blocked_combat');
+  assert.equal(guardChecks,2);
+  assert.equal(calls.filter(c=>c.name==='combat_v2_build_cas_server_v1').length,commitsBefore,
+    'Activity changed to combat: no compare-and-swap may be attempted');
   const disabled=await service.mutate(account,character,{
     action:'delete',slot:0,expectedRevision:2,
   },false);

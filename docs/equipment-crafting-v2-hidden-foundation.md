@@ -90,3 +90,15 @@ This is a coordinated future update. Both Equipment 2.0 and Crafting 2.0 are hel
 - The draft branch was merged forward with `main` after a read-only overlap audit found a single workflow conflict. That conflict was resolved by preserving both the new feature-hub UI check and the hidden Crafting 2.0 UX check. Draft PR #1382 remains unmerged and its release gates remain disabled.
 
 **Still required before release:** one atomic, authenticated `commit_online_game_guild_pve_v1` integration; exact physical copy storage including existing equipped, locked and gemmed gear; completed permanent socket-replacement operations; nine-class combat economy simulation; green CI and controlled staging rollout. Do not use the preview projection or shadow ledger as a production write source.
+
+
+## 18 November — single-commit integration rehearsal and conservation contract
+
+- Hidden server module `equipment-crafting-v2-commit-plan.ts` derives a read-only settlement plan from the V2 start/claim resolver using the same conceptual preconditions as the **existing** online gameplay commit: authenticated account/character, authoritative online version, authoritative active wallet and an idempotent request ID.
+- A start plan specifies the exact owner Gold debit, inventory and shared Bank ingredient debits, new queued job, expected and next versions and persisted receipt. Claim plans show the single newly minted exact-copy item and one original-crafter profession XP award; no further resource or Gold debit occurs.
+- The verifier rejects unrelated character modifications, unexpected Bank stock increases, misplaced item/XP awards, extra/missing jobs and mismatches between reservation and actual material consumption. Replays are read-only, preserving prior exact receipts.
+- A production adapter is **not** implemented. `needsLegacyCoexistenceAdapter: true` is a permanent draft marker preventing this plan from being mistaken for a live commit. In particular, do **not** post its deltas independently of the existing `commit_online_game_guild_pve_v1` transaction.
+- Added `equipment-crafting-v2-commit-plan.test.ts` to the focused backend CI: cross-character claim, exact debits, duplicate command replay, wallet shortage and version conflict checks.
+- Hardened `equipment-crafting-v2-transaction.ts` so a future invalid canonical recipe with duplicate ingredient IDs or overflowing totals cannot double-debit a shared stack.
+
+**Next engineering step:** implement a single server-authoritative gameplay command executor that carries this validated settlement into the *existing* account state, maintaining the original V33 Forge and legacy ownership, then persist by the existing account CAS commit. This must remain gated behind paired Equipment/Skills/Enemies 2.0 staging tests, receipt replay and rollback coverage.

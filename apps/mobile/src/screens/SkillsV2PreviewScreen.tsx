@@ -41,6 +41,19 @@ const clone=(draft:Draft):Draft=>({
  specialization:draft.specialization,equipped:[...draft.equipped],
  variants:{...draft.variants},talentRanks:{...draft.talentRanks},signatureIds:[...draft.signatureIds],
 });
+/** Design guidance only. Server-authoritative class/role eligibility is
+ * checked again against the actual item instance when activating a build. */
+const GEAR_GUIDANCE_V2:Record<ClassId,{weapon:string;sets:string;stats:string}>={
+ IRONWARDEN:{weapon:'Sword',sets:'Oathplate · Citadel · Bloodsteel · Vigilhide',stats:'Defense · HP · Wards'},
+ BASTION:{weapon:'Tower shield',sets:'Oathplate · Citadel · Bloodsteel · Vigilhide',stats:'Barriers · HP · Defense'},
+ DREADGUARD:{weapon:'Chained weapon',sets:'Oathplate · Citadel · Bloodsteel · Vigilhide',stats:'Sustain · HP · Threat'},
+ WAYFINDER:{weapon:'Bow',sets:'Quickstep · Horizon · Blackscript · Breakerforge',stats:'Accuracy · Crit · Haste'},
+ RAVAGER:{weapon:'Two-handed weapon',sets:'Quickstep · Horizon · Blackscript · Breakerforge',stats:'Power · Armor break · Haste'},
+ HEXWEAVER:{weapon:'Wand + focus',sets:'Quickstep · Horizon · Blackscript · Breakerforge',stats:'Spell power · DoT · Haste'},
+ KNIFE_DANCER:{weapon:'Blades',sets:'Quickstep · Horizon · Blackscript · Breakerforge',stats:'Haste · Crit · Evasion'},
+ DAWNKEEPER:{weapon:'Mace',sets:'Brightweave · Stormthread · Rootshield · Echohide',stats:'Healing · Wards · Haste'},
+ STONECALLER:{weapon:'Staff',sets:'Brightweave · Stormthread · Rootshield · Echohide',stats:'Shields · Healing · Haste'},
+};
 const resourceHelp:Record<ClassId,{gain:string;spend:string}>={
  IRONWARDEN:{gain:'Taunts, interrupts and blocked shield damage',spend:'Runic Judgment and defensive finishers'},
  BASTION:{gain:'Granting barriers and absorbing attacks',spend:'Citadel Slam and reinforced protection'},
@@ -220,6 +233,13 @@ export function SkillsV2PreviewScreen({
       </View><Text style={s.mutedSmall}>Edit</Text>
     </Pressable>;
    })}
+  </Panel>
+  <Panel style={s.panel}>
+    <Text style={s.sectionLabel}>EQUIPMENT 2.0 · PREVIEW</Text>
+    <Text style={s.skillName}>Weapon identity: {GEAR_GUIDANCE_V2[classId].weapon}</Text>
+    <Text style={s.helper}>Role-set families: {GEAR_GUIDANCE_V2[classId].sets}</Text>
+    <Text style={s.mutedSmall}>Useful stats: {GEAR_GUIDANCE_V2[classId].stats}</Text>
+    <Text style={s.helper}>Suggestions, not mandatory builds. Actual gear eligibility and owned item instances are checked by the server. Existing items are never rerolled by this preview.</Text>
   </Panel>
   <Panel style={s.panel}>
     <Text style={s.sectionLabel}>CLASS TRAINING (UNCHANGED)</Text>

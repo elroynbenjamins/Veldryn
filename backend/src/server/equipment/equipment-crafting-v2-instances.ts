@@ -108,6 +108,11 @@ export function v2ServerExactTemplateConsistent(item:V2ExactEquipmentTemplate){
   ||item.role!==piece.role||item.material!==piece.material||item.name!==piece.name
   ||item.setId!==piece.setId||item.classRestriction!==piece.classRestriction
   ||item.hands!==piece.hands
+  /** Until verified enhancement/socket mutation rules exist, ONLY the freshly
+   * minted zero-enhancement, unsocketed snapshot can pass this draft preflight.
+   * Never accept a caller-injected gem socket or upgraded rank.
+   */
+  ||item.enhancementRank!==0||!Array.isArray(item.gemSlots)||item.gemSlots.length!==0
   ||!Number.isInteger(item.quality)||item.quality<0||item.quality>100
   ||!Object.prototype.hasOwnProperty.call(V2_SERVER_RARITY_BASE_MULTIPLIER,item.rarity))
   return false;

@@ -11,6 +11,25 @@ const js=ts.transpileModule(read('src/core/world-boss-readonly-snapshot.ts'),{
 const exportsV46={};
 new Function('exports',js)(exportsV46);
 const {decodeWorldBossReadOnlyStatusV46:decode,WORLD_BOSS_MOBILE_RELEASED:released}=exportsV46;
+
+const presentationJs=ts.transpileModule(read('src/core/world-boss-presentation.ts'),{
+ compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},
+}).outputText;
+const presentationExports={};
+new Function('exports',presentationJs)(presentationExports);
+const {WORLD_BOSS_PRESENTATION,worldBossPresentationFor}=presentationExports;
+test('proper boss names are distinct from stable region/protocol IDs',()=>{
+ assert.deepEqual(Object.keys(WORLD_BOSS_PRESENTATION).sort(),['frostmarch','hollowroot','sunscar']);
+ assert.equal(worldBossPresentationFor('hollowroot')?.name,'Hollowroot');
+ assert.equal(worldBossPresentationFor('sunscar')?.name,'Solbrand');
+ assert.equal(worldBossPresentationFor('sunscar')?.region,'Sunscar');
+ assert.equal(worldBossPresentationFor('frostmarch')?.name,'Rimewarden');
+ assert.equal(worldBossPresentationFor('frostmarch')?.region,'Frostmarch');
+ for(const value of [null,undefined,'Sunscar','Frostmarch','constructor','__proto__',{},0]){
+  assert.equal(worldBossPresentationFor(value),null);
+ }
+});
+
 const EVENT='30000000-0000-4000-8000-000000000046';
 const ACCOUNT='10000000-0000-4000-8000-000000000046';
 const OTHER='10000000-0000-4000-8000-000000000047';

@@ -51,6 +51,7 @@ BEGIN
  FROM private.world_boss_reward_ledger_v28
  WHERE event_id=p_event AND account_id=p_account;
  RETURN jsonb_build_object(
+  'schema','world-boss-overview-v41',
   'eventId',p_event::text,'accountId',p_account::text,
   'bossId',e.boss_id,'status',e.status,'phase',phase,
   'startsAtUtcMs',floor(extract(epoch FROM e.starts_at)*1000)::bigint,

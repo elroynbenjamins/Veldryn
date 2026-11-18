@@ -30,10 +30,17 @@ const makeContext=(nowMs:number):V2DraftContext=>({
  randomInt:()=>0,
 });
 const create=():V2DraftSnapshot=>({
- accountId:'account-test',activeCharacterId:'character-test',ownedCharacterIds:['character-test','character-alt'],version:10,
- characterLevel:30,professionLevels:{smithing:45,tailoring:45},
- gold:10000,
- inventory:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,Math.ceil(i.quantity/2)])),
+ accountId:'account-test',activeCharacterId:'character-test',version:10,
+ characters:{
+  'character-test':{
+   level:30,professionLevels:{smithing:45,tailoring:45},gold:10000,
+   inventory:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,Math.ceil(i.quantity/2)])),
+  },
+  'character-alt':{
+   level:30,professionLevels:{smithing:45,tailoring:45},gold:7777,
+   inventory:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,0])),
+  },
+ },
  bank:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,Math.floor(i.quantity/2)])),
  jobs:[],equipment:[],skillAwards:[],receipts:[],
 });
@@ -43,15 +50,16 @@ const start=resolveEquipmentV2DraftCommand(original,startRequest,makeContext(1_0
 assert.deepEqual(original,before,'Planning must never mutate trusted state in place');
 assert.equal(start.replayed,false);
 assert.equal(start.response.kind,'started');
-assert.equal(start.next.gold,10000-recipe.gold);
+assert.equal(start.next.characters['character-test'].gold,10000-recipe.gold);
 assert.equal(start.next.version,11);
 assert.equal(start.next.jobs.length,1);
+assert.equal(start.next.characters['character-alt'].gold,7777,'An unrelated character wallet is never charged');
 assert.equal(start.next.receipts.length,1);
 assert.equal(start.next.equipment.length,0,'No rarity/quality item may exist at queue start');
 assert.equal(start.next.jobs[0].goldReserved,recipe.gold);
 assert.equal(start.next.jobs[0].materialsReserved.length,recipe.inputs.length);
 for(const ingredient of recipe.inputs){
- assert.equal((start.next.inventory[ingredient.itemId]??0)+(start.next.bank[ingredient.itemId]??0),0,
+ assert.equal((start.next.characters['character-test'].inventory[ingredient.itemId]??0)+(start.next.bank[ingredient.itemId]??0),0,
   'Consume owned materials across Inventory and Bank at most once');
 }
 const replay=resolveEquipmentV2DraftCommand(start.next,startRequest,makeContext(1_000_000));
@@ -86,7 +94,8 @@ assert.equal(claim.next.equipment[0].ownerCharacterId,'character-test',
 assert.equal(claim.next.skillAwards[0].characterId,'character-test',
  'Crafting XP must stay with the character who started the job');
 assert.equal(claim.next.skillAwards.length,1);
-assert.equal(claim.next.gold,start.next.gold);
+assert.equal(claim.next.characters['character-test'].gold,start.next.characters['character-test'].gold);
+assert.equal(claim.next.characters['character-alt'].gold,7777,'Claiming on alternate character never changes their wallet');
 assert.equal(claim.next.version,12);
 assert.equal(claim.next.jobs[0].status,'claimed');
 assert.equal(claim.next.skillAwards[0].xp,recipe.xp);
@@ -110,11 +119,11 @@ atCap.equipment=Array.from({length:25},(_,i)=>({
 assert.throws(()=>resolveEquipmentV2DraftCommand(atCap,claimRequest,makeContext(job.finishesAtMs)),
  /copy_limit_reached/,'Full exact-copy equipment storage cannot mint or auto-sell a 26th piece');
 assert.equal(atCap.jobs[0].status,'queued','Blocked claim must preserve finished Forge job');
-const noGold=create();noGold.gold=recipe.gold-1;
+const noGold=create();noGold.characters['character-test'].gold=recipe.gold-1;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noGold,startRequest,makeContext(1_000_000)),/insufficient_gold/);
 const noMaterial=create();noMaterial.bank[recipe.inputs[0].itemId]=0;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noMaterial,startRequest,makeContext(1_000_000)),/insufficient_materials/);
-const noLevel=create();noLevel.professionLevels.smithing=0;
+const noLevel=create();noLevel.characters['character-test'].professionLevels.smithing=0;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noLevel,startRequest,makeContext(1_000_000)),/craft_requirement_locked/);
 const wrongOwner=create();
 assert.throws(()=>resolveEquipmentV2DraftCommand(wrongOwner,startRequest,

@@ -68,12 +68,20 @@ ok(equipmentBonusRange(2,'healingPower','gloves','mythic')![1]<
   'T2 Mythic support rolls must stay below T5 Common tier ceiling');
 
 ok(equipmentBonusConfig(t5,'common')?.count===2,'T5 Common has two bonuses');
+const earlyEquipmentPool=new Set(CLASSES.flatMap(cls=>equipmentBonusConfig(item('T5',cls.id,'gloves'),'uncommon')?.pool??[]));
+ok(earlyEquipmentPool.size===11,'All eleven new equipment stats remain available across class roles');
+ok(!earlyEquipmentPool.has('abilityDamage')&&!earlyEquipmentPool.has('tenacity'),
+  'No new nonweapon receipt may mint attributes deferred until Combat 2.0');
 ok(!equipmentBonusConfig(t5,'common')?.pool.includes('abilityDamage'),
   'The early-release armor pool excludes the combat-incomplete Ability Damage affix');
 ok(equipmentBonusConfig(t5,'common',2)?.pool.includes('abilityDamage'),
   'Prior v2 nonweapon development receipts retain their original pool');
-ok(!equipmentBonusRange(5,'abilityDamage','gloves','uncommon',3),
-  'New v3 nonweapon receipts cannot mint Ability Damage');
+ok(!equipmentBonusRange(5,'abilityDamage','gloves','uncommon',4),
+  'New v4 nonweapon receipts cannot mint Ability Damage');
+ok(!equipmentBonusRange(5,'tenacity','gloves','uncommon',4),
+  'New v4 nonweapon receipts cannot mint Tenacity');
+ok(equipmentBonusRange(5,'tenacity','gloves','uncommon',3)!==undefined,
+  'Older v3 nonweapon Tenacity range must remain readable');
 ok(equipmentBonusRange(5,'abilityDamage','gloves','uncommon',2)!==undefined,
   'Old v2 nonweapon receipts retain their original stat-specific range');
 ok(equipmentBonusRange(2,'critRate','gloves')![1]<equipmentBonusRange(5,'critRate','gloves')![1],
@@ -88,11 +96,11 @@ ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'
 
 const initial=createCharacter(newGame(1),'WAYFINDER','Roll Tester','male');
 const crafted=draftCraftedGearInstance({itemId:t2,ownerCharacterId:initial.character!.id,jobId:'t2-gloves-receipt',createdAtMs:1,roll:.3});
-ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===3,
+ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===4,
   'A fresh T2 forged glove must gain a persistent single bonus');
 const loaded=normalizeCraftedGearInstances([crafted])[0];
-ok(!crafted.equipmentBonuses?.some(b=>b.stat==='abilityDamage'),
-  'Fresh nonweapon rolls must never include the deferred Ability Damage attribute');
+ok(!crafted.equipmentBonuses?.some(b=>b.stat==='abilityDamage'||b.stat==='tenacity'),
+  'Fresh nonweapon rolls must not include Ability Damage or Tenacity');
 const previousV1={...crafted,equipmentBonusRollVersion:1 as const,
   equipmentBonuses:[{stat:'evasion' as const,basisPoints:30}]};
 const preservedV1=normalizeCraftedGearInstances([previousV1])[0];
@@ -130,8 +138,22 @@ const preDeferV2={
 const preservedV2=normalizeCraftedGearInstances([preDeferV2])[0];
 ok(preservedV2.equipmentBonusRollVersion===2&&preservedV2.equipmentBonuses?.[0]?.stat==='abilityDamage',
   'Existing version 2 nonweapon development receipts must remain readable');
-ok(!normalizeEquipmentBonuses(t5,high.rarity,preDeferV2.equipmentBonuses,3),
-  'Old Ability Damage values cannot be minted as new nonweapon v3 receipts');
+ok(!normalizeEquipmentBonuses(t5,high.rarity,preDeferV2.equipmentBonuses,4),
+  'Old Ability Damage values cannot be minted as new nonweapon v4 receipts');
+const t5TankGloves=item('T5','DREADGUARD','gloves');
+const preDeferV3={
+  ...high,id:'v3-tenacity-development-receipt',itemId:t5TankGloves,
+  equipmentBonusRollVersion:3 as const,
+  equipmentBonuses:[
+    {stat:'tenacity' as const,basisPoints:equipmentBonusRange(5,'tenacity','gloves',high.rarity,3)![0]},
+    {stat:'armor' as const,basisPoints:equipmentBonusRange(5,'armor','gloves',high.rarity,3)![0]},
+  ],
+};
+const preservedV3=normalizeCraftedGearInstances([preDeferV3])[0];
+ok(preservedV3.equipmentBonusRollVersion===3&&preservedV3.equipmentBonuses?.[0]?.stat==='tenacity',
+  'Previously minted nonweapon v3 Tenacity stays readable on its original saved copy');
+ok(!normalizeEquipmentBonuses(t5TankGloves,high.rarity,preDeferV3.equipmentBonuses,4),
+  'Legacy v3 Tenacity cannot be silently accepted as a newly minted v4 roll');
 const noRoll={...high,equipmentBonuses:undefined,equipmentBonusRollVersion:undefined};
 const clean=withEquipped(noRoll),rolled=withEquipped(high);
 const cleanStats=activeEquipmentBuildStats(clean),rolledStats=activeEquipmentBuildStats(rolled);

@@ -20,7 +20,7 @@
 
 ### Equipment 2.0 affix contract
 - `backend/src/server/combat/v2/equipment-affixes.ts`: typed definitions for 13 affix types with correct eligible item slots and distinction between relative percentages and percentage points.
-- Requires final approved per-affix ranges and rarity/tier counts from **server-owned policy**. Stored values from actual item instances are validated; no RNG, new drop rates, rerolls or guessed rarity multipliers.
+- Requires final approved per-affix ranges, rarity/tier counts **and final Haste/Crit caps** from **server-owned policy**. Overcap values fail closed, rather than silently being nerfed. Stored values from actual item instances are validated; no RNG, new drop rates, rerolls or guessed rarity multipliers.
 - Seven attributes are now expressed as a gated combat-stats calculation: attack, defense, max HP, haste, crit rate, crit damage, class healing. Source attribution is retained per gear instance; double application is prevented.
 - Six effect families intentionally fail closed until supported in the combat engine: accuracy, evasion, penetration, ward, shield strength and hex potency.
 - The calculation requires authoritative **base gear stats already resolved** (tier, rarity and quality). It does not add or fabricate those values, and is not called from the live combat engine.

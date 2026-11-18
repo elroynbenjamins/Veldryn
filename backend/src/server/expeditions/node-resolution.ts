@@ -117,7 +117,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
    state={...state,actors,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2};
    break;
   }
-  case 'event': state={...state,resources:state.resources+1,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
+  case 'event': state={...state,resources:state.resources+1}; break; // Events award supplies, not a second boon.
   case 'merchant': state={...state}; break;
  }
  const healedHp=input.players.reduce((total,player)=>total+Math.max(0,(state.actors[player.id]?.hp??0)-(input.state.actors[player.id]?.hp??0)),0);

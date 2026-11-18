@@ -2,7 +2,7 @@ import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDe
 import {itemDef} from '../content/items';
 import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
 import {normalizeCraftedGearInstances} from './crafted-gear-instances';
-import type {GameState} from './types';
+import type {GameState,GearSlot} from './types';
 
 export type EquipmentSetStatKey=
   'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion';
@@ -48,7 +48,7 @@ export function equippedEquipmentBonusStats(state:GameState):Partial<EquipmentSe
   const stats:Partial<EquipmentSetStats>={};
   for(const [slot,itemId] of Object.entries(character.equipment)){
     if(!itemId||slot==='weapon')continue;
-    const instanceId=character.equipmentInstanceIds?.[slot as keyof typeof character.equipmentInstanceIds];
+    const instanceId=character.equipmentInstanceIds?.[slot as GearSlot];
     if(!instanceId)continue;
     const raw=state.account.craftedGearInstances?.find(row=>row?.id===instanceId&&row?.itemId===itemId);
     const copy=raw?normalizeCraftedGearInstances([raw])[0]:undefined;

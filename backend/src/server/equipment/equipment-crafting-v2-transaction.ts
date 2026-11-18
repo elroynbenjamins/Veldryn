@@ -103,14 +103,15 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
    ||state.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
  if(!safeCount(recipe.gold)||recipe.gold===0||!safeCount(recipe.seconds)||recipe.seconds===0||!safeCount(recipe.xp))fail('invalid_recipe_economy');
  if(state.gold<recipe.gold)fail('insufficient_gold');
- const queue=state.jobs.filter(j=>j.status==='queued');
- if(queue.length>=MAX_QUEUED_CRAFTS)fail('queue_full');
- const ready=queue.filter(j=>j.finishesAtMs<=ctx.nowMs);
+ const unclaimed=state.jobs.filter(j=>j.status==='queued');
+ const queue=unclaimed.filter(j=>j.finishesAtMs>ctx.nowMs);
+ const ready=unclaimed.filter(j=>j.finishesAtMs<=ctx.nowMs);
  if(ready.length>=MAX_UNCLAIMED_READY)fail('ready_storage_full');
+ if(queue.length>=MAX_QUEUED_CRAFTS)fail('queue_full');
  const material=consumption(state,recipe.inputs);
  const start=nextSlot(queue,ctx.nowMs);
  const jobId=(ctx.randomId??randomUUID)();
- if(!jobId||state.jobs.some(j=>j.id===jobId))fail('invalid_job_id_generated');
+ if(!jobId||state.jobs.some(j=>j.id===jobId)||state.equipment.some(i=>i.id===jobId))fail('invalid_job_id_generated');
  const job:V2DraftJob={
   id:jobId,accountId:ctx.accountId,ownerCharacterId:ctx.characterId,
   recipeId:recipe.id,pieceId:piece.id,

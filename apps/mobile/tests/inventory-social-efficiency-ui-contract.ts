@@ -13,5 +13,5 @@ ok(bulk.includes('if(!stacks.length)return {'),'Empty selection skips recipe res
 ok(friends.includes('friendsOverview()')&&social.includes('client.rpc(\'friend_list\'),client.rpc(\'friend_request_list\'),client.rpc(\'blocked_player_list\')'),'Friends screen loads account lists together');
 ok(social.includes('socialListIdentityIds(friendRows,requestRows)')&&social.includes('withSocialListIdentities(friendRows,identities)'),'Social list identity lookup is batched');
 ok(friends.includes('Searching doesn\'t mutate friendships')&&!friends.includes('await run(async()=>{const next=await searchPlayers('),'Player search does not reload friends after each query');
-ok(profile.includes('pendingPublicProfiles.run(viewer+')&&profile.includes('profile_public_v43'),'Public profiles share in-flight requests only and remain server-authorized');
+ok(profile.includes('pendingPublicProfiles.run(viewer+')&&profile.includes("characterId??'featured'")&&profile.includes("db.rpc('profile_character_public_v1'")&&!profile.includes('profile_public_v43'),'Character public profiles share only in-flight viewer- and character-scoped requests while relying on server authorization');
 console.log('PASS inventory and social screen navigation efficiency contracts');

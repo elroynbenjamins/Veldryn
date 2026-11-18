@@ -12,6 +12,7 @@ import {
  type PartyEventTrustedStatusReaderV34,
 } from './party-event-authenticated-read-v34';
 import type {PartyEventReadOnlyStatusV33} from './party-event-readonly-status-v33';
+import {createPartyEventCurrentStatusReaderV40} from './party-event-current-read-v40';
 
 export const PARTY_EVENT_READ_ROUTE_V39_MOUNTED=false;
 type ReadResponseBodyV39=
@@ -46,8 +47,12 @@ const error=(status:401|405|503,reason:'unauthorized'|'method_not_allowed'|'unav
  */
 export function createPrivatePartyEventReadHttpAdapterV39(
  auth:VerifiedUserAuthV34, reader:PartyEventTrustedStatusReaderV34,
+ trustedServerNowMs:()=>number=()=>Date.now(),
 ){
- const verified=createPrivatePartyAuthenticatedReaderV34(auth,reader);
+ // V33 finds the latest enrollment. V40 forbids stale, future or
+ // status-inconsistent weeks from being called the current event.
+ const verified=createPrivatePartyAuthenticatedReaderV34(
+  auth,createPartyEventCurrentStatusReaderV40(reader,trustedServerNowMs));
  return {
   async handle(request:Readonly<{method:string;authorization?:string|null}>):Promise<PrivatePartyReadHttpResponseV39>{
    if(request.method!=='GET')return error(405,'method_not_allowed');

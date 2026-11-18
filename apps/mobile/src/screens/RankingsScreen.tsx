@@ -32,6 +32,10 @@ export function RankingsScreen(){
  const rankingValueLabel=(id:RankingBoardId,value:number)=>{const unit=RANKING_BOARDS.find(row=>row.id===id)!.unit;const number=formatLocalizedNumber(language,Math.max(0,Math.floor(value)));return socialText(language,id==="dungeon_tier"?"Tier {value}":unit==="levels"?"{value} levels":unit==="points"?"{value} points":unit==="rating"?"{value} rating":unit==="wins"?"{value} wins":unit==="clears"?"{value} clears":"{value} level",{value:number});};
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackRows=width<360||fontScale>=1.25;const[group,setGroup]=useState<RankingGroup>('Account'),[board,setBoard]=useState<RankingBoardId>('profession_total'),[snapshot,setSnapshot]=useState<RankingBoardSnapshot|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState(''),[boardPickerOpen,setBoardPickerOpen]=useState(false),[page,setPage]=useState(0),[loadedPage,setLoadedPage]=useState(0),[hasNext,setHasNext]=useState(false);const boards=useMemo(()=>RANKING_BOARDS.filter(row=>row.group===group),[group]);useEffect(()=>{if(!boards.some(row=>row.id===board))setBoard(boards[0].id)},[group]);
  const request=useRef(0);
+ // Polling, foreground and manual refresh must not launch duplicate reads.
+ // A stalled request may be replaced after 30s; the version guard rejects
+ // responses from the replaced request or a previous board/page.
+ const inFlight=useRef<{scope:string;version:number;startedAt:number}|null>(null);
  const scrollRef=useRef<ScrollViewInstance|null>(null);
  const [guideOpen,setGuideOpen]=useState(false);
  function selectGroup(value:RankingGroup){
@@ -57,11 +61,14 @@ export function RankingsScreen(){
    setSnapshot(null);setHasNext(false);setError('');setLoading(false);setPage(next);
  }
  async function load(){
+   const scope=board+':'+page;
+   if(inFlight.current?.scope===scope&&Date.now()-inFlight.current.startedAt<30000)return;
    const version=++request.current;
    if(!rankingsOnlineConfigured){
      setLoading(false);setSnapshot(null);setHasNext(false);
      setError(st("Rankings require the authenticated online server."));return;
    }
+   inFlight.current={scope,version,startedAt:Date.now()};
    setLoading(true);setError('');
    try{
      const next=await rankingsClient.board(board,RANKING_PAGE_SIZE+1,rankingPageOffset(page));
@@ -80,7 +87,10 @@ export function RankingsScreen(){
      if(version===request.current){
        setError(st("Could not load Rankings."));
      }
-   }finally{if(version===request.current)setLoading(false);}
+   }finally{
+     if(inFlight.current?.version===version)inFlight.current=null;
+     if(version===request.current)setLoading(false);
+   }
  }
  useEffect(()=>{void load();const timer=setInterval(()=>{if(AppState.currentState==='active')void load();},60000);const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});return()=>{request.current++;clearInterval(timer);foreground.remove();};},[board,page]);const definition=RANKING_BOARDS.find(row=>row.id===board)!,activeSnapshot=snapshot?.board===board&&loadedPage===page&&boards.some(row=>row.id===board)?snapshot:null;
 
@@ -148,6 +158,7 @@ export function RankingsScreen(){
   {loading&&!activeSnapshot?<LoadingState compact label={st("Loading rankings")} detail={st("Fetching the latest server-calculated board.")}/>:null}
   {error?<View style={s.errorPanel}>
     <ActionFeedback message={error} tone="error" reduceMotion/>
+    {activeSnapshot?<Text accessibilityLiveRegion="polite" style={s.staleNote}>{st("Showing last verified standings. Retry to update.")}</Text>:null}
     {!activeSnapshot&&rankingsOnlineConfigured?<GameButton compact title={st("Refresh")} tone="secondary" onPress={()=>{void load();}}/>:null}
   </View>:null}
   {podium.length?<View style={s.sectionGroup}><Text style={s.filterLabel}>{st("TOP THREE")}</Text>
@@ -213,7 +224,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  boardPicker:{minHeight:64,padding:10,borderRadius:radii.md,backgroundColor:C.panel,borderWidth:1,borderColor:C.lineStrong,flexDirection:'row',alignItems:'center',gap:10},
  boardGlyph:{width:38,height:38,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,alignItems:'center',justifyContent:'center',backgroundColor:C.panel2},
  boardArt:{width:30,height:30},boardName:{...typography.bodyStrong,color:C.text,marginTop:3},selectorArrow:{fontSize:22,color:C.accent},
- boardIntro:{paddingHorizontal:3,minHeight:18,gap:4},lastUpdated:{fontSize:10,lineHeight:14,color:C.muted},errorPanel:{gap:6},
+ boardIntro:{paddingHorizontal:3,minHeight:18,gap:4},lastUpdated:{fontSize:10,lineHeight:14,color:C.muted},errorPanel:{gap:6},staleNote:{...typography.caption,color:C.warning,lineHeight:17},
  flex:{flex:1,minWidth:0},
  selfCard:{padding:12,borderRadius:radii.lg,backgroundColor:C.accentSurface,borderWidth:1,borderColor:C.selectionLine,gap:7},
  selfHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},

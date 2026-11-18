@@ -36,6 +36,8 @@ test('V46 release off, valid private v41 read-only projection and spent wallet',
  const snap=parse();
  assert.ok(snap);
  assert.equal(snap.phase,'preparation');
+ assert.equal(snap.startsAtUtcMs,START);
+ assert.equal(snap.endsAtUtcMs,START+7*DAY);
  assert.equal(snap.attemptsRemaining,2);
  assert.equal(snap.donationsRemaining,1);
  assert.equal(snap.rewards.balance,0);
@@ -77,8 +79,15 @@ test('verified-format Saturday raid data is informative, not action-authorizing'
 test('FeaturePreviewScreen consumes optional QA-only props, never creates a live route',()=>{
  const screen=read('src/screens/FeaturePreviewScreen.tsx');
  const app=read('App.tsx');
- assert.match(screen,/decodeWorldBossReadOnlyStatusV46\(worldBossStatus,worldBossAccountId\)/);
+ assert.match(screen,/decodeWorldBossReadOnlyStatusV46\(worldBossStatus,worldBossAccountId,statusNowMs\)/);
  assert.match(screen,/PRIVATE READ-ONLY SNAPSHOT/);
+ assert.match(screen,/leaseTimer=setInterval\(\(\)=>setStatusNowMs\(Date.now\(\)\),15000\)/);
+ assert.match(screen,/clearInterval\(leaseTimer\)/);
+ assert.match(screen,/No verified War Camp progress/);
+ assert.match(screen,/Projected'\)\+' tier '/);
+ assert.match(screen,/Already claimed this event/);
+ assert.match(screen,/Current spendable wallet/);
+ assert.doesNotMatch(screen,/EXAMPLE WAR SUPPLY METER|value=\{65\}/);
  assert.match(screen,/No verified World Boss loaded/);
  assert.match(screen,/active\.warCamp\.contributions\[track\]/);
  assert.match(screen,/active\.rewards\.claimedThisEvent/);

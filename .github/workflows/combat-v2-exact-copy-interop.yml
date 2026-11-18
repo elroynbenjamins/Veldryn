@@ -1,0 +1,36 @@
+name: Hidden Equipment/Crafting and Combat 2.0 interoperability
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2-integration/**'
+      - 'docs/combat-v2-equipment-exact-copy-interoperability-20261118.md'
+      - '.github/workflows/combat-v2-exact-copy-interop.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/server/combat/v2-integration/**'
+      - 'docs/combat-v2-equipment-exact-copy-interoperability-20261118.md'
+      - '.github/workflows/combat-v2-exact-copy-interop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-copy-source-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify frozen craft-to-combat evidence without gameplay activation
+        run: node backend/src/server/combat/v2-integration/__tests__/equipment-exact-copy-interop-v1.test.mjs
+      - name: Confirm module is not imported by live authoritative combat
+        run: |
+          set -euo pipefail
+          if grep -R 'equipment-exact-copy-interop-v1' backend/online backend/src/server/combat/engine.ts backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+            echo 'Hidden equipment/Combat V2 interoperability is wired into live code'
+            exit 1
+          fi

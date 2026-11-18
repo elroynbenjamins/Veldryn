@@ -57,7 +57,7 @@ async function main(){
   assert.deepEqual(worldBossRotationAtV50(MONDAY,cycle.startsAtUtcMs),cycle);
   assert.deepEqual(worldBossRotationAtV50(MONDAY,cycle.cycleEndsAtUtcMs-1),cycle);
   assert.deepEqual(assertWorldBossCanonicalEventV50(MONDAY,cycle),cycle);
-  reject(()=>assertWorldBossCanonicalEventV50(MONDAY,{...cycle,bossId:'sunscar'}),'noncanonical_event');
+  reject(()=>assertWorldBossCanonicalEventV50(MONDAY,{...cycle,bossId:WORLD_BOSS_V50_ORDER[(index+1)%WORLD_BOSS_V50_ORDER.length]}),'noncanonical_event');
   reject(()=>assertWorldBossCanonicalEventV50(MONDAY,{...cycle,startsAtUtcMs:cycle.startsAtUtcMs+DAY}),'noncanonical_event');
  }
  assert.equal(worldBossRotationAtV50(MONDAY,MONDAY-1).bossId,'hollowroot');

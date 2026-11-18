@@ -136,7 +136,8 @@ async function main(){
   ...eligible,evidenceDigest:'changed',
  }), 'proof_nonce_conflict');
  rejectSync(()=>journal.inspectOrRecord('GX_V14_CLAIM_2',{
-  ...eligible,canClaim:true,
+  // Deliberately forge an impossible claimable payload to exercise the runtime guard.
+  ...eligible,canClaim:true as unknown as false,
  }), 'payout_forbidden');
  const noBinding=structuredClone(fabricatedComplete);
  noBinding.cycleBindings={};

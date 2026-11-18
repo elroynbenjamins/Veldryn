@@ -17,7 +17,7 @@ export type V2AuthorityBlocker=
  |'invalid_online_version'|'missing_authoritative_wallet'
  |'duplicate_character_id'|'invalid_character_wallet'
  |'invalid_material_stack'|'legacy_forge_jobs_present'
- |'legacy_custody_conflict'|'legacy_gear_present'|'reserved_v2_item_ids_present';
+ |'legacy_custody_conflict'|'reserved_v2_item_ids_present';
 
 export interface V2AuthoritativeReadinessInput{
  state:GameState;accountId:string;onlineVersion:number;
@@ -93,7 +93,9 @@ export function equipmentV2AuthoritativeReadiness(input:V2AuthoritativeReadiness
  if(legacyCraftJobs)blockers.add('legacy_forge_jobs_present');
  const legacy=equipmentV2LegacyPreservationAudit(state);
  if(legacy.reservedNamespaceCopies)blockers.add('reserved_v2_item_ids_present');
- if(legacy.legacyCraftedCopies||legacy.legacyStacksWithoutInstanceIds)blockers.add('legacy_gear_present');
+  // Existing V33 equipment remains fully owned and untouched. Only broken
+  // custody, duplicate markers, reserved V2 IDs or overlapping Forge jobs
+  // prevent an isolated hidden V2 rehearsal.
  if(legacy.unresolvedEquippedReferences||legacy.missingRecordForInstanceStacks||legacy.duplicatePhysicalLocations)
   blockers.add('legacy_custody_conflict');
  const blocked=blockers.size>0;

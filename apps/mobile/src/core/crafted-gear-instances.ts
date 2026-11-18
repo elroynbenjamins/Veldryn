@@ -63,7 +63,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         const rarity=(['common','uncommon','rare','epic','legendary','mythic'].includes(row.rarity)?row.rarity:itemRarity(item)) as ItemRarity;
         const enhancement=row.enhancement&&typeof row.enhancement==='object'?row.enhancement:{};
         // Draft v1 receipts may predate a version marker. Unknown explicit versions fail closed.
-        const version:WeaponBonusRollVersion|undefined=row.weaponBonusRollVersion===1||row.weaponBonusRollVersion===2
+        const version:WeaponBonusRollVersion|undefined=row.weaponBonusRollVersion===1||row.weaponBonusRollVersion===2||row.weaponBonusRollVersion===3
           ?row.weaponBonusRollVersion:row.weaponBonusRollVersion===undefined&&Array.isArray(row.weaponBonuses)?1:undefined;
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
@@ -74,7 +74,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
           weaponBonuses:version?normalizeWeaponBonuses(item.id,rarity,row.weaponBonuses,version):undefined,
           weaponBonusRollVersion:version,
           equipmentBonuses:normalizeEquipmentBonuses(item.id,rarity,row.equipmentBonuses,row.equipmentBonusRollVersion),
-          equipmentBonusRollVersion:row.equipmentBonusRollVersion===EQUIPMENT_BONUS_ROLL_VERSION?EQUIPMENT_BONUS_ROLL_VERSION:undefined,
+          equipmentBonusRollVersion:row.equipmentBonusRollVersion===1||row.equipmentBonusRollVersion===2?row.equipmentBonusRollVersion:undefined,
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
           enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,statGemRollPercent:normalizeGemRollPercentV1(enhancement.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(enhancement.effectGemRollPercent),gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},

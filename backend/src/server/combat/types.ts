@@ -160,6 +160,8 @@ export interface CombatInput {
   initialPlayerState?: Record<string, PersistentActorState>;
   /** Only set by server-owned Q-Mode runs; Live and legacy combat retain baseline rolls. */
   enemyDamageProfile?:'qmode-v1';
+  /** Internal, server-owned opt-in for experimental Enemy 2.0 status safety. Never derive from client JSON. */
+  experimentalRuleset?:'enemy-v2-prototype-1';
 }
 
 export interface PersistentActorState {

@@ -51,7 +51,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  },[session?.user.id,publicSelf]);
  if(!c)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={s.heading}>{profileT(language,"Profile")}</Text><Panel><Text style={s.copy}>{profileT(language,"Create a character to build your profile.")}</Text></Panel></ScrollView>;
 
- const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?.masteryShowcaseActionIds?.length?publicSelf.masteryShowcaseActionIds:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
+ const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?publicSelf.masteryShowcaseActionIds??[]:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
  const achievementEntries=achievementIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id),prestige=profileAchievementPrestige(id);return {key:id,label:profileAchievementLabel(id),meta:def?profileText(language,label(def.category)):profileT(language,'Achievement'),prestige:prestige.tone,badge:profileBadge(language,prestige.badge)}});
  const recordPrestige=profileRecordPrestige();
  const recordEntries=recordIds.map(id=>{const record=publicSelf?.recordEntries?.[id]??state.account.journalState?.records?.[id];return {key:id,label:profileText(language,profileRecordLabel(id)),value:record?profileRecordValue(language,id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:profileBadge(language,recordPrestige.badge)}});
@@ -62,9 +62,9 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const selectedProfileCharacterId=publicSelf?.character.id??c.id;
  const selectedLocally=selectedProfileCharacterId===c.id||(state.otherCharacters??[]).some(row=>row.character.id===selectedProfileCharacterId);
  const displayedGear=selectedLocally?localProfileGear(state,selectedProfileCharacterId):publicSelf?.equippedGear??[];
- const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
+ const favoriteSkillId=publicSelf?publicSelf.favoriteSkillId??undefined:summary.highestSkill?.skillId;
  const profileHero=selectedProfileCharacterId===c.id?c:(state.otherCharacters??[]).find(row=>row.character.id===selectedProfileCharacterId)?.character;
- const favoriteCompanionId=publicSelf?.favoriteCompanionId??profileHero?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
+ const favoriteCompanionId=publicSelf?publicSelf.favoriteCompanionId??undefined:profileHero?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',profileStateLabel=publicError?profileT(language,"SYNC ISSUE"):publicSelf?.visibility==='public'?profileT(language,"PUBLIC PROFILE"):publicSelf?.visibility==='guild'?profileT(language,"GUILD PROFILE"):publicSelf?.visibility==='private'?profileT(language,"PRIVATE PROFILE"):profileT(language,"LOCAL PROFILE");
  const bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?profileT(language,"Link this guest account before publishing biography and showcase changes."):profileT(language,"Add a short biography from Customize Profile to tell other players about your character or play style.")):profileT(language,"This local profile is fully usable on-device. Sign in when you want to publish social profile details.");
 

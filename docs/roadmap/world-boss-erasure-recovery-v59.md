@@ -52,7 +52,9 @@ All tables have private-schema RLS and **no grants to `PUBLIC`, `anon`, `authent
 - orderly stage transitions, a synthetic removed Auth identity, completion retry and unchanged V57 fence;
 - untouched second-account job, Auth identity and replay manifest; new unreviewed identity table still rejected.
 
-**The SQL suite is not considered passing until a completed exact-head CI run proves it.**
+A second CI script, `docs/roadmap/world-boss-erasure-lease-v59-race-ci.sh`, uses **two independent PostgreSQL sessions** against the disposable `127.0.0.1/postgres` service. It checks that only one same-account lease wins, a crashed lease can be reclaimed at a higher generation, the original worker cannot release the new worker's lease, a separate account can still progress and the V57 account fences remain. The script rejects any non-local host or database/user and cleans up synthetic rows.
+
+**Neither SQL suite is considered passing until a completed exact-head CI run proves it.**
 
 ## Next implementation gates
 

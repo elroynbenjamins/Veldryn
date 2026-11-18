@@ -34,9 +34,11 @@
   `public.online_game_states`, and
   `public.guild_project_supply_catalogue_v1` exist.
 - The existing Guild supply catalogue provides **three wood and three ore
-  items, with no herb category entries**. This is *not proof that no herb
-  exists anywhere*, but the draft V16 supply plan still lacks an approved
-  herbal gathering-source mapping; keep three-category supply orders blocked.
+  items, with no herb category entries**; however, the later **V22 hidden
+  migration and gameplay source audit explicitly approve Level 1 Greenfields
+  Dewleaf** (`DEWLEAF_PATCH`) as the herb starter item while keeping Thorn
+  Sap disabled. The source mapping is verified in draft code but **not installed
+  on staging**, so three-category live supply orders remain blocked.
 - Tests verify that missing/incorrect columns, absent RLS, unexpected player
   privileges, exposed private function EXECUTE, and duplicate audit rows all
   produce a non-ready report. This is no production migration or DDL.

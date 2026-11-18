@@ -31,7 +31,7 @@ const disabled=compileTrustedEquipmentAffixesV2(ready,items,policy,false);
 assert.equal(disabled.actor,ready);
 assert.equal(disabled.sources.length,0);
 const compiled=compileTrustedEquipmentAffixesV2(ready,items,policy,true);
-assert.equal(compiled.sources.length,8);
+assert.equal(compiled.sources.length,7);
 assert.equal(compiled.actor.stats.attackPower,Math.round(ready.stats.attackPower*1.04*1e5)/1e5);
 assert.equal(compiled.actor.stats.defense,Math.round(ready.stats.defense*1.04*1e5)/1e5);
 assert.equal(compiled.actor.stats.maxHp,Math.round(ready.stats.maxHp*1.03*1e5)/1e5);

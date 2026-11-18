@@ -96,11 +96,12 @@ DECLARE account_key uuid;
 BEGIN
  account_key:=CASE WHEN TG_OP='DELETE' THEN OLD.account_id ELSE NEW.account_id END;
  PERFORM private.world_boss_v57_account_lock(account_key);
- IF TG_OP='UPDATE' AND
-    (NEW.account_id IS DISTINCT FROM OLD.account_id OR
+ IF TG_OP='UPDATE' THEN
+  IF NEW.account_id IS DISTINCT FROM OLD.account_id OR
      NEW.status IS DISTINCT FROM OLD.status OR
-     NEW.fenced_at IS DISTINCT FROM OLD.fenced_at)
- THEN RAISE EXCEPTION 'WB57_FENCE_IMMUTABLE'; END IF;
+     NEW.fenced_at IS DISTINCT FROM OLD.fenced_at
+  THEN RAISE EXCEPTION 'WB57_FENCE_IMMUTABLE'; END IF;
+ END IF;
  IF TG_OP='DELETE' THEN
   IF EXISTS(SELECT 1 FROM auth.users WHERE id=OLD.account_id)
   THEN RAISE EXCEPTION 'WB57_CANNOT_UNFENCE_EXISTING_AUTH_ACCOUNT'; END IF;

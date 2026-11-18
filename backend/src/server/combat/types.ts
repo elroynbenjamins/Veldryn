@@ -179,7 +179,7 @@ export interface CombatantState {
 
 export interface CombatGemStateSnapshot{ targetId:string; tag:string; expiriesAtMs:number[]; }
 
-export type CombatEventType = 'capstone_trigger'|'resource_gain'|'resource_spend'|'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export type CombatEventType = 'passive_trigger'|'capstone_trigger'|'resource_gain'|'resource_spend'|'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'status_remove' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
   resource?:CombatV2Resource;
   resourceBefore?:number;

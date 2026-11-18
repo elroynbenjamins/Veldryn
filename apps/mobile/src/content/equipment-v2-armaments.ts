@@ -42,6 +42,19 @@ export const EQUIPMENT_V2_ARMAMENTS:readonly V2Armament[]=
    id:'EQ2_OFFHAND_T'+tier+'_'+spec.classId,name:TIER_NAMES[tier]+' '+spec.offhandName};
   return [weapon,offhand];
  }));
+/** New class weapon templates are craftable by all classes but only wearable
+ * by the class whose archetype they match. Never merge with legacy V33 IDs.
+ */
+export type V2CraftableArmament=V2Armament & {role:'tank'|'damage'|'support';classRestriction:ClassId;setId?:undefined};
+const V2_WEAPON_ROLE_BY_CLASS:Readonly<Record<ClassId,'tank'|'damage'|'support'>>={
+ IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
+ WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
+ DAWNKEEPER:'support',STONECALLER:'damage',
+};
+export const EQUIPMENT_V2_CRAFTABLE_ARMAMENTS:readonly V2CraftableArmament[]=
+ EQUIPMENT_V2_ARMAMENTS.map(item=>({
+  ...item,role:V2_WEAPON_ROLE_BY_CLASS[item.classId],classRestriction:item.classId,
+ }));
 export function equipmentV2ArmamentStats(item:V2Armament,quality=50,rarityMultiplier=1){
  return item.slot==='weapon'
   ?equipmentV2PreviewArmamentStats(item.tier,item.profile,item.hands,quality,rarityMultiplier)

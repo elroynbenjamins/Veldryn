@@ -71,7 +71,7 @@ async function run(){
   'revision_quote_or_gold_mismatch');
  denies({...base,locked:{...base.locked,quoteHash:'f'.repeat(64)}},
   'revision_quote_or_gold_mismatch');
- denies({...base,locked:{...base.locked,locksHeld:true}},
+ denies({...base,locked:{...base.locked,locksHeld:true} as unknown as typeof base.locked},
   'stale_or_privileged_locked_snapshot');
  denies({...base,recovery:{...base.recovery,status:'paired_receipt_present'}},
   'receipt_already_present_or_untrusted');
@@ -90,7 +90,7 @@ async function run(){
   'private_schema_not_verified');
  denies({...base,schema:{...base.schema,unsafeGrants:['anon_execute']}},
   'private_schema_not_verified');
- denies({...base,evidence:{...base.evidence,payoutEnabled:true}},
+ denies({...base,evidence:{...base.evidence,payoutEnabled:true} as unknown as typeof base.evidence},
   'reward_evidence_inconsistent');
  denies({...base,snapshot:{...base.snapshot,eventStartsAt:'2026-11-02T00:00:00Z'}},
   'event_window_identity_mismatch');

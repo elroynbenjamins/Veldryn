@@ -86,7 +86,7 @@ try{
   'public.commit_online_game_party_sources_server_v48(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid)','EXECUTE') as server`);
  assert.deepEqual(role.rows[0],{player:false,guest:false,server:true},
   'RPC must be service-role-only even though public schema is exposed');
- await db.query(`select set_config('request.jwt.claim.role','service_role',false)`);
+
  const invoke=(id=request,amount=5)=>db.query(`
  select public.commit_online_game_party_sources_server_v48(
   $1::uuid,0::bigint,0::bigint,$2::text,$3::text,$4::jsonb,$5::jsonb,$6::jsonb,
@@ -102,11 +102,11 @@ try{
  ).rows[0];
 
  // A public PostgREST RPC cannot be usable with a normal player JWT.
- await db.query(`select set_config('request.jwt.claim.role','authenticated',false)`);
+ await db.exec('set role authenticated;');
  let roleDenied=false;
  try{await invoke();}catch{roleDenied=true;}
- assert.equal(roleDenied,true,'user JWT cannot invoke hidden V48 gateway');
- await db.query(`select set_config('request.jwt.claim.role','service_role',false)`);
+ finally{await db.exec('reset role;');}
+ assert.equal(roleDenied,true,'authenticated database role cannot invoke hidden V48 gateway');
  const initial=await invoke();
  assert.equal(initial.rows.length,1);
  assert.deepEqual(await count(),{actions:1,crafts:1,idle:1,queued:2},

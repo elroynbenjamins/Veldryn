@@ -136,7 +136,7 @@ ok(achievements.includes("entryRightStack:{width:'100%',maxWidth:'100%',flexDire
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px touch target');
 ok(rankings.includes('stackRows=width<360||fontScale>=1.25'),'Ranking rows must adapt to narrow phones and large text');
-ok(rankings.includes("scoreValueStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
+ok(rankings.includes('stackRows&&s.scoreWrapStack')&&rankings.includes("scoreWrapStack:{width:'100%',maxWidth:'100%',paddingLeft:53,alignItems:'flex-start'}")&&rankings.includes("scoreValueStack:{textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
 
 const petBonus=read('src/screens/PetBonusOverviewScreen.tsx');
 ok(petBonus.includes('useWindowDimensions')&&petBonus.includes("singleColumn=width<360||fontScale>=1.25"),'Pet Bonus Overview must adapt filters and cards for narrow phones and large text');

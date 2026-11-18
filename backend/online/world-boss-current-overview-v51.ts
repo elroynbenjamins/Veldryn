@@ -9,9 +9,9 @@
  */
 import {
  worldBossRotationAtV50,assertWorldBossCanonicalEventV50,
+ worldBossScheduleAtV22,
  type WorldBossGlobalCycleV50,type WorldBossRotatingIdV50,
 } from '../src/server/combat/world-boss-weekend-v22';
-import {worldBossScheduleAtV22} from '../src/server/combat/world-boss-weekend-v22';
 import {
  createWorldBossOverviewPgV41,verifyWorldBossOverviewV41,
  type WorldBossOverviewRowV41,

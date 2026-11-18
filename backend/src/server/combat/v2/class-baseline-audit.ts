@@ -69,6 +69,16 @@ export function auditApprovedClassBaselinesV2(
         current.maxHp<=0||current.critMultiplier<1||
         current.critChance>1||current.haste>2){
        issues.push({classId,level,code:'invalid_class_curve_stats'});
+       continue;
+     }
+     // The same class/level must create byte-stable combat stats on every
+     // replay. Never accept randomness, clock-based bonuses or mutation.
+     try{
+       const repeated=profile.statsAtLevel(level);
+       if(!repeated||stats.some(k=>repeated[k]!==current[k]))
+         issues.push({classId,level,code:'non_deterministic_class_curve'});
+     }catch{
+       issues.push({classId,level,code:'class_curve_threw_on_repeat'});
      }
    }
  }

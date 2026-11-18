@@ -232,6 +232,17 @@ export function verifyPersistedEnemyKitsV2(
    next.level===base.level&&next.boss===base.boss&&
    (next.tags??[]).filter(t=>t===KIT_TAG).length===1&&
    !duplicateAbility(next),'invalid_stored_enemy_identity');
+  const baseAbilityIds=new Set(base.abilities.map(a=>a.id));
+  const preservedAbilities=next.abilities.filter(a=>baseAbilityIds.has(a.id));
+  const basePhaseIds=new Set((base.phases??[]).map(p=>p.id));
+  const preservedPhases=(next.phases??[]).filter(p=>basePhaseIds.has(p.id));
+  assert(enemyV2SnapshotDigest(preservedAbilities)===enemyV2SnapshotDigest(base.abilities)&&
+    enemyV2SnapshotDigest(preservedPhases)===enemyV2SnapshotDigest(base.phases??[])&&
+    (base.tags??[]).every(tag=>(next.tags??[]).includes(tag)),
+    'original_enemy_kit_mutated');
+  if(base.boss)
+   assert(enemyV2SnapshotDigest(next.stats)===enemyV2SnapshotDigest(base.stats),
+     'boss_base_stats_mutated');
   assert((base.boss===true)===(p.kind==='boss')&&
    (!base.boss||next.tags?.some(t=>t.startsWith('enemy-v2:boss-profile:'))),
    'invalid_stored_enemy_profile');

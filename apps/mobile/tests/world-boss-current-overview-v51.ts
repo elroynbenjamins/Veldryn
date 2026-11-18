@@ -252,6 +252,21 @@ async function main(){
  await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
   ...deps,accountPrivacy:v58,
  }), 'account_privacy_hold');
+ hasDeletionFence=false;
+ // A private deletion fence appearing DURING a pending status read must
+ // revoke visibility at the second V51 check, not leak the completed row.
+ let midReadChecks=0;
+ const midReadPg=createWorldBossAccountPrivacyPgV58({
+  async query<T extends object>(_statement:string,parameters:readonly unknown[]){
+   assert.deepEqual(parameters,[ACCOUNT]);
+   midReadChecks++;
+   return {rows:[{allowRead:midReadChecks===1} as T]};
+  },
+ });
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:midReadPg,
+ }), 'account_privacy_hold');
+ assert.equal(midReadChecks,2,'privacy must be read before AND after overview');
  assert.ok(privacySqlCalls>=6,'privacy is checked twice around accepted overview');
 
  await rejection(()=>v58.allowRead('malformed-owner'),

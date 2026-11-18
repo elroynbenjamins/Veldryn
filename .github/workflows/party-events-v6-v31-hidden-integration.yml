@@ -40,6 +40,8 @@ jobs:
         run: node tests/party-event-source-alignment-v44.mjs
       - name: Test V43 trusted source-to-week mapping and overlap denial
         run: node tests/party-event-activity-credit-sql-v43.mjs
+      - name: Prove V49 source-time humans and full V14 credit after disconnect in disposable PGlite
+        run: node tests/party-event-coop-attestation-v49.mjs
       - name: Ensure hidden migrations and disabled V48 gate are not promoted
         run: node tests/party-event-hidden-migrations-v37.mjs
   party-events-online-sources:
@@ -159,6 +161,8 @@ jobs:
         run: node tests/party-event-source-alignment-v44.mjs
       - name: Verify V43 canonical receipt/event matching and overlap denial in disposable PGlite
         run: node tests/party-event-activity-credit-sql-v43.mjs
+      - name: Verify V49 human co-op attestation and V14 frozen-source credit
+        run: node tests/party-event-coop-attestation-v49.mjs
       - name: Verify hidden SQL paid-receipt and locked claim contracts in disposable PGlite
         run: |
           node tests/party-event-paid-schema-v29.mjs

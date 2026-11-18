@@ -5,6 +5,10 @@
 ## New code
 - backend/src/server/combat/v2/build-contract.ts — nine-class role mapping, ten gear slots, server-verified loadout, specialization, variants, talents, capstones and set thresholds.
 - backend/src/server/combat/v2/__tests__/build-contract.ts — regression coverage for ownership, legacy class locks, cross-role restrictions, set combinations, skills and talent points.
+- backend/src/server/combat/v2/set-catalog.ts and its test — canonical 12 set-family structures and 60 T1–T5 variants.
+
+## Set catalogue
+A separate structural registry enumerates 12 role-based families and generates 60 T1–T5 definitions with their actual slot lists and 2/3/4/6-piece thresholds. These are definitions only; no numeric set effects or runtime item changes are made.
 
 ## Trust model
 validateBuildV2 requires an authenticated server snapshot of character class, level and owned item instance IDs. An authoritative server catalog defines eligibility and membership. Client inputs select IDs only and cannot supply actual affix roll values, derived effects or class levels.

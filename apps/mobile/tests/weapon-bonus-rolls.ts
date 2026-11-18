@@ -92,8 +92,9 @@ const fullPool=new Set(CLASSES.flatMap(cls=>{
  const itemId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.classId===cls.id&&itemDef(row.output.itemId).slot==='weapon')!.output.itemId;
  return [...weaponBonusConfig(itemId,'common')!.pool];
 }));
-for(const name of ['maxHp','armor','ward','tenacity','critRate','critDamage','abilityDamage','healingPower','haste','penetration','accuracy','potency','evasion','power'])
-  ok(fullPool.has(name as any),'Full Equipment 2.0 weapon pool is missing '+name);
+for(const name of ['maxHp','armor','ward','tenacity','critRate','critDamage','abilityDamage','healingPower','haste','penetration','accuracy','potency','evasion'])
+  ok(fullPool.has(name as any),'Early equipment stat pool is missing '+name);
+ok(!fullPool.has('power' as any),'Generic Power cannot roll before the Weapon Power / Skill Power 2.0 split');
 // Stat-specific balancing: high-value Crit Rate and Ward cap below broad HP / Tenacity.
 ok(weaponBonusRange(2,'critRate')?.join(',')==='30,80','T2 Crit Rate must have an especially low roll cap');
 ok(weaponBonusRange(3,'critRate')?.join(',')==='50,150','T3 Crit Rate is 0.5–1.5%, not the old global range');

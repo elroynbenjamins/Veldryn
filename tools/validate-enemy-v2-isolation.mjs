@@ -29,11 +29,13 @@ const sourceExtensions=/\.(?:ts|tsx|js|jsx|mjs|cjs)$/;
 const patterns=[
   /\bprepareEnemyV2\b/,
   /\bprepareAsterfallBossV2\b/,
+  /\bprepareRegionalBossV2\b/,
   /\bENEMY_V2_RULESET\b/,
   /['"]enemy-v2-prototype['"]/,
   /['"]boss-v2-asterfall-prototype['"]/,
   /\benemy-v2-prototype\b/,
   /\bboss-v2-asterfall-prototype\b/,
+  /\bboss-v2-regional-prototype\b/,
 ];
 const failures=[];
 let checked=0;

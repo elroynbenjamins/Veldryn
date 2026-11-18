@@ -128,10 +128,10 @@ export function PartyHubPanel(props: PartyHubPanelProps){
      const manage=partyMemberManagement(canManageParty,props.accountId,member.accountId);
      const canOpenManagement=manage.canTransfer&&!!props.onTransferLeadership||manage.canRemove&&!!props.onRemoveMember;
      return <View key={member.accountId} style={s.memberRow}>
-      <Pressable accessibilityRole="button" accessibilityLabel={st('Open {name} profile',{name:member.characterName})} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.pressed]}>
-       <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.characterName} className={member.className} status={member.isLeader?st('PARTY LEADER'):socialLabel(language,member.role).toLocaleUpperCase(language)} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st('VIEW PROFILE ›'):undefined}/>
+      <Pressable accessibilityRole="button" accessibilityLabel={st('Open {name} profile',{name:member.socialName??member.characterName})} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.pressed]}>
+       <CompactPlayerIdentity accountId={member.accountId} badges={member.playerBadges} name={member.socialName??member.characterName} className={member.className} status={member.isLeader?st('PARTY LEADER'):socialLabel(language,member.role).toLocaleUpperCase(language)} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?st('VIEW PROFILE ›'):undefined}/>
       </Pressable>
-      {canOpenManagement?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
+      {canOpenManagement?<Pressable accessibilityRole="button" accessibilityLabel={st('Manage {name}',{name:member.socialName??member.characterName})} onPress={()=>setSelectedMember(member)} style={({pressed})=>[s.iconAction,pressed&&s.pressed]}><Text style={s.iconActionText}>•••</Text></Pressable>:null}
      </View>;
     })}</View>
     {openSpots>0?<Pressable accessibilityRole="button" accessibilityLabel={st('Find members')} onPress={()=>{if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots,pressed&&s.pressed]}>
@@ -190,7 +190,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <GameModalSurface visible={!!focusedMember&&inParty} presentation="dialog" onClose={()=>setSelectedMember(null)}>
    <GameModalHeader eyebrow={st('PARTY MEMBERS')} title={st('Manage member')} onClose={()=>setSelectedMember(null)}/>
    {focusedMember?<View style={s.modalBody}>
-     <CompactPlayerIdentity accountId={focusedMember.accountId} badges={focusedMember.playerBadges} name={focusedMember.characterName} className={focusedMember.className} status={socialLabel(language,focusedMember.role).toLocaleUpperCase(language)} statusTone="info"/>
+     <CompactPlayerIdentity accountId={focusedMember.accountId} badges={focusedMember.playerBadges} name={focusedMember.socialName??focusedMember.characterName} className={focusedMember.className} status={socialLabel(language,focusedMember.role).toLocaleUpperCase(language)} statusTone="info"/>
      <View style={s.divider}/>
      {permissions?.canTransfer?<GameButton tone="secondary" title={st('Transfer leadership')} disabled={!props.onTransferLeadership} onPress={()=>{setSelectedMember(null);props.onTransferLeadership?.(focusedMember);}}/>:null}
      {permissions?.canRemove?<GameButton tone="danger" title={st('Remove member')} disabled={!props.onRemoveMember} onPress={()=>{setSelectedMember(null);props.onRemoveMember?.(focusedMember);}}/>:null}

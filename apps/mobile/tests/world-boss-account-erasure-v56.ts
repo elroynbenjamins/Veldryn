@@ -9,7 +9,6 @@ import {
 } from '../../../backend/online/world-boss-account-erasure-v56';
 
 const OWNER='10000000-0000-4000-8000-000000000056';
-const OTHER='10000000-0000-4000-8000-000000000057';
 const TICKET='wb56-private-privacy-service-ticket-very-long';
 const KEYS=['private/replays/owner/first','private/replays/owner/second'] as const;
 async function reject(fn:()=>Promise<unknown>,fragment:string){
@@ -149,12 +148,15 @@ async function main(){
  assert.equal(auth.state.authDeletes,2);
  assert.equal(auth.state.finalizes,1);
 
- // A missing account privacy ticket must never claim a different user
- // or call any game deletion operation.
+ // A forged or malformed privacy account identity is rejected BEFORE
+ // acquiring a deletion lease or reading any personal World Boss records.
+ let unauthorizedLeases=0;
  await reject(()=>runWorldBossErasureV56({ticket:TICKET},{
-  ...test.deps,authorizeTicket:async()=>({accountId:OTHER}),
-  beginOrResume:async()=>({kind:'acquired',leaseId:'BAD_OWNER_LOCK',stage:'fenced'}),
- }), ''); // fail if explicit wrong account cannot use real owner-scoped reader
+  ...test.deps,authorizeTicket:async()=>({accountId:'not-a-uuid'}),
+  beginOrResume:async()=>{unauthorizedLeases++;return {kind:'busy'};},
+ }), 'private_authorization_required');
+ assert.equal(unauthorizedLeases,0);
+ assert.equal(test.state.rowPurges,1,'other account data untouched');
  console.log('WORLD_BOSS_V56_PRIVATE_ERASURE_RETRY_AND_ORDER=PASS');
 }
 void main().catch(error=>{console.error(error);throw error;});

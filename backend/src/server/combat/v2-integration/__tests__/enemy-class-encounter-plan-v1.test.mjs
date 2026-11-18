@@ -114,6 +114,8 @@ let debuff=status(args([],next('damage_done','e1','debuff')));
 debuff=status(args(debuff.entries,next('damage_done','e1','debuff',6500)));
 assert.equal(debuff.entries.length,1);
 assert.throws(()=>status(args([],next('unknown'))),/unsupported_status_effect/);
+assert.throws(()=>status(args([],{...next('poison'),privatePayload:{bonus:12}})),/invalid_status_payload/);
+assert.throws(()=>status(args([{...next('poison'),nested:{raw:'secret'}}],next('poison'))),/invalid_existing_status/);
 assert.throws(()=>status(args([],next('poison','e1','dot',1000))),/invalid_status_payload/);
 assert.throws(()=>status(args([
  next('poison','e1'),next('poison','e1'),next('poison','e1'),next('poison','e1'),
@@ -124,4 +126,4 @@ assert.equal(shield({targetTeam:'enemies',maxHp:1000,currentShield:95,requested:
 assert.equal(shield({targetTeam:'enemies',maxHp:1000,currentShield:110,requested:50}),0);
 assert.throws(()=>shield({targetTeam:'players',maxHp:1000,currentShield:0,requested:5}),/shield_target_must_be_enemy/);
 assert.throws(()=>shield({targetTeam:'enemies',maxHp:1000,currentShield:0,requested:Infinity}),/invalid_shield_amount/);
-console.log('PASS: 8 archetype mappings, nine classes, 30 fail-closed encounter cases, status caps/replay and enemy shield ceilings');
+console.log('PASS: 8 archetype mappings, nine classes, 31 fail-closed encounter cases, status caps/replay and enemy shield ceilings');

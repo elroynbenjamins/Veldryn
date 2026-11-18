@@ -1,9 +1,10 @@
 import type {ActivePeriodicEffect,ActiveTimedModifier} from './types';
 
 /**
- * Experimental Enemy 2.0 status policies. This file is ONLY used when a
- * server-owned CombatInput explicitly selects 'enemy-v2-prototype-1'.
- * No changes to legacy combat stacks, heals or shields are permitted.
+ * Experimental Enemy 2.0 status policies shared with the Classes V2 engine.
+ * Only a server-issued, snapshot-bound authority in the SECOND simulator
+ * parameter enables these rules. CombatInput JSON never selects the ruleset.
+ * Existing legacy/Q-mode statuses and shields remain unchanged.
  */
 export const ENEMY_V2_MAX_DOT_STACKS_PER_SOURCE = 3;
 export const ENEMY_V2_MAX_SHIELD_RATIO = .10;

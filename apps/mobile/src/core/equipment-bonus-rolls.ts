@@ -46,7 +46,8 @@ export function equipmentBonusConfig(itemId:string,rarity:ItemRarity,version:Equ
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||!item.slot||!ELIGIBLE_SLOTS.has(item.slot)||tier<2||tier>9||!role)return undefined;
   const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  return {tier,role,slot:item.slot,count,pool:(version===1?LEGACY_ROLE_POOL:ROLE_POOL)[role]};
+  const pool:readonly EquipmentBonusStat[]=version===1?LEGACY_ROLE_POOL[role]:ROLE_POOL[role];
+  return {tier,role,slot:item.slot,count,pool};
 }
 
 /** Smaller per-slot percentages than weapons, guarding against nine-slot stacking. */

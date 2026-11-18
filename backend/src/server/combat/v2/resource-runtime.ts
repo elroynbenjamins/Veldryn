@@ -6,6 +6,7 @@
  * State starts at zero for every new encounter (not persisted across Q-mode rooms).
  */
 import type {AbilityDefinition,CombatantDefinition,CombatantState,CombatEvent,CombatV2Resource,CombatV2State} from '../types';
+import {reactiveResourceSpendMultiplierV2} from './reactive-passive-runtime';
 
 export const RESOURCE_BY_CLASS_V2 = {
   IRONWARDEN:'guard',BASTION:'barrier',DREADGUARD:'dread',WAYFINDER:'focus',
@@ -68,7 +69,8 @@ export function spendCombatResourceV2(state:CombatantState,ability:AbilityDefini
   const before=v2.stacks;
   v2.stacks-=spent;
   v2.spentTotal+=spent;
-  const coeffScale=Math.min(1.5,1+spent*Math.max(0,Math.min(.12,config.bonusPerStack??.05)));
+  const coeffScale=Math.min(1.6,(1+spent*Math.max(0,Math.min(.12,config.bonusPerStack??.05)))*
+    reactiveResourceSpendMultiplierV2(state));
   const effects=ability.effects.map(effect=>
     ['damage','shield','heal'].includes(effect.kind)&&typeof effect.coeff==='number'
       ?{...effect,coeff:Math.round(effect.coeff*coeffScale*1e6)/1e6}:effect);

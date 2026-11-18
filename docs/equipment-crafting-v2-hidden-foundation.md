@@ -52,3 +52,14 @@ This is a coordinated future update. Both Equipment 2.0 and Crafting 2.0 are hel
 6. Obtain green CI and staging smoke runs before any feature gates are enabled.
 
 **Release safety:** Do not merge this WIP draft into a live rollout, deploy shadow SQL, alter existing item records, charge player Gold or expose any V2 public controls during hidden implementation.
+
+
+## Read-only crafting economy and UI refinement pass
+- Added `equipment-crafting-v2-preparation.ts`: forecasts a complete prerequsite chain from the *actual live component and binder recipes*, including available Inventory/Bank materials, profession unlocks, production batches, sequential processing time, Gold paid and XP by profession.
+- The planner uses a virtual material stock ledger so multiple components cannot double-count the same resource. It reports material shortages, locked steps and circular dependencies rather than treating missing resources as automatically owned. No Gold is spent, no materials are reserved and no Market listings are invented.
+- Recipe variants now compare hypothetical external shortages, then known Gold and processing time; the user can still choose either route. The hidden detail screen shows assembly cost separately from planned processing, individual component steps, their XP and any still-unavailable materials.
+- Locked component/binder requirements get a specific “unlock prerequisite” state, instead of a misleading “prepare components” prompt.
+- The focused GitHub equipment workflow now triggers on `equipment-v2-*` content, React Native V2 components, backend server files, SQL draft, and V2 regression tests—not just core files.
+- Added regressions for component batch aggregation, split raw-material reuse, locked recipes, cyclic production paths, batch-cost optimization, and an accurate blocked-state CTA.
+
+**Known limitation**: This is a read-only estimate assuming the selected prerequisite recipes are performed. Source acquisition Gold is omitted until authenticated, quantity-aware market quotes exist. Profession multipliers, queue speedups, recipe knowledge, capacity and material locks must be accounted for by the final server-authoritative flow. Existing live Forge behavior is unchanged.

@@ -25,6 +25,7 @@ on:
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
       - 'docs/roadmap/world-boss-overview-v41*.sql'
+      - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
       - 'backend/online/world-boss-current-read-route-v52.ts'
@@ -187,3 +188,5 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41-smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-private-access-audit-v32.sql
+          # V53 proof-only cycle constraints run inside BEGIN/ROLLBACK.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql

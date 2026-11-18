@@ -6,6 +6,8 @@ on:
       - 'apps/mobile/src/content/equipment-v2-*.ts'
       - 'apps/mobile/src/components/EquipmentCraftingV2*.tsx'
       - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+      - 'backend/src/server/combat/v2-integration/equipment-exact-copy-interop-v1.mjs'
+      - 'backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs'
       - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
       - 'backend/sql/drafts/equipment_crafting_v2_*.sql'
       - 'backend/tsconfig.equipment-v2.json'
@@ -58,6 +60,8 @@ jobs:
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-custody.test.js
       - name: Verify hidden V2 atomic gameplay commit plan and Gold conservation
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.js
+      - name: Verify canonical Equipment 2.0 exact copies in Combat 2.0 evidence
+        run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs
       - name: Test shadow store compare-and-swap and crash recovery
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-shadow.test.js
       - name: Audit shadow SQL security and safe rollout boundary

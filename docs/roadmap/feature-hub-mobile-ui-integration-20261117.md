@@ -120,3 +120,12 @@ source/receipt idempotency and Day 8 settlement are still blockers.
 
 **Keep this UI PR draft, developer-only and unmerged.** No online Party Event
 RPC or paid claim exists here.
+
+## V46 hidden World Boss read-only bridge (18 November 2026)
+
+- `apps/mobile/src/core/world-boss-readonly-snapshot.ts` decodes the *versioned* V41 `world-boss-overview-v41` projection. It refuses wrong account identity, missing version, invalid seven-day Monday-UTC calendar, stale or future data, inconsistent attempts, implausible HP, forged War Camp counters/tiers and out-of-range Sigil balances.
+- Developer-only World Boss cards can **optionally** show a verified-format server-provided boss HP/phase, attempts remaining, War Camp track totals and the distinction between event-earned and currently spendable Sigils. Changing the preview boss clears mismatched regional data. Empty, expired, invalid or missing data falls back to explicit **No verified World Boss loaded** rather than manufactured live status.
+- The normal `apps/mobile/App.tsx` intentionally passes **neither** `worldBossStatus` nor `worldBossAccountId`: no HTTP/Supabase route or live authenticated provider currently exists. The preview is unmounted outside the existing `__DEV__` QA feature route.
+- Donate, battle, claim and market actions **remain disabled** regardless of the snapshot's phase or counts. The decoder is for UI integrity, **not** identity proof: the future authenticated backend must derive account ID from Auth and verify replay ownership.
+- New runtime/source regression `apps/mobile/tests/world-boss-readonly-snapshot.cjs` is included in `pnpm test:feature-hubs`, and the separate hidden backend V41 contract has been version-tagged to match. No feature flag, database table, real currency or production screen was enabled.
+- Launch still blocked by #1348 (retention/account erasure), prior baseline Expo/core/bundle drifts, staging migrations, real 3–5 character raid fixtures and reviewed authenticated endpoints.

@@ -123,6 +123,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies for cross-root shared combat imports
+        run: pnpm --dir backend install --frozen-lockfile
       - name: Typecheck the React Native mobile app including the hidden Skills 2.0 screen
         run: pnpm --dir apps/mobile typecheck
       - name: Verify preview catalogue, accessible interactions and isolation from production
@@ -142,6 +144,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies for shared UI theme types in online contracts
+        run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Compile isolated online contracts
         run: pnpm --dir backend exec tsc -p tsconfig.online.json
       - name: Reject build spoofing and verify disabled transport

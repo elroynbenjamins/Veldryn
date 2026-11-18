@@ -99,7 +99,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects ten unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects eleven unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

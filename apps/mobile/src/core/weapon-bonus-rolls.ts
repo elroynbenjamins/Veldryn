@@ -25,7 +25,7 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Legacy
 const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
   Tank:['armor','maxHp','ward','tenacity','evasion','power','haste'],
   Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','power','evasion'],
-  Support:['healingPower','potency','haste','ward','maxHp','tenacity','abilityDamage','power'],
+  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate','power'],
 };
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
  * HP and Tenacity have wider budgets than combat tempo/crit/avoidance stats. */

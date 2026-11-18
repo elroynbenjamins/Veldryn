@@ -1,0 +1,40 @@
+name: Hidden Combat 2.0 Enemy/Class reconciliation
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2-integration/**'
+      - 'docs/combat-v2-enemy-class-integration-v1-20261118.md'
+      - '.github/workflows/combat-v2-enemy-class-integration.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/src/server/combat/v2-integration/**'
+      - 'docs/combat-v2-enemy-class-integration-v1-20261118.md'
+      - '.github/workflows/combat-v2-enemy-class-integration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reconciled-enemy-class-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check nine-class identity, archetype mappings, status caps and legacy isolation
+        run: node backend/src/server/combat/v2-integration/__tests__/enemy-class-encounter-plan-v1.test.mjs
+      - name: Confirm hidden coordinator is not imported by production combat
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R 'enemy-class-encounter-plan-v1' \
+            backend/online backend/supabase/functions \
+            backend/src/server/combat/engine.ts \
+            apps/mobile/src --include='*.ts' --include='*.tsx'; then
+            echo 'Unreleased Class/Enemy V2 preflight referenced by a live route'
+            exit 1
+          fi

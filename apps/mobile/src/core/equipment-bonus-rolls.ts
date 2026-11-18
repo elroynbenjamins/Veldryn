@@ -9,8 +9,8 @@ import type {GearSlot} from './types';
 /** T2–T9 non-weapon bonus rolls, stored on the immutable crafted-copy receipt. */
 export type EquipmentBonusStat=WeaponBonusStat;
 export interface EquipmentBonusRoll{stat:EquipmentBonusStat;basisPoints:number;}
-export const EQUIPMENT_BONUS_ROLL_VERSION=2 as const;
-export type EquipmentBonusRollVersion=1|2;
+export const EQUIPMENT_BONUS_ROLL_VERSION=3 as const;
+export type EquipmentBonusRollVersion=1|2|3;
 
 const HIGH_RARITIES:readonly ItemRarity[]=['epic','legendary','mythic'];
 const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
@@ -18,9 +18,16 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Equipm
   Damage:['critRate','critDamage','haste','penetration','accuracy','evasion'],
   Support:['potency','haste','ward','maxHp','tenacity','critRate'],
 };
-const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
+/** Preserve prior v2 receipts, including Ability Damage when originally forged. */
+const V2_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
   Tank:['maxHp','armor','ward','tenacity','evasion','haste'],
   Damage:['critRate','critDamage','abilityDamage','haste','penetration','accuracy','evasion'],
+  Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
+};
+/** Only fully resolved combat attributes are minted in the small release. */
+const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
+  Tank:['maxHp','armor','ward','tenacity','evasion','haste'],
+  Damage:['critRate','critDamage','haste','penetration','accuracy','evasion'],
   Support:['healingPower','potency','haste','ward','maxHp','tenacity','critRate'],
 };
 const EXTRA_RANGES:Readonly<Record<2|3|5|7|9,Readonly<Record<'evasion'|'critDamage',readonly [number,number]>>>>={
@@ -46,14 +53,15 @@ export function equipmentBonusConfig(itemId:string,rarity:ItemRarity,version:Equ
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||!item.slot||!ELIGIBLE_SLOTS.has(item.slot)||tier<2||tier>9||!role)return undefined;
   const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  const pool:readonly EquipmentBonusStat[]=version===1?LEGACY_ROLE_POOL[role]:ROLE_POOL[role];
+  const pool:readonly EquipmentBonusStat[]=version===1?LEGACY_ROLE_POOL[role]:version===2?V2_ROLE_POOL[role]:ROLE_POOL[role];
   return {tier,role,slot:item.slot,count,pool};
 }
 
 /** Smaller per-slot percentages than weapons, guarding against nine-slot stacking. */
 export function equipmentBonusRange(tier:number,stat:EquipmentBonusStat,slot:GearSlot,rarity:ItemRarity='uncommon',version:EquipmentBonusRollVersion=EQUIPMENT_BONUS_ROLL_VERSION):readonly [number,number]|undefined{
   const band=bandForTier(tier);
-  if(band===undefined||!ELIGIBLE_SLOTS.has(slot))return undefined;
+  if(band===undefined||!ELIGIBLE_SLOTS.has(slot)||(version!==1&&version!==2&&version!==3))return undefined;
+  if(version===3&&stat==='abilityDamage')return undefined;
   const base=version===1
     ?stat==='evasion'||stat==='critDamage'
       ?EXTRA_RANGES[band][stat]:weaponBonusRange(tier,stat,2)
@@ -73,11 +81,11 @@ export function rollEquipmentBonuses(itemId:string,rarity:ItemRarity,receiptKey:
   const available=[...cfg.pool],result:EquipmentBonusRoll[]=[];
   const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for(let index=0;index<cfg.count;index++){
-    const choice=deterministicCraftRarityRoll(`equipment-affix:v2:stat:${seed}:${index}`);
+    const choice=deterministicCraftRarityRoll(`equipment-affix:v3:stat:${seed}:${index}`);
     const [stat]=available.splice(Math.min(available.length-1,Math.floor(choice*available.length)),1);
     const [minimum,maximum]=equipmentBonusRange(cfg.tier,stat,cfg.slot,rarity)!;
     const steps=(maximum-minimum)/STEP_BPS;
-    const roll=deterministicCraftRarityRoll(`equipment-affix:v2:value:${seed}:${index}`);
+    const roll=deterministicCraftRarityRoll(`equipment-affix:v3:value:${seed}:${index}`);
     result.push({stat,basisPoints:minimum+STEP_BPS*Math.min(steps,Math.floor(roll*(steps+1)))});
   }
   return result;
@@ -85,7 +93,7 @@ export function rollEquipmentBonuses(itemId:string,rarity:ItemRarity,receiptKey:
 
 /** Missing receipts remain unrolled. Reject any malformed/version-mismatched stat set. */
 export function normalizeEquipmentBonuses(itemId:string,rarity:ItemRarity,raw:unknown,version:unknown):EquipmentBonusRoll[]|undefined{
-  if(version!==1&&version!==2)return undefined;
+  if(version!==1&&version!==2&&version!==3)return undefined;
   const cfg=equipmentBonusConfig(itemId,rarity,version);
   if(!cfg||!Array.isArray(raw)||raw.length!==cfg.count)return undefined;
   const seen=new Set<EquipmentBonusStat>(),result:EquipmentBonusRoll[]=[];

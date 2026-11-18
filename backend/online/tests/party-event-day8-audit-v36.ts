@@ -67,6 +67,8 @@ async function run(){
   &&valid.claimReady===false&&valid.readOnly===true
   &&valid.requiresAtomicWriter===true,'never_a_paid_claim');
  denies({...base,trustedAccountId:character},'identity_or_offer_mismatch');
+ denies({...base,trustedAccountId:'forged'},'invalid_identity_or_quote');
+ denies({...base,evidence:{...base.evidence,quoteHash:'bad_hash'}},'invalid_identity_or_quote');
  denies({...base,evidence:{...base.evidence,onlineRevision:13}},
   'revision_quote_or_gold_mismatch');
  denies({...base,locked:{...base.locked,quoteHash:'f'.repeat(64)}},
@@ -99,6 +101,6 @@ async function run(){
  try{await settlePartyEventDay8V36();throw Error('unexpected_payout');}
  catch(e){must(String(e).includes('atomic_settlement_unreleased'),
   'explicitly_blocked_live_writer');}
- console.log('PARTY_EVENTS_V36_DAY8_OK: 15 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
+ console.log('PARTY_EVENTS_V36_DAY8_OK: 17 negative cases, full-stage supplies, votes, account/revision/receipt gates; zero payout');
 }
 void run().catch(e=>{console.error(e);process.exitCode=1;});

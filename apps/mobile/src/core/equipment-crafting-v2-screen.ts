@@ -1,6 +1,6 @@
 import type {GearSlot} from './types';
 import type {EquipmentV2Tier,EquipmentV2Profile} from './equipment-crafting-v2-foundation';
-import {equipmentV2PreviewBaseStats,EQUIPMENT_V2_RARITIES,equipmentV2AffixCount} from './equipment-crafting-v2-foundation';
+import {equipmentV2PreviewBaseStats,equipmentV2PreviewArmamentStats,EQUIPMENT_V2_RARITIES,equipmentV2AffixCount} from './equipment-crafting-v2-foundation';
 import {equipmentV2DraftAssembly,equipmentV2SourcePlan,equipmentV2CostSummary,type EquipmentV2Ingredient,type EquipmentV2SourceStrategy} from './equipment-crafting-v2-economy';
 import {EQUIPMENT_CRAFTING_V2_RELEASED} from './release-flags';
 
@@ -8,6 +8,7 @@ export type EquipmentV2PrimaryAction='craft'|'unlock'|'prepare_components'|'find
 export interface EquipmentV2RecipePreviewInput {
  name:string;tier:EquipmentV2Tier;slot:GearSlot;profile:EquipmentV2Profile;setPiece:boolean;
  craftSeconds?:number;profession?:'smithing'|'tailoring';
+ hands?:'one'|'two'|'dual';equipClass?:string;
  rarityMultiplier?:number;quality?:number;
  ingredients:readonly EquipmentV2Ingredient[];
  strategy:EquipmentV2SourceStrategy;marketReleased?:boolean;
@@ -36,7 +37,10 @@ export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInpu
  const canCraftNow=EQUIPMENT_CRAFTING_V2_RELEASED&&action==='craft'&&source.fullySupplied;
  return {
   name:input.name,tier:input.tier,slot:input.slot,
-  baseStats:equipmentV2PreviewBaseStats(input.tier,input.slot,input.profile,input.quality??50,input.rarityMultiplier??1),
+  baseStats:input.slot==='weapon'&&input.hands&&input.hands!=='one'
+   ?equipmentV2PreviewArmamentStats(input.tier,input.profile,input.hands,input.quality??50,input.rarityMultiplier??1)
+   :equipmentV2PreviewBaseStats(input.tier,input.slot,input.profile,input.quality??50,input.rarityMultiplier??1),
+  equipClass:input.equipClass,weaponHands:input.hands,
   draftXp:draft.xp,source,cost,
   requirements:{characterLevel:requiredCharacter,professionLevel:requiredProfession,locked},
   action,canCraftNow,previewMaterialsReady:action==='craft'&&source.fullySupplied,

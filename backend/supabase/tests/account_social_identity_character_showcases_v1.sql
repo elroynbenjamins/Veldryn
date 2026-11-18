@@ -66,6 +66,45 @@ begin
  perform pg_temp.assert_social(
   (select count(*)=2 from public.character_profile_showcases_v1 where account_id=owner_id),
   'two independently stored showcases');
+ -- The legacy profile save used to switch active gameplay characters: no longer allowed.
+ perform pg_temp.assert_social(
+  (select active_character_id=c2 from public.player_profiles where account_id=owner_id) is false,
+  'legacy profile save did not switch active gameplay hero');
+ perform public.profile_identity_update_v2('public',false,'Identity only');
+ perform pg_temp.assert_social(
+  (select selected_character_id=c2 from public.player_profile_extensions where account_id=owner_id),
+  'identity save retains featured hero');
+ perform public.profile_character_showcase_update_v2(c1,null,null,
+  '{}'::text[],'[{"kind":"profile_icon","id":"starter:hooded-ranger"}]'::jsonb,
+  '{}'::text[],'{}'::text[]);
+ perform pg_temp.assert_social(
+  (select selected_character_id=c2 from public.player_profile_extensions where account_id=owner_id),
+  'saving a different hero does not overwrite featured hero');
+ perform pg_temp.assert_social(
+  (select active_character_id=c1 from public.player_profiles where account_id=owner_id),
+  'saving a different hero preserves active gameplay hero');
+ perform pg_temp.assert_social(
+  (select jsonb_array_length(collection_showcase)=1 from public.character_profile_showcases_v1
+   where character_id=c1),
+  'starter portrait collection entry is supported');
+ begin
+  perform public.profile_character_showcase_update_v2(c1,null,null,
+   '{}'::text[],'[{"kind":"profile_icon","id":"hidden:unowned"}]'::jsonb,
+   '{}'::text[],'{}'::text[]);
+  raise exception 'expected locked portrait rejected';
+ exception when others then
+  if sqlerrm not like '%COLLECTION_NOT_OWNED%' then raise;end if;
+ end;
+ perform public.profile_featured_character_update_v2(c3);
+ perform pg_temp.assert_social(
+  (select selected_character_id=c3 from public.player_profile_extensions where account_id=owner_id),
+  'explicit featured hero changed');
+ perform pg_temp.assert_social(
+  (select active_character_id=c1 from public.player_profiles where account_id=owner_id),
+  'featuring another hero does not change gameplay hero');
+ -- Restore the second hero as featured for subsequent old public-profile assertions.
+ perform public.profile_featured_character_update_v2(c2);
+
  -- Assert independent per-character state is read, not the account's last selected slots.
  update public.character_profile_showcases_v1
   set favorite_skill_id='mining' where character_id=c1;
@@ -76,6 +115,7 @@ begin
  perform pg_temp.assert_social(row#>>'{character,name}'='Warden One','first character name');
  perform pg_temp.assert_social(row2#>>'{character,name}'='Shade Two','second character name');
  perform pg_temp.assert_social(jsonb_array_length(row->'characterChoices')=3,'three-character gallery');
+ perform pg_temp.assert_social(row->>'bio'='Identity only','identity-only save persisted bio');
  begin
   perform public.character_showcase_self_v1(c1);
   raise exception 'expected cross-account showcase lookup denied';

@@ -52,10 +52,10 @@ for(const expected of ['authored(boss.name)','authored(boss.phaseName)'])
 for(const expected of ['authored(crisis.name)','authored(crisisStatusLabel(crisis))'])
  assert.ok(crisisPanel.includes(expected),'Unlocalized Regional Crisis panel: '+expected);
 for(const expected of [
- 'authored(c.name)','authored(c.currentStageName)','authored(b.name)','authored(b.phaseName)',
+ 'authored(c.name)','authored(crisisStatusLabel(c))','authored(b.name)','authored(b.phaseName)',
  "p('REGIONAL CRISIS ·')","p('WORLD BOSS ·')",
  "authored('secured')","authored('HP remaining')",
- "authored(Math.max(0,b.dailyAttemptCap-b.attemptsToday)===1?'fight':'fights')"
+ "const remaining=bossAttemptsRemaining(b)","authored(remaining===1?'fight':'fights')"
 ]) assert.ok(hub.includes(expected),'Shared World overview has an English-only callsite: '+expected);
 for(const file of [worldPanel,crisisPanel,hub])assert.ok(file.includes("import {sharedWorldAuthoredText} from '../i18n/shared-world-authored-de';"),'Server source translator disconnected');
 console.log('PASS: 11 source-checked boss/crisis templates and 5 hub statuses; German-only UI wiring');

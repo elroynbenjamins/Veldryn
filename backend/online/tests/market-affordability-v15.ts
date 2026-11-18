@@ -91,7 +91,7 @@ assert(normal&&mythic&&epic);
 assert.equal(mythic.rarityChance,.001);
 assert.equal(epic.rarityChance,.006);
 assert(mythic.qualityChanceAtLeast>.08&&mythic.qualityChanceAtLeast<.10);
-assert(mythic.approxCraftsPerJointResult>10_000);
+assert((mythic.approxCraftsPerJointResult??0)>10_000);
 assert.equal(mythic.automaticPriceMultiplier,false);
 assert.equal(mythic.humanReviewSuggested,true);
 assert.equal(normal.humanReviewSuggested,false);

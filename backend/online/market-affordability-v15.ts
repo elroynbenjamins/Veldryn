@@ -7,6 +7,7 @@ import {upgradeGoldCost,upgradeMaterialCosts} from '../../apps/mobile/src/core/e
 import type {ClassId} from '../../apps/mobile/src/core/types';
 import type {ItemRarity} from '../../apps/mobile/src/core/item-rarity';
 import {previewMarketGearBandV14,previewMarketResourceBandV14} from './market-recipe-aware-price-v14';
+import {MARKET_SALE_TAX_BASIS_POINTS_V11} from './market-economy-policy-v11';
 
 /**
  * Hidden, read-only Player Market V15 economic evidence.
@@ -128,7 +129,7 @@ export function previewMarketTradeIncomeScenarioV15(
   .map(row=>({...row,expectedUnitsPerHour:rounded(row.expectedUnitsPerHour),
    grossGoldPerHour:rounded(row.grossGoldPerHour)}));
  const hypotheticalResourceGrossGoldPerHour=[...items.values()].reduce((a,b)=>a+b.grossGoldPerHour,0);
- const net=hypotheticalResourceGrossGoldPerHour*assumedSoldFraction*.95;
+ const net=hypotheticalResourceGrossGoldPerHour*assumedSoldFraction*(1-MARKET_SALE_TAX_BASIS_POINTS_V11/10_000);
  const combined=baseline.goldPerHour+net;
  return {tier,assumedSoldFraction,observedPlayerTradeData:false,
   referenceGoldPerHour:rounded(baseline.goldPerHour),
@@ -194,7 +195,8 @@ export interface MarketScarcityContextV15{
  rarityChance:number;qualityChanceAtLeast:number;
  /** Assumes independent rarity/quality subrolls; not a market demand estimate. */
  modelJointChance:number;
- approxCraftsPerJointResult:number;
+ /** null when the combination cannot roll (Infinity does not survive JSON). */
+ approxCraftsPerJointResult:number|null;
  automaticPriceMultiplier:false;
  humanReviewSuggested:boolean;
 }
@@ -209,7 +211,7 @@ export function previewGearScarcityContextV15(itemId:string,rarity:ItemRarity,qu
  return {itemId,rarity,qualityThreshold,rarityChance:rarityOutcome.chance,
   qualityChanceAtLeast:qualityChance,
   modelJointChance:chance,
-  approxCraftsPerJointResult:chance>0?rounded(1/chance):Infinity,
+  approxCraftsPerJointResult:chance>0?rounded(1/chance):null,
   automaticPriceMultiplier:false,
   humanReviewSuggested:RARITY_MANUAL_REVIEW.has(rarity)||qualityThreshold>=90};
 }

@@ -151,12 +151,17 @@ function materialQuote(id:string,seen:Set<string>,depth:number):MaterialQuote|un
  return {unitMin,unitMax,source:'crafted_recipe',
   minimumLot,recipeCost:cheapest};
 }
+/** Item and recipe catalogs are static, so a top-level quote never changes within a
+ * process. Recursive quotes are NOT cached because they depend on the cycle guard.
+ * Affordability audits otherwise re-walk the same ingot/binder trees per drop. */
+const TOP_LEVEL_QUOTES=new Map<string,MaterialQuote|undefined>();
 export function previewMarketResourceBandV14(itemId:string):MarketPriceDraftV14|undefined{
- const q=materialQuote(itemId,new Set(),0);
+ if(!TOP_LEVEL_QUOTES.has(itemId))TOP_LEVEL_QUOTES.set(itemId,materialQuote(itemId,new Set(),0));
+ const q=TOP_LEVEL_QUOTES.get(itemId);
  if(!q)return undefined;
  return {itemId,kind:'resource',unitMin:q.unitMin,unitMax:q.unitMax,
   tick:priceTick(q.unitMin),minimumLot:q.minimumLot,source:q.source,
-  recipeCost:q.recipeCost,modelVersion:14,approved:false,canListNow:false};
+  recipeCost:q.recipeCost&&{...q.recipeCost},modelVersion:14,approved:false,canListNow:false};
 }
 export function previewMarketGearBandV14(itemId:string,traits:MarketGearPriceTraitsV10):MarketPriceDraftV14|undefined{
  if(!traits||!Number.isInteger(traits.quality)||traits.quality<0||traits.quality>100

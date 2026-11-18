@@ -31,6 +31,8 @@ const noMerge=groupTwoVariantCraftingRecipes([strapStandard,{...strapRecycled,go
 equal(noMerge.length,2,'Recipes with different gold costs must remain separate cards');
 const threeWays=groupTwoVariantCraftingRecipes([strapStandard,strapRecycled,{...strapRecycled,id:'ANOTHER_STRAPS_ROUTE'}]);
 equal(threeWays.length,3,'Three-route crafts must not be forced into the two-route switcher');
+const lockedThird=groupTwoVariantCraftingRecipes([strapStandard,strapRecycled,{...strapRecycled,id:'KNOWLEDGE_STRAPS_ROUTE',requiredKnowledgeId:'knowledge_test'}]);
+equal(lockedThird.length,3,'An ineligible third route must keep its own card and must not be hidden behind the pair');
 const unrelated=groupTwoVariantCraftingRecipes([strapStandard,{...strapRecycled,output:{itemId:'ARMOR_RIVETS',quantity:1}}]);
 equal(unrelated.length,2,'Different crafting outputs must not merge');
 

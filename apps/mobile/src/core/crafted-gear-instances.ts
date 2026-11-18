@@ -152,11 +152,14 @@ export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerChar
 
 export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
   const rarity=craftedGearRarity(args.itemId,args.roll);
+  const weaponBonuses=rollWeaponBonuses(args.itemId,rarity,args.jobId,args.roll);
   return {
     id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
     rarity,quality:craftedGearQualityRoll(args.roll,args.jobId),
-    weaponBonuses:rollWeaponBonuses(args.itemId,rarity,args.jobId,args.roll),
-    weaponBonusRollVersion:itemDef(args.itemId).slot==='weapon'&&/^T[3-9]_/.test(itemDef(args.itemId).equipmentSetId??'')?WEAPON_BONUS_ROLL_VERSION:undefined,
+    weaponBonuses,
+    // Stamp the roll version only on receipts that actually carry rolled bonuses, so the
+    // marker and payload can never disagree (e.g. a T3+ weapon without a class role).
+    weaponBonusRollVersion:weaponBonuses?.length?WEAPON_BONUS_ROLL_VERSION:undefined,
     locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }
@@ -169,7 +172,7 @@ export function createCraftedGearInstance(state:GameState,args:{itemId:string;ow
 }
 
 export function craftClaimSubRoll(trustedRoll:number,jobId:string){
-  if(trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
+  if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);
 }
 

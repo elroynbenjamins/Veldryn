@@ -1,6 +1,7 @@
 import {CLASSES} from '../src/content/classes';
 import {createCharacter,newGame,startCombat,startClassTraining,claimActivity,effectiveStats,previewActivityReward,offlineCapSeconds,startGathering} from '../src/core/game';
-import {characterClassSkills,CLASS_DRILL_BASE_XP,normalizeClassDrills,normalizeClassSkills,MAX_CLASS_SKILL_XP,awardClassSkillXp} from '../src/core/class-skills';
+import {characterClassSkills,CLASS_DRILL_BASE_XP,normalizeClassDrills,normalizeClassSkills,MAX_CLASS_SKILL_XP,awardClassSkillXp,awardCombatClassXp,settleClassDrills} from '../src/core/class-skills';
+import {classSkillAffinityLabel} from '../src/core/class-skill-affinities';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {classSkillsFor} from '../src/content/class-skills';
 import {huntClassSurvivalEvents} from '../src/core/hunt-class-identity';
@@ -64,5 +65,23 @@ for(const [focus,primary,secondary] of [['secondary',25,75],['balanced',50,50],[
  ok(earned.awards[0].xp===primary&&earned.awards[1].xp===secondary,'Skill-order XP split: '+primary+'/'+secondary);
  const hunting=startCombat(restored,'MOSS_RAT',now);
  ok(hunting.activity!.classFocus===focus,'New fight snapshots the selected XP split: '+focus);
+}
+{
+ // Corrupt inputs never write NaN XP into a save.
+ const fresh=createCharacter(newGame(0),'RAVAGER','Finite XP').character!;
+ for(const pool of [Number.NaN,Number.POSITIVE_INFINITY]){
+  const awarded=awardClassSkillXp(fresh,pool);
+  ok(characterClassSkills(awarded.character).every(row=>row.xp===0)&&awarded.awards.every(row=>row.xp===0),'Non-finite XP pool must award nothing');
+  ok(Object.values(awarded.character.classSkillRemainders??{}).every(Number.isFinite),'Remainders must stay finite');
+ }
+ const combat=awardCombatClassXp(fresh,3,Number.NaN);
+ ok(combat.awards.every(row=>row.xp===0),'Non-finite per-kill XP must award nothing');
+ const partial=awardCombatClassXp(fresh,2.9,10);
+ ok(partial.awards.reduce((sum,row)=>sum+row.xp,0)===20,'Fractional kill counts round down to whole kills');
+ // Drill settlement ignores a non-finite clock.
+ const drilling={...createCharacter(newGame(0),'RAVAGER','Clock'),};
+ const withDrill={...drilling,character:{...drilling.character!,classTraining:{lastClaimAtMs:0,progressMs:0,focus:'balanced' as const,xpPerDrill:CLASS_DRILL_BASE_XP}}};
+ ok(settleClassDrills(withDrill,Number.NaN,3600).state===withDrill,'NaN clock must not settle drills');
+ ok(classSkillAffinityLabel('IRONWARDEN')==='Smithing · +5% XP · +3% speed','Affinity label must reflect the applied multipliers');
 }
 console.log(`PASS class skills: ${checks} checks`);

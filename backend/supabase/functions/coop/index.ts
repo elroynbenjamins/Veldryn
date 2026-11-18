@@ -46524,7 +46524,12 @@ function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
 var STEP_BPS = 10;
 function weaponBonusConfig(itemId, rarity) {
-  const item = itemDef(itemId);
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
   if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role2) return void 0;
@@ -46923,7 +46928,12 @@ function activeEquipmentSetRuntime(state) {
   const setIds = /* @__PURE__ */ new Set();
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const setId = itemDef(itemId).equipmentSetId;
+    let setId;
+    try {
+      setId = itemDef(itemId).equipmentSetId;
+    } catch {
+      continue;
+    }
     if (setId) setIds.add(setId);
   }
   const activeSets = [];

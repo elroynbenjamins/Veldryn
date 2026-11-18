@@ -43931,8 +43931,9 @@ function normalizeClassSkills(id, raw2) {
 }
 var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
 function awardCombatClassXp(c, kills, perKill, firstFocus) {
-  if (kills <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
-  const first = awardClassSkillXp(c, kills > 0 ? perKill : 0, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
+  kills = Number.isFinite(kills) ? Math.floor(kills) : 0;
+  if (kills <= 0 || !Number.isFinite(perKill) || perKill <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
+  const first = awardClassSkillXp(c, perKill, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
   const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
   return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
 }
@@ -43940,8 +43941,12 @@ function normalizeClassDrills(raw2) {
   if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
   return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
 }
+function trainingFocusShares(focus) {
+  return focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
+}
 function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
-  const shares = focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5], remainders = { ...c.classSkillRemainders ?? {} };
+  const shares = trainingFocusShares(focus), remainders = { ...c.classSkillRemainders ?? {} };
+  if (!Number.isFinite(pool)) pool = 0;
   const awards = [];
   const classSkills = characterClassSkills(c).map((s, i) => {
     const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
@@ -43981,8 +43986,10 @@ function characterClassEffects(c) {
 function settleClassDrills(state, now, capSeconds) {
   const c = state.character, drill = normalizeClassDrills(c?.classTraining);
   const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
-  if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
-  const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), speed = mealSpeedFactor(c, "noncombat");
+  if (!c || !drill || !Number.isFinite(now) || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
+  const rawSpeed = mealSpeedFactor(c, "noncombat");
+  const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 1;
+  const elapsed = Math.min(Math.max(0, Number.isFinite(capSeconds) ? capSeconds : 0) * 1e3, now - drill.lastClaimAtMs);
   const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
   let character = c;
   const awards = {};
@@ -43995,7 +44002,7 @@ function settleClassDrills(state, now, capSeconds) {
   const focus = normalizeTrainingFocus(c.trainingFocus);
   let completed = characterClassSkills(c).every((s) => s.level === 100) ? 0 : Math.min(1, actions);
   apply(completed, drill.focus);
-  const shares = focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
+  const shares = trainingFocusShares(focus);
   const remainingToCap = Math.max(...characterClassSkills(character).map((s, i) => Math.max(0, Math.ceil((MAX_CLASS_SKILL_XP - s.xp - (character.classSkillRemainders?.[s.skillId] ?? 0)) / (drill.xpPerDrill * shares[i])))));
   const rest = Math.min(Math.max(0, actions - completed), remainingToCap);
   apply(rest, focus);
@@ -51324,7 +51331,12 @@ function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
 var STEP_BPS = 10;
 function weaponBonusConfig(itemId, rarity) {
-  const item = itemDef(itemId);
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
   if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role) return void 0;
@@ -51467,14 +51479,17 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
 }
 function draftCraftedGearInstance(args) {
   const rarity = craftedGearRarity(args.itemId, args.roll);
+  const weaponBonuses = rollWeaponBonuses(args.itemId, rarity, args.jobId, args.roll);
   return {
     id: `gear:${args.ownerCharacterId}:${args.jobId}`,
     itemId: args.itemId,
     ownerCharacterId: args.ownerCharacterId,
     rarity,
     quality: craftedGearQualityRoll(args.roll, args.jobId),
-    weaponBonuses: rollWeaponBonuses(args.itemId, rarity, args.jobId, args.roll),
-    weaponBonusRollVersion: itemDef(args.itemId).slot === "weapon" && /^T[3-9]_/.test(itemDef(args.itemId).equipmentSetId ?? "") ? WEAPON_BONUS_ROLL_VERSION : void 0,
+    weaponBonuses,
+    // Stamp the roll version only on receipts that actually carry rolled bonuses, so the
+    // marker and payload can never disagree (e.g. a T3+ weapon without a class role).
+    weaponBonusRollVersion: weaponBonuses?.length ? WEAPON_BONUS_ROLL_VERSION : void 0,
     locked: false,
     statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
@@ -51491,7 +51506,7 @@ function createCraftedGearInstance(state, args) {
   return { state: { ...state, account: { ...state.account, craftedGearInstances: [...previous, instance] } }, instance };
 }
 function craftClaimSubRoll(trustedRoll, jobId) {
-  if (trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid crafted rarity roll");
+  if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid crafted rarity roll");
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);
 }
 function craftedInstanceResult(state, instance) {
@@ -52184,7 +52199,12 @@ function activeEquipmentSetRuntime(state) {
   const setIds = /* @__PURE__ */ new Set();
   for (const itemId of Object.values(state.character.equipment)) {
     if (!itemId) continue;
-    const setId = itemDef(itemId).equipmentSetId;
+    let setId;
+    try {
+      setId = itemDef(itemId).equipmentSetId;
+    } catch {
+      continue;
+    }
     if (setId) setIds.add(setId);
   }
   const activeSets = [];
@@ -52233,7 +52253,8 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
   const baseCritDamage = 0.5;
   const accuracyMultiplier = Math.min(0.99, baseAccuracy + stats4.accuracy) / baseAccuracy;
   const baseCritExpected = 1 + baseCritChance * baseCritDamage;
-  const setCritExpected = 1 + (baseCritChance + stats4.critRate) * (baseCritDamage + stats4.critDamage);
+  const critChance = Math.max(0, Math.min(1, baseCritChance + stats4.critRate));
+  const setCritExpected = 1 + critChance * (baseCritDamage + stats4.critDamage);
   return {
     maxHpMultiplier: 1 + stats4.maxHp,
     defenseMultiplier: 1 + stats4.armor,

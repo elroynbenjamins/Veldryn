@@ -7,12 +7,13 @@ import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
 import {decodePartyEventReadOnlySnapshot,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
+import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -32,7 +33,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,worldBossStatus=null,worldBossAccountId=''}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -56,6 +57,10 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  const title=meta[feature];
  const selectedBoss=bosses.find(item=>item.id===bossId)??bosses[0];
  const selectedStory=stories.find(item=>item.id===storyId)??stories[0];
+ // A future authenticated host may inject the private V41 result. No RPC
+ // is mounted here and no account selector is accepted from player input.
+ const bossStatus=feature==='boss'&&worldBossAccountId?
+  decodeWorldBossReadOnlyStatusV46(worldBossStatus,worldBossAccountId):null;
  const accent=feature==='boss'?selectedBoss.color:feature==='party'?selectedStory.accent:title.accent;
  const heroSceneId=feature==='boss'?selectedBoss.scene:feature==='party'?selectedStory.scene:null;
  const guideTopics=feature==='boss'?[
@@ -92,7 +97,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
-    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId}/>:null}
+    {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} selected={bossId} onSelect={setBossId} status={bossStatus}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={partyEventStatus}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
@@ -144,13 +149,19 @@ const bosses=[
   mechanics:['Identify the coming whiteout cast','Protect the squad through the freezing wave','Counterattack as the storm recedes'],
   threat:'Visibility and freezing attacks test the whole account squad.'},
 ] as const;
-function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void}){
+function BossContents({s,C,accent,tab,onTab,selected,onSelect,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];onSelect:(id:(typeof bosses)[number]['id'])=>void;status:WorldBossScreenSnapshotV46|null}){
  const boss=bosses.find(item=>item.id===selected)??bosses[0];
+ const active=status?.bossId===(selected==='hollow'?'hollowroot':selected==='frost'?'frostmarch':'sunscar')?status:null;
  if(tab==='overview')return <>
   <Card s={s}><SectionHeading s={s} kicker="14-DAY REALM CYCLE" title="The next great encounter" sub="Five days to prepare. One continuous weekend battle. A week to recover."/>
    <View style={s.statRow}><Stat s={s} label="PREPARATION" value="5 days"/><Stat s={s} label="BATTLE" value="48 hours"/><Stat s={s} label="ATTEMPTS" value="3 / account"/></View>
    <View style={s.stepRow}><Tag s={s} label="01 War Camp" accent={accent}/><Tag s={s} label="02 Battle"/><Tag s={s} label="03 Results"/></View>
   </Card>
+  {active?<Card s={s}><SectionHeading s={s} kicker="PRIVATE READ-ONLY SNAPSHOT" title={boss.name+' · '+active.phase.toUpperCase()} sub="Verified-format event data only. No attacks, donations, claims or release actions are connected."/>
+   <View style={s.statRow}><Stat s={s} label="BOSS HP" value={active.remainingHp.toLocaleString('en-US')+' / '+active.maxHp.toLocaleString('en-US')}/><Stat s={s} label="ATTEMPTS LEFT" value={String(active.attemptsRemaining)+' / 3'}/><Stat s={s} label="DONATIONS LEFT" value={String(active.donationsRemaining)+' / 2'}/></View>
+   <Progress s={s} value={active.remainingHp/active.maxHp*100} accent={accent}/>
+   <Text style={s.finePrint}>Snapshot is short-lived. Combat, spending and rewards remain unavailable in Design QA.</Text>
+  </Card>:<Card s={s}><SectionHeading s={s} kicker="ACCOUNT STATUS" title="No verified World Boss loaded" sub="This preview has no authenticated World Boss feed. Boss availability and personal attempts are not implied by example values."/></Card>}
   <Card s={s}><SectionHeading s={s} kicker="ENCOUNTER CODEX" title="Choose a boss to inspect" sub="Choose a region to preview its encounter. No boss availability is implied."/>
    {bosses.map(entry=><Pressable key={entry.id} accessibilityRole="button" accessibilityState={{selected:selected===entry.id}} onPress={()=>onSelect(entry.id)} style={[s.choice,selected===entry.id&&{borderColor:entry.color,backgroundColor:C.panelRaised}]}>
      <View style={[s.motif,{backgroundColor:C.panel2,borderColor:entry.color}]}><UiIcon name="world" size={28}/></View><View style={s.flex}><Text style={s.choiceTitle}>{entry.name}</Text><Text style={s.choiceSub}>{entry.region} · {entry.motif}</Text></View><Text style={[s.choiceArrow,{color:entry.color}]}>{selected===entry.id?'✓':'›'}</Text>
@@ -161,7 +172,14 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
  if(tab==='camp')return <>
   <Card s={s}><SectionHeading s={s} kicker={'WAR CAMP · '+boss.region.toUpperCase()} title={'Prepare for '+boss.name} sub="Donations are account-wide and consume real resources only after a verified server transaction."/>
    <View style={s.statRow}><Stat s={s} label="DONATION LIMIT" value="2 per event"/><Stat s={s} label="FREEZE" value="Saturday"/><Stat s={s} label="BONUSES" value="Server verified"/></View>
-   <Text style={s.detailLabel}>EXAMPLE WAR SUPPLY METER</Text><Progress s={s} value={65} accent={boss.color}/><Text style={s.finePrint}>Illustrative progress only. No current donation total is available in this preview.</Text>
+   {active?<><Text style={s.detailLabel}>PRIVATE VERIFIED-FORMAT SUPPLY TOTALS · READ ONLY</Text>
+    {(['fortifications','fieldProvisions','siegecraft'] as const).map(track=><View key={track} style={s.sectionHead}>
+     <View style={s.detailRow}><Text style={s.choiceTitle}>{track==='fieldProvisions'?'Field Provisions':track==='fortifications'?'Fortifications':'Siegecraft'}</Text><Text style={s.choiceSub}>{active.warCamp.contributions[track]} / {active.warCamp.goals[track].tier2At}</Text></View>
+     <Progress s={s} value={active.warCamp.contributions[track]/active.warCamp.goals[track].tier2At*100} accent={boss.color}/>
+    </View>)}
+    <Tag s={s} label={active.warCamp.frozen?'Frozen bonuses · Server record':'Bonuses not yet frozen'} accent={accent}/>
+    <Text style={s.finePrint}>{active.donationsRemaining} account donations remaining. No inventory resources can be spent here.</Text>
+   </>:<><Text style={s.detailLabel}>EXAMPLE WAR SUPPLY METER</Text><Progress s={s} value={65} accent={boss.color}/><Text style={s.finePrint}>Illustrative progress only. No current donation total is available in this preview.</Text></>}
   </Card>
   <Card s={s}><SectionHeading s={s} kicker="PREPARATION TASKS" title="Support the war effort"/>
    {boss.supplies.map((name,i)=><View key={name} style={s.detailRow}><Text style={s.index}>{'0'+(i+1)}</Text><View style={s.flex}><Text style={s.choiceTitle}>{name}</Text><Text style={s.choiceSub}>Pending authenticated stock and cost check</Text></View><Tag s={s} label="Locked"/></View>)}
@@ -170,7 +188,7 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
  </>;
  if(tab==='battle')return <>
   <Card s={s}><SectionHeading s={s} kicker="CONTINUOUS WEEKEND BATTLE" title={'Face '+boss.name} sub="Up to five eligible owned characters can contribute in a single account-wide battle."/>
-   <View style={s.statRow}><Stat s={s} label="ATTEMPTS" value="3 shared"/><Stat s={s} label="COMBAT" value="14 rounds"/><Stat s={s} label="WINDOW" value="Sat–Sun"/></View>
+   <View style={s.statRow}><Stat s={s} label="ATTEMPTS" value={active?active.attemptsRemaining+' / 3 left':'3 shared'}/><Stat s={s} label="COMBAT" value="14 rounds"/><Stat s={s} label="WINDOW" value={active?active.phase.toUpperCase():'Sat–Sun'}/></View>
    <View style={s.warning}><Text style={s.warningTitle}>Battle not connected</Text><Text style={s.bodyText}>The server must reserve attempts, verify your actual roster, record combat and settle HP exactly once. This preview cannot start a fight.</Text></View>
    <Action label="Begin account raid · Not available" s={s} disabled/>
   </Card>
@@ -182,7 +200,8 @@ function BossContents({s,C,accent,tab,onTab,selected,onSelect}:Shared&{tab:strin
  if(tab==='rewards')return <>
   <Card s={s}><SectionHeading s={s} kicker="ACCOUNT-WIDE REWARDS" title="Earn World Sigils" sub="Contribution and eligibility determine rewards; owning more characters does not multiply payout."/>
    <View style={s.rewardPanel}><Text style={[s.rewardGlyph,{color:accent}]}>✧</Text><View style={s.flex}><Text style={s.choiceTitle}>World Sigils</Text><Text style={s.choiceSub}>Future shop currency · quantities not yet approved</Text></View></View>
-   <View style={s.detailRow}><Text style={s.choiceSub}>Contribution</Text><Text style={s.choiceTitle}>No live record</Text></View>
+   <View style={s.detailRow}><Text style={s.choiceSub}>Earned in event</Text><Text style={s.choiceTitle}>{active?active.rewards.claimedThisEvent.toLocaleString('en-US')+' Sigils':'No live record'}</Text></View>
+   {active?<View style={s.detailRow}><Text style={s.choiceSub}>Private wallet balance</Text><Text style={s.choiceTitle}>{active.rewards.balance.toLocaleString('en-US')} Sigils</Text></View>:null}
    <View style={s.detailRow}><Text style={s.choiceSub}>Claim status</Text><Text style={s.choiceTitle}>Unavailable</Text></View>
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>

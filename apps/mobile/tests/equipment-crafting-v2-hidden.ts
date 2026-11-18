@@ -387,6 +387,8 @@ const projectionBefore=JSON.stringify(liveProjectionFixture);
 const projectionInput={state:liveProjectionFixture,accountId:'account-v2-test',
  onlineVersion:17,onlineCharacterId:liveProjectionFixture.character!.id,authoritativeWalletGold:22222};
 const safeProjection=equipmentV2AuthoritativeReadiness(projectionInput);
+check(safeProjection.projection?.forgeSlotCapacity===3,
+ 'Hidden projection inherits live base Forge slots, not a second queue constant');
 check(!safeProjection.blocked&&safeProjection.projection?.version===17,
  'Read-only gameplay projection must retain authenticated online version');
 check(safeProjection.projection?.characters[liveProjectionFixture.character!.id]?.gold===22222,

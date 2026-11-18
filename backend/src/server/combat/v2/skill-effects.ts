@@ -76,6 +76,7 @@ type VariantRecipe={
   cooldownDelta?:number;cooldownMult?:number;target?:AbilityDefinition['target'];
   adds?:readonly AbilityEffect[];replaces?:readonly AbilityEffect[];
   priorityDelta?:number;
+  healBelowHpPct?:number;healBonus?:number;
 };
 const ward=(value:number,durationMs=4000):AbilityEffect=>({kind:'buff',target:'self',tag:'damage_taken',value:-value,durationMs});
 const weakening=(value:number,durationMs=5000):AbilityEffect=>({kind:'debuff',tag:'damage_done',value:-value,durationMs});
@@ -109,7 +110,7 @@ const variants:Readonly<Record<string,readonly [VariantRecipe,VariantRecipe,Vari
   {adds:[weakening(.06)]},
  ],
  'Grim Resolve':[
-  {heal:1.20,cooldownDelta:1000},
+  {heal:1,cooldownDelta:1000,healBelowHpPct:.40,healBonus:.25},
   {adds:[ward(.07)]},
   {heal:1.10,cooldownDelta:-700},
  ],
@@ -154,13 +155,13 @@ const variants:Readonly<Record<string,readonly [VariantRecipe,VariantRecipe,Vari
   {damage:.95,adds:[ward(.04)]},
  ],
  'Dawn Mend':[
-  {heal:1.20,cooldownDelta:1500},
+  {heal:1,cooldownDelta:1500,healBelowHpPct:.35,healBonus:.25},
   {heal:.90,adds:[{kind:'hot',coeff:.10,durationMs:4000,tickMs:2000}]},
   {heal:1.05,adds:[{kind:'buff',tag:'damage_done',value:.03,durationMs:5000}]},
  ],
  'Sunthread':[
   {hot:1.22,cooldownDelta:1300},
-  {target:'all_allies',hot:.62,cooldownDelta:1600},
+  {target:'two_lowest_hp_allies',hot:.62,cooldownDelta:1600},
   {hot:1.10,cooldownDelta:700},
  ],
  'Resonant Armor':[
@@ -194,6 +195,10 @@ function applyRecipe(base:AbilityDefinition,recipe:VariantRecipe,mods:MutableMod
       :e.kind==='hot'?(recipe.hot??1)*(1+mods.hot)
       :e.kind==='shield'?(recipe.shield??1)*(1+mods.shield):1;
     if(typeof e.coeff==='number')n.coeff=round(e.coeff*finite(scale,0,2.0));
+    if(e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
+      n.healBelowHpPct=finite(recipe.healBelowHpPct,0,.75);
+      n.healBonus=finite(recipe.healBonus??0,0,.4);
+    }
     if(e.kind==='taunt')n.value=round((e.value??100)*(1+finite(mods.threat,0,.7)));
     return n;
   });

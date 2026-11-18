@@ -12,6 +12,7 @@ import {useGameTheme} from '../../theme/ThemeContext';
 import {GameButton} from '../GameButton';
 import {GameTextInput} from '../GameTextInput';
 import {Panel} from '../Panel';
+import {SocialNameEditor} from '../SocialNameEditor';
 import {PlayerNameStyleEditor} from '../PlayerNameStyleEditor';
 
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
@@ -46,6 +47,7 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
  </View>;
 
  return <View style={s.root}>
+  {active?<SocialNameEditor/>:null}
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
    <Text style={s.copy}>{profileT(language,"Guest progress can continue normally, but public social-profile publishing is held until the account is linked.")}</Text></View>:null}
 

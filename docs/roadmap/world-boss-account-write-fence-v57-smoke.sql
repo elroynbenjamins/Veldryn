@@ -235,7 +235,41 @@ BEGIN
   blocked:=SQLERRM LIKE '%WB57_CANNOT_UNFENCE_EXISTING_AUTH_ACCOUNT%';
  END;
  IF NOT blocked THEN RAISE EXCEPTION 'WB57_PREMATURE_UNFENCE_ALLOWED'; END IF;
- RAISE NOTICE 'WORLD_BOSS_V57_NINE_OWNER_WRITE_FENCES=PASS';
+
+ -- Integrated V55/V57 cleanup ordering, still ONLY synthetic DB fixtures:
+ -- neither object store deletion nor actual Supabase Admin Auth is invoked.
+ -- The committed fence remains in place throughout child-before-parent
+ -- erasure. Row guards must reject writes but permit legitimate cleanup.
+ DELETE FROM private.world_boss_replay_proofs_v28 WHERE account_id=owner;
+ DELETE FROM private.world_boss_claim_receipts_v28 WHERE account_id=owner;
+ DELETE FROM private.world_boss_reward_ledger_v28 WHERE account_id=owner;
+ DELETE FROM private.world_boss_wallet_v28 WHERE account_id=owner;
+ DELETE FROM private.world_boss_war_donations_v27 WHERE account_id=owner;
+ DELETE FROM private.world_boss_consent_commands_v21 WHERE owner_account_id=owner;
+ DELETE FROM private.world_boss_echo_consents_v20 WHERE owner_account_id=owner;
+ DELETE FROM private.world_boss_attempts_v17 WHERE account_id=owner;
+ IF (private.world_boss_v36_erasure_preflight(owner)->>'status')
+    IS DISTINCT FROM 'no_world_boss_rows'
+ THEN RAISE EXCEPTION 'WB57_PRIVATE_ACCOUNT_ROW_ERASURE_INCOMPLETE'; END IF;
+ DELETE FROM auth.users WHERE id=owner;
+ -- Once the fixture user is gone, the reviewed privacy retention owner
+ -- could remove its tombstone; this tests the invariant, NOT retention policy.
+ DELETE FROM private.world_boss_erasure_fences_v57 WHERE account_id=owner;
+ IF EXISTS(SELECT 1 FROM private.world_boss_erasure_fences_v57
+     WHERE account_id=owner)
+ OR EXISTS(SELECT 1 FROM public.characters WHERE account_id=owner)
+ OR NOT EXISTS(SELECT 1 FROM auth.users WHERE id=other_owner)
+ OR NOT EXISTS(SELECT 1 FROM private.world_boss_wallet_v28
+     WHERE account_id=other_owner)
+ OR NOT EXISTS(SELECT 1 FROM private.world_boss_attempts_v17
+     WHERE event_id=event_key AND account_id=other_owner)
+ THEN RAISE EXCEPTION 'WB57_ERASURE_DAMAGED_OTHER_OWNER_OR_TOMBSTONE'; END IF;
+ IF (SELECT to_jsonb(e) FROM private.world_boss_events_v17 e WHERE id=event_key)
+    IS DISTINCT FROM ev_before
+ OR (SELECT to_jsonb(w) FROM private.world_boss_war_camps_v27 w
+     WHERE event_id=event_key) IS DISTINCT FROM camp_before
+ THEN RAISE EXCEPTION 'WB57_ERASURE_CHANGED_COMMUNITY_PROGRESS'; END IF;
+ RAISE NOTICE 'WORLD_BOSS_V57_NINE_OWNER_WRITE_FENCES_AND_ERASURE=PASS';
 END $test$;
 ROLLBACK;
 -- Under REPEATABLE READ a transaction could see a snapshot from before

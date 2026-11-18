@@ -17,6 +17,9 @@ const files={
  v22:'20261113184500_party_event_audited_herb_v22.sql',
  v29:'20261115173500_party_event_paid_receipt_inbox_v29.sql',
  v30:'20261115190000_party_event_locked_claim_snapshot_v30.sql',
+ v45:'20261118143000_party_event_canonical_source_writer_v45.sql',
+ v46:'20261118173000_party_event_source_outbox_v46.sql',
+ v47:'20261118183000_party_event_source_leases_v47.sql',
 };
 const sql=Object.fromEntries(Object.entries(files).map(([key,path])=>
  [key,read(base+path)]));
@@ -73,13 +76,22 @@ for(const [src,id,item] of [
 assert.match(sql.v29,/create table private\.party_event_paid_claim_receipts_v29/i);
 assert.match(sql.v29,/create table private\.party_event_paid_claim_inbox_v29/i);
 assert.match(sql.v30,/inspect_party_event_claim_lock_v30/i);
+assert.match(sql.v45,/private\.commit_online_game_party_sources_v45/i);
+assert.match(sql.v46,/private\.party_event_source_outbox_v46/i);
+assert.match(sql.v47,/private\.lease_party_event_sources_v47/i);
+const commitPreview=read('backend/online/party-event-gameplay-commit-v48.ts');
+const gameplay=read('backend/online/gameplay.ts');
+assert.match(commitPreview,/export const PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED=false;/,
+ 'V48 gameplay route must remain hidden pending staging approval');
+assert.match(gameplay,/enableDraftBridge:PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED/,
+ 'normal gameplay must stay behind the shared release gate');
 for(const [key,source] of Object.entries(sql)){
  assert.doesNotMatch(source,/\bgrant\s+(?:all|execute|select|insert|update|delete)\b[^;]*\bto\s+(?:public|anon|authenticated)\b/i,
   'unapproved player-facing permission '+key);
 }
 const executable=readdirSync(join(root,'backend/supabase/migrations'));
 for(const filename of executable){
- assert.ok(!/20261113|20261115/.test(filename)||!filename.includes('party_event_'),
+ assert.ok(!/20261113|20261115|20261118/.test(filename)||!filename.includes('party_event_'),
   'draft hidden Party Event migration mistakenly added to live migration path '+filename);
 }
-console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: 28 columns align, RLS and private grants, Dewleaf Level 1 source, disabled Thorn Sap, drafts outside production migration path');
+console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: 28 columns align, RLS/private grants, V45–V47 drafts hidden, V48 runtime OFF, source content aligned');

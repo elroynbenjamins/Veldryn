@@ -99,7 +99,7 @@ ok(craftingBrowser.includes('label:gt("READY NOW"),tone:\'ready\'')&&craftingBro
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes('processingAvailability(state,recipe.id,undefined,true)'),'Timed skill recipes must remain startable while another activity is settled and replaced');
 ok(craftingBrowser.includes('preferredRecipeId'),'Crafting lists must preserve exact deep-linked recipe selection');
-ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}'),'Deep-linked crafting targets must arrive already expanded');
+ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}')||craftingBrowser.includes('initialExpanded={recipeGroup.rows.some(row=>row.recipe.id===preferredRecipeId)}'),'Deep-linked crafting targets must arrive already expanded, including the selected route of a grouped material recipe');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 

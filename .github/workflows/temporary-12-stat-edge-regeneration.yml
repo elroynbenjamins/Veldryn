@@ -1,8 +1,10 @@
 name: Temporary 11-stat Edge regeneration
 on:
-  pull_request:
+  push:
+    branches: [feature/equipment-stat-rolls-t3-t5]
     paths:
       - '.github/workflows/temporary-12-stat-edge-regeneration.yml'
+  workflow_dispatch:
 permissions:
   contents: write
 concurrency:

@@ -179,7 +179,7 @@ function BossRegionPicker({s,C,selected,onSelect}:{s:Shared['s'];C:ThemeColors;s
 }
 const phaseTitles={upcoming:'Upcoming',preparation:'War Camp',raid:'Battle',cooldown:'Recovery',expired:'Ended'} as const;
 const bossTracks=['fortifications','fieldProvisions','siegecraft'] as const;
-function BossContents({s,C,accent,tab,onTab,selected,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];status:WorldBossScreenSnapshotV46|null}){
+function BossContents({s,accent,tab,onTab,selected,status}:Shared&{tab:string;onTab:(value:string)=>void;selected:(typeof bosses)[number]['id'];status:WorldBossScreenSnapshotV46|null}){
  const boss=bosses.find(item=>item.id===selected)??bosses[0];
  const active=status?.bossId===(selected==='hollow'?'hollowroot':selected==='frost'?'frostmarch':'sunscar')?status:null;
  const phaseEnd=active?(active.phase==='upcoming'?active.startsAtUtcMs:active.phase==='preparation'?active.startsAtUtcMs+5*86400000:active.phase==='raid'?active.endsAtUtcMs:active.phase==='cooldown'?active.startsAtUtcMs+14*86400000:null):null;

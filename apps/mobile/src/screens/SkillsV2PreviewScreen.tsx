@@ -106,7 +106,7 @@ export function SkillsV2PreviewScreen({
   // Never carry another character's draft, talent ranks or selected build.
   setDraft(newDraft(level));setSaved([null,null]);setSelectedSlot(0);
   setTab('overview');setNotice('');setExpanded(0);
- },[classId,characterLabel]);
+ },[classId,characterLabel,level]);
  const points=tpoints(level);
  const used=Object.values(draft.talentRanks).reduce((sum,v)=>sum+v,0);
  const available=points-used;
@@ -182,13 +182,13 @@ export function SkillsV2PreviewScreen({
   const variantIndex=draft.variants[index]??0;
   return <Panel key={index} style={s.skillCard}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded:expanded===index,disabled:!unlocked}}
-    accessibilityLabel={skill.name+', '+(equipped?'equipped':'unequipped')+', cooldown '+skill.cooldownSeconds+' seconds'}
+    accessibilityLabel={skill.name+', '+(equipped?'equipped':'unequipped')+', base cooldown '+skill.cooldownSeconds+' seconds'}
     onPress={()=>setExpanded(expanded===index?null:index)}
     style={s.skillHeading}>
     <View style={s.iconSquare}><Text style={s.iconText}>{String(index+1).padStart(2,'0')}</Text></View>
     <View style={s.flex}>
      <Text style={s.skillName}>{skill.name}</Text>
-     <Text style={s.subtitle}>{skill.cooldownSeconds}s cooldown · {unlocked?'Available':'Unlocks Lv '+UNLOCK_SKILL[index]}</Text>
+     <Text style={s.subtitle}>Base {skill.cooldownSeconds}s cooldown · {unlocked?'Available':'Unlocks Lv '+UNLOCK_SKILL[index]}</Text>
     </View>
     <Text style={[s.stateText,{color:equipped?C.good:C.muted}]}>{equipped?'EQUIPPED':unlocked?'VIEW':'LOCKED'}</Text>
    </Pressable>
@@ -215,7 +215,9 @@ export function SkillsV2PreviewScreen({
     {data.specializations.map((spec,i)=><View key={spec.name} style={s.specCell}>
      <Chip title={spec.name} hint={'Capstone: '+spec.capstone} active={draft.specialization===i}
        onPress={()=>{setDraft(current=>({...current,specialization:i}));setNotice('Specialization changed in preview only.');}} C={C}/>
-     <Text style={s.helper}>{spec.theme}</Text><Text style={s.mutedSmall}>Lv 50: {spec.capstone}</Text>
+     <Text style={s.helper}>{spec.theme}</Text>
+     <Text style={s.mutedSmall}>Core skill change (provisional): {spec.earlyStyle}</Text>
+     <Text style={s.mutedSmall}>Lv 50 capstone: {spec.capstone}</Text>
     </View>)}
    </View>:<Text style={s.helper}>Choose one of two specializations at level 10.</Text>}
   </Panel>
@@ -229,7 +231,7 @@ export function SkillsV2PreviewScreen({
       style={[s.slotRow,selectedSlot===i&&s.selectedSlot]}>
       <Text style={s.slotNumber}>{i+1}</Text>
       <View style={s.flex}><Text style={s.skillName}>{skill?.name??'Empty slot'}</Text>
-       <Text style={s.mutedSmall}>{skill?skill.variants[draft.variants[index!]??0]+' · '+skill.cooldownSeconds+'s':'Choose a skill'}</Text>
+       <Text style={s.mutedSmall}>{skill?skill.variants[draft.variants[index!]??0]+' · base '+skill.cooldownSeconds+'s':'Choose a skill'}</Text>
       </View><Text style={s.mutedSmall}>Edit</Text>
     </Pressable>;
    })}
@@ -313,7 +315,7 @@ export function SkillsV2PreviewScreen({
   showsVerticalScrollIndicator={false}>
   <View style={s.topRow}>
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>Skills 2.0</Text>
-    <Text style={s.subtitle}>{characterLabel??data.name} · {data.name} · Lv {level}</Text></View>
+    <Text style={s.subtitle}>{characterLabel??data.name} · {data.name} ({data.role}) · Lv {level}</Text></View>
    {onClose?<GameButton title="Close" tone="secondary" compact onPress={onClose}/>:null}
   </View>
   <View style={s.previewNote}><Text style={s.previewText}>DEVELOPMENT PREVIEW · No live character changes</Text></View>
@@ -321,8 +323,10 @@ export function SkillsV2PreviewScreen({
    <View style={s.between}><Text style={s.sectionLabel}>{data.resource.toUpperCase()}</Text>
     <Text style={s.mutedSmall}>0 / {data.cap} · Starts empty each battle</Text></View>
    <View style={s.pips}>{Array.from({length:data.cap},(_,i)=><View key={i} style={s.pip}/>)}</View>
-   <Text style={s.helper}>Gain: {resourceHelp[classId].gain}</Text>
-   <Text style={s.helper}>Spend: {resourceHelp[classId].spend}</Text>
+   <Text style={s.helper}>Gain stacks: {resourceHelp[classId].gain}</Text>
+   <Text style={s.skillName}>Early spender: {data.coreSpender} · up to 1 stack</Text>
+   <Text style={s.helper}>Advanced spenders: {resourceHelp[classId].spend}</Text>
+   <Text style={s.mutedSmall}>Base cooldowns and provisional skill modifiers are shown. Final values come from server combat balance.</Text>
   </Panel>
   <View accessibilityRole="tablist" style={[s.tabs,compact&&s.compactTabs]}>
    {TABS.map(x=><View key={x.id} style={s.tabCell}>{tabButton(x.id,x.label)}</View>)}

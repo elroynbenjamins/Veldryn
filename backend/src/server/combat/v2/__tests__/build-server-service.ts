@@ -33,6 +33,7 @@ const client:V2ServiceRpcClient={
   async rpc<T>(name:string,args:Record<string,unknown>){
     calls.push({name,args});
     if(name==='combat_v2_build_read_server_v1'){
+      if(args.p_character_id!==character)return {data:null,error:{message:'combat_v2_character_mismatch'}};
       return {data:{...payload,builds:saved} as T,error:null};
     }
     if(name==='combat_v2_build_cas_server_v1'){
@@ -54,6 +55,7 @@ const service=new CharacterBuildServiceV2({
     wrong_class:{itemId:'wrong_class',slot:'weapon',requiredLevel:1,eligibleClasses:['WAYFINDER']},
   },
   sets:{},
+  activityGuard:async()=>null,
 });
 async function main(){
   assert.deepEqual((await service.read(account,character)).issues,[{code:'feature_disabled',at:'feature'}]);
@@ -102,6 +104,7 @@ async function main(){
     },
     equipment:{helmet_t2:{itemId:'helmet_t2',slot:'helmet',requiredLevel:18,eligibleClasses:['IRONWARDEN']}},
     sets:{},
+    activityGuard:async()=>null,
   });
   const levelBlock=await lowLevelService.mutate(account,character,{
     action:'save',slot:0,expectedRevision:0,name:'Low level',selected,
@@ -121,6 +124,22 @@ async function main(){
   assert.equal(staleBuild.ok,false);
   assert.equal(staleBuild.issues[0].code,'stale_build_revision');
   race=null;
+  const noActivityService=new CharacterBuildServiceV2({
+    storage:repository,equipment:{},sets:{},
+  });
+  const unknownActivity=await noActivityService.mutate(account,character,{
+    action:'activate',slot:0,expectedRevision:2,
+  },true);
+  assert.equal(unknownActivity.ok,false);
+  assert.equal(unknownActivity.issues[0].code,'activity_guard_unavailable');
+  const busyService=new CharacterBuildServiceV2({
+    storage:repository,equipment:{},sets:{},
+    activityGuard:async()=> 'combat',
+  });
+  const duringFight=await busyService.mutate(account,character,{
+    action:'activate',slot:0,expectedRevision:2,
+  },true);
+  assert.equal(duringFight.issues[0].code,'build_switch_blocked_combat');
   const disabled=await service.mutate(account,character,{
     action:'delete',slot:0,expectedRevision:2,
   },false);

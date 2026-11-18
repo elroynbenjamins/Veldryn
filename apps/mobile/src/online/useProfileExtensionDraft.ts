@@ -1,8 +1,9 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useAuthSession} from './AuthSessionProvider';
 import {onlineConfigured} from './supabase';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
 import {
- selfProfileExtensionV43,characterShowcaseSelfV1,updateProfileIdentityV2,
+ selfProfileExtensionV43,updateProfileExtensionV43,characterShowcaseSelfV1,updateProfileIdentityV2,
  updateCharacterShowcaseV2,setFeaturedProfileCharacterV2,
  type CharacterShowcaseFieldsV1,type ProfileExtensionSelfV43,
 } from './profile-extension-v43';
@@ -37,6 +38,17 @@ const showcaseSnapshot=(row:ProfileExtensionSelfV43):CharacterShowcaseFieldsV1=>
  masteryShowcaseActionIds:row.masteryShowcaseActionIds,
 });
 
+/** Existing production v43 RPC remains the only write path until the
+ * account-wide Social Name schema and companion binary are released. */
+const saveLegacyProfile=(row:ProfileExtensionSelfV43,bio:string,fallbackCharacterId?:string)=>
+ updateProfileExtensionV43({
+  visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,
+  selectedCharacterId:row.selectedCharacterId??fallbackCharacterId??null,bio,
+  favoriteSkillId:row.favoriteSkillId,favoriteCompanionId:row.favoriteCompanionId,
+  achievementShowcaseIds:row.achievementShowcaseIds,collectionShowcase:row.collectionShowcase,
+  recordShowcaseIds:row.recordShowcaseIds,masteryShowcaseActionIds:row.masteryShowcaseActionIds,
+ });
+
 export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExtensionDraft{
  const {session}=useAuthSession();
  const accountId=session?.user.id??'';
@@ -54,7 +66,7 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   try{
    const row=await selfProfileExtensionV43();
    const selected=row.selectedCharacterId??fallbackCharacterId;
-   const showcase=selected?await characterShowcaseSelfV1(selected):null;
+   const showcase=ACCOUNT_SOCIAL_IDENTITY_RELEASED&&selected?await characterShowcaseSelfV1(selected):null;
    if(!mounted.current||version!==requestVersion.current)return;
    const resolved={...row,...showcase,selectedCharacterId:selected??null};
    setFeaturedCharacterId(row.selectedCharacterId??null);
@@ -101,7 +113,7 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
  const dirty=identityDirty||showcaseDirty;
 
  const selectCharacter=useCallback(async(characterId:string)=>{
-  if(!value||busy)return false;
+  if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!value||busy)return false;
   if(showcaseDirty){
    setError('Save or revert this hero’s showcase before opening another hero.');
    return false;
@@ -129,18 +141,20 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   const version=requestVersion.current;
   setBusy(true);setError('');setNotice('');
   try{
-   const row=await updateProfileIdentityV2({
-    visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,bio,
-   });
+   const row=ACCOUNT_SOCIAL_IDENTITY_RELEASED
+    ?await updateProfileIdentityV2({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,bio})
+    :await saveLegacyProfile(value,bio,fallbackCharacterId);
    if(!mounted.current||version!==requestVersion.current)return;
-   const identity={visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,bio:row.bio};
-   setValue(current=>current?{...current,...identity}:current);
-   setSavedValue(current=>current?{...current,...identity}:current);
-   setBioState(row.bio);setNotice('Profile identity saved.');
+   if(ACCOUNT_SOCIAL_IDENTITY_RELEASED){
+    const identity={visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,bio:row.bio};
+    setValue(current=>current?{...current,...identity}:current);
+    setSavedValue(current=>current?{...current,...identity}:current);
+   }else{setValue(row);setSavedValue(row);}
+   setBioState(row.bio);setNotice(ACCOUNT_SOCIAL_IDENTITY_RELEASED?'Profile identity saved.':'Profile saved.');
   }catch{
    if(mounted.current&&version===requestVersion.current)setError('Unable to save your profile identity.');
   }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
- },[value,bio,busy,guest,identityDirty]);
+ },[value,bio,busy,guest,identityDirty,fallbackCharacterId]);
 
  const saveShowcase=useCallback(async()=>{
   const characterId=value?.selectedCharacterId;
@@ -148,19 +162,22 @@ export function useProfileExtensionDraft(fallbackCharacterId?:string):ProfileExt
   const version=requestVersion.current;
   setBusy(true);setError('');setNotice('');
   try{
-   const result=await updateCharacterShowcaseV2(characterId,showcaseSnapshot(value));
+   const result=ACCOUNT_SOCIAL_IDENTITY_RELEASED
+    ?await updateCharacterShowcaseV2(characterId,showcaseSnapshot(value))
+    :await saveLegacyProfile(value,bio,fallbackCharacterId);
    if(!mounted.current||version!==requestVersion.current)return;
    setValue(current=>current?.selectedCharacterId===characterId?{...current,...result}:current);
    setSavedValue(current=>current?.selectedCharacterId===characterId?{...current,...result}:current);
-   setNotice('Character showcase saved.');
+   if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED)setBioState((result as ProfileExtensionSelfV43).bio);
+   setNotice(ACCOUNT_SOCIAL_IDENTITY_RELEASED?'Character showcase saved.':'Profile saved.');
   }catch{
    if(mounted.current&&version===requestVersion.current)setError('Unable to save this character showcase.');
   }finally{if(mounted.current&&version===requestVersion.current)setBusy(false)}
- },[value,busy,guest,showcaseDirty]);
+ },[value,bio,busy,guest,showcaseDirty,fallbackCharacterId]);
 
  const setFeatured=useCallback(async()=>{
   const characterId=value?.selectedCharacterId;
-  if(!characterId||busy||guest||characterId===featuredCharacterId)return;
+  if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!characterId||busy||guest||characterId===featuredCharacterId)return;
   if(showcaseDirty){
    setError('Save or revert this hero’s showcase before featuring it.');
    return;

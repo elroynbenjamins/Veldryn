@@ -43,7 +43,7 @@ for(const tier of tiers){
           'No missing or duplicate rolled stats');
         ok(rolls.every(roll=>cfg!.pool.includes(roll.stat)),'Rolled stats must belong to the class role');
         ok(rolls.every(roll=>{
-          const range=equipmentBonusRange(cfg!.tier,roll.stat,cfg!.slot);
+          const range=equipmentBonusRange(cfg!.tier,roll.stat,cfg!.slot,rarity);
           return !!range&&roll.basisPoints>=range[0]&&roll.basisPoints<=range[1]
             &&(roll.basisPoints-range[0])%10===0
             &&equipmentBonusLine(itemId,rarity,roll).includes('/100 roll');
@@ -57,22 +57,38 @@ for(const tier of tiers){
 
 const t2=item('T2','WAYFINDER','gloves'),t5=item('T5','WAYFINDER','gloves');
 ok(equipmentBonusConfig(t2,'mythic')?.count===1,'T2 Mythic stays one bonus');
+ok(equipmentBonusRange(5,'critRate','amulet','mythic')![1]>
+   equipmentBonusRange(5,'critRate','amulet','common')![1],
+  'Mythic amulets have higher Critical Rate bounds than Common amulets');
+ok(equipmentBonusRange(5,'critDamage','gloves','uncommon')![1]>
+   equipmentBonusRange(5,'critDamage','gloves','common')![1],
+  'Critical Damage armor ranges also use rarity multipliers');
+ok(equipmentBonusRange(2,'healingPower','gloves','mythic')![1]<
+   equipmentBonusRange(5,'healingPower','gloves','common')![1],
+  'T2 Mythic support rolls must stay below T5 Common tier ceiling');
+
 ok(equipmentBonusConfig(t5,'common')?.count===2,'T5 Common has two bonuses');
 ok(equipmentBonusRange(2,'critRate','gloves')![1]<equipmentBonusRange(5,'critRate','gloves')![1],
   'Early T2 must have lower caps than T5');
-ok(!normalizeEquipmentBonuses(t2,'common',[{stat:'critRate',basisPoints:9000}],1),
+ok(!normalizeEquipmentBonuses(t2,'common',[{stat:'critRate',basisPoints:9000}],2),
   'Out-of-range values must fail closed');
 ok(!normalizeEquipmentBonuses(t2,'common',[{stat:'critRate',basisPoints:40}],999),
   'Unknown roll versions cannot grant stats');
-ok(!normalizeEquipmentBonuses(t2,'common',null,1),'Legacy T2 gear has no invented roll');
-ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'haste',basisPoints:50}],1),
+ok(!normalizeEquipmentBonuses(t2,'common',null,2),'Legacy T2 gear has no invented roll');
+ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'haste',basisPoints:50}],2),
   'Duplicate stat types must fail closed');
 
 const initial=createCharacter(newGame(1),'WAYFINDER','Roll Tester','male');
 const crafted=draftCraftedGearInstance({itemId:t2,ownerCharacterId:initial.character!.id,jobId:'t2-gloves-receipt',createdAtMs:1,roll:.3});
-ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===1,
+ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===2,
   'A fresh T2 forged glove must gain a persistent single bonus');
 const loaded=normalizeCraftedGearInstances([crafted])[0];
+const previousV1={...crafted,equipmentBonusRollVersion:1 as const,
+  equipmentBonuses:[{stat:'evasion' as const,basisPoints:30}]};
+const preservedV1=normalizeCraftedGearInstances([previousV1])[0];
+ok(preservedV1.equipmentBonusRollVersion===1&&preservedV1.equipmentBonuses?.[0]?.basisPoints===30,
+  'Older v1 T2 armor bonuses must remain readable on the old 0.1% table');
+
 ok(JSON.stringify(loaded.equipmentBonuses)===JSON.stringify(crafted.equipmentBonuses),
   'Save/load must retain the exact T2 stat and value');
 

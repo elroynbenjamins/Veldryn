@@ -1,4 +1,5 @@
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
+import {planHiddenPartyGameCommitV48,PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED} from './party-event-gameplay-commit-v48';
 import {newGame} from '../../apps/mobile/src/core/game';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
@@ -113,8 +114,18 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    ...(projectSegments.some(({activity})=>activity.kind==='alchemy'||activity.kind==='processing')?[]:contributions.filter(event=>event.kind==='crafting'&&event.units>0).map(event=>({kind:'crafting',units:Math.min(100,event.units)}))),
   ];
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
-  const commitRpc='commit_online_game_guild_pve_v1';
-  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  // Party Events V48 remains DEFAULT-OFF. The existing online commit is
+  // returned unchanged until approved staging migrations and E2E gates pass.
+  const normalCommitArgs={p_account_id:accountId,p_expected_version:loaded.version,
+   p_expected_gold:loaded.walletGold,p_request_id:body.requestId,
+   p_request_hash:requestHash,p_response:response,p_contributions:contributions,
+   ...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})};
+  const partyCommit=planHiddenPartyGameCommitV48({
+   enableDraftBridge:PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED,
+   adminQa,commandType:command.type,trustedServerNowMs:loaded.serverNow,
+   previousActivity:state.activity??null,result,normalArgs:normalCommitArgs,
+  });
+  const committed=await services.rpc(partyCommit.rpc,partyCommit.args);
   try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   await recordOutcome('committed');
   return json(committed);

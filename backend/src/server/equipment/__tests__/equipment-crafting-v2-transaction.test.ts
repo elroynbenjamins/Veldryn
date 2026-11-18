@@ -26,7 +26,7 @@ const makeContext=(nowMs:number):V2DraftContext=>({
  randomInt:()=>0,
 });
 const create=():V2DraftSnapshot=>({
- accountId:'account-test',activeCharacterId:'character-test',version:10,
+ accountId:'account-test',activeCharacterId:'character-test',ownedCharacterIds:['character-test','character-alt'],version:10,
  characterLevel:30,professionLevels:{smithing:45,tailoring:45},
  gold:10000,
  inventory:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,Math.ceil(i.quantity/2)])),
@@ -71,9 +71,16 @@ assert.throws(()=>resolveEquipmentV2DraftCommand(start.next,
  {kind:'claim',requestId:'claim-00001',expectedVersion:11,jobId:job.id},
  makeContext(job.finishesAtMs-1)),/job_not_finished/,'Premature claim must not roll an item');
 const claimRequest={kind:'claim' as const,requestId:'claim-00001',expectedVersion:11,jobId:job.id};
-const claim=resolveEquipmentV2DraftCommand(start.next,claimRequest,makeContext(job.finishesAtMs));
+const switched=structuredClone(start.next);
+switched.activeCharacterId='character-alt';
+const otherCharacterContext={...makeContext(job.finishesAtMs),characterId:'character-alt'};
+const claim=resolveEquipmentV2DraftCommand(switched,claimRequest,otherCharacterContext);
 assert.equal(claim.response.kind,'claimed');
 assert.equal(claim.next.equipment.length,1);
+assert.equal(claim.next.equipment[0].ownerCharacterId,'character-test',
+ 'Claiming on a second character must not transfer the first character\'s item');
+assert.equal(claim.next.skillAwards[0].characterId,'character-test',
+ 'Crafting XP must stay with the character who started the job');
 assert.equal(claim.next.skillAwards.length,1);
 assert.equal(claim.next.gold,start.next.gold);
 assert.equal(claim.next.version,12);
@@ -83,13 +90,13 @@ assert.equal(claim.next.equipment[0].outcome.rarity,'mythic');
 assert.equal(claim.next.equipment[0].outcome.quality,0);
 assert.equal(claim.next.equipment[0].outcome.affixes.length,2,'T1 Mythic has two affixes');
 assert.equal(new Set(claim.next.equipment[0].outcome.affixes.map(a=>a.stat)).size,2);
-const claimReplay=resolveEquipmentV2DraftCommand(claim.next,claimRequest,makeContext(job.finishesAtMs+999));
+const claimReplay=resolveEquipmentV2DraftCommand(claim.next,claimRequest,{...makeContext(job.finishesAtMs+999),characterId:'character-alt'});
 assert.equal(claimReplay.replayed,true);
 assert.deepEqual(claimReplay.response,claim.response);
 assert.equal(claimReplay.next.equipment.length,1,'Replay must never mint a second piece');
 assert.throws(()=>resolveEquipmentV2DraftCommand(claim.next,
  {kind:'claim',requestId:'claim-00002',expectedVersion:12,jobId:job.id},
- makeContext(job.finishesAtMs+999)),/already_claimed/,'A distinct claim request cannot mint again');
+ {...makeContext(job.finishesAtMs+999),characterId:'character-alt'}),/already_claimed/,'A distinct claim request cannot mint again');
 const noGold=create();noGold.gold=recipe.gold-1;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noGold,startRequest,makeContext(1_000_000)),/insufficient_gold/);
 const noMaterial=create();noMaterial.bank[recipe.inputs[0].itemId]=0;

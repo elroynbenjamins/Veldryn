@@ -71,7 +71,8 @@ jobs:
             party-event-receipt-recovery-v31 \
             party-event-readonly-status-v33 \
             party-event-authenticated-read-v34 \
-            party-event-schema-readiness-v35
+            party-event-schema-readiness-v35 \
+            party-event-day8-audit-v36
           do
             node "dist/online/backend/online/tests/${suite}.js"
           done

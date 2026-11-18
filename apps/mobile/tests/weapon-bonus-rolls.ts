@@ -9,6 +9,7 @@ import {moveCraftedGearInstance,equipCraftedGearInstance,unequipCraftedGearInsta
 import {previewEquipment} from '../src/core/equipment-preview';
 import {normalizeWeaponBonuses,rollWeaponBonuses,weaponBonusConfig,weaponBonusLine,weaponBonusRange,WEAPON_BONUS_BPS_BY_BAND,WEAPON_BONUS_ROLL_VERSION,weaponBonusCompactLine,weaponBonusRollGrade} from '../src/core/weapon-bonus-rolls';
 import type {ItemRarity} from '../src/core/item-rarity';
+import {BONUS_ROLL_RARITY_MULTIPLIER} from '../src/core/bonus-roll-rarity';
 import type {CraftedGearInstance,GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -60,13 +61,39 @@ for(const [id,rarity,count] of [
   ok(new Set(first!.map(row=>row.stat)).size===count,'Weapon stats must be distinct');
   const tier=weaponBonusConfig(id,rarity)!.tier;
   ok(first!.every(row=>{
-    const range=weaponBonusRange(tier,row.stat);
+    const range=weaponBonusRange(tier,row.stat,WEAPON_BONUS_ROLL_VERSION,rarity);
     return !!range&&row.basisPoints>=range[0]&&row.basisPoints<=range[1]&&(row.basisPoints-range[0])%10===0;
   }), 'Each rolled stat must use its own tier range in 0.1% steps');
   ok(first!.every(row=>weaponBonusLine(id,rarity,row).includes('/100 roll')),'Tooltip should show the range and roll strength');
   ok(JSON.stringify(normalizeWeaponBonuses(id,rarity,first))===JSON.stringify(first),'Valid rolls must survive normalization');
 }
 
+// Player-approved rarity scaling applies to BOTH boundaries, not to existing minted copies.
+ok(JSON.stringify(BONUS_ROLL_RARITY_MULTIPLIER)===JSON.stringify({
+  common:.85,uncommon:1,rare:1.2,epic:1.35,legendary:1.45,mythic:1.5,
+}),'Rarity multipliers must match the approved 85–150% schedule');
+ok(weaponBonusRange(5,'critRate',3,'common')?.join(',')==='70,170',
+  'Common T5 Crit Rate must use 15% weaker bounds in 0.1% steps');
+ok(weaponBonusRange(5,'critRate',3,'rare')?.join(',')==='100,240',
+  'Rare T5 Crit Rate is +20% over baseline');
+ok(weaponBonusRange(5,'critRate',3,'epic')?.join(',')==='110,270',
+  'Epic T5 Crit Rate is +35% over baseline');
+ok(weaponBonusRange(5,'critRate',3,'mythic')?.join(',')==='120,300',
+  'Mythic T5 Crit Rate caps at 3.0%');
+ok(weaponBonusRange(5,'critDamage',3,'uncommon')?.join(',')==='300,700',
+  'T5 Crit Damage baseline is 3–7%');
+ok(weaponBonusRange(5,'abilityDamage',3,'uncommon')?.join(',')==='200,500',
+  'T5 Ability Damage baseline is 2–5%');
+ok(weaponBonusRange(5,'healingPower',3,'uncommon')?.join(',')==='200,500',
+  'T5 Healing Power baseline is 2–5%');
+ok(weaponBonusRange(5,'critRate',2,'mythic')?.join(',')==='80,200',
+  'Old v2 weapon values must not gain a retroactive Mythic multiplier');
+const fullPool=new Set(CLASSES.flatMap(cls=>{
+ const itemId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.classId===cls.id&&itemDef(row.output.itemId).slot==='weapon')!.output.itemId;
+ return [...weaponBonusConfig(itemId,'common')!.pool];
+}));
+for(const name of ['maxHp','armor','ward','tenacity','critRate','critDamage','abilityDamage','healingPower','haste','penetration','accuracy','potency','evasion','power'])
+  ok(fullPool.has(name as any),'Full Equipment 2.0 weapon pool is missing '+name);
 // Stat-specific balancing: high-value Crit Rate and Ward cap below broad HP / Tenacity.
 ok(weaponBonusRange(2,'critRate')?.join(',')==='30,80','T2 Crit Rate must have an especially low roll cap');
 ok(weaponBonusRange(3,'critRate')?.join(',')==='50,150','T3 Crit Rate is 0.5–1.5%, not the old global range');
@@ -81,8 +108,8 @@ ok(weaponBonusLine(t5,'common',{stat:'haste',basisPoints:200}).includes('Range 1
   'Tooltip displays the Haste-specific tier range');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:200}]),
   'The former T3 2.0% Crit Rate value must be rejected under the new cap');
-ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'haste',basisPoints:200}]),
-  'T3 Haste can reach its valid 2.0% cap');
+ok(!!normalizeWeaponBonuses(t3,'uncommon',[{stat:'haste',basisPoints:200}]),
+  'T3 Uncommon Haste can reach its baseline 2.0% cap');
 for(const band of [3,5,7,9] as const){
   for(const [stat,range] of Object.entries(WEAPON_BONUS_BPS_BY_BAND[band])){
     ok(range.length===2&&range[0]<range[1]&&range.every(value=>Number.isInteger(value)&&value%10===0),
@@ -100,7 +127,7 @@ for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
   ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
 }
-ok(WEAPON_BONUS_ROLL_VERSION===2,'Current weapon rolls must use the versioned stat-specific balance table');
+ok(WEAPON_BONUS_ROLL_VERSION===3,'New weapons use rarity-adjusted v3 tables; previous v1/v2 stay readable');
 ok(weaponBonusRange(3,'critRate',1)?.join(',')==='100,300','Older v1 receipts keep their original T3 1–3% range');
 ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:250}],1),
   'Already minted v1 high Crit Rate rolls must be preserved after rebalance');
@@ -127,7 +154,7 @@ const copy=draftCraftedGearInstance({itemId:t5,ownerCharacterId:owner,jobId:'wea
 ok(copy.weaponBonuses?.length===2,'New T5 forged copy must receive two attributes');
 const normalized=normalizeCraftedGearInstances([copy])[0];
 ok(JSON.stringify(normalized.weaponBonuses)===JSON.stringify(copy.weaponBonuses),'Saved attributes must survive round-trip');
-ok(normalized.weaponBonusRollVersion===2,'New copies retain their stat-range balance version');
+ok(normalized.weaponBonusRollVersion===3,'New copies retain their rarity-scaled version');
 const preRebalanceCopy={
   ...copy,id:'v1-legacy-draft',weaponBonusRollVersion:1 as const,
   weaponBonuses:[{stat:'critRate' as const,basisPoints:250},{stat:'haste' as const,basisPoints:290}],

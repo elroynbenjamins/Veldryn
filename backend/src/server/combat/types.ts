@@ -47,6 +47,12 @@ export interface AbilityEffect {
   executeBonus?:number;
   /** Optional bounded bonus to direct hits against targets already carrying a debuff. */
   bonusVsDebuffed?:number;
+  /** Combat 2.0: bounded, server-authored passive effects only. */
+  penetrationPct?:number;
+  criticalDamageBonusVsMarked?:number;
+  criticalHitBonusVsMarked?:number;
+  additionalExecuteBelowHpPct?:number;
+  additionalExecuteBonus?:number;
   /** Server-authored one-shot critical multiplier bonus for Combat 2.0. */
   critMultiplierBonus?:number;
   /** Only applied to v2 direct heals; no changes to legacy healing. */

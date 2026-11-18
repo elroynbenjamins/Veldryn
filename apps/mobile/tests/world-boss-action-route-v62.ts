@@ -44,9 +44,8 @@ const base:WorldBossActionDepsV62={
    readAttempt:async(eventId,accountId,req)=>{
     priorCalls++;assert.equal(eventId,EVENT);assert.equal(accountId,OWNER);
     assert.equal(req,requestId);
-    return {order:'steady_assault',status:'committed',
-     ordinal:1,repeated:false} as Awaited<ReturnType<
-       WorldBossActionDepsV62['raid']['db']['readAttempt']>>;
+    return {characterId:CHARACTER,order:'steady_assault',
+     status:'committed',ordinal:1};
    },
    listOwnedStates:async()=>{throw Error('a retry must not load characters');},
    loadEvent:async()=>{throw Error('a retry must not load event');},

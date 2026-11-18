@@ -58,6 +58,8 @@ export function planHiddenEnemyClassEncounterV2(snapshot,authority){
    deny('trusted_snapshot_verifier_required');
  if(snapshot.version!==2||snapshot.ruleset!==ENEMY_V2_RULESET||
     snapshot.source!=='server-persisted-v2'||snapshot.mode!=='solo'||
+    !['asterfall','sunscar','frostmarch'].includes(snapshot.region)||
+    ![2,3,4,5].includes(snapshot.equipmentTier)||
     !string(snapshot.encounterId)||!string(snapshot.serverSeed)||
     !Number.isSafeInteger(snapshot.snapshotRevision)||snapshot.snapshotRevision<1)
    deny('invalid_server_snapshot');
@@ -85,7 +87,7 @@ export function planHiddenEnemyClassEncounterV2(snapshot,authority){
  for(const enemy of snapshot.enemies){
   if(!record(enemy)||!string(enemy.id)||seen.has(enemy.id)||
      !string(enemy.pveArchetypeTag)||!['normal','elite'].includes(enemy.kind)||
-     enemy.team!=='enemies'||enemy.boss===true||
+     enemy.team!=='enemies'||(enemy.boss!==undefined&&enemy.boss!==false)||
      !Array.isArray(enemy.traits)||enemy.traits.length>2||
      enemy.preparedByAnotherCompiler===true||
      (enemy.tags!==undefined&&(!Array.isArray(enemy.tags)||
@@ -93,6 +95,8 @@ export function planHiddenEnemyClassEncounterV2(snapshot,authority){
     deny('enemy_identity_or_duplicate_compiler');
   seen.add(enemy.id);
   const canonical=canonicalEnemyTraitsArchetypeV2(enemy.pveArchetypeTag);
+  const maxTraits=enemy.kind==='elite'&&snapshot.equipmentTier>=3?2:1;
+  if(enemy.traits.length>maxTraits)deny('trait_count_exceeds_tier_policy');
   const allowed=implemented[canonical];
   const selected=new Set(),usedGroups=new Set();
   for(const id of enemy.traits){
@@ -108,6 +112,7 @@ export function planHiddenEnemyClassEncounterV2(snapshot,authority){
  return seal({
   schema:COMBAT_V2_ENEMY_CLASS_GATE,encounterId:snapshot.encounterId,
   snapshotRevision:snapshot.snapshotRevision,mode:'new-v2-solo-only',
+  region:snapshot.region,equipmentTier:snapshot.equipmentTier,
   ruleset:ENEMY_V2_RULESET,characterId:actor.characterId,
   classId:actor.classId,classPolicyVersion:actor.classPolicyVersion,
   skillBuildVersion:actor.skillBuildVersion,

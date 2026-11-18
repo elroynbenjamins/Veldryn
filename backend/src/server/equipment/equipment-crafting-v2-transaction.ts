@@ -48,6 +48,7 @@ export interface V2DraftResolution {
 }
 const MAX_QUEUED_CRAFTS=8; // 3 active and 5 waiting; ready capacity enforced separately
 const MAX_UNCLAIMED_READY=20;
+const MAX_CRAFTED_COPIES_PER_PIECE=25;
 const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
 const safeCount=(x:number)=>Number.isSafeInteger(x)&&x>=0;
 function verifyCommand(command:V2DraftCommand){
@@ -139,6 +140,7 @@ function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const matched=v2ServerRecipeAndPiece(job.recipeId);
  if(!matched||matched.recipe.pieceId!==job.pieceId)fail('unknown_job_recipe');
  const {recipe,piece}=matched;
+ if(state.equipment.filter(item=>item.outcome.pieceId===piece.id).length>=MAX_CRAFTED_COPIES_PER_PIECE)fail('copy_limit_reached');
  const outcome=draftEquipmentV2Outcome({recipeId:recipe.id,pieceId:piece.id,slot:piece.slot,role:piece.role,tier:piece.tier},
   ctx.randomInt??randomInt);
  const instanceId=(ctx.randomId??randomUUID)();

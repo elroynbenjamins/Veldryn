@@ -1,26 +1,26 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import type {CoopRoomOutcomeView} from '../../core/coop-presentation';
 import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
+import {GameButton} from '../GameButton';
 
-/** A transient, non-modal result based on committed server deltas, not guesses. */
-export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView}){
- const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText(),[visible,setVisible]=useState(Boolean(outcome));
+/** Server-confirmed room rewards stay readable until the player progresses.
+ * Solo rooms require acknowledgement; Live voting stays non-blocking. */
+export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoomOutcomeView;onContinue?:()=>void}){
+ const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const enter=useRef(new Animated.Value(0)).current;
  const pulse=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  setVisible(Boolean(outcome));
   if(!outcome)return;
   enter.setValue(0);pulse.setValue(0);
   Animated.timing(enter,{toValue:1,duration:280,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
   Animated.sequence([Animated.timing(pulse,{toValue:1,duration:360,easing:Easing.out(Easing.quad),useNativeDriver:true}),Animated.timing(pulse,{toValue:0,duration:520,easing:Easing.in(Easing.quad),useNativeDriver:true})]).start();
-  const timeout=setTimeout(()=>setVisible(false),6500);
-  return()=>clearTimeout(timeout);
+  return()=>{enter.stopAnimation();pulse.stopAnimation();};
  },[outcome?.nodeId,outcome?.kind,outcome?.offerKind,outcome?.resourcesDelta]);
- if(!outcome||!visible||outcome.kind==='merchant')return null;
+ if(!outcome||outcome.kind==='merchant'||outcome.kind==='merchant_purchase')return null;
  const detail:string[]=[];
  if(outcome.kind==='merchant_purchase'){
   const item=outcome.offerKind==='boon'?st('Sealed boon'):outcome.offerKind==='artifact'?st('Run artifact'):st('Restorative salve');
@@ -42,17 +42,26 @@ export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView
  const markScale={transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.35]})}]};
  const ringStyle={opacity:pulse.interpolate({inputRange:[0,1],outputRange:[0,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.6,1.8]})}]};
  return <Animated.View style={[s.banner,{borderColor:tint},enterStyle]} accessibilityLiveRegion="polite">
-  <View style={s.markSlot}>
-   <Animated.View pointerEvents="none" style={[s.ring,{backgroundColor:tint},ringStyle]}/>
-   <Animated.Text style={[s.mark,{color:tint},markScale]}>{glyph}</Animated.Text>
+  <View style={s.heading}>
+   <View style={s.markSlot}>
+    <Animated.View pointerEvents="none" style={[s.ring,{backgroundColor:tint},ringStyle]}/>
+    <Animated.Text style={[s.mark,{color:tint},markScale]}>{glyph}</Animated.Text>
+   </View>
+   <View style={s.body}>
+    <Text style={s.title}>{room?st(room.name):st('Room cleared')}</Text>
+    <Text style={s.text}>{summary}</Text>
+   </View>
   </View>
-  <Text style={s.text} numberOfLines={3}>{room?`${st(room.name)} · ${summary}`:summary}</Text>
+  {onContinue?<GameButton compact title={st('Continue dungeon')} onPress={onContinue}/>:null}
  </Animated.View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
- banner:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm,minHeight:38,paddingHorizontal:coopSpacing.sm,paddingVertical:7,borderRadius:9,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.surface},
+ banner:{gap:coopSpacing.sm,minHeight:38,paddingHorizontal:coopSpacing.sm,paddingVertical:10,borderRadius:9,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,backgroundColor:C.surface},
+ heading:{flexDirection:'row',alignItems:'center',gap:coopSpacing.sm},
+ body:{flex:1,minWidth:0,gap:2},
+ title:{fontSize:13,lineHeight:19,fontWeight:'900',color:C.text},
  markSlot:{width:22,height:22,alignItems:'center',justifyContent:'center'},
  ring:{position:'absolute',width:22,height:22,borderRadius:11},
  mark:{fontSize:14,lineHeight:18,fontWeight:'800',color:C.success},
- text:{flex:1,minWidth:0,fontSize:12,lineHeight:17,color:C.textSecondary,fontWeight:'700'}
+ text:{fontSize:12,lineHeight:17,color:C.textSecondary,fontWeight:'700'}
 });

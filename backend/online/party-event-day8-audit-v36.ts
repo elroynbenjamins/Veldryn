@@ -14,6 +14,8 @@ import type {VerifiedPartyEventLockedSnapshotV30} from './party-event-locked-sna
 import type {PartyEventReceiptRecoveryV31} from './party-event-receipt-recovery-v31';
 
 export const PARTY_EVENT_DAY8_V36_PAYOUT_RELEASED=false;
+const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const HASH=/^[0-9a-f]{64}$/;
 type EvidenceV36=Pick<VerifiedPartyEventEvidenceV27,
  'trustedAccountId'|'offerId'|'partyId'|'eventStartsAt'
  |'frozenCharacterId'|'quoteHash'|'onlineRevision'
@@ -63,6 +65,10 @@ export function auditPartyEventDay8ReadinessV36(
    requiresAtomicWriter:true};
  }
  const {evidence:e,locked:l,recovery:r,schema}=input;
+ if(!UUID.test(input.trustedAccountId)||!UUID.test(e.offerId)
+  ||!UUID.test(e.partyId)||!UUID.test(e.frozenCharacterId)
+  ||!HASH.test(e.quoteHash)||!HASH.test(l.quoteHash))
+  issues.push('invalid_identity_or_quote');
  if(schema.ready!==true||schema.missingOrMismatched.length
   ||schema.unsafeGrants.length)
   issues.push('private_schema_not_verified');

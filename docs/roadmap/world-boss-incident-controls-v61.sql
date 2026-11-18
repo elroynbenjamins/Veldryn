@@ -55,6 +55,11 @@ BEGIN
  IF TG_OP='INSERT' AND NEW.revision<>1 THEN
   RAISE EXCEPTION 'WB61_INVALID_INITIAL_REVISION';
  END IF;
+ -- Initial registration is always CLOSED. Opening any action requires an
+ -- explicit audited second transaction with a monotonically newer revision.
+ IF TG_OP='INSERT' AND
+   (NEW.new_raids_open OR NEW.new_donations_open OR NEW.new_claims_open)
+ THEN RAISE EXCEPTION 'WB61_INITIAL_CONTROL_MUST_BE_CLOSED'; END IF;
  IF NEW.changed_by IS NULL OR length(NEW.changed_by) NOT BETWEEN 3 AND 80
     OR NEW.change_reason IS NULL
     OR length(NEW.change_reason) NOT BETWEEN 12 AND 500

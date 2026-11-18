@@ -94,7 +94,8 @@ RETURNS trigger LANGUAGE plpgsql VOLATILE SECURITY INVOKER SET search_path=''
 AS $fence$
 DECLARE account_key uuid;
 BEGIN
- account_key:=CASE WHEN TG_OP='DELETE' THEN OLD.account_id ELSE NEW.account_id END;
+ IF TG_OP='DELETE' THEN account_key:=OLD.account_id;
+ ELSE account_key:=NEW.account_id; END IF;
  PERFORM private.world_boss_v57_account_lock(account_key);
  IF TG_OP='UPDATE' THEN
   IF NEW.account_id IS DISTINCT FROM OLD.account_id OR

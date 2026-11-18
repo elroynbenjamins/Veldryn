@@ -219,6 +219,15 @@ const lockedRivets=equipmentV2PreparationPlan(probeEquipment,{
 check(lockedRivets.shortages.some(i=>i.itemId==='ARMOR_RIVETS'&&i.reason==='recipe_locked')
  &&!lockedRivets.canPrepareWithOwned,'Locked component recipes must never be represented as craftable');
 
+const lockedPreview=equipmentV2HiddenRecipeScreen({
+ name:'Locked-component gear',tier:3,slot:'chest',profile:'defense_health',setPiece:false,
+ ingredients:[{itemId:'ARMOR_RIVETS',required:2,owned:0,kind:'component'}],
+ strategy:'gather',characterLevel:40,professionLevel:40,goldAvailable:50000,
+ queueHasCapacity:true,preparation:lockedRivets,
+});
+check(lockedPreview.action==='unlock_prerequisite'&&!lockedPreview.canCraftNow,
+ 'The UI must explain locked cross-profession prerequisites rather than offer a nonfunctional craft');
+
 const syntheticProducer=(id:string,itemId:string,inputs:{itemId:string;quantity:number}[],gold:number,outputQty=1):Recipe=>({
  id,name:id,skillId:'smithing',level:1,gold,xp:10,seconds:10,inputs,
  output:{itemId,quantity:outputQty},

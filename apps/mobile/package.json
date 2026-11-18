@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "test:feature-hubs": "node tests/feature-hub-preview-ui.cjs && node tests/world-boss-readonly-snapshot.cjs && node tests/party-event-readonly-snapshot.cjs && node tests/market-preview-quote.cjs && node tests/market-preview-filter.cjs",
     "test:dungeon-guide": "node tests/dungeon-home-guide-ui.cjs",
     "test:app-version-gate": "node tests/app-version-gate.cjs",
     "test:google-native-auth": "node tests/google-native-nonce.cjs && node tests/auth-account-link.cjs && node tests/account-auth-refinement-ui.cjs",

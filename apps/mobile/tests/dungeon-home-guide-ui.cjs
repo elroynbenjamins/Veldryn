@@ -47,7 +47,7 @@ test('Event content leads the screen while real matchmaking, tiers and shops sta
  assert.match(browser,/coopTierEligibility\(dungeon,value,currentLevel,currentPower\)/);
  assert.match(screen,/currentLevel=\{state.character\?\.level\?\?0\} currentPower=\{combatPowerRating\(state\)\.total\}/);
  assert.match(screen,/onShop=\{\(\)=>setShowShop\(true\)\}/);
- assert.match(app,/showActivityBar=\{tab!=='ProfileCustomize'&&tab!=='Coop'\}/);
+ assert.match(app,/showActivityBar=\{tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell\.hideActivityBar\}/);
 });
 
 test('Guide copy matches authoritative boon and run-item behavior',()=>{

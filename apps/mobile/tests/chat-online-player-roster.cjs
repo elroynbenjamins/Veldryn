@@ -29,7 +29,7 @@ assert.throws(()=>parse(null),/Invalid online player response/);
 const overlay=read('src/components/ChatOverlay.tsx');
 const panel=read('src/components/ChatOnlinePlayersPanel.tsx');
 const heartbeat=read('src/online/useOnlineGame.ts');
-assert.ok(overlay.includes('useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled)'),'refresh only while chat is open and the release gate is on');
+assert.ok(overlay.includes('useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly)'),'refresh only while chat is open, roster release gate is on and Party-only modal is closed');
 assert.ok(overlay.includes('ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured'),'show the header only when the verified release gate is on');
 assert.ok(read('src/core/release-flags.ts').includes('ONLINE_PLAYER_ROSTER_RELEASED=true'),'the verified online roster is enabled for release');
 assert.ok(overlay.includes('<ChatOnlinePlayersPanel'),'the header opens the existing modal-based roster');

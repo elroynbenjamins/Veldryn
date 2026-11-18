@@ -48,7 +48,7 @@ for(const cls of classIds){
   const spender=combat.abilities.find(x=>x.name===early[cls]);
   assert.ok(spender,early[cls]+' must remain equippable at L1');
   assert.equal(spender.combatV2?.spend,1,cls+' must have an early spend loop');
-  assert.ok(spender.combatV2?.bonusPerStack!>0);
+  assert.ok((spender.combatV2?.bonusPerStack??0)>0);
   const style=styles.find(x=>spec.id===specializationIdV2(cls,x.name))!;
   assert.ok(style);
   // Ensure the actual compiled technique, not just the isolated style helper,

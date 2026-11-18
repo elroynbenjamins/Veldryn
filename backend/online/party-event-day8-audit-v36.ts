@@ -55,7 +55,13 @@ export function auditPartyEventDay8ReadinessV36(
  const issues:string[]=[];
  let snapshot:PartyEventReadOnlyStatusV33;
  try{snapshot=parsePartyEventReadOnlyStatusV33(input.snapshot);}
- catch{issues.push('invalid_event_snapshot');snapshot=input.snapshot;}
+ catch{
+  // Never attempt to inspect fields of a malformed snapshot, even if a
+  // compromised private adapter bypassed its static TypeScript contract.
+  return {previewEvidenceCoherent:false,issues:['invalid_event_snapshot'],
+   payoutAuthorized:false,canGrant:false,claimReady:false,readOnly:true,
+   requiresAtomicWriter:true};
+ }
  const {evidence:e,locked:l,recovery:r,schema}=input;
  if(schema.ready!==true||schema.missingOrMismatched.length
   ||schema.unsafeGrants.length)

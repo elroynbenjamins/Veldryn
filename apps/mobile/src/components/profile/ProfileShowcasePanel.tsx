@@ -51,8 +51,8 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
  const focusedId=value?.selectedCharacterId??state.character?.id;
  const focusedOther=(state.otherCharacters??[]).find(row=>row.character.id===focusedId);
  const focusedCharacter=characters.find(row=>row.id===focusedId);
- const focusedSkills=focusedOther?.skills??(focusedId===state.character?.id?state.skills:[]);
- const focusedInventory=focusedOther?.inventory??(focusedId===state.character?.id?state.inventory:undefined);
+ const focusedSkills=ACCOUNT_SOCIAL_IDENTITY_RELEASED?(focusedOther?.skills??(focusedId===state.character?.id?state.skills:[])):state.skills;
+ const focusedInventory=ACCOUNT_SOCIAL_IDENTITY_RELEASED?(focusedOther?.inventory??(focusedId===state.character?.id?state.inventory:undefined)):state.inventory;
  const skills=focusedSkills.map(row=>({id:row.skillId,label:profileText(language,row.skillId)}));
  const companions=(state.account.unlockedCombatCompanionIds??[]).map(id=>({id,label:COMBAT_COMPANIONS.find(row=>row.id===id)?.name??id.replace(/_/g,' ')}));
  const achievements=Object.keys(state.account.journalState?.unlockedAchievements??{}).map(id=>({id,label:JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id)?.title??id.replace(/_/g,' ')}));
@@ -64,15 +64,15 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   for(const id of state.account.unlockedCosmeticPetIds??[])add('pet',id);
   for(const id of state.account.unlockedCombatCompanionIds??[])add('companion',id);
   for(const icon of profileIconCollection(state).filter(row=>row.unlocked))add('profile_icon',icon.id);
-  for(const hero of characters){
+  if(ACCOUNT_SOCIAL_IDENTITY_RELEASED)for(const hero of characters){
    add('profile_icon','class:'+hero.classId);
    add('profile_icon',hero.profileIconId);
   }
   for(const id of state.account.unlockedProfileBackgroundIds??[])add('background',id);
-  add('background',focusedCharacter?.profileBackgroundId);
+  add('background',(ACCOUNT_SOCIAL_IDENTITY_RELEASED?focusedCharacter:state.character)?.profileBackgroundId);
   for(const id of state.account.unlockedProfileBorderIds??[])add('border',id);
-  add('border',focusedCharacter?.profileBorderId);
-  for(const id of Object.values(focusedCharacter?.equipment??{}))add('item',id);
+  add('border',(ACCOUNT_SOCIAL_IDENTITY_RELEASED?focusedCharacter:state.character)?.profileBorderId);
+  for(const id of Object.values((ACCOUNT_SOCIAL_IDENTITY_RELEASED?focusedCharacter:state.character)?.equipment??{}))add('item',id);
   for(const stack of (focusedInventory?.stacks??[]).filter(row=>row.quantity>0).slice(0,30))add('item',stack.itemId);
   return refs.slice(0,100);
  },[state,focusedCharacter,focusedInventory]);
@@ -117,10 +117,10 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
    <Text style={s.copy}>{profileT(language,"Guest progress can continue normally, but public social-profile publishing is held until the account is linked.")}</Text></View>:null}
 
-  <View style={s.head}><Text style={s.eyebrow}>{socialIdentityT(language,'CHARACTER SHOWCASE')}</Text><Text style={s.hint}>{socialIdentityT(language,'This hero’s own display')}</Text></View>
+  <View style={s.head}><Text style={s.eyebrow}>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?socialIdentityT(language,'CHARACTER SHOWCASE'):profileT(language,'SHOWCASE CHARACTER')}</Text><Text style={s.hint}>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?socialIdentityT(language,'This hero’s own display'):profileT(language,'What players see first')}</Text></View>
   <View style={s.headlineWrap}>
   <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,'Showcase character: {name} ▾',{name:character?.name??profileT(language,'Current character')})}
-    disabled={guest||busy||!ACCOUNT_SOCIAL_IDENTITY_RELEASED||characters.length<2} onPress={()=>openPicker('character')} style={({pressed})=>[s.headline,pressed&&s.pressed]}>
+    disabled={guest||busy||characters.length<2} onPress={()=>openPicker('character')} style={({pressed})=>[s.headline,pressed&&s.pressed]}>
    {scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.headlineScrim}/>
    {character?<ProfileIcon id={character.profileIconId} classId={character.classId} size={58} style={s.headlineIcon}/>:null}
@@ -131,7 +131,7 @@ export function ProfileShowcasePanel({state,draft}:{state:GameState;draft:Profil
     </View>
     <Text numberOfLines={1} style={s.headlineMeta}>{character?profileT(language,'Lv. {level}',{level:character.level})+' · '+className:''}</Text>
     <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
-    {ACCOUNT_SOCIAL_IDENTITY_RELEASED&&characters.length>1?<Text style={s.headlineAction}>{socialIdentityT(language,'Tap to edit another hero')} ›</Text>:null}
+    {characters.length>1?<Text style={s.headlineAction}>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?socialIdentityT(language,'Tap to edit another hero'):profileT(language,'Tap to swap')} ›</Text>:null}
    </View>
   </Pressable>
   {headlineFrame?<ProfileFrameOverlay source={headlineFrame}/>:null}

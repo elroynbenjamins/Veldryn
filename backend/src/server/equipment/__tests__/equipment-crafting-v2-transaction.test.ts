@@ -19,7 +19,9 @@ for(const recipe of V2_SERVER_RECIPES){
  assert.ok(recipe.inputs.length>=4&&recipe.inputs.every(i=>Number.isSafeInteger(i.quantity)&&i.quantity>0));
  if(recipe.pieceId.startsWith('EQ2_WEAPON_')||recipe.pieceId.startsWith('EQ2_OFFHAND_')){
   assert.ok(source.piece.classRestriction,'Server must enforce an explicit wearable class on V2 armaments');
-  assert.ok(['one','two','dual'].includes(source.piece.hands??''),'Archetype must define its hand use');
+  if(source.piece.slot==='weapon')
+   assert.ok(['one','two','dual'].includes(source.piece.hands??''),'Weapon must define its hand use');
+  else assert.equal(source.piece.hands,undefined,'Offhands are not weapons with hand-count metadata');
  }
 }
 assert.throws(()=>assertEquipmentCraftingV2Released(),/not_released/,'Backend V2 gate must be disabled');

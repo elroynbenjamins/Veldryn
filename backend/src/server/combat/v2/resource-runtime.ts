@@ -77,3 +77,31 @@ export function spendCombatResourceV2(state:CombatantState,ability:AbilityDefini
     resource:v2.resource,resourceBefore:before,resourceAfter:v2.stacks,detail:'spent:'+spent,
   }};
 }
+
+
+/** Consume already primed capstone bonuses on the next eligible skill.
+ * Called BEFORE this skill's resource spend, so Void Surge cannot boost
+ * the very cast that initially primed it.
+ */
+export function consumeQueuedCombatBonusV2(state:CombatantState,ability:AbilityDefinition):AbilityDefinition{
+ const v2=state.combatV2;
+ if(!v2||!ability.effects.length)return ability;
+ let damage=0,crit=0;
+ const hasDirect=ability.effects.some(e=>e.kind==='damage');
+ const hasHeal=ability.effects.some(e=>e.kind==='heal');
+ if(hasDirect){damage=v2.pendingDamageBonus;crit=v2.pendingCritMultiplierBonus;
+   v2.pendingDamageBonus=0;v2.pendingCritMultiplierBonus=0;}
+ const heal=hasHeal?v2.pendingHealingBonus:0;
+ if(heal)v2.pendingHealingBonus=0;
+ if(!damage&&!crit&&!heal)return ability;
+ const effects=ability.effects.map(e=>{
+  if(e.kind==='damage'){
+   return {...e,coeff:typeof e.coeff==='number'?Math.round(e.coeff*(1+damage)*1e6)/1e6:e.coeff,
+     critMultiplierBonus:Math.max(0,Math.min(.5,(e.critMultiplierBonus??0)+crit))};
+  }
+  if(e.kind==='heal'&&typeof e.coeff==='number')
+   return {...e,coeff:Math.round(e.coeff*(1+heal)*1e6)/1e6};
+  return e;
+ });
+ return {...ability,effects};
+}

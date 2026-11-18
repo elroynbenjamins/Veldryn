@@ -194,6 +194,20 @@ test('World Boss displays only the server-selected rotating event, never a manua
  assert.doesNotMatch(screen,/EXAMPLE WAR SUPPLY METER|value=\{65\}/);
 });
 
+test('World Boss optional status read keeps private QA boundary and rejects stale account data',()=>{
+ assert.match(screen,/worldBossReadCurrent\?:\(\)=>Promise<unknown>/);
+ assert.match(screen,/const bossProviderReady=feature==='boss'/);
+ assert.match(screen,/loadedBoss\?\.accountId===worldBossAccountId/);
+ assert.match(screen,/decodeWorldBossReadOnlyStatusV46\(displayBossStatus,worldBossAccountId,statusNowMs\)/);
+ assert.match(screen,/Refresh read-only status/);
+ assert.match(screen,/No announced boss in this cycle/);
+ assert.match(screen,/World Boss read failed/);
+ assert.match(screen,/No previous data is displayed/);
+ assert.match(screen,/No raid, donation, claim or reward permission is available/);
+ assert.doesNotMatch(app,/worldBossReadCurrent=\{/);
+ assert.doesNotMatch(screen,/supabase\.(rpc|from)|worldBossReadCurrent\(token\)/);
+});
+
 test('market browsing offers safe item inspection, reset and equipment gem trade rules',()=>{
  assert.match(screen,/Example T3 Forged Blade/);
  assert.match(screen,/requiredLevel:30/);

@@ -1,7 +1,7 @@
 import type {GameState} from './types';
 import type {EquipmentV2SourceStrategy} from './equipment-crafting-v2-economy';
 import type {EquipmentV2RecipePreviewInput} from './equipment-crafting-v2-screen';
-import {EQUIPMENT_V2_PIECES,equipmentV2Piece} from '../content/equipment-v2-catalog';
+import {EQUIPMENT_V2_PIECES,equipmentV2Piece,equipmentV2Set} from '../content/equipment-v2-catalog';
 import {equipmentV2RecipesForItem} from '../content/equipment-v2-recipes';
 import {equipmentCraftQueueModel} from './equipment-crafting-queue';
 
@@ -9,7 +9,8 @@ import {equipmentCraftQueueModel} from './equipment-crafting-queue';
  * Reads the real inventory, Bank and profession levels but never edits them.
  */
 export interface EquipmentV2PreviewRoute extends EquipmentV2RecipePreviewInput {
- key:string;methodName:string;recipeId:string;profession:'smithing'|'tailoring';
+ key:string;methodName:string;recipeId:string;profession:'smithing'|'tailoring';recommended?:boolean;
+ setBonuses?:readonly {pieces:number;description:string}[];
 }
 function ownedFromState(state:GameState,itemId:string){
  return [...state.inventory.stacks,...state.bank.stacks].reduce(
@@ -22,10 +23,12 @@ export function equipmentV2PreviewRoutesForItem(
  if(!piece)return [];
  const queue=equipmentCraftQueueModel(state,nowMs);
  const canEnqueue=queue.freeSlots>0||queue.freeWaiting>0;
- return equipmentV2RecipesForItem(itemId).map(recipe=>{
+ const variants=equipmentV2RecipesForItem(itemId).map(recipe=>{
   const professionLevel=state.skills.find(s=>s.skillId===recipe.profession)?.level??0;
   return {
    key:recipe.id,recipeId:recipe.id,methodName:recipe.route==='foundation'?'Foundation':'Alternate',
+   craftSeconds:recipe.seconds,
+   setBonuses:piece.setId?equipmentV2Set(piece.setId)?.bonuses.map(b=>({pieces:b.pieces,description:'+'+b.percent+'% '+b.affix})):undefined,
    profession:recipe.profession,name:piece.name,tier:piece.tier,slot:piece.slot,
    profile:piece.profile,setPiece:Boolean(piece.setId),
    ingredients:recipe.inputs.map(input=>({
@@ -36,6 +39,13 @@ export function equipmentV2PreviewRoutesForItem(
    processingGold:0,
   };
  });
+ const recommendation=variants.slice().sort((a,b)=>{
+  const missingA=a.ingredients.filter(i=>i.owned<i.required);
+  const missingB=b.ingredients.filter(i=>i.owned<i.required);
+  return missingA.length-missingB.length
+   ||missingA.reduce((n,i)=>n+i.required-i.owned,0)-missingB.reduce((n,i)=>n+i.required-i.owned,0);
+ })[0]?.key;
+ return variants.map(v=>({...v,recommended:v.key===recommendation}));
 }
 export function equipmentV2HiddenCatalogueSummary(){
  return {count:EQUIPMENT_V2_PIECES.length,

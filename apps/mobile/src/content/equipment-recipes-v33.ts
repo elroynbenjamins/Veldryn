@@ -178,7 +178,10 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
   const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
   const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
-  const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
+  const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1);
+  // T3 is the early Sunscar bridge: use its intended profession floor (20),
+  // not the generic characterLevel-3 rule (23). Character equip gates stay intact.
+  const level=tier==='T3'?TIER_CRAFTING_LEVEL_FLOOR.T3:Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   const baseCraftXp=q(tierXp[tier]??120,multiplier)+(['T3','T4'].includes(tier)?20:0);
   const standardCraftXp=['T2','T3','T4'].includes(tier)?Math.round(baseCraftXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):baseCraftXp;

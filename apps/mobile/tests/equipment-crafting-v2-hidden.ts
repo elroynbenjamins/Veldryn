@@ -2,6 +2,9 @@ import {equipmentV2ResultPresentation} from '../src/core/equipment-crafting-v2-r
 import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-preparation';
 import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
+import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
+import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
+import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef} from '../src/content/items';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
@@ -306,5 +309,26 @@ for(const invalid of [
  try{equipmentV2ResultPresentation(invalid as never)}catch{badResultCount++}
 }
 check(badResultCount===7,'The result view rejects malformed rarity, quality, roll grades, duplicate stats, IDs and client-authored origin');
+
+
+for(const [slot,budget] of Object.entries(EQUIPMENT_V2_T1_SLOT_BUDGET)){
+ check(V2_SERVER_SLOT_BUDGET[slot as keyof typeof V2_SERVER_SLOT_BUDGET]===budget,
+  'Server/client slot stat budget mismatch: '+slot);
+}
+for(const item of V2_SERVER_PIECES){
+ for(const quality of [0,50,100]){
+  for(const [rarity,multiplier] of Object.entries(V2_SERVER_RARITY_BASE_MULTIPLIER)){
+   const qualityMultiplier=equipmentV2QualityMultiplier(quality);
+   const server=v2ServerBaseStatProjection(item,qualityMultiplier*multiplier);
+   const client=item.slot==='weapon'&&item.hands&&item.hands!=='one'
+    ?equipmentV2PreviewArmamentStats(item.tier,item.profile,item.hands,quality,multiplier)
+    :equipmentV2PreviewBaseStats(item.tier,item.slot,item.profile,quality,multiplier);
+   for(const stat of ['attack','defense','hp'] as const){
+    check(Math.abs(server[stat]-client[stat])<=.005001,
+     'Server/client rolled base stat drift for '+item.id+': Q'+quality+': '+rarity+': '+stat);
+   }
+  }
+ }
+}
 
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

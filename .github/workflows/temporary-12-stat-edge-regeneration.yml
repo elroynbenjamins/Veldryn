@@ -1,0 +1,50 @@
+name: Temporary 12-stat Edge regeneration
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-12-stat-edge-regeneration.yml'
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/equipment-stat-rolls-t3-t5
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install frozen dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Validate exact-copy stat rolls and types
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile typecheck
+          node tools/run-mobile-tests.mjs equipment-bonus-rolls weapon-bonus-rolls equipment-set-runtime equipment-crafting-source-v33 hunt-active-abilities
+      - name: Rebuild canonical server gameplay bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated artifacts to this draft feature branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical Edge bundles already match 12-stat source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): synchronize versioned 12-stat equipment minting'
+          git push origin HEAD:feature/equipment-stat-rolls-t3-t5

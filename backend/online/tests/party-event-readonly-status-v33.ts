@@ -27,7 +27,11 @@ must(sql.includes('private.party_event_roster_v11')&&sql.includes('private.party
  &&sql.includes('private.party_event_supply_orders_v16')
  &&sql.includes('private.party_event_ballots_v17')
  &&sql.includes('private.party_event_receipts_v11'),'private_sources_only');
-must(sql.includes('order by w.event_starts_at desc')&&sql.includes('limit 1'),'latest_unambiguous');
+must(sql.includes('order by w.event_starts_at desc')&&sql.includes('limit 1'),'stable_latest_current');
+must(sql.includes("w.event_starts_at <= now()")&&sql.includes("w.event_ends_at + interval '1 day' > now()")
+ &&sql.includes('overlap_roster.account_id=r.account_id')
+ &&sql.includes('private.party_event_weeks_v11 overlap_week')
+ &&sql.includes(')=1'),'current_only_no_overlap');
 must(!/\b(insert|update|delete|truncate|grant|revoke|perform|call)\s+(into|from|on|table|private)\b/i.test(sql),
  'read_must_not_write');
 must(!/\$2|auth\.users|public\.chat_messages/i.test(sql),'no_client_party_ids_or_other_scopes');

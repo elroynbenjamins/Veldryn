@@ -170,3 +170,16 @@ The rotating boss **display names** now distinguish the individual encounter fro
 The three-boss sequence is **Hollowroot → Solbrand → Rimewarden**, still a single realm-wide boss per 14-day cycle. Only the mobile, private preview's UI strings have changed; existing boss IDs, regions, encounter kits, database references, receipts, reward keys, replay formats and scheduling contracts remain byte-for-byte compatible. Stable IDs are intentionally *not* renamed because they encode server contracts and historic analytics. Regional background art still follows the verified event identity.
 
 Before player release, reconcile these labels across localized strings, player-facing summaries, boss-specific portrait assets, announcements and eventual history/leaderboard views; do not expose inconsistent old display labels. No production migration, combat activation or rewards change is authorized by this naming pass.
+
+## V50 hidden UI follow-up — canonical naming and event-phase guidance (18 November 2026)
+
+The previous V49 naming and V48 single-boss decisions remain in force.
+
+1. **One display identity catalog.** `apps/mobile/src/core/world-boss-presentation.ts` is now the canonical player-facing `bossId → name / region / subtitle` mapping for Hollowroot, Solbrand and Rimewarden. It does not redefine or migrate the private combat IDs `hollowroot`, `sunscar` or `frostmarch`. This lets future replay, ranking and history surfaces use consistent labels when they are built. The three proper names are preserved across supported languages; surrounding screen text still requires localization.
+2. **No hard-coded label drift.** The private screen builds its regional encounter profiles from the shared catalog, uses snapshot-verified `bossId` to select the one currently displayed encounter, and renders the three-boss explanatory rotation from those same catalog values. No manual selection or default-to-Hollowroot behavior was reintroduced.
+3. **Phase-specific Overview guidance.** Upcoming/preparation/raid/recovery/expired snapshots have distinct, explicit next-step descriptions. Accessible navigation opens only the corresponding **read-only** War Camp, Battle or Rewards tab. Missing/expired authenticated data stays an unverified neutral state; the private UI never deduces the next event from a local clock or enables a submit/claim control.
+4. **Regression suite.** `apps/mobile/tests/world-boss-readonly-snapshot.cjs` tests the presentation catalog at runtime, including rejection of unknown and prototype-chain IDs; `apps/mobile/tests/feature-hub-preview-ui.cjs` checks the shared mapping, event-phase guidance and disabled action behavior.
+
+The sibling hidden backend V50 rotation contract on World Boss PR #1346 is a pure server-side calculator, **not connected** to any runtime service. One-event-per-cycle database uniqueness, account erasure (#1348), staging migrations, Auth, real squad and wallet data, and Android/localization validation still block release.
+
+**Do not merge to main or open gameplay permissions solely based on this UI pass.**

@@ -13,6 +13,13 @@ assert.match(screen,/useGameTheme/);
 assert.match(screen,/accessibilityRole="tablist"/);
 assert.match(screen,/minHeight:44/);
 assert.match(screen,/signatureIds/,'Signature slots must be represented');
+assert.match(content,/CLASS_STYLE_V2/,'18 specialization effects must be explained');
+assert.match(content,/CLASS_META_V2/,'Each class must have a role and early resource spender');
+assert.match(screen,/Core skill change \(provisional\):/);
+assert.match(screen,/Early spender:/,'Resource loop cannot feel locked until endgame');
+assert.match(screen,/Base .*cooldown/,'Cooldowns must not be presented as final variant values');
+assert.match(screen,/\[classId,characterLabel,level\]/,'Preview draft must reset for new level or character');
+
 assert.match(screen,/GEAR_GUIDANCE_V2/,'The build overview should explain class weapon and role-set choices');
 assert.match(screen,/Actual gear eligibility and owned item instances are checked by the server/);
 assert.match(screen,/talentRanks/);

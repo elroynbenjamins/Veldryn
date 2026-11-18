@@ -25,10 +25,16 @@ export type V2DraftReceiptResponse=
  |{kind:'started';jobId:string;recipeId:string;pieceId:string;finishesAtMs:number;goldCharged:number;version:number}
  |{kind:'claimed';jobId:string;instanceId:string;outcome:V2DraftRollOutcome;xpAwarded:number;profession:V2ServerProfession;version:number};
 export interface V2DraftReceipt {requestId:string;commandFingerprint:string;response:V2DraftReceiptResponse}
+export interface V2DraftCharacter {
+ level:number;professionLevels:Record<V2ServerProfession,number>;gold:number;
+ inventory:Record<string,number>;
+}
 export interface V2DraftSnapshot {
- accountId:string;activeCharacterId:string;ownedCharacterIds:readonly string[];version:number;
- characterLevel:number;professionLevels:Record<V2ServerProfession,number>;
- gold:number;inventory:Record<string,number>;bank:Record<string,number>;
+ accountId:string;activeCharacterId:string;version:number;
+ /** Only server-loaded owned characters may appear here; one wallet/pack each. */
+ characters:Record<string,V2DraftCharacter>;
+ /** Shared Bank and Forge queue; never confuse these with a character's pack. */
+ bank:Record<string,number>;
  jobs:V2DraftJob[];equipment:V2DraftItem[];skillAwards:V2DraftSkillAward[];
  receipts:V2DraftReceipt[];
 }
@@ -64,20 +70,21 @@ function verifyCommand(command:V2DraftCommand){
 }
 function verifyState(state:V2DraftSnapshot,ctx:V2DraftContext){
  if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId
-   ||!state.ownedCharacterIds.includes(ctx.characterId))fail('invalid_owner');
- if(!safeCount(state.version)||!safeCount(state.gold)||!safeCount(state.characterLevel)
-   ||!safeCount(state.professionLevels.smithing)||!safeCount(state.professionLevels.tailoring)
+   ||!state.characters||!Object.prototype.hasOwnProperty.call(state.characters,ctx.characterId))fail('invalid_owner');
+ const active=state.characters[ctx.characterId];
+ if(!safeCount(state.version)||!safeCount(active.gold)||!safeCount(active.level)
+   ||!safeCount(active.professionLevels.smithing)||!safeCount(active.professionLevels.tailoring)
    ||!Number.isSafeInteger(ctx.nowMs)||ctx.nowMs<0)fail('invalid_trusted_snapshot');
  if(state.jobs.some(j=>j.accountId!==ctx.accountId)||state.equipment.some(i=>i.accountId!==ctx.accountId))fail('foreign_account_records');
 }
 function fingerprint(c:V2DraftCommand){
  return c.kind==='start'?'start:'+c.recipeId:'claim:'+c.jobId;
 }
-function consumption(state:V2DraftSnapshot,inputs:readonly {itemId:string;quantity:number}[]){
+function consumption(state:V2DraftSnapshot,owner:V2DraftCharacter,inputs:readonly {itemId:string;quantity:number}[]){
  const plan:{itemId:string;quantity:number;fromInventory:number;fromBank:number}[]=[];
  for(const input of inputs){
   if(!input.itemId||!Number.isSafeInteger(input.quantity)||input.quantity<1)fail('invalid_canonical_recipe');
-  const inv=state.inventory[input.itemId]??0,bank=state.bank[input.itemId]??0;
+  const inv=owner.inventory[input.itemId]??0,bank=state.bank[input.itemId]??0;
   if(!safeCount(inv)||!safeCount(bank))fail('invalid_material_inventory');
   if(inv+bank<input.quantity)fail('insufficient_materials');
   const fromInventory=Math.min(inv,input.quantity);
@@ -100,17 +107,18 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const match=v2ServerRecipeAndPiece(command.recipeId);
  if(!match)fail('unknown_v2_recipe');
  const {recipe,piece}=match;
+ const owner=state.characters[ctx.characterId];
  if(piece.tier!==recipe.tier||piece.id!==recipe.pieceId)fail('inconsistent_canonical_manifest');
- if(state.characterLevel<recipe.characterLevel
-   ||state.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
+ if(owner.level<recipe.characterLevel
+   ||owner.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
  if(!safeCount(recipe.gold)||recipe.gold===0||!safeCount(recipe.seconds)||recipe.seconds===0||!safeCount(recipe.xp))fail('invalid_recipe_economy');
- if(state.gold<recipe.gold)fail('insufficient_gold');
+ if(owner.gold<recipe.gold)fail('insufficient_gold');
  const unclaimed=state.jobs.filter(j=>j.status==='queued');
  const queue=unclaimed.filter(j=>j.finishesAtMs>ctx.nowMs);
  const ready=unclaimed.filter(j=>j.finishesAtMs<=ctx.nowMs);
  if(ready.length>=MAX_UNCLAIMED_READY)fail('ready_storage_full');
  if(queue.length>=MAX_QUEUED_CRAFTS)fail('queue_full');
- const material=consumption(state,recipe.inputs);
+ const material=consumption(state,owner,recipe.inputs);
  const start=nextSlot(queue,ctx.nowMs);
  const jobId=(ctx.randomId??randomUUID)();
  if(!jobId||state.jobs.some(j=>j.id===jobId)||state.equipment.some(i=>i.id===jobId))fail('invalid_job_id_generated');
@@ -123,10 +131,10 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  };
  if(!Number.isSafeInteger(job.finishesAtMs))fail('invalid_job_finish_time');
  for(const row of material){
-  state.inventory[row.itemId]=(state.inventory[row.itemId]??0)-row.fromInventory;
+  owner.inventory[row.itemId]=(owner.inventory[row.itemId]??0)-row.fromInventory;
   state.bank[row.itemId]=(state.bank[row.itemId]??0)-row.fromBank;
  }
- state.gold-=recipe.gold;
+ owner.gold-=recipe.gold;
  state.jobs.push(job);
  const response:V2DraftReceiptResponse={kind:'started',jobId,recipeId:recipe.id,pieceId:piece.id,
   finishesAtMs:job.finishesAtMs,goldCharged:recipe.gold,version:state.version+1};
@@ -134,7 +142,7 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
 }
 function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'claim'}>,ctx:V2DraftContext){
  const job=state.jobs.find(j=>j.id===command.jobId);
- if(!job||job.accountId!==ctx.accountId||!state.ownedCharacterIds.includes(job.ownerCharacterId))fail('unknown_owned_job');
+ if(!job||job.accountId!==ctx.accountId||!Object.prototype.hasOwnProperty.call(state.characters,job.ownerCharacterId))fail('unknown_owned_job');
  if(job.status==='claimed')fail('already_claimed');
  if(ctx.nowMs<job.finishesAtMs)fail('job_not_finished');
  const matched=v2ServerRecipeAndPiece(job.recipeId);

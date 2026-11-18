@@ -1,0 +1,59 @@
+name: Temporary T2-T5 integration Edge bundle rebuild
+on:
+  push:
+    branches: [integration/1-0-11-stat-rolls-main-parity]
+    paths:
+      - '.github/workflows/temporary-11-stat-integration-edge-sync.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/temporary-11-stat-integration-edge-sync.yml'
+permissions:
+  contents: write
+concurrency:
+  group: veldryn-1-0-11-integration-edge-sync
+  cancel-in-progress: false
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/1-0-11-stat-rolls-main-parity
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked shared engine dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Validate integrated early-roll core, types and hidden release boundaries
+        run: |
+          pnpm --dir apps/mobile typecheck:core
+          pnpm --dir apps/mobile typecheck
+          node tools/run-mobile-tests.mjs equipment-bonus-rolls weapon-bonus-rolls equipment-set-runtime equipment-crafting-source-v33 hunt-active-abilities
+          node tools/validate-hidden-feature-release-fences.mjs --self-test
+      - name: Rebuild authoritative gameplay and co-op Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+          node backend/dist/online/backend/online/tests/coop-loadout.js
+      - name: Commit generated Edge bundles to integration branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical integration Edge bundles already match.'
+            exit 0
+          fi
+          git commit -m 'build(edge): regenerate integrated T2-T5 stat rolls from current main'
+          git push origin HEAD:integration/1-0-11-stat-rolls-main-parity

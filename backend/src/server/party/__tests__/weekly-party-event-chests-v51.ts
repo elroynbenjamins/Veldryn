@@ -80,6 +80,13 @@ const miss=resolvePartyChestGearDraftV51(first,{
  gearRoll:1200,pieceRoll:0,ownedPieceIds:[],
 });
 ensure(!miss.gearDropped&&miss.piece===null,'do_not_reroll_missed_gear');
+let standardHits=0;
+for(let roll=0;roll<10000;roll++){
+ if(resolvePartyChestGearDraftV51(first,{
+  gearRoll:roll,pieceRoll:0,ownedPieceIds:[],
+ }).gearDropped)standardHits++;
+}
+ensure(standardHits===1200,'exactly_twelve_percent_over_full_roll_space');
 const pieces=partyEventGearForFamilyV51(base.family);
 const hit=resolvePartyChestGearDraftV51(first,{
  gearRoll:0,pieceRoll:9999,ownedPieceIds:pieces.slice(0,4).map(x=>x.id),

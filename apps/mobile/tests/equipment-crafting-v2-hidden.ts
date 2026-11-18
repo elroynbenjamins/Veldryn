@@ -425,8 +425,14 @@ legacyOwner.account.craftedGearInstances=[{
  rarity:'rare',quality:78,acquireSource:'craft',sourceReceiptKey:'old-receipt',
  createdAtMs:1,enhancement:{rank:1,failures:0,gemIds:[]},
 }];
-check(equipmentV2AuthoritativeReadiness({...projectionInput,state:legacyOwner}).blockers.includes('legacy_gear_present'),
- 'Any legacy equipment must be preserved by the real online commit before V2 write integration');
+legacyOwner.inventory.stacks.push({itemId:oldItem.id,quantity:1,instanceId:'old-owned'});
+const safeLegacy=equipmentV2AuthoritativeReadiness({...projectionInput,state:legacyOwner});
+check(!safeLegacy.blocked&&safeLegacy.legacyExactCopies===1,
+ 'Fully identified V33 exact-copy gear is preserved and does not disqualify the account from isolated V2 crafting');
+const orphanedLegacy=structuredClone(legacyOwner);
+orphanedLegacy.inventory.stacks=orphanedLegacy.inventory.stacks.filter(row=>row.instanceId!=='old-owned');
+check(equipmentV2AuthoritativeReadiness({...projectionInput,state:orphanedLegacy}).blockers.includes('legacy_custody_conflict'),
+ 'Orphaned V33 crafted copies must be inspected instead of silently discarded or migrated');
 const injectedV2=structuredClone(liveProjectionFixture);
 injectedV2.inventory.stacks.push({itemId:'EQ2_WEAPON_T1_WAYFINDER',quantity:1});
 check(equipmentV2AuthoritativeReadiness({...projectionInput,state:injectedV2}).blockers.includes('reserved_v2_item_ids_present'),

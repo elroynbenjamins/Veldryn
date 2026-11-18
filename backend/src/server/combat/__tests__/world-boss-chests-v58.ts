@@ -62,6 +62,13 @@ const unsuccessful=resolveWorldBossChestGearDraftV58(chest,{
 });
 check(!unsuccessful.gearDropped&&unsuccessful.selectedSlot===null,
  'one_percent_hit_roll_boundary');
+let worldGearHits=0;
+for(let roll=0;roll<10000;roll++){
+ if(resolveWorldBossChestGearDraftV58(chest,{
+  hitRoll:roll,slotRoll:0,ownedSlots:[],
+ }).gearDropped)worldGearHits++;
+}
+check(worldGearHits===100,'exactly_one_percent_over_complete_roll_space');
 const hit=resolveWorldBossChestGearDraftV58(chest,{
  hitRoll:99,slotRoll:7000,ownedSlots:WORLD_BOSS_GEAR_SLOTS_V58.slice(0,9),
 });

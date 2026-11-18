@@ -87,7 +87,13 @@ export function decodeWorldBossReadOnlyStatusV46(
   t<start+5*dayMs?'preparation':
   t<start+7*dayMs?'raid':
   t<start+14*dayMs?'cooldown':'expired';
- if(raw.phase!==phase)return null;
+ // V60: the server's read lease is not permission to render the previous
+ // phase after a UTC boundary. The private status loader refreshes on error.
+ const phaseAtDisplay:WorldBossPhaseV46=nowUtcMs<start?'upcoming':
+  nowUtcMs<start+5*dayMs?'preparation':
+  nowUtcMs<start+7*dayMs?'raid':
+  nowUtcMs<start+14*dayMs?'cooldown':'expired';
+ if(raw.phase!==phase||phaseAtDisplay!==phase)return null;
  const counts={} as Record<Track,number>;
  const goals={} as Record<Track,{tier1At:number;tier2At:number}>;
  let total=0;

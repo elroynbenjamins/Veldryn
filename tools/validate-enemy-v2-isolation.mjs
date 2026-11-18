@@ -17,6 +17,7 @@ const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
 const runtimeRoots=[
   'backend/src/server',
   'backend/online',
+  'backend/supabase/functions',
   'apps/mobile/src',
   'apps/mobile/App.tsx',
 ];

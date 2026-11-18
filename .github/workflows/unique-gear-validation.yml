@@ -9,6 +9,7 @@ on:
       - 'apps/mobile/src/components/ForgeOddsGuide.tsx'
       - 'apps/mobile/src/components/SmithingCollection.tsx'
       - 'apps/mobile/tests/equipment-crafted-instance-results.ts'
+      - 'apps/mobile/tests/weapon-bonus-rolls.ts'
       - 'apps/mobile/tsconfig.unique-gear.json'
       - '.github/workflows/unique-gear-validation.yml'
   workflow_dispatch:

@@ -80,8 +80,10 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
   if(preferred)return preferred;
   // A material-ready route is the sensible first selection, but players can
   // deliberately switch to an unavailable route to inspect requirements.
-  const searched=q?group.rows.find(row=>recipeMatchesLocalizedSearch(language,row.recipe,q)):undefined;
-  return searched??group.rows.find(row=>row.status.ready)??group.rows[0];
+  const searched=q?group.rows.filter(row=>recipeMatchesLocalizedSearch(language,row.recipe,q)):[];
+  // A query for an exact alternative opens that method. A shared item-name
+  // query instead defaults to whichever route can be crafted right now.
+  return (searched.length===1?searched[0]:undefined)??group.rows.find(row=>row.status.ready)??searched[0]??group.rows[0];
  };
  return <View style={s.root}>
   <View style={s.searchRow}><View style={s.flex}><SearchField accessibilityLabel={gt("Search recipes")} value={query} onChangeText={value=>{setQuery(value);setLimit(12);}} placeholder={gt("Search recipes…")}/></View><DisclosureControl label={gt("Filters")+(readyOnly||guildMaterialsOnly?' · '+(Number(readyOnly)+Number(guildMaterialsOnly)):'')} expanded={filterOpen} onPress={()=>setFilterOpen(value=>!value)} compact/></View>

@@ -25,6 +25,7 @@ on:
       - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
       - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
       - 'docs/roadmap/world-boss-overview-v41*.sql'
+      - 'docs/roadmap/world-boss-incident-controls-v61*.sql'
       - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
@@ -204,3 +205,7 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57-smoke.sql
           bash docs/roadmap/world-boss-account-write-fence-v57-race-ci.sh
+          # V61 adds fail-closed first-live incident controls AFTER existing
+          # contract checks. No World Boss event is scheduled or played here.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61-smoke.sql

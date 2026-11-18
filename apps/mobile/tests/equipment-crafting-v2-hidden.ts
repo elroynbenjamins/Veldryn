@@ -293,11 +293,12 @@ for(const invalid of [
  {...verifiedResult,affixes:[verifiedResult.affixes[0]]},
  {...verifiedResult,affixes:[verifiedResult.affixes[0],verifiedResult.affixes[0]]},
  {...verifiedResult,affixes:[{stat:'armor' as const,percent:30,grade:70},verifiedResult.affixes[1]]},
+ {...verifiedResult,affixes:[{stat:'armor' as const,percent:2.6,grade:0},verifiedResult.affixes[1]]},
  {...verifiedResult,pieceId:'LEGACY_GEAR_V33'},
  {...verifiedResult,receiptOrigin:'client' as const},
 ]){
  try{equipmentV2ResultPresentation(invalid as never)}catch{badResultCount++}
 }
-check(badResultCount===6,'The result view rejects malformed rarity, quality, rolls, duplicate stats, IDs and client-authored origin');
+check(badResultCount===7,'The result view rejects malformed rarity, quality, roll grades, duplicate stats, IDs and client-authored origin');
 
 console.log('PASS: hidden Equipment/Crafting 2.0 release gate, stat budgets, rarity, Gold/XP and sourcing preview');

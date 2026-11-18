@@ -1,0 +1,204 @@
+name: Hidden World Boss V10–V43 validation
+
+# Test-only: no Supabase connection, deployment, wallet or production feature.
+on:
+  pull_request:
+    paths:
+      - 'backend/online/world-boss-loadout-v12.ts'
+      - 'backend/online/world-boss-owned-cohort-v15.ts'
+      - 'backend/online/world-boss-service-v19.ts'
+      - 'backend/online/world-boss-account-service-v23.ts'
+      - 'backend/online/world-boss-account-pg-v23.ts'
+      - 'backend/src/server/combat/world-boss-account-balance-v24.ts'
+      - 'backend/src/server/combat/world-boss-account-encounter-v25.ts'
+      - 'backend/online/world-boss-account-service-v26.ts'
+      - 'backend/online/world-boss-account-pg-v26.ts'
+      - 'backend/online/world-boss-account-state-v33.ts'
+      - 'backend/online/world-boss-war-camp-service-v27.ts'
+      - 'backend/online/world-boss-war-camp-policy-v27.ts'
+      - 'backend/online/world-boss-account-runtime-v27.ts'
+      - 'backend/online/world-boss-impact-audit-v29.ts'
+      - 'docs/roadmap/world-boss-impact-audit-v29.md'
+      - 'backend/online/world-boss-rewards-v28.ts'
+      - 'backend/online/world-boss-rewards-pg-v28.ts'
+      - 'backend/online/world-boss-reward-runtime-v28.ts'
+      - 'docs/roadmap/world-boss-reward-ledger-v28*.sql'
+      - 'docs/roadmap/world-boss-private-access-audit-v32.sql'
+      - 'docs/roadmap/world-boss-overview-v41*.sql'
+      - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
+      - 'backend/online/world-boss-overview-v41.ts'
+      - 'backend/online/world-boss-current-overview-v51.ts'
+      - 'backend/online/world-boss-current-read-route-v52.ts'
+      - 'backend/online/world-boss-account-erasure-v56.ts'
+      - 'backend/online/world-boss-readiness-audit-v43.ts'
+      - 'docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql'
+      - 'docs/roadmap/world-boss-character-lifecycle-v34.sql'
+      - 'docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql'
+      - 'docs/roadmap/world-boss-account-erasure-preflight-v36.sql'
+      - 'docs/roadmap/world-boss-account-erasure-v55-smoke.sql'
+      - 'docs/roadmap/world-boss-account-write-fence-v57*.sql'
+      - 'docs/roadmap/world-boss-account-write-fence-v57-race-ci.sh'
+      - 'docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql'
+      - 'docs/roadmap/world-boss-account-save-donation-v37-smoke.sql'
+      - 'docs/roadmap/world-boss-preparation-calendar-v38-smoke.sql'
+      - 'docs/roadmap/world-boss-v28-concurrent-claims-ci.sh'
+      - 'docs/roadmap/world-boss-war-camp-transactions-v27*.sql'
+      - 'docs/roadmap/world-boss-war-camp-policy-init-v27.sql'
+      - 'backend/online/world-boss-consented-echoes-v20.ts'
+      - 'backend/online/world-boss-consent-command-v21.ts'
+      - 'backend/online/world-boss-frozen-modifiers-v20.ts'
+      - 'backend/online/world-boss-auth-v19.ts'
+      - 'backend/online/world-boss-private-pg-v19.ts'
+      - 'backend/src/server/combat/world-boss-bracket-audit-v14.ts'
+      - 'backend/online/coop-loadout.ts'
+      - 'backend/online/party-event-loadout-v4.ts'
+      - 'apps/mobile/src/core/regional-combat-fixtures.ts'
+      - 'apps/mobile/tsconfig.world-boss-v12.json'
+      - 'apps/mobile/tsconfig.core.json'
+      - 'backend/src/server/combat/world-boss-*.ts'
+      - 'apps/mobile/tests/world-boss-*.ts'
+      - 'docs/roadmap/world-boss-postgres-contract-v17*.sql'
+      - 'docs/roadmap/world-boss-transactions-v18.sql'
+      - 'docs/roadmap/world-boss-v18-*.sql'
+      - 'docs/roadmap/world-boss-v18-*.sh'
+      - 'docs/roadmap/world-boss-consent-guard-v20*.sql'
+      - 'docs/roadmap/world-boss-consent-lifecycle-v21*.sql'
+      - 'docs/roadmap/world-boss-weekend-reservation-v22*.sql'
+      - 'docs/roadmap/world-boss-authored-settlement-v26*.sql'
+      - '.github/workflows/world-boss-v12-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  world-boss-fixture-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck world boss and game fixture bridge
+        run: pnpm typecheck:core
+      - name: Compile hidden game core test fixtures
+        run: pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+      - name: Typecheck Node-backed equipment and companion integration
+        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --noEmit
+      - name: Compile Node-backed real-loadout integration suite
+        run: pnpm exec tsc -p tsconfig.world-boss-v12.json --outDir .core-build
+      - name: Run v7-v43 World Boss tests
+        run: |
+          set -e
+          for suite in \
+            world-boss-echo-prototype \
+            world-boss-verified-roster-v9 \
+            world-boss-atomic-emulator-v9 \
+            world-boss-reservation-v10 \
+            world-boss-war-camp-v11 \
+            world-boss-real-loadout-v12 \
+            world-boss-supply-economy-v12 \
+            world-boss-guard-role-v13 \
+            world-boss-bracket-audit-v14 \
+            world-boss-owned-cohort-v15 \
+            world-boss-attempt-command-v16 \
+            world-boss-server-service-v19 \
+            world-boss-consented-echoes-v20 \
+            world-boss-consent-command-v21 \
+            world-boss-weekend-account-raid-v22 \
+            world-boss-account-service-v23 \
+            world-boss-account-balance-v24 \
+            world-boss-authored-account-encounters-v25 \
+            world-boss-authored-settlement-v26 \
+            world-boss-war-camp-transactions-v27 \
+            world-boss-reward-ledger-v28 \
+            world-boss-impact-audit-v29 \
+            world-boss-roster-compatibility-v30 \
+            world-boss-account-state-v33 \
+            world-boss-overview-v41 \
+            world-boss-current-overview-v51 \
+            world-boss-account-erasure-v56 \
+            world-boss-readiness-audit-v43
+          do
+            node ".core-build/apps/mobile/tests/${suite}.js"
+          done
+
+  world-boss-postgres-schema-dryrun:
+    # Real PostgreSQL in a disposable CI service, never a Supabase project.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: world_boss_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify private V17/V18 SQL and independent-session transaction recovery
+        env:
+          PGPASSWORD: world_boss_ci_only
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: postgres
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          for f in \
+            docs/roadmap/world-boss-postgres-contract-v17-fixture.sql \
+            docs/roadmap/world-boss-postgres-contract-v17.sql \
+            docs/roadmap/world-boss-postgres-contract-v17-smoke.sql
+          do
+            psql -X -v ON_ERROR_STOP=1 -f "$f"
+          done
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-transactions-v18.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-v18-concurrent-fixture.sql
+          bash docs/roadmap/world-boss-v18-concurrency-ci.sh
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-guard-v20.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-guard-v20-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-lifecycle-v21.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-consent-lifecycle-v21-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-weekend-reservation-v22-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-authored-settlement-v26-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-transactions-v27.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-policy-init-v27.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-war-camp-transactions-v27-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-reward-ledger-v28-smoke.sql
+          bash docs/roadmap/world-boss-v28-concurrent-claims-ci.sh
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-character-lifecycle-v34.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-character-lifecycle-v34-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-retired-consent-lifecycle-v35-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-preflight-v36.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-save-donation-v37-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-preparation-calendar-v38-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-overview-v41-smoke.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-private-access-audit-v32.sql
+          # V53 proof-only cycle constraints run inside BEGIN/ROLLBACK.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql
+          # V55 two-account FK/ledger/community-preserving erase dry-run; ROLLBACK.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-erasure-v55-smoke.sql
+          # V57 is installed only in this disposable PostgreSQL CI service.
+          # ALL future staging/production schema changes require approval.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57-smoke.sql
+          bash docs/roadmap/world-boss-account-write-fence-v57-race-ci.sh

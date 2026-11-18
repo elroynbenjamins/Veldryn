@@ -1,5 +1,5 @@
 import {RANKING_BOARDS,rankingBoardDefinition,rankingValueLabel,type RankingEntry} from '../src/core/rankings';
-import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay} from '../src/core/ranking-pagination';
+import {RANKING_PAGE_SIZE,rankingPageOffset,projectRankingPage,splitRankingDisplay,rankingCanStartRead} from '../src/core/ranking-pagination';
 const assert=(condition:boolean,message:string)=>{if(!condition)throw new Error(message)};
 assert(RANKING_BOARDS.length===19,'expected all rankings');
 assert(rankingBoardDefinition('arena_rating').unit==='rating','arena unit');
@@ -27,6 +27,17 @@ const manyTies:Array<RankingEntry>=Array.from({length:8},(_,index)=>({
 const firstHighlight=splitRankingDisplay(manyTies,0);
 assert(firstHighlight.podium.length===3&&firstHighlight.remaining.length===5,'only three tied players appear in podium');
 assert(firstHighlight.remaining.every(entry=>entry.rank===1),'non-podium tied players retain their official rank');
+const obscuredLeaders:Array<RankingEntry>=[
+ {rank:4,entityType:'account',displayName:'Visible fourth',value:700,isSelf:false},
+ {rank:5,entityType:'account',displayName:'Visible fifth',value:600,isSelf:false},
+];
+const filtered=splitRankingDisplay(obscuredLeaders,0);
+assert(filtered.podium.length===0&&filtered.remaining.length===2,'privacy gaps must not promote later ranks into the podium');
+const partialPodium=splitRankingDisplay([
+ {rank:2,entityType:'account',displayName:'Visible second',value:900,isSelf:false},
+ {rank:4,entityType:'account',displayName:'Visible fourth',value:800,isSelf:false},
+],0);
+assert(partialPodium.podium.length===1&&partialPodium.podium[0].rank===2&&partialPodium.remaining[0].rank===4,'podium preserves missing official ranks');
 const laterHighlight=splitRankingDisplay(manyTies,1);
 assert(laterHighlight.podium.length===0&&laterHighlight.remaining.length===8,'later pages never show a second podium');
 assert(manyTies.length===8,'podium projection does not mutate score rows');
@@ -41,4 +52,12 @@ for(const invalidSize of [0,2.5,100]){
  let failed=false;try{rankingPageOffset(0,invalidSize)}catch{failed=true}
  assert(failed,'invalid page size must throw: '+String(invalidSize));
 }
+const activeRead={scope:'mining:0',version:4,startedAt:1000};
+assert(!rankingCanStartRead(activeRead,'mining:0',1001),'same board/page must not launch a duplicate read');
+assert(!rankingCanStartRead(activeRead,'mining:0',30999),'fresh read remains single-flight for 30s');
+assert(rankingCanStartRead(activeRead,'fishing:0',1001),'changing boards must not be blocked');
+assert(rankingCanStartRead(activeRead,'mining:1',1001),'changing pages must not be blocked');
+assert(rankingCanStartRead(activeRead,'mining:0',31000),'stalled read may be replaced after 30s');
+assert(rankingCanStartRead(activeRead,'mining:0',999),'clock rollback must not pin a read forever');
+assert(rankingCanStartRead(null,'mining:0',1000),'initial read must start');
 console.log('rankings core + pagination PASS');

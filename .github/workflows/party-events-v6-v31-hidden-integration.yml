@@ -1,0 +1,101 @@
+name: Hidden Party Events V6–V31 integration validation
+on:
+  pull_request:
+    paths:
+      - 'backend/online/party-event-*.ts'
+      - 'backend/online/tests/party-event-*.ts'
+      - 'backend/src/server/party/weekly-party-*.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-*.ts'
+      - 'backend/supabase/tests/party_event_*.sql'
+      - 'backend/tests/party-event-*.mjs'
+      - 'docs/roadmap/party-events/**'
+      - 'docs/roadmap/party-events-*.md'
+      - '.github/workflows/party-events-v6-v31-hidden-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  party-events-deterministic:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install referenced mobile TypeScript/react-native declarations
+        run: pnpm --dir ../apps/mobile install --frozen-lockfile
+      - name: Baseline server TypeScript and existing weekly Party Events
+        run: pnpm test:party-weekly-v2
+      - name: Compile all new hidden server Party Event prototypes
+        run: pnpm exec tsc
+      - name: Run V6–V27 deterministic Party Event stage and settlement tests
+        run: |
+          set -euo pipefail
+          for suite in \
+            weekly-party-finale-hazards-v6 \
+            weekly-party-finale-objectives-v7 \
+            weekly-party-distinct-finales-v8 \
+            weekly-party-family-stages-v9 \
+            weekly-party-stage-ledger-v10 \
+            weekly-party-boss-replay-v20 \
+            weekly-party-reward-offers-v24 \
+            weekly-party-reward-claim-v25 \
+            weekly-party-claim-intents-v25 \
+            weekly-party-claim-preflight-v25 \
+            weekly-party-settlement-policy-v26 \
+            weekly-party-settlement-evidence-v27
+          do
+            node "dist/server/party/__tests__/${suite}.js"
+          done
+      - name: Compile private Party Event server integration
+        run: pnpm exec tsc -p tsconfig.online.json
+      - name: Run V22–V31 Party Event evidence, claims, recovery and receipt tests
+        run: |
+          set -euo pipefail
+          for suite in \
+            party-event-canonical-supplies-v22 \
+            party-event-claim-quote-v25 \
+            party-event-settlement-evidence-v27 \
+            party-event-save-projection-v28 \
+            party-event-atomic-packet-v29 \
+            party-event-locked-snapshot-v30 \
+            party-event-receipt-recovery-v31 \
+            party-event-readonly-status-v33 \
+            party-event-authenticated-read-v34 \
+            party-event-read-route-v39 \
+            party-event-current-read-v40 \
+            party-event-security-sweep-v41 \
+            party-event-schema-readiness-v35 \
+            party-event-day8-audit-v36 \
+            party-event-staging-assessment-v37
+          do
+            node "dist/online/backend/online/tests/${suite}.js"
+          done
+      - name: Verify hidden Party Event V37 SQL definitions, canonical starter gathering and migration isolation
+        run: node tests/party-event-hidden-migrations-v37.mjs
+      - name: Verify flexible Party Event V32 roster and receipt SQL in disposable PGlite
+        run: node tests/party-event-flexible-sql-v32.mjs
+      - name: Verify private V33 read-only account isolation in disposable PGlite
+        run: node tests/party-event-readonly-sql-v33.mjs
+      - name: Verify V38 account-locked reward / receipt / Inbox failure atomicity in disposable PGlite
+        run: node tests/party-event-atomic-rollback-v38.mjs
+      - name: Verify hidden SQL paid-receipt and locked claim contracts in disposable PGlite
+        run: |
+          node tests/party-event-paid-schema-v29.mjs
+          node tests/party-event-locked-snapshot-v30.mjs
+      - name: Ensure production migration path has no hidden Party Event V11–V30 SQL
+        run: |
+          set -euo pipefail
+          if find supabase/migrations -maxdepth 1 -type f -name '*party_event*' | grep -E '20261113|20261115'; then
+            echo 'Unapproved Party Event schema was copied into the executable migration path.'
+            exit 1
+          fi

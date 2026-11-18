@@ -34,6 +34,14 @@ DECLARE
 BEGIN
  IF p_account IS NULL
  THEN RAISE EXCEPTION 'WB36_ACCOUNT_REQUIRED'; END IF;
+ -- V57 adds one explicitly reviewed identity column on the private
+ -- erasure-tombstone table. It is not a gameplay receipt, but it must be
+ -- recognized to preserve fail-closed schema drift checks after V57.
+ IF pg_catalog.to_regclass('private.world_boss_erasure_fences_v57')
+    IS NOT NULL THEN
+  expected_account_columns:=array_append(expected_account_columns,
+   'world_boss_erasure_fences_v57.account_id');
+ END IF;
  -- Every player-linked private World Boss table must be explicitly
  -- reviewed. Addition, deletion, renaming, or silent new account columns
  -- makes the preflight fail closed, rather than approving an incomplete wipe.

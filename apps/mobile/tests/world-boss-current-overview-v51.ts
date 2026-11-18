@@ -126,6 +126,42 @@ async function main(){
   ...deps,serverNowUtcMs:()=>Number.NaN,
  }), 'invalid_server_clock');
 
+ // V60: a slow database/privacy read must not return stale phase, expired
+ // lease or the previous globally rotating boss, even inside the 2m lease.
+ let postReadClock=NOW;
+ const stillFresh=await readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,serverNowUtcMs:()=>postReadClock,
+  overview:{read:async()=>{postReadClock=NOW+30000;return row();}},
+ });
+ assert.equal(stillFresh?.phase,'preparation');
+ let deadlineClock=NOW;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,serverNowUtcMs:()=>deadlineClock,
+  overview:{read:async()=>{deadlineClock=NOW+120001;return row();}},
+ }), 'status_lease_expired');
+ let clockCalls=0;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,serverNowUtcMs:()=>++clockCalls===1?NOW:NOW-1,
+ }), 'clock_regressed');
+ const raidStart=LAUNCH+5*DAY;
+ let phaseClock=raidStart-25;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,serverNowUtcMs:()=>phaseClock,
+  overview:{read:async()=>{
+   phaseClock=raidStart+25;
+   return row(LAUNCH,raidStart-25);
+  }},
+ }), 'phase_changed');
+ const cycleEnd=LAUNCH+14*DAY;
+ let cycleClock=cycleEnd-25;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,serverNowUtcMs:()=>cycleClock,
+  overview:{read:async()=>{
+   cycleClock=cycleEnd+25;
+   return {...row(LAUNCH,cycleEnd-25),phase:'cooldown'};
+  }},
+ }), 'cycle_changed');
+
  // The second cycle belongs to Solbrand, not a second simultaneous boss.
  const second=LAUNCH+14*DAY;
  const secondNow=second+DAY+3600000;

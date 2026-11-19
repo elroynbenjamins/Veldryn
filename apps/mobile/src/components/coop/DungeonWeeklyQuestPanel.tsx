@@ -24,7 +24,7 @@ export function DungeonWeeklyQuestPanel({language,quest,loading,error,busy=false
  const progress=quest?.progress??0,ready=!!quest&&!quest.claimed&&progress>=quest.target;
  return <FantasyPanel variant={quest?.claimed?'success':ready?'selected':'default'}>
   <Pressable accessibilityRole="button"
-   accessibilityState={{expanded}} accessibilityLabel={dungeonUxText(language,'weeklyFallback')}
+   accessibilityState={{expanded}} accessibilityLabel={copy?.name??dungeonUxText(language,'weeklyFallback')}
    accessibilityHint={expanded?dungeonUxText(language,'weeklyCollapse'):dungeonUxText(language,'weeklyExpand')}
    onPress={()=>setExpanded(value=>!value)} style={({pressed})=>[s.heading,pressed&&s.pressed]}>
    <View style={s.titleWrap}>

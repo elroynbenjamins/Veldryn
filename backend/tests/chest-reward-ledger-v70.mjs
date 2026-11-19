@@ -68,6 +68,19 @@ try{
  await assert.rejects(()=>insertReceipt(source2,account,{
   ...receiptFor(source2),accountId:other,
  }),/check constraint/);
+ const missingOwner=receiptFor(source2);
+ delete missingOwner.accountId;
+ await assert.rejects(()=>insertReceipt(source2,account,missingOwner),
+  /check constraint/);
+ await assert.rejects(()=>insertReceipt(source2,account,{
+  ...receiptFor(source2),equipmentDeliveryMode:null,
+ }),/check constraint/);
+ await db.exec('begin');
+ await insertReceipt(source2,account,{
+  ...receiptFor(source2),equipmentDeliveryMode:'account_unclaimed',
+  recipientCharacterId:null,
+ });
+ await db.exec('rollback');
  await assert.rejects(()=>insertLeg(source,account,'guarantee',0,'gold',401,'g_bad'),
   /CHEST_V70_INVALID_GUARANTEE_LEG/);
  await assert.rejects(()=>insertLeg(source,account,'drop',0,

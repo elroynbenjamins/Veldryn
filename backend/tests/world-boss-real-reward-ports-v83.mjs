@@ -192,17 +192,44 @@ try{
   [account])).rows[0].state.account.companionEssence,9);
  await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
   'WHERE account_id=$1',[account,JSON.stringify(original)]);
- // Any post-grant physical corruption invalidates immutable replay rather
- // than silently paying again or trusting the V70 journal alone.
- const tampered=structuredClone(original);
- tampered.account.companionEssence=8;
- await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
-  'WHERE account_id=$1',[account,JSON.stringify(tampered)]);
+ // Legitimate later spending and character switch MUST NOT break a
+ // historical replay or re-credit the original character's Gold.
+ const secondCharacter='55555555-5555-4555-8555-555555555555';
+ await db.query('INSERT INTO public.characters VALUES($1,$2)',
+  [secondCharacter,account]);
+ await db.query('INSERT INTO public.character_wallets VALUES($1,77)',
+  [secondCharacter]);
+ await db.query('UPDATE public.character_wallets SET gold=50 '+
+  'WHERE character_id=$1',[character]);
+ const spent=structuredClone(original);
+ spent.character={id:secondCharacter,gold:77};
+ spent.account.companionEssence=1;
+ spent.inventory.stacks[0].quantity=1;
+ spent.bank.stacks[0].quantity=1;
+ await db.query('UPDATE public.online_game_states SET state=$2::jsonb,'+
+  'character_id=$3::uuid WHERE account_id=$1',
+  [account,JSON.stringify(spent),secondCharacter]);
+ assert.equal((await open({
+  authenticatedAccountId:account,sourceKey:source,
+ })).replayed,true);
+ assert.equal((await db.query(
+  'SELECT gold::text AS gold FROM public.character_wallets WHERE character_id=$1',
+  [character])).rows[0].gold,'50',
+  'historical replay never re-credits spent Gold');
+ assert.equal((await db.query(
+  'SELECT gold::text AS gold FROM public.character_wallets WHERE character_id=$1',
+  [secondCharacter])).rows[0].gold,'77',
+  'historical replay never credits the newly active character');
+ // A forged historical Inbox attachment is not legitimate spending:
+ // this must invalidate replay even if the amount audit still exists.
+ await db.query('UPDATE private.reward_inbox_v1 SET '+
+  "attachments='[{\"kind\":\"gold\",\"quantity\":900}]'::jsonb "+
+  'WHERE source_key=$1',[source]);
  await assert.rejects(()=>open({
   authenticatedAccountId:account,sourceKey:source,
  }),/physical|grant|incomplete|verify|receipt/);
- await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
-  'WHERE account_id=$1',[account,JSON.stringify(original)]);
+ await db.query('UPDATE private.reward_inbox_v1 SET '+
+  "attachments='[]'::jsonb WHERE source_key=$1",[source]);
  await assert.rejects(
   ()=>db.query(
    'UPDATE private.world_boss_chest_resource_grants_v83 '+

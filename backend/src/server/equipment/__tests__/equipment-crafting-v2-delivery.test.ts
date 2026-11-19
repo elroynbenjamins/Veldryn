@@ -45,6 +45,11 @@ const claimed:V2DraftReceipt={
   xpAwarded:recipe.xp,profession:recipe.profession,version:11},
 };
 const good=()=>verifyEquipmentV2HiddenLedger(accountId,[job],[item],[started,claimed],[award]);
+assert.throws(()=>verifyEquipmentV2HiddenLedger(accountId,[null as never],[item],[started,claimed],[award]),
+ /corrupted_hidden_v2_metadata/,'Malformed saved records must not crash or be auto-repaired');
+assert.throws(()=>verifyEquipmentV2HiddenLedger('not-original-account',[job],[item],[started,claimed],[award]),
+ /invalid_hidden_v2_job/,'A saved ledger may never be replayed in another account');
+
 assert.doesNotThrow(good);
 assert.doesNotThrow(()=>verifyEquipmentV2HiddenLedger(accountId,[{
  ...job,status:'queued',resultId:undefined,

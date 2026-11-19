@@ -106,6 +106,26 @@ assert.equal(claimedLedger.items[0].exactItem.rarity,'mythic');
 assert.equal(claimed.state.otherCharacters!.find(row=>row.character.id===active)!
  .skills.find(s=>s.skillId===recipe.profession)!.xp,oldSkillXp+recipe.xp);
 assert.equal(claimedLedger.items[0].jobId,jobId);
+assert.equal(claimed.delivery?.instanceId,claimedLedger.items[0].id);
+assert.equal(claimed.delivery?.ownerCharacterId,active,
+ 'The delivery preflight must target the original crafter, not the currently selected hero');
+assert.equal(claimed.delivery?.requiresV2CatalogCompatibility,true);
+assert.equal(claimed.delivery?.physicallyDelivered,false,
+ 'The public gear catalogue must never receive unreleased EQ2 item IDs');
+assert.ok(['inventory','equipment_pouch','deferred'].includes(claimed.delivery?.suggestedLocation??''));
+const storageFull=structuredClone(switched);
+const originalOwner=storageFull.otherCharacters!.find(row=>row.character.id===active)!;
+originalOwner.inventory.capacity=originalOwner.inventory.stacks.length;
+originalOwner.character.equipmentPouch={stacks:[],capacity:0};
+const fullClaim=simulateEquipmentV2InGameState(makeInput(storageFull,{
+ ...claim,requestId:'claim-full-0001',
+},20,finishes));
+assert.equal(fullClaim.delivery?.suggestedLocation,'deferred');
+assert.equal(fullClaim.delivery?.reason,'storage_full');
+assert.equal(fullClaim.delivery?.physicallyDelivered,false);
+assert.equal((fullClaim.state.account.equipmentV2Hidden as V2HiddenGameMetadata).items.length,1,
+ 'A full pouch/Inventory cannot destroy an immutable finished Forge copy');
+
 assert.ok(!claimed.state.inventory.stacks.some(x=>x.itemId.startsWith('EQ2_')),
  'New items remain quarantined in hidden metadata until real gear custody is ready');
 const repeatedClaim=simulateEquipmentV2InGameState(makeInput(claimed.state,claim,21,finishes+200));

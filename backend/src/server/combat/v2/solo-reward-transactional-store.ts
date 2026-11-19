@@ -24,12 +24,26 @@ export interface CombatV2PinnedSqlClient extends CombatV2RewardSqlTransaction {
 export interface CombatV2SqlPool {
  connect():Promise<CombatV2PinnedSqlClient>;
 }
+export interface CombatV2RewardGrantWriteProof {
+ readonly grantSourceId:string;
+ readonly kind:SoloRewardGrantV2['kind'];
+ readonly resourceId:string;
+ readonly amount:number;
+}
+export interface CombatV2RewardInboxWriteProof {
+ readonly sourceKey:string;
+ readonly accountId:string;
+ readonly characterId:string;
+}
 export interface CombatV2RewardWriters {
  /** Implement with audited transaction-local source-unique grant ledgers.
-  * Any error MUST throw; no asynchronous follow-up or partial success. */
- applyGrant(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,grant:SoloRewardGrantV2):Promise<void>;
- /** Create exactly one Inbox message under receipt.sourceKey IN this transaction. */
- appendInbox(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,receipt:SoloRewardReceiptV2):Promise<void>;
+  * Each call must return the exact durable grant-source write/readback proof.
+  * Any error or missing proof MUST rollback; never silently succeed. */
+ applyGrant(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,
+  grant:SoloRewardGrantV2):Promise<CombatV2RewardGrantWriteProof>;
+ /** Exactly one Inbox message under receipt.sourceKey, in the SAME transaction. */
+ appendInbox(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,
+  receipt:SoloRewardReceiptV2):Promise<CombatV2RewardInboxWriteProof>;
 }
 export interface CombatV2RewardSqlStoreDeps {
  readonly pool:CombatV2SqlPool;
@@ -166,9 +180,18 @@ export function transactionalSoloRewardStoreV2(
      },
     };
     // Every grant + Inbox call MUST use the same pinned transaction.
-    for(const grant of receipt.grants)
-     await deps.writers.applyGrant(grantTx,scope,clone(grant));
-    await deps.writers.appendInbox(grantTx,scope,clone(receipt));
+    for(const grant of receipt.grants){
+     const proof=await deps.writers.applyGrant(grantTx,scope,clone(grant));
+     if(!proof||proof.grantSourceId!==grant.grantSourceId||
+      proof.kind!==grant.kind||proof.resourceId!==grant.resourceId||
+      proof.amount!==grant.amount)
+      fail('grant_write_not_verified');
+    }
+    const inboxProof=await deps.writers.appendInbox(grantTx,scope,clone(receipt));
+    if(!inboxProof||inboxProof.sourceKey!==receipt.sourceKey||
+     inboxProof.accountId!==scope.accountId||
+     inboxProof.characterId!==scope.characterId)
+     fail('inbox_write_not_verified');
     await tx.query(INSERT_RECEIPT,[
      receipt.encounterId,receipt.accountId,receipt.characterId,
      receipt.sourceKey,receipt.snapshotDigest,receipt.outcomeDigest,

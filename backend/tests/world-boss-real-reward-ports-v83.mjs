@@ -166,6 +166,20 @@ try{
  assert.equal((await db.query(
   'SELECT COUNT(*)::int n FROM private.reward_inbox_v1 '+
   'WHERE source_key=$1',[source])).rows[0].n,1);
+ // The relational active character and embedded JSON character must
+ // agree: otherwise an award could pay one wallet but display another.
+ const mismatched=structuredClone(stored);
+ mismatched.character.id=other;
+ await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
+  'WHERE account_id=$1',[account,JSON.stringify(mismatched)]);
+ await assert.rejects(()=>open({
+  authenticatedAccountId:account,sourceKey:blockedSource,
+ }),/active_character_mismatch/);
+ assert.equal((await db.query(
+  'SELECT COUNT(*)::int n FROM private.chest_reward_receipts_v70 '+
+  'WHERE source_key=$1',[blockedSource])).rows[0].n,0);
+ await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
+  'WHERE account_id=$1',[account,JSON.stringify(stored)]);
  // Force inventory+bank to full with no matching stacks and ensure Gold,
  // Essence and all V70 receipts roll back together.
  const original=structuredClone(stored);

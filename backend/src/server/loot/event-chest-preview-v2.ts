@@ -120,7 +120,7 @@ export function previewWorldBossTreasurePanelV2(input:{
  checkedWallet(input.trustedWorldSigilsBalance);
  if(!Array.isArray(input.ownedGatheringGearSlots)||
   input.ownedGatheringGearSlots.some(slot=>!WORLD_BOSS_GEAR_SLOTS_V58.includes(slot))||
-  new Set(input.ownedGatheringGearSlots).size!==input.ownedGatheringGearSlots.length
+  new Set(input.ownedGatheringGearSlots).size!==input.ownedGatheringGearSlots.length)
   throw Error('event_chest_preview_v2_invalid_collection');
  const available=previewVerifiedWorldBossChestsV58(input.evidence);
  const name:Readonly<Record<WorldBossChestKindV58,string>>={

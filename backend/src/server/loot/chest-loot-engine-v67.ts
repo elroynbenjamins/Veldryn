@@ -33,6 +33,8 @@ export interface ChestRewardAmountV67{
 }
 export interface ChestWeightedEntryV67{
  readonly id:string;readonly weight:number;
+ /** Number of stackable units; default 1. Unique gear/pets are always 1. */
+ readonly quantity?:number;
 }
 export interface ChestDropGroupV67{
  readonly id:string;
@@ -61,13 +63,14 @@ export interface ChestGroupResultV67{
  readonly hit:boolean;
  /** A successful hit may still be empty under unique_only when exhausted. */
  readonly entryId:string|null;
+ readonly quantity:number;
 }
 export interface ChestLootResolutionV67{
  readonly tableId:string;
  readonly tableVersion:string;
  readonly guarantees:readonly ChestRewardAmountV67[];
  readonly groups:readonly ChestGroupResultV67[];
- readonly drops:readonly {groupId:string;type:ChestDropTypeV67;entryId:string}[];
+ readonly drops:readonly {groupId:string;type:ChestDropTypeV67;entryId:string;quantity:number}[];
 }
 /** Validated and recursively frozen configuration for server-authored tables. */
 export function defineChestLootTableV67(raw:ChestLootTableV67):ChestLootTableV67{
@@ -108,7 +111,11 @@ export function defineChestLootTableV67(raw:ChestLootTableV67):ChestLootTableV67
    ids.add(e.id);weightSum+=e.weight;
    if(weightSum>CHEST_ROLL_MODULUS_V67)
     throw Error('chest_v67_weight_budget_exceeded');
-   return Object.freeze({id:e.id,weight:e.weight});
+   const quantity=e.quantity??1;
+   if(!safeQuantity(quantity)||quantity<1||
+    (['equipment','pet','companion','cosmetic'].includes(g.type)&&quantity!==1))
+    throw Error('chest_v67_invalid_drop_quantity');
+   return Object.freeze({id:e.id,weight:e.weight,quantity});
   });
   return Object.freeze({
    id:g.id,type:g.type,chanceBps:g.chanceBps,
@@ -153,7 +160,7 @@ export function resolveChestLootV67(table:ChestLootTableV67,input:{
   const hit=roll.hitRoll<group.chanceBps;
   if(!hit)return {
    groupId:group.id,type:group.type,chanceBps:group.chanceBps,
-   hit:false,entryId:null,
+   hit:false,entryId:null,quantity:0,
   };
   let pool=group.entries;
   if(group.duplicatePolicy!=='allow_duplicates'){
@@ -161,20 +168,22 @@ export function resolveChestLootV67(table:ChestLootTableV67,input:{
    if(missing.length)pool=missing;
    else if(group.duplicatePolicy==='unique_only')pool=[];
   }
-  let entryId:string|null=null;
+  let entryId:string|null=null,quantity=0;
   if(pool.length){
    const total=pool.reduce((sum,item)=>sum+item.weight,0);
    const selection=roll.selectionRoll%total;
    let cursor=0;
    for(const item of pool){
     cursor+=item.weight;
-    if(selection<cursor){entryId=item.id;break;}
+    if(selection<cursor){
+     entryId=item.id;quantity=item.quantity??1;break;
+    }
    }
    if(entryId===null)throw Error('chest_v67_invalid_weight_selection');
   }
   return {
    groupId:group.id,type:group.type,chanceBps:group.chanceBps,
-   hit:true,entryId,
+   hit:true,entryId,quantity,
   };
  });
  return {
@@ -182,6 +191,7 @@ export function resolveChestLootV67(table:ChestLootTableV67,input:{
   guarantees:def.guarantees,groups,
   drops:groups.filter(g=>g.entryId!==null).map(g=>({
    groupId:g.groupId,type:g.type,entryId:g.entryId!,
+   quantity:g.quantity,
   })),
  };
 }

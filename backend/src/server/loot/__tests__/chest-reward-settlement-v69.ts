@@ -57,7 +57,8 @@ class MockDb implements ChestGrantStoreV69{
  readonly audit:string[]=[];
  proof:TrustedChestSourceV69={
   sourceKey:source,accountId:account,proofVersion:'trusted-seasonal-v1',
-  earned:true,recipientCharacterId:null,lootTable:table,
+  earned:true,recipientCharacterId:null,
+  equipmentDeliveryMode:null,lootTable:table,
  };
  failAfterFirstDrop=false;
  simulateMissingWallet=false;
@@ -256,7 +257,8 @@ async function run(){
   });
   const key=attempt('missing_character');
   const s=startFresh(key);
-  s.proof={...s.proof,lootTable:gear,recipientCharacterId:null};
+  s.proof={...s.proof,lootTable:gear,recipientCharacterId:null,
+   equipmentDeliveryMode:'character'};
   await throws(()=>createChestRewardSettlementV69(s,{secret},true)({
    authenticatedAccountId:account,sourceKey:key,
   }),'unverified_character_destination');
@@ -272,6 +274,7 @@ async function run(){
   });
   check(!minted.replayed&&
    minted.receipt.recipientCharacterId===character&&
+   minted.receipt.equipmentDeliveryMode==='character'&&
    minted.receipt.drops[0]!.entryId==='EQUIPMENT_BOOTS',
    'approved_character_in_frozen_receipt');
   s.proof={...s.proof,recipientCharacterId:other};
@@ -281,6 +284,23 @@ async function run(){
   check(replay.replayed&&
    replay.receipt.recipientCharacterId===character,
    'character_switch_cannot_redirect_issued_gear');
+ }
+ {
+  const gear=defineChestLootTableV67({
+   tableId:'world_boss_chest',version:'world_boss_v58_hollowroot_donations_goal',
+   guarantees:[],groups:[{id:'equipment',type:'equipment',chanceBps:10000,
+    duplicatePolicy:'prefer_unowned',entries:[{id:'boots',weight:1}]}],
+  });
+  const key=attempt('account_unclaimed');
+  const store=startFresh(key);
+  store.proof={...store.proof,lootTable:gear,
+   equipmentDeliveryMode:'account_unclaimed',recipientCharacterId:null};
+  const issued=await createChestRewardSettlementV69(store,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  });
+  check(issued.receipt.recipientCharacterId===null&&
+   issued.receipt.equipmentDeliveryMode==='account_unclaimed',
+   'account_unclaimed_world_boss_custody');
  }
  {
   const party=partyChestLootTableV68({

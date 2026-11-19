@@ -109,6 +109,19 @@ type AttackRow={eventId:string;accountId:string;requestId:string;
  ordinal:number;status:'reserved'|'committed'|'voided';
  replayProof:'verified'|'absent'};
 const sourceComponents=['gold','gem_dust','tempering_dust','companion_essence'] as const;
+/** PostgreSQL JSONB normalizes object key order. Compare immutable rolls
+ * structurally, not by insertion-order JSON.stringify(). */
+function canonicalJson(value:unknown):string{
+ if(Array.isArray(value))return '['+value.map(canonicalJson).join(',')+']';
+ if(value!==null&&typeof value==='object'){
+  const record=value as Record<string,unknown>;
+  return '{'+Object.keys(record).sort().map(k=>
+   JSON.stringify(k)+':'+canonicalJson(record[k])).join(',')+'}';
+ }
+ const scalar=JSON.stringify(value);
+ if(scalar===undefined)throw Error('world_boss_v63_invalid_jsonb_value');
+ return scalar;
+}
 function validatePorts(ports:WorldBossChestPgPortsV63){
  if(!ports||typeof ports.readHighestOwnedCharacterLevel!=='function'||
   typeof ports.grantAccountResources!=='function'||
@@ -249,7 +262,7 @@ export function createWorldBossChestPrivatePgV63(
         [sourceKey,accountId,eventId])).rows;
        if(owned.length!==1||!receipt.frozenGear||
         owned[0].instanceId!==receipt.frozenGear.instanceId||
-        JSON.stringify(owned[0].roll)!==JSON.stringify(receipt.frozenGear.roll))
+        canonicalJson(owned[0].roll)!==canonicalJson(receipt.frozenGear.roll))
         throw Error('world_boss_v63_missing_frozen_item');
       }
       return receipt;

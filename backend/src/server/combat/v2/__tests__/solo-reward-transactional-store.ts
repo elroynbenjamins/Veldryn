@@ -112,10 +112,10 @@ const writers={
   await tx.query('qa_grant',[grant]);
   return {...grant,grantSourceId:forgedGrantProof?'wrong-source':grant.grantSourceId};
  },
- async appendInbox(tx:CombatV2RewardSqlTransaction,scope:typeof scope,plan:SoloRewardReceiptV2){
+ async appendInbox(tx:CombatV2RewardSqlTransaction,requestScope:{accountId:string;characterId:string;encounterId:string},plan:SoloRewardReceiptV2){
   await tx.query('qa_inbox',[plan]);
   return {sourceKey:forgedInboxProof?'wrong-source':plan.sourceKey,
-   accountId:scope.accountId,characterId:scope.characterId};
+   accountId:requestScope.accountId,characterId:requestScope.characterId};
  },
 };
 const store=transactionalSoloRewardStoreV2({

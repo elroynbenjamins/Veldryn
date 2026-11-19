@@ -215,6 +215,11 @@ export function createChestPostgresStoreV70(
        !Number.isInteger(index)||index<0||index>=receipt.drops.length)
        throw Error('chest_v70_invalid_drop_grant');
       const drop=receipt.drops[index]!;
+      // Party PE_ templates and World Boss gathering copies still lack a
+      // registered, verified EQ2 item writer. Never commit a simulated
+      // Equipment 2.0 item or use the old character v24 instance table.
+      if(drop.type==='equipment')
+       throw Error('chest_v70_eq2_manifest_and_custody_not_ready');
       const grant=await ports.grantDrop(conn,receipt,index);
       await writeLeg('drop',index,drop.entryId,drop.quantity,
        grant,drop.type==='equipment');

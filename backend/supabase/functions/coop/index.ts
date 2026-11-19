@@ -48010,12 +48010,13 @@ function parseMechanics(tags) {
 function pveEncounterPreview(definitions2) {
   const enemies = definitions2.filter((definition) => definition.team === "enemies");
   if (!enemies.length) return void 0;
+  const previewEnemies = enemies.slice(0, 4).map((enemy4) => ({ name: enemy4.name, boss: enemy4.boss === true }));
   const archetypes = [...new Set(enemies.map((enemy4) => parseArchetype(enemy4.tags ?? [])).filter((value) => Boolean(value)))].slice(0, 2);
   const mechanicIds = [...new Set(enemies.flatMap((enemy4) => parseMechanics(enemy4.tags ?? [])))].slice(0, 4);
-  if (!archetypes.length && !mechanicIds.length) return void 0;
+  if (!archetypes.length && !mechanicIds.length && !previewEnemies.length) return void 0;
   const mechanics = mechanicIds.map((id) => MECHANICS[id]);
   const labels2 = [...archetypes.map((id) => ARCHETYPE_LABEL[id]), ...mechanics.slice(0, 2).map((item) => item.label)];
-  return { archetypes: archetypes.map((id) => ({ id, label: ARCHETYPE_LABEL[id] })), mechanics, summary: labels2.join(" \xB7 ") };
+  return { archetypes: archetypes.map((id) => ({ id, label: ARCHETYPE_LABEL[id] })), enemies: previewEnemies, mechanics, summary: labels2.join(" \xB7 ") || previewEnemies.map((enemy4) => enemy4.name).join(" \xB7 ") };
 }
 function pveBossTelegraph(definitions2) {
   const boss4 = definitions2.find((definition) => definition.team === "enemies" && definition.boss);

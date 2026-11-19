@@ -10,6 +10,9 @@ import type {
  ChestGrantStoreV69,ChestGrantTransactionV69,TrustedChestSourceV69,
  FrozenChestReceiptV69,
 } from './chest-reward-settlement-v69';
+import {
+ planChestEquipmentV71,type ChestEq2ServerContextV71,
+} from './chest-equipment-bridge-v71';
 
 export const CHEST_POSTGRES_STORE_V70_RELEASED=false;
 export const CHEST_POSTGRES_STORE_V70_VERSION='chest-postgres-v70' as const;
@@ -44,6 +47,10 @@ export interface ChestPhysicalPortsV70{
   Promise<readonly string[]>;
  isOwnedCharacter(tx:ChestSqlV70,accountId:string,characterId:string):
   Promise<boolean>;
+ /** Read the locked event proof's actual item tier and boss identity. No
+  * client tier or guessed boss/slot may cross the issuance boundary. */
+ readApprovedEquipmentContext(tx:ChestSqlV70,receipt:FrozenChestReceiptV69,
+  index:number):Promise<ChestEq2ServerContextV71>;
  /** Invoke existing real wallet/resource grants, returning DB grant id.
   * Never use a second connection or external side effect. */
  creditGuaranteed(tx:ChestSqlV70,receipt:FrozenChestReceiptV69,index:number):
@@ -218,8 +225,15 @@ export function createChestPostgresStoreV70(
       // Party PE_ templates and World Boss gathering copies still lack a
       // registered, verified EQ2 item writer. Never commit a simulated
       // Equipment 2.0 item or use the old character v24 instance table.
-      if(drop.type==='equipment')
+      if(drop.type==='equipment'){
+       const context=await ports.readApprovedEquipmentContext(
+        conn,receipt,index,
+       );
+       const candidate=planChestEquipmentV71(receipt,index,context);
+       if(candidate.readyForIssuance!==false||candidate.blockers.length===0)
+        throw Error('chest_v70_invalid_eq2_issuance_gate');
        throw Error('chest_v70_eq2_manifest_and_custody_not_ready');
+      }
       const grant=await ports.grantDrop(conn,receipt,index);
       await writeLeg('drop',index,drop.entryId,drop.quantity,
        grant,drop.type==='equipment');

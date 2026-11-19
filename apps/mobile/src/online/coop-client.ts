@@ -25,7 +25,7 @@ export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabas
 // emergency build-time kill switch for either co-op surface.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1===undefined?!isDevelopment:process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
 export interface CoopEntryData {rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;gameVersion?:number;}
-export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;preferredEchoProfileIds?:string[];}
+export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;preferredEchoCharacterIds?:string[];}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;tier?:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}

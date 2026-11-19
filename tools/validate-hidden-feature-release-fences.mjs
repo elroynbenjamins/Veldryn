@@ -43,7 +43,7 @@ function check(read,migrations){
   for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY','EQUIPMENT_CRAFTING_V2_RELEASED'])
     requireExportFalse('flags',name);
   requireExportFalse('crafting2Gate','EQUIPMENT_CRAFTING_V2_SERVER_RELEASED');
-  if(/(?:runEquipmentV2(?:Gem)?InGameState|simulateEquipmentV2(?:Gem)?InGameState|proposeEquipmentV2ClaimCustody|reserveEquipmentV2HiddenClaim|verifyEquipmentV2HiddenLedger|equipment_crafting_v2_gameplay|equipment-crafting-v2-(?:delivery|game-state|gem-sidecar|storage-reservations))/i.test(source('gameplay')))
+  if(/(?:runEquipmentV2(?:Gem)?InGameState|simulateEquipmentV2(?:Gem)?InGameState|proposeEquipmentV2ClaimCustody|reserveEquipmentV2HiddenClaim|verifyEquipmentV2HiddenLedger|equipment_crafting_v2_gameplay|equipment-crafting-v2-(?:delivery|game-state|gem-sidecar|storage-reservations|virtual-custody|effect-gem-policy))/i.test(source('gameplay')))
     failures.push('Hidden Equipment/Crafting V2 must not be mounted in online gameplay before coordinated release');
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');
@@ -97,6 +97,8 @@ function selfTest(){
     ['craft-bridge-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {runEquipmentV2InGameState} from '../src/server/equipment/equipment-crafting-v2-game-state';\nimport {executeGameCommand,validateGameCommand}"],
     ['craft-custody-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {proposeEquipmentV2ClaimCustody} from '../src/server/equipment/equipment-crafting-v2-delivery';\nimport {executeGameCommand,validateGameCommand}"],
     ['craft-gem-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {simulateEquipmentV2GemInGameState} from '../src/server/equipment/equipment-crafting-v2-gem-sidecar';\nimport {executeGameCommand,validateGameCommand}"],
+    ['craft-virtual-custody-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {simulateEquipmentV2VirtualCustody} from '../src/server/equipment/equipment-crafting-v2-virtual-custody';\nimport {executeGameCommand,validateGameCommand}"],
+    ['craft-effect-gem-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {validateEquipmentV2EffectGemInstall} from '../src/server/equipment/equipment-crafting-v2-effect-gem-policy';\nimport {executeGameCommand,validateGameCommand}"],
   ];
   for(const [label,path,before,after] of mutations){
     const original=fixtures.get(path);
@@ -109,7 +111,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects sixteen unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects eighteen unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

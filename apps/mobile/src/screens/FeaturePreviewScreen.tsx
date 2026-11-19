@@ -521,7 +521,7 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <Card s={s}><SectionHeading s={s} kicker={'EVENT EQUIPMENT · '+story.name.toUpperCase()} title="Two collections, five pieces" sub="A three-piece signature set and a two-piece support set. Bonuses only activate when the matching tier pieces are equipped."/>
    {partyTreasureSets[story.id].map(set=><View key={set.name} style={s.detailRow}>
     <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.pieces}-piece set · Collection unavailable until the private inventory read is connected</Text></View>
-    <Tag s={s} label={set.pieces===3?'2 / 3 bonus tiers':'2-piece bonus'}/>
+    <Tag s={s} label={set.pieces===3?'2 & 3 equipped':'2 equipped'}/>
    </View>)}
    <Text style={s.finePrint}>Party Sigils: balance unverified · One targeted missing piece may cost 60 Sigils per event week. No currency is debited in this screen.</Text>
    <Action label="Exchange gear · Not available" s={s} disabled/>

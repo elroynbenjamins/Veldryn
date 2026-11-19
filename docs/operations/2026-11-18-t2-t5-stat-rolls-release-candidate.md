@@ -1,4 +1,6 @@
-> **Superseded design checkpoint (19 Nov 2026):** The active *unreleased* revision is [T1–T5 seven-stat launch gate](./2026-11-19-t1-t5-seven-stat-rolls-release-gate.md), based on new **weapon v6 / nonweapon v5** rolls. The eleven-stat / T2–T5 details below describe the older PR #1374 / #1404 candidate and must not be used for release approval. Older v5/v4 saved receipts remain compatible.\n\n# Veldryn — T2–T5 randomized equipment rolls release candidate
+> **Superseded design checkpoint (19 Nov 2026):** The active *unreleased* revision is [T1–T5 seven-stat launch gate](./2026-11-19-t1-t5-seven-stat-rolls-release-gate.md), based on new **weapon v6 / nonweapon v5** rolls. The eleven-stat / T2–T5 details below describe the older PR #1374 / #1404 candidate and must not be used for release approval. Older v5/v4 saved receipts remain compatible.
+
+# Veldryn — T2–T5 randomized equipment rolls release candidate
 
 **Prepared:** 2026-11-18  
 **Source PR:** #1374 (draft, unmerged), based on current main  

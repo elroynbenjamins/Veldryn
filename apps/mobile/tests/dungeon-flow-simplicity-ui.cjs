@@ -19,7 +19,7 @@ assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Dung
 assert(browser.includes('notice?<FantasyPanel variant="danger"')&&screen.includes('notice={notice} activeRun={entry?.activeRun}'),'Quick Match errors must appear on the main Dungeon screen without opening group finder');
 assert(browser.includes('onQuickMatch?<View style={s.inlineTool}'),'Live Quick Match should remain directly accessible without an oversized panel');
 assert(browser.includes("mode==='live'&&liveTools?"),'Advanced group search remains accessible');
-assert(browser.includes("mode==='qmode'&&echoTools?"),'Echo sharing must not crowd primary browsing');
+assert(!browser.includes('echoTools')&&!screen.includes('showEchoSharing'),'Manual Echo sharing drawers must not crowd the Dungeon screen');
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
 const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');

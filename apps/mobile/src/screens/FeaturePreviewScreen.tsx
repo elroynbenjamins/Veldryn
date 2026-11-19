@@ -7,6 +7,7 @@ import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
 import {decodePartyEventReadOnlySnapshot,decodePartyEventReadTransportV39,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
+import {decodePartyEventRewardReadOnlyV62,type PartyRewardMobileV62} from '../core/party-event-reward-readonly-v62';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
@@ -14,7 +15,7 @@ import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;partyEventAccountId?:string;partyEventReadCurrent?:()=>Promise<unknown>;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;partyEventAccountId?:string;partyEventReadCurrent?:()=>Promise<unknown>;partyEventRewardStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -58,7 +59,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,partyEventAccountId='',partyEventReadCurrent,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,partyEventAccountId='',partyEventReadCurrent,partyEventRewardStatus=null,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -218,7 +219,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
-    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} nowMs={statusNowMs}/>:null}
+    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} partyEventRewardStatus={partyEventRewardStatus} trustedAccountId={partyEventAccountId} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
@@ -419,13 +420,24 @@ const partyStoryGuides={
 } as const;
 const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
 /** Only Party Events subscribes to live Party state; market and boss QA never rerender for Party updates. */
-function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus,nowMs}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown;nowMs:number}){
+function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus,partyEventRewardStatus,trustedAccountId,nowMs}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown;partyEventRewardStatus:unknown;trustedAccountId:string;nowMs:number}){
  const social=usePartySocial();
  // App deliberately does not supply a live payload while the private service
  // and event migrations are unreleased. Malformed payloads fail closed.
  const status=useMemo(()=>decodePartyEventReadOnlySnapshot(partyEventStatus,nowMs),[partyEventStatus,nowMs]);
+ const rewards=useMemo(()=>{
+  // Both authoritatively authenticated event and reward snapshots must agree
+  // about the owner, event week and enrolled family. No sample/cached fallback.
+  if(!status||!trustedAccountId||!partyEventStatus||typeof partyEventStatus!=='object')return null;
+  const starts=(partyEventStatus as {eventStartsAt?:unknown}).eventStartsAt;
+  if(typeof starts!=='string')return null;
+  const week=Date.parse(starts);
+  const verified=decodePartyEventRewardReadOnlyV62(partyEventRewardStatus,trustedAccountId,week,nowMs);
+  const families={caravan:'broken_caravan',hunt:'nightfall_hunt',wards:'broken_wards',reliquary:'lost_reliquary'} as const;
+  return verified?.family===families[status.family]?verified:null;
+ },[status,partyEventStatus,partyEventRewardStatus,trustedAccountId,nowMs]);
  return <PartyContents s={s} C={C} accent={accent} tab={tab} onTab={onTab} storyId={storyId} onStoryChange={onStoryChange}
-  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status}/>;
+  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status} rewards={rewards}/>;
 }
 function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:Shared['s'];accent:string;partyUnread:number;onOpenParty:()=>void;onOpenPartyChat:()=>void}){
  const social=usePartySocial();
@@ -437,13 +449,14 @@ function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:
    <Text style={s.dockArrow}>›</Text>
  </Pressable>;
 }
-function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty,status}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void;status:PartyEventScreenSnapshot|null}){
+function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty,status,rewards}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void;status:PartyEventScreenSnapshot|null;rewards:PartyRewardMobileV62|null}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
  const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
  const story=stories.find(e=>e.id===storyId)??stories[0];
  const storyGuide=partyStoryGuides[story.id];
  const storyStatus=status?.family===story.id?status:null;
+ const rewardStatus=storyStatus&&rewards?rewards:null;
  const required=storyStatus?partyEventSupplyProgress(storyStatus,storyStatus.stage,'required'):null;
  if(tab==='adventure')return <>
   <Card s={s}><SectionHeading s={s} kicker="PRIVATE EVENT SNAPSHOT" title={status?'Enrolled adventure':'No verified event loaded'} sub={status?'Read-only event enrollment, separate from your current live Party. No combat or rewards are active.':'The Party roster below is real, but stages, votes and supplies require a separately authenticated event service.'}/>
@@ -543,18 +556,21 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <Card s={s}><SectionHeading s={s} kicker="PARTY TREASURE · DESIGN QA" title="Three chests to earn" sub="Up to three per account per event week. These are baseline Standard gear chances, not guaranteed drops."/>
    {partyChestDesign.map((chest,i)=><View key={chest.name} style={s.detailRow}>
     <View style={[s.motif,{borderColor:accent}]}><UiIcon name="rewards" size={26}/></View>
-    <View style={s.flex}><Text style={s.choiceTitle}>{chest.name}</Text><Text style={s.choiceSub}>{chest.condition}</Text><Text style={s.finePrint}>No authenticated entitlement loaded</Text></View>
-    <Tag s={s} label={chest.chance+' base'} accent={i===2?accent:undefined}/>
+    <View style={s.flex}><Text style={s.choiceTitle}>{chest.name}</Text><Text style={s.choiceSub}>{rewardStatus?.chests[i]?.unlockHint??chest.condition}</Text><Text accessibilityLiveRegion="polite" style={s.finePrint}>{rewardStatus?rewardStatus.chests[i]!.state.toUpperCase()+' · Verified private read; no claiming enabled':'No authenticated entitlement loaded'}</Text></View>
+    <Tag s={s} label={rewardStatus?rewardStatus.chests[i]!.gearChancePercent+'%':chest.chance+' base'} accent={i===2?accent:undefined}/>
    </View>)}
    <Text style={s.finePrint}>Veteran and Heroic difficulty improve these base chances. Opening a chest cannot be simulated or claimed in this preview.</Text>
    <Action label="Open chest · Not available" s={s} disabled/>
   </Card>
   <Card s={s}><SectionHeading s={s} kicker={'EVENT EQUIPMENT · '+story.name.toUpperCase()} title="Two collections, five pieces" sub="A three-piece signature set and a two-piece support set. Bonuses only activate when the matching tier pieces are equipped."/>
-   {partyTreasureSets[story.id].map(set=><View key={set.name} style={s.detailRow}>
+   {rewardStatus?rewardStatus.sets.map(set=><View key={set.id} style={s.detailRow}>
+    <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.collected} / {set.size} pieces collected · Equipped pieces activate bonuses</Text></View>
+    <Tag s={s} label={set.size===3?'2 & 3 equipped':'2 equipped'}/>
+   </View>):partyTreasureSets[story.id].map(set=><View key={set.name} style={s.detailRow}>
     <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.pieces}-piece set · Collection unavailable until the private inventory read is connected</Text></View>
     <Tag s={s} label={set.pieces===3?'2 & 3 equipped':'2 equipped'}/>
    </View>)}
-   <Text style={s.finePrint}>Party Sigils: balance unverified · One targeted missing piece may cost 60 Sigils per event week. No currency is debited in this screen.</Text>
+   <Text style={s.finePrint}>Party Sigils: {rewardStatus?rewardStatus.partySigilsBalance+' verified':'balance unverified'} · One targeted missing piece may cost 60 Sigils per event week. No currency is debited in this screen.</Text>
    <Action label="Exchange gear · Not available" s={s} disabled/>
   </Card>
  </>;

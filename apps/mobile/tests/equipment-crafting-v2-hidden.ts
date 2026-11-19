@@ -3,7 +3,6 @@ import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-prep
 import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
 import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
-import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef,ITEMS} from '../src/content/items';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
@@ -144,7 +143,7 @@ let badRollRejected=false;
 try{draftEquipmentV2Outcome(trusted,()=>-1)}catch{badRollRejected=true}
 check(badRollRejected,'Out-of-range server RNG samples must fail closed');
 let randomSeed=77;
-const deterministic=max=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
+const deterministic=(max:number)=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
 for(let n=0;n<50;n++){
  const roll=draftEquipmentV2Outcome(trusted,deterministic);
  check(new Set(roll.affixes.map(x=>x.stat)).size===roll.affixes.length

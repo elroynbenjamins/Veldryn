@@ -64,6 +64,7 @@ assert.throws(()=>verifyEquipmentV2HiddenLedger(accountId,[job],[{
  ...item,exactItem:{...exactItem,gemSlots:[{socketId:'stat',gemId:'FREE_GEM',gemInstanceId:'free'}]},
  } as V2DraftItem],[started,claimed],[award]),/invalid_hidden_v2_exact_copy/);
 
+const originalStateJSON=JSON.stringify(state);
 const copyState=structuredClone(state);
 copyState.character!.equipmentPouch={stacks:[],capacity:1};
 const first=proposeEquipmentV2ClaimCustody(copyState,item);
@@ -71,7 +72,6 @@ assert.equal(first.suggestedLocation,'equipment_pouch');
 assert.equal(first.physicallyDelivered,false);
 assert.equal(first.requiresSingleAccountCommit,true);
 assert.deepEqual(first.stack,{itemId:piece.id,instanceId:item.id,quantity:1});
-const snapshot=JSON.stringify(copyState);
 copyState.character!.equipmentPouch.stacks.push({itemId:'LEGACY_GEAR',quantity:1});
 assert.equal(proposeEquipmentV2ClaimCustody(copyState,item).suggestedLocation,'inventory');
 copyState.inventory.capacity=copyState.inventory.stacks.length;
@@ -104,6 +104,6 @@ const collision=structuredClone(state);
 collision.bank.stacks.push({itemId:'OLD_HELM',instanceId:item.id,quantity:1});
 assert.throws(()=>proposeEquipmentV2ClaimCustody(collision,item),/v2_delivery_instance_collision/,
  'Exact-copy IDs must never collide with an existing physical Bank marker');
-assert.equal(JSON.stringify(state),snapshot.replace('"equipmentPouch":{"stacks":[],"capacity":1}', '"equipmentPouch":undefined')===JSON.stringify(state)?JSON.stringify(state):JSON.stringify(state),
+assert.equal(JSON.stringify(state),originalStateJSON,
  'The original live GameState remains untouched by delivery previews');
 console.log('PASS: hidden V2 claim receipt integrity, original-crafter delivery, storage fallback and collision denial');

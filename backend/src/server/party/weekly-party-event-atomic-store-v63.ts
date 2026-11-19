@@ -55,10 +55,12 @@ export interface PartyEventAtomicPortsV63{
 const receiptAmounts=new Map(PARTY_EVENT_CHESTS_V51.map(c=>[c.kind,c]));
 function checkedReceipt(receipt:PartyEventRewardReceiptV60,
  account:string,week:number,family:PrivatePartyRewardProofV61['week']['family'],
+ approvedTier:PartyChestTierV51,
 ):void{
  const key='party-event:'+week+':'+account+':';
  const kind=receipt?.chestKind;
- const chest=PARTY_EVENT_CHESTS_V51.find(x=>x.kind===kind);
+ const chest=receipt?.origin==='chest'
+  ?PARTY_EVENT_CHESTS_V51.find(x=>x.kind===kind):undefined;
  const expected=receipt?.origin==='chest'&&chest
   ?key+kind:receipt?.origin==='exchange'?key+'exchange':null;
  const exact=receipt?.frozenGear;
@@ -72,7 +74,7 @@ function checkedReceipt(receipt:PartyEventRewardReceiptV60,
   (chest?(receipt.partySigilsDelta!==chest.partySigils||
    receipt.gold!==chest.gold||receipt.gemDust!==chest.gemDust||
    receipt.companionEssence!==chest.companionEssence):(
-    receipt.chestKind!==undefined||
+    receipt.chestKind!=null||
     receipt.partySigilsDelta!==-60||receipt.gold!==0||
     receipt.gemDust!==0||receipt.companionEssence!==0))||
   (receipt.pieceId!==null&&
@@ -80,7 +82,7 @@ function checkedReceipt(receipt:PartyEventRewardReceiptV60,
   ((receipt.pieceId===null)!==(exact===null))||
   (exact!==null&&(
    !UUID.test(exact.itemInstanceId)||exact.pieceId!==receipt.pieceId||
-   ![1,2,3,4,5,6,7,8,9].includes(exact.tier)||
+   exact.tier!==approvedTier||
    typeof exact.exactItemReceiptVersion!=='string'||
    exact.exactItemReceiptVersion.length<3))||
   (!chest&&receipt.pieceId===null))
@@ -183,7 +185,8 @@ export function createPartyEventRewardStoreV63(
       if(found.rows.length>1)
        throw Error('party_event_v63_ambiguous_receipt');
       const receipt=found.rows[0]?.receipt??null;
-      if(receipt)checkedReceipt(receipt,accountId,weekStartMs,evidence.family);
+      if(receipt)checkedReceipt(receipt,accountId,weekStartMs,evidence.family,
+       evidence.eligibleGearTier);
       return receipt;
      },
      mintExactEquipmentV2:async({sourceKey,piece,tier})=>{
@@ -210,7 +213,8 @@ export function createPartyEventRewardStoreV63(
      },
      insertReceiptOnce:async receipt=>{
       const {evidence}=requireEvidence();
-      checkedReceipt(receipt,accountId,weekStartMs,evidence.family);
+      checkedReceipt(receipt,accountId,weekStartMs,evidence.family,
+       evidence.eligibleGearTier);
       await connection.query(writeReceiptSql,[
        receipt.sourceKey,partyId,weekStartMs,accountId,receipt.origin,
        receipt.chestKind??null,receipt.pieceId,

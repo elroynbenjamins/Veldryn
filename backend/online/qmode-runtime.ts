@@ -16,7 +16,7 @@ import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
-import {validateSelectedSocialEchoIds} from '../../apps/mobile/src/core/coop-social-echoes';
+import {validateSelectedSocialEchoCharacterIds} from '../../apps/mobile/src/core/coop-social-echoes';
 import {prepareSocialEchoCandidates} from './coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
@@ -65,11 +65,11 @@ export class OnlineQModeRuntime{
   // The client chooses friend/guild CHARACTERS, not published Echo profiles.
   // Each selected donor is freshly derived from its server-owned saved game.
   // This removes the sharing switch and its seven-day opt-in prerequisite.
-  const requestedCharacters=request.preferredEchoProfileIds??[];
+  const requestedCharacters=request.preferredEchoCharacterIds??[];
   const publishedSelections:string[]=[];
   if(requestedCharacters.length){
    const sources=await prepareSocialEchoCandidates(this.services,accountId,minimum);
-   validateSelectedSocialEchoIds(requestedCharacters,sources.map(source=>source.candidate),record.classId,controller.readiness.role);
+   validateSelectedSocialEchoCharacterIds(requestedCharacters,sources.map(source=>source.candidate),record.classId,controller.readiness.role);
    for(const characterId of requestedCharacters){
     const source=sources.find(item=>item.candidate.characterId===characterId);
     if(!source)throw new GameplayError('social_echo_unavailable',409);

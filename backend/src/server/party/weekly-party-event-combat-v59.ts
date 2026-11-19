@@ -156,8 +156,14 @@ export function previewPartyEventHookV59(
  state:PartyEventHookStateV59,
  context:PartyEventHookContextV59,
 ):PartyEventHookResolutionV59{
- if(!hook||!hook.id||!state||
-  !Number.isSafeInteger(context?.nowMs)||context.nowMs<0||
+ const set=PARTY_EVENT_GEAR_SETS_V51.find(x=>x.id===hook?.setId);
+ const canonical=set?.bonuses.find(x=>x.threshold===3)?.effects.find(
+  e=>e===hook?.effect&&e.kind!=='stat');
+ if(!set||!canonical||!Number.isSafeInteger(hook.tier)||hook.tier<1||
+  hook.tier>9||hook.threshold!==3||
+  hook.id!==set.id+':T'+hook.tier+':3:'+hook.effect.kind)
+  throw Error('party_event_v59_unapproved_hook');
+ if(!state||!Number.isSafeInteger(context?.nowMs)||context.nowMs<0||
   (state.lastProcAtMs!==null&&(
    !Number.isSafeInteger(state.lastProcAtMs)||state.lastProcAtMs<0||
    state.lastProcAtMs>context.nowMs))||
@@ -177,11 +183,13 @@ export function previewPartyEventHookV59(
   spend(effect.internalCooldownMs,effect.durationMs,effect.abilityDamageBps);
  if(effect.kind==='elite_execute'&&context.trigger==='direct_damage'&&
    context.targetIsElite===true&&Number.isInteger(context.targetHpBps)&&
-   context.targetHpBps!>=0&&context.targetHpBps!<effect.enemyHpBelowBps){
+   context.targetHpBps!>=0&&context.targetHpBps!<=10000&&
+   context.targetHpBps!<effect.enemyHpBelowBps){
   activated=true;bonusBps=effect.damageBps;
  }
  if(effect.kind==='defensive_barrier'&&context.trigger==='low_hp_cross'&&
    Number.isInteger(context.previousHpBps)&&Number.isInteger(context.currentHpBps)&&
+   context.previousHpBps!<=10000&&context.currentHpBps!>=0&&
    context.previousHpBps!>=4000&&context.currentHpBps!<4000){
   spend(effect.internalCooldownMs,effect.durationMs,effect.maxHpBps);
  }

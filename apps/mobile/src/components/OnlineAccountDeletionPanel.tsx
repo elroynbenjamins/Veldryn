@@ -9,14 +9,14 @@ import {ACCOUNT_DELETION_CONFIRMATION,cancelOnlineAccountDeletionRequest,readOnl
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {Language} from '../i18n/languages';
-import {accountText} from '../i18n/account';
+import {accountDeletionText} from '../i18n/account-deletion';
 
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 
 /** This panel cannot erase a user. Once released it requests manual privacy review.
  * Final account erasure has a separate backend safety gate and is not implemented. */
 export function OnlineAccountDeletionPanel({language}:{language:Language}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),a=(value:string)=>accountText(language,value);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),a=(value:string)=>accountDeletionText(language,value);
  const {session}=useAuthSession(),accountId=session?.user.id??'',linked=!!session&&!session.user.is_anonymous;
  const [expanded,setExpanded]=useState(false),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [status,setStatus]=useState<AccountDeletionRequestSnapshot|null>(null);

@@ -4,6 +4,7 @@ import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/cor
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
+import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
 import {planEquipmentV2AtomicCommit,type V2AtomicCommitPlan} from './equipment-crafting-v2-commit-plan';
 import {
  type V2DraftCommand,type V2DraftContext,type V2DraftItem,type V2DraftJob,
@@ -26,6 +27,8 @@ export interface V2HiddenGameMetadata{
  skillAwards:V2DraftSkillAward[];
  /** Optional for older hidden V1 snapshots; no public EQ2 storage is modified. */
  storageReservations?:V2HiddenStorageReservation[];
+ /** Separate irreversible socket history; never rewrites the minted exact item. */
+ gemSocketState?:V2GemSidecarState;
 }
 export interface V2HiddenGameInput{
  state:GameState;accountId:string;onlineVersion:number;
@@ -46,7 +49,10 @@ function requireHidden(s:GameState){
  if(stored.schemaVersion!=='eq2-hidden-game-state-v1'||!Array.isArray(stored.jobs)
   ||!Array.isArray(stored.items)||!Array.isArray(stored.receipts)
   ||!Array.isArray(stored.skillAwards)
-  ||(stored.storageReservations!==undefined&&!Array.isArray(stored.storageReservations)))fail('corrupted_hidden_v2_metadata');
+  ||(stored.storageReservations!==undefined&&!Array.isArray(stored.storageReservations))
+  ||(stored.gemSocketState!==undefined&&(!stored.gemSocketState
+   ||!Array.isArray(stored.gemSocketState.slots)||!Array.isArray(stored.gemSocketState.receipts))))
+  fail('corrupted_hidden_v2_metadata');
  const checked=structuredClone(stored);
  return checked;
 }
@@ -118,6 +124,9 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  const metadata=requireHidden(state);
  verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,metadata.items,metadata.storageReservations??[]);
+ if(metadata.gemSocketState)verifyEquipmentV2GemSidecar(metadata.items,metadata.gemSocketState);
+ if(metadata.gemSocketState?.receipts.some(receipt=>receipt.requestId===command.requestId))
+  fail('v2_cross_command_request_id_conflict');
  const previous={...readiness.projection,
   jobs:metadata.jobs,equipment:metadata.items,
   receipts:metadata.receipts,skillAwards:metadata.skillAwards,
@@ -151,6 +160,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   jobs:resolution.next.jobs,items:resolution.next.equipment,
   receipts:resolution.next.receipts,skillAwards:resolution.next.skillAwards,
   storageReservations,
+  ...(metadata.gemSocketState?{gemSocketState:metadata.gemSocketState}:{}),
  };
  verifyEquipmentV2HiddenLedger(accountId,updated.jobs,updated.items,updated.receipts,updated.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,updated.items,storageReservations);

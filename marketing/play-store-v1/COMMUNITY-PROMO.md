@@ -26,9 +26,7 @@ Built-in image-generation tool, reference-guided generation (not CLI fallback). 
 References:
 
 1. `source/promotional-key-art.png`: approved palette, pixel-art treatment, Ironwarden heroine.
-2. `apps/mobile/assets/character-skins-t1-wayfinder/T1_012/male-front.png`: male Wayfinder design.
-3. `apps/mobile/assets/character-skins-t1-dawnkeeper/T1_024/female-front.png`: female Dawnkeeper design.
-4. `apps/mobile/assets/guild-customization/banners/banner_swordwing_blue.png`: existing guild banner motif.
+2. `apps/mobile/assets/guild-customization/banners/banner_swordwing_blue.png`: existing guild banner motif.
 
 ## Final generation prompt
 

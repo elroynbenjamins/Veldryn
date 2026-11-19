@@ -3,6 +3,7 @@ import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game'
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {simulateEquipmentV2InGameState,type V2HiddenGameInput} from '../equipment-crafting-v2-game-state';
+import {simulateEquipmentV2GemInGameState} from '../equipment-crafting-v2-gem-sidecar';
 import {
  simulateEquipmentV2VirtualCustody,readEquipmentV2VirtualCustody,runEquipmentV2VirtualCustody,
  type V2VirtualMoveCommand,type V2VirtualMoveInput,type V2VirtualLedger,
@@ -72,6 +73,21 @@ const withdrawn=simulateEquipmentV2VirtualCustody(input(alternate,
  request('withdraw_bank','virtual-withdraw-001',13),13));
 assert.equal(withdrawn.receipt.to,'pouch');
 assert.equal(withdrawn.receipt.newHolder,other.character.id);
+const recipientWithGem=structuredClone(withdrawn.state);
+recipientWithGem.bank.stacks.push({itemId:'gem:stat_might:g1',quantity:1});
+const recipientSocket=simulateEquipmentV2GemInGameState({
+ state:recipientWithGem,accountId,onlineVersion:14,
+ onlineCharacterId:recipientWithGem.character!.id,
+ authoritativeWalletGold:recipientWithGem.character!.gold,
+ command:{requestId:'virtual-alt-socket-01',expectedVersion:14,
+  instanceId,gemId:'gem:stat_might:g1'},
+ serverRollPercent:100,
+});
+assert.equal(recipientSocket.receipt.source,'bank');
+assert.equal(recipientSocket.receipt.burnedGemId,null);
+assert.equal(recipientSocket.state.bank.stacks.filter(row=>row.itemId==='gem:stat_might:g1').length,0,
+ 'The actual shadow holder, rather than the original crafter, owns socket authority after Bank withdrawal');
+
 assert.equal(withdrawn.state.otherCharacters?.length,1);
 const worn=simulateEquipmentV2VirtualCustody(input(withdrawn.state,
  request('equip','virtual-equip-0001',14),14));
@@ -109,6 +125,13 @@ assert.throws(()=>simulateEquipmentV2VirtualCustody(input(corrupted,
 const gap=structuredClone(worn.state);
 const ledger=gap.account.equipmentV2Hidden as V2VirtualLedger;
 ledger.storageReservations=[];
+const colliding=structuredClone(banked.state);
+const collidingLedger=colliding.account.equipmentV2Hidden as V2VirtualLedger;
+collidingLedger.custodyReceipts![0].requestId=collidingLedger.receipts[0].requestId;
+assert.throws(()=>simulateEquipmentV2VirtualCustody(input(colliding,
+ request('withdraw_bank','virtual-collision-01',13),13)),
+ /duplicate_cross_system_v2_receipt_id/,
+ 'Historical Forge and custody request IDs must never collide');
 assert.throws(()=>readEquipmentV2VirtualCustody(ledger.items,ledger.storageReservations!,
  ledger.custodyReceipts??[]),/unreconciled_v2_virtual_claim/);
 const full=structuredClone(claimed.state);

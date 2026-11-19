@@ -9,6 +9,9 @@ on:
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/tests/combat-v2-pg17-disposable-concurrency.sh'
+      - 'backend/src/server/combat/v2/solo-reward-settlement.ts'
+      - 'backend/src/server/combat/v2/__tests__/solo-reward-settlement.ts'
       - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
       - 'backend/online/combat-v2-build-auth-boundary.ts'
       - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
@@ -28,6 +31,9 @@ on:
       - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
       - 'backend/tests/combat-v2-build-sql-contract.cjs'
       - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/tests/combat-v2-pg17-disposable-concurrency.sh'
+      - 'backend/src/server/combat/v2/solo-reward-settlement.ts'
+      - 'backend/src/server/combat/v2/__tests__/solo-reward-settlement.ts'
       - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
       - 'backend/online/combat-v2-build-auth-boundary.ts'
       - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
@@ -84,7 +90,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -100,6 +106,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
       - name: Validate private solo V2 encounter reservation, RPC adapter and replay
         run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
+      - name: Validate disabled-by-default solo reward settlement contract
+        run: node backend/dist/server/combat/v2/__tests__/solo-reward-settlement.js
       - name: Validate full class, approved gear base, set and affix pipeline
         run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
       - name: Validate all nine class roles through the full gear pipeline
@@ -186,3 +194,32 @@ jobs:
         run: node backend/dist/server/coop/__tests__/phase6-qmode.js
       - name: Validate private enemy/class V2 rules and no-authority legacy replay
         run: node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
+
+  disposable_pg17:
+    name: PG17 actual migrations, concurrent CAS and service-only grants
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: combat_v2_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d combat_v2_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: combat_v2_test
+      COMBAT_V2_DISPOSABLE_DB: YES_TEST_DATABASE
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure psql client is available
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+      - name: Exercise actual hidden migrations with 16 independent sessions
+        run: bash backend/tests/combat-v2-pg17-disposable-concurrency.sh

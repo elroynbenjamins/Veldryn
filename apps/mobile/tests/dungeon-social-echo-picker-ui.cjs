@@ -21,7 +21,7 @@ const sql=backend('supabase/migrations/20261119162000_coop_social_echo_candidate
 assert(locale.includes('Dungeon Allies')&&picker.includes('partySlots')&&picker.includes('roleSlots(hostRole'),'Localized four-seat preview and compact summary are required');
 assert(picker.includes("['all','friend','guild']")&&locale.includes('Search character or class')&&picker.includes('onChangeText={setSearch}'),'All/friends/guild filters and search must work');
 assert(picker.includes('accessibilityRole="checkbox"')&&picker.includes('reasonFor(candidate'),'Role-safe accessible selection must be explicit');
-assert(loadout.includes('<CoopSocialEchoPicker language={language}')&&loadout.includes('preferredEchoCharacterIds:selectedSocialEchoIds'),'Localized party choices belong on pre-run screen and must reach run intent');
+assert(loadout.includes('<CoopSocialEchoPicker language={language}')&&loadout.includes('preferredEchoCharacterIds:selectedSocialCharacterIds'),'Localized party choices belong on pre-run screen and must reach run intent');
 assert(screen.includes('coopClient.socialEchoes(minimum)')&&screen.includes('socialEchoes={socialEchoes}'),'Screen must refresh the eligible contacts');
 assert(client.includes('socialEchoes:(minimumLevel:number)')&&client.includes('/coop/echo-allies'),'Browse endpoint must be authenticated');
 assert(source.includes('intent.preferredEchoCharacterIds'),'Run start carries selected character IDs');

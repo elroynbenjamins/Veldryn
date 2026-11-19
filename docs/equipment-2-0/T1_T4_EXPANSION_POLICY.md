@@ -1,6 +1,6 @@
 # Veldryn Equipment 2.0: T1–T4 expansion and earned-gear exclusivity
 
-**Status: hidden design manifest + unmounted source contract only; not yet wired to the authoritative Equipment/Crafting 2.0 server/client catalogs, item rolls, shops or actual reward paths.** This PR intentionally stacks on hidden Equipment/Crafting 2.0 PR #1382, not `main`. Both Equipment 2.0 client/server flags remain OFF. No drop odds or purchases are active.
+**Status: hidden, partially implemented.** All **33 coverage + 18 alternate-stat** items are now present in the hidden client and independently pinned server catalogs, with 102 ordinary two-route canonical recipes. The six rare-blueprint items and their trait/drop entitlements are still **design-only**. Existing live shops, chests, rolls and routes are unchanged. This PR intentionally stacks on hidden Equipment/Crafting 2.0 PR #1382, not `main`. Both Equipment 2.0 client/server flags remain OFF. No drop odds or purchases are active.
 
 ## Decision (19 November 2026)
 
@@ -75,11 +75,11 @@ These are **traits proposed for Skills/Combat 2.0**, not implemented executable 
 ## Implementation sequence / release safety
 
 1. **Rebase and reconcile:** hidden #1382 catalog, server-pinned mirrored manifest, class weapon compatibility and latest #1416 chest contracts. Do not overwrite other active branches or live game.
-2. **Introduce 33 ordinary items:** server-owned IDs, two independent material recipe routes, stat profiles, profession/Gold/material/time balance and mobile previews. Preserve existing stable item IDs. Verify each role-slot cell becomes available.
-3. **Introduce 18 distinct alternatives:** create separate item definitions, inspect their actual inherited slot-profile caps, ensure total same-tier base budget parity, and give visually differentiated art.
+2. **33 ordinary items implemented in hidden catalogs (still QA):** server-owned IDs, two independent material recipe routes, stat profiles, profession/Gold/material/time balance and mobile previews. Preserve existing stable item IDs. Verify each role-slot cell and server/client recipe parity in CI.
+3. **18 distinct stat alternatives implemented in hidden catalogs (still QA):** separate item IDs and legal, differently distributed existing stat profiles. Same-tier budget stays unchanged. Artwork remains ungenerated and per-item visuals require approval.
 4. **Introduce 6 rare blueprints last:** separate server-owned drop table and proof, locked recipe entitlement check, anti-duplication, expensive craft route and dormant trait snapshot; do not include them in default unlocked recipes.
 5. **Exclusive reward integration:** correct hidden Party/World source contracts and future Dungeon tables; register actual item IDs and sources in authoritative EQ2 issuer, block all purchases/exchanges/Market, verify cryptographic/SQL claim proof. Roll back entire reward commit on failure.
 6. **Art:** select user's approved **Style 4** hand-painted dark-fantasy, slot pose guide and per-item 192px transparent optimized WebP. Produce assets by **real individual item ID**, not invented 10-piece set atlases. One visual lock across tier variations, with identifiable real source materials.
 7. **Prove release:** exact-head tests, server/client manifest and recipe parity, golden Gear 2.0 copy + gold/XP settlement, market/shops denial, PGlite/PG16 concurrency/rollback, Android small-screen UI, combat and economy simulations. Keep both hidden EQ2 flags OFF until explicit release approval.
 
-**This review PR is a concrete generation/implementation contract, NOT a fully wired 175-item game catalog.** Real template/recipe/trait and event-source integration is deliberately outstanding rather than being claimed prematurely.
+**This is now a hidden 169-item normally craftable catalog, not 175 active items.** Existing 118 + new 51 craftable items = 169; the six rare-blueprint traits stay outside the ordinary catalog, and their server-owned unlock/roll/custody pipeline must be built before 175 could be called implemented. Real event-source and shop hard-deny route integrations, Android art, SQL and staging validation are outstanding.

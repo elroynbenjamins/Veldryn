@@ -190,7 +190,9 @@ export function previewPartyEventHookV59(
  if(effect.kind==='defensive_barrier'&&context.trigger==='low_hp_cross'&&
    Number.isInteger(context.previousHpBps)&&Number.isInteger(context.currentHpBps)&&
    context.previousHpBps!<=10000&&context.currentHpBps!>=0&&
-   context.previousHpBps!>=4000&&context.currentHpBps!<4000){
+   Number.isSafeInteger(effect.hpBelowBps)&&effect.hpBelowBps>=1&&
+   effect.hpBelowBps<=10000&&context.previousHpBps!>=effect.hpBelowBps&&
+   context.currentHpBps!<effect.hpBelowBps){
   spend(effect.internalCooldownMs,effect.durationMs,effect.maxHpBps);
  }
  if(effect.kind==='echo_cooldown'&&context.trigger==='ability_cast'){

@@ -16,7 +16,8 @@ import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
-import {validateSocialEchoCandidates,validateSelectedSocialEchoIds} from '../../apps/mobile/src/core/coop-social-echoes';
+import {validateSelectedSocialEchoIds} from '../../apps/mobile/src/core/coop-social-echoes';
+import {prepareSocialEchoCandidates} from './coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
@@ -61,22 +62,43 @@ export class OnlineQModeRuntime{
   // by start_online_qmode_server_v1. Do not reject a valid player just for background activity.
   if(request.loadoutRevision>record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
   const controller=freeze(record);
+  // The client chooses friend/guild CHARACTERS, not published Echo profiles.
+  // Each selected donor is freshly derived from its server-owned saved game.
+  // This removes the sharing switch and its seven-day opt-in prerequisite.
+  const requestedCharacters=request.preferredEchoProfileIds??[];
+  const publishedSelections:string[]=[];
+  if(requestedCharacters.length){
+   const sources=await prepareSocialEchoCandidates(this.services,accountId,minimum);
+   validateSelectedSocialEchoIds(requestedCharacters,sources.map(source=>source.candidate),record.classId,controller.readiness.role);
+   for(const characterId of requestedCharacters){
+    const source=sources.find(item=>item.candidate.characterId===characterId);
+    if(!source)throw new GameplayError('social_echo_unavailable',409);
+    // Recheck role-readiness at this dungeon's actual sync level.
+    try{freeze(source.record);}
+    catch{throw new GameplayError('social_echo_unavailable',409);}
+    let published:{echoProfileId?:string|null};
+    try{
+     published=await this.services.rpc<{echoProfileId?:string|null}>('publish_online_coop_loadout_server_v1',{
+      p_account_id:source.record.accountId,p_game_version:source.record.revision,
+      p_record:source.record,p_snapshot_hash:onlineCoopLoadoutHash(source.record),
+      p_readiness:source.readiness,p_share_echo:true,
+      p_request_id:'auto-'+digest([accountId,request.requestId,characterId,source.record.revision]).slice(0,58),
+     });
+    }catch{throw new GameplayError('social_echo_unavailable',409);}
+    if(!published?.echoProfileId)throw new GameplayError('social_echo_unavailable',409);
+    publishedSelections.push(published.echoProfileId);
+   }
+  }
+  // Random fallback is restricted by SQL to current friends/guild members;
+  // missing seats use NPCs. Strangers are never published to the controller.
   const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:minimum});
   const profiles:PublishedEcho[]=[];
   for(const echo of raw){
-   // Old or ineligible profiles cannot turn an entire valid donor pool into a failure.
    if(echo.record.accountId!==echo.sourceAccountId)continue;
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:content,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
-  const preferredProfileIds=request.preferredEchoProfileIds??[];
-  if(preferredProfileIds.length){
-   // Fresh server-authorized friendship/guild membership is checked at start;
-   // the Browse list alone is never an authorization token.
-   const candidates=validateSocialEchoCandidates(await this.services.rpc(
-    'coop_social_echo_candidates_server_v1',{p_actor_account_id:accountId,p_min_level:minimum}));
-   validateSelectedSocialEchoIds(preferredProfileIds,candidates,record.classId,controller.readiness.role);
-   if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
-  }
+  const preferredProfileIds=publishedSelections;
+  if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);

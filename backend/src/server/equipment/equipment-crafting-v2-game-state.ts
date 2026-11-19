@@ -2,7 +2,8 @@ import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
 import {levelFromXp,totalXpAtLevel} from '../../../../apps/mobile/src/core/progression';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
-import {verifyEquipmentV2HiddenLedger,proposeEquipmentV2ClaimCustody} from './equipment-crafting-v2-delivery';
+import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
+import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {planEquipmentV2AtomicCommit,type V2AtomicCommitPlan} from './equipment-crafting-v2-commit-plan';
 import {
  type V2DraftCommand,type V2DraftContext,type V2DraftItem,type V2DraftJob,
@@ -23,6 +24,8 @@ export interface V2HiddenGameMetadata{
  items:V2DraftItem[];
  receipts:V2DraftReceipt[];
  skillAwards:V2DraftSkillAward[];
+ /** Optional for older hidden V1 snapshots; no public EQ2 storage is modified. */
+ storageReservations?:V2HiddenStorageReservation[];
 }
 export interface V2HiddenGameInput{
  state:GameState;accountId:string;onlineVersion:number;
@@ -35,14 +38,15 @@ const safe=(x:number)=>Number.isSafeInteger(x)&&x>=0;
 const hidden=(s:GameState):V2HiddenGameMetadata|undefined=>
  (s.account as typeof s.account&{equipmentV2Hidden?:V2HiddenGameMetadata}).equipmentV2Hidden;
 const empty=():V2HiddenGameMetadata=>({
- schemaVersion:'eq2-hidden-game-state-v1',jobs:[],items:[],receipts:[],skillAwards:[],
+ schemaVersion:'eq2-hidden-game-state-v1',jobs:[],items:[],receipts:[],skillAwards:[],storageReservations:[],
 });
 function requireHidden(s:GameState){
  const stored=hidden(s);
  if(!stored)return empty();
  if(stored.schemaVersion!=='eq2-hidden-game-state-v1'||!Array.isArray(stored.jobs)
   ||!Array.isArray(stored.items)||!Array.isArray(stored.receipts)
-  ||!Array.isArray(stored.skillAwards))fail('corrupted_hidden_v2_metadata');
+  ||!Array.isArray(stored.skillAwards)
+  ||(stored.storageReservations!==undefined&&!Array.isArray(stored.storageReservations)))fail('corrupted_hidden_v2_metadata');
  const checked=structuredClone(stored);
  return checked;
 }
@@ -113,6 +117,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   fail('v2_gameplay_not_ready:'+readiness.blockers.join(','));
  const metadata=requireHidden(state);
  verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
+ verifyEquipmentV2StorageReservations(accountId,metadata.items,metadata.storageReservations??[]);
  const previous={...readiness.projection,
   jobs:metadata.jobs,equipment:metadata.items,
   receipts:metadata.receipts,skillAwards:metadata.skillAwards,
@@ -134,18 +139,23 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   next=awardOwner(next,plan.awardedXp.characterId,
    plan.awardedXp.profession,plan.awardedXp.xp);
  }
+ // Reserve *virtual* space for each separate claimed copy so that two
+ // successful claims cannot each promise the same last pouch/Inventory slot.
+ // These receipts are metadata only; nothing is physically delivered.
+ const storageReservations=[...(metadata.storageReservations??[])];
+ const planned=command.kind==='claim'&&plan.createdItem
+  ?reserveEquipmentV2HiddenClaim(next,accountId,plan.createdItem,storageReservations):null;
+ if(planned)storageReservations.push(planned.reservation);
  const updated:V2HiddenGameMetadata={
   schemaVersion:'eq2-hidden-game-state-v1',
   jobs:resolution.next.jobs,items:resolution.next.equipment,
   receipts:resolution.next.receipts,skillAwards:resolution.next.skillAwards,
+  storageReservations,
  };
- next.account={...next.account,equipmentV2Hidden:updated};
  verifyEquipmentV2HiddenLedger(accountId,updated.jobs,updated.items,updated.receipts,updated.skillAwards);
- // A claim always retains its immutable exact copy in the hidden ledger.
- // This proposal ONLY identifies future physical destination/capacity; no
- // EQ2 item is inserted into the public V33 catalogue or its storage.
- const delivery=command.kind==='claim'&&plan.createdItem
-  ?proposeEquipmentV2ClaimCustody(next,accountId,plan.createdItem):null;
+ verifyEquipmentV2StorageReservations(accountId,updated.items,storageReservations);
+ next.account={...next.account,equipmentV2Hidden:updated};
+ const delivery=planned?.delivery??null;
  // CAS is still owned by the existing online gameplay service. Never change
  // GameState.version (schema 6/11) to the server's online sequence number.
  if(next.version!==state.version)fail('game_schema_version_corrupted');

@@ -68,8 +68,8 @@ export function BossV2CounterplayPreview({
      style={[styles.track,{backgroundColor:C.lineStrong}]}>
      <View style={[styles.fill,{
       backgroundColor:C.accent,
-      width:(Math.max(0,Math.min(100,
-       (current.durationMs-current.remainingMs)/current.durationMs*100)))+'%',
+      width:`${Math.max(0,Math.min(100,
+       (current.durationMs-current.remainingMs)/current.durationMs*100))}%` as `${number}%`,
      }]}/>
     </View>
    </View>:null}

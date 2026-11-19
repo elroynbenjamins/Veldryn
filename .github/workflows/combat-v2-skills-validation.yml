@@ -106,6 +106,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
       - name: Validate deterministic Enemy/Boss 2.0 kit composition and six profiles
         run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
+      - name: Validate eight authored Tier 1 archetypes and persisted replays
+        run: node backend/dist/server/combat/v2/__tests__/enemy-t1-intro-kit.js
+      - name: Validate six Boss 2.0 mobile-readable tells, counterplay and legacy replay lock
+        run: node backend/dist/server/combat/v2/__tests__/boss-counterplay-contract.js
       - name: Validate private solo V2 encounter reservation, RPC adapter and replay
         run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
       - name: Validate disabled-by-default solo reward settlement contract

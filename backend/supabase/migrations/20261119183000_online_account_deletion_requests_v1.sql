@@ -19,7 +19,8 @@ revoke all on table private.online_account_deletion_requests_v1 from public, ano
 -- SECURITY DEFINER RPCs below are the only request write surface for players.
 grant select on table private.online_account_deletion_requests_v1 to service_role;
 
--- Never trust a caller-supplied account UUID or session age from the client.
+-- The caller's expected account UUID is only a race guard, never an owner selector.
+-- Trust only auth.uid() and the active Auth session; never accept a session age from the client.
 -- Validate both the signed JWT subject and the still-active Auth session row;
 -- a stale JWT from a revoked session cannot submit or withdraw a request.
 create or replace function public.online_account_deletion_request_guard_v1()
@@ -46,12 +47,13 @@ revoke all on function public.online_account_deletion_request_guard_v1()
 -- A helper reached exclusively through the wrappers below, not callable by a mobile token.
 
 create or replace function public.submit_online_account_deletion_request_v1(
- p_confirmation text,p_request_id uuid
+ p_expected_account_id uuid,p_confirmation text,p_request_id uuid
 ) returns jsonb language plpgsql security definer set search_path=''
 as $function$
 declare v_actor uuid;v_row private.online_account_deletion_requests_v1;
 begin
  v_actor:=public.online_account_deletion_request_guard_v1();
+ if p_expected_account_id is distinct from v_actor then raise exception 'ACCOUNT_CHANGED';end if;
  if p_confirmation is distinct from 'DELETE ACCOUNT' or p_request_id is null
  then raise exception 'INVALID_DELETION_CONFIRMATION';end if;
  insert into private.online_account_deletion_requests_v1 as current_request
@@ -81,16 +83,17 @@ begin
   'erasureCompleted',false);
 end;
 $function$;
-revoke all on function public.submit_online_account_deletion_request_v1(text,uuid)
+revoke all on function public.submit_online_account_deletion_request_v1(uuid,text,uuid)
  from public,anon,authenticated;
-grant execute on function public.submit_online_account_deletion_request_v1(text,uuid) to authenticated;
+grant execute on function public.submit_online_account_deletion_request_v1(uuid,text,uuid) to authenticated;
 
-create or replace function public.online_account_deletion_request_status_v1()
+create or replace function public.online_account_deletion_request_status_v1(p_expected_account_id uuid)
 returns jsonb language plpgsql stable security definer set search_path=''
 as $function$
 declare v_actor uuid;v_row private.online_account_deletion_requests_v1;
 begin
  v_actor:=public.online_account_deletion_request_guard_v1();
+ if p_expected_account_id is distinct from v_actor then raise exception 'ACCOUNT_CHANGED';end if;
  select * into v_row from private.online_account_deletion_requests_v1
  where account_id=v_actor;
  if not found then return '{"status":"none","erasureCompleted":false}'::jsonb;end if;
@@ -100,17 +103,18 @@ begin
   'erasureCompleted',false);
 end;
 $function$;
-revoke all on function public.online_account_deletion_request_status_v1()
+revoke all on function public.online_account_deletion_request_status_v1(uuid)
  from public,anon,authenticated;
-grant execute on function public.online_account_deletion_request_status_v1() to authenticated;
+grant execute on function public.online_account_deletion_request_status_v1(uuid) to authenticated;
 
 create or replace function public.cancel_online_account_deletion_request_v1(
- p_confirmation text
+ p_expected_account_id uuid,p_confirmation text
 ) returns jsonb language plpgsql security definer set search_path=''
 as $function$
 declare v_actor uuid;v_row private.online_account_deletion_requests_v1;
 begin
  v_actor:=public.online_account_deletion_request_guard_v1();
+ if p_expected_account_id is distinct from v_actor then raise exception 'ACCOUNT_CHANGED';end if;
  if p_confirmation is distinct from 'KEEP ACCOUNT' then
   raise exception 'INVALID_CANCELLATION_CONFIRMATION';end if;
  update private.online_account_deletion_requests_v1
@@ -126,7 +130,7 @@ begin
    'erasureCompleted',false);
 end;
 $function$;
-revoke all on function public.cancel_online_account_deletion_request_v1(text)
+revoke all on function public.cancel_online_account_deletion_request_v1(uuid,text)
  from public,anon,authenticated;
-grant execute on function public.cancel_online_account_deletion_request_v1(text) to authenticated;
+grant execute on function public.cancel_online_account_deletion_request_v1(uuid,text) to authenticated;
 commit;

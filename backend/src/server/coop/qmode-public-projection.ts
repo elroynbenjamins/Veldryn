@@ -6,6 +6,7 @@ import {expeditionBossTelegraph,expeditionEncounterPreview} from '../combat/expe
 import {roomBoonOffers,type RoomBoonOffer} from './room-boon-choices';
 import {dungeonContractProgress,type DungeonContractProgress} from './dungeon-contracts';
 import {DUNGEON_ARTIFACTS,isDungeonArtifact} from './dungeon-artifacts';
+import {ROOM_BOON_CHOICES} from './room-boon-choices';
 import {availableDungeonCombatMarks,projectedDungeonCombatMarks,DUNGEON_COMBAT_MARKS_CAP} from './dungeon-combat-marks-cap';
 
 // Static encounter intel is determined solely by the content ID; do not
@@ -23,7 +24,8 @@ export function publicCoopRoomOutcome(nodeId:string|undefined,summary:Record<str
  const count=(key:string)=>typeof summary[key]==='number'&&Number.isFinite(summary[key])?Math.max(0,summary[key] as number):0;
  const delta=typeof summary.resourcesDelta==='number'&&Number.isFinite(summary.resourcesDelta)?summary.resourcesDelta:0;
  return {nodeId,kind,resourcesDelta:delta,healedHp:count('healedHp'),damagedHp:count('damagedHp'),revivedCount:count('revivedCount'),boonCount:count('boonCount'),artifactCount:count('artifactCount'),curseCount:count('curseCount'),...(kind==='merchant_purchase'&&typeof summary.offerKind==='string'?{offerKind:summary.offerKind}: {}),
-  ...(typeof summary.artifactId==='string'&&isDungeonArtifact(summary.artifactId)?{artifactName:DUNGEON_ARTIFACTS[summary.artifactId].name}:{})};
+  ...(typeof summary.artifactId==='string'&&isDungeonArtifact(summary.artifactId)?{artifactName:DUNGEON_ARTIFACTS[summary.artifactId].name}:{}),
+  ...(typeof summary.boonId==='string'&&ROOM_BOON_CHOICES.some(boon=>boon.id===summary.boonId)?{boonName:ROOM_BOON_CHOICES.find(boon=>boon.id===summary.boonId)!.name}:{})};
 }
 
 
@@ -38,6 +40,7 @@ export interface PublicQModeRunProjection {
   lastRoomOutcome?:ReturnType<typeof publicCoopRoomOutcome>;
   lastCombatMarks?:number;combatMarksEarned?:number;combatMarksCap?:number;
   boonOffers?:RoomBoonOffer[];contracts?:DungeonContractProgress[];
+  runBuild?:{boons:Array<{id:string;name:string;description:string;stacks:number}>;artifacts:Array<{id:string;name:string;description:string;stacks:number}>};
   potionChargeCapacity?:number;healingPotionUsesByActor?:Record<string,number>;
   potionPreparationOpen?:boolean;preparedAlchemyPotionIdsByActor?:Record<string,string>;
 }
@@ -57,6 +60,10 @@ export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode',serverS
   const options=run.phase==='awaiting_choice'?current.nextNodeIds.filter(id=>visible.has(id)).map(id=>graph.nodes.find(node=>node.nodeId===id)!).filter(Boolean).map(node=>({...node,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:cachedEncounterPreview(node.contentId)}:{})})):[];
   const lastRoomOutcome=publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary);
   const boonOffers=mode==='qmode'&&serverSecret?roomBoonOffers(run,serverSecret):[];
+  const runBuild=run.enduranceRouteVersion===1?{
+   boons:ROOM_BOON_CHOICES.filter(choice=>run.persistentState.boons.includes(choice.id)).map(choice=>({id:choice.id,name:choice.name,description:choice.description,stacks:run.persistentState.boons.filter(id=>id===choice.id).length})),
+   artifacts:(Object.entries(DUNGEON_ARTIFACTS) as Array<[keyof typeof DUNGEON_ARTIFACTS,(typeof DUNGEON_ARTIFACTS)[keyof typeof DUNGEON_ARTIFACTS]]>).filter(([id])=>run.persistentState.artifacts.includes(id)).map(([id,definition])=>({id,name:definition.name,description:definition.description,stacks:run.persistentState.artifacts.filter(item=>item===id).length})),
+  }:undefined;
   const resolvedNode=run.graph.nodes.find(node=>node.nodeId===run.lastResolution?.nodeId);
   const visitedCombatKinds=run.persistentState.visitedNodeIds
    .filter(id=>run.lastResolution?.result.success!==false||id!==run.lastResolution?.nodeId)
@@ -69,5 +76,5 @@ export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode',serverS
   const lastCombatMarks=lastCombatBase&&run.lastResolution?.result.success
    ?cappedRun?availableDungeonCombatMarks(previouslyEarned,lastCombatBase):lastCombatBase==='elite'?5:3:undefined;
   const team=run.players.map((player,index):PublicQModeMember=>{const state=run.persistentState.actors[player.id];if(!state)throw new Error('missing_qmode_actor_state');const companionId=(player.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(player.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:player.id,displayName:player.name,role:player.role as CoopRole,classId:player.classId??'',bodyPresentation,companionId,kind:index===0?'controller':run.npcCharacterIds?.includes(player.id)?'npc':'echo',effectiveLevel:player.level,currentHp:state.hp,maximumHp:player.stats.maxHp,downed:state.downed};});
-  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,potionChargeCapacity:([3,3,4,4,5] as const)[run.tier-1],healingPotionUsesByActor:run.persistentState.healingPotionUsesByActor??{},potionPreparationOpen:run.phase==='awaiting_choice'&&!run.persistentState.visitedNodeIds.length,preparedAlchemyPotionIdsByActor:run.persistentState.preparedAlchemyPotionIdsByActor??{},...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),...(boonOffers.length?{boonOffers}:{}),...(run.enduranceRouteVersion===1?{contracts:dungeonContractProgress(run)}:{}),...(lastRoomOutcome?{lastRoomOutcome}:{}),...(lastCombatMarks?{lastCombatMarks}:{}),...(cappedRun?{combatMarksEarned,combatMarksCap:DUNGEON_COMBAT_MARKS_CAP}:{}),settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
+  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,potionChargeCapacity:([3,3,4,4,5] as const)[run.tier-1],healingPotionUsesByActor:run.persistentState.healingPotionUsesByActor??{},potionPreparationOpen:run.phase==='awaiting_choice'&&!run.persistentState.visitedNodeIds.length,preparedAlchemyPotionIdsByActor:run.persistentState.preparedAlchemyPotionIdsByActor??{},...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),...(boonOffers.length?{boonOffers}:{}),...(run.enduranceRouteVersion===1?{contracts:dungeonContractProgress(run),runBuild}:{}),...(lastRoomOutcome?{lastRoomOutcome}:{}),...(lastCombatMarks?{lastCombatMarks}:{}),...(cappedRun?{combatMarksEarned,combatMarksCap:DUNGEON_COMBAT_MARKS_CAP}:{}),settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
 }

@@ -38,6 +38,13 @@ const npcOnly=new QModeService(new MemoryQModeRunRepository(),'npc-test').create
  controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,
  contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles:[],npcSnapshots:npcKits});
 assert.equal(npcOnly.npcCharacterIds?.length,3);
+const extendedSolo=new QModeService(new MemoryQModeRunRepository(),'npc-test').create({
+ requestId:'extended-test-request',runId:'extended-npc-run',controllerAccountId:'controller',
+ controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,
+ contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles:[],npcSnapshots:npcKits,runLength:'extended'});
+assert.equal(extendedSolo.graph.preBossNodeCount,14);
+assert.equal(extendedSolo.graph.nodes.find(node=>node.kind==='boss')?.depth,15);
+assert.equal(npcOnly.graph.preBossNodeCount,5,'Standard Solo stays six floors total');
 assert.equal(npcOnly.qmodePressureVersion,1,'NPC fallback receives same combat difficulty as real Echo recruits');
 assert.equal(npcOnly.echoSourceAccountIds.length,0);
 assert.deepEqual(projectQModeRun(npcOnly).team.map(member=>member.kind),['controller','npc','npc','npc']);

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 1,
-  "styleLock": "veldryn-eq2-icon-v1",
+  "schemaVersion": 2,
+  "styleLock": "veldryn-eq2-storybook-v1",
   "generatedOn": "2026-11-19",
   "releaseStatus": "not_enabled",
-  "description": "Art-production queue scaffold only. Item IDs and counts must be regenerated from synchronized authoritative 2.0 contracts. Empty items means zero artwork completed, not zero required.",
+  "description": "Style 4 painterly dark-fantasy storybook direction approved 2026-11-19. Production visual masters and canonical 2.0 item inventory remain unapproved/unverified; artwork queue still empty.",
   "technical": {
     "cellPx": [
       192,
@@ -33,9 +33,13 @@
     "runtimeFormat": "webp",
     "masterFormat": "png",
     "light": "upper-left-10oclock",
-    "camera": "front-three-quarter-viewer-right",
-    "renderer": "rough-pixel-cluster",
-    "maxAtlasKiBTarget": 250
+    "camera": "slot-specific-product-three-quarter",
+    "renderer": "storybook-hand-painted-dark-fantasy",
+    "maxAtlasKiBTarget": 250,
+    "poseLockPath": "docs/art/equipment-2-0-pose-lock.json",
+    "resampling": "lanczos",
+    "weaponFamilyPoseRequired": true,
+    "offhandFamilyPoseRequired": true
   },
   "sourceBuckets": [
     {
@@ -106,8 +110,8 @@
     "resourceIconPaths": [],
     "distinctiveSilhouette": null,
     "light": "upper-left-10oclock",
-    "camera": "front-three-quarter-viewer-right",
-    "styleLock": "veldryn-eq2-icon-v1",
+    "camera": "slot-specific-product-three-quarter",
+    "styleLock": "veldryn-eq2-storybook-v1",
     "materialPlan": null,
     "tierUpgradeDelta": null,
     "candidateMasterPath": null,
@@ -118,37 +122,55 @@
     "deviceQa": null,
     "reviewer": null,
     "evidence": [],
-    "referenceKitId": "veldryn-eq2-refkit-v1",
+    "referenceKitId": "veldryn-eq2-refkit-style4-v1",
     "styleReferencePath": null,
     "sourceReferenceSha256": null,
     "modelName": null,
     "modelVersion": null,
-    "promptVersion": "veldryn-eq2-generation-v1",
+    "promptVersion": "veldryn-eq2-generation-style4-v1",
     "referenceHashes": {},
     "seed": null,
     "outputColorSpace": "sRGB",
-    "pixelClusterVisualCheck": null,
     "slotCompositionVisualCheck": null,
     "lightingVisualCheck": null,
     "materialFidelityVisualCheck": null,
     "peerComparisonVisualCheck": null,
     "largeAndSmallSizePreviews": [],
-    "artistApprovedAt": null
+    "artistApprovedAt": null,
+    "weaponFamily": null,
+    "offhandFamily": null,
+    "poseId": null,
+    "poseGuideVersion": "2026-11-19-style4-v1",
+    "poseVisualCheck": null,
+    "viewFacingVisualCheck": null,
+    "renderer": "storybook-hand-painted-dark-fantasy",
+    "painterlyStyleVisualCheck": null
   },
   "items": [],
   "referenceKit": {
-    "id": "veldryn-eq2-refkit-v1",
+    "id": "veldryn-eq2-refkit-style4-v1",
     "status": "not_approved",
     "approvedBy": null,
     "approvedAt": null,
     "referenceAssets": [],
-    "notes": "Approve actual current runtime/class/slot/style reference crops, record SHA256 + crop coordinates, before marking any item brief_ready."
+    "notes": "New Style 4 direction is approved, but selected concept still needs archival, SHA256, and cropped single-slot Style 4 reference masters. Do not reuse rough-pixel references as style authorities."
   },
   "promptLock": {
-    "id": "veldryn-eq2-generation-v1",
+    "id": "veldryn-eq2-generation-style4-v1",
     "status": "draft",
     "immutableStyleSource": "docs/art/EQUIPMENT_2_0_ICON_STANDARD.md",
     "procedureSource": "docs/art/EQUIPMENT_2_0_GENERATION_PLAYBOOK.md",
-    "approvedAt": null
+    "approvedAt": null,
+    "poseSource": "docs/art/EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md",
+    "poseManifest": "docs/art/equipment-2-0-pose-lock.json"
+  },
+  "visualDirection": {
+    "status": "approved",
+    "selectedStyle": "Style 4 — grounded dark-fantasy storybook painterly inventory equipment",
+    "selectedOn": "2026-11-19",
+    "conceptAssetLocation": "project-conversation-fourth-example",
+    "conceptAssetHash": null,
+    "assetArchiveStatus": "not_archived",
+    "note": "Selected concept establishes look, but exact sample image still needs to be archived and hashed; checkerboard is mock presentation and must never be treated as transparency."
   }
 }

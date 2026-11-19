@@ -1,4 +1,12 @@
 import { strict as assert } from 'node:assert';
+/** Compatible with the repository's narrow node:assert ambient declaration. */
+async function expectRejected(promise:Promise<unknown>,expected:RegExp):Promise<void>{
+ let failed:unknown=null;
+ try{await promise;}catch(error){failed=error;}
+ assert.ok(failed!==null&&expected.test(String(failed)),
+  'expected rejection '+expected);
+}
+
 import { deriveRegionalCrisisScale, evaluateRegionalCrisis, REGIONAL_CRISIS_TEMPLATE_POOL, scoreRegionalCrisisContribution } from './regional-crises';
 import { applyWorldBossDamage, canStartScoredBossAttempt, computeWorldBossImpact, deriveWorldBossScale, phaseForHp, WORLD_BOSS_TEMPLATE_POOL } from './world-bosses';
 
@@ -109,8 +117,8 @@ void (async()=>{
   // Admin commands reject blank ids and unaudited destructive actions.
   const calls:string[]=[];
   const deps={cancelCrisis:async(id:string)=>calls.push('cc:'+id),recalculateCrisis:async(id:string)=>calls.push('rc:'+id),cancelWorldBoss:async(id:string)=>calls.push('cb:'+id),recalculateWorldBossHp:async(id:string)=>calls.push('rb:'+id),repairWorldBossAttempt:async(id:string)=>calls.push('ra:'+id),finalizeWorldBoss:async(id:string)=>calls.push('fb:'+id)};
-  await assert.rejects(executeSharedWorldAdminCommand(deps,'shared_world.crisis_recalculate',{},''),/instance_id_required/);
-  await assert.rejects(executeSharedWorldAdminCommand(deps,'shared_world.world_boss_cancel',{instanceId:'b1'},'  '),/reason_required/);
+  await expectRejected(executeSharedWorldAdminCommand(deps,'shared_world.crisis_recalculate',{},''),/instance_id_required/);
+  await expectRejected(executeSharedWorldAdminCommand(deps,'shared_world.world_boss_cancel',{instanceId:'b1'},'  '),/reason_required/);
   await executeSharedWorldAdminCommand(deps,'shared_world.world_boss_repair_attempt',{encounterId:' e1 '},'stuck reservation');
   await executeSharedWorldAdminCommand(deps,'shared_world.crisis_recalculate',{instanceId:'c1'},'');
   assert.deepEqual(calls,['ra:e1','rc:c1']);
@@ -132,7 +140,7 @@ void (async()=>{
 
   // Settlement fails fast once the reservation has expired.
   const reservation={encounterId:'e',instanceId:'b',accountId:'a',characterId:'c',dateKey:'2026-09-14',echoOnly:false,phaseId:'phase_1',expiresAtMs:100};
-  await assert.rejects(settleWorldBossAttempt({store:{loadAttempt:async()=>reservation} as never},{encounterId:'e',accountId:'a',nowMs:101,combatResult:{encounterId:'e',accountId:'a',characterId:'c',roleProfile:'damage',durationSeconds:90,directDamage:1,damagePrevented:0,effectiveHealing:0,utilityUptimeSeconds:0,survived:true,defeatedPlayer:false}}),/world_boss_attempt_expired/);
+  await expectRejected(settleWorldBossAttempt({store:{loadAttempt:async()=>reservation} as never},{encounterId:'e',accountId:'a',nowMs:101,combatResult:{encounterId:'e',accountId:'a',characterId:'c',roleProfile:'damage',durationSeconds:90,directDamage:1,damagePrevented:0,effectiveHealing:0,utilityUptimeSeconds:0,survived:true,defeatedPlayer:false}}),/world_boss_attempt_expired/);
 
   console.log('v19 shared-world refinement tests passed');
 })().catch(error=>{console.error(error);process.exit(1);});

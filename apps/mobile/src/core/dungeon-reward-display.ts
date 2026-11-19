@@ -66,8 +66,10 @@ export function parseDungeonCombatMarks(value:unknown):DungeonCombatMarks|undefi
   if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
   const row=value as Record<string,unknown>;
   const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite),partial=row.partial===undefined?0:safeMarks(row.partial);
-  if(total===undefined||normal===undefined||elite===undefined||partial===undefined||total!==normal*3+elite*5+partial||total>25||row.cap!==undefined&&row.cap!==25)return undefined;
-  return {total,normal,elite,partial,cap:25};
+  const capped=row.cap===25;
+  // Legacy runs may have paid more than 25 before Endurance existed.
+  if(total===undefined||normal===undefined||elite===undefined||partial===undefined||total!==normal*3+elite*5+partial||(capped&&total>25)||(row.cap!==undefined&&row.cap!==null&&!capped))return undefined;
+  return {total,normal,elite,partial,...(capped?{cap:25}:{})};
 }
 
 export function dungeonRunMarksBreakdown(

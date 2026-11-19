@@ -569,7 +569,7 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
     const eta=etaById.get(job.id)??job;
     const durationSeconds=Math.ceil(jobDurationMs(eta)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
-    return {...job,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
+    return {...job,startedAtMs:eta.startedAtMs,completesAtMs:eta.completesAtMs,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
       ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((eta.completesAtMs-nowMs)/1000)),
       startInSeconds:waiting?Math.max(1,Math.ceil((eta.startedAtMs-nowMs)/1000)):0,
       waitingPosition:waiting?waitingIds.indexOf(job.id)+1:0};

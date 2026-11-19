@@ -6,10 +6,10 @@ import {assertEquipmentCraftingV2Released} from '../equipment-crafting-v2-gate';
 import {resolveEquipmentV2DraftCommand,runEquipmentV2Command,V2DraftCraftError,
  type V2DraftContext,type V2DraftSnapshot} from '../equipment-crafting-v2-transaction';
 
-assert.equal(V2_SERVER_PIECES.length,118,'Server only knows canonical 118 hidden item templates');
-assert.equal(V2_SERVER_RECIPES.length,236,'Two canonical recipes per hidden item');
-assert.equal(new Set(V2_SERVER_PIECES.map(x=>x.id)).size,118);
-assert.equal(new Set(V2_SERVER_RECIPES.map(x=>x.id)).size,236);
+assert.equal(V2_SERVER_PIECES.length,169,'Server only knows canonical 169 normal hidden item templates');
+assert.equal(V2_SERVER_RECIPES.length,338,'Two canonical recipes per hidden item');
+assert.equal(new Set(V2_SERVER_PIECES.map(x=>x.id)).size,169);
+assert.equal(new Set(V2_SERVER_RECIPES.map(x=>x.id)).size,338);
 for(const recipe of V2_SERVER_RECIPES){
  const source=v2ServerRecipeAndPiece(recipe.id);
  assert.ok(source,'All recipes must reference server-owned equipment');

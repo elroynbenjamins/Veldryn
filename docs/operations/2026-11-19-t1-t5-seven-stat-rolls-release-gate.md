@@ -29,8 +29,16 @@ Expected mapping of each newly mintable stat in the legacy 1.0.11 engine:
 
 New regression assertions on exact-copy T1 gloves for all seven stats target solo, story-boss and frozen co-op snapshots; they must actually **run green** on the approved integration head. Old v4 Healing Power co-op regression remains a *legacy receipt* test, not a newly minted stat.
 
+## Consolidation checkpoint (19 November 2026)
+- [x] Child T1 / 7-stat PR #1433 was fast-forwarded into parent stat-roll integration #1404 and GitHub marks the child merged.
+- [x] Integration #1404 merged the latest `main` commit `72ad4d5`. Post-merge GitHub comparison: **0 commits behind main**.
+- [x] The temporary source-to-Edge regeneration workflow was repaired to respond to actual T1–T5/engine/related source updates on the integration branch, not only changes to its own YAML.
+- [ ] New [temporary Edge rebuild run](https://github.com/elroynbenjamins/Veldryn/actions/runs/44502025465) was observed as **pending, with zero jobs executed**. This is **not** a verified pass. CI runner/approval blockage remains unresolved.
+- [ ] Both generated Edge bundles must be committed by a genuinely successful run before the temporary workflow is removed and any release merge considered.
+- [ ] `main` has not received stat-roll commits; production release gate and Supabase functions remain unchanged.
+
 ## Integration and operational blockers
-1. Reconcile #1404 with **latest main**, then include the child feature branch. Do not overwrite other in-flight Equipment 2.0/Classes/Enemies feature branches.
+1. **Completed source consolidation:** #1433 is merged into #1404; #1404 is rebased via a merge commit onto the latest main (0 behind). Re-compare if main advances before go/no-go. Preserve all other in-flight 2.0 branches.
 2. GitHub Actions previously returned `action_required` with **zero jobs executed** for required workflows; retry endpoint returned 403. Resolve repository Actions approval/policy in GitHub and obtain exact-head green checks. Do not count a blocked, queued or skipped run as a pass.
 3. Build **both** canonical gameplay and coop Edge bundles from the final combined code. Verify byte-for-byte provenance; remove temporary edge generation workflow after verified regeneration.
 4. Run full mobile TypeScript, Mobile Core (including weapon/equipment/retention tests), Unique Equipment, Mobile UX, Gem/Dungeon, combat, release fences, generated Edge parity and Android native CI.

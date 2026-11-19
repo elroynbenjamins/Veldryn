@@ -1,6 +1,6 @@
 # Player Market V17 — account-wide trading, bulk resource fills and seven-day expiry
 
-**Status: HIDDEN BACKEND / RELEASE BLOCKED.** Implemented on a development branch; tested against staging with a transaction-scoped, **ROLLBACK-only** synthetic fixture. Not enabled for players, and not an authorization to change any runtime or item-policy gates.
+**Status: HIDDEN BACKEND / RELEASE BLOCKED.** Implemented on a development branch; **V17 and V17b installed in staging only**, with transaction-scoped, **ROLLBACK-only** synthetic regressions passing. Neither migration is deployed to production. Not enabled for players, and not an authorization to change any runtime or item-policy gates.
 
 ## Agreed behavior
 
@@ -21,23 +21,24 @@
 
 ### Seven-day expiry and safe returns
 - Existing V2 hold `expires_at` has a **seven-day** default. V5 publishes only unexpired holds; browse hides expired offers.
-- The existing private `market_queue_due_returns_v2` routine serializes offer closure and queues a durable, unique return entitlement. A later `market_claim_return_delivery_v3` claim checks inventory/bank capacity, supports inactive-character storage ownership, and leaves the entitlement pending if the target is full.
+- The new private `market_queue_due_returns_v17` dispatches both resource/gem lots and exact Forge equipment to their separate safe cancellation/return paths. The older `market_queue_due_returns_v2` remains for compatibility. Both create durable, unique return entitlements. A later `market_claim_return_delivery_v3` claim checks inventory/bank capacity, supports inactive-character storage ownership, and leaves the entitlement pending if the target is full.
 - After partial fills, only the unsold remainder of the original held stack is returned on cancellation or expiry. Sold child holds cannot expire back to the seller. Expiry is idempotent; returned items are not silently discarded.
-- **Operational dependency:** the expiry routine is deliberately **not scheduled on production** while the market release gate is locked off. At actual launch the trusted server must run expiry batches periodically, monitor pending claims and alert on worker failures. The UI must not imply expired inventory was credited before the owner claims it.
+- **Operational dependency:** the V17 expiry dispatcher is deliberately **not scheduled on production** while the market release gate is locked off. At actual launch the trusted server must run expiry batches periodically, monitor pending claims and alert on worker failures. The UI must not imply expired inventory was credited before the owner claims it.
 
 ## Verified synthetic scenarios
 - A seller account with two characters creates one account-owned bulk listing. Self-buying with the same account fails.
 - Purchase 100 / 300 / 100 from a 500-resource listing; initial offer shows 400 then 100 then closes, with three genuine completed-sale rows.
 - An idempotent repeated 100-unit request returns the original receipt; a conflicting 101-unit reuse is rejected.
 - After a 100/200 purchase, cancellation returns **only 100 unsold units**.
-- A separate expired offer generates exactly one pending return; retrying the expiry worker generates none.
+- A separate expired resource offer generates exactly one pending return; retrying the expiry worker generates none.
+- An expired exact equipment offer closes once, leaves its full Forge receipt unchanged in a pending return delivery, and does not move Gold or generate a fake sale.
 - Across the fixture, **800 units** are conserved: 600 purchased and 200 queued for return. Gold remains exact: 6,000 debited, 5,700 credited to seller, 300 burned in 5% tax.
 - No synthetic accounts, item policies, offers, sales or releases survive the SQL test transaction.
 
 ## Remaining launch blockers
 - Bind the future authenticated Edge gateway's `buy` operation to V17 partial fills (account ID must come from verified Auth, never request JSON).
 - Implement and mount the market search/list/sell/buy UI and quantity selection; complete Android small-screen/accessibility QA.
-- Deploy and verify the migration in **staging**; run the full disposable PG17 suite and reconcile Supabase migration history.
-- Add trusted expiry worker scheduling, monitoring, replay/race tests and production recovery runbook as part of the explicit market launch plan.
+- **Staging migration and rollback test: PASS.** Still run the complete disposable PG17 suite in CI and reconcile Supabase's generated migration-history versions against GitHub filenames before any eventual automated deployment.
+- Add trusted V17 expiry worker scheduling, monitoring, replay/race tests and production recovery runbook as part of the explicit market launch plan.
 - Complete manual tradability/price approvals, anti-abuse controls, cohort rollout and all other V12 launch-readiness gates.
 - **Never** flip `PLAYER_MARKET_RELEASED`, `MARKET_EDGE_TRANSPORT_RELEASED`, `trading_enabled`, `snapshot_bridge_ready` or item `tradable` simply because V17 tests pass.

@@ -84,6 +84,10 @@ assert.equal(replay.projectBossV2Replay(preview,[...start,
  {atMs:2000,type:'death',actorId:preview.bossId}],2300).currentCast,null);
 const invalid=[
  [{...preview,bossId:'UNKNOWN_BOSS'},start],
+ [{...preview,bossId:'__proto__'},start],
+ [{...preview,bossId:'constructor'},start],
+ [{...preview,casts:[null]},start],
+ [{...preview,phases:[null,preview.phases[1]]},start],
  [{...preview,casts:[cast('SOLAR_V2_SUNFALL',1200,true)]},start],
  [{...preview,casts:[cast('SOLAR_V2_SUNFALL',1800,false)]},start],
  [{...preview,casts:[cast('BELLBEAST_V2_SHATTER',2000,true)]},start],

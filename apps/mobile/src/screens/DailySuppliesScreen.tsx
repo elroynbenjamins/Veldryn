@@ -9,6 +9,7 @@ import {GameButton} from '../components/GameButton';
 import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
 import {StatusPill} from '../components/StatusPill';
 import {UiIcon} from '../components/UiIcon';
+import {SupplyJourneyGlyph} from '../components/SupplyJourneyGlyph';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -74,7 +75,7 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
    </Panel>
    <Panel accentColor={milestone?C.special:C.selectionLine} accentSurface={milestone?C.specialSurface:undefined} style={s.rewardPanel}>
     <View style={s.between}><Text style={s.kicker}>{a('DAY {day} REWARD',{day:selectedDay})}</Text><StatusPill label={isClaimed?a('COLLECTED'):isToday?a('AVAILABLE'):a('PREVIEW')} tone={isClaimed?'muted':isToday?'good':'info'}/></View>
-    <View style={s.rewardRow}><View style={[s.rewardGlyph,milestone&&s.rewardGlyphSpecial]}><Text style={s.glyphText}>{milestone?'◆':ICONS[reward.type]}</Text></View><View style={s.flex}><Text style={s.rewardName}>{milestone?a('Supply Blessing'):a(dailySupplyBoostLabel(reward.type))}</Text><Text style={s.rewardAmount}>{dailySupplyBonusText(reward.bonus)} · {durationHours(reward.seconds)}</Text><Text style={s.meta}>{milestone?a('Choose one enhanced buff to store'):a('Stored until activated · time drains only during eligible activity')}</Text></View></View>
+    <View style={s.rewardRow}><View style={[s.rewardGlyph,milestone&&s.rewardGlyphSpecial]}><SupplyJourneyGlyph kind={milestone?'milestone':reward.type} size={46}/></View><View style={s.flex}><Text style={s.rewardName}>{milestone?a('Supply Blessing'):a(dailySupplyBoostLabel(reward.type))}</Text><Text style={s.rewardAmount}>{dailySupplyBonusText(reward.bonus)} · {durationHours(reward.seconds)}</Text><Text style={s.meta}>{milestone?a('Choose one enhanced buff to store'):a('Stored until activated · time drains only during eligible activity')}</Text></View></View>
     {milestone&&isToday?<View style={s.blessingBox}><Text style={s.label}>{a('CHOOSE YOUR BLESSING')}</Text><View style={s.choices}>{DAILY_SUPPLY_BOOST_TYPES.map(type=><Pressable key={type} accessibilityRole="radio" accessibilityState={{selected:blessing===type}} disabled={busy} onPress={()=>setBlessing(type)} style={[s.choice,blessing===type&&s.choiceSelected]}><Text style={[s.choiceText,blessing===type&&s.choiceTextSelected]}>{ICONS[type]} {a(dailySupplyBoostLabel(type))}</Text></Pressable>)}</View></View>:null}
     {isToday?<GameButton title={milestone?a('Claim Supply Blessing'):a('Claim Today’s Supply')} disabled={busy} loading={busy} onPress={()=>run({type:'daily_supplies_claim',args:{characterId:state.character!.id,...(todayReward.kind==='milestone'?{choiceType:blessing}:{})}},a('Reward banked account-wide.'))}/>:isClaimed?<GameButton title={a('Reward Collected')} disabled onPress={()=>{}}/>:<GameButton tone="secondary" title={a('View Current Claim')} onPress={resetToday}/>}
    </Panel>
@@ -88,7 +89,7 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
    {DAILY_SUPPLY_BOOST_TYPES.map(type=>{
     const current=active[type],charges=bank[type]??[],queuedCount=queued[type]?.length??0;
     const best=charges.reduce((top,entry)=>Math.max(top,entry.bonus),0);
-    return <Panel key={type}><View style={s.vaultRow}><View style={s.boostGlyph}><Text style={s.boostGlyphText}>{ICONS[type]}</Text></View><View style={s.flex}><Text style={s.boostName}>{a(dailySupplyBoostLabel(type))}</Text><Text style={s.meta}>{current?dailySupplyBonusText(current.bonus)+' · '+accountDuration(language,current.remainingSeconds)+' '+a('left'):a('No active boost')}</Text><Text style={s.meta}>{charges.length} {a('saved')}{queuedCount?' · '+queuedCount+' '+a('queued'):''}{best?' · '+a('best')+' '+dailySupplyBonusText(best):''}</Text></View></View>
+    return <Panel key={type}><View style={s.vaultRow}><View style={s.boostGlyph}><SupplyJourneyGlyph kind={type} size={32}/></View><View style={s.flex}><Text style={s.boostName}>{a(dailySupplyBoostLabel(type))}</Text><Text style={s.meta}>{current?dailySupplyBonusText(current.bonus)+' · '+accountDuration(language,current.remainingSeconds)+' '+a('left'):a('No active boost')}</Text><Text style={s.meta}>{charges.length} {a('saved')}{queuedCount?' · '+queuedCount+' '+a('queued'):''}{best?' · '+a('best')+' '+dailySupplyBonusText(best):''}</Text></View></View>
      <GameButton compact tone="secondary" selected={!!current} disabled={busy||charges.length===0} title={charges.length?a('Activate strongest saved')+(current?' / queue':''):a('No saved boosts')} onPress={()=>run({type:'daily_supplies_activate',args:{type}},a(dailySupplyBoostLabel(type))+' '+a('activated or queued.'))}/>
     </Panel>;
    })}
@@ -125,7 +126,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  rewardPanel:{gap:12},rewardRow:{flexDirection:'row',alignItems:'center',gap:12},
  rewardGlyph:{width:66,height:66,borderWidth:2,borderColor:C.selectionLine,borderRadius:8,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
  rewardGlyphSpecial:{backgroundColor:C.specialSurface,borderColor:C.special},
- glyphText:{fontSize:34,fontWeight:'900',color:C.accent},rewardName:{...typography.title,color:C.text},rewardAmount:{...typography.bodyStrong,color:C.good},
+ rewardName:{...typography.title,color:C.text},rewardAmount:{...typography.bodyStrong,color:C.good},
  blessingBox:{gap:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:7},
  choice:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:7,paddingHorizontal:12,paddingVertical:10,backgroundColor:C.panel2,justifyContent:'center'},
  choiceSelected:{borderColor:C.special,backgroundColor:C.specialSurface},choiceText:{...typography.caption,color:C.muted,fontWeight:'700'},choiceTextSelected:{color:C.text},
@@ -133,7 +134,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  milestoneDone:{borderColor:C.good,backgroundColor:C.goodSurface},milestoneGlyph:{fontSize:19,color:C.special},milestoneLabel:{fontSize:10,fontWeight:'900',color:C.text},
  milestoneAmount:{fontSize:14,fontWeight:'900',color:C.text},milestoneDuration:{...typography.caption,color:C.muted},
  vaultRow:{flexDirection:'row',alignItems:'center',gap:12},boostGlyph:{width:46,height:46,borderWidth:1,borderColor:C.lineStrong,borderRadius:7,backgroundColor:C.panel2,justifyContent:'center',alignItems:'center'},
- boostGlyphText:{fontSize:26,color:C.accent,fontWeight:'900'},boostName:{...typography.bodyStrong,color:C.text},
+ boostName:{...typography.bodyStrong,color:C.text},
  rulesToggle:{minHeight:58,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:8},
  rulesArrow:{fontSize:24,fontWeight:'800',color:C.info},
  });}

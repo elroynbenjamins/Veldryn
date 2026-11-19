@@ -286,4 +286,42 @@ assert.deepEqual(bossFight,simulateUnifiedEquipmentCombatV2(
  soloBossInput,[build],[runtime],true,{snapshot:storedBoss,verifyPersisted:()=>true}),
  'Handcrafted solo boss must deterministically replay without a second boss compiler');
 
+// Exact crafting copies already have their rarity/quality baked into
+// frozen baseStats. Importing one as an authored definition would scale it
+// again, so the combined class + gear resolver must reject it.
+const unscaledHelm=runtime.definitionsByItemId.oath_helm;
+const incompatibleSources=[
+ {...unscaledHelm,statSource:'craft-frozen-pre-scaled-v2' as const,
+  rarityAndQualityAlreadyApplied:true,sourceSchema:'eq2-cv2-exact-source-v1'},
+ {...unscaledHelm,rarityAndQualityAlreadyApplied:true},
+ {...unscaledHelm,sourceSchema:'eq2-cv2-exact-source-v1'},
+];
+for(const crafted of incompatibleSources){
+ const badRuntime:TrustedEquipmentRuntimeV2={
+  ...runtime,definitionsByItemId:{...runtime.definitionsByItemId,oath_helm:crafted},
+ };
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+  input,[build],[badRuntime],true,
+ ),/crafting_pre_scaled_item_requires_exact_adapter/);
+}
+const unapprovedSource:TrustedEquipmentRuntimeV2={
+ ...runtime,definitionsByItemId:{
+  ...runtime.definitionsByItemId,
+  oath_helm:{...unscaledHelm,sourceSchema:'unknown-basis-v99'},
+ },
+};
+assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+ input,[build],[unapprovedSource],true,
+),/unapproved_equipment_source_provenance/);
+const explicitRaw:TrustedEquipmentRuntimeV2={
+ ...runtime,definitionsByItemId:{
+  ...runtime.definitionsByItemId,
+  oath_helm:{...unscaledHelm,statSource:'authored-unscaled-v2' as const,
+   sourceSchema:'authored-unscaled-v2',rarityAndQualityAlreadyApplied:false},
+ },
+};
+assert.deepEqual(
+ simulateUnifiedEquipmentCombatV2(input,[build],[explicitRaw],true),
+ enabled,'Explicit authored raw bases must retain exactly-once scaling');
+
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

@@ -258,7 +258,7 @@ export function verifyPersistedEnemyKitsV2(
      .map((t:string)=>t.slice('enemy-v2:trait:'.length));
    const archetypes=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:archetype:'))
      .map((t:string)=>t.slice('enemy-v2:archetype:'.length));
-   const old=(base.tags??[]).find(t=>t.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
+   const old=(base.tags??[]).find((t:string)=>t.startsWith('pve:archetype:'))?.slice('pve:archetype:'.length);
    const group=new Set<string>();
    for(const trait of actual){
     const spec=ENEMY_V2_TRAITS[trait as keyof typeof ENEMY_V2_TRAITS];

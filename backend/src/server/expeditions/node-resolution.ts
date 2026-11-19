@@ -70,7 +70,7 @@ function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinitio
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;deferArtifactChoice?:boolean;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -134,6 +134,9 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
    break;
   }
   case 'treasure': case 'secret': {
+   // A new Solo run drafts three artifacts at the next route decision.
+   // Live and all existing runs still receive a deterministic room drop.
+   if(input.enduranceLootVersion===1&&input.deferArtifactChoice)break;
    awardedArtifact=input.enduranceLootVersion===1?rollDungeonArtifact(input.serverSecret,input.runId,input.node.nodeId,state.artifacts):`${input.node.contentId}:${roll}`;
    state={...state,artifacts:[...state.artifacts,awardedArtifact]};break;
   }

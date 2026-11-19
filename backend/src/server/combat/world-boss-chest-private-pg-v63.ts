@@ -28,6 +28,50 @@ export interface WorldBossChestPgDriverV63{
  /** Same connection, READ COMMITTED, rollback all inserted rows on failure. */
  withTransaction<T>(work:(tx:WorldBossChestPgTransactionV63)=>Promise<T>):Promise<T>;
 }
+/** A real Node PostgreSQL pool supplies this shape from pool.connect().
+ * No new pg dependency, credentials or public connection is introduced here. */
+export interface WorldBossChestPgClientV63 extends WorldBossChestPgTransactionV63{
+ release():void;
+}
+export interface WorldBossChestPgPoolV63{
+ connect():Promise<WorldBossChestPgClientV63>;
+}
+/** Pinned-client transaction driver: errors roll back, success commits,
+ * and every path returns the client. Never call from an HTTP route.
+ * A COMMIT acknowledgement failure is uncertain; the next verified claim
+ * must read the immutable source receipt before considering new entropy. */
+export function createPinnedWorldBossPgDriverV63(
+ pool:WorldBossChestPgPoolV63,isolatedFixtureEnabled=false,
+):WorldBossChestPgDriverV63{
+ if(!isolatedFixtureEnabled||WORLD_BOSS_CHEST_PRIVATE_PG_V63_LIVE)
+  throw Error('world_boss_v63_hidden_adapter_disabled');
+ if(!pool||typeof pool.connect!=='function')
+  throw Error('world_boss_v63_private_pool_required');
+ return {async withTransaction<T>(
+  work:(tx:WorldBossChestPgTransactionV63)=>Promise<T>,
+ ):Promise<T>{
+  const client=await pool.connect();
+  if(!client||typeof client.query!=='function'||
+   typeof client.release!=='function')
+   throw Error('world_boss_v63_invalid_pooled_client');
+  let began=false;
+  try{
+   await client.query('BEGIN',[]);
+   began=true;
+   const result=await work(client);
+   await client.query('COMMIT',[]);
+   return result;
+  }catch(error){
+   if(began){
+    try{await client.query('ROLLBACK',[]);}catch{
+     // Preserve the original failure. A broken connection is not reusable;
+     // the PG pool must evict it in its real client implementation.
+    }
+   }
+   throw error;
+  }finally{client.release();}
+ }};
+}
 export interface WorldBossChestPgPortsV63{
  /** Only server-owned, committed character saves; no mobile combat level. */
  readHighestOwnedCharacterLevel(

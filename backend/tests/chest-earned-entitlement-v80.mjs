@@ -107,8 +107,13 @@ try{
  assert.equal(party.counts().privacyChecks,0);
  assert.equal((await db.query('SELECT COUNT(*)::int n FROM '+
   'private.chest_earned_entitlements_v80')).rows[0].n,2);
- assert.equal((await db.query('SELECT COUNT(*)::int n FROM '+
-  'private.chest_reward_receipts_v70')).rows[0]?.n,undefined);
+ // V80 deliberately creates no V70 payouts, Inbox or physical item tables.
+ const noPayoutTables=(await db.query(
+  "SELECT COUNT(*)::int n FROM information_schema.tables "+
+  "WHERE table_schema='private' AND table_name IN "+
+  "('chest_reward_receipts_v70','chest_reward_grant_legs_v70')"
+ )).rows[0].n;
+ assert.equal(noPayoutTables,0);
  await db.exec('COMMIT');
  // Forged source/account must fail before any SQL call or proof read.
  const previous=queries.length;

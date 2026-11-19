@@ -101,13 +101,14 @@ function checkedReceipt(receipt:FrozenChestReceiptV69,
  * per-group channels; the selection core is identical for both. */
 export function deriveChestSettlementRollsV69(
  table:ChestLootTableV67,sourceKey:string,secret:Uint8Array,
+ ownedDropIds:readonly string[]=[],
 ):readonly ChestGroupRollV67[]{
  const frozen=defineChestLootTableV67(table);
  const legacyDomain=frozen.tableId==='party_event_chest'?
   'party_event_v51':frozen.tableId==='world_boss_chest'?
    'world_boss_v58':null;
  if(!legacyDomain)return deriveChestGroupRollsV67({
-  table:frozen,sourceKey,secret,
+  table:frozen,sourceKey,secret,ownedDropIds,
  });
  if(frozen.groups.length!==1||frozen.groups[0]!.id!=='equipment')
   throw Error('chest_v69_unapproved_legacy_table_shape');
@@ -147,7 +148,9 @@ export function createChestRewardSettlementV69(
     throw Error('chest_v69_unearned_or_foreign_source');
    const table=defineChestLootTableV67(trusted.lootTable);
    const owned=await tx.readOwnedDropIds(accountId);
-   const rolls=deriveChestSettlementRollsV69(table,sourceKey,authority.secret);
+   const rolls=deriveChestSettlementRollsV69(
+    table,sourceKey,authority.secret,owned,
+   );
    const resolved=resolveChestLootV67(table,{
     rolls,ownedDropIds:owned,
    });

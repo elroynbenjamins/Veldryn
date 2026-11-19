@@ -32,6 +32,17 @@ const partyTreasureSets:Readonly<Record<'caravan'|'hunt'|'wards'|'reliquary',rea
  wards:[{name:'Runebound Vigil',pieces:3},{name:"Warden's Seal",pieces:2}],
  reliquary:[{name:'Echoheart Vestment',pieces:3},{name:"Curator's Oath",pieces:2}],
 };
+/** World Boss V61/V62 chest design is NOT an authenticated entitlement feed. */
+const bossChestDesign:readonly {name:string;condition:string;guaranteed:string}[]=[
+ {name:'War Camp Chest',condition:'Two War Camp tracks at Tier I and your committed donation',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
+ {name:'Warrior Chest',condition:'All 3 account attacks committed and replay-verified',guaranteed:'650 Gold · 8 Essence · 3 Gem Dust · 3 Tempering Dust'},
+ {name:'Realm Victory Chest',condition:'70% of shared boss HP defeated and your proven attack',guaranteed:'900 Gold · 10 Essence · 4 Gem Dust · 4 Tempering Dust'},
+];
+const bossGatheringSetLabel:Readonly<Record<'hollowroot'|'sunscar'|'frostmarch',string>>={
+ hollowroot:'Rootbound Harvester · Woodcutting',
+ sunscar:'Sunforged Prospector · Mining',
+ frostmarch:'Rimebound Angler · Fishing',
+};
 const partyChestDesign:readonly {name:string;chance:string;condition:string}[]=[
  {name:'Adventure Chest',chance:'12%',condition:'15 verified personal Event Points'},
  {name:'Preparation Chest',chance:'16%',condition:'Personal preparation + optional goal'},
@@ -356,6 +367,26 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
    <View style={s.detailRow}><Text style={s.choiceSub}>Current spendable wallet</Text><Text style={s.choiceTitle}>{active?active.rewards.balance.toLocaleString('en-US')+' Sigils':'No verified record'}</Text></View>
    <Text style={s.finePrint}>A claimed-event total is not an unclaimed reward balance. Pending eligibility and claimable amounts are not exposed by this private snapshot.</Text>
    <Action label="Claim rewards · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}>
+   <SectionHeading s={s} kicker="FUTURE MILESTONE CHESTS" title="Three chests per account" sub="Design preview only. Earning a milestone chest does not guarantee gathering equipment."/>
+   {bossChestDesign.map(chest=><View key={chest.name} style={s.detailRow}>
+    <View style={s.flex}>
+     <Text style={s.choiceTitle}>{chest.name}</Text>
+     <Text style={s.choiceSub}>{chest.condition}</Text>
+     <Text style={s.finePrint}>{chest.guaranteed} · 1% gathering gear chance</Text>
+    </View>
+    <Tag s={s} label="PREVIEW"/>
+   </View>)}
+   <View style={s.rewardPanel}>
+    <UiIcon name="rewards" size={24}/>
+    <View style={s.flex}>
+     <Text style={s.choiceTitle}>{active?bossGatheringSetLabel[active.bossId]:'Boss-specific gathering set'}</Text>
+     <Text style={s.choiceSub}>10 unique pieces · rarity, quality and gathering-only bonus rolls</Text>
+    </View>
+   </View>
+   <Text style={s.finePrint}>No authenticated chest entitlement, collected-piece count or reward claim is available in this design QA screen. Drop odds are per earned chest, not per attack.</Text>
+   <Action label="Open chest · Not available" s={s} disabled/>
   </Card>
  </>;
  return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Official ranks must come from finalized server-verified account contributions, with a consistent power bracket and privacy checks."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution, final placements and account-wide rewards cannot be inferred from a boss health snapshot.</Text></View><Action label="Review battle rules" s={s} secondary onPress={()=>onTab('battle')}/></Card>;

@@ -124,6 +124,10 @@ function withEquipped(copy:CraftedGearInstance,instanceId=copy.id):GameState{
     character:{...initial.character!,equipment:{...initial.character!.equipment,gloves:copy.itemId},
       equipmentInstanceIds:{gloves:instanceId}}};
 }
+const t1Equipped=withEquipped(normalizeCraftedGearInstances([starter])[0]);
+for(const roll of starter.equipmentBonuses!)
+  close(equippedEquipmentBonusStats(t1Equipped)[roll.stat]??0,roll.basisPoints/10_000,
+    'T1 exact-equipped nonweapon copy must apply its saved bonus');
 const active=withEquipped(loaded),stats=equippedEquipmentBonusStats(active);
 for(const roll of loaded.equipmentBonuses!)close(stats[roll.stat]??0,roll.basisPoints/10_000,
   'Equipped exact copy must apply its roll');

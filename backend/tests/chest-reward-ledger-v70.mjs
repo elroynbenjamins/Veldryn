@@ -20,7 +20,8 @@ const source='winter-event:2026_11_16:'+account+':first';
 const source2='winter-event:2026_11_16:'+account+':retry';
 const receiptFor=(src,acc=account)=>({
  rulesVersion:'chest-settlement-v69',sourceKey:src,accountId:acc,
- recipientCharacterId:char,proofVersion:'trusted-winter-v1',
+ recipientCharacterId:char,equipmentDeliveryMode:'character',
+ proofVersion:'trusted-winter-v1',
  tableId:'winter_chest',tableVersion:'winter_v1',
  guaranteed:[{id:'gold',quantity:400},{id:'gem_dust',quantity:2}],
  groups:[{groupId:'equipment',type:'equipment',chanceBps:100,
@@ -35,9 +36,10 @@ const receiptFor=(src,acc=account)=>({
 const db=await PGlite.create();
 const insertReceipt=async(src,acc=account,receipt=receiptFor(src,acc))=>db.query(
  'insert into private.chest_reward_receipts_v70 '+
- '(source_key,account_id,recipient_character_id,proof_version,table_id,table_version,rules_version,receipt) '+
- 'values($1,$2,$3,$4,$5,$6,$7,$8::jsonb)',
- [src,acc,receipt.recipientCharacterId,receipt.proofVersion,
+ '(source_key,account_id,recipient_character_id,equipment_delivery_mode,proof_version,table_id,table_version,rules_version,receipt) '+
+ 'values($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb)',
+ [src,acc,receipt.recipientCharacterId,receipt.equipmentDeliveryMode,
+  receipt.proofVersion,
   receipt.tableId,receipt.tableVersion,receipt.rulesVersion,JSON.stringify(receipt)],
 );
 const insertLeg=async(src,acc,kind,ordinal,reward,quantity,grant,instanceId=null)=>db.query(

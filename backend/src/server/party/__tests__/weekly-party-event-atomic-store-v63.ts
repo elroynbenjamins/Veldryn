@@ -78,6 +78,35 @@ class MockPool implements PartySqlPoolV63{
     }
     ensure(begun&&!ended,'query_only_active_tx');
     if(sql.startsWith('set local lock_timeout'))return {rows:[]};
+    if(sql==='select canonical_reward_proof'){
+     ensure(params[0]===account&&params[1]===week,'proof_owner_week');
+     return {rows:[{proof:pool.wrongPartyProof?{
+      ...proof,week:{...proof.week,partyId:character},
+     }:proof} as unknown as T]};
+    }
+    if(sql==='select existing_party_gear owned'){
+     ensure(params[0]===account,'collection_owner');
+     return {rows:[{ids:pool.invalidCollection?['FAKE_PIECE']:[]} as unknown as T]};
+    }
+    if(sql==='select existing_party_sigils balance'){
+     ensure(params[0]===account,'wallet_read_owner');
+     return {rows:[{balance:copy.sigils} as unknown as T]};
+    }
+    if(sql==='update existing_party_sigils wallet delta'){
+     ensure(params[0]===account,'wallet_write_owner');
+     const delta=params[1] as number;
+     if(copy.sigils+delta<0)throw Error('insufficient_currency');
+     copy.sigils+=delta;
+     return {rows:[]};
+    }
+    if(sql==='insert into existing_resources grant'){
+     ensure(params[0]===account,'resource_owner');
+     if(pool.failResources)throw Error('resource_writer_fault');
+     copy.gold+=params[1] as number;
+     copy.gemDust+=params[2] as number;
+     copy.essence+=params[3] as number;
+     return {rows:[]};
+    }
     if(sql.includes('for update of r,w')){
      ensure(params[0]===account&&params[1]===week,'account_week_lock_params');
      return {rows:pool.foreignRoster?[]:[{party_id:party} as T]};
@@ -116,23 +145,19 @@ class MockPool implements PartySqlPoolV63{
 }
 const pool=new MockPool();
 const ports:PartyEventAtomicPortsV63={
- readCanonicalProof:async _tx=>pool.wrongPartyProof?{
-  ...proof,week:{...proof.week,partyId:character},
- }:proof,
- readOwnedGearPieceIds:async _tx=>pool.invalidCollection?['FAKE_PIECE']:[],
- readExistingPartySigils:async _tx=>pool.state.sigils,
+ readCanonicalProof:async tx=>(await tx.query<{proof:PrivatePartyRewardProofV61}>(
+  'select canonical_reward_proof',[account,week])).rows[0]!.proof,
+ readOwnedGearPieceIds:async tx=>(await tx.query<{ids:string[]}>(
+  'select existing_party_gear owned',[account])).rows[0]!.ids,
+ readExistingPartySigils:async tx=>(await tx.query<{balance:number}>(
+  'select existing_party_sigils balance',[account])).rows[0]!.balance,
  issueAndCommitCanonicalEventGear:async()=>{throw Error('MUST_NOT_ISSUE_EQ2');},
- applyExistingPartySigils:async(_tx,owner,_key,delta)=>{
-  ensure(owner===account,'wallet_account');
-  if(pool.state.sigils+delta<0)throw Error('insufficient_currency');
-  pool.state.sigils+=delta;
+ applyExistingPartySigils:async(tx,owner,_key,delta)=>{
+  await tx.query('update existing_party_sigils wallet delta',[owner,delta]);
  },
- grantExistingResources:async(_tx,owner,_key,r)=>{
-  ensure(owner===account,'grant_account');
-  if(pool.failResources)throw Error('resource_writer_fault');
-  pool.state.gold+=r.gold;
-  pool.state.gemDust+=r.gemDust;
-  pool.state.essence+=r.companionEssence;
+ grantExistingResources:async(tx,owner,_key,r)=>{
+  await tx.query('insert into existing_resources grant',[
+   owner,r.gold,r.gemDust,r.companionEssence]);
  },
  grantExactEquipmentCustody:async()=>{throw Error('MUST_NOT_GRANT_EQ2');},
 };
@@ -162,16 +187,19 @@ async function run(){
  await reject(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,
  },true),'resource_writer_fault');
- ensure(pool.state.receipts.size===0&&pool.state.gold===0,
-  'failure_rolls_back_receipt');
+ ensure(pool.state.receipts.size===0&&pool.state.gold===0&&
+  pool.state.sigils===60&&pool.state.gemDust===0&&pool.state.essence===0,
+  'failure_rolls_back_receipt_wallet_and_resources');
  pool.failResources=false;
  const [first,replay]=await Promise.all([
   claimPartyEventChestV60({authority,kind:'participation',store},true),
   claimPartyEventChestV60({authority,kind:'participation',store},true),
  ]);
  ensure(first.sourceKey===replay.sourceKey&&
-  first.frozenGear===null&&pool.state.receipts.size===1,
-  'two_connections_one_receipt');
+  first.frozenGear===null&&pool.state.receipts.size===1&&
+  pool.state.sigils===68&&pool.state.gold===200&&
+  pool.state.gemDust===2&&pool.state.essence===4,
+  'two_connections_one_receipt_one_reward');
  ensure(pool.history.filter(x=>x==='commit').length===2,
   'one_transaction_per_successful_attempt');
  ensure(pool.history.some(x=>x==='begin isolation level serializable')&&
@@ -181,7 +209,8 @@ async function run(){
  const again=await claimPartyEventChestV60({
   authority:rotated,kind:'participation',store,
  },true);
- ensure(again.sourceKey===first.sourceKey&&pool.state.receipts.size===1,
+ ensure(again.sourceKey===first.sourceKey&&pool.state.receipts.size===1&&
+  pool.state.sigils===68&&pool.state.gold===200,
   'lost_ack_entropy_rotation_safe');
  pool.invalidReceipt=true;
  await reject(()=>claimPartyEventChestV60({

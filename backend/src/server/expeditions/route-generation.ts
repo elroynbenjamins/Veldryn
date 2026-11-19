@@ -105,6 +105,9 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
   const visit=(id:string,nonBossCount:number):void=>{
     const node=byId.get(id); if(!node)throw new Error('missing_route_reference');
     if(visiting.has(id))throw new Error('cyclic_route');
+    // Converging routes reach each node from many parents. Validate each node once.
+    // The route-depth invariant is independently checked on every outgoing edge.
+    if(visited.has(id))return;
     if(node.kind==='boss'){
       if(nonBossCount!==graph.preBossNodeCount)throw new Error('invalid_route_path_length');
       return;

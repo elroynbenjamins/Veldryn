@@ -1,11 +1,11 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {CharacterPortrait} from '../CharacterVisual';
 import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
 import {CoopDungeonCompanionSelector,dungeonCompanionCounterLabel} from './CoopDungeonCompanionSelector';
 import {CoopSocialEchoPicker} from './CoopSocialEchoPicker';
-import {validateSelectedSocialEchoIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
+import type {SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {dungeonCompanionOpportunity,type DungeonCompanionCounterId} from '../../../../../backend/src/server/coop/dungeon-companion-counters';
 import {useSocialText} from '../../i18n/social';
 import type {GameState} from '../../core/types';
@@ -31,6 +31,13 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   const [selectedId,setSelectedId]=useState(views.find(loadout=>loadout.selectable)?.id??views[0]?.id);
   const [showDetails,setShowDetails]=useState(false),[showCompanions,setShowCompanions]=useState(false),[showMatchup,setShowMatchup]=useState(false);
   const [selectedSocialEchoIds,setSelectedSocialEchoIds]=useState<string[]>([]);
+  // Revoked sharing, removed friendships and new guild membership all invalidate
+  // formerly visible selections. Keep the next commit entirely server-authorized.
+  useEffect(()=>{
+   if(socialEchoLoading)return;
+   const valid=new Set(socialEchoes.map(candidate=>candidate.profileId));
+   setSelectedSocialEchoIds(previous=>previous.every(id=>valid.has(id))?previous:previous.filter(id=>valid.has(id)));
+  },[socialEchoes,socialEchoLoading]);
   const matchup=state.character?.equippedCombatCompanionId?dungeonCompanionOpportunity(state.character.equippedCombatCompanionId,possibleCounterIds):undefined;
   const selected=views.find(loadout=>loadout.id===selectedId)??views[0];
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');

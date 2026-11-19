@@ -5,6 +5,8 @@ import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {validateEquipmentV2EffectGemInstall} from './equipment-crafting-v2-effect-gem-policy';
 import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,type V2DraftSkillAward} from './equipment-crafting-v2-transaction';
 
 /**
@@ -162,13 +164,15 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
   receipts:V2DraftReceipt[];skillAwards:V2DraftSkillAward[];
   storageReservations?:V2HiddenStorageReservation[];
   gemSocketState?:V2GemSidecarState;
+  custodyReceipts?:V2VirtualMoveReceipt[];
  }|undefined;
  if(!raw||raw.schemaVersion!=='eq2-hidden-game-state-v1')fail('missing_v2_socket_ledger');
  verifyEquipmentV2HiddenLedger(accountId,raw.jobs,raw.items,raw.receipts,raw.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,raw.items,raw.storageReservations??[]);
  const sidecar=requireSidecar(raw.gemSocketState);
  verifyEquipmentV2GemSidecar(raw.items,sidecar);
- if(raw.receipts.some(row=>row.requestId===command.requestId))
+ if(raw.receipts.some(row=>row.requestId===command.requestId)
+  ||raw.custodyReceipts?.some(row=>row.requestId===command.requestId))
   fail('v2_cross_command_request_id_conflict');
  const existing=sidecar.receipts.find(row=>row.requestId===command.requestId);
  if(existing){
@@ -181,12 +185,23 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  if(!item||!v2ServerExactTemplateConsistent(item.exactItem))fail('unknown_v2_socket_copy');
  if(item.accountId!==accountId||item.ownerCharacterId!==onlineCharacterId)
   fail('wrong_v2_socket_owner');
- // An item cannot be socketed using its Forge job ID alone. Require its
- // immutable claim to have reserved a storage slot (possibly deferred).
- if(!(raw.storageReservations??[]).some(row=>row.instanceId===item.id))
-  fail('unreconciled_v2_socket_custody');
+ // A socket is restricted to the actual shadow holder. Once a copy enters
+ // the shared Bank, its original crafter cannot continue socketing it; the
+ // withdrawing character becomes its authenticated holder instead.
+ const custody=readEquipmentV2VirtualCustody(raw.items,
+  raw.storageReservations??[],raw.custodyReceipts??[]);
+ const location=custody.find(row=>row.instanceId===item.id);
+ if(!location)fail('unreconciled_v2_socket_custody');
+ if(location.holderCharacterId!==onlineCharacterId
+  ||!['pouch','inventory','equipped'].includes(location.location))
+  fail('v2_socket_copy_not_in_character_custody');
  const kind=gemKind(command.gemId);
- if(kind==='effect')fail('v2_effect_gem_loadout_cap_not_ready');
+ if(kind==='effect')validateEquipmentV2EffectGemInstall({
+  state,accountId,actorCharacterId:onlineCharacterId,items:raw.items,
+  reservations:raw.storageReservations??[],
+  custodyReceipts:raw.custodyReceipts??[],installed:sidecar,
+  targetInstanceId:item.id,incomingGemId:command.gemId,
+ });
  if(state.settings.lockedItemIds?.includes(command.gemId)
   ||state.settings.favoriteItemIds?.includes(command.gemId))
   fail('protected_v2_socket_gem');

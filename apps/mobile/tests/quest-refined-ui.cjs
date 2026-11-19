@@ -49,6 +49,12 @@ assert.ok(screen.includes('onQueueWeeklyOrder(chosenOrder)')&&screen.includes('o
   'weekly orders must retain Queue and Stop at done actions');
 assert.ok(screen.includes('weeklyOrderLockReason(state,chosenOrder)'),
   'weekly contract actions must honour progression locks');
+assert.ok(screen.includes('seasonalChallengeDestination(chosenChallenge)')&&screen.includes('onNavigate(challengeDestination)'),
+ 'Active Class Challenges must deep-link to the relevant skill or activity without settling rewards');
+assert.ok(app.includes('destination.mode??')&&app.includes('setSelectedSkill(destination.skillId)'),
+ 'Quest skill buttons must select the correct skill screen and clear stale deep-link targets');
+assert.ok(app.includes('questClaims.challenges')&&app.includes('questClaims.milestones'),
+ 'Account quest alerts include class challenges and milestone rewards');
 assert.ok(screen.includes('onOpenWeeklyBoss'),'Fallen Knight weekly bounty flow must remain reachable');
 assert.ok(screen.includes('onOpenWeeklyOrder(chosenOrder)'),'contract routes must open the canonical destination');
 assert.ok(screen.includes('Rewards process automatically')&&screen.includes('chosenOrder&&selectedStatus'),

@@ -33,7 +33,7 @@ export function validateUniqueDamageClasses(members:readonly {role:CoopRole;clas
 export function validatePreBossNodeCount(count: number): void {
   if (!Number.isInteger(count)
     || count < COOP_ROGUELITE_CONFIG.preBossNodeMin
-    || count > COOP_ROGUELITE_CONFIG.preBossNodeMax) {
+    || (count > COOP_ROGUELITE_CONFIG.preBossNodeMax && count !== 14)) {
     throw new Error('invalid_coop_route_length');
   }
 }

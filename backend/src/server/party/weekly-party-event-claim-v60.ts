@@ -117,7 +117,8 @@ export async function claimPartyEventChestV60(input:{
  kind:PartyEventChestKindV51;
  store:PartyEventRewardStoreV60;
 },serverEnabled=false):Promise<PartyEventRewardReceiptV60>{
- if(!serverEnabled||PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED)
+ if(!serverEnabled||PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED||
+  process.env.NODE_ENV==='production')
   throw Error('party_event_v60_hidden_gateway_disabled');
  assertAuthority(input.authority);
  if(!['participation','preparation','finale'].includes(input.kind))
@@ -167,7 +168,8 @@ export async function exchangePartyEventGearV60(input:{
  requestedPieceId:string;
  store:PartyEventRewardStoreV60;
 },serverEnabled=false):Promise<PartyEventRewardReceiptV60>{
- if(!serverEnabled||PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED)
+ if(!serverEnabled||PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED||
+  process.env.NODE_ENV==='production')
   throw Error('party_event_v60_hidden_gateway_disabled');
  assertAuthority(input.authority);
  if(!partyEventGearPieceV51(input.requestedPieceId))

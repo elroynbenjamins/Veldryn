@@ -8,6 +8,10 @@
   "include": [
     "src/server/party/weekly-party-event-gear-v51.ts",
     "src/server/party/weekly-party-event-chests-v51.ts",
+    "src/server/party/weekly-party-event-combat-v59.ts",
+    "src/server/party/__tests__/weekly-party-event-combat-v59.ts",
+    "src/server/party/weekly-party-event-claim-v60.ts",
+    "src/server/party/__tests__/weekly-party-event-claim-v60.ts",
     "src/server/party/__tests__/weekly-party-event-chests-v51.ts",
     "src/server/combat/world-boss-chests-v58.ts",
     "src/server/combat/__tests__/world-boss-chests-v58.ts",

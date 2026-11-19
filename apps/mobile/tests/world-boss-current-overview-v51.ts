@@ -7,6 +7,10 @@ import {
  type WorldBossCurrentOverviewDepsV51,
 } from '../../../backend/online/world-boss-current-overview-v51';
 import type {WorldBossOverviewRowV41} from '../../../backend/online/world-boss-overview-v41';
+import {
+ WORLD_BOSS_V58_PRIVATE_READ_LIVE,
+ createWorldBossAccountPrivacyPgV58,createWorldBossCurrentOverviewPgV58,
+} from '../../../backend/online/world-boss-account-privacy-v58';
 import {WORLD_BOSS_V52_READ_ROUTE_LIVE,handleWorldBossStatusReadV52} from
  '../../../backend/online/world-boss-current-read-route-v52';
 
@@ -245,6 +249,81 @@ async function main(){
  assert.equal(unavailable.status,503);
  assert.equal(JSON.stringify(unavailable).includes(OTHER),false);
  assert.equal(JSON.stringify(unavailable).includes(token),false);
+ // V58: the private V57 erasure fence MUST be checked against current Auth.
+ // No live API route, no client account selector, and no public DB RPC.
+ assert.equal(WORLD_BOSS_V58_PRIVATE_READ_LIVE,false);
+ let existsInAuth=true,hasDeletionFence=false,privacySqlCalls=0;
+ const privatePg={
+  async query<T extends object>(statement:string,parameters:readonly unknown[]){
+   privacySqlCalls++;
+   assert.ok(statement.includes('FROM auth.users'));
+   assert.ok(statement.includes('private.world_boss_erasure_fences_v57'));
+   assert.ok(statement.includes('id=$1::uuid'));
+   assert.ok(statement.includes('account_id=$1::uuid'));
+   assert.deepEqual(parameters,[ACCOUNT]);
+   assert.ok(!statement.includes(ACCOUNT),
+    'verified owner must be a bound SQL parameter');
+   return {rows:[{allowRead:existsInAuth&&!hasDeletionFence} as T]};
+  },
+ };
+ const v58=createWorldBossAccountPrivacyPgV58(privatePg);
+ assert.equal(await v58.allowRead(ACCOUNT),true);
+ hasDeletionFence=true;
+ assert.equal(await v58.allowRead(ACCOUNT),false);
+ hasDeletionFence=false;existsInAuth=false;
+ assert.equal(await v58.allowRead(ACCOUNT),false,
+  'deleted Auth subject must never read private rewards via an old JWT');
+ existsInAuth=true;
+ const composed=createWorldBossCurrentOverviewPgV58(privatePg);
+ assert.equal(typeof composed.events.findByCycleStart,'function');
+ assert.equal(typeof composed.overview.read,'function');
+ assert.equal(await composed.accountPrivacy.allowRead(ACCOUNT),true);
+ const goodV58=await readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:v58,
+ });
+ assert.equal(goodV58?.accountId,ACCOUNT);
+ assert.equal(goodV58?.bossId,'hollowroot');
+ hasDeletionFence=true;
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:v58,
+ }), 'account_privacy_hold');
+ hasDeletionFence=false;
+ // A private deletion fence appearing DURING a pending status read must
+ // revoke visibility at the second V51 check, not leak the completed row.
+ let midReadChecks=0;
+ const midReadPg=createWorldBossAccountPrivacyPgV58({
+  async query<T extends object>(_statement:string,parameters:readonly unknown[]){
+   assert.deepEqual(parameters,[ACCOUNT]);
+   midReadChecks++;
+   return {rows:[{allowRead:midReadChecks===1} as T]};
+  },
+ });
+ await rejection(()=>readAuthenticatedCurrentWorldBossOverviewV51({token},{
+  ...deps,accountPrivacy:midReadPg,
+ }), 'account_privacy_hold');
+ assert.equal(midReadChecks,2,'privacy must be read before AND after overview');
+ assert.ok(privacySqlCalls>=6,'privacy is checked twice around accepted overview');
+
+ await rejection(()=>v58.allowRead('malformed-owner'),
+  'invalid_verified_owner');
+ assert.ok(!JSON.stringify(await v58.allowRead(ACCOUNT)).includes(token));
+ const emptyV58=createWorldBossAccountPrivacyPgV58({
+  async query<T extends object>(){return {rows:[] as T[]};},
+ });
+ await rejection(()=>emptyV58.allowRead(ACCOUNT),'invalid_private_privacy_result');
+ const malformedV58=createWorldBossAccountPrivacyPgV58({
+  async query<T extends object>(){return {rows:[{allowRead:'true'} as T]};},
+ });
+ await rejection(()=>malformedV58.allowRead(ACCOUNT),'invalid_private_privacy_result');
+ const ambiguousV58=createWorldBossAccountPrivacyPgV58({
+  async query<T extends object>(){return {rows:[
+   {allowRead:true} as T,{allowRead:false} as T]};},
+ });
+ await rejection(()=>ambiguousV58.allowRead(ACCOUNT),'invalid_private_privacy_result');
+ await rejection(async()=>{createWorldBossAccountPrivacyPgV58(
+  null as unknown as typeof privatePg);},'private_pg_required');
+ console.log('WORLD_BOSS_V58_AUTH_AND_ERASURE_FENCE_READ=PASS');
+
  console.log('WORLD_BOSS_V52_UNMOUNTED_GET_READONLY_HANDLER=PASS');
 
  console.log('WORLD_BOSS_V51_OWNER_SCOPED_READONLY_CYCLE=PASS');

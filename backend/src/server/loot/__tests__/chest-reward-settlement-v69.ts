@@ -171,6 +171,16 @@ async function run(){
   open({authenticatedAccountId:account,sourceKey:source}),
   open({authenticatedAccountId:account,sourceKey:source}),
  ]);
+ const frozen=db.state.receipts.get(source)!;
+ db.state.receipts.set(source,{...frozen,drops:frozen.drops.map((d,i)=>
+  i===0?{...d,quantity:d.quantity+1}:d)});
+ await throws(()=>open({authenticatedAccountId:account,sourceKey:source}),
+  'corrupt_committed_receipt');
+ db.state.receipts.set(source,{...frozen,groups:frozen.groups.map((g,i)=>
+  i===0?{...g,chanceBps:10001}:g)});
+ await throws(()=>open({authenticatedAccountId:account,sourceKey:source}),
+  'corrupt_committed_receipt');
+ db.state.receipts.set(source,frozen);
  check(concurrent.every(r=>r.replayed)&&db.state.receipts.size===1&&
   db.state.guaranteed.size===1,'concurrent_replays_once');
  await throws(()=>open({authenticatedAccountId:other,sourceKey:source}),

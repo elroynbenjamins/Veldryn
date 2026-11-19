@@ -25,7 +25,6 @@ for(const path of [
  'src/components/CustomizationUnlockPopup.tsx',
  'src/components/StoryBossBattleModal.tsx',
  'src/components/ChatPlayerSheet.tsx',
- 'src/screens/DailySuppliesScreen.tsx',
  'src/screens/PetBonusOverviewScreen.tsx',
 ]){
  const source=read(path);
@@ -105,7 +104,8 @@ ok(inventory.includes('<GameModalSurface visible={filterOpen}'),'Inventory filte
 ok(inventory.includes('reduceMotion={state.settings.reduceMotion}'),'Inventory modal interactions must respect reduced motion');
 
 const daily=read('src/screens/DailySuppliesScreen.tsx');
-ok(daily.includes('GameModalHeader')&&daily.includes('accessibilityRole="radio"'),'Daily Supplies picker must use shared header and radio semantics');
+// Supply Journey 2.0: boosts are account-wide, so the receiving-character modal is gone; the Blessing choice keeps radio semantics.
+ok(!daily.includes('<Modal')&&daily.includes('accessibilityRole="radio"'),'Daily Supplies Blessing choice must use radio semantics and no bespoke modal');
 
 const idleRules=read('src/components/IdleRulesEditorV40.tsx');
 ok(idleRules.includes('GameModalHeader')&&idleRules.includes('reduceMotion={state.settings.reduceMotion}'),'Advanced Idle Rules must use the shared motion-safe sheet/header interaction');

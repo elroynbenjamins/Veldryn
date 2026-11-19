@@ -5,6 +5,7 @@ import {gatheringSceneModel,nextFishingPhase,type FishingScenePhase,type Gatheri
 import {ballisticTracks,clipDurationMs,frameStarts,heldSteps,windowTrack,type BallisticParticle} from '../core/sprite-animation';
 import {BIOME_PARTICLES,CAVE_POOL_BACKGROUND,CHUNK_SIZE,GATHERER_SHEETS,GATHERING_LAYOUT as L,LOG_SIZE,ORE_NODES,PIXEL_SCENE,PIXEL_UNIT,SCENE_BACKGROUNDS,WATER_FX,WOOD_NODES} from '../theme/pixel-scene-assets';
 import {SpriteFrames} from './anim/SpriteFrames';
+import {playSound} from '../storage/audio';
 import {LOOP_NATIVE_DRIVER,track,useActionCompleted,useLoopProgress,useMotionEnabled,type Progress} from './anim/motion';
 
 const AMBIENT_MS=6_400;
@@ -74,6 +75,14 @@ function SwingScene({model,unit,motion,clock}:SceneProps){
   const ambient=useLoopProgress(AMBIENT_MS,motion);
   const impactAt=frameStarts(sheet.durationsMs)[sheet.impactFrame];
   const contact=kind==='mining'?L.miningContact:L.choppingContact;
+  // Each swing lands with a pick or axe sound, timed to the sprite's impact frame.
+  useEffect(()=>{
+    if(!motion)return;
+    const loopMs=clipDurationMs(sheet.durationsMs),sound=kind==='mining'?'mine_hit':'chop_hit';
+    let interval:ReturnType<typeof setInterval>|undefined;
+    const first=setTimeout(()=>{playSound(sound);interval=setInterval(()=>playSound(sound),loopMs);},impactAt*loopMs);
+    return()=>{clearTimeout(first);if(interval)clearInterval(interval);};
+  },[motion,kind,impactAt,sheet.durationsMs]);
   const tones=oreNode?[oreNode.fragment,oreNode.spark,oreNode.sparkLight]:[woodNode!.chip,woodNode!.chipLight,woodNode!.chipLight];
   const particles=useMemo(()=>SWING_PARTICLES[kind].map(particle=>({particle,tracks:ballisticTracks({...particle,at:impactAt},unit)})),[kind,impactAt,unit]);
   // The node answers each blow with a one-pixel jolt.
@@ -103,6 +112,7 @@ function SwingScene({model,unit,motion,clock}:SceneProps){
 function YieldPop({source,size,x,y,unit,clock,enabled}:{source:ImageSourcePropType;size:{width:number;height:number};x:number;y:number;unit:number;clock:SceneProps['clock'];enabled:boolean}){
   const pop=useRef(new Animated.Value(0)).current,[shown,setShown]=useState(false);
   const play=useCallback(()=>{
+    playSound('gather_yield');
     setShown(true);pop.stopAnimation();pop.setValue(0);
     Animated.timing(pop,{toValue:1,duration:760,easing:Easing.linear,useNativeDriver:true}).start(({finished})=>{if(finished)setShown(false);});
   },[pop]);
@@ -196,7 +206,7 @@ function FishingScene({model,unit,motion,clock,startedAtMs}:SceneProps){
   },[phase,motion,progress,sheet]);
   useEffect(()=>{if(!motion)setPhase('wait');},[motion]);
   // The catch reaction is earned: it only starts when a fishing action has really completed.
-  useActionCompleted(clock,motion,()=>setPhase(current=>nextFishingPhase(current,'actionCompleted')));
+  useActionCompleted(clock,motion,()=>{playSound('fish_splash');setPhase(current=>nextFishingPhase(current,'actionCompleted'));});
   const splash=useMemo(()=>{
     const landsAt=frameStarts(GATHERER_SHEETS.fishingCast.durationsMs)[GATHERER_SHEETS.fishingCast.frames-1];
     return phase==='cast'?{from:landsAt,to:.999}:{from:.002,to:.42};

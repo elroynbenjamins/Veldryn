@@ -88,8 +88,11 @@ for(const [offerId,petId,assetName] of [
  assert(dungeonPetArt.includes(offerId+":'"+petId+"'"),'shop SKU mapping missing '+offerId);
  assert(petDefinitions.includes(petId),'shop pet must retain its collectible ID: '+petId);
 }
-assert(petRegistry.includes('??dungeonShopPetArtSource(id)'),'Pet Collection must resolve Dungeon Shop art');
-assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offers must use unique pet art and expanded preview');
+assert(petRegistry.includes('??dungeonShopPetMediumArtSource(id)'),'Pet Collection cards must use sharper 256px Dungeon Shop art');
+assert(petRegistry.includes('??dungeonShopPetPortraitArtSource(id)'),'Pet Collection detail must resolve 512px Dungeon Shop portraits');
+assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offer rows must use unique medium-sized pet art');
+assert(shopView.includes('dungeonShopPetOfferPortraitArt(item.id)'),'expanded Dungeon Shop previews must prefer 512px portrait art');
+assert(shopView.includes('s.petPortraitPreviewImage'),'pet portraits must not render at the tiny shop icon size');
 assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
 
 // Dungeon Shop cosmetics use stable reward IDs throughout the server, gallery
@@ -131,6 +134,37 @@ function webpSize(bytes){
  if(type==='VP8 ')return [bytes.readUInt16LE(26)&16383,bytes.readUInt16LE(28)&16383];
  throw Error('unsupported WebP chunk '+type);
 }
+// Approved asset set: full-size portraits must be genuine 512px images, not
+// scaled-up 72px thumbnails. Preserve each regional pet's distinct design.
+const approvedDungeonPetAssets=[
+ ['DUNGEON_PET_ASTERFALL_001','DUNGEON_PET_ASTERFALL_001_Oathroot_Seedling','8a7244a7a3b8853fb255ff56224d656c2d121523ee8e302659de8b24a2ca8f72','f50749152f045b7f9e732e8d866bffb49e2cb7e0a01468a06f7e31c92a2bfb5d','e5095fd0ea3fdc0a3c60e318325455a4c24fcbb617ac975f8bf8a5694cd467e1'],
+ ['DUNGEON_PET_SUNSCAR_001','DUNGEON_PET_SUNSCAR_001_Vaultscarab','fde4fc616653ff654c14bc485740c06470061b24bc89e77ed98fe4df5cdd448d','5deb807d8c6f847aceb102e122b972e04050ca6af56b4f552a5c1bfecfb31f88','a24a2ce983015a4424c734db473861350ff87203e24d1375986530731ba92ffd'],
+ ['DUNGEON_PET_FROSTMARCH_001','DUNGEON_PET_FROSTMARCH_001_Choirbell_Sprite','6ac0a00dd4ed143cfc5d258dc0b456b610c38adb5fdd4322652ebe894af8564d','0a3a5687dee4e9d0e28a1341a36f0be319c5255a86ef0c8f0becbf0915d4d77d','2dedca1405d1db513577a6b65cf7b8b15eb0596d1d9799f1523a1abee3115f18'],
+];
+const approvedArtHashes=new Set();
+for(const [petId,basename,portraitHash,mediumHash,smallHash] of approvedDungeonPetAssets){
+ for(const [folder,filename,dims,expectedHash] of [
+  ['portraits',basename+'.png',[512,512],portraitHash],
+  ['medium',basename+'.webp',[256,256],mediumHash],
+  ['',basename+'.webp',[72,72],smallHash],
+ ]){
+  const file=path.join(root,'apps/mobile/assets/dungeon-shop/pets',folder,filename);
+  assert(fs.existsSync(file),'missing approved pet art: '+file);
+  const bytes=fs.readFileSync(file);
+  const png=filename.endsWith('.png');
+  const dimensions=png?[bytes.readUInt32BE(16),bytes.readUInt32BE(20)]:webpSize(bytes);
+  assert(png?bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])):bytes.toString('ascii',8,12)==='WEBP','invalid pet art: '+file);
+  assert.deepEqual(dimensions,dims,'incorrect pet artwork dimensions: '+file);
+  const hash=crypto.createHash('sha256').update(bytes).digest('hex');
+  assert.equal(hash,expectedHash,'unexpected approved pet asset: '+file);
+  assert(!approvedArtHashes.has(hash),'two pet art files unexpectedly share the same image');
+  approvedArtHashes.add(hash);
+  const expectedRequire=petId+":require('../../assets/dungeon-shop/pets/"+(folder?folder+'/':'')+filename+"')";
+  assert(dungeonPetArt.includes(expectedRequire),'resolver misses approved asset '+filename);
+ }
+}
+assert(dungeonPetArt.includes('dungeonShopPetOfferPortraitArt'),'shop must have a dedicated full-resolution portrait resolver');
+assert(dungeonPetArt.includes('dungeonShopPetMediumArtSource'),'shop must have a separate medium-resolution card resolver');
 for(const [offerId,id,kind,filename,dims,registry] of [
  ['dshop_asterfall_icon','dungeon:asterfall:wardens-lantern','icon','dungeon-asterfall-wardens-lantern.webp',[512,512],profileIconsArt],
  ['dshop_sunscar_icon','dungeon:sunscar:solar-vault-key','icon','dungeon-sunscar-solar-vault-key.webp',[512,512],profileIconsArt],

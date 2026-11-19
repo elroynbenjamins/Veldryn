@@ -6,6 +6,7 @@ import {activeCombatRuntimeProjection} from '../core/game';
 import {combatPresentation} from '../core/combat-presentation';
 import {huntingEffectsEnabled,huntingHitCue} from '../core/hunting-hit-effects';
 import {useGameTheme} from '../theme/ThemeContext';
+import {playSound} from '../storage/audio';
 
 /** Local, decorative playback. No background catch-up, rewards, or health mutation. */
 export function HuntingHitEffects({state,monster,side}:{state:GameState;monster:MonsterDef;side:'player'|'enemy'}){
@@ -29,6 +30,7 @@ export function HuntingHitEffects({state,monster,side}:{state:GameState;monster:
    previous=cue;
    const view=combatPresentation(current,monster,elapsed/1000,cycleSeconds);
    setAmount(side==='enemy'?view.playerHit:view.enemyHit);
+   playSound('hit',side==='enemy'?.45:.6);
    animation?.stop();pulse.setValue(0);
    animation=Animated.timing(pulse,{toValue:1,duration:650,easing:Easing.out(Easing.quad),useNativeDriver:true});animation.start();
   };

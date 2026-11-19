@@ -1,5 +1,6 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 import type {Language} from './languages';
+import type {MealBonusDefinition} from '../core/meal-buffs';
 
 export const craftingDetailRows={
  'Next equipment tier':['Nächste Ausrüstungsstufe','Siguiente nivel de equipo','Volgende uitrustingsniveau','Prossimo livello di equipaggiamento','Prochain palier d’équipement'],
@@ -11,6 +12,16 @@ export const craftingDetailRows={
  '+{value}% action speed':['+{value}% Aktionstempo','+{value}% velocidad de acción','+{value}% actiesnelheid','+{value}% velocità d’azione','+{value} % vitesse d’action'],
  'Unlocks at {skill} level {level}':['Wird mit {skill} Stufe {level} freigeschaltet','Se desbloquea con {skill} nivel {level}','Ontgrendeld bij {skill} niveau {level}','Si sblocca con {skill} livello {level}','Débloqué avec {skill} niveau {level}'],
  'Requires character level {level}':['Erfordert Charakterstufe {level}','Requiere personaje de nivel {level}','Vereist personageniveau {level}','Richiede personaggio di livello {level}','Nécessite un personnage de niveau {level}'],
+ 'Makes {count} · Costs {gold} Gold':['Ergibt {count} · Kostet {gold} Gold','Produce {count} · Cuesta {gold} de oro','Maakt {count} · Kost {gold} goud','Produce {count} · Costa {gold} oro','Produit {count} · Coûte {gold} or'],
+ '+{value}% Gathering speed':['+{value}% Sammeltempo','+{value}% velocidad de recolección','+{value}% verzamelsnelheid','+{value}% velocità di raccolta','+{value} % vitesse de récolte'],
+ '+{value}% Crafting speed':['+{value}% Herstellungstempo','+{value}% velocidad de fabricación','+{value}% productiesnelheid','+{value}% velocità di creazione','+{value} % vitesse de fabrication'],
+ '+{value}% Combat XP':['+{value}% Kampf-EP','+{value}% EXP de combate','+{value}% gevechts-XP','+{value}% ESP combattimento','+{value} % EXP de combat'],
+ '+{value}% Non-combat skill speed':['+{value}% Tempo für Nichtkampf-Fertigkeiten','+{value}% velocidad de habilidades no bélicas','+{value}% snelheid buiten gevecht','+{value}% velocità delle abilità non di combattimento','+{value} % vitesse des compétences hors combat'],
+ 'Cooking mastered · no more XP':['Kochen gemeistert · keine weiteren EP','Cocina al máximo · sin más EXP','Koken maximaal · geen XP meer','Cucina al massimo · niente più ESP','Cuisine maîtrisée · plus d’EXP'],
+ 'Current cooking run uses the XP rate reserved when it started.':['Der aktuelle Kochdurchlauf verwendet die beim Start festgelegte EP-Rate.','La tanda actual utiliza la EXP fijada al iniciarla.','De huidige kookronde gebruikt de XP die bij de start is vastgelegd.','Il lotto in corso usa l’ESP fissata all’avvio.','La préparation en cours utilise le taux d’EXP fixé au démarrage.'],
+ 'Activate meal buffs from Inventory. Auto-eat only restores HP.':['Mahlzeitenboni im Inventar aktivieren. Automatisches Essen stellt nur LP wieder her.','Activa los bonos de comida en el inventario. Comer automáticamente solo restaura PV.','Activeer maaltijdbonussen in Inventaris. Automatisch eten herstelt alleen HP.','Attiva i bonus pasto dall’inventario. Il cibo automatico ripristina solo i PS.','Activez les bonus de repas depuis l’inventaire. L’alimentation automatique ne soigne que les PV.'],
+ '+{xp} Cooking XP per batch':['+{xp} Koch-EP pro Durchgang','+{xp} EXP de cocina por tanda','+{xp} Kook-XP per batch','+{xp} ESP cucina per lotto','+{xp} EXP de cuisine par lot'],
+ 'Cost {gold} Gold':['Kosten: {gold} Gold','Coste: {gold} de oro','Kosten: {gold} goud','Costo: {gold} oro','Coût : {gold} or'],
  'Makes {count} · +{xp} XP · {gold} Gold':['Ergibt {count} · +{xp} EP · {gold} Gold','Produce {count} · +{xp} EXP · {gold} oro','Maakt {count} · +{xp} XP · {gold} goud','Produce {count} · +{xp} ESP · {gold} oro','Produit {count} · +{xp} EXP · {gold} or'],
  '{ready}/{total} materials ready':['{ready}/{total} Materialien bereit','{ready}/{total} materiales listos','{ready}/{total} materialen gereed','{ready}/{total} materiali pronti','{ready}/{total} matériaux prêts'],
  'Cost {gold} Gold · +{xp} skill XP':['Kosten: {gold} Gold · +{xp} Fertigkeits-EP','Coste: {gold} oro · +{xp} EXP de habilidad','Kosten: {gold} goud · +{xp} vaardigheids-XP','Costo: {gold} oro · +{xp} ESP abilità','Coût : {gold} or · +{xp} EXP de compétence'],
@@ -47,4 +58,13 @@ export function craftingDetailContent(language:Language,value:string|undefined,f
  const bonus=parts.map(part=>/^\+(\d+)% (skill XP|XP|yield|speed|action speed)$/.exec(part));
  if(bonus.every(Boolean))return bonus.map(match=>craftingDetailText(language,'+{value}% '+match![2],{value:match![1]})).join(' · ');
  return fallback(value);
+}
+
+/** Shared translation for special meal effects shown in both Cooking views. */
+export function cookingMealEffectText(language:Language,meal:Pick<MealBonusDefinition,'kind'|'percent'>):string{
+ const key=meal.kind==='gathering_speed'?'+{value}% Gathering speed'
+  :meal.kind==='crafting_speed'?'+{value}% Crafting speed'
+  :meal.kind==='combat_xp'?'+{value}% Combat XP'
+  :'+{value}% Non-combat skill speed';
+ return craftingDetailText(language,key,{value:meal.percent});
 }

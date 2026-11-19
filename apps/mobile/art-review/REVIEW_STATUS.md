@@ -1,13 +1,6 @@
 # Art review status
 
-The Ironwarden pilot mannequin is the immutable character reference. Active full-character candidates must preserve its face, hair, head size, anatomy, pose, ground line, pixel scale, and backdrop; clothing is the only permitted change.
-
-## Approved beginner character skins
-
-- `beginner-sets-v1/skins/` contains all nine class starter skins, each with male/female front/back runtime portraits generated directly from the immutable pilot views.
-- These skins deliberately use patched cloth, dented scrap metal, worn leather, crude fittings, and restrained class colors so they read as the first craftable tier.
-- Completing a class's ten-piece novice set permanently unlocks the matching cosmetic skin.
-- `aster-iron-pilot-aligned-v1/` remains the visual reference used to lock anatomy, pose, pixel scale, and backdrop.
+Art review covers equipment atlases, icons and event equipment.
 
 ## Accepted equipment atlases
 
@@ -18,25 +11,10 @@ The Ironwarden pilot mannequin is the immutable character reference. Active full
 - The accepted batches now contain all 27 progression sets, Aster Iron, and the repaired Runespark Adept novice set. Mirage Hunter and Runespark Adept are active again with clean replacement atlases.
 - The approved Wayfinder Oathforged atlases `T3_010` Oathfeather Pursuit, `T3_011` Lanternstalk Hunter, and `T3_012` Vaultstar Tracker are active in `assets/equipment-t3-wayfinder/`. `T3_012` uses the corrected Greenveil-derived palette-locked atlas.
 
-The older smooth/checkerboard attempts and superseded set-reference folders were removed on 2026-09-09. Only accepted production art, current visual standards, the canonical mannequin source, and active event concepts remain.
+The older smooth/checkerboard attempts and superseded set-reference folders were removed on 2026-09-09. Only accepted production art, current visual standards and active event concepts remain.
 
-## Accepted equipment character skins
-
-- `accepted-set-skins-front-v1/` contains male and female front appearances for all 29 accepted atlases: 27 regional progression sets, Aster Iron, and Runespark Adept.
-- Every appearance uses the accepted mannequin posture and visibly equips its weapon and offhand.
-- Front view is the production standard for all new character skins. New back views are no longer required.
-- `accepted-set-skins-front-v1/review-contact-sheet.png` is the collection-wide visual audit.
-
-## Accepted event equipment and skins
+## Accepted event equipment
 
 - `event-sets-v1/harvestwake/` contains nine class-specific Harvestwake concept overviews matching the reward names already used by the live-event runtime.
 - `event-sets-v1/liveops-catalog/` contains one event-wide visual direction for each of the eight events in the master LiveOps calendar.
-- Every board shows male and female front skins, the helmet, weapon and offhand, and a complete ten-piece equipment set.
-- `event-sets-v1/production/` contains the production manifest and two final contact sheets. The accepted 17 atlases and 34 individual portraits live only in their runtime asset folders to avoid duplicate art copies.
-- All production atlases and portraits are registered in the runtime asset maps. Harvestwake's nine class skins are connected to its existing event reward IDs; the eight future LiveOps sets remain staged until their gameplay definitions exist.
-
-## Canonical reference
-
-- `source-pack/VELDRYN_Character_Runtime_Assets_v1/source_references/ironwarden_pilot_reference.png`
-
-The retired local art archive was removed on 2026-09-09 after the accepted runtime assets were verified.
+- `event-sets-v1/production/` contains the production manifest and the equipment contact sheet. The accepted 17 atlases live only in `assets/equipment-ui/` to avoid duplicate art copies.

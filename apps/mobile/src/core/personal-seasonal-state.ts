@@ -4,6 +4,7 @@ import type {SeasonalActivity,SeasonalPeriod,SeasonalProgress} from './seasonal-
 /** Personal challenges and their claim receipts follow the selected character, not the account-wide currency wallet. */
 const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
 export const SEASONAL_ACTIVITY_TAGS:readonly SeasonalActivity[]=['combat','gathering','crafting','exploration','faith','boss','cooking','alchemy','smithing','tailoring','enchanting','event'];
+export const SEASONAL_QUEST_COUNTS:Readonly<Record<SeasonalPeriod,number>>={daily:3,weekly:4,monthly:5};
 const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
@@ -14,7 +15,7 @@ export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
   if(!row||typeof row.key!=='string'||row.key.length>32)continue;
   const counts:Partial<Record<SeasonalActivity,number>>={};
   for(const tag of activityTags){const value=row.counts?.[tag];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value));}
-  const tags=Array.isArray(row.tags)&&row.tags.length===(period==='daily'?2:period==='weekly'?3:4)&&row.tags.every((tag:unknown)=>typeof tag==='string'&&activityTags.includes(tag as SeasonalActivity))&&new Set(row.tags).size===row.tags.length?row.tags as SeasonalActivity[]:undefined;
+  const tags=Array.isArray(row.tags)&&(row.tags.length===SEASONAL_QUEST_COUNTS[period]||row.tags.length===SEASONAL_QUEST_COUNTS[period]-1)&&row.tags.every((tag:unknown)=>typeof tag==='string'&&activityTags.includes(tag as SeasonalActivity))&&new Set(row.tags).size===row.tags.length?row.tags as SeasonalActivity[]:undefined;
   result[period]={key:row.key,counts,...(tags?{tags:[...tags]}:{})};
  }
  return result;

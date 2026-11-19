@@ -10,6 +10,8 @@ import {decodePartyEventReadOnlySnapshot,decodePartyEventReadTransportV39,partyE
 import {decodePartyEventRewardReadOnlyV62,type PartyRewardMobileV62} from '../core/party-event-reward-readonly-v62';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
+import {WorldBossBattleStage} from '../components/WorldBossBattleStage';
+import {WORLD_BOSS_REPLAY_FIXTURE} from '../dev/world-boss-replay-fixture';
 import {filterMarketPreviewItems,type MarketPreviewItem,type MarketPreviewSort} from '../core/market-preview-filter';
 import {UiIcon} from '../components/UiIcon';
 
@@ -79,6 +81,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
  // while the QA screen stays open; no network request or action is mounted.
  const [statusNowMs,setStatusNowMs]=useState(()=>Date.now());
  const [bossRetry,setBossRetry]=useState(0);
+ const [fightPreview,setFightPreview]=useState(false);
  const [loadedBoss,setLoadedBoss]=useState<{accountId:string;raw:unknown}|null>(null);
  const [bossReadState,setBossReadState]=useState<'idle'|'loading'|'ready'|'empty'|'error'>('idle');
  // A host-approved, authenticated READ endpoint may be injected in QA.
@@ -218,6 +221,8 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs} accessibilityRole="tablist">
       {tabs.map(item=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:activeTab===item.id}} onPress={()=>changeTab(item.id)} style={[s.tab,activeTab===item.id&&{backgroundColor:C.panelRaised,borderColor:accent}]}><Text style={[s.tabText,activeTab===item.id&&{color:C.text}]}>{item.label}</Text></Pressable>)}
     </ScrollView>
+    {feature==='boss'?<Action label="Watch a recorded World Boss fight" s={s} onPress={()=>setFightPreview(true)}/>:null}
+    {feature==='boss'&&fightPreview?<WorldBossBattleStage input={WORLD_BOSS_REPLAY_FIXTURE} language="en" reduceMotion={reduceMotion} onClose={()=>setFightPreview(false)}/>:null}
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
     {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} partyEventRewardStatus={partyEventRewardStatus} trustedAccountId={partyEventAccountId} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}

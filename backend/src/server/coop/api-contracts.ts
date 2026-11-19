@@ -7,7 +7,7 @@ function rejectClientAuthority(row:Record<string,unknown>):void{for(const key of
 
 function parsePreferredEchoCharacterIds(value:unknown,mode:CoopMode):string[]{
  if(mode!=='qmode'||!Array.isArray(value)||value.length>3||new Set(value).size!==value.length
-    ||value.some(id=>typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id)))throw new Error('invalid_echo_selection');
+    ||value.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))throw new Error('invalid_echo_selection');
  return value as string[];
 }
 export function parseCoopRunRequest(value:unknown,mode:CoopMode):CoopRunRequest{

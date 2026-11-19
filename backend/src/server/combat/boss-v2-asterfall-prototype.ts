@@ -21,7 +21,7 @@ export function prepareAsterfallBossV2(
       // Defensive phases introduce short offensive windows without invulnerability.
       abilities=[...boss.abilities,{
         id:'ROOT_V2_LIVING_BARK',name:'Living Bark',cooldownMs:28000,
-        castTimeMs:600,target:'self',priority:76,
+        castTimeMs:1200,target:'self',priority:76,
         effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.04)}],
       }];
       phases=[
@@ -38,14 +38,14 @@ export function prepareAsterfallBossV2(
     case 'BOSS_EXP_BELL':{
       abilities=[...boss.abilities,{
         id:'BELL_V2_SOUL_CURSE',name:'Soul Curse',cooldownMs:14000,
-        castTimeMs:750,target:'current_target',priority:78,
+        castTimeMs:1350,target:'current_target',priority:78,
         effects:[
           {kind:'damage',coeff:.65,damageType:'shadow'},
           {kind:'debuff',tag:'damage_done',value:-.07,durationMs:4500},
         ],
       },{
         id:'BELL_V2_VEIL_MIRROR',name:'Veil Mirror',cooldownMs:22000,
-        castTimeMs:650,target:'self',priority:72,
+        castTimeMs:1150,target:'self',priority:72,
         effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.035)}],
       }];
       phases=[

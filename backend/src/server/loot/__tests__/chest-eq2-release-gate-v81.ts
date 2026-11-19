@@ -113,7 +113,7 @@ rejects(()=>inspectEarnedChestReleaseV81({
  }},approved),'world_one_percent_odds_changed');
 rejects(()=>inspectEarnedChestReleaseV81({
  ...world,paid:true,
-} as EarnedChestEntitlementV80,approved),'untrusted_release_evidence');
+} as unknown as EarnedChestEntitlementV80,approved),'untrusted_release_evidence');
 rejects(()=>inspectEarnedChestReleaseV81(world,{
  ...approved,maxFullyApprovedEq2Tier:6,
 }),'untrusted_release_evidence');

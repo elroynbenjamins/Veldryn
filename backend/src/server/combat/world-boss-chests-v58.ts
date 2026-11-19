@@ -11,6 +11,8 @@
  * shop purchase, world currency, calendar or public route.
  */
 import type {WorldBossRotatingIdV50} from './world-boss-weekend-v22';
+import {defineChestLootTableV67,resolveChestLootV67,
+ type ChestLootTableV67} from '../loot/chest-loot-engine-v67';
 
 export const WORLD_BOSS_CHESTS_V58_RELEASED=false;
 export const WORLD_BOSS_CHESTS_PER_ACCOUNT_EVENT_V58=3 as const;
@@ -89,6 +91,37 @@ export function worldBossChestGuaranteeV58(kind:WorldBossChestKindV58){
   gold:row.gold,companionEssence:row.companionEssence,
   gemDust:row.gemDust,temperingDust:row.temperingDust,
  };
+}
+/** V68 World Boss is the same V67 loot algorithm with a different table.
+ * Preserve 1% independent of boss, set family, player level or chest type.
+ * Gathering-only item stats and the original roll/receipt factory are unchanged.
+ */
+export function worldBossChestLootTableV68(input:{
+ readonly bossId:WorldBossRotatingIdV50;
+ readonly kind:WorldBossChestKindV58;
+}):ChestLootTableV67{
+ const row=definitions.find(d=>d.kind===input?.kind);
+ if(!row||!Object.prototype.hasOwnProperty.call(
+  WORLD_BOSS_GATHERING_SET_POLICY_V58,input?.bossId))
+  throw Error('world_boss_v68_unknown_chest_table');
+ return defineChestLootTableV67({
+  tableId:'world_boss_chest',
+  version:'world_boss_v58_'+input.bossId+'_'+input.kind,
+  guarantees:[
+   {id:'gold',quantity:row.gold},
+   {id:'companion_essence',quantity:row.companionEssence},
+   {id:'gem_dust',quantity:row.gemDust},
+   {id:'tempering_dust',quantity:row.temperingDust},
+  ],
+  groups:[{
+   id:'equipment',type:'equipment',
+   chanceBps:WORLD_BOSS_CHEST_GEAR_CHANCE_BPS_V58,
+   duplicatePolicy:'prefer_unowned',
+   entries:WORLD_BOSS_GEAR_SLOTS_V58.map(slot=>({
+    id:slot,weight:1,
+   })),
+  }],
+ });
 }
 function checked(e:VerifiedWorldBossChestEvidenceV58):void{
  if(!e||!UUID.test(e.eventId)||!UUID.test(e.accountId)||
@@ -177,10 +210,20 @@ export function resolveWorldBossChestGearDraftV58(
   new Set(random.ownedSlots).size!==random.ownedSlots.length||
   random.ownedSlots.some(x=>!knownSlot(x)))
   throw Error('world_boss_v58_invalid_server_roll');
- const unseen=WORLD_BOSS_GEAR_SLOTS_V58.filter(s=>!random.ownedSlots.includes(s));
- const pool=unseen.length?unseen:WORLD_BOSS_GEAR_SLOTS_V58;
- const selectedSlot=random.hitRoll<WORLD_BOSS_CHEST_GEAR_CHANCE_BPS_V58
-  ?pool[random.slotRoll%pool.length]!:null;
+ const table=worldBossChestLootTableV68({
+  bossId:preview.bossId,kind:preview.kind,
+ });
+ const result=resolveChestLootV67(table,{
+  rolls:[{groupId:'equipment',hitRoll:random.hitRoll,
+   selectionRoll:random.slotRoll}],
+  ownedDropIds:random.ownedSlots,
+ });
+ const selected=result.groups[0]!.entryId;
+ const selectedSlot=selected===null?null:(
+  WORLD_BOSS_GEAR_SLOTS_V58.find(slot=>slot===selected)??null
+ );
+ if(selected!==null&&selectedSlot===null)
+  throw Error('world_boss_v68_catalog_mismatch');
  return {
   gearDropped:selectedSlot!==null,selectedSlot,bossId:preview.bossId,
   skill:preview.gearSetSkill,

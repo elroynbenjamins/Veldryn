@@ -554,15 +554,24 @@ export function moveWaitingEquipmentCraft(state:GameState,jobId:string,direction
 }
 
 export function equipmentCraftQueueModel(state:GameState,nowMs:number){
-  const slotInfo=equipmentCraftSlotBreakdown(state),queue=projectedEquipmentCraftingQueue(state,nowMs);
+  const projected=withProjectedQueue(state,nowMs),slotInfo=equipmentCraftSlotBreakdown(projected),queue=equipmentCraftingQueue(projected);
+  // Forecast on an isolated copy. A UI refresh never spends the real charge.
+  const speed=activeDailySupplyBoosts(projected).crafting_speed;
+  const forgeEligible=projected.activity?.kind!=='alchemy'&&projected.activity?.kind!=='processing';
+  const horizon=Math.ceil(Math.max(nowMs,...queue.map(job=>job.completesAtMs))+1000);
+  const forecast=speed&&forgeEligible&&queue.some(row=>row.completesAtMs>nowMs)
+    ?equipmentCraftingQueue(advanceForgeSupply(projected,horizon))
+    :queue;
+  const etaById=new Map(forecast.map(row=>[row.id,row]));
   const waitingIds=queue.filter(row=>isWaiting(row,nowMs)).map(row=>row.id);
   const jobs=queue.map(job=>{
     const recipe=recipeDef(job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
-    const durationSeconds=Math.ceil(jobDurationMs(job)/1000);
+    const eta=etaById.get(job.id)??job;
+    const durationSeconds=Math.ceil(jobDurationMs(eta)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
     return {...job,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
-      ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((job.completesAtMs-nowMs)/1000)),
-      startInSeconds:waiting?Math.max(1,Math.ceil((job.startedAtMs-nowMs)/1000)):0,
+      ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((eta.completesAtMs-nowMs)/1000)),
+      startInSeconds:waiting?Math.max(1,Math.ceil((eta.startedAtMs-nowMs)/1000)):0,
       waitingPosition:waiting?waitingIds.indexOf(job.id)+1:0};
   });
   const active=jobs.filter(row=>row.active).length,waiting=jobs.filter(row=>row.waiting).length,ready=jobs.filter(row=>row.ready).length;

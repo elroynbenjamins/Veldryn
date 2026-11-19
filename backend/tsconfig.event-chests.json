@@ -30,6 +30,8 @@
     "src/server/loot/chest-postgres-store-v70.ts",
     "src/server/loot/chest-equipment-bridge-v71.ts",
     "src/server/loot/__tests__/chest-equipment-bridge-v71.ts",
+    "src/server/loot/world-boss-chest-pg-source-v73.ts",
+    "src/server/loot/__tests__/world-boss-chest-pg-source-v73.ts",
     "src/server/loot/world-boss-chest-source-v72.ts",
     "src/server/loot/__tests__/world-boss-chest-source-v72.ts",
     "src/server/loot/chest-reward-settlement-v69.ts",

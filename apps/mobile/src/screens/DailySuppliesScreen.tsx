@@ -100,7 +100,8 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
    <Text style={s.copy}>{a('Only the strongest Supply buff of a category applies. Weaker active buffs pause while a stronger one runs, then resume.')}</Text>
    <Text style={s.copy}>{a('Supply buffs affect account-wide stored bonuses but use a shared timer across characters. Different categories can run together.')}</Text>
    <Text style={s.copy}>{a('Event boosts, candy, pets and independent bonuses still stack according to their own rules.')}</Text>
-   <Text style={s.copy}>{a('Gathering Speed applies to mining, woodcutting, fishing and herbalism. Crafting Speed applies to timed processing and alchemy; instant recipes have no waiting time to shorten.')}</Text>
+   <Text style={s.copy}>{a('Gathering Speed covers mining, woodcutting, fishing and herbalism. Crafting Speed accelerates timed processing, alchemy and Equipment Forge jobs; instant recipes have no waiting time to shorten.')}</Text>
+   <Text style={s.copy}>{a('Forge jobs across all slots share one Crafting Speed timer. When timed alchemy or processing runs at the same time, it takes priority and Forge uses its regular speed, preventing double consumption.')}</Text>
    <Text style={s.copy}>{a('Combat Speed applies to ordinary idle hunts, not dungeon, boss or PvP cooldowns. Supply buffs do not extend Offline Reserve.')}</Text>
   </Panel>:null}
   {feedback?<ActionFeedback message={feedback.tone==='error'?accountError(language,feedback.message):a(feedback.message)} tone={feedback.tone} reduceMotion={state.settings.reduceMotion}/>:null}

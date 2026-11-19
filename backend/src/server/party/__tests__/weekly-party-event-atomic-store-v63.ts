@@ -182,6 +182,17 @@ async function run(){
   authority,kind:'participation',store:disabled,
  },true),'hidden_store_disabled');
  ensure(pool.connections===0,'disabled_did_not_checkout_db');
+ const oldNodeEnv=process.env.NODE_ENV;
+ try{
+  process.env.NODE_ENV='production';
+  await reject(()=>claimPartyEventChestV60({
+   authority,kind:'participation',
+   store:createPartyEventRewardStoreV63(pool,ports,true),
+  },true),'hidden_gateway_disabled');
+ }finally{
+  process.env.NODE_ENV=oldNodeEnv;
+ }
+ ensure(pool.connections===0,'production_never_checks_out_db');
  const store=createPartyEventRewardStoreV63(pool,ports,true);
  pool.failResources=true;
  await reject(()=>claimPartyEventChestV60({

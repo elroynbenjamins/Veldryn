@@ -38,7 +38,7 @@ export async function prepareSocialEchoCandidates(
   try{
    const record=deriveOnlineCoopLoadout(source.accountId,source.state,Number(source.revision));
    if(record.characterId!==source.characterId||record.characterLevel<minimumLevel
-     ||(record.combatPower??0)<2500||!record.legalEquipment)continue;
+     ||!record.legalEquipment)continue;
    const {readiness}=assessOnlineCoopLoadout(record);
    if(!readiness.ready)continue;
    prepared.push({

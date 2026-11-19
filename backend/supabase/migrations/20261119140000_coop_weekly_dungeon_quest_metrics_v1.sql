@@ -54,9 +54,9 @@ as $function$
    from completed_rooms group by run_id
  )
  select pg_catalog.jsonb_build_object(
-  'clears',count(*) filter(where boss_wins>0)::integer,
-  'deep15',count(*) filter(where deepest>=15)::integer,
-  'elite3',count(*) filter(where elite_wins>=3)::integer
+  'clears',coalesce(max(case when boss_wins>0 then 1 else 0 end),0)::integer,
+  'deep15',coalesce(max(deepest),0)::integer,
+  'elite3',coalesce(max(elite_wins),0)::integer
  ) from per_run;
 $function$;
 revoke all on function public.coop_dungeon_weekly_metrics_server_v1(uuid,timestamptz) from public,anon,authenticated;
@@ -73,6 +73,7 @@ declare
  v_id text;
  v_name text;
  v_description text;
+ v_target integer;
  v_metrics jsonb;
  v_progress integer;
  v_claimed boolean;
@@ -83,18 +84,18 @@ begin
  v_week_key:=pg_catalog.to_char(v_now at time zone 'UTC','IYYY-"W"IW');
  v_week_number:=extract(week from v_now at time zone 'UTC')::integer;
  case v_week_number%3
-  when 0 then v_id:='clears';v_name:='Dungeon Duty';v_description:='Defeat a dungeon boss this week.';
-  when 1 then v_id:='deep15';v_name:='Deep Delver';v_description:='Reach room 15 in a single dungeon run this week.';
-  else v_id:='elite3';v_name:='Elite Hunter';v_description:='Defeat 3 elite encounters in a single dungeon run this week.';
+  when 0 then v_id:='clears';v_name:='Dungeon Duty';v_description:='Defeat a dungeon boss this week.';v_target:=1;
+  when 1 then v_id:='deep15';v_name:='Deep Delver';v_description:='Reach room 15 in a single dungeon run this week.';v_target:=15;
+  else v_id:='elite3';v_name:='Elite Hunter';v_description:='Defeat 3 elite encounters in a single dungeon run this week.';v_target:=3;
  end case;
  v_metrics:=public.coop_dungeon_weekly_metrics_server_v1(p_account_id,v_week_start);
- v_progress:=least(1,greatest(0,coalesce((v_metrics->>v_id)::integer,0)));
+ v_progress:=least(v_target,greatest(0,coalesce((v_metrics->>v_id)::integer,0)));
  select exists(select 1 from public.coop_dungeon_weekly_claims_v1 as c
     where c.account_id=p_account_id and c.week_start=(v_week_start at time zone 'UTC')::date)
  into v_claimed;
  return pg_catalog.jsonb_build_object(
   'weekKey',v_week_key,'id',v_id,'name',v_name,'description',v_description,
-  'progress',v_progress,'target',1,'rewardMarks',25,'claimed',v_claimed,
+  'progress',v_progress,'target',v_target,'rewardMarks',25,'claimed',v_claimed,
   'resetAtMs',pg_catalog.floor(extract(epoch from v_week_start+interval '7 days')*1000)::bigint
  );
 end;
@@ -124,7 +125,7 @@ begin
  v_snapshot:=public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
  if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;
  if (v_snapshot->>'claimed')::boolean then return v_snapshot; end if;
- if (v_snapshot->>'progress')::integer<1 then raise exception 'dungeon_weekly_quest_incomplete'; end if;
+ if (v_snapshot->>'progress')::integer<(v_snapshot->>'target')::integer then raise exception 'dungeon_weekly_quest_incomplete'; end if;
  v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.transaction_timestamp() at time zone 'UTC'))::date;
  v_id:=v_snapshot->>'id';
  insert into public.coop_dungeon_weekly_claims_v1(account_id,week_start,objective_id,reward_marks,request_id)

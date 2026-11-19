@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useSocialText} from '../../i18n/social';
 import {dungeonWeeklyQuestCopy} from '../../i18n/dungeon-weekly-quest-copy';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import type {Language} from '../../i18n';
 import type {DungeonWeeklyQuestSnapshot} from '../../core/dungeon-weekly-quests';
 import {useCoopStyles} from '../../theme/useCoopStyles';
@@ -24,7 +25,7 @@ export function DungeonWeeklyQuestPanel({language,quest,loading,error,busy=false
  return <FantasyPanel variant={quest?.claimed?'success':ready?'selected':'default'}>
   <Pressable accessibilityRole="button"
    accessibilityState={{expanded}} accessibilityLabel={st('Weekly dungeon challenge')}
-   accessibilityHint={expanded?st('Collapse details'):st('View details')}
+   accessibilityHint={expanded?dungeonUxText(language,'weeklyCollapse'):dungeonUxText(language,'weeklyExpand')}
    onPress={()=>setExpanded(value=>!value)} style={({pressed})=>[s.heading,pressed&&s.pressed]}>
    <View style={s.titleWrap}>
     <Text style={s.eyebrow}>{st('WEEKLY DUNGEON QUEST')}</Text>

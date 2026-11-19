@@ -14,7 +14,9 @@ const activityTags=SEASONAL_ACTIVITY_TAGS;
 
 /** Credit completed actions on settlement, matching the game's reward-claim timing. */
 export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,units:number,nowMs:number):GameState{
- if(!state.character||!Number.isFinite(units)||units<1)return state;
+ // Dungeon weekly counters are injected only from the authenticated server's
+ // committed room results; ordinary gameplay actions must not mint progress.
+ if(tag==='dungeon'||!state.character||!Number.isFinite(units)||units<1)return state;
  const ready=ensurePersonalSeasonalState(state);
  const progress=normalizeSeasonalProgress(ready.character?.personalSeasonal?.progress),date=new Date(nowMs);
  for(const period of periods){

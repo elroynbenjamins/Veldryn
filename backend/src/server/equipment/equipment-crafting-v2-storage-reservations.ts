@@ -52,9 +52,17 @@ export function verifyEquipmentV2StorageReservations(
  * A full storage destination defers; it does not discard the exact copy.
  * This must run inside the same eventual account CAS as the claim receipt.
  */
+/** Optional current placements are verified, replayed custody positions.
+ * This prevents later Forge claims from counting obsolete original pouch
+ * reservations after earlier copies move to Bank or become equipped.
+ */
+export interface V2ShadowStorageOccupancy{
+ holderCharacterId:string|null;location:'pouch'|'inventory'|'bank'|'equipped'|'deferred';
+}
 export function reserveEquipmentV2HiddenClaim(
  state:GameState,accountId:string,item:V2DraftItem,
  prior:readonly V2HiddenStorageReservation[],
+ currentPlacements?:readonly V2ShadowStorageOccupancy[],
 ):{reservation:V2HiddenStorageReservation;delivery:V2HiddenClaimCustody} {
  if(prior.some(row=>row.instanceId===item.id))fail('duplicate_v2_storage_reservation');
  const verified=proposeEquipmentV2ClaimCustody(state,accountId,item);
@@ -62,7 +70,10 @@ export function reserveEquipmentV2HiddenClaim(
  if(!owner)fail('unknown_v2_delivery_owner');
  const space=(storage:InventoryState|undefined,destination:'equipment_pouch'|'inventory')=>{
   if(!validateStorage(storage)||!storage)return false;
-  const reserved=prior.filter(row=>row.ownerCharacterId===item.ownerCharacterId&&row.destination===destination).length;
+  const reserved=currentPlacements
+   ?currentPlacements.filter(row=>row.holderCharacterId===item.ownerCharacterId
+     &&row.location===(destination==='equipment_pouch'?'pouch':'inventory')).length
+   :prior.filter(row=>row.ownerCharacterId===item.ownerCharacterId&&row.destination===destination).length;
   return storage.stacks.length+reserved<storage.capacity;
  };
  const destination=space(owner.pouch,'equipment_pouch')?'equipment_pouch'

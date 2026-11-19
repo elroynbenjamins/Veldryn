@@ -4,6 +4,12 @@ on:
     paths:
       - 'backend/src/server/party/weekly-party-event-gear-v51.ts'
       - 'backend/src/server/party/weekly-party-event-chests-v51.ts'
+      - 'backend/src/server/party/weekly-party-event-combat-v59.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-combat-v59.ts'
+      - 'backend/src/server/party/weekly-party-event-claim-v60.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-claim-v60.ts'
+      - 'apps/mobile/src/screens/FeaturePreviewScreen.tsx'
+      - 'apps/mobile/tests/party-event-treasure-preview-ui.cjs'
       - 'backend/src/server/party/__tests__/weekly-party-event-chests-v51.ts'
       - 'backend/src/server/combat/world-boss-chests-v58.ts'
       - 'backend/src/server/combat/__tests__/world-boss-chests-v58.ts'
@@ -43,6 +49,12 @@ jobs:
         run: pnpm exec tsc -p tsconfig.event-chests.json
       - name: Verify equal Party Event gear and three chest sources
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chests-v51.js
+      - name: Verify Equipment 2.0 Party Event equipped bonuses and conditional procs
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-combat-v59.js
+      - name: Verify transactional Party Event chest and exchange replay
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-claim-v60.js
+      - name: Verify mobile Party Event treasure remains a read-only QA design
+        run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
       - name: Verify original World Boss gathering gear, 1 percent odds, source caps
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chests-v58.js
       - name: Verify World Boss milestone proof and cross-account replay safety
@@ -58,6 +70,8 @@ jobs:
           set -euo pipefail
           grep -q 'PARTY_EVENT_GEAR_V51_RELEASED=false' src/server/party/weekly-party-event-gear-v51.ts
           grep -q 'PARTY_EVENT_CHESTS_V51_RELEASED=false' src/server/party/weekly-party-event-chests-v51.ts
+          grep -q 'PARTY_EVENT_COMBAT_V59_RELEASED=false' src/server/party/weekly-party-event-combat-v59.ts
+          grep -q 'PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED=false' src/server/party/weekly-party-event-claim-v60.ts
           grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
           grep -q 'WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false' src/server/combat/world-boss-gathering-loot-v64.ts
           grep -q 'WORLD_BOSS_CHEST_PROOF_V59_LIVE=false' src/server/combat/world-boss-chest-proof-v59.ts

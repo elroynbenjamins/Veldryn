@@ -42,6 +42,7 @@ create table private.party_event_reward_receipts_v61 (
  constraint party_event_reward_receipt_v61_frozen_item check (
   (piece_id is null and item_instance_id is null and exact_item_receipt_version is null) or
   (piece_id is not null and item_instance_id is not null and
+   exact_item_receipt_version is not null and
    length(exact_item_receipt_version) between 3 and 100)
  ),
  constraint party_event_reward_receipt_v61_canonical_amounts check (

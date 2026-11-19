@@ -13,7 +13,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageStat
 
 # Quality candidates run from smallest likely filesize toward most faithful.
 QUALITIES = (80, 84, 88, 92, 96)
@@ -49,19 +49,15 @@ def _save_webp(image: Image.Image, *, quality: int | None) -> bytes:
 
 
 def _mae_visible(a: Image.Image, b: Image.Image, *, mask: Image.Image) -> float:
-    """RGB mean absolute error only where a rendered item is visible."""
+    """Masked RGB MAE (in C via Pillow) over visible item pixels only."""
     if a.size != b.size or mask.size != a.size:
         raise ValueError("comparison_size_mismatch")
-    ar, ag, ab = a.convert("RGB").split()
-    br, bg, bb = b.convert("RGB").split()
     coverage = mask.point(lambda value: 255 if value > 8 else 0)
-    count = sum(1 for pixel in coverage.getdata() if pixel)
-    if count == 0:
+    if coverage.getbbox() is None:
         return 0.0
-    diffs = (ImageChops.difference(x, y) for x, y in ((ar, br), (ag, bg), (ab, bb)))
-    error = sum(sum(p for p, selected in zip(channel.getdata(), coverage.getdata()) if selected) for channel in diffs)
-    return error / (count * 3)
-
+    diff = ImageChops.difference(a.convert("RGB"), b.convert("RGB"))
+    stats = ImageStat.Stat(diff, mask=coverage)
+    return sum(stats.mean) / 3
 
 def _composite(image: Image.Image, background: tuple[int, int, int]) -> Image.Image:
     canvas = Image.new("RGBA", image.size, (*background, 255))
@@ -77,24 +73,37 @@ def fidelity(reference: Image.Image, webp: bytes) -> dict[str, Any]:
     if encoded.getchannel("A").tobytes() != reference.getchannel("A").tobytes():
         return {"passed": False, "error": "alpha_changed"}
 
-    mask_native = reference.getchannel("A")
-    mask_small = mask_native.resize((VISUAL_WIDTH, max(1, round(reference.height * VISUAL_WIDTH / reference.width))), Image.Resampling.BOX)
+    # For atlases evaluate EVERY individual 192px cell at 40px. Resizing
+    # the entire 960px atlas to 40px would obscure edge/detail damage.
+    if reference.size == (960, 384):
+        rectangles = [
+            ((index % 5) * 192, (index // 5) * 192,
+             ((index % 5) + 1) * 192, ((index // 5) + 1) * 192)
+            for index in range(10)
+        ]
+    else:
+        rectangles = [(0, 0, reference.width, reference.height)]
+
     native_error = 0.0
     small_error = 0.0
-    for background in BACKGROUNDS:
-        a = _composite(reference, background)
-        b = _composite(encoded, background)
-        native_error = max(native_error, _mae_visible(a, b, mask=mask_native))
-        a_small = a.resize(mask_small.size, Image.Resampling.BOX)
-        b_small = b.resize(mask_small.size, Image.Resampling.BOX)
-        small_error = max(small_error, _mae_visible(a_small, b_small, mask=mask_small))
+    for rectangle in rectangles:
+        original_cell = reference.crop(rectangle)
+        encoded_cell = encoded.crop(rectangle)
+        alpha = original_cell.getchannel("A")
+        scaled_alpha = alpha.resize((VISUAL_WIDTH, VISUAL_WIDTH), Image.Resampling.BOX)
+        for background in BACKGROUNDS:
+            a = _composite(original_cell, background)
+            b = _composite(encoded_cell, background)
+            native_error = max(native_error, _mae_visible(a, b, mask=alpha))
+            a_small = a.resize((VISUAL_WIDTH, VISUAL_WIDTH), Image.Resampling.BOX)
+            b_small = b.resize((VISUAL_WIDTH, VISUAL_WIDTH), Image.Resampling.BOX)
+            small_error = max(small_error, _mae_visible(a_small, b_small, mask=scaled_alpha))
     return {
         "passed": native_error <= MAX_NATIVE_RGB_MAE and small_error <= MAX_40PX_RGB_MAE,
         "native_mae": round(native_error, 4),
         "40px_mae": round(small_error, 4),
         "alpha_exact": True,
     }
-
 
 def _png_size(image: Image.Image) -> int:
     stream = BytesIO()

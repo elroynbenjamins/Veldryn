@@ -70,7 +70,7 @@ function validateRolledOutcome(piece:V2ServerPiece,roll:V2DraftRollOutcome){
   if(!affix||!Object.prototype.hasOwnProperty.call(V2_SERVER_AFFIX_RANGES,affix.stat)
    ||used.has(affix.stat))throw new Error('invalid_v2_affix_identity');
   used.add(affix.stat);
-  const range=V2_SERVER_AFFIX_RANGES[affix.stat][piece.tier-1];
+  const range=V2_SERVER_AFFIX_RANGES[affix.stat as V2Affix][piece.tier-1];
   const min=range[0]+(range[1]-range[0])*rarityBand.low;
   const max=range[0]+(range[1]-range[0])*rarityBand.high;
   if(!Number.isFinite(affix.percent)||affix.percent<min-.011||affix.percent>max+.011

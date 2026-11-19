@@ -1015,7 +1015,8 @@
       "equipmentType": "combat",
       "source": "boss_drop_or_completion_chest",
       "tableStatus": "pending_exact_dungeon_item_manifest",
-      "neverOverwriteCurrentRates": true
+      "neverOverwriteCurrentRates": true,
+      "noEquipmentShop": true
     },
     "partyEvent": {
       "proposedBaseBudgetMultRange": [
@@ -1032,7 +1033,8 @@
       "source": "party_event_chest_only",
       "sourcePr": 1416,
       "existingDraftViolation": "party_event_chest_or_exchange must be removed from issuing policy; existing hidden code is not release-ready",
-      "doNotChangeLiveLootOdds": true
+      "doNotChangeLiveLootOdds": true,
+      "noEquipmentExchange": true
     },
     "worldBoss": {
       "equipmentType": "gathering_speed_specialization_only",
@@ -1046,7 +1048,8 @@
       ],
       "existingChanceBps": 100,
       "existingDraftViolation": "V58 World Sigil equipment exchange quote contradicts chest-only requirement; remove/disable gear exchange before release",
-      "doNotChangeCurrentChance": true
+      "doNotChangeCurrentChance": true,
+      "noSigilExchange": true
     }
   },
   "releaseGates": {

@@ -42,6 +42,11 @@ on:
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-chest-source-v77.ts'
+      - 'backend/src/server/loot/chest-earned-entitlement-v80.ts'
+      - 'backend/src/server/loot/chest-eq2-release-gate-v81.ts'
+      - 'backend/src/server/loot/__tests__/chest-eq2-release-gate-v81.ts'
+      - 'backend/tests/chest-earned-entitlement-v80.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119172000_chest_earned_entitlements_v80_review_only.sql'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/src/server/loot/chest-equipment-bridge-v71.ts'
       - 'backend/src/server/loot/__tests__/chest-equipment-bridge-v71.ts'
@@ -132,6 +137,10 @@ jobs:
         run: |
           node tests/chest-reward-ledger-v70.mjs
           node tests/chest-postgres-store-v70.mjs
+      - name: Verify V80 immutable earned chests in disposable private PostgreSQL
+        run: node tests/chest-earned-entitlement-v80.mjs
+      - name: Verify V81 Equipment 2.0 T1–T5 gate and T6–T9 deferred guarantees
+        run: node .event-chest-tests/server/loot/__tests__/chest-eq2-release-gate-v81.js
       - name: Verify V71 Party/World Equipment 2.0 binding and owner custody
         run: node .event-chest-tests/server/loot/__tests__/chest-equipment-bridge-v71.js
       - name: Verify server-only deterministic chest entropy and replay safety
@@ -167,6 +176,9 @@ jobs:
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
+          grep -q 'CHEST_EARNED_ENTITLEMENT_V80_RELEASED=false' src/server/loot/chest-earned-entitlement-v80.ts
+          grep -q 'CHEST_EQ2_RELEASE_GATE_V81_RELEASED=false' src/server/loot/chest-eq2-release-gate-v81.ts
+          test ! -f supabase/migrations/20261119172000_chest_earned_entitlements_v80_review_only.sql
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts
           test ! -f supabase/migrations/20261119104500_universal_chest_ledger_v70.sql
           grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts

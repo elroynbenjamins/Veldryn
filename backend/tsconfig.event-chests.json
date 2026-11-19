@@ -23,6 +23,9 @@
     "src/server/combat/world-boss-chest-proof-v59.ts",
     "src/server/combat/__tests__/world-boss-chest-proof-v59.ts",
     "src/server/combat/world-boss-chest-resolution-v60.ts",
-    "src/server/combat/__tests__/world-boss-chest-resolution-v60.ts"
+    "src/server/combat/__tests__/world-boss-chest-resolution-v60.ts",
+    "src/server/combat/world-boss-gathering-instance-v62.ts",
+    "src/server/combat/world-boss-chest-settlement-v61.ts",
+    "src/server/combat/__tests__/world-boss-chest-settlement-v61.ts"
   ]
 }

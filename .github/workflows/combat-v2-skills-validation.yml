@@ -18,6 +18,9 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   pull_request:
     paths:
@@ -34,6 +37,9 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
@@ -150,3 +156,33 @@ jobs:
         run: pnpm --dir backend exec tsc -p tsconfig.online.json
       - name: Reject build spoofing and verify disabled transport
         run: node backend/dist/online/backend/online/tests/combat-v2-build-auth-boundary.js
+
+  legacy_edge_isolation:
+    name: Live Edge isolation and legacy combat parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Verify fail-closed V2 import shims and leaked-module rejection
+        run: node tools/tests/combat-v2-edge-isolation.test.mjs
+      - name: Compile production gameplay and co-op bundles WITHOUT experimental V2 runtime
+        run: node tools/build-online.mjs
+      - name: Compile real private engine and legacy combat fixtures
+        run: pnpm --dir backend build
+      - name: Verify deterministic pre-2.0 combat and party matrix
+        run: |
+          node backend/dist/server/combat/__tests__/combat-smoke.js
+          node backend/dist/server/combat/__tests__/party-matrix.js
+      - name: Verify unchanged live Q-Mode rules
+        run: node backend/dist/server/coop/__tests__/phase6-qmode.js
+      - name: Validate private enemy/class V2 rules and no-authority legacy replay
+        run: node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js

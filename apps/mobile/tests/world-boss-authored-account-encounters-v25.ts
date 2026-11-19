@@ -3,6 +3,7 @@
  * derived 14-round probes. No private DB, public API, rewards or real players.
  */
 import {assert} from './test-assert';
+import {worldBossReplayCues} from '../src/core/world-boss-replay-presentation';
 import {regionalCombatFixture,REGIONAL_COMBAT_FIXTURES} from
  '../src/core/regional-combat-fixtures';
 import type {ClassId,GameState} from '../src/core/types';
@@ -86,6 +87,13 @@ async function main(){
   seed:'WB25_LEGACY_CONTRACT_SEED_123456789',
   players:[launchPlayer('Ironwarden',25)],
  }), 'requires_four_players');
+ // V58: tonics belong only to the owned-party account raid, never the legacy Echo path.
+ reject(()=>simulateWorldBossRounds({
+  boss:'hollowroot',phase:'armored',
+  seed:'WB25_LEGACY_CONTRACT_SEED_123456789',
+  players:['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(name=>launchPlayer(name,25)),
+  serverTonic:{outgoing:1.1,incoming:1,healing:1,shielding:1},
+ }), 'tonic_requires_account_raid');
  let fights=0,tactical=0,signatureObserved=0,statusEvents=0,
   protectionObserved=0,cleansesObserved=0,interruptsObserved=0,
   guardRefreshObserved=0,wipes=0;
@@ -150,6 +158,19 @@ async function main(){
     if(result.events.some(e=>e.type==='guard'&&e.detail==='local_only'))
      guardRefreshObserved++;
     if(!result.survived)wipes++;
+    // Every real authored replay must present cleanly: entrance first, results last,
+    // each party strike/miss and boss hit carried through, nothing invented.
+    const beats=worldBossReplayCues({bossId:boss,phase,tonicItemId:null,reduceMotion:false,
+     party:result.characterLedger.map(c=>({characterId:c.characterId,name:'Hero '+c.characterId.slice(-4),classId:c.role})),
+     events:result.events,world:{maxHp:10_000_000,hpBefore:10_000_000,creditedHp:result.proposedWorldHpDamage}}).map(c=>c.beat);
+    assert.equal(beats[0].kind,'entrance');assert.equal(beats[beats.length-1].kind,'results');
+    const bossName=(id?:string)=>['HOLLOWROOT','SUNSCAR','FROSTMARCH'].includes(id??'');
+    const partyHits=result.events.filter(e=>(e.type==='strike'||e.type==='miss')&&!bossName(e.actorId)).length;
+    assert.equal(beats.filter(b=>b.kind==='party_action'&&(b.action==='strike'||b.action==='miss')).length,partyHits,
+     'Every real party strike and miss is presented exactly once');
+    const bossHits=result.events.filter(e=>e.type==='strike'&&bossName(e.actorId)).length;
+    assert.equal(beats.reduce((n,b)=>n+(b.kind==='boss_attack'?b.hits.length:0),0),bossHits,
+     'Every real boss hit is presented exactly once, grouped into impacts');
     if(result.events.some(e=>e.type==='telegraph'&&
      e.abilityId===signature[boss][phase]))signatureObserved++;
     if(size===1)soloWorldHpPreview=result.proposedWorldHpDamage;

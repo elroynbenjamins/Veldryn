@@ -10,6 +10,18 @@ import type {CombatantDefinition, AbilityDefinition, AbilityEffect} from './type
 import {deriveWorldBossWarCampEffectsV11,type WorldBossWarCampSnapshotV11} from './world-boss-war-camp-v11';
 import {verifyWorldBossEncounterProfileV13,type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
 
+/** V58: one buff tonic per account raid, frozen and already paid at reservation.
+ * Multipliers come from the server dungeon tonic catalog, never from player JSON. */
+export interface WorldBossTonicModifiersV58{outgoing:number;incoming:number;healing:number;shielding:number;}
+const NEUTRAL_TONIC:WorldBossTonicModifiersV58={outgoing:1,incoming:1,healing:1,shielding:1};
+function verifiedTonic(t:WorldBossTonicModifiersV58|undefined):WorldBossTonicModifiersV58{
+ if(t===undefined)return NEUTRAL_TONIC;
+ const ok=(v:unknown,min:number,max:number)=>typeof v==='number'&&Number.isFinite(v)&&v>=min&&v<=max;
+ if(!t||!ok(t.outgoing,1,1.25)||!ok(t.incoming,.75,1)||!ok(t.healing,1,1.25)||!ok(t.shielding,1,1.25))
+  throw Error('world_boss_v58_invalid_tonic');
+ return t;
+}
+
 export type WorldBossId='hollowroot'|'sunscar'|'frostmarch';
 export type WorldBossPhase='armored'|'exposed'|'enraged';
 export type WorldBossOrder='break_armor'|'hold_line'|'steady_assault';
@@ -38,6 +50,8 @@ export interface WorldBossRoundInput {
   testOnlyStressMultiplier?:number;
   /** Must come from a trusted frozen event reservation, never from player JSON. */
   serverWarCamp?:WorldBossWarCampSnapshotV11;
+  /** V58 account raids only: the frozen tonic shared by the whole owned party. */
+  serverTonic?:WorldBossTonicModifiersV58;
 }
 export interface WorldBossRoundResult {
   boss:WorldBossId;phase:WorldBossPhase;roundsCompleted:number;survived:boolean;bossHpDamage:number;
@@ -135,6 +149,8 @@ function simulateWorldBossCore(
   !Number.isFinite(input.testOnlyStressMultiplier)||input.testOnlyStressMultiplier<1||input.testOnlyStressMultiplier>12))
   throw Error('world_boss_v13_invalid_test_stress');
  const camp=deriveWorldBossWarCampEffectsV11(input.serverWarCamp);
+ if(input.serverTonic!==undefined&&!accountRaid)throw Error('world_boss_v58_tonic_requires_account_raid');
+ const tonic=verifiedTonic(input.serverTonic);
  const players:Player[]=input.players.map(original=>{
   const def={...original,stats:{...original.stats,maxHp:money(original.stats.maxHp*camp.startingHpMultiplier)}};
   return {def,hp:def.stats.maxHp,shields:[],statuses:[],cooldowns:{},buffs:{}};
@@ -182,7 +198,7 @@ function simulateWorldBossCore(
    const ap=roleAdjustedAttackPower({team:'players',role:actor.def.role,attackPower:actor.def.stats.attackPower,defense:actor.def.stats.defense,maxHp:actor.def.stats.maxHp,healingPower:actor.def.stats.healingPower});
    const damage=money(damageAfterMitigation(ap,coeff,defenseMitigation(bossDefense,1200),.95+noRngBelow(rng,round+':damage_variance')*.1,crit,actor.def.stats.critMultiplier));
    const weak=round<=exposedThrough && guard<=0;
-   const enhanced=money(damage*(weak?1.10*camp.weakPointMultiplier:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
+   const enhanced=money(damage*tonic.outgoing*(weak?1.10*camp.weakPointMultiplier:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
    const guardCoeff=(order==='break_armor'?1.05:1)*camp.guardBreakMultiplier;
    const absorbed=money(Math.min(guard,enhanced*guardCoeff));
    guard=money(guard-absorbed);
@@ -199,6 +215,15 @@ function simulateWorldBossCore(
   const mit=defenseMitigation(target.def.stats.defense,1200);
   let preShield=money(damageAfterMitigation(attack,coeff,mit,.95+noRngBelow(rng,round+':boss_variance')*.1,false,1));
   const blockedByDefense=money(Math.max(0,raw-preShield));
+  if(tonic.incoming<1){
+   // Real, ledger-visible HP saved by the Ward tonic after existing shields; not World Impact.
+   const shieldCoverage=target.shields.reduce((n,s)=>n+s.amount,0);
+   const beforeHp=Math.min(target.hp,Math.max(0,preShield-shieldCoverage));
+   const reduced=money(preShield*tonic.incoming);
+   const saved=money(Math.max(0,beforeHp-Math.min(target.hp,Math.max(0,reduced-shieldCoverage))));
+   preShield=reduced;
+   if(saved>0)emit({round,type:'mitigate',abilityId:'TONIC_WARD',actorId:target.def.id,targetId:target.def.id,amount:saved,detail:'tonic_not_impact'});
+  }
   let campSaved=0;
   if(camp.bossDamageReduction>0){
    const shieldCoverage=target.shields.reduce((n,s)=>n+s.amount,0);
@@ -260,7 +285,7 @@ function simulateWorldBossCore(
  };
  const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,amount:number)=>{
   if(target.hp<=0)return;
-  const healed=money(Math.min(money(amount*camp.healingMultiplier),target.def.stats.maxHp-target.hp));
+  const healed=money(Math.min(money(amount*camp.healingMultiplier*tonic.healing),target.def.stats.maxHp-target.hp));
   target.hp=money(target.hp+healed);ledger[actor.def.id].effectiveHealing=money(ledger[actor.def.id].effectiveHealing+healed);
   emit({round,type:'heal',actorId:actor.def.id,targetId:target.def.id,abilityId,amount:healed});
  };
@@ -320,7 +345,7 @@ function simulateWorldBossCore(
    if(effect.kind==='damage')applyDamage(round,actor,undefined,chosen.id,(effect.coeff??0)*(1-reduced),'player');
    if(effect.kind==='heal')applyHeal(round,actor,target,chosen.id,actor.def.stats.healingPower*(effect.coeff??0)*(1-reduced)+(effect.flat??0));
    if(effect.kind==='shield' && target.hp>0){
-    const amount=money((actor.def.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*(1-reduced));
+    const amount=money((actor.def.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*(1-reduced)*tonic.shielding);
     target.shields.push({amount,ownerId:actor.def.id});
     emit({round,type:'shield',actorId:actor.def.id,targetId:target.def.id,abilityId:chosen.id,amount});
    }

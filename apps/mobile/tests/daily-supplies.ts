@@ -17,8 +17,8 @@ let home=dailySuppliesHomeSummary(state,t0);
 ok(home.visible&&home.canClaim&&!!home.claimLabel,'Home should surface a ready Daily Supplies claim');
 const first=claimDailySupplies(state,state.character!.id,t0);
 state=first.state;
-ok(first.status.reward.kind==='boost'&&first.status.reward.type==='gathering_yield','Claim 1 should bank Gathering Yield');
-equal(dailySupplyBank(state.character).gathering_yield,1,'Claim 1 should bank one character-bound charge');
+ok(first.status.reward.kind==='boost'&&first.status.reward.type==='gathering_speed','Claim 1 should bank Gathering Speed');
+equal(dailySupplyBank(state.character).gathering_speed,1,'Claim 1 should bank one character-bound charge');
 rejects(()=>claimDailySupplies(state,state.character!.id,t0+1000),'A UTC day can only be claimed once');
 rejects(()=>claimDailySupplies({...state,account:{...state.account,dailySupplies:{schemaVersion:1,totalClaims:6,lastClaimDayKey:'2026-09-19'}}},'FAKE_CHARACTER',t0+DAY),'Daily Supplies claims must reject a fabricated receiver even on a premium milestone');
 const paused=claimDailySupplies(state,state.character!.id,t0+4*DAY);
@@ -35,51 +35,66 @@ equal(cycle.account.dailySupplies?.totalClaims,28,'A complete cycle should recor
 equal(premium,100,'Milestones 7/14/21/28 should award 100 premium currency total');
 equal(cycle.account.premiumCurrencyBalance,100,'Premium milestone currency should be account-wide');
 const reloadedCycle=normalizeSave(structuredClone(cycle));equal(reloadedCycle.account.premiumCurrencyBalance,100,'Premium milestone currency must survive save normalization');equal(reloadedCycle.account.dailySupplies?.totalClaims,28,'Daily Supplies track must survive save normalization');
-for(const type of ['gathering_yield','crafting_output','skill_xp','combat_xp'] as const)equal(dailySupplyBank(cycle.character)[type],6,'Twenty-four normal claims should rotate evenly across all four boosts');
+for(const type of ['gathering_speed','crafting_output','skill_xp','combat_xp'] as const)equal(dailySupplyBank(cycle.character)[type],6,'Twenty-four normal claims should rotate evenly across all four boosts');
 const nextCycle=dailySuppliesStatus(cycle,t0+28*DAY);equal(nextCycle.cycle,2,'The track should roll into a new cycle after claim 28');equal(nextCycle.dayInTrack,1,'The next cycle should restart at claim 1');
 
 let roster=createCharacter(newGame(t0),'WAYFINDER','Main');
 roster={...roster,otherCharacters:[{character:{...roster.character!,id:'ALT_CHAR',name:'Alt'},inventory:{stacks:[],capacity:30},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:structuredClone(roster.skills),quests:structuredClone(roster.quests),currentRegionId:'GREENFIELDS'}]};
 const altClaim=claimDailySupplies(roster,'ALT_CHAR',t0);
-equal(altClaim.state.otherCharacters?.[0].character.dailySupplyBoostBank?.gathering_yield,1,'Normal Daily Supplies can be assigned to another owned character');
-ok(!altClaim.state.character?.dailySupplyBoostBank?.gathering_yield,'Assigning a charge to an alt must not also grant it to the active character');
+equal(altClaim.state.otherCharacters?.[0].character.dailySupplyBoostBank?.gathering_speed,1,'Normal Daily Supplies can be assigned to another owned character');
+ok(!altClaim.state.character?.dailySupplyBoostBank?.gathering_speed,'Assigning a charge to an alt must not also grant it to the active character');
 
 let activation=createCharacter(newGame(t0),'WAYFINDER','Activation');
-activation={...activation,character:{...activation.character!,dailySupplyBoostBank:{gathering_yield:1}}};
-activation=activateDailySupplyBoost(activation,'gathering_yield');
+activation={...activation,character:{...activation.character!,dailySupplyBoostBank:{gathering_speed:1}}};
+activation=activateDailySupplyBoost(activation,'gathering_speed');
 home=dailySuppliesHomeSummary(activation,t0);
-ok(home.visible&&home.activeLabel?.includes('Gathering Yield')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time even if today\'s claim is also ready');
+ok(home.visible&&home.activeLabel?.includes('Gathering Speed')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time even if today\'s claim is also ready');
 equal(activation.character?.activeDailySupplyBoost?.remainingSeconds,DAILY_SUPPLY_CHARGE_SECONDS,'Activated charge should contain exactly two hours of qualifying time');
-equal(activation.character?.dailySupplyBoostBank?.gathering_yield,undefined,'Activation should consume one banked charge');
+equal(activation.character?.dailySupplyBoostBank?.gathering_speed,undefined,'Activation should consume one banked charge');
 activation=activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp');
-equal(activation.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Gathering Yield stays active after Combat XP activates');
+equal(activation.character?.activeDailySupplyBoosts?.gathering_speed?.remainingSeconds,7200,'Gathering Speed stays active after Combat XP activates');
 equal(activation.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Different Daily Supplies bonuses can run simultaneously');
 const restored=migrateSave(activation);
-equal(restored.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,7200,'Reload preserves first active login boost');
+equal(restored.character?.activeDailySupplyBoosts?.gathering_speed?.remainingSeconds,7200,'Reload preserves first active login boost');
 equal(restored.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Reload preserves second active login boost');
 rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'One type cannot be activated twice concurrently');
+const legacyBank=normalizeSave({...activation,character:{...activation.character!,dailySupplyBoostBank:{gathering_yield:2} as never,activeDailySupplyBoost:{type:'gathering_yield',remainingSeconds:1800} as never,activeDailySupplyBoosts:undefined}});
+equal(legacyBank.character?.dailySupplyBoostBank?.gathering_speed,2,'Previously banked Gathering Yield charges migrate into Gathering Speed');
+equal(legacyBank.character?.activeDailySupplyBoost?.type,'gathering_speed','Previously active Gathering Yield becomes Gathering Speed without losing time');
+equal(legacyBank.character?.activeDailySupplyBoost?.remainingSeconds,1800,'Legacy activation time is preserved');
 
 let baseGather=createCharacter(newGame(t0),'WAYFINDER','Base Gather');
 baseGather=startGathering(baseGather,'GREENWOOD_TREE',t0);
 const baseGatherPreview=previewActivityReward(baseGather,t0+3600_000);
-let boostedGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoost:{type:'gathering_yield' as const,remainingSeconds:7200}}};
+let boostedGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoost:{type:'gathering_speed' as const,remainingSeconds:7200}}};
 const boostedGatherPreview=previewActivityReward(boostedGather,t0+3600_000);
-equal(boostedGatherPreview.xp,baseGatherPreview.xp,'Gathering Yield must not increase Skill XP');
-equal(boostedGatherPreview.items[0].quantity,baseGatherPreview.items[0].quantity+Math.floor(baseGatherPreview.items[0].quantity*.10),'Gathering Yield should add exactly 10% stackable output with integer carry');
+ok(boostedGatherPreview.xp>baseGatherPreview.xp,'Gathering Speed should complete more actions and therefore earn more Skill XP');
+ok(boostedGatherPreview.kills>baseGatherPreview.kills,'Gathering Speed should complete more mining/woodcutting actions');
+ok(boostedGatherPreview.items[0].quantity>baseGatherPreview.items[0].quantity,'Gathering Speed should earn more resources through additional actions, not an extra-yield roll');
 const mixedGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoosts:{
- gathering_yield:{type:'gathering_yield' as const,remainingSeconds:7200},
+ gathering_speed:{type:'gathering_speed' as const,remainingSeconds:7200},
  skill_xp:{type:'skill_xp' as const,remainingSeconds:7200},
  combat_xp:{type:'combat_xp' as const,remainingSeconds:7200},
 }}};
 const mixedPreview=previewActivityReward(mixedGather,t0+3600_000);
-equal(mixedPreview.items[0].quantity,boostedGatherPreview.items[0].quantity,'Concurrent gathering yield still grants exact +10% items');
-equal(mixedPreview.xp,baseGatherPreview.xp+Math.floor(baseGatherPreview.xp*.10),'Concurrent skill XP grants its own +10%');
+equal(mixedPreview.items[0].quantity,boostedGatherPreview.items[0].quantity,'Concurrent Skill XP should not add resources beyond Gathering Speed');
+equal(mixedPreview.xp,boostedGatherPreview.xp+Math.floor(boostedGatherPreview.xp*.10),'Concurrent Skill XP grants its own +10% on XP from completed speed-boosted actions');
 const mixedClaim=claimActivity(mixedGather,t0+3600_000);
-equal(mixedClaim.state.character?.activeDailySupplyBoosts?.gathering_yield?.remainingSeconds,3600,'Gathering Yield consumes its own qualifying hour');
+equal(mixedClaim.state.character?.activeDailySupplyBoosts?.gathering_speed?.remainingSeconds,3600,'Gathering Speed consumes its own qualifying hour');
 equal(mixedClaim.state.character?.activeDailySupplyBoosts?.skill_xp?.remainingSeconds,3600,'Skill XP independently consumes the same qualifying hour');
 equal(mixedClaim.state.character?.activeDailySupplyBoosts?.combat_xp?.remainingSeconds,7200,'Combat XP retains time during non-combat gathering');
 const gathered=claimActivity(boostedGather,t0+3600_000);
 equal(gathered.state.character?.activeDailySupplyBoost?.remainingSeconds,3600,'One hour of qualifying gathering should consume one hour of boost time');
+const longGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoost:{type:'gathering_speed' as const,remainingSeconds:7200}}};
+const longPreview=previewActivityReward(longGather,t0+3*3600_000);
+const ordinaryLong=previewActivityReward(baseGather,t0+3*3600_000);
+ok(longPreview.kills>ordinaryLong.kills,'A two-hour speed charge should increase actions over a three-hour offline session');
+const firstTwoHours=claimActivity(longGather,t0+2*3600_000);
+const followingHour=claimActivity(firstTwoHours.state,t0+3*3600_000);
+equal(firstTwoHours.reward.kills+followingHour.reward.kills,longPreview.kills,'One long offline claim must match two claims split at boost expiry');
+equal(followingHour.state.character?.activeDailySupplyBoosts?.gathering_speed,undefined,'Gathering speed must expire after two eligible hours');
+const shortGather=claimActivity({...baseGather,character:{...baseGather.character!,activeDailySupplyBoost:{type:'gathering_speed',remainingSeconds:7200}}},t0+1000);
+equal(shortGather.state.character?.activeDailySupplyBoost?.remainingSeconds,7199,'Gathering speed charge must drain for qualifying time even before the first action completes');
 
 let skillGather={...baseGather,character:{...baseGather.character!,activeDailySupplyBoost:{type:'skill_xp' as const,remainingSeconds:7200}}};
 const skillPreview=previewActivityReward(skillGather,t0+3600_000);

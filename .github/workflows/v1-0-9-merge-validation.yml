@@ -7,10 +7,27 @@ concurrency:
 on:
   pull_request:
     paths:
-      - 'apps/mobile/**'
+      # Keep historical badge/gear/profile regression coverage without rerunning
+      # the entire legacy suite for unrelated social, cooking or world UI edits.
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'apps/mobile/src/core/player-badges.ts'
+      - 'apps/mobile/src/core/profile-*.ts'
+      - 'apps/mobile/src/core/equipment-*.ts'
+      - 'apps/mobile/src/core/crafted-gear-*.ts'
+      - 'apps/mobile/src/core/weapon-bonus-rolls.ts'
+      - 'apps/mobile/src/components/profile/**'
+      - 'apps/mobile/src/components/*Badge*.tsx'
+      - 'apps/mobile/src/components/OptionPager.tsx'
+      - 'apps/mobile/src/screens/Profile*.tsx'
+      - 'apps/mobile/tests/profile-*.ts'
+      - 'apps/mobile/tests/*badge*.ts'
+      - 'apps/mobile/tests/weapon-bonus-rolls.ts'
       - 'backend/supabase/migrations/*badge*'
       - 'backend/supabase/tests/profile_badges_tenure_fixture.sql'
-      - 'tools/**'
+      - 'tools/test-player-badge-tenure-db.mjs'
+      - 'tools/run-mobile-core-tests.mjs'
+      - 'tools/mobile-core-tests.json'
       - '.github/workflows/v1-0-9-merge-validation.yml'
   workflow_dispatch:
 jobs:

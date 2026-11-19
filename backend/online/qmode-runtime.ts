@@ -70,7 +70,7 @@ export class OnlineQModeRuntime{
   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots});
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,runLength:request.runLength??'standard',npcSnapshots});
   const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
    const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
    if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}

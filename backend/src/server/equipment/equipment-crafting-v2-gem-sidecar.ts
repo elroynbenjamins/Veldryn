@@ -120,7 +120,7 @@ export function verifyEquipmentV2GemSidecar(
    fail('invalid_v2_gem_receipt');
   if(row.version<=lastVersion)fail('out_of_order_v2_gem_receipt');
   lastVersion=row.version;
-  const before=rebuilt.get(row.instanceId)??{instanceId:row.instanceId};
+  const before:V2GemCopySockets=rebuilt.get(row.instanceId)??{instanceId:row.instanceId};
   const previous=before[row.socket];
   const burned=previous&&previous.gemId!==row.gemId?previous.gemId:null;
   if(burned!==row.burnedGemId

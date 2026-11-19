@@ -3,7 +3,19 @@ name: Veldryn 1.0.11 reconcile Edge bundles
 on:
   push:
     branches: ['release/1.0.11-feature-integration-20261119']
-    paths: ['.github/workflows/v1-0-11-reconcile-generated-edge.yml']
+    # Reconcile changed online sources on this isolated release branch.
+    # Generated functions/index.ts are intentionally excluded to prevent loops.
+    paths:
+      - '.github/workflows/v1-0-11-reconcile-generated-edge.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
+      - 'backend/src/**'
+      - 'backend/package.json'
+      - 'backend/pnpm-lock.yaml'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'tools/build-online.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
   workflow_dispatch:
 
 permissions:

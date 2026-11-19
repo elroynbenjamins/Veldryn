@@ -218,6 +218,56 @@ try{
  )).rows[0].n;
  assert.equal(unissued,0,'gear failure must roll back guaranteed Gold as well');
  assert.equal(noInbox,0,'gear failure must not create an Inbox claim');
+ // A real V70 transaction must settle an earned Party chest whose legacy
+ // equipment roll misses: grant exactly the guaranteed rewards + one Inbox,
+ // no item ledger, no character custody, and a receipt that cannot be rerolled.
+ const missSource='party-event:'+Date.UTC(2026,10,16)+':'+account+
+  ':preparation';
+ const missedGearTable=defineChestLootTableV67({
+  ...equipmentTable,version:'party_event_v51_broken_caravan_preparation_standard',
+  groups:equipmentTable.groups.map(g=>({...g,chanceBps:0})),
+ });
+ proof={...proof,sourceKey:missSource,lootTable:missedGearTable,
+  recipientCharacterId:character,equipmentDeliveryMode:'character'};
+ const missed=await open({
+  authenticatedAccountId:account,sourceKey:missSource,
+ });
+ assert.equal(missed.replayed,false);
+ assert.equal(missed.receipt.drops.length,0);
+ assert.equal(missed.receipt.equipmentDeliveryMode,null);
+ assert.equal(missed.receipt.recipientCharacterId,null);
+ const physicalGuarantees=(await db.query(
+  'select count(*)::integer n from private.v70_test_guarantees where source_key=$1',
+  [missSource],
+ )).rows[0].n;
+ const physicalInbox=(await db.query(
+  'select count(*)::integer n from private.v70_test_inbox where source_key=$1',
+  [missSource],
+ )).rows[0].n;
+ const physicalItems=(await db.query(
+  'select count(*)::integer n from private.v70_test_drops where source_key=$1',
+  [missSource],
+ )).rows[0].n;
+ assert.equal(physicalGuarantees,1,'gear miss still paid canonical guarantee');
+ assert.equal(physicalInbox,1,'gear miss still produced one Inbox receipt');
+ assert.equal(physicalItems,0,'gear miss did not invent an item');
+ proof={...proof,recipientCharacterId:other};
+ const replayMissed=await open({
+  authenticatedAccountId:account,sourceKey:missSource,
+ });
+ assert.equal(replayMissed.replayed,true);
+ assert.deepEqual(replayMissed.receipt,missed.receipt);
+ const foreignMissSource='party-event:'+Date.UTC(2026,10,16)+':'+account+
+  ':finale';
+ proof={...proof,sourceKey:foreignMissSource};
+ await assert.rejects(
+  ()=>open({authenticatedAccountId:account,sourceKey:foreignMissSource}),
+  /chest_v69_unverified_character_destination/,
+ );
+ assert.equal((await db.query(
+  'select count(*)::integer n from private.chest_reward_receipts_v70 where source_key=$1',
+  [foreignMissSource],
+ )).rows[0].n,0,'foreign character cannot claim even on a gear miss');
  // World Boss V73: execute the *actual* parameterized source SQL against
  // disposable PostgreSQL tables on the SAME V70 connection. This is NOT a
  // battle rehearsal or an actual V57 migration.

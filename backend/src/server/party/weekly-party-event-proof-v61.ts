@@ -84,7 +84,7 @@ export function deriveVerifiedPartyChestEvidenceV61(
   proof.week.status!=='settled'||
   !families.includes(proof.week.family)||!difficulties.includes(proof.week.difficulty)||
   !validId(proof.roster?.frozenCharacterId)||
-  ![2,3,4].includes(proof.roster?.rosterSize)||
+  !proof.roster||![2,3,4].includes(proof.roster.rosterSize)||
   proof.activity?.sourceVersion!=='party_event_member_progress_v14'||
   !safe(proof.activity.activityPoints)||proof.activity.activityPoints>40||
   proof.tier?.sourceVersion!=='server_level_snapshot_v2'||

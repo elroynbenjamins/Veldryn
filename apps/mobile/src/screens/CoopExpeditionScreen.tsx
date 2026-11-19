@@ -170,13 +170,21 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
    if(!foreground||entrySource.kind!=='real'||!characterId)return;
    void refreshDungeonWeeklyQuest();
   },[foreground,entrySource.kind,characterId,refreshDungeonWeeklyQuest]);
+  // Keep the dungeon card correct if a player leaves this screen open over
+  // Monday's UTC reset; only the server decides the new weekly objective.
+  useEffect(()=>{
+   if(!weeklyQuest||!foreground||entrySource.kind!=='real')return;
+   const remaining=weeklyQuest.resetAtMs-Date.now();
+   const timer=setTimeout(()=>void refreshDungeonWeeklyQuest(),Math.max(1000,remaining+1000));
+   return()=>clearTimeout(timer);
+  },[weeklyQuest?.resetAtMs,foreground,entrySource.kind,refreshDungeonWeeklyQuest]);
   const claimDungeonWeeklyQuest=async()=>{
    if(!weeklyQuest||weeklyQuest.claimed||weeklyQuest.progress<weeklyQuest.target||weeklyQuestClaiming||busy)return;
    setWeeklyQuestClaiming(true);setNotice('');
    try{
     const next=validateDungeonWeeklyQuestSnapshot(await coopClient.claimDungeonWeeklyQuest(weeklyQuest.weekKey,coopRequestId()));
     if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuest(next);
-    setNotice(st('Weekly dungeon reward claimed: 25 Expedition Marks.'));
+    setNotice(''); // Claimed state on the card is the confirmation; no danger-colored toast.
     // A failed UI refresh cannot reverse an already committed reward.
     void Promise.resolve().then(()=>onRewardsChanged?.()).catch(()=>{});
    }catch(error){

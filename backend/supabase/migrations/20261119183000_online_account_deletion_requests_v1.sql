@@ -60,23 +60,19 @@ begin
   (account_id,request_id,status,policy_version)
  values(v_actor,p_request_id,'pending_review','deletion-request-v1')
  on conflict(account_id) do update
- set request_id=case
-       when current_request.status='cancelled'
-       then excluded.request_id
-       else current_request.request_id end,
-     status=case
-       when current_request.status='cancelled'
-       then 'pending_review'
-       else current_request.status end,
-     requested_at=case
-       when current_request.status='cancelled'
-       then pg_catalog.transaction_timestamp()
-       else current_request.requested_at end,
-     updated_at=case
-       when current_request.status='cancelled'
-       then pg_catalog.transaction_timestamp()
-       else current_request.updated_at end
+ set request_id=excluded.request_id,
+     status='pending_review',
+     requested_at=pg_catalog.transaction_timestamp(),
+     updated_at=pg_catalog.transaction_timestamp()
+ where current_request.status='cancelled'
  returning * into v_row;
+ -- Repeated submissions against an active request are read-only. Do not
+ -- refresh its timestamp or rewrite its receipt for every network retry.
+ if not found then
+  select * into v_row from private.online_account_deletion_requests_v1
+  where account_id=v_actor;
+ end if;
+ if not found then raise exception 'REQUEST_LOOKUP_FAILED';end if;
  return pg_catalog.jsonb_build_object('status',v_row.status,
   'requestId',v_row.request_id::text,
   'requestedAtMs',pg_catalog.floor(extract(epoch from v_row.requested_at)*1000)::bigint,

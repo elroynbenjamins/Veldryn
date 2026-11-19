@@ -93,7 +93,7 @@ ok(workshop.includes('Activate meal buffs from Inventory. Auto-eat only restores
 ok(component.includes('cookingXpPreview?.usingReservedRate'),'Cooking details must explain the active reserved XP snapshot');
 ok(component.includes('Cooking mastered · no more XP'),'Cooking card must display level-cap state');
 ok(component.includes('Activate meal buffs from Inventory. Auto-eat only restores HP.'),'Meal buff preview must distinguish activation from auto-eating');
-ok(component.includes("meal?<Text style={s.mealBonus}>"),
+ok(component.includes("meal?<><Text style={s.mealBonus}>")||component.includes("meal?<Text style={s.mealBonus}>"),
  'Expanded Cooking recipes must display food utility buffs');
 ok(translations.includes("' +{xp} Cooking XP per batch'")||translations.includes("'+{xp} Cooking XP per batch'"),
  'Cooking XP label must be localized through crafting detail translations');

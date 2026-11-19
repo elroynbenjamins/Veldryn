@@ -188,13 +188,13 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
   return <View style={s.root}>
    <GameModalSurface visible={claimReceipt!==null} onClose={()=>setClaimReceipt(null)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.85}}>
     <GameModalHeader title={t(claimReceipt?.kind==='companion_training'?'Daily Training':'Weekly Essence')} onClose={()=>setClaimReceipt(null)}/>
-    {claimReceipt?<ScrollView contentContainerStyle={{paddingBottom:16,gap:12}} showsVerticalScrollIndicator={false}>
+    {claimReceipt?<ScrollView contentContainerStyle={{paddingBottom:16,gap:12}} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <Text style={s.name}>{claimReceipt.status==='timer_started'?t('Reward timer started'):t('Rewards collected')}</Text>
       {claimReceipt.status==='timer_started'?<Text style={s.body}>{t('Your reward timer is running. Return when it is ready to collect the rewards.')}</Text>:<>
         <Text style={s.body}>{t('Confirmed rewards')}</Text>
         {claimReceipt.kind==='companion_training'?<>
           <Text style={s.name}>{t('Companion XP')} +{amount(claimReceipt.companionXp)}</Text>
-          {claimReceipt.companions.map(row=><View key={row.id} style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}><Text style={[s.body,s.flex]}>{row.name}</Text><Text style={s.name}>+{amount(row.xp)} XP</Text></View>)}
+          {claimReceipt.companions.map(row=><View key={row.id} style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}><Text style={[s.body,s.flex]}>{row.name}</Text><Text style={s.name}>{t('+{value0} XP',{value0:amount(row.xp)})}</Text></View>)}
           {!claimReceipt.companionCount?<Text style={s.body}>{t('No eligible companion received XP this claim.')}</Text>:null}
         </>:null}
         {claimReceipt.essence>0||claimReceipt.kind==='companion_essence'?<View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}><Text style={s.body}>{t('Companion Essence')}</Text><Text style={s.name}>+{amount(claimReceipt.essence)}</Text></View>:null}

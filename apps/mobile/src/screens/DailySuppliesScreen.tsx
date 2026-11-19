@@ -52,7 +52,7 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
  const selectDay=(day:number)=>{setSelectedDay(day);setWeek(Math.ceil(day/7))};
  const milestone=reward.kind==='milestone';
  const todayReward=status.reward;
- return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>{a('ACCOUNT / DAILY REWARDS')}</Text><Text accessibilityRole="header" style={s.heading}>{a('Supply Journey')}</Text><Text style={s.copy}>{a('One claim per UTC day. Missed days pause, never reset, the journey.')}</Text></View><View style={s.chapterIcon}><UiIcon name="rewards" size={26}/></View></View>
   <View style={s.tabs}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='path'}} onPress={()=>setTab('path')} style={[s.tab,tab==='path'&&s.tabSelected]}><Text style={[s.tabText,tab==='path'&&s.tabTextSelected]}>{a('Reward Path')}</Text></Pressable>

@@ -61,7 +61,7 @@ for(const marker of [
  "ui('Inspect {name} combat details'",
  "ui('{count} stacks'",
  "ui('Effect Gem proc')",
- "ui('{count} more effects'",
+ "...effectDescriptions,gemProc?ui('Effect Gem proc')", // all effects are announced, so no 'N more' label
  "ui('BARRIER +{amount}'",
  "ui('FOCUS → {target}'",
  "ui(boss?'Boss {name}':'Dungeon enemy {name}'",

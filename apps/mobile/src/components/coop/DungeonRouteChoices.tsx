@@ -4,6 +4,7 @@ import type {CoopMode,CoopRouteOptionView} from '../../core/coop-presentation';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useDungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {localizedDungeonEncounterPreview} from '../../i18n/dungeon-encounter-preview';
@@ -37,7 +38,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
    const bossExit=option.kind==='boss'&&options.length>1;
-   const routeAction=bossExit?st('Fight boss · finish run'):option.kind==='boss'?st('Fight final boss'):action;
+   const routeAction=bossExit?dungeonUxText(language,'bossFinish'):option.kind==='boss'?dungeonUxText(language,'bossFinal'):action;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
    const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
@@ -52,7 +53,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?action:ui('Unavailable')})}
-    accessibilityHint={bossExit?`${preview??''} ${st('Clearing the boss ends this run.')}`:preview}
+    accessibilityHint={bossExit?`${preview??''} ${dungeonUxText(language,'bossHint')}`:preview}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -69,7 +70,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       <Text style={[s.actionCue,bossExit&&s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
      {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
-     {bossExit?<Text numberOfLines={1} style={s.bossHint}>{st('Clearing the boss ends this run.')}</Text>:null}
+     {bossExit?<Text numberOfLines={1} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier||roomMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}

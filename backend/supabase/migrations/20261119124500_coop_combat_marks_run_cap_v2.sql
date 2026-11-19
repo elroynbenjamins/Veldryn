@@ -84,13 +84,20 @@ declare
 begin
  if v_account_id is null then raise exception 'AUTH_REQUIRED';end if;
  select coalesce(sum(l.amount),0)::integer,
-   count(*) filter(where l.amount=3)::integer,
-   count(*) filter(where l.amount=5)::integer,
-   coalesce(sum(l.amount) filter(where l.amount not in(3,5)),0)::integer
- into v_total,v_normal,v_elite,v_partial
+   count(*) filter(where room.kind='battle' and l.amount=3)::integer,
+   count(*) filter(where room.kind='elite' and l.amount=5)::integer
+ into v_total,v_normal,v_elite
  from public.expedition_currency_ledger as l
+ join public.expedition_runs as run on run.id=l.run_id
+ left join lateral (
+   select node.value->>'kind' as kind
+   from pg_catalog.jsonb_array_elements(run.route_graph_json->'nodes') as node(value)
+   where node.value->>'nodeId'=pg_catalog.split_part(l.idempotency_key,':',3)
+   limit 1
+ ) as room on true
  where l.account_id=v_account_id and l.run_id=p_run_id
    and l.reason='coop_combat_room' and l.currency='expedition_mark';
+ v_partial:=greatest(0,v_total-v_normal*3-v_elite*5);
 
  return pg_catalog.jsonb_build_object(
   'total',v_total,'normal',v_normal,'elite',v_elite,'partial',v_partial,'cap',25

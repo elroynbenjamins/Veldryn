@@ -10,6 +10,7 @@ on:
       - 'backend/src/server/party/__tests__/weekly-party-event-claim-v60.ts'
       - 'apps/mobile/src/screens/FeaturePreviewScreen.tsx'
       - 'apps/mobile/tests/party-event-treasure-preview-ui.cjs'
+      - 'apps/mobile/tests/world-boss-chest-preview-ui.cjs'
       - 'backend/src/server/party/__tests__/weekly-party-event-chests-v51.ts'
       - 'backend/src/server/combat/world-boss-chests-v58.ts'
       - 'backend/src/server/combat/__tests__/world-boss-chests-v58.ts'
@@ -59,6 +60,8 @@ jobs:
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-claim-v60.js
       - name: Verify mobile Party Event treasure remains a read-only QA design
         run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
+      - name: Guard mobile World Boss chest cards as read-only previews
+        run: node ../apps/mobile/tests/world-boss-chest-preview-ui.cjs
       - name: Verify original World Boss gathering gear, 1 percent odds, source caps
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chests-v58.js
       - name: Verify World Boss milestone proof and cross-account replay safety

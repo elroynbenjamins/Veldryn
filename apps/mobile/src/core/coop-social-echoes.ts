@@ -14,11 +14,12 @@ export interface SocialEchoCandidate{
 export function validateSocialEchoCandidates(value:unknown):SocialEchoCandidate[]{
  if(!Array.isArray(value)||value.length>128)throw new Error('invalid_social_echo_candidates');
  const ids=new Set<string>(),result:SocialEchoCandidate[]=[];
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  for(const raw of value){
   if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('invalid_social_echo_candidates');
   const c=raw as Record<string,unknown>;
-  if(typeof c.characterId!=='string'||!/^[0-9a-f-]{36}$/i.test(c.characterId)||ids.has(c.characterId)
-   ||typeof c.characterId!=='string'||typeof c.accountId!=='string'
+  if(typeof c.characterId!=='string'||!uuid.test(c.characterId)||ids.has(c.characterId)
+   ||typeof c.accountId!=='string'
    ||typeof c.name!=='string'||c.name.length<1||c.name.length>80
    ||typeof c.classId!=='string'||!['tank','damage','support'].includes(String(c.role))
    ||!Number.isSafeInteger(c.level)||Number(c.level)<1||Number(c.level)>100

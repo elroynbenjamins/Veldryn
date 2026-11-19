@@ -97,6 +97,13 @@ async function run(){
  await rejects(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,
  }),'hidden_gateway_disabled');
+ const nodeEnv=process.env.NODE_ENV;
+ try{
+  process.env.NODE_ENV='production';
+  await rejects(()=>claimPartyEventChestV60({
+   authority,kind:'participation',store,
+  },true),'hidden_gateway_disabled');
+ }finally{process.env.NODE_ENV=nodeEnv;}
  store.failOnResource=true;
  await rejects(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,

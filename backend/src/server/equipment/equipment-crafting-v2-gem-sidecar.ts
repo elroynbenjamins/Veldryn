@@ -2,6 +2,7 @@ import type {GameState,ItemStack,InventoryState} from '../../../../apps/mobile/s
 import {itemDef} from '../../../../apps/mobile/src/content/items';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
@@ -171,6 +172,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  verifyEquipmentV2StorageReservations(accountId,raw.items,raw.storageReservations??[]);
  const sidecar=requireSidecar(raw.gemSocketState);
  verifyEquipmentV2GemSidecar(raw.items,sidecar);
+ verifyEquipmentV2ReceiptNamespace({forge:raw.receipts,gems:sidecar.receipts,custody:raw.custodyReceipts});
  if(raw.receipts.some(row=>row.requestId===command.requestId)
   ||raw.custodyReceipts?.some(row=>row.requestId===command.requestId))
   fail('v2_cross_command_request_id_conflict');

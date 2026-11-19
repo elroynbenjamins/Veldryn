@@ -1,11 +1,11 @@
 {
-  "extends":"./tsconfig.json",
-  "compilerOptions":{
-    "outDir":".event-chest-tests",
-    "rootDir":"src",
-    "strict":true
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": ".event-chest-tests",
+    "rootDir": "src",
+    "strict": true
   },
-  "include":[
+  "include": [
     "src/server/party/weekly-party-event-gear-v51.ts",
     "src/server/party/weekly-party-event-chests-v51.ts",
     "src/server/party/__tests__/weekly-party-event-chests-v51.ts",
@@ -14,6 +14,11 @@
     "src/server/loot/event-chest-server-roll-v1.ts",
     "src/server/loot/__tests__/event-chest-server-roll-v1.ts",
     "src/server/loot/event-chest-preview-v2.ts",
-    "src/server/loot/__tests__/event-chest-preview-v2.ts"
+    "src/server/loot/__tests__/event-chest-preview-v2.ts",
+    "src/server/combat/world-boss-gathering-loot-v64.ts",
+    "src/server/combat/world-boss-chest-proof-v59.ts",
+    "src/server/combat/__tests__/world-boss-chest-proof-v59.ts",
+    "src/server/combat/world-boss-chest-resolution-v60.ts",
+    "src/server/combat/__tests__/world-boss-chest-resolution-v60.ts"
   ]
 }

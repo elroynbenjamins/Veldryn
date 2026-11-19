@@ -73,7 +73,7 @@ function numericRemainders(value:unknown){
 }
 export function normalizeActiveDailySupplyBoost(value:unknown):ActiveDailySupplyBoost|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
- const row=value as Record<string,unknown>,type=safeType(row.type),seconds=safeSeconds(row.remainingSeconds);
+ const row=value as Record<string,unknown>,type=safeType(row.type),rawSeconds=Number(row.remainingSeconds),seconds=Number.isFinite(rawSeconds)?Math.max(0,Math.min(14400,rawSeconds)):0;
  if(!type||seconds<=0)return undefined;
  const bonus=validBonus(row.bonus),full=safeSeconds(row.seconds)||DAILY_SUPPLY_CHARGE_SECONDS;
  const remainders=numericRemainders(row.remainders);

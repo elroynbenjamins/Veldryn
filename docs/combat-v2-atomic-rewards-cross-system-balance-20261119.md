@@ -46,3 +46,15 @@ node backend/dist/server/combat/v2/__tests__/solo-reward-transactional-store.js
 node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
 node backend/dist/server/combat/v2/__tests__/solo-reward-settlement.js
 ```
+
+## Additional polish from real predecessor CI diagnostics
+
+PR #1414's 19 November CI run exposed **three reproducible blockers**:
+- `Live Edge isolation` test: its initial import guard rejected ordinary `./calculation` imports. The guard now ignores non-V2 imports and rejects unexpected paths only inside the V2 namespace.
+- `Server skills` TypeScript build: implicit `any` on a source enemy archetype tag. Added explicit `(t:string)` annotation, without changing enemy mechanics.
+- `PG17 disposable` job: test script changed directory one level above the checkout, so it failed to locate the hidden SQL migrations. The script now changes to the repository root.
+
+These fixes are on the **new private integration branch**, not yet consolidated into prior draft PRs. CI must rerun on this exact new head before counting any path green.
+
+### Reward-writer hardening
+Grant and Inbox adapters now receive a **query-only transaction facade** with manual BEGIN/COMMIT/ROLLBACK and pinned-connection release denied. Each transaction-local writer must return exact account/source/amount readback proof; forged or missing proofs abort the transaction. The mock tests exercise all four proposed resource categories and rollback if any proof is incorrect.

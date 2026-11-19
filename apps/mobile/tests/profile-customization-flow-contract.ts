@@ -13,6 +13,7 @@ const unlock=fs.readFileSync('src/components/profile/ProfileUnlockSheet.tsx','ut
 const identity=fs.readFileSync('src/components/profile/ProfileIdentityPanel.tsx','utf8');
 const showcase=fs.readFileSync('src/components/profile/ProfileShowcasePanel.tsx','utf8');
 const draft=fs.readFileSync('src/online/useProfileExtensionDraft.ts','utf8');
+const releaseFlags=fs.readFileSync('src/core/release-flags.ts','utf8');
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
@@ -63,8 +64,14 @@ ok(appearance.includes("const borderName=(id:string)=>profileRewardSource(state,
 ok(appearance.includes('style={s.petImage}')&&appearance.includes('petImage:{width:\'100%\',height:\'100%\'}'),'Pet cards must size visible art explicitly inside the gallery');
 
 // Identity and Showcase are two tabs over one stored row.
-ok(draft.includes('export function useProfileExtensionDraft')&&draft.includes('editableSnapshot'),'Identity and Showcase must share one profile-extension draft');
-ok(draft.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
+ok(draft.includes('export function useProfileExtensionDraft')&&screen.includes('const draft=useProfileExtensionDraft(')&&draft.includes('identitySnapshot(')&&draft.includes('showcaseSnapshot(')&&draft.includes('const dirty=identityDirty||showcaseDirty'),'Identity and Showcase must share one draft with independently tracked account and character changes');
+ok(draft.includes('masteryShowcaseActionIds:row.masteryShowcaseActionIds')&&draft.includes('showcaseSnapshot(value)')&&draft.includes('saveLegacyProfile(value,bio,fallbackCharacterId)'),'Mastery showcase selections must participate in dirty/save state');
+const staleSaveGuards=(draft.match(/if\(!mounted\.current\|\|version!==requestVersion\.current\)return;/g)??[]).length;
+const scopedBusyReleases=(draft.match(/if\(mounted\.current&&version===requestVersion\.current\)setBusy\(false\)/g)??[]).length;
+ok(staleSaveGuards>=4&&scopedBusyReleases>=5,'Async identity, showcase and featured-hero saves must never overwrite a newer account or selection after a stale completion');
+ok(draft.includes('current?.selectedCharacterId===characterId'),'Character showcase saves must not update another selected hero');
+ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false')&&draft.includes('saveLegacyProfile(')&&draft.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED&&selected')&&identity.includes('active&&ACCOUNT_SOCIAL_IDENTITY_RELEASED')&&showcase.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED?<View style={s.featuredRow}')&&showcase.includes('disabled={guest||busy||characters.length<2}')&&draft.includes('if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED){'),'Social V2 stays hidden, existing v43 writes survive, and the legacy featured-character picker remains available');
+ok(draft.includes('const revertIdentity=useCallback(')&&draft.includes('const revertShowcase=useCallback(')&&identity.includes('onPress={draft.revertIdentity}')&&showcase.includes('onPress={draft.revertShowcase}'),'Revert in either profile tab must preserve edits in the other');
 ok(identity.includes('accessibilityRole="radiogroup"')&&identity.includes("{id:'guild'")&&identity.includes("{id:'public'"),'Identity must expose the three profile audiences as a single-choice control');
 ok(identity.includes('<PlayerNameStyleEditor'),'Identity must host the player name-style editor');
 ok(identity.includes('draft.bio.length')&&identity.includes('/160'),'Biography must keep its visible character budget');

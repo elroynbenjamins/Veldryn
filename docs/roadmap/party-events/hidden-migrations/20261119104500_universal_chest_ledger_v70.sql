@@ -4,14 +4,17 @@
 -- or private.world_boss_chest_receipts_v61. A future approved migration must
 -- reconcile older committed receipts without opening the same source twice.
 -- Claims require a separate authenticated DB worker and physical reward ports.
+-- Account erasure: delete auth.users only through the approved authenticated
+-- erasure route; scoped FK cascades purge this draft chest fence/receipts/legs.
+-- No direct receipt/leg DELETE, normal UPDATE or service_role writes allowed.
 BEGIN;
 CREATE TABLE private.chest_account_fence_v70 (
- account_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE RESTRICT,
+ account_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
  created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE TABLE private.chest_reward_receipts_v70 (
  source_key text PRIMARY KEY,
- account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+ account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
  recipient_character_id uuid,
  equipment_delivery_mode text CHECK(
   equipment_delivery_mode IN ('character','account_unclaimed')),
@@ -72,7 +75,7 @@ CREATE TABLE private.chest_reward_grant_legs_v70 (
  UNIQUE(leg_kind,grant_id),
  FOREIGN KEY (source_key,account_id)
   REFERENCES private.chest_reward_receipts_v70(source_key,account_id)
-  ON DELETE RESTRICT,
+  ON DELETE CASCADE,
  CHECK (leg_kind='drop' OR item_instance_id IS NULL),
  CHECK (leg_kind<>'inbox' OR (ordinal=0 AND quantity=1))
 );
@@ -121,13 +124,20 @@ CREATE TRIGGER chest_v70_guard_ledger_insert
  BEFORE INSERT ON private.chest_reward_grant_legs_v70
  FOR EACH ROW EXECUTE FUNCTION private.chest_v70_leg_insert_guard();
 
+-- Ordinary DELETE is forbidden, but a secure auth.users delete must not
+-- leave these historical rewards as orphaned data. PostgreSQL's ON DELETE
+-- CASCADE runs after the parent user row is removed in this transaction.
+-- Only then can the child DELETE pass; UPDATE remains impossible.
 CREATE FUNCTION private.chest_v70_immutable()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
-AS $$
+AS $chest_erase_v82$
 BEGIN
+ IF TG_OP='DELETE' AND NOT EXISTS (
+  SELECT 1 FROM auth.users WHERE id=OLD.account_id
+ ) THEN RETURN OLD; END IF;
  RAISE EXCEPTION 'CHEST_V70_IMMUTABLE';
 END
-$$;
+$chest_erase_v82$;
 CREATE TRIGGER chest_v70_receipt_immutable
  BEFORE UPDATE OR DELETE ON private.chest_reward_receipts_v70
  FOR EACH ROW EXECUTE FUNCTION private.chest_v70_immutable();

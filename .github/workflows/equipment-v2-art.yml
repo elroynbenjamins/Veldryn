@@ -1,0 +1,71 @@
+name: Equipment 2.0 Art Contract
+
+on:
+  push:
+    paths:
+      - 'tools/validate-equipment-v2-art.py'
+      - 'tools/pack-equipment-v2-atlas.py'
+      - 'tools/validate-equipment-v2-pose-lock.py'
+      - 'tools/test_equipment_v2_pose.py'
+      - 'docs/art/EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md'
+      - 'docs/art/equipment-2-0-pose-lock.json'
+      - 'docs/art/EQUIPMENT_2_0_GENERATION_PLAYBOOK.md'
+      - 'tools/equipment_v2_image_optimization.py'
+      - 'tools/audit-equipment-v2-bundle.py'
+      - 'tools/test_equipment_v2_optimization.py'
+      - 'tools/test_equipment_v2_art.py'
+      - 'docs/art/EQUIPMENT_2_0_ICON_STANDARD.md'
+      - 'docs/art/equipment-2-0-generation-queue.json'
+      - 'apps/mobile/assets/equipment-2-0/**'
+      - '.github/workflows/equipment-v2-art.yml'
+  pull_request:
+    paths:
+      - 'tools/validate-equipment-v2-art.py'
+      - 'tools/pack-equipment-v2-atlas.py'
+      - 'tools/validate-equipment-v2-pose-lock.py'
+      - 'tools/test_equipment_v2_pose.py'
+      - 'docs/art/EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md'
+      - 'docs/art/equipment-2-0-pose-lock.json'
+      - 'docs/art/EQUIPMENT_2_0_GENERATION_PLAYBOOK.md'
+      - 'tools/equipment_v2_image_optimization.py'
+      - 'tools/audit-equipment-v2-bundle.py'
+      - 'tools/test_equipment_v2_optimization.py'
+      - 'tools/test_equipment_v2_art.py'
+      - 'docs/art/EQUIPMENT_2_0_ICON_STANDARD.md'
+      - 'docs/art/equipment-2-0-generation-queue.json'
+      - 'apps/mobile/assets/equipment-2-0/**'
+      - '.github/workflows/equipment-v2-art.yml'
+
+jobs:
+  validate-art-contract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install isolated image validator dependency
+        run: python -m pip install 'Pillow>=11,<13'
+      - name: Geometry, alpha, containment and reference-size unit tests
+        run: python -m unittest discover -s tools -p 'test_equipment_v2_*.py' -v
+      - name: Enforce selected Style 4 camera and facing contract
+        run: python tools/validate-equipment-v2-pose-lock.py
+      - name: Validate any checked-in Equipment 2.0 exports
+        shell: bash
+        run: |
+          shopt -s globstar nullglob
+          images=(apps/mobile/assets/equipment-2-0/**/*.webp)
+          if (( ${#images[@]} == 0 )); then
+            echo 'No EQ2 exports checked in yet; contract/unit tests only.'
+          fi
+          for image in "${images[@]}"; do
+            if [[ "$image" == *-atlas.webp ]]; then
+              python tools/validate-equipment-v2-art.py "$image" --kind atlas
+            else
+              python tools/validate-equipment-v2-art.py "$image" --kind icon
+            fi
+          done
+      - name: Audit EQ2 mobile bundle duplicates and raw source leaks
+        run: python tools/audit-equipment-v2-bundle.py

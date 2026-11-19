@@ -40,6 +40,8 @@ on:
       - 'backend/src/server/combat/world-boss-gathering-instance-v62.ts'
       - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
+      - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/src/server/loot/chest-equipment-bridge-v71.ts'
       - 'backend/src/server/loot/__tests__/chest-equipment-bridge-v71.ts'
@@ -116,6 +118,8 @@ jobs:
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-resolution-v60.js
       - name: Verify World Boss V61 exactly-once ledger, rollback, and V62 issued gear
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-settlement-v61.js
+      - name: Verify V77 canonical Party settlement-source to chest entitlement bridge
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chest-source-v77.js
       - name: Verify generic V67 chest tables and V68 legacy parity
         run: node .event-chest-tests/server/loot/__tests__/chest-loot-engine-v67.js
       - name: Verify World Boss V72 account-bound replay-proof source for reusable chests
@@ -160,6 +164,7 @@ jobs:
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
           grep -q 'WORLD_BOSS_CHEST_PG_SOURCE_V73_RELEASED=false' src/server/loot/world-boss-chest-pg-source-v73.ts
           grep -q 'WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false' src/server/loot/world-boss-chest-source-v72.ts
+          grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts

@@ -58,7 +58,7 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'STORMGLASS_COLOSSUS',name:'Stormglass Colossus',level:75,hp:3230,attack:175,defense:127,xp:2400,gold:124,secondsPerKill:66,unlockLevel:74,zone:'Frostmarch',areaId:'ZONE_015',regionalAreaAutoUnlock:true,drops:[{itemId:'FROSTIRON',chance:.51,min:1,max:2},{itemId:'RIMEGLASS',chance:.38,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.22,min:1,max:1}]},
 {id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:180,secondsPerKill:75,unlockLevel:25,zone:"King's Road",boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:1,min:2,max:4},{itemId:'TORN_OATHCLOTH',chance:1,min:4,max:6}]},
 ];
-/** All nine tool-blueprint drops are eligible for the tool-only -25% adjustment. */
+/** All nine tool blueprints receive the original -25% and a further -50% rate adjustment. */
 const toolBlueprintItemIds=new Set(TOOL_BLUEPRINT_ITEMS.map(blueprint=>blueprint.id));
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
@@ -131,7 +131,7 @@ export const MONSTERS:MonsterDef[]=PREPARED_MONSTERS.map(monster=>{
     const relativeChanceScale=drop.itemId===HOLY_WATER_ID?1:drop.chance<1?.95:1;
     const toolBlueprintScale=toolBlueprintItemIds.has(drop.itemId)?TOOL_BLUEPRINT_DROP_MULTIPLIER:1;
     const adjustedChance=drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale*toolBlueprintScale;
-    // Final tool-blueprint rates are 0.5%-1.2% after the 25% blueprint and 5% general reductions, rounded down to 0.1%.
+    // Final tool-blueprint rates are 0.25%-0.60% after -25%, another -50%, and the 5% general reduction, rounded down to 0.05 percentage points.
     return {...drop,chance:toolBlueprintScale!==1?roundDownToolBlueprintDropChance(adjustedChance):adjustedChance};
   }),
   // Idle combat uses authored cycle duration rather than HP to calculate kills.

@@ -106,7 +106,7 @@ async function run(){
   authenticatedAccountId:accountId,sourceKey:source('donations_goal')
    .replace('world-boss:','party-event:'),
  },tx,port,true),'invalid_account_source');
- check(reads===5,'invalid_selection_never_queries_private_state');
+ check(Number(reads)===5,'invalid_selection_never_queries_private_state');
  proof={...canonical,accountId:other};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),

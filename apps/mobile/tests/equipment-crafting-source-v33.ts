@@ -4,6 +4,7 @@ import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
 import {itemDef} from '../src/content/items';
+import {equipmentCraftAvailability} from '../src/core/equipment-crafting-queue';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -14,7 +15,8 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
-import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel,totalXpAtLevel} from '../src/core/progression';
+import {nextEquipmentTierGoal} from '../src/core/equipment-tier-progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -116,16 +118,49 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId))
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
-// The former characterLevel-3 rule silently raised T3 from its intended Level 20
-// floor to 23, creating a disproportionate T2 -> T3 training wall.
-ok(TIER_CRAFTING_LEVEL_FLOOR.T3===20,'T3 profession bridge must remain at Level 20');
+// Keep the T2-to-T3 bridge moderately challenging: profession Level 22 rather
+// than the old effective Level 23 or the earlier temporary Level 20 proposal.
+ok(TIER_CRAFTING_LEVEL_FLOOR.T3===22,'T3 profession bridge must remain at Level 22');
 for(const profession of ['smithing','tailoring'] as const){
   const t3Recipes=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3'&&row.skillId===profession);
   ok(t3Recipes.length>0,profession+' must have T3 gear recipes');
-  ok(t3Recipes.every(row=>row.level===20),profession+' T3 gear must unlock at profession Level 20');
+  ok(t3Recipes.every(row=>row.level===22),profession+' T3 gear must unlock at profession Level 22');
+  const expectedClasses=profession==='smithing'?4:5;
+  ok(t3Recipes.length===expectedClasses*2*10,profession+' must have T3 recipes for every class, path, and slot');
+  for(const classId of new Set(t3Recipes.map(row=>row.classId))){
+    const classRecipes=t3Recipes.filter(row=>row.classId===classId);
+    ok(classRecipes.length===20,profession+' '+classId+' T3 must have ten pieces in both paths');
+    for(const path of ['Foundation','Alternate'])
+      ok(classRecipes.filter(row=>row.v33Path===path).length===10,profession+' '+classId+' '+path+' T3 must have ten pieces');
+  }
+  for(const path of ['Foundation','Alternate']){
+    const sample=t3Recipes.find(row=>row.v33Path===path)!;
+    const base=createCharacter(newGame(0),sample.classId,'Skill Gate');
+    const readyAt=(level:number)=>{
+      const state={
+        ...base,
+        character:{...base.character!,level:sample.characterLevel,gold:sample.gold},
+        skills:base.skills.map(row=>row.skillId===profession?{...row,level}:row),
+        inventory:{...base.inventory,stacks:sample.inputs.map(input=>({...input}))},
+      };
+      return equipmentCraftAvailability(state,sample.id,1000);
+    };
+    const locked=readyAt(21),unlocked=readyAt(22);
+    ok(!locked.ready&&locked.reason.includes('level 22'),profession+' '+path+' must reject Level 21 with a clear level requirement');
+    ok(unlocked.ready,profession+' '+path+' must accept Level 22 with exact gold and inputs: '+unlocked.reason);
+  }
+}
+// Both professions must show the exact same T3 goal and cumulative XP distance.
+for(const profession of ['smithing','tailoring'] as const){
+ const t3Goal=nextEquipmentTierGoal(profession,13,32886);
+ ok(t3Goal?.tier==='T3'&&t3Goal.requiredLevel===22,profession+' next equipment tier must be T3 at Level 22');
+ ok(t3Goal?.remainingXp===totalXpAtLevel(22)-32886,profession+' milestone must show remaining cumulative XP, not one-level XP');
+ const t4Goal=nextEquipmentTierGoal(profession,22,totalXpAtLevel(22));
+ ok(t4Goal?.tier==='T4'&&t4Goal.requiredLevel===37,profession+' milestone must advance to T4 after T3 unlock');
+ ok(nextEquipmentTierGoal(profession,100,totalXpAtLevel(100))===undefined,profession+' milestone must hide when no released tier remains');
 }
 const t3Components=RECIPES.filter(row=>['FORGE_ARMOR_RIVETS','FORGE_RECLAIMED_ARMOR_RIVETS','STITCH_REINFORCED_STRAPS','STITCH_RECYCLED_REINFORCED_STRAPS'].includes(row.id));
-ok(t3Components.length===4&&t3Components.every(row=>row.level===20),'T3 cross-profession components must unlock alongside T3 gear');
+ok(t3Components.length===4&&t3Components.every(row=>row.level===20),'T3 cross-profession components must unlock before T3 gear');
 
 const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'IRONWOOD_BINDING_RESIN',T3:'SUNSCAR_DUNE_BINDER',T4:'GLASSBOUND_BINDER',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
 ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))||RECIPES.some(refine=>refine.inputs.some(input=>input.itemId===infusion.id)&&V33_EQUIPMENT_RECIPES.some(gear=>gear.inputs.some(input=>input.itemId===refine.output.itemId)))),'Every crafted infusion must feed equipment directly or through a verified conversion');

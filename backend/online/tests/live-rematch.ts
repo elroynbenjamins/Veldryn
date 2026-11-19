@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 import {OnlineLiveRematch,type LiveRematchState} from '../live-rematch';
 import {coopHandler} from '../coop';
 
@@ -12,6 +13,14 @@ async function main(){
   const state=createCharacter(newGame(0),classId,'Rematch Test');state.character!.level=40;state.character!.xp=legacyCharacterTotalXpAtLevel(40);state.defeatedBossIds.push('FALLEN_KNIGHT');
   state.character!.id=`rematch-character-${index}`;
   state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+  // Same fixture rule as live-ready: lift the roster above the published Sunscar
+  // Combat Power requirement using the real server formula.
+  for(let pass=0;pass<30&&combatPowerRating(state).total<6200;pass++){
+   state.character!.attack=Math.ceil(state.character!.attack*1.4+1);
+   state.character!.defense=Math.ceil(state.character!.defense*1.4+1);
+   state.character!.hp=Math.ceil(state.character!.hp*1.4+1);
+  }
+  assert.ok(combatPowerRating(state).total>=6200,'Rematch fixture must satisfy the published Combat Power requirement');
   return {accountId,characterId:state.character!.id,loadoutId:'current',loadoutRevision:1,version:1,state};
  });
  const sourceId='11111111-1111-4111-8111-111111111111';
@@ -22,6 +31,7 @@ async function main(){
   members:members.map((member,index)=>({accountId:member.accountId,characterId:member.characterId,role:(index===0?'tank':index===3?'support':'damage') as 'tank'|'support'|'damage',self:index===0,accepted:false})),
  };
  let errorOnSources=false;
+ let sourceMembers=members;
  const services={
   randomId:()=>sourceId,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
@@ -29,7 +39,7 @@ async function main(){
    if(name==='online_live_rematch_state_server_v1')return current as T;
    if(name==='online_live_rematch_sources_server_v1'){
     if(errorOnSources)throw new Error('rematch_roster_unavailable');
-    return {dungeonId:'EXP_004',tier:1,members} as T;
+    return {dungeonId:'EXP_003',tier:1,members:sourceMembers} as T; // EXP_004 is no longer a published regular dungeon
    }
    if(name==='online_live_rematch_respond_server_v1')return current as T;
    throw new Error('unexpected_rpc:'+name);
@@ -59,6 +69,12 @@ async function main(){
  errorOnSources=true;
  await assert.rejects(()=>rematch.respond(members[0].accountId,sourceId,{requestId:'rematch-invalid-01',accept:true}),/rematch_roster_unavailable/);
  assert.equal(calls.filter(x=>x.name==='online_live_rematch_respond_server_v1').length,0,'Failed roster validation cannot cast a ready vote');
+ // Regression: rematch must apply the same Combat Power gate as the live ready check.
+ errorOnSources=false;calls.length=0;
+ const weak=createCharacter(newGame(0),'IRONWARDEN','Underpowered');weak.character!.level=40;weak.character!.xp=legacyCharacterTotalXpAtLevel(40);weak.defeatedBossIds.push('FALLEN_KNIGHT');weak.character!.id=members[0].characterId;
+ sourceMembers=[{...members[0],state:weak},...members.slice(1)];
+ await assert.rejects(()=>rematch.respond(members[0].accountId,sourceId,{requestId:'rematch-weak-01',accept:true}),/dungeon_power_requirement/);
+ assert.equal(calls.filter(x=>x.name==='online_live_rematch_respond_server_v1').length,0,'An underpowered roster cannot cast a rematch vote');
  console.log('PASS Live same-party rematch: authoritative four-person freeze, saved votes, no rollback, recovery and failed roster safety');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

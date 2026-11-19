@@ -4,6 +4,7 @@ import type {GameState,SkillId} from '../core/types';
 import {QUESTS,QUEST_ACTS,type QuestDef} from '../content/quests';
 import {JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
 import {journalEntries,questDestination,type JournalFilter,type QuestDestination} from '../core/quest-journal';
+import {seasonalChallengeDestination} from '../core/quest-challenge-navigation';
 import {recoveredStoryDiscoveries,storyActProgress,storyDiscoveryText,STORY_DISCOVERIES} from '../core/story-chronicle';
 import {localizedQuestLockHint,localizedQuestDestinationText,localizedWeeklyOrderLockReason} from '../i18n/quest-unlock-copy';
 import {seasonalQuestBoard,QUEST_RARITIES,type SeasonalPeriod,type SeasonalQuest} from '../core/seasonal-quests';
@@ -215,6 +216,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
  const selectedValue=chosenStory?Math.min(selectedGoal,selectedProgress?.progress??0):chosenOrder?Math.min(selectedGoal,chosenOrder.progress):chosenChallenge?Math.min(selectedGoal,chosenChallenge.progress):0;
  const selectedTitle=chosenStory?localizedQuestStoryText(language,chosenStory,'name'):chosenChallenge?seasonalChallengeName(language,chosenChallenge):chosenOrder?weeklyOrderTitle(language,chosenOrder):'';
  const chosenDestination=chosenOrder?weeklyOrderDestination(chosenOrder):undefined;
+ const challengeDestination=chosenChallenge?seasonalChallengeDestination(chosenChallenge):undefined;
  const chosenQueueable=chosenOrder?weeklyOrderQueueActivity(chosenOrder):undefined;
  const queueFull=(state.character?.activityQueue?.length??0)>=activityQueueCapacity(state);
  const stopActive=chosenOrder?state.character?.activeIdleRuleIdV40===weeklyOrderIdleRuleId(chosenOrder):false;
@@ -399,7 +401,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
-    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenOrder&&selectedStatus==='active'?<>
+    {sheetStage==='success'?<GameButton title={p('Continue')} onPress={closeSheet}/>:sheetStage==='claiming'?<GameButton title={p('Waiting for server confirmation…')} loading disabled onPress={()=>{}}/>:hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenChallenge&&selectedStatus==='active'&&challengeDestination?<GameButton title={p(challengeDestination.label)} onPress={()=>{closeSheet();onNavigate(challengeDestination)}}/>:chosenOrder&&selectedStatus==='active'?<>
      <GameButton title={weeklyOrderDestinationLabel(language,chosenOrder,'button')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>

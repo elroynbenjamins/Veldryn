@@ -12,6 +12,9 @@ const skillsScreen=read('src/screens/SkillsScreen.tsx');
 const app=read('App.tsx');
 const novice=read('src/content/novice-sets.ts');
 const refinery=read('src/components/EnchantingRefineryPanel.tsx');
+const smithingCollection=read('src/components/SmithingCollection.tsx');
+const tierProgression=read('src/core/equipment-tier-progression.ts');
+const craftingTranslations=read('src/i18n/crafting-details.ts');
 
 ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V33 equipment needs a dedicated complete recipe adapter');
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');
@@ -24,6 +27,9 @@ ok(!skills.includes('GENERATED_COMPLETE_SET_RECIPES'),'Pre-V33 generated equipme
 ok(!skills.includes('TAILOR_MOSSWRAP_GLOVES')&&!skills.includes('CRAFT_TRACKER_CHEST'),'Legacy profession/class-set gear recipes must not remain in the active recipe catalog');
 ok(novice.includes('EQUIPMENT_CRAFT_SKILL_BY_CLASS[set.classId]'),'Novice equipment must follow the same Smithing/Tailoring class map');
 
+ok(smithingCollection.includes('nextEquipmentTierGoal(skillId')&&smithingCollection.includes('nextTier.remainingXp'),'Both Smithing and Tailoring crafting headers must surface the same next-tier XP milestone');
+ok(smithingCollection.includes('craftingDetailText(language')&&craftingTranslations.includes("'Next equipment tier':"),'Next equipment tier cue must be localized');
+ok(tierProgression.includes('isReleasedEquipmentTier')&&tierProgression.includes('totalXpAtLevel'),'Tier goals must use released recipes and cumulative profession XP');
 ok(path.includes('workingTowardItemSource'),'Equipment crafting planner must reuse shared source navigation');
 ok(path.includes("kind:'material'"),'Missing materials must become explicit blockers');
 ok(path.includes("mode:'crafting'")&&path.includes('Train '),'Skill blockers must route to profession training');

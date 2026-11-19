@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
+import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {simulateEquipmentV2InGameState,type V2HiddenGameInput} from '../equipment-crafting-v2-game-state';
 import {
@@ -128,5 +129,19 @@ const corrupted=structuredClone(first.state);
 (getSidecar(corrupted).slots[0].stat as {rollPercent:number}).rollPercent=999;
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(corrupted,
  command('gem-corrup-0001',13,firstGem),13,100)),/invalid_v2_installed_gem/);
+const other=createCharacter(newGame(now),'WAYFINDER');
+assert.ok(other.character);
+other.character.id='gem-other-hero';
+const switchable=structuredClone(first.state);
+switchable.otherCharacters=[{
+ character:other.character,inventory:other.inventory,overflow:other.overflow,
+ activity:other.activity,skills:other.skills,quests:other.quests,
+ currentRegionId:other.currentRegionId,
+}];
+const switched=switchAccountCharacter(switchable,'gem-other-hero',now);
+assert.equal(switched.character?.id,'gem-other-hero');
+assert.throws(()=>simulateEquipmentV2GemInGameState(input(switched,
+ command('gem-not-owner-01',13,firstGem),13,100)),/wrong_v2_socket_owner/,
+ 'Other account characters may share gems but not mutate an unreleased copy owned by the original crafter');
 assert.equal(owner,state.character!.id);
 console.log('PASS: hidden Equipment 2.0 permanent Stat Gem one-time consumption, owner receipts, reroll, replacement, deferred effect caps and disabled runtime');

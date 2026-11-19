@@ -19,7 +19,7 @@ const hero:CombatantDefinition={
  basicAttackMs:2300,basicAttackCoeff:1,abilities:[],
 };
 const six=[
- ['BOSS_EXP_ROOT','Asterfall Root','asterfall',2,1],
+ ['BOSS_EXP_ROOT','Rootbound Heart','asterfall',2,1],
  ['BOSS_EXP_BELL','Asterfall Bell','asterfall',2,2],
  ['BOSS_EXP_SOLAR','The Buried Heliarch','sunscar',3,1],
  ['BOSS_EXP_SPHINX','The Veiled Sphinx','sunscar',3,1],

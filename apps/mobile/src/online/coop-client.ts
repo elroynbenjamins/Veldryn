@@ -98,6 +98,7 @@ async function publicProfilePower(accountId:string):Promise<{combatPower:number}
 }
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
+ socialEchoes:(minLevel:number)=>request<SocialEchoCandidate[]>(`/coop/echo-allies?minLevel=${encodeURIComponent(String(minLevel))}`),
  dungeonMarksShop:()=>request<DungeonMarksShopSnapshot>('/coop/shop'),
  dungeonWeeklyQuest:()=>request<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest'),
  claimDungeonWeeklyQuest:(weekKey:string,requestId:string)=>mutate<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest',{weekKey,requestId}),

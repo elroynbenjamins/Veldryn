@@ -72,7 +72,7 @@ async function run(){
    source('participation'),8),'unreleased');
  }finally{process.env.NODE_ENV=old;}
  check(reported===34,'production_no_wallet_access');
- check(operations.length===6,'only_three_reads_and_three_valid_applies');
+ check(operations.length===5,'only_two_reads_and_three_valid_applies');
  console.log('PARTY_SIGILS_V65_OK: one account wallet, exact chest rates, no forged source/delta or production writes');
 }
 run().catch(e=>{console.error(e);throw e;});

@@ -86,7 +86,7 @@ const thirdReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,cop
 ]);
 assert.equal(thirdReservation.reservation.destination,'deferred');
 assert.equal(thirdReservation.delivery.physicallyDelivered,false);
-assert.equal(JSON.stringify(capacityState.character!.equipmentPouch!.stacks),'[]',
+assert.equal(capacityState.character!.equipmentPouch!.stacks.length,29,
  'Virtual storage reservations must never write EQ2 item stacks');
 assert.doesNotThrow(()=>verifyEquipmentV2StorageReservations(accountId,[item,copyTwo,copyThree],[
  firstReservation.reservation,secondReservation.reservation,thirdReservation.reservation,

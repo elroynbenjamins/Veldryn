@@ -3,6 +3,8 @@
  * Never pass player-authored text, server IDs or gameplay command fields to this adapter.
  */
 export const SPANISH_UI_GAPS = {
+  "Haptic feedback": "Respuesta háptica",
+  "Vibrate on big combat moments, such as boss specials and finishing blows.": "Vibra en los grandes momentos del combate, como los ataques especiales de jefes y los golpes finales.",
   "Resource Codex": "Códice de recursos",
   "Discover materials and where to obtain them.": "Descubre materiales y dónde conseguirlos.",
   "Filter resources": "Filtrar recursos",

@@ -56,4 +56,26 @@ const echo=worldBossReplayCues({...base,world:{maxHp:1000,hpBefore:0,creditedHp:
 assert.ok(echo&&echo.kind==='finale'&&echo.residualEcho&&!echo.killingBlow);
 let threw=false;try{worldBossReplayCues({...base,bossId:'fake'});}catch{threw=true;}
 assert.ok(threw,'Unknown bosses are never presented');
+// Role moments: real answers to the boss become standout beats.
+const roles=worldBossReplayCues({...base,events:[
+ {round:2,type:'telegraph',abilityId:'ROOT_SLAM',actorId:'HOLLOWROOT',detail:'c2'},
+ {round:3,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:'c1',targetId:'c2',amount:33,detail:'telegraphed_ward'},
+ {round:3,type:'mitigate',abilityId:'TANK_INTERCEPT',actorId:'c1',targetId:'c2',amount:4,detail:'ordinary_intercept'},
+ {round:5,type:'cleanse',abilityId:'PURIFY',actorId:'c2',targetId:'c1',detail:'burn'},
+ {round:6,type:'interrupt',abilityId:'RUNE_BASH',actorId:'c1',targetId:'HOLLOWROOT',detail:'REGROWTH'},
+ {round:7,type:'interrupt',abilityId:'REGROWTH',actorId:'HOLLOWROOT',detail:'cancelled_special'},
+],ledger:[
+ {characterId:'c1',bossHpDamage:900,effectiveHealing:0,shieldConsumed:0,tankProtection:37,cleansePrevented:0,interrupts:1,survived:true},
+ {characterId:'c2',bossHpDamage:900,effectiveHealing:120,shieldConsumed:30,tankProtection:0,cleansePrevented:24,interrupts:0,survived:true},
+ {characterId:'ghost',bossHpDamage:99999,effectiveHealing:0,shieldConsumed:0,tankProtection:0,cleansePrevented:0,interrupts:0,survived:true},
+]}).map(c=>c.beat);
+const moments=roles.filter(b=>b.kind==='role_moment').map(b=>b.kind==='role_moment'?b.moment+':'+b.actorName+':'+(b.targetName??''):'');
+assert.deepEqual(moments,['guarded:Aldric:Mira','cleansed:Mira:Aldric','interrupted:Aldric:'],'Guard, cleanse and interrupt are role moments');
+assert.ok(roles.some(b=>b.kind==='party_action'&&b.action==='mitigate'&&b.amount===4),'Ordinary intercepts stay ordinary actions');
+assert.ok(roles.some(b=>b.kind==='boss_state'&&b.state==='special_cancelled'),'A cancelled special is shown');
+const honors=roles[roles.length-1];
+assert.ok(honors.kind==='results');
+assert.deepEqual(honors.kind==='results'?honors.honors.map(h=>h.honor+':'+h.name+':'+h.value):[],
+ ['vanguard:Aldric:900','bulwark:Aldric:37','lifebinder:Mira:150','spellbreaker:Aldric:1','purifier:Mira:24'],
+ 'Honors go to the top real contributor; ties go to roster order; non-party rows are ignored');
 console.log('PASS: World Boss replay is an unskippable, untimed set-piece with real-event beats, acts, tonic and world finale');

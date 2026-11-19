@@ -330,6 +330,75 @@ async function run(){
    worldRolls[0]!.selectionRoll===oldWorld.pieceRoll,
    'legacy_world_exact_hmac_compatibility');
  }
+ {
+  // V69 previously rejected the 99% World Boss no-gear outcome because
+  // the trusted source necessarily specifies potential equipment custody.
+  // A miss MUST still commit its four guarantees and one inbox receipt.
+  const bossTable=worldBossChestLootTableV68({
+   bossId:'hollowroot',kind:'donations_goal',
+  });
+  let missedBossKey='';
+  for(let i=1;i<=100&&!missedBossKey;i++){
+   const event='44444444-4444-4444-8444-'+i.toString(16).padStart(12,'0');
+   const candidate='world-boss:'+event+':'+account+':donations_goal';
+   if(deriveChestSettlementRollsV69(
+    bossTable,candidate,secret,
+   )[0]!.hitRoll>=100)missedBossKey=candidate;
+  }
+  check(!!missedBossKey,'found_deterministic_world_gear_miss');
+  const noGear=new MockDb();
+  noGear.proof={...noGear.proof,sourceKey:missedBossKey,
+   lootTable:bossTable,equipmentDeliveryMode:'account_unclaimed',
+   recipientCharacterId:null};
+  const openBoss=createChestRewardSettlementV69(noGear,{secret},true);
+  const earned=await openBoss({
+   authenticatedAccountId:account,sourceKey:missedBossKey,
+  });
+  check(earned.receipt.guaranteed.length===4&&
+   earned.receipt.groups.length===1&&
+   earned.receipt.groups[0]!.hit===false&&
+   earned.receipt.drops.length===0&&
+   earned.receipt.equipmentDeliveryMode===null&&
+   earned.receipt.recipientCharacterId===null&&
+   noGear.state.guaranteed.size===1&&
+   noGear.state.inbox.size===1&&
+   noGear.state.drops.size===0,
+   'world_99_percent_miss_pays_guarantees_and_inbox');
+  const replay=await openBoss({
+   authenticatedAccountId:account,sourceKey:missedBossKey,
+  });
+  check(replay.replayed&&replay.receipt===earned.receipt&&
+   noGear.state.inbox.size===1,'world_no_gear_replay_once');
+ }
+ {
+  // Same requirement for Party Event equipment; a chosen character is
+  // not pinned to the receipt unless an actual item was rolled.
+  const partyTable=partyChestLootTableV68({
+   kind:'participation',difficulty:'standard',family:'nightfall_hunt',
+  });
+  const chance=partyTable.groups[0]!.chanceBps;
+  let missedPartyKey='';
+  for(let i=1;i<=100&&!missedPartyKey;i++){
+   const candidate='party-event:'+(Date.UTC(2026,10,16)+i)+
+    ':'+account+':participation';
+   if(deriveChestSettlementRollsV69(
+    partyTable,candidate,secret,
+   )[0]!.hitRoll>=chance)missedPartyKey=candidate;
+  }
+  check(!!missedPartyKey,'found_deterministic_party_gear_miss');
+  const noGear=new MockDb();
+  noGear.proof={...noGear.proof,sourceKey:missedPartyKey,
+   lootTable:partyTable,equipmentDeliveryMode:'character',
+   recipientCharacterId:character};
+  const earned=await createChestRewardSettlementV69(
+   noGear,{secret},true,
+  )({authenticatedAccountId:account,sourceKey:missedPartyKey});
+  check(earned.receipt.drops.length===0&&
+   earned.receipt.equipmentDeliveryMode===null&&
+   earned.receipt.recipientCharacterId===null&&
+   noGear.state.guaranteed.size===1&&noGear.state.inbox.size===1,
+   'party_no_gear_miss_still_grants_rewards');
+ }
  console.log('CHEST_SETTLEMENT_V69_OK: receipt-first, exact-once multi-drop payouts, replay after table change/key rollover, concurrent source locks, rollback on missing custody, production fence, legacy HMAC parity');
 }
 run().catch(e=>{console.error(e);throw e;});

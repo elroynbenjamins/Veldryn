@@ -24,8 +24,8 @@ function colorFields(draft:PlayerNameStylePreference,fallback:string|undefined):
   c:stored.gradientColors?.[2]??stored.gradientColors?.[1]??SUPPORTER_NAME_PRESETS[0].colors[2]};
 }
 
-export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle,onInputDirtyChange,resetVersion=0,active=true}:{
- state:GameState;draft:PlayerNameStylePreference;onDraftChange:(style:PlayerNameStylePreference)=>void;
+export function PlayerNameStyleEditor({state,previewName,draft,onDraftChange,onSaveNameStyle,onInputDirtyChange,resetVersion=0,active=true}:{
+ state:GameState;previewName?:string;draft:PlayerNameStylePreference;onDraftChange:(style:PlayerNameStylePreference)=>void;
  onSaveNameStyle:SavePlayerNameStyle;onInputDirtyChange?:(dirty:boolean)=>void;resetVersion?:number;active?:boolean;
 }){
  const language=useGameLanguage();
@@ -40,7 +40,7 @@ export function PlayerNameStyleEditor({state,draft,onDraftChange,onSaveNameStyle
  const inputDirty=JSON.stringify(fields)!==fieldKey;
  useEffect(()=>{onInputDirtyChange?.(inputDirty);},[inputDirty,onInputDirtyChange]);
  useEffect(()=>()=>onInputDirtyChange?.(false),[onInputDirtyChange]);
- const playerName=state.character?.name??'Adventurer';
+ const playerName=previewName?.trim()||state.character?.name||'Adventurer';
  const canApply=draft.mode==='default'||draft.mode==='solid'&&entitlements.canUseSolidRgb||draft.mode==='gradient'&&entitlements.canUseAdvanced;
  const editField=(key:keyof ColorFields,value:string)=>{setFields(current=>({...current,[key]:value}));setMessage('');};
  const previewStyle=(style:PlayerNameStylePreference)=>{const normalized=normalizePlayerNameStyle(style);setFields(colorFields(normalized,state.account.vipPlusNameColor));onDraftChange(normalized);setMessage('');};

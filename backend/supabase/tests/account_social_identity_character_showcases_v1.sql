@@ -1,0 +1,165 @@
+-- Transactional staging QA: no fixture survives the final rollback.
+begin;
+create or replace function pg_temp.assert_social(value boolean,label text)
+returns void language plpgsql as $$
+begin if value is distinct from true then raise exception 'SOCIAL_IDENTITY_FAIL: %',label;end if;end $$;
+do $qa$
+declare
+ owner_id uuid:=gen_random_uuid();
+ viewer_id uuid:=gen_random_uuid();
+ c1 uuid:=gen_random_uuid();c2 uuid:=gen_random_uuid();c3 uuid:=gen_random_uuid();
+ row jsonb;row2 jsonb;
+begin
+ insert into auth.users(id,email)
+ values(owner_id,'social-owner-'||owner_id||'@example.invalid'),
+  (viewer_id,'social-viewer-'||viewer_id||'@example.invalid');
+ insert into public.characters(id,account_id,name,class_id)
+ values(c1,owner_id,'Warden One','IRONWARDEN'),
+  (c2,owner_id,'Shade Two','KNIFE_DANCER'),
+  (c3,owner_id,'Healer Three','DAWNKEEPER');
+ insert into public.player_profiles(account_id,display_name,active_character_id)
+ values(owner_id,'Warden One',c1) on conflict(account_id) do update set active_character_id=excluded.active_character_id,display_name=excluded.display_name;
+ insert into public.player_profiles(account_id,display_name)
+ values(viewer_id,'Viewer') on conflict(account_id) do nothing;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ row:=public.set_account_social_name_v1('Realm Hero');
+ perform pg_temp.assert_social(row->>'socialName'='Realm Hero' and row->>'selected'='true','initial name selection');
+ update public.player_profiles set active_character_id=c2 where account_id=owner_id;
+ perform pg_temp.assert_social((select display_name='Realm Hero' from public.player_profiles where account_id=owner_id),'switch preserves social name');
+ -- The same selected name is idempotent rather than a second cooldown event.
+ row:=public.set_account_social_name_v1('Realm Hero');
+ perform pg_temp.assert_social(row->>'selected'='true','same-name idempotency');
+ begin
+  perform public.set_account_social_name_v1('New Hero');
+  raise exception 'expected cooldown not enforced';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_COOLDOWN%' then raise;end if;
+ end;
+ -- Direct row writes must not bypass the validated rename cooldown.
+ perform set_config('veldryn.social_name_write','',true);
+ begin
+  update public.player_profiles set social_name_changed_at=now()-interval '31 days'
+    where account_id=owner_id;
+  raise exception 'expected direct timestamp write denied';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_RPC_REQUIRED%' then raise;end if;
+ end;
+ begin
+  update public.player_profiles set social_name='Bypass'
+    where account_id=owner_id;
+  raise exception 'expected direct rename denied';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_RPC_REQUIRED%' then raise;end if;
+ end;
+ perform set_config('request.jwt.claim.sub',viewer_id::text,true);
+ begin
+  perform public.set_account_social_name_v1('Realm Hero');
+  raise exception 'expected uniqueness not enforced';
+ exception when others then
+  if sqlerrm not like '%SOCIAL_NAME_TAKEN%' then raise;end if;
+ end;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ -- Reset after the explicit roster-switch test: profile edits must leave this hero active.
+ update public.player_profiles set active_character_id=c1 where account_id=owner_id;
+ perform public.profile_extension_update_v43('public',false,c1,'Shared account bio',null,null,
+  '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+ perform public.profile_extension_update_v43('public',false,c2,'Shared account bio',null,null,
+  '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+ perform pg_temp.assert_social(
+  (select count(*)=2 from public.character_profile_showcases_v1 where account_id=owner_id),
+  'two independently stored showcases');
+ -- Distinct skill inventories for active and inactive heroes.
+ insert into public.online_game_states(account_id,character_id,state) values(
+  owner_id,c1,
+  jsonb_build_object(
+   'character',jsonb_build_object('id',c1,'name','Warden One'),
+   'skills',jsonb_build_array(jsonb_build_object('skillId','mining','level',10)),
+   'otherCharacters',jsonb_build_array(
+    jsonb_build_object('character',jsonb_build_object('id',c2,'name','Shade Two'),
+     'skills',jsonb_build_array(jsonb_build_object('skillId','fishing','level',10))),
+    jsonb_build_object('character',jsonb_build_object('id',c3,'name','Healer Three'),
+     'skills',jsonb_build_array(jsonb_build_object('skillId','woodcutting','level',10)))),
+   'account',jsonb_build_object('unlockedCombatCompanionIds','[]'::jsonb)));
+ perform public.profile_character_showcase_update_v2(c3,'woodcutting',null,
+  '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+ perform pg_temp.assert_social(
+  (select favorite_skill_id='woodcutting' from public.character_profile_showcases_v1
+   where character_id=c3),
+  'inactive hero can save own skill');
+ begin
+  perform public.profile_character_showcase_update_v2(c3,'mining',null,
+   '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+  raise exception 'expected cross-hero skill rejected';
+ exception when others then
+  if sqlerrm not like '%SKILL_NOT_AVAILABLE%' then raise;end if;
+ end;
+
+ -- The legacy profile save used to switch active gameplay characters: no longer allowed.
+ perform pg_temp.assert_social(
+  (select active_character_id=c2 from public.player_profiles where account_id=owner_id) is false,
+  'legacy profile save did not switch active gameplay hero');
+ perform public.profile_identity_update_v2('public',false,'Identity only');
+ perform pg_temp.assert_social(
+  (select selected_character_id=c2 from public.player_profile_extensions where account_id=owner_id),
+  'identity save retains featured hero');
+ perform public.profile_character_showcase_update_v2(c1,null,null,
+  '{}'::text[],'[{"kind":"profile_icon","id":"starter:hooded-ranger"}]'::jsonb,
+  '{}'::text[],'{}'::text[]);
+ perform pg_temp.assert_social(
+  (select selected_character_id=c2 from public.player_profile_extensions where account_id=owner_id),
+  'saving a different hero does not overwrite featured hero');
+ perform pg_temp.assert_social(
+  (select active_character_id=c1 from public.player_profiles where account_id=owner_id),
+  'saving a different hero preserves active gameplay hero');
+ perform pg_temp.assert_social(
+  (select jsonb_array_length(collection_showcase)=1 from public.character_profile_showcases_v1
+   where character_id=c1),
+  'starter portrait collection entry is supported');
+ begin
+  perform public.profile_character_showcase_update_v2(c1,null,null,
+   '{}'::text[],'[{"kind":"profile_icon","id":"hidden:unowned"}]'::jsonb,
+   '{}'::text[],'{}'::text[]);
+  raise exception 'expected locked portrait rejected';
+ exception when others then
+  if sqlerrm not like '%COLLECTION_NOT_OWNED%' then raise;end if;
+ end;
+ perform public.profile_featured_character_update_v2(c3);
+ perform pg_temp.assert_social(
+  (select selected_character_id=c3 from public.player_profile_extensions where account_id=owner_id),
+  'explicit featured hero changed');
+ perform pg_temp.assert_social(
+  (select active_character_id=c1 from public.player_profiles where account_id=owner_id),
+  'featuring another hero does not change gameplay hero');
+ -- Restore the second hero as featured for subsequent old public-profile assertions.
+ perform public.profile_featured_character_update_v2(c2);
+
+ -- Assert independent per-character state is read, not the account's last selected slots.
+ update public.character_profile_showcases_v1
+  set favorite_skill_id='mining' where character_id=c1;
+ perform set_config('request.jwt.claim.sub',viewer_id::text,true);
+ row:=public.profile_character_public_v1(owner_id,c1);
+ row2:=public.profile_character_public_v1(owner_id,c2);
+ perform pg_temp.assert_social(row->>'displayName'='Realm Hero','social name exposed on public profile');
+ perform pg_temp.assert_social(row#>>'{character,name}'='Warden One','first character name');
+ perform pg_temp.assert_social(row2#>>'{character,name}'='Shade Two','second character name');
+ perform pg_temp.assert_social(jsonb_array_length(row->'characterChoices')=3,'three-character gallery');
+ perform pg_temp.assert_social(row->>'bio'='Identity only','identity-only save persisted bio');
+ begin
+  perform public.character_showcase_self_v1(c1);
+  raise exception 'expected cross-account showcase lookup denied';
+ exception when others then
+  if sqlerrm not like '%CHARACTER_NOT_OWNED%' then raise;end if;
+ end;
+ perform pg_temp.assert_social(row->>'favoriteSkillId'='mining'
+    and row2->>'favoriteSkillId' is null,'showcase preferences stay separate');
+ row:=public.profile_character_gear_v1(owner_id,c2);
+ perform pg_temp.assert_social(row->>'characterId'=c2::text,'gear uses selected hero not featured hero');
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.profile_extension_update_v43('private',false,c2,'Private bio',null,null,
+  '{}'::text[],'[]'::jsonb,'{}'::text[],'{}'::text[]);
+ perform set_config('request.jwt.claim.sub',viewer_id::text,true);
+ perform pg_temp.assert_social(public.profile_character_public_v1(owner_id,c1) is null,'private gallery blocked');
+ perform pg_temp.assert_social(public.profile_character_gear_v1(owner_id,c1) is null,'private gear blocked');
+end $qa$;
+select 'PASS: account social name, cooldown, three characters, independent showcases and privacy' as result;
+rollback;

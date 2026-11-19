@@ -43,7 +43,7 @@ assert.equal(withdraw.nextLocation,'pouch',
 const wrongClass:V2CustodyState={...initial,copies:initial.copies.map(row=>row.instanceId==='iron-sword'
  ?{...row,ownerCharacterId:'wayfinder-2'}:row)};
 assert.equal(v2ServerCustodyPreflight(wrongClass,{kind:'equip',actorCharacterId:'wayfinder-2',
- instanceId:'iron-sword'}).reason,'wrong_class','Crafting or withdrawing must never bypass equip class rules');
+ instanceId:'iron-sword'}).reason,'incompatible_weapon_family','Bank transfer cannot bypass weapon-family eligibility');
 assert.equal(v2ServerCustodyPreflight(initial,{kind:'equip',actorCharacterId:'iron-1',
  instanceId:'iron-sword'}).allowed,true);
 assert.equal(v2ServerCustodyPreflight(initial,{kind:'deposit_bank',actorCharacterId:'wayfinder-2',

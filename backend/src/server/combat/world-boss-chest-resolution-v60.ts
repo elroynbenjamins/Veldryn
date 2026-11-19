@@ -51,7 +51,7 @@ function privateGearStream(secret:Uint8Array,key:string):(max:number)=>number{
   const label=index++;
   const ceiling=Math.floor(WORD_RANGE/max)*max;
   for(let retry=0;retry<32;retry++){
-   const digest=createHmac('sha256',secret)
+   const digest=createHmac('sha256',Buffer.from(secret))
     .update('veldryn:world-boss:gear:v60\0')
     .update(key).update('\0')
     .update(String(label)).update('\0')

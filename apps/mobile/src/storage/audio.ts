@@ -109,7 +109,12 @@ function fade(player:Player,from:number,to:number,done?:()=>void){
  if(fadeTimer)clearInterval(fadeTimer);
  const steps=Math.max(1,Math.round(FADE_MS/40));let i=0;
  fadeTimer=setInterval(()=>{
-  i++;try{player.volume=from+(to-from)*Math.min(1,i/steps);}catch{/* ignore */}
+  i++;try{
+   // A user can adjust music while a scene fade is still running.
+   // Fade-ins follow the latest selected level; fade-outs still end at zero.
+   const target=done?to:musicVolume();
+   player.volume=from+(target-from)*Math.min(1,i/steps);
+  }catch{/* ignore */}
   if(i>=steps){clearInterval(fadeTimer);fadeTimer=undefined;done?.();}
  },40);
 }

@@ -8,6 +8,12 @@ on:
       - 'backend/online/tests/live-queue.ts'
       - 'backend/online/dungeon-shop.ts'
       - 'backend/online/coop.ts'
+      - 'backend/online/dungeon-weekly-quests.ts'
+      - 'backend/online/tests/dungeon-weekly-quests.ts'
+      - 'apps/mobile/src/screens/CoopExpeditionScreen.tsx'
+      - 'apps/mobile/src/core/dungeon-weekly-quests.ts'
+      - 'apps/mobile/tests/dungeon-weekly-quest-ui.cjs'
+      - 'backend/supabase/migrations/20261119140000_coop_weekly_dungeon_quest_metrics_v1.sql'
       - 'backend/online/tests/dungeon-shop.ts'
       - 'backend/online/tests/dungeon-variety.ts'
       - 'backend/online/tests/regional-dungeon-clear-rates.ts'
@@ -67,6 +73,9 @@ jobs:
       - name: Validate verified weekly dungeon quests, boon drafts and named relics
         run: node dist/online/backend/online/tests/dungeon-weekly-quests.js
         working-directory: backend
+      - name: Validate standalone weekly dungeon card and claim wiring
+        run: pnpm test:dungeon-weekly-ui
+        working-directory: apps/mobile
       - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
         run: pnpm test:dungeon-tier-balance
         working-directory: backend

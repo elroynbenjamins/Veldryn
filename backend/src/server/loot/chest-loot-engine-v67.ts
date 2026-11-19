@@ -202,18 +202,17 @@ export function deriveChestGroupRollsV67(input:{
  readonly table:ChestLootTableV67;
  readonly sourceKey:string;
  readonly secret:Uint8Array;
- /** Actual DB-owned account collection for unbiased weighted selections. */
- readonly ownedDropIds?:readonly string[];
+ /** REQUIRED DB-owned account collection for unbiased missing-piece weights. */
+ readonly ownedDropIds:readonly string[];
 }):readonly ChestGroupRollV67[]{
  const table=defineChestLootTableV67(input?.table);
  if(!(input?.secret instanceof Uint8Array)||
   input.secret.byteLength<32||input.secret.byteLength>512||
   typeof input.sourceKey!=='string'||!SAFE_KEY.test(input.sourceKey)||
-  (input.ownedDropIds!==undefined&&
-   (!Array.isArray(input.ownedDropIds)||
-    input.ownedDropIds.some(x=>typeof x!=='string'||!SAFE_ENTRY_ID.test(x)))))
+  !Array.isArray(input.ownedDropIds)||
+  input.ownedDropIds.some(x=>typeof x!=='string'||!SAFE_ENTRY_ID.test(x)))
   throw Error('chest_v67_invalid_server_entropy_contract');
- const owned=new Set(input.ownedDropIds??[]);
+ const owned=new Set(input.ownedDropIds);
  const draw=(groupId:string,label:'hit'|'select',max:number):number=>{
   if(!Number.isSafeInteger(max)||max<1||max>CHEST_ROLL_MODULUS_V67)
    throw Error('chest_v67_invalid_entropy_range');

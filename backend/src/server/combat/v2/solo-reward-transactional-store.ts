@@ -94,7 +94,7 @@ function validateScope(scope:TrustedSoloIdentityV2){
 }
 function checkSnapshot(scope:TrustedSoloIdentityV2,row:LockedSnapshotRow|undefined,
  receipt:SoloRewardReceiptV2){
- if(!row)fail('snapshot_missing');
+ if(!row)throw Error('combat_v2_reward_sql_snapshot_missing');
  if(row.account_id!==scope.accountId||row.character_id!==scope.characterId||
   row.snapshot_digest!==receipt.snapshotDigest||
   !row.payload||typeof row.payload!=='object'||

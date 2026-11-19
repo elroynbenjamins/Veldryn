@@ -1,7 +1,16 @@
 # Account-wide Social Name and character showcases — guarded release QA
 
-**Candidate:** draft PR #1384 · **Status:** hidden, not enabled · **Target:** coordinated Android 1.0.11 or later.
+**Candidate:** merged release integration PR #1453 (draft design provenance #1384) · **Status:** code integrated, hidden, not enabled · **Target:** coordinated Android 1.0.11 or later.
 **Do not set** `ACCOUNT_SOCIAL_IDENTITY_RELEASED=true`, deploy production migrations, or move the Android version policy until all release gates pass.
+
+## Release-readiness audit — 19 November 2026
+
+- **GitHub integration:** PR #1453 was merged into `main` at `5a2644491f240e923171bc270fb96f5aeecb5025`; the feature is still hidden behind `ACCOUNT_SOCIAL_IDENTITY_RELEASED=false`.
+- **Staging:** Re-ran the rollback-only `backend/supabase/tests/account_social_identity_character_showcases_v1.sql` and received **PASS** on 2026-11-19. All seven social-identity migrations exist in the staging migration history. Checked `character_profile_showcases_v1`: RLS enabled; `anon` and `authenticated` have no direct table SELECT/UPDATE privileges.
+- **RPC grants:** Checked staging: `anon` cannot execute the identity/name/showcase public API functions, while `authenticated` can execute designated functions. Trigger helper `protect_social_name_v1` is not callable by either role. These catalog checks complement, but do not replace, Android authenticated/blocked-user testing.
+- **Production:** None of the seven new social-identity migrations are present, and the expected `social_name` columns and new showcase table are absent. No migration or feature flag was activated in production during this audit.
+- **Android CI blocker:** Merged `main` run `44569715600` failed at `expo-doctor`: required peer `expo-asset` was missing from the app's declared dependencies. Release-readiness branch `codex/social-identity-1-0-11-release-readiness` adds the existing lockfile-resolved `expo-asset@58.0.21` as a direct dependency. **Do not mark this fixed until fresh PR Android AAB + emulator smoke jobs pass.**
+- **Release status:** **NO-GO for production activation** while Android signoff, final security review, and Play internal-track QA remain unverified.
 
 ## Verified on 18 November 2026
 

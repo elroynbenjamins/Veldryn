@@ -31,3 +31,13 @@
 ## Next consolidation decision
 
 Once tests actually pass, consider splitting #1407 into **World Boss backend safety/rewards** and **Party Event chest UI/prototypes** for smaller review units; keep the canonical 1% gathering rule and all disabled gates intact. Do not flip release flags just to make tests pass.
+
+## Review split completed — 19 Nov (following consolidated audit)
+
+**Party Event draft:** [#1429](https://github.com/elroynbenjamins/Veldryn/pull/1429) targeting `main`; branch `review/party-event-chests-equipment-v51-v60-20261119`. Extracted Party Event V51 eight sets, three chest types, V59 combat hooks, V60 hidden grant gateway, shared cryptographic V1 entropy and a Party-only static QA treasure preview. Its own `event-chest-catalog-hidden.yml` compiles Party-only `tsconfig.event-chests.json` and runs focused Party checks, never World Boss modules. All public/production gates remain disabled.
+
+**World Boss draft:** [#1407](https://github.com/elroynbenjamins/Veldryn/pull/1407) now targets **the Party Event branch**, not `main`. Its tree remains the same after an ancestry-only two-parent merge: World Boss-specific backend, private erasure/stop protections, item custody/roll policy, SQL drafts, and World Boss QA/CI remain intact. Shared party files are now base-branch dependencies, not independently reviewed in #1407. Reviewing/merging directly to `main` out of order would be inappropriate. **Do not merge #1407 before #1429 is reviewed and its base is safely advanced to `main`.**
+
+**CI correction:** the pre-split #1407 `chest-contracts` job failed TypeScript compilation due CommonJS top-level `await`, fixture assertion narrowing and a redundant gear-hook union comparison. Those errors were corrected on the hidden World Boss branch before the split; the Party branch includes the corrected Party files. This is a *source fix only*: new exact-head CI results must be checked before claiming tests pass. The separate hidden release-boundary job previously completed successfully.
+
+**Outstanding shared dependencies:** the Party V60 and World Boss V61/V63 reward gateways are nonpaying fixtures. They require real owner-authenticated account receipts, the durable Equipment 2.0 item issuer, final account wallet/Inbox, V57 account-erasure gating, regression tests with two independent real PostgreSQL sessions, and Android visual/accessibility QA. No staging or production migration, rollout, or feature flag change was made during this split.

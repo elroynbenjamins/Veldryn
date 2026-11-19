@@ -129,8 +129,8 @@ const emptyTrack=():DailySuppliesTrack=>({schemaVersion:2,totalClaims:0,bank:{},
 function track(state:GameState){return normalizeDailySuppliesTrack(state.account.dailySupplies)??emptyTrack()}
 const clearLegacy=(character:CharacterState):CharacterState=>({...character,dailySupplyBoostBank:undefined,activeDailySupplyBoost:undefined,activeDailySupplyBoosts:undefined});
 /** Idempotent: v2 is canonical. Each legacy character contributes charges only on the first migration. */
-export function migrateLegacyDailySupplies(state:GameState):GameState{
- const old=state.account.dailySupplies,needsMigration=!old||old.schemaVersion!==2;
+export function migrateLegacyDailySupplies(state:GameState,forceLegacy=false):GameState{
+ const old=state.account.dailySupplies,needsMigration=forceLegacy||!old||old.schemaVersion!==2;
  const next=track(state);
  if(needsMigration){
   const bank={...(next.bank??{})},active={...(next.active??{})},queued={...(next.queued??{})};

@@ -14,6 +14,8 @@ boots.png, weapon.png, offhand.png, cape.png, amulet.png and ring.png.
 from __future__ import annotations
 
 import argparse
+import json
+from equipment_v2_image_optimization import write_optimized
 from pathlib import Path
 import sys
 
@@ -67,10 +69,10 @@ def normalize(src: Path, slot: str) -> Image.Image:
     return output
 
 
-def export(art: Image.Image, out: Path, quality: int) -> None:
-    out.parent.mkdir(parents=True, exist_ok=True)
-    art.save(out, format="WEBP", quality=quality, method=6)
-
+def export(art: Image.Image, out: Path, quality: int) -> dict:
+    """Select lossless or quality-guarded WebP; never ship a blind q78 encode."""
+    kind = "atlas" if art.size == (960, 384) else "icon"
+    return write_optimized(art, out, kind=kind, min_quality=quality)
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -79,13 +81,15 @@ def main() -> int:
     atlas = subs.add_parser("atlas", help="Compile ten slot-named PNG masters")
     atlas.add_argument("--folder", required=True, type=Path)
     atlas.add_argument("--out", required=True, type=Path)
-    atlas.add_argument("--quality", type=int, default=78)
+    atlas.add_argument("--quality", type=int, default=80, help="Minimum lossy candidate quality; lossless always considered")
+    atlas.add_argument("--report", type=Path, help="Write JSON report outside mobile assets")
 
     icon = subs.add_parser("icon", help="Compile one standalone reward icon")
     icon.add_argument("--slot", required=True, choices=SLOTS)
     icon.add_argument("--input", required=True, type=Path)
     icon.add_argument("--out", required=True, type=Path)
-    icon.add_argument("--quality", type=int, default=78)
+    icon.add_argument("--quality", type=int, default=80, help="Minimum lossy candidate quality; lossless always considered")
+    icon.add_argument("--report", type=Path, help="Write JSON report outside mobile assets")
 
     args = parser.parse_args()
     if not (1 <= args.quality <= 100):
@@ -98,11 +102,17 @@ def main() -> int:
             for index, slot in enumerate(SLOTS):
                 source = args.folder / f"{slot}.png"
                 result.alpha_composite(normalize(source, slot), ((index % 5) * CELL, (index // 5) * CELL))
-        export(result, args.out, args.quality)
+        report = export(result, args.out, args.quality)
+        if args.report is not None:
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     except (OSError, ValueError) as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1
     print(f"EXPORTED: {args.out} ({result.width}x{result.height}; transparent WebP)")
+    print("  Encoded: {} quality={} size={} B, PNG-equivalent saved {}%".format(report["codec"], report["quality"], report["output_bytes"], report["png_equivalent_savings_pct"]))
+    if report["above_target"]:
+        print("  WARN: above preferred runtime size target; art review recommended")
     print("NEXT: run tools/validate-equipment-v2-art.py and human style/material QA")
     return 0
 

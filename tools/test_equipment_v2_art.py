@@ -91,7 +91,7 @@ class EquipmentArtRules(unittest.TestCase):
             current = p / "current.webp"
             packer.export(packer.normalize(p / "ring.png", "ring"), reference, 78)
             art = Image.new("RGBA", (192, 192), (0, 0, 0, 0))
-            ImageDraw.Draw(art).rectangle((60, 60, 132, 132), fill=(100, 110, 120, 255))
+            ImageDraw.Draw(art).rectangle((36, 36, 155, 155), fill=(100, 110, 120, 255))
             packer.export(art, current, 78)
             self.assertFalse(gate.validate(current, "icon", reference=reference)["passed"])
 

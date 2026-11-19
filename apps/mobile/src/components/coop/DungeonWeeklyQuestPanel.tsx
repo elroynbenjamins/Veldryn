@@ -27,7 +27,7 @@ export function DungeonWeeklyQuestPanel({language,quest,loading,error,busy=false
    {quest?<StateChip label={quest.claimed?st('CLAIMED'):ready?st('READY'):st('WEEKLY')} tone={quest.claimed?'success':ready?'selected':'warning'}/>:null}
   </View>
   {quest?<><Text style={s.description}>{copy?.description??quest.description}</Text>
-    <View style={s.progressRow}>
+    <View style={s.progressRow} accessible accessibilityRole="progressbar" accessibilityValue={{min:0,max:quest.target,now:progress}} accessibilityLabel={st('{name}: {current} of {goal}',{name:copy?.name??quest.name,current:progress,goal:quest.target})}>
      <View style={s.track}><View style={[s.fill,{width:(Math.min(100,Math.round(progress/quest.target*100))+'%') as `${number}%`}]}/></View>
      <Text style={s.progress}>{progress}/{quest.target}</Text>
     </View>

@@ -11,10 +11,13 @@ export function scaleSocialEchoToHost(
 ):CombatantDefinition{
  const owner=Math.max(1,Number(hostCombatPower)||0);
  const donor=Math.max(1,Number(echoCombatPower)||0);
- // Fall back to a small fixed penalty if an old donor lacks CP metadata.
+ // Approximately 90% of the host's CP even when recruiting a far stronger
+ // friend. Donor power still influences the result slightly, never above 110%
+ // of the host in that influence term. We keep their actual stat distribution,
+ // abilities and equipped effects, rather than replacing the borrowed build.
+ const target=.90*(owner*.88+Math.min(donor,owner*1.10)*.12);
  const factor=hostCombatPower&&echoCombatPower&&hostCombatPower>0&&echoCombatPower>0
-  ?Math.max(.60,Math.min(1.02,.90*Math.pow(owner/donor,.5)))
-  :.90;
+  ?Math.min(1.02,target/donor):.90;
  return {...echo,stats:{...echo.stats,
   maxHp:echo.stats.maxHp*factor,
   attackPower:echo.stats.attackPower*factor,

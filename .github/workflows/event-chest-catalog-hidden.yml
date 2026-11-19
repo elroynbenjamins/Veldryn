@@ -46,6 +46,8 @@ on:
       - 'backend/tests/chest-reward-ledger-v70.mjs'
       - 'backend/tests/chest-postgres-store-v70.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql'
+      - 'backend/src/server/loot/world-boss-chest-source-v72.ts'
+      - 'backend/src/server/loot/__tests__/world-boss-chest-source-v72.ts'
       - 'backend/src/server/loot/chest-reward-settlement-v69.ts'
       - 'backend/src/server/loot/__tests__/chest-reward-settlement-v69.ts'
       - 'backend/src/server/loot/chest-loot-engine-v67.ts'
@@ -114,6 +116,8 @@ jobs:
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-settlement-v61.js
       - name: Verify generic V67 chest tables and V68 legacy parity
         run: node .event-chest-tests/server/loot/__tests__/chest-loot-engine-v67.js
+      - name: Verify World Boss V72 account-bound replay-proof source for reusable chests
+        run: node .event-chest-tests/server/loot/__tests__/world-boss-chest-source-v72.js
       - name: Verify V69 shared receipt-first settlement, rollback, replay and source locks
         run: node .event-chest-tests/server/loot/__tests__/chest-reward-settlement-v69.js
       - name: Run V70 real SQL account-locked receipt/physical payout regression
@@ -150,6 +154,7 @@ jobs:
           test ! -f supabase/migrations/20261119_world_boss_chest_ledger_v61_review_only.sql
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
+          grep -q 'WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false' src/server/loot/world-boss-chest-source-v72.ts
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts

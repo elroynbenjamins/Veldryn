@@ -115,7 +115,9 @@ class PgFixture implements WorldBossChestPgDriverV63{
     data.receipts.set(key,JSON.parse(args[13] as string) as WorldBossChestReceiptV61);
     rows.push({sourceKey:key});
    }else if(sql.includes('INSERT INTO private.world_boss_chest_grant_sources_v61')){
-    const key=args[0]+':'+args[1];
+    const component=sql.includes("'equipment'")?'equipment':
+     sql.includes("'inbox'")?'inbox':String(args[1]);
+    const key=args[0]+':'+component;
     if(data.grants.has(key))throw Error('duplicate_component');
     data.grants.add(key);
    }else if(sql.includes('FROM private.world_boss_chest_grant_sources_v61')){

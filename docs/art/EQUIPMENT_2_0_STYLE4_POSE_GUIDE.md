@@ -52,7 +52,7 @@ The helmet, chest and shield should share a **front three-quarter viewer-right**
 
 - **Canvas and gutters are machine-enforced:** 192×192 canvas, 26px alpha inset; total allowed alpha rectangle is x/y from 26 through 165 (exclusive bound 166).
 - **Visual target center:** approximate (96,96); allow shape-dependent perceptual offsets (e.g. sword mass is diagonal; boots' paired toes are left-heavy), but compare centroid with the **matching-slot signed-off reference**.
-- **Object size:** compare longest occupied dimension with accepted prior-tier same-slot icon; automated optional tolerance ±20% is an exception-catching gate, not an ideal range. For full sets, target much closer to reference: **roughly ±8–10%** in visual review.
+- **Object size:** compare longest occupied dimension with accepted prior-tier same-slot icon; automated optional tolerance ±20% is an exception-catching gate, not an ideal range. For each actual compact set, target much closer to reference: **roughly ±8–10%** in visual review.
 - **Camera yaw:** +10–15° “toward viewer-right” *for armor only*; avoid rigid reinterpretation on jewelry, capes, paired items and non-sword weapons.
 - **Object lean:** armor waist/torso should remain essentially upright (≤5° from vertical), but cloth folds/sword axis reflect their own natural pose.
 - **Pair offset:** match the accepted slot master; keep difference in top-edge y position subtle, no dramatic action pose.
@@ -74,9 +74,9 @@ Every set has an identity card: 1–2 material sources, dominant dark/mid/light 
 
 1. Mark Style 4's *direction* approved: complete for this decision.
 2. Archive an **actual reference copy** of the user's fourth example in review storage, then record source SHA256 and label it **style-direction-only**. It is **not** a finished transparent ten-slot icon set and may have imperfect silhouettes or sample background.
-3. Redraw/generate one **real T1 armor-plus-weapon calibration set**, each item individually with transparent edges and a correct Style 4 slot pose. Capture actual 192px approved cropped masters; build a ten-slot comparison sheet. Human-review direction, shadows and legibility at 40px.
-4. Review a contrasting cloth class and a T5 equivalent; confirm the visual model holds across materials, tiers and different weapon axes.
-5. Approve ten slot masters **individually** and record reference-kit version + hash. Only then allow production batch generation. `direction_approved` **is not the same** as `referenceKit.status=approved`.
+3. Generate **real canonical T1 compact-set pieces**, initially two Fieldborn Guard pieces (helmet/chest), two Fieldborn Trail (gloves/boots), and two Fieldborn Acolyte (cape/amulet); render each individually. Separately add an actual class weapon/offhand template **only after its canonical item ID is verified**. A ten-slot comparison contact sheet may display unrelated sample items but is **not a ten-piece equipment set**.
+4. Review actual higher-tier crafted **T2 Ironwood, T3 Sunscar and T4 Glassbound** items, plus real different weapon families; T5+ remains concept progression until authoritative craft IDs exist.
+5. Over time, approve visual masters for each **slot type** individually and record reference-kit version + hashes; these ten general slot references are independent of set size. Then allow production of catalogued pieces only. `direction_approved` **is not the same** as `referenceKit.status=approved`.
 
 **Reviewer checklist:** adjacent items upright, sword direction consistent, axe/staff/bow exceptions correct, fronts/backs deliberate, every glove/boot pair facing the same way, camera elevation constant, no mirrored light, no cropping, readable 40px comparison, validated compression and pixel-accurate alpha.
 

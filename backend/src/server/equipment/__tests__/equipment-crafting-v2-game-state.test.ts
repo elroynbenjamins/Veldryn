@@ -116,7 +116,7 @@ assert.ok(['inventory','equipment_pouch','deferred'].includes(claimed.delivery?.
 const storageFull=structuredClone(switched);
 const originalOwner=storageFull.otherCharacters!.find(row=>row.character.id===active)!;
 originalOwner.inventory.capacity=originalOwner.inventory.stacks.length;
-originalOwner.character.equipmentPouch={stacks:[],capacity:0};
+originalOwner.character.equipmentPouch={stacks:Array.from({length:30},()=>({itemId:'basic_sword',quantity:1})),capacity:30};
 const fullClaim=simulateEquipmentV2InGameState(makeInput(storageFull,{
  ...claim,requestId:'claim-full-0001',
 },20,finishes));

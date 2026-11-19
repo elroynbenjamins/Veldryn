@@ -62,6 +62,8 @@ jobs:
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.js
       - name: Verify hidden immutable claim ledger, storage capacity and custody proposal
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-delivery.test.js
+      - name: Verify hidden permanent Stat Gem replacement, one-time consumption and receipt replay
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-gem-sidecar.test.js
       - name: Verify canonical Equipment 2.0 exact copies in Combat 2.0 evidence
         run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs
       - name: Rehearse V2 in the existing GameState with original Forge and wallet preserved

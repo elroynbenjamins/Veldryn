@@ -30,13 +30,13 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   const views=useMemo(()=>loadouts.map(loadout=>presentCoopLoadout(loadout,state.character!.id)),[loadouts,state.character]);
   const [selectedId,setSelectedId]=useState(views.find(loadout=>loadout.selectable)?.id??views[0]?.id);
   const [showDetails,setShowDetails]=useState(false),[showCompanions,setShowCompanions]=useState(false),[showMatchup,setShowMatchup]=useState(false);
-  const [selectedSocialEchoIds,setSelectedSocialEchoIds]=useState<string[]>([]);
+  const [selectedSocialCharacterIds,setSelectedSocialCharacterIds]=useState<string[]>([]);
   // Revoked sharing, removed friendships and new guild membership all invalidate
   // formerly visible selections. Keep the next commit entirely server-authorized.
   useEffect(()=>{
    if(socialEchoLoading)return;
-   const valid=new Set(socialEchoes.map(candidate=>candidate.profileId));
-   setSelectedSocialEchoIds(previous=>previous.every(id=>valid.has(id))?previous:previous.filter(id=>valid.has(id)));
+   const valid=new Set(socialEchoes.map(candidate=>candidate.characterId));
+   setSelectedSocialCharacterIds(previous=>previous.every(id=>valid.has(id))?previous:previous.filter(id=>valid.has(id)));
   },[socialEchoes,socialEchoLoading]);
   const matchup=state.character?.equippedCombatCompanionId?dungeonCompanionOpportunity(state.character.equippedCombatCompanionId,possibleCounterIds):undefined;
   const selected=views.find(loadout=>loadout.id===selectedId)??views[0];
@@ -44,7 +44,7 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   // contact list itself is unchanged. Retain only the still-legal choices.
   useEffect(()=>{
    if(socialEchoLoading||!selected||!state.character)return;
-   setSelectedSocialEchoIds(previous=>{
+   setSelectedSocialCharacterIds(previous=>{
     const kept:string[]=[];
     for(const id of previous){
      try{
@@ -57,10 +57,10 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   },[socialEchoes,socialEchoLoading,selected?.role,state.character?.classId]);
 
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');
-  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent({...buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected}),...(mode==='qmode'&&selectedSocialEchoIds.length?{preferredEchoCharacterIds:selectedSocialEchoIds}:{})}):onRefresh()}/></View>}>
+  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent({...buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected}),...(mode==='qmode'&&selectedSocialCharacterIds.length?{preferredEchoCharacterIds:selectedSocialCharacterIds}:{})}):onRefresh()}/></View>}>
     <FantasyPanel variant="selected"><View style={s.hero}><CharacterPortrait state={state} compact style={s.portrait}/><View style={s.heroCopy}><Text style={s.character}>{state.character!.name}</Text><Text style={s.copy}>{mode==='live'?`${dungeonName} · ${clt(language,'liveAuto')} · ${clt(language,'level')} ${tier}`:`${dungeonName} · ${clt(language,'level')} ${tier}`}</Text><View style={s.heroBadges}>{selected?<RoleBadge role={selected.role} label={t(language,`coopUi.${selected.role}`)}/>:null}{selected?.selectable?<StateChip label={clt(language,'ready')} tone="success"/>:null}</View></View></View></FantasyPanel>
     {mode==='live'?    <View style={s.partyPreparation}><View style={s.partyPreparationHeader}><Text style={s.section}>{st('Party & formation')}</Text><Text style={s.copy}>{mode==='live'?ct(language,'details.live'):ct(language,'details.qmode')}</Text></View><Text style={s.copy}>{ct(language,'details.partyValue')}</Text><View style={s.partyRoleStrip}><RoleBadge role="tank" label={t(language,'coopUi.tank')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="support" label={t(language,'coopUi.support')}/></View></View>:null}
-    {mode==='qmode'&&selected?<CoopSocialEchoPicker language={language} candidates={socialEchoes} selectedIds={selectedSocialEchoIds} onChange={setSelectedSocialEchoIds} hostRole={selected.role} hostClassId={state.character!.classId} loading={socialEchoLoading} error={socialEchoError} onRefresh={onRefreshSocialEchoes??(()=>{})}/>:null}
+    {mode==='qmode'&&selected?<CoopSocialEchoPicker language={language} candidates={socialEchoes} selectedIds={selectedSocialCharacterIds} onChange={setSelectedSocialCharacterIds} hostRole={selected.role} hostClassId={state.character!.classId} loading={socialEchoLoading} error={socialEchoError} onRefresh={onRefreshSocialEchoes??(()=>{})}/>:null}
     <CoopCombatSetupPanel state={state} compact onChooseCompanion={onEquipCompanion?()=>setShowCompanions(true):undefined} companionDisabled={refreshing} tonicPreference={tonicPreference} onTonicPreferenceChange={onTonicPreferenceChange} onSelectHealingPotion={onSelectHealingPotion}/>
     {onEquipCompanion?<FantasyPanel><Pressable accessibilityRole="button" accessibilityState={{expanded:showMatchup}} onPress={()=>setShowMatchup(value=>!value)} style={s.matchupToggle}><Text style={s.section}>{st('Companion matchup')}</Text><Text style={s.matchupChevron}>{showMatchup?'−':'+'}</Text></Pressable>{showMatchup?<View style={s.matchupDetails}><Text style={s.copy}>{matchup?dungeonCompanionCounterLabel(matchup,st):st('No special encounter counter selected. Every legal companion still assists.')}</Text><Text style={s.copy}>{possibleCounterIds.length?st('Matchups are possible, not guaranteed. Rooms are randomized.'):st('Your companion choice can still provide damage, shielding or recovery.')}</Text></View>:null}</FantasyPanel>:null}
     {!views.length?<FantasyPanel variant="danger"><Text style={s.copy}>{clt(language,'empty')}</Text></FantasyPanel>:null}

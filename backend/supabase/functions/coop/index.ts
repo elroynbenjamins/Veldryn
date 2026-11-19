@@ -49937,7 +49937,7 @@ function validateDungeonWeeklyQuestSnapshot(raw2) {
   const data = raw2;
   const weekKey = String(data.weekKey ?? "");
   const quest = dungeonWeeklyQuestForWeek(weekKey);
-  if (data.id !== quest.id || data.name !== quest.name || data.description !== quest.description || !Number.isSafeInteger(data.progress) || Number(data.progress) < 0 || Number(data.progress) > 1 || data.target !== quest.target || Number(data.progress) > quest.target || data.rewardMarks !== DUNGEON_WEEKLY_REWARD_MARKS || typeof data.claimed !== "boolean" || !Number.isSafeInteger(data.resetAtMs) || Number(data.resetAtMs) < 0) throw new Error("invalid_dungeon_weekly_quest");
+  if (data.id !== quest.id || data.name !== quest.name || data.description !== quest.description || !Number.isSafeInteger(data.progress) || Number(data.progress) < 0 || Number(data.progress) > quest.target || data.target !== quest.target || Number(data.progress) > quest.target || data.rewardMarks !== DUNGEON_WEEKLY_REWARD_MARKS || typeof data.claimed !== "boolean" || !Number.isSafeInteger(data.resetAtMs) || Number(data.resetAtMs) < 0) throw new Error("invalid_dungeon_weekly_quest");
   return data;
 }
 

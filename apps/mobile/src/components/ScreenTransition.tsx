@@ -22,16 +22,21 @@ export function useSystemReduceMotion():boolean {
 export function ScreenTransition({kind,reduceMotion,children}:{kind:ScreenTransitionKind;reduceMotion:boolean;children:ReactNode}){
  const preset=SCREEN_TRANSITION_PRESETS[kind];
  const opacity=useRef(new Animated.Value(reduceMotion?1:preset.startOpacity)).current;
+ // Run exactly once on route mount. Changing motion preferences mid-screen
+ // must not replay the entrance (including while changing Settings).
  useEffect(()=>{
   opacity.stopAnimation();
   if(reduceMotion||preset.durationMs===0){opacity.setValue(1);return;}
-  opacity.setValue(preset.startOpacity);
   const animation=Animated.timing(opacity,{
    toValue:1,duration:preset.durationMs,easing:Easing.out(Easing.cubic),useNativeDriver:true,
   });
   animation.start();
   return ()=>animation.stop();
- },[kind,reduceMotion,opacity,preset.durationMs,preset.startOpacity]);
+ // A changed route remounts this component with a different key.
+ },[]);
+ useEffect(()=>{
+  if(reduceMotion){opacity.stopAnimation();opacity.setValue(1);}
+ },[reduceMotion,opacity]);
  return <Animated.View style={[styles.content,{opacity}]}>{children}</Animated.View>;
 }
 const styles=StyleSheet.create({content:{flex:1}});

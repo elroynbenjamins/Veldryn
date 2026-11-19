@@ -107,22 +107,28 @@ export function readEquipmentV2VirtualCustody(
  let priorVersion=-1;
  for(const row of receipts){
   if(!row||typeof row.requestId!=='string'||!row.requestId||seen.has(row.requestId)
+   ||typeof row.instanceId!=='string'||!row.instanceId
+   ||typeof row.actorCharacterId!=='string'||!row.actorCharacterId
+   ||typeof row.fingerprint!=='string'
    ||!safe(row.version)||row.version<=priorVersion||!validLocation(row.from)
-   ||!validLocation(row.to)||row.physicallyDelivered!==false
-   ||!['deposit_bank','withdraw_bank','equip','unequip','store_deferred'].includes(row.fingerprint.split(':')[1])
-   ||row.fingerprint!==fingerprint(row.fingerprint.split(':')[1] as V2VirtualMoveKind,row.instanceId))
+   ||!validLocation(row.to)||row.physicallyDelivered!==false)
+   fail('invalid_v2_virtual_move_receipt');
+  const segments=row.fingerprint.split(':');
+  const kind=segments[1] as V2VirtualMoveKind;
+  if(segments.length!==3
+   ||!['deposit_bank','withdraw_bank','equip','unequip','store_deferred'].includes(kind)
+   ||row.fingerprint!==fingerprint(kind,row.instanceId))
    fail('invalid_v2_virtual_move_receipt');
   seen.add(row.requestId);priorVersion=row.version;
   const before=byId.get(row.instanceId);
   if(!before||before.location!==row.from||before.holderCharacterId!==row.oldHolder
-   ||!allowedTransition(row.fingerprint.split(':')[1] as V2VirtualMoveKind,row.from,row.to))
+   ||!allowedTransition(kind,row.from,row.to))
    fail('v2_virtual_move_history_conflict');
-  const kind=row.fingerprint.split(':')[1] as V2VirtualMoveKind;
   const newHolder=row.to==='bank'?null:row.actorCharacterId;
-  if(!row.actorCharacterId||!row.newHolder&&! (row.to==='bank')
-   ||row.newHolder!==newHolder
-   ||(kind==='deposit_bank'||kind==='equip'||kind==='unequip'||kind==='store_deferred')
-     &&row.oldHolder!==row.actorCharacterId)
+  const mustAlreadyHold=kind!=='withdraw_bank';
+  if(row.newHolder!==newHolder
+   ||(mustAlreadyHold&&row.oldHolder!==row.actorCharacterId)
+   ||(kind==='withdraw_bank'&&row.oldHolder!==null))
    fail('v2_virtual_move_owner_conflict');
   if(row.to==='equipped'){
    const item=items.find(item=>item.id===row.instanceId);

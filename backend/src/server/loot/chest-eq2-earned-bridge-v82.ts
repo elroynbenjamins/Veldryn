@@ -55,6 +55,18 @@ export function planFrozenEarnedChestGearV82(
      e.id===drop.entryId&&e.quantity===drop.quantity);
   }))
   throw Error('chest_v82_earned_loot_table_changed');
+ // A frozen hit group must correspond exactly once to an issued drop.
+ // Checking membership alone could accidentally authorize an invented second
+ // equipment drop even when the canonical group missed.
+ const projected=receipt.groups.filter(g=>g.entryId!==null);
+ if(projected.length!==receipt.drops.length||
+  projected.some((g,i)=>g.entryId!==receipt.drops[i]?.entryId||
+   g.groupId!==receipt.drops[i]?.groupId||
+   g.quantity!==receipt.drops[i]?.quantity||
+   g.type!==receipt.drops[i]?.type)||
+  receipt.groups.some(g=>g.entryId===null&&
+   (g.quantity!==0||g.hit!==false)))
+  throw Error('chest_v82_forged_group_drop_pairing');
  if(dropIndex<0||!Number.isInteger(dropIndex)||
   dropIndex>=receipt.drops.length)
   throw Error('chest_v82_invalid_drop_index');

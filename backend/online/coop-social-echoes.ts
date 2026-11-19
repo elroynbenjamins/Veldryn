@@ -44,7 +44,7 @@ export async function prepareSocialEchoCandidates(
    prepared.push({
     candidate:{
      // Stable opaque selection ID; not an Echo publication or consent token.
-     profileId:record.characterId,characterId:record.characterId,
+     characterId:record.characterId,
      accountId:source.accountId,name:record.stats.displayName,
      classId:record.classId,role:readiness.role,
      level:record.characterLevel,combatPower:record.combatPower??0,

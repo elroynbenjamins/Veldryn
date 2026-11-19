@@ -218,7 +218,7 @@ export function dailySupplyBank(source:GameState|CharacterState|null|undefined){
  if(!source)return {} as Partial<Record<DailySupplyBoostType,DailySupplyCharge[]>>;
  if('account' in source)return track(source).bank??{};
  const counters=normalizeDailySupplyBank(source.dailySupplyBoostBank)??{},bank:Partial<Record<DailySupplyBoostType,DailySupplyCharge[]>>={};
- for(const type of DAILY_SUPPLY_BOOST_TYPES)if(counters[type])bank[type]=Array.from({length:counters[type]},baseCharge);
+ for(const type of DAILY_SUPPLY_BOOST_TYPES)if(counters[type])bank[type]=Array.from({length:counters[type]??0},baseCharge);
  return bank;
 }
 export function dailySupplyQueued(state:GameState){return track(state).queued??{}}
@@ -245,6 +245,26 @@ export function dailySupplySpeedMultiplier(state:GameState,type:'gathering_speed
  const current=activeDailySupplyBoosts(state)[type];
  if(!current)return 1;
  return elapsed>0?1+dailySupplyCoverage(state,type,elapsed).weightedBonusSeconds/elapsed:1+current.bonus;
+}
+/** Timed crafting simulates work, but settlement and bonus charges use real elapsed time. */
+export function dailySupplyCraftWorkSeconds(state:GameState,elapsed:number){return elapsed+dailySupplyCoverage(state,'crafting_speed',elapsed).weightedBonusSeconds;}
+export function dailySupplyAdjustTimedCraftReward(state:GameState,reward:RewardBundle,realElapsed:number):RewardBundle{
+ const start=state.activity?.lastClaimAtMs??0,active=activeDailySupplyBoosts(state).crafting_speed;
+ if(!active)return {...reward,elapsedSeconds:realElapsed};
+ const queue=[...(dailySupplyQueued(state).crafting_speed??[])].sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds);
+ const workToReal=(rawWork:number)=>{
+  let pending=Math.max(0,rawWork),real=0;
+  for(const entry of [active,...queue]){
+   const capacity=entry.remainingSeconds*(1+entry.bonus);
+   if(pending<=capacity)return real+pending/(1+entry.bonus);
+   real+=entry.remainingSeconds;pending-=capacity;
+  }
+  return real+pending;
+ };
+ const times=(reward.craftingCompletedAtMs??[]).map(when=>Math.round(start+workToReal((when-start)/1000)*1000));
+ const stillWorking=!!reward.nextBrewRemaining||!!reward.nextProcessingRemaining;
+ const end=times.length?Math.max(0,(times[times.length-1]-start)/1000):0;
+ return {...reward,elapsedSeconds:realElapsed,qualifyingActivitySeconds:stillWorking?realElapsed:Math.min(realElapsed,end),craftingCompletedAtMs:times};
 }
 function activityModeEligible(type:DailySupplyBoostType,mode:'combat'|'gathering'|'skill'|'crafting'|'training'){
  if(type==='combat_xp'||type==='combat_speed')return mode==='combat';
@@ -285,7 +305,7 @@ export function commitDailySupplyTimedBoost(state:GameState,result:Pick<DailySup
   const existing=active[type],spent=updates[type];if(!existing||!spent||spent.consumedSeconds<=0)continue;
   changed=true;
   let timeLeft=spent.consumedSeconds;
-  const rest=[existing,...(queued[type]??[]).sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds)];
+  const rest=[existing,...[...(queued[type]??[])].sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds)];
   while(timeLeft>0&&rest.length){
    const head=rest[0],used=Math.min(timeLeft,head.remainingSeconds);
    timeLeft-=used;

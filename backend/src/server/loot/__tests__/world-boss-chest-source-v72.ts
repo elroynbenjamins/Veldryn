@@ -8,6 +8,7 @@ import type {WorldBossCanonicalChestReadV59}
  from '../../combat/world-boss-chest-proof-v59';
 import {worldBossChestGuaranteeV58}
  from '../../combat/world-boss-chests-v58';
+import type {ChestSqlV70} from '../chest-postgres-store-v70';
 
 function check(ok:unknown,reason:string):asserts ok{
  if(!ok)throw Error('world_boss_v72_test:'+reason);
@@ -38,8 +39,15 @@ const canonical:WorldBossCanonicalChestReadV59={
 };
 let reads=0;
 let proof:WorldBossCanonicalChestReadV59=canonical;
+const tx:ChestSqlV70={
+ async query<T extends Record<string,unknown>>():Promise<{rows:T[]}>{
+  throw Error('V72 source mock must not perform unaudited SQL');
+ },
+ release(){throw Error('V72 port must not release the locked connection')},
+};
 const port:WorldBossChestSourcePortV72={
- readCanonicalInLockedTransaction:async(event,owner)=>{
+ readCanonicalInLockedTransaction:async(sameTx,event,owner)=>{
+  check(sameTx===tx,'same_pinned_v70_connection');
   reads++;
   check(event===eventId&&owner===accountId,'private_lookup_bound');
   return proof;
@@ -49,12 +57,12 @@ async function run(){
  check(WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED===false,'release_off');
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
- },port),'unreleased');
+ },tx,port),'unreleased');
  check(reads===0,'no_private_read_while_disabled');
  for(const kind of kinds){
   const trusted=await readWorldBossTrustedChestSourceV72({
    authenticatedAccountId:accountId,sourceKey:source(kind),
-  },port,true);
+  },tx,port,true);
   const guarantee=worldBossChestGuaranteeV58(kind);
   check(trusted.earned===true&&trusted.accountId===accountId&&
    trusted.sourceKey===source(kind)&&
@@ -81,7 +89,7 @@ async function run(){
   proof={...canonical,event:{...canonical.event,bossId}};
   const rotated=await readWorldBossTrustedChestSourceV72({
    authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
-  },port,true);
+  },tx,port,true);
   check(rotated.lootTable.version===
    'world_boss_v58_'+bossId+'_donations_goal'&&
    rotated.lootTable.groups[0]!.chanceBps===100,
@@ -90,52 +98,52 @@ async function run(){
  proof=canonical;
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:other,sourceKey:source('donations_goal'),
- },port,true),'invalid_account_source');
+ },tx,port,true),'invalid_account_source');
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal')+':extra',
- },port,true),'invalid_account_source');
+ },tx,port,true),'invalid_account_source');
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal')
    .replace('world-boss:','party-event:'),
- },port,true),'invalid_account_source');
+ },tx,port,true),'invalid_account_source');
  check(reads===5,'invalid_selection_never_queries_private_state');
  proof={...canonical,accountId:other};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
- },port,true),'cross_account_proof');
+ },tx,port,true),'cross_account_proof');
  proof={...canonical,warCamp:{
   ...canonical.warCamp,ownDonationReceipts:[],
  }};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  proof={...canonical,attacks:canonical.attacks.map(attack=>({
   ...attack,replayProof:'pending' as const,
  }))};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('three_attempts'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('community_damage_goal'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  proof={...canonical,attacks:[]};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('three_attempts'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('community_damage_goal'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  proof={...canonical,event:{...canonical.event,remainingHp:301}};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('community_damage_goal'),
- },port,true),'unearned_chest');
+ },tx,port,true),'unearned_chest');
  proof=canonical;
  const previous=process.env.NODE_ENV;
  try{
   process.env.NODE_ENV='production';
   await rejects(()=>readWorldBossTrustedChestSourceV72({
    authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
-  },port,true),'unreleased');
+  },tx,port,true),'unreleased');
  }finally{process.env.NODE_ENV=previous}
  console.log('WORLD_BOSS_V72_OK: private source binding, three replay-proven milestones, original 1% policy, forged proof denial, production off');
 }

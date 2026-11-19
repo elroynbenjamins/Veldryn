@@ -14,6 +14,7 @@ const identity=fs.readFileSync('src/components/profile/ProfileIdentityPanel.tsx'
 const showcase=fs.readFileSync('src/components/profile/ProfileShowcasePanel.tsx','utf8');
 const draft=fs.readFileSync('src/online/useProfileExtensionDraft.ts','utf8');
 const releaseFlags=fs.readFileSync('src/core/release-flags.ts','utf8');
+const socialClientGate=fs.readFileSync('src/online/social-identity-client-gate.ts','utf8');
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
@@ -70,7 +71,7 @@ const staleSaveGuards=(draft.match(/if\(!mounted\.current\|\|version!==requestVe
 const scopedBusyReleases=(draft.match(/if\(mounted\.current&&version===requestVersion\.current\)setBusy\(false\)/g)??[]).length;
 ok(staleSaveGuards>=4&&scopedBusyReleases>=5,'Async identity, showcase and featured-hero saves must never overwrite a newer account or selection after a stale completion');
 ok(draft.includes('current?.selectedCharacterId===characterId'),'Character showcase saves must not update another selected hero');
-ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false')&&draft.includes('saveLegacyProfile(')&&draft.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED&&selected')&&identity.includes('active&&ACCOUNT_SOCIAL_IDENTITY_RELEASED')&&showcase.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED?<View style={s.featuredRow}')&&showcase.includes('disabled={guest||busy||characters.length<2}')&&draft.includes('if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED){'),'Social V2 stays hidden, existing v43 writes survive, and the legacy featured-character picker remains available');
+ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false')&&socialClientGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'")&&socialClientGate.includes("process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'")&&socialClientGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'")&&draft.includes('saveLegacyProfile(')&&draft.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED&&selected')&&identity.includes('active&&ACCOUNT_SOCIAL_IDENTITY_RELEASED')&&showcase.includes('ACCOUNT_SOCIAL_IDENTITY_RELEASED?<View style={s.featuredRow}')&&showcase.includes('disabled={guest||busy||characters.length<2}')&&draft.includes('if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED){'),'Social V2 is staging-only, production v43 writes survive, and the legacy featured-character picker remains available');
 ok(draft.includes('const revertIdentity=useCallback(')&&draft.includes('const revertShowcase=useCallback(')&&identity.includes('onPress={draft.revertIdentity}')&&showcase.includes('onPress={draft.revertShowcase}'),'Revert in either profile tab must preserve edits in the other');
 ok(identity.includes('accessibilityRole="radiogroup"')&&identity.includes("{id:'guild'")&&identity.includes("{id:'public'"),'Identity must expose the three profile audiences as a single-choice control');
 ok(identity.includes('<PlayerNameStyleEditor'),'Identity must host the player name-style editor');

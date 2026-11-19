@@ -1,7 +1,15 @@
 # Account-wide Social Name and character showcases — guarded release QA
 
-**Candidate:** merged release integration PR #1453 (draft design provenance #1384) · **Status:** code integrated, hidden, not enabled · **Target:** coordinated Android 1.0.11 or later.
-**Do not set** `ACCOUNT_SOCIAL_IDENTITY_RELEASED=true`, deploy production migrations, or move the Android version policy until all release gates pass.
+**Candidate:** merged release integration PR #1453 (draft design provenance #1384) · **Status:** integrated in main; production OFF; internal staging QA opt-in ON · **Target:** Android 1.0.11 or later.
+**Do not enable production Social Names**, deploy production migrations, or move Android minimum-version policy until all release gates pass.
+
+## Internal staging QA build profile
+
+- `eas build --platform android --profile staging` builds an **internal staging APK** with Social Names and three-hero showcases enabled against the staging Supabase backend only. Creating this APK still requires EAS access/signing; a GitHub CI AAB/emulator smoke is not an EAS staging build.
+- The app gate requires all three literal build-time conditions: `EXPO_PUBLIC_RELEASE_CHANNEL=staging`, the exact staging Supabase URL, and `EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW=true`. If any is absent or mismatched, the new RPC/UI path remains disabled; production profile explicitly sets the preview opt-in to false.
+- Android QA must use the actual signed/staging APK and collect build hash, screenshots, logs and tested account cases. Do not treat the green generic Android CI smoke as proof that the feature-ON staging scenario passed.
+- Before player rollout, run the release permission SQL gate, confirm migrations and old v43 RPC coexistence, complete manual QA and then prepare a separate, explicit production feature-activation change. Never infer production readiness from this staging-only opt-in.
+
 
 ## Release-readiness audit — 19 November 2026
 

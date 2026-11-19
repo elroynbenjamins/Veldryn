@@ -1,7 +1,7 @@
 import {profileT,profileText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {socialIdentityT} from '../../i18n/social-identity';
-import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../core/release-flags';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../online/social-identity-client-gate';
 import {useMemo,useState,type ReactNode} from 'react';
 import {Image,Keyboard,Pressable,ScrollView,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GameState} from '../../core/types';

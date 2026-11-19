@@ -8,7 +8,7 @@ import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileCharacterSelector} from '../components/ProfileCharacterSelector';
-import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../online/social-identity-client-gate';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
 import {ProfileEquippedGearShowcase} from '../components/ProfileEquippedGearShowcase';

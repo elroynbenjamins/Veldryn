@@ -1,5 +1,5 @@
 import {supabase} from './supabase';
-import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
 import {RequestSingleflight} from '../core/request-singleflight';
 import {normalizeProfileGear,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import type {PlayerBadgeIdentity} from '../core/player-badges';

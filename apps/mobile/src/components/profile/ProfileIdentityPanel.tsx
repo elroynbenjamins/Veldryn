@@ -13,7 +13,7 @@ import {GameButton} from '../GameButton';
 import {GameTextInput} from '../GameTextInput';
 import {Panel} from '../Panel';
 import {SocialNameEditor} from '../SocialNameEditor';
-import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../core/release-flags';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../online/social-identity-client-gate';
 import {PlayerNameStyleEditor} from '../PlayerNameStyleEditor';
 
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};

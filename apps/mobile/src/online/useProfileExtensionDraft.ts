@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useAuthSession} from './AuthSessionProvider';
 import {onlineConfigured} from './supabase';
-import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
 import {
  selfProfileExtensionV43,updateProfileExtensionV43,characterShowcaseSelfV1,updateProfileIdentityV2,
  updateCharacterShowcaseV2,setFeaturedProfileCharacterV2,

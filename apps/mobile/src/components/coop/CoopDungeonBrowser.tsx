@@ -38,10 +38,10 @@ const REGION_ACCENT:Record<string,'gold'|'cyan'|'violet'|'danger'>={
  Asterfall:'gold',Sunscar:'danger',Frostmarch:'cyan',Ashlands:'violet',
 };
 
-type BrowseProps={language:Language;guideScope:string;currentLevel:number;currentPower:number;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+type BrowseProps={language:Language;guideScope:string;currentLevel:number;currentPower:number;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;weeklyQuestPanel?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
 
 /** Single unfiltered list: seasonal events first, all currently available dungeons next. */
-export function CoopDungeonList({language,guideScope,currentLevel,currentPower,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
+export function CoopDungeonList({language,guideScope,currentLevel,currentPower,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,weeklyQuestPanel,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
  const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false),[showEchoTools,setShowEchoTools]=useState(false);
@@ -55,6 +55,7 @@ export function CoopDungeonList({language,guideScope,currentLevel,currentPower,d
  return <ExpeditionScreenShell compactHeader hideHeader eyebrow="" title={st("Dungeons")} banner={<View style={s.browseToolbar}><Pressable accessibilityRole="button" accessibilityLabel={a("Back")} onPress={onBack} style={({pressed})=>[s.toolbarBack,pressed&&s.pressed]}><Text style={s.toolbarBackText}>‹</Text></Pressable><Text numberOfLines={1} style={[s.toolbarTitle,s.flex]}>{st("Dungeons")}</Text><SectionGuide scope={guideScope} area="dungeon" section="home" placement="header" guide={DUNGEON_HOME_GUIDE} translate={value=>dungeonGuideText(language,value)} stepThrough/><Pressable accessibilityRole="button" accessibilityLabel={st("Open Expedition shop")} onPress={onShop} style={({pressed})=>[s.shopShortcut,pressed&&s.pressed]}><ExpeditionMarkIcon size={18}/><Text style={s.shopShortcutText}>{st("Shop")}</Text></Pressable>{onOpenChat?<Pressable accessibilityRole="button" accessibilityLabel={st("World Chat")} onPress={onOpenChat} style={({pressed})=>[s.toolbarChat,pressed&&s.pressed]}><Text style={s.toolbarChatText}>☏</Text></Pressable>:null}</View>}>
    {notice?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{notice}</Text></FantasyPanel>:null}
    {activeRun?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'browse.resumeTitle')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></View></FantasyPanel>:null}
+    {weeklyQuestPanel??null}
    {showCatalog?<>
      <View style={s.finderHeader}>
        <View style={s.flex}><Text style={s.finderTitle}>{st("Dungeon Finder")}</Text><Text style={s.finderSubtitle}>{a("Choose a dungeon and plan your route.")}</Text></View>

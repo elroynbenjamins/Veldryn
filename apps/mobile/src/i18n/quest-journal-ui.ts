@@ -8,6 +8,18 @@ import {progressionText} from './progression';
  * Columns: de, es, nl, it, fr, ru, tr. */
 type SevenLocales=readonly [string,string,string,string,string,string,string];
 export const questJournalUiRows={
+  "Go to Faith": ["Zu Glauben","Ir a Fe","Naar Geloof","Vai a Fede","Aller à Foi","К Вере","İnanç'a git"],
+  "Go to Exploration": ["Zur Erkundung","Ir a Exploración","Naar Verkenning","Vai a Esplorazione","Aller à Exploration","К Исследованию","Keşif'e git"],
+  "Go to Gathering": ["Zum Sammeln","Ir a Recolección","Naar Verzamelen","Vai a Raccolta","Aller à Récolte","К Сбору ресурсов","Toplamaya git"],
+  "Go to Crafting": ["Zum Handwerk","Ir a Fabricación","Naar Vervaardigen","Vai ad Artigianato","Aller à Artisanat","К Ремеслу","Üretime git"],
+  "Go to Cooking": ["Zum Kochen","Ir a Cocina","Naar Koken","Vai a Cucina","Aller à Cuisine","К Кулинарии","Aşçılığa git"],
+  "Go to Alchemy": ["Zur Alchemie","Ir a Alquimia","Naar Alchemie","Vai ad Alchimia","Aller à Alchimie","К Алхимии","Simyaya git"],
+  "Go to Smithing": ["Zur Schmiedekunst","Ir a Herrería","Naar Smeden","Vai a Forgiatura","Aller à Forge","К Кузнечному делу","Demirciliğe git"],
+  "Go to Tailoring": ["Zur Schneiderei","Ir a Sastrería","Naar Kleermakerij","Vai a Sartoria","Aller à Couture","К Портняжному делу","Terziliğe git"],
+  "Go to Enchanting": ["Zur Verzauberung","Ir a Encantamiento","Naar Betoveren","Vai a Incantamento","Aller à Enchantement","К Зачарованию","Büyülemeye git"],
+  "Go to Combat": ["Zum Kampf","Ir a Combate","Naar Gevechten","Vai a Combattimento","Aller au Combat","К Бою","Savaşa git"],
+  "Open Events": ["Events öffnen","Abrir Eventos","Evenementen openen","Apri Eventi","Ouvrir les Événements","Открыть события","Etkinlikleri aç"],
+  "Open Inventory": ["Inventar öffnen","Abrir Inventario","Inventaris openen","Apri Inventario","Ouvrir l’Inventaire","Открыть инвентарь","Envanteri aç"],
   "Open Sunscar": ["Sunscar öffnen","Abrir Sunscar","Sunscar openen","Apri Sunscar","Ouvrir Sunscar","Открыть Sunscar","Sunscar'ı aç"],
   "Regional story leads continue in the World.": ["Die regionale Geschichte geht in der Welt weiter.","Las pistas de la historia regional continúan en el Mundo.","Regionale verhaalsporen gaan verder in de Wereld.","Gli indizi della storia regionale continuano nel Mondo.","Les pistes de l'histoire régionale se poursuivent dans le Monde.","Региональные сюжетные следы продолжаются в разделе «Мир».","Bölgesel hikâye ipuçları Dünya bölümünde devam ediyor."],
   "Follow the oathglass signal into Sunscar.": ["Folge dem Oathglass-Signal nach Sunscar.","Sigue la señal del Oathglass hasta Sunscar.","Volg het Oathglass-signaal naar Sunscar.","Segui il segnale del Oathglass fino a Sunscar.","Suivez le signal du Oathglass jusqu’à Sunscar.","Следуйте сигналу Oathglass в Sunscar.","Oathglass sinyalini Sunscar'a kadar izle."],

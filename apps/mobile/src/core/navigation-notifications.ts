@@ -1,6 +1,6 @@
 import type {QuickNavDestination} from './quick-navigation';
 export type PrimaryNavigationId='home'|'character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready'|'guild_project_reward_ready';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'story_reward_ready'|'class_challenge_reward_ready'|'quest_milestone_reward_ready'|'inventory_overflow'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready'|'party_contract_reward_ready'|'guild_project_reward_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -15,7 +15,9 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
  chat_unread:{primary:'account',subroute:'social.chat',mode:'count'},
  weekly_order_complete:{primary:'world',subroute:'world.weekly-orders',mode:'dot'},
- story_reward_ready:{primary:'world',subroute:'world.story-journal',mode:'count'},
+ story_reward_ready:{primary:'account',subroute:'account.quests.story',mode:'dot'},
+ class_challenge_reward_ready:{primary:'account',subroute:'account.quests.challenges',mode:'dot'},
+ quest_milestone_reward_ready:{primary:'account',subroute:'account.quests.milestones',mode:'dot'},
  inventory_overflow:{primary:'inventory',subroute:'inventory.overflow',mode:'dot'},
  reward_ready:{primary:'character',subroute:'character.rewards',mode:'dot'},
  collection_unlock:{primary:'account',subroute:'collections',mode:'dot'},
@@ -73,6 +75,8 @@ export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDes
  chat_unread:'Party',
  weekly_order_complete:'Quests',
  story_reward_ready:'Quests',
+ class_challenge_reward_ready:'Quests',
+ quest_milestone_reward_ready:'Quests',
  inventory_overflow:'Inventory',
  reward_ready:'Home',
  collection_unlock:'Account',
@@ -104,12 +108,14 @@ export function buildQuickNavigationBadges(rows:NavigationNotification[]):QuickN
  * There are no extra timers, network reads, popups, or new destinations.
  */
 export function actionableClaimNotifications(input:{
- storyRewards:number;overflowStacks:number;
+ storyRewards:number;challengeRewards?:number;milestoneRewards?:number;overflowStacks:number;
 }):NavigationNotification[]{
  const count=(n:number)=>Number.isFinite(n)?Math.max(0,Math.floor(n)):0;
- const story=count(input.storyRewards),overflow=count(input.overflowStacks);
+ const story=count(input.storyRewards),challenges=count(input.challengeRewards??0),milestones=count(input.milestoneRewards??0),overflow=count(input.overflowStacks);
  return [
   {key:'story-rewards-claimable',kind:'story_reward_ready',count:story,unread:story>0},
+  {key:'class-challenges-claimable',kind:'class_challenge_reward_ready',count:challenges,unread:challenges>0},
+  {key:'quest-milestones-claimable',kind:'quest_milestone_reward_ready',count:milestones,unread:milestones>0},
   {key:'overflow-items-waiting',kind:'inventory_overflow',unread:overflow>0},
  ];
 }

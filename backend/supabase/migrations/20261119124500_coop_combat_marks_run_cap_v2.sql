@@ -44,7 +44,7 @@ begin
    where l.account_id=v_member.account_id and l.run_id=new.run_id
      and l.currency='expedition_mark' and l.reason='coop_combat_room';
 
-   v_paid_marks:=pg_catalog.least(v_base_marks,pg_catalog.greatest(0,25-v_already_paid));
+   v_paid_marks:=least(v_base_marks,greatest(0,25-v_already_paid));
    if v_paid_marks=0 then continue; end if;
 
    v_ledger_id:=null;

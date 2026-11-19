@@ -2,7 +2,7 @@ import * as Crypto from 'expo-crypto';
 import {supabase} from './supabase';
 import {ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED} from '../core/release-flags';
 
-import {ACCOUNT_DELETION_CANCELLATION,normalizeAccountDeletionRequest,validAccountDeletionConfirmation} from '../core/account-deletion-request';
+import {ACCOUNT_DELETION_CANCELLATION,normalizeAccountDeletionRequest,validAccountDeletionConfirmation,type AccountDeletionRequestSnapshot} from '../core/account-deletion-request';
 export {ACCOUNT_DELETION_CONFIRMATION,validAccountDeletionConfirmation} from '../core/account-deletion-request';
 export type {AccountDeletionRequestSnapshot} from '../core/account-deletion-request';
 

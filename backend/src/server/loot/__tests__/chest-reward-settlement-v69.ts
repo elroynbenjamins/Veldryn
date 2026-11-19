@@ -65,8 +65,8 @@ class MockDb implements ChestGrantStoreV69{
   work:(tx:ChestGrantTransactionV69)=>Promise<T>,
  ):Promise<T>{
   const previous=this.pending;
-  let release=()=>{};
-  this.pending=new Promise<void>(resolve=>{release=resolve});
+  let release:()=>void=()=>{};
+  this.pending=new Promise<void>(resolve=>{release=()=>resolve()});
   await previous;
   const draft=clone(this.state);
   this.audit.push('lock:'+sourceKey);

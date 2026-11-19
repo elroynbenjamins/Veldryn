@@ -63,7 +63,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   // pipeline as every other weekly quest. Its counters come exclusively from
   // committed coop_node_results for this account and active character.
   // Do not trust saved or client-derived dungeon progress at claim time.
-  if(state.character&&state.character.level>=10&&(request.method==='GET'||command?.type==='seasonal')){
+  if(state.character&&(state.character.level>=10||state.character.personalSeasonal?.progress.weekly?.tags?.includes('dungeon'))&&(request.method==='GET'||command?.type==='seasonal')){
    const weekKey=periodKey('weekly',new Date(loaded.serverNow));
    let metrics:VerifiedDungeonWeeklyMetrics={clears:0,deep15:0,elite3:0};
    try{

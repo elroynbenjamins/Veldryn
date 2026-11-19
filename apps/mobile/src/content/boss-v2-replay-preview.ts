@@ -24,6 +24,17 @@ export const BOSS_V2_PRESENTATION_IDS:Readonly<Record<string,Readonly<{
  BOSS_EXP_CANTOR:{casts:['CANTOR_V2_DISSONANCE'],
   phases:['CANTOR_V2_PHASE_70','CANTOR_V2_PHASE_35']},
 };
+/** Frozen hidden preview version: UI rejects stale/forged cast rules rather
+ * than displaying an incorrect interrupt affordance or countdown. */
+const AUTHORED_CAST:Readonly<Record<string,{castMs:number;interruptible:boolean}>>={
+ ROOT_V2_LIVING_BARK:{castMs:1200,interruptible:false},
+ BELL_V2_SOUL_CURSE:{castMs:1350,interruptible:false},
+ BELL_V2_VEIL_MIRROR:{castMs:1150,interruptible:false},
+ SOLAR_V2_SUNFALL:{castMs:1800,interruptible:true},
+ SPHINX_V2_MIRAGE:{castMs:1200,interruptible:false},
+ BELLBEAST_V2_SHATTER:{castMs:2000,interruptible:true},
+ CANTOR_V2_DISSONANCE:{castMs:1500,interruptible:true},
+};
 export interface BossV2SafeCast {
  readonly abilityId:string;readonly castMs:number;readonly interruptible:boolean;
  // Authored source labels intentionally NOT used for client UI; localized IDs only.
@@ -57,8 +68,9 @@ export function projectBossV2Replay(
     preview.phases.length!==2||
     preview.casts.some((c,i)=>c.abilityId!==expected.casts[i]||
       !(BOSS_V2_CAST_IDS as readonly string[]).includes(c.abilityId)||
-      !safeInt(c.castMs)||c.castMs<1100||c.castMs>5000||
-      typeof c.interruptible!=='boolean')||
+      !AUTHORED_CAST[c.abilityId]||
+      c.castMs!==AUTHORED_CAST[c.abilityId].castMs||
+      c.interruptible!==AUTHORED_CAST[c.abilityId].interruptible)||
     preview.phases.some((p,i)=>p.phaseId!==expected.phases[i]||
       p.hpPercent!==(i===0?70:35)))return null;
  let at=-1;

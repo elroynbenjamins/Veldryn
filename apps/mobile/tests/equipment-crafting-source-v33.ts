@@ -135,7 +135,7 @@ for(const profession of ['smithing','tailoring'] as const){
   }
   for(const path of ['Foundation','Alternate']){
     const sample=t3Recipes.find(row=>row.v33Path===path)!;
-    const base=createCharacter(newGame(0),sample.classId,'T3 Skill Gate');
+    const base=createCharacter(newGame(0),sample.classId,'Skill Gate');
     const readyAt=(level:number)=>{
       const state={
         ...base,

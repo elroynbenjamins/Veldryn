@@ -64,6 +64,10 @@ returns jsonb language sql stable security definer set search_path=public as $$
   where e.opted_in and e.expires_at>now() and e.published_at>now()-interval '7 days'
    and e.content_version='online-coop-loadout-v1' and e.preferences->>'pipeline'='online_coop_v1'
    and e.synced_level>=p_min_level and c.account_id<>p_actor_account_id
+   and (coalesce(e.preferences->>'qa_system','false')<>'true'
+      or exists(select 1 from auth.users actor where actor.id=p_actor_account_id
+        and (coalesce(actor.raw_app_meta_data,'{}'::jsonb) @> '{"admin_qa":true}'::jsonb
+         or coalesce(actor.raw_app_meta_data->'roles','[]'::jsonb) ? 'admin_qa')))
    and not exists(select 1 from public.player_blocks b where (b.blocker_id=c.account_id and b.blocked_id=p_actor_account_id) or (b.blocked_id=c.account_id and b.blocker_id=p_actor_account_id))
  ) p where p.role_rank<=128;
 $$;

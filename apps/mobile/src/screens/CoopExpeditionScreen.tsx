@@ -530,7 +530,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
       {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
     </View>):undefined;
   if(showShop)return <View style={{flex:1,padding:16,gap:12}}><ExpeditionShopPanel onBack={()=>setShowShop(false)} onRewardsChanged={onRewardsChanged}/></View>;
-   const weeklyQuestPanel=entrySource.kind==='real'&&characterId?<DungeonWeeklyQuestPanel quest={weeklyQuest} loading={weeklyQuestLoading} error={weeklyQuestError} busy={weeklyQuestClaiming||busy||pending} onRefresh={()=>void refreshDungeonWeeklyQuest()} onClaim={()=>void claimDungeonWeeklyQuest()}/>:undefined;
+   const weeklyQuestPanel=entrySource.kind==='real'&&characterId?<DungeonWeeklyQuestPanel language={language} quest={weeklyQuest} loading={weeklyQuestLoading} error={weeklyQuestError} busy={weeklyQuestClaiming||busy||pending} onRefresh={()=>void refreshDungeonWeeklyQuest()} onClaim={()=>void claimDungeonWeeklyQuest()}/>:undefined;
   return <View style={{flex:1}}>
     {retry}
     {dungeonMarksShopPreview&&entrySource.kind==='real'?<View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:4}}>

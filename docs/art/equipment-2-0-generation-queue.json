@@ -3,7 +3,7 @@
   "styleLock": "veldryn-eq2-storybook-v1",
   "generatedOn": "2026-11-19",
   "releaseStatus": "not_enabled",
-  "description": "Style 4 painterly dark-fantasy storybook direction approved 2026-11-19. Production visual masters and canonical 2.0 item inventory remain unapproved/unverified; artwork queue still empty.",
+  "description": "Equipment 2.0 item-first art production. Hidden T1-T4 draft: 15 sets with 2-4 real pieces (42 set items), 24 standalones, 52 armaments. Use actual IDs; all art ungenerated/not approved.",
   "technical": {
     "cellPx": [
       192,
@@ -45,12 +45,12 @@
     {
       "key": "equipment_2_crafted",
       "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1382",
-      "draftEvidence": "118 T1–T4 hidden item templates; includes standalones and weapons/offhands",
+      "draftEvidence": "PR #1382 hidden item manifest: 15 compact 2–4 piece sets (42 pieces), 24 standalones, 52 class armaments; T1–T4 only, 118 template items total",
       "countStatus": "not_final_audit",
       "requiredItems": null,
       "identifiedItems": 0,
       "approvedItems": 0,
-      "notes": "Audit exact template/item IDs, class, slot, recipe and tier on synchronized head before filling the item list"
+      "notes": "Art production is 1 image per canonical ID. Generate no missing ten-slot set members. Reaudit synchronized EQ2 manifest and recipes before claiming full coverage."
     },
     {
       "key": "dungeon_rewards",
@@ -172,5 +172,69 @@
     "conceptAssetHash": null,
     "assetArchiveStatus": "not_archived",
     "note": "Selected concept establishes look, but exact sample image still needs to be archived and hashed; checkerboard is mock presentation and must never be treated as transparency."
+  },
+  "catalogAudit": {
+    "productionUnit": "canonical_item_id",
+    "setPackaging": "individual_icon_per_real_piece",
+    "sourceBranch": "feature/equipment-crafting-2-hidden-foundation-20261118",
+    "sourcePr": 1382,
+    "sourceStatus": "hidden_unmerged_subject_to_sync",
+    "craftedTierRangeVerified": [
+      1,
+      4
+    ],
+    "craftedSets": 15,
+    "craftedSetSizes": [
+      2,
+      3,
+      4
+    ],
+    "craftedSetPieces": 42,
+    "standalones": 24,
+    "armamentTemplates": 52,
+    "allTemplates": 118,
+    "fullTenPieceSets": 0,
+    "scopeNote": "Counts verified from hidden PR #1382 description and EQ2 mobile catalog. Canonical item IDs may change; rerun source audit after branch sync. Do not generate invented T5+ crafted set pieces."
+  },
+  "exportPolicy": {
+    "default": "standalone_webp_per_canonical_item_id",
+    "canvasPx": [
+      192,
+      192
+    ],
+    "legacyAtlas": "optional_only_when_runtime_requires_id_to_cell_mapping",
+    "neverFillNonexistentSlots": true
+  },
+  "firstCalibrationBatch": {
+    "status": "planned_not_generated",
+    "verifiedFrom": "apps/mobile/src/content/equipment-v2-catalog.ts in hidden PR #1382",
+    "sets": [
+      {
+        "setId": "EQ2_SET_FIELDBORN_GUARD",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_GUARD_HELMET",
+          "EQ2_FIELDBORN_GUARD_CHEST"
+        ]
+      },
+      {
+        "setId": "EQ2_SET_FIELDBORN_TRAIL",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_TRAIL_GLOVES",
+          "EQ2_FIELDBORN_TRAIL_BOOTS"
+        ]
+      },
+      {
+        "setId": "EQ2_SET_FIELDBORN_ACOLYTE",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_ACOLYTE_CAPE",
+          "EQ2_FIELDBORN_ACOLYTE_AMULET"
+        ]
+      }
+    ],
+    "totalExpectedIcons": 6,
+    "notes": "Six actual canonical items across three 2-piece compact sets. No class ten-slot set implied. Images remain not generated until visual masters and style kit approved."
   }
 }

@@ -38,13 +38,13 @@ const REGION_ACCENT:Record<string,'gold'|'cyan'|'violet'|'danger'>={
  Asterfall:'gold',Sunscar:'danger',Frostmarch:'cyan',Ashlands:'violet',
 };
 
-type BrowseProps={language:Language;guideScope:string;currentLevel:number;currentPower:number;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;echoTools?:ReactNode;weeklyQuestPanel?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+type BrowseProps={language:Language;guideScope:string;currentLevel:number;currentPower:number;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];mode:CoopMode;liveAvailable?:boolean;onMode:(mode:CoopMode)=>void;loading:boolean;error:string;activeRun?:CoopRunView;notice?:string;liveTools?:ReactNode;weeklyQuestPanel?:ReactNode;onQuickMatch?:()=>void;quickMatchBusy?:boolean;onBack:()=>void;onRetry:()=>void;onShop:()=>void;onOpenChat?:()=>void;onSelect:(dungeon:CoopDungeonView,tier?:CoopTier)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
 
 /** Single unfiltered list: seasonal events first, all currently available dungeons next. */
-export function CoopDungeonList({language,guideScope,currentLevel,currentPower,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,echoTools,weeklyQuestPanel,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
+export function CoopDungeonList({language,guideScope,currentLevel,currentPower,dungeons,eventExpeditions,mode,liveAvailable=true,onMode,loading,error,activeRun,notice,liveTools,weeklyQuestPanel,onQuickMatch,quickMatchBusy=false,onBack,onRetry,onShop,onOpenChat,onSelect,onSelectEvent,onResume}:BrowseProps){
  const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value);
- const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false),[showEchoTools,setShowEchoTools]=useState(false);
+ const [showLocked,setShowLocked]=useState(false),[showLiveTools,setShowLiveTools]=useState(false);
  const [expandedId,setExpandedId]=useState<string|null>(null);
  const [quickTier,setQuickTier]=useState<CoopTier>(1);
  const available=dungeons.filter(dungeon=>dungeon.available).sort((a,b)=>a.minLevel-b.minLevel||a.name.localeCompare(b.name));
@@ -79,7 +79,6 @@ export function CoopDungeonList({language,guideScope,currentLevel,currentPower,d
    {showCatalog&&available.length>0?<View style={s.availableSection}><View style={s.sectionDivider}><Text style={s.sectionLabel}>{dungeonGuideText(language,'Regional dungeons')}</Text><View style={s.dividerLine}/></View>
      {available.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} currentLevel={currentLevel} currentPower={currentPower} mode={mode} expanded={expandedId===dungeon.id} selectedTier={quickTier} onTier={setQuickTier} onPress={()=>{setExpandedId(current=>current===dungeon.id?null:dungeon.id);setQuickTier(dungeon.difficulties[0]??1);}} onPrepare={tier=>onSelect(dungeon,tier)}/>)}
    </View>:null}
-   {showCatalog&&mode==='qmode'&&echoTools?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoTools}} onPress={()=>setShowEchoTools(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{a("My Echo & sharing")}</Text><View style={s.flex}/><Text style={s.liveMark}>{showEchoTools?'−':'+'}</Text></Pressable>{showEchoTools?echoTools:null}</>:null}
    {showCatalog&&locked.length>0?<><Pressable accessibilityRole="button" accessibilityState={{expanded:showLocked}} onPress={()=>setShowLocked(value=>!value)} style={({pressed})=>[s.liveToggle,pressed&&s.pressed]}><Text style={s.liveTitle}>{showLocked?a("Hide locked dungeons"):a("Locked dungeons")+' ('+locked.length+')'}</Text><View style={s.flex}/><Text style={s.liveMark}>{showLocked?'−':'+'}</Text></Pressable>{showLocked?<View style={s.availableSection}>{locked.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} currentLevel={currentLevel} currentPower={currentPower} mode={mode} expanded={false} selectedTier={1} onTier={()=>{}} onPress={()=>onSelect(dungeon)} onPrepare={()=>onSelect(dungeon)}/>)}</View>:null}</>:null}
  </ExpeditionScreenShell>;
 }

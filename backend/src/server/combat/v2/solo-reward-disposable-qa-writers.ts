@@ -80,7 +80,7 @@ export function disposableQaSoloRewardWritersV2(
     !validId(scope.encounterId)||!grant||
     !validId(grant.resourceId)||!Number.isSafeInteger(grant.amount)||
     grant.amount<1||typeof grant.grantSourceId!=='string'||
-    !new RegExp('^combat-v2:solo:'+scope.encounterId+':[0-9]{1,2}
+     !new RegExp('^combat-v2:solo:'+scope.encounterId+':[0-9]{1,2}$').test(grant.grantSourceId))
     reject('invalid_grant_scope');
    const params=[grant.grantSourceId,scope.accountId,scope.characterId,
     grant.kind,grant.resourceId,textAmount(grant.amount)] as const;
@@ -96,7 +96,7 @@ export function disposableQaSoloRewardWritersV2(
     scope.accountId,scope.characterId,grant.kind,grant.resourceId,textAmount(grant.amount),
    ]);
    if(balance.rows.length!==1||
-    !/^\\d+$/.test(balance.rows[0].balance)||
+     !new RegExp('^[0-9]+$').test(balance.rows[0].balance)||
     BigInt(balance.rows[0].balance)<BigInt(grant.amount))
     reject('balance_readback_failed');
    return proof;

@@ -74,5 +74,5 @@ test('mute memory persists and new controls are localized',()=>{
  assert.match(storage,/persistence=persistence\.catch/);
  assert.match(storage,/if\(loaded\)return prefs;/);
  assert.match(translations,/"Mute": \[/);
- assert.match(translations,/"Restore": \[/);
+ assert.match(translations,/"Unmute": \[/);
 });

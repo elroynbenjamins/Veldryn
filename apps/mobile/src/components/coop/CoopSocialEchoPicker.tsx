@@ -4,7 +4,7 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 import {dungeonEchoPickerText} from '../../i18n/dungeon-social-echo-copy';
 import type {Language} from '../../i18n/languages';
-import {validateSelectedSocialEchoIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
+import {validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {FantasyPanel,RoleBadge} from './CoopVisualKit';
 import {GameButton} from '../GameButton';
 
@@ -17,19 +17,19 @@ function displayClass(classId:string){
 function reasonFor(candidate:SocialEchoCandidate,selectedIds:readonly string[],
  candidates:readonly SocialEchoCandidate[],hostClassId:string,hostRole:Role){
  try{
-  validateSelectedSocialEchoIds([...selectedIds,candidate.profileId],candidates,hostClassId,hostRole);
+  validateSelectedSocialEchoCharacterIds([...selectedIds,candidate.characterId],candidates,hostClassId,hostRole);
   return '';
  }catch(error){
   return error instanceof Error?error.message:'invalid_echo_selection';
  }
 }
 function roleSlots(hostRole:Role,candidates:readonly SocialEchoCandidate[],selectedIds:readonly string[]){
- const chosen=selectedIds.map(id=>candidates.find(row=>row.profileId===id)).filter((v):v is SocialEchoCandidate=>!!v);
+ const chosen=selectedIds.map(id=>candidates.find(row=>row.characterId===id)).filter((v):v is SocialEchoCandidate=>!!v);
  const used=new Set<string>();let hostUsed=false;
  return PARTY_ROLES.map((role,index)=>{
   if(role===hostRole&&!hostUsed){hostUsed=true;return {key:role+index,role,name:'YOU',kind:'host' as const};}
-  const person=chosen.find(row=>row.role===role&&!used.has(row.profileId));
-  if(person){used.add(person.profileId);return {key:role+index,role,name:person.name,kind:'chosen' as const};}
+  const person=chosen.find(row=>row.role===role&&!used.has(row.characterId));
+  if(person){used.add(person.characterId);return {key:role+index,role,name:person.name,kind:'chosen' as const};}
   return {key:role+index,role,name:'AUTO',kind:'auto' as const};
  });
 }
@@ -53,10 +53,10 @@ export function CoopSocialEchoPicker({
   if(filter!=='all'&&row.relationship!==filter&&row.relationship!=='both')return false;
   const q=search.trim().toLowerCase();
   return !q||row.name.toLowerCase().includes(q)||displayClass(row.classId).toLowerCase().includes(q);
- }).sort((a,b)=>Number(selectedIds.includes(b.profileId))-Number(selectedIds.includes(a.profileId))||a.name.localeCompare(b.name)),[candidates,filter,search,selectedIds]);
+ }).sort((a,b)=>Number(selectedIds.includes(b.characterId))-Number(selectedIds.includes(a.characterId))||a.name.localeCompare(b.name)),[candidates,filter,search,selectedIds]);
  const toggle=(candidate:SocialEchoCandidate)=>{
-  if(selectedIds.includes(candidate.profileId)){
-   onChange(selectedIds.filter(id=>id!==candidate.profileId));setSelectionError('');return;
+  if(selectedIds.includes(candidate.characterId)){
+   onChange(selectedIds.filter(id=>id!==candidate.characterId));setSelectionError('');return;
   }
   const errorCode=reasonFor(candidate,selectedIds,candidates,hostClassId,hostRole);
   if(errorCode){
@@ -64,7 +64,7 @@ export function CoopSocialEchoPicker({
     errorCode==='duplicate_damage_class'?t('uniqueDamage'):
     t('slotFull'));return;
   }
-  onChange([...selectedIds,candidate.profileId]);setSelectionError('');
+  onChange([...selectedIds,candidate.characterId]);setSelectionError('');
  };
  return <FantasyPanel variant={selectedIds.length?'selected':'default'}>
   <Pressable accessibilityRole="button" accessibilityLabel={t('open')}
@@ -109,10 +109,10 @@ export function CoopSocialEchoPicker({
     <Text style={s.meta}>{t('emptyCopy')}</Text>
    </View>:null}
    {available.map(candidate=>{
-    const chosen=selectedIds.includes(candidate.profileId);
+    const chosen=selectedIds.includes(candidate.characterId);
     const why=chosen?'':selectedIds.length>=3?'max':reasonFor(candidate,selectedIds,candidates,hostClassId,hostRole);
     const disabled=!!why;
-    return <Pressable key={candidate.profileId} accessibilityRole="checkbox"
+    return <Pressable key={candidate.characterId} accessibilityRole="checkbox"
      accessibilityLabel={candidate.name+', '+displayClass(candidate.classId)+', '+candidate.role}
      accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?t('disabled'):undefined}
      disabled={disabled} onPress={()=>toggle(candidate)}

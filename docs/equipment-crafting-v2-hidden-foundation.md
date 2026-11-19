@@ -198,3 +198,34 @@ A claimed copy's immutable initial reservation is an audit trail, **not** proof 
 2. Reconcile virtual positions and outstanding deferred items against actual V33 item definitions, equipment pouches, Bank capacities, saved loadouts, enhancements, gem custody, Market escrow and all characters without losing any copy.
 3. Compile one Combat 2.0 equipped snapshot containing **both** legacy and EQ2 items; until then, the new Effect Gem shadow policy rejects mixed live equipment and produces no active combat effects.
 4. Obtain green exact-head test jobs, SQL/race/rollback staging evidence, release-fence self-test, signed Android device QA, final 2.0 balance approval and coordinated rollback. Both release flags remain false.
+
+
+## November 19 — two subsequent passes: offline physical-delivery candidate and 2.0 joint combat contract checks
+
+### Pass 1: production-CAS-shaped, staging-only physical item preparation
+
+- New \`backend/src/server/equipment/equipment-crafting-v2-physical-delivery-staging.ts\` constructs an **isolated staging fixture** \`GameState\` containing exactly one physical \`{itemId:'EQ2_*', instanceId, quantity:1}\` stack in the verified current character's Inventory or Equipment Pouch. A matching \`physicalDeliveryReceipts\` record is added in that SAME candidate; the frozen \`V2DraftItem.exactItem\`, already rolled base stats, rarity, quality, gems and affixes remain immutable.
+- Checks original claimed receipt, trusted account and online version, authoritative active-character Gold, replayed current custody (not obsolete initial reservation), physical ID collisions against all V33 and other character locations, materialization receipt/account history, storage occupancy including outstanding unmaterialized V2 reservations, and one physical copy per exact ID. Nothing is ever auto-delivered to time-limited Overflow or physically equipped.
+- A deferred claim must first make a **separate versioned virtual \`store_deferred\` custody move**. The candidate does not silently turn a previously deferred item into a physical Pouch copy when space becomes free.
+- The returned \`buildEquipmentV2StagingOnlineCommitCandidate\` is a **non-executable preview** matching the existing handler's \`commit_online_game_guild_pve_v1\` field names: \`p_account_id\`, \`p_expected_version\`, \`p_expected_gold\`, \`p_request_id\`, \`p_request_hash\`, \`p_response\` and \`p_contributions\`. This is **not a production command**: \`equipment_v2_physical_delivery\` has not been registered in the public command schema, and the current RPC serializer and V33 \`itemDef\` cannot safely round-trip EQ2 physical items.
+- A fake, in-memory single-account CAS test demonstrates lost-response replay, stale concurrent request rejection, one stored copy, original wallet integrity, duplicate-detection, full capacity deferral and unchanged V33 item registry. **This is not a real SQL transaction, staging deployment, or verified PostgreSQL rollback.**
+- All real run entrypoints remain explicitly gated off; the fixture cannot be used on a live route. The shared Forge/Gem/Custody/Physical receipt namespace rejects cross-command duplicate keys.
+
+### Pass 2: cross-system Equipment + Skills + Enemy 2.0 readiness matrix
+
+- New \`backend/src/server/combat/v2-integration/__tests__/equipment-skills-enemies-v2-staging-readiness.test.mjs\` builds canonical **T2 exact rolled weapon copies** for all nine classes, passes them through the existing pre-scaled Equipment→Combat evidence contract, and combines them with **eight implemented Enemy 2.0 archetypes (72 synthetic pairings)**.
+- This verifies class ID and role parity, source quality/rarity not being scaled twice, exact frozen stat mapping, canonical skill/weapon action-source separation (Weapon Power versus Skill Power), healing versus Ability Damage versus shielding multiplier separation, enemy trait compiler ownership, immutable encounter inputs, and the refusal of stale/forged/duplicate or unsupported legacy/dungeon sources.
+- The isolated Combat 2.0 prototype \`combat-stat-contract-v2.ts\` is compiled as a dependency of this test; coefficients and skill budget numbers are **explicitly synthetic fixtures**, not final nine-class balance. All generated encounter plans remain \`runnable:false\` and \`combatReady:false\`; Combat 2.0's final ability variants, passives, damage calculations, enemy strength, rewards, companions and world-boss/dungeon engine are not installed or exercised.
+
+### Refinement and polish
+
+- Extended the unique-gear validation workflow with both regression suites and the real source Combat 2.0 action contract.
+- Tightened canonical future command hashing, account-wide physical receipt de-duplication, virtual-before-physical consistency and the hidden feature activation fence.
+- **No actual deployment, SQL migration, active equipment catalog, production database commit or player-visible feature has been performed.** This PR remains draft; all release flags remain off.
+
+### Explicit go/no-go blockers for the next integration stage
+
+1. Implement versioned EQ2 catalog/item-ID recognition and normalization across Inventory, Equipment Pouch, shared Bank, equipped slots, 3-character account state, loadouts, Market, disposal, guild/boss rewards and saved games.
+2. Integrate into the **same authenticated online gameplay handler and one \`commit_online_game_guild_pve_v1\` database transaction**, including the real command schema, request hash and response, account version, Gold/materials, immutable item, skill XP, storage and receipt; run real PostgreSQL race, crash/read-back and rollback tests in isolated staging.
+3. Bring Classes/Skills 2.0 and Enemies 2.0 under an approved server-owned combat snapshot with all statuses, unique abilities, sockets, affixes, sets and balance caps. Run deterministic encounter simulations and nine-class fairness tests on staging, rather than assuming readiness from the synthetic contract matrix.
+4. Obtain exact-head green CI, reconcile the draft branch with current main, complete Android small-screen/accessibility QA, and approve one coordinated release/rollback plan. Do not remove feature fences before these checks.

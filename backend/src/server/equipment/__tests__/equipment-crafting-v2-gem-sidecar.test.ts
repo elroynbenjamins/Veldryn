@@ -166,7 +166,7 @@ switchable.otherCharacters=[{
 const switched=switchAccountCharacter(switchable,'gem-other-hero',now);
 assert.equal(switched.character?.id,'gem-other-hero');
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(switched,
- command('gem-not-owner-01',13,firstGem),13,100)),/wrong_v2_socket_owner/,
+ command('gem-not-owner-01',13,firstGem),13,100)),/v2_socket_copy_not_in_character_custody/,
  'Other account characters may share gems but not mutate an unreleased copy owned by the original crafter');
 assert.equal(owner,state.character!.id);
 console.log('PASS: hidden Equipment 2.0 permanent Stat Gem one-time consumption, owner receipts, reroll, replacement, deferred effect caps and disabled runtime');

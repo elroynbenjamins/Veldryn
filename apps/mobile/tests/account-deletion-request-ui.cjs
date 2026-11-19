@@ -23,8 +23,33 @@ for(const path of [
 assert.match(flags,/ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED=false/,'Request intake stays disabled until staging approval');
 assert.ok(settings.includes("{online&&<OnlineAccountDeletionPanel language={language}/>}")&&settings.includes('Delete local save'),'Online account deletion is separate from local save and character removal');
 assert.ok(panel.includes('is_anonymous')&&panel.includes('Privacy & deletion support'),'Guest/signed-out visitors get a non-destructive support route');
-for(const lang of ['de','es','nl','it','fr','ru','tr'])assert.ok(translation.includes(lang+':'),'Deletion-support copy needs the '+lang+' locale');
-assert.ok(panel.includes('accountDeletionText(language,value)'),'Public deletion support must use translated copy');
+const localeTree=ts.createSourceFile('src/i18n/account-deletion.ts',translation,ts.ScriptTarget.Latest,true,ts.ScriptKind.TS);
+assert.deepEqual(localeTree.parseDiagnostics.map(e=>ts.flattenDiagnosticMessageText(e.messageText,' ')),[],'Deletion locale syntax');
+const rows=new Map();
+function scan(node){
+ if(ts.isVariableDeclaration(node)&&['publicCopy','requestCopy'].includes(node.name.getText(localeTree))&&ts.isObjectLiteralExpression(node.initializer)){
+  for(const key of node.initializer.properties){
+   if(!ts.isPropertyAssignment(key)||!ts.isObjectLiteralExpression(key.initializer))continue;
+   const name=ts.isStringLiteral(key.name)?key.name.text:key.name.getText(localeTree);
+   const languages=new Set(key.initializer.properties.filter(ts.isPropertyAssignment).map(property=>property.name.getText(localeTree)));
+   rows.set(name,languages);
+  }
+ }
+ ts.forEachChild(node,scan);
+}
+scan(localeTree);
+const conditionalKeys=[
+ 'Checking your deletion request status…',
+ 'We could not verify the latest request status. Refresh before submitting anything.',
+ 'Deletion request received','Deletion request under review','Deletion request needs support review',
+];
+const displayed=[...new Set([...panel.matchAll(/\\ba\\('([^']+)'\\)/g)].map(match=>match[1]).concat(conditionalKeys))];
+for(const key of displayed){
+ assert.ok(rows.has(key),'Missing authored deletion-panel copy: '+key);
+ for(const locale of ['de','es','nl','it','fr','ru','tr'])
+  assert.ok(rows.get(key).has(locale),'Missing '+locale+' deletion-panel translation: '+key);
+}
+assert.ok(panel.includes('accountDeletionText(language,value)'),'Deletion UI uses authored eight-language translations');
 assert.ok(panel.includes("validAccountDeletionConfirmation(confirmation)")&&panel.includes('maxLength={40}'),'Submit requires deliberate keyboard-accessible typed confirmation');
 assert.ok(panel.includes('requestOnlineAccountDeletion(')&&panel.includes('cancelOnlineAccountDeletionRequest('),'Owner may submit and withdraw the intake request');
 assert.ok(panel.includes("Submitting a request does not delete your account immediately."),'UI may not promise instant erasure');

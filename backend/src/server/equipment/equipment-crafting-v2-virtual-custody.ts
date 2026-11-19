@@ -223,7 +223,7 @@ export function simulateEquipmentV2VirtualCustody(input:V2VirtualMoveInput){
   })),copies:all.filter(row=>row.location!=='deferred').map(row=>{
    const record=meta.items.find(item=>item.id===row.instanceId)!;
    return {instanceId:row.instanceId,accountId,ownerCharacterId:row.holderCharacterId,
-    location:row.location,equippedSlot:row.equippedSlot,
+    location:row.location as V2CustodyLocation,equippedSlot:row.equippedSlot,
     item:record.exactItem,locked:true,favorite:true};
   })};
   const policy=v2ServerCustodyPreflight(preflight,{

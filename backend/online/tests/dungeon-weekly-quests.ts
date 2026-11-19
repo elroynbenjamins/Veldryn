@@ -12,6 +12,7 @@ import type {QModeRun} from '../../src/server/coop/qmode';
 import {initialPersistentRunState} from '../../src/server/expeditions/node-resolution';
 
 assert.equal(DUNGEON_WEEKLY_QUESTS.length,3);
+assert.deepEqual(DUNGEON_WEEKLY_QUESTS.map(q=>q.target),[1,15,3],'Single-run goals must show real depth and elite progress');
 const all=new Set<string>();
 for(let week=1;week<=53;week++){
  const label=`2026-W${String(week).padStart(2,'0')}`;
@@ -23,11 +24,11 @@ assert.equal(all.size,3,'One dungeon-only challenge rotates independently every 
 assert.throws(()=>dungeonWeeklyQuestForWeek('2026-W00'),/invalid_dungeon_week/);
 assert.throws(()=>dungeonWeeklyQuestForWeek('2026-W54'),/invalid_dungeon_week/);
 const chosen=dungeonWeeklyQuestForWeek('2026-W47');
-const board:DungeonWeeklyQuestSnapshot={weekKey:'2026-W47',...chosen,progress:1,target:1,rewardMarks:DUNGEON_WEEKLY_REWARD_MARKS,claimed:false,resetAtMs:Date.parse('2026-11-23T00:00:00.000Z')};
+const board:DungeonWeeklyQuestSnapshot={weekKey:'2026-W47',...chosen,progress:chosen.target,target:chosen.target,rewardMarks:DUNGEON_WEEKLY_REWARD_MARKS,claimed:false,resetAtMs:Date.parse('2026-11-23T00:00:00.000Z')};
 assert.deepEqual(validateDungeonWeeklyQuestSnapshot(board),board);
 assert.throws(()=>validateDungeonWeeklyQuestSnapshot({...board,rewardMarks:500000}),/invalid_dungeon_weekly_quest/);
 assert.throws(()=>validateDungeonWeeklyQuestSnapshot({...board,id:'clears'}),/invalid_dungeon_weekly_quest/);
-assert.throws(()=>validateDungeonWeeklyQuestSnapshot({...board,progress:2}),/invalid_dungeon_weekly_quest/);
+assert.throws(()=>validateDungeonWeeklyQuestSnapshot({...board,progress:chosen.target+1}),/invalid_dungeon_weekly_quest/);
 
 const calls:Array<{name:string;args:Record<string,unknown>}>=[];
 let claimed=false;

@@ -15,6 +15,13 @@ for(let seed=0;seed<10_000;seed++){
   assert.ok(['event','treasure','camp','shrine'].includes(String(secondRooms[2].kind)),'Second stage offers a useful alternative');
   assert.equal(new Set(secondRooms.map(node=>node.contentId)).size,3,'Early alternatives must use unique content');
 }
+const longRoute=generateCoopRouteGraph(secret,'EXP_001','extended-run','content-v1','balance-v1','extended');
+validateCoopRouteGraph(longRoute);
+assert.equal(longRoute.preBossNodeCount,14,'Extended Solo adds fourteen rooms and a final boss');
+assert.equal(longRoute.nodes.filter(node=>node.kind==='boss').length,1);
+assert.equal(longRoute.nodes.find(node=>node.kind==='boss')?.depth,15);
+assert.equal(longRoute.nodes.length,44,'Extended path has one entry, 42 choices and one boss');
+assert.deepEqual(generateCoopRouteGraph(secret,'EXP_001','extended-run','content-v1','balance-v1','extended'),longRoute,'Extended route is deterministic on reconnect');
 const sameA=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 const sameB=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 assert.deepEqual(sameA,sameB);

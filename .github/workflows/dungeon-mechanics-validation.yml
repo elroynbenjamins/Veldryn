@@ -64,8 +64,8 @@ jobs:
       - name: Verify dedicated boon rooms and independent Camp / Treasure / Event rewards
         run: node dist/online/backend/online/tests/room-boon-choices.js
         working-directory: backend
-      - name: Check Dungeon Contracts, seeded boon drafts and named relic balance
-        run: node dist/online/backend/online/tests/dungeon-contracts-endurance.js
+      - name: Validate verified weekly dungeon quests, boon drafts and named relics
+        run: node dist/online/backend/online/tests/dungeon-weekly-quests.js
         working-directory: backend
       - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
         run: pnpm test:dungeon-tier-balance

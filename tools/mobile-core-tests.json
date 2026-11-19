@@ -402,5 +402,6 @@
   ".core-build/apps/mobile/tests/equipment-resale-gate.js",
   ".core-build/apps/mobile/tests/equipment-disposal-guidance.js",
   "tests/equipment-disposal-ui.cjs",
-  ".core-build/apps/mobile/tests/stored-json.js"
+  ".core-build/apps/mobile/tests/stored-json.js",
+  ".core-build/apps/mobile/tests/world-boss-replay-presentation.js"
 ]

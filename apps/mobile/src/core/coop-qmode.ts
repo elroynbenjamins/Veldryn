@@ -24,7 +24,7 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
  const options=projection.options.map(value=>{
   if(!value||typeof value!=='object')throw new Error('invalid_route_option');const node=value as Record<string,unknown>;
   if(typeof node.nodeId!=='string'||typeof node.kind!=='string'||typeof node.risk!=='number'||!Number.isFinite(node.risk)||typeof node.rewardTag!=='string'||node.previewHidden)throw new Error('invalid_route_option');
-  const kind=node.kind,title=kind==='boss'?'Final boss':kind.charAt(0).toUpperCase()+kind.slice(1);
+  const kind=node.kind,title=kind==='boss'?(node.modifierId==='checkpoint'?'Fight Boss · Finish Run':'Final boss'):kind.charAt(0).toUpperCase()+kind.slice(1);
   const encounterPreview=parseCoopEncounterPreview(node.encounterPreview);return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' '),...(typeof node.modifierId==='string'?{modifierId:node.modifierId}:{}),...(projection.mode==='live'&&typeof node.votes==='number'?{votes:node.votes}:{}),...(encounterPreview?{encounterPreview}:{})};
  });
  // Queued dungeon nodes keep their selected ID in the server projection.
@@ -35,7 +35,7 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
  const selectedNodeKind=selectedNode&&typeof selectedNode==='object'&&typeof (selectedNode as {kind?:unknown}).kind==='string'?(selectedNode as {kind:string}).kind:undefined;
  // Every resolved node is counted; the boss is the last depth. visitedNodeIds
  // excludes the un-resolvable entry, so its length is the current depth.
- const preBossNodeCount=typeof graph?.preBossNodeCount==='number'&&Number.isInteger(graph.preBossNodeCount)&&graph.preBossNodeCount>0&&graph.preBossNodeCount<=12?graph.preBossNodeCount:undefined;
+ const preBossNodeCount=typeof graph?.preBossNodeCount==='number'&&Number.isInteger(graph.preBossNodeCount)&&graph.preBossNodeCount>0&&graph.preBossNodeCount<=42?graph.preBossNodeCount:undefined;
  const visitedDepth=Array.isArray(projection.visitedNodeIds)?projection.visitedNodeIds.length:0;
  const totalDepth=preBossNodeCount!==undefined?preBossNodeCount+1:undefined;
  const routePath=totalDepth!==undefined?{depth:Math.min(visitedDepth,totalDepth),totalDepth}:undefined;

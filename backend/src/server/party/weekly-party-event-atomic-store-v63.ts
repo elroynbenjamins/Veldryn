@@ -123,7 +123,8 @@ export function createPartyEventRewardStoreV63(
    accountId:string,weekStartMs:number,
    work:(tx:PartyEventRewardTransactionV60)=>Promise<T>,
   ):Promise<T>{
-   if(!serverEnabled||PARTY_EVENT_ATOMIC_STORE_V63_RELEASED)
+   if(!serverEnabled||PARTY_EVENT_ATOMIC_STORE_V63_RELEASED||
+    process.env.NODE_ENV==='production')
     throw Error('party_event_v63_hidden_store_disabled');
    if(!UUID.test(accountId)||accountId!==accountId.toLowerCase()||
     !Number.isSafeInteger(weekStartMs)||weekStartMs<0||

@@ -145,7 +145,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  // This proposal ONLY identifies future physical destination/capacity; no
  // EQ2 item is inserted into the public V33 catalogue or its storage.
  const delivery=command.kind==='claim'&&plan.createdItem
-  ?proposeEquipmentV2ClaimCustody(next,plan.createdItem):null;
+  ?proposeEquipmentV2ClaimCustody(next,accountId,plan.createdItem):null;
  // CAS is still owned by the existing online gameplay service. Never change
  // GameState.version (schema 6/11) to the server's online sequence number.
  if(next.version!==state.version)fail('game_schema_version_corrupted');

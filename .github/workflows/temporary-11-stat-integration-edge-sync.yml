@@ -1,12 +1,22 @@
-name: Temporary T2-T5 integration Edge bundle rebuild
+name: Temporary 1.0.11 seven-stat Edge bundle rebuild
+# Release preparation only: this does not deploy functions, merge main, or enable any feature.
 on:
   push:
-    branches: [integration/1-0-11-stat-rolls-main-parity]
+    branches:
+      - integration/1-0-11-stat-rolls-main-parity
     paths:
       - '.github/workflows/temporary-11-stat-integration-edge-sync.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/temporary-11-stat-integration-edge-sync.yml'
+      - 'apps/mobile/src/core/**'
+      - 'apps/mobile/src/content/**'
+      - 'apps/mobile/tests/weapon-bonus-rolls.ts'
+      - 'apps/mobile/tests/equipment-bonus-rolls.ts'
+      - 'backend/online/**'
+      - 'backend/src/server/**'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'backend/pnpm-lock.yaml'
+      - 'tools/run-mobile-tests.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
+  workflow_dispatch:
 permissions:
   contents: write
 concurrency:
@@ -14,6 +24,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -21,6 +32,7 @@ jobs:
         with:
           ref: integration/1-0-11-stat-rolls-main-parity
           fetch-depth: 0
+          persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -29,22 +41,23 @@ jobs:
           node-version: 22
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
-      - name: Install locked shared engine dependencies
+      - name: Install locked engine and mobile dependencies
         run: |
           pnpm --dir backend install --frozen-lockfile
           pnpm --dir apps/mobile install --frozen-lockfile
-      - name: Validate integrated early-roll core, types and hidden release boundaries
+      - name: Validate T1–T9 rolls, saved versions and hidden release boundaries
         run: |
           pnpm --dir apps/mobile typecheck:core
           pnpm --dir apps/mobile typecheck
+          pnpm --dir backend typecheck:online
           node tools/run-mobile-tests.mjs equipment-bonus-rolls weapon-bonus-rolls equipment-set-runtime equipment-crafting-source-v33 hunt-active-abilities
           node tools/validate-hidden-feature-release-fences.mjs --self-test
-      - name: Rebuild authoritative gameplay and co-op Edge bundles
+      - name: Rebuild and verify both canonical Edge bundles, with dungeon regression
         run: |
           pnpm --dir backend build:online
           node tools/verify-gameplay-edge.mjs
           node backend/dist/online/backend/online/tests/coop-loadout.js
-      - name: Commit generated Edge bundles to integration branch only
+      - name: Commit verified, regenerated artifacts to integration only
         shell: bash
         run: |
           set -euo pipefail
@@ -52,8 +65,9 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if git diff --cached --quiet; then
-            echo 'Canonical integration Edge bundles already match.'
+            echo 'Both canonical bundles already match the integrated sources.'
             exit 0
           fi
-          git commit -m 'build(edge): regenerate integrated T2-T5 stat rolls from current main'
+          git commit -m 'build(edge): regenerate T1–T5 seven-stat rolls from synced source'
+          # Plain fast-forward push: a concurrent human commit must not be overwritten.
           git push origin HEAD:integration/1-0-11-stat-rolls-main-parity

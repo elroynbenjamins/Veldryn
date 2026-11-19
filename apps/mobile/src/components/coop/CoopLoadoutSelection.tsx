@@ -5,7 +5,7 @@ import {CharacterPortrait} from '../CharacterVisual';
 import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
 import {CoopDungeonCompanionSelector,dungeonCompanionCounterLabel} from './CoopDungeonCompanionSelector';
 import {CoopSocialEchoPicker} from './CoopSocialEchoPicker';
-import {validateSelectedSocialEchoIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
+import {validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {dungeonCompanionOpportunity,type DungeonCompanionCounterId} from '../../../../../backend/src/server/coop/dungeon-companion-counters';
 import {useSocialText} from '../../i18n/social';
 import type {GameState} from '../../core/types';
@@ -48,7 +48,7 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
     const kept:string[]=[];
     for(const id of previous){
      try{
-      validateSelectedSocialEchoIds([...kept,id],socialEchoes,state.character!.classId,selected.role);
+      validateSelectedSocialEchoCharacterIds([...kept,id],socialEchoes,state.character!.classId,selected.role);
       kept.push(id);
      }catch{/* Role or donor changed; leave that seat automatic. */}
     }
@@ -57,7 +57,7 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
   },[socialEchoes,socialEchoLoading,selected?.role,state.character?.classId]);
 
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');
-  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent({...buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected}),...(mode==='qmode'&&selectedSocialEchoIds.length?{preferredEchoProfileIds:selectedSocialEchoIds}:{})}):onRefresh()}/></View>}>
+  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent({...buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected}),...(mode==='qmode'&&selectedSocialEchoIds.length?{preferredEchoCharacterIds:selectedSocialEchoIds}:{})}):onRefresh()}/></View>}>
     <FantasyPanel variant="selected"><View style={s.hero}><CharacterPortrait state={state} compact style={s.portrait}/><View style={s.heroCopy}><Text style={s.character}>{state.character!.name}</Text><Text style={s.copy}>{mode==='live'?`${dungeonName} · ${clt(language,'liveAuto')} · ${clt(language,'level')} ${tier}`:`${dungeonName} · ${clt(language,'level')} ${tier}`}</Text><View style={s.heroBadges}>{selected?<RoleBadge role={selected.role} label={t(language,`coopUi.${selected.role}`)}/>:null}{selected?.selectable?<StateChip label={clt(language,'ready')} tone="success"/>:null}</View></View></View></FantasyPanel>
     {mode==='live'?    <View style={s.partyPreparation}><View style={s.partyPreparationHeader}><Text style={s.section}>{st('Party & formation')}</Text><Text style={s.copy}>{mode==='live'?ct(language,'details.live'):ct(language,'details.qmode')}</Text></View><Text style={s.copy}>{ct(language,'details.partyValue')}</Text><View style={s.partyRoleStrip}><RoleBadge role="tank" label={t(language,'coopUi.tank')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="support" label={t(language,'coopUi.support')}/></View></View>:null}
     {mode==='qmode'&&selected?<CoopSocialEchoPicker language={language} candidates={socialEchoes} selectedIds={selectedSocialEchoIds} onChange={setSelectedSocialEchoIds} hostRole={selected.role} hostClassId={state.character!.classId} loading={socialEchoLoading} error={socialEchoError} onRefresh={onRefreshSocialEchoes??(()=>{})}/>:null}

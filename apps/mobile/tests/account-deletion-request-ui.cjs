@@ -43,7 +43,7 @@ const conditionalKeys=[
  'We could not verify the latest request status. Refresh before submitting anything.',
  'Deletion request received','Deletion request under review','Deletion request needs support review',
 ];
-const displayed=[...new Set([...panel.matchAll(/\\ba\\('([^']+)'\\)/g)].map(match=>match[1]).concat(conditionalKeys))];
+const displayed=[...new Set([...panel.matchAll(/\ba\('([^']+)'\)/g)].map(match=>match[1]).concat(conditionalKeys))];
 for(const key of displayed){
  assert.ok(rows.has(key),'Missing authored deletion-panel copy: '+key);
  for(const locale of ['de','es','nl','it','fr','ru','tr'])

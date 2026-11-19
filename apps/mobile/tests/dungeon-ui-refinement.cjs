@@ -31,10 +31,14 @@ test('weekly quest snapshot validates actual objective targets, not a hard-coded
 });
 test('all new compact prompts exist in eight languages',()=>{
  const m=loadTypeScript('src/i18n/dungeon-ux-copy.ts');
- const keys=['bossChoice','bossFinish','bossFinal','bossHint','weeklyExpand','weeklyCollapse'];
+ const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
  for(const lang of ['en','de','es','nl','it','fr','ru','tr'])
   for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>4,lang+' '+key);
  assert.notEqual(m.dungeonUxText('en','bossChoice'),m.dungeonUxText('de','bossChoice'));
+ assert.equal(m.dungeonUxText('fr','weeklyProgress',{name:'Élite',current:3,goal:3}),'Élite : 3 sur 3');
+ assert.equal(m.dungeonUxText('en','nextBossAt',{room:21}),'Next boss option after room 21');
+ assert.equal(m.dungeonUxText('tr','weeklyProgress',{name:'Seçkin',current:2,goal:3}),'Seçkin: 2/3');
+ assert.notEqual(m.dungeonUxText('en','bossVote'),m.dungeonUxText('en','bossFinish'),'Voting is not an immediate fight');
 });
 test('weekly quest is compact, accessible, and claims without entering detail mode',()=>{
  const source=read('src/components/coop/DungeonWeeklyQuestPanel.tsx');
@@ -78,6 +82,9 @@ test('Endurance boss exits are distinct without changing server-owned route subm
  const strip=read('src/components/coop/RoutePathStrip.tsx');
  assert.match(route,/const bossExit=option\.kind==='boss'&&options\.length>1/);
  assert.match(route,/dungeonUxText\(language,'bossHint'\)/);
+ assert.match(route,/live\?dungeonUxText\(language,'bossVote'\)/);
+ assert.match(route,/AccessibilityInfo\.isReduceMotionEnabled\(\)/);
+ assert.match(route,/animation\.stop\(\)/);
  assert.match(route,/onPress=\{\(\)=>onChoose\?\.\(option\.nodeId\)\}/);
  assert.match(route,/canChoose&&!option\.hidden/);
  assert.match(route,/myVotedNodeId===option\.nodeId/);

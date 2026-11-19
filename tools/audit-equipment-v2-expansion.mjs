@@ -46,21 +46,21 @@ function slotProfiles(src){
 }
 export function readAuthoritativeBaseline(root=ROOT){
  const client=readFileSync(resolve(root,'apps/mobile/src/content/equipment-v2-catalog.ts'),'utf8');
- const armaments=readFileSync(resolve(root,'apps/mobile/src/content/equipment-v2-armaments.ts'),'utf8');
+ const armaments=readFileSync(resolve(root,'backend/src/server/equipment/equipment-crafting-v2-armament-manifest.ts'),'utf8');
  const foundation=readFileSync(resolve(root,'apps/mobile/src/core/equipment-crafting-v2-foundation.ts'),'utf8');
  const server=readFileSync(resolve(root,'backend/src/server/equipment/equipment-crafting-v2-manifest.ts'),'utf8');
  const sets=parseLiteralArray(client,'export const EQUIPMENT_V2_SETS:');
  const standalones=parseLiteralArray(client,'export const EQUIPMENT_V2_STANDALONE:');
  const serverCore=parseLiteralArray(server,'const V2_SERVER_CORE_PIECES:');
  const core=[...sets.flatMap(set=>set.pieces.map(p=>({...p,tier:set.tier,role:set.role,kind:'set'}))),...standalones.map(x=>({...x,kind:'standalone'}))];
- const armamentCount=parseLiteralArray(armaments,'const V2_CLASS_OFFHAND_DESIGN:')?.length??0;
+ const serverArmaments=parseLiteralArray(armaments,'export const V2_SERVER_ARMAMENT_PIECES:');
  // Class armament client array is constructed by 9 specs * 4 tiers, with
  // four applicable optional offhands (Ironwarden, Bastion, Hexweaver, Dawnkeeper).
  const catalogWeaponIds=['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER'];
- const builtIn={sets:sets.length,setPieces:sets.reduce((x,y)=>x+y.pieces.length,0),standalones:standalones.length,armaments:52};
+ const builtIn={sets:sets.length,setPieces:sets.reduce((x,y)=>x+y.pieces.length,0),standalones:standalones.length,armaments:serverArmaments.length};
  const serverKeys=new Set(serverCore.map(x=>x.id));
  const clientKeys=new Set(core.map(x=>x.id));
- return {core,sets,standalones,serverCore,serverKeys,clientKeys,profiles:slotProfiles(foundation),builtIn,catalogWeaponIds};
+ return {core,sets,standalones,serverCore,serverArmaments,serverKeys,clientKeys,profiles:slotProfiles(foundation),builtIn,catalogWeaponIds};
 }
 export function auditExpansion(manifest, baseline){
  const errors=[];
@@ -71,6 +71,17 @@ export function auditExpansion(manifest, baseline){
  add(manifest?.postReleaseTierPlan?.tier5!=='after_eq2_launch_only','tier5_not_deferred');
  for(const [key,count] of Object.entries(EXPECTED_BUILT_IN))add(baseline.builtIn[key]!==count,'underlying_catalog_changed:'+key);
  add(baseline.serverKeys.size!==baseline.clientKeys.size||[...baseline.clientKeys].some(id=>!baseline.serverKeys.has(id)), 'client_server_baseline_drift');
+ const armaments=baseline.serverArmaments;
+ for(let tier=1;tier<=4;tier++){
+  for(const classId of baseline.catalogWeaponIds){
+   const rows=armaments.filter(x=>x.classRestriction===classId&&x.tier===tier);
+   add(rows.filter(x=>x.slot==='weapon').length!==1,'missing_class_weapon:'+tier+':'+classId);
+   const hasOffhand=['IRONWARDEN','BASTION','HEXWEAVER','DAWNKEEPER'].includes(classId);
+   add(rows.filter(x=>x.slot==='offhand').length!==(hasOffhand?1:0),'incorrect_class_offhand:'+tier+':'+classId);
+  }
+ }
+ add(new Set(armaments.map(x=>x.id)).size!==52,'duplicate_class_armaments');
+
  const items=manifest?.items??[];
  const names=new Set(),ids=new Set(),blueprints=new Set();
  const occupied=new Set(baseline.core.map(x=>x.id));

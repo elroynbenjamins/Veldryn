@@ -9,13 +9,15 @@ export function verifyEquipmentV2ReceiptNamespace(groups:{
  forge:readonly {requestId:string}[];
  gems?:readonly {requestId:string}[];
  custody?:readonly {requestId:string}[];
+ physical?:readonly {requestId:string}[];
 }):void{
  if(!groups||!Array.isArray(groups.forge)
   ||(groups.gems!==undefined&&!Array.isArray(groups.gems))
-  ||(groups.custody!==undefined&&!Array.isArray(groups.custody)))
+  ||(groups.custody!==undefined&&!Array.isArray(groups.custody))
+  ||(groups.physical!==undefined&&!Array.isArray(groups.physical)))
   throw new V2DraftCraftError('invalid_v2_receipt_namespace');
  const keys=new Set<string>();
- for(const group of [groups.forge,groups.gems??[],groups.custody??[]]){
+ for(const group of [groups.forge,groups.gems??[],groups.custody??[],groups.physical??[]]){
   for(const receipt of group){
    if(!receipt||typeof receipt.requestId!=='string'
     ||!/^[a-zA-Z0-9_-]{8,128}$/.test(receipt.requestId))

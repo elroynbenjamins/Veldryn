@@ -96,7 +96,7 @@ function selfTest(){
     ['preview-nav-bypass',paths.app,'if(isFeatureHubPreviewRoute(destination)&&!FEATURE_HUB_QA_ENABLED)return;','if(isFeatureHubPreviewRoute(destination))return;'],
     ['craft-bridge-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {runEquipmentV2InGameState} from '../src/server/equipment/equipment-crafting-v2-game-state';\nimport {executeGameCommand,validateGameCommand}"],
     ['craft-custody-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {proposeEquipmentV2ClaimCustody} from '../src/server/equipment/equipment-crafting-v2-delivery';\nimport {executeGameCommand,validateGameCommand}"],
-    ['craft-gem-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {simulateEquipmentV2GemInGameState} from '../src/server/equipment/equipment-crafting-v2-gem-sidecar';\\nimport {executeGameCommand,validateGameCommand}"],
+    ['craft-gem-mount',paths.gameplay,"import {executeGameCommand,validateGameCommand}", "import {simulateEquipmentV2GemInGameState} from '../src/server/equipment/equipment-crafting-v2-gem-sidecar';\nimport {executeGameCommand,validateGameCommand}"],
   ];
   for(const [label,path,before,after] of mutations){
     const original=fixtures.get(path);

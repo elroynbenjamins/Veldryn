@@ -188,3 +188,13 @@ The evidence projection remains `combatReady:false`: it is **not live combat**, 
 - Tightened custody-history parsing, account ownership, V33 slot conflict handling and fail-closed behavior for malformed receipts; expanded the hidden release fence to detect accidental public imports of these modules.
 - New focused tests cover lost-response replay, version conflicts, Bank-full denial, cross-character withdrawal and socketing, existing V33 gear preservation, equipment class/slot eligibility, effect family cap/replacement/resonance and mixed-legacy denial. The Unique forged equipment workflow includes them.
 - **Verification pending:** The current draft PR is not merged or released. These tests are committed but latest-head GitHub Actions results and staging/Android checks are not confirmed. This is NOT the actual authenticated production commit; no database migrations or live backend routes have been applied. Require full CI, source-authority review, mixed-gear compatibility, proper per-copy protection and an end-to-end single-CAS retry/race test before any integration or feature-flag activation.
+
+
+### Follow-up consistency fix: current custody versus original reservation
+A claimed copy's immutable initial reservation is an audit trail, **not** proof it still occupies the original pouch or inventory slot. New Forge claims now use validated, replayed virtual custody to count currently occupied per-character locations. Once a copy is virtually moved to Bank or equipped, the former slot is reusable. A regression specifically checks that moving an item to Bank frees a previously full shadow pouch reservation without ever writing public V33 storage. The resulting release plan still requires a physical-storage CAS and snapshot recheck.
+
+### Exact rollout checks still required
+1. Confirm the authenticated online command and persistence are on the *existing* `commit_online_game_guild_pve_v1` path with one request receipt, account version compare-and-swap and same-transaction item, gem and storage changes; this draft does not provide that production adapter.
+2. Reconcile virtual positions and outstanding deferred items against actual V33 item definitions, equipment pouches, Bank capacities, saved loadouts, enhancements, gem custody, Market escrow and all characters without losing any copy.
+3. Compile one Combat 2.0 equipped snapshot containing **both** legacy and EQ2 items; until then, the new Effect Gem shadow policy rejects mixed live equipment and produces no active combat effects.
+4. Obtain green exact-head test jobs, SQL/race/rollback staging evidence, release-fence self-test, signed Android device QA, final 2.0 balance approval and coordinated rollback. Both release flags remain false.

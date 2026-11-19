@@ -227,11 +227,24 @@ export function dailySupplyActiveLabels(source:GameState|CharacterState|null|und
  return DAILY_SUPPLY_BOOST_TYPES.flatMap(type=>{const active=boosts[type];return active?[{...active,label:dailySupplyBoostLabel(type),hours:active.remainingSeconds/3600}]:[];});
 }
 export function dailySupplyActiveLabel(source:GameState|CharacterState|null|undefined){return dailySupplyActiveLabels(source)[0]}
+/** Weighted activity-time coverage: a paused weaker tier resumes within the same settlement. */
+export function dailySupplyCoverage(state:GameState,type:DailySupplyBoostType,elapsedSeconds:number){
+ const current=activeDailySupplyBoosts(state)[type];
+ if(!current)return {consumedSeconds:0,weightedBonusSeconds:0};
+ const queue=[...(dailySupplyQueued(state)[type]??[])].sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds);
+ let left=Math.max(0,elapsedSeconds),consumedSeconds=0,weightedBonusSeconds=0;
+ for(const entry of [current,...queue]){
+  if(left<=0)break;
+  const used=Math.min(left,entry.remainingSeconds);
+  consumedSeconds+=used;weightedBonusSeconds+=used*entry.bonus;left-=used;
+ }
+ return {consumedSeconds,weightedBonusSeconds};
+}
 export function dailySupplySpeedMultiplier(state:GameState,type:'gathering_speed'|'crafting_speed'|'combat_speed',elapsedSeconds:number){
- const active=activeDailySupplyBoosts(state)[type];
- if(!active)return 1;
  const elapsed=Math.max(0,elapsedSeconds);
- return 1+active.bonus*(elapsed>0?Math.min(elapsed,active.remainingSeconds)/elapsed:1);
+ const current=activeDailySupplyBoosts(state)[type];
+ if(!current)return 1;
+ return elapsed>0?1+dailySupplyCoverage(state,type,elapsed).weightedBonusSeconds/elapsed:1+current.bonus;
 }
 function activityModeEligible(type:DailySupplyBoostType,mode:'combat'|'gathering'|'skill'|'crafting'|'training'){
  if(type==='combat_xp'||type==='combat_speed')return mode==='combat';
@@ -252,11 +265,11 @@ export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundl
   if(!hasReward)continue;
   const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));
   if(qualifyingSeconds<=0)continue;
-  const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),remainders={...(active.remainders??{})};
-  if(type==='combat_xp')next.xp+=bonusInteger(reward.xp,'xp:combat',fraction,remainders,active.bonus);
+  const coverage=dailySupplyCoverage(state,type,qualifyingSeconds),consumedSeconds=coverage.consumedSeconds,averageBonus=coverage.weightedBonusSeconds/Math.max(1,qualifyingSeconds),remainders={...(active.remainders??{})};
+  if(type==='combat_xp')next.xp+=bonusInteger(reward.xp,'xp:combat',1,remainders,averageBonus);
   else if(type==='skill_xp'){
-   if(reward.classSkillXp?.length)next.classSkillXp=reward.classSkillXp.map(row=>({...row,xp:row.xp+bonusInteger(row.xp,'class:'+row.skillId,fraction,remainders,active.bonus)}));
-   else{const extra=bonusInteger(reward.xp,'xp:skill',fraction,remainders,active.bonus);next.xp+=extra;if(reward.faithXp!==undefined)next.faithXp=(reward.faithXp??0)+extra;}
+   if(reward.classSkillXp?.length)next.classSkillXp=reward.classSkillXp.map(row=>({...row,xp:row.xp+bonusInteger(row.xp,'class:'+row.skillId,1,remainders,averageBonus)}));
+   else{const extra=bonusInteger(reward.xp,'xp:skill',1,remainders,averageBonus);next.xp+=extra;if(reward.faithXp!==undefined)next.faithXp=(reward.faithXp??0)+extra;}
   }
   updates[type]={consumedSeconds,nextRemainders:remainders};
  }
@@ -271,9 +284,16 @@ export function commitDailySupplyTimedBoost(state:GameState,result:Pick<DailySup
  for(const type of DAILY_SUPPLY_BOOST_TYPES){
   const existing=active[type],spent=updates[type];if(!existing||!spent||spent.consumedSeconds<=0)continue;
   changed=true;
-  const remainingSeconds=Math.max(0,existing.remainingSeconds-spent.consumedSeconds);
-  if(remainingSeconds>0){active[type]={...existing,remainingSeconds,remainders:spent.nextRemainders};continue;}
-  const rest=[...(queued[type]??[])].sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds),next=rest.shift();
+  let timeLeft=spent.consumedSeconds;
+  const rest=[existing,...(queued[type]??[]).sort((a,b)=>b.bonus-a.bonus||b.remainingSeconds-a.remainingSeconds)];
+  while(timeLeft>0&&rest.length){
+   const head=rest[0],used=Math.min(timeLeft,head.remainingSeconds);
+   timeLeft-=used;
+   const remainingSeconds=Math.max(0,head.remainingSeconds-used);
+   if(remainingSeconds>0){rest[0]={...head,remainingSeconds,remainders:spent.nextRemainders};break;}
+   rest.shift();
+  }
+  const next=rest.shift();
   if(next)active[type]=next;else delete active[type];
   if(rest.length)queued[type]=rest;else delete queued[type];
  }
@@ -284,8 +304,8 @@ export function applyDailySupplyCraft(state:GameState,input:{seconds:number;outp
  if(!state.character||input.seconds<=0)return {state,outputQuantity:input.outputQuantity,xp:input.xp,bonusQuantity:0,bonusXp:0};
  const active=activeDailySupplyBoosts(state).skill_xp;
  if(!active)return {state,outputQuantity:input.outputQuantity,xp:input.xp,bonusQuantity:0,bonusXp:0};
- const consumedSeconds=Math.min(active.remainingSeconds,input.seconds),remainders={...(active.remainders??{})};
- const bonusXp=bonusInteger(input.xp,'craft:xp',consumedSeconds/input.seconds,remainders,active.bonus);
+ const coverage=dailySupplyCoverage(state,'skill_xp',input.seconds),consumedSeconds=coverage.consumedSeconds,remainders={...(active.remainders??{})};
+ const bonusXp=bonusInteger(input.xp,'craft:xp',1,remainders,coverage.weightedBonusSeconds/input.seconds);
  return {state:commitDailySupplyTimedBoost(state,{consumedSeconds:0,nextRemainders:{},updates:{skill_xp:{consumedSeconds,nextRemainders:remainders}}}),outputQuantity:input.outputQuantity,xp:input.xp+bonusXp,bonusQuantity:0,bonusXp};
 }
 export function dailySupplyActivityMode(activity:ActiveActivity|null|undefined):'combat'|'gathering'|'skill'|'crafting'|undefined{

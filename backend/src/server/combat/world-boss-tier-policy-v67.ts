@@ -20,12 +20,14 @@ export function worldBossCatalogTierUnlocksV67():readonly WorldBossTierUnlockV67
    .map(s=>s.unlockLevel);
   if(!levels.length||levels.some(n=>!Number.isSafeInteger(n)||n<1||n>200))
    throw Error('world_boss_v67_unverified_equipment_catalog');
-  // Every class/path must share the canonical tier unlock. A mismatch is a
-  // content-review blocker, not a reason to silently allow early gear.
-  const unique=[...new Set(levels)];
-  if(unique.length!==1)
+  // The v33 catalog has two paths per class and tier: Foundation, then an
+  // Alternate path a few levels later. The tier opens at its Foundation level,
+  // so that is the canonical unlock; every Foundation set must share it.
+  const minLevel=Math.min(...levels);
+  const foundation=EQUIPMENT_SETS_V33.filter(s=>s.tier===tier&&s.unlockLevel===minLevel);
+  if(foundation.length*2!==levels.length)
    throw Error('world_boss_v67_inconsistent_tier_unlock:'+tier);
-  return {tier,minLevel:unique[0]};
+  return {tier,minLevel};
  });
  if(result.some((x,i)=>i>0&&x.minLevel<=result[i-1].minLevel))
   throw Error('world_boss_v67_nonmonotonic_tier_unlocks');

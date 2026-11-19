@@ -96,7 +96,7 @@ try{
  const node=id=>db.query(`insert into public.coop_node_results
  (run_id,node_id,fencing_generation,success,start_state_hash)
  values($1::uuid,'COMBAT_A',7,true,'NODE_HASH')`,[id]);
- const summary=async id=run=>(
+ const summary=async (id=run)=>(
   await db.query(`select
   (select count(*)::int from public.coop_node_results where run_id=$1::uuid) as nodes,
   (select count(*)::int from private.party_event_coop_node_actors_v49

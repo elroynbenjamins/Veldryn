@@ -93,12 +93,9 @@ async function main(){
  assert.equal(replayCalls,2);
  assert.equal(privateStatements.some(x=>x.includes('world_boss_v27_reserve_frozen')),false);
  assert.equal(privateStatements.some(x=>x.includes('world_boss_v28_claim')),false);
- rejection(()=>createWorldBossActionDepsV64({...config,accountPrivacy:undefined}
-  as unknown as WorldBossActionRuntimeConfigV64));
- rejection(()=>createWorldBossActionDepsV64({...config,authenticate:undefined}
-  as unknown as WorldBossActionRuntimeConfigV64));
- rejection(()=>createWorldBossActionDepsV64({...config,executor:undefined}
-  as unknown as WorldBossActionRuntimeConfigV64));
+ rejection(()=>createWorldBossActionDepsV64({...config,accountPrivacy:undefined} as unknown as WorldBossActionRuntimeConfigV64));
+ rejection(()=>createWorldBossActionDepsV64({...config,authenticate:undefined} as unknown as WorldBossActionRuntimeConfigV64));
+ rejection(()=>createWorldBossActionDepsV64({...config,executor:undefined} as unknown as WorldBossActionRuntimeConfigV64));
  rejection(()=>createWorldBossActionDepsV64({...config,launchMondayUtcMs:MONDAY+DAY}));
  rejection(()=>createWorldBossActionDepsV64({...config,minimumCharacterLevel:0}));
  rejection(()=>createWorldBossActionDepsV64({...config,workerId:'short'}));

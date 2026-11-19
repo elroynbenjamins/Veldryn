@@ -234,7 +234,7 @@ for(const test of [
  {stat:'evasion',classId:'DREADGUARD',field:'evasion',soloField:'evasion'},
  {stat:'haste',classId:'DAWNKEEPER',field:'haste',soloField:'haste'},
 ] as const){
- const state=createCharacter(newGame(0),test.classId,'T1 Seven Stat Parity');
+ const state=createCharacter(newGame(0),test.classId,'Tier One Stat Parity');
  state.character!.level=25;state.character!.xp=legacyCharacterTotalXpAtLevel(25);
  state.character!.equipment=Object.fromEntries(noviceSetFor(test.classId).slots.map(slot=>[slot,noviceItemId(test.classId,slot)]));
  const itemId=V33_EQUIPMENT_RECIPES.find(row=>row.classId===test.classId&&row.v33EquipmentTier==='T1'

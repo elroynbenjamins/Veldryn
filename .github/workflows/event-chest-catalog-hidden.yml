@@ -152,6 +152,8 @@ jobs:
         run: node tests/party-event-inbox-v80.mjs
       - name: Verify V83 real World Boss wallet, account-state and Inbox custody in disposable PostgreSQL
         run: node tests/world-boss-real-reward-ports-v83.mjs
+      - name: Verify V84 immutable World Boss Equipment 2.0 account-unclaimed custody
+        run: node tests/world-boss-eq2-unclaimed-v84.mjs
       - name: Verify V80 immutable earned chests in disposable private PostgreSQL
         run: node tests/chest-earned-entitlement-v80.mjs
       - name: Verify V81 Equipment 2.0 T1–T5 gate and T6–T9 deferred guarantees
@@ -190,6 +192,8 @@ jobs:
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
           grep -q 'WORLD_BOSS_CHEST_PG_SOURCE_V73_RELEASED=false' src/server/loot/world-boss-chest-pg-source-v73.ts
           grep -q 'WORLD_BOSS_REAL_REWARDS_V83_RELEASED=false' src/server/loot/world-boss-real-reward-ports-v83.ts
+          grep -q 'WORLD_BOSS_EQ2_ESCROW_V84_RELEASED=false' src/server/loot/world-boss-eq2-unclaimed-v84.ts
+          test ! -f supabase/migrations/20261119201000_world_boss_eq2_quarantine_v84_review_only.sql
           test ! -f supabase/migrations/20261119200000_world_boss_real_wallet_v83_review_only.sql
           grep -q 'WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false' src/server/loot/world-boss-chest-source-v72.ts
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts

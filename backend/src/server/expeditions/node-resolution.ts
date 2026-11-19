@@ -115,6 +115,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  if(!IMPLEMENTED_NONCOMBAT.has(input.node.kind))throw new Error(`unsupported_node_kind:${input.node.kind}`);
  const roll=deterministicInt(input.serverSecret,1,999,'node-resolution-v1',input.runId,input.node.nodeId,input.node.contentId);
  let awardedArtifact:string|undefined;
+ let awardedBoon:string|undefined;
  switch(input.node.kind){
   case 'camp': state=healAtCamp(state,input.players); break;
   case 'shrine': case 'forge': case 'echo': {
@@ -126,6 +127,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
      const available=pool.filter(choice=>state.boons.filter(id=>id===choice.id).length<3);
      const eligible=available.length?available:pool;
      const selected=eligible[deterministicInt(input.serverSecret,0,eligible.length-1,'dungeon-live-boon-v1',input.runId,input.node.nodeId)];
+     awardedBoon=selected.id;
      state={...state,boons:[...state.boons,selected.id]};
     }else state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]};
    }
@@ -157,6 +159,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   boonCount:state.boons.length-input.state.boons.length,
   artifactCount:state.artifacts.length-input.state.artifacts.length,
   ...(awardedArtifact?{artifactId:awardedArtifact}:{}),
+  ...(awardedBoon?{boonId:awardedBoon}:{}),
   curseCount:state.curses.length-input.state.curses.length,
   ...(input.node.kind==='merchant'?{offers:merchantOffers(input.node.contentId)}:{})}};
 }

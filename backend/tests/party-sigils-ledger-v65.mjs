@@ -82,8 +82,14 @@ try{
  await assert.rejects(()=>pay(account,first),/party_sigils_v65_source_already_applied/);
  assert.equal(await balance(account),8);
  const prep=await insertReceipt(weeks[0],account,'preparation');
+ await assert.rejects(()=>db.query(
+  'insert into private.party_sigils_ledger_v65(source_key,account_id,delta,balance_after) values($1,$2,16,24)',
+  [prep,account]),/party_sigils_v65_noncanonical_ledger_row/);
  await pay(account,prep);
  const finale=await insertReceipt(weeks[0],account,'finale');
+ await assert.rejects(()=>db.query(
+  'insert into private.party_sigils_ledger_v65(source_key,account_id,delta,balance_after) values($1,$2,16,34)',
+  [finale,account]),/party_sigils_v65_noncanonical_ledger_row/);
  await pay(account,finale);
  assert.equal(await balance(account),34);
  const blockedExchange=await insertReceipt(weeks[0],account,'exchange');

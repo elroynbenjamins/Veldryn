@@ -26,6 +26,7 @@ on:
       - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
       - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
       - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/boss-v2-preview-runtime.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -53,6 +54,7 @@ on:
       - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
       - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
       - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/boss-v2-preview-runtime.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -165,6 +167,8 @@ jobs:
         run: node apps/mobile/tests/skills-v2-preview-ui.cjs
       - name: Verify localized and accessible Boss 2.0 replay preview isolation
         run: node apps/mobile/tests/boss-v2-preview-ui.cjs
+      - name: Execute six-boss localized replay projection tamper and timeline tests
+        run: node apps/mobile/tests/boss-v2-preview-runtime.cjs
 
   build_api_boundary:
     name: Hidden authenticated Combat 2.0 build transport

@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {claimWorldBossChestV61,type WorldBossChestReceiptV61} from '../world-boss-chest-settlement-v61';
-import {createWorldBossChestPrivatePgV63,
+import {createWorldBossChestPrivatePgV63,createPinnedWorldBossPgDriverV63,
  type WorldBossChestPgDriverV63,type WorldBossChestPgTransactionV63,
  type WorldBossChestPgPortsV63} from '../world-boss-chest-private-pg-v63';
 import {worldBossCatalogTierUnlocksV67,worldBossTierForVerifiedAccountLevelV67}
@@ -141,7 +141,35 @@ const ports=(pg:PgFixture):WorldBossChestPgPortsV63=>({
   if(pg.fail==='inbox')throw Error('fixture_inbox_failure');
  },
 });
+async function validatePinnedDriver(){
+ const statements:string[]=[];let releases=0;
+ const client={
+  async query<T extends object>(sql:string,_args:readonly unknown[]):Promise<{rows:T[]}>{
+   statements.push(sql);
+   return {rows:[]};
+  },
+  release(){releases++;},
+ };
+ const pool={connect:async()=>client};
+ await rejects(()=>createPinnedWorldBossPgDriverV63(pool),
+  'hidden_adapter_disabled');
+ const driver=createPinnedWorldBossPgDriverV63(pool,true);
+ await driver.withTransaction(async tx=>{
+  await tx.query('SELECT 1',[]);
+  return true;
+ });
+ check(statements.join(',')==='BEGIN,SELECT 1,COMMIT'&&releases===1,
+  'pinned_begin_commit_release');
+ statements.length=0;
+ await rejects(()=>driver.withTransaction(async tx=>{
+  await tx.query('SELECT 2',[]);
+  throw Error('fixture_boom');
+ }),'fixture_boom');
+ check(statements.join(',')==='BEGIN,SELECT 2,ROLLBACK'&&releases===2,
+  'pinned_failure_rolls_back_and_releases');
+}
 async function run(){
+ await validatePinnedDriver();
  await rejects(()=>createWorldBossChestPrivatePgV63(new PgFixture(),
   ports(new PgFixture())),'hidden_adapter_disabled');
  const pg=new PgFixture();

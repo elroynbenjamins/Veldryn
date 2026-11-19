@@ -12,7 +12,7 @@
 
 ## Safe PR behaviour
 
-The concurrency group includes workflow name plus pull-request number or ref. `cancel-in-progress` evaluates to true **only** on pull requests; new commits supersede obsolete validation without cancelling successful main branch builds or release runs. Older cancelled statuses should not be treated as failures of the newest head commit.
+Pull requests share a concurrency group by workflow name and PR number; push, scheduled and manual runs use the **unique GitHub run ID**, so even their pending runs are never replaced by this throttle. `cancel-in-progress` is true only for PRs, where newer commits supersede obsolete checks. Older cancelled statuses should not be treated as failures of the newest head commit.
 
 ## Required before signing and shipping Android releases
 

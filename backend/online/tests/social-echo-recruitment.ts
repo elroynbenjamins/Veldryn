@@ -50,7 +50,7 @@ assert.throws(()=>validateSelectedSocialEchoIds([profiles[1].profileId,profiles[
 
 const actor={id:'char-3',role:'damage',classId:'RAVAGER',stats:{maxHp:1000,attackPower:150,healingPower:25,defense:100,critChance:.24,haste:.17},abilities:[{id:'original-class-ability'}],tags:['gear:legendary']} as unknown as CombatantDefinition;
 const powerful=scaleSocialEchoToHost(actor,3000,12000);
-assert.ok(powerful.stats.maxHp<actor.stats.maxHp*.9&&powerful.stats.maxHp>actor.stats.maxHp*.55);
+assert.ok(powerful.stats.maxHp<actor.stats.maxHp*.35&&powerful.stats.maxHp>actor.stats.maxHp*.2,'Overpowered donor must scale close to host, not dominate');
 assert.ok(powerful.stats.attackPower<actor.stats.attackPower&&powerful.stats.defense<actor.stats.defense);
 assert.equal(powerful.stats.critChance,actor.stats.critChance,'Equipment crit shape survives normalization');
 assert.deepEqual(powerful.abilities,actor.abilities,'Borrowed class abilities remain untouched');

@@ -1,4 +1,5 @@
 import type {GameState,ItemStack,CharacterState} from '../../../../apps/mobile/src/core/types';
+import {equipmentPouchForCharacter} from '../../../../apps/mobile/src/core/equipment-pouch';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
 import {
  V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,type V2DraftSkillAward,
@@ -159,8 +160,8 @@ export function proposeEquipmentV2ClaimCustody(
    fail('invalid_v2_delivery_capacity');
   return stacks.length<capacity;
  };
- const pouch=owner.character.equipmentPouch;
- const suggestedLocation=pouch&&space(pouch.stacks,pouch.capacity)
+ const pouch=equipmentPouchForCharacter(owner.character);
+ const suggestedLocation=space(pouch.stacks,pouch.capacity)
   ?'equipment_pouch' as const
   :space(owner.inventory.stacks,owner.inventory.capacity)
    ?'inventory' as const:'deferred' as const;

@@ -6,6 +6,8 @@
 
 A text prompt mentioning "pixel art" and "upper-left lighting" is not enough to prevent style drift across different models, sessions, classes, rewards or artists. Every batch must use **approved visual anchors, locked shape/composition, reproducible prompt/reference metadata, staged QA and explicit approvals**. These safeguards improve consistency; AI generation is stochastic, and perfect pixel-identical style cannot be guaranteed solely by a prompt.
 
+**Style lock:** `veldryn-eq2-storybook-v1`. **Selected direction:** Style 4 (2026-11-19). **Reference kit:** `veldryn-eq2-refkit-style4-v1` remains `not_approved` pending archival of the exact selected example and production slot masters. **Do not reuse** the prior rough-cluster reference kit or prompt lock.
+
 ## A. Freeze one reference kit before production
 
 Maintain an **approved, versioned EQ2 art reference kit**, e.g. `veldryn-eq2-refkit-v1`. Do not claim the kit is approved until an artist visually signs off its sampled *actual active* Veldryn assets.
@@ -14,7 +16,7 @@ Each reference kit contains:
 
 | Component | What to lock | How used |
 | --- | --- | --- |
-| Style master | Approved rough-cluster T1 inventory artwork, no rejected candidate | Overall contour weight, light response, material planes, detail frequency |
+| Style master | Approved rough-cluster T1 inventory artwork, no rejected candidate | Painterly silhouette, wear, warm highlights, authentic materials and controlled brush texture |
 | Slot masters ×10 | One accepted icon for helmet, chest, gloves, legs, boots, main weapon, offhand, cape, amulet, ring | Angle, bounds, placement, silhouette density, pair spacing |
 | Class identity ×9 | Current approved class/path armor examples with class accents | Family crest, armor type, cloth construction, weapon/offhand silhouette |
 | Tier ladder | Approved same-class/path T1/T2/T3/T4 plus progressively approved later tier | Demonstrable material upgrade at constant footprint |
@@ -22,7 +24,7 @@ Each reference kit contains:
 | Reward motif kit | Boss/event/biome source art approved for that reward collection | Distinct reward identity without changing renderer |
 | Dark/light UI proof | Real 32/40/48/64px in-app inventory backgrounds | Readability, alpha edges and color harmony |
 
-The per-slot master is mandatory for ALL new icons, including standalone drops. The same-class/path prior tier is mandatory for normal tier advancement. A new class/path should first have its **T1 master** approved, followed by one representative T5/T6 counterpart before bulk generation. The *style* master is shared across the entire game.
+The per-slot **Style 4 painterly** master is mandatory for ALL new icons, including standalone drops. The same-class/path prior tier is mandatory for normal tier advancement. A new class/path should first have its **T1 master** approved, followed by one representative T5/T6 counterpart before bulk generation. The *style* master is shared across the entire game.
 
 **Asset lock:** Store each reference's repo path, SHA256 of source bytes, crop coordinates (if sourced from an atlas), status (`approved`), owner, approval date and kit version. If a source changes, bump the reference-kit version and review dependent assets; silently replacing the reference is forbidden. Crop reference icons before handing them to the generator, not just a list of filenames.
 
@@ -30,24 +32,11 @@ The per-slot master is mandatory for ALL new icons, including standalone drops. 
 
 ## B. Freeze the camera and each slot's placement
 
-Use `front-three-quarter-viewer-right` as a *visual* camera convention, but also store a **slot-specific visual template**. For every item, compare with its approved same-slot master: same lean, pitch, facing, shadow side, vertical center and perceived footprint.
+Use the **slot-specific Style 4 pose lock** in [EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md](EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md) and [equipment-2-0-pose-lock.json](equipment-2-0-pose-lock.json), not a universal front-three-quarter camera. For every item, compare with its approved same-slot master: same lean, pitch, facing, shadow side, vertical center and perceived footprint.
 
-Guidance for the ten slots (all coordinates are on a **192×192** transparent canvas; center at **(96,96)**; all nonzero alpha strictly inside **26..165** inclusive):
+**Single source of truth:** the [Style 4 pose guide](EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md) and [JSON pose contract](equipment-2-0-pose-lock.json) control helmet/chest/glove/leg/boot/cape/jewelry direction, plus each weapon or offhand family. Do not maintain a competing abbreviated slot table here: one changed exception could otherwise silently drift.
 
-| Slot | Placement / orientation lock | Mistakes to reject |
-| --- | --- | --- |
-| Helmet | Face/visor front and slightly viewer-right; open face remains empty, no wearer | Turned full profile, asymmetrical lens, oversized plumes |
-| Chest | Front armor panel upright, shoulder plane visible and matched to helmet turn | Detached arms, torso/body, more camera tilt than helm |
-| Gloves | Two closed gauntlets, fingertips downward, fixed left/right spacing based on master | A bare hand, gloves merged into one blob, one glove far larger |
-| Legs | Both legs readable, end above ankles, same stance/pair spacing | Boot toes and soles, cropped legs |
-| Boots | Two intact shoes with toes consistently toward viewer-right | One boot only, feet pointing randomly opposite ways |
-| Main weapon | Handle lower-left; weapon head/point upper-right as class/path allows; compare to that weapon-family anchor | Mirror flips, twice-normal blade length, alternate class weapon |
-| Offhand | Distinct item with its own angle; shield face readable and slightly viewer-right; one dagger only for Knife Dancer offhand | Mirrored main weapon or wrong offhand family |
-| Cape | Collar top, fabric weight vertical, hem below, limited wind movement | Free-floating cape, shoulder mannequin, extravagant banner trails |
-| Amulet | Chain/cord draped symmetrically around one focal pendant, scaled smaller than armor | Giant necklace, disconnected chain links |
-| Ring | One slightly tilted band with hollow center, restrained center gem where justified | Ring turned into front-facing coin or multi-ring stack |
-
-**Consistency metric:** use the approved reference's alpha bounding box and its center of mass as a **review signal**, not a command to stretch or deform unique equipment. New export must pass the current automated 26px inset and optional 20% footprint parity check; human approval is required for deliberate exceptions. The new item must not be made larger merely to look stronger.
+The visual review must compare same-slot pose and orientation with the signed-off reference at 40px. **Sword hilt upper-right, tip lower-left; boots toes image-left; cape viewed from behind.** Staff/spear, bow, axe/mace/hammer and shield/book/focus/dagger explicitly have different poses and their own reference anchors. These are image-space directions, not anatomical left/right. The 10–15° camera elevation is a *human-reviewed visual target*, not a property recoverable from PNG metadata.
 
 ## C. Lock the illumination and shading hierarchy
 
@@ -61,7 +50,7 @@ Guidance for the ten slots (all coordinates are on a **192×192** transparent ca
 
 Before batch generation, measure the approved slot references and **record a calibrated range** for each of these; no arbitrary universal hard number is safe until anchors are visually inspected:
 1. Outline darkness compared to local material shadow (avoid pure black keylines).
-2. Typical 192px edge stair-step width / cluster size (do not upscale smooth art and call it pixel art).
+2. Painterly edge quality at 192px and 40px, controlled textured brushstrokes without blurring or storybook-painted clustering.
 3. Large/medium/small shape balance; broad silhouettes must be visible at 40px.
 4. Saturation of large surfaces vs tiny accents.
 5. Nontransparent footprint, center of mass and per-slot pair spacing.
@@ -125,7 +114,7 @@ Record **model/tool name, model version where exposed, generation date, prompt v
 
 **Gate 4 — In-app and release:** compare on real phone in Inventory, Forge, equipment compare, chest reward screen and any shop where item is shown. Confirm no UI sizing jitter, washed-out pixels or missing lazy-load asset. Mapping only occurs after art approval; hidden 2.0 gameplay/reward flags stay OFF until the distinct release sign-off.
 
-**Rule of thumb:** an item is not approved because it looks impressive in a 1024px isolated preview. It must pass the **40px same-class lineup** and have the same renderer, camera, shadow side, source material and UI footprint as its neighbors.
+**Rule of thumb:** an item is not approved because it looks impressive in a 1024px isolated preview. It must pass the **40px same-class lineup** and have the same Style 4 painterly renderer, approved slot-specific camera, shadow side, source material and UI footprint as its neighbors.
 
 ## Batch acceptance matrix / failure codes
 

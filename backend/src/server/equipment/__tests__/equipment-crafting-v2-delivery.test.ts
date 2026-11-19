@@ -6,6 +6,7 @@ import {v2ServerCreateExactTemplate} from '../equipment-crafting-v2-instances';
 import {
  proposeEquipmentV2ClaimCustody,verifyEquipmentV2HiddenLedger,
 } from '../equipment-crafting-v2-delivery';
+import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations} from '../equipment-crafting-v2-storage-reservations';
 import type {V2DraftItem,V2DraftJob,V2DraftReceipt,V2DraftSkillAward} from '../equipment-crafting-v2-transaction';
 
 const accountId='delivery-account-1',now=2_000_000_000_000;
@@ -70,6 +71,36 @@ assert.throws(()=>verifyEquipmentV2HiddenLedger(accountId,[job],[{
  } as V2DraftItem],[started,claimed],[award]),/invalid_hidden_v2_exact_copy/);
 
 const originalStateJSON=JSON.stringify(state);
+// Independent successful Forge claims must not overbook the same single slot.
+const capacityState=structuredClone(state);
+capacityState.character!.equipmentPouch={stacks:[],capacity:1};
+capacityState.inventory.capacity=capacityState.inventory.stacks.length+1;
+const copyTwo={...item,id:'delivery-copy-2',jobId:'delivery-job-2'};
+const copyThree={...item,id:'delivery-copy-3',jobId:'delivery-job-3'};
+const firstReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,item,[]);
+assert.equal(firstReservation.reservation.destination,'equipment_pouch');
+const secondReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,copyTwo,[firstReservation.reservation]);
+assert.equal(secondReservation.reservation.destination,'inventory');
+const thirdReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,copyThree,[
+ firstReservation.reservation,secondReservation.reservation,
+]);
+assert.equal(thirdReservation.reservation.destination,'deferred');
+assert.equal(thirdReservation.delivery.physicallyDelivered,false);
+assert.equal(JSON.stringify(capacityState.character!.equipmentPouch!.stacks),'[]',
+ 'Virtual storage reservations must never write EQ2 item stacks');
+assert.doesNotThrow(()=>verifyEquipmentV2StorageReservations(accountId,[item,copyTwo,copyThree],[
+ firstReservation.reservation,secondReservation.reservation,thirdReservation.reservation,
+]));
+assert.throws(()=>verifyEquipmentV2StorageReservations(accountId,[item],[
+ firstReservation.reservation,firstReservation.reservation,
+]),/duplicate_v2_storage_reservation/);
+assert.throws(()=>verifyEquipmentV2StorageReservations(accountId,[item],[
+ {...firstReservation.reservation,ownerCharacterId:'other-character'},
+]),/invalid_v2_storage_reservation/);
+assert.throws(()=>reserveEquipmentV2HiddenClaim(capacityState,accountId,item,[
+ firstReservation.reservation,
+]),/duplicate_v2_storage_reservation/);
+
 const copyState=structuredClone(state);
 copyState.character!.equipmentPouch={stacks:[],capacity:1};
 const first=proposeEquipmentV2ClaimCustody(copyState,accountId,item);

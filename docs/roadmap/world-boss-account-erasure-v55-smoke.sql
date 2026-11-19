@@ -179,7 +179,7 @@ DO $assert$
 DECLARE
  target_account uuid:='10000000-0000-4000-8000-000000000055';
  other_account uuid:='10000000-0000-4000-8000-000000000056';
- event_id uuid:='30000000-0000-4000-8000-000000000055';
+ target_event_id uuid:='30000000-0000-4000-8000-000000000055';
  event_before jsonb;
  camp_before jsonb;
  other_before jsonb;
@@ -187,9 +187,9 @@ DECLARE
  refused boolean:=false;
 BEGIN
  SELECT to_jsonb(e) INTO event_before FROM private.world_boss_events_v17 e
- WHERE id=event_id;
+ WHERE id=target_event_id;
  SELECT to_jsonb(w) INTO camp_before FROM private.world_boss_war_camps_v27 w
- WHERE w.event_id=event_id;
+ WHERE w.event_id=target_event_id;
  SELECT private.world_boss_v36_erasure_preflight(target_account)
  INTO before_count;
  IF (before_count->>'requiresReconciliation')::boolean IS DISTINCT FROM true
@@ -209,7 +209,7 @@ BEGIN
  -- Simulated external purge acknowledgement is ONLY a fixture control.
  -- The true external object delete cannot be part of this SQL transaction.
  SELECT to_jsonb(a) INTO other_before FROM private.world_boss_attempts_v17 a
- WHERE event_id=event_id AND account_id=other_account;
+ WHERE event_id=target_event_id AND account_id=other_account;
  PERFORM pg_temp.wb55_fixture_purge(target_account,true);
  IF (SELECT private.world_boss_v36_erasure_preflight(target_account)->>'status')
     IS DISTINCT FROM 'no_world_boss_rows'
@@ -217,31 +217,31 @@ BEGIN
  IF EXISTS(SELECT 1 FROM auth.users WHERE id=target_account)
  OR EXISTS(SELECT 1 FROM public.characters WHERE account_id=target_account)
  THEN RAISE EXCEPTION 'WB55_ACCOUNT_OR_CHARACTER_NOT_ERASED'; END IF;
- IF (SELECT to_jsonb(e) FROM private.world_boss_events_v17 e WHERE id=event_id)
+ IF (SELECT to_jsonb(e) FROM private.world_boss_events_v17 e WHERE id=target_event_id)
     IS DISTINCT FROM event_before
- OR (SELECT to_jsonb(w) FROM private.world_boss_war_camps_v27 w WHERE w.event_id=event_id)
+ OR (SELECT to_jsonb(w) FROM private.world_boss_war_camps_v27 w WHERE w.event_id=target_event_id)
     IS DISTINCT FROM camp_before
  THEN RAISE EXCEPTION 'WB55_COMMUNITY_PROGRESS_CHANGED'; END IF;
  IF (SELECT to_jsonb(a) FROM private.world_boss_attempts_v17 a
-    WHERE event_id=event_id AND account_id=other_account)
+    WHERE event_id=target_event_id AND account_id=other_account)
     IS DISTINCT FROM other_before
  OR NOT EXISTS(SELECT 1 FROM private.world_boss_replay_proofs_v28
-    WHERE event_id=event_id AND account_id=other_account)
+    WHERE event_id=target_event_id AND account_id=other_account)
  OR NOT EXISTS(SELECT 1 FROM private.world_boss_reward_ledger_v28
-    WHERE event_id=event_id AND account_id=other_account)
+    WHERE event_id=target_event_id AND account_id=other_account)
  OR NOT EXISTS(SELECT 1 FROM private.world_boss_claim_receipts_v28
-    WHERE event_id=event_id AND account_id=other_account)
+    WHERE event_id=target_event_id AND account_id=other_account)
  OR NOT EXISTS(SELECT 1 FROM private.world_boss_war_donations_v27
-    WHERE event_id=event_id AND account_id=other_account)
+    WHERE event_id=target_event_id AND account_id=other_account)
  THEN RAISE EXCEPTION 'WB55_OTHER_PLAYER_DATA_WAS_CHANGED'; END IF;
  IF NOT EXISTS(SELECT 1 FROM private.world_boss_milestones_v17
-     WHERE event_id=event_id AND threshold=70
+     WHERE event_id=target_event_id AND threshold=70
        AND crossed_by_account IS NULL AND crossed_by_request='REDACTED')
  THEN RAISE EXCEPTION 'WB55_MILESTONE_DUPLICATE_OR_IDENTITY_RETAINED'; END IF;
  -- Network retries must be harmless: no accounts recreated, no payouts,
  -- no community reversal and no personal rows reappearing.
  PERFORM pg_temp.wb55_fixture_purge(target_account,true);
- IF (SELECT to_jsonb(e) FROM private.world_boss_events_v17 e WHERE id=event_id)
+ IF (SELECT to_jsonb(e) FROM private.world_boss_events_v17 e WHERE id=target_event_id)
     IS DISTINCT FROM event_before
  THEN RAISE EXCEPTION 'WB55_IDEMPOTENT_RETRY_CHANGED_EVENT'; END IF;
  RAISE NOTICE 'WORLD_BOSS_V55_DISPOSABLE_ACCOUNT_ERASURE_ORDER=PASS';

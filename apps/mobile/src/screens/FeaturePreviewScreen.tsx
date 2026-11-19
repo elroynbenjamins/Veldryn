@@ -7,6 +7,7 @@ import type {FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 import {regionScenes} from '../theme/upgraded-artwork';
 import {estimateMarketPreviewQuote} from '../core/market-preview-quote';
 import {decodePartyEventReadOnlySnapshot,decodePartyEventReadTransportV39,partyEventSupplyProgress,type PartyEventScreenSnapshot} from '../core/party-event-readonly-snapshot';
+import {decodePartyEventRewardReadOnlyV62,type PartyRewardMobileV62} from '../core/party-event-reward-readonly-v62';
 import {decodeWorldBossReadOnlyStatusV46,type WorldBossScreenSnapshotV46} from '../core/world-boss-readonly-snapshot';
 import {WORLD_BOSS_PRESENTATION} from '../core/world-boss-presentation';
 import {WorldBossBattleStage} from '../components/WorldBossBattleStage';
@@ -16,7 +17,7 @@ import {UiIcon} from '../components/UiIcon';
 
 type Feature='boss'|'party'|'market';
 type TabItem={id:string;label:string};
-type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;partyEventAccountId?:string;partyEventReadCurrent?:()=>Promise<unknown>;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
+type Props={route:FeatureHubPreviewRoute;onClose:()=>void;onOpenParty:()=>void;onOpenPartyChat:()=>void;partyUnread?:number;reduceMotion?:boolean;partyEventStatus?:unknown;partyEventAccountId?:string;partyEventReadCurrent?:()=>Promise<unknown>;partyEventRewardStatus?:unknown;worldBossStatus?:unknown;worldBossAccountId?:string;worldBossReadCurrent?:()=>Promise<unknown>};
 
 const bossTabs:TabItem[]=[
  {id:'overview',label:'Overview'},{id:'camp',label:'War Camp'},{id:'battle',label:'Battle'},
@@ -25,6 +26,30 @@ const bossTabs:TabItem[]=[
 const partyTabs:TabItem[]=[
  {id:'adventure',label:'Adventure'},{id:'stages',label:'Stages'},{id:'supplies',label:'Supplies'},
  {id:'vote',label:'Voting'},{id:'finale',label:'Finale'},{id:'results',label:'Results'},
+];
+/** Static, deliberately NONENTITLED design catalog. Collection and balances
+ * must come from a future authenticated, short-leased server reward snapshot. */
+const partyTreasureSets:Readonly<Record<'caravan'|'hunt'|'wards'|'reliquary',readonly {name:string;pieces:number}[]>>={
+ caravan:[{name:"Wayfarer's Pact",pieces:3},{name:"Smuggler's Guile",pieces:2}],
+ hunt:[{name:'Moonfang Pursuit',pieces:3},{name:"Predator's Mark",pieces:2}],
+ wards:[{name:'Runebound Vigil',pieces:3},{name:"Warden's Seal",pieces:2}],
+ reliquary:[{name:'Echoheart Vestment',pieces:3},{name:"Curator's Oath",pieces:2}],
+};
+/** World Boss V61/V62 chest design is NOT an authenticated entitlement feed. */
+const bossChestDesign:readonly {name:string;condition:string;guaranteed:string}[]=[
+ {name:'War Camp Chest',condition:'Two War Camp tracks at Tier I and your committed donation',guaranteed:'450 Gold · 6 Essence · 2 Gem Dust · 2 Tempering Dust'},
+ {name:'Warrior Chest',condition:'All 3 account attacks committed and replay-verified',guaranteed:'650 Gold · 8 Essence · 3 Gem Dust · 3 Tempering Dust'},
+ {name:'Realm Victory Chest',condition:'70% of shared boss HP defeated and your proven attack',guaranteed:'900 Gold · 10 Essence · 4 Gem Dust · 4 Tempering Dust'},
+];
+const bossGatheringSetLabel:Readonly<Record<'hollowroot'|'sunscar'|'frostmarch',string>>={
+ hollowroot:'Rootbound Harvester · Woodcutting',
+ sunscar:'Sunforged Prospector · Mining',
+ frostmarch:'Rimebound Angler · Fishing',
+};
+const partyChestDesign:readonly {name:string;chance:string;condition:string}[]=[
+ {name:'Adventure Chest',chance:'12%',condition:'15 verified personal Event Points'},
+ {name:'Preparation Chest',chance:'16%',condition:'Personal preparation + optional goal'},
+ {name:'Victory Chest',chance:'24%',condition:'Verified finale victory'},
 ];
 const marketTabs:TabItem[]=[
  {id:'browse',label:'Browse'},{id:'sell',label:'Sell'},{id:'listings',label:'My Listings'},{id:'inbox',label:'Inbox'},{id:'history',label:'History'},
@@ -36,7 +61,7 @@ const meta={
  market:{eyebrow:'REALM ECONOMY',title:'Player Market',subtitle:'Trade with purpose and clarity.',accent:'#D5C196'},
 };
 
-export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,partyEventAccountId='',partyEventReadCurrent,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
+export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,partyUnread=0,reduceMotion=false,partyEventStatus=null,partyEventAccountId='',partyEventReadCurrent,partyEventRewardStatus=null,worldBossStatus=null,worldBossAccountId='',worldBossReadCurrent}:Props){
  const feature:Feature=route==='WorldBossPreview'?'boss':route==='PartyEventPreview'?'party':'market';
  const tabs=feature==='boss'?bossTabs:feature==='party'?partyTabs:marketTabs;
  const defaultTab=tabs[0].id;
@@ -199,7 +224,7 @@ export function FeaturePreviewScreen({route,onClose,onOpenParty,onOpenPartyChat,
     {feature==='boss'?<Action label="Watch a recorded World Boss fight" s={s} onPress={()=>setFightPreview(true)}/>:null}
     {feature==='boss'&&fightPreview?<WorldBossBattleStage input={WORLD_BOSS_REPLAY_FIXTURE} language="en" reduceMotion={reduceMotion} onClose={()=>setFightPreview(false)}/>:null}
     {feature==='boss'?<BossContents s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} status={bossStatus}/>:null}
-    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} nowMs={statusNowMs}/>:null}
+    {feature==='party'?<PartyPreviewPanel s={s} C={C} accent={accent} tab={activeTab} onTab={changeTab} storyId={storyId} onStoryChange={setStoryId} onOpenParty={onOpenParty} partyEventStatus={displayPartyStatus} partyEventRewardStatus={partyEventRewardStatus} trustedAccountId={partyEventAccountId} nowMs={statusNowMs}/>:null}
     {feature==='market'?<MarketContents s={s} C={C} accent={accent} tab={activeTab}/>:null}
     <View style={s.footer}><Text style={s.footerText}>VELDRYN  •  FEATURE DESIGN REVIEW</Text></View>
    </ScrollView>
@@ -349,6 +374,26 @@ function BossContents({s,accent,tab,onTab,status}:Shared&{tab:string;onTab:(valu
    <Text style={s.finePrint}>A claimed-event total is not an unclaimed reward balance. Pending eligibility and claimable amounts are not exposed by this private snapshot.</Text>
    <Action label="Claim rewards · Not available" s={s} disabled/>
   </Card>
+  <Card s={s}>
+   <SectionHeading s={s} kicker="FUTURE MILESTONE CHESTS" title="Three chests per account" sub="Design preview only. Earning a milestone chest does not guarantee gathering equipment."/>
+   {bossChestDesign.map(chest=><View key={chest.name} style={s.detailRow}>
+    <View style={s.flex}>
+     <Text style={s.choiceTitle}>{chest.name}</Text>
+     <Text style={s.choiceSub}>{chest.condition}</Text>
+     <Text style={s.finePrint}>{chest.guaranteed} · 1% gathering gear chance</Text>
+    </View>
+    <Tag s={s} label="PREVIEW"/>
+   </View>)}
+   <View style={s.rewardPanel}>
+    <UiIcon name="rewards" size={24}/>
+    <View style={s.flex}>
+     <Text style={s.choiceTitle}>{active?bossGatheringSetLabel[active.bossId]:'Boss-specific gathering set'}</Text>
+     <Text style={s.choiceSub}>10 unique pieces · rarity, quality and gathering-only bonus rolls</Text>
+    </View>
+   </View>
+   <Text style={s.finePrint}>No authenticated chest entitlement, collected-piece count or reward claim is available in this design QA screen. Drop odds are per earned chest, not per attack.</Text>
+   <Action label="Open chest · Not available" s={s} disabled/>
+  </Card>
  </>;
  return <Card s={s}><SectionHeading s={s} kicker="CONTRIBUTION BOARD" title="Realm rankings" sub="Official ranks must come from finalized server-verified account contributions, with a consistent power bracket and privacy checks."/><View style={s.empty}><UiIcon name="world" size={34}/><Text style={s.choiceTitle}>No authenticated ranking feed yet</Text><Text style={s.bodyText}>Personal contribution, final placements and account-wide rewards cannot be inferred from a boss health snapshot.</Text></View><Action label="Review battle rules" s={s} secondary onPress={()=>onTab('battle')}/></Card>;
 }
@@ -380,13 +425,24 @@ const partyStoryGuides={
 } as const;
 const partyActionStages=['Stage 1','Stage 2','Stage 2','Stage 3'] as const;
 /** Only Party Events subscribes to live Party state; market and boss QA never rerender for Party updates. */
-function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus,nowMs}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown;nowMs:number}){
+function PartyPreviewPanel({s,C,accent,tab,onTab,storyId,onStoryChange,onOpenParty,partyEventStatus,partyEventRewardStatus,trustedAccountId,nowMs}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;onOpenParty:()=>void;partyEventStatus:unknown;partyEventRewardStatus:unknown;trustedAccountId:string;nowMs:number}){
  const social=usePartySocial();
  // App deliberately does not supply a live payload while the private service
  // and event migrations are unreleased. Malformed payloads fail closed.
  const status=useMemo(()=>decodePartyEventReadOnlySnapshot(partyEventStatus,nowMs),[partyEventStatus,nowMs]);
+ const rewards=useMemo(()=>{
+  // Both authoritatively authenticated event and reward snapshots must agree
+  // about the owner, event week and enrolled family. No sample/cached fallback.
+  if(!status||!trustedAccountId||!partyEventStatus||typeof partyEventStatus!=='object')return null;
+  const starts=(partyEventStatus as {eventStartsAt?:unknown}).eventStartsAt;
+  if(typeof starts!=='string')return null;
+  const week=Date.parse(starts);
+  const verified=decodePartyEventRewardReadOnlyV62(partyEventRewardStatus,trustedAccountId,week,nowMs);
+  const families={caravan:'broken_caravan',hunt:'nightfall_hunt',wards:'broken_wards',reliquary:'lost_reliquary'} as const;
+  return verified?.family===families[status.family]?verified:null;
+ },[status,partyEventStatus,partyEventRewardStatus,trustedAccountId,nowMs]);
  return <PartyContents s={s} C={C} accent={accent} tab={tab} onTab={onTab} storyId={storyId} onStoryChange={onStoryChange}
-  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status}/>;
+  hasParty={Boolean(social.party?.id)} roster={social.party?.members.map(member=>({name:member.characterName,isLeader:member.isLeader}))??[]} onOpenParty={onOpenParty} status={status} rewards={rewards}/>;
 }
 function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:Shared['s'];accent:string;partyUnread:number;onOpenParty:()=>void;onOpenPartyChat:()=>void}){
  const social=usePartySocial();
@@ -398,13 +454,14 @@ function PartyPreviewDock({s,accent,partyUnread,onOpenParty,onOpenPartyChat}:{s:
    <Text style={s.dockArrow}>›</Text>
  </Pressable>;
 }
-function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty,status}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void;status:PartyEventScreenSnapshot|null}){
+function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,roster,onOpenParty,status,rewards}:Shared&{tab:string;onTab:(tab:string)=>void;storyId:(typeof stories)[number]['id'];onStoryChange:(id:(typeof stories)[number]['id'])=>void;hasParty:boolean;roster:readonly {name:string;isLeader:boolean}[];onOpenParty:()=>void;status:PartyEventScreenSnapshot|null;rewards:PartyRewardMobileV62|null}){
  const [choice,setChoice]=useState<'secure'|'swift'|null>(null);
  const [finalChoice,setFinalChoice]=useState<'secure'|'swift'|null>(null);
  const [ballot,setBallot]=useState<'approach'|'finale'>('approach');
  const story=stories.find(e=>e.id===storyId)??stories[0];
  const storyGuide=partyStoryGuides[story.id];
  const storyStatus=status?.family===story.id?status:null;
+ const rewardStatus=storyStatus&&rewards?rewards:null;
  const required=storyStatus?partyEventSupplyProgress(storyStatus,storyStatus.stage,'required'):null;
  if(tab==='adventure')return <>
   <Card s={s}><SectionHeading s={s} kicker="PRIVATE EVENT SNAPSHOT" title={status?'Enrolled adventure':'No verified event loaded'} sub={status?'Read-only event enrollment, separate from your current live Party. No combat or rewards are active.':'The Party roster below is real, but stages, votes and supplies require a separately authenticated event service.'}/>
@@ -495,11 +552,33 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <View style={s.empty}><UiIcon name="dungeon" size={34}/><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>
  </Card>;
- return <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Final rewards will be calculated once per verified event cycle. This screen cannot issue Event Points, refund items, or claim rewards."/>
-  <View style={s.statRow}><Stat s={s} label="RESULT" value="Not live"/><Stat s={s} label="CONTRIBUTION" value="No record"/><Stat s={s} label="CLAIM" value="Unavailable"/></View>
-  <View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>Awaiting a verified settlement</Text><Text style={s.bodyText}>Your Party's final outcome, stage choices and personal rewards will appear here only after the server closes and validates the adventure.</Text></View>
-  <Action label="Claim settlement · Not available" s={s} disabled/>
- </Card>;
+ return <>
+  <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Day 8 settlement choices remain separate from event treasure chests. All payouts require verified server receipts."/>
+   <View style={s.statRow}><Stat s={s} label="RESULT" value="Not live"/><Stat s={s} label="CONTRIBUTION" value="No record"/><Stat s={s} label="CLAIM" value="Unavailable"/></View>
+   <View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>Awaiting a verified settlement</Text><Text style={s.bodyText}>Your Party's final outcome, personal rewards and earned chest entitlements will appear after an authenticated server settlement.</Text></View>
+   <Action label="Claim settlement · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker="PARTY TREASURE · DESIGN QA" title="Three chests to earn" sub="Up to three per account per event week. These are baseline Standard gear chances, not guaranteed drops."/>
+   {partyChestDesign.map((chest,i)=><View key={chest.name} style={s.detailRow}>
+    <View style={[s.motif,{borderColor:accent}]}><UiIcon name="rewards" size={26}/></View>
+    <View style={s.flex}><Text style={s.choiceTitle}>{chest.name}</Text><Text style={s.choiceSub}>{rewardStatus?.chests[i]?.unlockHint??chest.condition}</Text><Text accessibilityLiveRegion="polite" style={s.finePrint}>{rewardStatus?rewardStatus.chests[i]!.state.toUpperCase()+' · Verified private read; no claiming enabled':'No authenticated entitlement loaded'}</Text></View>
+    <Tag s={s} label={rewardStatus?rewardStatus.chests[i]!.gearChancePercent+'%':chest.chance+' base'} accent={i===2?accent:undefined}/>
+   </View>)}
+   <Text style={s.finePrint}>Veteran and Heroic difficulty improve these base chances. Opening a chest cannot be simulated or claimed in this preview.</Text>
+   <Action label="Open chest · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker={'EVENT EQUIPMENT · '+story.name.toUpperCase()} title="Two collections, five pieces" sub="A three-piece signature set and a two-piece support set. Bonuses only activate when the matching tier pieces are equipped."/>
+   {rewardStatus?rewardStatus.sets.map(set=><View key={set.id} style={s.detailRow}>
+    <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.collected} / {set.size} pieces collected · Equipped pieces activate bonuses</Text></View>
+    <Tag s={s} label={set.size===3?'2 & 3 equipped':'2 equipped'}/>
+   </View>):partyTreasureSets[story.id].map(set=><View key={set.name} style={s.detailRow}>
+    <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.pieces}-piece set · Collection unavailable until the private inventory read is connected</Text></View>
+    <Tag s={s} label={set.pieces===3?'2 & 3 equipped':'2 equipped'}/>
+   </View>)}
+   <Text style={s.finePrint}>Party Sigils: {rewardStatus?rewardStatus.partySigilsBalance+' verified':'balance unverified'} · One targeted missing piece may cost 60 Sigils per event week. No currency is debited in this screen.</Text>
+   <Action label="Exchange gear · Not available" s={s} disabled/>
+  </Card>
+ </>;
 }
 
 const samples:readonly MarketPreviewItem[]=[

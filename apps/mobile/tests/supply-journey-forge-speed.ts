@@ -42,6 +42,16 @@ equal(equipmentCraftingQueue(s).filter(j=>j.completesAtMs<=t0+10*HOUR).length,4,
 equal(activeDailySupplyBoosts(s).crafting_speed?.remainingSeconds,1440,'Supply consumption ends when all Forge jobs are ready');
 equal(activeDailySupplyBoosts(advanceForgeSupply(s,t0+12*HOUR)).crafting_speed?.remainingSeconds,1440,'No ongoing Forge work means no additional charge drain');
 
+// Save/reload checkpoints must be equivalent to one long offline settlement.
+const fullReplay=advanceForgeSupply(scenario([...three,waiting]),t0+5000_000);
+const splitReplay=advanceForgeSupply(advanceForgeSupply(scenario([...three,waiting]),t0+1500_000),t0+5000_000);
+for(const row of equipmentCraftingQueue(fullReplay)){
+ const partial=equipmentCraftingQueue(splitReplay).find(job=>job.id===row.id);
+ ok(!!partial&&Math.abs(partial.completesAtMs-row.completesAtMs)<=1,'Split and continuous sessions must yield the same Forge completion time for '+row.id);
+}
+ok(Math.abs((activeDailySupplyBoosts(fullReplay).crafting_speed?.remainingSeconds??0)-(activeDailySupplyBoosts(splitReplay).crafting_speed?.remainingSeconds??0))<.002,
+ 'Repeated offline checkpoints cannot duplicate or erase Crafting Speed consumption');
+
 let tiers=scenario([job('long',t0,5*HOUR)],.2,3600);
 tiers={...tiers,account:{...tiers.account,dailySupplies:{...tiers.account.dailySupplies!,queued:{crafting_speed:[{type:'crafting_speed',bonus:.1,seconds:7200,remainingSeconds:7200}]}}}};
 tiers=advanceForgeSupply(tiers,t0+5400_000);

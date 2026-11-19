@@ -161,11 +161,11 @@ ok(miss.drops.length===1&&miss.drops[0]!.entryId==='SEASONAL_ORE',
  'exact_chance_boundary_and_no_reroll');
 const secret=new Uint8Array(32).fill(17);
 const sourceKey='seasonal-event:11111111-1111-4111-8111-111111111111:reward';
-const a=deriveChestGroupRollsV67({table,sourceKey,secret});
-const b=deriveChestGroupRollsV67({table,sourceKey,secret});
+const a=deriveChestGroupRollsV67({table,sourceKey,secret,ownedDropIds:[]});
+const b=deriveChestGroupRollsV67({table,sourceKey,secret,ownedDropIds:[]});
 const c=deriveChestGroupRollsV67({
  table:defineChestLootTableV67({...future,version:'winter_rewards_v2'}),
- sourceKey,secret,
+ sourceKey,secret,ownedDropIds:[],
 });
 ok(JSON.stringify(a)===JSON.stringify(b),'replay_derived_entropy_stable');
 ok(a.length===3&&a.every(x=>x.hitRoll>=0&&x.hitRoll<10000&&
@@ -183,7 +183,7 @@ const materialRange=defineChestLootTableV67({...future,
  ]}],
 });
 const materialDraws=deriveChestGroupRollsV67({
- table:materialRange,sourceKey,secret,
+ table:materialRange,sourceKey,secret,ownedDropIds:[],
 });
 ok(materialDraws[0]!.selectionRoll<3,
  'future_weighted_HMAC_rejection_samples_exact_1_to_3');
@@ -222,6 +222,7 @@ rejects(()=>defineChestLootTableV67({...future,
  ]}],
 }),'invalid_drop_quantity');
 rejects(()=>deriveChestGroupRollsV67({table,sourceKey,
- secret:new Uint8Array(4)}),'invalid_server_entropy_contract');
+ secret:new Uint8Array(4),ownedDropIds:[]}),
+ 'invalid_server_entropy_contract');
 console.log('CHEST_LOOT_V67_V68_OK: '+parityChecks+
  ' exact legacy parity scenarios; 12–29% Party / 1% World preserved; future weighted independent pools; unique/missing policy; immutable source version and domain-separated entropy');

@@ -84,7 +84,7 @@ const removed=simulateEquipmentV2VirtualCustody(input(worn.state,
 assert.equal(removed.receipt.to,'pouch');
 assert.equal(removed.receipt.equippedSlot,undefined);
 assert.throws(()=>simulateEquipmentV2VirtualCustody(input(withdrawn.state,
- request('deposit_bank','virtual-own-0001',14),14)),/invalid_v2_virtual_transition/,
+ request('withdraw_bank','virtual-own-0001',14),14)),/invalid_v2_virtual_transition/,
  'Invalid duplicate or wrong virtual transitions must fail');
 const corrupted=structuredClone(worn.state);
 const metadata=corrupted.account.equipmentV2Hidden as V2VirtualLedger;

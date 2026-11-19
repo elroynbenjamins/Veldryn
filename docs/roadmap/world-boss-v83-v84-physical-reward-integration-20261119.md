@@ -26,7 +26,12 @@ authoritative relations: `public.character_wallets.gold`,
 3. Write immutable source-linked per-resource before/after audit rows in a
    private **review-only** `world_boss_chest_resource_grants_v83` table.
    V70 independently reads all four actual resource values and compares
-   each audit and grant leg before committing.
+   each audit and grant leg before committing. On subsequent
+   replays, V70 passes an explicit `replay` verification phase: the
+   immutable, source-linked committed grant journal and empty Inbox
+   attachment history are checked, **not** current spendable balances.
+   Players may spend Gold/materials, use Essence, or switch characters
+   after claiming without breaking historical idempotency.
 4. Only already-paid, non-claimable **Inbox history** with
    `source_kind='gift'`, `claimed_at=now()` and empty attachments can be
    inserted into the existing Inbox schema. This is an interim transport,

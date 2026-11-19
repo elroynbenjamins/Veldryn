@@ -118,8 +118,8 @@ const future:ChestLootTableV67={
  groups:[
   {id:'material',type:'material',chanceBps:10000,
    duplicatePolicy:'allow_duplicates',entries:[
-    {id:'SEASONAL_ORE',weight:1},{id:'SEASONAL_WOOD',weight:3},
-    {id:'SEASONAL_FISH',weight:6},
+    {id:'SEASONAL_ORE',weight:1},{id:'SEASONAL_WOOD',weight:3,quantity:5},
+    {id:'SEASONAL_FISH',weight:6,quantity:2},
    ]},
   {id:'pet',type:'pet',chanceBps:500,
    duplicatePolicy:'unique_only',entries:[
@@ -144,7 +144,9 @@ const result=resolveChestLootV67(table,{
 });
 ok(result.guarantees.length===2&&result.drops.length===2&&
  result.drops[0]!.entryId==='SEASONAL_WOOD'&&
+ result.drops[0]!.quantity===5&&
  result.drops[1]!.entryId==='LOOK_CROWN'&&
+ result.drops[1]!.quantity===1&&
  result.groups[1]!.hit&&result.groups[1]!.entryId===null,
  'future_multiple_independent_pools_and_unique_exhaustion');
 const miss=resolveChestLootV67(table,{
@@ -209,6 +211,16 @@ rejects(()=>defineChestLootTableV67({...future,
 rejects(()=>defineChestLootTableV67({...future,
  groups:[future.groups[0]!,future.groups[0]!],
 }),'invalid_group');
+rejects(()=>defineChestLootTableV67({...future,
+ groups:[{...future.groups[0]!,entries:[
+  {id:'BAD_ZERO',weight:1,quantity:0},
+ ]}],
+}),'invalid_drop_quantity');
+rejects(()=>defineChestLootTableV67({...future,
+ groups:[{...future.groups[1]!,entries:[
+  {id:'BAD_PET_BULK',weight:1,quantity:2},
+ ]}],
+}),'invalid_drop_quantity');
 rejects(()=>deriveChestGroupRollsV67({table,sourceKey,
  secret:new Uint8Array(4)}),'invalid_server_entropy_contract');
 console.log('CHEST_LOOT_V67_V68_OK: '+parityChecks+

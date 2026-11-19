@@ -6,7 +6,7 @@ import {EXPLORATION_ROUTES} from '../content/exploration';
 import {GameState,SkillId} from './types';
 
 export type JournalFilter='current'|'all'|'claimed'|'locked';
-export type QuestDestination={tab:'World'|'Skills'|'Inventory';zoneId?:string;skillId?:SkillId;label:string;hint:string};
+export type QuestDestination={tab:'World'|'Skills'|'Inventory'|'Combat'|'Events';zoneId?:string;skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';label:string;hint:string};
 export function questLockHint(state:Pick<GameState,'character'|'quests'>,def:QuestDef):string{
   if(def.requiredCharacterLevel&&(state.character?.level??0)<def.requiredCharacterLevel)return `Reach character level ${def.requiredCharacterLevel} through Combat to unlock this objective.`;
   const index=QUESTS.findIndex(row=>row.id===def.id),previous=index>0?QUESTS[index-1]:undefined;

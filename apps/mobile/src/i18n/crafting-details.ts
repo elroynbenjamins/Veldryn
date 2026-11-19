@@ -2,6 +2,7 @@ import {createSourceTranslator,type TranslationRow} from './source-catalog';
 import type {Language} from './languages';
 
 export const craftingDetailRows={
+ 'Next equipment tier':['Nächste Ausrüstungsstufe','Siguiente nivel de equipo','Volgende uitrustingsniveau','Prossimo livello di equipaggiamento','Prochain palier d’équipement'],
  'No active mastery bonus yet':['Noch kein aktiver Meisterschaftsbonus','Aún no hay bonos de maestría activos','Nog geen actieve meesterschapsbonus','Nessun bonus maestria attivo','Aucun bonus de maîtrise actif'],
  '+{value}% skill XP':['+{value}% Fertigkeits-EP','+{value}% EXP de habilidad','+{value}% vaardigheids-XP','+{value}% ESP abilità','+{value} % EXP de compétence'],
  '+{value}% XP':['+{value}% EP','+{value}% EXP','+{value}% XP','+{value}% ESP','+{value} % EXP'],

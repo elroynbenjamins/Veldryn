@@ -7,7 +7,7 @@ async function main(){
  const T=Date.UTC(2026,9,15,12),ID='EVT_ANNUAL_010_2026';
  for(const mode of ['gathering','processing'] as const){
   let state=createCharacter(newGame(T),'IRONWARDEN','Server currency');state.character!.gold=10000;
-  state.inventory.stacks=[{itemId:'COPPER_ORE',quantity:100}];
+  state.inventory.stacks=[{itemId:'COPPER_ORE',quantity:100},{itemId:'GREENWOOD_LOG',quantity:20}]; // SMELT_COPPER_INGOT also needs 2 logs per batch
   state=mode==='gathering'?startGathering(state,'GREENWOOD_TREE',T):startProcessingBatch(state,'SMELT_COPPER_INGOT',5,T);
   const cycle=state.activity!.processing?.cycleSeconds??60;
   const runtime={eventId:ID,enabled:true,startsAtMs:T+cycle*1500,endsAtMs:T+cycle*4500,graceEndsAtMs:T+86400000};

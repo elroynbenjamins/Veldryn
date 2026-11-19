@@ -3,6 +3,8 @@ import {join} from 'node:path';
 import {RECIPES} from '../src/content/skills';
 import {createCharacter,newGame} from '../src/core/game';
 import {professionActionPace} from '../src/core/profession-action-pace';
+import {cookingRecipeXpPreview} from '../src/core/cooking-xp-preview';
+import {totalXpAtLevel} from '../src/core/progression';
 import {startProcessingBatch,processingRecipeDef,previewProcessingReward} from '../src/core/processing';
 import {mealBonusDef} from '../src/core/meal-buffs';
 import type {GameState} from '../src/core/types';
@@ -22,11 +24,28 @@ for(const recipe of cooking.filter(recipe=>!!processingRecipeDef(recipe.id)).sli
   bank:{...original.bank,capacity:100,stacks:[]},
  };
  const displayedXp=Math.floor(professionActionPace(state,recipe,'batch').xpPerAction+1e-9);
+ const preview=cookingRecipeXpPreview(state,recipe);
+ equal(preview?.estimatedXp,displayedXp,recipe.id+' cooking UI preview matches the prospective batch');
  const reserved=startProcessingBatch(state,recipe.id,1,now).activity?.processing;
  ok(!!reserved,'Cooking recipe '+recipe.id+' should reserve one processing batch');
  equal(Math.floor((reserved?.xpPerBatch??0)+1e-9),displayedXp,recipe.id+' shown XP should use the same effective pace as the gameplay batch');
  const earned=previewProcessingReward(startProcessingBatch(state,recipe.id,1,now),reserved!.cycleSeconds).xp;
  equal(earned,displayedXp,recipe.id+' displayed Cooking XP must equal the actual one-batch XP settlement');
+ // An already-reserved cooking run keeps its earlier XP rate even if the
+ // current recipe projection would change after a progression update.
+ const active=startProcessingBatch(state,recipe.id,1,now);
+ const saved={...active,activity:{...active.activity!,processing:{...active.activity!.processing!,xpPerBatch:displayedXp+13}}} as GameState;
+ const reservedPreview=cookingRecipeXpPreview(saved,recipe);
+ ok(reservedPreview?.usingReservedRate,recipe.id+' preview should detect current reserved cooking work');
+ equal(reservedPreview?.estimatedXp,displayedXp+13,recipe.id+' preview should honor locked-in batch XP');
+ const capXp=totalXpAtLevel(100);
+ const capped={...state,skills:state.skills.map(row=>row.skillId==='cooking'?{...row,xp:capXp,level:100}:row)};
+ const cappedPreview=cookingRecipeXpPreview(capped,recipe);
+ ok(cappedPreview?.maxed&&cappedPreview.estimatedXp===0,recipe.id+' must show zero XP at the skill cap');
+ const nearCap={...state,skills:state.skills.map(row=>row.skillId==='cooking'?{...row,xp:capXp-4,level:99}:row)};
+ const limited=cookingRecipeXpPreview(nearCap,recipe);
+ ok(limited?.limitedByCap&&limited.estimatedXp===4,recipe.id+' must limit displayed XP to remaining skill XP');
+ equal(previewProcessingReward(startProcessingBatch(nearCap,recipe.id,1,now),reserved!.cycleSeconds).xp,4,recipe.id+' XP settlement must match the cap-safe preview');
  ok(displayedXp>=0,recipe.id+' XP cannot be negative');
  tested++;
 }
@@ -47,9 +66,14 @@ ok(component.includes("meal?<Text style={s.mealBonusCompact}>"),'Collapsed cards
 ok(component.includes('const mealLabel=meal?ct('),'Special dish bonuses must use localized translations');
 for(const key of ['+{value}% Gathering speed','+{value}% Crafting speed','+{value}% Combat XP','+{value}% Non-combat skill speed'])
  ok(translations.includes("'"+key+"'"),'Translated meal descriptor missing: '+key);
+ok(component.includes('cookingXpPreview?.usingReservedRate'),'Cooking details must explain the active reserved XP snapshot');
+ok(component.includes('Cooking mastered · no more XP'),'Cooking card must display level-cap state');
+ok(component.includes('Activate meal buffs from Inventory. Auto-eat only restores HP.'),'Meal buff preview must distinguish activation from auto-eating');
 ok(component.includes("meal?<Text style={s.mealBonus}>"),
  'Expanded Cooking recipes must display food utility buffs');
 ok(translations.includes("' +{xp} Cooking XP per batch'")||translations.includes("'+{xp} Cooking XP per batch'"),
  'Cooking XP label must be localized through crafting detail translations');
+for(const label of ['Cooking mastered · no more XP','Current cooking run uses the XP rate reserved when it started.','Activate meal buffs from Inventory. Auto-eat only restores HP.'])
+ ok(translations.includes("'"+label+"'"),'Cooking explanation must be translatable: '+label);
 
 console.log(JSON.stringify({status:'PASS',testedCookingRecipes:tested,specialMeals:cooking.filter(recipe=>!!mealBonusDef(recipe.output.itemId)).length}));

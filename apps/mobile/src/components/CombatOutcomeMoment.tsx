@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
+import {playSound} from '../storage/audio';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
@@ -11,6 +12,7 @@ export function CombatOutcomeMoment({outcome,title,detail,reduceMotion=false}:{
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),reveal=useRef(new Animated.Value(reduceMotion?1:0)).current;
  const success=outcome==='victory',accent=success?C.good:outcome==='timeout'?C.warning:C.bad;
+ useEffect(()=>{playSound(outcome==='victory'?'victory':'defeat');},[outcome,title]);
  useEffect(()=>{
   reveal.stopAnimation();reveal.setValue(reduceMotion?1:0);
   if(reduceMotion)return;

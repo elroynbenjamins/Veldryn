@@ -156,11 +156,11 @@ var init_meal_buffs = __esm({
   "../apps/mobile/src/core/meal-buffs.ts"() {
     "use strict";
     MEAL_BONUSES = [
-      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
-      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
-      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
-      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
-      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
+      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 4, durationHours: 3, label: "+4% Gathering speed" },
+      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 6, durationHours: 4, label: "+6% Gathering speed" },
+      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 6, durationHours: 4, label: "+6% Crafting speed" },
+      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 8, durationHours: 4, label: "+8% Combat XP" },
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 10, durationHours: 4, label: "+10% Non-combat skill speed" }
     ];
   }
 });
@@ -42059,6 +42059,7 @@ function itemVendorSellGold(item, uplift = EQUIPMENT_RESALE_UPLIFT_RELEASED) {
 // ../apps/mobile/src/core/personal-seasonal-state.ts
 var periods = ["daily", "weekly", "monthly"];
 var SEASONAL_ACTIVITY_TAGS = ["combat", "gathering", "crafting", "exploration", "faith", "boss", "cooking", "alchemy", "smithing", "tailoring", "enchanting", "event"];
+var SEASONAL_QUEST_COUNTS = { daily: 3, weekly: 4, monthly: 5 };
 var activityTags = SEASONAL_ACTIVITY_TAGS;
 function normalizeSeasonalProgress(raw2) {
   const result = {};
@@ -42071,7 +42072,7 @@ function normalizeSeasonalProgress(raw2) {
       const value = row.counts?.[tag];
       if (typeof value === "number" && Number.isFinite(value) && value >= 0) counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, Math.floor(value));
     }
-    const tags = Array.isArray(row.tags) && row.tags.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
+    const tags = Array.isArray(row.tags) && (row.tags.length === SEASONAL_QUEST_COUNTS[period] || row.tags.length === SEASONAL_QUEST_COUNTS[period] - 1) && row.tags.every((tag) => typeof tag === "string" && activityTags.includes(tag)) && new Set(row.tags).size === row.tags.length ? row.tags : void 0;
     result[period] = { key: row.key, counts, ...tags ? { tags: [...tags] } : {} };
   }
   return result;
@@ -42632,7 +42633,8 @@ function recordSeasonalActivity(state, tag, units, nowMs) {
   const progress = normalizeSeasonalProgress(ready.character?.personalSeasonal?.progress), date = new Date(nowMs);
   for (const period of periods2) {
     const key = periodKey(period, date), old = progress[period], counts = old?.key === key ? { ...old.counts } : {};
-    const tags = old?.key === key && old.tags?.every((tag2) => activityTags2.includes(tag2)) ? old.tags : selectSeasonalTags(ready, period, key, nowMs);
+    const existingTags = old?.key === key && old.tags?.every((tag2) => activityTags2.includes(tag2)) ? old.tags : void 0;
+    const tags = existingTags?.length === SEASONAL_QUEST_COUNTS[period] ? existingTags : selectSeasonalTags(ready, period, key, nowMs, existingTags);
     counts[tag] = Math.min(Number.MAX_SAFE_INTEGER, (counts[tag] ?? 0) + Math.floor(units));
     progress[period] = { key, counts, tags };
   }
@@ -42698,11 +42700,12 @@ function availableTemplate(state, tag, atMs) {
   }
   return true;
 }
-function selectSeasonalTags(state, period, key, atMs) {
-  const count = period === "daily" ? 2 : period === "weekly" ? 3 : 4;
+function selectSeasonalTags(state, period, key, atMs, existing = []) {
+  const count = SEASONAL_QUEST_COUNTS[period];
   const available = TEMPLATES.filter((row) => row[period] > 0 && availableTemplate(state, row.tag, atMs));
-  const pool = [...available], selected2 = [];
-  for (let index = 0; index < count && pool.length; index++) {
+  const selected2 = [...existing];
+  const pool = available.filter((row) => !selected2.includes(row.tag));
+  for (let index = selected2.length; index < count && pool.length; index++) {
     const pick = hash32(`${period}:${key}:quest:${index}`) % pool.length;
     selected2.push(pool.splice(pick, 1)[0].tag);
   }
@@ -42788,7 +42791,9 @@ function contractProgress(state, tag, period, key) {
 }
 function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   if (!state.character) return [];
-  const key = periodKey(period, date), frozen = (state.character.personalSeasonal?.progress ?? state.account.seasonalContractProgress)?.[period], tags = frozen?.key === key && frozen.tags?.length === (period === "daily" ? 2 : period === "weekly" ? 3 : 4) && frozen.tags.every((tag) => activityTags2.includes(tag)) ? frozen.tags : selectSeasonalTags(state, period, key, date.getTime());
+  const key = periodKey(period, date), frozen = (state.character.personalSeasonal?.progress ?? state.account.seasonalContractProgress)?.[period];
+  const existingTags = frozen?.key === key && frozen.tags?.every((tag) => activityTags2.includes(tag)) ? frozen.tags : void 0;
+  const tags = existingTags?.length === SEASONAL_QUEST_COUNTS[period] ? existingTags : selectSeasonalTags(state, period, key, date.getTime(), existingTags);
   const base = BASE_REWARD_ACTIONS;
   return tags.map((tag, index) => {
     const template = TEMPLATES.find((row) => row.tag === tag);
@@ -44967,6 +44972,11 @@ function companionCurrentLevelCap(def, progress) {
 function companionMaxLevel(def) {
   return COMPANION_RARITY_CONFIG[def.rarity].maxLevel;
 }
+function companionRemainingLifetimeXp(def, level, xp = 0) {
+  let remaining = 0;
+  for (let current = Math.max(1, level); current < companionMaxLevel(def); current++) remaining += companionXpToNextLevel(def.rarity, current);
+  return Math.max(0, remaining - Math.max(0, Math.floor(xp)));
+}
 function requiredAscensionTierForLevel(def, level) {
   const caps = COMPANION_STAGE_CAPS[def.rarity];
   for (let tier = 0; tier < 4; tier++) if (level <= caps[tier]) return tier;
@@ -44991,6 +45001,7 @@ function normalizeProgress(def, value, fallback2) {
   return {
     level: safeLevel2,
     xp: safeLevel2 >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback2.xp), Math.max(0, nextXp - 1)),
+    bankedXp: safeLevel2 >= max ? 0 : Math.min(int(value?.bankedXp ?? fallback2.bankedXp), companionRemainingLifetimeXp(def, safeLevel2)),
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
@@ -45245,7 +45256,7 @@ function ascendCombatCompanion(state, id) {
   if (cost.materialId && inventoryQty(clean2, cost.materialId) < (cost.materialQuantity ?? 0)) throw new Error(`Missing regional material: ${cost.materialId}.`);
   clean2 = { ...clean2, character: { ...clean2.character, gold: clean2.character.gold - cost.gold }, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) - cost.companionEssence, bondstones: (clean2.account.bondstones ?? 0) - cost.bondstones } };
   clean2 = consumeMaterial(clean2, cost.materialId, cost.materialQuantity ?? 0);
-  return setProgress(clean2, id, { ...p, ascensionTier: tier });
+  return setProgress(clean2, id, applyCompanionXp({ ...p, ascensionTier: tier, bankedXp: 0 }, def, p.bankedXp ?? 0));
 }
 function masterPrestigeCompanion(state, id) {
   let clean2 = sanitizeCombatCompanionState(state);
@@ -45261,6 +45272,27 @@ function masterPrestigeCompanion(state, id) {
   clean2 = { ...clean2, character: { ...clean2.character, gold: clean2.character.gold - cost.gold }, account: { ...clean2.account, companionEssence: (clean2.account.companionEssence ?? 0) - cost.companionEssence, bondstones: (clean2.account.bondstones ?? 0) - cost.bondstones } };
   clean2 = consumeMaterial(clean2, cost.materialId, cost.materialQuantity ?? 0);
   return setProgress(clean2, id, { ...p, mastered: true });
+}
+function applyCompanionXp(progress, def, amount, _deprecatedHousingCap) {
+  const max = companionMaxLevel(def), cap = companionCurrentLevelCap(def, progress);
+  let p = { ...progress, xp: Math.max(0, progress.xp) }, remaining = Math.max(0, Math.floor(amount));
+  while (remaining > 0 && p.level < cap && p.level < max) {
+    const need = Math.max(1, companionXpToNextLevel(def.rarity, p.level) - p.xp);
+    if (remaining < need) {
+      p.xp += remaining;
+      remaining = 0;
+      break;
+    }
+    remaining -= need;
+    p.level++;
+    p.xp = 0;
+  }
+  if (p.level >= max) return { ...p, xp: 0, bankedXp: 0 };
+  if (p.level >= cap) {
+    const capacity = companionRemainingLifetimeXp(def, p.level);
+    return { ...p, xp: 0, bankedXp: Math.min(capacity, Math.max(0, p.bankedXp ?? 0) + remaining) };
+  }
+  return p;
 }
 var LEGACY_BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
 function bondThreshold(level) {
@@ -47701,7 +47733,7 @@ function validateProgressionSnapshot(companionId, input) {
   const rarity = COMPANION_RARITY[companionId];
   if (!rarity) throw new Error("unknown_companion");
   const ascensionTier = Math.max(0, Math.min(3, Math.floor(input.ascensionTier))), cap = companionLevelCap(companionId, ascensionTier);
-  return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
+  return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ...input.bankedXp === void 0 ? {} : { bankedXp: Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(input.bankedXp))) }, ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
 // src/server/companions/progression-v2.ts
@@ -47755,7 +47787,11 @@ function awardCompanionXpServer(input) {
   }
   if (p.level >= currentCap && currentCap < rarityMax) {
     p.xp = 0;
-    return { progress: p, companionEssence: input.companionEssence, overflow: normalizeOverflow(input.overflow, input.serverNowMs), convertedEssence: 0, droppedXp: remaining };
+    let lifetimeCapacity = 0;
+    for (let level = p.level; level < rarityMax; level++) lifetimeCapacity += companionXpToNextServer(def.id, level);
+    const prior = Math.min(lifetimeCapacity, Math.max(0, Math.floor(p.bankedXp ?? 0))), bankedXp = Math.min(lifetimeCapacity, prior + remaining);
+    p.bankedXp = bankedXp;
+    return { progress: p, companionEssence: input.companionEssence, overflow: normalizeOverflow(input.overflow, input.serverNowMs), convertedEssence: 0, droppedXp: Math.max(0, remaining - (bankedXp - prior)) };
   }
   if (p.level >= rarityMax && remaining > 0) {
     const overflow = normalizeOverflow(input.overflow, input.serverNowMs), room = Math.max(0, COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP - overflow.essenceConvertedThisWeek), converted = Math.min(room, Math.floor(remaining * COMPANION_MAX_XP_ESSENCE_RATE));
@@ -53256,35 +53292,39 @@ function championBonus(baseXp, baseGold, count) {
 var DAILY_SUPPLY_BONUS = 0.1;
 var DAILY_SUPPLY_CHARGE_SECONDS = 2 * 60 * 60;
 var DAILY_SUPPLY_TRACK_LENGTH = 28;
-var DAILY_SUPPLY_BOOST_TYPES = ["gathering_yield", "crafting_output", "skill_xp", "combat_xp"];
-var BOOST_LABELS = {
-  gathering_yield: "Gathering Yield",
-  crafting_output: "Crafting / Processing Output",
-  skill_xp: "Skill XP",
-  combat_xp: "Combat XP"
+var DAILY_SUPPLY_BOOST_TYPES = ["gathering_speed", "crafting_speed", "skill_xp", "combat_xp", "combat_speed"];
+var DAILY_SUPPLY_MILESTONES = {
+  7: { bonus: 0.2, seconds: 7200 },
+  14: { bonus: 0.2, seconds: 10800 },
+  21: { bonus: 0.25, seconds: 10800 },
+  28: { bonus: 0.25, seconds: 14400 }
 };
-var milestonePremium = { 7: 10, 14: 20, 21: 30, 28: 40 };
-function dailySupplyBoostLabel(type) {
-  return BOOST_LABELS[type];
-}
-function dailySupplyUtcDayKey(nowMs) {
-  return new Date(nowMs).toISOString().slice(0, 10);
-}
-function normalizeDailySuppliesTrack(value) {
+var BOOST_LABELS = {
+  gathering_speed: "Gathering Speed",
+  crafting_speed: "Crafting Speed",
+  skill_xp: "Skill XP",
+  combat_xp: "Combat XP",
+  combat_speed: "Combat Speed"
+};
+var LEGACY_TYPE_MAP = {
+  gathering_yield: "gathering_speed",
+  crafting_output: "crafting_speed",
+  gathering_speed: "gathering_speed",
+  crafting_speed: "crafting_speed",
+  skill_xp: "skill_xp",
+  combat_xp: "combat_xp",
+  combat_speed: "combat_speed"
+};
+var baseCharge = () => ({ bonus: DAILY_SUPPLY_BONUS, seconds: DAILY_SUPPLY_CHARGE_SECONDS });
+var safeSeconds = (value, max = 14400) => Number.isFinite(Number(value)) ? Math.max(0, Math.min(max, Math.floor(Number(value)))) : 0;
+var validBonus = (value) => [0.1, 0.2, 0.25].includes(Number(value)) ? Number(value) : DAILY_SUPPLY_BONUS;
+var safeType = (value) => typeof value === "string" ? LEGACY_TYPE_MAP[value] : void 0;
+var dailySupplyBoostLabel = (type) => BOOST_LABELS[type];
+var dailySupplyUtcDayKey = (nowMs) => new Date(nowMs).toISOString().slice(0, 10);
+function normalizeCharge(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
-  const row = value, totalClaims = Number(row.totalClaims);
-  if (row.schemaVersion !== 1 || !Number.isFinite(totalClaims) || totalClaims < 0) return void 0;
-  const lastClaimDayKey = typeof row.lastClaimDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.lastClaimDayKey) ? row.lastClaimDayKey : void 0;
-  return { schemaVersion: 1, totalClaims: Math.max(0, Math.floor(totalClaims)), ...lastClaimDayKey ? { lastClaimDayKey } : {} };
-}
-function normalizeDailySupplyBank(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
-  const row = value, out = {};
-  for (const type of DAILY_SUPPLY_BOOST_TYPES) {
-    const count = Number(row[type]);
-    if (Number.isFinite(count) && count > 0) out[type] = Math.floor(count);
-  }
-  return Object.keys(out).length ? out : void 0;
+  const row = value, seconds = safeSeconds(row.seconds);
+  return seconds > 0 ? { bonus: validBonus(row.bonus), seconds } : void 0;
 }
 function numericRemainders(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
@@ -53297,108 +53337,241 @@ function numericRemainders(value) {
 }
 function normalizeActiveDailySupplyBoost(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
-  const row = value, type = row.type, seconds = Number(row.remainingSeconds);
-  if (!DAILY_SUPPLY_BOOST_TYPES.includes(type) || !Number.isFinite(seconds) || seconds <= 0) return void 0;
+  const row = value, type = safeType(row.type), rawSeconds = Number(row.remainingSeconds), seconds = Number.isFinite(rawSeconds) ? Math.max(0, Math.min(14400, rawSeconds)) : 0;
+  if (!type || seconds <= 0) return void 0;
+  const bonus = validBonus(row.bonus), full = safeSeconds(row.seconds) || DAILY_SUPPLY_CHARGE_SECONDS;
   const remainders = numericRemainders(row.remainders);
-  return { type, remainingSeconds: Math.min(DAILY_SUPPLY_CHARGE_SECONDS, Math.max(1, Math.floor(seconds))), ...remainders ? { remainders } : {} };
+  return { type, bonus, seconds: Math.max(seconds, full), remainingSeconds: seconds, ...remainders ? { remainders } : {} };
 }
-function activeDailySupplyBoosts(character) {
-  if (!character) return {};
-  const mapped = character.activeDailySupplyBoosts, valid = {};
+function normalizeBoostBank(value) {
+  const bank = {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return bank;
+  for (const [key, raw2] of Object.entries(value)) {
+    const type = safeType(key);
+    if (!type) continue;
+    const charges = Array.isArray(raw2) ? raw2.slice(0, 100).map(normalizeCharge).filter((row) => !!row) : [];
+    if (charges.length) bank[type] = [...bank[type] ?? [], ...charges].slice(0, 100);
+  }
+  return bank;
+}
+function normalizeBoostActive(value) {
+  const active2 = {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return active2;
+  for (const [key, raw2] of Object.entries(value)) {
+    const type = safeType(key), boost = normalizeActiveDailySupplyBoost(raw2);
+    if (type && boost && boost.type === type) active2[type] = boost;
+  }
+  return active2;
+}
+function normalizeQueued(value) {
+  const queued = {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return queued;
+  for (const [key, raw2] of Object.entries(value)) {
+    const type = safeType(key);
+    if (!type || !Array.isArray(raw2)) continue;
+    const entries = raw2.slice(0, 100).map(normalizeActiveDailySupplyBoost).filter((entry2) => !!entry2 && entry2.type === type);
+    if (entries.length) queued[type] = entries;
+  }
+  return queued;
+}
+function normalizeDailySuppliesTrack(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
+  const row = value, totalClaims = Number(row.totalClaims);
+  if (row.schemaVersion !== 1 && row.schemaVersion !== 2 || !Number.isSafeInteger(totalClaims) || totalClaims < 0) return void 0;
+  const lastClaimDayKey = typeof row.lastClaimDayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(row.lastClaimDayKey) ? row.lastClaimDayKey : void 0;
+  const forgeSettledAtMs = Number(row.forgeSettledAtMs);
+  return {
+    schemaVersion: 2,
+    totalClaims,
+    ...lastClaimDayKey ? { lastClaimDayKey } : {},
+    ...Number.isSafeInteger(forgeSettledAtMs) && forgeSettledAtMs >= 0 ? { forgeSettledAtMs } : {},
+    bank: normalizeBoostBank(row.bank),
+    active: normalizeBoostActive(row.active),
+    queued: normalizeQueued(row.queued)
+  };
+}
+function normalizeDailySupplyBank(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
+  const out = {};
+  for (const [key, count] of Object.entries(value)) {
+    const type = safeType(key), n = Number(count);
+    if (type && Number.isFinite(n) && n > 0) out[type] = Math.min(100, (out[type] ?? 0) + Math.floor(n));
+  }
+  return Object.keys(out).length ? out : void 0;
+}
+var emptyTrack = () => ({ schemaVersion: 2, totalClaims: 0, bank: {}, active: {}, queued: {} });
+function track(state) {
+  return normalizeDailySuppliesTrack(state.account.dailySupplies) ?? emptyTrack();
+}
+var clearLegacy = (character) => ({ ...character, dailySupplyBoostBank: void 0, activeDailySupplyBoost: void 0, activeDailySupplyBoosts: void 0 });
+function migrateLegacyDailySupplies(state, forceLegacy = false) {
+  const old = state.account.dailySupplies, needsMigration = forceLegacy || !old || old.schemaVersion !== 2;
+  const next = track(state);
+  if (needsMigration) {
+    const bank = { ...next.bank ?? {} }, active2 = { ...next.active ?? {} }, queued = { ...next.queued ?? {} };
+    const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter((row) => !!row);
+    for (const character of characters) {
+      const counters = normalizeDailySupplyBank(character.dailySupplyBoostBank);
+      if (counters) for (const type of DAILY_SUPPLY_BOOST_TYPES) {
+        const count = counters[type] ?? 0;
+        if (count > 0) bank[type] = [...bank[type] ?? [], ...Array.from({ length: count }, baseCharge)].slice(0, 100);
+      }
+      const map = activeDailySupplyBoosts(character);
+      for (const type of DAILY_SUPPLY_BOOST_TYPES) {
+        const entry2 = map[type];
+        if (!entry2) continue;
+        const current = active2[type];
+        if (!current || entry2.bonus > current.bonus) {
+          if (current) queued[type] = [...queued[type] ?? [], current];
+          active2[type] = entry2;
+        } else queued[type] = [...queued[type] ?? [], entry2];
+      }
+    }
+    next.bank = bank;
+    next.active = active2;
+    next.queued = queued;
+  }
+  return {
+    ...state,
+    account: { ...state.account, dailySupplies: next },
+    character: state.character ? clearLegacy(state.character) : null,
+    otherCharacters: (state.otherCharacters ?? []).map((entry2) => ({ ...entry2, character: clearLegacy(entry2.character) }))
+  };
+}
+function activeDailySupplyBoosts(source) {
+  if (!source) return {};
+  if ("account" in source) return track(source).active ?? {};
+  const mapped = source.activeDailySupplyBoosts, valid = {};
   if (mapped && typeof mapped === "object" && !Array.isArray(mapped)) {
-    for (const type of DAILY_SUPPLY_BOOST_TYPES) {
-      const entry2 = normalizeActiveDailySupplyBoost(mapped[type]);
-      if (entry2 && entry2.type === type) valid[type] = entry2;
+    for (const raw2 of Object.values(mapped)) {
+      const entry2 = normalizeActiveDailySupplyBoost(raw2);
+      if (entry2 && !valid[entry2.type]) valid[entry2.type] = entry2;
     }
   }
-  if (!Object.keys(valid).length) {
-    const legacy = normalizeActiveDailySupplyBoost(character.activeDailySupplyBoost);
-    if (legacy) valid[legacy.type] = legacy;
-  }
+  const legacy = normalizeActiveDailySupplyBoost(source.activeDailySupplyBoost);
+  if (legacy && !valid[legacy.type]) valid[legacy.type] = legacy;
   return valid;
 }
-function withActiveDailySupplyBoosts(character, boosts) {
-  const first = DAILY_SUPPLY_BOOST_TYPES.map((type) => boosts[type]).find(Boolean);
-  return { ...character, activeDailySupplyBoosts: boosts, activeDailySupplyBoost: first };
+function normalRewardIndex(cycle, day) {
+  const priorMilestones = Math.floor((day - 1) / 7);
+  return ((cycle - 1) * 24 + (day - 1) - priorMilestones) % DAILY_SUPPLY_BOOST_TYPES.length;
 }
-function track(state) {
-  return normalizeDailySuppliesTrack(state.account.dailySupplies) ?? { schemaVersion: 1, totalClaims: 0 };
-}
-function normalClaimIndex(totalClaims) {
-  const inCycle = totalClaims % DAILY_SUPPLY_TRACK_LENGTH, priorMilestones = Math.floor(inCycle / 7);
-  return inCycle - priorMilestones;
+function dailySupplyRewardForDay(day, cycle = 1) {
+  const milestone = DAILY_SUPPLY_MILESTONES[day];
+  return milestone ? { kind: "milestone", ...milestone } : { kind: "boost", type: DAILY_SUPPLY_BOOST_TYPES[normalRewardIndex(cycle, day)], charges: 1, ...baseCharge() };
 }
 function dailySuppliesStatus(state, nowMs = Date.now()) {
-  const current = track(state), dayInTrack = current.totalClaims % DAILY_SUPPLY_TRACK_LENGTH + 1, currentDayKey = dailySupplyUtcDayKey(nowMs), premium = milestonePremium[dayInTrack];
-  return { cycle: Math.floor(current.totalClaims / DAILY_SUPPLY_TRACK_LENGTH) + 1, dayInTrack, canClaim: current.lastClaimDayKey !== currentDayKey, currentDayKey, reward: premium ? { kind: "premium", amount: premium } : { kind: "boost", type: DAILY_SUPPLY_BOOST_TYPES[normalClaimIndex(current.totalClaims) % DAILY_SUPPLY_BOOST_TYPES.length], charges: 1 } };
+  const current = track(state), dayInTrack = current.totalClaims % DAILY_SUPPLY_TRACK_LENGTH + 1, cycle = Math.floor(current.totalClaims / DAILY_SUPPLY_TRACK_LENGTH) + 1, currentDayKey = dailySupplyUtcDayKey(nowMs);
+  return { cycle, dayInTrack, canClaim: current.lastClaimDayKey !== currentDayKey, currentDayKey, reward: dailySupplyRewardForDay(dayInTrack, cycle) };
 }
-function updateCharacter(state, characterId, fn) {
-  if (state.character?.id === characterId) return { ...state, character: fn(state.character) };
-  let found = false;
-  const otherCharacters = (state.otherCharacters ?? []).map((entry2) => entry2.character.id === characterId ? (found = true, { ...entry2, character: fn(entry2.character) }) : entry2);
-  if (!found) throw new Error("Character is not owned.");
-  return { ...state, otherCharacters };
-}
-function claimDailySupplies(state, characterId, nowMs) {
+function claimDailySupplies(state, characterId, nowMs, selectedType) {
   if (!state.character || !characterId || state.character.id !== characterId && !(state.otherCharacters ?? []).some((entry2) => entry2.character.id === characterId)) throw new Error("Character is not owned.");
-  const status = dailySuppliesStatus(state, nowMs), current = track(state);
+  const status = dailySuppliesStatus(state, nowMs);
   if (!status.canClaim) throw new Error("Daily Supplies were already claimed for this UTC day.");
-  let next = state;
-  if (status.reward.kind === "premium") {
-    next = { ...next, account: { ...next.account, premiumCurrencyBalance: (next.account.premiumCurrencyBalance ?? 0) + status.reward.amount } };
-  } else {
-    const reward3 = status.reward;
-    next = updateCharacter(next, characterId, (character) => {
-      const bank = { ...character.dailySupplyBoostBank ?? {} }, type = reward3.type;
-      bank[type] = (bank[type] ?? 0) + reward3.charges;
-      return { ...character, dailySupplyBoostBank: bank };
-    });
-  }
-  next = { ...next, account: { ...next.account, dailySupplies: { schemaVersion: 1, totalClaims: current.totalClaims + 1, lastClaimDayKey: status.currentDayKey } } };
-  return { state: next, status };
+  const canonical2 = migrateLegacyDailySupplies(state), current = track(canonical2);
+  const reward3 = status.reward;
+  const type = reward3.kind === "milestone" ? selectedType : reward3.type;
+  if (!type || !DAILY_SUPPLY_BOOST_TYPES.includes(type)) throw new Error("Choose a Supply Blessing first.");
+  const bank = { ...current.bank ?? {} };
+  bank[type] = [...bank[type] ?? [], { bonus: reward3.bonus, seconds: reward3.seconds }].slice(-100);
+  const dailySupplies = { ...current, bank, totalClaims: current.totalClaims + 1, lastClaimDayKey: status.currentDayKey };
+  return { state: { ...canonical2, account: { ...canonical2.account, dailySupplies } }, status };
 }
 function activateDailySupplyBoost(state, type) {
   if (!state.character) throw new Error("Create a character first.");
   if (!DAILY_SUPPLY_BOOST_TYPES.includes(type)) throw new Error("Unknown Daily Supplies boost.");
-  const active2 = activeDailySupplyBoosts(state.character);
-  if (active2[type]) throw new Error("This Daily Supplies boost is already active.");
-  const bank = { ...normalizeDailySupplyBank(state.character.dailySupplyBoostBank) ?? {} }, charges = bank[type] ?? 0;
-  if (charges < 1) throw new Error("No banked charge is available for this boost.");
-  if (charges === 1) delete bank[type];
-  else bank[type] = charges - 1;
-  return { ...state, character: withActiveDailySupplyBoosts({ ...state.character, dailySupplyBoostBank: bank }, { ...active2, [type]: { type, remainingSeconds: DAILY_SUPPLY_CHARGE_SECONDS } }) };
+  const canonical2 = migrateLegacyDailySupplies(state), current = track(canonical2);
+  const bank = { ...current.bank ?? {} }, available = [...bank[type] ?? []].sort((a, b) => b.bonus - a.bonus || b.seconds - a.seconds);
+  if (!available.length) throw new Error("No banked charge is available for this boost.");
+  const chosen = available.shift();
+  if (available.length) bank[type] = available;
+  else delete bank[type];
+  const active2 = { ...current.active ?? {} }, queued = { ...current.queued ?? {} };
+  const entry2 = { type, ...chosen, remainingSeconds: chosen.seconds };
+  if (active2[type] && active2[type].bonus >= entry2.bonus) {
+    queued[type] = [...queued[type] ?? [], entry2];
+  } else {
+    if (active2[type]) queued[type] = [...queued[type] ?? [], active2[type]];
+    active2[type] = entry2;
+  }
+  return { ...canonical2, account: { ...canonical2.account, dailySupplies: { ...current, bank, active: active2, queued } } };
+}
+function dailySupplyQueued(state) {
+  return track(state).queued ?? {};
+}
+function dailySupplyCoverage(state, type, elapsedSeconds) {
+  const current = activeDailySupplyBoosts(state)[type];
+  if (!current) return { consumedSeconds: 0, weightedBonusSeconds: 0 };
+  const queue = [...dailySupplyQueued(state)[type] ?? []].sort((a, b) => b.bonus - a.bonus || b.remainingSeconds - a.remainingSeconds);
+  let left = Math.max(0, elapsedSeconds), consumedSeconds = 0, weightedBonusSeconds = 0;
+  for (const entry2 of [current, ...queue]) {
+    if (left <= 0) break;
+    const used = Math.min(left, entry2.remainingSeconds);
+    consumedSeconds += used;
+    weightedBonusSeconds += used * entry2.bonus;
+    left -= used;
+  }
+  return { consumedSeconds, weightedBonusSeconds };
+}
+function dailySupplySpeedMultiplier(state, type, elapsedSeconds) {
+  const elapsed = Math.max(0, elapsedSeconds);
+  const current = activeDailySupplyBoosts(state)[type];
+  if (!current) return 1;
+  return elapsed > 0 ? 1 + dailySupplyCoverage(state, type, elapsed).weightedBonusSeconds / elapsed : 1 + current.bonus;
+}
+function dailySupplyCraftWorkSeconds(state, elapsed) {
+  return elapsed + dailySupplyCoverage(state, "crafting_speed", elapsed).weightedBonusSeconds;
+}
+function dailySupplyAdjustTimedCraftReward(state, reward3, realElapsed) {
+  const start = state.activity?.lastClaimAtMs ?? 0, active2 = activeDailySupplyBoosts(state).crafting_speed;
+  if (!active2) return { ...reward3, elapsedSeconds: realElapsed };
+  const queue = [...dailySupplyQueued(state).crafting_speed ?? []].sort((a, b) => b.bonus - a.bonus || b.remainingSeconds - a.remainingSeconds);
+  const workToReal = (rawWork) => {
+    let pending = Math.max(0, rawWork), real = 0;
+    for (const entry2 of [active2, ...queue]) {
+      const capacity = entry2.remainingSeconds * (1 + entry2.bonus);
+      if (pending <= capacity) return real + pending / (1 + entry2.bonus);
+      real += entry2.remainingSeconds;
+      pending -= capacity;
+    }
+    return real + pending;
+  };
+  const times = (reward3.craftingCompletedAtMs ?? []).map((when) => Math.round(start + workToReal((when - start) / 1e3) * 1e3));
+  const stillWorking = !!reward3.nextBrewRemaining || !!reward3.nextProcessingRemaining;
+  const end = times.length ? Math.max(0, (times[times.length - 1] - start) / 1e3) : 0;
+  return { ...reward3, elapsedSeconds: realElapsed, qualifyingActivitySeconds: stillWorking ? realElapsed : Math.min(realElapsed, end), craftingCompletedAtMs: times };
 }
 function activityModeEligible(type, mode) {
-  if (type === "combat_xp") return mode === "combat";
-  if (type === "gathering_yield") return mode === "gathering";
-  if (type === "crafting_output") return mode === "crafting";
+  if (type === "combat_xp" || type === "combat_speed") return mode === "combat";
+  if (type === "gathering_speed") return mode === "gathering";
+  if (type === "crafting_speed") return mode === "crafting";
   return mode === "gathering" || mode === "skill" || mode === "crafting" || mode === "training";
 }
-function bonusInteger(base, key, fraction, remainders) {
-  const extraFloat = Math.max(0, base) * DAILY_SUPPLY_BONUS * fraction + (remainders[key] ?? 0), extra = Math.floor(extraFloat + 1e-9);
+function bonusInteger(base, key, fraction, remainders, bonus) {
+  const extraFloat = Math.max(0, base) * bonus * fraction + (remainders[key] ?? 0), extra = Math.floor(extraFloat + 1e-9);
   remainders[key] = Math.max(0, extraFloat - extra);
   return extra;
 }
 function previewDailySupplyTimedReward(state, reward3, mode) {
-  const boosts = activeDailySupplyBoosts(state.character), updates = {};
+  const boosts = activeDailySupplyBoosts(state), updates = {};
   let next = { ...reward3, items: reward3.items.map((item) => ({ ...item })) };
   for (const type of DAILY_SUPPLY_BOOST_TYPES) {
     const active2 = boosts[type];
     if (!active2 || !activityModeEligible(type, mode) || reward3.elapsedSeconds <= 0) continue;
-    const hasReward = type === "combat_xp" ? reward3.xp > 0 : type === "skill_xp" ? reward3.xp > 0 || (reward3.faithXp ?? 0) > 0 || (reward3.classSkillXp ?? []).some((row) => row.xp > 0) : reward3.items.some((item) => item.quantity > 0);
+    const hasReward = type === "combat_xp" ? reward3.xp > 0 : type === "skill_xp" ? reward3.xp > 0 || (reward3.faithXp ?? 0) > 0 || (reward3.classSkillXp ?? []).some((row) => row.xp > 0) : true;
     if (!hasReward) continue;
     const qualifyingSeconds = Math.min(Math.max(0, reward3.elapsedSeconds), Math.max(0, reward3.qualifyingActivitySeconds ?? reward3.elapsedSeconds));
     if (qualifyingSeconds <= 0) continue;
-    const consumedSeconds = Math.min(active2.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), remainders = { ...active2.remainders ?? {} };
-    if (type === "combat_xp") next.xp += bonusInteger(reward3.xp, "xp:combat", fraction, remainders);
+    const coverage = dailySupplyCoverage(state, type, qualifyingSeconds), consumedSeconds = coverage.consumedSeconds, averageBonus = coverage.weightedBonusSeconds / Math.max(1, qualifyingSeconds), remainders = { ...active2.remainders ?? {} };
+    if (type === "combat_xp") next.xp += bonusInteger(reward3.xp, "xp:combat", 1, remainders, averageBonus);
     else if (type === "skill_xp") {
-      if (reward3.classSkillXp?.length) next.classSkillXp = reward3.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, remainders) }));
+      if (reward3.classSkillXp?.length) next.classSkillXp = reward3.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, "class:" + row.skillId, 1, remainders, averageBonus) }));
       else {
-        const extra = bonusInteger(reward3.xp, "xp:skill", fraction, remainders);
+        const extra = bonusInteger(reward3.xp, "xp:skill", 1, remainders, averageBonus);
         next.xp += extra;
         if (reward3.faithXp !== void 0) next.faithXp = (reward3.faithXp ?? 0) + extra;
       }
-    } else next.items = next.items.map((item) => ({ ...item, quantity: item.quantity + bonusInteger(item.quantity, `item:${item.itemId}`, fraction, remainders) }));
+    }
     updates[type] = { consumedSeconds, nextRemainders: remainders };
   }
   const first = DAILY_SUPPLY_BOOST_TYPES.map((type) => updates[type]).find(Boolean);
@@ -53406,33 +53579,40 @@ function previewDailySupplyTimedReward(state, reward3, mode) {
 }
 function commitDailySupplyTimedBoost(state, result) {
   if (!state.character) return state;
-  const active2 = activeDailySupplyBoosts(state.character);
-  const updates = result.updates ?? (state.character.activeDailySupplyBoost ? { [state.character.activeDailySupplyBoost.type]: result } : {});
-  const next = { ...active2 };
+  const canonical2 = migrateLegacyDailySupplies(state), current = track(canonical2), active2 = { ...current.active ?? {} }, queued = { ...current.queued ?? {} };
+  const updates = result.updates ?? {};
   let changed = false;
   for (const type of DAILY_SUPPLY_BOOST_TYPES) {
-    const current = active2[type], spent = updates[type];
-    if (!current || !spent || spent.consumedSeconds <= 0) continue;
+    const existing = active2[type], spent = updates[type];
+    if (!existing || !spent || spent.consumedSeconds <= 0) continue;
     changed = true;
-    const remainingSeconds = Math.max(0, current.remainingSeconds - spent.consumedSeconds);
-    if (remainingSeconds > 0) next[type] = { ...current, remainingSeconds, remainders: spent.nextRemainders };
-    else delete next[type];
+    let timeLeft = spent.consumedSeconds;
+    const rest = [existing, ...[...queued[type] ?? []].sort((a, b) => b.bonus - a.bonus || b.remainingSeconds - a.remainingSeconds)];
+    while (timeLeft > 0 && rest.length) {
+      const head = rest[0], used = Math.min(timeLeft, head.remainingSeconds);
+      timeLeft -= used;
+      const remainingSeconds = Math.max(0, head.remainingSeconds - used);
+      if (remainingSeconds > 0) {
+        rest[0] = { ...head, remainingSeconds, remainders: spent.nextRemainders };
+        break;
+      }
+      rest.shift();
+    }
+    const next = rest.shift();
+    if (next) active2[type] = next;
+    else delete active2[type];
+    if (rest.length) queued[type] = rest;
+    else delete queued[type];
   }
-  return changed ? { ...state, character: withActiveDailySupplyBoosts(state.character, next) } : state;
+  return changed ? { ...canonical2, account: { ...canonical2.account, dailySupplies: { ...current, active: active2, queued } } } : canonical2;
 }
 function applyDailySupplyCraft(state, input) {
   if (!state.character || input.seconds <= 0) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
-  const active2 = activeDailySupplyBoosts(state.character), updates = {};
-  let bonusQuantity = 0, bonusXp = 0;
-  for (const type of ["crafting_output", "skill_xp"]) {
-    const boost = active2[type];
-    if (!boost || type === "crafting_output" && !input.outputEligible) continue;
-    const consumedSeconds = Math.min(boost.remainingSeconds, input.seconds), fraction = consumedSeconds / input.seconds, remainders = { ...boost.remainders ?? {} };
-    if (type === "crafting_output") bonusQuantity = bonusInteger(input.outputQuantity, "craft:output", fraction, remainders);
-    else bonusXp = bonusInteger(input.xp, "craft:xp", fraction, remainders);
-    updates[type] = { consumedSeconds, nextRemainders: remainders };
-  }
-  return { state: commitDailySupplyTimedBoost(state, { consumedSeconds: 0, nextRemainders: {}, updates }), outputQuantity: input.outputQuantity + bonusQuantity, xp: input.xp + bonusXp, bonusQuantity, bonusXp };
+  const active2 = activeDailySupplyBoosts(state).skill_xp;
+  if (!active2) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
+  const coverage = dailySupplyCoverage(state, "skill_xp", input.seconds), consumedSeconds = coverage.consumedSeconds, remainders = { ...active2.remainders ?? {} };
+  const bonusXp = bonusInteger(input.xp, "craft:xp", 1, remainders, coverage.weightedBonusSeconds / input.seconds);
+  return { state: commitDailySupplyTimedBoost(state, { consumedSeconds: 0, nextRemainders: {}, updates: { skill_xp: { consumedSeconds, nextRemainders: remainders } } }), outputQuantity: input.outputQuantity, xp: input.xp + bonusXp, bonusQuantity: 0, bonusXp };
 }
 function dailySupplyActivityMode(activity) {
   if (!activity) return void 0;
@@ -54221,7 +54401,7 @@ function regionalHuntSeed(state, monsterId, index) {
   const activity = state.activity?.kind === "combat" && state.activity.targetId === monsterId ? state.activity : void 0;
   return `${state.character.id}:${activity?.startedAtMs ?? 0}:${monsterId}:${(activity?.sessionKills ?? 0) + index}`;
 }
-function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
+function combatRuntimeDetails(state, monsterId, nowMs = Date.now(), elapsedForSupply = 0) {
   const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId);
   const m = baseMonster, stats4 = effectiveStats(state), modifiers = characterPermanentMultipliers(state), companion = companionCombatContribution(state);
   const masteryBonuses = monsterMasteryCombatBonuses(state, monsterId);
@@ -54237,6 +54417,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const skillEffects = characterClassEffects(c);
   const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier * classCounter.outputMultiplier * (1 + skillEffects.potency) * (usesDamageDrivenHunts(m.zone) ? 1 : 1 + skillEffects.penetration);
   const combatCandy = eventCandyUtilityMultiplier(state, nowMs, "combat");
+  const supplyCombatSpeed = dailySupplySpeedMultiplier(state, "combat_speed", elapsedForSupply);
   const regionalGearTier = m.zone === "Silverbrook" ? m.level >= 20 ? 2 : 1 : m.zone === "Ironwood Forest" ? m.level >= 14 ? 2 : 1 : m.zone === "Old Mines" ? 2 : m.zone === "King's Road" ? 2 : m.zone === "Sunscar" ? m.level >= 42 ? 4 : 3 : m.zone === "Frostmarch" ? m.level >= 67 ? 6 : 5 : m.zone === "Ashlands" ? m.level >= 82 ? 7 : 6 : void 0;
   const expectedTier = regionalGearTier === void 0 ? regionalMonsterPressureBand(m.id) === "hard" ? m.level >= 22 ? 2 : m.level >= 10 ? 1 : 0 : 0 : m.zone === "Frostmarch" ? Math.min(MAX_RELEASED_EQUIPMENT_TIER, regionalGearTier) : regionalGearTier;
   const tierGap = regionalEquippedTierGap(state, expectedTier);
@@ -54244,7 +54425,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
   const progressionDamagePenalty = tierGap === 0 ? 1 : 1 + tierGap * 0.2;
   const gearAttritionMultiplier = 1 + tierGap * MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   const outgoingPreparation = c.preparation ? preparationEffects(c.preparation).outgoing : 1;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * masteryBonuses.damageMultiplier * (1 + effectGems.combat_speed) * setOutput * combatCandy * progressionSpeedPenalty * outgoingPreparation;
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * masteryBonuses.damageMultiplier * (1 + effectGems.combat_speed) * setOutput * combatCandy * supplyCombatSpeed * progressionSpeedPenalty * outgoingPreparation;
   const huntOptions = usesDamageDrivenHunts(m.zone) && !m.boss ? {
     zone: m.zone,
     monsterHp: m.hp,
@@ -54259,7 +54440,7 @@ function combatRuntimeDetails(state, monsterId, nowMs = Date.now()) {
     haste: stats4.haste,
     enemyHaste: secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
-    tempo: style.speedMultiplier * style.soloHuntTempoMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed),
+    tempo: style.speedMultiplier * style.soloHuntTempoMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * supplyCombatSpeed,
     environmentTimeMultiplier: environment?.actionTimeMultiplier ?? 1,
     seed: regionalHuntSeed(state, monsterId, 0)
   } : void 0;
@@ -54287,7 +54468,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
 }
 function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
   const c = state.character, activity = state.activity, startsAtMs = activity?.lastClaimAtMs ?? nowMs - elapsed * 1e3;
-  const unprepared = { ...state, character: { ...c, preparation: void 0 } }, plain = combatRuntimeDetails(unprepared, monsterId, startsAtMs), prepared = combatRuntimeDetails(state, monsterId, startsAtMs);
+  const unprepared = { ...state, character: { ...c, preparation: void 0 } }, plain = combatRuntimeDetails(unprepared, monsterId, startsAtMs, elapsed), prepared = combatRuntimeDetails(state, monsterId, startsAtMs, elapsed);
   const startCandy = eventCandyUtilityMultiplier(state, startsAtMs, "combat");
   const seedFor = (index) => regionalHuntSeed(state, monsterId, index);
   const dynamic = !!plain.huntOptions;
@@ -54465,7 +54646,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const pacing = gatheringPacing(state, g), mastery2 = professionMasteryMultipliers(g.id, state.account.professionMasteryByAction?.[g.id]), affinity = activeSkillAffinity(state, g.skillId);
     const herbLevel = state.skills.find((row) => row.skillId === "herbalism")?.level ?? 1, method = g.skillId === "herbalism" ? herbalismMethod(state.activity.herbalismMethodId ?? state.character.herbalismMethodId, herbLevel) : void 0;
     const specialtySpeed = g.skillId === "fishing" ? multipliers.fishingSpeedMultiplier : g.skillId === "herbalism" ? multipliers.herbalismSpeedMultiplier : 1;
-    const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (multipliers.gatheringSpeedMultiplier * specialtySpeed * mastery2.speed * affinity.speedMultiplier);
+    const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (multipliers.gatheringSpeedMultiplier * specialtySpeed * mastery2.speed * affinity.speedMultiplier * dailySupplySpeedMultiplier(state, "gathering_speed", elapsed));
     const elapsedMs = Math.min(offlineCapSeconds(state) * 1e3, Math.max(0, effectiveNowMs - state.activity.lastClaimAtMs));
     const timeline = combatTimeline({ startsAtMs: state.activity.lastClaimAtMs, elapsedSeconds: elapsedMs / 1e3, progressFraction: state.activity.progressFraction ?? 0, preparationEncounters: 0, cycleSeconds: effectiveActionSeconds, preparedCycleSeconds: effectiveActionSeconds, candy: eventCandyWindow(state, "skill") });
     const actions = timeline.encounters.length, candyActions = timeline.encounters.filter((row) => row.candy).length;
@@ -54659,12 +54840,12 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, settled.reward, "skill").reward;
   }
   if (state.activity?.kind === "alchemy") {
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewAlchemyReward(state, elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (state.activity?.kind === "processing") {
     const source = state.activity;
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -54832,7 +55013,7 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "alchemy") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewAlchemyReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
     const routed2 = routeRewards(state, reward4.items, nowMs);
     const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0))) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, brew: { ...brew, remainingBatches: reward4.nextBrewRemaining } } : null };
@@ -54845,7 +55026,7 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "processing") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = previewProcessingReward(state, elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, processing = state.activity.processing;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, processing = state.activity.processing;
     const routed2 = routeRewards(state, reward4.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
@@ -55566,7 +55747,7 @@ function gatheringBalanceProjection(state, activity, offlineHours) {
   const environment = environmentForZone(activity.zoneId), effect2 = environmentEffect(activity.skillId, environment), pacing = gatheringPacing(state, activity), permanent = characterPermanentMultipliers(state), mastery = professionMasteryMultipliers(activity.id, state.account.professionMasteryByAction?.[activity.id]), rank = professionMasteryRankProgress(activity.id, state.account.professionMasteryByAction?.[activity.id]);
   const herbLevel = state.skills.find((row) => row.skillId === "herbalism")?.level ?? 1, method = activity.skillId === "herbalism" ? herbalismMethod(state.character?.herbalismMethodId, herbLevel) : void 0;
   const specialtySpeed = activity.skillId === "fishing" ? permanent.fishingSpeedMultiplier : activity.skillId === "herbalism" ? permanent.herbalismSpeedMultiplier : 1;
-  const cycleSeconds = activity.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect2.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (permanent.gatheringSpeedMultiplier * specialtySpeed * mastery.speed * affinity.speedMultiplier), actionsPerHour = 3600 / Math.max(0.1, cycleSeconds);
+  const cycleSeconds = activity.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect2.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (permanent.gatheringSpeedMultiplier * dailySupplySpeedMultiplier(state, "gathering_speed", 0) * specialtySpeed * mastery.speed * affinity.speedMultiplier), actionsPerHour = 3600 / Math.max(0.1, cycleSeconds);
   const meanItems = (activity.min + activity.max) / 2;
   const runtimeItemsPerHour = actionsPerHour * meanItems * effect2.itemMultiplier * (method?.yieldMultiplier ?? 1) * permanent.gatheringYieldMultiplier * mastery.yield;
   const authoredMeanItemsPerHour = runtimeItemsPerHour;
@@ -56526,11 +56707,50 @@ function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
   });
   return [...ready, ...active2, ...scheduled];
 }
-function projectedEquipmentCraftingQueue(state, nowMs) {
-  return scheduleWaiting(equipmentCraftingQueue(state), equipmentCraftSlotBreakdown(state).capacity, nowMs);
+function advanceForgeSupply(state, nowMs) {
+  if (!Number.isSafeInteger(nowMs) || nowMs < 0) throw new Error("invalid_forge_clock");
+  let current = migrateLegacyDailySupplies(state);
+  const supply = current.account.dailySupplies, previous = supply.forgeSettledAtMs;
+  if (previous !== void 0 && nowMs < previous) return current;
+  const start = previous ?? nowMs, capacity = equipmentCraftSlotBreakdown(current).capacity;
+  let clock = start, queue = scheduleWaiting(equipmentCraftingQueue(current), capacity, clock);
+  let steps = 0;
+  const primaryCrafting = current.activity?.kind === "alchemy" || current.activity?.kind === "processing";
+  while (clock < nowMs) {
+    if (++steps > 1024) throw new Error("forge_progress_iteration_limit");
+    queue = scheduleWaiting(queue, capacity, clock);
+    const running = queue.filter((job) => isActive(job, clock));
+    if (!running.length) {
+      break;
+    }
+    const supplyBoost = primaryCrafting ? void 0 : activeDailySupplyBoosts(current).crafting_speed;
+    const bonus = supplyBoost?.bonus ?? 0, speed = 1 + bonus;
+    const timeUntilCompletion = Math.max(1, Math.ceil(Math.min(...running.map((job) => (job.completesAtMs - clock) / speed))));
+    const chargeMs = supplyBoost ? Math.max(1, Math.ceil(supplyBoost.remainingSeconds * 1e3)) : Infinity;
+    const delta = Math.min(nowMs - clock, timeUntilCompletion, chargeMs);
+    if (delta <= 0 || !Number.isFinite(delta)) throw new Error("invalid_forge_progress_delta");
+    const runningIds = new Set(running.map((job) => job.id));
+    const end = clock + delta;
+    queue = queue.map((job) => runningIds.has(job.id) && bonus > 0 ? { ...job, completesAtMs: Math.max(end, job.completesAtMs - delta * bonus) } : job);
+    clock = end;
+    if (supplyBoost) {
+      const seconds = delta / 1e3;
+      current = commitDailySupplyTimedBoost(current, {
+        consumedSeconds: seconds,
+        nextRemainders: {},
+        updates: { crafting_speed: { consumedSeconds: seconds, nextRemainders: supplyBoost.remainders ?? {} } }
+      });
+    }
+  }
+  queue = scheduleWaiting(queue, capacity, nowMs);
+  return { ...current, account: {
+    ...current.account,
+    equipmentCraftingQueue: queue,
+    dailySupplies: { ...current.account.dailySupplies, forgeSettledAtMs: nowMs }
+  } };
 }
 function withProjectedQueue(state, nowMs) {
-  return { ...state, account: { ...state.account, equipmentCraftingQueue: projectedEquipmentCraftingQueue(state, nowMs) } };
+  return advanceForgeSupply(state, nowMs);
 }
 function equipmentCraftDurationSeconds(state, recipeId) {
   const recipe2 = timedEquipmentRecipe(recipeId);
@@ -58765,7 +58985,7 @@ var fields = {
   arena_slot: ["index", "characterId"],
   goals_set: ["goals"],
   idle_rules_set: ["rules", "activeId"],
-  daily_supplies_claim: ["characterId"],
+  daily_supplies_claim: ["characterId", "choiceType"],
   daily_supplies_activate: ["type"],
   quest: ["id"],
   seasonal: ["period", "id", "choiceId"],
@@ -58894,6 +59114,7 @@ function executeGameCommand(previous, value, now, options = {}) {
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
   if (options.accountId) state.account.longTermAccountScopeId = options.accountId;
   state = migrateRetiredStoryRewards(state, now);
+  if (state.account.equipmentCraftingQueue?.length) state = advanceForgeSupply(state, now);
   const credit = (source, earned) => {
     if (!source || earned.kills <= 0) return;
     if (source.kind === "combat") contributions.push({ kind: "combat", contentId: source.targetId, units: earned.kills, startedAtMs: Math.max(source.lastClaimAtMs, now - earned.elapsedSeconds * 1e3) });
@@ -58914,7 +59135,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     settle();
     state = stopActivity(state, now);
   };
-  const settlementFreeCommand = command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
+  const settlementFreeCommand = command.type === "companion_training" || command.type === "companion_essence" || command.type === "queue_add" && a.handoffGoal === void 0 || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "monthly_quest_milestone" || command.type === "roster_delete" || command.type === "inventory_preference" || command.type === "inventory_seen_all" || command.type === "event_accept" || command.type.startsWith("qa_");
   const activityStartCommand = ["start", "explore", "class_training", "faith_practice", "alchemy_start", "processing_start"].includes(command.type);
   if (state.character && command.type !== "create" && !settlementFreeCommand) {
     if (activityStartCommand) settleAndStop();
@@ -59452,15 +59673,16 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "daily_supplies_claim": {
-      const result = claimDailySupplies(state, text(a, "characterId"), now);
+      const choice = a.choiceType === void 0 ? void 0 : oneOf(a.choiceType, DAILY_SUPPLY_BOOST_TYPES);
+      const result = claimDailySupplies(state, text(a, "characterId"), now, choice);
       state = result.state;
-      message = result.status.reward.kind === "premium" ? `Daily Supplies milestone: +${result.status.reward.amount} premium currency.` : `Daily Supplies: +2h ${dailySupplyBoostLabel(result.status.reward.type)} boost banked.`;
+      message = result.status.reward.kind === "milestone" ? "Supply Blessing banked account-wide." : "Daily Supplies boost banked account-wide.";
       break;
     }
     case "daily_supplies_activate": {
       const type = oneOf(a.type, DAILY_SUPPLY_BOOST_TYPES);
       state = activateDailySupplyBoost(state, type);
-      message = `+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;
+      message = dailySupplyBoostLabel(type) + " activated or queued account-wide.";
       break;
     }
     case "quest":

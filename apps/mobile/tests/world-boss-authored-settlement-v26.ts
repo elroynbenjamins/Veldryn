@@ -50,7 +50,7 @@ type Reservation={
  reservedAt:number;
  encounterDigest:string;generation:number;settlement?:WorldBossSettlementViewV19;
 };
-function fixture(){
+function fixture(opts:{inventoryTonic?:string;bankTonic?:string}={}){
  let now=SATURDAY+12*HOUR;
  let hp=1000000;
  let entropyCount=0,rosterReads=0,replayWrites=0,settleCalls=0;
@@ -61,6 +61,10 @@ function fixture(){
   const serverState=regionalCombatFixture({...T2,level:25,tier:'T2'},
    'prepared',classes[i]);
   serverState.character={...serverState.character!,id:characterId};
+  if(i===0&&opts.inventoryTonic)serverState.inventory={...serverState.inventory,
+   stacks:[...serverState.inventory.stacks,{itemId:opts.inventoryTonic,quantity:2}]};
+  if(i===1&&opts.bankTonic)serverState.bank={...serverState.bank,
+   stacks:[...serverState.bank.stacks,{itemId:opts.bankTonic,quantity:1}]};
   return {ownerAccountId:ACCOUNT,characterId,gameVersion:2,
    updatedAtUtcMs:SATURDAY-2*HOUR,serverState};
  });
@@ -311,6 +315,52 @@ async function main(){
  },f.deps);
  assert.equal(expired.status,'voided');
  assert.equal(f.metrics().settleCalls,2);
+
+ // V58: one buff tonic per account raid, verified against the party's own saves.
+ const replayOf=(g:ReturnType<typeof fixture>)=>{
+  const [content]=[...g.artifacts.values()];
+  return JSON.parse(content) as {tonicItemId:string|null;replay:{tonicItemId:string|null;rawBossHpDamage:number;
+   events:{type:string;abilityId?:string}[]}};
+ };
+ const plain=fixture();
+ await reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:selection('WB58_PLAIN')},plain.deps);
+ await settleTrustedWorldBossAccountV26({eventId:EVENT,accountId:ACCOUNT,requestId:'WB58_PLAIN'},plain.deps);
+ const baseline=replayOf(plain);
+ assert.equal(baseline.tonicItemId,null);assert.equal(baseline.replay.tonicItemId,null);
+ const vigor=fixture({inventoryTonic:'OATH_VIGOR_TONIC'});
+ await fail(()=>reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:{...selection('WB58_NOT_OWNED'),tonicItemId:'OATH_WARD_TONIC'}},vigor.deps),'tonic_not_owned');
+ await fail(()=>reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:{...selection('WB58_FAKE'),tonicItemId:'SUPER_TONIC'}},vigor.deps),'invalid_selection');
+ await reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:{...selection('WB58_VIGOR'),tonicItemId:'OATH_VIGOR_TONIC'}},vigor.deps);
+ const frozenTonic=vigor.history.get('WB58_VIGOR')!.frozen.tonic!;
+ assert.deepEqual(frozenTonic.consume,{itemId:'OATH_VIGOR_TONIC',characterId:CHARS[0],
+  location:'inventory',quantity:1,expectedGameVersion:2},'Reservation must name the exact stack to consume');
+ await settleTrustedWorldBossAccountV26({eventId:EVENT,accountId:ACCOUNT,requestId:'WB58_VIGOR'},vigor.deps);
+ const boosted=replayOf(vigor);
+ assert.equal(boosted.replay.tonicItemId,'OATH_VIGOR_TONIC');
+ assert.ok(boosted.replay.rawBossHpDamage>baseline.replay.rawBossHpDamage,
+  'A damage tonic must raise real boss damage: '+boosted.replay.rawBossHpDamage+' vs '+baseline.replay.rawBossHpDamage);
+ // Bank fallback and a real, ledger-visible Ward mitigation event.
+ const ward=fixture({bankTonic:'OATH_WARD_TONIC'});
+ await reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:{...selection('WB58_WARD'),tonicItemId:'OATH_WARD_TONIC'}},ward.deps);
+ assert.equal(ward.history.get('WB58_WARD')!.frozen.tonic!.consume.location,'bank');
+ await settleTrustedWorldBossAccountV26({eventId:EVENT,accountId:ACCOUNT,requestId:'WB58_WARD'},ward.deps);
+ assert.ok(replayOf(ward).replay.events.some(e=>e.type==='mitigate'&&e.abilityId==='TONIC_WARD'),
+  'Ward tonic savings must appear as real replay events');
+ // A tampered frozen tonic is refused at settlement and the attempt stays reserved.
+ const tampered=fixture({inventoryTonic:'VIGOR_TONIC'});
+ await reserveAuthenticatedWorldBossAccountV26({token:'auth-token-verified',
+  selection:{...selection('WB58_TAMPER'),tonicItemId:'VIGOR_TONIC'}},tampered.deps);
+ tampered.tamper('WB58_TAMPER',x=>{(x.frozen.tonic as {itemId:string}).itemId='OATH_VIGOR_TONIC';});
+ await fail(()=>settleTrustedWorldBossAccountV26({eventId:EVENT,accountId:ACCOUNT,requestId:'WB58_TAMPER'},
+  tampered.deps),'corrupt_frozen_tonic');
+ assert.equal(tampered.history.get('WB58_TAMPER')?.record.status,'reserved');
+ console.log('WORLD_BOSS_V58_TONIC='+JSON.stringify({ownedOnly:true,inventoryThenBank:true,
+  damageRaised:true,wardEvents:true,tamperRefused:true}));
  console.log('WORLD_BOSS_V26_HIDDEN_ACCOUNT_SETTLEMENT='+JSON.stringify({
   charactersFrozen:2,authored14RoundEngine:true,
   exactLocalGuardLedger:true,oldEngineRejected:true,

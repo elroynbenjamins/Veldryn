@@ -35,6 +35,15 @@
       ],
       "./plugins/with-veldryn-play-games",
       "./plugins/with-veldryn-game-category",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
       "expo-secure-store",
       "expo-status-bar"
     ]

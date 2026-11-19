@@ -18,6 +18,8 @@ import {freezeWorldBossAccountRosterV22,type WorldBossAccountRosterV22} from
 import {simulateWorldBossAuthoredAccountEncounterV25,WORLD_BOSS_V25_ENGINE_VERSION} from
  '../src/server/combat/world-boss-account-encounter-v25';
 import {worldBossScheduleAtV22} from '../src/server/combat/world-boss-weekend-v22';
+import {freezeWorldBossTonicV58,verifyFrozenWorldBossTonicV58,isWorldBossTonicIdV58,
+ type WorldBossFrozenTonicV58} from './world-boss-tonic-v58';
 import type {WorldBossOrder,WorldBossId,WorldBossPhase} from
  '../src/server/combat/world-boss-round-prototype';
 import type {WorldBossOwnerStateV19,WorldBossLeaseV19,
@@ -80,6 +82,8 @@ export interface WorldBossDepsV26{
 }
 export interface WorldBossSelectionV26{
  eventId:string;requestId:string;order:WorldBossOrder;
+ /** V58: optional buff tonic for the whole owned party; ownership is verified server-side. */
+ tonicItemId?:string;
 }
 export interface WorldBossReceiptV26{
  status:'reserved'|'committed'|'voided';ordinal:number;repeated:boolean;
@@ -95,6 +99,9 @@ export interface FrozenAccountPacketV26{
  characters:{characterId:string}[];
  warCamp:WorldBossFrozenRulesV20['warCamp'];
  encounterProfiles:WorldBossFrozenRulesV20['encounterProfiles'];
+ /** V58: frozen tonic plus the exact stack the reservation transaction must consume.
+  * Absent on packets reserved before V58, which therefore fight without a tonic. */
+ tonic?:WorldBossFrozenTonicV58|null;
 }
 function validDeps(s:WorldBossDepsV26){
  if(!s||!s.db||!s.rulesSource||!s.replayStore||
@@ -108,9 +115,10 @@ function validDeps(s:WorldBossDepsV26){
 }
 function selectionValid(selection:WorldBossSelectionV26){
  if(!selection||Object.keys(selection).some(k=>
-  !['eventId','requestId','order'].includes(k))||
+  !['eventId','requestId','order','tonicItemId'].includes(k))||
   !uuid(selection.eventId)||!REQUEST.test(selection.requestId)||
-  !ORDERS.includes(selection.order))
+  !ORDERS.includes(selection.order)||
+  (selection.tonicItemId!==undefined&&!isWorldBossTonicIdV58(selection.tonicItemId)))
   throw Error('world_boss_v26_invalid_selection');
 }
 function receiptValid(value:WorldBossReceiptV26):WorldBossReceiptV26{
@@ -149,6 +157,7 @@ export async function reserveAuthenticatedWorldBossAccountV26(input:{
  const prior=await s.db.readAttempt(eventId,accountId,requestId);
  if(prior){
   if(prior.order!==order)throw Error('world_boss_v26_request_reused');
+  // A retry must not swap the tonic either; the original frozen choice stands.
   return receiptValid({...prior,repeated:true});
  }
  const event=await s.db.loadEvent(eventId);
@@ -197,6 +206,11 @@ export async function reserveAuthenticatedWorldBossAccountV26(input:{
  const frozen=await loadWorldBossFrozenRulesV20({
   source:s.rulesSource,eventId,boss:event.boss,initiatorBracket:bracket,
  });
+ // V58: verify the tonic against the frozen party's own server saves, in roster order.
+ const tonic=input.selection.tonicItemId===undefined?null:freezeWorldBossTonicV58({
+  itemId:input.selection.tonicItemId,
+  states:roster.characters.map(c=>byCharacter.get(c.characterId)!),
+ });
  const seed=s.randomSeed();
  if(typeof seed!=='string'||!SEED.test(seed))
   throw Error('world_boss_v26_entropy_required');
@@ -206,6 +220,7 @@ export async function reserveAuthenticatedWorldBossAccountV26(input:{
   rosterDigest:roster.rosterDigest,serializedRoster:JSON.stringify(roster),
   characters:roster.characters.map(c=>({characterId:c.characterId})),
   warCamp:frozen.warCamp,encounterProfiles:frozen.encounterProfiles,
+  tonic,
  };
  // REPAIRED review-only V22 SQL permits the V26 packet+engine pair and
  // checks the 48h weekend again while holding the event row lock.
@@ -265,16 +280,19 @@ export async function settleTrustedWorldBossAccountV26(job:{
   eventId:job.eventId,boss:event.boss,phase:lease.phase!,
   warCampDigest:lease.warCampDigest!,encounterProfileDigest:lease.encounterDigest!,
  });
+ const tonic=verifyFrozenWorldBossTonicV58(p.tonic,roster.characters.map(c=>c.characterId));
  const replay=simulateWorldBossAuthoredAccountEncounterV25({
   eventId:job.eventId,requestId:job.requestId,
   roster,order:lease.order!,boss:event.boss,phase:lease.phase!,
   serverSeed:lease.seed,warCamp:rules.warCamp,encounter:rules.encounterProfile,
+  tonicItemId:tonic?.itemId??null,
  });
  if(replay.engineVersion!==WORLD_BOSS_V25_ENGINE_VERSION||
   replay.schema!=='world-boss-v25-authored-account-rounds'||
   replay.accountId!==job.accountId||replay.rosterDigest!==lease.digest||
   replay.encounterDigest!==lease.encounterDigest||
   replay.warCampDigest!==lease.warCampDigest||
+  replay.tonicItemId!==(tonic?.itemId??null)||
   !Number.isSafeInteger(replay.proposedWorldHpDamage)||
   replay.proposedWorldHpDamage<0||replay.proposedWorldHpDamage>1e12||
   !Number.isFinite(replay.localGuardDamage)||
@@ -292,6 +310,7 @@ export async function settleTrustedWorldBossAccountV26(job:{
   eventId:job.eventId,accountId:job.accountId,requestId:job.requestId,
   seed:lease.seed,rosterDigest:lease.digest,phase:lease.phase,
   warCampDigest:lease.warCampDigest,encounterDigest:lease.encounterDigest,
+  tonicItemId:tonic?.itemId??null,
   replay,
  });
  const replayDigest=sha(content);

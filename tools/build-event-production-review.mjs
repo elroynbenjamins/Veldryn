@@ -5,7 +5,6 @@ import sharp from 'file:///C:/Users/elroy/.cache/codex-runtimes/codex-primary-ru
 const workspace='C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn';
 const production=path.join(workspace,'apps/mobile/art-review/event-sets-v1/production');
 const equipment=path.join(workspace,'apps/mobile/assets/equipment-ui');
-const characters=path.join(workspace,'apps/mobile/assets/character-runtime/events-v1');
 const manifest=JSON.parse(await fs.readFile(path.join(production,'manifest.json'),'utf8'));
 
 async function labelSvg(label,width,height){
@@ -24,20 +23,5 @@ async function buildAtlasSheet(){
   await sharp({create:{width:cellW*cols,height:(artH+labelH)*rows,channels:4,background:'#15110d'}}).composite(layers).png().toFile(path.join(production,'equipment-review-contact-sheet.png'));
 }
 
-async function buildSkinSheet(){
-  const cellW=300,artH=450,labelH=58,cols=4,rows=Math.ceil(manifest.length/2);
-  const layers=[];
-  for(let i=0;i<manifest.length;i++){
-    const entry=manifest[i],row=Math.floor(i/2),pair=i%2;
-    for(let gender=0;gender<2;gender++){
-      const col=pair*2+gender,left=col*cellW,top=row*(artH+labelH);
-      const filename=gender===0?'male-front.png':'female-front.png';
-      const art=await sharp(path.join(characters,entry.id,filename)).resize(cellW,artH,{fit:'contain',kernel:sharp.kernel.nearest,background:'#080604'}).png().toBuffer();
-      layers.push({input:art,left,top},{input:await labelSvg(`${entry.name} — ${gender===0?'Male':'Female'}`,cellW,labelH),left,top:top+artH});
-    }
-  }
-  await sharp({create:{width:cellW*cols,height:(artH+labelH)*rows,channels:4,background:'#080604'}}).composite(layers).png().toFile(path.join(production,'skins-review-contact-sheet.png'));
-}
-
-await Promise.all([buildAtlasSheet(),buildSkinSheet()]);
+await buildAtlasSheet();
 console.log(JSON.stringify({sets:manifest.length,production},null,2));

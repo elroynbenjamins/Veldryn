@@ -1116,6 +1116,15 @@ export const companionTranslationRows={
  "Ascension":["Aufstieg","Ascensión","Ascensie","Ascensione","Ascension"],
  "or lower":["oder niedriger","o inferior","of lager","o inferiore","ou inférieur"],
  "Expedition started":["Expedition gestartet","Expedición iniciada","Expeditie gestart","Spedizione avviata","Expédition lancée"],
+ "Reward timer started":["Belohnungstimer gestartet", "Temporizador de recompensa iniciado", "Beloningstimer gestart", "Timer della ricompensa avviato", "Minuteur de récompense lancé"],
+ "Rewards collected":["Belohnungen erhalten", "Recompensas obtenidas", "Beloningen ontvangen", "Ricompense ottenute", "Récompenses obtenues"],
+ "Your reward timer is running. Return when it is ready to collect the rewards.":["Dein Belohnungstimer läuft. Komm zurück, sobald er bereit ist, um die Belohnungen abzuholen.", "Tu temporizador de recompensa está en marcha. Vuelve cuando esté listo para recoger las recompensas.", "Je beloningstimer loopt. Kom terug wanneer hij klaar is om de beloningen op te halen.", "Il timer della ricompensa è in corso. Torna quando è pronto per riscuotere le ricompense.", "Ton minuteur de récompense est en cours. Reviens quand il est prêt pour récupérer les récompenses."],
+ "Confirmed rewards":["Bestätigte Belohnungen", "Recompensas confirmadas", "Bevestigde beloningen", "Ricompense confermate", "Récompenses confirmées"],
+ "No eligible companion received XP this claim.":["Kein berechtigter Gefährte hat bei dieser Abholung EP erhalten.", "Ningún compañero elegible recibió EXP en esta reclamación.", "Geen geschikte metgezel heeft bij deze claim XP ontvangen.", "Nessun compagno idoneo ha ricevuto PE con questo riscatto.", "Aucun compagnon éligible n’a reçu d’EXP lors de cette récupération."],
+ "Companion Essence":["Gefährtenessenz", "Esencia de compañero", "Metgezel-essentie", "Essenza del compagno", "Essence de compagnon"],
+ "Stored XP: {value0}":["Gespeicherte EP: {value0}", "EXP guardada: {value0}", "Opgeslagen XP: {value0}", "PE accumulati: {value0}", "EXP stockée : {value0}"],
+ "Applied automatically after ascension":["Wird nach dem Aufstieg automatisch angewendet", "Se aplica automáticamente tras la ascensión", "Wordt na ascensie automatisch toegepast", "Applicati automaticamente dopo l'ascensione", "Appliquée automatiquement après l’ascension"],
+ "+{value0} XP":["+{value0} EP", "+{value0} EXP", "+{value0} XP", "+{value0} PE", "+{value0} EXP"],
  "Companion XP":["Gefährten-EP","EXP de compañero","Metgezel-XP","PE compagno","EXP compagnon"],
  "Bond XP":["Bindungs-EP","EXP de vínculo","Band-XP","PE legame","EXP de lien"],
  "Send your available companions on timed missions.":["Schicke verfügbare Gefährten auf zeitlich begrenzte Missionen.","Envía compañeros disponibles a misiones temporizadas.","Stuur beschikbare metgezellen op missies met een looptijd.","Invia i compagni disponibili in missioni a tempo.","Envoyez vos compagnons disponibles en mission."],
@@ -1165,6 +1174,24 @@ for(const key of Object.keys(companionTranslationRows) as CompanionMessageKey[])
  companionCatalogs.ru[key]=key;
  companionCatalogs.tr[key]=key;
 }
+companionCatalogs.ru["Reward timer started"]="Таймер награды запущен";
+companionCatalogs.tr["Reward timer started"]="Ödül sayacı başladı";
+companionCatalogs.ru["Rewards collected"]="Награды получены";
+companionCatalogs.tr["Rewards collected"]="Ödüller alındı";
+companionCatalogs.ru["Your reward timer is running. Return when it is ready to collect the rewards."]="Таймер награды запущен. Вернитесь, когда он завершится, чтобы забрать награды.";
+companionCatalogs.tr["Your reward timer is running. Return when it is ready to collect the rewards."]="Ödül sayacın çalışıyor. Hazır olduğunda ödülleri almak için geri dön.";
+companionCatalogs.ru["Confirmed rewards"]="Подтверждённые награды";
+companionCatalogs.tr["Confirmed rewards"]="Onaylanan ödüller";
+companionCatalogs.ru["No eligible companion received XP this claim."]="Ни один подходящий спутник не получил опыт за эту награду.";
+companionCatalogs.tr["No eligible companion received XP this claim."]="Bu alımda uygun hiçbir yoldaş XP almadı.";
+companionCatalogs.ru["Companion Essence"]="Эссенция спутника";
+companionCatalogs.tr["Companion Essence"]="Yoldaş Özü";
+companionCatalogs.ru["Stored XP: {value0}"]="Накопленный опыт: {value0}";
+companionCatalogs.tr["Stored XP: {value0}"]="Biriken XP: {value0}";
+companionCatalogs.ru["Applied automatically after ascension"]="Применяется автоматически после вознесения";
+companionCatalogs.tr["Applied automatically after ascension"]="Yükselişten sonra otomatik uygulanır";
+companionCatalogs.ru["+{value0} XP"]="+{value0} опыта";
+companionCatalogs.tr["+{value0} XP"]="+{value0} XP";
 companionCatalogs.ru["COMPANION QUARTERS"]="ПОКОИ СПУТНИКОВ";
 companionCatalogs.tr["COMPANION QUARTERS"]="YOLDAŞ ODALARI";
 companionCatalogs.ru["Housing improves training and companion stats. Only Ascension and rarity limit levels."]="Покои улучшают тренировку и характеристики спутника. Предел уровня зависит только от Вознесения и редкости.";

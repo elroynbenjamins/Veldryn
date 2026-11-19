@@ -14,7 +14,7 @@ import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShop
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
-import {dungeonShopPetOfferArt} from '../../theme/dungeon-shop-pet-art';
+import {dungeonShopPetOfferArt,dungeonShopPetOfferPortraitArt} from '../../theme/dungeon-shop-pet-art';
 import {dungeonShopCosmeticOfferArt} from '../../theme/dungeon-shop-cosmetic-art';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
@@ -126,7 +126,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const localizedMarks=formatLocalizedNumber(language,item.marks);
    const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
    const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
-   const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
+   // Shop rows use 256px art; expanded pet details always prefer the 512px portrait.
+   const previewArt=dungeonShopPetOfferPortraitArt(item.id)??dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
@@ -143,7 +144,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
     {expanded?<View style={s.detail}>
      {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
       ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
-      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:item.category==='pet'?s.petPortraitPreviewImage:s.petPreviewImage}/>
      }</View>:null}
      {bonusDetails?<View style={s.bonusBlock}>
       <Text style={s.bonusName}>{bonusDetails.stat}</Text>
@@ -188,7 +189,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  bonusCaption:{...typography.caption,color:C.muted,lineHeight:16},
  previewNote:{...typography.caption,color:C.muted,lineHeight:18},
  cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
- petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
+ petPreviewImage:{width:96,height:96},petPortraitPreviewImage:{width:160,height:160,maxWidth:'100%'},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

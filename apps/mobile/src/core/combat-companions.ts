@@ -112,6 +112,12 @@ export function companionCurrentLevelCap(def:CompanionDefinition,progress:OwnedC
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel,COMPANION_STAGE_CAPS[def.rarity][Math.max(0,Math.min(3,progress.ascensionTier))]);
 }
 export function companionMaxLevel(def:CompanionDefinition){return COMPANION_RARITY_CONFIG[def.rarity].maxLevel;}
+/** Maximum XP this companion could still earn before its absolute rarity cap. */
+export function companionRemainingLifetimeXp(def:CompanionDefinition,level:number,xp=0){
+  let remaining=0;for(let current=Math.max(1,level);current<companionMaxLevel(def);current++)remaining+=companionXpToNextLevel(def.rarity,current);
+  return Math.max(0,remaining-Math.max(0,Math.floor(xp)));
+}
+
 export function requiredAscensionTierForLevel(def:CompanionDefinition,level:number):0|1|2|3{
   const caps=COMPANION_STAGE_CAPS[def.rarity];
   for(let tier=0;tier<4;tier++)if(level<=caps[tier])return tier as 0|1|2|3;
@@ -139,6 +145,7 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
   return {
     level:safeLevel,
     xp:safeLevel>=Math.min(cap,max)?0:Math.min(int(value?.xp??fallback.xp),Math.max(0,nextXp-1)),
+    bankedXp:safeLevel>=max?0:Math.min(int(value?.bankedXp??fallback.bankedXp),companionRemainingLifetimeXp(def,safeLevel)),
     ascensionTier,
     bondLevel,
     bondXp:normalizedBondXp,
@@ -384,7 +391,7 @@ export function ascendCombatCompanion<T extends CombatCompanionStateHost>(state:
   // All validation happens before the first deduction so failures are atomic.
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence,bondstones:(clean.account.bondstones??0)-cost.bondstones}} as T;
   clean=consumeMaterial(clean,cost.materialId,cost.materialQuantity??0);
-  return setProgress(clean,id,{...p,ascensionTier:tier});
+  return setProgress(clean,id,applyCompanionXp({...p,ascensionTier:tier,bankedXp:0},def,p.bankedXp??0));
 }
 export function masterPrestigeCompanion<T extends CombatCompanionStateHost>(state:T,id:string):T{
   let clean=sanitizeCombatCompanionState(state);if(!clean.character)throw new Error('Create a character first.');const def=combatCompanionDef(id);if(!def||def.rarity!=='prestige')throw new Error('Prestige Mastery is only available to Prestige companions.');
@@ -394,11 +401,14 @@ export function masterPrestigeCompanion<T extends CombatCompanionStateHost>(stat
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence,bondstones:(clean.account.bondstones??0)-cost.bondstones}} as T;clean=consumeMaterial(clean,cost.materialId,cost.materialQuantity??0);return setProgress(clean,id,{...p,mastered:true});
 }
 
-/** The former fourth argument is accepted for old callers but cannot impose a Housing cap. */
+/** Training XP never vanishes at an ascension gate. Bank only up to the lifetime rarity cap. */
 export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number,_deprecatedHousingCap?:number):OwnedCompanionProgress{
-   let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
-   while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;}
-  if(p.level>=cap||p.level>=max)p.xp=0;return p;
+  const max=companionMaxLevel(def),cap=companionCurrentLevelCap(def,progress);
+  let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount));
+  while(remaining>0&&p.level<cap&&p.level<max){const need=Math.max(1,companionXpToNextLevel(def.rarity,p.level)-p.xp);if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;}
+  if(p.level>=max)return {...p,xp:0,bankedXp:0};
+  if(p.level>=cap){const capacity=companionRemainingLifetimeXp(def,p.level);return {...p,xp:0,bankedXp:Math.min(capacity,Math.max(0,p.bankedXp??0)+remaining)};}
+  return p;
 }
 const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
 function bondThreshold(level:number){return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,Math.min(9,level-1))]??Number.MAX_SAFE_INTEGER;}

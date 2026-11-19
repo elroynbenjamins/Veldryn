@@ -18,22 +18,27 @@ const fresh=()=>{
  ]}} as GameState;
 };
 const expected=[
- ['IRONWOOD_STEW',2,3,'gathering_speed'],
- ['GLASSFIN_FEAST',3,4,'gathering_speed'],
- ['FROSTED_ICEFIN',3,4,'crafting_speed'],
- ['CHARRED_EMBERFIN',4,4,'combat_xp'],
- ['ASHLANDS_EMBER_STEW',5,4,'noncombat_speed'],
+ ['IRONWOOD_STEW',4,3,'gathering_speed'],
+ ['GLASSFIN_FEAST',6,4,'gathering_speed'],
+ ['FROSTED_ICEFIN',6,4,'crafting_speed'],
+ ['CHARRED_EMBERFIN',8,4,'combat_xp'],
+ ['ASHLANDS_EMBER_STEW',10,4,'noncombat_speed'],
 ] as const;
 ok(MEAL_BONUSES.length===5,'exactly five special meal buffs');
 for(const [id,percent,hours,kind] of expected){
  const def=mealBonusDef(id);
- ok(def?.percent===percent&&def.durationHours===hours&&def.kind===kind,id+' must keep doubled approved rate and duration');
+ if(!def)throw new Error('Missing special meal definition: '+id);
+ ok(def.percent===percent&&def.durationHours===hours&&def.kind===kind,id+' must keep doubled approved rate and duration');
  const before=fresh(),after=executeGameCommand(before,{type:'meal_bonus',args:{id}},now).state,stats=characterPermanentMultipliers(after);
  ok(after.inventory.stacks.find(row=>row.itemId===id)?.quantity===3,'explicit meal consumes one inventory item');
  ok(after.character?.activeMealBuff?.itemId===id&&after.character.activeMealBuff.remainingSeconds===hours*3600,'meal grants exact duration');
  ok((kind==='gathering_speed'||kind==='noncombat_speed')?stats.gatheringSpeedMultiplier>characterPermanentMultipliers(before).gatheringSpeedMultiplier:true,id+' gathering benefit');
  ok((kind==='crafting_speed'||kind==='noncombat_speed')?stats.craftingSpeedMultiplier>characterPermanentMultipliers(before).craftingSpeedMultiplier:true,id+' crafting benefit');
  ok(kind==='combat_xp'?stats.characterXpMultiplier>characterPermanentMultipliers(before).characterXpMultiplier:true,id+' combat XP benefit');
+ const baseline=characterPermanentMultipliers(before),epsilon=.00001;
+ const multiplier=kind==='gathering_speed'?stats.gatheringSpeedMultiplier/baseline.gatheringSpeedMultiplier:kind==='crafting_speed'?stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier:kind==='combat_xp'?stats.characterXpMultiplier/baseline.characterXpMultiplier:stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier;
+ ok(Math.abs(multiplier-(1+percent/100))<epsilon,id+' must apply exactly its doubled rate, without changing other bonus sources');
+ ok(def.label.includes('+'+percent+'%'),id+' player-facing label must match the new rate');
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
@@ -90,7 +95,7 @@ const boostedTraining=executeGameCommand(executeGameCommand(fresh(),{type:'meal_
 const baseline59=claimActivity(noBuffTraining,now+59000);
 const boosted59=claimActivity(boostedTraining,now+59000);
 ok((baseline59.reward.trainingActions??0)===0,'baseline class drills need 60 seconds');
-ok((boosted59.reward.trainingActions??0)>=1,'Ashlands meal increases class drill speed by 5%');
+ok((boosted59.reward.trainingActions??0)>=1,'Ashlands meal increases class drill speed by 10%');
 const shortTraining={...boostedTraining,character:{...boostedTraining.character!,activeMealBuff:{itemId:'ASHLANDS_EMBER_STEW',remainingSeconds:60}}} as GameState;
 const drillOne=claimActivity(shortTraining,now+120000);
 const drillPart=claimActivity(shortTraining,now+60000);

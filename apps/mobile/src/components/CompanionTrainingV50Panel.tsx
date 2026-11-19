@@ -75,7 +75,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const costBreakdown=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number})=>cost?<CompanionCostBreakdown rows={[{resourceId:"gold",label:t("Gold"),owned:economy.gold,required:cost.gold},{resourceId:"essence",label:t("Essence"),owned:economy.companionEssence,required:cost.companionEssence},{resourceId:"bondstones",label:t("Bondstones"),owned:economy.bondstones,required:cost.bondstones??0},...(cost.materialId?[{resourceId:cost.materialId,label:material(cost.materialId),owned:economy.materials[cost.materialId]??0,required:cost.materialQuantity??0}]:[])]}/>:null;
  const selectedDef=model?.def,rarity=selectedDef?COMPANION_RARITY_CONFIG[selectedDef.rarity]:undefined;
  const xpTarget=progress&&selectedDef&&progress.level<model!.maxLevel?companionXpToNextLevel(selectedDef.rarity,progress.level):0;
- const xpPct=progress&&xpTarget?Math.min(100,progress.xp/xpTarget*100):progress?100:0;
+ const xpPct=ascentBlocked?100:progress&&xpTarget?Math.min(100,progress.xp/xpTarget*100):progress?100:0;
  const ascension=companionAscensionReadiness(state,selection);
  const ascensionResourceId=model?.nextAscensionCost?.materialId??selectedDef?.ascensionMaterialId;
  const sources=ascensionResourceId?companionMaterialSourceTargets(ascensionResourceId):[],roadmap=selectedDef?companionProgressionRoadmap(state,selectedDef.id):undefined;
@@ -91,7 +91,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  return <View style={s.root}>
   {showPicker?<View><Text style={s.heading}>{t('Training Grounds')}</Text><Text style={s.copy}>{t('Spend Gold and Essence to level up.')}</Text></View>:null}
   {model?<View style={s.hero}><View style={s.heroHead}>{companionArtSource(model.def.id)?<Image accessibilityLabel={model.def.name} source={companionArtSource(model.def.id)} resizeMode="contain" style={{width:76,height:76}}/>:null}<View style={s.flex}><Text style={s.eyebrow}>{t('COMPANION TRAINING')}</Text><Text style={s.heroName}>{model.def.name}</Text><Text style={s.copy}>{companionContent(language,rarity?.label??model.def.rarity)} · {label(model.def.role)}</Text></View></View>
-    {progress?<><View style={s.progressHeading}><Text style={s.progressText}>{t("Companion XP {value0}{value1}",{value0:progress.xp.toLocaleString(),value1:xpTarget?' / '+xpTarget.toLocaleString():''})}</Text><Text style={s.progressText}>{t("Lv. {value0}",{value0:progress.level})}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.max(2,xpPct)+'%') as any}]}/></View></>:<Text style={s.lockBadge}>{t("LOCKED")}</Text>}
+    {progress?<><View style={s.progressHeading}><Text style={s.progressText}>{ascentBlocked?t("Ascension required"):t("Companion XP {value0}{value1}",{value0:progress.xp.toLocaleString(),value1:xpTarget?' / '+xpTarget.toLocaleString():''})}</Text><Text style={s.progressText}>{t("Lv. {value0}",{value0:progress.level})}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.max(2,xpPct)+'%') as any}]}/></View>{(progress.bankedXp??0)>0?<Text style={s.ready}>{t('Stored XP: {value0}',{value0:amount(progress.bankedXp??0)})}{ascentBlocked?' · '+t('Applied automatically after ascension'):''}</Text>:null}</>:<Text style={s.lockBadge}>{t("LOCKED")}</Text>}
   </View>:null}
   {showPicker?<GameButton compact tone="secondary" title={t('Change companion')} disabled={busy} onPress={()=>setTab('Roster')}/>:null}
   {model?.owned&&progress?<CompanionBondProgressPanel

@@ -142,6 +142,13 @@ export function createPartyEventRewardStoreV63(
     const partyId=locked.rows[0]!.party_id;
     let evidence:ReturnType<typeof deriveVerifiedPartyChestEvidenceV61>|null=null;
     let proof:PrivatePartyRewardProofV61|null=null;
+    let stagedReceipt:PartyEventRewardReceiptV60|null=null;
+    let sigilsApplied=false,resourcesApplied=false,equipmentApplied=false;
+    const requireStagedSource=(sourceKey:string)=>{
+     if(!stagedReceipt||stagedReceipt.sourceKey!==sourceKey)
+      throw Error('party_event_v63_grant_without_receipt');
+     return stagedReceipt;
+    };
     const requireEvidence=()=>{
      if(!evidence||!proof)throw Error('party_event_v63_proof_not_loaded');
      return {evidence,proof};
@@ -216,6 +223,7 @@ export function createPartyEventRewardStoreV63(
       const {evidence}=requireEvidence();
       checkedReceipt(receipt,accountId,weekStartMs,evidence.family,
        evidence.eligibleGearTier);
+      if(stagedReceipt)throw Error('party_event_v63_multiple_receipts_in_one_transaction');
       await connection.query(writeReceiptSql,[
        receipt.sourceKey,partyId,weekStartMs,accountId,receipt.origin,
        receipt.chestKind??null,receipt.pieceId,
@@ -226,28 +234,48 @@ export function createPartyEventRewardStoreV63(
        'party-event-proof-v61',JSON.stringify({...receipt,
         chestKind:receipt.chestKind??null}),
       ]);
+      stagedReceipt=receipt;
      },
      applyPartySigilsDelta:async(sourceKey,delta)=>{
       requireEvidence();assertSource(sourceKey);
-      if(!Number.isSafeInteger(delta)||delta<-60||delta>16)
+      const receipt=requireStagedSource(sourceKey);
+      if(sigilsApplied||receipt.partySigilsDelta!==delta||
+       !Number.isSafeInteger(delta)||delta<-60||delta>16)
        throw Error('party_event_v63_invalid_wallet_delta');
       await ports.applyExistingPartySigils(connection,accountId,sourceKey,delta);
+      sigilsApplied=true;
      },
      grantExistingResources:async(sourceKey,amounts)=>{
       requireEvidence();assertSource(sourceKey);
-      if(!amounts||![amounts.gold,amounts.gemDust,amounts.companionEssence]
+      const receipt=requireStagedSource(sourceKey);
+      if(resourcesApplied||receipt.origin!=='chest'||!amounts||
+       amounts.gold!==receipt.gold||amounts.gemDust!==receipt.gemDust||
+       amounts.companionEssence!==receipt.companionEssence||
+       ![amounts.gold,amounts.gemDust,amounts.companionEssence]
        .every(v=>Number.isSafeInteger(v)&&v>=0))
        throw Error('party_event_v63_invalid_resource_grant');
       await ports.grantExistingResources(connection,accountId,sourceKey,amounts);
+      resourcesApplied=true;
      },
      grantFrozenEquipment:async(sourceKey,item)=>{
       requireEvidence();assertSource(sourceKey);
-      if(!item||!UUID.test(item.itemInstanceId))
+      const receipt=requireStagedSource(sourceKey);
+      if(equipmentApplied||!item||!receipt.frozenGear||
+       !UUID.test(item.itemInstanceId)||
+       item.itemInstanceId!==receipt.frozenGear.itemInstanceId||
+       item.pieceId!==receipt.frozenGear.pieceId||
+       item.tier!==receipt.frozenGear.tier||
+       item.exactItemReceiptVersion!==receipt.frozenGear.exactItemReceiptVersion)
        throw Error('party_event_v63_invalid_item_grant');
       await ports.grantExactEquipmentCustody(connection,accountId,sourceKey,item);
+      equipmentApplied=true;
      },
     };
     const result=await work(tx);
+    if(stagedReceipt&&(!sigilsApplied||
+     (stagedReceipt.origin==='chest'&&!resourcesApplied)||
+     (stagedReceipt.frozenGear!==null&&!equipmentApplied)))
+     throw Error('party_event_v63_incomplete_grant_transaction');
     await connection.query('commit');
     return result;
    }catch(error){

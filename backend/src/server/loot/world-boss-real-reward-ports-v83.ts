@@ -244,8 +244,11 @@ export function createWorldBossRealRewardPortsV83(qaEnabled=false):
     throw Error('world_boss_v83_inbox_missing');
    return {grantId:'inbox:'+rows[0]!.id,itemInstanceId:null};
   },
-  async verifyPhysical(tx,receipt,legs:readonly ChestLedgerLegV70[]){
+  async verifyPhysical(tx,receipt,legs:readonly ChestLedgerLegV70[],
+   phase:'fresh'|'replay'){
    gate(qaEnabled);immutableReceiptNoGear(receipt);
+   if(phase!=='fresh'&&phase!=='replay')
+    throw Error('world_boss_v83_untrusted_verify_phase');
    const {eventId}=checkedReceipt(receipt);
    if(legs.length!==5||legs.some(x=>x.sourceKey!==receipt.sourceKey||
     x.accountId!==receipt.accountId||x.itemInstanceId!==null))
@@ -267,35 +270,48 @@ export function createWorldBossRealRewardPortsV83(qaEnabled=false):
     ib.claimed_at===null||
     !legs.some(x=>x.kind==='inbox'&&x.ordinal===0&&
      x.grantId==='inbox:'+ib.id))return false;
-   const rows=(await tx.query<GameRow>(readGameSql,[receipt.accountId])).rows;
-   if(rows.length!==1)return false;
-   const s=state(rows[0]!.state);
+   // A paid chest is historical: Gold, materials and the active character
+   // can change after the original commit. Only a FRESH claim compares
+   // physical balances. A REPLAY checks the immutable audit+receipt legs and
+   // zero-attachment historical Inbox, never mutable current balances.
+   const rows=phase==='fresh'?
+    (await tx.query<GameRow>(readGameSql,[receipt.accountId])).rows:[];
+   if(phase==='fresh'&&rows.length!==1)return false;
+   const s=phase==='fresh'?state(rows[0]!.state):null;
+   const creditedCharacter=audit[0]?.character_id;
+   if(!creditedCharacter||!UUID.test(creditedCharacter)||
+    creditedCharacter===receipt.accountId)return false;
    for(let i=0;i<4;i++){
     const a=audit[i]!,g=receipt.guaranteed[i]!;
     const before=number(a.balance_before,'audit_before');
     const after=number(a.balance_after,'audit_after');
     if(a.account_id!==receipt.accountId||
-     a.source_key!==receipt.sourceKey||a.character_id!==rows[0]!.character_id||
+     a.source_key!==receipt.sourceKey||a.character_id!==creditedCharacter||
+     (phase==='fresh'&&a.character_id!==rows[0]!.character_id)||
      Number(a.ordinal)!==i||a.reward_id!==g.id||
      Number(a.quantity)!==g.quantity||after-before!==g.quantity||
      !legs.some(x=>x.kind==='guarantee'&&x.ordinal===i&&
       x.rewardId===g.id&&x.quantity===g.quantity&&
       x.grantId==='wb83:'+a.id))
      return false;
+    if(g.id==='gold'&&a.custody!=='character_wallet')return false;
+    if(g.id==='companion_essence'&&a.custody!=='account_state')
+     return false;
+    if((g.id==='gem_dust'||g.id==='tempering_dust')&&
+     a.custody!=='inventory'&&a.custody!=='bank')return false;
+    if(phase==='replay')continue;
+    if(!s)return false;
     let current:number;
     if(g.id==='gold'){
-     if(a.custody!=='character_wallet')return false;
      const wallet=(await tx.query<WalletRow>(readWalletSql,
-      [rows[0]!.character_id])).rows;
+      [creditedCharacter])).rows;
      if(wallet.length!==1)return false;
      current=number(wallet[0]!.gold,'verify_gold');
      if(number(s.character.gold,'verify_character_gold')!==current)
       return false;
     }else if(g.id==='companion_essence'){
-     if(a.custody!=='account_state')return false;
      current=rewardBalance(s,'companion_essence');
     }else if(g.id==='gem_dust'||g.id==='tempering_dust'){
-     if(a.custody!=='inventory'&&a.custody!=='bank')return false;
      current=rewardBalance(s,g.id,a.custody);
     }else return false;
     if(current!==after)return false;

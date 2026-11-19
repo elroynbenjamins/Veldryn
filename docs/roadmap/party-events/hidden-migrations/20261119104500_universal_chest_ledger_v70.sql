@@ -26,7 +26,9 @@ CREATE TABLE private.chest_reward_receipts_v70 (
  CHECK (length(source_key) BETWEEN 20 AND 220 AND
   source_key ~ '^[a-z0-9:_-]+$' AND
   position(':'||account_id::text||':' in source_key)>0),
- CHECK (receipt->>'sourceKey'=source_key AND
+ -- PostgreSQL CHECK accepts UNKNOWN. Force every identity/schema
+ -- predicate to TRUE so missing JSON keys can NEVER bypass the guard.
+ CHECK ((receipt->>'sourceKey'=source_key AND
   receipt->>'accountId'=account_id::text AND
   receipt->>'rulesVersion'=rules_version AND
   receipt->>'proofVersion'=proof_version AND
@@ -36,17 +38,22 @@ CREATE TABLE private.chest_reward_receipts_v70 (
   jsonb_typeof(receipt->'guaranteed')='array' AND
   jsonb_typeof(receipt->'groups')='array' AND
   jsonb_typeof(receipt->'drops')='array' AND
-  (recipient_character_id IS NULL AND receipt->'recipientCharacterId'='null'::jsonb
-   OR recipient_character_id IS NOT NULL AND
-    receipt->>'recipientCharacterId'=recipient_character_id::text)),
- CHECK (
-  (equipment_delivery_mode IS NULL AND receipt->'equipmentDeliveryMode'='null'::jsonb)
+  ((recipient_character_id IS NULL AND
+    receipt->'recipientCharacterId'='null'::jsonb)
+   OR (recipient_character_id IS NOT NULL AND
+    receipt->>'recipientCharacterId'=recipient_character_id::text))) IS TRUE),
+ CHECK (((equipment_delivery_mode IS NULL AND
+   receipt->'equipmentDeliveryMode'='null'::jsonb)
   OR (equipment_delivery_mode IS NOT NULL AND
-   receipt->>'equipmentDeliveryMode'=equipment_delivery_mode)),
- CHECK (
-  (equipment_delivery_mode='character' AND recipient_character_id IS NOT NULL)
-  OR (equipment_delivery_mode='account_unclaimed' AND recipient_character_id IS NULL)
-  OR (equipment_delivery_mode IS NULL AND recipient_character_id IS NULL))
+   receipt->>'equipmentDeliveryMode'=equipment_delivery_mode)) IS TRUE),
+ CHECK (CASE
+  WHEN equipment_delivery_mode='character'
+   THEN recipient_character_id IS NOT NULL
+  WHEN equipment_delivery_mode='account_unclaimed'
+   THEN recipient_character_id IS NULL
+  WHEN equipment_delivery_mode IS NULL
+   THEN recipient_character_id IS NULL
+  ELSE false END)
 );
 CREATE INDEX chest_reward_receipts_account_v70
  ON private.chest_reward_receipts_v70(account_id,created_at);

@@ -113,6 +113,42 @@ function checkedReceipt(receipt:FrozenChestReceiptV69,
   (receipt.drops.some(drop=>drop.type==='equipment')&&
    receipt.recipientCharacterId===null))
   throw Error('chest_v69_corrupt_committed_receipt');
+ const ids=/^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/;
+ const groupIds=new Set<string>();
+ const types=['equipment','material','consumable','pet','companion',
+  'cosmetic','currency'];
+ if(receipt.guaranteed.length>40||receipt.groups.length>20||
+  receipt.drops.length>20||
+  receipt.guaranteed.some(g=>!g||!ids.test(g.id)||
+   !Number.isSafeInteger(g.quantity)||g.quantity<0||
+   g.quantity>2147483647)||
+  receipt.groups.some(g=>{
+   if(!g||!ids.test(g.groupId)||groupIds.has(g.groupId)||
+    !types.includes(g.type)||
+    !Number.isInteger(g.chanceBps)||g.chanceBps<0||
+    g.chanceBps>10000||typeof g.hit!=='boolean'||
+    !Number.isSafeInteger(g.quantity)||g.quantity<0||
+    g.quantity>2147483647||
+    (g.entryId!==null&&
+     (typeof g.entryId!=='string'||!ids.test(g.entryId)))||
+    ((g.entryId===null)!==(g.quantity===0))||
+    (g.entryId!==null&&!g.hit)||
+    (g.entryId!==null&&
+     ['equipment','pet','companion','cosmetic'].includes(g.type)&&
+     g.quantity!==1))return true;
+   groupIds.add(g.groupId);
+   return false;
+  }))
+  throw Error('chest_v69_corrupt_committed_receipt');
+ const winners=receipt.groups.filter(g=>g.entryId!==null);
+ if(winners.length!==receipt.drops.length||
+  winners.some((winner,index)=>{
+   const drop=receipt.drops[index];
+   return !drop||drop.groupId!==winner.groupId||
+    drop.type!==winner.type||drop.entryId!==winner.entryId||
+    drop.quantity!==winner.quantity;
+  }))
+  throw Error('chest_v69_corrupt_committed_receipt');
 }
 /** V1 HMAC is a compatibility contract for previously authored chests.
  * All new table kinds use domain-separated V67 entropy with separate

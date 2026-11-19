@@ -35,6 +35,7 @@ import {CompanionTrialStage} from './CompanionTrialStage';
 import {CompanionTower} from './CompanionTower';
 import {CompanionFacility,CompanionCostBreakdown} from './CompanionUpgradePresentation';
 import {GameModalSurface,GameModalHeader} from './GameModalSurface';
+import {sanctuaryClaimReceipt,type SanctuaryClaimKind,type SanctuaryClaimReceipt} from '../core/sanctuary-claim-receipt';
 import {CombatTheaterModal} from './CombatTheaterModal';
 import {CompanionProgressMoment,isCompanionProgressMoment} from './CompanionProgressMoment';
 import {companionArtSource} from '../theme/companion-art';
@@ -95,6 +96,9 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
    const {session}=useAuthSession();
    const guideScope=session?.user.id??state.character?.id??'';
   const [detailOpen,setDetailOpen]=useState(false);
+  const [claimReceipt,setClaimReceipt]=useState<SanctuaryClaimReceipt|null>(null);
+  const pendingClaim=useRef<{kind:SanctuaryClaimKind;before:GameState}|null>(null);
+  useEffect(()=>{const pending=pendingClaim.current;if(!pending)return;const receipt=sanctuaryClaimReceipt(pending.before,state,pending.kind);if(receipt){pendingClaim.current=null;setClaimReceipt(receipt);}},[state]);
    const [openBondOnEntry,setOpenBondOnEntry]=useState(false);
   const [codexView,setCodexView]=useState<'progress'|'showcase'|'rewards'>('progress');
   const {height:windowHeight}=useWindowDimensions();
@@ -132,7 +136,7 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource,initi
     if(type==='companion_boss_rematch')return 'FALLEN KNIGHT REMATCH · Weekly boss rewards and progression updated.';
     return 'Companion progress saved.';
   };
-  const act=async(type:string,args?:Record<string,unknown>)=>{if(lock.current)return;lock.current=true;setBusy(true);setMessage('');setMessageError(false);try{const success=successMessage(type,args);await onCommand({type,args});setMessage(success);if(type==='companion_trial_floor'||type==='companion_special')setTrialSheet('battle');}catch(error){setMessageError(true);setMessage(error instanceof Error?error.message:'Unable to complete action.');}finally{lock.current=false;setBusy(false);}};
+  const act=async(type:string,args?:Record<string,unknown>)=>{if(lock.current)return;lock.current=true;setBusy(true);setMessage('');setMessageError(false);const isClaim=type==='companion_training'||type==='companion_essence';if(isClaim)pendingClaim.current={kind:type as SanctuaryClaimKind,before:state};try{const success=successMessage(type,args);await onCommand({type,args});if(!isClaim)setMessage(success);if(type==='companion_trial_floor'||type==='companion_special')setTrialSheet('battle');}catch(error){if(isClaim)pendingClaim.current=null;setMessageError(true);setMessage(error instanceof Error?error.message:'Unable to complete action.');}finally{lock.current=false;setBusy(false);}};
   const btn=(title:string,type:string,args?:Record<string,unknown>,disabled=false)=> <GameButton title={title} disabled={busy||disabled} onPress={()=>act(type,args)}/>;
   const idle=(id:string)=>{try{assertCompanionIdle(state,id);return true;}catch{return false;}};
   const activeMissionRotation=activeCompanionMissions(now),activeMissionPool=activeMissionRotation.definitions,visibleMissions=activeMissionPool.filter(m=>missionMatchesFilter(m,missionFilter));
@@ -182,6 +186,22 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
       })]);
 
   return <View style={s.root}>
+   <GameModalSurface visible={claimReceipt!==null} onClose={()=>setClaimReceipt(null)} reduceMotion={state.settings.reduceMotion} surfaceStyle={{maxHeight:windowHeight*.85}}>
+    <GameModalHeader title={t(claimReceipt?.kind==='companion_training'?'Daily Training':'Weekly Essence')} onClose={()=>setClaimReceipt(null)}/>
+    {claimReceipt?<ScrollView contentContainerStyle={{paddingBottom:16,gap:12}} showsVerticalScrollIndicator={false}>
+      <Text style={s.name}>{claimReceipt.status==='timer_started'?t('Reward timer started'):t('Rewards collected')}</Text>
+      {claimReceipt.status==='timer_started'?<Text style={s.body}>{t('Your reward timer is running. Return when it is ready to collect the rewards.')}</Text>:<>
+        <Text style={s.body}>{t('Confirmed rewards')}</Text>
+        {claimReceipt.kind==='companion_training'?<>
+          <Text style={s.name}>{t('Companion XP')} +{amount(claimReceipt.companionXp)}</Text>
+          {claimReceipt.companions.map(row=><View key={row.id} style={s.between}><Text style={[s.body,s.flex]}>{row.name}</Text><Text style={s.name}>+{amount(row.xp)} XP</Text></View>)}
+          {!claimReceipt.companionCount?<Text style={s.body}>{t('No eligible companion received XP this claim.')}</Text>:null}
+        </>:null}
+        {claimReceipt.essence>0||claimReceipt.kind==='companion_essence'?<View style={s.between}><Text style={s.body}>{t('Companion Essence')}</Text><Text style={s.name}>+{amount(claimReceipt.essence)}</Text></View>:null}
+      </>}
+      <GameButton title={t('Continue')} onPress={()=>setClaimReceipt(null)}/>
+    </ScrollView>:null}
+   </GameModalSurface>
    <SectionGuide scope={guideScope} area="companions" section={section} guide={{title:sectionGuide.title,body:sectionGuide.body,detail:sectionGuide.hint}} translate={text=>companionTutorialText(language,text)} header={<View style={s.resourceBar}><Text numberOfLines={1} style={[s.resources,{flexShrink:1}]}>{amount(e.companionEssence)} {t("Essence")}</Text><Text numberOfLines={1} style={[s.body,{flexShrink:1}]}>{amount(e.bondstones)} {t("Bondstones")} · {amount(e.gold)} {t("Gold")}</Text></View>}/>
     <View accessibilityRole="tablist" style={s.navigation}>{sections.map(tab=><Pressable key={tab} accessibilityRole="tab" accessibilityLabel={tab==='Collection'?t("Roster"):label(tab)} accessibilityState={{selected:section===tab||(section==='Codex'&&tab==='Collection')}} onPress={()=>{if(tab==='Sanctuary'&&!model?.owned&&ownedIds[0])setSelection(ownedIds[0]);if(tab==='Training')setOpenBondOnEntry(false);setSection(tab);}} style={({pressed})=>[s.navigationTab,(section===tab||section==='Codex'&&tab==='Collection')&&s.navigationSelected,pressed&&s.pressed]}><UiIcon name={sectionIcons[tab]} size={20} muted={section!==tab&&!(section==='Codex'&&tab==='Collection')}/><Text style={[s.navigationText,(section===tab||section==='Codex'&&tab==='Collection')&&s.navigationTextSelected]}>{tab==='Collection'?t("Roster"):label(tab)}</Text></Pressable>)}</View>
 

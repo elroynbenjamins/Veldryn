@@ -5,6 +5,7 @@ import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
 import {planEquipmentV2AtomicCommit,type V2AtomicCommitPlan} from './equipment-crafting-v2-commit-plan';
 import {
  type V2DraftCommand,type V2DraftContext,type V2DraftItem,type V2DraftJob,
@@ -29,6 +30,8 @@ export interface V2HiddenGameMetadata{
  storageReservations?:V2HiddenStorageReservation[];
  /** Separate irreversible socket history; never rewrites the minted exact item. */
  gemSocketState?:V2GemSidecarState;
+ /** Replayed account-wide Bank/equip custody decisions; still hidden only. */
+ custodyReceipts?:V2VirtualMoveReceipt[];
 }
 export interface V2HiddenGameInput{
  state:GameState;accountId:string;onlineVersion:number;
@@ -50,6 +53,7 @@ function requireHidden(s:GameState){
   ||!Array.isArray(stored.items)||!Array.isArray(stored.receipts)
   ||!Array.isArray(stored.skillAwards)
   ||(stored.storageReservations!==undefined&&!Array.isArray(stored.storageReservations))
+  ||(stored.custodyReceipts!==undefined&&!Array.isArray(stored.custodyReceipts))
   ||(stored.gemSocketState!==undefined&&(!stored.gemSocketState
    ||!Array.isArray(stored.gemSocketState.slots)||!Array.isArray(stored.gemSocketState.receipts))))
   fail('corrupted_hidden_v2_metadata');
@@ -125,7 +129,9 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,metadata.items,metadata.storageReservations??[]);
  if(metadata.gemSocketState)verifyEquipmentV2GemSidecar(metadata.items,metadata.gemSocketState);
- if(metadata.gemSocketState?.receipts.some(receipt=>receipt.requestId===command.requestId))
+ if(metadata.custodyReceipts)readEquipmentV2VirtualCustody(metadata.items,metadata.storageReservations??[],metadata.custodyReceipts);
+ if(metadata.gemSocketState?.receipts.some(receipt=>receipt.requestId===command.requestId)
+  ||metadata.custodyReceipts?.some(receipt=>receipt.requestId===command.requestId))
   fail('v2_cross_command_request_id_conflict');
  const previous={...readiness.projection,
   jobs:metadata.jobs,equipment:metadata.items,
@@ -161,6 +167,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   receipts:resolution.next.receipts,skillAwards:resolution.next.skillAwards,
   storageReservations,
   ...(metadata.gemSocketState?{gemSocketState:metadata.gemSocketState}:{}),
+  ...(metadata.custodyReceipts?{custodyReceipts:metadata.custodyReceipts}:{}),
  };
  verifyEquipmentV2HiddenLedger(accountId,updated.jobs,updated.items,updated.receipts,updated.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,updated.items,storageReservations);

@@ -43,7 +43,7 @@ function check(read,migrations){
   for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY','EQUIPMENT_CRAFTING_V2_RELEASED'])
     requireExportFalse('flags',name);
   requireExportFalse('crafting2Gate','EQUIPMENT_CRAFTING_V2_SERVER_RELEASED');
-  if(/(?:runEquipmentV2(?:Gem)?InGameState|simulateEquipmentV2(?:Gem)?InGameState|proposeEquipmentV2ClaimCustody|reserveEquipmentV2HiddenClaim|verifyEquipmentV2HiddenLedger|equipment_crafting_v2_gameplay|equipment-crafting-v2-(?:delivery|game-state|gem-sidecar|storage-reservations|virtual-custody|effect-gem-policy))/i.test(source('gameplay')))
+  if(/(?:runEquipmentV2(?:Gem)?InGameState|simulateEquipmentV2(?:Gem)?InGameState|proposeEquipmentV2ClaimCustody|reserveEquipmentV2HiddenClaim|simulateEquipmentV2VirtualCustody|validateEquipmentV2EffectGemInstall|verifyEquipmentV2HiddenLedger|verifyEquipmentV2ReceiptNamespace|equipment_crafting_v2_gameplay|equipment-crafting-v2-(?:delivery|game-state|gem-sidecar|storage-reservations|virtual-custody|effect-gem-policy|receipt-coherence))/i.test(source('gameplay')))
     failures.push('Hidden Equipment/Crafting V2 must not be mounted in online gameplay before coordinated release');
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');

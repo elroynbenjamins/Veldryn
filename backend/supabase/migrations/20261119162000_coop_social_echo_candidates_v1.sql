@@ -64,7 +64,8 @@ as $function$
     and e.content_version='online-coop-loadout-v1'
     and e.preferences->>'pipeline'='online_coop_v1'
     and e.synced_level>=p_min_level
-    and coalesce((e.loadout_snapshot->>'combatPower')::numeric,0)>=2500
+    -- Friend/guild Echoes are level-gated; the host's Live CP gate is separate.
+    -- Frozen loadout role/readiness and legal equipment are rechecked at run start.
     and c.account_id<>p_actor_account_id
     and (
       exists(select 1 from public.friendships f

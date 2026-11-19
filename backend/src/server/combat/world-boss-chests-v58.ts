@@ -81,6 +81,15 @@ const definitions:readonly {
  {kind:'community_damage_goal',name:'Realm Victory Chest',gold:900,
   companionEssence:10,gemDust:4,temperingDust:4},
 ];
+/** One canonical reward amount source for new and already-committed receipts. */
+export function worldBossChestGuaranteeV58(kind:WorldBossChestKindV58){
+ const row=definitions.find(d=>d.kind===kind);
+ if(!row)throw Error('world_boss_v58_unknown_chest_kind');
+ return {
+  gold:row.gold,companionEssence:row.companionEssence,
+  gemDust:row.gemDust,temperingDust:row.temperingDust,
+ };
+}
 function checked(e:VerifiedWorldBossChestEvidenceV58):void{
  if(!e||!UUID.test(e.eventId)||!UUID.test(e.accountId)||
   !Object.prototype.hasOwnProperty.call(WORLD_BOSS_GATHERING_SET_POLICY_V58,e.bossId)||

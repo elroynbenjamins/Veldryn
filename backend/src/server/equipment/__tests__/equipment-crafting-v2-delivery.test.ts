@@ -67,21 +67,23 @@ assert.throws(()=>verifyEquipmentV2HiddenLedger(accountId,[job],[{
 const originalStateJSON=JSON.stringify(state);
 const copyState=structuredClone(state);
 copyState.character!.equipmentPouch={stacks:[],capacity:1};
-const first=proposeEquipmentV2ClaimCustody(copyState,item);
+const first=proposeEquipmentV2ClaimCustody(copyState,accountId,item);
+assert.throws(()=>proposeEquipmentV2ClaimCustody(copyState,'wrong-account',item),
+ /invalid_v2_delivery_copy/,'A gear receipt may not be proposed under a different account');
 assert.equal(first.suggestedLocation,'equipment_pouch');
 assert.equal(first.physicallyDelivered,false);
 assert.equal(first.requiresSingleAccountCommit,true);
 assert.deepEqual(first.stack,{itemId:piece.id,instanceId:item.id,quantity:1});
 copyState.character!.equipmentPouch.stacks.push({itemId:'LEGACY_GEAR',quantity:1});
-assert.equal(proposeEquipmentV2ClaimCustody(copyState,item).suggestedLocation,'inventory');
+assert.equal(proposeEquipmentV2ClaimCustody(copyState,accountId,item).suggestedLocation,'inventory');
 copyState.inventory.capacity=copyState.inventory.stacks.length;
-const deferred=proposeEquipmentV2ClaimCustody(copyState,item);
+const deferred=proposeEquipmentV2ClaimCustody(copyState,accountId,item);
 assert.equal(deferred.suggestedLocation,'deferred');
 assert.equal(deferred.reason,'storage_full','No copy is discarded or rerolled when both stores are full');
 assert.equal(deferred.physicallyDelivered,false);
 assert.throws(()=>proposeEquipmentV2ClaimCustody({
  ...copyState,inventory:{...copyState.inventory,capacity:-1},
-},item),/invalid_v2_delivery_capacity/);
+},accountId,item),/invalid_v2_delivery_capacity/);
 
 const different=createCharacter(newGame(now),'WAYFINDER');
 assert.ok(different.character);
@@ -94,15 +96,15 @@ alternate.otherCharacters=[{
  activity:different.activity,skills:different.skills,quests:different.quests,
  currentRegionId:different.currentRegionId,
 }];
-assert.equal(proposeEquipmentV2ClaimCustody(alternate,alternateItem).ownerCharacterId,'wayfinder-alternate');
-assert.equal(proposeEquipmentV2ClaimCustody(alternate,alternateItem).suggestedLocation,'equipment_pouch');
-assert.throws(()=>proposeEquipmentV2ClaimCustody(alternate,{
+assert.equal(proposeEquipmentV2ClaimCustody(alternate,accountId,alternateItem).ownerCharacterId,'wayfinder-alternate');
+assert.equal(proposeEquipmentV2ClaimCustody(alternate,accountId,alternateItem).suggestedLocation,'equipment_pouch');
+assert.throws(()=>proposeEquipmentV2ClaimCustody(alternate,accountId,{
  ...item,ownerCharacterId:'non-account-character',
 }),/unknown_v2_delivery_owner/);
 
 const collision=structuredClone(state);
 collision.bank.stacks.push({itemId:'OLD_HELM',instanceId:item.id,quantity:1});
-assert.throws(()=>proposeEquipmentV2ClaimCustody(collision,item),/v2_delivery_instance_collision/,
+assert.throws(()=>proposeEquipmentV2ClaimCustody(collision,accountId,item),/v2_delivery_instance_collision/,
  'Exact-copy IDs must never collide with an existing physical Bank marker');
 assert.equal(JSON.stringify(state),originalStateJSON,
  'The original live GameState remains untouched by delivery previews');

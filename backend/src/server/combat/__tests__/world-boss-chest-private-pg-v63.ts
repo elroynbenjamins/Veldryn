@@ -47,7 +47,7 @@ function secretFor(hit:boolean){
 }
 const winner=secretFor(true);
 const miss=secretFor(false);
-type ItemRow={instanceId:string;sourceKey:string;accountId:string;eventId:string;bossId:string;slot:string};
+type ItemRow={instanceId:string;sourceKey:string;accountId:string;eventId:string;bossId:string;slot:string;roll:unknown};
 type DbState={
  receipts:Map<string,WorldBossChestReceiptV61>;
  items:Map<string,ItemRow>;
@@ -106,7 +106,8 @@ class PgFixture implements WorldBossChestPgDriverV63{
     this.issueCount++;
     const instanceId='44444444-4444-4444-8444-444444444444';
     data.items.set(key,{instanceId,sourceKey:key,accountId:account,
-     eventId:event,bossId:'sunscar',slot:args[4] as string});
+     eventId:event,bossId:'sunscar',slot:args[4] as string,
+     roll:JSON.parse(args[12] as string)});
     rows.push({instanceId});
    }else if(sql.includes('INSERT INTO private.world_boss_chest_receipts_v61')){
     const key=args[4] as string;
@@ -117,9 +118,13 @@ class PgFixture implements WorldBossChestPgDriverV63{
     const key=args[0]+':'+args[1];
     if(data.grants.has(key))throw Error('duplicate_component');
     data.grants.add(key);
+   }else if(sql.includes('FROM private.world_boss_chest_grant_sources_v61')){
+    const key=args[0] as string;
+    rows.push(...[...data.grants].filter(x=>x.startsWith(key+':'))
+     .map(x=>({component:x.slice(key.length+1)})));
    }else if(sql.includes('SELECT instance_id::text AS "instanceId"')){
     const found=data.items.get(args[0] as string);
-    if(found)rows.push({instanceId:found.instanceId});
+    if(found)rows.push({instanceId:found.instanceId,roll:found.roll});
    }else throw Error('world_boss_v63_unexpected_sql:'+sql.slice(0,90));
    return {rows:rows as T[]};
   };
@@ -191,6 +196,20 @@ async function run(){
  },true);
  check(JSON.stringify(first)===JSON.stringify(second)&&pg.issueCount===1,
   'retry_secret_rotation_returns_first_item');
+ // A physically missing source or item cannot be treated as a
+ // successful saved first claim (even when immutable JSON still exists).
+ pg.data.grants.delete(source+':gem_dust');
+ await rejects(()=>claimWorldBossChestV61(selection,{
+  authenticate:async()=>account,secret:miss,store,
+ },true),'incomplete_stored_grant');
+ pg.data.grants.add(source+':gem_dust');
+ const frozenItem=pg.data.items.get(source);
+ check(frozenItem,'stored_item_exists');
+ pg.data.items.delete(source);
+ await rejects(()=>claimWorldBossChestV61(selection,{
+  authenticate:async()=>account,secret:miss,store,
+ },true),'missing_frozen_item');
+ pg.data.items.set(source,frozenItem);
  const racing=new PgFixture();
  const parallel=createWorldBossChestPrivatePgV63(racing,ports(racing),true);
  const [a,b]=await Promise.all([

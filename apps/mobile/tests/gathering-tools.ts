@@ -1,8 +1,8 @@
 import {GATHERING_TOOLS,TOOL_BLUEPRINT_ITEMS,TOOL_RECIPES,TOOL_CRAFT_COST_MULTIPLIER_BY_TIER,roundDownToolBlueprintDropChance,increasedToolCraftXp} from '../src/content/gathering-tools';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES} from '../src/content/herbalism';
-import {craftRecipe,createCharacter,equipGatheringTool,GATHER_TIME_SCALE,newGame,previewActivityReward,startGathering} from '../src/core/game';
-import {gatheringPacing} from '../src/core/gathering-tools';
+import {craftRecipe,createCharacter,equipGatheringTool,unequipGatheringTool,GATHER_TIME_SCALE,newGame,previewActivityReward,startGathering} from '../src/core/game';
+import {equippedGatheringTools,gatheringPacing,gatheringToolTimeMultiplier} from '../src/core/gathering-tools';
 import {activityCycleSeconds} from '../src/core/dashboard';
 import {executeGameCommand} from '../src/core/game-commands';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -67,6 +67,42 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
  }
 }
 
+// Tier 3 blueprints no longer overlap the early Tier 2 encounter window.
+ok(GATHERING_TOOLS.find(t=>t.id==='OATHSTONE_HATCHET')?.blueprint?.sourceMonsterId==='OATHGLASS_REVENANT','Tier 3 hatchet blueprint must be awarded by the late Asterfall Revenant, not the level-15 Treant');
+ok(!MONSTERS.find(m=>m.id==='ANCIENT_TREANT')?.drops.some(d=>d.itemId==='BP_OATHSTONE_HATCHET'),'Early Treant must not retain a duplicate Tier 3 hatchet blueprint');
+const tier3SourceLevels=GATHERING_TOOLS.filter(t=>t.tier===3).map(t=>MONSTERS.find(m=>m.id===t.blueprint?.sourceMonsterId)?.level??0).sort((a,b)=>a-b);
+ok(tier3SourceLevels.join(',')==='19,22,25','Tier 3 blueprint hunts must be staggered across level 19, 22 and 25 enemies');
+
+// An existing save containing a single equipped tool remains readable.
+const legacyToolState={...state,character:{...state.character!,equippedToolIds:{mining:'OATHSTONE_PICKAXE'}}};
+ok(equippedGatheringTools(legacyToolState,'mining').length===1&&Math.abs(gatheringToolTimeMultiplier(legacyToolState,'mining')-.75)<.001,'Legacy single-tool saves should still load without duplicate contributions');
+
+// All twelve tools can coexist in independent per-skill, per-tier slots.
+let collection=createCharacter(newGame(0),'IRONWARDEN','Tool Collection Tester');
+collection={...collection,character:{...collection.character!,level:46},skills:collection.skills.map(skill=>['mining','woodcutting','fishing'].includes(skill.skillId)?{...skill,level:46,xp:totalXpAtLevel(46)}:skill),inventory:{...collection.inventory,stacks:[...collection.inventory.stacks,...GATHERING_TOOLS.map(tool=>({itemId:tool.id,quantity:1}))]}};
+for(const skillId of ['mining','woodcutting','fishing'] as const){
+ ok(Math.abs(gatheringToolTimeMultiplier(collection,skillId)-1.15)<.001,'No '+skillId+' tool must preserve the 15% missing-tool slowdown');
+ const ladder=GATHERING_TOOLS.filter(t=>t.skillId===skillId).sort((a,b)=>a.tier-b.tier);
+ for(const [index,tool] of ladder.entries()){
+  collection=equipGatheringTool(collection,tool.id,0);
+  const expected=[.95,.75,.5,.4][index];
+  ok(Math.abs(gatheringToolTimeMultiplier(collection,skillId)-expected)<.001,skillId+' should add one tool contribution at tier '+tool.tier);
+  ok(equippedGatheringTools(collection,skillId).length===index+1,skillId+' should retain all previously-equipped tiers');
+  const before=collection;
+  collection=equipGatheringTool(collection,tool.id,0);
+  ok(collection===before,'Re-equipping an equipped tier must not duplicate a bonus or a tool');
+ }
+ ok(!collection.inventory.stacks.some(row=>ladder.some(tool=>tool.id===row.itemId)),skillId+' equipped tools must be removed from Inventory');
+}
+ok(['mining','woodcutting','fishing'].every(skillId=>equippedGatheringTools(collection,skillId as 'mining'|'woodcutting'|'fishing').length===4),'All 12 independent tool slots should work simultaneously');
+collection=executeGameCommand(collection,{type:'unequip_tool',args:{id:'FROSTIRON_PICKAXE'}},0).state;
+ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.5)<.001,'Unequipping Tier 4 removes only its 10% contribution');
+ok(collection.inventory.stacks.some(row=>row.itemId==='FROSTIRON_PICKAXE'),'Unequipped tool must return to Inventory');
+collection=equipGatheringTool(collection,'FROSTIRON_PICKAXE',0);
+ok(Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.4)<.001,'Re-equipping restores the 60% cumulative maximum');
+collection=unequipGatheringTool(collection,'mining',0,'ASTER_IRON_PICKAXE');
+ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.6)<.001,'Any individually unequipped tier should remove only its own contribution');
+
 ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===2,'Level-16 Mining should recommend the highest legally reachable tool tier rather than a locked Tier 3');
 const greenwood=GATHERING.find(entry=>entry.id==='GREENWOOD_TREE')!,ironwood=GATHERING.find(entry=>entry.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(entry=>entry.id==='CROWNWOOD_TREE')!;
 ok(greenwood.xp===8,'Starter gathering XP should stay unchanged');
@@ -80,11 +116,11 @@ state={...state,currentRegionId:'OLD_MINES',exploredRouteIds:['SCOUT_IRONWOOD'],
 state=equipGatheringTool(state,'OATHSTONE_PICKAXE');
 ok(state.character?.equippedToolIds?.mining==='OATHSTONE_PICKAXE','Crafted pickaxe should equip in the mining tool slot');
 ok(!state.inventory.stacks.some(stack=>stack.itemId==='OATHSTONE_PICKAXE'),'Equipped tool should leave carried Inventory');
-ok(Math.abs(gatheringPacing(state,oathstone).timeMultiplier-.75)<.001,'A higher-tier pickaxe should make the Level-16 node substantially faster than its raw difficulty gate');
+ok(Math.abs(gatheringPacing(state,oathstone).timeMultiplier-1.125)<.001,'A higher-tier pickaxe should make the Level-16 node substantially faster than its raw difficulty gate');
 
 state=startGathering(state,'OATHSTONE_SEAM',0);
-ok(Math.abs(activityCycleSeconds(state)-oathstone.seconds*GATHER_TIME_SCALE*.75)<.001,'Dashboard cycle must use the same fast recommended-tool pacing as reward settlement');
-const reward=previewActivityReward(state,Math.ceil(oathstone.seconds*GATHER_TIME_SCALE*.75)*1000);
+ok(Math.abs(activityCycleSeconds(state)-oathstone.seconds*GATHER_TIME_SCALE*1.125)<.001,'Dashboard cycle must use the same fast recommended-tool pacing as reward settlement');
+const reward=previewActivityReward(state,Math.ceil(oathstone.seconds*GATHER_TIME_SCALE*1.125)*1000);
 ok(reward.kills>=1,'A recommended tool should complete the normalized late-resource cycle');
 let midSession=createCharacter(newGame(0),'IRONWARDEN','Tool Swap Tester','female');
 midSession={...midSession,currentRegionId:'GREENFIELDS',character:{...midSession.character!,level:3},skills:midSession.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:3,xp:totalXpAtLevel(3)}:skill),inventory:{...midSession.inventory,stacks:[...midSession.inventory.stacks,{itemId:'GREENWOOD_HATCHET',quantity:1}]}};

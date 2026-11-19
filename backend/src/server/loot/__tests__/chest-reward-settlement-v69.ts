@@ -27,7 +27,7 @@ const table=defineChestLootTableV67({
  groups:[
   {id:'material',type:'material',chanceBps:10000,
    duplicatePolicy:'allow_duplicates',entries:[
-    {id:'ORE',weight:1},{id:'FISH',weight:2},
+    {id:'ORE',weight:1,quantity:4},{id:'FISH',weight:2,quantity:3},
    ]},
   {id:'pet',type:'pet',chanceBps:10000,
    duplicatePolicy:'prefer_unowned',entries:[
@@ -103,7 +103,7 @@ class MockDb implements ChestGrantStoreV69{
     const entry=receipt.drops[index];
     if(!entry)throw Error('missing_canonical_drop');
     const prior=draft.drops.get(receipt.sourceKey)??[];
-    prior.push(entry.entryId);
+    prior.push(entry.entryId+'x'+entry.quantity);
     draft.drops.set(receipt.sourceKey,prior);
     draft.owned.add(entry.entryId);
     if(this.failAfterFirstDrop)throw Error('mock_inventory_write_failed');
@@ -114,7 +114,7 @@ class MockDb implements ChestGrantStoreV69{
      draft.guaranteed.get(receipt.sourceKey)===
       JSON.stringify(receipt.guaranteed)&&
      JSON.stringify(draft.drops.get(receipt.sourceKey)??[])===
-      JSON.stringify(receipt.drops.map(d=>d.entryId));
+      JSON.stringify(receipt.drops.map(d=>d.entryId+'x'+d.quantity));
    },
   };
   try{
@@ -140,7 +140,9 @@ async function run(){
  const first=await open({authenticatedAccountId:account,sourceKey:source});
  check(!first.replayed&&first.receipt.committed&&
   first.receipt.tableVersion==='winter_event_v1'&&
-  first.receipt.drops.length===2,'first_full_durable_receipt');
+  first.receipt.drops.length===2&&
+  first.receipt.drops[0]!.quantity>=3,
+  'first_full_durable_receipt_with_stack_quantities');
  check(db.state.guaranteed.size===1&&db.state.drops.size===1&&
   db.state.owned.size===2,'all_legs_same_transaction');
  check(db.audit.indexOf('insert-receipt')<

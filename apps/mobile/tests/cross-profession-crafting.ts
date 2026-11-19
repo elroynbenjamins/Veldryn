@@ -119,7 +119,7 @@ for(const recipe of CROSS_PROFESSION_COMPONENT_RECIPES){
  for(const input of recipe.inputs){
   equal(commanded.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,0,'Component ingredients must be reserved: '+recipe.id+'/'+input.itemId);
  }
- const settled=claimActivity(commanded,1000+recipe.seconds*1000+1000).state;
+ const settled=claimActivity(commanded,1000+commanded.activity!.processing!.cycleSeconds*1000+1000).state;
  equal(settled.inventory.stacks.find(stack=>stack.itemId===recipe.output.itemId)?.quantity??0,recipe.output.quantity,'Component settlement must grant exactly one output: '+recipe.id);
  equal(settled.activity?.processing?.remainingBatches??0,0,'Component batch must not remain claimable: '+recipe.id);
 }

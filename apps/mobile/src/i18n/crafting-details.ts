@@ -1,5 +1,6 @@
 import {createSourceTranslator,type TranslationRow} from './source-catalog';
 import type {Language} from './languages';
+import type {MealBonusDefinition} from '../core/meal-buffs';
 
 export const craftingDetailRows={
  'Next equipment tier':['Nächste Ausrüstungsstufe','Siguiente nivel de equipo','Volgende uitrustingsniveau','Prossimo livello di equipaggiamento','Prochain palier d’équipement'],
@@ -57,4 +58,13 @@ export function craftingDetailContent(language:Language,value:string|undefined,f
  const bonus=parts.map(part=>/^\+(\d+)% (skill XP|XP|yield|speed|action speed)$/.exec(part));
  if(bonus.every(Boolean))return bonus.map(match=>craftingDetailText(language,'+{value}% '+match![2],{value:match![1]})).join(' · ');
  return fallback(value);
+}
+
+/** Shared translation for special meal effects shown in both Cooking views. */
+export function cookingMealEffectText(language:Language,meal:Pick<MealBonusDefinition,'kind'|'percent'>):string{
+ const key=meal.kind==='gathering_speed'?'+{value}% Gathering speed'
+  :meal.kind==='crafting_speed'?'+{value}% Crafting speed'
+  :meal.kind==='combat_xp'?'+{value}% Combat XP'
+  :'+{value}% Non-combat skill speed';
+ return craftingDetailText(language,key,{value:meal.percent});
 }

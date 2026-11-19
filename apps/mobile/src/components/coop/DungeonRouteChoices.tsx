@@ -1,5 +1,5 @@
-import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
-import {useEffect,useMemo,useRef} from 'react';
+import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useState} from 'react';
 import type {CoopMode,CoopRouteOptionView} from '../../core/coop-presentation';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {useCoopStyles} from '../../theme/useCoopStyles';
@@ -27,11 +27,21 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
  const stepKey=options.map(option=>option.nodeId).join('|');
+ const [reduceMotion,setReduceMotion]=useState(false);
  const anims=useMemo(()=>options.map(()=>new Animated.Value(0)),[stepKey]);
  useEffect(()=>{
+  let mounted=true;
+  void AccessibilityInfo.isReduceMotionEnabled().then(enabled=>{if(mounted)setReduceMotion(enabled);}).catch(()=>{});
+  const subscription=AccessibilityInfo.addEventListener('reduceMotionChanged',setReduceMotion);
+  return ()=>{mounted=false;subscription.remove();};
+ },[]);
+ useEffect(()=>{
+  if(reduceMotion){anims.forEach(value=>value.setValue(1));return;}
   anims.forEach(value=>value.setValue(0));
-  Animated.stagger(70,anims.map(value=>Animated.timing(value,{toValue:1,duration:260,easing:Easing.out(Easing.cubic),useNativeDriver:true}))).start();
- },[stepKey]);
+  const animation=Animated.stagger(70,anims.map(value=>Animated.timing(value,{toValue:1,duration:260,easing:Easing.out(Easing.cubic),useNativeDriver:true})));
+  animation.start();
+  return ()=>animation.stop();
+ },[anims,reduceMotion]);
  return <View style={s.list}>
   {options.map((option,optionIndex)=>{
    const enter=anims[optionIndex]??new Animated.Value(1);
@@ -52,7 +62,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     const combatMarks=Math.min(roomMarks,Math.max(0,combatMarksRemaining));
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
-    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?action:ui('Unavailable')})}
+    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?(votedHere?ui('Your vote'):routeAction):ui('Unavailable')})}
     accessibilityHint={bossExit?`${preview??''} ${dungeonUxText(language,'bossHint')}`:preview}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}

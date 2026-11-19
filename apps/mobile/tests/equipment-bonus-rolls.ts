@@ -21,19 +21,15 @@ function item(tier:string,classId:string,slot:GearSlot){
   return recipe!.output.itemId;
 }
 
-// Every class and every armor/accessory slot has meaningful but limited T2–T5 rolls.
+// Every class and every armor/accessory slot has a cross-mode safe T1–T5 roll.
 for(const tier of tiers){
   for(const cls of CLASSES){
     for(const slot of slots){
       const itemId=item(tier,cls.id,slot);
       for(const rarity of ['common','epic','mythic'] as const){
         const cfg=equipmentBonusConfig(itemId,rarity);
-        if(tier==='T1'){
-          ok(!cfg&&!rollEquipmentBonuses(itemId,rarity,'t1-test',.21),'T1 gear must stay simple');
-          continue;
-        }
         ok(cfg,`Missing ${tier}/${cls.id}/${slot} roll configuration`);
-        const count=tier==='T5'||(tier!=='T2'&&rarity!=='common')?2:1;
+        const count=tier==='T5'||(tier!=='T1'&&tier!=='T2'&&rarity!=='common')?2:1;
         ok(cfg!.count===count,`${tier} ${rarity} requires ${count} stat rolls`);
         const key=`equipment:${tier}:${cls.id}:${slot}:${rarity}`;
         const rolls=rollEquipmentBonuses(itemId,rarity,key,.43210)!;
@@ -55,7 +51,11 @@ for(const tier of tiers){
   }
 }
 
-const t2=item('T2','WAYFINDER','gloves'),t5=item('T5','WAYFINDER','gloves');
+const t1=item('T1','WAYFINDER','gloves'),t2=item('T2','WAYFINDER','gloves'),t5=item('T5','WAYFINDER','gloves');
+ok(equipmentBonusConfig(t1,'mythic')?.count===1,'T1 Mythic still receives only one roll');
+ok(!equipmentBonusConfig(t1,'common',4),'Legacy v4 must not fabricate T1 bonuses');
+ok(equipmentBonusRange(1,'critRate','gloves')![1]<equipmentBonusRange(2,'critRate','gloves')![1],
+  'T1 armor roll strength must remain below T2');
 ok(equipmentBonusConfig(t2,'mythic')?.count===1,'T2 Mythic stays one bonus');
 ok(equipmentBonusRange(5,'critRate','amulet','mythic')![1]>
    equipmentBonusRange(5,'critRate','amulet','common')![1],
@@ -63,13 +63,17 @@ ok(equipmentBonusRange(5,'critRate','amulet','mythic')![1]>
 ok(equipmentBonusRange(5,'critDamage','gloves','uncommon')![1]>
    equipmentBonusRange(5,'critDamage','gloves','common')![1],
   'Critical Damage armor ranges also use rarity multipliers');
-ok(equipmentBonusRange(2,'healingPower','gloves','mythic')![1]<
-   equipmentBonusRange(5,'healingPower','gloves','common')![1],
+ok(equipmentBonusRange(2,'healingPower','gloves','mythic',4)![1]<
+   equipmentBonusRange(5,'healingPower','gloves','common',4)![1],
   'T2 Mythic support rolls must stay below T5 Common tier ceiling');
 
 ok(equipmentBonusConfig(t5,'common')?.count===2,'T5 Common has two bonuses');
 const earlyEquipmentPool=new Set(CLASSES.flatMap(cls=>equipmentBonusConfig(item('T5',cls.id,'gloves'),'uncommon')?.pool??[]));
-ok(earlyEquipmentPool.size===11,'All eleven new equipment stats remain available across class roles');
+ok(earlyEquipmentPool.size===7,'Exactly seven cross-mode stats remain available for new equipment');
+for(const excluded of ['ward','penetration','potency','healingPower','abilityDamage','tenacity'] as const)
+  ok(!earlyEquipmentPool.has(excluded),'Deferred stat must not mint under new v5: '+excluded);
+ok(equipmentBonusConfig(t5,'uncommon',4)?.pool.includes('penetration'),
+  'Historical v4 Damage rolls remain readable even after the launch pool shrinks');
 ok(!earlyEquipmentPool.has('abilityDamage')&&!earlyEquipmentPool.has('tenacity'),
   'No new nonweapon receipt may mint attributes deferred until Combat 2.0');
 ok(!equipmentBonusConfig(t5,'common')?.pool.includes('abilityDamage'),
@@ -95,8 +99,13 @@ ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'
   'Duplicate stat types must fail closed');
 
 const initial=createCharacter(newGame(1),'WAYFINDER','Roll Tester','male');
+const starter=draftCraftedGearInstance({itemId:t1,ownerCharacterId:initial.character!.id,jobId:'t1-gloves-receipt',createdAtMs:1,roll:.3});
+ok(starter.equipmentBonuses?.length===1&&starter.equipmentBonusRollVersion===5,
+  'T1 forged gloves must gain one permanent safe roll');
+ok(JSON.stringify(normalizeCraftedGearInstances([starter])[0].equipmentBonuses)===JSON.stringify(starter.equipmentBonuses),
+  'T1 roll must survive the exact-copy save/load normalization');
 const crafted=draftCraftedGearInstance({itemId:t2,ownerCharacterId:initial.character!.id,jobId:'t2-gloves-receipt',createdAtMs:1,roll:.3});
-ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===4,
+ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===5,
   'A fresh T2 forged glove must gain a persistent single bonus');
 const loaded=normalizeCraftedGearInstances([crafted])[0];
 ok(!crafted.equipmentBonuses?.some(b=>b.stat==='abilityDamage'||b.stat==='tenacity'),
@@ -154,6 +163,17 @@ ok(preservedV3.equipmentBonusRollVersion===3&&preservedV3.equipmentBonuses?.[0]?
   'Previously minted nonweapon v3 Tenacity stays readable on its original saved copy');
 ok(!normalizeEquipmentBonuses(t5TankGloves,high.rarity,preDeferV3.equipmentBonuses,4),
   'Legacy v3 Tenacity cannot be silently accepted as a newly minted v4 roll');
+const t5SupportGloves=item('T5','DAWNKEEPER','gloves');
+const oldV4Healing={...high,id:'armor-v4-healing-receipt',itemId:t5SupportGloves,equipmentBonusRollVersion:4 as const,
+  equipmentBonuses:[
+    {stat:'healingPower' as const,basisPoints:equipmentBonusRange(5,'healingPower','gloves',high.rarity,4)![0]},
+    {stat:'haste' as const,basisPoints:equipmentBonusRange(5,'haste','gloves',high.rarity,4)![0]},
+  ]};
+const retainedV4=normalizeCraftedGearInstances([oldV4Healing])[0];
+ok(retainedV4.equipmentBonusRollVersion===4&&retainedV4.equipmentBonuses?.[0]?.stat==='healingPower',
+  'Earlier v4 support equipment keeps its Healing Power roll');
+ok(!normalizeEquipmentBonuses(t5SupportGloves,high.rarity,oldV4Healing.equipmentBonuses,5),
+  'New v5 armor cannot borrow a mode-dependent historical affix');
 const noRoll={...high,equipmentBonuses:undefined,equipmentBonusRollVersion:undefined};
 const clean=withEquipped(noRoll),rolled=withEquipped(high);
 const cleanStats=activeEquipmentBuildStats(clean),rolledStats=activeEquipmentBuildStats(rolled);
@@ -195,4 +215,4 @@ const existing=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,index)
 }));
 const keepBest=planCraftedGearRetention(existing,{...high,id:'incoming-rolled-gloves'},'keep_best_seven');
 ok(keepBest.action==='manual_review','Rolled non-weapon bonuses must require manual choice at the copy cap');
-console.log('PASS: T2–T5 role-based equipment rolls, transfers, retention and exact-copy combat safety');
+console.log('PASS: T1–T5 seven-stat equipment rolls, old versions, transfers and exact-copy combat');

@@ -9,8 +9,8 @@ type LegacyWeaponBonusStat='maxHp'|'armor'|'ward'|'tenacity'|'critRate'|'haste'|
 export type WeaponBonusStat=LegacyWeaponBonusStat|'evasion'|'critDamage'|'abilityDamage'|'healingPower';
 type NewBonusStat=Exclude<WeaponBonusStat,LegacyWeaponBonusStat>;
 export interface WeaponBonusRoll{stat:WeaponBonusStat;basisPoints:number;}
-export const WEAPON_BONUS_ROLL_VERSION=5;
-export type WeaponBonusRollVersion=1|2|3|4|5;
+export const WEAPON_BONUS_ROLL_VERSION=6;
+export type WeaponBonusRollVersion=1|2|3|4|5|6;
 export const WEAPON_BONUS_LABELS:Readonly<Record<WeaponBonusStat,string>>={
   maxHp:'Max HP',armor:'Armor',ward:'Ward',tenacity:'Tenacity',
   critRate:'Crit Rate',haste:'Haste',penetration:'Penetration',
@@ -40,6 +40,13 @@ const ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusSt
   Tank:['armor','maxHp','ward','evasion','haste'],
   Damage:['critRate','critDamage','haste','penetration','accuracy','evasion'],
   Support:['healingPower','potency','haste','ward','maxHp','critRate'],
+};
+/** A deliberately narrow 1.0.11 pool: each stat changes ordinary hunts, story bosses and frozen dungeon loadouts. */
+export const LAUNCH_SAFE_BONUS_STATS:readonly WeaponBonusStat[]=['maxHp','armor','critRate','critDamage','accuracy','evasion','haste'];
+export const LAUNCH_SAFE_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly WeaponBonusStat[]>>={
+  Tank:['maxHp','armor','evasion','haste'],
+  Damage:['critRate','critDamage','accuracy','evasion','haste'],
+  Support:['maxHp','armor','accuracy','evasion','haste'],
 };
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
  * HP and Tenacity have wider budgets than combat tempo/crit/avoidance stats. */
@@ -84,18 +91,25 @@ const V1_RANGE_BY_BAND:Readonly<Partial<Record<WeaponTierBand,readonly [number,n
 export function weaponBonusRange(
   tier:number,stat:WeaponBonusStat,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION,rarity:ItemRarity='uncommon',
 ):readonly [number,number]|undefined{
-  const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:tier===2?2:undefined;
-  if(band===undefined)return undefined;
+  const band:WeaponTierBand|undefined=tier===1&&version===6?2:tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:tier===2?2:undefined;
+  if(band===undefined||(tier===1&&version!==6))return undefined;
+  if(version===6&&!LAUNCH_SAFE_BONUS_STATS.includes(stat))return undefined;
   const legacy=(WEAPON_BONUS_BPS_BY_BAND[band] as Partial<Record<WeaponBonusStat,readonly [number,number]>>)[stat];
   if(version===1)return V1_RANGE_BY_BAND[band];
   if(version===2)return legacy;
-  if(version!==3&&version!==4&&version!==5)return undefined;
-  // Prior development receipts keep their minted ranges and effects.
-  // New v5 no longer mints Tenacity until combat actually resolves control.
-  if((version===4||version===5)&&stat==='abilityDamage')return undefined;
-  if(version===5&&stat==='tenacity')return undefined;
+  if(version!==3&&version!==4&&version!==5&&version!==6)return undefined;
+  // Historical v3-v5 ranges remain untouched; newly minted v6 uses only seven universally useful stats.
+  if((version===4||version===5||version===6)&&stat==='abilityDamage')return undefined;
+  if((version===5||version===6)&&stat==='tenacity')return undefined;
   const baseline=legacy??V3_EXTRA_BPS_BY_BAND[band][stat as NewBonusStat];
-  return baseline?rarityAdjustedBonusRange(baseline,rarity):undefined;
+  if(!baseline)return undefined;
+  if(tier===1){
+    // T1 receives one smaller roll. Quantize before rarity scaling; never exceed T2 base strength.
+    const low=Math.max(10,Math.round(baseline[0]/20)*10);
+    const high=Math.max(low+10,Math.round(baseline[1]/20)*10);
+    return rarityAdjustedBonusRange([low,high],rarity);
+  }
+  return rarityAdjustedBonusRange(baseline,rarity);
 }
 const HIGH_RARITIES:readonly ItemRarity[]=['epic','legendary','mythic'];
 const STEP_BPS=10;
@@ -106,9 +120,9 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity,version:Weapon
   try{item=itemDef(itemId);}catch{return undefined;}
   const tier=Number(/^T([1-9])_/.exec(item.equipmentSetId??'')?.[1]??0);
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
-  if(item.type!=='gear'||item.slot!=='weapon'||tier<2||tier>9||!role)return undefined;
+  if(item.type!=='gear'||item.slot!=='weapon'||tier<1||tier>9||(tier===1&&version!==6)||!role)return undefined;
   const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  const pool:readonly WeaponBonusStat[]=version===5?ROLE_POOL[role]:version===4?V4_ROLE_POOL[role]:version===3?V3_ROLE_POOL[role]:LEGACY_ROLE_POOL[role];
+  const pool:readonly WeaponBonusStat[]=version===6?LAUNCH_SAFE_ROLE_POOL[role]:version===5?ROLE_POOL[role]:version===4?V4_ROLE_POOL[role]:version===3?V3_ROLE_POOL[role]:LEGACY_ROLE_POOL[role];
   return {tier,role,count,pool};
 }
 
@@ -120,10 +134,10 @@ export function rollWeaponBonuses(itemId:string,rarity:ItemRarity,receiptKey:str
   const pool=[...cfg.pool],out:WeaponBonusRoll[]=[];
   const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for(let index=0;index<cfg.count;index++){
-    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v5:stat:${seed}:${index}`);
+    const statUnit=deterministicCraftRarityRoll(`weapon-affix:v6:stat:${seed}:${index}`);
     const position=Math.min(pool.length-1,Math.floor(statUnit*pool.length));
     const [stat]=pool.splice(position,1); // Two bonuses must have different stat types.
-    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v5:value:${seed}:${index}`);
+    const valueUnit=deterministicCraftRarityRoll(`weapon-affix:v6:value:${seed}:${index}`);
     const range=weaponBonusRange(cfg.tier,stat,WEAPON_BONUS_ROLL_VERSION,rarity)!;
     const steps=(range[1]-range[0])/STEP_BPS;
     out.push({stat,basisPoints:range[0]+STEP_BPS*Math.min(steps,Math.floor(valueUnit*(steps+1)))});

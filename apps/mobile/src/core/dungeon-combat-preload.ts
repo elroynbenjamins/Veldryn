@@ -15,7 +15,7 @@ function warm(source:Parameters<typeof Image.resolveAssetSource>[0]|undefined):v
  if(!uri||warmed.has(uri))return;
  if(warmed.size>100)warmed.clear();
  warmed.add(uri);
- void Image.prefetch(uri).catch(()=>{warmed.delete(uri);});
+ void Image.prefetch(uri).catch(()=>{}); // Some packaged asset URIs cannot be prefetched; do not retry every poll.
 }
 export function preloadDungeonCombatArt(options:readonly CoopRouteOptionView[],roleSlots:CoopRunView['roleSlots']):void{
  for(const slot of roleSlots)warm(dungeonCombatPortraitSource(slot.classId,slot.bodyPresentation??'male'));

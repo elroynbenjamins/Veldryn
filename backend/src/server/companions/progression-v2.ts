@@ -22,7 +22,12 @@ export function grantCombatCompanionOrConvertDuplicate(input:{companionId:string
 export function awardCompanionXpServer(input:{progress:OwnedCompanionSnapshot;amount:number;companionEssence:number;overflow?:CompanionOverflowState;serverNowMs:number;maxLevelCap?:number}){
  const def=companionServerDefinition(input.progress.companionId);if(!def)throw new Error('unknown_companion');let p={...input.progress},remaining=Math.max(0,Math.floor(input.amount));const rarityMax=COMPANION_RARITY_MAX_LEVEL[def.rarity],currentCap=Math.min(companionLevelCap(def.id,p.ascensionTier),Number.isFinite(input.maxLevelCap)?Math.max(1,Math.floor(input.maxLevelCap!)):35);
  while(remaining>0&&p.level<Math.min(rarityMax,currentCap)){const needed=companionXpToNextServer(def.id,p.level)-p.xp;if(remaining<needed){p.xp+=remaining;remaining=0;break;}remaining-=needed;p.level++;p.xp=0;}
- if(p.level>=currentCap&&currentCap<rarityMax){p.xp=0;return {progress:p,companionEssence:input.companionEssence,overflow:normalizeOverflow(input.overflow,input.serverNowMs),convertedEssence:0,droppedXp:remaining};}
+ if(p.level>=currentCap&&currentCap<rarityMax){
+  p.xp=0;let lifetimeCapacity=0;for(let level=p.level;level<rarityMax;level++)lifetimeCapacity+=companionXpToNextServer(def.id,level);
+  const prior=Math.min(lifetimeCapacity,Math.max(0,Math.floor(p.bankedXp??0))),bankedXp=Math.min(lifetimeCapacity,prior+remaining);
+  p.bankedXp=bankedXp;
+  return {progress:p,companionEssence:input.companionEssence,overflow:normalizeOverflow(input.overflow,input.serverNowMs),convertedEssence:0,droppedXp:Math.max(0,remaining-(bankedXp-prior))};
+ }
  if(p.level>=rarityMax&&remaining>0){const overflow=normalizeOverflow(input.overflow,input.serverNowMs),room=Math.max(0,COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP-overflow.essenceConvertedThisWeek),converted=Math.min(room,Math.floor(remaining*COMPANION_MAX_XP_ESSENCE_RATE));return {progress:{...p,xp:0},companionEssence:input.companionEssence+converted,overflow:{...overflow,essenceConvertedThisWeek:overflow.essenceConvertedThisWeek+converted},convertedEssence:converted,droppedXp:remaining};}
  return {progress:p,companionEssence:input.companionEssence,overflow:normalizeOverflow(input.overflow,input.serverNowMs),convertedEssence:0,droppedXp:0};
 }

@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 2,
+  "styleLock": "veldryn-eq2-storybook-v1",
+  "generatedOn": "2026-11-19",
+  "releaseStatus": "not_enabled",
+  "description": "Equipment 2.0 item-first art production. Hidden T1-T4 draft: 15 sets with 2-4 real pieces (42 set items), 24 standalones, 52 armaments. Use actual IDs; all art ungenerated/not approved.",
+  "technical": {
+    "cellPx": [
+      192,
+      192
+    ],
+    "atlasPx": [
+      960,
+      384
+    ],
+    "atlasLayout": [
+      5,
+      2
+    ],
+    "slotOrder": [
+      "helmet",
+      "chest",
+      "gloves",
+      "legs",
+      "boots",
+      "weapon",
+      "offhand",
+      "cape",
+      "amulet",
+      "ring"
+    ],
+    "alphaInsetPx": 26,
+    "runtimeFormat": "webp",
+    "masterFormat": "png",
+    "light": "upper-left-10oclock",
+    "camera": "slot-specific-product-three-quarter",
+    "renderer": "storybook-hand-painted-dark-fantasy",
+    "maxAtlasKiBTarget": 250,
+    "poseLockPath": "docs/art/equipment-2-0-pose-lock.json",
+    "resampling": "lanczos",
+    "weaponFamilyPoseRequired": true,
+    "offhandFamilyPoseRequired": true
+  },
+  "sourceBuckets": [
+    {
+      "key": "equipment_2_crafted",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1382",
+      "draftEvidence": "PR #1382 hidden item manifest: 15 compact 2–4 piece sets (42 pieces), 24 standalones, 52 class armaments; T1–T4 only, 118 template items total",
+      "countStatus": "not_final_audit",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Art production is 1 image per canonical ID. Generate no missing ten-slot set members. Reaudit synchronized EQ2 manifest and recipes before claiming full coverage."
+    },
+    {
+      "key": "dungeon_rewards",
+      "draftContract": null,
+      "draftEvidence": "New 2.0 dungeon drop set/item contract requires source audit",
+      "countStatus": "unknown",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Do not invent set count; inspect Dungeon 2.0 drop tables once authoritative"
+    },
+    {
+      "key": "party_event_chests",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1416",
+      "draftEvidence": "Party chest proposal: 4 events, 8 universal sets, 20 total items",
+      "countStatus": "draft_unverified",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Some sets are partial; emit individual keyed icons, not invented ten-slot sets"
+    },
+    {
+      "key": "world_boss_chests",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1454",
+      "draftEvidence": "World Boss proposal: 3 boss-specific ten-piece gathering collections; 1% drop chance is gameplay metadata only",
+      "countStatus": "draft_unverified",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Gathering pieces are not automatically ten conventional armor slots; inspect exact source table and item slots"
+    },
+    {
+      "key": "other_2_0_drops",
+      "draftContract": null,
+      "draftEvidence": "Quests, guild, seasonal or enemy reward equipment when defined by an authoritative source",
+      "countStatus": "unknown",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Use canonical item IDs, source identity and eligibility; avoid duplicate art for same item"
+    }
+  ],
+  "itemRecordTemplate": {
+    "itemId": null,
+    "itemName": null,
+    "setId": null,
+    "slot": null,
+    "tier": null,
+    "classId": null,
+    "path": null,
+    "sourceBucket": null,
+    "sourceTableId": null,
+    "primaryResourceId": null,
+    "secondaryResourceId": null,
+    "sameSlotReferencePath": null,
+    "priorTierReferencePath": null,
+    "resourceIconPaths": [],
+    "distinctiveSilhouette": null,
+    "light": "upper-left-10oclock",
+    "camera": "slot-specific-product-three-quarter",
+    "styleLock": "veldryn-eq2-storybook-v1",
+    "materialPlan": null,
+    "tierUpgradeDelta": null,
+    "candidateMasterPath": null,
+    "exportPath": null,
+    "artStatus": "identified",
+    "automatedQaReport": null,
+    "visualQa": null,
+    "deviceQa": null,
+    "reviewer": null,
+    "evidence": [],
+    "referenceKitId": "veldryn-eq2-refkit-style4-v1",
+    "styleReferencePath": null,
+    "sourceReferenceSha256": null,
+    "modelName": null,
+    "modelVersion": null,
+    "promptVersion": "veldryn-eq2-generation-style4-v1",
+    "referenceHashes": {},
+    "seed": null,
+    "outputColorSpace": "sRGB",
+    "slotCompositionVisualCheck": null,
+    "lightingVisualCheck": null,
+    "materialFidelityVisualCheck": null,
+    "peerComparisonVisualCheck": null,
+    "largeAndSmallSizePreviews": [],
+    "artistApprovedAt": null,
+    "weaponFamily": null,
+    "offhandFamily": null,
+    "poseId": null,
+    "poseGuideVersion": "2026-11-19-style4-v1",
+    "poseVisualCheck": null,
+    "viewFacingVisualCheck": null,
+    "renderer": "storybook-hand-painted-dark-fantasy",
+    "painterlyStyleVisualCheck": null
+  },
+  "items": [],
+  "referenceKit": {
+    "id": "veldryn-eq2-refkit-style4-v1",
+    "status": "not_approved",
+    "approvedBy": null,
+    "approvedAt": null,
+    "referenceAssets": [],
+    "notes": "New Style 4 direction is approved, but selected concept still needs archival, SHA256, and cropped single-slot Style 4 reference masters. Do not reuse rough-pixel references as style authorities."
+  },
+  "promptLock": {
+    "id": "veldryn-eq2-generation-style4-v1",
+    "status": "draft",
+    "immutableStyleSource": "docs/art/EQUIPMENT_2_0_ICON_STANDARD.md",
+    "procedureSource": "docs/art/EQUIPMENT_2_0_GENERATION_PLAYBOOK.md",
+    "approvedAt": null,
+    "poseSource": "docs/art/EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md",
+    "poseManifest": "docs/art/equipment-2-0-pose-lock.json"
+  },
+  "visualDirection": {
+    "status": "approved",
+    "selectedStyle": "Style 4 — grounded dark-fantasy storybook painterly inventory equipment",
+    "selectedOn": "2026-11-19",
+    "conceptAssetLocation": "project-conversation-fourth-example",
+    "conceptAssetHash": null,
+    "assetArchiveStatus": "not_archived",
+    "note": "Selected concept establishes look, but exact sample image still needs to be archived and hashed; checkerboard is mock presentation and must never be treated as transparency."
+  },
+  "catalogAudit": {
+    "productionUnit": "canonical_item_id",
+    "setPackaging": "individual_icon_per_real_piece",
+    "sourceBranch": "feature/equipment-crafting-2-hidden-foundation-20261118",
+    "sourcePr": 1382,
+    "sourceStatus": "hidden_unmerged_subject_to_sync",
+    "craftedTierRangeVerified": [
+      1,
+      4
+    ],
+    "craftedSets": 15,
+    "craftedSetSizes": [
+      2,
+      3,
+      4
+    ],
+    "craftedSetPieces": 42,
+    "standalones": 24,
+    "armamentTemplates": 52,
+    "allTemplates": 118,
+    "fullTenPieceSets": 0,
+    "scopeNote": "Counts verified from hidden PR #1382 description and EQ2 mobile catalog. Canonical item IDs may change; rerun source audit after branch sync. Do not generate invented T5+ crafted set pieces."
+  },
+  "exportPolicy": {
+    "default": "standalone_webp_per_canonical_item_id",
+    "canvasPx": [
+      192,
+      192
+    ],
+    "legacyAtlas": "optional_only_when_runtime_requires_id_to_cell_mapping",
+    "neverFillNonexistentSlots": true
+  },
+  "firstCalibrationBatch": {
+    "status": "planned_not_generated",
+    "verifiedFrom": "apps/mobile/src/content/equipment-v2-catalog.ts in hidden PR #1382",
+    "sets": [
+      {
+        "setId": "EQ2_SET_FIELDBORN_GUARD",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_GUARD_HELMET",
+          "EQ2_FIELDBORN_GUARD_CHEST"
+        ]
+      },
+      {
+        "setId": "EQ2_SET_FIELDBORN_TRAIL",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_TRAIL_GLOVES",
+          "EQ2_FIELDBORN_TRAIL_BOOTS"
+        ]
+      },
+      {
+        "setId": "EQ2_SET_FIELDBORN_ACOLYTE",
+        "tier": 1,
+        "itemIds": [
+          "EQ2_FIELDBORN_ACOLYTE_CAPE",
+          "EQ2_FIELDBORN_ACOLYTE_AMULET"
+        ]
+      }
+    ],
+    "totalExpectedIcons": 6,
+    "notes": "Six actual canonical items across three 2-piece compact sets. No class ten-slot set implied. Images remain not generated until visual masters and style kit approved."
+  }
+}

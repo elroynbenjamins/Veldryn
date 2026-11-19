@@ -46,6 +46,8 @@ export interface PartyMemberSummary {
   accountId: string;
   characterId: string;
   characterName: string;
+  /** Stable account identity shown across social surfaces; active hero remains separate. */
+  socialName?:string;
   className: string;
   role: PartyRole;
   isLeader: boolean;

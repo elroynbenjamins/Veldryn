@@ -1,11 +1,14 @@
 import {profileT,profileText,profileBadge,profileRecordValue} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {useCallback,useEffect,useMemo,useState} from 'react';
+import {socialIdentityT} from '../i18n/social-identity';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
+import {ProfileCharacterSelector} from '../components/ProfileCharacterSelector';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
 import {ProfileEquippedGearShowcase} from '../components/ProfileEquippedGearShowcase';
@@ -35,12 +38,40 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const c=state.character,account=state.account,{session}=useAuthSession();
  const [publicSelf,setPublicSelf]=useState<PublicPlayerProfileV43|null>(null),[loadingPublic,setLoadingPublic]=useState(false),[publicError,setPublicError]=useState('');
+ const profileRequest=useRef(0);
  const summary=useMemo(()=>localProfileSummary(state),[state]);
- const refreshPublic=useCallback(async()=>{if(!onlineConfigured||!session){setPublicSelf(null);setPublicError('');return;}setLoadingPublic(true);setPublicError('');try{setPublicSelf(await publicPlayerProfileV43(session.user.id));}catch(error){setPublicSelf(null);setPublicError('Online profile could not refresh');}finally{setLoadingPublic(false)}},[session?.user.id]);
- useEffect(()=>{void refreshPublic()},[refreshPublic]);
+ const refreshPublic=useCallback(async()=>{
+  const version=++profileRequest.current,accountId=session?.user.id;
+  if(!onlineConfigured||!accountId){setPublicSelf(null);setPublicError('');return;}
+  setPublicSelf(null);setLoadingPublic(true);setPublicError('');
+  try{
+   const profile=await publicPlayerProfileV43(accountId);
+   if(profileRequest.current===version)setPublicSelf(profile);
+  }catch{
+   if(profileRequest.current===version){setPublicSelf(null);setPublicError('Online profile could not refresh');}
+  }finally{
+   if(profileRequest.current===version)setLoadingPublic(false);
+  }
+ },[session?.user.id]);
+ useEffect(()=>{void refreshPublic();return()=>{profileRequest.current++}},[refreshPublic]);
+ const selectPublicHero=useCallback(async(characterId:string)=>{
+  if(!session||!publicSelf||publicSelf.character.id===characterId)return;
+  const version=++profileRequest.current;
+  setLoadingPublic(true);setPublicError('');
+  try{
+   const chosen=await publicPlayerProfileV43(session.user.id,characterId);
+   if(profileRequest.current!==version)return;
+   if(chosen)setPublicSelf(chosen);
+   else setPublicError('This character profile is unavailable.');
+  }catch{
+   if(profileRequest.current===version)setPublicError('Unable to load character profile.');
+  }finally{
+   if(profileRequest.current===version)setLoadingPublic(false);
+  }
+ },[session?.user.id,publicSelf]);
  if(!c)return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={s.heading}>{profileT(language,"Profile")}</Text><Panel><Text style={s.copy}>{profileT(language,"Create a character to build your profile.")}</Text></Panel></ScrollView>;
 
- const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?.masteryShowcaseActionIds?.length?publicSelf.masteryShowcaseActionIds:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
+ const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?publicSelf.masteryShowcaseActionIds??[]:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
  const achievementEntries=achievementIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id),prestige=profileAchievementPrestige(id);return {key:id,label:profileAchievementLabel(id),meta:def?profileText(language,label(def.category)):profileT(language,'Achievement'),prestige:prestige.tone,badge:profileBadge(language,prestige.badge)}});
  const recordPrestige=profileRecordPrestige();
  const recordEntries=recordIds.map(id=>{const record=publicSelf?.recordEntries?.[id]??state.account.journalState?.records?.[id];return {key:id,label:profileText(language,profileRecordLabel(id)),value:record?profileRecordValue(language,id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:profileBadge(language,recordPrestige.badge)}});
@@ -51,18 +82,20 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const selectedProfileCharacterId=publicSelf?.character.id??c.id;
  const selectedLocally=selectedProfileCharacterId===c.id||(state.otherCharacters??[]).some(row=>row.character.id===selectedProfileCharacterId);
  const displayedGear=selectedLocally?localProfileGear(state,selectedProfileCharacterId):publicSelf?.equippedGear??[];
- const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
- const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
+ const favoriteSkillId=publicSelf?publicSelf.favoriteSkillId??undefined:summary.highestSkill?.skillId;
+ const profileHero=selectedProfileCharacterId===c.id?c:(state.otherCharacters??[]).find(row=>row.character.id===selectedProfileCharacterId)?.character;
+ const favoriteCompanionId=publicSelf?publicSelf.favoriteCompanionId??undefined:profileHero?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',profileStateLabel=publicError?profileT(language,"SYNC ISSUE"):publicSelf?.visibility==='public'?profileT(language,"PUBLIC PROFILE"):publicSelf?.visibility==='guild'?profileT(language,"GUILD PROFILE"):publicSelf?.visibility==='private'?profileT(language,"PRIVATE PROFILE"):profileT(language,"LOCAL PROFILE");
  const bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?profileT(language,"Link this guest account before publishing biography and showcase changes."):profileT(language,"Add a short biography from Customize Profile to tell other players about your character or play style.")):profileT(language,"This local profile is fully usable on-device. Sign in when you want to publish social profile details.");
 
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>{profileT(language,"PLAYER IDENTITY")}</Text><Text accessibilityRole="header" style={s.heading}>{profileT(language,"Profile")}</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,publicError?s.syncIssue:online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
+  {publicSelf?<Text style={s.socialLabel}>{socialIdentityT(language,'Social name')} · {publicSelf.displayName}</Text>:null}
   <View style={s.quickActions}>
    <View style={s.customizeAction}><GameButton compact title={profileT(language,"Customize")} onPress={()=>onNavigate?.('Customize')}/></View>
   </View>
 
-  {publicSelf?<PublicProfileScene profile={publicSelf} showGuild={false}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
+  {publicSelf?<><PublicProfileScene profile={publicSelf} showGuild={false}/>{ACCOUNT_SOCIAL_IDENTITY_RELEASED?<ProfileCharacterSelector choices={publicSelf.characterChoices} selectedId={publicSelf.character.id} onSelect={id=>void selectPublicHero(id)} disabled={loadingPublic}/>:null}</>:<ProfileScenePreview state={state} backgroundId={background}/>}
   {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>{profileT(language,"Online profile could not refresh")}</Text><Text style={s.syncText}>{profileT(language,"Your local identity is still shown safely. Retry to refresh privacy and showcase selections.")}</Text></View><View style={s.syncButton}><GameButton compact title={profileT(language,"Retry")} tone="secondary" onPress={()=>refreshPublic()}/></View></View>:null}
 
   <Panel>
@@ -91,7 +124,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
 
   <View style={s.highlights}>
    <View style={s.sectionHead}><Text style={s.section}>{profileT(language,"FAVORITES")}</Text><Text style={s.sectionMeta}>{profileT(language,"Showcased by player")}</Text></View>
-   <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
+   <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={!publicSelf&&summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?profileT(language,'Highest current skill · Lv. {level}',{level:summary.highestSkill.level}):favoriteSkillId?profileT(language,'Showcased by player'):undefined} favoriteCompanionId={favoriteCompanionId}/>
   </View>
 
   <ProfileEquippedGearShowcase key={publicSelf?publicSelf.accountId+':'+publicSelf.character.id:c.id} gear={displayedGear} reduceMotion={state.settings.reduceMotion}/>
@@ -109,6 +142,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  headingRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
  heading:{...typography.hero,color:C.text},
+ socialLabel:{...typography.caption,color:C.muted,fontWeight:'800'},
  onlineBadge:{fontSize:9,fontWeight:'900',letterSpacing:.7,paddingHorizontal:8,paddingVertical:5,borderRadius:99,borderWidth:1},online:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},local:{color:C.muted,borderColor:C.line,backgroundColor:C.panel2},syncIssue:{color:C.warning,borderColor:C.warning,backgroundColor:C.warningSurface},syncCard:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:C.warningSurface},syncTitle:{...typography.bodyStrong,color:C.warning},syncText:{...typography.caption,color:C.muted},syncButton:{width:82},
  aboutRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},copy:{...typography.body,color:C.muted,lineHeight:19},bio:{...typography.body,color:C.text,lineHeight:20},
  quickActions:{flexDirection:'row',flexWrap:'wrap',gap:5,marginTop:8},customizeAction:{flex:1.2,minWidth:94},action:{flex:1,minWidth:88},

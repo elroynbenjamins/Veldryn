@@ -89,11 +89,10 @@ function DungeonCard({language,dungeon,currentLevel,currentPower,mode,onPress,on
  const status=dungeon.available?ct(language,'browse.available'):ct(language,'browse.locked')+': '+dungeon.lockedReason;
  const inDev=dungeon.lockedReason==='In Development';
  const selectedEligibility=coopTierEligibility(dungeon,selectedTier,currentLevel,mode==='live'?currentPower:Number.POSITIVE_INFINITY);
- const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
  return <View style={[s.questCard,expanded&&s.expandedQuest,!dungeon.available&&s.lockedQuest]}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={dungeon.name+'. '+status+'. '+ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.cardPressArea,pressed&&s.pressed]}>
      <View style={s.cardRow}><View style={s.cardThumbHolder}><CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>{inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}</View>
-       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?roomCount+' '+a('rooms before the boss')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
+       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?a('Boss choice every 7 rooms')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
        <Text style={s.compactChevron}>{expanded?'⌄':'›'}</Text>
      </View>
    </Pressable>
@@ -281,11 +280,11 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   toolbarBackText:{fontSize:27,lineHeight:31,color:coopColors.cyan,fontWeight:'600'},
   toolbarTitle:{fontSize:15,lineHeight:22,fontWeight:'800',letterSpacing:1.1,color:coopColors.text},
   finderHeader:{flexDirection:'row',alignItems:'center',gap:12,marginTop:2},
-  finderTitle:{fontSize:23,lineHeight:28,fontWeight:'800',color:coopColors.text},
-  finderSubtitle:{fontSize:12,lineHeight:17,color:coopColors.textMuted,marginTop:3},
+  finderTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:coopColors.text},
+  finderSubtitle:{fontSize:11,lineHeight:15,color:coopColors.textMuted,marginTop:2},
   shopShortcut:{minWidth:74,minHeight:42,paddingHorizontal:7,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,borderWidth:1,borderColor:coopColors.cyan,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
   shopShortcutText:{fontSize:13,fontWeight:'800',color:coopColors.text},
-  partyHeading:{fontSize:12,lineHeight:17,fontWeight:'800',color:coopColors.textSecondary,marginTop:4},
+  partyHeading:{fontSize:11,lineHeight:16,fontWeight:'800',color:coopColors.textSecondary,marginTop:3},
   modeSegment:{flexDirection:'row',gap:4,padding:4,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},
   modeOption:{flex:1,minHeight:42,justifyContent:'center',alignItems:'center',borderRadius:9},
   modeOptionSelected:{backgroundColor:coopColors.selection,borderWidth:1,borderColor:coopColors.cyan},
@@ -296,15 +295,15 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   sectionDivider:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:1},
   dividerLine:{flex:1,height:1,backgroundColor:coopColors.lineStrong,opacity:.7},
   sectionLabel:{fontSize:12,lineHeight:18,fontWeight:'800',letterSpacing:.7,color:coopColors.textSecondary,textTransform:'uppercase'},
-  availableSection:{gap:9,marginTop:6},
-  cardPressArea:{minHeight:86,padding:10,justifyContent:'center'},
+  availableSection:{gap:6,marginTop:5},
+  cardPressArea:{minHeight:86,paddingHorizontal:9,paddingVertical:6,justifyContent:'center'},
   expandedQuest:{borderColor:coopColors.cyan,backgroundColor:coopColors.surfaceRaised},
   regionMini:{fontSize:10,lineHeight:13,letterSpacing:.7,fontWeight:'700',textTransform:'uppercase',color:coopColors.cyan},
-  compactCardTitle:{fontSize:16,lineHeight:21,fontWeight:'800',color:coopColors.text},
-  compactCardMeta:{fontSize:12,lineHeight:17,color:coopColors.textSecondary},
-  compactCardReward:{fontSize:11,lineHeight:15,color:coopColors.gold,fontWeight:'600'},
+  compactCardTitle:{fontSize:15,lineHeight:20,fontWeight:'800',color:coopColors.text},
+  compactCardMeta:{fontSize:11,lineHeight:16,color:coopColors.textSecondary},
+  compactCardReward:{fontSize:11,lineHeight:15,color:coopColors.gold,fontWeight:'700'},
   compactChevron:{fontSize:22,lineHeight:25,color:coopColors.cyan},
-  expandArea:{gap:9,padding:12,paddingTop:8,borderTopWidth:1,borderTopColor:coopColors.line},
+  expandArea:{gap:8,paddingHorizontal:10,paddingVertical:8,borderTopWidth:1,borderTopColor:coopColors.line},
   tierHeading:{fontSize:12,lineHeight:17,color:coopColors.textSecondary,fontWeight:'700'},
   quickTierRow:{flexDirection:'row',gap:7},
   quickTierButton:{flex:1,minHeight:50,paddingHorizontal:4,justifyContent:'center',alignItems:'center',borderRadius:8,borderWidth:1,borderColor:coopColors.line,backgroundColor:coopColors.surface},

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
-import {projectVerifiedCraftingV2BaseEvidence} from '../equipment-exact-copy-interop-v1.mjs';
+import {projectVerifiedCraftingV2BaseEvidence,v2CombatFamilyCompatible} from '../equipment-exact-copy-interop-v1.mjs';
 
 /** Cross-system integration regression: compile the hidden server Equipment 2
  * TypeScript target first, then pass ACTUAL canonical exact copies through
@@ -11,6 +11,7 @@ const output='../../../../../dist-equipment-v2/server/equipment/';
 const {v2ServerRecipeAndPiece,V2_SERVER_PIECES,V2_SERVER_MANIFEST_VERSION}=require(output+'equipment-crafting-v2-manifest.js');
 const {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION}=require(output+'equipment-crafting-v2-rolls.js');
 const {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent}=require(output+'equipment-crafting-v2-instances.js');
+const {V2_EQUIPMENT_FAMILY_CLASSES}=require(output+'equipment-crafting-v2-weapon-families.js');
 const roles={
  IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
  WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
@@ -46,10 +47,10 @@ function project(classId,items,receiptApproved=true){
   },
  });
 }
-const weaponPieces=V2_SERVER_PIECES.filter(p=>p.slot==='weapon'&&p.tier===2);
+const weaponPieces=V2_SERVER_PIECES.filter(p=>p.slot==='weapon'&&p.tier===2&&p.originClass);
 assert.equal(weaponPieces.length,9);
 for(const weapon of weaponPieces){
- const classId=weapon.classRestriction;
+ const classId=weapon.originClass;
  assert.ok(classId in roles,'All weapon templates need a playable class');
  assert.equal(weapon.role,roles[classId],classId+' canonical combat role must match the class');
  const item=exact(weapon.id);
@@ -68,9 +69,9 @@ assert.equal(offhandPieces.length,4);
 for(const piece of offhandPieces){
  assert.equal(piece.hands,undefined,'Offhand must not pretend to be a weapon with hand count');
  const hand=exact(piece.id);
- const main=exact('EQ2_WEAPON_T2_'+piece.classRestriction);
+ const main=exact('EQ2_WEAPON_T2_'+piece.originClass);
  assert.equal(main.hands,'one','Only one-hand weapon combinations may equip offhand');
- const r=project(piece.classRestriction,[main,hand]);
+ const r=project(piece.originClass,[main,hand]);
  assert.equal(r.sources.length,2);
  assert.equal(r.baseTotals.defense,main.baseStats.defense+hand.baseStats.defense);
 }
@@ -82,7 +83,21 @@ assert.equal(project('STONECALLER',[general]).sources.length,1,
 const twoHand=exact('EQ2_WEAPON_T2_WAYFINDER');
 const unrelatedOffhand=exact('EQ2_OFFHAND_T2_IRONWARDEN');
 assert.throws(()=>project('WAYFINDER',[twoHand,unrelatedOffhand]),
- /eq2_cv2_(role_mismatch|wrong_class|two_hand_offhand_conflict)/);
+ /eq2_cv2_(incompatible_weapon_family|two_hand_offhand_conflict)/);
+for(const [family,classes] of Object.entries(V2_EQUIPMENT_FAMILY_CLASSES)){
+ for(const classId of Object.keys(roles)){
+  assert.equal(v2CombatFamilyCompatible(classId,family),classes.includes(classId),'Combat/Equipment family drift '+family+' '+classId);
+ }
+}
+const genericAxe=exact('EQ2_WEAPON_T2_AXE');
+assert.equal(project('IRONWARDEN',[genericAxe]).baseTotals.attackPower,genericAxe.baseStats.attack);
+assert.equal(project('RAVAGER',[genericAxe]).sources[0].equipmentFamily,'axe');
+const wand=exact('EQ2_WEAPON_T2_HEXWEAVER');
+assert.equal(project('DAWNKEEPER',[wand]).baseTotals.attackPower,wand.baseStats.attack);
+assert.equal(project('STONECALLER',[wand]).role,'support');
+const staff=exact('EQ2_WEAPON_T2_STONECALLER');
+assert.equal(project('HEXWEAVER',[staff]).sources[0].equipmentFamily,'staff');
+assert.throws(()=>project('IRONWARDEN',[wand]),/eq2_cv2_incompatible_weapon_family/);
 assert.throws(()=>project('WAYFINDER',[twoHand],false),/eq2_cv2_receipt_not_verified/);
 const tampered={...twoHand,baseStats:{...twoHand.baseStats,attack:9999}};
 assert.throws(()=>project('WAYFINDER',[tampered]),/eq2_cv2_receipt_not_verified/);

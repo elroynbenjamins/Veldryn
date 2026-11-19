@@ -42,7 +42,7 @@ function rejects(fn:()=>unknown,match:RegExp){
 }
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,candidate as unknown as PersistedEnemyKitV2),/invalid_stored_kit/);
 rejects(()=>prepareSoloEnemyKitsV2(candidate.preparedEnemies,options),/unverified_or_already_compiled_enemy/);
-rejects(()=>prepareSoloEnemyKitsV2(enemies,{...options,equipmentTier:1}),/unsupported_region_or_tier/);
+rejects(()=>prepareSoloEnemyKitsV2([base('UNKNOWN','unclassified')],{...options,equipmentTier:1,eliteEnemyIds:[]}),/unsupported_t1_archetype/);
 rejects(()=>prepareSoloEnemyKitsV2(enemies,{...options,eliteEnemyIds:['OTHER']}),/invalid_elite_enemy_ids/);
 rejects(()=>prepareSoloEnemyKitsV2([...enemies,enemies[0]],options),/unverified_or_already_compiled_enemy/);
 rejects(()=>prepareSoloEnemyKitsV2([{...enemies[0],abilities:[

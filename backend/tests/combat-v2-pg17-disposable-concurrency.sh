@@ -5,7 +5,7 @@ set -euo pipefail
 : "${COMBAT_V2_DISPOSABLE_DB:?Must explicitly opt in to a disposable database}"
 [[ "${COMBAT_V2_DISPOSABLE_DB}" == "YES_TEST_DATABASE" ]] || { echo 'Disposable DB opt-in required' >&2; exit 1; }
 [[ "${PGDATABASE:-}" == "combat_v2_test" ]] || { echo 'Refuse to run outside combat_v2_test database' >&2; exit 1; }
-cd "$(dirname "$0")/../../.."
+cd "$(dirname "$0")/../.."
 run() { psql -X -v ON_ERROR_STOP=1 -qAt "$@"; }
 run <<'SQL'
 create role anon nologin;

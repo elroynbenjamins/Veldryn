@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {dungeonWeeklyObjective,projectVerifiedDungeonWeeklyProgress,verifiedDungeonWeeklyCount,WEEKLY_DUNGEON_OBJECTIVES} from '../../../apps/mobile/src/core/dungeon-weekly-quests';
-import {periodKey,seasonalQuestBoard} from '../../../apps/mobile/src/core/seasonal-quests';
+import {periodKey,seasonalQuestBoard,recordSeasonalActivity} from '../../../apps/mobile/src/core/seasonal-quests';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 import {DUNGEON_ARTIFACTS,dungeonArtifactBonuses,rollDungeonArtifact} from '../../src/server/coop/dungeon-artifacts';
 import {roomArtifactOffers,applyRoomArtifact} from '../../src/server/coop/room-artifact-choices';
@@ -29,6 +29,8 @@ const state={
  skills:[],defeatedBossIds:['FALLEN_KNIGHT'],
  currentRegionId:'ASTERFALL',
 } as unknown as GameState;
+const forged=recordSeasonalActivity(state,'dungeon',999,date.getTime());
+assert.equal(forged,state,'Only committed dungeon results can credit the new weekly quest tag');
 const before=seasonalQuestBoard(state,'weekly',date);
 assert.equal(before.length,3,'Keep the existing number of weekly quest slots');
 assert.equal(before.filter(item=>item.tag==='dungeon').length,1,'One weekly slot must always be a dungeon objective at level 10+');

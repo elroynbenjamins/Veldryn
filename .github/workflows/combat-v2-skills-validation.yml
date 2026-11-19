@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -108,6 +108,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
       - name: Validate disabled-by-default solo reward settlement contract
         run: node backend/dist/server/combat/v2/__tests__/solo-reward-settlement.js
+      - name: Validate pinned SQL reward transaction, rollback and 16 retries
+        run: node backend/dist/server/combat/v2/__tests__/solo-reward-transactional-store.js
       - name: Validate full class, approved gear base, set and affix pipeline
         run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
       - name: Validate all nine class roles through the full gear pipeline
@@ -223,3 +225,22 @@ jobs:
         run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
       - name: Exercise actual hidden migrations with 16 independent sessions
         run: bash backend/tests/combat-v2-pg17-disposable-concurrency.sh
+
+  cross_system_balance_matrix:
+    name: Synthetic 9-class 18-spec T1-T5 and Enemy V2 matchup matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile private Equipment, Skills and Enemies 2.0 contracts
+        run: pnpm --dir backend build
+      - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
+        run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js

@@ -3,13 +3,13 @@ import type {GameState,CharacterState,RewardBundle} from './types';
 export type MealBonusKind='gathering_speed'|'crafting_speed'|'combat_xp'|'noncombat_speed';
 export interface MealBonusDefinition {itemId:string;kind:MealBonusKind;percent:number;durationHours:number;label:string;}
 export interface ActiveMealBuff {itemId:string;remainingSeconds:number;}
-/** Bonus rates are intentionally small, independent of normal food healing. */
+/** Improved 2x meal rates; one explicitly activated meal at a time, separate from Supply boosts. */
 export const MEAL_BONUSES:readonly MealBonusDefinition[]=[
- {itemId:'IRONWOOD_STEW',kind:'gathering_speed',percent:2,durationHours:3,label:'+2% Gathering speed'},
- {itemId:'GLASSFIN_FEAST',kind:'gathering_speed',percent:3,durationHours:4,label:'+3% Gathering speed'},
- {itemId:'FROSTED_ICEFIN',kind:'crafting_speed',percent:3,durationHours:4,label:'+3% Crafting speed'},
- {itemId:'CHARRED_EMBERFIN',kind:'combat_xp',percent:4,durationHours:4,label:'+4% Combat XP'},
- {itemId:'ASHLANDS_EMBER_STEW',kind:'noncombat_speed',percent:5,durationHours:4,label:'+5% Non-combat skill speed'},
+ {itemId:'IRONWOOD_STEW',kind:'gathering_speed',percent:4,durationHours:3,label:'+4% Gathering speed'},
+ {itemId:'GLASSFIN_FEAST',kind:'gathering_speed',percent:6,durationHours:4,label:'+6% Gathering speed'},
+ {itemId:'FROSTED_ICEFIN',kind:'crafting_speed',percent:6,durationHours:4,label:'+6% Crafting speed'},
+ {itemId:'CHARRED_EMBERFIN',kind:'combat_xp',percent:8,durationHours:4,label:'+8% Combat XP'},
+ {itemId:'ASHLANDS_EMBER_STEW',kind:'noncombat_speed',percent:10,durationHours:4,label:'+10% Non-combat skill speed'},
 ];
 export function mealBonusDef(itemId:string|undefined){return MEAL_BONUSES.find(row=>row.itemId===itemId);}
 export function normalizeMealBuff(value:unknown):ActiveMealBuff|undefined{

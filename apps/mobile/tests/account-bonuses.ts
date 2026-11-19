@@ -11,15 +11,15 @@ ok(!overview.temporary,'Fresh character should not report a temporary account bo
 state={...state,character:{...state.character!,
  faith:{...(state.character!.faith as any),xp:0,selectedBlessingId:'EMBER_VOW',favoriteBlessingIds:[],hideWeakerBlessings:true},
  ownedBoostIds:['boost:combat_focus'],
- activeDailySupplyBoost:{type:'combat_xp',remainingSeconds:3600},
 }};
+state={...state,account:{...state.account,dailySupplies:{schemaVersion:2,totalClaims:1,bank:{},active:{combat_xp:{type:'combat_xp',bonus:.1,seconds:7200,remainingSeconds:3600}},queued:{}}}};
 overview=accountBonusOverview(state);
 const combat=overview.modifiers.find(row=>row.id==='combatPowerMultiplier');
 ok(!!combat&&combat.percent>8&&combat.percent<8.2,'Overview should reflect compounded Faith + permanent combat power math');
 ok(overview.sources.some(row=>row.id==='faith:EMBER_VOW'&&row.scope==='character'),'Selected Faith blessing should appear as an active character source');
 ok(overview.sources.some(row=>row.label==='Combat Focus Sigil'&&row.scope==='character'),'Owned permanent boost should appear as an active character source');
 ok(overview.temporary?.label==='Combat XP'&&overview.temporary.percent===10&&overview.temporary.remainingSeconds===3600,'Active Daily Supplies boost should appear with exact remaining qualifying time');
-ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily Supplies')),'Temporary Daily Supplies source should be labeled separately from permanent modifiers');
+ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Supply Journey')),'Temporary Daily Supplies source should be labeled separately from permanent modifiers');
 // Entitlement assertions compare against the existing effective baseline because account bonuses stack multiplicatively.
 const preEntitlementDropPercent=overview.modifiers.find(row=>row.label==='Drop chance')?.percent??0;
 const preEntitlementCraftingPercent=overview.modifiers.find(row=>row.label==='Crafting speed')?.percent??0;

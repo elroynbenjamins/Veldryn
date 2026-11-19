@@ -18,6 +18,8 @@ import {AsterfallWelcomeModal} from './src/components/AsterfallWelcomeModal';
 import {StartupScreen} from './src/components/StartupScreen';
 import {pickStartupScene} from './src/theme/startup-art';
 import {AsyncStorageGameRepository} from './src/storage/async-storage-repository';
+import {setBaseMusic} from './src/storage/audio';
+import {backgroundMusicFor} from './src/core/music-context';
 import {ActiveActivity,ClassId,CombatTacticId,GameState,QueuedActivity,RewardBundle} from './src/core/types';
 import type {HuntGoalId} from './src/core/hunt-goals';
 import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claimSeasonalContract,craftRecipe,createCharacter,depositAllMaterials,depositToBank,sellBankItem,depositGoldToBank,withdrawGoldFromBank,eatFood,equipFood,equipGatheringTool,newGame,previewActivityReward,salvageItem,sellItem,travelToRegion,unequipItem,upgradeStorage,withdrawFromBank} from './src/core/game';
@@ -168,7 +170,7 @@ type NavigationContext={skillsMode:'gathering'|'crafting'|'novice'|'faith';selec
 const primaryTabs:PrimaryTab[]=['Home','Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
-    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Daily Supplies');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');case 'AdventurersJournal':return appText(language,"Adventurer's Journal");case 'Bestiary':return appText(language,'Bestiary');case 'WorldMilestones':return appText(language,'World Milestones');
+    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return appText(language,'Account');case 'Activity':return appText(language,'Characters');case 'DailySupplies':return appText(language,'Supply Journey');case 'AccountBonuses':return appText(language,'Account Bonuses');case 'RewardsInbox':return appText(language,'Rewards Inbox');case 'MasteryHall':return appText(language,'Mastery Hall');case 'AdventurersJournal':return appText(language,"Adventurer's Journal");case 'Bestiary':return appText(language,'Bestiary');case 'WorldMilestones':return appText(language,'World Milestones');
     case 'Quests':return t(language,'more.quests');case 'Companions':return appText(language,'Companions');case 'Skills':return t(language,'more.skills');case 'Events':return t(language,'more.events');case 'Friends':return t(language,'more.friends');case 'Guild':return t(language,'more.guild');case 'Settings':return t(language,'more.settings');case 'Store':return appText(language,'Store');case 'Account':return appText(language,'Account');case 'Dungeon':return appText(language,'Dungeon');case 'Empty':return appText(language,'Empty');
     case 'WorldBossPreview':return 'World Bosses';case 'PartyEventPreview':return 'Party Events';case 'PlayerMarketPreview':return 'Player Market';
     case 'Combat':return appText(language,'Combat');case 'Coop':return appText(language,'Dungeons');
@@ -215,6 +217,9 @@ function VeldrynApp(){
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
+  // Background music follows the current screen and region; dungeons and bosses override it.
+  const musicTrack=backgroundMusicFor({screen:tab,regionId:state?.currentRegionId,hasCharacter:Boolean(state?.character)});
+  useEffect(()=>setBaseMusic(musicTrack),[musicTrack]);
   const [settingsSection,setSettingsSection]=useState<SettingsSection|undefined>();
    const [focusChatEmotes,setFocusChatEmotes]=useState(false);
   const [tabHistory,setTabHistory]=useState<ScreenHistoryEntry<Tab,NavigationContext>[]>([]);

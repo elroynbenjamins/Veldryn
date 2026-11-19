@@ -18,7 +18,6 @@ const sets=[
 
 const reviewRoot=path.join(workspace,'apps/mobile/art-review/beginner-sets-v1');
 const uiRoot=path.join(workspace,'apps/mobile/assets/equipment-ui');
-const skinRoot=path.join(workspace,'apps/mobile/assets/character-runtime/beginner');
 
 async function transparentAtlas(source){
   const {data,info}=await sharp(source)
@@ -36,30 +35,13 @@ async function transparentAtlas(source){
   return sharp(data,{raw:info}).resize(2000,1000,{kernel:'nearest'}).png().toBuffer();
 }
 
-for(const [id,atlasName,skinName] of sets){
+for(const [id,atlasName] of sets){
   const reviewUi=path.join(reviewRoot,'equipment-ui',`${id}-icon-sheet.png`);
   const activeUi=path.join(uiRoot,`${id}-icon-sheet.png`);
-  const reviewSkin=path.join(reviewRoot,'skins',id);
-  const activeSkin=path.join(skinRoot,id);
   await fs.mkdir(path.dirname(reviewUi),{recursive:true});
-  await fs.mkdir(reviewSkin,{recursive:true});
-  await fs.mkdir(activeSkin,{recursive:true});
   const atlas=await transparentAtlas(path.join(generated,atlasName));
   await Promise.all([fs.writeFile(reviewUi,atlas),fs.writeFile(activeUi,atlas)]);
 
-  const strip=path.join(generated,skinName);
-  await fs.copyFile(strip,path.join(reviewSkin,'turnaround-source.png'));
-  const metadata=await sharp(strip).metadata();
-  const cellWidth=Math.floor(metadata.width/4),cellHeight=metadata.height;
-  const views=[['male-front.png',0],['male-back.png',1],['female-front.png',2],['female-back.png',3]];
-  for(const [name,column] of views){
-    const portrait=await sharp(strip)
-      .extract({left:column*cellWidth,top:0,width:cellWidth,height:cellHeight})
-      .resize(1024,1536,{fit:'contain',kernel:'nearest',background:{r:4,g:3,b:2,alpha:1}})
-      .png()
-      .toBuffer();
-    await Promise.all([fs.writeFile(path.join(reviewSkin,name),portrait),fs.writeFile(path.join(activeSkin,name),portrait)]);
-  }
 }
 
 for(const [id] of sets){
@@ -73,10 +55,6 @@ for(const [id] of sets){
     if(data[i+3]>0&&data[i]>150&&data[i+2]>100&&data[i+1]<120&&data[i]>data[i+1]*1.5&&data[i+2]>data[i+1]*1.2)fringe++;
   }
   if(!transparent||fringe)throw new Error(`Atlas transparency audit failed: ${id} (${fringe} key-color pixels)`);
-  for(const name of ['male-front.png','male-back.png','female-front.png','female-back.png']){
-    const meta=await sharp(path.join(skinRoot,id,name)).metadata();
-    if(meta.width!==1024||meta.height!==1536)throw new Error(`Invalid portrait output: ${id}/${name}`);
-  }
 }
 
-console.log(`PASS: ${sets.length} transparent beginner atlases and ${sets.length*4} 1024x1536 runtime portraits.`);
+console.log(`PASS: ${sets.length} transparent beginner atlases.`);

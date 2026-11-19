@@ -16,6 +16,7 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {accountEntitlementBenefits} from './account-entitlements';
 import {tryStoreEquipmentInPouch,equipmentPouchForCharacter} from './equipment-pouch';
+import {activeDailySupplyBoosts,commitDailySupplyTimedBoost,dailySupplyQueued,migrateLegacyDailySupplies} from './daily-supplies';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=7;
@@ -157,13 +158,69 @@ function scheduleWaiting(queue:EquipmentCraftJob[],capacity:number,nowMs:number,
   return [...ready,...active,...scheduled];
 }
 
+/**
+ * Advances the shared Forge clock using server-provided UTC time.
+ *
+ * A Supply charge is spent once per wall-clock second with at least one active
+ * Forge job, regardless of the number of parallel slots. Ready jobs stop
+ * consuming time. Queued jobs start at the actual completion event, not at the
+ * time the player happens to reopen the Forge.
+ *
+ * Timed alchemy/processing take priority when simultaneously active: they
+ * consume their one shared Crafting Speed charge through the activity ledger.
+ * Forge jobs continue normally during these sessions so time is never debited
+ * to the same account twice.
+ */
+export function advanceForgeSupply(state:GameState,nowMs:number):GameState{
+  if(!Number.isSafeInteger(nowMs)||nowMs<0)throw new Error('invalid_forge_clock');
+  let current=migrateLegacyDailySupplies(state);
+  const supply=current.account.dailySupplies!,previous=supply.forgeSettledAtMs;
+  if(previous!==undefined&&nowMs<previous)return current; // Never rewind a trusted timestamp.
+  const start=previous??nowMs,capacity=equipmentCraftSlotBreakdown(current).capacity;
+  let clock=start,queue=scheduleWaiting(equipmentCraftingQueue(current),capacity,clock);
+  let steps=0;
+  const primaryCrafting=current.activity?.kind==='alchemy'||current.activity?.kind==='processing';
+  while(clock<nowMs){
+    if(++steps>1024)throw new Error('forge_progress_iteration_limit');
+    queue=scheduleWaiting(queue,capacity,clock);
+    const running=queue.filter(job=>isActive(job,clock));
+    if(!running.length){
+      // No running work means there is no qualifying Forge time.
+      // scheduleWaiting has already filled all available slots.
+      break;
+    }
+    const supplyBoost=primaryCrafting?undefined:activeDailySupplyBoosts(current).crafting_speed;
+    const bonus=supplyBoost?.bonus??0,speed=1+bonus;
+    const timeUntilCompletion=Math.max(1,Math.ceil(Math.min(...running.map(job=>(job.completesAtMs-clock)/speed))));
+    const chargeMs=supplyBoost?Math.max(1,Math.ceil(supplyBoost.remainingSeconds*1000)):Infinity;
+    const delta=Math.min(nowMs-clock,timeUntilCompletion,chargeMs);
+    if(delta<=0||!Number.isFinite(delta))throw new Error('invalid_forge_progress_delta');
+    const runningIds=new Set(running.map(job=>job.id));
+    const end=clock+delta;
+    // Ordinary time passing moves the clock itself; subtract only extra work.
+    queue=queue.map(job=>runningIds.has(job.id)&&bonus>0
+      ?{...job,completesAtMs:Math.max(end,job.completesAtMs-delta*bonus)}
+      :job);
+    clock=end;
+    if(supplyBoost){
+      const seconds=delta/1000;
+      current=commitDailySupplyTimedBoost(current,{consumedSeconds:seconds,nextRemainders:{},
+        updates:{crafting_speed:{consumedSeconds:seconds,nextRemainders:supplyBoost.remainders??{}}}});
+    }
+  }
+  // If the simulation ended with no work, record the trusted current time.
+  // Future jobs must not receive the preceding idle interval as a speed credit.
+  queue=scheduleWaiting(queue,capacity,nowMs);
+  return {...current,account:{...current.account,equipmentCraftingQueue:queue,
+    dailySupplies:{...current.account.dailySupplies!,forgeSettledAtMs:nowMs}}};
+}
 export function projectedEquipmentCraftingQueue(state:GameState,nowMs:number){
-  return scheduleWaiting(equipmentCraftingQueue(state),equipmentCraftSlotBreakdown(state).capacity,nowMs);
+  return equipmentCraftingQueue(withProjectedQueue(state,nowMs));
+}
+function withProjectedQueue(state:GameState,nowMs:number){
+  return advanceForgeSupply(state,nowMs);
 }
 
-function withProjectedQueue(state:GameState,nowMs:number){
-  return {...state,account:{...state.account,equipmentCraftingQueue:projectedEquipmentCraftingQueue(state,nowMs)}} as GameState;
-}
 
 export function equipmentCraftDurationSeconds(state:GameState,recipeId:string){
   const recipe=timedEquipmentRecipe(recipeId);if(!recipe)throw new Error('Unknown timed equipment recipe');
@@ -497,15 +554,24 @@ export function moveWaitingEquipmentCraft(state:GameState,jobId:string,direction
 }
 
 export function equipmentCraftQueueModel(state:GameState,nowMs:number){
-  const slotInfo=equipmentCraftSlotBreakdown(state),queue=projectedEquipmentCraftingQueue(state,nowMs);
+  const projected=withProjectedQueue(state,nowMs),slotInfo=equipmentCraftSlotBreakdown(projected),queue=equipmentCraftingQueue(projected);
+  // Forecast on an isolated copy. A UI refresh never spends the real charge.
+  const speed=activeDailySupplyBoosts(projected).crafting_speed;
+  const forgeEligible=projected.activity?.kind!=='alchemy'&&projected.activity?.kind!=='processing';
+  const horizon=Math.ceil(Math.max(nowMs,...queue.map(job=>job.completesAtMs))+1000);
+  const forecast=speed&&forgeEligible&&queue.some(row=>row.completesAtMs>nowMs)
+    ?equipmentCraftingQueue(advanceForgeSupply(projected,horizon))
+    :queue;
+  const etaById=new Map(forecast.map(row=>[row.id,row]));
   const waitingIds=queue.filter(row=>isWaiting(row,nowMs)).map(row=>row.id);
   const jobs=queue.map(job=>{
     const recipe=recipeDef(job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
-    const durationSeconds=Math.ceil(jobDurationMs(job)/1000);
+    const eta=etaById.get(job.id)??job;
+    const durationSeconds=Math.ceil(jobDurationMs(eta)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
-    return {...job,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
-      ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((job.completesAtMs-nowMs)/1000)),
-      startInSeconds:waiting?Math.max(1,Math.ceil((job.startedAtMs-nowMs)/1000)):0,
+    return {...job,startedAtMs:eta.startedAtMs,completesAtMs:eta.completesAtMs,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
+      ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((eta.completesAtMs-nowMs)/1000)),
+      startInSeconds:waiting?Math.max(1,Math.ceil((eta.startedAtMs-nowMs)/1000)):0,
       waitingPosition:waiting?waitingIds.indexOf(job.id)+1:0};
   });
   const active=jobs.filter(row=>row.active).length,waiting=jobs.filter(row=>row.waiting).length,ready=jobs.filter(row=>row.ready).length;

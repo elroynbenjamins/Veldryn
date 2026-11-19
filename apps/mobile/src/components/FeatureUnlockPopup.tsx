@@ -1,6 +1,7 @@
 import {creationT,creationText} from '../i18n/creation';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {useMemo} from 'react';
+import {useEffect,useMemo} from 'react';
+import {playSound} from '../storage/audio';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {EarlyFeatureUnlockMoment} from '../core/feature-unlocks';
 import {GameButton} from './GameButton';
@@ -11,6 +12,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 export function FeatureUnlockPopup({moment,reduceMotion=false,onOpen,onLater}:{moment?:EarlyFeatureUnlockMoment;reduceMotion?:boolean;onOpen:()=>void;onLater:()=>void}){
  const language=useGameLanguage();
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+ useEffect(()=>{if(moment)playSound('unlock');},[moment]);
  return <GameModalSurface visible={!!moment} presentation="dialog" reduceMotion={reduceMotion} onClose={onLater} backdropLabel={creationT(language,"Close feature unlock")} surfaceStyle={s.card}>
   {moment?<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={[s.badge,{borderColor:E.goldSoft}]}><Text style={[s.badgeMark,{color:E.goldSoft}]}>✦</Text></View>

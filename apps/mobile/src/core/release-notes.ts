@@ -6,6 +6,17 @@ export type ReleaseNote={
  publishedAt:string;
 };
 
+/** Render a release's published date in UTC, without shifting days for device time zones. */
+export function formatReleaseNoteDate(publishedAt:string):string|null{
+ const match=/^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(publishedAt.trim());
+ if(!match)return null;
+ const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return null;
+ const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+ return `${day} ${monthNames[month-1]} ${year}`;
+}
+
 export function compareReleaseVersions(left:string,right:string):number{
  const parts=(value:string)=>value.trim().split('.').map(part=>Number.parseInt(part.replace(/\D.*$/,''),10)||0);
  const a=parts(left),b=parts(right);

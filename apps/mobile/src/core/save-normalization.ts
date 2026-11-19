@@ -28,7 +28,7 @@ import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBackgroundId,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 import {activityQueueCapacity,normalizeActivityQueue,normalizeActivityQueueGoal,normalizeQueueCombatRecovery} from './activity-queue';
-import {normalizeActiveDailySupplyBoost,activeDailySupplyBoosts,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
+import {normalizeActiveDailySupplyBoost,activeDailySupplyBoosts,normalizeDailySuppliesTrack,normalizeDailySupplyBank,migrateLegacyDailySupplies} from './daily-supplies';
 import {normalizeChatEmoteTrayIds} from './chat-emotes';
 import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
@@ -259,5 +259,5 @@ export function normalizeSave(input:any):GameState{
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return ensurePersonalSeasonalState(rebaseCombatGameState(normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(normalized),normalized.createdAtMs)))));
+  return ensurePersonalSeasonalState(rebaseCombatGameState(normalizeProfileIcon(reconcileAccountCollections(reconcileCombatCompanionUnlocks(migrateGemPouch(migrateLegacyDailySupplies(normalized,input.account?.dailySupplies?.schemaVersion!==2)),normalized.createdAtMs)))));
 }

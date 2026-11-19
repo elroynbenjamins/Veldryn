@@ -1,5 +1,6 @@
 import {useGameplayText} from '../i18n/gameplay';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {playSound} from '../storage/audio';
 import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {ITEMS,itemDef} from '../content/items';
 import {combinedQuantity,enhancedGearStatsAtRank,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from '../core/equipment-enhancement';
@@ -34,6 +35,7 @@ function UpgradeResultMoment({feedback,itemId,state,reduceMotion}:{feedback:Enha
   const upgrade=feedback.kind==='upgrade_success'||feedback.kind==='upgrade_failure',success=feedback.kind==='upgrade_success';
   useEffect(()=>{
     scale.stopAnimation();shake.stopAnimation();scale.setValue(1);shake.setValue(0);
+    if(upgrade)playSound(success?'upgrade_success':'upgrade_fail');
     if(!upgrade||reduceMotion)return;
     if(success)Animated.sequence([Animated.spring(scale,{toValue:1.045,damping:9,stiffness:240,mass:.55,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:16,stiffness:220,mass:.7,useNativeDriver:true})]).start();
     else Animated.sequence([-5,5,-3,3,0].map(value=>Animated.timing(shake,{toValue:value,duration:55,useNativeDriver:true}))).start();

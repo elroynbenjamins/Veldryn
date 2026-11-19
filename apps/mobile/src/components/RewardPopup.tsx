@@ -1,6 +1,8 @@
 import {eventDropTotals} from '../core/activity-rewards';
 import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef} from 'react';
+import {playSound,useRarityRevealSound} from '../storage/audio';
+import {highestRarity} from '../core/rarity-reveal-sound';
 import {Animated,Image,ImageBackground,Modal,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {ActiveActivity,ClassId,RewardBundle} from '../core/types';
 import {itemDef} from '../content/items';
@@ -73,6 +75,16 @@ export function RewardPopup({reward,activity,classId,welcomeBack=false,welcomeRe
     return [];
   })[0];
   const followNext=()=>{if(!nextAction)return;onClose();nextAction.action();};
+  // One sound per reward, scaled to the biggest moment in it. Epic+ equipment instead gets its rarity
+  // stinger once the Exceptional Loot card is on screen (after the level-up fanfare when both happen).
+  const level=progressionMoments.some(m=>m.kind==='character_level'),bestGear=highestRarity(spotlightLoot.filter(row=>row.type==='gear').map(row=>row.rarity));
+  useEffect(()=>{
+    if(!reward)return;
+    const progress=progressionMoments.length>0;
+    if(bestGear&&!level)return;
+    playSound(level?'level_up':spotlightLoot.length?'rare_drop':companionUnlocks.length||petDrops.length?'unlock':progress?'quest_complete':'reward_collect');
+  },[reward]); // eslint-disable-line react-hooks/exhaustive-deps
+  useRarityRevealSound(reward?bestGear:null,reward,{reduceMotion,after:level?900:0});
   return <Modal transparent statusBarTranslucent visible={reward!==null} animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={s.backdrop}>
       <ImageBackground source={require('../../assets/world/asterfall-map-v1.webp')} resizeMode="cover" imageStyle={s.mapImage} style={[s.world,width<360&&s.worldCompact,{paddingTop:Math.max(spacing.xl,insets.top+spacing.md),paddingBottom:Math.max(spacing.xl,insets.bottom+spacing.md)}]} accessibilityLabel={gt("Asterfall expedition rewards")}>

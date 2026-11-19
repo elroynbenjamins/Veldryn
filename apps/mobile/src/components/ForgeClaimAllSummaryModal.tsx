@@ -1,10 +1,12 @@
-import {useMemo} from 'react';
+import {useEffect,useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {equipmentRecipeForItem} from '../core/equipment-crafting-path';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
+import {highestRarity,rarityRevealSound} from '../core/rarity-reveal-sound';
+import {playSound,useRarityRevealSound} from '../storage/audio';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork} from './EquipmentArtwork';
@@ -62,6 +64,10 @@ export function ForgeClaimAllSummaryModal({results,remainingCount=0,reduceMotion
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,height,fontScale}=useWindowDimensions();
   const groups=useMemo(()=>forgeClaimAllSummaryGroups(results),[results]);
   const stackActions=width<360||fontScale>=1.25;
+  // The best gear you kept sets the sound: an Epic+ stinger once the list is up, otherwise the normal claim sound.
+  const bestKept=highestRarity(groups.kept.map(result=>result.rarity));
+  useEffect(()=>{if(results.length&&!rarityRevealSound(bestKept))playSound('craft_complete');},[results]); // eslint-disable-line react-hooks/exhaustive-deps
+  useRarityRevealSound(results.length?bestKept:null,results,{reduceMotion});
   if(!results.length)return null;
   const {kept,sold,replaced,incomingGold,replacedGold}=groups;
   return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt('Close Forge collection')} surfaceStyle={s.dialog}>

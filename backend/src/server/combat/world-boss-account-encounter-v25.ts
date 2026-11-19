@@ -18,6 +18,7 @@ import {deriveWorldBossWarCampEffectsV11,
  type WorldBossWarCampSnapshotV11} from './world-boss-war-camp-v11';
 import {verifyWorldBossEncounterProfileV13,
  type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
+import {DUNGEON_ROLE_TONIC_MODIFIERS} from '../coop/potion-modifiers';
 
 export const WORLD_BOSS_V25_AUTHORED_ENCOUNTERS_LIVE=false as const;
 export const WORLD_BOSS_V25_ENGINE_VERSION='world-boss-account-rounds-v25-prototype' as const;
@@ -47,6 +48,8 @@ export interface WorldBossAccountEncounterOutputV25{
  /** Preview ONLY: bounded account-wide shared-boss contribution. */
  proposedWorldHpDamage:number;
  localGuardDamage:number;remainingGuard:number;guardRestored:number;
+ /** V58: the one frozen buff tonic shared by the owned party, or null. */
+ tonicItemId:string|null;
  /** Fully replayable, authored, server-seeded 14-round event log. */
  events:readonly WorldBossRoundEvent[];
  characterLedger:readonly WorldBossAccountRoleLedgerV25[];
@@ -58,6 +61,8 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
  order:WorldBossOrder;boss:WorldBossId;phase:WorldBossPhase;
  serverSeed:string;encounter:WorldBossEncounterProfileV13;
  warCamp?:WorldBossWarCampSnapshotV11;
+ /** V58: tonic ID frozen and paid at reservation; effects come from the server catalog. */
+ tonicItemId?:string|null;
 }):WorldBossAccountEncounterOutputV25{
  if(!input||!ID.test(input.eventId)||!ID.test(input.requestId)||
   !SERVER_SEED.test(input.serverSeed)||
@@ -99,6 +104,11 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
  if(input.warCamp&&input.warCamp.eventId!==input.eventId)
   throw Error('world_boss_v25_foreign_war_camp');
  deriveWorldBossWarCampEffectsV11(input.warCamp);
+ const tonicItemId=input.tonicItemId??null;
+ if(tonicItemId!==null&&!Object.prototype.hasOwnProperty.call(DUNGEON_ROLE_TONIC_MODIFIERS,tonicItemId))
+  throw Error('world_boss_v25_unknown_tonic');
+ const tonic=tonicItemId===null?undefined:
+  {...DUNGEON_ROLE_TONIC_MODIFIERS[tonicItemId as keyof typeof DUNGEON_ROLE_TONIC_MODIFIERS]};
  const result=simulateWorldBossAccountRoundsV25({
   seed:[WORLD_BOSS_V25_ENGINE_VERSION,input.eventId,roster.accountId,
    input.serverSeed].join(':'),
@@ -106,6 +116,7 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   players:characters.map(c=>structuredClone(c.combatant)),
   serverEncounterProfile:input.encounter,
   serverWarCamp:input.warCamp,
+  serverTonic:tonic,
  });
  const characterLedger:WorldBossAccountRoleLedgerV25[]=characters.map(c=>{
   const row=result.participants[c.characterId];
@@ -143,7 +154,7 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   eventId:input.eventId,accountId:roster.accountId,requestId:input.requestId,
   boss:input.boss,phase:input.phase,order:input.order,
   rosterDigest:roster.rosterDigest,encounterDigest:input.encounter.digest,
-  warCampDigest:input.warCamp?.digest??null,
+  warCampDigest:input.warCamp?.digest??null,tonicItemId,
   roundsCompleted:result.roundsCompleted,survived:result.survived,
   rawBossHpDamage:result.bossHpDamage,
   proposedWorldHpDamage,localGuardDamage:result.localGuardDamage,

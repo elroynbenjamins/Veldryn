@@ -6,8 +6,8 @@
  * This plugin replaces only engine.ts's experimental imports while building the
  * legacy Edge entrypoints. No client or caller can enable V2 via request JSON.
  */
-const ENGINE_SUFFIX=/[\\/]backend[\\/]src[\\/]server[\\/]combat[\\/]engine\\.ts$/;
-const EXPERIMENTAL_SOURCE=/(?:^|[\\/])src[\\/]server[\\/]combat[\\/](?:v2[\\/]|enemy-v2-status-rules\\.ts$)/;
+const ENGINE_SUFFIX='/backend/src/server/combat/engine.ts';
+const experimentalSource=input=>{const clean=input.replaceAll(String.fromCharCode(92),'/');return clean.includes('src/server/combat/v2/')||clean.endsWith('src/server/combat/enemy-v2-status-rules.ts');};
 const ALLOWED=new Set([
  './v2/resource-runtime',
  './v2/capstone-runtime',
@@ -57,8 +57,8 @@ export function liveEdgeCombatV2IsolationPlugin(){
  return {
   name:'live-edge-combat-v2-isolation',
   setup(build){
-   build.onResolve({filter:/^\\.\\/(?:v2\\/(?:resource-runtime|capstone-runtime|reactive-passive-runtime|enemy-engine-authority)|enemy-v2-status-rules)$/},args=>{
-    if(!ENGINE_SUFFIX.test(args.importer.replaceAll('\\\\','/')))return;
+   build.onResolve({filter:/.*/},args=>{
+    if(!args.importer.replaceAll(String.fromCharCode(92),'/').endsWith(ENGINE_SUFFIX))return;
     if(!ALLOWED.has(args.path))throw Error('unexpected_combat_v2_legacy_shim:'+args.path);
     return {path:args.path,namespace:'live-edge-v2-disabled'};
    });
@@ -73,11 +73,11 @@ export function liveEdgeCombatV2IsolationPlugin(){
 export function assertLegacyEdgeIsolation(result,outputName){
  if(!result?.metafile||!Array.isArray(result.outputFiles)||!result.outputFiles.length)
   throw Error('combat_v2_edge_isolation_missing_metafile:'+outputName);
- const imported=Object.keys(result.metafile.inputs).filter(input=>EXPERIMENTAL_SOURCE.test(input));
+ const imported=Object.keys(result.metafile.inputs).filter(input=>experimentalSource(input));
  if(imported.length)
   throw Error('combat_v2_edge_private_runtime_in_bundle:'+outputName+':'+imported.join(','));
  const js=result.outputFiles.filter(item=>item.path.endsWith('.js')||item.path.endsWith('.ts'))
-  .map(item=>item.text).join('\\n');
+  .map(item=>item.text).join(String.fromCharCode(10));
  for(const forbidden of [
   'combat_v2_enemy_authority_','combat_v2_solo_',
   'enemy-v2-prototype-1','issueEnemyV2EngineAuthority',

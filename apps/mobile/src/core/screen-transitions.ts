@@ -3,10 +3,10 @@ export type ScreenTransitionKind='none'|'primary'|'detail'|'return'|'dungeon';
 
 export const SCREEN_TRANSITION_PRESETS:Readonly<Record<ScreenTransitionKind,{durationMs:number;startOpacity:number}>>={
  none:{durationMs:0,startOpacity:1},
- primary:{durationMs:130,startOpacity:.56},
- detail:{durationMs:185,startOpacity:.38},
- return:{durationMs:155,startOpacity:.55},
- dungeon:{durationMs:245,startOpacity:0},
+ primary:{durationMs:130,startOpacity:.78},
+ detail:{durationMs:185,startOpacity:.62},
+ return:{durationMs:155,startOpacity:.72},
+ dungeon:{durationMs:245,startOpacity:.20},
 };
 
 const PRIMARY_ROUTES=new Set(['Home','Character','Skills','World','Inventory','More']);

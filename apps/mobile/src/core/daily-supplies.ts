@@ -116,7 +116,7 @@ export function normalizeDailySuppliesTrack(value:unknown):DailySuppliesTrack|un
  const lastClaimDayKey=typeof row.lastClaimDayKey==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(row.lastClaimDayKey)?row.lastClaimDayKey:undefined;
  const forgeSettledAtMs=Number(row.forgeSettledAtMs);
  return {schemaVersion:2,totalClaims,...(lastClaimDayKey?{lastClaimDayKey}:{}),
-  ...(Number.isSafeInteger(forgeSettledAtMs)&&forgeSettledAtMs>0?{forgeSettledAtMs}:{}),
+  ...(Number.isSafeInteger(forgeSettledAtMs)&&forgeSettledAtMs>=0?{forgeSettledAtMs}:{}),
   bank:normalizeBoostBank(row.bank),active:normalizeBoostActive(row.active),queued:normalizeQueued(row.queued)};
 }
 /** The old character-bound charge counter is accepted only for save migration. */

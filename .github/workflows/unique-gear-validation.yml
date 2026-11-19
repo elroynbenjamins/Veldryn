@@ -8,6 +8,7 @@ on:
       - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
       - 'backend/src/server/combat/v2-integration/equipment-exact-copy-interop-v1.mjs'
       - 'backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs'
+      - 'backend/src/server/combat/v2-integration/__tests__/equipment-skills-enemies-v2-staging-readiness.test.mjs'
       - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
       - 'backend/sql/drafts/equipment_crafting_v2_*.sql'
       - 'backend/tsconfig.equipment-v2.json'
@@ -66,10 +67,14 @@ jobs:
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-gem-sidecar.test.js
       - name: Verify hidden custody receipts, Bank transfer and equip replay
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-virtual-custody.test.js
+      - name: Rehearse physical EQ2 copy delivery against the existing online CAS payload in isolated staging
+        run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-physical-delivery-staging.test.js
       - name: Verify Effect Gem family caps and no legacy-loadout bypass
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-effect-gem-policy.test.js
       - name: Verify canonical Equipment 2.0 exact copies in Combat 2.0 evidence
         run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-crafting-v2-real-manifest-interop.test.mjs
+      - name: Exercise 9 classes by 8 enemies with canonical Equipment, Skills and Enemy V2 blockers
+        run: node ../../backend/src/server/combat/v2-integration/__tests__/equipment-skills-enemies-v2-staging-readiness.test.mjs
       - name: Rehearse V2 in the existing GameState with original Forge and wallet preserved
         run: node ../../backend/dist-equipment-v2/server/equipment/__tests__/equipment-crafting-v2-game-state.test.js
       - name: Test shadow store compare-and-swap and crash recovery

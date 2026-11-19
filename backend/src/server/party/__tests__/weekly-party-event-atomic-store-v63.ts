@@ -1,0 +1,210 @@
+import {
+ createPartyEventRewardStoreV63,PARTY_EVENT_ATOMIC_STORE_V63_RELEASED,
+ type PartySqlConnectionV63,type PartySqlPoolV63,
+ type PartyEventAtomicPortsV63,
+} from '../weekly-party-event-atomic-store-v63';
+import {
+ claimPartyEventChestV60,exchangePartyEventGearV60,
+ type PartyEventRewardReceiptV60,type ServerPartyRewardAuthorityV60,
+} from '../weekly-party-event-claim-v60';
+import type {PrivatePartyRewardProofV61} from '../weekly-party-event-proof-v61';
+import {deriveServerChestRollsV1} from '../../loot/event-chest-server-roll-v1';
+import {partyEventGearForFamilyV51} from '../weekly-party-event-gear-v51';
+
+function ensure(value:unknown,label:string):asserts value{
+ if(!value)throw Error('party_event_v63_test:'+label);
+}
+async function reject(fn:()=>Promise<unknown>,fragment:string){
+ let failed=false;try{await fn();}catch(e){failed=String(e).includes(fragment)}
+ ensure(failed,'reject_'+fragment);
+}
+const account='11111111-1111-4111-8111-111111111111';
+const party='22222222-2222-4222-8222-222222222222';
+const character='33333333-3333-4333-8333-333333333333';
+const receiptId='44444444-4444-4444-8444-444444444444';
+const week=Date.UTC(2026,10,16);
+const identity={partyId:party,accountId:account,eventStartsAtUtcMs:week};
+const proof:PrivatePartyRewardProofV61={
+ source:'private_party_event_settlement_join_v61',
+ week:{partyId:party,eventStartsAtUtcMs:week,
+  eventEndsAtUtcMs:week+604800000,settledAtUtcMs:week+604800000+3600000,
+  status:'settled',family:'broken_caravan',difficulty:'standard'},
+ roster:{...identity,rosterSize:2,frozenCharacterId:character},
+ activity:{...identity,sourceVersion:'party_event_member_progress_v14',
+  activityPoints:28},
+ preparation:{...identity,committedDonationId:receiptId,
+  optionalSupplyGoalReceiptId:receiptId,optionalGoalFrozen:true},
+ finale:{partyId:party,eventStartsAtUtcMs:week,
+  canonicalFinaleReceiptId:receiptId,serverVerifiedVictory:true},
+ tier:{...identity,eligibleGearTier:2,sourceVersion:'server_level_snapshot_v2'},
+};
+type DatabaseState={
+ receipts:Map<string,PartyEventRewardReceiptV60>;
+ sigils:number;gold:number;gemDust:number;essence:number;
+};
+const clone=(state:DatabaseState):DatabaseState=>({
+ ...state,receipts:new Map(state.receipts),
+});
+class MockPool implements PartySqlPoolV63{
+ state:DatabaseState={receipts:new Map(),sigils:60,gold:0,gemDust:0,essence:0};
+ history:string[]=[];
+ released=0;
+ connections=0;
+ failResources=false;
+ foreignRoster=false;
+ invalidReceipt=false;
+ invalidCollection=false;
+ wrongPartyProof=false;
+ private last:Promise<void>=Promise.resolve();
+ async connect():Promise<PartySqlConnectionV63>{
+  const previous=this.last;
+  let unblock=()=>{};
+  this.last=new Promise<void>(resolve=>{unblock=resolve;});
+  await previous;
+  this.connections++;
+  let copy=clone(this.state);
+  let begun=false;
+  let ended=false;
+  const pool=this;
+  return {
+   async query<T extends Record<string,unknown>=Record<string,unknown>>(
+    sql:string,params:readonly unknown[]=[],
+   ):Promise<{rows:T[]}>{
+    pool.history.push(sql);
+    if(sql==='begin isolation level serializable'){
+     ensure(!begun,'single_begin');
+     begun=true;
+     return {rows:[]};
+    }
+    ensure(begun&&!ended,'query_only_active_tx');
+    if(sql.startsWith('set local lock_timeout'))return {rows:[]};
+    if(sql.includes('for update of r,w')){
+     ensure(params[0]===account&&params[1]===week,'account_week_lock_params');
+     return {rows:pool.foreignRoster?[]:[{party_id:party} as T]};
+    }
+    if(sql.startsWith('select receipt from private.party_event_reward_receipts_v61')){
+     const receipt=copy.receipts.get(params[0] as string);
+     if(!receipt)return {rows:[]};
+     return {rows:[{receipt:pool.invalidReceipt?
+      {...receipt,partySigilsDelta:999}:receipt} as unknown as T]};
+    }
+    if(sql.startsWith('insert into private.party_event_reward_receipts_v61')){
+     const key=params[0] as string,receipt=JSON.parse(params[15] as string)
+      as PartyEventRewardReceiptV60;
+     ensure(params[3]===account&&params[2]===week,'source_bound_to_week');
+     if(copy.receipts.has(key))throw Error('unique_violation');
+     copy.receipts.set(key,receipt);
+     return {rows:[]};
+    }
+    if(sql==='commit'){
+     pool.state=copy;
+     ended=true;
+     return {rows:[]};
+    }
+    if(sql==='rollback'){
+     ended=true;
+     return {rows:[]};
+    }
+    throw Error('unapproved_query:'+sql);
+   },
+   release(){
+    pool.released++;
+    unblock();
+   },
+  };
+ }
+}
+const pool=new MockPool();
+const ports:PartyEventAtomicPortsV63={
+ readCanonicalProof:async _tx=>pool.wrongPartyProof?{
+  ...proof,week:{...proof.week,partyId:character},
+ }:proof,
+ readOwnedGearPieceIds:async _tx=>pool.invalidCollection?['FAKE_PIECE']:[],
+ readExistingPartySigils:async _tx=>pool.state.sigils,
+ issueAndCommitCanonicalEventGear:async()=>{throw Error('MUST_NOT_ISSUE_EQ2');},
+ applyExistingPartySigils:async(_tx,owner,_key,delta)=>{
+  ensure(owner===account,'wallet_account');
+  if(pool.state.sigils+delta<0)throw Error('insufficient_currency');
+  pool.state.sigils+=delta;
+ },
+ grantExistingResources:async(_tx,owner,_key,r)=>{
+  ensure(owner===account,'grant_account');
+  if(pool.failResources)throw Error('resource_writer_fault');
+  pool.state.gold+=r.gold;
+  pool.state.gemDust+=r.gemDust;
+  pool.state.essence+=r.companionEssence;
+ },
+ grantExactEquipmentCustody:async()=>{throw Error('MUST_NOT_GRANT_EQ2');},
+};
+function secretForMiss(){
+ const chest='party-event:'+week+':'+account+':participation';
+ for(let i=0;i<250;i++){
+  const secret=new Uint8Array(32).fill(i);
+  if(deriveServerChestRollsV1({
+   domain:'party_event_v51',secret,committedChestKey:chest,
+  }).hitRoll>=1200)return secret;
+ }
+ throw Error('no_stable_non_hit');
+}
+const authority:ServerPartyRewardAuthorityV60={
+ source:'private_service_worker',accountId:account,eventStartsAtUtcMs:week,
+ secret:secretForMiss(),
+};
+async function run(){
+ ensure(!PARTY_EVENT_ATOMIC_STORE_V63_RELEASED,'hidden');
+ const disabled=createPartyEventRewardStoreV63(pool,ports);
+ await reject(()=>claimPartyEventChestV60({
+  authority,kind:'participation',store:disabled,
+ },true),'hidden_store_disabled');
+ ensure(pool.connections===0,'disabled_did_not_checkout_db');
+ const store=createPartyEventRewardStoreV63(pool,ports,true);
+ pool.failResources=true;
+ await reject(()=>claimPartyEventChestV60({
+  authority,kind:'participation',store,
+ },true),'resource_writer_fault');
+ ensure(pool.state.receipts.size===0&&pool.state.gold===0,
+  'failure_rolls_back_receipt');
+ pool.failResources=false;
+ const [first,replay]=await Promise.all([
+  claimPartyEventChestV60({authority,kind:'participation',store},true),
+  claimPartyEventChestV60({authority,kind:'participation',store},true),
+ ]);
+ ensure(first.sourceKey===replay.sourceKey&&
+  first.frozenGear===null&&pool.state.receipts.size===1,
+  'two_connections_one_receipt');
+ ensure(pool.history.filter(x=>x==='commit').length===2,
+  'one_transaction_per_successful_attempt');
+ ensure(pool.history.some(x=>x==='begin isolation level serializable')&&
+  pool.history.some(x=>x.includes('for update of r,w')),
+  'serializable_account_week_db_lock');
+ const rotated={...authority,secret:new Uint8Array(32).fill(99)};
+ const again=await claimPartyEventChestV60({
+  authority:rotated,kind:'participation',store,
+ },true);
+ ensure(again.sourceKey===first.sourceKey&&pool.state.receipts.size===1,
+  'lost_ack_entropy_rotation_safe');
+ pool.invalidReceipt=true;
+ await reject(()=>claimPartyEventChestV60({
+  authority,kind:'participation',store,
+ },true),'corrupt_canonical_receipt');
+ pool.invalidReceipt=false;
+ pool.wrongPartyProof=true;
+ await reject(()=>claimPartyEventChestV60({
+  authority,kind:'preparation',store,
+ },true),'foreign_party_proof');
+ pool.wrongPartyProof=false;
+ pool.invalidCollection=true;
+ await reject(()=>claimPartyEventChestV60({
+  authority,kind:'preparation',store,
+ },true),'invalid_canonical_collection');
+ pool.invalidCollection=false;
+ const piece=partyEventGearForFamilyV51('broken_caravan')[0]!;
+ await reject(()=>exchangePartyEventGearV60({
+  authority,requestedPieceId:piece.id,store,
+ },true),'eq2_event_issuer_not_ready');
+ ensure(pool.state.receipts.size===1,'blocked_issuer_did_not_add_exchange_receipt');
+ ensure(pool.released===pool.connections,
+  'every_success_or_failure_releases_connection');
+ console.log('PARTY_EVENT_ATOMIC_STORE_V63_OK: single-connection SERIALIZABLE lock, failure rollback, retry, key rotation, canonical source, no unverified EQ2 grant');
+}
+run().catch(e=>{console.error(e);throw e;});

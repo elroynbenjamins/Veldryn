@@ -3,7 +3,7 @@ import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import type {ReleaseNote} from '../core/release-notes';
-import {compareReleaseVersions} from '../core/release-notes';
+import {compareReleaseVersions,formatReleaseNoteDate} from '../core/release-notes';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 
@@ -24,11 +24,11 @@ export function WhatsNewModal({visible,currentVersion,notes,latestVersion,update
   <GameModalHeader eyebrow="VELDRYN RELEASES" title="What's New" onClose={onClose}/>
   <Text style={s.current}>Installed version {currentVersion}</Text>
   <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-   {installedNotes.length?installedNotes.map(note=><View key={note.version} style={s.release}>
-    <View style={s.head}><Text style={s.title}>{note.title}</Text><Text style={s.version}>v{note.version}</Text></View>
+   {installedNotes.length?installedNotes.map(note=>{const date=formatReleaseNoteDate(note.publishedAt);return <View key={note.version} style={s.release}>
+    <View style={s.head}><Text style={s.title}>{note.title}</Text><View style={s.meta}><Text style={s.version}>v{note.version}</Text>{date?<Text style={s.date}>{date}</Text>:null}</View></View>
     {note.highlights.map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}
-   </View>):<Text style={s.muted}>Release notes will appear here when the next update is published.</Text>}
-   {upcomingNotes.length>0&&updateAvailable?<View style={s.release}><Text style={s.title}>Available in the latest update</Text>{upcomingNotes.map(note=><View key={note.version} style={s.upcoming}><Text style={s.version}>v{note.version} · {note.title}</Text>{note.highlights.slice(0,4).map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}</View>)}</View>:null}
+   </View>}):<Text style={s.muted}>Release notes will appear here when the next update is published.</Text>}
+   {upcomingNotes.length>0&&updateAvailable?<View style={s.release}><Text style={s.title}>Available in the latest update</Text>{upcomingNotes.map(note=>{const date=formatReleaseNoteDate(note.publishedAt);return <View key={note.version} style={s.upcoming}><View style={s.head}><Text style={s.upcomingTitle}>{note.title}</Text><View style={s.meta}><Text style={s.version}>v{note.version}</Text>{date?<Text style={s.date}>{date}</Text>:null}</View></View>{note.highlights.slice(0,4).map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}</View>})}</View>:null}
   </ScrollView>
   {updateAvailable?<View style={s.update}><Text style={s.updateTitle}>Update available{latestVersion?' · v'+latestVersion:''}</Text><Text style={s.muted}>A newer release is on Google Play. You can continue playing this version until the required minimum changes.</Text><GameButton title="Update on Google Play" onPress={onUpdate}/></View>:null}
   <GameButton title="Continue playing" tone="secondary" onPress={onClose}/>
@@ -38,7 +38,8 @@ function styles(C:ThemeColors){return StyleSheet.create({
  current:{fontSize:11,color:C.muted,fontWeight:'700',marginBottom:8},
  scroll:{maxHeight:330,flexGrow:0},content:{gap:10,paddingBottom:10},
  release:{gap:6,padding:10,borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
- head:{flexDirection:'row',alignItems:'center',gap:8},title:{flex:1,fontSize:15,color:C.text,fontWeight:'900'},version:{fontSize:11,color:C.info,fontWeight:'800'},
+ head:{flexDirection:'row',alignItems:'center',gap:8},title:{flex:1,fontSize:15,color:C.text,fontWeight:'900'},upcomingTitle:{flex:1,fontSize:12,color:C.text,fontWeight:'800'},
+ meta:{alignItems:'flex-end',gap:1},version:{fontSize:11,color:C.info,fontWeight:'800'},date:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'600'},
  line:{fontSize:13,lineHeight:19,color:C.text},
  muted:{fontSize:12,lineHeight:18,color:C.muted},
  upcoming:{gap:4,paddingTop:6,borderTopColor:C.line,borderTopWidth:1},

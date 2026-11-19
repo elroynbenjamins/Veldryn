@@ -8,6 +8,10 @@
  */
 import type {WeeklyPartyDifficulty,WeeklyPartyFamily} from './weekly-party-events-v2';
 import {
+ defineChestLootTableV67,resolveChestLootV67,
+ type ChestLootTableV67,
+} from '../loot/chest-loot-engine-v67';
+import {
  PARTY_EVENT_GEAR_V51_CATALOG_VERSION,partyEventGearForFamilyV51,
  type PartyGearPieceV51,
 } from './weekly-party-event-gear-v51';
@@ -93,6 +97,37 @@ export function partyChestGearChanceV51(
  return def.baseGearChanceBps+(difficulty==='veteran'?def.veteranBonusBps:
   difficulty==='heroic'?def.heroicBonusBps:0);
 }
+/**
+ * V68 adapter: the three established Party chest kinds are table data.
+ * Future events may author distinct tables without changing the V67 roller.
+ * V51 preview/claim contracts and HMAC V1 entropy stay byte-for-byte stable.
+ */
+export function partyChestLootTableV68(input:{
+ readonly kind:PartyEventChestKindV51;
+ readonly difficulty:WeeklyPartyDifficulty;
+ readonly family:WeeklyPartyFamily;
+}):ChestLootTableV67{
+ const def=PARTY_EVENT_CHESTS_V51.find(x=>x.kind===input?.kind);
+ const pool=partyEventGearForFamilyV51(input?.family);
+ if(!def||!pool.length)
+  throw Error('party_event_v68_unknown_chest_table');
+ return defineChestLootTableV67({
+  tableId:'party_event_chest',
+  version:'party_event_v51_'+input.family+'_'+input.kind+'_'+input.difficulty,
+  guarantees:[
+   {id:'party_sigils',quantity:def.partySigils},
+   {id:'gold',quantity:def.gold},
+   {id:'gem_dust',quantity:def.gemDust},
+   {id:'companion_essence',quantity:def.companionEssence},
+  ],
+  groups:[{
+   id:'equipment',type:'equipment',
+   chanceBps:partyChestGearChanceV51(input.kind,input.difficulty),
+   duplicatePolicy:'prefer_unowned',
+   entries:pool.map(piece=>({id:piece.id,weight:1})),
+  }],
+ });
+}
 /** No mutable client claims; this is a view of a future trusted DB snapshot. */
 export function previewVerifiedPartyChestsV51(
  e:VerifiedPartyChestEvidenceV51,
@@ -151,11 +186,19 @@ export function resolvePartyChestGearDraftV51(
   throw Error('party_event_v51_invalid_chest_preview');
  checkedRoll(random.gearRoll);
  checkedRoll(random.pieceRoll);
- const pool=partyEventGearForFamilyV51(preview.family);
- const missing=pool.filter(x=>!random.ownedPieceIds.includes(x.id));
- const candidates=missing.length?missing:pool;
- const piece=random.gearRoll<preview.gearChanceBps
-  ?candidates[random.pieceRoll%candidates.length]!:null;
+ const table=partyChestLootTableV68({
+  kind:preview.kind,difficulty:preview.difficulty,family:preview.family,
+ });
+ const resolved=resolveChestLootV67(table,{
+  rolls:[{groupId:'equipment',hitRoll:random.gearRoll,
+   selectionRoll:random.pieceRoll}],
+  ownedDropIds:random.ownedPieceIds,
+ });
+ const selectedId=resolved.groups[0]!.entryId;
+ const piece=selectedId===null?null:
+  partyEventGearForFamilyV51(preview.family).find(p=>p.id===selectedId)??null;
+ if(selectedId!==null&&!piece)
+  throw Error('party_event_v68_catalog_mismatch');
  return {gearDropped:piece!==null,piece,gearTier:preview.eligibleGearTier,
   qualityAndRarity:'defer_to_equipment_2_0_server_roller',
   affixes:'defer_to_equipment_2_0_server_roller'};

@@ -14,12 +14,14 @@ import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombat
 import {preparedCoopCombatants} from './potion-modifiers';
 import {dungeonDepthMultipliers} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
+import {roomArtifactOffers,applyRoomArtifact} from './room-artifact-choices';
+import type {DungeonArtifactId} from './dungeon-artifacts';
 import {assignDungeonContracts,type DungeonContractId} from './dungeon-contracts';
 
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; contractIds?:DungeonContractId[];
+ players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; chosenRoomArtifacts?:Record<string,DungeonArtifactId>; contractIds?:DungeonContractId[];
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -72,12 +74,19 @@ export class QModeService{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
   const offers=roomBoonOffers(run,this.serverSecret);
+  const artifactOffers=roomArtifactOffers(run,this.serverSecret);
   if(offers.length){
    // Older supported clients cannot submit a boon choice yet. Choose the
    // first deterministic offer for them instead of blocking existing runs.
    const selectedBoon=input.boonId??offers[0].id;
    if(!offers.some(offer=>offer.id===selectedBoon))throw new Error('invalid_boon_choice');
    applyRoomBoon(run,selectedBoon as RoomBoonId);
+  }else if(artifactOffers.length){
+   // Reuse the optional selection field to keep older supported clients
+   // compatible with a deterministic first-choice fallback.
+   const selectedArtifact=input.boonId??artifactOffers[0].id;
+   if(!artifactOffers.some(offer=>offer.id===selectedArtifact))throw new Error('invalid_artifact_choice');
+   applyRoomArtifact(run,selectedArtifact as DungeonArtifactId);
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
   const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
@@ -90,7 +99,7 @@ export class QModeService{
   const bossTuning=run.regionalBalanceVersion===1&&run.tier===1&&selected.contentId==='BOSS_EXP_SOLAR'
    ?{profileId:'sunscar-regional-solar-ward-cadence-v1',abilityCooldownMultipliers:{BOSS_EXP_SOLAR_WARD:3}}
    :undefined;
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,deferArtifactChoice:run.enduranceRouteVersion===1&&run.qmodePressureVersion===1,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';

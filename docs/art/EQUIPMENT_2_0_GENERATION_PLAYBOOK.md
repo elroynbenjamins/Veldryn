@@ -16,7 +16,7 @@ Each reference kit contains:
 
 | Component | What to lock | How used |
 | --- | --- | --- |
-| Style master | Approved rough-cluster T1 inventory artwork, no rejected candidate | Painterly silhouette, wear, warm highlights, authentic materials and controlled brush texture |
+| Style master | User-selected Style 4 direction; archived chosen illustration, then *approved painterly* T1 production source | Painterly silhouette, wear, warm highlights, authentic materials and controlled brush texture |
 | Slot masters ×10 | One accepted icon for helmet, chest, gloves, legs, boots, main weapon, offhand, cape, amulet, ring | Angle, bounds, placement, silhouette density, pair spacing |
 | Class identity ×9 | Current approved class/path armor examples with class accents | Family crest, armor type, cloth construction, weapon/offhand silhouette |
 | Tier ladder | Approved same-class/path T1/T2/T3/T4 plus progressively approved later tier | Demonstrable material upgrade at constant footprint |

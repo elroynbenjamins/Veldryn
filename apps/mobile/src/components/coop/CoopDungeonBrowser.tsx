@@ -11,6 +11,7 @@ import {rawGemSpriteSourceV1} from '../../theme/gem-assets';
 import {skillIcons} from '../../theme/skill-assets';
 import {SectionGuide} from '../SectionGuide';
 import {DUNGEON_HOME_GUIDE,dungeonGuideText} from '../../i18n/dungeon-home-guide';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {liveEventDef} from '../../content/live-events';
 import {liveEventVisuals} from '../../ui/live-event-visuals-active';
 import {dungeonText as accountText} from '../../i18n/dungeon-preparation';
@@ -92,7 +93,7 @@ function DungeonCard({language,dungeon,currentLevel,currentPower,mode,onPress,on
  return <View style={[s.questCard,expanded&&s.expandedQuest,!dungeon.available&&s.lockedQuest]}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={dungeon.name+'. '+status+'. '+ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.cardPressArea,pressed&&s.pressed]}>
      <View style={s.cardRow}><View style={s.cardThumbHolder}><CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>{inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}</View>
-       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?a('Boss choice every 7 rooms')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
+       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?dungeonUxText(language,'bossChoice')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
        <Text style={s.compactChevron}>{expanded?'⌄':'›'}</Text>
      </View>
    </Pressable>

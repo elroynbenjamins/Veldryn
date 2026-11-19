@@ -57,7 +57,7 @@ roster=activateDailySupplyBoost(roster,'gathering_speed');
 equal(activeDailySupplyBoosts(roster).gathering_speed?.remainingSeconds,7200,'Account boosts activate regardless of claiming character');
 equal(roster.otherCharacters?.[0].character.activeDailySupplyBoost,undefined,'Alt does not duplicate active boost state');
 
-let legacy=create('Legacy');
+let legacy:any=create('Legacy');
 legacy={...legacy,account:{...legacy.account,dailySupplies:{schemaVersion:1,totalClaims:8,lastClaimDayKey:'2026-11-18'}},character:{...legacy.character!,dailySupplyBoostBank:{gathering_yield:2,combat_xp:1} as any,activeDailySupplyBoost:{type:'crafting_output',remainingSeconds:3500} as any}};
 const migrated=normalizeSave(legacy);
 equal(migrated.account.dailySupplies?.schemaVersion,2,'Legacy v1 track migrates to v2');

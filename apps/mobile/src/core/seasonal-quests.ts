@@ -1,7 +1,7 @@
 import type {GameState} from './types';
 import {hash32} from './rng';
 import {RECIPES} from '../content/skills';
-import {normalizeSeasonalProgress,SEASONAL_ACTIVITY_TAGS,ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
+import {normalizeSeasonalProgress,SEASONAL_ACTIVITY_TAGS,SEASONAL_QUEST_COUNTS,ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
 export {normalizeSeasonalProgress,SEASONAL_ACTIVITY_TAGS} from './personal-seasonal-state';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
@@ -20,7 +20,8 @@ export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,unit
   const key=periodKey(period,date),old=progress[period],counts=old?.key===key?{...old.counts}:{};
   // Freeze unlock-aware selections at the first credited action in a period.
   // Further character level-ups must not replace a quest someone was progressing.
-  const tags=old?.key===key&&old.tags?.every(tag=>activityTags.includes(tag))?old.tags:selectSeasonalTags(ready,period,key,nowMs);
+  const existingTags=old?.key===key&&old.tags?.every(tag=>activityTags.includes(tag))?old.tags:undefined;
+  const tags=existingTags?.length===SEASONAL_QUEST_COUNTS[period]?existingTags:selectSeasonalTags(ready,period,key,nowMs,existingTags);
   counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,(counts[tag]??0)+Math.floor(units));
   progress[period]={key,counts,tags};
  }
@@ -80,13 +81,16 @@ function availableTemplate(state:GameState,tag:SeasonalActivity,atMs:number):boo
  if(tag==='event'){const event=state.account.liveEvent;return !!event?.enabled&&atMs>=event.startsAtMs&&atMs<event.endsAtMs&&event.endsAtMs-atMs>=86400_000;}
  return true;
 }
-function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string,atMs:number):SeasonalActivity[]{
- const count=period==='daily'?2:period==='weekly'?3:4;
+function selectSeasonalTags(state:GameState,period:SeasonalPeriod,key:string,atMs:number,existing:readonly SeasonalActivity[]=[]):SeasonalActivity[]{
+ const count=SEASONAL_QUEST_COUNTS[period];
  const available=TEMPLATES.filter(row=>row[period]>0&&availableTemplate(state,row.tag,atMs));
- const pool=[...available],selected:SeasonalActivity[]=[];
+ // Preserve existing quest slots when upgrading a board from 2/3/4 to 3/4/5.
+ // This keeps claim IDs, rewards and current progress stable mid-period.
+ const selected:SeasonalActivity[]=[...existing];
+ const pool=available.filter(row=>!selected.includes(row.tag));
  // The previous five accessible types always remain as fallbacks. Use a stable
  // period rotation; account progression never affects rarity or cache quality.
- for(let index=0;index<count&&pool.length;index++){
+ for(let index=selected.length;index<count&&pool.length;index++){
   const pick=hash32(`${period}:${key}:quest:${index}`)%pool.length;
   selected.push(pool.splice(pick,1)[0].tag);
  }
@@ -105,7 +109,7 @@ function rarityFor(period:SeasonalPeriod,key:string,index:number):QuestRarity{
 }
 /** Contract rewards are useful progression currency or targeted upgrade materials.
  * Rarity is selected before this table; claims use the same deterministic projection.
- * Reward amounts are deliberately modest because there are 2 daily, 3 weekly and 4 monthly challenges.
+ * Reward amounts are deliberately modest because there are 3 daily, 4 weekly and 5 monthly challenges.
  */
 export function seasonalQuestCache(period:SeasonalPeriod,rarity:QuestRarity):Pick<SeasonalQuest,'rewardItemId'|'rewardItemQty'|'rewardCompanionEssence'>{
  if(period==='daily'){
@@ -166,7 +170,9 @@ function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,
 }
 export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=new Date()):SeasonalQuest[]{
  if(!state.character)return [];
- const key=periodKey(period,date),frozen=(state.character.personalSeasonal?.progress??state.account.seasonalContractProgress)?.[period],tags=frozen?.key===key&&frozen.tags?.length===(period==='daily'?2:period==='weekly'?3:4)&&frozen.tags.every(tag=>activityTags.includes(tag))?frozen.tags:selectSeasonalTags(state,period,key,date.getTime());
+ const key=periodKey(period,date),frozen=(state.character.personalSeasonal?.progress??state.account.seasonalContractProgress)?.[period];
+ const existingTags=frozen?.key===key&&frozen.tags?.every(tag=>activityTags.includes(tag))?frozen.tags:undefined;
+ const tags=existingTags?.length===SEASONAL_QUEST_COUNTS[period]?existingTags:selectSeasonalTags(state,period,key,date.getTime(),existingTags);
  const base=BASE_REWARD_ACTIONS;
  return tags.map((tag,index)=>{
   const template=TEMPLATES.find(row=>row.tag===tag)!;

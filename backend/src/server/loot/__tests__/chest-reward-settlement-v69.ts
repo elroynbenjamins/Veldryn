@@ -19,6 +19,7 @@ async function throws(fn:()=>Promise<unknown>,message:string){
 }
 const account='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
+const character='33333333-3333-4333-8333-333333333333';
 const source='seasonal-event:2026_11_16:'+account+':chest_1';
 const secret=new Uint8Array(32).fill(19);
 const table=defineChestLootTableV67({
@@ -54,7 +55,7 @@ class MockDb implements ChestGrantStoreV69{
  readonly audit:string[]=[];
  proof:TrustedChestSourceV69={
   sourceKey:source,accountId:account,proofVersion:'trusted-seasonal-v1',
-  earned:true,lootTable:table,
+  earned:true,recipientCharacterId:null,lootTable:table,
  };
  failAfterFirstDrop=false;
  simulateMissingWallet=false;
@@ -83,6 +84,10 @@ class MockDb implements ChestGrantStoreV69{
    readOwnedDropIds:async()=>{
     this.audit.push('read-owned');
     return [...draft.owned];
+   },
+   verifyRecipientCharacter:async(owner,target)=>{
+    this.audit.push('verify-character');
+    return owner===account&&target===character;
    },
    insertFrozenReceipt:async receipt=>{
     this.audit.push('insert-receipt');
@@ -141,7 +146,8 @@ async function run(){
  check(!first.replayed&&first.receipt.committed&&
   first.receipt.tableVersion==='winter_event_v1'&&
   first.receipt.drops.length===2&&
-  first.receipt.drops[0]!.quantity>=3,
+  first.receipt.drops[0]!.quantity>=3&&
+  first.receipt.recipientCharacterId===null,
   'first_full_durable_receipt_with_stack_quantities');
  check(db.state.guaranteed.size===1&&db.state.drops.size===1&&
   db.state.owned.size===2,'all_legs_same_transaction');
@@ -220,6 +226,41 @@ async function run(){
   await throws(()=>createChestRewardSettlementV69(s,{secret},true)({
    authenticatedAccountId:account,sourceKey:key,
   }),'unearned_or_foreign_source');
+ }
+ {
+  const gear=defineChestLootTableV67({
+   tableId:'equipment_event_test',version:'gear_v1',
+   guarantees:[],
+   groups:[{id:'equipment',type:'equipment',chanceBps:10000,
+    duplicatePolicy:'prefer_unowned',entries:[{id:'EQUIPMENT_BOOTS',weight:1}]}],
+  });
+  const key=attempt('missing_character');
+  const s=startFresh(key);
+  s.proof={...s.proof,lootTable:gear,recipientCharacterId:null};
+  await throws(()=>createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  }),'unverified_character_destination');
+  check(s.state.receipts.size===0,'gear_destination_missing_cannot_claim');
+  s.proof={...s.proof,recipientCharacterId:other};
+  await throws(()=>createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  }),'unverified_character_destination');
+  check(s.state.receipts.size===0,'foreign_character_cannot_claim');
+  s.proof={...s.proof,recipientCharacterId:character};
+  const minted=await createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  });
+  check(!minted.replayed&&
+   minted.receipt.recipientCharacterId===character&&
+   minted.receipt.drops[0]!.entryId==='EQUIPMENT_BOOTS',
+   'approved_character_in_frozen_receipt');
+  s.proof={...s.proof,recipientCharacterId:other};
+  const replay=await createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  });
+  check(replay.replayed&&
+   replay.receipt.recipientCharacterId===character,
+   'character_switch_cannot_redirect_issued_gear');
  }
  {
   const party=partyChestLootTableV68({

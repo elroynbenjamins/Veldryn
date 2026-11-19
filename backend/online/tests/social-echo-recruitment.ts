@@ -54,6 +54,9 @@ assert.ok(powerful.stats.maxHp<actor.stats.maxHp*.35&&powerful.stats.maxHp>actor
 assert.ok(powerful.stats.attackPower<actor.stats.attackPower&&powerful.stats.defense<actor.stats.defense);
 assert.equal(powerful.stats.critChance,actor.stats.critChance,'Equipment crit shape survives normalization');
 assert.deepEqual(powerful.abilities,actor.abilities,'Borrowed class abilities remain untouched');
+const boosted=scaleSocialEchoToHost(actor,3000,12000,1,1.36);
+assert.ok(boosted.stats.attackPower<powerful.stats.attackPower,'Regional high-CP amplification must be removed for chosen Echoes');
+assert.ok(boosted.stats.maxHp<powerful.stats.maxHp,'Regional survival amplification must also be corrected');
 assert.equal(actor.stats.attackPower,150,'Frozen donor data is not mutated');
 const equal=scaleSocialEchoToHost(actor,5000,5000);
 assert.ok(equal.stats.attackPower<=135.00001,'An equally powerful borrowed ally receives a 10% soft cap');

@@ -9,7 +9,7 @@ export type EquipmentV2PrimaryAction='craft'|'unlock'|'unlock_prerequisite'|'pre
 export interface EquipmentV2RecipePreviewInput {
  name:string;tier:EquipmentV2Tier;slot:GearSlot;profile:EquipmentV2Profile;setPiece:boolean;
  craftSeconds?:number;profession?:'smithing'|'tailoring';
- hands?:'one'|'two'|'dual';equipClass?:string;
+ hands?:'one'|'two'|'dual';originClass?:string;equipmentFamily?:string;equipClasses?:readonly string[];
  rarityMultiplier?:number;quality?:number;
  ingredients:readonly EquipmentV2Ingredient[];
  strategy:EquipmentV2SourceStrategy;marketReleased?:boolean;
@@ -44,7 +44,8 @@ export function equipmentV2HiddenRecipeScreen(input:EquipmentV2RecipePreviewInpu
   baseStats:input.slot==='weapon'&&input.hands&&input.hands!=='one'
    ?equipmentV2PreviewArmamentStats(input.tier,input.profile,input.hands,input.quality??50,input.rarityMultiplier??1)
    :equipmentV2PreviewBaseStats(input.tier,input.slot,input.profile,input.quality??50,input.rarityMultiplier??1),
-  equipClass:input.equipClass,weaponHands:input.hands,
+  originClass:input.originClass,equipmentFamily:input.equipmentFamily,
+  equipClasses:input.equipClasses,weaponHands:input.hands,
   draftXp:draft.xp,source,cost,
   requirements:{characterLevel:requiredCharacter,professionLevel:requiredProfession,locked,lockedPrerequisite},
   action,canCraftNow,previewMaterialsReady:action==='craft'&&source.fullySupplied,

@@ -43,8 +43,11 @@ const affixLimits=Object.fromEntries([
 ].map(key=>[key,{min:.01,max:.10}])) as ServerAffixPolicyV2['limits'];
 const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
  tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
-const bossByRegion={asterfall:'BOSS_EXP_ROOT',sunscar:'BOSS_EXP_SOLAR',
- frostmarch:'BOSS_EXP_BELLBEAST'} as const;
+const bossByRegion={
+ asterfall:{id:'BOSS_EXP_ROOT',name:'Asterfall Root'},
+ sunscar:{id:'BOSS_EXP_SOLAR',name:'The Buried Heliarch'},
+ frostmarch:{id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake'},
+} as const;
 const roleCounts={tank:0,damage:0,support:0};
 const resultRows:{
  classId:string;spec:string;role:string;tier:GearTier;
@@ -123,9 +126,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     for(const kind of kinds){
      const locale=region(tier);
      const isBoss=kind==='boss';
-     const enemyId=isBoss?bossByRegion[locale]:'QA_ENEMY_'+kind;
+     const enemyId=isBoss?bossByRegion[locale].id:'QA_ENEMY_'+kind;
+     const enemyName=isBoss?bossByRegion[locale].name:'Synthetic '+kind;
      const enemy:CombatantDefinition={
-      id:enemyId,name:'Synthetic '+kind,team:'enemies',role:'enemy',
+      id:enemyId,name:enemyName,team:'enemies',role:'enemy',
       level,stats:{
        maxHp:8000+tier*3500,attackPower:60+tier*40,healingPower:0,
        defense:90+tier*40,accuracy:700+tier*40,evasion:100+tier*10,
@@ -149,6 +153,11 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       verifyPersisted:(_snapshot:PersistedEnemyKitV2,digest:string)=>
        /^[0-9a-f]{64}$/.test(digest),
      };
+     if(isBoss){
+      assert.equal(fixtureKit.preview[0].kind,'boss');
+      assert.equal(fixtureKit.preview[0].phaseNames.length,2,
+       'Regional boss must have authored phases, not an unnamed generic foe');
+     }
      // This fixture issues one synthetic trusted kit per encounter. The real
      // service still demands a persisted receipt; this is not a game route.
      const a=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,trusted);

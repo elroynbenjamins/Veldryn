@@ -58,11 +58,11 @@ function coopKind(secret:string, expeditionId:string, runId:string, contentVersi
   return 'battle';
 }
 
-export function generateCoopRouteGraph(secret:string, expeditionId:string, runId:string, contentVersion:string, balanceVersion:string):CoopRouteGraph {
+export function generateCoopRouteGraph(secret:string, expeditionId:string, runId:string, contentVersion:string, balanceVersion:string,runLength:'standard'|'extended'='standard'):CoopRouteGraph {
   const def=EXPEDITIONS[expeditionId]; if(!def)throw new Error('unknown_expedition');
   if(!def.coopImplemented)throw new Error('expedition_not_implemented');
   const generatorVersion=COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
-  const preBossNodeCount=deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
+  const preBossNodeCount=runLength==='extended'?14:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
   const nodes:CoopRouteNode[]=[];
   const idsAt=(depth:number)=>Array.from({length:COOP_ROGUELITE_CONFIG.choicesPerDepth},(_,choice)=>`d${depth}-c${choice}`);
   nodes.push({nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)});

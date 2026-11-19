@@ -6,7 +6,8 @@ import {previewVerifiedPartyChestsV51} from '../weekly-party-event-chests-v51';
 import {deriveVerifiedPartyChestEvidenceV61,
  type PrivatePartyRewardProofV61} from '../weekly-party-event-proof-v61';
 import {createChestRewardSettlementV69,
- type FrozenChestReceiptV69,type ChestGrantStoreV69} from '../../loot/chest-reward-settlement-v69';
+ type FrozenChestReceiptV69,type ChestGrantStoreV69,
+ type ChestGrantTransactionV69} from '../../loot/chest-reward-settlement-v69';
 
 function ok(value:unknown,label:string):asserts value{
  if(!value)throw Error('party_event_v77_test:'+label);
@@ -95,7 +96,10 @@ async function run(){
  }};
  let saved:FrozenChestReceiptV69|null=null;
  const store:ChestGrantStoreV69={
-  async withLockedAccountSource<T>(_owner,_key,work){
+  async withLockedAccountSource<T>(
+   _owner:string,_key:string,
+   work:(tx:ChestGrantTransactionV69)=>Promise<T>,
+  ):Promise<T>{
    const tx={
     readCommittedReceipt:async()=>saved,
     readTrustedSource:async()=>noGear,

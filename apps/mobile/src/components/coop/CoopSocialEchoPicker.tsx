@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 import {dungeonEchoPickerText} from '../../i18n/dungeon-social-echo-copy';
@@ -7,6 +7,8 @@ import type {Language} from '../../i18n/languages';
 import {validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {FantasyPanel} from './CoopVisualKit';
 import {GameButton} from '../GameButton';
+import {IdentityArtwork} from '../SocialIdentity';
+import {coopUiAssets} from '../../theme/coop-ui-assets';
 
 type Role='tank'|'damage'|'support';
 type Filter='all'|'friend'|'guild';
@@ -118,15 +120,13 @@ export function CoopSocialEchoPicker({
      accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?reasonLabel:undefined}
      disabled={disabled} onPress={()=>toggle(candidate)}
      style={({pressed})=>[s.person,chosen&&s.personChosen,disabled&&s.personDisabled,pressed&&s.pressed]}>
-      <View style={[s.avatar,chosen&&s.avatarChosen]}>
-       <Text style={[s.avatarLetter,chosen&&s.avatarLetterChosen]}>{candidate.name.slice(0,1).toUpperCase()}</Text>
-      </View>
+      <IdentityArtwork name={candidate.name} className={candidate.classId} size={34}/>
       <View style={s.personInfo}>
        <Text style={s.personName} numberOfLines={1}>{candidate.name}</Text>
        <Text style={s.personSub} numberOfLines={1}>{displayClass(candidate.classId)}  ·  Lv {candidate.level}</Text>
        <Text style={[s.relationship,disabled&&s.reason]} numberOfLines={2}>{disabled?reasonLabel:candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
       </View>
-      <View style={s.rolePill}><Text style={s.rolePillText}>{candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}</Text></View>
+      <View style={s.rolePill}><Image accessible={false} source={coopUiAssets[candidate.role==='damage'?'role_damage':candidate.role==='support'?'role_support':'role_tank']} style={s.roleIcon} resizeMode="contain"/><Text style={s.rolePillText}>{candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}</Text></View>
       <View style={[s.selectIcon,chosen&&s.selectIconChosen]}>
        <Text style={[s.selectIconText,chosen&&s.selectIconTextChosen]}>{chosen?'✓':disabled?'–':'+'}</Text>
       </View>
@@ -171,7 +171,8 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  personName:{fontSize:12,fontWeight:'900',color:C.text},personSub:{fontSize:10,color:C.textSecondary},
  relationship:{fontSize:9,lineHeight:12,color:C.cyan,fontWeight:'800'},
  reason:{color:C.textSecondary,fontWeight:'700'},
- rolePill:{minWidth:34,paddingHorizontal:5,minHeight:25,justifyContent:'center',alignItems:'center',borderRadius:5,borderWidth:1,borderColor:C.goldDim,backgroundColor:C.surfaceRaised},
+ rolePill:{minWidth:48,paddingHorizontal:4,minHeight:28,flexDirection:'row',gap:2,justifyContent:'center',alignItems:'center',borderRadius:5,borderWidth:1,borderColor:C.goldDim,backgroundColor:C.surfaceRaised},
+ roleIcon:{width:16,height:16},
  rolePillText:{fontSize:9,fontWeight:'900',color:C.gold},
  selectIcon:{borderWidth:1,borderColor:C.goldDim,borderRadius:5,width:26,height:26,alignItems:'center',justifyContent:'center'},
  selectIconChosen:{backgroundColor:C.cyan,borderColor:C.cyan},

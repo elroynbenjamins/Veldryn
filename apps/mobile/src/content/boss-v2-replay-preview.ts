@@ -6,14 +6,6 @@
  */
 import {BOSS_V2_CAST_IDS} from './boss-v2-preview-locales';
 
-const BOSS_IDS={
- BOSS_EXP_ROOT:['ROOT_V2_LIVING_BARK',['ROOT_V2_PHASE_70','ROOT_V2_PHASE_35']],
- BOSS_EXP_BELL:['BELL_V2_SOUL_CURSE','BELL_V2_VEIL_MIRROR',['BELL_V2_PHASE_70','BELL_V2_PHASE_35']],
- BOSS_EXP_SOLAR:['SOLAR_V2_SUNFALL',['SOLAR_V2_PHASE_70','SOLAR_V2_PHASE_35']],
- BOSS_EXP_SPHINX:['SPHINX_V2_MIRAGE',['SPHINX_V2_PHASE_70','SPHINX_V2_PHASE_35']],
- BOSS_EXP_BELLBEAST:['BELLBEAST_V2_SHATTER',['BELLBEAST_V2_PHASE_70','BELLBEAST_V2_PHASE_35']],
- BOSS_EXP_CANTOR:['CANTOR_V2_DISSONANCE',['CANTOR_V2_PHASE_70','CANTOR_V2_PHASE_35']],
-} as const;
 // Typed map kept distinct from game data. No user-authored ability name may be
 // used to add UI authority or alter combat outcomes.
 export const BOSS_V2_PRESENTATION_IDS:Readonly<Record<string,Readonly<{

@@ -1,0 +1,78 @@
+import assert from 'node:assert/strict';
+import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
+import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
+import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
+import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
+import {prepareSocialEchoCandidates} from '../coop-social-echoes';
+import {OnlineQModeRuntime} from '../qmode-runtime';
+import {deriveOnlineCoopLoadout} from '../coop-loadout';
+import {validateSocialEchoCandidates} from '../../../apps/mobile/src/core/coop-social-echoes';
+
+function makeHero(classId:'IRONWARDEN'|'WAYFINDER',name:string){
+ const state=createCharacter(newGame(0),classId,name);
+ state.character!.level=50;state.character!.xp=legacyCharacterTotalXpAtLevel(50);
+ state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
+ for(let i=0;i<40&&combatPowerRating(state).total<10_000;i++){
+  state.character!.attack=Math.ceil(state.character!.attack*1.4+1);
+  state.character!.defense=Math.ceil(state.character!.defense*1.4+1);
+  state.character!.hp=Math.ceil(state.character!.hp*1.4+1);
+ }
+ assert.ok(combatPowerRating(state).total>=2500);
+ return state;
+}
+async function main(){
+ const owner=makeHero('IRONWARDEN','Dungeon Host'),friend=makeHero('WAYFINDER','Trusted Friend');
+ const sourceRow={accountId:'friend-account',characterId:friend.character!.id,revision:23,state:friend,relationship:'friend' as const};
+ const sourceCalls:string[]=[];
+ const listing=await prepareSocialEchoCandidates({rpc:async<T>(name:string):Promise<T>=>{
+  sourceCalls.push(name);
+  if(name==='coop_social_echo_sources_server_v1')return [sourceRow] as T;
+  throw new Error('unexpected_rpc:'+name);
+ }},'host-account',10);
+ assert.equal(sourceCalls.length,1,'Browsing must never publish another player automatically');
+ assert.equal(listing.length,1,'Valid current friend can be used even without an Echo publication');
+ assert.equal(listing[0].candidate.profileId,friend.character!.id);
+ assert.equal(listing[0].candidate.relationship,'friend');
+ assert.equal(validateSocialEchoCandidates(listing.map(x=>x.candidate)).length,1);
+ const profileId='00000000-0000-4000-8000-000000000099';
+ let publishedCount=0,runMembers:unknown[]=[];
+ let serial=0;
+ const runtime=new OnlineQModeRuntime({
+  randomId:()=>`00000000-0000-4000-8000-${String(++serial).padStart(12,'0')}`,
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='load_online_game_server_v1')return {state:owner,version:21,serverNow:1000} as T;
+   if(name==='coop_social_echo_sources_server_v1')return [sourceRow] as T;
+   if(name==='publish_online_coop_loadout_server_v1'){
+    publishedCount++;
+    assert.equal(args.p_account_id,'friend-account');
+    assert.equal(args.p_share_echo,true,'Trusted server freezes the contact with no user sharing control');
+    assert.equal(args.p_game_version,23);
+    assert.equal((args.p_record as {characterId:string}).characterId,friend.character!.id);
+    return {echoProfileId:profileId} as T;
+   }
+   if(name==='eligible_online_coop_echoes_server_v1'){
+    return [{profileId,sourceAccountId:'friend-account',publishedAtMs:1000,
+     record:deriveOnlineCoopLoadout('friend-account',friend,23)}] as T;
+   }
+   if(name==='start_online_qmode_server_v1'){
+    runMembers=args.p_members as unknown[];
+    return args.p_client_projection as T;
+   }
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ const result=await runtime.start('host-account',{
+  mode:'qmode',requestId:'auto-friend-test-1',dungeonId:'EXP_001',tier:1,
+  characterId:owner.character!.id,loadoutId:'current',loadoutRevision:21,
+  preferredEchoProfileIds:[friend.character!.id],
+ });
+ assert.ok(result&&typeof result==='object');
+ assert.equal(publishedCount,1,'Only selected contacts are snapshotted on run start');
+ assert.equal(runMembers.length,4);
+ const echo=runMembers.map(v=>v as {memberKind:string;profileId?:string}).find(v=>v.memberKind==='echo');
+ assert.equal(echo?.profileId,profileId,'The committed seat uses the authoritative publication ID, never client stats');
+ assert.equal(runMembers.filter(v=>(v as {memberKind:string}).memberKind==='npc').length,2,'Missing roles still use NPCs');
+ console.log('PASS automatic friend Echo candidate, no share toggle, server-only publication and NPC role fallback');
+}
+void main().catch(error=>{console.error(error);process.exitCode=1;});

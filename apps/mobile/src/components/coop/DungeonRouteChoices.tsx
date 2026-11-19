@@ -70,7 +70,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
      {(!riskBaseline||!redundantReward||modifier||combatMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
-      {roomMarks>0?<View style={s.rewardTag}><Text style={s.rewardText} >{combatMarks>0?`+${combatMarks}`:st('Cap reached')} {st('Marks')}</Text></View>:null}
+      {roomMarks>0?<View style={s.rewardTag}><Text style={s.rewardText} >{combatMarks>0?`+${combatMarks} ${st('Marks')}`:st('Combat Marks capped')}</Text></View>:null}
        {!redundantReward?<View style={s.rewardTag}><Text style={s.rewardText} numberOfLines={1}>{translatedReward}</Text></View>:null}
      </View>:null}
     </View>

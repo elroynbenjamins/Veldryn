@@ -2,6 +2,7 @@ import type {GameState,CharacterState,InventoryState,GearSlot} from '../../../..
 import {equipmentPouchForCharacter} from '../../../../apps/mobile/src/core/equipment-pouch';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
@@ -62,6 +63,7 @@ function sourceLedger(state:GameState,accountId:string):V2VirtualLedger{
  verifyEquipmentV2HiddenLedger(accountId,meta.jobs,meta.items,meta.receipts,meta.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,meta.items,meta.storageReservations);
  if(meta.gemSocketState)verifyEquipmentV2GemSidecar(meta.items,meta.gemSocketState);
+ verifyEquipmentV2ReceiptNamespace({forge:meta.receipts,gems:meta.gemSocketState?.receipts,custody:meta.custodyReceipts});
  return meta;
 }
 function characterRow(state:GameState,id:string):

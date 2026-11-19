@@ -1,5 +1,6 @@
 import {hash32} from './rng';
 import type {GameState} from './types';
+import type {SeasonalActivity} from './seasonal-quests';
 import {ensurePersonalSeasonalState,updatePersonalSeasonalState} from './personal-seasonal-state';
 
 /** Unlike room contracts, these use the existing per-character weekly
@@ -34,7 +35,7 @@ export function projectVerifiedDungeonWeeklyProgress(state:GameState,weekKey:str
  if(!ready.character)return ready;
  const previous=ready.character.personalSeasonal?.progress??{};
  const same=previous.weekly?.key===weekKey;
- const counts=same?{...previous.weekly!.counts}:{};
+ const counts:Partial<Record<SeasonalActivity,number>>=same?{...previous.weekly!.counts}:{};
  counts.dungeon=verifiedDungeonWeeklyCount(weekKey,metrics);
  const weekly={key:weekKey,counts,...(same&&previous.weekly?.tags?.length?{tags:[...previous.weekly.tags]}:{})};
  return updatePersonalSeasonalState(ready,{progress:{...previous,weekly}});

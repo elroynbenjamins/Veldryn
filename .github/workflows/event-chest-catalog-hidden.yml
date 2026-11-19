@@ -108,6 +108,8 @@ jobs:
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-settlement-v61.js
       - name: Verify generic V67 chest tables and V68 legacy parity
         run: node .event-chest-tests/server/loot/__tests__/chest-loot-engine-v67.js
+      - name: Verify V69 shared receipt-first settlement, rollback, replay and source locks
+        run: node .event-chest-tests/server/loot/__tests__/chest-reward-settlement-v69.js
       - name: Verify server-only deterministic chest entropy and replay safety
         run: node .event-chest-tests/server/loot/__tests__/event-chest-server-roll-v1.js
       - name: Verify non-paying read-only Party/World chest panel states and collection
@@ -136,6 +138,7 @@ jobs:
           test ! -f supabase/migrations/20261119_world_boss_chest_ledger_v61_review_only.sql
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
+          grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts
           test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql
           echo 'EVENT_CHESTS_HIDDEN_VALIDATION_OK'

@@ -25,6 +25,7 @@ def audit(root: Path, *, warn_mib: float = 12.0, hard_mib: float = 20.0) -> dict
         raise ValueError("invalid_bundle_budget")
     result = {
         "folder": str(root),
+        "passed": True,
         "asset_count": 0,
         "checked_in_bytes": 0,
         "checked_in_mib": 0.0,

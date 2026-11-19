@@ -33,13 +33,13 @@ const calls:Array<{name:string;args:Record<string,unknown>}>=[];
 let claimed=false;
 const rpc=async <T>(name:string,args:Record<string,unknown>):Promise<T>=>{
  calls.push({name,args});
- if(name==='coop_dungeon_weekly_quest_snapshot_server_v1')return {...board,claimed} as T;
+ if(name==='coop_dungeon_weekly_quest_snapshot_server_v1')return {...board,claimed} as unknown as T;
  if(name==='coop_dungeon_weekly_quest_claim_server_v1'){
   assert.equal(args.p_account_id,'account-test');
   assert.equal(args.p_week_key,board.weekKey);
   assert.equal(args.p_request_id,'request-001');
   claimed=true;
-  return {...board,claimed} as T;
+  return {...board,claimed} as unknown as T;
  }
  throw new Error('unexpected_rpc:'+name);
 };

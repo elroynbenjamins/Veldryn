@@ -44,7 +44,7 @@ export function decodePartyEventRewardReadOnlyV62(
 ):PartyRewardMobileV62|null{
  if(!record(raw)||raw.schema!=='party-event-reward-readonly-v62'||
   !string(expectedAccountId,36,36)||
-  !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(expectedAccountId)||
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(expectedAccountId)||
   raw.accountId!==expectedAccountId.toLowerCase()||
   !whole(expectedEventStartMs,0,8640000000000000)||
   raw.eventStartsAtUtcMs!==expectedEventStartMs||

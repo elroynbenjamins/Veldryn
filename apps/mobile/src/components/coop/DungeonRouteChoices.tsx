@@ -48,7 +48,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
    const bossExit=option.kind==='boss'&&options.length>1;
-   const routeAction=bossExit?dungeonUxText(language,'bossFinish'):option.kind==='boss'?dungeonUxText(language,'bossFinal'):action;
+   const routeAction=bossExit?(live?dungeonUxText(language,'bossVote'):dungeonUxText(language,'bossFinish')):option.kind==='boss'&&!live?dungeonUxText(language,'bossFinal'):action;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
    const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);

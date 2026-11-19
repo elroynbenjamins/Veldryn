@@ -34,7 +34,9 @@ export function coopHandler(services:GameplayServices){
    if(path.endsWith('/coop/echo-allies')){
      if(request.method!=='GET')return json({error:'method_not_allowed'},405);
      const params=new URL(request.url).searchParams;
-     if([...params.keys()].some(key=>key!=='minLevel'))throw new GameplayError('invalid_echo_level');
+     let invalidParams=params.getAll('minLevel').length!==1;
+     params.forEach((_value,key)=>{if(key!=='minLevel')invalidParams=true;});
+     if(invalidParams)throw new GameplayError('invalid_echo_level');
      const minLevel=Number(params.get('minLevel'));
      if(!Number.isSafeInteger(minLevel)||minLevel<1||minLevel>100)throw new GameplayError('invalid_echo_level');
      const candidates=await services.rpc('coop_social_echo_candidates_server_v1',{p_actor_account_id:accountId,p_min_level:minLevel});

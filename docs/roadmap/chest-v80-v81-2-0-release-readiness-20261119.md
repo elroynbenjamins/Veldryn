@@ -58,6 +58,27 @@ contracts allow **T1–T9**. We do not silently cap T6–T9 down to T5:
   chest sources across **T1–T9** (54 cases), original 1% world odds,
   Party legacy odds, no payout/roll and anti-forgery checks.
 
+## Refinement — V82 frozen, account-owned EQ2 candidate
+
+`planFrozenEarnedChestGearV82` additionally verifies the future
+**claim-side receipt** against its V80 entitlement: source/account identity,
+original proof/table version, guaranteed reward amounts, every equipment
+group's original odds, the matching group-to-drop mapping, boss/role-specific
+custody and the **exact server-frozen tier**. It delegates to the existing
+V71 PE_ / World Boss item descriptor rather than minting synthetic EQ2
+items. Fake extra equipment rows, displaced guarantee amounts, different
+boss/owner or T5 substitution for a T6–T9 earned chest are rejected.
+
+It returns an explicitly **unissuable** candidate and never calls a wallet,
+Inbox, RNG or EQ2 writer. The V82 and V81 tests cover multiple source/tier
+matrices and negative tampering cases, but their success cannot certify a
+production Equipment 2.0 physical issuer.
+
+The consolidated Party branch also has **separate** Party Event V80/V81
+historical-Inbox protections. These remain included in the hidden CI and
+are distinct from the V80 **earned-entitlement** table described here.
+Neither supplies a pending player-facing, redeemable chest.
+
 ## Physical writer blockers — no fake substitute
 
 The **installed** `private.reward_inbox_v1` has source kinds

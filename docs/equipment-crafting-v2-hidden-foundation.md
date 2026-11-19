@@ -128,3 +128,19 @@ The evidence projection remains `combatReady:false`: it is **not live combat**, 
 - Synchronized this draft branch to the newer `main` enemy/class combat work, market updates, World Boss changes and translations with no overlapping file conflict in the latest comparison.
 
 **Critical open work:** This is a developer-only, in-memory **settlement rehearsal**, not the completed persistent production command. A real release still needs a single authenticated server routing/receipt contract inside `executeGameCommand` and `commit_online_game_guild_pve_v1`, verified storage capacity and physical exact-copy delivery, server-side crafting modifiers and mastery/affinity snapshots, item custody and permanent gem replacement, Skills/Enemies 2.0 combat integration, green CI, staging checks and rollout/rollback approval. Do not enable either flag, merge as release or apply shadow SQL.
+
+
+## November 19 — two follow-up passes: no-loss physical custody boundary + ledger integrity
+
+**Pass 1 — claim-to-custody preparation (hidden only)**
+- A new backend-only `equipment-crafting-v2-delivery.ts` computes a deterministic read-only destination proposal for the ORIGINAL crafter's equipment pouch, falling back to that character's inventory. Capacity is checked on the correct character even after an account character switch.
+- A full pouch and full inventory return `deferred/storage_full` rather than discarding a copy, forcing overflow with an unapproved expiry, or rolling again. There is intentionally no public EQ2 `ItemStack` insertion, no Bank mutation, no equipped-slot write, no auto-sale and no production API mounting.
+- Exact copy IDs are checked against all existing V33 account records, active/alternate inventory and pouch stacks, all overflow stacks, Bank and equipped references. The proposed single-instance physical marker always has quantity 1.
+- The proposal explicitly requires both **V2 item-catalog compatibility** and the **same existing authenticated account CAS transaction** as claim receipt, XP, and equipment ownership. It is NOT an authorization or a persistence implementation.
+
+**Pass 2 — immutable receipt/replay hardening (hidden only)**
+- The GameState rehearsal now audits its entire hidden job/item/XP/receipt graph **before** processing new commands and after non-replayed start/claim commands. It rejects duplicate job/copy/receipt/award IDs, orphan records, rewarded queued jobs, unbalanced one-time settlements, forged exact snapshots, wrong owner, missing claim receipts and mismatched roll/XP receipt payloads.
+- Claim rehearsal returns a read-only `delivery` proposal alongside the original immutable receipt. Replayed commands remain state-identical and never create another proposal or copy.
+- New backend regression tests cover the full/empty pouch, inventory fallback, deferred full-storage claim, original-crafter ownership across characters, V33 instance-ID collision, malformed frozen gear/receipts, duplicate claim IDs and legacy preservation. The focused Unique forged equipment workflow now executes the new test.
+
+**Refinement / polish constraints:** this is intentionally *not* physically delivered equipment. The V33 item catalog cannot yet safely resolve EQ2 templates. The actual production `executeGameCommand` → `commit_online_game_guild_pve_v1` adapter, permanent-gem replacement, storage overflow expiry policy, loadout protection, queue/Forge mastery integration and source-owned Combat 2.0 bonus effects are still required. Both 2.0 release flags remain disabled, the draft PR stays unmerged, and this work does not touch player balances or make new inventory items usable. Exact-head TypeScript, CI, staging, race/rollback and Android smoke checks remain pending until observed passing.

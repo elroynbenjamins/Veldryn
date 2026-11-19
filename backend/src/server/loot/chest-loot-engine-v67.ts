@@ -17,6 +17,8 @@ export const CHEST_LOOT_ENGINE_V67_RELEASED=false;
 export const CHEST_ROLL_MODULUS_V67=10000 as const;
 export const CHEST_LOOT_ENGINE_V67_VERSION='chest-loot-v67' as const;
 const SAFE_ID=/^[a-z][a-z0-9:_-]{1,100}$/;
+/** Reward/item identifiers often use uppercase (PE_*, item catalog IDs). */
+const SAFE_ENTRY_ID=/^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/;
 const SAFE_KEY=/^[a-z0-9:_-]{20,220}$/;
 const isBps=(n:unknown):n is number=>
  typeof n==='number'&&Number.isInteger(n)&&n>=0&&n<=10000;
@@ -76,7 +78,7 @@ export function defineChestLootTableV67(raw:ChestLootTableV67):ChestLootTableV67
   throw Error('chest_v67_invalid_table');
  const seenGuarantees=new Set<string>();
  const guarantees=raw.guarantees.map(g=>{
-  if(!g||typeof g.id!=='string'||!SAFE_ID.test(g.id)||
+  if(!g||typeof g.id!=='string'||!SAFE_ENTRY_ID.test(g.id)||
    !safeQuantity(g.quantity)||seenGuarantees.has(g.id))
    throw Error('chest_v67_invalid_guarantee');
   seenGuarantees.add(g.id);
@@ -99,7 +101,7 @@ export function defineChestLootTableV67(raw:ChestLootTableV67):ChestLootTableV67
   let weightSum=0;
   const ids=new Set<string>();
   const entries=g.entries.map(e=>{
-   if(!e||typeof e.id!=='string'||!SAFE_ID.test(e.id)||
+   if(!e||typeof e.id!=='string'||!SAFE_ENTRY_ID.test(e.id)||
     ids.has(e.id)||!Number.isSafeInteger(e.weight)||e.weight<1||
     e.weight>CHEST_ROLL_MODULUS_V67)
     throw Error('chest_v67_invalid_entry');
@@ -134,7 +136,7 @@ export function resolveChestLootV67(table:ChestLootTableV67,input:{
  if(!input||!Array.isArray(input.rolls)||
   !Array.isArray(input.ownedDropIds)||
   input.rolls.length!==def.groups.length||
-  input.ownedDropIds.some(x=>typeof x!=='string'||!SAFE_ID.test(x)))
+  input.ownedDropIds.some(x=>typeof x!=='string'||!SAFE_ENTRY_ID.test(x)))
   throw Error('chest_v67_invalid_server_context');
  const byId=new Map<string,ChestGroupRollV67>();
  for(const roll of input.rolls){

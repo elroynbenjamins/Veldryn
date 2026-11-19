@@ -55,6 +55,12 @@ export function compileEnemiesForCombatV2(
  const labels:string[]=[];
  const converted=enemies.map(enemy=>{
    if(enemy.team!=='enemies')throw Error('combat_v2_invalid_enemy_team');
+   // Already-authored Enemy V2 kits must NEVER also receive generic V2
+   // abilities or pressure phases. Persisted kits use a separate compiler.
+   if(enemy.tags?.some(tag=>tag.startsWith('enemy-v2:'))||
+      enemy.abilities.some(a=>a.id.startsWith('ENEMY_V2_'))||
+      enemy.phases?.some(p=>p.id.startsWith('ENEMY_V2_')))
+     throw Error('combat_v2_mixed_enemy_compilers');
    if(enemy.tags?.includes('combat-v2-enemy'))return enemy;
    const archetype=identity(enemy);
    const extra=ability(enemy,archetype);

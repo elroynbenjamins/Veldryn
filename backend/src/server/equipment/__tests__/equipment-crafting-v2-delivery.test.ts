@@ -81,6 +81,13 @@ const firstReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,ite
 assert.equal(firstReservation.reservation.destination,'equipment_pouch');
 const secondReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,copyTwo,[firstReservation.reservation]);
 assert.equal(secondReservation.reservation.destination,'inventory');
+const afterBankMove=reserveEquipmentV2HiddenClaim(capacityState,accountId,copyTwo,
+ [firstReservation.reservation],[
+  {holderCharacterId:null,location:'bank'},
+ ]);
+assert.equal(afterBankMove.reservation.destination,'equipment_pouch',
+ 'A copy that moved to Bank must release its former virtual Pouch reservation');
+
 const thirdReservation=reserveEquipmentV2HiddenClaim(capacityState,accountId,copyThree,[
  firstReservation.reservation,secondReservation.reservation,
 ]);

@@ -156,7 +156,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const [weeklyQuestClaiming,setWeeklyQuestClaiming]=useState(false);
   const weeklyQuestCharacterRef=useRef(characterId);weeklyQuestCharacterRef.current=characterId;
   const refreshDungeonWeeklyQuest=useCallback(async()=>{
-   if(entrySource.kind!=='real'||!characterId)return;
+   if(entrySource.kind!=='real'||!characterId||(state.character?.level??0)<10)return;
    setWeeklyQuestLoading(true);setWeeklyQuestError('');
    try{
     const snapshot=validateDungeonWeeklyQuestSnapshot(await coopClient.dungeonWeeklyQuest());
@@ -164,12 +164,12 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
    }catch(reason){
     if(weeklyQuestCharacterRef.current===characterId){setWeeklyQuest(undefined);setWeeklyQuestError(coopErrorMessage(reason,'Could not verify weekly dungeon quest.'));}
    }finally{if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuestLoading(false);}
-  },[entrySource.kind,characterId]);
+  },[entrySource.kind,characterId,state.character?.level]);
   useEffect(()=>{
    setWeeklyQuest(undefined);
-   if(!foreground||entrySource.kind!=='real'||!characterId)return;
+   if(!foreground||entrySource.kind!=='real'||!characterId||(state.character?.level??0)<10)return;
    void refreshDungeonWeeklyQuest();
-  },[foreground,entrySource.kind,characterId,refreshDungeonWeeklyQuest]);
+  },[foreground,entrySource.kind,characterId,state.character?.level,refreshDungeonWeeklyQuest]);
   // Keep the dungeon card correct if a player leaves this screen open over
   // Monday's UTC reset; only the server decides the new weekly objective.
   useEffect(()=>{
@@ -554,7 +554,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
       {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
     </View>):undefined;
   if(showShop)return <View style={{flex:1,padding:16,gap:12}}><ExpeditionShopPanel onBack={()=>setShowShop(false)} onRewardsChanged={onRewardsChanged}/></View>;
-   const weeklyQuestPanel=entrySource.kind==='real'&&characterId?<DungeonWeeklyQuestPanel language={language} quest={weeklyQuest} loading={weeklyQuestLoading} error={weeklyQuestError} busy={weeklyQuestClaiming||busy||pending} onRefresh={()=>void refreshDungeonWeeklyQuest()} onClaim={()=>void claimDungeonWeeklyQuest()}/>:undefined;
+   const weeklyQuestPanel=entrySource.kind==='real'&&characterId&&(state.character?.level??0)>=10?<DungeonWeeklyQuestPanel language={language} quest={weeklyQuest} loading={weeklyQuestLoading} error={weeklyQuestError} busy={weeklyQuestClaiming||busy||pending} onRefresh={()=>void refreshDungeonWeeklyQuest()} onClaim={()=>void claimDungeonWeeklyQuest()}/>:undefined;
   return <View style={{flex:1}}>
     {retry}
     {dungeonMarksShopPreview&&entrySource.kind==='real'?<View style={{paddingHorizontal:16,paddingTop:6,paddingBottom:4}}>

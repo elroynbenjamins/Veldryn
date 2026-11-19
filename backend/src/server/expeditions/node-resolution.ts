@@ -4,6 +4,7 @@ import { resolveExpeditionCombat } from '../combat/expedition-combat-service';
 import {coopTierEnemyMultipliers} from './tier-balance';
 import type {ExpeditionTier} from './constants';
 import type { CombatantDefinition, EncounterBossTuning, PersistentActorState } from '../combat/types';
+import {rollDungeonArtifact,dungeonArtifactBonuses} from '../coop/dungeon-artifacts';
 import { COOP_CLASS_ABILITY_MULTIPLIERS,ROOTBOUND_COOP_BALANCE_V2, type RootboundCoopBalance } from '../coop/config';
 
 export interface PersistentRunState {
@@ -68,7 +69,7 @@ function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinitio
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -76,22 +77,31 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   const rootbound=input.node.contentId.startsWith('ROOT')||input.node.contentId==='BOSS_EXP_ROOT',balance=input.rootboundBalance??ROOTBOUND_COOP_BALANCE_V2;
   // Selected room boons modify the server combatants, not a cosmetic label.
   // Frozen loadouts remain unchanged; bonuses are reapplied per encounter.
-  const strikes=state.boons.filter(id=>id==='ROOM_BOON_STRIKE').length;
-  const wards=state.boons.filter(id=>id==='ROOM_BOON_WARD').length;
+  const strikes=Math.min(5,state.boons.filter(id=>id==='ROOM_BOON_STRIKE').length);
+  const wards=Math.min(5,state.boons.filter(id=>id==='ROOM_BOON_WARD').length);
+  const fury=Math.min(3,state.boons.filter(id=>id==='ROOM_BOON_FURY').length);
+  const swift=Math.min(3,state.boons.filter(id=>id==='ROOM_BOON_SWIFT').length);
+  const precision=Math.min(3,state.boons.filter(id=>id==='ROOM_BOON_PRECISION').length);
+  const harmony=Math.min(3,state.boons.filter(id=>id==='ROOM_BOON_HARMONY').length);
+  const bulwark=Math.min(3,state.boons.filter(id=>id==='ROOM_BOON_BULWARK').length);
   // Previously some non-combat rewards and curses were only bookkeeping.
   // Keep the new boosts small and capped to protect existing tier balance.
   const roomBlessings=Math.min(5,state.boons.filter(id=>id.includes(':')).length);
-  const sharedArtifacts=Math.min(5,state.artifacts.length);
+  const sharedArtifacts=Math.min(5,state.artifacts.filter(id=>!id.startsWith('RELIC_')).length);
   const curses=Math.min(5,state.curses.length);
   const players=input.players.map(player=>{
    const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];
    const personal=state.personalEffects[player.id];
    const personalBlessings=Math.min(3,personal?.boons.length??0);
    const personalArtifacts=Math.min(3,personal?.artifacts.length??0);
-   const attackMultiplier=1+strikes*.05+roomBlessings*.012+sharedArtifacts*.018+personalBlessings*.025+personalArtifacts*.024;
-   const defenseMultiplier=Math.max(.8,1+wards*.05+roomBlessings*.008+sharedArtifacts*.012+personalArtifacts*.018-curses*.035);
+   const relic= input.enduranceLootVersion===1?dungeonArtifactBonuses(state.artifacts,player.role,input.node.kind):{attack:1,defense:1,healing:1,haste:0,critChance:0};
+   const attackMultiplier=(1+strikes*.05+fury*.075+roomBlessings*.012+sharedArtifacts*.018+personalBlessings*.025+personalArtifacts*.024)*relic.attack;
+   const defenseMultiplier=Math.max(.8,1+wards*.05+bulwark*(player.role==='tank'?.06:.025)+roomBlessings*.008+sharedArtifacts*.012+personalArtifacts*.018-curses*.035-fury*.025)*relic.defense;
    return {...player,
-    stats:{...player.stats,attackPower:player.stats.attackPower*attackMultiplier,defense:player.stats.defense*defenseMultiplier},
+    stats:{...player.stats,attackPower:player.stats.attackPower*attackMultiplier,defense:player.stats.defense*defenseMultiplier,
+     healingPower:player.stats.healingPower*(1+harmony*.10)*relic.healing,
+     haste:player.stats.haste+swift*.04+relic.haste,
+     critChance:Math.min(.75,player.stats.critChance+precision*.025+relic.critChance)},
     abilities:multipliers?player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;}):player.abilities,
    };
   });
@@ -103,10 +113,14 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  }
  if(!IMPLEMENTED_NONCOMBAT.has(input.node.kind))throw new Error(`unsupported_node_kind:${input.node.kind}`);
  const roll=deterministicInt(input.serverSecret,1,999,'node-resolution-v1',input.runId,input.node.nodeId,input.node.contentId);
+ let awardedArtifact:string|undefined;
  switch(input.node.kind){
   case 'camp': state=healAtCamp(state,input.players); break;
   case 'shrine': case 'forge': case 'echo': if(input.enemyDamageProfile!=='qmode-v1')state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
-  case 'treasure': case 'secret': state={...state,artifacts:[...state.artifacts,`${input.node.contentId}:${roll}`]}; break;
+  case 'treasure': case 'secret': {
+   awardedArtifact=input.enduranceLootVersion===1?rollDungeonArtifact(input.serverSecret,input.runId,input.node.nodeId,state.artifacts):`${input.node.contentId}:${roll}`;
+   state={...state,artifacts:[...state.artifacts,awardedArtifact]};break;
+  }
   case 'risk': {
    // The +2 supplies have a real drawback: nonlethal party injury plus
    // stacking defense pressure in later encounters.
@@ -128,6 +142,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   healedHp,revivedCount,damagedHp,
   boonCount:state.boons.length-input.state.boons.length,
   artifactCount:state.artifacts.length-input.state.artifacts.length,
+  ...(awardedArtifact?{artifactId:awardedArtifact}:{}),
   curseCount:state.curses.length-input.state.curses.length,
   ...(input.node.kind==='merchant'?{offers:merchantOffers(input.node.contentId)}:{})}};
 }

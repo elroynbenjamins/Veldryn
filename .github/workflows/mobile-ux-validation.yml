@@ -55,6 +55,8 @@ jobs:
         run: node tests/dungeon-failure-consolation-ui.cjs
       - name: Validate chat emote Settings navigation
         run: node tests/chat-emote-settings-navigation.cjs
+      - name: Validate pixel audio settings and reversible mute
+        run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
         run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes

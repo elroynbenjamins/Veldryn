@@ -49,6 +49,7 @@ for(const family of PARTY_EVENT_GEAR_FAMILIES_V51){
  for(const piece of pieces){
   const request=makeRequest(piece,3);
   const plan=planPartyEventEquipmentIssuanceV64(request);
+  ok(plan.candidateTemplateKey===piece.id+':T3','candidate_v66_template');
   ok(!plan.readyForIssuance&&plan.blockers.includes('party_event_template_not_in_eq2_manifest')
    &&plan.blockers.includes('eq2_physical_custody_unverified'),
    'all_event_pieces_currently_blocked_'+piece.id);

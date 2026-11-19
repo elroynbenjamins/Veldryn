@@ -90,6 +90,11 @@ for(const [offerId,petId,assetName] of [
 }
 assert(petRegistry.includes('??dungeonShopPetArtSource(id)'),'Pet Collection must resolve Dungeon Shop art');
 assert(shopView.includes('dungeonShopPetOfferArt(item.id)'),'shop offers must use unique pet art and expanded preview');
+assert(shopView.includes('Image.resolveAssetSource(previewArt)'),'pet preview must inspect packed art resolution');
+assert(shopView.includes('petArtIsThumbnail?s.petThumbnailPreview:s.petPortraitPreview'),'pet previews must not inflate thumbnail art into a large portrait');
+assert(shopView.includes('petThumbnailPreview:{width:64,height:64}'),'72px shop sprites need an inset preview until portrait masters ship');
+assert(shopView.includes('petPortraitPreview:{width:160,height:160'),'portrait-grade art should retain a spacious preview');
+
 assert(read('apps/mobile/src/core/release-flags.ts').includes('DUNGEON_MARKS_SHOP_RELEASED=false'),'new pet art must not bypass collectible release gate');
 
 // Dungeon Shop cosmetics use stable reward IDs throughout the server, gallery

@@ -19,7 +19,7 @@ assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Dung
 assert(browser.includes('notice?<FantasyPanel variant="danger"')&&screen.includes('notice={notice} activeRun={entry?.activeRun}'),'Quick Match errors must appear on the main Dungeon screen without opening group finder');
 assert(browser.includes('onQuickMatch?<View style={s.inlineTool}'),'Live Quick Match should remain directly accessible without an oversized panel');
 assert(browser.includes("mode==='live'&&liveTools?"),'Advanced group search remains accessible');
-assert(browser.includes("mode==='qmode'&&echoTools?"),'Echo sharing must not crowd primary browsing');
+assert(!browser.includes('echoTools')&&!screen.includes('showEchoSharing'),'Manual Echo sharing drawers must not crowd the Dungeon screen');
 assert(browser.includes('NPC or Echo allies fill the missing roles'),'Solo ally description must account for NPC fallback');
 const topBar=read('components/GameTopBar.tsx'),activityBar=read('components/ActiveActivityBar.tsx');
 const app=fs.readFileSync(path.join(root,'App.tsx'),'utf8');
@@ -66,7 +66,7 @@ assert(run.includes("run.phase==='awaiting_choice'&&run.options.length"),'Stale 
 assert(run.includes('initiallyOpen={run.presenceSummary.safetyAiCount>0}'),'Live party connection only expands when intervention is useful');
 assert(lobby.includes('Math.max(148,Math.min(208,height*.23))'),'Live lobby artwork stays compact on small phones');
 
-assert(run.includes('needsBoon')&&run.includes('selectedBoonId')&&run.includes('run.boonOffers!.map'),'Echo rooms must offer a real three-choice boon selection');
+assert(run.includes('needsBoon')&&run.includes('selectedBoonId')&&run.includes('draftOffers!.map')&&run.includes('run.artifactOffers'),'Echo rooms must offer a real three-choice boon selection');
 assert(run.includes('onChoose?.(nodeId,needsBoon?selectedBoonId:undefined)'),'Chosen boon must be submitted together with the next room');
 assert(screen.includes('...(boonId?{boonId}:{})'),'The boon ID must travel through the idempotent server command');
 const boonRuntime=fs.readFileSync(path.join(root,'../../backend/src/server/coop/room-boon-choices.ts'),'utf8');

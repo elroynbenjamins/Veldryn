@@ -5,9 +5,14 @@ function text(row:Record<string,unknown>,key:string,min=1,max=128):string{const 
 function integer(row:Record<string,unknown>,key:string,min:number,max:number):number{const value=row[key];if(typeof value!=='number'||!Number.isInteger(value)||value<min||value>max)throw new Error(`invalid_${key}`);return value;}
 function rejectClientAuthority(row:Record<string,unknown>):void{for(const key of ['role','stats','statSnapshot','loadoutSnapshot','normalizedReadiness'])if(key in row)throw new Error(`client_${key}_forbidden`);}
 
+function parsePreferredEchoCharacterIds(value:unknown,mode:CoopMode):string[]{
+ if(mode!=='qmode'||!Array.isArray(value)||value.length>3||new Set(value).size!==value.length
+    ||value.some(id=>typeof id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)))throw new Error('invalid_echo_selection');
+ return value as string[];
+}
 export function parseCoopRunRequest(value:unknown,mode:CoopMode):CoopRunRequest{
   const row=object(value);rejectClientAuthority(row);
-  return {requestId:text(row,'requestId',8),mode,dungeonId:text(row,'dungeonId'),tier:integer(row,'tier',1,5) as CoopRunRequest['tier'],characterId:text(row,'characterId'),loadoutId:text(row,'loadoutId'),loadoutRevision:integer(row,'loadoutRevision',1,Number.MAX_SAFE_INTEGER)};
+  return {requestId:text(row,'requestId',8),mode,dungeonId:text(row,'dungeonId'),tier:integer(row,'tier',1,5) as CoopRunRequest['tier'],characterId:text(row,'characterId'),loadoutId:text(row,'loadoutId'),loadoutRevision:integer(row,'loadoutRevision',1,Number.MAX_SAFE_INTEGER),...(row.preferredEchoCharacterIds===undefined?{}:{preferredEchoCharacterIds:parsePreferredEchoCharacterIds(row.preferredEchoCharacterIds,mode)})};
 }
 export function parseCoopDecisionCommand(value:unknown):CoopDecisionCommand{
   const row=object(value);rejectClientAuthority(row);

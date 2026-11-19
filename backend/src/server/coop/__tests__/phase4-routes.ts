@@ -15,6 +15,39 @@ for(let seed=0;seed<10_000;seed++){
   assert.ok(['event','treasure','camp','shrine'].includes(String(secondRooms[2].kind)),'Second stage offers a useful alternative');
   assert.equal(new Set(secondRooms.map(node=>node.contentId)).size,3,'Early alternatives must use unique content');
 }
+// New runs of both modes use the same checkpoint graph, not a pre-entry queue split.
+const endurance=generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance');
+validateCoopRouteGraph(endurance);
+assert.equal(endurance.preBossNodeCount,42);
+assert.equal(endurance.nodes.length,128);
+assert.equal(endurance.nodes.filter(node=>node.kind==='boss').length,6,'Five optional checkpoints and one mandatory final boss');
+for(const cleared of [7,14,21,28,35]){
+ const options=endurance.nodes.filter(node=>node.depth===cleared+1);
+ assert.equal(options.length,3);
+ assert.equal(options.filter(node=>node.kind==='boss').length,1);
+ assert.equal(options.filter(node=>node.kind!=='boss').length,2);
+ assert.ok(options.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3),'Continue options lead to another room');
+}
+assert.deepEqual(generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance'),endurance,'Reconnected runs must retain the checkpoint graph');
+// Exercise a spread of runs: every optional boss must preserve the same frozen
+// boss variant, and both continuation rooms must feed into the next layer.
+for(let seed=0;seed<40;seed++){
+ const graph=generateCoopRouteGraph(secret,'EXP_001',`endurance-seed-${seed}`,'content-v1','balance-v1','endurance');
+ validateCoopRouteGraph(graph);
+ const finalBoss=graph.nodes.find(node=>node.nodeId===graph.bossNodeId)!;
+ for(const cleared of [7,14,21,28,35]){
+  const current=graph.nodes.find(node=>node.nodeId===`d${cleared}-c0`)!;
+  const choices=current.nextNodeIds.map(id=>graph.nodes.find(node=>node.nodeId===id)!);
+  assert.equal(choices.length,3);
+  assert.equal(choices.filter(node=>node.kind==='boss').length,1);
+  assert.equal(choices.find(node=>node.kind==='boss')?.contentId,finalBoss.contentId,'Continued runs cannot reroll boss identity');
+  assert.ok(choices.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3));
+ }
+}
+
+const tampered=structuredClone(endurance);
+tampered.nodes=tampered.nodes.map(node=>node.nodeId==='d8-c2'?{...node,kind:'battle' as const}:node);
+assert.throws(()=>validateCoopRouteGraph(tampered),'Checkpoint boss cannot be bypassed by client graph tampering');
 const sameA=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 const sameB=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 assert.deepEqual(sameA,sameB);

@@ -1,9 +1,11 @@
 import {useCoopStyles} from '../../theme/useCoopStyles';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {CharacterPortrait} from '../CharacterVisual';
 import {CoopCombatSetupPanel} from './CoopCombatSetupPanel';
 import {CoopDungeonCompanionSelector,dungeonCompanionCounterLabel} from './CoopDungeonCompanionSelector';
+import {CoopSocialEchoPicker} from './CoopSocialEchoPicker';
+import {validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {dungeonCompanionOpportunity,type DungeonCompanionCounterId} from '../../../../../backend/src/server/coop/dungeon-companion-counters';
 import {useSocialText} from '../../i18n/social';
 import type {GameState} from '../../core/types';
@@ -14,7 +16,7 @@ import {clt,ct,t,type CoopLoadoutMessageKey,type Language} from '../../i18n';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,PrimaryAction,RoleBadge,StateChip} from './CoopVisualKit';
 
-type Props={state:GameState;language:Language;dungeonId:string;dungeonName:string;tier:1|2|3|4|5;mode:CoopMode;loadouts:CoopLoadoutProjection[];possibleCounterIds?:readonly DungeonCompanionCounterId[];onBack:()=>void;onIntent:(intent:CoopLoadoutIntent)=>void;onRefresh:()=>void;onEquipCompanion?:(id:string|null)=>Promise<void>;tonicPreference?:DungeonTonicPreference;onTonicPreferenceChange?:(next:DungeonTonicPreference)=>void;onSelectHealingPotion?:(id:string)=>Promise<void>;refreshing?:boolean;notice?:string};
+type Props={state:GameState;language:Language;dungeonId:string;dungeonName:string;tier:1|2|3|4|5;mode:CoopMode;loadouts:CoopLoadoutProjection[];possibleCounterIds?:readonly DungeonCompanionCounterId[];onBack:()=>void;onIntent:(intent:CoopLoadoutIntent)=>void;onRefresh:()=>void;onEquipCompanion?:(id:string|null)=>Promise<void>;tonicPreference?:DungeonTonicPreference;onTonicPreferenceChange?:(next:DungeonTonicPreference)=>void;onSelectHealingPotion?:(id:string)=>Promise<void>;refreshing?:boolean;notice?:string;socialEchoes?:SocialEchoCandidate[];socialEchoLoading?:boolean;socialEchoError?:string;onRefreshSocialEchoes?:()=>void;};
 const statRows:Array<[keyof CoopEffectiveStats,CoopLoadoutMessageKey]>=[['maxHp','hp'],['attackPower','attack'],['healingPower','healing'],['defense','defense']];
 function status(loadout:ReturnType<typeof presentCoopLoadout>,language:Language){
   if(loadout.status==='pending')return {label:clt(language,'pending'),tone:'warning' as const};
@@ -23,17 +25,42 @@ function status(loadout:ReturnType<typeof presentCoopLoadout>,language:Language)
   if(loadout.selectable)return {label:clt(language,'ready'),tone:'success' as const};
   return {label:clt(language,'ineligible'),tone:'danger' as const};
 }
-export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,mode,loadouts,possibleCounterIds=[],onBack,onIntent,onRefresh,onEquipCompanion,tonicPreference,onTonicPreferenceChange,onSelectHealingPotion,refreshing=false,notice}:Props){
+export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,mode,loadouts,possibleCounterIds=[],onBack,onIntent,onRefresh,onEquipCompanion,tonicPreference,onTonicPreferenceChange,onSelectHealingPotion,refreshing=false,notice,socialEchoes=[],socialEchoLoading=false,socialEchoError,onRefreshSocialEchoes}:Props){
  const {styles:s}=useCoopStyles(makeStyles),st=useSocialText();
   const views=useMemo(()=>loadouts.map(loadout=>presentCoopLoadout(loadout,state.character!.id)),[loadouts,state.character]);
   const [selectedId,setSelectedId]=useState(views.find(loadout=>loadout.selectable)?.id??views[0]?.id);
   const [showDetails,setShowDetails]=useState(false),[showCompanions,setShowCompanions]=useState(false),[showMatchup,setShowMatchup]=useState(false);
+  const [selectedSocialCharacterIds,setSelectedSocialCharacterIds]=useState<string[]>([]);
+  // Revoked sharing, removed friendships and new guild membership all invalidate
+  // formerly visible selections. Keep the next commit entirely server-authorized.
+  useEffect(()=>{
+   if(socialEchoLoading)return;
+   const valid=new Set(socialEchoes.map(candidate=>candidate.characterId));
+   setSelectedSocialCharacterIds(previous=>previous.every(id=>valid.has(id))?previous:previous.filter(id=>valid.has(id)));
+  },[socialEchoes,socialEchoLoading]);
   const matchup=state.character?.equippedCombatCompanionId?dungeonCompanionOpportunity(state.character.equippedCombatCompanionId,possibleCounterIds):undefined;
   const selected=views.find(loadout=>loadout.id===selectedId)??views[0];
+  // A class/role change can make an earlier selection illegal even while the
+  // contact list itself is unchanged. Retain only the still-legal choices.
+  useEffect(()=>{
+   if(socialEchoLoading||!selected||!state.character)return;
+   setSelectedSocialCharacterIds(previous=>{
+    const kept:string[]=[];
+    for(const id of previous){
+     try{
+      validateSelectedSocialEchoCharacterIds([...kept,id],socialEchoes,state.character!.classId,selected.role);
+      kept.push(id);
+     }catch{/* Role or donor changed; leave that seat automatic. */}
+    }
+    return kept.length===previous.length?previous:kept;
+   });
+  },[socialEchoes,socialEchoLoading,selected?.role,state.character?.classId]);
+
   const cta=mode==='live'?clt(language,'liveCta'):clt(language,'qmodeCta');
-  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent(buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected})):onRefresh()}/></View>}>
+  return <><ExpeditionScreenShell compactHeader eyebrow={clt(language,'kicker')} title={clt(language,'title')} onBack={onBack} backLabel={clt(language,'back')} stickyAction={<View style={s.sticky}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={selected?.selectable?cta:clt(language,'refresh')} loading={refreshing} disabled={refreshing} onPress={()=>selected?.selectable?onIntent({...buildCoopLoadoutIntent({mode,dungeonId,tier,loadout:selected}),...(mode==='qmode'&&selectedSocialCharacterIds.length?{preferredEchoCharacterIds:selectedSocialCharacterIds}:{})}):onRefresh()}/></View>}>
     <FantasyPanel variant="selected"><View style={s.hero}><CharacterPortrait state={state} compact style={s.portrait}/><View style={s.heroCopy}><Text style={s.character}>{state.character!.name}</Text><Text style={s.copy}>{mode==='live'?`${dungeonName} · ${clt(language,'liveAuto')} · ${clt(language,'level')} ${tier}`:`${dungeonName} · ${clt(language,'level')} ${tier}`}</Text><View style={s.heroBadges}>{selected?<RoleBadge role={selected.role} label={t(language,`coopUi.${selected.role}`)}/>:null}{selected?.selectable?<StateChip label={clt(language,'ready')} tone="success"/>:null}</View></View></View></FantasyPanel>
-    <View style={s.partyPreparation}><View style={s.partyPreparationHeader}><Text style={s.section}>{st('Party & formation')}</Text><Text style={s.copy}>{mode==='live'?ct(language,'details.live'):ct(language,'details.qmode')}</Text></View><Text style={s.copy}>{ct(language,'details.partyValue')}</Text><View style={s.partyRoleStrip}><RoleBadge role="tank" label={t(language,'coopUi.tank')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="support" label={t(language,'coopUi.support')}/></View></View>
+    {mode==='live'?    <View style={s.partyPreparation}><View style={s.partyPreparationHeader}><Text style={s.section}>{st('Party & formation')}</Text><Text style={s.copy}>{mode==='live'?ct(language,'details.live'):ct(language,'details.qmode')}</Text></View><Text style={s.copy}>{ct(language,'details.partyValue')}</Text><View style={s.partyRoleStrip}><RoleBadge role="tank" label={t(language,'coopUi.tank')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="damage" label={t(language,'coopUi.damage')}/><RoleBadge role="support" label={t(language,'coopUi.support')}/></View></View>:null}
+    {mode==='qmode'&&selected?<CoopSocialEchoPicker language={language} candidates={socialEchoes} selectedIds={selectedSocialCharacterIds} onChange={setSelectedSocialCharacterIds} hostRole={selected.role} hostClassId={state.character!.classId} loading={socialEchoLoading} error={socialEchoError} onRefresh={onRefreshSocialEchoes??(()=>{})}/>:null}
     <CoopCombatSetupPanel state={state} compact onChooseCompanion={onEquipCompanion?()=>setShowCompanions(true):undefined} companionDisabled={refreshing} tonicPreference={tonicPreference} onTonicPreferenceChange={onTonicPreferenceChange} onSelectHealingPotion={onSelectHealingPotion}/>
     {onEquipCompanion?<FantasyPanel><Pressable accessibilityRole="button" accessibilityState={{expanded:showMatchup}} onPress={()=>setShowMatchup(value=>!value)} style={s.matchupToggle}><Text style={s.section}>{st('Companion matchup')}</Text><Text style={s.matchupChevron}>{showMatchup?'−':'+'}</Text></Pressable>{showMatchup?<View style={s.matchupDetails}><Text style={s.copy}>{matchup?dungeonCompanionCounterLabel(matchup,st):st('No special encounter counter selected. Every legal companion still assists.')}</Text><Text style={s.copy}>{possibleCounterIds.length?st('Matchups are possible, not guaranteed. Rooms are randomized.'):st('Your companion choice can still provide damage, shielding or recovery.')}</Text></View>:null}</FantasyPanel>:null}
     {!views.length?<FantasyPanel variant="danger"><Text style={s.copy}>{clt(language,'empty')}</Text></FantasyPanel>:null}

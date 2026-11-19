@@ -103,8 +103,8 @@ export function highestEligibleCoopTier(dungeon:CoopDungeonView,currentLevel:num
 export function validateCoopDungeonView(view:CoopDungeonView):void{
   if(!view.id||!view.name||view.minLevel<1||view.recommendedLevel<view.minLevel)throw new Error('invalid_dungeon_projection');
   if(!view.available&&!view.lockedReason)throw new Error('locked_reason_required');
-  if(view.preBossRoomMin!==5||view.preBossRoomMax!==5)throw new Error('invalid_route_room_range');
-  if(view.estimatedMinutes.min!==6||view.estimatedMinutes.max!==8)throw new Error('invalid_run_duration_target');
+  if(!((view.preBossRoomMin===5&&view.preBossRoomMax===5)||(view.preBossRoomMin===7&&view.preBossRoomMax===7)))throw new Error('invalid_route_room_range');
+  if(!((view.estimatedMinutes.min===6&&view.estimatedMinutes.max===8)||(view.estimatedMinutes.min===8&&view.estimatedMinutes.max===12)))throw new Error('invalid_run_duration_target');
   if(view.difficulties.some(tier=>view.tierMinLevels[tier]<view.minLevel))throw new Error('invalid_tier_level_requirement');
   if(view.difficulties.some(tier=>!Number.isFinite(view.tierMinPower[tier])||view.tierMinPower[tier]<0))throw new Error('invalid_tier_power_requirement');
   if(view.difficulties.some(tier=>tier<1||tier>3))throw new Error('invalid_difficulty');

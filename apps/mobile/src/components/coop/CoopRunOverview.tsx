@@ -83,7 +83,7 @@ function MarkIconBurst({reduceMotion}:{reduceMotion:boolean}){
  const style={position:'absolute' as const,top:-6,left:-6,right:-6,bottom:-6,borderRadius:16,borderWidth:2,borderColor:'#F4CE5D',opacity:burst.interpolate({inputRange:[0,.4,1],outputRange:[0,.85,0]}),transform:[{scale:burst.interpolate({inputRange:[0,1],outputRange:[.8,1.4]})}]};
  return <Animated.View pointerEvents="none" style={style}/>;
 }
-export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVoter,onBack,onChoose,onUseHealingPotion,healingPotion,onPrepareTonic,dungeonTonic,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],rewardBudget,liveFellowshipRemaining,recipeUnlocks=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string,boonId?:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onPrepareTonic?:(id:string)=>void;dungeonTonic?:DungeonTonicView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];combatMarks?:DungeonCombatMarks;rewardBudget?:DungeonRewardPreviewBudget;liveFellowshipRemaining?:number;recipeUnlocks?:DungeonEffectRecipeUnlock[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>}){
+export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVoter,onBack,onChoose,onUseHealingPotion,healingPotion,onPrepareTonic,dungeonTonic,onRefresh,onClaim,onQueueAgain,onPartyRematch,busy=false,notice,syncError,rewards=[],rewardBudget,liveFellowshipRemaining,recipeUnlocks=[],terminalAction,reduceMotion=false,seasonal=false,eventName,chatMessages=[],onChatSend,vipPlus=false,playbackSpeed=1,onPlaybackSpeedChange}:{language:Language;run:CoopRunView;myVotedNodeId?:string;selfVoter?:{name:string;profileIconId?:string|null;className?:string|null};onBack:()=>void;onChoose?:(nodeId:string,boonId?:string)=>void;onUseHealingPotion?:()=>void;healingPotion?:DungeonHealingPotionView;onPrepareTonic?:(id:string)=>void;dungeonTonic?:DungeonTonicView;onRefresh?:()=>void;onClaim?:(id:string)=>void;onQueueAgain?:{label:string;onPress:()=>void};onPartyRematch?:()=>void;busy?:boolean;notice?:string;syncError?:string;rewards?:CoopRewardDisplay[];combatMarks?:DungeonCombatMarks;rewardBudget?:DungeonRewardPreviewBudget;liveFellowshipRemaining?:number;recipeUnlocks?:DungeonEffectRecipeUnlock[];terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void};reduceMotion?:boolean;seasonal?:boolean;eventName?:string;chatMessages?:CoopChatMessage[];onChatSend?:(text:string)=>Promise<void>;vipPlus?:boolean;playbackSpeed?:1|2;onPlaybackSpeedChange?:(speed:1|2)=>void}){
  const {colors:C,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText(),a=(value:string)=>accountText(language,value),{gt}=useGameplayText();
  const localizedMechanic=run.mechanic?localizedSeasonalDungeonMechanic(language,run.mechanic):undefined;
@@ -116,7 +116,9 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   const [selectedBoonId,setSelectedBoonId]=useState<string|undefined>();
   const [reviewedRoomNodeId,setReviewedRoomNodeId]=useState<string|undefined>();
   useEffect(()=>setSelectedBoonId(undefined),[run.runId,run.lastRoomOutcome?.nodeId]);
-  const needsBoon=run.mode==='qmode'&&Boolean(run.boonOffers?.length);
+  const artifactDraft=Boolean(run.artifactOffers?.length);
+   const draftOffers=run.boonOffers?.length?run.boonOffers:run.artifactOffers;
+   const needsBoon=run.mode==='qmode'&&Boolean(draftOffers?.length);
   // Review server-confirmed utility rewards before presenting the next Solo route.
   // Live voting remains on its existing timer and does not await acknowledgement.
   const reviewingRoom=run.mode==='qmode'&&run.phase==='awaiting_choice'&&!!run.lastRoomOutcome&&!['merchant','merchant_purchase'].includes(run.lastRoomOutcome.kind)&&reviewedRoomNodeId!==run.lastRoomOutcome.nodeId;
@@ -188,23 +190,33 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
     <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'&&(run.mode==='live'||reviewingRoom)?run.lastRoomOutcome:undefined} onContinue={reviewingRoom?()=>setReviewedRoomNodeId(run.lastRoomOutcome!.nodeId):undefined}/>
     {run.lastCombat?.reason==='victory'&&run.lastCombatMarks&&!inCombat&&!enteringCombat?<FantasyPanel variant="success"><View style={s.summary}><ExpeditionMarkIcon size={20}/><Text style={s.name}>{st('+{marks} Expedition Marks earned',{marks:run.lastCombatMarks})}</Text></View></FantasyPanel>:null}
     {needsBoon&&run.phase==='awaiting_choice'&&!reviewingRoom?<FantasyPanel variant="selected">
-      <View style={s.boonHeader}><Text style={s.title}>{st('Choose a boon')}</Text><Text style={s.copy}>{st('Select one reward before entering the next room.')}</Text></View>
-      <View style={s.boonChoices}>{run.boonOffers!.map(offer=><Pressable key={offer.id} accessibilityRole="radio" accessibilityState={{selected:selectedBoonId===offer.id,disabled:busy}} disabled={busy} onPress={()=>setSelectedBoonId(offer.id)} style={[s.boonChoice,selectedBoonId===offer.id&&s.boonSelected]}>
+      <View style={s.boonHeader}><Text style={s.title}>{artifactDraft?st('Choose an artifact'):st('Choose a boon')}</Text><Text style={s.copy}>{st('Select one reward before entering the next room.')}</Text></View>
+      <View style={s.boonChoices}>{draftOffers!.map(offer=><Pressable key={offer.id} accessibilityRole="radio" accessibilityState={{selected:selectedBoonId===offer.id,disabled:busy}} disabled={busy} onPress={()=>setSelectedBoonId(offer.id)} style={[s.boonChoice,selectedBoonId===offer.id&&s.boonSelected]}>
        <View style={s.boonText}><Text style={s.name}>{offer.name}</Text><Text style={s.copy}>{offer.description}</Text></View>
        <Text style={s.boonMarker}>{selectedBoonId===offer.id?'✓':'○'}</Text>
       </Pressable>)}</View>
     </FantasyPanel>:null}
         {run.phase==='awaiting_choice'&&run.options.length&&!enteringUtility&&!reviewingRoom?<View style={s.actionArea}>
       {run.routePath?<RoutePathStrip path={run.routePath} reduceMotion={reduceMotion}/>:null}
-      <View style={s.routeHeader}><View style={s.grow}><Text style={s.routeEyebrow}>{modeLabel}</Text><Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text></View>{bossNext?<StateChip label={st('FINAL BOSS')} tone="warning"/>:null}</View>
+      <View style={s.routeHeader}><View style={s.grow}><Text style={s.routeEyebrow}>{modeLabel}</Text><Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text></View>{bossNext?<StateChip label={run.options.length>1?st('BOSS EXIT AVAILABLE'):st('FINAL BOSS')} tone="warning"/>:null}</View>
       {!seasonal&&(dungeonTonic?.open||dungeonTonic?.preparedName||healingPotion)?<View style={s.routeSupplies}>{dungeonTonic&&(dungeonTonic.open||dungeonTonic.preparedName)?<Text style={s.routeSupply} numberOfLines={1}>{dungeonTonic.preparedName?`${gt('DUNGEON TONIC')}: ${dungeonTonic.preparedName}`:gt('Choose a tonic before the first room.')}</Text>:null}{healingPotion?<Text style={s.routeSupply}>{gt('DUNGEON HEALING')} {healingPotion.remaining}/{healingPotion.capacity}</Text>:null}</View>:null}
-      {needsBoon&&!selectedBoonId?<Text style={s.copy}>{st('Choose your boon above to continue.')}</Text>:null}
+      {needsBoon&&!selectedBoonId?<Text style={s.copy}>{artifactDraft?st('Choose your artifact above to continue.'):st('Choose your boon above to continue.')}</Text>:null}
+       {bossNext&&run.options.length>1?<Text style={s.copy}>{run.mode==='live'?st('Vote to finish with the boss, or continue deeper together.'):st('Fight the boss to finish now, or continue deeper for a harder challenge.')}</Text>:null}
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
-      <DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
+      {!seasonal&&run.combatMarksEarned!==undefined?<Text style={s.routeEyebrow}>{st('Combat Marks')} · {run.combatMarksEarned}/{run.combatMarksCap??25}</Text>:null}
+       <DungeonRouteChoices options={run.options} combatMarksRemaining={Math.max(0,(run.combatMarksCap??25)-(run.combatMarksEarned??0))} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>
       <View style={s.partyMini} accessibilityLabel={st('Party & formation')}>
        {run.roleSlots.map((slot,index)=><View key={`${slot.role}-${index}`} accessible accessibilityLabel={`${slot.name}, ${t(language,`coopUi.${slot.role}`)}`} style={s.partyMiniMember}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={28}/><Text numberOfLines={1} style={s.partyMiniName}>{slot.name}</Text><Text numberOfLines={1} style={s.partyMiniRole}>{t(language,`coopUi.${slot.role}`)}</Text></View>)}
       </View>
      </View>:run.phase!=='resolving_node'&&!terminal&&!enteringUtility?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
+    {!seasonal&&run.runBuild&&(run.runBuild.boons.length>0||run.runBuild.artifacts.length>0)?<DungeonDisclosure title={`${st('Run Build')} · ${run.runBuild.boons.length} ${st('boons')} / ${run.runBuild.artifacts.length} ${st('artifacts')}`} initiallyOpen={false}>
+     <FantasyPanel>
+      {[...run.runBuild.boons,...run.runBuild.artifacts].map(effect=><View key={effect.id} style={s.marksBreakdownLine}>
+       <View style={s.grow}><Text style={s.name}>{effect.name}</Text><Text style={s.copy}>{effect.description}</Text></View>
+       <StateChip label={`×${effect.stacks}`} tone="selected"/>
+      </View>)}
+     </FantasyPanel>
+    </DungeonDisclosure>:null}
     {!seasonal&&(dungeonTonic||healingPotion)&&run.phase==='awaiting_choice'?<DungeonDisclosure title={`${gt('DUNGEON HEALING')} · ${gt('DUNGEON TONIC')}`} initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}>
     {!seasonal&&dungeonTonic&&run.phase==='awaiting_choice'?<FantasyPanel>
       <View style={s.summary}>
@@ -278,7 +290,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
       {!seasonal&&(rewards.length>0||combatMarks!==undefined)?<View style={[s.rewardRow,s.marksBreakdown]}>
         <View style={s.summary}><ExpeditionMarkIcon size={22}/><Text style={s.rewardRowTitle}>{st('This run · Expedition Marks')}</Text></View>
         <View style={s.marksBreakdownLine}><Text style={s.copy}>{st('Enemy encounters · already credited')}</Text><Text style={s.marksBreakdownAmount}>{combatMarks===undefined?'—':`+${combatMarks.total.toLocaleString(language)}`}</Text></View>
-        {combatMarks?<Text style={s.rewardFootnote}>{st('Normal: {normal} × 3 · Elite: {elite} × 5',{normal:combatMarks.normal,elite:combatMarks.elite})}</Text>:<Text style={s.rewardFootnote}>{st('Combat Marks breakdown unavailable. Refresh to retry.')}</Text>}
+        {combatMarks?<Text style={s.rewardFootnote}>{st('Normal: {normal} × 3 · Elite: {elite} × 5',{normal:combatMarks.normal,elite:combatMarks.elite})+(combatMarks.partial?` · +${combatMarks.partial} ${st('final capped award')}`:'')+(combatMarks.cap?` · ${combatMarks.total}/${combatMarks.cap}`:'')}</Text>:<Text style={s.rewardFootnote}>{st('Combat Marks breakdown unavailable. Refresh to retry.')}</Text>}
         <View style={s.marksBreakdownLine}><Text style={s.copy}>{st('Completion reward · claim below')}</Text><Text style={s.marksBreakdownAmount}>{marksBreakdown?.completion===undefined?'—':`+${marksBreakdown.completion.toLocaleString(language)}`}</Text></View>
         <View style={[s.marksBreakdownLine,s.marksTotalLine]}><Text style={s.rewardRowTitle}>{st('Total Marks from this run')}</Text><Text style={s.marksTotalAmount}>{marksBreakdown?.total===undefined?'—':`${marksBreakdown.estimated?'≈':''}+${marksBreakdown.total.toLocaleString(language)}`}</Text></View>
         <Text style={s.rewardFootnote}>{st('Combat Marks are already in your wallet. Completion Marks are added only when claimed.')}{marksBreakdown?.estimated?' '+st('Total is estimated until the claim is complete.'):''}</Text>
@@ -311,7 +323,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={closeTheater} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion} footer={showBattleAction?<GameButton title={terminal?st('View rewards'):st('Continue dungeon')} onPress={closeTheater}/>:onRefresh&&(inCombat||enteringCombat||awaitingCombatPlayback)?<GameButton title={st('Refresh battle status')} tone="secondary" disabled={busy} onPress={onRefresh}/>:undefined}>
-    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={(entryCombatKind??run.selectedNodeKind)==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
+    <DungeonCombatStage run={run} vipPlus={vipPlus} playbackSpeed={playbackSpeed} onPlaybackSpeedChange={onPlaybackSpeedChange} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={(entryCombatKind??run.selectedNodeKind)==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

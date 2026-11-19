@@ -12,15 +12,30 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
  const st=useSocialText();
  const pulse=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
-  if(reduceMotion){pulse.setValue(0);return;}
+  if(reduceMotion||path.totalDepth>16){pulse.setValue(0);return;}
   const loop=Animated.loop(Animated.sequence([
    Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.inOut(Easing.quad),useNativeDriver:true}),
    Animated.timing(pulse,{toValue:0,duration:1100,easing:Easing.inOut(Easing.quad),useNativeDriver:true}),
   ]));
   loop.start();
   return()=>loop.stop();
- },[reduceMotion,pulse]);
+ },[reduceMotion,pulse,path.totalDepth]);
  const currentStyle={transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.14]})}],opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.85,1]})};
+ // Endurance routes can last dozens of rooms; a 43-dot minimap would
+ // collapse on mobile. Show just the current seven-room checkpoint segment.
+ if(path.totalDepth>16){
+  const cleared=path.depth,checkpointAvailable=cleared>0&&cleared%7===0;
+  const completedThisSegment=checkpointAvailable?7:cleared%7;
+  const finalBossAvailable=cleared>=path.totalDepth-1;
+  const nextRoom=Math.min(cleared+1,path.totalDepth);
+  const threatTier=Math.min(7,Math.floor((nextRoom-1)/7)+1);
+  const nextBossAt=Math.min(path.totalDepth-1,checkpointAvailable?cleared:Math.ceil((cleared+1)/7)*7);
+  return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(cleared,path.totalDepth)}} accessibilityLabel={st('Route progress: room {current} of {total}',{current:Math.min(cleared+1,path.totalDepth),total:path.totalDepth})}>
+    <View style={s.header}><Text style={s.label}>{st('ENDURANCE ROUTE')} · {st('Threat')} {threatTier}</Text><Text style={s.counter}>{st('Room')} {nextRoom}</Text></View>
+    <View style={s.strip}>{Array.from({length:7},(_,index)=><View key={index} style={[s.enduranceDot,index<completedThisSegment?s.visitedDot:s.futureDot]}/>)}</View>
+    <Text style={s.bossLegend}>{finalBossAvailable?st('Final boss · Complete the expedition'):checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text>
+   </View>;
+ }
  const steps=Array.from({length:path.totalDepth},(_,index)=>index);
  return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(path.depth,path.totalDepth)}} accessibilityLabel={st("Route progress: room {current} of {total}",{current:Math.min(path.depth+1,path.totalDepth),total:path.totalDepth})}>
   <View style={s.header}>
@@ -52,6 +67,7 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  counter:{...coopTypography.meta,color:C.gold,fontWeight:'800'},
  strip:{flexDirection:'row',alignItems:'center',gap:0},
  dot:{width:16,height:16,borderRadius:8,alignItems:'center',justifyContent:'center',borderWidth:1},
+ enduranceDot:{flex:1,height:9,borderRadius:5,borderWidth:1},
  visitedDot:{backgroundColor:C.cyan,borderColor:C.cyan},
  currentDot:{backgroundColor:C.gold,borderColor:C.gold,shadowColor:C.gold,shadowOpacity:.5,shadowRadius:4,shadowOffset:{width:0,height:0},elevation:3},
  futureDot:{backgroundColor:'transparent',borderColor:C.line},

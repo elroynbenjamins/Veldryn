@@ -100,7 +100,7 @@ function openingEnemyFx(archetype:string|undefined){
  if(archetype==='guardian')return{motion:'brace' as const,accent:'gold' as const};
  return{motion:'smash' as const,accent:'danger' as const};
 }
-export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,previewArchetypes,onPresentationComplete}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;previewArchetypes?:Array<{id:string;label:string}>;onPresentationComplete?:()=>void}){
+export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eventName,reduceMotionSetting=false,anticipation=false,entryNodeId,previewArchetypes,onPresentationComplete,vipPlus=false,playbackSpeed=1,onPlaybackSpeedChange}:{run:CoopRunView;enemyLabel?:string;boss?:boolean;seasonal?:boolean;eventName?:string;reduceMotionSetting?:boolean;anticipation?:boolean;entryNodeId?:string;previewArchetypes?:Array<{id:string;label:string}>;onPresentationComplete?:()=>void;vipPlus?:boolean;playbackSpeed?:1|2;onPlaybackSpeedChange?:(speed:1|2)=>void}){
  const {styles:s}=useCoopStyles(makeStyles);
  const theme=useGameTheme();
  const backdrop=combatBackdrop(seasonal,eventName);
@@ -109,7 +109,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  // Visual-only anticipation never plays the previous encounter's replay.
- const pending=run.pendingCombat,replay=anticipation?undefined:pending?{...pending,reason:'victory' as const}:run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}`;
+ const pending=run.pendingCombat,fastReplayAvailable=vipPlus&&!pending&&!anticipation,effectivePlaybackSpeed=fastReplayAvailable?playbackSpeed:1,replay=anticipation?undefined:pending?{...pending,reason:'victory' as const}:run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}`;
  const [cueIndex,setCueIndex]=useState(0),[systemReduceMotion,setReduceMotion]=useState(false);
  const [inspectKey,setInspectKey]=useState<string|undefined>(undefined),[showLog,setShowLog]=useState(false);
  const reduceMotion=reduceMotionSetting||systemReduceMotion;
@@ -141,10 +141,10 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  useEffect(()=>{
   if(!replay||reduceMotion||cueIndex>=cues.length-1)return;
   const current=cues[cueIndex],next=cues[cueIndex+1];
-  const delay=playbackAdvanceDelayMs(current,next,1);
+  const delay=playbackAdvanceDelayMs(current,next,effectivePlaybackSpeed);
   const timer=setTimeout(()=>setCueIndex(value=>Math.min(value+1,cues.length-1)),pending?Math.max(180,Math.min(380,Math.round(delay*.55))):delay);
   return()=>clearTimeout(timer);
- },[replay,replayKey,pending,reduceMotion,cueIndex,cues]);
+ },[replay,replayKey,pending,reduceMotion,cueIndex,cues,effectivePlaybackSpeed]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined;
  const actionImpact:CombatImpactKind|undefined=currentCue?.type==='action'&&currentCue.outcome!=='miss'
   ?currentCue.actionKind==='heal'?'heal':currentCue.actionKind==='shield'?'shield':currentCue.outcome==='critical'?'critical':'damage'
@@ -160,7 +160,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   ?CLASS_ICON_ACCENT[actorSlot.classId as ClassId]:undefined;
  const localizedSkillName=skillActivation?.kind==='class'?battleText(language,skillActivation.name):skillActivation?.name;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
- const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,1):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),1,120):0;
+ const fxDuration=fx?playbackVisualDurationMs(fx.durationMs,effectivePlaybackSpeed):0,feedbackDuration=fx?playbackVisualDurationMs(Math.max(260,Math.min(700,fx.durationMs+180)),effectivePlaybackSpeed,120):0;
  useEffect(()=>{
   actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();feedbackAnim.stopAnimation();
   actorAnim.setValue(0);targetAnim.setValue(0);fxAnim.setValue(reduceMotion&&fx?1:0);feedbackAnim.setValue(reduceMotion&&currentCue?.type==='action'?1:0);
@@ -175,7 +175,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
    ]),
   ]).start();
   return()=>{actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();feedbackAnim.stopAnimation();};
- },[cueIndex,replayKey,reduceMotion,fx?.durationMs,fx?.actorMotion,fx?.targetMotion,currentCue?.type]);
+ },[cueIndex,replayKey,reduceMotion,fx?.durationMs,fx?.actorMotion,fx?.targetMotion,currentCue?.type,effectivePlaybackSpeed]);
 
  const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return seasonalBossDisplayName(language,cue.abilityName);}return undefined;},[cues,cueIndex,language]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
@@ -209,7 +209,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
   {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
  ]}:undefined;
  const feedbackStyle=currentCue?.type==='action'&&!reduceMotion?{opacity:feedbackAnim.interpolate({inputRange:[0,.12,.72,1],outputRange:[0,1,1,0]}),transform:[{translateY:feedbackAnim.interpolate({inputRange:[0,1],outputRange:[6,-12]})},{scale:feedbackAnim.interpolate({inputRange:[0,.18,1],outputRange:[.9,1.08,1]})}]}:undefined;
- const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):dungeonDynamicUiText(language,'Boss ability'),durationMs:currentBossCast.durationMs??0,displayDurationMs:playbackCastDisplayMs(currentBossCast,1),interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),animationKey:`${replayKey}:${cueIndex}`}:undefined;
+ const bossCast=currentBossCast?{label:currentBossCast.abilityName?seasonalBossDisplayName(language,dungeonEnemyAbilityDisplayName(currentBossCast.abilityName)):dungeonDynamicUiText(language,'Boss ability'),durationMs:currentBossCast.durationMs??0,displayDurationMs:playbackCastDisplayMs(currentBossCast,effectivePlaybackSpeed),interruptible:bossCastDef?.interruptible??false,targetLabel:currentBossCast.targetName?.trim(),animationKey:`${replayKey}:${cueIndex}`}:undefined;
  const toggleInspect=(key:string)=>setInspectKey(current=>current===key?undefined:key);
   const inspectedSlot=inspectKey?.startsWith('party:')?ordered.find(slot=>slotInspectKey(slot)===inspectKey):undefined;
  const inspectedEnemy=inspectKey?.startsWith('enemy:')?visibleEnemies.find(enemy=>enemyInspectKey(enemy.id)===inspectKey):undefined;
@@ -218,7 +218,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const fallbackInspect=inspectKey==='enemy:fallback';
  const inspectTarget:CombatantInspectTarget|undefined=inspectedEnemy?{kind:'enemy',name:dungeonEnemyDisplayName(inspectedEnemy.name),boss:inspectedEnemy.boss,currentHp:inspectedEnemyState?.hp,maximumHp:inspectedEnemyState?.maxHp,shield:inspectedEnemyState?.shield??0,statuses:inspectedEnemyStatuses,phaseLabel:inspectedEnemy.boss?bossPhaseLabel:undefined,cast:inspectedEnemy.boss?bossCast:undefined}:fallbackInspect?{kind:'enemy',name:dungeonEnemyDisplayName(fallbackEnemyName),boss:bossEncounter,currentHp:fallbackEnemyState?.hp,maximumHp:fallbackEnemyState?.maxHp,shield:fallbackEnemyState?.shield??0,statuses:fallbackEnemyStatuses,phaseLabel:bossEncounter?bossPhaseLabel:undefined,cast:bossEncounter?bossCast:undefined}:inspectedSlot?{kind:'party',name:inspectedSlot.name,role:inspectedSlot.role,classId:inspectedSlot.classId,profileIconId:inspectedSlot.profileIconId,iconClassId:inspectedSlot.iconClassId,companionId:inspectedSlot.companionId,currentHp:inspectedState?.hp??inspectedSlot.currentHp,maximumHp:inspectedState?.maxHp??inspectedSlot.maximumHp,shield:inspectedState?.shield??0,statuses:inspectedStatuses}:undefined;
  return <View style={{gap:10}}>
-  <View style={s.header}><Text style={s.kicker}>{st("PARTY FORMATION")}</Text><View style={s.headerRight}>{assists?<StateChip label={st("{count} companion assists",{count:assists})} tone="success"/>:null}<Text style={s.headerElapsed}>{st("Elapsed")} · <BattleElapsedSeconds battleKey={battleClockKey} serverElapsedMs={pending?.elapsedMs} active={!complete}/></Text></View></View>
+  <View style={s.header}><Text style={s.kicker}>{st("PARTY FORMATION")}</Text><View style={s.headerRight}>{vipPlus?<Pressable accessibilityRole="button" accessibilityLabel={fastReplayAvailable?`Dungeon replay speed ${playbackSpeed}×. Toggle speed.`:'2× replay unavailable until combat is confirmed'} accessibilityState={{disabled:!fastReplayAvailable}} disabled={!fastReplayAvailable} onPress={()=>onPlaybackSpeedChange?.(playbackSpeed===1?2:1)} style={[s.speedToggle,playbackSpeed===2&&fastReplayAvailable&&s.speedToggleActive,!fastReplayAvailable&&s.speedToggleDisabled]}><Text style={s.speedToggleText}>{fastReplayAvailable?`${playbackSpeed}×`:'1×'}</Text></Pressable>:null}{assists?<StateChip label={st("{count} companion assists",{count:assists})} tone="success"/>:null}<Text style={s.headerElapsed}>{st("Elapsed")} · <BattleElapsedSeconds battleKey={battleClockKey} serverElapsedMs={pending?.elapsedMs} active={!complete}/></Text></View></View>
   {anticipation?<Text accessibilityLiveRegion="polite" style={s.previewHint}>{st('Visual preview · calculating battle')}</Text>:null}
   <View accessibilityLabel={st('Battle arena: enemies at the top, party at the bottom')} style={[s.arena,{padding:layout.arenaPadding,minHeight:layout.mode==='compact'?420:480}]}>
    <Image accessibilityIgnoresInvertColors source={backdrop} resizeMode="cover" fadeDuration={0} style={s.arenaBackdrop}/>
@@ -251,7 +251,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  </View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
- header:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},headerRight:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm},headerElapsed:{...typography.caption,color:C.text,fontWeight:'800'},grow:{flex:1,minWidth:0},
+ header:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},headerRight:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm},headerElapsed:{...typography.caption,color:C.text,fontWeight:'800'},speedToggle:{minWidth:42,minHeight:30,paddingHorizontal:8,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.surfaceRaised},speedToggleActive:{borderColor:C.cyan},speedToggleDisabled:{opacity:.55},speedToggleText:{...typography.caption,color:C.text,fontWeight:'900'},grow:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:C.textMuted,fontWeight:'800',letterSpacing:.8},previewHint:{...typography.caption,color:C.cyan,fontWeight:'700'},title:{...typography.title,color:C.text,fontWeight:'900'},
  arena:{gap:14,justifyContent:'space-between',overflow:'hidden',position:'relative',borderRadius:16,backgroundColor:C.background},arenaBackdrop:{...StyleSheet.absoluteFill,width:'100%',height:'100%',opacity:.34},arenaShade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,9,18,.24)'},enemyFormation:{width:'100%',gap:5},partyFormation:{width:'100%',gap:5,marginTop:'auto'},formationHeading:{...typography.caption,color:C.textMuted,fontWeight:'800',letterSpacing:.8,fontSize:10},enemyField:{alignSelf:'center'},enemyGroup:{flexDirection:'row',flexWrap:'wrap',justifyContent:'center'},enemySlot:{flexGrow:1,flexBasis:'48%',maxWidth:'50%',minWidth:0},
  partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap',alignItems:'stretch',justifyContent:'space-between'},formationSlot:{width:'48%',flexGrow:1,minWidth:0},

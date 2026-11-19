@@ -10,7 +10,7 @@ export interface CoopLoadoutProjection {
   level:number;effectiveLevel?:number;beforeStats?:CoopEffectiveStats;effectiveStats?:CoopEffectiveStats;
   skills:string[];equipment:string[];normalizationVersion?:string;verifiedAt?:string;
 }
-export interface CoopLoadoutIntent {mode:CoopMode;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopLoadoutIntent {mode:CoopMode;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;preferredEchoCharacterIds?:string[];}
 export interface CoopLoadoutView extends CoopLoadoutProjection {selectable:boolean;blockingReasons:string[];changed:boolean;}
 
 /** Presents only server-projected values. It deliberately does not derive roles,

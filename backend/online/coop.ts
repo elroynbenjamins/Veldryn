@@ -11,6 +11,7 @@ import {OnlineCoopLfg} from './coop-lfg';
 import {publicProfileCombatPower} from './public-profile-power';
 import {OnlineEventExpeditionRuntime,type OnlineEventExpeditionStartRequest} from './event-expedition-runtime';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {validateSocialEchoCandidates} from '../../apps/mobile/src/core/coop-social-echoes';
 import {parseCoopRunRequest,parseCoopDecisionCommand,parseCoopReadyCommand} from '../src/server/coop/api-contracts';
 
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
@@ -30,7 +31,16 @@ export function coopHandler(services:GameplayServices){
    if(!bearer)return json({error:'auth_required'},401);
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
 
-   if(path.endsWith('/coop/weekly-quest')){
+   if(path.endsWith('/coop/echo-allies')){
+     if(request.method!=='GET')return json({error:'method_not_allowed'},405);
+     const params=new URL(request.url).searchParams;
+     if([...params.keys()].some(key=>key!=='minLevel'))throw new GameplayError('invalid_echo_level');
+     const minLevel=Number(params.get('minLevel'));
+     if(!Number.isSafeInteger(minLevel)||minLevel<1||minLevel>100)throw new GameplayError('invalid_echo_level');
+     const candidates=await services.rpc('coop_social_echo_candidates_server_v1',{p_actor_account_id:accountId,p_min_level:minLevel});
+     return json(validateSocialEchoCandidates(candidates));
+    }
+    if(path.endsWith('/coop/weekly-quest')){
      if(request.method==='GET')return json(await weeklyDungeonQuest.snapshot(accountId));
      if(request.method!=='POST')return json({error:'method_not_allowed'},405);
      const raw=await request.text();if(raw.length>1024)return json({error:'request_too_large'},413);
@@ -166,7 +176,7 @@ export function coopHandler(services:GameplayServices){
    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:run?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId','boonId']:['requestId','decisionId','decisionRevision','optionId'];
+   const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision','preferredEchoProfileIds']:run?.[2]==='merchant'?['requestId','expectedVersion','offerId']:run?.[2]==='potion'?['requestId']:run?.[2]==='tonic'?['requestId','potionId']:run?.[2]==='choose'?['requestId','decisionId','decisionRevision','optionId','boonId']:['requestId','decisionId','decisionRevision','optionId'];
    if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
    if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
     if(run?.[2]==='potion'){

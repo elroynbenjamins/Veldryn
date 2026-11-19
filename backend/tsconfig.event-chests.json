@@ -29,6 +29,7 @@
     "src/server/combat/__tests__/world-boss-chest-settlement-v61.ts",
     "src/server/combat/world-boss-chest-private-pg-v63.ts",
     "src/server/combat/__tests__/world-boss-chest-private-pg-v63.ts",
-    "src/server/combat/world-boss-tier-policy-v67.ts"
+    "src/server/combat/world-boss-tier-policy-v67.ts",
+    "src/server/combat/__tests__/world-boss-gathering-regression-v64.ts"
   ]
 }

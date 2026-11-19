@@ -75,6 +75,19 @@ async function run(){
    actual.get('tempering_dust')===guarantee.temperingDust,
    'original_four_guarantees_'+kind);
  }
+ // Rotation selects the gathering collection strictly from the event,
+ // never from the supplied chest kind or a client boss selector.
+ for(const bossId of ['sunscar','frostmarch'] as const){
+  proof={...canonical,event:{...canonical.event,bossId}};
+  const rotated=await readWorldBossTrustedChestSourceV72({
+   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
+  },port,true);
+  check(rotated.lootTable.version===
+   'world_boss_v58_'+bossId+'_donations_goal'&&
+   rotated.lootTable.groups[0]!.chanceBps===100,
+   'server_owned_boss_rotation_'+bossId);
+ }
+ proof=canonical;
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:other,sourceKey:source('donations_goal'),
  },port,true),'invalid_account_source');
@@ -85,7 +98,7 @@ async function run(){
   authenticatedAccountId:accountId,sourceKey:source('donations_goal')
    .replace('world-boss:','party-event:'),
  },port,true),'invalid_account_source');
- check(reads===3,'invalid_selection_never_queries_private_state');
+ check(reads===5,'invalid_selection_never_queries_private_state');
  proof={...canonical,accountId:other};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
@@ -95,6 +108,15 @@ async function run(){
  }};
  await rejects(()=>readWorldBossTrustedChestSourceV72({
   authenticatedAccountId:accountId,sourceKey:source('donations_goal'),
+ },port,true),'unearned_chest');
+ proof={...canonical,attacks:canonical.attacks.map(attack=>({
+  ...attack,replayProof:'pending' as const,
+ }))};
+ await rejects(()=>readWorldBossTrustedChestSourceV72({
+  authenticatedAccountId:accountId,sourceKey:source('three_attempts'),
+ },port,true),'unearned_chest');
+ await rejects(()=>readWorldBossTrustedChestSourceV72({
+  authenticatedAccountId:accountId,sourceKey:source('community_damage_goal'),
  },port,true),'unearned_chest');
  proof={...canonical,attacks:[]};
  await rejects(()=>readWorldBossTrustedChestSourceV72({

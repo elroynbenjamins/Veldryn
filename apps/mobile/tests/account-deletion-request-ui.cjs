@@ -7,6 +7,7 @@ const api=read('src/online/account-deletion.ts');
 const settings=read('src/screens/SettingsScreen.tsx');
 const flags=read('src/core/release-flags.ts');
 const sql=read('../../backend/supabase/migrations/20261119183000_online_account_deletion_requests_v1.sql');
+const translation=read('src/i18n/account-deletion.ts');
 
 for(const path of [
  'src/components/OnlineAccountDeletionPanel.tsx',
@@ -21,6 +22,8 @@ for(const path of [
 assert.match(flags,/ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED=false/,'Request intake stays disabled until staging approval');
 assert.ok(settings.includes("{online&&<OnlineAccountDeletionPanel language={language}/>}")&&settings.includes('Delete local save'),'Online account deletion is separate from local save and character removal');
 assert.ok(panel.includes('is_anonymous')&&panel.includes('Privacy & deletion support'),'Guest/signed-out visitors get a non-destructive support route');
+for(const lang of ['de','es','nl','it','fr','ru','tr'])assert.ok(translation.includes(lang+':'),'Deletion-support copy needs the '+lang+' locale');
+assert.ok(panel.includes('accountDeletionText(language,value)'),'Public deletion support must use translated copy');
 assert.ok(panel.includes("validAccountDeletionConfirmation(confirmation)")&&panel.includes('maxLength={40}'),'Submit requires deliberate keyboard-accessible typed confirmation');
 assert.ok(panel.includes('requestOnlineAccountDeletion(')&&panel.includes('cancelOnlineAccountDeletionRequest('),'Owner may submit and withdraw the intake request');
 assert.ok(panel.includes("Submitting a request does not delete your account immediately."),'UI may not promise instant erasure');

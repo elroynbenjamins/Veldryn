@@ -5,10 +5,30 @@
   "releaseStatus": "not_enabled",
   "description": "Art-production queue scaffold only. Item IDs and counts must be regenerated from synchronized authoritative 2.0 contracts. Empty items means zero artwork completed, not zero required.",
   "technical": {
-    "cellPx": [192, 192],
-    "atlasPx": [960, 384],
-    "atlasLayout": [5, 2],
-    "slotOrder": ["helmet", "chest", "gloves", "legs", "boots", "weapon", "offhand", "cape", "amulet", "ring"],
+    "cellPx": [
+      192,
+      192
+    ],
+    "atlasPx": [
+      960,
+      384
+    ],
+    "atlasLayout": [
+      5,
+      2
+    ],
+    "slotOrder": [
+      "helmet",
+      "chest",
+      "gloves",
+      "legs",
+      "boots",
+      "weapon",
+      "offhand",
+      "cape",
+      "amulet",
+      "ring"
+    ],
     "alphaInsetPx": 26,
     "runtimeFormat": "webp",
     "masterFormat": "png",
@@ -97,7 +117,38 @@
     "visualQa": null,
     "deviceQa": null,
     "reviewer": null,
-    "evidence": []
+    "evidence": [],
+    "referenceKitId": "veldryn-eq2-refkit-v1",
+    "styleReferencePath": null,
+    "sourceReferenceSha256": null,
+    "modelName": null,
+    "modelVersion": null,
+    "promptVersion": "veldryn-eq2-generation-v1",
+    "referenceHashes": {},
+    "seed": null,
+    "outputColorSpace": "sRGB",
+    "pixelClusterVisualCheck": null,
+    "slotCompositionVisualCheck": null,
+    "lightingVisualCheck": null,
+    "materialFidelityVisualCheck": null,
+    "peerComparisonVisualCheck": null,
+    "largeAndSmallSizePreviews": [],
+    "artistApprovedAt": null
   },
-  "items": []
+  "items": [],
+  "referenceKit": {
+    "id": "veldryn-eq2-refkit-v1",
+    "status": "not_approved",
+    "approvedBy": null,
+    "approvedAt": null,
+    "referenceAssets": [],
+    "notes": "Approve actual current runtime/class/slot/style reference crops, record SHA256 + crop coordinates, before marking any item brief_ready."
+  },
+  "promptLock": {
+    "id": "veldryn-eq2-generation-v1",
+    "status": "draft",
+    "immutableStyleSource": "docs/art/EQUIPMENT_2_0_ICON_STANDARD.md",
+    "procedureSource": "docs/art/EQUIPMENT_2_0_GENERATION_PLAYBOOK.md",
+    "approvedAt": null
+  }
 }

@@ -1064,9 +1064,9 @@
     "readyForProduction": false
   },
   "remarks": [
-    "No gameplay/catalog/server manifests, SQL, shop routes, drops or Android assets changed by this review-only manifest.",
-    "Exact percentages/trait magnitudes require simulations and server-owned rollout; suggested multiplier ranges are not active equipment modifiers.",
-    "Class-specific weapons require separate compatibility review; dual-hand and offhand budget contracts remain unchanged."
+    "33 missing role-slot items and 18 distinct same-tier stat variants are now mirrored in hidden client/server catalogs with 102 independent canonical recipe methods.",
+    "The six rare blueprint trait items are NOT present in default unlocked craftable catalogs or recipes; entitlement/claim/Combat 2.0 hooks remain blocked.",
+    "No production SQL, shop, chest, Market, live routing, game feature flag or optimized Android art has been changed."
   ],
   "rewardSetDirection": {
     "status": "concept_and_approval_requirements_not_runtime",
@@ -1134,5 +1134,21 @@
       "existingOnePercentChancePreserved": true
     },
     "notes": "Numbers here are targets; do not enable or adjust actual chest odds or existing set procs until Combat/Rewards 2.0 server simulation and written approval."
+  },
+  "implementationProgress": {
+    "status": "partially_implemented_hidden",
+    "updatedOn": "2026-11-19",
+    "normalCraftItemsWired": 51,
+    "normalCraftServerRecipesWired": 102,
+    "normalCraftClientRecipesGenerated": 102,
+    "baselinePlusExpansionNormalItems": 169,
+    "baselinePlusExpansionNormalRecipes": 338,
+    "rareBlueprintsStillDesignOnly": 6,
+    "rareBlueprintCraftRoutesEnabled": 0,
+    "sourceRuntimeRewardShopRestrictionsWired": false,
+    "serverClientManifestParityCi": "pending_exact_head",
+    "actualGameRelease": false,
+    "productionGo": false,
+    "note": "51 physical item type definitions in hidden catalog + server-pinned two-route recipes; not yet installed in production, no physical custody SQL, Android QA, art or trait procs."
   }
 }

@@ -41,6 +41,7 @@ interface FakeState{
  guaranteed:Map<string,string>;
  drops:Map<string,string[]>;
  owned:Set<string>;
+ inbox:Set<string>;
 }
 const fresh=():FakeState=>({
  receipts:new Map(),guaranteed:new Map(),drops:new Map(),owned:new Set(),
@@ -49,7 +50,7 @@ const fresh=():FakeState=>({
 const clone=(s:FakeState):FakeState=>({
  receipts:new Map(s.receipts),guaranteed:new Map(s.guaranteed),
  drops:new Map([...s.drops].map(([k,v])=>[k,[...v]])),
- owned:new Set(s.owned),
+ owned:new Set(s.owned),inbox:new Set(s.inbox),
 });
 class MockDb implements ChestGrantStoreV69{
  state:FakeState=fresh();
@@ -114,9 +115,16 @@ class MockDb implements ChestGrantStoreV69{
     draft.owned.add(entry.entryId);
     if(this.failAfterFirstDrop)throw Error('mock_inventory_write_failed');
    },
+   grantInbox:async receipt=>{
+    this.audit.push('grant-inbox');
+    check(draft.receipts.has(receipt.sourceKey),'receipt_before_inbox');
+    if(draft.inbox.has(receipt.sourceKey))throw Error('duplicate_inbox');
+    draft.inbox.add(receipt.sourceKey);
+   },
    verifyExactlyGranted:async receipt=>{
     this.audit.push('verify-custody');
-    return draft.receipts.get(receipt.sourceKey)===receipt&&
+    return draft.inbox.has(receipt.sourceKey)&&
+     draft.receipts.get(receipt.sourceKey)===receipt&&
      draft.guaranteed.get(receipt.sourceKey)===
       JSON.stringify(receipt.guaranteed)&&
      JSON.stringify(draft.drops.get(receipt.sourceKey)??[])===
@@ -151,7 +159,8 @@ async function run(){
   first.receipt.recipientCharacterId===null,
   'first_full_durable_receipt_with_stack_quantities');
  check(db.state.guaranteed.size===1&&db.state.drops.size===1&&
-  db.state.owned.size===2,'all_legs_same_transaction');
+  db.state.owned.size===2&&db.state.inbox.size===1,
+  'all_legs_same_transaction');
  check(db.audit.indexOf('insert-receipt')<
   db.audit.indexOf('credit-guaranteed')&&
   db.audit.indexOf('credit-guaranteed')<

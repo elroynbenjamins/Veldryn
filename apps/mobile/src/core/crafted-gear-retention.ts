@@ -76,8 +76,9 @@ export function planCraftedGearRetention(
   if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
   if(mode==='off')return {action:'manual_review',reason:'disabled'};
   // Rolled attributes represent playstyle, not a single comparable power score.
-  // Never auto-sell an earned weapon at the copy cap based on quality alone.
-  if(incoming.weaponBonuses?.length||existing.some(row=>row.instance.weaponBonuses?.length))
+  // Never auto-sell earned rolled equipment at the copy cap based on quality alone.
+  if(incoming.weaponBonuses?.length||incoming.equipmentBonuses?.length
+    ||existing.some(row=>row.instance.weaponBonuses?.length||row.instance.equipmentBonuses?.length))
     return {action:'manual_review',reason:'weapon_bonus_choice'};
   const validQuality=isValidCraftedGearQuality;
   if(existing.some(row=>!validQuality(row.instance.quality))||!validQuality(incoming.quality))

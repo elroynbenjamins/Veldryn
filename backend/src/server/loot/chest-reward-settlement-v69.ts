@@ -6,7 +6,8 @@
  * one canonical account/source, first-resolution persistence, all guaranteed
  * rewards + each independent rolled pool, replay and custody verification.
  *
- * ALL tx methods MUST use the same pinned READ COMMITTED SQL connection and take
+ * ALL tx methods MUST use one pinned SQL connection (SERIALIZABLE by default;
+ * World Boss READ COMMITTED with V57 account-erasure fencing) and take
  * an ACCOUNT inventory lock (shared across every chest source) before the
  * per-source unique receipt lock. Different chests for one account must not
  * race on the missing-piece collection snapshot. Failed grants MUST roll
@@ -77,7 +78,7 @@ export interface ChestGrantTransactionV69{
  verifyExactlyGranted(receipt:FrozenChestReceiptV69):Promise<boolean>;
 }
 export interface ChestGrantStoreV69{
- /** Includes DB BEGIN READ COMMITTED, canonical ACCOUNT inventory lock
+ /** Includes a pinned DB transaction with the canonical ACCOUNT inventory lock
   * shared across different chest keys, UNIQUE source receipt, commit/rollback.
   * If concurrent item/currency writers cannot share this lock, reject the
   * deployment rather than trusting the prefer_unowned collection snapshot. */

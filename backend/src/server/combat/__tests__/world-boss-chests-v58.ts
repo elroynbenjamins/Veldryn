@@ -103,4 +103,15 @@ check(!quoteWorldBossGearExchangeV58({
  bossId:'sunscar',slot:'amulet',worldSigilBalance:100,
  alreadyExchangedForEvent:true,ownedSlots:[],
 }).exchangeAvailable,'one_world_exchange_per_event');
+throws(()=>resolveWorldBossChestGearDraftV58({
+ ...chest,guaranteed:{...chest.guaranteed,gold:999999},
+},{hitRoll:0,slotRoll:0,ownedSlots:[]}),
+ 'invalid_server_roll');
+throws(()=>resolveWorldBossChestGearDraftV58({
+ ...chest,chestId:'world-boss:forged-source:donations_goal',
+},{hitRoll:0,slotRoll:0,ownedSlots:[]}),
+ 'invalid_server_roll');
+throws(()=>resolveWorldBossChestGearDraftV58(chest,{
+ hitRoll:0,slotRoll:0,ownedSlots:['helmet','helmet'],
+}), 'invalid_server_roll');
 console.log('WORLD_BOSS_CHESTS_V58_OK: original 3x10 gathering sets, 1% intact, canonical 3 account chests, no duplicate World Sigils, fair missing-slot quotes');

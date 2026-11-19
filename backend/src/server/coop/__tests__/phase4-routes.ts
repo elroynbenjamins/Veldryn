@@ -47,7 +47,7 @@ for(let seed=0;seed<40;seed++){
 
 const tampered=structuredClone(endurance);
 tampered.nodes=tampered.nodes.map(node=>node.nodeId==='d8-c2'?{...node,kind:'battle' as const}:node);
-assert.throws(()=>validateCoopRouteGraph(tampered),'Checkpoint boss cannot be bypassed by client graph tampering');
+assert.throws(()=>validateCoopRouteGraph(tampered),/checkpoint|boss|invalid|graph/i,'Checkpoint boss cannot be bypassed by client graph tampering');
 const sameA=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 const sameB=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 assert.deepEqual(sameA,sameB);

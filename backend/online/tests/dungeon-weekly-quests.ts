@@ -67,7 +67,7 @@ assert.ok(dungeonArtifactBonuses(['RELIC_HUNTER_MARK'],'damage','elite').attack>
 assert.ok(dungeonArtifactBonuses(['RELIC_BOSS_WARD'],'tank','boss').defense>1);
 
 const fakePlayers=[{id:'hero',role:'tank',stats:{maxHp:100}}];
-const state=initialPersistentRunState(fakePlayers as Parameters<typeof initialPersistentRunState>[0]);
+const state=initialPersistentRunState(fakePlayers as unknown as Parameters<typeof initialPersistentRunState>[0]);
 const treasure={nodeId:'treasure',kind:'treasure',depth:3,contentId:'TEST_TREASURE',modifierId:'steady'};
 const run={
  id:'quest-test-run',enduranceRouteVersion:1,qmodePressureVersion:1,phase:'awaiting_choice',

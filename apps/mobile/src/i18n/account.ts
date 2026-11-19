@@ -852,6 +852,7 @@ export const accountTranslationRows = {
   "Could not load account benefits. Please try again.": ["Could not load account benefits. Please try again.","Kontovorteile konnten nicht geladen werden. Bitte versuche es erneut.","No se pudieron cargar los beneficios de la cuenta. Inténtalo de nuevo.","De accountvoordelen konden niet worden geladen. Probeer het opnieuw.","Impossibile caricare i benefici dell'account. Riprova.","Impossible de charger les avantages du compte. Veuillez réessayer."],
   "OWNED": ["OWNED","IM BESITZ","ADQUIRIDO","IN BEZIT","POSSEDUTO","ACQUIS"],
   "Buy VIP": ["Buy VIP","VIP kaufen","Comprar VIP","VIP kopen","Acquista VIP","Acheter VIP"],
+  "2× Dungeon Combat Replay Speed": ["2× Dungeon Combat Replay Speed","2× Geschwindigkeit für Dungeon-Kampfwiederholungen","Velocidad 2× de repetición de combates de mazmorra","2× snelheid voor het herhalen van kerkergevechten","Velocità 2× per i replay dei combattimenti nei dungeon","Vitesse 2× des replays de combat en donjon"],
   "Buy VIP+": ["Buy VIP+","VIP+ kaufen","Comprar VIP+","VIP+ kopen","Acquista VIP+","Acheter VIP+"],
   "BUY VIP": ["BUY VIP","VIP KAUFEN","COMPRAR VIP","VIP KOPEN","ACQUISTA VIP","ACHETER VIP"],
   "Upgrade to VIP+": ["Upgrade to VIP+","Auf VIP+ upgraden","Mejorar a VIP+","Upgraden naar VIP+","Passa a VIP+","Passer à VIP+"],

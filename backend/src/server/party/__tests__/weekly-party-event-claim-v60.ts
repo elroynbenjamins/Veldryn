@@ -41,6 +41,7 @@ class MockStore implements PartyEventRewardStoreV60{
   inventory:new Map(),ownedPieceIds:[],mints:0,writes:0};
  failOnResource=false;
  foreignEvidence=false;
+ pointsOverride:number|null=null;
  invalidMint=false;
  private pending:Promise<void>=Promise.resolve();
  async withLockedAccountWeek<T>(
@@ -51,7 +52,8 @@ class MockStore implements PartyEventRewardStoreV60{
    const snapshot=clone(this.state);
    const tx:PartyEventRewardTransactionV60={
     readVerifiedEvidence:async()=>this.foreignEvidence?
-     {...evidence,accountId:'33333333-3333-4333-8333-333333333333'}:evidence,
+     {...evidence,accountId:'33333333-3333-4333-8333-333333333333'}:
+     this.pointsOverride===null?evidence:{...evidence,personalPoints:this.pointsOverride},
     readOwnedPartyGearPieceIds:async()=>[...snapshot.ownedPieceIds],
     readPartySigilsBalance:async()=>snapshot.balance,
     readReceipt:async key=>snapshot.receipts.get(key)??null,
@@ -168,9 +170,7 @@ async function run(){
  ensure(bad.state.receipts.size===0&&bad.state.balance===60,
   'invalid_item_mint_cannot_credit_currency');
  const notEarned=new MockStore();
- const old=notEarned.withLockedAccountWeek.bind(notEarned);
- notEarned.withLockedAccountWeek=async (id,w,work)=>old(id,w,async tx=>
-  work({...tx,readVerifiedEvidence:async()=>({...evidence,personalPoints:0})}));
+ notEarned.pointsOverride=0;
  await rejects(()=>claimPartyEventChestV60({
   authority,kind:'participation',store:notEarned,
  },true),'chest_not_earned');

@@ -5,7 +5,7 @@ import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progr
 import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice-sets';
 import {prepareSocialEchoCandidates} from '../coop-social-echoes';
 import {OnlineQModeRuntime} from '../qmode-runtime';
-import {deriveOnlineCoopLoadout} from '../coop-loadout';
+import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from '../coop-loadout';
 import {validateSocialEchoCandidates} from '../../../apps/mobile/src/core/coop-social-echoes';
 
 function makeHero(classId:'IRONWARDEN'|'WAYFINDER',name:string){
@@ -23,17 +23,28 @@ function makeHero(classId:'IRONWARDEN'|'WAYFINDER',name:string){
 async function main(){
  const owner=makeHero('IRONWARDEN','Dungeon Host'),friend=makeHero('WAYFINDER','Trusted Friend');
  const sourceRow={accountId:'friend-account',characterId:friend.character!.id,revision:23,state:friend,relationship:'friend' as const};
+ // Lower-power donors are welcome if level, role and equipment are valid.
+ // Only the host's Live dungeon entry retains a Combat Power gate.
+ const modest=createCharacter(newGame(0),'WAYFINDER','Modest Ally');
+ modest.character!.level=10;
+ modest.character!.xp=legacyCharacterTotalXpAtLevel(10);
+ modest.character!.equipment=Object.fromEntries(noviceSetFor('WAYFINDER').slots.map(slot=>[slot,noviceItemId('WAYFINDER',slot)]));
+ const modestRecord=deriveOnlineCoopLoadout('modest-account',modest,22);
+ assert.ok((modestRecord.combatPower??0)<2500,'Fixture must be below the removed 2,500 CP restriction');
+ assert.equal(assessOnlineCoopLoadout(modestRecord).readiness.ready,true,'Modest contact still meets the independent equipment/role floor');
+ const modestRow={accountId:'modest-account',characterId:modest.character!.id,revision:22,state:modest,relationship:'guild' as const};
  const sourceCalls:string[]=[];
  const listing=await prepareSocialEchoCandidates({rpc:async<T>(name:string):Promise<T>=>{
   sourceCalls.push(name);
-  if(name==='coop_social_echo_sources_server_v1')return [sourceRow] as T;
+  if(name==='coop_social_echo_sources_server_v1')return [sourceRow,modestRow] as T;
   throw new Error('unexpected_rpc:'+name);
  }},'host-account',10);
  assert.equal(sourceCalls.length,1,'Browsing must never publish another player automatically');
- assert.equal(listing.length,1,'Valid current friend can be used even without an Echo publication');
+ assert.equal(listing.length,2,'Valid friends/guildmates must not require publication or 2,500 Combat Power');
+ assert.ok(listing.some(x=>x.candidate.characterId===modest.character!.id));
  assert.equal(listing[0].candidate.characterId,friend.character!.id);
  assert.equal(listing[0].candidate.relationship,'friend');
- assert.equal(validateSocialEchoCandidates(listing.map(x=>x.candidate)).length,1);
+ assert.equal(validateSocialEchoCandidates(listing.map(x=>x.candidate)).length,2);
  const profileId='00000000-0000-4000-8000-000000000099';
  let publishedCount=0,runMembers:unknown[]=[];
  let serial=0;

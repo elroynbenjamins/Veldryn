@@ -7,7 +7,7 @@ import {
 import {deriveServerChestRollsV1} from '../../loot/event-chest-server-roll-v1';
 import type {WorldBossCanonicalChestReadV59} from '../world-boss-chest-proof-v59';
 import type {WorldBossFrozenEquipmentReceiptV62} from '../world-boss-gathering-instance-v62';
-function check(value:unknown,msg:string):asserts value{
+function check(value:unknown,msg:string):void{
  if(!value)throw Error('world_boss_v61_test:'+msg);
 }
 async function rejects(fn:()=>Promise<unknown>,code:string){

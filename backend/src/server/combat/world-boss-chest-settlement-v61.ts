@@ -165,9 +165,10 @@ export async function claimWorldBossChestV61(input:{
   const earned=previewVerifiedWorldBossChestsV58(evidence)
    .find(p=>p.kind===input.kind);
   if(!earned)bad('not_earned');
-  const [ownedSlots,tier]=await Promise.all([
-   tx.readOwnedBossGatheringSlots(),tx.readTrustedEquipmentTier(),
-  ]);
+  // Keep the two canonical reads ordered on one pinned PostgreSQL
+  // transaction client. The account/event lock protects their shared view.
+  const ownedSlots=await tx.readOwnedBossGatheringSlots();
+  const tier=await tx.readTrustedEquipmentTier();
   const resolution=previewResolveWorldBossChestV60({
    evidence,kind:input.kind,ownedSlots,serverSecret:authority.secret,
   });

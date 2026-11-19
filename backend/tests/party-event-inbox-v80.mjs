@@ -13,10 +13,10 @@ const {createPartyChestInboxHistoryPortsV80}=require(
 const v70=readFileSync(new URL(
  '../../docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql',
  import.meta.url),'utf8');
-const lines=v70.split(/\\r?\\n/);
+const lines=v70.split(/\r?\n/);
 const start=lines.findIndex(x=>x.trim().toLowerCase()==='begin;');
 const end=lines.findLastIndex(x=>x.trim().toLowerCase()==='commit;');
-const sql=lines.slice(start+1,end).join('\\n');
+const sql=lines.slice(start+1,end).join('\n');
 const account='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
 const party='33333333-3333-4333-8333-333333333333';

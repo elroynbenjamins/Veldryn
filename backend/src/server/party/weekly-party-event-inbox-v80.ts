@@ -24,7 +24,7 @@ import {PARTY_EVENT_CHESTS_V51} from './weekly-party-event-chests-v51';
 export const PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false;
 export const PARTY_EVENT_INBOX_HISTORY_V80_VERSION='party-event-inbox-history-v80' as const;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const SOURCE=/^party-event:(\\d{13}):([0-9a-f-]{36}):(participation|preparation|finale)$/;
+const SOURCE=/^party-event:(\d{13}):([0-9a-f-]{36}):(participation|preparation|finale)$/;
 const TITLE='Party Event chest received';
 const BODY='Rewards were credited when this chest was opened. No additional Inbox claim is required.';
 type Kind='participation'|'preparation'|'finale';
@@ -106,13 +106,14 @@ export function createPartyChestInboxHistoryPortsV80(qaEnabled=false):
  };
  const trusted=async(tx:ChestSqlV70,receipt:FrozenChestReceiptV69)=>{
   const {week,kind}=check(receipt);
-  const [roster,stored]=await Promise.all([
-   tx.query<{party_id:string;family:string;difficulty:string}>(
-    rosterSql,[receipt.accountId,week]),
-   tx.query<{source_key:string}>(
-    receiptSql,[receipt.sourceKey,receipt.accountId,
-     receipt.proofVersion,receipt.rulesVersion]),
-  ]);
+  // A single PG SERIALIZABLE connection must never execute parallel
+  // queries: keep the lock acquisition and source check sequential.
+  const roster=await tx.query<{
+   party_id:string;family:string;difficulty:string;
+  }>(rosterSql,[receipt.accountId,week]);
+  const stored=await tx.query<{source_key:string}>(
+   receiptSql,[receipt.sourceKey,receipt.accountId,
+    receipt.proofVersion,receipt.rulesVersion]);
   if(roster.rows.length!==1||stored.rows.length!==1||
    stored.rows[0]?.source_key!==receipt.sourceKey)
    throw Error('party_event_v80_canonical_paid_source_missing');

@@ -96,6 +96,7 @@ export function BossV2CounterplayPreview({
    <Text style={[typography.bodyStrong,{color:C.text}]}>
     {words.phase}: 70% / 35%
    </Text>
+   <Text style={[typography.caption,{color:C.muted}]}>{words.legacyMoves}</Text>
    {state.latestPhase?
     <Text style={[typography.caption,{color:C.accent}]}>
      {words.complete}: {state.latestPhase.hpPercent}%

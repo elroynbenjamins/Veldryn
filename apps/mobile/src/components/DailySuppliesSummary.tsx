@@ -20,7 +20,7 @@ export function DailySuppliesSummary({state,nowMs,onOpen}:{state:GameState;nowMs
  const summary=dailySuppliesHomeSummary(state,nowMs);
  if(!summary.visible)return null;
  return <View style={[s.card,summary.canClaim&&s.ready]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{a("DAILY SUPPLIES")}</Text><Text style={s.title}>{summary.canClaim?a("Daily claim ready"):(summary.activeLabel?a(summary.activeLabel):a('Banked boosts ready'))}</Text></View>{summary.canClaim?<Text style={s.readyText}>{a("READY")}</Text>:summary.activeLabel?<Text style={s.activeText}>{a("ACTIVE")}</Text>:null}</View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{a("SUPPLY JOURNEY")}</Text><Text style={s.title}>{summary.canClaim?a("Daily claim ready"):(summary.activeLabel?a(summary.activeLabel):a('Banked boosts ready'))}</Text></View>{summary.canClaim?<Text style={s.readyText}>{a("READY")}</Text>:summary.activeLabel?<Text style={s.activeText}>{a("ACTIVE")}</Text>:null}</View>
   {summary.canClaim&&summary.claimLabel?<Text style={s.detail}>{a('Today: {reward}',{reward:a(summary.claimLabel)})}</Text>:null}
   {summary.activeLabel?<Text style={s.detail}>{a(summary.activeLabel)} · {a('{time} qualifying time remaining',{time:accountDuration(language,summary.activeRemainingSeconds??0)})}</Text>:null}
   {summary.bankedCharges>0?<Text style={s.meta}>{a('{count} banked boost charges on {name}',{count:summary.bankedCharges,name:state.character?.name??a('this character')})}</Text>:null}

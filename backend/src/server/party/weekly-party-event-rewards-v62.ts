@@ -94,7 +94,7 @@ export function buildPrivatePartyRewardReadV62(input:{
     receipt.gemDust!==0||receipt.companionEssence!==0))||
    (receipt.pieceId!==null&&
     !partyEventGearForFamilyV51(evidence.family).some(p=>p.id===receipt.pieceId))||
-   (receipt.pieceId===null&&receipt.frozenGear!==null)||
+   ((receipt.pieceId===null)!==(receipt.frozenGear===null))||
    (receipt.frozenGear!==null&&(
     !UUID.test(receipt.frozenGear.itemInstanceId)||
     receipt.frozenGear.pieceId!==receipt.pieceId||

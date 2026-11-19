@@ -16,6 +16,7 @@ const out='../../../../../dist-equipment-v2/server/equipment/';
 const {v2ServerRecipeAndPiece,V2_SERVER_PIECES,V2_SERVER_MANIFEST_VERSION}=require(out+'equipment-crafting-v2-manifest.js');
 const {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION}=require(out+'equipment-crafting-v2-rolls.js');
 const {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent}=require(out+'equipment-crafting-v2-instances.js');
+const {projectCombatActionPowerV2,validateCombatActionV2}=require('../../../../../dist-equipment-v2/server/combat/combat-stat-contract-v2.js');
 const roles={
  IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
  WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
@@ -93,6 +94,38 @@ for(const classId of allClasses){
  assert.equal(gear.sources[0].rarityAndQualityAlreadyApplied,true);
  assert.ok(gear.blockedUntil.includes('verified_class_baseline'));
  assert.ok(gear.blockedUntil.includes('affix_and_set_effects'));
+ // Pure Combat 2.0 source separation, with synthetic class-skill budget.
+ // These fixture numbers are NOT class balance or approved live coefficients.
+ const statBudget={
+  weaponPower:gear.baseTotals.attackPower,skillPower:33,
+  abilityDamage:0.12,healingPower:0.08,potency:0.06,
+ };
+ const basic=projectCombatActionPowerV2(statBudget,{
+  kind:'basic_weapon',purpose:'damage',powerSource:'weapon',coefficient:1,
+ });
+ const technique=projectCombatActionPowerV2(statBudget,{
+  kind:'weapon_technique',purpose:'damage',powerSource:'weapon',coefficient:1,
+ });
+ const skillDamage=projectCombatActionPowerV2(statBudget,{
+  kind:'class_skill',purpose:'damage',powerSource:'skill',coefficient:1,
+ });
+ const skillHeal=projectCombatActionPowerV2(statBudget,{
+  kind:'class_skill',purpose:'heal',powerSource:'skill',coefficient:1,
+ });
+ const skillShield=projectCombatActionPowerV2(statBudget,{
+  kind:'class_skill',purpose:'shield',powerSource:'skill',coefficient:1,
+ });
+ assert.equal(basic.basePower,gear.baseTotals.attackPower);
+ assert.equal(basic.bonusMultiplier,1,'Basic weapons never inherit Ability Damage');
+ assert.equal(technique.bonusMultiplier,1.12,'Weapon techniques receive Ability Damage once');
+ assert.equal(skillDamage.basePower,33,'Class skill cannot borrow Weapon Power');
+ assert.equal(skillDamage.bonusMultiplier,1.12);
+ assert.equal(skillHeal.bonusMultiplier,1.08,'Healing inherits Healing Power, not Ability Damage');
+ assert.equal(skillShield.bonusMultiplier,1,'A shield never silently inherits a heal coefficient');
+ assert.ok(validateCombatActionV2({
+  kind:'class_skill',purpose:'damage',powerSource:'weapon',coefficient:1,
+ }).includes('invalid_class_skill_tag'));
+
  for(const [ordinal,archetype] of allArchetypes.entries()){
   const saved=syntheticEncounter(classId,gear,archetype,ordinal);
   const input=JSON.stringify(saved);

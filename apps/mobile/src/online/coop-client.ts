@@ -7,6 +7,7 @@ import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../co
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
 import type {DungeonWeeklyQuestSnapshot} from '../core/dungeon-weekly-quests';
+import type {SocialEchoCandidate} from '../core/coop-social-echoes';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
@@ -24,7 +25,7 @@ export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabas
 // emergency build-time kill switch for either co-op surface.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1===undefined?!isDevelopment:process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
 export interface CoopEntryData {rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
-export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;preferredEchoProfileIds?:string[];}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;tier?:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}

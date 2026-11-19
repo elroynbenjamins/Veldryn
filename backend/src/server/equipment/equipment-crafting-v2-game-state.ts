@@ -2,6 +2,7 @@ import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
 import {levelFromXp,totalXpAtLevel} from '../../../../apps/mobile/src/core/progression';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
@@ -127,6 +128,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   fail('v2_gameplay_not_ready:'+readiness.blockers.join(','));
  const metadata=requireHidden(state);
  verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
+ verifyEquipmentV2ReceiptNamespace({forge:metadata.receipts,gems:metadata.gemSocketState?.receipts,custody:metadata.custodyReceipts});
  verifyEquipmentV2StorageReservations(accountId,metadata.items,metadata.storageReservations??[]);
  if(metadata.gemSocketState)verifyEquipmentV2GemSidecar(metadata.items,metadata.gemSocketState);
  if(metadata.custodyReceipts)readEquipmentV2VirtualCustody(metadata.items,metadata.storageReservations??[],metadata.custodyReceipts);

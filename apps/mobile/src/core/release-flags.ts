@@ -27,3 +27,8 @@ export const ONLINE_PLAYER_ROSTER_RELEASED=true;
 
 /** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
 export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
+
+/** Staged request-only online account deletion: never expose before authenticated RPC,
+ * privacy/support review, multilingual copy and Android keyboard QA pass.
+ * This does NOT enable destructive user erasure. */
+export const ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED=false;

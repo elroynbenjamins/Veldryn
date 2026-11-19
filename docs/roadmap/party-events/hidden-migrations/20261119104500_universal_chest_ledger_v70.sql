@@ -13,6 +13,8 @@ CREATE TABLE private.chest_reward_receipts_v70 (
  source_key text PRIMARY KEY,
  account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
  recipient_character_id uuid,
+ equipment_delivery_mode text CHECK(
+  equipment_delivery_mode IN ('character','account_unclaimed')),
  proof_version text NOT NULL CHECK (length(proof_version) BETWEEN 3 AND 100),
  table_id text NOT NULL CHECK (table_id ~ '^[a-z][a-z0-9:_-]{1,100}$'),
  table_version text NOT NULL CHECK (table_version ~ '^[a-z][a-z0-9:_-]{1,100}$'),
@@ -36,7 +38,15 @@ CREATE TABLE private.chest_reward_receipts_v70 (
   jsonb_typeof(receipt->'drops')='array' AND
   (recipient_character_id IS NULL AND receipt->'recipientCharacterId'='null'::jsonb
    OR recipient_character_id IS NOT NULL AND
-    receipt->>'recipientCharacterId'=recipient_character_id::text))
+    receipt->>'recipientCharacterId'=recipient_character_id::text)),
+ CHECK (
+  (equipment_delivery_mode IS NULL AND receipt->'equipmentDeliveryMode'='null'::jsonb)
+  OR (equipment_delivery_mode IS NOT NULL AND
+   receipt->>'equipmentDeliveryMode'=equipment_delivery_mode)),
+ CHECK (
+  (equipment_delivery_mode='character' AND recipient_character_id IS NOT NULL)
+  OR (equipment_delivery_mode='account_unclaimed' AND recipient_character_id IS NULL)
+  OR (equipment_delivery_mode IS NULL AND recipient_character_id IS NULL))
 );
 CREATE INDEX chest_reward_receipts_account_v70
  ON private.chest_reward_receipts_v70(account_id,created_at);

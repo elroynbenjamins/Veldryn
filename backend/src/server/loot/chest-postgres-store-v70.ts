@@ -1,6 +1,6 @@
 /**
  * V70: review-only, UNMOUNTED Postgres adapter for shared V69 chest settlement.
- * The same connection handles READ COMMITTED account inventory locks, frozen
+ * The same connection handles source-specific isolation, account inventory locks, frozen
  * receipt, resource/item/inbox delivery, leg audit, and physical read-back.
  *
  * Nothing here enables a reward. Injectable ports must be audited SQL-only
@@ -150,15 +150,18 @@ export function createChestPostgresStoreV70(
     throw Error('chest_v70_unreleased');
    assertIdentity(accountId,sourceKey);
    // V57 deliberately refuses SERIALIZABLE due to possible stale erasure
-   // snapshots. Do not allow a World Boss claim without its event-first,
-   // same-transaction account-erasure preflight.
-   if(sourceKey.startsWith('world-boss:')&&
+   // snapshots. Keep existing SERIALIZABLE behavior for non-World-Boss
+   // chests; the guarded World Boss path needs READ COMMITTED plus locks.
+   const isWorldBoss=sourceKey.startsWith('world-boss:');
+   if(isWorldBoss&&
     typeof ports?.assertSourceWriteOpen!=='function')
     throw Error('chest_v70_world_boss_privacy_gate_required');
    const conn=await pool.connect();
    let began=false;
    try{
-    await conn.query('begin isolation level read committed');
+    await conn.query(isWorldBoss?
+     'begin isolation level read committed':
+     'begin isolation level serializable');
     began=true;
     await conn.query("set local lock_timeout='5s'");
     if(ports.assertSourceWriteOpen)

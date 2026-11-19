@@ -12,6 +12,8 @@
     "src/server/party/__tests__/weekly-party-event-combat-v59.ts",
     "src/server/party/weekly-party-event-claim-v60.ts",
     "src/server/party/weekly-party-event-proof-v61.ts",
+    "src/server/party/weekly-party-event-chest-source-v77.ts",
+    "src/server/party/__tests__/weekly-party-event-chest-source-v77.ts",
     "src/server/party/__tests__/weekly-party-event-proof-v61.ts",
     "src/server/party/weekly-party-event-rewards-v62.ts",
     "src/server/party/weekly-party-event-atomic-store-v63.ts",

@@ -16,7 +16,7 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
   // Cooking recipe XP, meal utility and activation guidance (Supply-independent).
-  '+{xp} Cooking XP per batch':['+{xp} опыта кулинарии за партию','Партия başına +{xp} Yemek Pişirme XP'],
+  '+{xp} Cooking XP per batch':['+{xp} опыта кулинарии за партию','Pişirme partisi başına +{xp} XP'],
   'Cooking mastered · no more XP':['Кулинария освоена · опыт больше не начисляется','Yemek pişirme ustalığı tamamlandı · artık XP yok'],
   'Current cooking run uses the XP rate reserved when it started.':['Текущая партия сохраняет количество опыта, установленное при запуске.','Mevcut pişirme partisi, başlangıçta sabitlenen XP miktarını kullanır.'],
   'Activate meal buffs from Inventory. Auto-eat only restores HP.':['Активируйте бонусы еды в инвентаре. Автоеда только восстанавливает здоровье.','Yemek bonuslarını Envanterden etkinleştir. Otomatik yeme yalnızca can yeniler.'],

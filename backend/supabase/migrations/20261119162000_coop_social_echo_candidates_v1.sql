@@ -81,4 +81,42 @@ as $function$
 $function$;
 revoke all on function public.eligible_online_coop_echoes_server_v1(uuid,integer) from public,anon,authenticated;
 grant execute on function public.eligible_online_coop_echoes_server_v1(uuid,integer) to service_role;
+-- A friendship/guild membership can change after the candidate list loads.
+-- Enforce the social gate again within the actual run-start transaction.
+-- The trigger affects only Echo seats, never human Live runs or NPC kits.
+create or replace function public.coop_social_echo_member_guard_v1()
+returns trigger
+language plpgsql security invoker set search_path=''
+as $function$
+declare v_controller uuid;
+begin
+ if new.member_kind='echo' then
+  select r.controller_account_id into v_controller
+   from public.expedition_runs r
+   where r.id=new.run_id and r.coop_mode='qmode';
+  if v_controller is not null then
+   if exists(select 1 from public.player_blocks b
+      where (b.blocker_id=v_controller and b.blocked_id=new.account_id)
+         or (b.blocked_id=v_controller and b.blocker_id=new.account_id))
+      or not (
+       exists(select 1 from public.friendships f
+        where (f.account_a=v_controller and f.account_b=new.account_id)
+           or (f.account_b=v_controller and f.account_a=new.account_id))
+       or exists(select 1 from public.guild_members mine
+        join public.guild_members other on other.guild_id=mine.guild_id
+        where mine.account_id=v_controller and other.account_id=new.account_id)
+      ) then
+     raise exception 'social_echo_unavailable';
+   end if;
+  end if;
+ end if;
+ return new;
+end;
+$function$;
+revoke all on function public.coop_social_echo_member_guard_v1() from public,anon,authenticated;
+grant execute on function public.coop_social_echo_member_guard_v1() to service_role;
+drop trigger if exists coop_social_echo_member_guard_v1 on public.expedition_run_members;
+create trigger coop_social_echo_member_guard_v1
+ before insert on public.expedition_run_members
+ for each row execute function public.coop_social_echo_member_guard_v1();
 commit;

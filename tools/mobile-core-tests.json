@@ -34,6 +34,7 @@
   ".core-build/apps/mobile/tests/player-identity-cache-policy.js",
   "tests/settings-simplicity-ui.cjs",
   "tests/account-auth-refinement-ui.cjs",
+  ".core-build/apps/mobile/tests/account-deletion-request.js",
   "tests/account-deletion-request-ui.cjs",
   "tests/store-memberships-ui.cjs",
   "tests/ux-popup-reliability-ui.cjs",

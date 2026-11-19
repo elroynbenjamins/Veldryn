@@ -74,6 +74,10 @@ jobs:
           node .event-chest-tests/server/party/__tests__/weekly-party-event-rewards-v62.js
       - name: Execute review-only Party Event reward ledger in disposable PGlite
         run: node tests/party-event-reward-ledger-v61.mjs
+      - name: Verify V63 transaction-boundary, lost ACK, rollback and V64 Equipment 2.0 issuer safety
+        run: |
+          node .event-chest-tests/server/party/__tests__/weekly-party-event-equipment-v64.js
+          node .event-chest-tests/server/party/__tests__/weekly-party-event-atomic-store-v63.js
       - name: Verify mobile Party Event treasure remains a read-only QA design
         run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
       - name: Guard mobile World Boss chest cards as read-only previews
@@ -99,6 +103,9 @@ jobs:
           grep -q 'PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED=false' src/server/party/weekly-party-event-claim-v60.ts
           grep -q 'PARTY_EVENT_PROOF_V61_RELEASED=false' src/server/party/weekly-party-event-proof-v61.ts
           grep -q 'PARTY_EVENT_REWARD_READ_V62_RELEASED=false' src/server/party/weekly-party-event-rewards-v62.ts
+          grep -q 'PARTY_EVENT_ATOMIC_STORE_V63_RELEASED=false' src/server/party/weekly-party-event-atomic-store-v63.ts
+          grep -q 'PARTY_EVENT_EQUIPMENT_BRIDGE_V64_RELEASED=false' src/server/party/weekly-party-event-equipment-v64.ts
+          test ! -f supabase/migrations/20261119070000_party_event_reward_ledger_v61.sql
           test ! -f supabase/migrations/20261119070000_party_event_reward_ledger_v61.sql
           grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
           grep -q 'WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false' src/server/combat/world-boss-gathering-loot-v64.ts

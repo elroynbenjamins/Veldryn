@@ -118,8 +118,7 @@ declare
 begin
  if p_account_id is null or p_request_id is null or
     p_request_id !~ '^[A-Za-z0-9_-]{8,128}$' or
-    p_week_key is null or p_week_key !~ '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])
- then raise exception 'invalid_dungeon_weekly_request';end if;
+    p_week_key is null or p_week_key !~ '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3]) then raise exception 'invalid_dungeon_weekly_request';end if;
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('dungeon-weekly:'||p_account_id::text,0));
  v_snapshot:=public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
  if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;

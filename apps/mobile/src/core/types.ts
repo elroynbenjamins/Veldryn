@@ -48,8 +48,10 @@ export interface CharacterState {
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** Character-only equipment storage: separate from Inventory, shared Bank and account Gem Pouch. */
   equipmentPouch?:InventoryState;
-  /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
+  /** Legacy best-tool pointer kept for existing character saves and older readers. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
+  /** All equipped tools, one per tier per gathering skill. Tools leave Inventory when equipped. */
+  equippedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   equippedFoodId?:string;
   /** Auto-eat backup order (up to four different food types); never consumes bank food. */
   foodQueueIds?:string[];

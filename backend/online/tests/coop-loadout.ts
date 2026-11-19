@@ -257,13 +257,13 @@ for(const test of [
  const rolledCoop=deriveOnlineCoopLoadout('owner',state,25);
  assert.ok(rolledSolo[test.soloField]>baseSolo[test.soloField],'Solo effect missing for T1 '+test.stat);
  assert.ok(rolledBoss[test.field]>baseBoss[test.field],'Story boss effect missing for T1 '+test.stat);
- assert.ok(rolledCoop.stats[test.field]>baseCoop.stats[test.field],'Dungeon snapshot effect missing for T1 '+test.stat);
+ assert.ok((rolledCoop.stats[test.field]??0)>(baseCoop.stats[test.field]??0),'Dungeon snapshot effect missing for T1 '+test.stat);
  const freeze=(record:ReturnType<typeof deriveOnlineCoopLoadout>)=>resolveAndFreezeLoadout({
   accountId:'owner',characterId:record.characterId,loadoutId:'current',expectedRevision:25,
   minLevel:rebasedCombatLevelFromLegacyLevel(15),syncLevel:25,repository:{getOwnedLoadout:()=>record},
  });
  const baseFrozen=freeze(baseCoop),rolledFrozen=freeze(rolledCoop);
- assert.ok(rolledFrozen.normalized.snapshot[test.field]>baseFrozen.normalized.snapshot[test.field],
+ assert.ok((rolledFrozen.normalized.snapshot[test.field]??0)>(baseFrozen.normalized.snapshot[test.field]??0),
   'Dungeon frozen combatant must receive T1 '+test.stat);
  assert.notEqual(onlineCoopLoadoutHash(rolledCoop),onlineCoopLoadoutHash(baseCoop),
   'A genuine new stat roll must change its signed loadout hash: '+test.stat);

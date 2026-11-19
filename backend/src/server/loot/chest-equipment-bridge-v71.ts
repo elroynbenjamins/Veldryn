@@ -163,6 +163,9 @@ export function assertChestEq2PhysicalReadbackV71(
  if(!candidate||candidate.readyForIssuance!==false||
   candidate.manifestRegistration!=='pending_authoritative_eq2_registration'||
   !item||!UUID.test(item.itemInstanceId)||
+  item.itemInstanceId===candidate.accountId||
+  (candidate.recipientCharacterId!==null&&
+   item.itemInstanceId===candidate.recipientCharacterId)||
   item.sourceKey!==candidate.sourceKey||
   item.grantSourceKey!==candidate.sourceKey||
   item.accountId!==candidate.accountId||

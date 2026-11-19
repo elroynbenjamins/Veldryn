@@ -130,6 +130,7 @@ for(const [change,expected] of [
  [{accountId:character},'forged_or_uncommitted_item'],
  [{recipientCharacterId:null},'forged_or_uncommitted_item'],
  [{itemInstanceId:account},'forged_or_uncommitted_item'],
+ [{itemInstanceId:character},'forged_or_uncommitted_item'],
  [{templateKey:'EQ2_CRAFT_FAKE'},'forged_or_uncommitted_item'],
  [{setId:'FORGED_SET'},'forged_or_uncommitted_item'],
  [{statFamily:'gathering_speed_only'},'forged_or_uncommitted_item'],

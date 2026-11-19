@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "styleLock": "veldryn-eq2-icon-v1",
+  "generatedOn": "2026-11-19",
+  "releaseStatus": "not_enabled",
+  "description": "Art-production queue scaffold only. Item IDs and counts must be regenerated from synchronized authoritative 2.0 contracts. Empty items means zero artwork completed, not zero required.",
+  "technical": {
+    "cellPx": [192, 192],
+    "atlasPx": [960, 384],
+    "atlasLayout": [5, 2],
+    "slotOrder": ["helmet", "chest", "gloves", "legs", "boots", "weapon", "offhand", "cape", "amulet", "ring"],
+    "alphaInsetPx": 26,
+    "runtimeFormat": "webp",
+    "masterFormat": "png",
+    "light": "upper-left-10oclock",
+    "camera": "front-three-quarter-viewer-right",
+    "renderer": "rough-pixel-cluster",
+    "maxAtlasKiBTarget": 250
+  },
+  "sourceBuckets": [
+    {
+      "key": "equipment_2_crafted",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1382",
+      "draftEvidence": "118 T1–T4 hidden item templates; includes standalones and weapons/offhands",
+      "countStatus": "not_final_audit",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Audit exact template/item IDs, class, slot, recipe and tier on synchronized head before filling the item list"
+    },
+    {
+      "key": "dungeon_rewards",
+      "draftContract": null,
+      "draftEvidence": "New 2.0 dungeon drop set/item contract requires source audit",
+      "countStatus": "unknown",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Do not invent set count; inspect Dungeon 2.0 drop tables once authoritative"
+    },
+    {
+      "key": "party_event_chests",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1416",
+      "draftEvidence": "Party chest proposal: 4 events, 8 universal sets, 20 total items",
+      "countStatus": "draft_unverified",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Some sets are partial; emit individual keyed icons, not invented ten-slot sets"
+    },
+    {
+      "key": "world_boss_chests",
+      "draftContract": "https://github.com/elroynbenjamins/Veldryn/pull/1454",
+      "draftEvidence": "World Boss proposal: 3 boss-specific ten-piece gathering collections; 1% drop chance is gameplay metadata only",
+      "countStatus": "draft_unverified",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Gathering pieces are not automatically ten conventional armor slots; inspect exact source table and item slots"
+    },
+    {
+      "key": "other_2_0_drops",
+      "draftContract": null,
+      "draftEvidence": "Quests, guild, seasonal or enemy reward equipment when defined by an authoritative source",
+      "countStatus": "unknown",
+      "requiredItems": null,
+      "identifiedItems": 0,
+      "approvedItems": 0,
+      "notes": "Use canonical item IDs, source identity and eligibility; avoid duplicate art for same item"
+    }
+  ],
+  "itemRecordTemplate": {
+    "itemId": null,
+    "itemName": null,
+    "setId": null,
+    "slot": null,
+    "tier": null,
+    "classId": null,
+    "path": null,
+    "sourceBucket": null,
+    "sourceTableId": null,
+    "primaryResourceId": null,
+    "secondaryResourceId": null,
+    "sameSlotReferencePath": null,
+    "priorTierReferencePath": null,
+    "resourceIconPaths": [],
+    "distinctiveSilhouette": null,
+    "light": "upper-left-10oclock",
+    "camera": "front-three-quarter-viewer-right",
+    "styleLock": "veldryn-eq2-icon-v1",
+    "materialPlan": null,
+    "tierUpgradeDelta": null,
+    "candidateMasterPath": null,
+    "exportPath": null,
+    "artStatus": "identified",
+    "automatedQaReport": null,
+    "visualQa": null,
+    "deviceQa": null,
+    "reviewer": null,
+    "evidence": []
+  },
+  "items": []
+}

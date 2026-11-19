@@ -56,7 +56,7 @@ CREATE TABLE private.chest_reward_grant_legs_v70 (
  account_id uuid NOT NULL,
  leg_kind text NOT NULL CHECK(leg_kind IN ('guarantee','drop','inbox')),
  ordinal integer NOT NULL CHECK (ordinal BETWEEN 0 AND 39),
- reward_id text NOT NULL CHECK(length(reward_id) BETWEEN 1 AND 220),
+ reward_id text NOT NULL CHECK(length(reward_id) BETWEEN 1 AND 240),
  quantity bigint NOT NULL CHECK(quantity BETWEEN 0 AND 2147483647),
  grant_id text NOT NULL CHECK(length(grant_id) BETWEEN 1 AND 200),
  item_instance_id uuid UNIQUE,

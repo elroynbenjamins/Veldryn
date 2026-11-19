@@ -95,7 +95,7 @@ export function resolveWorldBossChestEvidenceV59(
   personalCommittedDonations:donations,
   committedAttempts:completed,
   communityDamageGoalCompleted:
-   row.event.remainingHp/row.event.initialHp<=0.30,
+   row.event.remainingHp*10<=row.event.initialHp*3,
   personalProvenAttacks:completed,
  };
 }

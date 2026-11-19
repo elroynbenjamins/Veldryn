@@ -11,7 +11,7 @@
 import {strict as assert} from 'node:assert';
 import type {CombatStats,CombatantDefinition} from '../../types';
 import {launchPlayer} from '../../content/launch-combat';
-import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SKILLS_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {simulateUnifiedEquipmentCombatV2,type TrustedEquipmentRuntimeV2} from '../unified-equipment-encounter';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
@@ -63,7 +63,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
   for(const tier of tiers){
    const level=tier*10;
    const selectedSkills=SKILL_IDENTITIES_V2.filter(skill=>
-    skill.classId===classId&&skill.unlockLevel<=level).slice(0,2);
+    skill.classId===classId&&SKILLS_V2.some(s=>s.id===skill.id&&s.unlockLevel<=level)).slice(0,2);
    assert.ok(selectedSkills.length>=1,
     'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;

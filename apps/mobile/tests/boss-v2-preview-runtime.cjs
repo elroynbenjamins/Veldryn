@@ -36,6 +36,8 @@ assert.equal(locale.BOSS_V2_PREVIEW_PUBLIC_ENABLED,false);
 assert.equal(locale.BOSS_V2_CAST_IDS.length,7);
 for(const lang of ['en','es','de','ru','tr']){
  assert.equal(locale.bossV2Locale(lang+'-XX'),lang);
+ assert.ok(locale.bossV2Words(lang).legacyMoves,
+  'Existing boss mechanics must be explained in each language');
  for(const id of locale.BOSS_V2_CAST_IDS){
   const copy=locale.bossV2LocalizedCast(id,lang);
   assert.ok(copy&&copy.name&&copy.tell&&copy.counter&&copy.fallback);

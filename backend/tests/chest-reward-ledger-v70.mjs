@@ -75,6 +75,18 @@ try{
  await assert.rejects(()=>insertReceipt(source2,account,{
   ...receiptFor(source2),equipmentDeliveryMode:null,
  }),/check constraint/);
+ await assert.rejects(()=>insertReceipt(source2,account,{
+  ...receiptFor(source2),committed:'true',
+ }),/check constraint/);
+ // A missing drop type once bypassed nullable SQL IF conditions.
+ await db.exec('begin');
+ const missingDropType=receiptFor(source2);
+ missingDropType.drops[0]={...missingDropType.drops[0],type:null};
+ await insertReceipt(source2,account,missingDropType);
+ await assert.rejects(()=>insertLeg(source2,account,'drop',0,
+  'PE_WAYFARERS_PACT_BOOTS',1,'malformed_equipment',instance),
+  /CHEST_V70_INVALID_DROP_LEG/);
+ await db.exec('rollback');
  await db.exec('begin');
  await insertReceipt(source2,account,{
   ...receiptFor(source2),equipmentDeliveryMode:'account_unclaimed',

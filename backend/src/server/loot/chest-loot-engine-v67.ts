@@ -94,7 +94,7 @@ export function defineChestLootTableV67(raw:ChestLootTableV67):ChestLootTableV67
  const policies:readonly ChestDuplicatePolicyV67[]=[
   'allow_duplicates','prefer_unowned','unique_only',
  ];
- const groups=raw.groups.map(g=>{
+ const groups=raw.groups.map((g:ChestDropGroupV67)=>{
   if(!g||typeof g.id!=='string'||!SAFE_ID.test(g.id)||
    groupIds.has(g.id)||!types.includes(g.type)||
    !policies.includes(g.duplicatePolicy)||!isBps(g.chanceBps)||

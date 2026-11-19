@@ -34,7 +34,7 @@ CREATE TABLE private.chest_reward_receipts_v70 (
   receipt->>'proofVersion'=proof_version AND
   receipt->>'tableId'=table_id AND
   receipt->>'tableVersion'=table_version AND
-  receipt->>'committed'='true' AND
+  receipt->'committed'='true'::jsonb AND
   jsonb_typeof(receipt->'guaranteed')='array' AND
   jsonb_typeof(receipt->'groups')='array' AND
   jsonb_typeof(receipt->'drops')='array' AND
@@ -107,8 +107,11 @@ BEGIN
   expected_type:=expectation->>'type';
   IF NEW.reward_id IS DISTINCT FROM expectation->>'entryId'
    OR NEW.quantity IS DISTINCT FROM (expectation->>'quantity')::bigint
-   OR (expected_type='equipment' AND NEW.item_instance_id IS NULL)
-   OR (expected_type<>'equipment' AND NEW.item_instance_id IS NOT NULL)
+   OR expected_type IS NULL OR
+   expected_type NOT IN ('equipment','material','consumable',
+    'pet','companion','cosmetic','currency') OR
+   (expected_type='equipment' AND NEW.item_instance_id IS NULL) OR
+   (expected_type<>'equipment' AND NEW.item_instance_id IS NOT NULL)
   THEN RAISE EXCEPTION 'CHEST_V70_INVALID_DROP_LEG'; END IF;
  END IF;
  RETURN NEW;

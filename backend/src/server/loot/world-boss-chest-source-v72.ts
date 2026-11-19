@@ -15,6 +15,7 @@ import {
  type WorldBossChestKindV58,
 } from '../combat/world-boss-chests-v58';
 import type {TrustedChestSourceV69} from './chest-reward-settlement-v69';
+import type {ChestSqlV70} from './chest-postgres-store-v70';
 
 export const WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false;
 export const WORLD_BOSS_SHARED_CHEST_PROOF_VERSION_V72=
@@ -27,15 +28,16 @@ const VALID_UUID=new RegExp('^'+UUID+'$');
 export interface WorldBossChestSourcePortV72{
  /** Implement with trusted V18/V27/V28 rows on the pinned, account-locked
   * V70 connection. NEVER use network calls, mobile counters, or a fresh pool. */
- readCanonicalInLockedTransaction(eventId:string,accountId:string):
-  Promise<WorldBossCanonicalChestReadV59>;
+ readCanonicalInLockedTransaction(
+  tx:ChestSqlV70,eventId:string,accountId:string,
+ ):Promise<WorldBossCanonicalChestReadV59>;
 }
 /** The selection carries only sourceKey; account is derived by host Auth.
  * All eligibility, boss, and guarantees are reconstructed privately. */
 export async function readWorldBossTrustedChestSourceV72(input:{
  readonly authenticatedAccountId:string;
  readonly sourceKey:string;
-},port:WorldBossChestSourcePortV72,qaEnabled=false):
+},tx:ChestSqlV70,port:WorldBossChestSourcePortV72,qaEnabled=false):
  Promise<TrustedChestSourceV69>{
  if(!qaEnabled||WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED||
   process.env.NODE_ENV==='production')
@@ -45,13 +47,14 @@ export async function readWorldBossTrustedChestSourceV72(input:{
  if(!match||typeof input.authenticatedAccountId!=='string'||
   !VALID_UUID.test(input.authenticatedAccountId)||
   input.authenticatedAccountId!==match[2]||
+  !tx||typeof tx.query!=='function'||
   !port||typeof port.readCanonicalInLockedTransaction!=='function')
   throw Error('world_boss_v72_invalid_account_source');
  const eventId=match[1]!;
  const accountId=match[2]!;
  const kind=match[3] as WorldBossChestKindV58;
  const canonical=await port.readCanonicalInLockedTransaction(
-  eventId,accountId,
+  tx,eventId,accountId,
  );
  if(!canonical||canonical.accountId!==accountId||
   canonical.eventId!==eventId)

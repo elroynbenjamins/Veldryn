@@ -66,18 +66,33 @@ export function verifyEquipmentV2HiddenLedger(
  unique(awards.map(row=>row.jobId),'duplicate_hidden_v2_award');
  const jobMap=new Map(jobs.map(job=>[job.id,job]));
  const itemMap=new Map(items.map(item=>[item.id,item]));
+ const itemByJob=new Map<string,V2DraftItem>();
+ const awardByJob=new Map<string,V2DraftSkillAward>();
+ for(const item of items){
+  if(itemByJob.has(item.jobId))fail('duplicate_hidden_v2_job_result');
+  itemByJob.set(item.jobId,item);
+ }
+ for(const award of awards){
+  if(awardByJob.has(award.jobId))fail('duplicate_hidden_v2_award');
+  awardByJob.set(award.jobId,award);
+ }
  const startReceiptIds=new Set<string>(),claimReceiptIds=new Set<string>();
  for(const job of jobs){
   if(job.accountId!==accountId||!job.ownerCharacterId
+   ||!job.craftContract||!job.craftContract.piece
+   ||job.craftContract.piece.id!==job.pieceId
+   ||job.craftContract.recipeId!==job.recipeId
+   ||!safe(job.goldReserved)||!safe(job.craftContract.xpAwarded)
+   ||!safe(job.startedAtMs)||!safe(job.finishesAtMs)
    ||(job.status!=='queued'&&job.status!=='claimed'))fail('invalid_hidden_v2_job');
-  const linked=items.filter(item=>item.jobId===job.id);
-  const xp=awards.filter(award=>award.jobId===job.id);
-  if(job.status==='queued'&&(job.resultId||linked.length||xp.length))
+  const linked=itemByJob.get(job.id);
+  const xp=awardByJob.get(job.id);
+  if(job.status==='queued'&&(job.resultId||linked||xp))
    fail('queued_v2_job_has_rewards');
-  if(job.status==='claimed'&&(!job.resultId||linked.length!==1||xp.length!==1
-   ||linked[0].id!==job.resultId||xp[0].characterId!==job.ownerCharacterId
-   ||xp[0].profession!==job.craftContract.profession
-   ||xp[0].xp!==job.craftContract.xpAwarded))fail('invalid_hidden_v2_claim_settlement');
+  if(job.status==='claimed'&&(!job.resultId||!linked||!xp
+   ||linked.id!==job.resultId||xp.characterId!==job.ownerCharacterId
+   ||xp.profession!==job.craftContract.profession
+   ||xp.xp!==job.craftContract.xpAwarded))fail('invalid_hidden_v2_claim_settlement');
  }
  for(const item of items){
   const job=jobMap.get(item.jobId);
@@ -123,10 +138,10 @@ export function verifyEquipmentV2HiddenLedger(
  * Overflow has an expiry policy and cannot silently receive new EQ2 gear.
  */
 export function proposeEquipmentV2ClaimCustody(
- state:GameState,item:V2DraftItem,
+ state:GameState,accountId:string,item:V2DraftItem,
 ):V2HiddenClaimCustody{
- if(!state||!item||!v2ServerExactTemplateConsistent(item.exactItem)
-  ||!item.id||item.accountId==='')fail('invalid_v2_delivery_copy');
+ if(!state||!accountId||!item||!v2ServerExactTemplateConsistent(item.exactItem)
+  ||!item.id||item.accountId!==accountId)fail('invalid_v2_delivery_copy');
  const owner=owned(state,item.ownerCharacterId);
  if(!owner)fail('unknown_v2_delivery_owner');
  if(copies(state).includes(item.id))fail('v2_delivery_instance_collision');

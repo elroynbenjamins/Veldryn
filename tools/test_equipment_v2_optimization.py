@@ -84,6 +84,13 @@ class CompressionTests(unittest.TestCase):
             self.assertTrue(any("non_webp_runtime_file" in e for e in result["errors"]))
             self.assertTrue(any("identical_assets_must_share_single_path" in e for e in result["errors"]))
 
+    def test_approved_future_folder_not_created_yet_is_ok(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "future-hidden-assets"
+            result = bundle.audit(missing)
+            self.assertTrue(result["passed"])
+            self.assertEqual(result["asset_count"], 0)
+
     def test_bundle_reports_size_without_fake_release_savings(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

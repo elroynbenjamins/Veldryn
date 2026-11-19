@@ -66,6 +66,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [selectedEvent,setSelectedEvent]=useState<CoopEventExpeditionPreview>();
   const [mode,setMode]=useState<CoopMode>('qmode');
+   const [runLength,setRunLength]=useState<'standard'|'extended'>('standard');
    const [dungeonPlaybackSpeed,setDungeonPlaybackSpeed]=useState<1|2>(1);
    const vipPlus=accountEntitlementBenefits(state).vipPlus;
   const [tier,setTier]=useState<CoopTier>();
@@ -323,7 +324,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
       await coopClient.joinLive({requestId:coopRequestId(),dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision});
       setShowLive(true);return;
     }
-    const started=await realCoopQModeSource.start(intent,coopRequestId());setRun(started.run);
+    const started=await realCoopQModeSource.start({...intent,runLength},coopRequestId());setRun(started.run);
   });
   const continueDungeon=(resolvedTier:CoopTier)=>{
     if(!entry&&entrySource.kind==='real'){
@@ -386,7 +387,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     });
   };
   function joinRecruitmentSearch(dungeonId:string){const dungeon=dungeons.find(item=>item.id===dungeonId);if(!dungeon?.available){setNotice(st("That dungeon is no longer available for this character."));return;}setMode('live');chooseDungeon(dungeon);}
-  function chooseDungeon(dungeon:CoopDungeonView,quickTier?:CoopTier){setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);const firstTier=quickTier&&dungeon.difficulties.includes(quickTier)?quickTier:dungeon.difficulties[0];setTier(firstTier);setNotice('');if(!quickTier)void rememberedCoopTier(characterId,dungeon.id).then(remembered=>{if(remembered&&dungeon.difficulties.includes(remembered))setTier(current=>current===firstTier?remembered:current);});}
+  function chooseDungeon(dungeon:CoopDungeonView,quickTier?:CoopTier){setRunLength('standard');setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);const firstTier=quickTier&&dungeon.difficulties.includes(quickTier)?quickTier:dungeon.difficulties[0];setTier(firstTier);setNotice('');if(!quickTier)void rememberedCoopTier(characterId,dungeon.id).then(remembered=>{if(remembered&&dungeon.difficulties.includes(remembered))setTier(current=>current===firstTier?remembered:current);});}
   function chooseEvent(expedition:CoopEventExpeditionPreview){setSelected(undefined);setShowLoadouts(false);setRun(undefined);setSelectedEvent(expedition);setNotice('')}
   const retry=pending?<GameButton title={st("Retry pending co-op action")} disabled={busy} onPress={()=>action(async()=>{const value=await coopClient.retryPending();if(value&&typeof value==='object'&&'eventExpeditionId' in value)acceptEventRun(value as CoopEventRunServerProjection);else if(value&&typeof value==='object'&&'team' in value)acceptRun(value as CoopQModeServerProjection);await load();})}/>:null;
   const quickLiveMatch=()=>void action(async()=>{const loadout=verifiedLoadout();if(!loadout)throw new Error(st("No verified Live-ready loadout is available. Refresh your co-op loadout first."));await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);});
@@ -400,7 +401,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     const loadout=latest.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready&&item.characterId===characterId);
     if(!loadout)throw new Error(st('Your dungeon loadout changed. Refresh your equipment before running again.'));
     const started=await realCoopQModeSource.start({
-      mode:'qmode',dungeonId:finished.expeditionId,tier:finished.tier,
+      mode:'qmode',runLength:finished.routePath?.totalDepth===15?'extended':'standard',dungeonId:finished.expeditionId,tier:finished.tier,
       characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision,
     },coopRequestId());
     if(started.run.runId===finished.runId)throw new Error(st('Could not create a fresh dungeon run.'));
@@ -473,7 +474,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
   if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load(true)} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined} tonicPreference={tonicPreference} onTonicPreferenceChange={tonicPreference?updateTonicPreference:undefined} onSelectHealingPotion={entrySource.kind==='real'&&onCommand?selectDungeonHealingPotion:undefined}/></View>;
-  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('');if(selected)void rememberCoopTier(characterId,selected.id,next);}} onContinue={continueDungeon}/>;
+  if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} runLength={runLength} onRunLengthChange={setRunLength} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('');if(selected)void rememberCoopTier(characterId,selected.id,next);}} onContinue={continueDungeon}/>;
   const echoTools=entrySource.kind==='real'&&entry?.gameVersion?(<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 7 days.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>
         <View style={{flex:1}}><Text style={{color:C.text,fontWeight:'700'}}>{st("My Echo · Current equipment")}</Text><Text numberOfLines={2} style={{color:C.muted}}>{entry.echoSharing?st("Your character Echo is shared with other adventurers."):st("Prepare a snapshot of your current dungeon loadout for other players.")}</Text></View>

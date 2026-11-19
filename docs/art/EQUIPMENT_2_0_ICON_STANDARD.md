@@ -1,6 +1,6 @@
 # Veldryn — Equipment 2.0 icon production standard (draft v1)
 
-**Status:** authoring/QA contract only. No icons generated, replacement assets installed, 2.0 rewards issued, or release flags enabled by this document.
+**Production calibration companion:** [EQUIPMENT_2_0_GENERATION_PLAYBOOK.md](EQUIPMENT_2_0_GENERATION_PLAYBOOK.md) adds mandatory reference-kit, prompt-version, slot silhouette, light/shade, pixel-cluster and visual comparison gates. Do not begin batch generation until its approved reference kit is recorded in the generation queue and the first cross-material calibration batch is reviewed.\n\n**Status:** authoring/QA contract only. No icons generated, replacement assets installed, 2.0 rewards issued, or release flags enabled by this document.
 
 ## Authority and scope
 

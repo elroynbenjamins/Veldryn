@@ -66,9 +66,9 @@ const receiptSql=[
 ].join(' ');
 const insertSql=[
  'insert into private.chest_reward_receipts_v70',
- '(source_key,account_id,recipient_character_id,proof_version,',
+ '(source_key,account_id,recipient_character_id,equipment_delivery_mode,proof_version,',
  'table_id,table_version,rules_version,receipt)',
- 'values($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::jsonb)',
+ 'values($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9::jsonb)',
 ].join(' ');
 const legsSql=[
  'select source_key,account_id::text as account_id,leg_kind,ordinal,',
@@ -192,7 +192,8 @@ export function createChestPostgresStoreV70(
        receipt.accountId!==accountId||receipt.committed!==true)
        throw Error('chest_v70_invalid_receipt_insert');
       await conn.query(insertSql,[
-       sourceKey,accountId,receipt.recipientCharacterId,receipt.proofVersion,
+       sourceKey,accountId,receipt.recipientCharacterId,
+       receipt.equipmentDeliveryMode,receipt.proofVersion,
        receipt.tableId,receipt.tableVersion,receipt.rulesVersion,
        JSON.stringify(receipt),
       ]);

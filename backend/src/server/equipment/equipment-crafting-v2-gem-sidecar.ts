@@ -148,6 +148,8 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  verifyEquipmentV2StorageReservations(accountId,raw.items,raw.storageReservations??[]);
  const sidecar=requireSidecar(raw.gemSocketState);
  verifyEquipmentV2GemSidecar(raw.items,sidecar);
+ if(raw.receipts.some(row=>row.requestId===command.requestId))
+  fail('v2_cross_command_request_id_conflict');
  const existing=sidecar.receipts.find(row=>row.requestId===command.requestId);
  if(existing){
   if(existing.fingerprint!==fingerprint(command))fail('v2_socket_request_conflict');

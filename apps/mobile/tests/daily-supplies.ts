@@ -1,5 +1,5 @@
 import {migrateSave} from '../src/core/save-migrations';
-import {claimActivity,createCharacter,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
+import {activeCombatRuntimeProjection,claimActivity,createCharacter,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,DAILY_SUPPLY_CHARGE_SECONDS,DAILY_SUPPLY_MILESTONES,dailySupplyBank,dailySupplyCoverage,dailySupplySpeedMultiplier,dailySuppliesStatus,dailySupplyRewardForDay,activeDailySupplyBoosts,dailySupplyQueued,dailySupplyCraftWorkSeconds,dailySupplyAdjustTimedCraftReward,previewDailySupplyTimedReward,commitDailySupplyTimedBoost,migrateLegacyDailySupplies} from '../src/core/daily-supplies';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -110,7 +110,8 @@ let baseCombat=startCombat(create('Ordinary Hunt'),'MOSS_RAT',t0);
 const boostedCombat=withAccountBoost(baseCombat,'combat_speed');
 baseCombat={...baseCombat,account:{...baseCombat.account,dailySupplies:{schemaVersion:2,totalClaims:0,bank:{},active:{},queued:{}}}};
 const huntNormal=previewActivityReward(baseCombat,t0+1800_000),huntFast=previewActivityReward(boostedCombat,t0+1800_000);
-ok(huntFast.kills>=huntNormal.kills,'Combat Speed should not reduce ordinary hunt throughput');
+const normalProjection=activeCombatRuntimeProjection(baseCombat),speedProjection=activeCombatRuntimeProjection(boostedCombat);
+ok(!!normalProjection&&!!speedProjection&&speedProjection.killCycleSeconds<normalProjection.killCycleSeconds,'Combat Speed must reduce ordinary encounter cycle time');
 equal(dailySupplySpeedMultiplier(boostedCombat,'combat_speed',1800),1.1,'Combat Speed multiplier is 10% while active');
 
 let xp=withAccountBoost(startGathering(create('Skill XP'),'GREENWOOD_TREE',t0),'skill_xp',.2);

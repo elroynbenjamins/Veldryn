@@ -4,6 +4,7 @@ const ts=require('typescript');
 const read=path=>fs.readFileSync(path,'utf8');
 const panel=read('src/components/OnlineAccountDeletionPanel.tsx');
 const api=read('src/online/account-deletion.ts');
+const policy=read('src/core/account-deletion-request.ts');
 const settings=read('src/screens/SettingsScreen.tsx');
 const flags=read('src/core/release-flags.ts');
 const sql=read('../../backend/supabase/migrations/20261119183000_online_account_deletion_requests_v1.sql');
@@ -27,7 +28,9 @@ assert.ok(panel.includes('accountDeletionText(language,value)'),'Public deletion
 assert.ok(panel.includes("validAccountDeletionConfirmation(confirmation)")&&panel.includes('maxLength={40}'),'Submit requires deliberate keyboard-accessible typed confirmation');
 assert.ok(panel.includes('requestOnlineAccountDeletion(')&&panel.includes('cancelOnlineAccountDeletionRequest('),'Owner may submit and withdraw the intake request');
 assert.ok(panel.includes("Submitting a request does not delete your account immediately."),'UI may not promise instant erasure');
-assert.ok(api.includes("row.erasureCompleted!==false")&&api.includes("getUser(data.session.access_token)"),'The client verifies owner and never accepts a response claiming erasure');
+assert.ok(policy.includes("row.erasureCompleted!==false")&&api.includes("getUser(data.session.access_token)"),'The client verifies owner and its pure validator never accepts a response claiming erasure');
+assert.ok(panel.includes('!statusReady?')&&panel.includes('setStatusReady(false)'),'Request status must be checked before submission and rechecked after ambiguous network failures');
+assert.ok(panel.includes("formatLocalizedDate(language,status.requestedAtMs"),'The status receipt displays a localized request date');
 assert.ok(api.includes('Crypto.randomUUID()')&&api.includes('p_expected_account_id:accountId'),'Every request uses a random request ID and checks the displayed owner against the active Auth subject');
 assert.equal(sql.split("p_expected_account_id is distinct from v_actor").length-1,3,'Submit, status and cancel must all reject cross-account UI races');
 assert.ok(!api.includes('admin.deleteUser(')&&!panel.includes('admin.deleteUser('),'Client cannot delete Supabase Auth users');

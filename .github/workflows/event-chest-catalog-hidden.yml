@@ -40,6 +40,8 @@ on:
       - 'backend/src/server/combat/world-boss-gathering-instance-v62.ts'
       - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
+      - 'backend/src/server/loot/chest-reward-settlement-v69.ts'
+      - 'backend/src/server/loot/__tests__/chest-reward-settlement-v69.ts'
       - 'backend/src/server/loot/chest-loot-engine-v67.ts'
       - 'backend/src/server/loot/__tests__/chest-loot-engine-v67.ts'
       - 'backend/src/server/loot/event-chest-server-roll-v1.ts'

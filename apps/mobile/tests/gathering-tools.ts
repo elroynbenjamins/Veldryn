@@ -85,7 +85,7 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
  const ladder=GATHERING_TOOLS.filter(t=>t.skillId===skillId).sort((a,b)=>a.tier-b.tier);
  for(const [index,tool] of ladder.entries()){
   collection=equipGatheringTool(collection,tool.id,0);
-  const expected=[.95,.8,.65,.45][index];
+  const expected=[.9,.75,.6,.4][index];
   ok(Math.abs(gatheringToolTimeMultiplier(collection,skillId)-expected)<.001,skillId+' should add one tool contribution at tier '+tool.tier);
   ok(equippedGatheringTools(collection,skillId).length===index+1,skillId+' should retain all previously-equipped tiers');
   const before=collection;
@@ -95,14 +95,14 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
  ok(!collection.inventory.stacks.some(row=>ladder.some(tool=>tool.id===row.itemId)),skillId+' equipped tools must be removed from Inventory');
 }
 ok(['mining','woodcutting','fishing'].every(skillId=>equippedGatheringTools(collection,skillId as 'mining'|'woodcutting'|'fishing').length===4),'All 12 independent tool slots should work simultaneously');
-ok(['mining','woodcutting','fishing'].every(skillId=>Math.abs(gatheringToolTimeMultiplier(collection,skillId as 'mining'|'woodcutting'|'fishing')-.45)<.001),'All three gathering skills must cap at 55% time reduction with all tiers equipped');
+ok(['mining','woodcutting','fishing'].every(skillId=>Math.abs(gatheringToolTimeMultiplier(collection,skillId as 'mining'|'woodcutting'|'fishing')-.4)<.001),'All three gathering skills must cap at 60% time reduction with all tiers equipped');
 collection=executeGameCommand(collection,{type:'unequip_tool',args:{id:'FROSTIRON_PICKAXE'}},0).state;
-ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.65)<.001,'Unequipping Tier 4 removes its 20% contribution');
+ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.6)<.001,'Unequipping Tier 4 removes its 20% contribution');
 ok(collection.inventory.stacks.some(row=>row.itemId==='FROSTIRON_PICKAXE'),'Unequipped tool must return to Inventory');
 collection=equipGatheringTool(collection,'FROSTIRON_PICKAXE',0);
-ok(Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.45)<.001,'Re-equipping restores the 55% cumulative maximum');
+ok(Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.4)<.001,'Re-equipping restores the 60% cumulative maximum');
 collection=unequipGatheringTool(collection,'mining',0,'ASTER_IRON_PICKAXE');
-ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.6)<.001,'Any individually unequipped tier should remove only its own contribution');
+ok(equippedGatheringTools(collection,'mining').length===3&&Math.abs(gatheringToolTimeMultiplier(collection,'mining')-.55)<.001,'Unequipping Tier 2 retains the Tier 1, 3 and 4 contributions (45% total)');
 
 ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===2,'Level-16 Mining should recommend the highest legally reachable tool tier rather than a locked Tier 3');
 const greenwood=GATHERING.find(entry=>entry.id==='GREENWOOD_TREE')!,ironwood=GATHERING.find(entry=>entry.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(entry=>entry.id==='CROWNWOOD_TREE')!;

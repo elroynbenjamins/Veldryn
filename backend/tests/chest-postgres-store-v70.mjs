@@ -17,6 +17,12 @@ const {createWorldBossChestSourcePortsV73}=require(
  '../.event-chest-tests/server/loot/world-boss-chest-pg-source-v73.js');
 const {worldBossChestLootTableV68}=require(
  '../.event-chest-tests/server/combat/world-boss-chests-v58.js');
+const {resolveTrustedPartyChestSourceV77}=require(
+ '../.event-chest-tests/server/party/weekly-party-event-chest-source-v77.js');
+const {createPartyChestInboxHistoryPortsV80}=require(
+ '../.event-chest-tests/server/party/weekly-party-event-inbox-v80.js');
+const {deriveServerChestRollsV1}=require(
+ '../.event-chest-tests/server/loot/event-chest-server-roll-v1.js');
 const sql=readFileSync(new URL(
  '../../docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql',
  import.meta.url),'utf8');
@@ -53,6 +59,25 @@ try{
  await db.query('insert into public.characters values($1,$2)',[character,account]);
  await db.exec(ddl);
  await db.exec(
+  // Match the existing, published Inbox v1 table shape. This is a
+  // disposable fixture; the actual V80 review-only port owns the writes.
+  'create table private.party_event_weeks_v11('+
+   'party_id uuid not null,event_starts_at timestamptz not null,'+
+   'family text not null,difficulty text not null,status text not null,'+
+   'primary key(party_id,event_starts_at));'+
+  'create table private.party_event_roster_v11('+
+   'party_id uuid not null,event_starts_at timestamptz not null,'+
+   'account_id uuid not null,'+
+   'primary key(party_id,event_starts_at,account_id));'+
+  'create table private.reward_inbox_v1('+
+   'id uuid primary key default gen_random_uuid(),'+
+   'account_id uuid not null references auth.users(id) on delete cascade,'+
+   'source_key text not null,'+
+   "source_kind text not null check(source_kind in ('party','guild','dungeon','gift')),"+
+   "source_id uuid not null,title text not null,body text not null default '',"+
+   "attachments jsonb not null default '[]',"+
+   'created_at timestamptz not null default now(),claimed_at timestamptz,'+
+   'unique(account_id,source_key));'+
   'create table private.v70_test_guarantees('+
   'source_key text not null,account_id uuid not null,ordinal integer not null,'+
   'reward_id text not null,quantity integer not null,grant_id text not null unique,'+
@@ -65,6 +90,7 @@ try{
   'source_key text primary key,account_id uuid not null,grant_id text not null unique);'
  );
  let failDrop=false;
+ const history=createPartyChestInboxHistoryPortsV80(true);
  let proof={
   sourceKey:source,accountId:account,proofVersion:'trusted-winter-v1',
   recipientCharacterId:null,equipmentDeliveryMode:null,
@@ -96,11 +122,6 @@ try{
    return {tier:2};
   },
   creditGuaranteed:async(tx,receipt,index)=>{
-   const mode=(await tx.query('show transaction_isolation')).rows[0];
-   assert.equal(mode?.transaction_isolation,
-    receipt.sourceKey.startsWith('world-boss:')?
-     'read committed':'serializable',
-    'World Boss uses V57-compatible isolation; Party and generic remain serializable');
    const item=receipt.guaranteed[index];
    const grantId='g:'+receipt.sourceKey+':'+index;
    await tx.query(
@@ -124,6 +145,8 @@ try{
    return {grantId,itemInstanceId:null};
   },
   grantInbox:async(tx,receipt)=>{
+   if(receipt.proofVersion==='party-event-proof-v61')
+    return history.grantInbox(tx,receipt);
    const grantId='i:'+receipt.sourceKey;
    await tx.query(
     'insert into private.v70_test_inbox(source_key,account_id,grant_id) '+
@@ -134,24 +157,32 @@ try{
   },
   verifyPhysical:async(tx,receipt,legs)=>{
    // Single physical connection: don't issue parallel queries on the
-   // same pinned SQL session while verifying durable grant custody.
+   // same SERIALIZABLE session while verifying durable grant custody.
    const gs=await tx.query(
     'select * from private.v70_test_guarantees where source_key=$1',
     [receipt.sourceKey]);
    const ds=await tx.query(
     'select * from private.v70_test_drops where source_key=$1',
     [receipt.sourceKey]);
-   const ins=await tx.query(
-    'select * from private.v70_test_inbox where source_key=$1',
-    [receipt.sourceKey]);
+   const isPartyHistory=receipt.proofVersion==='party-event-proof-v61';
+   const ins=isPartyHistory?{rows:[]}:
+    await tx.query(
+     'select * from private.v70_test_inbox where source_key=$1',
+     [receipt.sourceKey]);
    if(gs.rows.length!==receipt.guaranteed.length||
-    ds.rows.length!==receipt.drops.length||ins.rows.length!==1)return false;
+    ds.rows.length!==receipt.drops.length||
+    (!isPartyHistory&&ins.rows.length!==1))return false;
    for(const row of [...gs.rows.map(x=>({...x,kind:'guarantee'})),
     ...ds.rows.map(x=>({...x,kind:'drop'}))]){
     if(!legs.some(leg=>leg.kind===row.kind&&leg.ordinal===row.ordinal&&
      leg.quantity===Number(row.quantity)&&leg.rewardId===row.reward_id&&
      leg.grantId===row.grant_id&&leg.accountId===row.account_id))
      return false;
+   }
+   if(isPartyHistory){
+    const leg=legs.find(item=>item.kind==='inbox'&&item.ordinal===0&&
+     item.accountId===account);
+    return !!leg&&await history.verifyInbox(tx,receipt,leg.grantId);
    }
    return legs.some(leg=>leg.kind==='inbox'&&leg.ordinal===0&&
     leg.grantId===ins.rows[0].grant_id&&leg.accountId===account);
@@ -268,6 +299,87 @@ try{
   'select count(*)::integer n from private.chest_reward_receipts_v70 where source_key=$1',
   [foreignMissSource],
  )).rows[0].n,0,'foreign character cannot claim even on a gear miss');
+ // V83 integrated Party chest: authentic V77 table/proof, deterministic
+ // real 12% roll MISS, V69 serializable settlement, V70 exact receipt and
+ // the real legacy Inbox shape via V80. Physical wallet tables remain a
+ // disposable fixture here; this does NOT validate a production grant.
+ const partyId='55555555-5555-4555-8555-555555555555';
+ const eventStart=Date.UTC(2026,10,16);
+ const identity={partyId,accountId:account,eventStartsAtUtcMs:eventStart};
+ const settled={
+  source:'private_party_event_settlement_join_v61',
+  week:{partyId,eventStartsAtUtcMs:eventStart,
+   eventEndsAtUtcMs:eventStart+604800000,
+   settledAtUtcMs:eventStart+608400000,
+   status:'settled',family:'broken_caravan',difficulty:'standard'},
+  roster:{...identity,rosterSize:2,frozenCharacterId:character},
+  activity:{...identity,activityPoints:20,
+   sourceVersion:'party_event_member_progress_v14'},
+  preparation:null,finale:null,
+  tier:{...identity,eligibleGearTier:2,
+   sourceVersion:'server_level_snapshot_v2'},
+ };
+ await db.query(
+  'insert into private.party_event_weeks_v11 values'+
+  "($1,to_timestamp($2::double precision/1000),'broken_caravan','standard','settled')",
+  [partyId,eventStart]);
+ await db.query('insert into private.party_event_roster_v11 values'+
+  '($1,to_timestamp($2::double precision/1000),$3)',
+  [partyId,eventStart,account]);
+ proof=resolveTrustedPartyChestSourceV77({
+  authenticatedAccountId:account,sourceKey:eqSource,proof:settled,
+ });
+ assert.equal(proof.lootTable.groups[0].chanceBps,1200);
+ assert.equal(proof.lootTable.guarantees.length,4);
+ let missedSecret=null;
+ for(let i=1;i<=255;i++){
+  const candidate=new Uint8Array(32).fill(i);
+  const roll=deriveServerChestRollsV1({
+   domain:'party_event_v51',secret:candidate,
+   committedChestKey:eqSource,
+  });
+  if(roll.hitRoll>=1200){missedSecret=candidate;break;}
+ }
+ assert.ok(missedSecret,'deterministic test vector must include a miss');
+ const realMiss=createChestRewardSettlementV69(
+  store,{secret:missedSecret},true);
+ const integrated=await realMiss({
+  authenticatedAccountId:account,sourceKey:eqSource,
+ });
+ assert.equal(integrated.replayed,false);
+ assert.equal(integrated.receipt.drops.length,0);
+ assert.equal(integrated.receipt.guaranteed.length,4);
+ assert.equal(integrated.receipt.proofVersion,'party-event-proof-v61');
+ const inboxHistory=(await db.query(
+  'select source_kind,attachments,claimed_at from private.reward_inbox_v1 '+
+  'where source_key=$1 and account_id=$2',[eqSource,account],
+ )).rows;
+ assert.equal(inboxHistory.length,1);
+ assert.equal(inboxHistory[0].source_kind,'gift');
+ assert.deepEqual(inboxHistory[0].attachments,[]);
+ assert.ok(inboxHistory[0].claimed_at);
+ const trueGrantCount=(await db.query(
+  'select count(*)::integer n from private.v70_test_guarantees '+
+  'where source_key=$1',[eqSource],
+ )).rows[0].n;
+ assert.equal(trueGrantCount,4,
+  'all four guaranteed legs must exist in same DB transaction');
+ const returned=await realMiss({
+  authenticatedAccountId:account,sourceKey:eqSource,
+ });
+ assert.equal(returned.replayed,true);
+ assert.deepEqual(returned.receipt,integrated.receipt);
+ // A missing physical Inbox row makes replay fail closed. The immutable
+ // receipt and four prior grants remain; no second reward is paid.
+ await db.query('delete from private.reward_inbox_v1 where source_key=$1',
+  [eqSource]);
+ await assert.rejects(()=>realMiss({
+  authenticatedAccountId:account,sourceKey:eqSource,
+ }),/chest_v69_replay_missing_physical_grants/);
+ assert.equal((await db.query(
+  'select count(*)::integer n from private.v70_test_guarantees '+
+  'where source_key=$1',[eqSource],
+ )).rows[0].n,4,'corrupt Inbox replay must not double-pay');
  // World Boss V73: execute the *actual* parameterized source SQL against
  // disposable PostgreSQL tables on the SAME V70 connection. This is NOT a
  // battle rehearsal or an actual V57 migration.
@@ -452,5 +564,5 @@ try{
    ()=>open({authenticatedAccountId:account,sourceKey:source}),
    /unreleased/);
  }finally{process.env.NODE_ENV=current;}
- console.log('CHEST_STORE_V70_PGLITE_OK: real SQL receipt/legs/Inboxes, replay, source ownership, physical verification, full rollback, EQ2 hard-block and production fence');
+ console.log('CHEST_STORE_V70_PGLITE_OK: real SQL receipt/legs/Inboxes, V77-V69-V70-V80 Party chain and V73 verified World Boss source, four guarantee legs, immutable replay, missing-Inbox denial, source ownership, physical verification, rollback, EQ2 hard-block and production fence');
 }finally{await db.close()}

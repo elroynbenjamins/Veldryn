@@ -7,6 +7,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const ts=require('typescript');
+const NodeModule=require('node:module');
 const root=path.resolve(__dirname,'../src/content');
 const modules={};
 function load(name){
@@ -17,14 +18,15 @@ function load(name){
   fileName:file,
   compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020},
  }).outputText;
- const mod={exports:{}};
- const injectedRequire=(id)=>{
+ const mod=new NodeModule(file,module);
+ mod.filename=file;
+ mod.paths=NodeModule._nodeModulePaths(path.dirname(file));
+ mod.require=(id)=>{
   if(id==='./boss-v2-preview-locales')return load('boss-v2-preview-locales');
   throw Error('Unapproved runtime import: '+id);
  };
- // Only our checked-in fixed-id pure content modules execute.
- const compile=new Function('require','module','exports',js);
- compile(injectedRequire,mod,mod.exports);
+ // Compile only the two checked-in fixed-id content modules, not app routes.
+ mod._compile(js,file);
  modules[name]=mod.exports;
  return mod.exports;
 }

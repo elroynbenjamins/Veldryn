@@ -38,6 +38,7 @@ import {rememberedDungeonPlaybackSpeed,rememberDungeonPlaybackSpeed} from '../co
 import {ExpeditionShopPanel} from '../components/ExpeditionShopPanel';
 import {DungeonMarksShopView,type DungeonMarksShopSnapshot} from '../components/coop/DungeonMarksShopView';
 import {DungeonWeeklyQuestPanel} from '../components/coop/DungeonWeeklyQuestPanel';
+import {validateSocialEchoCandidates,type SocialEchoCandidate} from '../core/coop-social-echoes';
 import {validateDungeonWeeklyQuestSnapshot,type DungeonWeeklyQuestSnapshot} from '../core/dungeon-weekly-quests';
 // Preview is development-only and requires explicit opt-in; server purchases remain off.
 declare const process:{env:Record<string,string|undefined>};
@@ -96,7 +97,22 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const [notice,setNotice]=useState('');
   const loadRequestId=useRef(0);
   const [showLoadouts,setShowLoadouts]=useState(false);
+  const [socialEchoes,setSocialEchoes]=useState<SocialEchoCandidate[]>([]);
+  const [socialEchoLoading,setSocialEchoLoading]=useState(false);
+  const [socialEchoError,setSocialEchoError]=useState('');
+  const refreshSocialEchoes=useCallback(async(minimum:number)=>{
+   if(entrySource.kind!=='real')return;
+   setSocialEchoLoading(true);setSocialEchoError('');
+   try{setSocialEchoes(validateSocialEchoCandidates(await coopClient.socialEchoes(minimum)));}
+   catch(error){setSocialEchoes([]);setSocialEchoError(coopErrorMessage(error,'Unable to load shared friends and guild Echoes.'));}
+   finally{setSocialEchoLoading(false);}
+  },[entrySource.kind]);
   const [busy,setBusy]=useState(false),[pending,setPending]=useState(false);
+  useEffect(()=>{
+   setSocialEchoes([]);setSocialEchoError('');
+   if(showLoadouts&&mode==='qmode'&&tier&&selected&&entrySource.kind==='real')
+    void refreshSocialEchoes(selected.tierMinLevels[tier]);
+  },[showLoadouts,mode,tier,selected?.id,entrySource.kind,refreshSocialEchoes]);
   const [myLiveVote,setMyLiveVote]=useState<{runId:string;decisionId:string;optionId:string}|null>(null);
   const displayRun=useMemo(()=>eventRun?presentEventExpeditionRun(eventRun):run,[eventRun,run]);
   const selectableLoadouts=useMemo(()=>state.character?(entry?.loadouts??[]).map(loadout=>presentCoopLoadout(loadout,state.character!.id)).filter(loadout=>loadout.selectable):[],[entry,state.character]);
@@ -511,7 +527,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     const started=await coopClient.startEvent({requestId:coopRequestId(),eventExpeditionId:selectedEvent.id,tier:selectedTier,characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});
     setSelectedEvent(undefined);acceptEventRun(started);
   })}/>;
-  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load(true)} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined} tonicPreference={tonicPreference} onTonicPreferenceChange={tonicPreference?updateTonicPreference:undefined} onSelectHealingPotion={entrySource.kind==='real'&&onCommand?selectDungeonHealingPotion:undefined}/></View>;
+  if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>load(true)} onIntent={startWithLoadout} possibleCounterIds={selected.companionCounterIds} onEquipCompanion={entrySource.kind==='real'&&onCommand?selectDungeonCompanion:undefined} tonicPreference={tonicPreference} onTonicPreferenceChange={tonicPreference?updateTonicPreference:undefined} onSelectHealingPotion={entrySource.kind==='real'&&onCommand?selectDungeonHealingPotion:undefined} socialEchoes={socialEchoes} socialEchoLoading={socialEchoLoading} socialEchoError={socialEchoError} onRefreshSocialEchoes={()=>selected&&tier&&void refreshSocialEchoes(selected.tierMinLevels[tier])}/></View>;
   if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} currentPower={combatPowerRating(state).total} mode={mode} tier={tier} readyToStart={entrySource.kind==='real'&&selectableLoadouts.length===1} busy={busy||pending} liveFellowshipRemaining={entry?.liveFellowshipRemaining} rewardBudget={entry?.rewardBudget} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onTier={next=>{setTier(next);setNotice('');if(selected)void rememberCoopTier(characterId,selected.id,next);}} onContinue={continueDungeon}/>;
   const echoTools=entrySource.kind==='real'&&entry?.gameVersion?(<View style={{paddingHorizontal:16,paddingTop:8}}>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showEchoSharing}} accessibilityLabel={st("Echo sharing")} accessibilityHint={st("Sharing an Echo lets other players recruit a snapshot of your character for 7 days.")} onPress={()=>setShowEchoSharing(value=>!value)} style={{paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between'}}>

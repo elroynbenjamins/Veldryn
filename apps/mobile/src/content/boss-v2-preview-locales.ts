@@ -20,7 +20,7 @@ const COUNTER_TYPE:Readonly<Record<BossV2CastId,CounterType>>={
 };
 type Words={
  title:string;phase:string;interruptible:string;uninterruptible:string;
- upcoming:string;remaining:string;resolving:string;complete:string;
+ upcoming:string;remaining:string;resolving:string;complete:string;legacyMoves:string;
  casts:Record<BossV2CastId,readonly [string,string]>;
  responses:Record<CounterType,readonly [string,string]>;
 };
@@ -29,6 +29,7 @@ const LANG:Record<BossV2Locale,Words>={
   title:'Boss mechanics',phase:'Phase',interruptible:'Interruptible',
   uninterruptible:'Cannot interrupt',upcoming:'Watch for',remaining:'Cast remaining',
   resolving:'Cast resolving',complete:'Latest phase',
+  legacyMoves:'Existing boss attacks and phases still apply.',
   casts:{
    ROOT_V2_LIVING_BARK:['Living Bark','Roots harden around the boss.'],
    BELL_V2_SOUL_CURSE:['Soul Curse','The bell marks its next target.'],
@@ -48,6 +49,7 @@ const LANG:Record<BossV2Locale,Words>={
   title:'Mecánicas del jefe',phase:'Fase',interruptible:'Se puede interrumpir',
   uninterruptible:'No se puede interrumpir',upcoming:'Presta atención a',
   remaining:'Tiempo de lanzamiento',resolving:'Resolviendo lanzamiento',complete:'Última fase',
+  legacyMoves:'Los ataques y fases anteriores del jefe siguen activos.',
   casts:{
    ROOT_V2_LIVING_BARK:['Corteza viviente','Las raíces endurecen al jefe.'],
    BELL_V2_SOUL_CURSE:['Maldición del alma','La campana marca a su próximo objetivo.'],
@@ -67,6 +69,7 @@ const LANG:Record<BossV2Locale,Words>={
   title:'Bossmechaniken',phase:'Phase',interruptible:'Unterbrechbar',
   uninterruptible:'Nicht unterbrechbar',upcoming:'Achte auf',
   remaining:'Verbleibende Zauberzeit',resolving:'Zauber wird ausgelöst',complete:'Letzte Phase',
+  legacyMoves:'Bisherige Bossangriffe und Phasen bleiben aktiv.',
   casts:{
    ROOT_V2_LIVING_BARK:['Lebende Rinde','Wurzeln verhärten den Boss.'],
    BELL_V2_SOUL_CURSE:['Seelenfluch','Die Glocke markiert ihr nächstes Ziel.'],
@@ -86,6 +89,7 @@ const LANG:Record<BossV2Locale,Words>={
   title:'Механики босса',phase:'Фаза',interruptible:'Можно прервать',
   uninterruptible:'Нельзя прервать',upcoming:'Ожидайте',
   remaining:'Осталось до применения',resolving:'Применение умения',complete:'Последняя фаза',
+  legacyMoves:'Прежние атаки и фазы босса остаются активными.',
   casts:{
    ROOT_V2_LIVING_BARK:['Живая кора','Корни укрепляют защиту босса.'],
    BELL_V2_SOUL_CURSE:['Проклятие души','Колокол отмечает следующую цель.'],
@@ -105,6 +109,7 @@ const LANG:Record<BossV2Locale,Words>={
   title:'Boss mekanikleri',phase:'Aşama',interruptible:'Kesilebilir',
   uninterruptible:'Kesilemez',upcoming:'Dikkat et',remaining:'Kalan kullanım süresi',
   resolving:'Yetenek gerçekleşiyor',complete:'Son aşama',
+  legacyMoves:'Önceki boss saldırıları ve aşamaları da etkin.',
   casts:{
    ROOT_V2_LIVING_BARK:['Canlı Kabuk','Kökler bossun etrafında sertleşiyor.'],
    BELL_V2_SOUL_CURSE:['Ruh Laneti','Çan sonraki hedefini işaretliyor.'],

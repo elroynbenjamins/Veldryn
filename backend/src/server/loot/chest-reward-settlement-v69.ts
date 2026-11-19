@@ -66,6 +66,9 @@ export interface ChestGrantTransactionV69{
  /** Must actually mint, own and validate each selected drop in the same tx.
   * If Equipment 2.0 event templates/custody are missing, throw to rollback. */
  grantDrop(receipt:FrozenChestReceiptV69,dropIndex:number):Promise<void>;
+ /** Store one source-deduped player inbox entry in the SAME transaction.
+  * Never use a separate push notification / network call here. */
+ grantInbox(receipt:FrozenChestReceiptV69):Promise<void>;
  /** Verify physical custody and guarantees from persistent tx rows, not memory. */
  verifyExactlyGranted(receipt:FrozenChestReceiptV69):Promise<boolean>;
 }
@@ -227,6 +230,7 @@ export function createChestRewardSettlementV69(
    await tx.creditGuaranteed(receipt);
    for(let i=0;i<receipt.drops.length;i++)
     await tx.grantDrop(receipt,i);
+   await tx.grantInbox(receipt);
    if(!await tx.verifyExactlyGranted(receipt))
     throw Error('chest_v69_incomplete_physical_reward');
    return {replayed:false,receipt};

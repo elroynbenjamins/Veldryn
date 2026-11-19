@@ -27,7 +27,7 @@ export class OnlineLiveRuntime{
  private async ensureDecision(accountId:string,loaded:Loaded):Promise<DecisionState|undefined>{
   const run=loaded.privateState.run;if(run.phase!=='awaiting_choice')return undefined;
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||current.nextNodeIds.length<2)return undefined;
-  return this.services.rpc<DecisionState>('ensure_online_live_decision_server_v1',{p_run_id:run.id,p_account_id:accountId,p_revision:loaded.stateVersion,p_option_ids:current.nextNodeIds,p_fallback_option_id:current.nextNodeIds[0],p_opened_at_ms:loaded.serverNow});
+  return this.services.rpc<DecisionState>('ensure_online_live_decision_server_v1',{p_run_id:run.id,p_account_id:accountId,p_revision:loaded.stateVersion,p_option_ids:current.nextNodeIds,p_fallback_option_id:current.nextNodeIds.find(id=>run.graph.nodes.find(node=>node.nodeId===id)?.kind==='boss')??current.nextNodeIds[0],p_opened_at_ms:loaded.serverNow});
  }
  private decorate(value:unknown,decision?:DecisionState){
   if(!decision||!value||typeof value!=='object')return value;

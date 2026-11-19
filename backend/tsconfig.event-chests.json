@@ -34,6 +34,8 @@
     "src/server/loot/__tests__/chest-equipment-bridge-v71.ts",
     "src/server/loot/chest-earned-entitlement-v80.ts",
     "src/server/loot/chest-eq2-release-gate-v81.ts",
+    "src/server/loot/chest-eq2-earned-bridge-v82.ts",
+    "src/server/loot/__tests__/chest-eq2-earned-bridge-v82.ts",
     "src/server/loot/__tests__/chest-eq2-release-gate-v81.ts",
     "src/server/loot/world-boss-chest-pg-source-v73.ts",
     "src/server/loot/__tests__/world-boss-chest-pg-source-v73.ts",

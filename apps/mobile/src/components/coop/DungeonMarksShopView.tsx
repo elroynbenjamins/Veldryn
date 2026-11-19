@@ -127,6 +127,10 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
    const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
    const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
+   // Current Dungeon Shop pets ship as 72px icons. A larger stage requires
+   // portrait-grade art; do not magnify the packed thumbnail on Android.
+   const petArtIsThumbnail=item.category==='pet'&&previewArt&&
+    (Image.resolveAssetSource(previewArt)?.width??0)<192;
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
@@ -143,7 +147,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
     {expanded?<View style={s.detail}>
      {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
       ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
-      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:item.category==='pet'?(petArtIsThumbnail?s.petThumbnailPreview:s.petPortraitPreview):s.petPreviewImage}/>
      }</View>:null}
      {bonusDetails?<View style={s.bonusBlock}>
       <Text style={s.bonusName}>{bonusDetails.stat}</Text>
@@ -188,7 +192,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  bonusCaption:{...typography.caption,color:C.muted,lineHeight:16},
  previewNote:{...typography.caption,color:C.muted,lineHeight:18},
  cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
- petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
+ petPreviewImage:{width:96,height:96},petThumbnailPreview:{width:64,height:64},petPortraitPreview:{width:160,height:160,maxWidth:'100%'},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

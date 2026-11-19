@@ -85,6 +85,12 @@ try{
    );
    return r.rows.length===1;
   },
+  readApprovedEquipmentContext:async(_tx,receipt,index)=>{
+   assert.equal(index,0,'only canonical equipment group approved');
+   assert.equal(receipt.tableId,'party_event_chest');
+   assert.equal(receipt.accountId,account);
+   return {tier:2};
+  },
   creditGuaranteed:async(tx,receipt,index)=>{
    const item=receipt.guaranteed[index];
    const grantId='g:'+receipt.sourceKey+':'+index;

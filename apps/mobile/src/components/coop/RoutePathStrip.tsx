@@ -26,11 +26,12 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
  if(path.totalDepth>16){
   const cleared=path.depth,checkpointAvailable=cleared>0&&cleared%7===0;
   const completedThisSegment=checkpointAvailable?7:cleared%7;
+  const finalBossAvailable=cleared>=path.totalDepth-1;
   const nextBossAt=Math.min(path.totalDepth-1,checkpointAvailable?cleared:Math.ceil((cleared+1)/7)*7);
   return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(cleared,path.totalDepth)}} accessibilityLabel={st('Route progress: room {current} of {total}',{current:Math.min(cleared+1,path.totalDepth),total:path.totalDepth})}>
     <View style={s.header}><Text style={s.label}>{st('ENDURANCE ROUTE')}</Text><Text style={s.counter}>{st('Room')} {Math.min(cleared+1,path.totalDepth)}</Text></View>
     <View style={s.strip}>{Array.from({length:7},(_,index)=><View key={index} style={[s.enduranceDot,index<completedThisSegment?s.visitedDot:s.futureDot]}/>)}</View>
-    <Text style={s.bossLegend}>{checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text>
+    <Text style={s.bossLegend}>{finalBossAvailable?st('Final boss · Complete the expedition'):checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text>
    </View>;
  }
  const steps=Array.from({length:path.totalDepth},(_,index)=>index);

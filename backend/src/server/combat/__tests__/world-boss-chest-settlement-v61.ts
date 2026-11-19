@@ -173,17 +173,18 @@ async function run(){
   'canonical_tier_exact_missing_slot_and_boss_skill');
  for(const failAt of ['resources','item','inbox'] as const){
   const failing=new LockedFixture();
+  const failingState=()=>failing.state;
   failing.failsAt=failAt;
   await rejects(()=>claimWorldBossChestV61(
    userInput,auth(failing,winner),true),'injected_'+failAt+'_failure');
-  check(failing.state.receipts.size===0&&failing.state.gold===0&&
-   failing.state.items.size===0&&failing.state.inbox.size===0,
+  check(failingState().receipts.size===0&&failingState().gold===0&&
+   failingState().items.size===0&&failingState().inbox.size===0,
    'transaction_rollback_all_resources_and_receipts_'+failAt);
   failing.failsAt=null;
   const resolved=await claimWorldBossChestV61(
    userInput,auth(failing,winner),true);
-  check(resolved.gearHit&&failing.state.items.size===1&&
-   failing.state.receipts.size===1&&failing.state.inbox.size===1,
+  check(resolved.gearHit&&failingState().items.size===1&&
+   failingState().receipts.size===1&&failingState().inbox.size===1,
    'recovery_after_crash_'+failAt);
  }
  const forged=new LockedFixture();

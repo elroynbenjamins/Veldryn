@@ -44,7 +44,7 @@ const affixLimits=Object.fromEntries([
 const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
  tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
 const bossByRegion={
- asterfall:{id:'BOSS_EXP_ROOT',name:'Asterfall Root'},
+ asterfall:{id:'BOSS_EXP_ROOT',name:'Rootbound Heart'},
  sunscar:{id:'BOSS_EXP_SOLAR',name:'The Buried Heliarch'},
  frostmarch:{id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake'},
 } as const;

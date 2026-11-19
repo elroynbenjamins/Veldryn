@@ -9,7 +9,7 @@ import {deriveServerChestRollsV1} from '../../loot/event-chest-server-roll-v1';
 import {partyEventGearForFamilyV51} from '../weekly-party-event-gear-v51';
 import type {VerifiedPartyChestEvidenceV51} from '../weekly-party-event-chests-v51';
 
-function ensure(ok:unknown,label:string):asserts ok{
+function ensure(ok:unknown,label:string):void{
  if(!ok)throw Error('party_event_claim_v60_test:'+label);
 }
 async function rejects(fn:()=>Promise<unknown>,fragment:string){

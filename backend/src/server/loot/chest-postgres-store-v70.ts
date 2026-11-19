@@ -1,6 +1,6 @@
 /**
  * V70: review-only, UNMOUNTED Postgres adapter for shared V69 chest settlement.
- * The same connection handles SERIALIZABLE account inventory locks, frozen
+ * The same connection handles READ COMMITTED account inventory locks, frozen
  * receipt, resource/item/inbox delivery, leg audit, and physical read-back.
  *
  * Nothing here enables a reward. Injectable ports must be audited SQL-only
@@ -40,6 +40,13 @@ export interface ChestLedgerLegV70{
  readonly itemInstanceId:string|null;
 }
 export interface ChestPhysicalPortsV70{
+ /** Lock source event first and assert the V57 account-erasure fence BEFORE
+  * the shared account-inventory row. Required for World Boss sources. This
+  * runs on the same READ COMMITTED connection and must not issue a new BEGIN,
+  * network request, or untrusted/client-derived authorization. */
+ assertSourceWriteOpen?(
+  tx:ChestSqlV70,accountId:string,sourceKey:string,
+ ):Promise<void>;
  /** Each method MUST use only this transaction's SQL connection. */
  readCanonicalSource(tx:ChestSqlV70,accountId:string,sourceKey:string):
   Promise<TrustedChestSourceV69>;
@@ -142,12 +149,20 @@ export function createChestPostgresStoreV70(
     process.env.NODE_ENV==='production')
     throw Error('chest_v70_unreleased');
    assertIdentity(accountId,sourceKey);
+   // V57 deliberately refuses SERIALIZABLE due to possible stale erasure
+   // snapshots. Do not allow a World Boss claim without its event-first,
+   // same-transaction account-erasure preflight.
+   if(sourceKey.startsWith('world-boss:')&&
+    typeof ports?.assertSourceWriteOpen!=='function')
+    throw Error('chest_v70_world_boss_privacy_gate_required');
    const conn=await pool.connect();
    let began=false;
    try{
-    await conn.query('begin isolation level serializable');
+    await conn.query('begin isolation level read committed');
     began=true;
     await conn.query("set local lock_timeout='5s'");
+    if(ports.assertSourceWriteOpen)
+     await ports.assertSourceWriteOpen(conn,accountId,sourceKey);
     // Dedicated account fence, not a per-source-only lock: opening two
     // different chests cannot race the account-wide missing-piece snapshot.
     await conn.query(

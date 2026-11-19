@@ -99,18 +99,30 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   const [socialEchoes,setSocialEchoes]=useState<SocialEchoCandidate[]>([]);
   const [socialEchoLoading,setSocialEchoLoading]=useState(false);
   const [socialEchoError,setSocialEchoError]=useState('');
+  const socialEchoRequestId=useRef(0);
   const refreshSocialEchoes=useCallback(async(minimum:number)=>{
    if(entrySource.kind!=='real')return;
+   const requestId=++socialEchoRequestId.current;
    setSocialEchoLoading(true);setSocialEchoError('');
-   try{setSocialEchoes(validateSocialEchoCandidates(await coopClient.socialEchoes(minimum)));}
-   catch(error){setSocialEchoes([]);setSocialEchoError(coopErrorMessage(error,'Unable to load shared friends and guild Echoes.'));}
-   finally{setSocialEchoLoading(false);}
+   try{
+    const candidates=validateSocialEchoCandidates(await coopClient.socialEchoes(minimum));
+    if(requestId===socialEchoRequestId.current)setSocialEchoes(candidates);
+   }catch(error){
+    if(requestId===socialEchoRequestId.current){
+     setSocialEchoes([]);
+     setSocialEchoError(coopErrorMessage(error,'Unable to load available friends and guild allies.'));
+    }
+   }finally{if(requestId===socialEchoRequestId.current)setSocialEchoLoading(false);}
   },[entrySource.kind]);
   const [busy,setBusy]=useState(false),[pending,setPending]=useState(false);
   useEffect(()=>{
-   setSocialEchoes([]);setSocialEchoError('');
+   // Ignore a previous dungeon's candidates if its network response arrives
+   // after a mode/tier change, account switch, or closing loadout selection.
+   socialEchoRequestId.current++;
+   setSocialEchoes([]);setSocialEchoError('');setSocialEchoLoading(false);
    if(showLoadouts&&mode==='qmode'&&tier&&selected&&entrySource.kind==='real')
     void refreshSocialEchoes(selected.tierMinLevels[tier]);
+   return()=>{socialEchoRequestId.current++;};
   },[showLoadouts,mode,tier,selected?.id,entrySource.kind,refreshSocialEchoes]);
   const [myLiveVote,setMyLiveVote]=useState<{runId:string;decisionId:string;optionId:string}|null>(null);
   const displayRun=useMemo(()=>eventRun?presentEventExpeditionRun(eventRun):run,[eventRun,run]);

@@ -43,6 +43,7 @@ on:
       - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/party/weekly-party-event-inbox-v80.ts'
       - 'backend/tests/party-event-inbox-v80.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119120000_party_event_inbox_history_guard_v81.sql'
       - 'backend/src/server/party/__tests__/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/src/server/loot/chest-equipment-bridge-v71.ts'
@@ -160,6 +161,7 @@ jobs:
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
           grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
+          test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts

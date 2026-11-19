@@ -17,6 +17,9 @@ const lines=v70.split(/\r?\n/);
 const start=lines.findIndex(x=>x.trim().toLowerCase()==='begin;');
 const end=lines.findLastIndex(x=>x.trim().toLowerCase()==='commit;');
 const sql=lines.slice(start+1,end).join('\n');
+const inboxGuard=readFileSync(new URL(
+ '../../docs/roadmap/party-events/hidden-migrations/20261119120000_party_event_inbox_history_guard_v81.sql',
+ import.meta.url),'utf8');
 const account='11111111-1111-4111-8111-111111111111';
 const other='22222222-2222-4222-8222-222222222222';
 const party='33333333-3333-4333-8333-333333333333';
@@ -62,6 +65,9 @@ try{
    'created_at timestamptz not null default now(),claimed_at timestamptz,'+
    'unique(account_id,source_key));'
  );
+ // Review-only SQL guard: cannot accidentally reactivate the old Party
+ // Contract claim route by making a Party Event history row unclaimed.
+ await db.exec(inboxGuard);
  await db.query('insert into private.party_event_weeks_v11 values'+
   "($1,to_timestamp($2::double precision/1000),'broken_caravan','standard','settled')",
   [party,week]);
@@ -103,6 +109,30 @@ try{
  const committed=await ports.grantInbox(tx,receipt);
  await db.exec('commit');
  assert.equal(await ports.verifyInbox(tx,receipt,committed.grantId),true);
+ await assert.rejects(()=>db.query(
+  'update private.reward_inbox_v1 set claimed_at=null where source_key=$1',
+  [source],
+ ),/PARTY_EVENT_V81_INBOX_HISTORY_IMMUTABLE/);
+ await assert.rejects(()=>db.query(
+  "update private.reward_inbox_v1 set source_kind='party' where source_key=$1",
+  [source],
+ ),/PARTY_EVENT_V81_INBOX_HISTORY_IMMUTABLE/);
+ await assert.rejects(()=>db.query(
+  'insert into private.reward_inbox_v1 '+
+  '(account_id,source_key,source_kind,source_id,title,body,attachments) '+
+  "values($1,$2,'party',$3,'Bad claimable chest','', '[]'::jsonb)",
+  [account,'party-event:'+week+':'+account+':finale',party],
+ ),/PARTY_EVENT_V81_INBOX_MUST_BE_NONCLAIMABLE/);
+ await assert.rejects(()=>db.query(
+  'insert into private.reward_inbox_v1 '+
+  '(account_id,source_key,source_kind,source_id,title,body,attachments,claimed_at) '+
+  "values($1,$2,'gift',$3,'Party Event chest received',"+
+   "'Rewards were credited when this chest was opened. No additional Inbox claim is required.',"+
+   "'[{\"kind\":\"gold\",\"quantity\":200}]'::jsonb,now())",
+  [account,'party-event:'+week+':'+account+':finale',party],
+ ),/PARTY_EVENT_V81_INBOX_MUST_BE_NONCLAIMABLE/);
+ assert.equal(await ports.verifyInbox(tx,receipt,committed.grantId),true,
+  'malicious reclassification must not modify paid history');
  await assert.rejects(()=>ports.grantInbox(tx,receipt),
   /duplicate key/);
  assert.equal(await ports.verifyInbox(tx,receipt,'inbox:'+party),false);
@@ -113,5 +143,5 @@ try{
   process.env.NODE_ENV='production';
   await assert.rejects(()=>ports.grantInbox(tx,receipt),/unreleased/);
  }finally{process.env.NODE_ENV=previous;}
- console.log('PARTY_EVENT_INBOX_V80_PGLITE_OK: existing Inbox shape, history-only, duplicate/source guards, no second claim, rollback, production fence');
+ console.log('PARTY_EVENT_INBOX_V80_V81_PGLITE_OK: existing Inbox, paid history, immutable no-claim guard, duplicate/source denials, rollback, production fence');
 }finally{await db.close()}

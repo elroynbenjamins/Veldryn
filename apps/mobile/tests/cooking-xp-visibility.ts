@@ -44,6 +44,9 @@ ok(component.includes("recipe.skillId==='cooking'?<Text style={s.cookingXp}"),
 ok(component.includes("ct('+{xp} Cooking XP per batch'"),
  'Cooking XP value must be labeled as per-batch, not generic XP');
 ok(component.includes("meal?<Text style={s.mealBonusCompact}>"),'Collapsed cards must reveal improved special-meal buffs');
+ok(component.includes('const mealLabel=meal?ct('),'Special dish bonuses must use localized translations');
+for(const key of ['+{value}% Gathering speed','+{value}% Crafting speed','+{value}% Combat XP','+{value}% Non-combat skill speed'])
+ ok(translations.includes("'"+key+"'"),'Translated meal descriptor missing: '+key);
 ok(component.includes("meal?<Text style={s.mealBonus}>"),
  'Expanded Cooking recipes must display food utility buffs');
 ok(translations.includes("' +{xp} Cooking XP per batch'")||translations.includes("'+{xp} Cooking XP per batch'"),

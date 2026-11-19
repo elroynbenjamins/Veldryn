@@ -26,7 +26,7 @@ export function coopHandler(services:GameplayServices){
  return async(request:Request):Promise<Response>=>{
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   const path=new URL(request.url).pathname;
-  if(/\/coop\/(entry|echo)$/.test(path))return entry(request);
+  if(/\/coop\/entry$/.test(path))return entry(request);
   try{
    const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
    if(!bearer)return json({error:'auth_required'},401);

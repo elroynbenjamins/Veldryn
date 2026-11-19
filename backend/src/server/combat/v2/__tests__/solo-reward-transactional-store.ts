@@ -33,6 +33,7 @@ let balances:SoloRewardGrantV2[]=[];
 let inbox:SoloRewardReceiptV2[]=[];
 let failOnGrant=false,failOnInbox=false,failOnLedger=false,failAfterCommit=false;
 let forbiddenCommit=false;
+let forgedGrantProof=false,forgedInboxProof=false;
 let lastWriterClient:CombatV2RewardSqlTransaction|null=null;
 let openConnections=0,commits=0,rollbacks=0,issued=0;
 let chain:Promise<void>=Promise.resolve();
@@ -109,9 +110,12 @@ const writers={
  async applyGrant(tx:CombatV2RewardSqlTransaction,_scope:typeof scope,grant:SoloRewardGrantV2){
   if(forbiddenCommit)await tx.query('COMMIT');
   await tx.query('qa_grant',[grant]);
+  return {...grant,grantSourceId:forgedGrantProof?'wrong-source':grant.grantSourceId};
  },
- async appendInbox(tx:CombatV2RewardSqlTransaction,_scope:typeof scope,plan:SoloRewardReceiptV2){
+ async appendInbox(tx:CombatV2RewardSqlTransaction,scope:typeof scope,plan:SoloRewardReceiptV2){
   await tx.query('qa_inbox',[plan]);
+  return {sourceKey:forgedInboxProof?'wrong-source':plan.sourceKey,
+   accountId:scope.accountId,characterId:scope.characterId};
  },
 };
 const store=transactionalSoloRewardStoreV2({
@@ -131,6 +135,12 @@ async function run(){
  forbiddenCommit=true;
  await rejected(store.commitOnce(scope,receipt),/writer_transaction_control_forbidden/);
  forbiddenCommit=false;
+ forgedGrantProof=true;
+ await rejected(store.commitOnce(scope,receipt),/grant_write_not_verified/);
+ forgedGrantProof=false;
+ forgedInboxProof=true;
+ await rejected(store.commitOnce(scope,receipt),/inbox_write_not_verified/);
+ forgedInboxProof=false;
  assert.equal(saved,null);assert.equal(balances.length,0);assert.equal(inbox.length,0);
  failOnInbox=true;
  await rejected(store.commitOnce(scope,receipt),/synthetic_inbox_failure/);

@@ -56,15 +56,18 @@ export interface DungeonCombatMarks {
   total:number;
   normal:number;
   elite:number;
+  /** Partial final-room award when the 25-Mark cap is reached. */
+  partial?:number;
+  cap?:number;
 }
 
 /** Ignore partial/invalid receipts rather than showing an invented total. */
 export function parseDungeonCombatMarks(value:unknown):DungeonCombatMarks|undefined{
   if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
   const row=value as Record<string,unknown>;
-  const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite);
-  if(total===undefined||normal===undefined||elite===undefined||total!==normal*3+elite*5)return undefined;
-  return {total,normal,elite};
+  const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite),partial=row.partial===undefined?0:safeMarks(row.partial);
+  if(total===undefined||normal===undefined||elite===undefined||partial===undefined||total!==normal*3+elite*5+partial||total>25||row.cap!==undefined&&row.cap!==25)return undefined;
+  return {total,normal,elite,partial,cap:25};
 }
 
 export function dungeonRunMarksBreakdown(

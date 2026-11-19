@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.COMPANION_AFFINITY_IDS = exports.COMPANION_AFFINITY_BY_ID = void 0;
+exports.companionAffinityById = companionAffinityById;
+exports.COMPANION_AFFINITY_BY_ID = {
+    UNIT_001: 'wild', UNIT_002: 'construct', UNIT_003: 'arcane', UNIT_004: 'primal', UNIT_005: 'arcane', UNIT_006: 'radiant',
+    UNIT_007: 'umbral', UNIT_008: 'radiant', UNIT_009: 'arcane', UNIT_010: 'construct', UNIT_011: 'umbral', UNIT_012: 'construct',
+    UNIT_013: 'wild', UNIT_014: 'primal', UNIT_015: 'radiant', UNIT_016: 'radiant',
+    UNIT_017: 'wild', UNIT_018: 'arcane', UNIT_019: 'construct', UNIT_020: 'arcane',
+    UNIT_021: 'primal', UNIT_022: 'construct', UNIT_023: 'primal', UNIT_024: 'umbral',
+    GUILD_UNIT_001: 'construct', GUILD_UNIT_002: 'wild', GUILD_UNIT_003: 'radiant',
+    EVT_UNIT_001: 'radiant', EVT_UNIT_002: 'radiant', EVT_UNIT_003: 'primal', EVT_UNIT_004: 'radiant', EVT_UNIT_005: 'arcane',
+    EVT_UNIT_006: 'primal', EVT_UNIT_007: 'umbral', EVT_UNIT_008: 'umbral', EVT_UNIT_009: 'arcane', EVT_UNIT_010: 'construct', EVT_UNIT_011: 'radiant',
+};
+exports.COMPANION_AFFINITY_IDS = ['wild', 'arcane', 'radiant', 'umbral', 'primal', 'construct'];
+function companionAffinityById(id) { return exports.COMPANION_AFFINITY_BY_ID[id] ?? 'wild'; }

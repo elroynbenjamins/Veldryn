@@ -1,0 +1,178 @@
+{
+  "music": {
+    "asterfall": {
+      "bpm": 100,
+      "seconds": 38.4
+    },
+    "boss": {
+      "bpm": 144,
+      "seconds": 26.67
+    },
+    "dungeon": {
+      "bpm": 126,
+      "seconds": 30.48
+    },
+    "frostmarch": {
+      "bpm": 84,
+      "seconds": 45.71
+    },
+    "sunscar": {
+      "bpm": 104,
+      "seconds": 36.92
+    },
+    "town": {
+      "bpm": 92,
+      "seconds": 41.74
+    },
+    "world_boss": {
+      "bpm": 112,
+      "seconds": 34.29
+    }
+  },
+  "sfx": {
+    "boss_entrance": {
+      "seconds": 2.7,
+      "volume": 0.9
+    },
+    "boss_special": {
+      "seconds": 1.0,
+      "volume": 0.95
+    },
+    "boss_telegraph": {
+      "seconds": 0.76,
+      "volume": 0.7
+    },
+    "cast": {
+      "seconds": 0.4,
+      "volume": 0.55
+    },
+    "chop_hit": {
+      "seconds": 0.12,
+      "volume": 0.4
+    },
+    "craft_complete": {
+      "seconds": 0.72,
+      "volume": 0.75
+    },
+    "crit": {
+      "seconds": 0.22,
+      "volume": 0.8
+    },
+    "defeat": {
+      "seconds": 1.56,
+      "volume": 0.75
+    },
+    "down": {
+      "seconds": 0.65,
+      "volume": 0.7
+    },
+    "fish_splash": {
+      "seconds": 0.45,
+      "volume": 0.45
+    },
+    "gather_yield": {
+      "seconds": 0.23,
+      "volume": 0.55
+    },
+    "guard_break": {
+      "seconds": 0.73,
+      "volume": 0.85
+    },
+    "heal": {
+      "seconds": 0.58,
+      "volume": 0.6
+    },
+    "hit": {
+      "seconds": 0.14,
+      "volume": 0.7
+    },
+    "honor": {
+      "seconds": 0.78,
+      "volume": 0.7
+    },
+    "interrupt": {
+      "seconds": 0.2,
+      "volume": 0.7
+    },
+    "killing_blow": {
+      "seconds": 2.46,
+      "volume": 0.95
+    },
+    "level_up": {
+      "seconds": 1.23,
+      "volume": 0.85
+    },
+    "mine_hit": {
+      "seconds": 0.18,
+      "volume": 0.4
+    },
+    "phase": {
+      "seconds": 0.7,
+      "volume": 0.8
+    },
+    "quest_complete": {
+      "seconds": 1.07,
+      "volume": 0.75
+    },
+    "rare_drop": {
+      "seconds": 1.28,
+      "volume": 0.8
+    },
+    "reward_collect": {
+      "seconds": 0.325,
+      "volume": 0.7
+    },
+    "role_moment": {
+      "seconds": 1.01,
+      "volume": 0.75
+    },
+    "shield": {
+      "seconds": 0.45,
+      "volume": 0.6
+    },
+    "tonic": {
+      "seconds": 0.38,
+      "volume": 0.6
+    },
+    "ui_back": {
+      "seconds": 0.13,
+      "volume": 0.55
+    },
+    "ui_confirm": {
+      "seconds": 0.145,
+      "volume": 0.6
+    },
+    "ui_error": {
+      "seconds": 0.23,
+      "volume": 0.6
+    },
+    "ui_tap": {
+      "seconds": 0.035,
+      "volume": 0.45
+    },
+    "ui_toggle": {
+      "seconds": 0.025,
+      "volume": 0.45
+    },
+    "unlock": {
+      "seconds": 0.91,
+      "volume": 0.75
+    },
+    "upgrade_fail": {
+      "seconds": 0.54,
+      "volume": 0.7
+    },
+    "upgrade_success": {
+      "seconds": 1.4,
+      "volume": 0.8
+    },
+    "victory": {
+      "seconds": 1.62,
+      "volume": 0.85
+    },
+    "world_hp_drop": {
+      "seconds": 1.6,
+      "volume": 0.8
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import {profileT,profileText,profileSourceText} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
-import {useMemo} from 'react';
+import {useEffect,useMemo} from 'react';
+import {playSound} from '../storage/audio';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -17,6 +18,7 @@ const kindLabel:Record<CustomizationUnlockKind,string>={
 export function CustomizationUnlockPopup({entries,reduceMotion=false,onClose,onProfile,onCharacter}:{entries:CustomizationUnlockEntry[];reduceMotion?:boolean;onClose:()=>void;onProfile:()=>void;onCharacter:()=>void}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ useEffect(()=>{if(entries.length)playSound('unlock');},[entries.length]);
  const hasProfile=entries.length>0;
  const content=<>
    <View style={s.badge}><Text style={s.badgeMark}>✦</Text></View>

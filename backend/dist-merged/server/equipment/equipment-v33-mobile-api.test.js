@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const equipment_catalog_v33_1 = require("./equipment-catalog-v33");
+const equipment_mobile_api_v33_1 = require("./equipment-mobile-api-v33");
+const firstSet = equipment_catalog_v33_1.EQUIPMENT_SETS_V33[0];
+node_assert_1.strict.ok(firstSet);
+const firstPieces = equipment_catalog_v33_1.EQUIPMENT_PIECES_V33.filter(piece => piece.setId === firstSet.id);
+node_assert_1.strict.equal(firstPieces.length, 10);
+node_assert_1.strict.equal((0, equipment_mobile_api_v33_1.craftingScreenPayloadV33)(firstPieces[0].id).recipe.pieceId, firstPieces[0].id);
+node_assert_1.strict.equal((0, equipment_mobile_api_v33_1.equipmentSetDetailPayloadV33)(firstSet.id, []).pieces.length, 10);
+const loadout = (0, equipment_mobile_api_v33_1.equipmentLoadoutPayloadV33)(firstPieces.map(piece => ({ pieceId: piece.id, setId: piece.setId, slot: piece.slot })));
+node_assert_1.strict.deepEqual(loadout.activeSets[0]?.thresholds.map(threshold => threshold.pieces), [2, 4, 6, 8, 10]);
+console.log('v33 mobile API payload tests passed');

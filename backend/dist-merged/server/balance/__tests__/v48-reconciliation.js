@@ -1,0 +1,16 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const constants_1 = require("../../expeditions/constants");
+const rewards_1 = require("../../expeditions/rewards");
+const launch_dungeon_v48_1 = require("../launch-dungeon-v48");
+node_assert_1.strict.equal(launch_dungeon_v48_1.V48_COMBAT_TARGETS.recommendedParty.composition, '1 tank / 2 damage / 1 support');
+node_assert_1.strict.ok(launch_dungeon_v48_1.V48_COMBAT_TARGETS.recommendedParty.bossWinRateMin >= .85);
+node_assert_1.strict.ok(launch_dungeon_v48_1.V48_COMBAT_TARGETS.recommendedParty.bossWinRateMax <= .98);
+node_assert_1.strict.equal(constants_1.FAILURE_REWARD.bossLow, .50);
+node_assert_1.strict.equal(rewards_1.V48_DUNGEON_REWARD_TUNING.maxCombinedClearMultiplier, 1.35);
+node_assert_1.strict.equal((0, rewards_1.clearRewardMultiplier)({ firstClear: true, cleanClear: true }), 1.35);
+node_assert_1.strict.equal((0, rewards_1.marksForRun)(100, 1, { cleared: true, routeProgress: 1, reachedFinalBoss: true }, 1, true), 100);
+node_assert_1.strict.equal((0, rewards_1.marksForRun)(100, 1, { cleared: true, routeProgress: 1, reachedFinalBoss: true }, 1, true, { firstClear: true, cleanClear: true }), 135);
+node_assert_1.strict.equal((0, rewards_1.marksForRun)(100, 1, { cleared: false, routeProgress: 1, reachedFinalBoss: true, finalBossHpFraction: .20 }, 1, true), 50);
+console.log('PASS: V48 reward tuning and hard-but-beatable dungeon target contracts');

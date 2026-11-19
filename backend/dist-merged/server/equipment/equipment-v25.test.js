@@ -1,0 +1,34 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const equipment_catalog_v23_1 = require("./equipment-catalog-v23");
+const equipment_resource_map_v25_1 = require("./equipment-resource-map-v25");
+const equipment_recipe_sources_v25_1 = require("./equipment-recipe-sources-v25");
+const equipment_recipes_v25_1 = require("./equipment-recipes-v25");
+const ok = (v, m = 'assert') => { if (!v)
+    throw new Error(m); };
+const eq = (a, b, m = 'assert') => { if (a !== b)
+    throw new Error(`${m}:${String(a)}!=${String(b)}`); };
+eq((0, equipment_resource_map_v25_1.canonicalResourceV25)('asterfall.oathsilver').itemId, 'ITEM_0030');
+eq((0, equipment_resource_map_v25_1.canonicalResourceV25)('sunscar.sunstone_ore').regionalResourceId, 'SUNRES_001');
+eq((0, equipment_resource_map_v25_1.canonicalResourceV25)('frostmarch.frostiron').regionalResourceId, 'FRRES_003');
+ok((0, equipment_resource_map_v25_1.missingItemRegistrationsV25)().length === 22, 'missing_registration_count');
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('sunscar.sunstone_ore', 26), false);
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('sunscar.sunstone_ore', 28), true);
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('frostmarch.wyrm_scale', 65), false);
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('frostmarch.wyrm_scale', 67), true);
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('frostmarch.frozen_heart', 69), false);
+eq((0, equipment_resource_map_v25_1.resourceAvailableAtLevelV25)('frostmarch.frozen_heart', 70), true);
+const t5Early = (0, equipment_recipe_sources_v25_1.resolveRecipeSourcesV25)('T5', 'Foundation', 26, 'piece');
+eq(t5Early.regional, 'sunscar.dunewood');
+const t9Early = (0, equipment_recipe_sources_v25_1.resolveRecipeSourcesV25)('T9', 'Foundation', 65, 'piece');
+ok(t9Early.regional !== 'frostmarch.wyrm_scale', 't9_early_no_wyrm_scale');
+eq(t9Early.boss, undefined, 't9_early_no_boss_wyrm');
+const t9Alt70 = equipment_catalog_v23_1.EQUIPMENT_PIECES_V23.find(p => p.tier === 'T9' && p.path === 'Alternate' && p.slot === 'Weapon' && p.requiredLevel === 70);
+ok(t9Alt70, 't9_alt70_piece');
+const recipe = (0, equipment_recipes_v25_1.recipeForPieceV25)(t9Alt70);
+ok(recipe.requirements.some(r => r.canonicalKey === 'frostmarch.frozen_heart'), 'frozen_heart_at_70');
+ok(recipe.blockedByMissingItemRegistration, 'frostmarch_registration_block');
+const ast = equipment_catalog_v23_1.EQUIPMENT_PIECES_V23.find(p => p.tier === 'T4' && p.className === 'Ironwarden' && p.slot === 'Weapon');
+const ar = (0, equipment_recipes_v25_1.recipeForPieceV25)(ast);
+ok(!ar.requirements.filter(r => r.canonicalKey.startsWith('asterfall.')).some(r => r.registrationRequired), 'asterfall_ready');
+console.log('equipment-v25 resource mapping tests passed');

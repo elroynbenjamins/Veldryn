@@ -6,6 +6,14 @@ import {accountText} from './account';
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
+  // Device sound settings (DE, ES, NL, IT, FR, RU, TR).
+  "Sound": ["Ton","Sonido","Geluid","Audio","Son","Звук","Ses"],
+  "Music": ["Musik","Música","Muziek","Musica","Musique","Музыка","Müzik"],
+  "Sound effects": ["Soundeffekte","Efectos de sonido","Geluidseffecten","Effetti sonori","Effets sonores","Звуковые эффекты","Ses efektleri"],
+  "Low": ["Leise","Bajo","Laag","Basso","Faible","Тихо","Düşük"],
+  "Medium": ["Mittel","Medio","Gemiddeld","Medio","Moyen","Средне","Orta"],
+  "High": ["Laut","Alto","Hoog","Alto","Élevé","Громко","Yüksek"],
+  "Sound plays only while Veldryn is open and follows your device's silent mode.": ["Ton wird nur bei geöffnetem Veldryn abgespielt und folgt dem Lautlosmodus deines Geräts.","El sonido solo se reproduce con Veldryn abierto y respeta el modo silencio de tu dispositivo.","Geluid speelt alleen terwijl Veldryn open is en volgt de stille modus van je apparaat.","L'audio viene riprodotto solo con Veldryn aperto e rispetta la modalità silenziosa del dispositivo.","Le son n'est joué que lorsque Veldryn est ouvert et respecte le mode silencieux de votre appareil.","Звук воспроизводится, только когда Veldryn открыт, и учитывает беззвучный режим устройства.","Ses yalnızca Veldryn açıkken çalar ve cihazının sessiz modunu izler."],
   // Device haptic feedback setting (DE, ES, NL, IT, FR, RU, TR).
   "Haptic feedback": ["Haptisches Feedback","Respuesta háptica","Haptische feedback","Feedback aptico","Retour haptique","Тактильная отдача","Dokunsal geri bildirim"],
   "Vibrate on big combat moments, such as boss specials and finishing blows.": ["Vibriert bei großen Kampfmomenten wie Boss-Spezialangriffen und finalen Treffern.","Vibra en los grandes momentos del combate, como los ataques especiales de jefes y los golpes finales.","Trilt bij grote gevechtsmomenten, zoals speciale aanvallen van bazen en genadeslagen.","Vibra nei grandi momenti di combattimento, come gli attacchi speciali dei boss e i colpi finali.","Vibre lors des grands moments de combat, comme les attaques spéciales des boss et les coups de grâce.","Вибрация в важные моменты боя, например при особых атаках боссов и добивающих ударах.","Boss özel saldırıları ve son vuruşlar gibi büyük savaş anlarında titreşir."],

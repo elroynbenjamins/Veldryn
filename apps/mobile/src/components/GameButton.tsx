@@ -2,6 +2,7 @@ import {useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text,type StyleProp,type ViewStyle} from 'react-native';
 import {radii,spacing,touchTargetMin,touchTargetPreferred,typography} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {playSound} from '../storage/audio';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
@@ -14,6 +15,7 @@ export function GameButton({title,onPress,disabled=false,loading=false,selected,
   const execute=()=>{
     if(inactive||pendingRef.current)return;
     pendingRef.current=true;
+    playSound('ui_tap');
     try{
       const result=onPress();
       if(result&&typeof (result as PromiseLike<unknown>).then==='function'){

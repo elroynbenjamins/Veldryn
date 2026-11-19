@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const engine_1 = require("../engine");
+const stats = { maxHp: 1000, attackPower: 100, healingPower: 100, defense: 0, accuracy: 1000, evasion: 0, critChance: 0, critMultiplier: 1.5, haste: 0 };
+function player(effectGems = []) { return { id: 'P1', classId: 'TEST', name: 'Tester', team: 'players', role: 'damage', level: 50, stats: { ...stats }, basicAttackMs: 1000, basicAttackCoeff: 1, abilities: [], effectGems }; }
+function boss() { return { id: 'B1', name: 'Gem Target', team: 'enemies', role: 'enemy', level: 50, stats: { ...stats, maxHp: 100000, attackPower: 1, accuracy: 1 }, basicAttackMs: 5000, basicAttackCoeff: .01, abilities: [], boss: true, tags: ['elite'] }; }
+const baseline = (0, engine_1.simulateCombat)({ seed: 'gem-runtime', players: [player()], enemies: [boss()], maxDurationMs: 5000 });
+const predator = (0, engine_1.simulateCombat)({ seed: 'gem-runtime', players: [player([{ familyId: 'effect_predator', copies: 3, resonance: 3, totalValue: .048 }])], enemies: [boss()], maxDurationMs: 5000 });
+node_assert_1.strict.ok(predator.players[0].damageDone > baseline.players[0].damageDone, 'Predator must increase authoritative boss damage');
+const momentum = (0, engine_1.simulateCombat)({ seed: 'gem-momentum', players: [player([{ familyId: 'effect_momentum', copies: 3, resonance: 3, totalValue: .0108 }])], enemies: [boss()], maxDurationMs: 7000 });
+node_assert_1.strict.ok(momentum.players[0].modifiers.some(row => row.tag === 'gem:momentum'), 'Momentum should build combat-runtime stacks');
+node_assert_1.strict.ok(momentum.players[0].damageDone > (0, engine_1.simulateCombat)({ seed: 'gem-momentum', players: [player()], enemies: [boss()], maxDurationMs: 7000 }).players[0].damageDone, 'Momentum stacks should increase sustained damage');
+const momentumSnapshots = momentum.events.filter(event => event.type === 'gem_state');
+node_assert_1.strict.ok(momentumSnapshots.length > 0, 'visible Effect Gem state changes should emit replay snapshots');
+node_assert_1.strict.ok(momentumSnapshots.some(event => event.gemStates?.some(state => state.targetId === 'P1' && state.tag === 'gem:momentum' && state.expiriesAtMs.length >= 1)), 'Momentum must appear in visible gem-state snapshots');
+node_assert_1.strict.equal(momentumSnapshots.some(event => event.gemStates?.some(state => /_cd$|_last:|_used$|_started:/.test(state.tag))), false, 'internal Effect Gem cooldown and bookkeeping tags must never enter visible snapshots');
+const unyieldingPlayer = player([{ familyId: 'effect_unyielding', copies: 3, resonance: 3, totalValue: .018 }]);
+const unyieldingRun = (0, engine_1.simulateCombat)({ seed: 'gem-unyielding-visible', players: [unyieldingPlayer], enemies: [{ ...boss(), stats: { ...boss().stats, attackPower: 500, accuracy: 5000 }, basicAttackMs: 500 }], maxDurationMs: 2200 });
+node_assert_1.strict.ok(unyieldingRun.events.some(event => event.type === 'gem_state' && event.gemStates?.some(state => state.targetId === 'P1' && state.tag === 'gem:unyielding')), 'Unyielding should expose its active defensive stacks without exposing its cooldown marker');
+const companionAbility = { ...player([{ familyId: 'effect_predator', copies: 3, resonance: 3, totalValue: .20 }]), basicAttackMs: 999999, abilities: [{ id: 'COMPANION_STRIKE', name: 'Companion Strike', cooldownMs: 100, castTimeMs: 0, target: 'current_target', priority: 10, effects: [{ kind: 'damage', coeff: 1, damageType: 'physical' }] }] };
+const companionWithGem = (0, engine_1.simulateCombat)({ seed: 'gem-companion', players: [companionAbility], enemies: [boss()], maxDurationMs: 3000 });
+const companionWithoutGem = (0, engine_1.simulateCombat)({ seed: 'gem-companion', players: [{ ...companionAbility, effectGems: [] }], enemies: [boss()], maxDurationMs: 3000 });
+node_assert_1.strict.equal(companionWithGem.players[0].damageDone, companionWithoutGem.players[0].damageDone, 'Companion-prefixed attacks must not inherit player Effect Gems');
+const healer = { id: 'H1', classId: 'DAWNKEEPER', name: 'Healer', team: 'players', role: 'support', level: 50, stats: { ...stats, attackPower: 1 }, basicAttackMs: 999999, basicAttackCoeff: .01, effectGems: [{ familyId: 'effect_mercy', copies: 3, resonance: 3, totalValue: .24 }], abilities: [{ id: 'HEAL', name: 'Heal', cooldownMs: 2000, castTimeMs: 0, target: 'self', priority: 10, effects: [{ kind: 'heal', coeff: 1 }] }] };
+const mercy = (0, engine_1.simulateCombat)({ seed: 'gem-mercy', players: [healer], enemies: [boss()], maxDurationMs: 2200 });
+node_assert_1.strict.ok(mercy.events.some(event => event.type === 'shield' && event.abilityId === 'GEM_MERCY'), 'Mercy overhealing should create an authoritative barrier event');
+const statusTester = { ...player(), basicAttackMs: 999999, abilities: [
+        { id: 'TEST_DEBUFF', name: 'Expose Weakness', cooldownMs: 999999, castTimeMs: 0, target: 'current_target', priority: 20, effects: [{ kind: 'debuff', tag: 'damage_taken', value: .1, durationMs: 3000 }, { kind: 'dot', coeff: .01, damageType: 'shadow', durationMs: 3000, tickMs: 1000 }] },
+        { id: 'TEST_BUFF', name: 'Battle Rhythm', cooldownMs: 999999, castTimeMs: 0, target: 'self', priority: 10, effects: [{ kind: 'buff', tag: 'damage_done', value: .1, durationMs: 2500 }, { kind: 'hot', flat: 1, durationMs: 2500, tickMs: 1000 }] },
+    ] };
+const statuses = (0, engine_1.simulateCombat)({ seed: 'status-windows', players: [statusTester], enemies: [boss()], maxDurationMs: 500 }).events.filter(event => event.type === 'status_apply');
+node_assert_1.strict.equal(statuses.length, 4, 'timed buffs, debuffs, DoTs and HoTs should emit authoritative status windows');
+node_assert_1.strict.deepEqual(new Set(statuses.map(event => event.statusKind)), new Set(['buff', 'debuff', 'dot', 'hot']));
+node_assert_1.strict.ok(statuses.every(event => event.expiresAtMs !== undefined && event.expiresAtMs > event.atMs && event.targetId), 'status windows must include target and expiry timing');
+console.log('PASS: authoritative Effect Gem combat runtime');

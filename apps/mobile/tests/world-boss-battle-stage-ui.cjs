@@ -30,10 +30,11 @@ const native={Platform:{OS:'android',select:o=>o.android??o.default},View:'View'
  StyleSheet:{create:x=>x,absoluteFill:{}},Easing:{out:()=>0,cubic:0,inOut:()=>0,sin:0,back:()=>0},
  Animated:{View:'AnimatedView',Value,timing:()=>anim,sequence:()=>anim,loop:()=>anim},
  AppState:{currentState:'active',addEventListener:(_e,fn)=>{appStateListener=fn;return {remove(){appStateListener=undefined;}};}}};
-const haptics=[];
+const haptics=[],sounds=[],musicOverrides=[];
 const deps={
  'react-native':native,
  '../storage/haptics':{playHaptic:m=>haptics.push(m)},
+ '../storage/audio':{playSound:id=>sounds.push(id),useMusicOverride:track=>{musicOverrides.push(track);}},
  '../theme/ThemeContext':{useGameTheme:()=>({text:'#fff',muted:'#aaa',accent:'#fc0',panelRaised:'#111',lineStrong:'#333',primaryButtonText:'#fff',bg:'#000',good:'#0f0'})},
  '../theme/pixel-scene-assets':{SCENE_BACKGROUNDS:{forest:{asterfall:1,sunscar:2,frostmarch:3}}},
  '../theme/class-emblem-assets':{classEmblemIconArtwork:new Proxy({},{get:()=>4})},
@@ -70,6 +71,9 @@ async function main(){
   assert.ok(seen.has(expected)||all.includes(expected),'Missing beat text: '+expected);
  assert.ok(all.includes('Incoming: '),'Telegraphs are announced');
  assert.ok(haptics.includes('heavy'),'Big moments use haptics');
+ assert.equal(musicOverrides[0],'world_boss','The fight plays the World Boss theme');
+ for(const id of ['boss_entrance','tonic','boss_telegraph','guard_break','role_moment','world_hp_drop','honor'])
+  assert.ok(sounds.includes(id),'Missing fight sound: '+id+' in '+[...new Set(sounds)].join(','));
  await act(async()=>{modal().props.onRequestClose();});assert.equal(closed,1,'Back closes only the results');
  const cont=renderer.root.findAll(n=>n.props&&n.props.accessibilityRole==='button')[0];
  await act(async()=>{cont.props.onPress();});assert.equal(closed,2);

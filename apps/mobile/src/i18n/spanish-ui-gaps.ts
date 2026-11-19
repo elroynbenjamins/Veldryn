@@ -4,6 +4,13 @@
  */
 export const SPANISH_UI_GAPS = {
   "Haptic feedback": "Respuesta háptica",
+  "Sound": "Sonido",
+  "Music": "Música",
+  "Sound effects": "Efectos de sonido",
+  "Low": "Bajo",
+  "Medium": "Medio",
+  "High": "Alto",
+  "Sound plays only while Veldryn is open and follows your device's silent mode.": "El sonido solo se reproduce con Veldryn abierto y respeta el modo silencio de tu dispositivo.",
   "Vibrate on big combat moments, such as boss specials and finishing blows.": "Vibra en los grandes momentos del combate, como los ataques especiales de jefes y los golpes finales.",
   "Resource Codex": "Códice de recursos",
   "Discover materials and where to obtain them.": "Descubre materiales y dónde conseguirlos.",

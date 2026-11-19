@@ -1,0 +1,55 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ROOM_BOON_CHOICES = void 0;
+exports.roomBoonOffers = roomBoonOffers;
+exports.applyRoomBoon = applyRoomBoon;
+const boon_generation_1 = require("../expeditions/boon-generation");
+/** Only these disclosed, versioned choices can change a server-owned run.
+ * Offers are deterministic for each run/room and cannot be supplied by clients. */
+exports.ROOM_BOON_CHOICES = [
+    { id: 'ROOM_BOON_STRIKE', name: 'Battle Focus', description: '+5% party attack power for the remaining run.' },
+    { id: 'ROOM_BOON_WARD', name: 'Stalwart Guard', description: '+5% party defense for the remaining run.' },
+    { id: 'ROOM_BOON_RECOVERY', name: 'Second Wind', description: 'Restore 20% max HP to each party member (revives downed allies).' },
+    { id: 'ROOM_BOON_SUPPLY', name: 'Expedition Cache', description: 'Legacy supply boon; no longer offered in new dungeon runs.' },
+];
+// Only purpose-built boon rooms prompt a second-stage choice. Treasure, camp,
+// secret and event rooms retain their own rewards without bonus buffs.
+const CHOICE_ROOM_KINDS = new Set(['shrine', 'forge', 'echo']);
+function roomBoonOffers(run, secret) {
+    // Live dungeons use group-voted routes; the owner-only Q-Mode choice does
+    // not silently apply to teammates or bypass their voting authority.
+    if (run.qmodePressureVersion !== 1 || run.phase !== 'awaiting_choice')
+        return [];
+    const last = run.lastResolution;
+    if (!last || last.nodeId !== run.currentNodeId || !last.result.success || !CHOICE_ROOM_KINDS.has(String(last.result.summary.kind)))
+        return [];
+    if (run.chosenRoomBoons?.[last.nodeId])
+        return [];
+    const current = run.graph.nodes.find(node => node.nodeId === last.nodeId);
+    if (!current || current.kind !== last.result.summary.kind)
+        return [];
+    const ids = (0, boon_generation_1.generateBoonOffer)({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: exports.ROOM_BOON_CHOICES.filter(choice => choice.id !== 'ROOM_BOON_SUPPLY').map(choice => choice.id), choiceCount: 3 });
+    return ids.map(id => exports.ROOM_BOON_CHOICES.find(choice => choice.id === id)).filter(Boolean);
+}
+function applyRoomBoon(run, boonId) {
+    if (run.chosenRoomBoons?.[run.currentNodeId])
+        throw new Error('boon_already_chosen');
+    const state = run.persistentState;
+    if (boonId === 'ROOM_BOON_RECOVERY') {
+        const actors = { ...state.actors };
+        for (const player of run.players) {
+            const actor = actors[player.id];
+            if (!actor)
+                continue;
+            actors[player.id] = { ...actor, hp: Math.min(player.stats.maxHp, actor.hp + player.stats.maxHp * .20), downed: false };
+        }
+        run.persistentState = { ...state, actors };
+    }
+    else if (boonId === 'ROOM_BOON_SUPPLY') {
+        run.persistentState = { ...state, resources: state.resources + 2 };
+    }
+    else {
+        run.persistentState = { ...state, boons: [...state.boons, boonId] };
+    }
+    run.chosenRoomBoons = { ...(run.chosenRoomBoons ?? {}), [run.currentNodeId]: boonId };
+}

@@ -8,7 +8,7 @@ function load(file,dependencies){
  vm.runInNewContext(code,sandbox);return sandbox.exports;
 }
 const native={Pressable:'Pressable',Text:'Text',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles},AppState:{currentState:'active',addEventListener:()=>({remove(){}})}};
-const theme={'react-native':native,'../theme/ThemeContext':{useGameTheme:()=>({text:'#fff',bg:'#000',good:'#0f0',primaryButtonText:'#fff'})},'../theme/theme':{radii:{},spacing:{},typography:{}}};
+const theme={'../storage/audio':{playSound(){}},'react-native':native,'../theme/ThemeContext':{useGameTheme:()=>({text:'#fff',bg:'#000',good:'#0f0',primaryButtonText:'#fff'})},'../theme/theme':{radii:{},spacing:{},typography:{}}};
 async function buttons(){
  for(const [name,label,busy] of [['GameButton','title','loading'],['SocialActionButton','label','busy']]){
   const Button=load(`src/components/${name}.tsx`,theme)[name];let renderer,pending=deferred(),calls=0;

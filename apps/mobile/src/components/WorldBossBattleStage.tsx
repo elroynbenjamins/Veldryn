@@ -8,6 +8,7 @@ import {worldBossPresentationFor} from '../core/world-boss-presentation';
 import {WORLD_BOSS_REPLAY_POLICY,worldBossReplayCues,type WorldBossReplayBeat,type WorldBossReplayInput,
  type WorldBossReplayPartyMember,type WorldBossHonor} from '../core/world-boss-replay-presentation';
 import {playHaptic} from '../storage/haptics';
+import {playSound,useMusicOverride} from '../storage/audio';
 import {useGameTheme} from '../theme/ThemeContext';
 import {SCENE_BACKGROUNDS,type PixelBiome} from '../theme/pixel-scene-assets';
 import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
@@ -39,6 +40,7 @@ export function WorldBossBattleStage({input,language,reduceMotion,bossArt,onClos
  const cues=useMemo(()=>worldBossReplayCues({...input,reduceMotion}),[input,reduceMotion]);
  const boss=worldBossPresentationFor(input.bossId)!;
  const [index,setIndex]=useState(0);
+ useMusicOverride('world_boss');
  const [foreground,setForeground]=useState(AppState.currentState==='active');
  useEffect(()=>{const sub=AppState.addEventListener('change',next=>setForeground(next==='active'));return()=>sub.remove();},[]);
  // Advance one beat at a time. Backgrounding pauses the fight so nothing is missed.
@@ -73,6 +75,15 @@ export function WorldBossBattleStage({input,language,reduceMotion,bossArt,onClos
    playHaptic('heavy');
   }else if(beat.kind==='down')playHaptic('warning');
   if(cue.flash){flash.setValue(.55);Animated.timing(flash,{toValue:0,duration:420,useNativeDriver:true}).start();}
+  // Beat sounds. Ordinary hits, heals and shields come from CombatImpactBurst.
+  if(beat.kind==='entrance')playSound('boss_entrance');
+  else if(beat.kind==='tonic')playSound('tonic');
+  else if(beat.kind==='telegraph')playSound('boss_telegraph');
+  else if(beat.kind==='boss_attack'&&beat.special)playSound('boss_special');
+  else if(beat.kind==='boss_state'&&beat.state==='guard_break')playSound('guard_break');
+  else if(beat.kind==='role_moment')playSound('role_moment');
+  else if(beat.kind==='finale')playSound(beat.killingBlow?'killing_blow':beat.residualEcho?'ui_confirm':'world_hp_drop');
+  else if(beat.kind==='results'&&beat.honors.length)playSound('honor');
   if(beat.kind==='finale'){
    const to=input.world.maxHp>0?beat.worldHpAfter/input.world.maxHp:0;
    Animated.timing(worldBar,{toValue:to,duration:reduceMotion?0:1800,easing:Easing.out(Easing.cubic),useNativeDriver:false}).start();

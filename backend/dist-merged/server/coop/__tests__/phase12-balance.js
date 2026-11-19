@@ -1,0 +1,74 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const launch_combat_1 = require("../../combat/content/launch-combat");
+const snapshot_adapter_1 = require("../../combat/snapshot-adapter");
+const route_generation_1 = require("../../expeditions/route-generation");
+const node_resolution_1 = require("../../expeditions/node-resolution");
+const rewards_1 = require("../../expeditions/rewards");
+const normalization_1 = require("../normalization");
+const normalRest = ['Ironwarden', 'Wayfinder', 'Ravager', 'Dawnkeeper'].map(id => (0, launch_combat_1.launchPlayer)(id, 25));
+const normalUtility = ['Ironwarden', 'Hexweaver', 'Knife Dancer', 'Stonecaller'].map(id => (0, launch_combat_1.launchPlayer)(id, 25));
+function extreme(player) { const role = player.role; const source = { characterId: player.id, classId: player.classId, role, level: 100, maxHp: player.stats.maxHp * 4, attackPower: player.stats.attackPower * 4, healingPower: player.stats.healingPower * 4, defense: player.stats.defense * 4, accuracy: player.stats.accuracy * 4, evasion: player.stats.evasion * 4, critChance: player.stats.critChance, haste: player.stats.haste }; const normalized = (0, normalization_1.normalizeCombatInput)(source, player.abilities, 25, normalization_1.ROOTBOUND_ROLE_REFERENCES[role]); return (0, snapshot_adapter_1.combatantFromVerifiedSnapshot)(normalized.snapshot, normalized.abilities); }
+function overParty(role) { const party = normalRest.map(player => structuredClone(player)); const index = party.findIndex(player => player.role === role); party[index] = extreme(party[index]); return party; }
+const overTank = overParty('tank'), overDamage = overParty('damage'), overSupport = overParty('support');
+const scenarios = [{ id: 'restoration_baseline', party: normalRest }, { id: 'utility_baseline', party: normalUtility }, { id: 'overgear_tank', party: overTank }, { id: 'overgear_damage', party: overDamage }, { id: 'overgear_support', party: overSupport }, { id: 'solo_tank', party: [overTank.find(player => player.role === 'tank')] }, { id: 'solo_damage', party: [overDamage.find(player => player.role === 'damage')] }, { id: 'solo_support', party: [overSupport.find(player => player.role === 'support')] }];
+function wilson(successes, n) { if (!n)
+    return [0, 0]; const z = 1.96, p = successes / n, den = 1 + z * z / n, mid = (p + z * z / (2 * n)) / den, margin = z * Math.sqrt((p * (1 - p) + z * z / (4 * n)) / n) / den; return [Number((mid - margin).toFixed(4)), Number((mid + margin).toFixed(4))]; }
+const report = { engine: 'full_combat', samplesPerScenario: 1_000, scenarios: [] };
+for (const scenario of scenarios) {
+    const byLength = { 5: { samples: 0, clears: 0, deaths: 0, durationMs: 0, marks: 0 } };
+    let clears = 0, totalDeaths = 0, totalDuration = 0, totalMarks = 0;
+    for (let seed = 0; seed < 1_000; seed++) {
+        const runId = `balance-${scenario.id}-${seed}`, secret = 'balance-v1';
+        const graph = (0, route_generation_1.generateCoopRouteGraph)(secret, 'EXP_001', runId, 'content-v1', 'balance-v1');
+        let state = (0, node_resolution_1.initialPersistentRunState)(scenario.party), current = graph.entryNodeId, success = true, reachedBoss = false, duration = 0;
+        for (let depth = 1; depth <= graph.preBossNodeCount; depth++) {
+            const node = graph.nodes.find(item => item.nodeId === current);
+            const choices = node.nextNodeIds.map(id => graph.nodes.find(item => item.nodeId === id));
+            const selected = choices.find(item => item.kind === 'camp') ?? choices[0];
+            const result = (0, node_resolution_1.resolveCoopNode)({ runId, serverSecret: secret, node: selected, players: scenario.party, state });
+            state = result.state;
+            duration += Number(result.summary.durationMs ?? 0);
+            current = selected.nodeId;
+            if (!result.success) {
+                success = false;
+                break;
+            }
+        }
+        if (success) {
+            const boss = graph.nodes.find(item => item.nodeId === graph.bossNodeId);
+            reachedBoss = true;
+            const result = (0, node_resolution_1.resolveCoopNode)({ runId, serverSecret: secret, node: boss, players: scenario.party, state });
+            state = result.state;
+            duration += Number(result.summary.durationMs ?? 0);
+            success = result.success;
+        }
+        const deaths = Object.values(state.actors).filter(actor => actor.downed).length, progress = Math.min(1, state.visitedNodeIds.filter(id => id !== 'boss').length / graph.preBossNodeCount), marks = (0, rewards_1.marksForRun)(74, 1, { cleared: success, routeProgress: progress, reachedFinalBoss: reachedBoss });
+        const bucket = byLength[String(graph.preBossNodeCount)];
+        bucket.samples++;
+        bucket.clears += success ? 1 : 0;
+        bucket.deaths += deaths;
+        bucket.durationMs += duration;
+        bucket.marks += marks;
+        clears += success ? 1 : 0;
+        totalDeaths += deaths;
+        totalDuration += duration;
+        totalMarks += marks;
+    }
+    node_assert_1.strict.equal(byLength['5'].samples, 1_000, `${scenario.id} must use the fixed five-room route`);
+    const rate = clears / 1_000;
+    if (scenario.id.endsWith('_baseline')) {
+        node_assert_1.strict.ok(rate >= .90 && rate <= .97, `${scenario.id} is outside the Tier I reference band`);
+    }
+    if (scenario.id.startsWith('solo_'))
+        node_assert_1.strict.equal(clears, 0, `${scenario.id} must not routinely solo-clear`);
+    report.scenarios.push({ id: scenario.id, samples: 1_000, clearRate: Number(rate.toFixed(4)), clearRate95: wilson(clears, 1_000), deathsPerRun: Number((totalDeaths / 1_000).toFixed(3)), avgDurationSeconds: Number((totalDuration / 1_000 / 1_000).toFixed(2)), avgMarks: Number((totalMarks / 1_000).toFixed(2)), preBossNodeCount: 5, byLength: Object.fromEntries(Object.entries(byLength).map(([length, value]) => [length, { samples: value.samples, clearRate: Number((value.clears / value.samples).toFixed(4)), clearRate95: wilson(value.clears, value.samples), avgDurationSeconds: Number((value.durationMs / value.samples / 1_000).toFixed(2)), avgMarks: Number((value.marks / value.samples).toFixed(2)) }])) });
+}
+const shareRun = 'damage-share';
+const boss = (0, route_generation_1.generateCoopRouteGraph)('share', 'EXP_001', shareRun, 'v1', 'b1').nodes.find(node => node.kind === 'boss');
+const shareResult = (0, node_resolution_1.resolveCoopNode)({ runId: shareRun, serverSecret: 'share', node: boss, players: normalRest, state: (0, node_resolution_1.initialPersistentRunState)(normalRest) });
+const damage = shareResult.summary.damage, total = Object.values(damage).reduce((sum, value) => sum + value, 0), maxDamageShare = Math.max(...normalRest.filter(player => player.role === 'damage').map(player => damage[player.id] / total));
+node_assert_1.strict.ok(maxDamageShare > .35, 'ordinary Damage output above 35% must remain observable');
+node_assert_1.strict.equal(report.scenarios.length, 8);
+console.log(JSON.stringify({ ...report, maxObservedDamageShare: Number(maxDamageShare.toFixed(4)) }));

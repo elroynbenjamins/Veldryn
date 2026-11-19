@@ -1,4 +1,7 @@
+import {useEffect} from 'react';
 import {View} from 'react-native';
+import {playSound} from '../storage/audio';
+import type {SoundEffectId} from '../theme/audio-assets';
 import {useGameTheme} from '../theme/ThemeContext';
 import {COMBAT_FX} from '../theme/pixel-scene-assets';
 import {PixelFx,type PixelFxName} from './anim/SpriteFrames';
@@ -6,6 +9,7 @@ import {useMotionEnabled} from './anim/motion';
 
 export type CombatImpactKind='damage'|'critical'|'heal'|'shield'|'interrupt'|'phase'|'cast'|'down';
 
+const IMPACT_SOUND:Record<CombatImpactKind,SoundEffectId>={damage:'hit',critical:'crit',heal:'heal',shield:'shield',interrupt:'interrupt',phase:'phase',cast:'cast',down:'down'};
 const IMPACT_FX:Record<CombatImpactKind,PixelFxName>={damage:'burst',critical:'crit',heal:'heal',shield:'ward',interrupt:'smash',phase:'smash',cast:'crit',down:'smash'};
 
 /**
@@ -17,6 +21,8 @@ export function CombatImpactBurst({eventId,kind,reduceMotion=false,size=66}:{
  eventId:string;kind:CombatImpactKind;reduceMotion?:boolean;size?:number;
 }){
  const C=useGameTheme(),animate=useMotionEnabled(reduceMotion);
+ // Sound belongs to the real event, so it plays even when reduced motion hides the sprite.
+ useEffect(()=>{playSound(IMPACT_SOUND[kind]);},[eventId]); // eslint-disable-line react-hooks/exhaustive-deps
  const color=kind==='critical'?C.warning:kind==='damage'||kind==='down'?C.bad:kind==='heal'?C.good:kind==='shield'?C.info:kind==='interrupt'?C.accent:kind==='cast'?C.warning:C.special;
  if(!animate)return null;
  const name=IMPACT_FX[kind],frameSize=COMBAT_FX[name].frameSize;

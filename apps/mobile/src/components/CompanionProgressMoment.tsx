@@ -1,6 +1,7 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
 import {useEffect,useMemo,useRef} from 'react';
+import {playSound} from '../storage/audio';
 import {Animated,StyleSheet,Text,View} from 'react-native';
 import {C,radii,spacing,typography} from '../theme/theme';
 
@@ -28,6 +29,7 @@ export function CompanionProgressMoment({message,reduceMotion=false}:{message:st
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
 
  const value=useRef(new Animated.Value(1)).current,copy=useMemo(()=>presentation(message),[message]);
+ useEffect(()=>{if(message)playSound('unlock');},[message]);
  useEffect(()=>{
   value.stopAnimation();
   if(reduceMotion){value.setValue(1);return;}

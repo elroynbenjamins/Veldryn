@@ -1,0 +1,32 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const equipment_catalog_v33_1 = require("./equipment-catalog-v33");
+const equipment_set_resolver_v33_1 = require("./equipment-set-resolver-v33");
+const equipment_settlement_v33_1 = require("./equipment-settlement-v33");
+const equipment_types_v33_1 = require("./equipment-types-v33");
+node_assert_1.strict.equal(equipment_catalog_v33_1.EQUIPMENT_SETS_V33.length, 162);
+node_assert_1.strict.equal(equipment_catalog_v33_1.EQUIPMENT_PIECES_V33.length, 1620);
+node_assert_1.strict.deepEqual((0, equipment_catalog_v33_1.validateCatalogV33)(), []);
+const pathsByTierAndClass = new Map();
+for (const set of equipment_catalog_v33_1.EQUIPMENT_SETS_V33) {
+    const key = `${set.tier}|${set.className}`;
+    const paths = pathsByTierAndClass.get(key) ?? [];
+    paths.push(set.path);
+    pathsByTierAndClass.set(key, paths);
+}
+node_assert_1.strict.equal(pathsByTierAndClass.size, 81);
+for (const [key, paths] of pathsByTierAndClass)
+    node_assert_1.strict.deepEqual(paths.sort(), ['Alternate', 'Foundation'], `${key} keeps the two intended paths`);
+const firstSet = equipment_catalog_v33_1.EQUIPMENT_SETS_V33[0];
+node_assert_1.strict.ok(firstSet);
+const firstPieces = equipment_catalog_v33_1.EQUIPMENT_PIECES_V33.filter((piece) => piece.setId === firstSet.id);
+node_assert_1.strict.equal(firstPieces.length, 10);
+node_assert_1.strict.deepEqual(firstPieces.map((piece) => piece.slot), [...equipment_types_v33_1.EQUIPMENT_SLOT_ORDER_V33]);
+const equipped = firstPieces.map((piece) => ({ pieceId: piece.id, setId: piece.setId, slot: piece.slot }));
+const active = (0, equipment_set_resolver_v33_1.resolveSetBonusesV33)(equipped, [firstSet]);
+node_assert_1.strict.deepEqual(active[0]?.thresholds.map((threshold) => threshold.pieces), [2, 4, 6, 8, 10]);
+const history = firstPieces.map((piece) => ({ characterId: 'character-v33', pieceId: piece.id }));
+node_assert_1.strict.equal((0, equipment_settlement_v33_1.setCraftProgressV33)('character-v33', firstSet.id, history).complete, true);
+node_assert_1.strict.equal((0, equipment_settlement_v33_1.setCraftProgressV33)('character-v33', firstSet.id, history.slice(0, 9)).complete, false);
+console.log('v33 equipment tests passed');

@@ -405,5 +405,6 @@
   "tests/equipment-disposal-ui.cjs",
   ".core-build/apps/mobile/tests/stored-json.js",
   ".core-build/apps/mobile/tests/world-boss-replay-presentation.js",
-  "tests/world-boss-battle-stage-ui.cjs"
+  "tests/world-boss-battle-stage-ui.cjs",
+  ".core-build/apps/mobile/tests/game-audio.js"
 ]

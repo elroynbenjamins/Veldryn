@@ -29,9 +29,9 @@ Path: `apps/mobile/assets/world-bosses/<id>/`. That is 11 images per boss and 33
 - Light and dark themes both read well against the region backdrop (`SCENE_BACKGROUNDS.forest`).
 - Reviewed in the dev-only Feature Preview with "Watch a recorded World Boss fight".
 
-## Audio: a separate project
+## Audio
 
-The app has no audio stack today. Sound is the biggest remaining premium lever, and the biggest piece of work.
+**Update:** a first full pass of original synthesized music and effects is implemented. See [game audio v1](game-audio-v1.md). The table below remains the brief for commissioned replacements, which drop in at the same file paths.
 
 | Piece | Scope |
 | --- | --- |

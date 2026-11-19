@@ -18,6 +18,8 @@ import {AsterfallWelcomeModal} from './src/components/AsterfallWelcomeModal';
 import {StartupScreen} from './src/components/StartupScreen';
 import {pickStartupScene} from './src/theme/startup-art';
 import {AsyncStorageGameRepository} from './src/storage/async-storage-repository';
+import {setBaseMusic} from './src/storage/audio';
+import {backgroundMusicFor} from './src/core/music-context';
 import {ActiveActivity,ClassId,CombatTacticId,GameState,QueuedActivity,RewardBundle} from './src/core/types';
 import type {HuntGoalId} from './src/core/hunt-goals';
 import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claimSeasonalContract,craftRecipe,createCharacter,depositAllMaterials,depositToBank,sellBankItem,depositGoldToBank,withdrawGoldFromBank,eatFood,equipFood,equipGatheringTool,newGame,previewActivityReward,salvageItem,sellItem,travelToRegion,unequipItem,upgradeStorage,withdrawFromBank} from './src/core/game';
@@ -215,6 +217,9 @@ function VeldrynApp(){
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
+  // Background music follows the current screen and region; dungeons and bosses override it.
+  const musicTrack=backgroundMusicFor({screen:tab,regionId:state?.currentRegionId,hasCharacter:Boolean(state?.character)});
+  useEffect(()=>setBaseMusic(musicTrack),[musicTrack]);
   const [settingsSection,setSettingsSection]=useState<SettingsSection|undefined>();
    const [focusChatEmotes,setFocusChatEmotes]=useState(false);
   const [tabHistory,setTabHistory]=useState<ScreenHistoryEntry<Tab,NavigationContext>[]>([]);

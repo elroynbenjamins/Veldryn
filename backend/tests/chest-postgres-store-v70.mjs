@@ -264,7 +264,7 @@ try{
  );
  await db.exec(`
   CREATE FUNCTION private.world_boss_v57_assert_write_open(p_account uuid)
-  RETURNS void LANGUAGE plpgsql AS $
+  RETURNS void LANGUAGE plpgsql AS $wbv73$
   BEGIN
    IF current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'WB57_READ_COMMITTED_REQUIRED';
@@ -275,7 +275,7 @@ try{
     WHERE account_id=p_account) THEN
     RAISE EXCEPTION 'WB57_ACCOUNT_ERASURE_FENCED';
    END IF;
-  END $;
+  END $wbv73$;
  `);
  await db.query(
   'insert into private.world_boss_events_v17 '+

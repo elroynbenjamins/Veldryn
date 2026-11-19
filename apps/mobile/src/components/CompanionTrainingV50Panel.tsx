@@ -75,7 +75,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const costBreakdown=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number})=>cost?<CompanionCostBreakdown rows={[{resourceId:"gold",label:t("Gold"),owned:economy.gold,required:cost.gold},{resourceId:"essence",label:t("Essence"),owned:economy.companionEssence,required:cost.companionEssence},{resourceId:"bondstones",label:t("Bondstones"),owned:economy.bondstones,required:cost.bondstones??0},...(cost.materialId?[{resourceId:cost.materialId,label:material(cost.materialId),owned:economy.materials[cost.materialId]??0,required:cost.materialQuantity??0}]:[])]}/>:null;
  const selectedDef=model?.def,rarity=selectedDef?COMPANION_RARITY_CONFIG[selectedDef.rarity]:undefined;
  const xpTarget=progress&&selectedDef&&progress.level<model!.maxLevel?companionXpToNextLevel(selectedDef.rarity,progress.level):0;
- const xpPct=progress&&xpTarget?Math.min(100,progress.xp/xpTarget*100):progress?100:0;
+ const xpPct=ascentBlocked?100:progress&&xpTarget?Math.min(100,progress.xp/xpTarget*100):progress?100:0;
  const ascension=companionAscensionReadiness(state,selection);
  const ascensionResourceId=model?.nextAscensionCost?.materialId??selectedDef?.ascensionMaterialId;
  const sources=ascensionResourceId?companionMaterialSourceTargets(ascensionResourceId):[],roadmap=selectedDef?companionProgressionRoadmap(state,selectedDef.id):undefined;

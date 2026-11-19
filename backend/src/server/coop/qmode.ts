@@ -12,6 +12,7 @@ import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from './dungeon-entry-policy';
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from './regional-power-balance';
 import {preparedCoopCombatants} from './potion-modifiers';
+import {scaleSocialEchoToHost} from './social-echo-balance';
 import {dungeonDepthMultipliers} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 import {roomArtifactOffers,applyRoomArtifact} from './room-artifact-choices';
@@ -45,16 +46,23 @@ function regionalCombatant(snapshot:FrozenLoadoutSnapshot,expeditionId:string,ba
 
 export class QModeService{
  constructor(private repository:QModeRunRepository,private serverSecret:string){}
- create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[]}):QModeRun{
+ create(input:{requestId:string;runId:string;controllerAccountId:string;controllerSnapshot:FrozenLoadoutSnapshot;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;nowMs:number;profiles:PublishedEcho[];npcSnapshots?:readonly FrozenLoadoutSnapshot[];preferredProfileIds?:readonly string[]}):QModeRun{
   const prior=this.repository.getByRequest(input.controllerAccountId,input.requestId);if(prior)return prior;
   const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
-  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,npcSnapshots:input.npcSnapshots??[]});
+  const allies=recruitQModeAllies({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles,npcSnapshots:input.npcSnapshots??[],preferredProfileIds:input.preferredProfileIds});
   const requiredLevel=regularDungeonTierRequiredLevel(definition,input.tier);
   for(const snapshot of [input.controllerSnapshot,...allies.map(ally=>ally.snapshot)])if((snapshot.characterLevel??snapshot.normalized.before.level)<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
   // Solo/Echo runs are level-gated; keep CP enforcement in createLive only.
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...allies.map(ally=>({accountId:ally.snapshot.accountId,characterId:ally.snapshot.characterId,role:ally.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
-  const players=[regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion),...allies.map(ally=>regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion))];
+  const player=regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion);
+  const preferred=new Set(input.preferredProfileIds??[]);
+  const players=[player,...allies.map(ally=>{
+   const base=regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion);
+   return ally.echo&&preferred.has(ally.echo.profileId)
+    ?scaleSocialEchoToHost(base,input.controllerSnapshot.combatPower,ally.snapshot.combatPower)
+    :base;
+  })];
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,qmodePressureVersion:1,echoSourceAccountIds:allies.filter(ally=>ally.kind==='echo').map(ally=>ally.snapshot.accountId),npcCharacterIds:allies.filter(ally=>ally.kind==='npc').map(ally=>ally.snapshot.characterId)});
  }
  createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{

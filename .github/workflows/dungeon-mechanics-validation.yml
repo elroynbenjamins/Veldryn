@@ -18,6 +18,8 @@ on:
       - 'backend/online/tests/social-echo-automatic.ts'
       - 'backend/src/server/coop/social-echo-balance.ts'
       - 'apps/mobile/tests/dungeon-social-echo-picker-ui.cjs'
+      - 'apps/mobile/tests/dungeon-ui-refinement.cjs'
+      - 'apps/mobile/src/i18n/dungeon-ux-copy.ts'
       - 'backend/supabase/migrations/20261119162000_coop_social_echo_candidates_v1.sql'
       - 'backend/online/tests/dungeon-weekly-quests.ts'
       - 'apps/mobile/src/screens/CoopExpeditionScreen.tsx'
@@ -94,6 +96,16 @@ jobs:
         working-directory: backend
       - name: Validate mobile friend/guild Echo picker and run authorization
         run: pnpm test:dungeon-social-echo-ui
+        working-directory: apps/mobile
+      - name: Validate compact Dungeon Hub, weekly quest, social Echo, route and loadout
+        run: |
+          node tests/dungeon-ui-refinement.cjs
+          node tests/dungeon-home-guide-ui.cjs
+          node tests/dungeon-route-choice-ui.cjs
+          node tests/dungeon-flow-simplicity-ui.cjs
+        working-directory: apps/mobile
+      - name: Validate mobile TypeScript after Dungeon UI changes
+        run: pnpm typecheck
         working-directory: apps/mobile
       - name: Validate rebalanced Expedition Marks and unchanged tier multipliers
         run: pnpm test:dungeon-tier-balance

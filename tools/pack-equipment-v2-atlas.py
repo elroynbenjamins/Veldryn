@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Aspect-preserving compositor for *approved* Equipment 2.0 source PNGs.
+"""Aspect-preserving compiler for *approved canonical-item* Equipment 2.0 PNGs.
 
 Requires Pillow. This does not generate art and does not certify artistic style.
 Source pixels touching the canvas edge are rejected rather than silently clipped.
 
-Examples:
-  python tools/pack-equipment-v2-atlas.py atlas --folder art/approved --out /tmp/set.webp
-  python tools/pack-equipment-v2-atlas.py icon --slot weapon --input art/weapon.png --out /tmp/weapon.webp
+Equipment 2.0 uses actual compact 2–4 piece sets and standalone items.
+Default is ONE WebP per canonical item ID (not a fictional ten-piece set).
 
-In atlas mode, --folder must contain helmet.png, chest.png, gloves.png, legs.png,
-boots.png, weapon.png, offhand.png, cape.png, amulet.png and ring.png.
+Example:
+  python tools/pack-equipment-v2-atlas.py icon --slot helmet --input art/EQ2_FIELDBORN_GUARD_HELMET.png --out /tmp/EQ2_FIELDBORN_GUARD_HELMET.webp
+
+Optional legacy 5x2 renderer atlas packaging (only when a real renderer mapping
+requires it, NEVER because an EQ2 set supposedly contains ten pieces):
+  python tools/pack-equipment-v2-atlas.py atlas --folder art/approved-ten-real-items --out /tmp/renderer-atlas.webp
+
+The optional atlas mode needs all ten slot-named PNGs: helmet, chest, gloves,
+legs, boots, weapon, offhand, cape, amulet and ring. Do not invent placeholders.
 """
 from __future__ import annotations
 
@@ -80,13 +86,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subs = parser.add_subparsers(dest="mode", required=True)
 
-    atlas = subs.add_parser("atlas", help="Compile ten slot-named PNG masters")
+    atlas = subs.add_parser("atlas", help="Optional legacy-renderer packaging of ten real slot-named PNGs; NOT an EQ2 set")
     atlas.add_argument("--folder", required=True, type=Path)
     atlas.add_argument("--out", required=True, type=Path)
     atlas.add_argument("--quality", type=int, default=80, help="Minimum lossy candidate quality; lossless always considered")
     atlas.add_argument("--report", type=Path, help="Write JSON report outside mobile assets")
 
-    icon = subs.add_parser("icon", help="Compile one standalone reward icon")
+    icon = subs.add_parser("icon", help="DEFAULT: compile one canonical EQ2 gear item (compact-set member, standalone or reward)")
     icon.add_argument("--slot", required=True, choices=SLOTS)
     icon.add_argument("--input", required=True, type=Path)
     icon.add_argument("--out", required=True, type=Path)

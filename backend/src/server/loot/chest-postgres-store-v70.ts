@@ -72,7 +72,8 @@ export interface ChestPhysicalPortsV70{
  /** Independently read exact amounts, instances, owner and Inbox from the
   * ACTUAL writer tables; grant journal alone is not physical custody proof. */
  verifyPhysical(tx:ChestSqlV70,receipt:FrozenChestReceiptV69,
-  legs:readonly ChestLedgerLegV70[]):Promise<boolean>;
+  legs:readonly ChestLedgerLegV70[],
+  phase:'fresh'|'replay'):Promise<boolean>;
 }
 const receiptSql=[
  'select receipt from private.chest_reward_receipts_v70',
@@ -289,7 +290,8 @@ export function createChestPostgresStoreV70(
         quantity,grantId,itemInstanceId:itemId as string|null,
        });
       }
-      return ports.verifyPhysical(conn,receipt,legs);
+      return ports.verifyPhysical(conn,receipt,legs,
+       inserted?'fresh':'replay');
      },
     };
     const result=await work(tx);

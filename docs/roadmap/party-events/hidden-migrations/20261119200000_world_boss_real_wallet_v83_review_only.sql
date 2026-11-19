@@ -6,7 +6,7 @@ BEGIN;
 CREATE TABLE private.world_boss_chest_resource_grants_v83(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  source_key text NOT NULL,
- account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+ account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
  character_id uuid NOT NULL,
  ordinal smallint NOT NULL CHECK(ordinal BETWEEN 0 AND 3),
  reward_id text NOT NULL CHECK(reward_id IN (
@@ -21,7 +21,7 @@ CREATE TABLE private.world_boss_chest_resource_grants_v83(
  UNIQUE(source_key,ordinal),
  FOREIGN KEY(source_key,account_id)
   REFERENCES private.chest_reward_receipts_v70(source_key,account_id)
-  ON DELETE RESTRICT,
+  ON DELETE CASCADE,
  CHECK(source_key ~ '^world-boss:[0-9a-f-]{36}:[0-9a-f-]{36}:(donations_goal|three_attempts|community_damage_goal)$'
   AND position(':'||account_id::text||':' in source_key)>0),
  CHECK((reward_id='gold' AND custody='character_wallet') OR

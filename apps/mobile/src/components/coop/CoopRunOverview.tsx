@@ -207,6 +207,15 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
        {run.roleSlots.map((slot,index)=><View key={`${slot.role}-${index}`} accessible accessibilityLabel={`${slot.name}, ${t(language,`coopUi.${slot.role}`)}`} style={s.partyMiniMember}><IdentityArtwork name={slot.name} profileIconId={slot.profileIconId} className={slot.iconClassId??slot.classId} size={28}/><Text numberOfLines={1} style={s.partyMiniName}>{slot.name}</Text><Text numberOfLines={1} style={s.partyMiniRole}>{t(language,`coopUi.${slot.role}`)}</Text></View>)}
       </View>
      </View>:run.phase!=='resolving_node'&&!terminal&&!enteringUtility?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
+    {!seasonal&&Boolean(run.contracts?.length)?<DungeonDisclosure title={`${st('Dungeon Contracts')} · ${run.contracts!.filter(contract=>contract.completed).length}/${run.contracts!.length}`} initiallyOpen={false}>
+      <FantasyPanel>
+       <Text style={s.copy}>{st('Optional run goals. Contract rewards are not enabled yet.')}</Text>
+       {run.contracts!.map(contract=><View key={contract.id} style={s.marksBreakdownLine} accessibilityLabel={`${contract.name}: ${contract.progress} of ${contract.target}`}>
+        <View style={s.grow}><Text style={s.name} numberOfLines={1}>{contract.name}</Text><Text style={s.copy}>{contract.description}</Text></View>
+        <StateChip label={contract.completed?st('DONE'):`${contract.progress}/${contract.target}`} tone={contract.completed?'success':'selected'}/>
+       </View>)}
+      </FantasyPanel>
+     </DungeonDisclosure>:null}
     {!seasonal&&(dungeonTonic||healingPotion)&&run.phase==='awaiting_choice'?<DungeonDisclosure title={`${gt('DUNGEON HEALING')} · ${gt('DUNGEON TONIC')}`} initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}>
     {!seasonal&&dungeonTonic&&run.phase==='awaiting_choice'?<FantasyPanel>
       <View style={s.summary}>

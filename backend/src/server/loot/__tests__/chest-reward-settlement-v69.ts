@@ -44,6 +44,7 @@ interface FakeState{
 }
 const fresh=():FakeState=>({
  receipts:new Map(),guaranteed:new Map(),drops:new Map(),owned:new Set(),
+ inbox:new Set(),
 });
 const clone=(s:FakeState):FakeState=>({
  receipts:new Map(s.receipts),guaranteed:new Map(s.guaranteed),

@@ -80,9 +80,8 @@ export function CoopSocialEchoPicker({
    <Text style={s.chevron}>{expanded?'⌄':'›'}</Text>
   </Pressable>
 
-  <View style={s.partySlots} accessible accessibilityLabel={t('title')}>
-
-   {slots.map(slot=><View key={slot.key} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
+  <View style={s.partySlots} accessibilityLabel={t('title')}>
+   {slots.map(slot=><View key={slot.key} accessible accessibilityLabel={t(slot.role)+': '+(slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name)} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
     <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{t(slot.role)}</Text>
     <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name}</Text>
     <View style={[s.slotMark,slot.kind==='chosen'&&s.slotMarkChosen,slot.kind==='host'&&s.slotMarkHost]}/>
@@ -116,7 +115,7 @@ export function CoopSocialEchoPicker({
     const reasonLabel=disabled?disabledReason(why):'';
     return <Pressable key={candidate.characterId} accessibilityRole="checkbox"
      accessibilityLabel={candidate.name+', '+displayClass(candidate.classId)+', '+candidate.role}
-     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?reasonLabel:t('explain')}
+     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?reasonLabel:undefined}
      disabled={disabled} onPress={()=>toggle(candidate)}
      style={({pressed})=>[s.person,chosen&&s.personChosen,disabled&&s.personDisabled,pressed&&s.pressed]}>
       <View style={[s.avatar,chosen&&s.avatarChosen]}>

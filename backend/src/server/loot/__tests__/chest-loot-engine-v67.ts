@@ -169,6 +169,23 @@ ok(JSON.stringify(a)===JSON.stringify(b),'replay_derived_entropy_stable');
 ok(a.length===3&&a.every(x=>x.hitRoll>=0&&x.hitRoll<10000&&
  x.selectionRoll>=0&&x.selectionRoll<10000),'independent_group_roll_range');
 ok(JSON.stringify(a)!==JSON.stringify(c),'version_domains_entropy');
+const afterOwnership=deriveChestGroupRollsV67({
+ table,sourceKey,secret,ownedDropIds:['PET_SNOWFOX','LOOK_SCARF'],
+});
+ok(afterOwnership[1]!.selectionRoll<1&&
+ afterOwnership[2]!.selectionRoll<1,
+ 'unbiased_future_selection_exact_missing_set_weight');
+const materialRange=defineChestLootTableV67({...future,
+ groups:[{...future.groups[0]!,entries:[
+  {id:'A',weight:1},{id:'B',weight:2},
+ ]}],
+});
+const materialDraws=deriveChestGroupRollsV67({
+ table:materialRange,sourceKey,secret,
+});
+ok(materialDraws[0]!.selectionRoll<3,
+ 'future_weighted_HMAC_rejection_samples_exact_1_to_3');
+
 rejects(()=>resolveChestLootV67(table,{
  rolls:[{groupId:'material',hitRoll:0,selectionRoll:0}],
  ownedDropIds:[],

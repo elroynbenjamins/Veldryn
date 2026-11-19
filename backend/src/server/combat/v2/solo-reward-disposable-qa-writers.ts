@@ -79,8 +79,46 @@ export function disposableQaSoloRewardWritersV2(
    if(!validId(scope.accountId)||!validId(scope.characterId)||
     !validId(scope.encounterId)||!grant||
     !validId(grant.resourceId)||!Number.isSafeInteger(grant.amount)||
-    grant.amount<1||grant.grantSourceId?.startsWith(
-     'combat-v2:solo:'+scope.encounterId+':')!==true)
+    grant.amount<1||typeof grant.grantSourceId!=='string'||
+    !new RegExp('^combat-v2:solo:'+scope.encounterId+':[0-9]{1,2}
+    reject('invalid_grant_scope');
+   const params=[grant.grantSourceId,scope.accountId,scope.characterId,
+    grant.kind,grant.resourceId,textAmount(grant.amount)] as const;
+   const added=await tx.query<QaGrantRow>(INSERT_GRANT,params);
+   if(added.rows.length>1)reject('duplicated_grant_source');
+   if(!added.rows.length){
+    const original=await tx.query<QaGrantRow>(READ_GRANT,[grant.grantSourceId]);
+    if(original.rows.length!==1)reject('missing_grant_source');
+    return checkGrant(original.rows[0],scope,grant);
+   }
+   const proof=checkGrant(added.rows[0],scope,grant);
+   const balance=await tx.query<QaBalanceRow>(CREDIT_QA_BALANCE,[
+    scope.accountId,scope.characterId,grant.kind,grant.resourceId,textAmount(grant.amount),
+   ]);
+   if(balance.rows.length!==1||
+    !/^\\d+$/.test(balance.rows[0].balance)||
+    BigInt(balance.rows[0].balance)<BigInt(grant.amount))
+    reject('balance_readback_failed');
+   return proof;
+  },
+  async appendInbox(
+   tx:CombatV2RewardSqlTransaction,
+   scope:TrustedSoloIdentityV2,receipt:SoloRewardReceiptV2,
+  ){
+   if(!receipt||receipt.sourceKey!=='combat-v2:solo:'+scope.encounterId||
+    receipt.accountId!==scope.accountId||receipt.characterId!==scope.characterId)
+    reject('invalid_inbox_scope');
+   const params=[receipt.sourceKey,scope.accountId,scope.characterId,receipt.receiptDigest] as const;
+   const added=await tx.query<QaInboxRow>(INSERT_INBOX,params);
+   if(added.rows.length>1)reject('duplicated_inbox_source');
+   if(added.rows.length===1)return checkInbox(added.rows[0],scope,receipt);
+   const existing=await tx.query<QaInboxRow>(READ_INBOX,[receipt.sourceKey]);
+   if(existing.rows.length!==1)reject('missing_inbox_source');
+   return checkInbox(existing.rows[0],scope,receipt);
+  },
+ };
+}
+).test(grant.grantSourceId))
     reject('invalid_grant_scope');
    const params=[grant.grantSourceId,scope.accountId,scope.characterId,
     grant.kind,grant.resourceId,textAmount(grant.amount)] as const;

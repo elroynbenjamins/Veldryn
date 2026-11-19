@@ -1,8 +1,10 @@
-# Veldryn — Equipment 2.0 icon production standard (draft v1)
+# Veldryn — Equipment 2.0 icon production standard (Style 4 selected)
 
 **Production calibration companion:** [EQUIPMENT_2_0_GENERATION_PLAYBOOK.md](EQUIPMENT_2_0_GENERATION_PLAYBOOK.md) adds mandatory reference-kit, prompt-version, slot silhouette, light/shade, pixel-cluster and visual comparison gates. Do not begin batch generation until its approved reference kit is recorded in the generation queue and the first cross-material calibration batch is reviewed.
 
 **Status:** authoring/QA contract only. No icons generated, replacement assets installed, 2.0 rewards issued, or release flags enabled by this document.
+
+**Approved direction (19 November 2026): Style 4 — painterly dark-fantasy storybook equipment.** It supersedes the previous rough pixel-cluster renderer for *new* Equipment 2.0 art only. The user's fourth concept sets the visual direction; **production-grade reference assets are still pending**. See the definitive [Style 4 slot pose guide](EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md) and [pose-lock JSON](equipment-2-0-pose-lock.json).
 
 ## Authority and scope
 
@@ -11,14 +13,14 @@ This standard governs **new Equipment/Crafting 2.0** crafted pieces, class/path 
 Relevant existing sources:
 - `apps/mobile/art-review/t1-t9-equipment-icons-v1/ART_DIRECTION.md` — established 5×2 runtime / class silhouettes / tier ladder.
 - `apps/mobile/art-review/REVIEW_STATUS.md` — approved rough pixel-cluster reference family (including `full-equipment-v2-rough/` and beginner sets).
-- `docs/art/EQUIPMENT_T3_T4_STYLE_GUIDE.md` — class accents, detailed regional resource fidelity and safe-bounds rules, **but its soft-painted renderer wording is legacy and must not override the approved rough-pixel style for NEW 2.0 art**.
+- `docs/art/EQUIPMENT_T3_T4_STYLE_GUIDE.md` — class accents, detailed regional resource fidelity and safe-bounds rules, **its painterly fantasy vocabulary can guide Style 4 material rendering, but the updated 2.0 pose guide overrides old orientation rules**.
 - `apps/mobile/src/content/equipment_catalog_t1_t9_v33.json` and `backend/data/equipment_exact_recipes_v33.json` — legacy reference identities/material progression, *not* a substitute for 2.0 definitions.
 - Hidden review PR #1382 (Equipment/Crafting 2.0), #1416 (Party / shared chest rewards), #1454 and upstream World Boss chest contracts. Re-verify those drafts after branch sync: their contents and counts may change.
 - `apps/mobile/src/theme/resource-assets.ts`, `regional-resource-assets.ts`, and dedicated ingredient icons — actual shipped material-color/shape authority.
 
-**Precedence:** actual item identity/recipe/entitlement contract > approved matching class/slot art reference > this 2.0 render/geometry lock > material icon > aesthetic improvisation. Art does not alter gameplay contracts. If references disagree on renderer, use approved rough pixel-cluster art as the 2.0 visual authority, not older smooth painted concept boards. Rarity frames, quality, glow effects and UI backgrounds are always rendered by the application.
+**Precedence:** actual item identity/recipe/entitlement contract > selected Style 4 painterly renderer and canonical Style 4 pose guide > approved same-slot Style 4 master > 2.0 geometry > authentic material icon > aesthetic improvisation. Previously accepted rough-pixel art is legacy reference only, not the new Style 4 master. Rarity/quality/glow/borders always come from the app.
 
-## Immutable technical lock: `veldryn-eq2-icon-v1`
+## Immutable technical lock: `veldryn-eq2-storybook-v1`
 
 | Property | Rule |
 | --- | --- |
@@ -30,7 +32,7 @@ Relevant existing sources:
 | Runtime exports | Optimized RGBA **WebP**, target **≤250 KiB** per 10-item atlas; >350 KiB requires review; >500 KiB fails until redesigned/optimized; never auto-sacrifice icon clarity. Single icon exports have a proportional budget |
 | Masters | Retain lossless **PNG** masters and generation notes in review/non-bundled folders, not the shipped asset folder |
 | Resolution/downsample | Generate individual isolated masters at convenient square source size (e.g. 1024px), confirm intact silhouette and alpha, preserve aspect ratio, center within safe bounds, then export exact 192px icon. Assemble 10 approved icons into the final atlas. Do not enlarge one tier relative to another |
-| Visual checks | Compare at 32, **40**, 48, and 64px per icon; nearest-neighbor/actual mobile renderer previews on dark and light UI backgrounds |
+| Visual checks | Compare at 32, **40**, 48, and 64px per icon; LANCZOS/actual mobile renderer previews on dark and light UI backgrounds |
 | No upscaling | A 192px icon is not a crop from a tiny 32px source scaled up; design at source size then deliberately resolve clustered edges at final size |
 
 **Two delivery modes:** Full ten-slot sets receive a ten-cell atlas. Partial/standalone chest rewards get **individual** 192px icons keyed by the canonical item ID; a twenty-piece Party collection is *not* forced into two invented ten-piece sets. World Boss gathering pieces likewise follow their actual item/slot map, not a fictional armor set. If runtime mapping later needs an atlas, use explicit approved slots and transparent empty slots in a separate format; never pass a sparse sheet to the legacy ten-slot validator.
@@ -39,27 +41,22 @@ Relevant existing sources:
 
 ## Immutable visual/camera lock
 
-- **Rendering:** premium dark-fantasy **rough pixel-cluster** inventory art; deliberate angular groups, hard stair-step contour transitions and compact readable material planes. Modest within-cluster painted shading is allowed. Reject smooth airbrush, glossy 3D/PBR, noisy mini-engraving, overly cartoon-flat vector work and faux pixelation from low-resolution enlargement.
-- **Viewpoint:** single, stable near-front **three-quarter inventory view**, slight top visibility, eye level consistent across a slot family. No perspective changes by tier, no floor plane. All left/right directions below refer to the *viewer*.
+- **Rendering:** grounded hand-painted dark-fantasy **storybook inventory illustration** matching the user's fourth example: crisp readable contours, modest natural brush texture, authentic scratches/stitching, believable matte metal/leather/cloth and gently graduated shadows. Reject rough pixel-cluster output, flat vectors, hyperreal PBR, airbrushed blur, and noisy micro-ornament.
+- **Viewpoint:** product camera about 10–15° elevated, **slot- and weapon-family-specific** near-front three-quarter view; capes show the rear, rings tilt, and bows/axes/staves each use their own pose. No camera changes by tier within one slot family and no floor plane. Left/right always mean *viewer left/right*.
 - **Lighting:** one steady **warm neutral key at upper-left (about 10 o'clock)**, top-left edge highlights and broad left-facing planes; subdued cool reflected fill to the lower-right, darkest occlusion at underside/inside joints. No extra spotlights, opposite-side rim swaps, HDR bloom, hard cast shadow or random colored mood lighting.
 - **Scale:** same slot-family visual mass throughout tiers; helmet/chest/boots cannot become progressively larger. Weapon length, horns, banners, fur and cape must stay wholly inside the same safe rectangle. Progression must be construction/material, not occupancy.
-- **Palette:** close dark outlines from material shadow (not uniform black), 2–4 readable shade planes per major material, class accent on a *small* controlled location, material-specific accent in structural features. Never flood every piece with the class color.
-- **Texture:** big groups first (metal plate / hide / cloth / wood / stone / crystal), medium-scale seams second, sparse highlight pixels last. No dust, motion lines or random sparkles that survive as floating components.
+- **Palette:** controlled storybook shadow edges, distinct major light/mid/dark material planes, textured transitional strokes and small localized class accents. No thick uniform pixel-outline or whole-piece class recoloring.
+- **Texture:** big material planes first, stitches/seams/scratches second, tiny brush marks last. No high-frequency pixel noise, floating dust, motion lines, blurred outlines or stray sparkles.
 
 ### Slot direction and canonical silhouettes
 
-| Slot | Stable composition for a single icon |
-| --- | --- |
-| Helmet | Front opening/visor faces viewer, slight three-quarter turn showing **viewer-right** side; same crown height and brow line within a class/path |
-| Chest | Upright torso-shaped piece with shoulders visible, no arms or mannequin; same three-quarter turn; clasps centerline |
-| Gloves | Two **closed** gloves/gauntlets, separated, fingertips pointing down; no skin/hands |
-| Legs | Paired trousers/greaves stop **above ankles**; no soles/feet; upright and symmetric visual weight |
-| Boots | Two boots as a pair, toes tipped slightly toward viewer-right; soles contained |
-| Weapon | One main-hand implement per icon; default handle low-left / point or head upper-right. Preserve class-specific bow/staff profiles and match approved path reference instead of rotating all items identically |
-| Offhand | One shield/focus/tome or **one separate offhand dagger** as class requires; shields show front and a little viewer-right edge. Do not duplicate the main weapon |
-| Cape | One hanging cloak, near rear/three-quarter cloth view, collar upper center, hem down; no floating shoulders or scene |
-| Amulet | One centered pendant with clearly visible chain/cord; simpler and smaller visual mass than chest/helmet |
-| Ring | One band at stable three-quarter tilt; smaller visual mass than major gear; prominent center stone only when justified by set materials |
+**Definitive orientation and family-based facing:** [EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md](EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md) and [equipment-2-0-pose-lock.json](equipment-2-0-pose-lock.json). The following overrides the previous draft:
+- Helmet, chest, shield: nearly frontal, with subtle viewer-right side and top reveal
+- Gloves: exactly two, fingertips mostly down-left; legs: two legs hanging vertically with no boots
+- Boots: exactly two, both toes toward image-left, fixed small pair offset
+- Straight swords/daggers: **hilt upper-right → blade tip lower-left**; axes/maces: **head upper-left → handle lower-right**; staff/spear: upright top-right; bow: arc image-left/string image-right
+- Cape: collar up and **back panel** toward camera, hem down; jewelry: centered pendant and three-quarter open elliptical ring
+- All poses: no mirroring, no random tilt, no wearer, no cut tips, no new orientation from one tier to the next
 
 **Class/path difference is mandatory:** same-class Foundation versus Alternate must differ in helmet/head profile, main weapon geometry and offhand identity (not just hue). Consult the specific approved class/path examples in `ART_DIRECTION.md`. Knife Dancer must use one dagger in weapon cell and one distinct dagger in offhand cell. The nine class accents are fixed there and in `docs/art/EQUIPMENT_T3_T4_STYLE_GUIDE.md`.
 
@@ -88,26 +85,26 @@ Before generating any icon, record in the art manifest:
 2. `sourceType`: `craft`, `dungeon`, `party_event_chest`, `world_boss_chest`, or another named source; exact reward/drop table and status. A design-only item is **not** marked wired.
 3. Approved **same-slot same-class/path** style reference + accepted immediately preceding tier + actual primary and secondary resource icon crops. For a unique reward, include canonical boss/event motif reference.
 4. Fixed **design brief:** helmet/weapon/offhand signature, dominant material, 2–3 icon-faithful colors/shapes, major construction placements, how this differs from the nearest existing item.
-5. Fixed `styleLock`: `veldryn-eq2-icon-v1`; `light`: `upper-left-10oclock`; `camera`: `front-three-quarter-viewer-right`; `canvas`: `192x192`; `safeInset`: `26px`; `slot`: exactly one approved slot.
+5. Fixed `styleLock`: `veldryn-eq2-storybook-v1`; `light`: `upper-left-10oclock`; `camera`: `slot-specific-product-three-quarter`; `canvas`: `192x192`; `safeInset`: `26px`; `slot`: exactly one approved slot.
 6. Candidate ID, generator/source, reviewer, visual QA, automated QA, runtime mapping check and status transition evidence. Keep generated masters and prompt versions traceable.
 
 **Reference priority:** supply a **labelled image of an approved corresponding slot** to lock rendering; provide approved matching-class prior-tier piece to lock progression; provide a *cropped* current resource icon to lock material; provide source motif reference if needed. Do not feed a whole atlas without specifying the exact cell. If the generator returns a board instead of a transparent item, treat it as a concept only.
 
 ### Exact prompt skeleton (replace every bracket)
 
-> Veldryn EQ2 equipment **single-item** production icon, styleLock veldryn-eq2-icon-v1. Draw ONLY [ITEM ID / NAME], the [SLOT] for [CLASS / PATH OR UNIVERSAL], [TIER], acquired from [CANONICAL SOURCE]. Reproduce the supplied approved Veldryn rough pixel-cluster dark fantasy icon style, cluster density, dark contour weight, 10-o'clock upper-left warm-neutral key light, cool lower-right occlusion and fixed front-three-quarter viewer-right inventory camera. Match [APPROVED SAME-SLOT REFERENCE] scale and orientation; use exactly the same 192×192 transparent output canvas, subject entirely within x/y 26..165 with no crop. Construction [TIER-APPROPRIATE CRAFT / MATERIAL PLAN]. Main material [RESOURCE NAME] must match the provided actual in-game icon's [HUE / SHAPE / SURFACE] as [STRUCTURAL COMPONENT]. Controlled class accent [COLOR], localized [LOCATION]. Distinctive set motif [ONE LEGIBLE FEATURE]. Relative to [PRIOR-TIER / PEER], this gear is [CONSTRUCTION DELTA], NOT bigger or brighter. No character, mannequin, ground, frame, words, border, baked-in rarity, particles, glow cloud, second item, low-resolution upscale, PBR, smooth rendering, hard floor shadow, cropped piece, or different lighting.
+> Veldryn EQ2 equipment **single-item** production icon, styleLock veldryn-eq2-storybook-v1. Draw ONLY [ITEM ID / NAME], the [SLOT] for [CLASS / PATH OR UNIVERSAL], [TIER], acquired from [CANONICAL SOURCE]. Reproduce **selected Style 4 hand-painted dark-fantasy storybook gear**: controlled warm 10-o'clock upper-left key light, crisp outlined shape with softly painted weathering/metal/fabric, subtle cool lower-right occlusion and slot/family-specific view from EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md. Match [APPROVED SAME-SLOT REFERENCE] scale and orientation; use exactly the same 192×192 transparent output canvas, subject entirely within x/y 26..165 with no crop. Construction [TIER-APPROPRIATE CRAFT / MATERIAL PLAN]. Main material [RESOURCE NAME] must match the provided actual in-game icon's [HUE / SHAPE / SURFACE] as [STRUCTURAL COMPONENT]. Controlled class accent [COLOR], localized [LOCATION]. Distinctive set motif [ONE LEGIBLE FEATURE]. Relative to [PRIOR-TIER / PEER], this gear is [CONSTRUCTION DELTA], NOT bigger or brighter. No character, mannequin, ground, frame, words, border, baked-in rarity, particles, glow cloud, second item, coarse pixel clusters, blurry airbrush, photoreal PBR, hard floor shadow, cropped piece, or different lighting.
 
 For a ten-item set, make each slot from the **same immutable packet**; never reroll camera, lighting, stroke or palette on each call. Assemble after individual approvals using the fixed slot order.
 
 ### Negative prompt / immediate rejection
 
-Different point of view, flipped directional highlights, soft blurred/airbrushed rendering, photorealism, tiny engraving, stray detached sparks, colored halo, floor shadows, opaque/checkered background, card framing, text, duplicated equipment, multiple weapons in one slot, bare hands in gloves, footwear in legs, weapon blade cropped, replacement of real material by generic colored magic, enlarged upper-tier icon, source cell touching an edge, or missing unique reward identity.
+Wrong sword hilt/tip direction, backwards boot toes, wrong bow/axe/staff family, back/front error, mirrored directional highlights, coarse pixel-cluster output, soft blurred/airbrushed rendering, photorealism, tiny engraving, stray detached sparks, colored halo, floor shadows, opaque/checkered background, card framing, text, duplicated equipment, multiple weapons in one slot, bare hands in gloves, footwear in legs, weapon blade cropped, replacement of real material by generic colored magic, enlarged upper-tier icon, source cell touching an edge, or missing unique reward identity.
 
 ## QA, approvals and deployment fence
 
 **Automated:** run `python tools/validate-equipment-v2-art.py <atlas.webp> --kind atlas` or `python tools/validate-equipment-v2-art.py <icon.webp> --kind icon` with Pillow installed. This strict 2.0 validator checks exact dimensions, real transparency, nonempty items, 26px gutters and byte budget. Optional `--reference` checks per-slot footprint parity. Also retain current production `tools/validate-equipment-atlas.mjs` for the normal legacy atlas contract. No validator can prove artistic sameness, correct item identity, correct 3D orientation, or that a source was previously cropped: these require **visual review**.
 
-**Human/mobile:** compare the full class/slot progression T1→T9 at the same 40px size, inspect hard pixel clusters at 100% and 300%, align on dark/light UI, compare resource silhouettes against the shipped ingredient icons, inspect alternate path side-by-side and inspect every generated source for pre-normalization clipping. Check actual Android inventory, crafting preview, chest result, shop and equipment comparison UI. Reject any mismatch; regenerate the single faulty slot rather than distorting the whole sheet.
+**Human/mobile:** compare the full class/slot progression T1→T9 at the same 40px size, inspect hand-painted silhouette/texture at 100% and 300%, align on dark/light UI, compare resource silhouettes against the shipped ingredient icons, inspect alternate path side-by-side and inspect every generated source for pre-normalization clipping. Check actual Android inventory, crafting preview, chest result, shop and equipment comparison UI. Reject any mismatch; regenerate the single faulty slot rather than distorting the whole sheet.
 
 **Art production states:** `identified → brief_ready → generating → candidate → visual_approved → normalized → tech_verified → mapped → device_verified`. Each step records evidence; unknown/unverified remains incomplete. `mapped` does **not** mean shipped. Release remains blocked until Equipment 2.0 physical item custody, approved drop tables, explicit go/no-go and corresponding gameplay release gate are complete.
 
@@ -117,6 +114,8 @@ Review-only source: `docs/art/equipment-2-0-masters/<source>/<item-id>/<candidat
 Validated standalone export: `apps/mobile/assets/equipment-2-0/<source>/<item-id>.webp`.
 Validated full set export: `apps/mobile/assets/equipment-2-0/sets/<set-id>-atlas.webp`.
 Use lowercase file-safe slugs while retaining exact uppercase/case-sensitive gameplay item IDs in metadata. Never overwrite approved legacy art merely because names sound similar. Keep only production-optimized exports under `assets/` after the art and runtime mapping checks pass. Do not duplicate masters at multiple density variants.
+
+**Visual direction selected, production references pending.** The fourth sample remains a design example from this conversation, not approved transparent production source material. Archive the original in non-runtime reference storage and approve the ten real slot masters before bulk generation.
 
 **Initial queue tracking:** populate the accompanying manifest with real IDs from the latest synchronized Equipment 2.0, Party Event, World Boss and dungeon contracts. PR #1382 documents a hidden 118-template T1–T4 foundation; #1429 documents 8 Party sets / 20 pieces, and the World Boss draft documents boss-specific gathering rewards. These are *draft counts*, not an audited final inventory. Do not claim 100% coverage until a code-derived item-by-item audit is complete.
 
@@ -129,7 +128,7 @@ Use `tools/pack-equipment-v2-atlas.py` to compose approved PNGs into a **960×38
 1. Normalize invisible RGB pixels to a clean transparent matte for more efficient encoding, without changing visible alpha.
 2. Try **lossless WebP** first and then lossy candidates at quality 80/84/88/92/96 (or stricter caller minimum).
 3. Decode every candidate and require **pixel-identical alpha**, exact dimensions, native visible-area RGB MAE ≤3.5, and **each individual 192px cell** resized to 40px with visible-area RGB MAE ≤2.0 on both light and dark backgrounds.
-4. Select the smallest passing candidate. Keep **lossless** if lossy saves less than 5%, protecting hard pixel clusters from pointless loss.
+4. Select the smallest passing candidate. Keep **lossless** if lossy saves less than 5%, protecting fine storybook painted edges from pointless loss.
 5. Fail hard over **500 KiB per ten-slot atlas** or **70 KiB per standalone icon** rather than drop compression quality below acceptance. Simplify overly noisy artwork and review the source in that case. Preferred targets are **250 KiB per atlas** and **32 KiB per icon**, not guarantees.
 6. Optionally emit a machine-readable report outside the mobile assets using `--report` (saved bytes relative to a same-size optimized PNG baseline, codec chosen and color-error metrics); keep this evidence for reviewer approval.
 

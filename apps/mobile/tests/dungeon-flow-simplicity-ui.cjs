@@ -39,7 +39,7 @@ assert(run.includes('<CombatTheaterModal visible')&&run.includes('<DungeonCombat
 assert(stage.includes('CombatAttackSprite')&&stage.includes('CombatImpactBurst'),'Animated attack and impact effects remain in the Live combat stage');
 assert(theater.includes('{footer?<View style={[s.footer')&&theater.includes('paddingBottom:Math.max(insets.bottom,12)'), 'Combat theater keeps the main action fixed above device safe area');
 assert(run.includes("st('Continue dungeon')")&&run.includes("terminal?st('View rewards')")&&run.includes('onPresentationComplete={()=>setBattlePresentationReady(true)}'), 'Victory and run-end actions are accessible without using the top-right close control');
-assert(stage.includes('previewEnemies=anticipation&&!bossEncounter')&&run.includes('setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[])'), 'Echo opening animations use server-published room archetypes');
+assert(stage.includes('previewEnemyRoster?.length')&&stage.includes('previewArchetypes??[]')&&run.includes('setEntryCombatEnemies(option?.encounterPreview?.enemies??[])')&&run.includes('setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[])'), 'Echo opening animations prefer actual server-revealed enemies, retaining archetype fallback for older servers');
 assert(stage.includes('const complete=Boolean(replay&&!pending')&&run.includes('battlePresentationReady&&!inCombat'), 'Preview animations never claim a combat victory or enable continuation before real settlement');
 assert(route.includes('option.votes??0'),'Live vote totals derive from server options');
 assert(route.includes('myVotedNodeId===option.nodeId'),'Player portrait must appear only on their recorded route');

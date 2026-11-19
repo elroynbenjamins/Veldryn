@@ -2,7 +2,7 @@ import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
 import {useSocialText} from '../../i18n/social';
 import type {DungeonWeeklyQuestSnapshot} from '../../core/dungeon-weekly-quests';
 import {useCoopStyles} from '../../theme/useCoopStyles';
-import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
+import {type CoopColors} from '../../theme/coop-ui-theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {GameButton} from '../GameButton';
 import {FantasyPanel,StateChip} from './CoopVisualKit';

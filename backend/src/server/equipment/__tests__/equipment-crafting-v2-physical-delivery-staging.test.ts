@@ -62,6 +62,47 @@ assert.deepEqual(Object.keys(first.commit!.args).sort(),[
  'p_account_id','p_expected_gold','p_expected_version','p_request_hash',
  'p_request_id','p_response','p_contributions',
 ].sort());
+// The future online RPC must serialize all state and receipt effects under
+// the EXISTING single-account expected-version + expected-wallet CAS. This
+// fake is deliberately NOT a real DB/staging integration.
+class FakeSingleAccountCommit {
+ version=12;
+ current=claimed.state;
+ receipts=new Map<string,{hash:string;reply:unknown}>();
+ writes=0;
+ commit(plan:NonNullable<typeof first.commit>){
+  assert.equal(plan.rpcName,'commit_online_game_guild_pve_v1');
+  assert.equal(plan.previewOnly,true);
+  const args=plan.args,prior=this.receipts.get(args.p_request_id);
+  if(prior){
+   if(prior.hash!==args.p_request_hash)throw Error('idempotency_key_conflict');
+   return {status:'replayed',response:prior.reply};
+  }
+  if(this.version!==args.p_expected_version)throw Error('stale_state');
+  if(this.current.character!.gold!==args.p_expected_gold)throw Error('wallet_conflict');
+  this.current=args.p_response.state;
+  this.version=args.p_response.version;
+  this.writes++;
+  this.receipts.set(args.p_request_id,{
+   hash:args.p_request_hash,reply:args.p_response,
+  });
+  return {status:'committed',response:args.p_response};
+ }
+}
+const fake=new FakeSingleAccountCommit();
+const secondCandidate=simulateEquipmentV2PhysicalDeliveryStaging(
+ input(claimed.state,'physical-race-0002',12));
+assert.ok(secondCandidate.commit);
+const committed=fake.commit(first.commit!);
+assert.equal(committed.status,'committed');
+assert.equal(fake.writes,1);
+assert.throws(()=>fake.commit(secondCandidate.commit!),/stale_state/,
+ 'A second materialization from the same loaded version cannot commit');
+const reissued=fake.commit(first.commit!);
+assert.equal(reissued.status,'replayed');
+assert.equal(fake.writes,1);
+assert.equal(fake.current.character!.equipmentPouch!.stacks.filter(row=>row.instanceId===item.id).length,1,
+ 'The materialized exact copy is stored once under a single account CAS');
 const replay=simulateEquipmentV2PhysicalDeliveryStaging(input(first.state));
 assert.equal(replay.replayed,true);
 assert.strictEqual(replay.state,first.state);

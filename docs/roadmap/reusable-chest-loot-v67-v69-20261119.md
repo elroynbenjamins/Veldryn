@@ -48,7 +48,7 @@ The hidden `chest-reward-settlement-v69.ts` contract establishes:
 1. The player account is bound by authenticated server context, never a client-specified account ID.
 2. A single **SERIALIZABLE** account-wide inventory lock plus unique account/source receipt and SQL connection covers every reward leg, ledger row and physical item grant.
 3. Read the already-**committed** immutable receipt *first*. Replays cannot reroll even if secret or loot-table version changes. Verify old custody before returning it.
-4. If first claim, load *server-verified* source eligibility, its approved versioned table, and account-wide owned items; then resolve rolls, persist frozen receipt first, pay guaranteed rewards, mint rolled drops via authoritative item writer, and verify all physical custody **before commit**.
+4. If first claim, load *server-verified* source eligibility, its approved versioned table, and account-wide owned items; then resolve rolls. If an equipment item wins, validate the destination character actually belongs to the authenticated account, and **freeze that character UUID** in the immutable receipt. The player cannot redirect gear by switching characters after the first claim. Persist the receipt first, pay guaranteed rewards, mint rolled drops via authoritative item writer, and verify all physical custody **before commit**.
 5. Any failure rolls back receipt, currency and items together. Per-source unique constraints prevent double grant under concurrent retries.
 
 This module currently provides **orchestration contracts and mock-transaction regression tests, not a deployed Postgres adapter**. It cannot be mounted as a public endpoint until actual canonical event proof, account-wallet/resource Inbox writers, Equipment 2.0 item templates and T5–T9 budgets, claim authorization, migration/RLS and load tests are approved. The review-only Party Sigils V65 and Party reward V61 SQL are not deployed.
@@ -56,6 +56,6 @@ This module currently provides **orchestration contracts and mock-transaction re
 ## Test and readiness
 
 - `chest-loot-engine-v67.ts` and `__tests__/chest-loot-engine-v67.ts` exercise all four Party families × all difficulties × all chest kinds, all three bosses × all chest kinds, exact old hit/piece rolls, guaranteed reward parity, future weighted multi-group drops, duplicate policies, immutable table config and secure entropy.
-- `__tests__/chest-reward-settlement-v69.ts` exercises initial payout, receipt-first replay after config change, concurrent locked claims, corrupted/missing physical grants, rollback/retry and V1 legacy Party/World HMAC parity.
+- `__tests__/chest-reward-settlement-v69.ts` exercises initial payout, receipt-first replay after config change, concurrent locked claims, corrupted/missing physical grants, rollback/retry, V1 legacy Party/World HMAC parity, and rejection of missing/foreign character destinations for equipment.
 - `docs/roadmap/world-boss-account-erasure-v55-smoke.sql` was also corrected for a PostgreSQL variable-vs-column ambiguity found by CI.
 - Keep **all V67 and V69 gates FALSE**, the consolidated Party Events branch and successor draft PRs unmerged to production, and all review-only SQL out of Supabase deployment folders.

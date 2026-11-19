@@ -82,6 +82,22 @@ assert.equal(replaced.receipt.rollPercent,110);
 assert.deepEqual(getSidecar(replaced.state).slots[0].stat,{gemId:replacementGem,rollPercent:110});
 assert.ok(!replaced.state.account.gemPouch!.stacks.some(row=>row.itemId===replacementGem));
 assert.equal(getSidecar(replaced.state).receipts.length,3);
+const withMaterials=structuredClone(replaced.state);
+withMaterials.inventory.stacks.push(...recipe.inputs.map(row=>({itemId:row.itemId,quantity:row.quantity})));
+const forgedAgain=simulateEquipmentV2InGameState(forgeInput(withMaterials,{
+ kind:'start',requestId:'next-forge-0001',expectedVersion:15,recipeId:recipe.id,
+},15));
+assert.deepEqual(getSidecar(forgedAgain.state),getSidecar(replaced.state),
+ 'New Forge activity must preserve immutable installed gems and history');
+assert.throws(()=>simulateEquipmentV2InGameState(forgeInput(withMaterials,{
+ kind:'start',requestId:'gem-replace-0003',expectedVersion:15,recipeId:recipe.id,
+},15)),/v2_cross_command_request_id_conflict/);
+const alteredHistory=structuredClone(replaced.state);
+getSidecar(alteredHistory).receipts[2].rollPercent=80;
+assert.throws(()=>simulateEquipmentV2GemInGameState(input(alteredHistory,
+ command('gem-tamper-0001',15,firstGem),15,100)),/v2_gem_sidecar_state_mismatch/,
+ 'A saved socket may not disagree with its immutable action receipts');
+
 assert.doesNotThrow(()=>verifyEquipmentV2GemSidecar(
  (replaced.state.account.equipmentV2Hidden as {items:any[]}).items,getSidecar(replaced.state)));
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(replaced.state,

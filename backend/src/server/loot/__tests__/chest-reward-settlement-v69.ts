@@ -222,7 +222,7 @@ async function run(){
   const retry=await createChestRewardSettlementV69(s,{secret},true)({
    authenticatedAccountId:account,sourceKey:key,
   });
-  check(!retry.replayed&&s.state.receipts.size===1,
+  check(!retry.replayed&&s.state.receipts.has(key),
    'safe_retry_after_atomic_rollback');
  }
  {

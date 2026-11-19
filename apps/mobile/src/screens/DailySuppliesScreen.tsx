@@ -38,7 +38,6 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
  const reward=dailySupplyRewardForDay(selectedDay,displayCycle);
  const isToday=status.canClaim&&status.dayInTrack===selectedDay&&status.cycle===displayCycle;
  const isClaimed=selectedDay<=completed;
- const selectedWeek=Math.ceil(selectedDay/7);
 
  useEffect(()=>{if(status.canClaim&&status.dayInTrack!==selectedDay&&status.dayInTrack>completed){setSelectedDay(status.dayInTrack);setWeek(Math.ceil(status.dayInTrack/7));}},[status.currentDayKey,status.canClaim,status.dayInTrack]);
  async function run(command:GameCommand,success:string){

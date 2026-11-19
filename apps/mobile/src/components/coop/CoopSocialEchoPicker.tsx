@@ -18,7 +18,9 @@ export function CoopSocialEchoPicker({
  const toggle=(id:string)=>{
   const next=selectedIds.includes(id)?selectedIds.filter(row=>row!==id):[...selectedIds,id];
   try{validateSelectedSocialEchoIds(next,candidates,hostClassId,hostRole);onChange(next);setSelectionError('');}
-  catch(reason){setSelectionError(reason instanceof Error?reason.message:st('The selected roles cannot form a legal dungeon team.'));}
+  catch(reason){const code=reason instanceof Error?reason.message:'';
+   setSelectionError(code==='duplicate_coop_account'?st('Choose only one character from each friend or guild member.'):code==='duplicate_damage_class'?st('The two Damage allies must use different classes.'):st('Your team must have one Tank, two Damage heroes and one Support.'));
+  }
  };
  return <FantasyPanel>
   <Pressable accessibilityRole="button" accessibilityState={{expanded}} onPress={()=>setExpanded(v=>!v)} style={s.heading}>
@@ -36,13 +38,16 @@ export function CoopSocialEchoPicker({
    {!!selectionError?<Text accessibilityRole="alert" style={s.error}>{selectionError.replaceAll('_',' ')}</Text>:null}
    {candidates.map(candidate=>{
     const selected=selectedIds.includes(candidate.profileId),full=selectedIds.length>=3&&!selected;
-    return <Pressable key={candidate.profileId} accessibilityRole="checkbox" accessibilityState={{checked:selected,disabled:full}}
-     disabled={full} onPress={()=>toggle(candidate.profileId)} style={({pressed})=>[s.candidate,selected&&s.selected,pressed&&s.pressed,full&&s.dim]}>
+    let illegal=false;
+    if(!selected&&!full)try{validateSelectedSocialEchoIds([...selectedIds,candidate.profileId],candidates,hostClassId,hostRole);}catch{illegal=true;}
+    const disabled=full||illegal;
+    return <Pressable key={candidate.profileId} accessibilityRole="checkbox" accessibilityState={{checked:selected,disabled}}
+     disabled={disabled} onPress={()=>toggle(candidate.profileId)} style={({pressed})=>[s.candidate,selected&&s.selected,pressed&&s.pressed,disabled&&s.dim]}>
      <RoleBadge role={candidate.role} label={candidate.role}/>
      <View style={s.flex}><Text style={s.name} numberOfLines={1}>{candidate.name}</Text>
       <Text style={s.copy} numberOfLines={1}>{candidate.classId.replaceAll('_',' ')} · Lv {candidate.level} · {candidate.relationship==='both'?st('Friend & Guild'):candidate.relationship==='friend'?st('Friend'):st('Guild')}</Text>
      </View>
-     <Text style={[s.select,{color:selected?C.cyan:C.textMuted}]}>{selected?'✓':'○'}</Text>
+     <Text style={[s.select,{color:selected?C.cyan:C.textMuted}]}>{selected?'✓':disabled?'–':'○'}</Text>
     </Pressable>;
    })}
   </View>:null}

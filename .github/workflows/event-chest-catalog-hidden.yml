@@ -41,6 +41,8 @@ on:
       - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
+      - 'backend/src/server/party/weekly-party-event-inbox-v80.ts'
+      - 'backend/tests/party-event-inbox-v80.mjs'
       - 'backend/src/server/party/__tests__/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/src/server/loot/chest-equipment-bridge-v71.ts'
@@ -124,6 +126,8 @@ jobs:
         run: |
           node tests/chest-reward-ledger-v70.mjs
           node tests/chest-postgres-store-v70.mjs
+      - name: Verify V80 safe paid Party Event Inbox history against existing schema
+        run: node tests/party-event-inbox-v80.mjs
       - name: Verify V71 Party/World Equipment 2.0 binding and owner custody
         run: node .event-chest-tests/server/loot/__tests__/chest-equipment-bridge-v71.js
       - name: Verify server-only deterministic chest entropy and replay safety
@@ -155,6 +159,7 @@ jobs:
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
+          grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts

@@ -16,6 +16,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const paths={
   flags:'apps/mobile/src/core/release-flags.ts',
   eas:'apps/mobile/eas.json',
+  socialGate:'apps/mobile/src/online/social-identity-client-gate.ts',
   routes:'apps/mobile/src/core/feature-hub-routes.ts',
   app:'apps/mobile/App.tsx',
   worldRead:'backend/online/world-boss-current-read-route-v52.ts',
@@ -41,11 +42,13 @@ function check(read,migrations){
   };
   for(const name of ['RANKINGS_RELEASED','PLAYER_MARKET_RELEASED','MARKET_AUTHENTICATED_SERVICE_READY'])
     requireExportFalse('flags',name);
-  // Social Names can be tested only inside the explicitly migrated staging APK.
-  // Both staging channel AND exact staging endpoint AND opt-in must match.
-  const socialStagingFlag=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true';/;
-  if(!socialStagingFlag.test(source('flags')))
-    failures.push('Social Names must be restricted to the explicit staging channel, project and opt-in');
+  // Shared gameplay and backend bundles remain immutable and disabled.
+  requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
+  // Only the mobile client can opt into the migrated staging backend for QA.
+  const socialStagingFlag=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*PRODUCTION_SOCIAL_IDENTITY_RELEASED\|\|\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'\s*\);/;
+  if(!source('socialGate').includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED as PRODUCTION_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';")||
+     !socialStagingFlag.test(source('socialGate')))
+    failures.push('Mobile Social Names QA gate must require unchanged production-off flag, staging channel, project and opt-in');
   try{
     const builds=JSON.parse(source('eas')).build;
     if(builds?.staging?.distribution!=='internal'||
@@ -95,8 +98,9 @@ function selfTest(){
   const mutations=[
     ['rankings-release',paths.flags,'RANKINGS_RELEASED=false','RANKINGS_RELEASED=true'],
     ['market-auth-release',paths.flags,'MARKET_AUTHENTICATED_SERVICE_READY=false','MARKET_AUTHENTICATED_SERVICE_READY=true'],
-    ['social-name-production-bypass',paths.flags,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'","true"],
-    ['social-name-project-bypass',paths.flags,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'","true"],
+    ['social-name-shared-flag-bypass',paths.flags,'ACCOUNT_SOCIAL_IDENTITY_RELEASED=false','ACCOUNT_SOCIAL_IDENTITY_RELEASED=true'],
+    ['social-name-production-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'","true"],
+    ['social-name-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'","true"],
     ['social-name-eas-prod-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "true"'],
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],

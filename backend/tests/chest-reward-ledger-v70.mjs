@@ -109,7 +109,7 @@ try{
  await assert.rejects(()=>insertLeg(source,account,'inbox',0,
   'inbox:'+source,1,'inbox_message_2'),/duplicate key/);
  await assert.rejects(()=>insertLeg(source,other,'guarantee',0,
-  'gold',400,'cross_account'),/foreign key/);
+  'gold',400,'cross_account'),/CHEST_V70_RECEIPT_NOT_FOUND/);
  await assert.rejects(()=>db.query(
   'update private.chest_reward_receipts_v70 set table_version=$1 where source_key=$2',
   ['tampered',source]),/CHEST_V70_IMMUTABLE/);

@@ -94,6 +94,8 @@ export interface CompanionDefinition{
 export interface OwnedCompanionProgress{
   level:number;
   xp:number;
+  /** Earned XP held at an ascension gate; released only after ascension. */
+  bankedXp?:number;
   ascensionTier:0|1|2|3;
   bondLevel:number;
   bondXp:number;

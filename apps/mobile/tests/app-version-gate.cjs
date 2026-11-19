@@ -64,7 +64,7 @@ async function main(){
  await gate.rememberAppPolicy({...row,minimum_version:'1.0.0'});release({data:row});assert.equal((await stale).updateRequired,true);mocks['./supabase'].supabase.from=previous;
  const React=require('react'),{act,create}=require('react-test-renderer');global.IS_REACT_ACT_ENVIRONMENT=true;
  const native={SafeAreaView:'SafeAreaView',View:'View',Text:'Text',Pressable:'Pressable',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles}};
- const uiMocks={react:React,'react/jsx-runtime':require('react/jsx-runtime'),'react-native':native,'../theme/theme':{C:{},radii:{},spacing:{},typography:{}},'../theme/ThemeContext':{useGameTheme:()=>({})},'../i18n/GameLanguageProvider':{useGameLanguage:()=> 'en'},'../i18n/shared':{sharedText:(_,text)=>text}};
+ const uiMocks={'../storage/audio':{playSound(){}},react:React,'react/jsx-runtime':require('react/jsx-runtime'),'react-native':native,'../theme/theme':{C:{},radii:{},spacing:{},typography:{}},'../theme/ThemeContext':{useGameTheme:()=>({})},'../i18n/GameLanguageProvider':{useGameLanguage:()=> 'en'},'../i18n/shared':{sharedText:(_,text)=>text}};
  const button=load('src/components/GameButton.tsx',uiMocks);
  const {UpdateRequiredScreen}=load('src/components/UpdateRequiredScreen.tsx',{...uiMocks,'./GameButton':button});
  let tree,finish,calls=0;const retry=new Promise(resolve=>{finish=resolve;});

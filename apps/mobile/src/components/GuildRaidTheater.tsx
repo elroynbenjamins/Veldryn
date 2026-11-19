@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {useMusicOverride} from '../storage/audio';
 import {ActivityIndicator,Animated,Easing,Image,ImageBackground,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GuildPveEncounter} from '../core/guild-pve-encounters';
 import {guildPvePresentation,guildPveView} from '../core/guild-pve-encounters';
@@ -21,6 +22,7 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
  stageArt:ImageSourcePropType;bossArt:ImageSourcePropType;onClose:()=>void;onRefresh?:()=>unknown;
 }){
  const st=useSocialText(),C=useGameTheme();
+ useMusicOverride('boss');
  const [now,setNow]=useState(Date.now()),[pulse,setPulse]=useState(0);
  const currentRefresh=useRef(onRefresh);currentRefresh.current=onRefresh;
  const pending=(row.pendingAttempts??0)>0;

@@ -108,11 +108,11 @@ var init_meal_buffs = __esm({
   "../apps/mobile/src/core/meal-buffs.ts"() {
     "use strict";
     MEAL_BONUSES = [
-      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 2, durationHours: 3, label: "+2% Gathering speed" },
-      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 3, durationHours: 4, label: "+3% Gathering speed" },
-      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 3, durationHours: 4, label: "+3% Crafting speed" },
-      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 4, durationHours: 4, label: "+4% Combat XP" },
-      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 5, durationHours: 4, label: "+5% Non-combat skill speed" }
+      { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 4, durationHours: 3, label: "+4% Gathering speed" },
+      { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 6, durationHours: 4, label: "+6% Gathering speed" },
+      { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 6, durationHours: 4, label: "+6% Crafting speed" },
+      { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 8, durationHours: 4, label: "+8% Combat XP" },
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 10, durationHours: 4, label: "+10% Non-combat skill speed" }
     ];
   }
 });
@@ -43291,6 +43291,11 @@ function companionXpToNextLevel(rarity, level) {
 function companionMaxLevel(def) {
   return COMPANION_RARITY_CONFIG[def.rarity].maxLevel;
 }
+function companionRemainingLifetimeXp(def, level, xp = 0) {
+  let remaining = 0;
+  for (let current = Math.max(1, level); current < companionMaxLevel(def); current++) remaining += companionXpToNextLevel(def.rarity, current);
+  return Math.max(0, remaining - Math.max(0, Math.floor(xp)));
+}
 function requiredAscensionTierForLevel(def, level) {
   const caps = COMPANION_STAGE_CAPS[def.rarity];
   for (let tier = 0; tier < 4; tier++) if (level <= caps[tier]) return tier;
@@ -43309,6 +43314,7 @@ function normalizeProgress(def, value, fallback) {
   return {
     level: safeLevel,
     xp: safeLevel >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback.xp), Math.max(0, nextXp - 1)),
+    bankedXp: safeLevel >= max ? 0 : Math.min(int(value?.bankedXp ?? fallback.bankedXp), companionRemainingLifetimeXp(def, safeLevel)),
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
@@ -45567,7 +45573,7 @@ function validateProgressionSnapshot(companionId, input) {
   const rarity = COMPANION_RARITY[companionId];
   if (!rarity) throw new Error("unknown_companion");
   const ascensionTier = Math.max(0, Math.min(3, Math.floor(input.ascensionTier))), cap = companionLevelCap(companionId, ascensionTier);
-  return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
+  return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ...input.bankedXp === void 0 ? {} : { bankedXp: Math.max(0, Math.min(Number.MAX_SAFE_INTEGER, Math.floor(input.bankedXp))) }, ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
 // ../apps/mobile/src/core/feature-unlocks.ts

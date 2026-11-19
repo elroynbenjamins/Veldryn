@@ -5,7 +5,7 @@ import {COLLECTIBLE_TARGET_LABELS} from '../content/collectibles';
 import {BUYABLE_PERMANENT_BOOSTS} from '../content/permanent-boosts';
 import {selectedFaithBlessing} from './faith';
 import {faithBlessingEffectLabel} from '../content/faith';
-import {DAILY_SUPPLY_BONUS,dailySupplyBoostLabel,normalizeActiveDailySupplyBoost} from './daily-supplies';
+import {dailySupplyBoostLabel,dailySupplyActiveLabels} from './daily-supplies';
 import {equipmentCraftSlotBreakdown} from './equipment-crafting-queue';
 import {accountEntitlementBenefits} from './account-entitlements';
 
@@ -90,9 +90,9 @@ export function accountBonusOverview(state:GameState):AccountBonusOverview{
  for(const row of craftSlots.sources.filter(source=>source.id!=='base'&&source.earned)){
   sources.push({id:'equipment-craft-slot:'+row.id,label:'Equipment Forge · '+row.label,detail:'+1 active crafting slot · '+craftSlots.capacity+'/'+craftSlots.max+' currently available',scope:'account'});
  }
- const active=normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
- const temporary=active?{label:dailySupplyBoostLabel(active.type),percent:DAILY_SUPPLY_BONUS*100,remainingSeconds:active.remainingSeconds}:undefined;
- if(temporary)sources.push({id:'daily-supplies',label:'Daily Supplies · '+temporary.label,detail:'+'+temporary.percent.toFixed(0)+'% while qualifying activity time remains',scope:'temporary'});
+ const active=dailySupplyActiveLabels(state);
+ const temporary=active[0]?{label:dailySupplyBoostLabel(active[0].type),percent:active[0].bonus*100,remainingSeconds:active[0].remainingSeconds}:undefined;
+ for(const entry of active)sources.push({id:'daily-supplies:'+entry.type,label:'Supply Journey · '+entry.label,detail:'+'+Math.round(entry.bonus*100)+'% · '+Math.ceil(entry.remainingSeconds/60)+' minutes of matching activity',scope:'temporary'});
 
  return {modifiers,sources,...(temporary?{temporary}:{})};
 }

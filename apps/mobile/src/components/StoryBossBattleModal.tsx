@@ -1,5 +1,6 @@
 import {useGameplayText,type GameplayKey} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useMusicOverride} from '../storage/audio';
 import {Animated,AppState,Easing,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {ITEMS} from '../content/items';
@@ -28,6 +29,7 @@ function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
 
 export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameState;battle:FallenKnightBattleResult;message:string;onClose:()=>void}){
  const {gt,gl,language}=useGameplayText();
+  useMusicOverride('boss');
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!,region=WORLD_ZONES.find(row=>row.name==="King's Road");
   const reduceMotion=state.settings.reduceMotion;
   const classTint=state.character?CLASS_ICON_ACCENT[state.character.classId]:C.accent;

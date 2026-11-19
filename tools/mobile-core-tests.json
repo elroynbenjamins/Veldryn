@@ -194,6 +194,7 @@
   ".core-build/apps/mobile/tests/activity-queue.js",
   ".core-build/apps/mobile/tests/queue-premium-travel.js",
   ".core-build/apps/mobile/tests/daily-supplies.js",
+  ".core-build/apps/mobile/tests/supply-journey-forge-speed.js",
   ".core-build/apps/mobile/tests/account-bonuses.js",
   ".core-build/apps/mobile/tests/vip-supporter-entitlements.js",
   ".core-build/apps/mobile/tests/player-name-style-save.js",
@@ -268,6 +269,7 @@
   ".core-build/apps/mobile/tests/timed-processing.js",
   "tests/alchemy-recipe-tap-ui-contract.cjs",
   ".core-build/apps/mobile/tests/meal-buffs.js",
+  ".core-build/apps/mobile/tests/cooking-xp-visibility.js",
   ".core-build/apps/mobile/tests/balance-telemetry.js",
   ".core-build/apps/mobile/tests/regional-companion-unlocks.js",
   ".core-build/apps/mobile/tests/asterfall-companion-unlocks.js",
@@ -403,5 +405,8 @@
   ".core-build/apps/mobile/tests/equipment-resale-gate.js",
   ".core-build/apps/mobile/tests/equipment-disposal-guidance.js",
   "tests/equipment-disposal-ui.cjs",
-  ".core-build/apps/mobile/tests/stored-json.js"
+  ".core-build/apps/mobile/tests/stored-json.js",
+  ".core-build/apps/mobile/tests/world-boss-replay-presentation.js",
+  "tests/world-boss-battle-stage-ui.cjs",
+  ".core-build/apps/mobile/tests/game-audio.js"
 ]

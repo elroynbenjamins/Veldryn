@@ -74,7 +74,7 @@ Open `capture.html?screen=hero` through the review server, replacing `hero` with
 
 **Mode:** built-in image-generation tool, reference-guided generation; not CLI/API fallback. Only the promotional key art was generated. The logo and tagline were added deterministically afterward. The generation skill guided reference fidelity, inspection, and saving the output into the project; no generated UI was substituted for gameplay.
 
-**References:** `apps/mobile/assets/events-startup-v1/backgrounds/startup_firstlight@3x.png` (world/style), and `apps/mobile/assets/character-skins-t1-ironwarden/T1_003/female-front.png` (heroine identity). Source output: `source/promotional-key-art.png`.
+**References:** `apps/mobile/assets/events-startup-v1/backgrounds/startup_firstlight@3x.png` (world/style). Source output: `source/promotional-key-art.png`.
 
 **Final prompt:**
 

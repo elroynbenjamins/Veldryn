@@ -9,6 +9,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalis
 import {GATHER_TIME_SCALE,COMBAT_TIME_SCALE} from './game';
 import {environmentEffect,environmentEffectForActivity,environmentForZone} from './world-weather';
 import {gatheringPacing} from './gathering-tools';
+import {dailySupplySpeedMultiplier} from './daily-supplies';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers,professionMasteryRankProgress} from './profession-mastery-v40';
 import {professionMasteryActiveBonusText} from './profession-mastery-presentation';
@@ -116,7 +117,7 @@ export function gatheringBalanceProjection(state:GameState,activity:GatherDef,of
   const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
   const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=activity.skillId==='herbalism'?herbalismMethod(state.character?.herbalismMethodId,herbLevel):undefined;
   const specialtySpeed=activity.skillId==='fishing'?permanent.fishingSpeedMultiplier:activity.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
-  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier),actionsPerHour=3600/Math.max(.1,cycleSeconds);
+  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',0)*specialtySpeed*mastery.speed*affinity.speedMultiplier),actionsPerHour=3600/Math.max(.1,cycleSeconds);
   const meanItems=(activity.min+activity.max)/2;
   // Settlement now rolls the authored min–max range deterministically per action,
   // so long-run runtime expectation and authored expectation intentionally match.
@@ -136,7 +137,7 @@ export function activeGatheringRuntimeProjection(state:GameState){
   const effect=environmentEffectForActivity(activity).effect,pacing=gatheringPacing(state,definition),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(definition.id,state.account.professionMasteryByAction?.[definition.id]);
   const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=definition.skillId==='herbalism'?herbalismMethod(activity.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;
   const specialtySpeed=definition.skillId==='fishing'?permanent.fishingSpeedMultiplier:definition.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
-  const cycleSeconds=definition.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier);
+  const cycleSeconds=definition.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',0)*specialtySpeed*mastery.speed*affinity.speedMultiplier);
   const actionsPerHour=3600/Math.max(.1,cycleSeconds),meanItems=(definition.min+definition.max)/2,essence=definition.skillId==='herbalism'?HERBALISM_ESSENCE_BY_ZONE[definition.zoneId]:undefined;
   return {
     definition,

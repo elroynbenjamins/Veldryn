@@ -22,13 +22,14 @@ export interface GatheringToolDef{
   rarity:'common'|'uncommon'|'rare'|'epic';value:number;
 }
 
-/** Tool blueprints are 25% rarer than their previously authored odds.
- * The normal 5% combat-drop reduction is applied separately by MONSTERS. */
-export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75;
-/** Drop chances are stored as fractional probabilities, so 0.001 = 0.10%.
- * Round the FINAL monster drop probability down, after the existing general
- * 5% reduction, rather than rounding the authored baseline too early. */
-export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.001;
+/** Existing -25% blueprint adjustment plus a further -50% for faster combat.
+ * The normal -5% combat drop adjustment is still applied separately by MONSTERS.
+ * Only tool blueprints use this multiplier; other monster loot is unchanged. */
+export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75*0.5;
+/** Fractional probabilities: 0.0005 = 0.05 percentage points.
+ * Round FINAL per-kill probabilities down, after all modifiers, preserving
+ * precise half-rates such as 0.55%, 0.45%, 0.35%, and 0.25%. */
+export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.0005;
 export function roundDownToolBlueprintDropChance(chance:number):number{
  if(!Number.isFinite(chance)||chance<0||chance>1)throw new Error('invalid_tool_blueprint_chance');
  const ticksPerUnit=Math.round(1/TOOL_BLUEPRINT_DROP_ROUNDING_STEP);

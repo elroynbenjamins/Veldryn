@@ -1,0 +1,70 @@
+# Temporary PR-only reconciliation. Remove before squash merge.
+# This never deploys or changes the production/main branch.
+name: Reconcile gathering tool PR Edge bundles
+
+on:
+  push:
+    branches: ['chatgpt/cumulative-gathering-tools-premium-20261119']
+    paths:
+      - '.github/workflows/reconcile-gathering-tools-edge.yml'
+      - 'apps/mobile/src/content/gathering-tools.ts'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/types.ts'
+      - 'apps/mobile/tests/gathering-tools.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gathering-tools-pr-edge-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/cumulative-gathering-tools-premium-20261119
+          fetch-depth: 1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned backend and mobile packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Run focused tool and encounter regression checks
+        run: node tools/run-mobile-tests.mjs gathering-tools monster-drop-balance
+      - name: Build authoritative gameplay and co-op Edge bundles
+        run: pnpm --dir backend build:online
+      - name: Verify both generated bundles match the authoritative source
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit generated bundles to this PR branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected generated changes; aborting: $unexpected"
+            exit 1
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Gameplay and co-op bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): reconcile gathering tools with authoritative server bundles'
+          git push origin HEAD:chatgpt/cumulative-gathering-tools-premium-20261119

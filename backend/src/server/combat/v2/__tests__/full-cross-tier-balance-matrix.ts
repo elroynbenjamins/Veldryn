@@ -9,6 +9,7 @@
  * equipmentTier >=2. This remains a marked, blocking coverage gap.
  */
 import {strict as assert} from 'node:assert';
+import {analyzeSyntheticBalanceV2} from '../balance-diagnostics';
 import type {CombatStats,CombatantDefinition} from '../../types';
 import {launchPlayer} from '../../content/launch-combat';
 import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SKILLS_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -215,7 +216,11 @@ const summary=Object.fromEntries(tiers.map(tier=>[
   authoredEnemyKit:tier>1,
  },
 ]));
+const diagnostics=analyzeSyntheticBalanceV2(resultRows);
+assert.equal(diagnostics.count,540);
+assert.equal(diagnostics.gearProgression.length,270);
 console.log(JSON.stringify({fixture:'SYNTHETIC_NOT_RELEASE_BALANCE',
+ diagnostics,
  scenarios:resultRows.length,deterministicChecks,roleCounts,
  authoredEnemyCases:authored,unapprovedT1KitCases:t1Gaps,
  summary,

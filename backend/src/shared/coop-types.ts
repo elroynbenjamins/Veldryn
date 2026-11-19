@@ -61,7 +61,7 @@ export interface CoopRunRequest {
   loadoutId: string;
   loadoutRevision: number;
   /** Optional social Echo profile IDs; never roles or raw stats. Q-Mode only. */
-  preferredEchoProfileIds?:string[];
+  preferredEchoCharacterIds?:string[];
 }
 
 export interface CoopDecision {

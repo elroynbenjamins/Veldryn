@@ -43,7 +43,7 @@ function check(read,migrations){
     requireExportFalse('flags',name);
   // Social Names can be tested only inside the explicitly migrated staging APK.
   // Both staging channel AND exact staging endpoint AND opt-in must match.
-  const socialStagingFlag=/export\\s+const\\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\\s*=\\s*process\\.env\\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\\s*process\\.env\\.EXPO_PUBLIC_SUPABASE_URL==='https:\\/\\/iqfmmpvwanvvmxcftfxw\\.supabase\\.co'&&\\s*process\\.env\\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true';/;
+  const socialStagingFlag=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true';/;
   if(!socialStagingFlag.test(source('flags')))
     failures.push('Social Names must be restricted to the explicit staging channel, project and opt-in');
   try{

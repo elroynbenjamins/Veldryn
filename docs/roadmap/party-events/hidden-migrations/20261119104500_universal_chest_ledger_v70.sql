@@ -130,14 +130,14 @@ CREATE TRIGGER chest_v70_guard_ledger_insert
 -- Only then can the child DELETE pass; UPDATE remains impossible.
 CREATE FUNCTION private.chest_v70_immutable()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
-AS $
+AS $chest_erase_v82$
 BEGIN
  IF TG_OP='DELETE' AND NOT EXISTS (
   SELECT 1 FROM auth.users WHERE id=OLD.account_id
  ) THEN RETURN OLD; END IF;
  RAISE EXCEPTION 'CHEST_V70_IMMUTABLE';
 END
-$;
+$chest_erase_v82$;
 CREATE TRIGGER chest_v70_receipt_immutable
  BEFORE UPDATE OR DELETE ON private.chest_reward_receipts_v70
  FOR EACH ROW EXECUTE FUNCTION private.chest_v70_immutable();

@@ -79,7 +79,7 @@ function checkedReceipt(receipt:FrozenChestReceiptV69){
   match[2]!==receipt.accountId||
   !receipt.tableVersion.startsWith('world_boss_v58_')||
   !['hollowroot','sunscar','frostmarch'].some(boss=>
-   receipt.tableVersion.startsWith('world_boss_v58_'+boss+'_'+match[3]+'_'))||
+   receipt.tableVersion==='world_boss_v58_'+boss+'_'+match[3])||
   receipt.guaranteed.length!==4||receipt.groups.length!==1||
   receipt.groups[0]?.groupId!=='equipment'||
   receipt.groups[0]?.type!=='equipment'||

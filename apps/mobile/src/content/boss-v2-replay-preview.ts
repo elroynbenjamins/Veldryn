@@ -63,15 +63,20 @@ export function projectBossV2Replay(
  if(!preview||!Array.isArray(preview.casts)||!Array.isArray(preview.phases)||
     !Array.isArray(events)||events.length>5000||!safeInt(serverCursorMs)||
     serverCursorMs>180000)return null;
+ if(typeof preview.bossId!=='string'||
+    !Object.prototype.hasOwnProperty.call(BOSS_V2_PRESENTATION_IDS,preview.bossId))
+    return null;
  const expected=BOSS_V2_PRESENTATION_IDS[preview.bossId];
  if(!expected||preview.casts.length!==expected.casts.length||
     preview.phases.length!==2||
-    preview.casts.some((c,i)=>c.abilityId!==expected.casts[i]||
+    preview.casts.some((c,i)=>!c||typeof c!=='object'||
+      c.abilityId!==expected.casts[i]||
       !(BOSS_V2_CAST_IDS as readonly string[]).includes(c.abilityId)||
-      !AUTHORED_CAST[c.abilityId]||
+      !Object.prototype.hasOwnProperty.call(AUTHORED_CAST,c.abilityId)||
       c.castMs!==AUTHORED_CAST[c.abilityId].castMs||
       c.interruptible!==AUTHORED_CAST[c.abilityId].interruptible)||
-    preview.phases.some((p,i)=>p.phaseId!==expected.phases[i]||
+    preview.phases.some((p,i)=>!p||typeof p!=='object'||
+      p.phaseId!==expected.phases[i]||
       p.hpPercent!==(i===0?70:35)))return null;
  let at=-1;
  let pending:null|{abilityId:string;startedAt:number;endsAt:number}=null;

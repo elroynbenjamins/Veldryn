@@ -4,6 +4,7 @@ import type {QModeRun} from './qmode';
 import {projectCombatReplay,type PublicCombatReplay} from './combat-replay-projection';
 import {expeditionBossTelegraph,expeditionEncounterPreview} from '../combat/expedition-combat-service';
 import {roomBoonOffers,type RoomBoonOffer} from './room-boon-choices';
+import {availableDungeonCombatMarks,projectedDungeonCombatMarks,DUNGEON_COMBAT_MARKS_CAP} from './dungeon-combat-marks-cap';
 
 // Static encounter intel is determined solely by the content ID; do not
 // regenerate its combat catalog for every server projection or room update.
@@ -32,7 +33,7 @@ export interface PublicQModeRunProjection {
   bossMechanic?:{label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:false}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:false}>;suppressedAbilities:Array<{id:string;label:string}>}};
   lastCombat?:PublicCombatReplay;
   lastRoomOutcome?:ReturnType<typeof publicCoopRoomOutcome>;
-  lastCombatMarks?:number;
+  lastCombatMarks?:number;combatMarksEarned?:number;combatMarksCap?:number;
   boonOffers?:RoomBoonOffer[];
   potionChargeCapacity?:number;healingPotionUsesByActor?:Record<string,number>;
   potionPreparationOpen?:boolean;preparedAlchemyPotionIdsByActor?:Record<string,string>;
@@ -54,7 +55,15 @@ export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode',serverS
   const lastRoomOutcome=publicCoopRoomOutcome(run.lastResolution?.nodeId,run.lastResolution?.result.summary);
   const boonOffers=mode==='qmode'&&serverSecret?roomBoonOffers(run,serverSecret):[];
   const resolvedNode=run.graph.nodes.find(node=>node.nodeId===run.lastResolution?.nodeId);
-  const lastCombatMarks=run.lastResolution?.result.success&&run.lastResolution.result.summary.kind==='combat'?(resolvedNode?.kind==='elite'?5:resolvedNode?.kind==='battle'?3:undefined):undefined;
+  const visitedCombatKinds=run.persistentState.visitedNodeIds
+   .filter(id=>run.lastResolution?.result.success!==false||id!==run.lastResolution?.nodeId)
+   .map(id=>run.graph.nodes.find(node=>node.nodeId===id)?.kind??'other');
+  const combatMarksEarned=projectedDungeonCombatMarks(visitedCombatKinds);
+  const lastCombatBase=resolvedNode&&(resolvedNode.kind==='elite'||resolvedNode.kind==='battle')?resolvedNode.kind:undefined;
+  const previouslyEarned=lastCombatBase&&run.lastResolution?.result.success
+   ?projectedDungeonCombatMarks(visitedCombatKinds.slice(0,-1)):combatMarksEarned;
+  const lastCombatMarks=lastCombatBase&&run.lastResolution?.result.success
+   ?availableDungeonCombatMarks(previouslyEarned,lastCombatBase):undefined;
   const team=run.players.map((player,index):PublicQModeMember=>{const state=run.persistentState.actors[player.id];if(!state)throw new Error('missing_qmode_actor_state');const companionId=(player.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length),bodyTag=(player.tags??[]).find(tag=>tag.startsWith('body:'))?.slice('body:'.length),bodyPresentation=bodyTag==='female'?'female' as const:bodyTag==='male'?'male' as const:undefined;return{memberId:player.id,displayName:player.name,role:player.role as CoopRole,classId:player.classId??'',bodyPresentation,companionId,kind:index===0?'controller':run.npcCharacterIds?.includes(player.id)?'npc':'echo',effectiveLevel:player.level,currentHp:state.hp,maximumHp:player.stats.maxHp,downed:state.downed};});
-  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,potionChargeCapacity:([3,3,4,4,5] as const)[run.tier-1],healingPotionUsesByActor:run.persistentState.healingPotionUsesByActor??{},potionPreparationOpen:run.phase==='awaiting_choice'&&!run.persistentState.visitedNodeIds.length,preparedAlchemyPotionIdsByActor:run.persistentState.preparedAlchemyPotionIdsByActor??{},...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),...(boonOffers.length?{boonOffers}:{}),...(lastRoomOutcome?{lastRoomOutcome}:{}),...(lastCombatMarks?{lastCombatMarks}:{}),settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
+  return {runId:run.id,mode,phase:run.phase,tier:run.tier,expeditionId:run.expeditionId,controller:true,team:mode==='live'?team.map(member=>({...member,kind:'controller' as const})):team,graph,currentNodeId:run.currentNodeId,options,visitedNodeIds:[...run.persistentState.visitedNodeIds],resources:run.persistentState.resources,boons:[...run.persistentState.boons],artifacts:[...run.persistentState.artifacts],curses:[...run.persistentState.curses],personalEffects:run.persistentState.personalEffects,potionChargeCapacity:([3,3,4,4,5] as const)[run.tier-1],healingPotionUsesByActor:run.persistentState.healingPotionUsesByActor??{},potionPreparationOpen:run.phase==='awaiting_choice'&&!run.persistentState.visitedNodeIds.length,preparedAlchemyPotionIdsByActor:run.persistentState.preparedAlchemyPotionIdsByActor??{},...(bossTelegraph?{bossMechanic:{label:'Dungeon boss mechanics',summary:'Read the cast telegraphs and interrupt dangerous abilities before the final phase.',tone:'mixed' as const,telegraph:bossTelegraph}}:{}),lastCombat:projectCombatReplay(run.lastResolution),...(boonOffers.length?{boonOffers}:{}),...(lastRoomOutcome?{lastRoomOutcome}:{}),...(lastCombatMarks?{lastCombatMarks}:{}),combatMarksEarned,combatMarksCap:DUNGEON_COMBAT_MARKS_CAP,settlement:{status:(run.phase==='completed'||run.phase==='failed')?'pending_entitlement':'not_ready'}};
 }

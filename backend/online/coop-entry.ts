@@ -8,7 +8,7 @@ import {eventExpeditionPreviews,isFrostfallEventExpedition,eventTierRewardMarks}
 import {PUBLISHED_COOP_TIERS,type CoopTier} from '../src/server/coop/config';
 import {listedRegularDungeon,publishedRegularDungeon,regularDungeonEntryError,regularDungeonLockedReason,regularDungeonReadyTier,regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
 import {publishedDungeonBossVariants} from '../src/server/expeditions/content/dungeon-boss-rotation';
-import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,onlineCoopLoadoutHash} from './coop-loadout';
+import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout} from './coop-loadout';
 import {possibleDungeonCompanionCounters} from '../src/server/coop/dungeon-companion-preview';
 import {GameplayError,type GameplayServices} from './gameplay';
 
@@ -18,8 +18,8 @@ const headers={'Content-Type':'application/json','Cache-Control':'no-store','Acc
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers});
 const tiers:CoopTier[]=[...PUBLISHED_COOP_TIERS];
 
-/** Authenticated entry/consent boundary. Stats, roles, owner identity and clocks
- * always come from the existing authoritative game, never request payloads. */
+/** Read-only authenticated dungeon catalog. Social Echo availability is
+ * derived automatically on demand from current contact game states. */
 export function coopEntryHandler(services:Services){return async(request:Request):Promise<Response>=>{
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  try{
@@ -27,38 +27,20 @@ export function coopEntryHandler(services:Services){return async(request:Request
   if(!token)return json({error:'auth_required'},401);
   const accountId=await services.authenticate(token);if(!accountId)return json({error:'invalid_session'},401);
   const path=new URL(request.url).pathname;
-  const entry=path.endsWith('/coop/entry'),echo=path.endsWith('/coop/echo');
-  if(!entry&&!echo)return json({error:'not_found'},404);
-  if(request.method!==(entry?'GET':'POST'))return json({error:'method_not_allowed'},405);
-  let body:{requestId:string;expectedVersion:number;share:boolean}|undefined;
-  if(echo){
-   const raw=await request.text();if(raw.length>2048)return json({error:'request_too_large'},413);
-   let parsed:unknown;try{parsed=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-   if(!parsed||typeof parsed!=='object'||Array.isArray(parsed))throw new GameplayError('invalid_request');
-   const row=parsed as Record<string,unknown>;
-   if(Object.keys(row).some(key=>!['requestId','expectedVersion','share'].includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||!Number.isSafeInteger(row.expectedVersion)||(row.expectedVersion as number)<1||typeof row.share!=='boolean')throw new GameplayError('invalid_request');
-   body=row as typeof body;
-  }
+  if(!path.endsWith('/coop/entry'))return json({error:'not_found'},404);
+  if(request.method!=='GET')return json({error:'method_not_allowed'},405);
   try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'coop_action'});}catch{/* Analytics are best-effort and must never block co-op entry. */}
   const loaded=await services.rpc<Loaded>('load_online_game_server_v1',{p_account_id:accountId});
   if(!loaded.state?.character)throw new GameplayError('character_required');
   const gameState=rebaseCombatGameState(loaded.state);
-  // Catalog browsing must work even if the current gear/companion fails
-  // validation. Invalid loadouts remain ineligible for queueing and sharing.
+  // Catalog browsing works even if gear/companion readiness fails.
+  // No publication or manual sharing choice is made during browsing.
   let prepared:{record:ReturnType<typeof deriveOnlineCoopLoadout>;assessment:ReturnType<typeof assessOnlineCoopLoadout>}|undefined;
   try{
    const record=deriveOnlineCoopLoadout(accountId,gameState,loaded.version);
    prepared={record,assessment:assessOnlineCoopLoadout(record)};
   }catch(error){
    console.error('coop_entry_loadout_invalid',error instanceof Error?error.message:'unknown');
-  }
-  if(body){
-   if(!prepared)throw new GameplayError('loadout_not_ready');
-   const {record}=prepared,{readiness}=prepared.assessment;
-   // The transaction checks receipts before revision so an uncertain command can
-   // replay after unrelated gameplay has advanced. It never republishes old gear.
-   const result=await services.rpc('publish_online_coop_loadout_server_v1',{p_account_id:accountId,p_game_version:body.expectedVersion,p_record:record,p_snapshot_hash:onlineCoopLoadoutHash(record),p_readiness:readiness,p_share_echo:body.share,p_request_id:body.requestId});
-   return json(result);
   }
   const character=gameState.character!,combatPower=combatPowerRating(gameState).total;
   const participation=await services.rpc<Record<string,unknown>>('online_coop_entry_state_server_v1',{p_account_id:accountId});

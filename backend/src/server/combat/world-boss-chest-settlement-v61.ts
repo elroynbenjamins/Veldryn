@@ -7,7 +7,7 @@
  * This file contains NO PostgREST RPC, route, SQL executor or live wallet.
  */
 import {
- previewVerifiedWorldBossChestsV58,
+ previewVerifiedWorldBossChestsV58,worldBossChestGuaranteeV58,
  type WorldBossChestKindV58,type VerifiedWorldBossChestEvidenceV58,
  type WorldBossGearSlotV58,
 } from './world-boss-chests-v58';
@@ -20,7 +20,11 @@ import {
  makeWorldBossEquipmentMintRequestV62,assertWorldBossFrozenItemV62,
  type WorldBossEquipmentMintRequestV62,
  type WorldBossFrozenEquipmentReceiptV62,
+ WORLD_BOSS_EQUIPMENT_TIERS_V62,WORLD_BOSS_TO_EQUIPMENT_SLOT_V62,
+ WORLD_BOSS_GATHERING_ISSUER_VERSION_V62,
 } from './world-boss-gathering-instance-v62';
+import {validateWorldBossGatheringRollV65,worldBossGatheringSetV64}
+ from './world-boss-gathering-loot-v64';
 import type {EquipmentTierIdV33} from '../equipment/equipment-types-v33';
 
 export const WORLD_BOSS_CHEST_GATEWAY_V61_LIVE=false as const;
@@ -83,23 +87,32 @@ function assertExisting(
  row:WorldBossChestReceiptV61,
  expected:{eventId:string;accountId:string;kind:WorldBossChestKindV58;sourceKey:string;bossId:string},
 ):void{
+ const guarantee=worldBossChestGuaranteeV58(expected.kind);
  if(!row||row.version!==WORLD_BOSS_CHEST_RECEIPT_VERSION_V61||
   row.status!=='committed'||row.sourceKey!==expected.sourceKey||
   row.eventId!==expected.eventId||row.accountId!==expected.accountId||
   row.bossId!==expected.bossId||row.kind!==expected.kind||
   row.inboxSourceKey!==row.sourceKey||row.worldSigilsDelta!==0||
   typeof row.gearHit!=='boolean'||row.gearHit!==(row.frozenGear!==null)||
-  !Number.isSafeInteger(row.gold)||row.gold<0||
-  !Number.isSafeInteger(row.gemDust)||row.gemDust<0||
-  !Number.isSafeInteger(row.temperingDust)||row.temperingDust<0||
-  !Number.isSafeInteger(row.companionEssence)||row.companionEssence<0)
+  row.gold!==guarantee.gold||
+  row.gemDust!==guarantee.gemDust||
+  row.temperingDust!==guarantee.temperingDust||
+  row.companionEssence!==guarantee.companionEssence)
   bad('corrupt_existing_receipt');
  if(row.frozenGear){
   const item=row.frozenGear;
+  const boss=worldBossGatheringSetV64(row.bossId);
   if(item.sourceKey!==row.sourceKey||item.accountId!==row.accountId||
    item.eventId!==row.eventId||item.bossId!==row.bossId||
    item.custody!=='account_bound_unclaimed_inventory'||
-   item.mutable!==false)
+   item.mutable!==false||
+   !WORLD_BOSS_EQUIPMENT_TIERS_V62.includes(item.tier)||
+   item.issuerVersion!==WORLD_BOSS_GATHERING_ISSUER_VERSION_V62||
+   item.acquireSource!=='world_boss_chest'||
+   !validateWorldBossGatheringRollV65(item.roll)||
+   item.setId!==boss.setId||item.roll.setId!==boss.setId||
+   item.roll.skill!==boss.skill||item.pieceId!==item.roll.itemId||
+   item.slot!==WORLD_BOSS_TO_EQUIPMENT_SLOT_V62[item.roll.slot])
    bad('corrupt_existing_item');
  }
 }
@@ -138,8 +151,10 @@ export async function claimWorldBossChestV61(input:{
   if(canonical?.eventId?.toLowerCase()!==canonicalEvent||
    canonical?.accountId?.toLowerCase()!==canonicalAccount)
    bad('cross_account_evidence');
-  const evidence:VerifiedWorldBossChestEvidenceV58=
-   resolveWorldBossChestEvidenceV59(canonical);
+  const resolved=resolveWorldBossChestEvidenceV59(canonical);
+  const evidence:VerifiedWorldBossChestEvidenceV58={
+   ...resolved,eventId:canonicalEvent,accountId:canonicalAccount,
+  };
   const sourceKey='world-boss:'+canonicalEvent+':'+canonicalAccount+':'+input.kind;
   const existing=await tx.readReceipt(sourceKey);
   if(existing){

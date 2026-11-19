@@ -7,7 +7,7 @@ create table if not exists private.online_account_deletion_requests_v1 (
  account_id uuid primary key references auth.users(id) on delete cascade,
  request_id uuid not null,
  status text not null default 'pending_review'
-   check (status in ('pending_review','cancelled','reviewing','erasure_blocked','completed')),
+   check (status in ('pending_review','cancelled','reviewing','erasure_blocked')),
  policy_version text not null default 'deletion-request-v1',
  requested_at timestamptz not null default pg_catalog.transaction_timestamp(),
  updated_at timestamptz not null default pg_catalog.transaction_timestamp()

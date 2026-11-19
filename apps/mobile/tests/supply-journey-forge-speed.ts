@@ -105,6 +105,13 @@ let duplicateBlocked=false;
 try{claimEquipmentCraft(claimed.state,startedToClaim.job.id,claimAt,.45)}catch{duplicateBlocked=true}
 ok(duplicateBlocked,'The same accelerated Forge job cannot be claimed twice');
 
+// Sub-second checkpoints must not erase activity charge precision on reload.
+const fractional=advanceForgeSupply(scenario([job('millisecond-work',t0,5000)]),t0+333);
+const fractionalSeconds=activeDailySupplyBoosts(fractional).crafting_speed?.remainingSeconds??0;
+ok(Math.abs(fractionalSeconds-(7200-.333))<.00001,'Sub-second Forge settlement charges actual milliseconds');
+const fractionalReload=normalizeSave(fractional);
+ok(Math.abs((activeDailySupplyBoosts(fractionalReload).crafting_speed?.remainingSeconds??0)-fractionalSeconds)<.00001,'Sub-second charged time survives save normalization');
+
 const normalized=normalizeSave(activation);
 equal(normalized.account.dailySupplies?.forgeSettledAtMs,t0+2*HOUR,'Forge watermark persists in normalized save');
 equal(activeDailySupplyBoosts(normalized).crafting_speed?.remainingSeconds,3600,'Remaining Forge time persists in normalized save');

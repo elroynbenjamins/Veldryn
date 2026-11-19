@@ -15,5 +15,5 @@ const rows:Record<Language,Record<Key,string>>={
 };
 export function dungeonUxText(language:Language,key:Key,params?:Record<string,string|number>):string{
  const template=(rows[language]??rows.en)[key];
- return params?template.replace(/\\{(\\w+)\\}/g,(_,name)=>String(params[name]??'{'+name+'}')):template;
+ return params?template.replace(/\{(\w+)\}/g,(_,name)=>String(params[name]??'{'+name+'}')):template;
 }

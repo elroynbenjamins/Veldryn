@@ -158,7 +158,7 @@ export function previewPartyEventHookV59(
 ):PartyEventHookResolutionV59{
  const set=PARTY_EVENT_GEAR_SETS_V51.find(x=>x.id===hook?.setId);
  const canonical=set?.bonuses.find(x=>x.threshold===3)?.effects.find(
-  e=>e===hook?.effect&&e.kind!=='stat');
+  e=>e.kind!=='stat'&&e===hook?.effect);
  if(!set||!canonical||!Number.isSafeInteger(hook.tier)||hook.tier<1||
   hook.tier>9||hook.threshold!==3||
   hook.id!==set.id+':T'+hook.tier+':3:'+hook.effect.kind)

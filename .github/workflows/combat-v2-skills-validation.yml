@@ -22,6 +22,10 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/src/content/boss-v2-preview-locales.ts'
+      - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
+      - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
+      - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -45,6 +49,10 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/src/content/boss-v2-preview-locales.ts'
+      - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
+      - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
+      - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -110,6 +118,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/enemy-t1-intro-kit.js
       - name: Validate six Boss 2.0 mobile-readable tells, counterplay and legacy replay lock
         run: node backend/dist/server/combat/v2/__tests__/boss-counterplay-contract.js
+      - name: Observe six bosses across 108 deterministic class/spec baseline encounters
+        run: node backend/dist/server/combat/v2/__tests__/boss-cross-system-readiness.js
       - name: Validate private solo V2 encounter reservation, RPC adapter and replay
         run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
       - name: Validate disabled-by-default solo reward settlement contract
@@ -153,6 +163,8 @@ jobs:
         run: pnpm --dir apps/mobile typecheck
       - name: Verify preview catalogue, accessible interactions and isolation from production
         run: node apps/mobile/tests/skills-v2-preview-ui.cjs
+      - name: Verify localized and accessible Boss 2.0 replay preview isolation
+        run: node apps/mobile/tests/boss-v2-preview-ui.cjs
 
   build_api_boundary:
     name: Hidden authenticated Combat 2.0 build transport

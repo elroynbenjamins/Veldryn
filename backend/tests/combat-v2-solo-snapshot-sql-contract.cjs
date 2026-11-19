@@ -28,23 +28,8 @@ assert.match(src,/combat_v2_encounter_id_conflict/);
 assert.match(src,/combat_v2_stale_game_revision/);
 assert.match(src,/combat_v2_stale_build_revision/);
 assert.match(src,/combat_v2_stale_character/);
-assert.match(src,/p_character_fingerprint\s*!~\s*'\^\[0-9a-f\]\{32\}\
-assert.match(src,/p_payload#>>'\{combatInput,seed\}' is distinct from p_payload#>>'\{preparedKit,seed\}'/);
-assert.match(src,/insert into private\.combat_v2_solo_snapshots_v1/);
-assert.doesNotMatch(src,/on conflict[\s\S]*?do update/i,
- 'Once prepared, a V2 combat snapshot must never be overwritten');
-assert.doesNotMatch(src,/(?:update|delete)\s+private\.combat_v2_solo_snapshots_v1\b/i,
- 'No mutation or erasure of battle snapshots without separate lifecycle design');
-assert.doesNotMatch(src,/\bgrant\s+(?:all|select|insert|update|delete)\s+on\s+private\.combat_v2_solo_snapshots_v1\s+to\s+(?:public|anon|authenticated)/i);
-assert.doesNotMatch(src,/\b(insert|update|delete)\s+into\s+public\.(?:online_game_states|account_balances|inventory|dungeon_rewards)/i,
- 'Snapshot SQL must not settle rewards, XP, activity or currency');
-assert.doesNotMatch(src,/revoke\s+all\s+on\s+schema\s+private/i,
- 'Do not change grants for existing private Supabase schema users');
-console.log('PASS: V2 solo snapshot RLS/service-role-only RPC, first-write-wins and stale CAS');
-/,
- 'The character fingerprint must use a properly closed and bounded regex');
-assert.doesNotMatch(src,/p_character_fingerprint\s*!~\s*'\^\[0-9a-f\]\{32\}\s*\n/,
- 'Reject migration with unterminated fingerprint SQL string');
+assert.ok(src.includes("p_character_fingerprint !~ '^[0-9a-f]{32}$'"),
+ 'Fingerprint SQL must include closed 32-character anchored regex');
 assert.match(src,/p_payload#>>'\{combatInput,seed\}' is distinct from p_payload#>>'\{preparedKit,seed\}'/);
 assert.match(src,/insert into private\.combat_v2_solo_snapshots_v1/);
 assert.doesNotMatch(src,/on conflict[\s\S]*?do update/i,

@@ -29,7 +29,7 @@ export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoom
  if((outcome.damagedHp??0)>0)detail.push(`−${Math.round(outcome.damagedHp??0)} HP`);
  if(outcome.healedHp>0)detail.push(st('Restored {amount} HP',{amount:Math.round(outcome.healedHp)}));
  if(outcome.revivedCount>0)detail.push(st('Revived {count}',{count:outcome.revivedCount}));
- if(outcome.boonCount>0)detail.push(st('{count} boon gained',{count:outcome.boonCount}));
+ if(outcome.boonCount>0)detail.push(outcome.boonName?`${outcome.boonName} · ${st('Boon gained')}`:st('{count} boon gained',{count:outcome.boonCount}));
  if(outcome.artifactCount>0)detail.push(outcome.artifactName?`${outcome.artifactName} · ${st('Run artifact')}`:st('{count} artifact gained',{count:outcome.artifactCount}));
  if(outcome.curseCount>0)detail.push(st('{count} curse gained',{count:outcome.curseCount}));
  if(outcome.resourcesDelta!==0)detail.push(st('{amount} resources',{amount:`${outcome.resourcesDelta>0?'+':''}${outcome.resourcesDelta}`}));

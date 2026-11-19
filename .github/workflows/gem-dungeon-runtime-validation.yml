@@ -1,5 +1,10 @@
 name: Gem and dungeon runtime validation
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Focused tests must still run while the separate release gate detects
 # out-of-date generated Edge bundles. This does not weaken that release gate.
 on:

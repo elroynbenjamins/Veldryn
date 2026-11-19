@@ -28,7 +28,12 @@ CREATE TABLE private.world_boss_gathering_items_v67(
   CHECK(custody IN('account_bound_unclaimed_inventory','equipped')),
  equipped_character_id uuid,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
- CHECK(source_key LIKE 'world-boss:'||event_id::text||':'||account_id::text||':%'),
+ CHECK(source_key IN (
+  'world-boss:'||event_id::text||':'||account_id::text||':donations_goal',
+  'world-boss:'||event_id::text||':'||account_id::text||':three_attempts',
+  'world-boss:'||event_id::text||':'||account_id::text||':community_damage_goal'
+ )),
+ CHECK(piece_id=set_id||'_'||upper(slot)),
  CHECK((custody='account_bound_unclaimed_inventory' AND equipped_character_id IS NULL)
     OR (custody='equipped' AND equipped_character_id IS NOT NULL)),
  CHECK(equipment_slot=CASE slot WHEN 'offhand' THEN 'Off-hand'
@@ -48,6 +53,36 @@ CREATE TABLE private.world_boss_gathering_items_v67(
        jsonb_typeof(roll->'bonusStats')='array' AND
        jsonb_array_length(roll->'bonusStats') BETWEEN 1 AND 2)
 );
+-- A committed V61 chest with gear must point at an actual exact item.
+ALTER TABLE private.world_boss_chest_receipts_v61
+ ADD CONSTRAINT world_boss_chest_v67_issued_item_fk
+ FOREIGN KEY (gear_instance_id)
+ REFERENCES private.world_boss_gathering_items_v67(instance_id)
+ ON DELETE RESTRICT;
+
+-- An eventual equip handler may change only custody and equipped owner;
+-- it cannot reroll rarity, quality, affixes, tier, source, item or set.
+CREATE FUNCTION private.world_boss_v67_immutable_roll_guard()
+RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path=''
+AS $guard$
+BEGIN
+ IF ROW(NEW.instance_id,NEW.source_key,NEW.event_id,NEW.account_id,
+    NEW.boss_id,NEW.slot,NEW.equipment_slot,NEW.piece_id,NEW.set_id,
+    NEW.tier,NEW.rarity,NEW.quality,NEW.base_speed_bps,NEW.roll,NEW.created_at)
+    IS DISTINCT FROM
+    ROW(OLD.instance_id,OLD.source_key,OLD.event_id,OLD.account_id,
+    OLD.boss_id,OLD.slot,OLD.equipment_slot,OLD.piece_id,OLD.set_id,
+    OLD.tier,OLD.rarity,OLD.quality,OLD.base_speed_bps,OLD.roll,OLD.created_at)
+ THEN RAISE EXCEPTION 'WB67_IMMUTABLE_ROLLED_ITEM'; END IF;
+ RETURN NEW;
+END
+$guard$;
+CREATE TRIGGER world_boss_v67_immutable_gear
+ BEFORE UPDATE ON private.world_boss_gathering_items_v67
+ FOR EACH ROW EXECUTE FUNCTION private.world_boss_v67_immutable_roll_guard();
+REVOKE ALL ON FUNCTION private.world_boss_v67_immutable_roll_guard()
+ FROM PUBLIC,anon,authenticated,service_role;
+
 CREATE INDEX world_boss_gathering_owner_boss_v67
  ON private.world_boss_gathering_items_v67(account_id,boss_id,slot);
 -- Source receipt and custody must commit in ONE transaction; inserting a

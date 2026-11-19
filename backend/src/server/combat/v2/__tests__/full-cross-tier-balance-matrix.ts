@@ -40,7 +40,8 @@ const affixLimits=Object.fromEntries([
  'accuracy_pp','evasion_pp','penetration_pp','ward_pp','shield_strength_pct',
  'class_healing_pct','hex_potency_pct',
 ].map(key=>[key,{min:.01,max:.10}])) as ServerAffixPolicyV2['limits'];
-const region=(tier:Tier)=>tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
+const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
+ tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
 const bossByRegion={asterfall:'BOSS_EXP_ROOT',sunscar:'BOSS_EXP_SOLAR',
  frostmarch:'BOSS_EXP_BELLBEAST'} as const;
 const roleCounts={tank:0,damage:0,support:0};

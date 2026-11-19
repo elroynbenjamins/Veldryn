@@ -106,7 +106,6 @@ jobs:
           grep -q 'PARTY_EVENT_ATOMIC_STORE_V63_RELEASED=false' src/server/party/weekly-party-event-atomic-store-v63.ts
           grep -q 'PARTY_EVENT_EQUIPMENT_BRIDGE_V64_RELEASED=false' src/server/party/weekly-party-event-equipment-v64.ts
           test ! -f supabase/migrations/20261119070000_party_event_reward_ledger_v61.sql
-          test ! -f supabase/migrations/20261119070000_party_event_reward_ledger_v61.sql
           grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
           grep -q 'WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false' src/server/combat/world-boss-gathering-loot-v64.ts
           grep -q 'WORLD_BOSS_CHEST_PROOF_V59_LIVE=false' src/server/combat/world-boss-chest-proof-v59.ts

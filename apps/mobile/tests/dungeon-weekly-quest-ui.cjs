@@ -16,7 +16,7 @@ assert(browser.includes('{weeklyQuestPanel??null}')&&browser.indexOf('{weeklyQue
 assert(game.includes('<DungeonWeeklyQuestPanel language={language} quest={weeklyQuest}')&&game.includes('weeklyQuestPanel={weeklyQuestPanel}'),'Dungeon screen must supply the authenticated quest snapshot');
 assert(game.includes('coopClient.dungeonWeeklyQuest()')&&game.includes('coopClient.claimDungeonWeeklyQuest(weeklyQuest.weekKey,coopRequestId())'),'Dungeon weekly quest uses a standalone read/claim flow');
 assert(client.includes("'/coop/weekly-quest'"),'Client must use a dedicated dungeon endpoint');
-assert(card.includes('Claim weekly reward')&&card.includes('ExpeditionMarkIcon')&&card.includes('resetAtMs')&&card.includes('One reward per account'),'Quest must display direct Marks payout, UTC reset and account scope');
+assert(card.includes("dungeonUxText(language,'weeklyClaim')")&&card.includes('ExpeditionMarkIcon')&&card.includes('resetAtMs')&&card.includes('One reward per account'),'Quest must display direct Marks payout, UTC reset and account scope');
 assert(quest.includes('DUNGEON_WEEKLY_REWARD_MARKS=25')&&quest.includes('DUNGEON_WEEKLY_QUESTS=['),'Dedicated rotation/reward definition missing');
 assert(!seasonal.includes('dungeonWeeklyObjective')&&!seasonal.includes("tag:'dungeon'"),'Regular seasonal weekly quests must not be modified');
 assert(!journal.includes("quest.tag==='dungeon'"),'Dungeon objectives must not be listed in the Quest Journal');

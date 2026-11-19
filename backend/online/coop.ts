@@ -12,6 +12,7 @@ import {publicProfileCombatPower} from './public-profile-power';
 import {OnlineEventExpeditionRuntime,type OnlineEventExpeditionStartRequest} from './event-expedition-runtime';
 import {GameplayError,type GameplayServices} from './gameplay';
 import {validateSocialEchoCandidates} from '../../apps/mobile/src/core/coop-social-echoes';
+import {prepareSocialEchoCandidates} from './coop-social-echoes';
 import {parseCoopRunRequest,parseCoopDecisionCommand,parseCoopReadyCommand} from '../src/server/coop/api-contracts';
 
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
@@ -39,8 +40,8 @@ export function coopHandler(services:GameplayServices){
      if(invalidParams)throw new GameplayError('invalid_echo_level');
      const minLevel=Number(params.get('minLevel'));
      if(!Number.isSafeInteger(minLevel)||minLevel<1||minLevel>100)throw new GameplayError('invalid_echo_level');
-     const candidates=await services.rpc('coop_social_echo_candidates_server_v1',{p_actor_account_id:accountId,p_min_level:minLevel});
-     return json(validateSocialEchoCandidates(candidates));
+     const sources=await prepareSocialEchoCandidates(services,accountId,minLevel);
+     return json(validateSocialEchoCandidates(sources.map(source=>source.candidate)));
     }
     if(path.endsWith('/coop/weekly-quest')){
      if(request.method==='GET')return json(await weeklyDungeonQuest.snapshot(accountId));

@@ -59,7 +59,7 @@ class MockPool implements PartySqlPoolV63{
  async connect():Promise<PartySqlConnectionV63>{
   const previous=this.last;
   let unblock=()=>{};
-  this.last=new Promise<void>(resolve=>{unblock=resolve;});
+  this.last=new Promise<void>(resolve=>{unblock=()=>resolve();});
   await previous;
   this.connections++;
   let copy=clone(this.state);
@@ -109,7 +109,7 @@ class MockPool implements PartySqlPoolV63{
     }
     if(sql.includes('for update of r,w')){
      ensure(params[0]===account&&params[1]===week,'account_week_lock_params');
-     return {rows:pool.foreignRoster?[]:[{party_id:party} as T]};
+     return {rows:pool.foreignRoster?[]:[{party_id:party} as unknown as T]};
     }
     if(sql.startsWith('select receipt from private.party_event_reward_receipts_v61')){
      const receipt=copy.receipts.get(params[0] as string);

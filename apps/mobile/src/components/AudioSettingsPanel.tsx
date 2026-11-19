@@ -25,6 +25,18 @@ function PixelAudioGlyph({channel,enabled,C,s}:{channel:Channel;enabled:boolean;
  </View>;
 }
 
+function MuteButton({channelLabel,muted,label,onPress,s}:{
+ channelLabel:string;muted:boolean;label:string;onPress:()=>void;s:Styles;
+}){
+ const [focused,setFocused]=useState(false);
+ return <Pressable accessibilityRole="button" accessibilityLabel={channelLabel+': '+label}
+  accessibilityState={{selected:muted}} onPress={onPress}
+  onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+  style={({pressed})=>[s.muteButton,muted&&s.muteButtonActive,focused&&s.focused,pressed&&s.pressed]}>
+  <Text style={[s.muteText,muted&&s.muteTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{label}</Text>
+ </Pressable>;
+}
+
 function LevelButton({channelLabel,level,label,current,onPress,C,s}:{
  channelLabel:string;level:AudioLevel;label:string;current:AudioLevel;onPress:()=>void;C:ThemeColors;s:Styles;
 }){
@@ -68,13 +80,7 @@ export function AudioSettingsPanel({translate}:{translate:(text:string)=>string}
       <Text style={s.channelTitle} numberOfLines={1} adjustsFontSizeToFit>{name}</Text>
       <Text style={s.channelStatus}>{labels[current]}</Text>
      </View>
-     <Pressable
-      accessibilityRole="button" accessibilityLabel={name+': '+translate(current===0?'Restore':'Mute')}
-      accessibilityHint={translate(current===0?'Restore':'Mute')+' '+name}
-      onPress={()=>mute(channel)}
-      style={({pressed})=>[s.muteButton,current===0&&s.muteButtonActive,pressed&&s.pressed]}>
-      <Text style={[s.muteText,current===0&&s.muteTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{translate(current===0?'Restore':'Mute')}</Text>
-     </Pressable>
+     <MuteButton channelLabel={name} muted={current===0} label={translate(current===0?'Unmute':'Mute')} onPress={()=>mute(channel)} s={s}/>
     </View>
     <View style={s.levelRow}>
      {LEVELS.map(level=><LevelButton key={level} channelLabel={name} level={level} label={labels[level]} current={current}

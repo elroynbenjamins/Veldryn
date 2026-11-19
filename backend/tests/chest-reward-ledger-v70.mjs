@@ -117,7 +117,8 @@ try{
   'delete from private.chest_reward_grant_legs_v70 where source_key=$1',
   [source]),/CHEST_V70_IMMUTABLE/);
  await assert.rejects(()=>db.query(
-  'delete from auth.users where id=$1',[account]),/foreign key/);
+  'delete from private.chest_reward_receipts_v70 where source_key=$1',
+  [source]),/CHEST_V70_IMMUTABLE/);
  const count=async table=>(await db.query(
   'select count(*)::integer as n from private.'+table,
  )).rows[0].n;
@@ -129,5 +130,29 @@ try{
  await db.exec('rollback');
  assert.equal(await count('chest_reward_receipts_v70'),1);
  assert.equal(await count('chest_reward_grant_legs_v70'),5);
- console.log('CHEST_V70_PGLITE_OK: private RLS, account/source identity, immutable receipt, exact grant legs, item UUID, no duplicates and rollback');
+ // Erasure must be atomic: deleting an auth user cascades only their
+ // frozen account fence, all chest receipts and all immutable grant legs.
+ // A rollback restores every row; unrelated accounts remain untouched.
+ await db.query('insert into private.chest_account_fence_v70(account_id) values($1)',[other]);
+ await db.exec('begin');
+ await db.query('delete from auth.users where id=$1',[account]);
+ assert.equal(await count('chest_account_fence_v70'),1);
+ assert.equal(await count('chest_reward_receipts_v70'),0);
+ assert.equal(await count('chest_reward_grant_legs_v70'),0);
+ assert.equal((await db.query(
+  'select count(*)::integer n from auth.users where id=$1',
+  [other])).rows[0].n,1,'foreign account untouched by erasure');
+ await db.exec('rollback');
+ assert.equal(await count('chest_reward_receipts_v70'),1,
+  'rollback must restore immutable receipt');
+ assert.equal(await count('chest_reward_grant_legs_v70'),5,
+  'rollback must restore every grant');
+ await db.query('delete from auth.users where id=$1',[account]);
+ assert.equal(await count('chest_reward_receipts_v70'),0,
+  'approved parent deletion should erase all chest history');
+ assert.equal(await count('chest_reward_grant_legs_v70'),0,
+  'approved parent deletion should erase every grant leg');
+ assert.equal(await count('chest_account_fence_v70'),1,
+  'other account fence unaffected');
+ console.log('CHEST_V70_PGLITE_OK: private RLS, account/source identity, immutable receipt, exact grant legs, item UUID, no duplicates, rollback and account-erasure cascade');
 }finally{await db.close()}

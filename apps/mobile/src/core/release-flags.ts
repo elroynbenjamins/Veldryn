@@ -28,5 +28,9 @@ export const ONLINE_PLAYER_ROSTER_RELEASED=true;
 /** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
 export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
 
-/** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
-export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
+/** Social Names are enabled only in the internal Android staging build against the migrated staging database.
+ * Production remains OFF until production migrations, signed-device QA and rollout approval. Expo inlines these at build time. */
+export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=
+ process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&
+ process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'&&
+ process.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true';

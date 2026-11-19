@@ -2,7 +2,8 @@ import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
-import {useSocialText} from '../../i18n/social';
+import {dungeonEchoPickerText} from '../../i18n/dungeon-social-echo-copy';
+import type {Language} from '../../i18n/languages';
 import {validateSelectedSocialEchoIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
 import {FantasyPanel,RoleBadge} from './CoopVisualKit';
 import {GameButton} from '../GameButton';
@@ -10,7 +11,6 @@ import {GameButton} from '../GameButton';
 type Role='tank'|'damage'|'support';
 type Filter='all'|'friend'|'guild';
 const PARTY_ROLES:readonly Role[]=['tank','damage','damage','support'];
-const roleLabel:Record<Role,string>={tank:'TANK',damage:'DAMAGE',support:'SUPPORT'};
 function displayClass(classId:string){
  return classId.split('_').map(word=>word.slice(0,1)+word.slice(1).toLowerCase()).join(' ');
 }
@@ -37,12 +37,13 @@ function roleSlots(hostRole:Role,candidates:readonly SocialEchoCandidate[],selec
 /** Compact, optional pre-run party builder. No sharing switch exists.
  * Contacts are server-derived; role legality is checked again at run start. */
 export function CoopSocialEchoPicker({
- candidates,selectedIds,onChange,hostRole,hostClassId,loading,error,onRefresh,
+ language,candidates,selectedIds,onChange,hostRole,hostClassId,loading,error,onRefresh,
 }:{
- candidates:readonly SocialEchoCandidate[];selectedIds:readonly string[];onChange:(ids:string[])=>void;
+ language:Language;candidates:readonly SocialEchoCandidate[];selectedIds:readonly string[];onChange:(ids:string[])=>void;
  hostRole:Role;hostClassId:string;loading:boolean;error?:string;onRefresh:()=>void;
 }){
- const {styles:s,colors:C}=useCoopStyles(makeStyles),st=useSocialText();
+ const {styles:s,colors:C}=useCoopStyles(makeStyles);
+ const t=(key:Parameters<typeof dungeonEchoPickerText>[1],count?:number)=>dungeonEchoPickerText(language,key,count);
  const [expanded,setExpanded]=useState(false);
  const [filter,setFilter]=useState<Filter>('all');
  const [search,setSearch]=useState('');
@@ -59,53 +60,53 @@ export function CoopSocialEchoPicker({
   }
   const errorCode=reasonFor(candidate,selectedIds,candidates,hostClassId,hostRole);
   if(errorCode){
-   setSelectionError(errorCode==='duplicate_coop_account'?st('Choose one character per player.'):
-    errorCode==='duplicate_damage_class'?st('Damage heroes must have different classes.'):
-    st('That role is already filled.'));return;
+   setSelectionError(errorCode==='duplicate_coop_account'?t('onePlayer'):
+    errorCode==='duplicate_damage_class'?t('uniqueDamage'):
+    t('slotFull'));return;
   }
   onChange([...selectedIds,candidate.profileId]);setSelectionError('');
  };
  return <FantasyPanel variant={selectedIds.length?'selected':'default'}>
-  <Pressable accessibilityRole="button" accessibilityLabel={st('Choose friends and guild dungeon allies')}
+  <Pressable accessibilityRole="button" accessibilityLabel={t('open')}
    accessibilityState={{expanded}} onPress={()=>setExpanded(v=>!v)} style={({pressed})=>[s.header,pressed&&s.pressed]}>
    <View style={s.emblem}><Text style={s.emblemText}>✦</Text></View>
    <View style={s.headerContent}>
-    <Text style={s.heading}>{st('Dungeon Allies')}</Text>
+    <Text style={s.heading}>{t('title')}</Text>
     <Text style={s.subtitle}>{selectedIds.length
-     ?st('{count} chosen · others auto-filled',{count:selectedIds.length})
-     :st('Recruit friends & guild heroes')}</Text>
+     ?t('chosen',selectedIds.length)
+     :t('subtitle')}</Text>
    </View>
    <View style={s.counter}><Text style={s.counterText}>{selectedIds.length}/3</Text></View>
    <Text style={s.chevron}>{expanded?'⌄':'›'}</Text>
   </Pressable>
 
-  <View style={s.partySlots} accessibilityLabel={st('Required party: one Tank, two Damage heroes, one Support')}>
+  <View style={s.partySlots} accessibilityLabel={t('title')}>
    {slots.map(slot=><View key={slot.key} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
-    <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{roleLabel[slot.role]}</Text>
-    <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.name}</Text>
+    <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{t(slot.role)}</Text>
+    <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name}</Text>
     <View style={[s.slotMark,slot.kind==='chosen'&&s.slotMarkChosen,slot.kind==='host'&&s.slotMarkHost]}/>
    </View>)}
   </View>
 
   {expanded?<View style={s.details}>
-   <Text style={s.explainer}>{st('Select up to three allies. Their class and gear effects remain; power adjusts to yours. Unfilled seats use automatic Echoes or NPCs.')}</Text>
+   <Text style={s.explainer}>{t('explain')}</Text>
    <View style={s.filters}>
     {(['all','friend','guild'] as const).map(option=><Pressable key={option}
      accessibilityRole="button" accessibilityState={{selected:filter===option}}
      onPress={()=>setFilter(option)} style={[s.filter,filter===option&&s.filterSelected]}>
-     <Text style={[s.filterText,filter===option&&s.filterTextSelected]}>{option==='all'?st('All'):option==='friend'?st('Friends'):st('Guild')}</Text>
+     <Text style={[s.filterText,filter===option&&s.filterTextSelected]}>{option==='all'?t('all'):option==='friend'?t('friends'):t('guild')}</Text>
     </Pressable>)}
    </View>
-   {candidates.length>6?<TextInput accessibilityLabel={st('Search available dungeon allies')}
-    style={s.search} placeholder={st('Search character or class…')}
+   {candidates.length>6?<TextInput accessibilityLabel={t('searchHint')}
+    style={s.search} placeholder={t('search')}
     placeholderTextColor={C.textMuted} value={search} onChangeText={setSearch}
     autoCorrect={false} maxLength={50}/>:null}
-   {loading?<Text style={s.meta}>{st('Checking available allies…')}</Text>:null}
+   {loading?<Text style={s.meta}>{t('checking')}</Text>:null}
    {error?<View style={s.errorRow}><Text accessibilityRole="alert" style={s.error}>{error}</Text>
-    <GameButton title={st('Retry')} tone="secondary" compact onPress={onRefresh}/></View>:null}
+    <GameButton title={t('retry')} tone="secondary" compact onPress={onRefresh}/></View>:null}
    {!loading&&!error&&available.length===0?<View style={s.empty}>
-    <Text style={s.emptyTitle}>{st('No eligible allies')}</Text>
-    <Text style={s.meta}>{st('Friends and guild members with a dungeon-ready character appear here automatically. NPCs can fill your party.')}</Text>
+    <Text style={s.emptyTitle}>{t('emptyTitle')}</Text>
+    <Text style={s.meta}>{t('emptyCopy')}</Text>
    </View>:null}
    {available.map(candidate=>{
     const chosen=selectedIds.includes(candidate.profileId);
@@ -113,7 +114,7 @@ export function CoopSocialEchoPicker({
     const disabled=!!why;
     return <Pressable key={candidate.profileId} accessibilityRole="checkbox"
      accessibilityLabel={candidate.name+', '+displayClass(candidate.classId)+', '+candidate.role}
-     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?st('This party slot is unavailable'):undefined}
+     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?t('disabled'):undefined}
      disabled={disabled} onPress={()=>toggle(candidate)}
      style={({pressed})=>[s.person,chosen&&s.personChosen,disabled&&s.personDisabled,pressed&&s.pressed]}>
       <View style={[s.avatar,chosen&&s.avatarChosen]}>
@@ -122,7 +123,7 @@ export function CoopSocialEchoPicker({
       <View style={s.personInfo}>
        <Text style={s.personName} numberOfLines={1}>{candidate.name}</Text>
        <Text style={s.personSub} numberOfLines={1}>{displayClass(candidate.classId)}  ·  Lv {candidate.level}</Text>
-       <Text style={s.relationship}>{candidate.relationship==='both'?st('Friend · Guild'):candidate.relationship==='friend'?st('Friend'):st('Guild member')}</Text>
+       <Text style={s.relationship}>{candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
       </View>
       <RoleBadge role={candidate.role} label={candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}/>
       <View style={[s.selectIcon,chosen&&s.selectIconChosen]}>
@@ -131,7 +132,7 @@ export function CoopSocialEchoPicker({
      </Pressable>;
    })}
    {!!selectionError?<Text accessibilityRole="alert" style={s.error}>{selectionError}</Text>:null}
-   <Text style={s.privacy}>{st('Always available to your friends and guild while eligible. No sharing switch needed. Blocking or removing a contact revokes access.')}</Text>
+   <Text style={s.privacy}>{t('privacy')}</Text>
   </View>:null}
  </FantasyPanel>;
 }

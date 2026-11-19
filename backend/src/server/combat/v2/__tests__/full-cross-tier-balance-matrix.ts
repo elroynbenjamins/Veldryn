@@ -5,8 +5,8 @@
  *
  * 9 classes x 2 specs x 5 gear tiers x 2 quality/rarity profiles
  * x (normal,elite,boss) = 540 deterministic calibration encounters.
- * T1 uses generic enemy bridge ONLY: authored Enemy V2 kits currently require
- * equipmentTier >=2. This remains a marked, blocking coverage gap.
+ * T1 exercises deterministic low-pressure authored introductions, not random traits.
+ * All cases stay synthetic and are NOT production-level balance approval.
  */
 import {strict as assert} from 'node:assert';
 import {analyzeSyntheticBalanceV2} from '../balance-diagnostics';
@@ -49,12 +49,12 @@ const roleCounts={tank:0,damage:0,support:0};
 const resultRows:{
  classId:string;spec:string;role:string;tier:GearTier;
  profile:'low'|'high';kind:EncounterKind;
- enemyKit:'generic-t1'|'authored-v2';
+ enemyKit:'t1-authored'|'authored-v2';
  dps:number;hps:number;damageTaken:number;victory:boolean;
  durationMs:number;resourceEvents:number;mechanics:number;
  baseEquipmentStat:number;
 }[]=[];
-let authored=0,t1Gaps=0,deterministicChecks=0;
+let authored=0,t1Authored=0,deterministicChecks=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  const role=CLASS_ROLES_V2[classId];
  const specs=SPECIALIZATIONS_V2.filter(spec=>spec.classId===classId);
@@ -137,18 +137,18 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      };
      const seed='v2-balance-'+classId+'-'+spec.id+'-'+tier+'-'+kind;
      const input={seed,players:[actor],enemies:[enemy],maxDurationMs:6000};
-     const fixtureKit=tier===1?undefined:prepareSoloEnemyKitsV2([enemy],{
+     const fixtureKit=prepareSoloEnemyKitsV2([enemy],{
       ruleset:'enemy-v2-prototype-1',serverSeed:seed,
       encounterId:'QA_'+classId+'_'+tier+'_'+kind,
       region:locale,equipmentTier:tier,
       eliteEnemyIds:kind==='elite'?[enemyId]:[],
      });
-     const trusted=fixtureKit?{
+     const trusted={
       snapshot:{...fixtureKit,source:'server-persisted-v2' as const,
        revision:1} as PersistedEnemyKitV2,
       verifyPersisted:(_snapshot:PersistedEnemyKitV2,digest:string)=>
        /^[0-9a-f]{64}$/.test(digest),
-     }:undefined;
+     };
      // This fixture issues one synthetic trusted kit per encounter. The real
      // service still demands a persisted receipt; this is not a game route.
      const a=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,trusted);
@@ -182,11 +182,12 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
        evt.resourceAfter!>=0&&evt.resourceAfter!<=cap,
        'Resource overflow '+classId+' '+spec.id);
      }
-     if(tier===1){t1Gaps++;assert.equal(trusted,undefined);}
-     else{authored++;assert.ok(a.enemyMechanicLabels.length>0);}
+     authored++;
+     if(tier===1)t1Authored++;
+     assert.ok(a.enemyMechanicLabels.length>0,'Each tier needs authored mechanics');
      resultRows.push({
       classId,spec:spec.id,role,tier:gearTier,profile:profile.id,kind,
-      enemyKit:tier===1?'generic-t1':'authored-v2',
+      enemyKit:tier===1?'t1-authored':'authored-v2',
       dps:Math.round(p.damageDone/Math.max(1,a.combat.durationMs)*1000),
       hps:Math.round(p.healingDone/Math.max(1,a.combat.durationMs)*1000),
       damageTaken:Math.round(p.damageTaken),
@@ -204,8 +205,8 @@ assert.equal(roleCounts.tank,6);
 assert.equal(roleCounts.damage,8);
 assert.equal(roleCounts.support,4);
 assert.equal(resultRows.length,540);
-assert.equal(authored,432);
-assert.equal(t1Gaps,108);
+assert.equal(authored,540);
+assert.equal(t1Authored,108);
 assert.equal(deterministicChecks,540);
 const summary=Object.fromEntries(tiers.map(tier=>[
  'T'+tier,{
@@ -213,7 +214,7 @@ const summary=Object.fromEntries(tiers.map(tier=>[
   avgDps:Math.round(resultRows.filter(r=>r.tier==='T'+tier)
    .reduce((sum,r)=>sum+r.dps,0)/108),
   victories:resultRows.filter(r=>r.tier==='T'+tier&&r.victory).length,
-  authoredEnemyKit:tier>1,
+  authoredEnemyKit:true,
  },
 ]));
 const diagnostics=analyzeSyntheticBalanceV2(resultRows);
@@ -222,7 +223,7 @@ assert.equal(diagnostics.gearProgression.length,270);
 console.log(JSON.stringify({fixture:'SYNTHETIC_NOT_RELEASE_BALANCE',
  diagnostics,
  scenarios:resultRows.length,deterministicChecks,roleCounts,
- authoredEnemyCases:authored,unapprovedT1KitCases:t1Gaps,
+ authoredEnemyCases:authored,authoredT1Cases:t1Authored,unapprovedT1KitCases:0,
  summary,
  // Developer-only diagnostics, not player data or final DPS promises.
  results:resultRows,

@@ -169,7 +169,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
   ||state.settings.favoriteItemIds?.includes(command.gemId))
   fail('protected_v2_socket_gem');
  const index=sidecar.slots.findIndex(row=>row.instanceId===item.id);
- const old=sidecar.slots[index]??{instanceId:item.id};
+ const old:V2GemCopySockets=sidecar.slots[index]??{instanceId:item.id};
  const previous=old[kind];
  if(previous?.gemId===command.gemId&&previous.rollPercent>=120)
   fail('v2_socket_already_perfected');

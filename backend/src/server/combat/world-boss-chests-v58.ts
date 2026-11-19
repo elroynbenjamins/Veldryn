@@ -145,13 +145,28 @@ function knownSlot(s:unknown):s is WorldBossGearSlotV58{
 export function resolveWorldBossChestGearDraftV58(
  preview:WorldBossChestPreviewV58,random:WorldBossChestSecureRollV58,
 ):WorldBossChestGearDraftV58{
- if(!preview||!Object.prototype.hasOwnProperty.call(
-  WORLD_BOSS_GATHERING_SET_POLICY_V58,preview.bossId)||
+ const definition=definitions.find(d=>d.kind===preview?.kind);
+ const ids=/^world-boss:([0-9a-f-]{36}):([0-9a-f-]{36}):([a-z_]+)$/;
+ const parts=typeof preview?.chestId==='string'?ids.exec(preview.chestId):null;
+ if(!preview||!definition||!parts||!UUID.test(parts[1])||
+  !UUID.test(parts[2])||parts[3]!==preview.kind||
+  parts[1]!==parts[1].toLowerCase()||
+  parts[2]!==parts[2].toLowerCase()||
+  !Object.prototype.hasOwnProperty.call(
+   WORLD_BOSS_GATHERING_SET_POLICY_V58,preview.bossId)||
+  preview.name!==definition.name||
+  preview.guaranteed?.gold!==definition.gold||
+  preview.guaranteed?.companionEssence!==definition.companionEssence||
+  preview.guaranteed?.gemDust!==definition.gemDust||
+  preview.guaranteed?.temperingDust!==definition.temperingDust||
   preview.gearChanceBps!==100||preview.gearPiecesInSet!==10||
+  preview.worldSigilsGrantedByThisChest!==0||
   preview.claimable!==false||preview.granted!==false||
   preview.gearSetSkill!==WORLD_BOSS_GATHERING_SET_POLICY_V58[preview.bossId].skill||
   !random||!roll(random.hitRoll)||!roll(random.slotRoll)||
-  !Array.isArray(random.ownedSlots)||random.ownedSlots.some(x=>!knownSlot(x)))
+  !Array.isArray(random.ownedSlots)||
+  new Set(random.ownedSlots).size!==random.ownedSlots.length||
+  random.ownedSlots.some(x=>!knownSlot(x)))
   throw Error('world_boss_v58_invalid_server_roll');
  const unseen=WORLD_BOSS_GEAR_SLOTS_V58.filter(s=>!random.ownedSlots.includes(s));
  const pool=unseen.length?unseen:WORLD_BOSS_GEAR_SLOTS_V58;

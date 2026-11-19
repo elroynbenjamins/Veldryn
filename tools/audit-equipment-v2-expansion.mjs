@@ -53,7 +53,7 @@ export function readAuthoritativeBaseline(root=ROOT){
  const standalones=parseLiteralArray(client,'export const EQUIPMENT_V2_STANDALONE:');
  const serverCore=parseLiteralArray(server,'const V2_SERVER_CORE_PIECES:');
  const expansionText=readFileSync(resolve(root,'apps/mobile/src/content/equipment-v2-expansion.ts'),'utf8');
- const expansionClient=expansionText.split('\\n').map(line=>line.trim()).filter(line=>line.startsWith('{"id":"EQ2_')).map(line=>JSON.parse(line.replace(/,$/,'')));
+ const expansionClient=expansionText.split(/\r?\n/).map(line=>line.trim()).filter(line=>line.startsWith('{"id":"EQ2_')).map(line=>JSON.parse(line.replace(/,$/,'')));
  const expansionServerText=readFileSync(resolve(root,'backend/src/server/equipment/equipment-crafting-v2-expansion-manifest.ts'),'utf8');
  const expansionServerPieces=parseLiteralArray(expansionServerText,'export const V2_SERVER_EXPANSION_PIECES:');
  const expansionServerRecipes=parseLiteralArray(expansionServerText,'export const V2_SERVER_EXPANSION_RECIPES:');

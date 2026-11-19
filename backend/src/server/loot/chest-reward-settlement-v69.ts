@@ -32,6 +32,9 @@ export interface TrustedChestSourceV69{
  readonly proofVersion:string;
  /** Character selected by authenticated account; never a client-trusted UUID. */
  readonly recipientCharacterId:string|null;
+ /** World Boss V62 gear is account-bound unclaimed; Party Event gear is
+  * character-delivered. Freeze this server-owned decision at first claim. */
+ readonly equipmentDeliveryMode:'character'|'account_unclaimed'|null;
  readonly earned:true;
  readonly lootTable:ChestLootTableV67;
 }
@@ -39,8 +42,9 @@ export interface FrozenChestReceiptV69{
  readonly rulesVersion:typeof CHEST_REWARD_SETTLEMENT_VERSION_V69;
  readonly sourceKey:string;
  readonly accountId:string;
- /** Frozen first claim destination, cannot change on replay. */
+ /** Frozen first claim destination/custody mode; cannot change on replay. */
  readonly recipientCharacterId:string|null;
+ readonly equipmentDeliveryMode:'character'|'account_unclaimed'|null;
  readonly proofVersion:string;
  readonly tableId:string;
  readonly tableVersion:string;
@@ -113,8 +117,14 @@ function checkedReceipt(receipt:FrozenChestReceiptV69,
     !UUID.test(receipt.recipientCharacterId)))||
   !Array.isArray(receipt.guaranteed)||!Array.isArray(receipt.groups)||
   !Array.isArray(receipt.drops)||
+  (!['character','account_unclaimed',null].includes(
+   receipt.equipmentDeliveryMode))||
+  (receipt.equipmentDeliveryMode==='character'&&
+   receipt.recipientCharacterId===null)||
+  (receipt.equipmentDeliveryMode==='account_unclaimed'&&
+   receipt.recipientCharacterId!==null)||
   (receipt.drops.some(drop=>drop.type==='equipment')&&
-   receipt.recipientCharacterId===null))
+   receipt.equipmentDeliveryMode===null))
   throw Error('chest_v69_corrupt_committed_receipt');
  const ids=/^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/;
  const groupIds=new Set<string>();
@@ -211,16 +221,22 @@ export function createChestRewardSettlementV69(
    const resolved=resolveChestLootV67(table,{
     rolls,ownedDropIds:owned,
    });
-   const needsCharacter=resolved.drops.some(d=>d.type==='equipment');
+   const hasEquipment=resolved.drops.some(d=>d.type==='equipment');
+   const mode=trusted.equipmentDeliveryMode;
    const destination=trusted.recipientCharacterId;
-   if(needsCharacter&&
+   if(hasEquipment&&mode==='character'&&
     (typeof destination!=='string'||!UUID.test(destination)||
      !await tx.verifyRecipientCharacter(accountId,destination)))
     throw Error('chest_v69_unverified_character_destination');
+   if((hasEquipment&&mode!=='character'&&mode!=='account_unclaimed')||
+    (mode==='account_unclaimed'&&destination!==null)||
+    (!hasEquipment&&mode!==null)||
+    (mode===null&&destination!==null))
+    throw Error('chest_v69_unapproved_custody_destination');
    const receipt:FrozenChestReceiptV69={
     rulesVersion:CHEST_REWARD_SETTLEMENT_VERSION_V69,
     sourceKey,accountId,recipientCharacterId:destination,
-    proofVersion:trusted.proofVersion,
+    equipmentDeliveryMode:mode,proofVersion:trusted.proofVersion,
     tableId:resolved.tableId,tableVersion:resolved.tableVersion,
     guaranteed:resolved.guarantees,
     groups:resolved.groups,drops:resolved.drops,committed:true,

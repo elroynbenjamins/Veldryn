@@ -7,8 +7,7 @@ function rejectClientAuthority(row:Record<string,unknown>):void{for(const key of
 
 export function parseCoopRunRequest(value:unknown,mode:CoopMode):CoopRunRequest{
   const row=object(value);rejectClientAuthority(row);
-  if(row.runLength!==undefined&&(mode!=='qmode'||typeof row.runLength!=='string'||!['standard','extended'].includes(row.runLength)))throw new Error('invalid_run_length');
-  return {requestId:text(row,'requestId',8),mode,...(row.runLength===undefined?{}:{runLength:row.runLength as 'standard'|'extended'}),dungeonId:text(row,'dungeonId'),tier:integer(row,'tier',1,5) as CoopRunRequest['tier'],characterId:text(row,'characterId'),loadoutId:text(row,'loadoutId'),loadoutRevision:integer(row,'loadoutRevision',1,Number.MAX_SAFE_INTEGER)};
+  return {requestId:text(row,'requestId',8),mode,dungeonId:text(row,'dungeonId'),tier:integer(row,'tier',1,5) as CoopRunRequest['tier'],characterId:text(row,'characterId'),loadoutId:text(row,'loadoutId'),loadoutRevision:integer(row,'loadoutRevision',1,Number.MAX_SAFE_INTEGER)};
 }
 export function parseCoopDecisionCommand(value:unknown):CoopDecisionCommand{
   const row=object(value);rejectClientAuthority(row);

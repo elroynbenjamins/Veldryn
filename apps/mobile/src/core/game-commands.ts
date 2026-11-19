@@ -25,7 +25,7 @@ import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActiv
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {advanceForgeSupply,cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
 import {disposeGemPouchSelected} from './gem-pouch-bulk';
 import {upgradeEquipmentPouch,moveLegacyEquipmentPouchStack} from './equipment-pouch';
@@ -160,6 +160,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(options.accountId)state.account.longTermAccountScopeId=options.accountId;
  // Reconcile retired story rewards within the same authoritative command write.
  state=migrateRetiredStoryRewards(state,now);
+ // Advance all running Forge slots exactly once before a command can replace
+ // or activate a Supply tier. In particular, never give past work a fresh
+ // Crafting Speed boost. Alchemy/processing retains priority if concurrently
+ // running and uses the same category through its own activity settlement.
+ if(state.account.equipmentCraftingQueue?.length)state=advanceForgeSupply(state,now);
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;if(result.reward.activityResults){for(const segment of result.reward.activityResults){const {activity,reward:earned}=segment;if(earned.kills>0&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind)))contributions.push({kind:activity.kind==='combat'?'combat':'gathering',contentId:activity.targetId,units:earned.kills,startedAtMs:activity.lastClaimAtMs});}}else credit(source,result.reward);};
  const settleAndStop=()=>{settle();state=game.stopActivity(state,now);};

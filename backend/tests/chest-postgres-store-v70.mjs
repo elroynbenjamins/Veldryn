@@ -334,6 +334,48 @@ try{
  assert.equal(repeatedBoss.replayed,true);
  assert.deepEqual(repeatedBoss.receipt,noGear.receipt,
   'retries do not reroll after no-gear receipt');
+ const attemptsSource='world-boss:'+bossEvent+':'+account+
+  ':three_attempts';
+ const damageSource='world-boss:'+bossEvent+':'+account+
+  ':community_damage_goal';
+ // A committed attempt without the independently matching V28 digest
+ // cannot earn the three-attack milestone or any payout.
+ await db.query(
+  'update private.world_boss_replay_proofs_v28 '+
+  'set replay_digest=$4 where event_id=$1 and account_id=$2 '+
+  'and request_id=$3',
+  [bossEvent,account,'attack_0003','f'.repeat(64)],
+ );
+ await assert.rejects(
+  ()=>bossOpen({authenticatedAccountId:account,sourceKey:attemptsSource}),
+  /unearned_chest/,
+  'tampered V28 replay digest invalidates chest entitlement',
+ );
+ const missingAttackReceipt=(await db.query(
+  'select count(*)::int n from private.chest_reward_receipts_v70 '+
+  'where source_key=$1',[attemptsSource],
+ )).rows[0].n;
+ assert.equal(missingAttackReceipt,0,'unproven source cannot receive gold');
+ await db.query(
+  'update private.world_boss_replay_proofs_v28 '+
+  'set replay_digest=$4 where event_id=$1 and account_id=$2 '+
+  'and request_id=$3',
+  [bossEvent,account,'attack_0003','3'.padStart(64,'0')],
+ );
+ // Exact 70% damage passes; 69.9% must not unlock the final chest.
+ await db.query(
+  'update private.world_boss_events_v17 set remaining_hp=301 where id=$1',
+  [bossEvent],
+ );
+ await assert.rejects(
+  ()=>bossOpen({authenticatedAccountId:account,sourceKey:damageSource}),
+  /unearned_chest/,
+  'the global HP threshold is checked from current authoritative DB',
+ );
+ await db.query(
+  'update private.world_boss_events_v17 set remaining_hp=300 where id=$1',
+  [bossEvent],
+ );
  await db.query(
   'insert into private.wb_v73_erasure_test_fences values ($1)',
   [account],

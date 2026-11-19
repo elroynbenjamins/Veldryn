@@ -3,6 +3,7 @@ import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game'
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {simulateEquipmentV2InGameState,type V2HiddenGameInput} from '../equipment-crafting-v2-game-state';
+import {simulateEquipmentV2VirtualCustody} from '../equipment-crafting-v2-virtual-custody';
 import {
  simulateEquipmentV2GemInGameState,runEquipmentV2GemInGameState,
  verifyEquipmentV2GemSidecar,type V2HiddenGemInput,type V2GemSidecarState,
@@ -114,7 +115,31 @@ assert.equal(bankChange.receipt.source,'bank');
 assert.ok(!bankChange.state.bank.stacks.some(row=>row.itemId===replacementGem));
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(first.state,
  command('gem-effect-001',13,'gem:effect_momentum:g1'),13,100)),
- /v2_effect_gem_loadout_cap_not_ready/,'Effect Gems cannot bypass future combat resonance caps');
+ /v2_(mixed_legacy_effect_loadout_unverified|effect_requires_equipped_copy)/,
+ 'Effect Gems require a verified exclusively V2 equipped-loadout source');
+// A purely virtual V2 equip can supply an authored Effect Gem family proof.
+// It does not enable combat procs or insert live V33 equipment.
+const effectPreview=structuredClone(claimed.state);
+effectPreview.character!.equipment={};
+const effectWorn=simulateEquipmentV2VirtualCustody({
+ state:effectPreview,accountId,onlineVersion:12,
+ onlineCharacterId:effectPreview.character!.id,
+ authoritativeWalletGold:effectPreview.character!.gold,
+ command:{kind:'equip',instanceId:itemId,requestId:'gem-equip-00001',expectedVersion:12},
+});
+const installedEffect=simulateEquipmentV2GemInGameState(input(effectWorn.state,
+ command('gem-effect-liveproof-01',13,'gem:effect_momentum:g1'),13,105));
+assert.equal(installedEffect.receipt.socket,'effect');
+assert.equal(installedEffect.receipt.rollPercent,105);
+assert.equal(getSidecar(installedEffect.state).slots[0].effect?.gemId,'gem:effect_momentum:g1');
+assert.equal(effectWorn.state.character!.equipment.helmet,undefined,
+ 'Equipped for hidden validation only; no player gear or combat effects change');
+const mixed=structuredClone(effectWorn.state);
+mixed.character!.equipment.weapon='basic_sword';
+assert.throws(()=>simulateEquipmentV2GemInGameState(input(mixed,
+ command('gem-effect-mixed-01',13,'gem:effect_momentum:g1'),13,105)),
+ /v2_mixed_legacy_effect_loadout_unverified/,
+ 'Mixed V33 and Equipment 2.0 effect loadouts are deferred until one authoritative compiler exists');
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(first.state,
  command('gem-claim-00001',13,firstGem),13,100)),
  /v2_cross_command_request_id_conflict/,'Forge and sockets share one request-ID namespace');

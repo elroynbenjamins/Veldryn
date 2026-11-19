@@ -194,10 +194,10 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
         <Text style={s.body}>{t('Confirmed rewards')}</Text>
         {claimReceipt.kind==='companion_training'?<>
           <Text style={s.name}>{t('Companion XP')} +{amount(claimReceipt.companionXp)}</Text>
-          {claimReceipt.companions.map(row=><View key={row.id} style={s.between}><Text style={[s.body,s.flex]}>{row.name}</Text><Text style={s.name}>+{amount(row.xp)} XP</Text></View>)}
+          {claimReceipt.companions.map(row=><View key={row.id} style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}><Text style={[s.body,s.flex]}>{row.name}</Text><Text style={s.name}>+{amount(row.xp)} XP</Text></View>)}
           {!claimReceipt.companionCount?<Text style={s.body}>{t('No eligible companion received XP this claim.')}</Text>:null}
         </>:null}
-        {claimReceipt.essence>0||claimReceipt.kind==='companion_essence'?<View style={s.between}><Text style={s.body}>{t('Companion Essence')}</Text><Text style={s.name}>+{amount(claimReceipt.essence)}</Text></View>:null}
+        {claimReceipt.essence>0||claimReceipt.kind==='companion_essence'?<View style={{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12}}><Text style={s.body}>{t('Companion Essence')}</Text><Text style={s.name}>+{amount(claimReceipt.essence)}</Text></View>:null}
       </>}
       <GameButton title={t('Continue')} onPress={()=>setClaimReceipt(null)}/>
     </ScrollView>:null}

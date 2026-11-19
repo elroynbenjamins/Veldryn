@@ -31,7 +31,7 @@ async function main(){
  }},'host-account',10);
  assert.equal(sourceCalls.length,1,'Browsing must never publish another player automatically');
  assert.equal(listing.length,1,'Valid current friend can be used even without an Echo publication');
- assert.equal(listing[0].candidate.profileId,friend.character!.id);
+ assert.equal(listing[0].candidate.characterId,friend.character!.id);
  assert.equal(listing[0].candidate.relationship,'friend');
  assert.equal(validateSocialEchoCandidates(listing.map(x=>x.candidate)).length,1);
  const profileId='00000000-0000-4000-8000-000000000099';
@@ -65,7 +65,7 @@ async function main(){
  const result=await runtime.start('host-account',{
   mode:'qmode',requestId:'auto-friend-test-1',dungeonId:'EXP_001',tier:1,
   characterId:owner.character!.id,loadoutId:'current',loadoutRevision:21,
-  preferredEchoProfileIds:[friend.character!.id],
+  preferredEchoCharacterIds:[friend.character!.id],
  });
  assert.ok(result&&typeof result==='object');
  assert.equal(publishedCount,1,'Only selected contacts are snapshotted on run start');

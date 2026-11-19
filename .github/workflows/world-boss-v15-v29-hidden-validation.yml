@@ -30,6 +30,8 @@ on:
       - 'docs/roadmap/world-boss-global-cycle-guard-v53-smoke.sql'
       - 'backend/online/world-boss-overview-v41.ts'
       - 'backend/online/world-boss-current-overview-v51.ts'
+      - 'backend/online/world-boss-account-privacy-v58.ts'
+      - 'docs/roadmap/world-boss-account-privacy-v58-smoke.sql'
       - 'backend/online/world-boss-current-read-route-v52.ts'
       - 'backend/online/world-boss-current-action-v62.ts'
       - 'backend/online/world-boss-gate-attestation-v63.ts'
@@ -216,6 +218,8 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-write-fence-v57-smoke.sql
           bash docs/roadmap/world-boss-account-write-fence-v57-race-ci.sh
+          # V58 private, authenticated owner visibility after erasure-fence.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-account-privacy-v58-smoke.sql
           # V61 adds fail-closed first-live incident controls AFTER existing
           # contract checks. No World Boss event is scheduled or played here.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-incident-controls-v61.sql

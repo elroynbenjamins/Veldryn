@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {recruitQModeAllies,type PublishedEcho} from '../../src/server/coop/echo-recruitment';
 import {scaleSocialEchoToHost} from '../../src/server/coop/social-echo-balance';
-import {validateSocialEchoCandidates,validateSelectedSocialEchoIds,type SocialEchoCandidate} from '../../../apps/mobile/src/core/coop-social-echoes';
+import {validateSocialEchoCandidates,validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../../apps/mobile/src/core/coop-social-echoes';
 import type {FrozenLoadoutSnapshot} from '../../src/server/coop/loadout-snapshots';
 import type {CombatantDefinition} from '../../src/server/combat/types';
 
@@ -9,7 +9,7 @@ const source=(id:string,role:'tank'|'damage'|'support',classId:string,accountId:
  profileId:'00000000-0000-4000-8000-'+id.padStart(12,'0'),
  sourceAccountId:accountId,optedIn:true,publishedAtMs:100,contentVersion:'v1',blockedAccountIds:[],
  snapshot:{
-  accountId,characterId:'char-'+id,classId,loadoutId:'current',revision:1,
+  accountId,characterId:'00000000-0000-4000-9000-'+id.padStart(12,'0'),classId,loadoutId:'current',revision:1,
   readiness:{ready:true,role,normalizedScore:1,failures:[]},normalized:{snapshot:{},effectiveLevel:25,before:{}},
   characterLevel:25,combatPower:5000,snapshotHash:'hash-'+id,
  } as unknown as FrozenLoadoutSnapshot,
@@ -39,14 +39,14 @@ const revoked=source('7','tank','BASTION','revoked-tank');revoked.optedIn=false;
 assert.throws(()=>recruitQModeAllies({...input,profiles:[...profiles,revoked],preferredProfileIds:[revoked.profileId]}),/social_echo_unavailable/);
 
 const candidates:SocialEchoCandidate[]=profiles.map((echo,index)=>({
- profileId:echo.profileId,characterId:echo.snapshot.characterId,accountId:echo.sourceAccountId,
+ characterId:echo.snapshot.characterId,accountId:echo.sourceAccountId,
  name:'Hero '+index,role:echo.snapshot.readiness.role,classId:echo.snapshot.classId,
  level:25,combatPower:5000,relationship:index===0?'friend':'guild',
 }));
 assert.equal(validateSocialEchoCandidates(candidates).length,5);
-assert.doesNotThrow(()=>validateSelectedSocialEchoIds([chosen.profileId],candidates,'DAWNKEEPER','support'));
-assert.throws(()=>validateSelectedSocialEchoIds([chosen.profileId,chosen.profileId],candidates,'DAWNKEEPER','support'),/invalid_echo_selection/);
-assert.throws(()=>validateSelectedSocialEchoIds([profiles[1].profileId,profiles[2].profileId,profiles[4].profileId],candidates,'DAWNKEEPER','support'),/invalid_echo_role_composition/);
+assert.doesNotThrow(()=>validateSelectedSocialEchoCharacterIds([chosen.snapshot.characterId],candidates,'DAWNKEEPER','support'));
+assert.throws(()=>validateSelectedSocialEchoCharacterIds([chosen.snapshot.characterId,chosen.snapshot.characterId],candidates,'DAWNKEEPER','support'),/invalid_echo_selection/);
+assert.throws(()=>validateSelectedSocialEchoCharacterIds([profiles[1].snapshot.characterId,profiles[2].snapshot.characterId,profiles[4].snapshot.characterId],candidates,'DAWNKEEPER','support'),/invalid_echo_role_composition/);
 
 const actor={id:'char-3',role:'damage',classId:'RAVAGER',stats:{maxHp:1000,attackPower:150,healingPower:25,defense:100,critChance:.24,haste:.17},abilities:[{id:'original-class-ability'}],tags:['gear:legendary']} as unknown as CombatantDefinition;
 const powerful=scaleSocialEchoToHost(actor,3000,12000);

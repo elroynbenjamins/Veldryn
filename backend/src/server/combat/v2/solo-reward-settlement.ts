@@ -98,6 +98,8 @@ function validateReceipt(
    g.grantSourceId!==receipt.sourceKey+':'+i)
    denied('invalid_grant_receipt');
  }
+ if(new Set(receipt.grants.map(grant=>grant.kind+':'+grant.resourceId)).size!==receipt.grants.length)
+  denied('duplicate_grant_receipt');
  return JSON.parse(JSON.stringify(receipt)) as SoloRewardReceiptV2;
 }
 function makeReceipt(
@@ -134,14 +136,15 @@ function battleOutcomeDigest(snapshot:StoredSoloEncounterV2,result:CombatResult)
   !Number.isSafeInteger(result.durationMs)||result.durationMs<0||
   !Array.isArray(result.events)||!result.events.length||
   !Array.isArray(result.players)||result.players.length!==1||
-  !Array.isArray(result.enemies)||!result.enemies.length||
+  !Array.isArray(result.enemies)||
+  result.enemies.length!==snapshot.combatInput.enemies.length||
   result.players[0].definition.id!==snapshot.actorId||
   !result.enemies.every((enemy,i)=>enemy.definition.id===
    snapshot.combatInput.enemies[i]?.id)||
   result.events.at(-1)?.type!=='combat_end'||
   result.events.at(-1)?.detail!==result.reason)
   denied('invalid_replay_outcome');
- if(result.reason==='victory'!==result.victory)
+ if((result.reason==='victory')!==result.victory)
   denied('outcome_inconsistent');
  if(result.victory && result.enemies.some(enemy=>enemy.alive||enemy.hp>0))
   denied('false_victory');

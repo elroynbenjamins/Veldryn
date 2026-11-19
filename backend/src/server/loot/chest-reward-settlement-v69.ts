@@ -30,6 +30,8 @@ export interface TrustedChestSourceV69{
  readonly sourceKey:string;
  readonly accountId:string;
  readonly proofVersion:string;
+ /** Character selected by authenticated account; never a client-trusted UUID. */
+ readonly recipientCharacterId:string|null;
  readonly earned:true;
  readonly lootTable:ChestLootTableV67;
 }
@@ -37,6 +39,8 @@ export interface FrozenChestReceiptV69{
  readonly rulesVersion:typeof CHEST_REWARD_SETTLEMENT_VERSION_V69;
  readonly sourceKey:string;
  readonly accountId:string;
+ /** Frozen first claim destination, cannot change on replay. */
+ readonly recipientCharacterId:string|null;
  readonly proofVersion:string;
  readonly tableId:string;
  readonly tableVersion:string;
@@ -52,6 +56,9 @@ export interface ChestGrantTransactionV69{
  readTrustedSource(accountId:string,sourceKey:string):Promise<TrustedChestSourceV69>;
  /** Live physical account inventory and pet/cosmetic collection, not a mobile list. */
  readOwnedDropIds(accountId:string):Promise<readonly string[]>;
+ /** Independently check this character is owned by the authenticated account,
+  * under this transaction. Class and tier eligibility stay with EQ2 issuer. */
+ verifyRecipientCharacter(accountId:string,characterId:string):Promise<boolean>;
  /** Immutable UNIQUE receipt insert; never cache or only insert after payout. */
  insertFrozenReceipt(receipt:FrozenChestReceiptV69):Promise<void>;
  /** Must credit ALL guaranteed rewards from the receipt through same tx. */
@@ -98,8 +105,13 @@ function checkedReceipt(receipt:FrozenChestReceiptV69,
   receipt.accountId!==accountId||receipt.sourceKey!==sourceKey||
   receipt.committed!==true||
   !receipt.proofVersion||!receipt.tableId||!receipt.tableVersion||
+  (receipt.recipientCharacterId!==null&&
+   (typeof receipt.recipientCharacterId!=='string'||
+    !UUID.test(receipt.recipientCharacterId)))||
   !Array.isArray(receipt.guaranteed)||!Array.isArray(receipt.groups)||
-  !Array.isArray(receipt.drops))
+  !Array.isArray(receipt.drops)||
+  (receipt.drops.some(drop=>drop.type==='equipment')&&
+   receipt.recipientCharacterId===null))
   throw Error('chest_v69_corrupt_committed_receipt');
 }
 /** V1 HMAC is a compatibility contract for previously authored chests.
@@ -160,9 +172,16 @@ export function createChestRewardSettlementV69(
    const resolved=resolveChestLootV67(table,{
     rolls,ownedDropIds:owned,
    });
+   const needsCharacter=resolved.drops.some(d=>d.type==='equipment');
+   const destination=trusted.recipientCharacterId;
+   if(needsCharacter&&
+    (typeof destination!=='string'||!UUID.test(destination)||
+     !await tx.verifyRecipientCharacter(accountId,destination)))
+    throw Error('chest_v69_unverified_character_destination');
    const receipt:FrozenChestReceiptV69={
     rulesVersion:CHEST_REWARD_SETTLEMENT_VERSION_V69,
-    sourceKey,accountId,proofVersion:trusted.proofVersion,
+    sourceKey,accountId,recipientCharacterId:destination,
+    proofVersion:trusted.proofVersion,
     tableId:resolved.tableId,tableVersion:resolved.tableVersion,
     guaranteed:resolved.guarantees,
     groups:resolved.groups,drops:resolved.drops,committed:true,

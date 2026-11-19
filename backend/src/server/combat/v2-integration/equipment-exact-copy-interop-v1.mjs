@@ -14,6 +14,20 @@ const roles=Object.freeze({
  WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
  DAWNKEEPER:'support',STONECALLER:'support',
 });
+const familyClasses=Object.freeze({
+ sword:['IRONWARDEN','BASTION','RAVAGER','DREADGUARD'],
+ axe:['IRONWARDEN','BASTION','RAVAGER','DREADGUARD'],
+ mace:['IRONWARDEN','BASTION','RAVAGER','DREADGUARD','DAWNKEEPER'],
+ greatblade:['RAVAGER','DREADGUARD'],scourge:['DREADGUARD','RAVAGER'],
+ bow:['WAYFINDER'],daggers:['KNIFE_DANCER','WAYFINDER'],
+ wand:['HEXWEAVER','STONECALLER','DAWNKEEPER'],
+ staff:['HEXWEAVER','STONECALLER','DAWNKEEPER'],
+ shield:['IRONWARDEN','BASTION','DAWNKEEPER','DREADGUARD'],
+ focus:['HEXWEAVER','STONECALLER','DAWNKEEPER'],
+});
+export function v2CombatFamilyCompatible(classId,family){
+ return Object.prototype.hasOwnProperty.call(familyClasses,family)&&familyClasses[family].includes(classId);
+}
 const slots=Object.freeze(['helmet','chest','gloves','legs','boots','cape','weapon','offhand','amulet','ring']);
 const levelByTier=Object.freeze({1:2,2:12,3:26,4:40});
 const fail=(code)=>{throw new Error('eq2_cv2_'+code);};
@@ -57,12 +71,12 @@ export function projectVerifiedCraftingV2BaseEvidence(request){
      !str(t.rarity))fail('invalid_exact_template');
   if(actor.level<levelByTier[t.tier])fail('tier_locked');
   if(t.classRestriction!=null&&t.classRestriction!==actor.classId)fail('wrong_class');
-  // Armor role is a build recommendation, not an equip restriction.
-  // Only class-specific armaments require matching class role; class checks
-  // remain enforced independently through classRestriction.
-  if(!['tank','damage','support'].includes(t.role)
-     ||((item.slot==='weapon'||item.slot==='offhand')&&t.role!==roles[actor.classId]))
-    fail('role_mismatch');
+  // Theme and role are descriptive, not equip locks. Family is authoritative.
+  if(!['tank','damage','support'].includes(t.role))fail('invalid_role');
+  if(item.slot==='weapon'||item.slot==='offhand'){
+   if(!str(t.equipmentFamily)||!v2CombatFamilyCompatible(actor.classId,t.equipmentFamily))
+    fail('incompatible_weapon_family');
+  }else if(t.equipmentFamily!==undefined)fail('family_on_nonarmament');
   if(t.hands!==undefined&&!['one','two','dual'].includes(t.hands))fail('invalid_hands');
   if(item.slot!=='weapon'&&t.hands!==undefined)fail('hands_on_nonweapon');
   if(t.enhancementRank!==0||!Array.isArray(t.gemSlots)||t.gemSlots.length!==0)
@@ -96,6 +110,7 @@ export function projectVerifiedCraftingV2BaseEvidence(request){
   evidence.push(Object.freeze({
    instanceId:item.instanceId,receiptId:item.receiptId,itemId:t.pieceId,slot:item.slot,
    tier:'T'+t.tier,rarity:t.rarity,quality:t.quality,
+    ...(t.equipmentFamily?{equipmentFamily:t.equipmentFamily}:{}),
    source:'server-frozen-exact-copy',rarityAndQualityAlreadyApplied:true,
    baseStats:mapped,unappliedAffixCount:t.affixes.length,
   }));

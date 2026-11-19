@@ -129,7 +129,7 @@ try{
   },
   verifyPhysical:async(tx,receipt,legs)=>{
    // Single physical connection: don't issue parallel queries on the
-   // same SERIALIZABLE session while verifying durable grant custody.
+   // same pinned SQL session while verifying durable grant custody.
    const gs=await tx.query(
     'select * from private.v70_test_guarantees where source_key=$1',
     [receipt.sourceKey]);

@@ -10,6 +10,8 @@ import {validateSocialEchoCandidates} from '../../../apps/mobile/src/core/coop-s
 
 function makeHero(classId:'IRONWARDEN'|'WAYFINDER',name:string){
  const state=createCharacter(newGame(0),classId,name);
+ // Offline test fixtures use LOCAL_CHAR_1; online social candidate IDs are UUIDs.
+ state.character!.id=classId==='IRONWARDEN'?'00000000-0000-4000-8000-000000000001':'00000000-0000-4000-8000-000000000002';
  state.character!.level=50;state.character!.xp=legacyCharacterTotalXpAtLevel(50);
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  for(let i=0;i<40&&combatPowerRating(state).total<10_000;i++){

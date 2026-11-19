@@ -93,6 +93,7 @@ class MockStore implements PartyEventRewardStoreV60{
 async function run(){
  ensure(!PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED,'feature_off');
  const store=new MockStore();
+ const state=()=>store.state;
  await rejects(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,
  }),'hidden_gateway_disabled');
@@ -100,8 +101,8 @@ async function run(){
  await rejects(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,
  },true),'simulated_resource_outage');
- ensure(store.state.receipts.size===0&&store.state.balance===60&&
-  store.state.gold===0&&store.state.inventory.size===0,
+ ensure(state().receipts.size===0&&state().balance===60&&
+  state().gold===0&&state().inventory.size===0,
   'failed_transaction_rolled_back_entirely');
  store.failOnResource=false;
  const [first,replay]=await Promise.all([
@@ -110,39 +111,39 @@ async function run(){
  ]);
  ensure(first===replay&&first.origin==='chest'&&
   first.partySigilsDelta===8,'same_frozen_receipt_on_concurrent_replay');
- ensure(store.state.receipts.size===1&&store.state.writes===1&&
-  store.state.balance===68&&store.state.gold===200,
+ ensure(state().receipts.size===1&&state().writes===1&&
+  state().balance===68&&state().gold===200,
   'one_receipt_one_currency_credit');
- ensure(store.state.dust===2&&store.state.essence===4,'existing_resources_once');
+ ensure(state().dust===2&&state().essence===4,'existing_resources_once');
  const key='party-event:'+week+':'+account+':participation';
  const hit=deriveServerChestRollsV1({
   domain:'party_event_v51',committedChestKey:key,secret:authority.secret,
  }).hitRoll<1200;
- ensure(Boolean(first.frozenGear)===hit&&store.state.mints===(hit?1:0),
+ ensure(Boolean(first.frozenGear)===hit&&state().mints===(hit?1:0),
   'only_secure_gear_hit_mints');
  // Mutating entropy after a successful receipt must never reroll the item.
  const rotated={...authority,secret:new Uint8Array(32).fill(19)};
  const rotatedReplay=await claimPartyEventChestV60({
   authority:rotated,kind:'participation',store,
  },true);
- ensure(rotatedReplay===first&&store.state.writes===1,'key_rotation_keeps_frozen_receipt');
+ ensure(rotatedReplay===first&&state().writes===1,'key_rotation_keeps_frozen_receipt');
  await claimPartyEventChestV60({authority,kind:'preparation',store},true);
  await claimPartyEventChestV60({authority,kind:'finale',store},true);
- ensure(store.state.receipts.size===3&&store.state.balance===94&&
-  store.state.gold===1000&&store.state.dust===10&&store.state.essence===17,
+ ensure(state().receipts.size===3&&state().balance===94&&
+  state().gold===1000&&state().dust===10&&state().essence===17,
   'three_chest_max_and_correct_rewards');
  const target=partyEventGearForFamilyV51(evidence.family)
-  .find(x=>!store.state.ownedPieceIds.includes(x.id))!;
+  .find(x=>!state().ownedPieceIds.includes(x.id))!;
  const exchanged=await exchangePartyEventGearV60({
   authority,requestedPieceId:target.id,store,
  },true);
  ensure(exchanged.partySigilsDelta===-60&&exchanged.pieceId===target.id&&
-  store.state.balance===34&&store.state.receipts.size===4,
+  state().balance===34&&state().receipts.size===4,
   'one_targeted_exchange_spends_existing_wallet');
  const replayExchange=await exchangePartyEventGearV60({
   authority,requestedPieceId:target.id,store,
  },true);
- ensure(replayExchange===exchanged&&store.state.balance===34,
+ ensure(replayExchange===exchanged&&state().balance===34,
   'repeat_exchange_does_not_pay_twice');
  const other=partyEventGearForFamilyV51(evidence.family).find(x=>x.id!==target.id)!;
  await rejects(()=>exchangePartyEventGearV60({

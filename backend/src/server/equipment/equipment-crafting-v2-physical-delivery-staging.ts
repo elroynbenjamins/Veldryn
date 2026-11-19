@@ -132,7 +132,8 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
  verifyEquipmentV2StorageReservations(accountId,meta.items,meta.storageReservations??[]);
  if(meta.gemSocketState)verifyEquipmentV2GemSidecar(meta.items,meta.gemSocketState);
  verifyEquipmentV2ReceiptNamespace({
-  forge:meta.receipts,gems:meta.gemSocketState?.receipts,custody:meta.custodyReceipts,
+  forge:meta.receipts,gems:meta.gemSocketState?.receipts,
+  custody:meta.custodyReceipts,physical:meta.physicalDeliveryReceipts,
  });
  verifyEquipmentV2StagingPhysicalReceipts(state,accountId,meta);
  const existing=meta.physicalDeliveryReceipts?.find(row=>row.requestId===requestId);
@@ -158,6 +159,11 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
  const location=custody.find(row=>row.instanceId===instanceId);
  if(!location||location.location==='equipped'||location.location==='bank')
   fail('v2_physical_requires_character_storage');
+ // Deferred copies must first receive a separately versioned, replayable
+ // store_deferred custody transition. Physicalizing without it leaves
+ // hidden custody pointing to 'deferred' while a physical item exists.
+ if(location.location==='deferred')
+  return {state,replayed:false,deferred:true,receipt:null,commit:null};
  const holderId=location.holderCharacterId;
  if(!holderId)fail('unowned_v2_physical_copy');
  const holder=accountHolder(state,holderId);
@@ -176,9 +182,7 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
   return storage.stacks.length+pending<=storage.capacity;
  };
  // A deferred claim must be safely rehomed; no Overflow auto-expiry.
- const dest=location.location==='deferred'?
-  eligible('pouch')?'pouch':eligible('inventory')?'inventory':null
-  :location.location==='pouch'?'pouch':'inventory';
+ const dest=location.location==='pouch'?'pouch':'inventory';
  if(!dest||!eligible(dest))return {
   state,replayed:false,deferred:true,receipt:null,commit:null,
  };
@@ -215,7 +219,8 @@ export function buildEquipmentV2StagingOnlineCommitCandidate(input:{
  state:GameState;accountId:string;onlineVersion:number;
  authoritativeWalletGold:number;requestId:string;instanceId:string;
 }){
- const command={type:'equipment_v2_physical_delivery',instanceId:input.instanceId};
+ // The existing online command hash uses sorted canonical object keys.
+ const command={instanceId:input.instanceId,type:'equipment_v2_physical_delivery'};
  const canonical=JSON.stringify(command);
  const requestHash=createHash('sha256').update(canonical).digest('hex');
  const response={

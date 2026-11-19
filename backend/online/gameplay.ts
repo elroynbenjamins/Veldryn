@@ -3,6 +3,8 @@ import {newGame} from '../../apps/mobile/src/core/game';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
 import {ensurePersonalSeasonalState} from '../../apps/mobile/src/core/personal-seasonal-state';
+import {periodKey,seasonalQuestBoard} from '../../apps/mobile/src/core/seasonal-quests';
+import {projectVerifiedDungeonWeeklyProgress,type VerifiedDungeonWeeklyMetrics} from '../../apps/mobile/src/core/dungeon-weekly-quests';
 import {snapshotEarnedLegacySeasonalClaims} from '../../apps/mobile/src/core/legacy-seasonal-claim';
 import {GATHERING,RECIPES} from '../../apps/mobile/src/content/skills';
 import {HERB_NODES} from '../../apps/mobile/src/content/herbalism';
@@ -56,7 +58,32 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
-  const state=restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
+  let state=restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
+  // A weekly dungeon quest uses the same per-character seasonal-quest claim
+  // pipeline as every other weekly quest. Its counters come exclusively from
+  // committed coop_node_results for this account and active character.
+  // Do not trust saved or client-derived dungeon progress at claim time.
+  if(state.character&&state.character.level>=10&&(request.method==='GET'||command?.type==='seasonal')){
+   const weekKey=periodKey('weekly',new Date(loaded.serverNow));
+   let metrics:VerifiedDungeonWeeklyMetrics={clears:0,deep15:0,elite3:0};
+   try{
+    const verified=await services.rpc<VerifiedDungeonWeeklyMetrics>('coop_weekly_dungeon_metrics_server_v1',{
+     p_account_id:accountId,p_character_id:state.character.id
+    });
+    if(!verified||!Object.values(verified).every(value=>Number.isSafeInteger(value)&&value>=0))throw new Error('invalid_dungeon_quest_metrics');
+    metrics=verified;
+   }catch{
+    if(command?.type==='seasonal'){
+     const args=command.args as {period?:string;id?:string};
+     if(args.period==='weekly'&&seasonalQuestBoard(state,'weekly',new Date(loaded.serverNow)).some(quest=>quest.id===args.id&&quest.tag==='dungeon')){
+      throw new GameplayError('dungeon_weekly_quest_verification_unavailable',503);
+     }
+    }
+    // Fail closed on reads until a verified server query is available.
+    metrics={clears:0,deep15:0,elite3:0};
+   }
+   state=projectVerifiedDungeonWeeklyProgress(state,weekKey,metrics);
+  }
   state.account.longTermAccountScopeId=accountId;
   state.account.guildMember=loaded.guildMember;
   // Retain an already-ended event's server-issued timestamps for one-time

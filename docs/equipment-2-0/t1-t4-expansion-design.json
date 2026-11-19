@@ -1,0 +1,1068 @@
+{
+  "schemaVersion": 1,
+  "documentKind": "eq2_t1_t4_expansion_review_only",
+  "catalogVersion": "eq2-t1t4-expansion-draft-20261119",
+  "project": "Veldryn",
+  "status": "design_only_hidden_unmounted_no_release",
+  "baseSource": {
+    "pr": 1382,
+    "branch": "feature/equipment-crafting-2-hidden-foundation-20261118",
+    "file": "apps/mobile/src/content/equipment-v2-catalog.ts",
+    "note": "Code-derived 15 sets/42 pieces+24 standalones/52 class armaments. Reconcile on latest synchronized feature head before changing authoritative manifests."
+  },
+  "tierScope": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "postReleaseTierPlan": {
+    "tier5": "after_eq2_launch_only",
+    "tiers6to9": "deferred"
+  },
+  "roles": [
+    "tank",
+    "damage",
+    "support"
+  ],
+  "armorAccessorySlots": [
+    "helmet",
+    "chest",
+    "gloves",
+    "legs",
+    "boots",
+    "cape",
+    "amulet",
+    "ring"
+  ],
+  "counts": {
+    "baselineNonWeapon": 66,
+    "baselineClassArmaments": 52,
+    "baselineTotal": 118,
+    "missingRoleSlotCells": 33,
+    "additionalCoveragePieces": 33,
+    "additionalAlternativeStatPieces": 18,
+    "rareBlueprintPieces": 6,
+    "proposedAdditionalNonWeapon": 57,
+    "proposedNonWeaponTotal": 123,
+    "proposedWithExistingArmaments": 175,
+    "originalCompactSets": 15,
+    "countsAreDesignNotLive": true
+  },
+  "tierCoverage": [
+    {
+      "tier": 1,
+      "baseline": 12,
+      "coverageFills": 12,
+      "alternatives": 0,
+      "rareBlueprints": 0,
+      "proposedNonWeaponTotal": 24,
+      "roleSlotMinimum": 24
+    },
+    {
+      "tier": 2,
+      "baseline": 15,
+      "coverageFills": 9,
+      "alternatives": 6,
+      "rareBlueprints": 2,
+      "proposedNonWeaponTotal": 32,
+      "roleSlotMinimum": 24
+    },
+    {
+      "tier": 3,
+      "baseline": 15,
+      "coverageFills": 9,
+      "alternatives": 6,
+      "rareBlueprints": 2,
+      "proposedNonWeaponTotal": 32,
+      "roleSlotMinimum": 24
+    },
+    {
+      "tier": 4,
+      "baseline": 24,
+      "coverageFills": 3,
+      "alternatives": 6,
+      "rareBlueprints": 2,
+      "proposedNonWeaponTotal": 35,
+      "roleSlotMinimum": 24
+    }
+  ],
+  "items": [
+    {
+      "tier": 1,
+      "role": "tank",
+      "slot": "gloves",
+      "id": "EQ2_EXP_T1_TANK_GLOVES",
+      "name": "Fieldborn Watcher's Grips",
+      "profile": "attack_defense",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank gloves: fieldborn watcher's grips, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "tank",
+      "slot": "boots",
+      "id": "EQ2_EXP_T1_TANK_BOOTS",
+      "name": "Fieldborn Ironmarch Boots",
+      "profile": "defense",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank boots: fieldborn ironmarch boots, visible hide bindings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "tank",
+      "slot": "cape",
+      "id": "EQ2_EXP_T1_TANK_CAPE",
+      "name": "Fieldborn Weatherworn Mantle",
+      "profile": "defense_health",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank cape: fieldborn weatherworn mantle, visible moss cloth; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "tank",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T1_TANK_AMULET",
+      "name": "Fieldborn Anchor Pendant",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank amulet: fieldborn anchor pendant, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "damage",
+      "slot": "helmet",
+      "id": "EQ2_EXP_T1_DAMAGE_HELMET",
+      "name": "Fieldborn Scout Cowl",
+      "profile": "health",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage helmet: fieldborn scout cowl, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "damage",
+      "slot": "legs",
+      "id": "EQ2_EXP_T1_DAMAGE_LEGS",
+      "name": "Fieldborn Prowler Legwraps",
+      "profile": "defense",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage legs: fieldborn prowler legwraps, visible hide bindings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "damage",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T1_DAMAGE_AMULET",
+      "name": "Fieldborn Keeneye Charm",
+      "profile": "attack",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage amulet: fieldborn keeneye charm, visible moss cloth; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "damage",
+      "slot": "ring",
+      "id": "EQ2_EXP_T1_DAMAGE_RING",
+      "name": "Fieldborn Quickstrike Ring",
+      "profile": "attack",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage ring: fieldborn quickstrike ring, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "support",
+      "slot": "chest",
+      "id": "EQ2_EXP_T1_SUPPORT_CHEST",
+      "name": "Fieldborn Herbalist Vest",
+      "profile": "health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support chest: fieldborn herbalist vest, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "support",
+      "slot": "legs",
+      "id": "EQ2_EXP_T1_SUPPORT_LEGS",
+      "name": "Fieldborn Caretaker Trousers",
+      "profile": "defense_health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support legs: fieldborn caretaker trousers, visible hide bindings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "support",
+      "slot": "boots",
+      "id": "EQ2_EXP_T1_SUPPORT_BOOTS",
+      "name": "Fieldborn Softstep Boots",
+      "profile": "defense_health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support boots: fieldborn softstep boots, visible moss cloth; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 1,
+      "role": "support",
+      "slot": "ring",
+      "id": "EQ2_EXP_T1_SUPPORT_RING",
+      "name": "Fieldborn Shelter Signet",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support ring: fieldborn shelter signet, visible worn iron; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "tank",
+      "slot": "gloves",
+      "id": "EQ2_EXP_T2_TANK_GLOVES",
+      "name": "Ironwood Thornwall Gauntlets",
+      "profile": "attack_defense",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank gloves: ironwood thornwall gauntlets, visible ironwood rivets; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "tank",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T2_TANK_AMULET",
+      "name": "Ironwood Rootbound Pendant",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank amulet: ironwood rootbound pendant, visible woven thorn-fiber; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "tank",
+      "slot": "ring",
+      "id": "EQ2_EXP_T2_TANK_RING",
+      "name": "Ironwood Watchsignet",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank ring: ironwood watchsignet, visible hardened wolf leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "damage",
+      "slot": "legs",
+      "id": "EQ2_EXP_T2_DAMAGE_LEGS",
+      "name": "Ironwood Ambusher Leggings",
+      "profile": "defense",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage legs: ironwood ambusher leggings, visible ironwood rivets; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "damage",
+      "slot": "boots",
+      "id": "EQ2_EXP_T2_DAMAGE_BOOTS",
+      "name": "Ironwood Pathfinder Boots",
+      "profile": "attack_health",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage boots: ironwood pathfinder boots, visible woven thorn-fiber; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "damage",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T2_DAMAGE_AMULET",
+      "name": "Ironwood Arrowcrest Pendant",
+      "profile": "attack",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage amulet: ironwood arrowcrest pendant, visible hardened wolf leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "support",
+      "slot": "legs",
+      "id": "EQ2_EXP_T2_SUPPORT_LEGS",
+      "name": "Ironwood Groveweave Trousers",
+      "profile": "defense_health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support legs: ironwood groveweave trousers, visible ironwood rivets; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "support",
+      "slot": "cape",
+      "id": "EQ2_EXP_T2_SUPPORT_CAPE",
+      "name": "Ironwood Restorative Cloak",
+      "profile": "health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support cape: ironwood restorative cloak, visible woven thorn-fiber; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 2,
+      "role": "support",
+      "slot": "ring",
+      "id": "EQ2_EXP_T2_SUPPORT_RING",
+      "name": "Ironwood Sanctum Ring",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support ring: ironwood sanctum ring, visible hardened wolf leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "tank",
+      "slot": "legs",
+      "id": "EQ2_EXP_T3_TANK_LEGS",
+      "name": "Sunscar Stonewarden Greaves",
+      "profile": "defense_health",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank legs: sunscar stonewarden greaves, visible sunstone studs; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "tank",
+      "slot": "boots",
+      "id": "EQ2_EXP_T3_TANK_BOOTS",
+      "name": "Sunscar Dunesentinel Boots",
+      "profile": "defense",
+      "material": "steel",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank boots: sunscar dunesentinel boots, visible sunscale leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "tank",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T3_TANK_AMULET",
+      "name": "Sunscar Oathstone Pendant",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank amulet: sunscar oathstone pendant, visible dunewood fittings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "damage",
+      "slot": "cape",
+      "id": "EQ2_EXP_T3_DAMAGE_CAPE",
+      "name": "Sunscar Sandstalker Mantle",
+      "profile": "attack_health",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage cape: sunscar sandstalker mantle, visible sunstone studs; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "damage",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T3_DAMAGE_AMULET",
+      "name": "Sunscar Glassfang Talisman",
+      "profile": "attack",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage amulet: sunscar glassfang talisman, visible sunscale leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "damage",
+      "slot": "ring",
+      "id": "EQ2_EXP_T3_DAMAGE_RING",
+      "name": "Sunscar Scorpion Ring",
+      "profile": "attack",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage ring: sunscar scorpion ring, visible dunewood fittings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "support",
+      "slot": "gloves",
+      "id": "EQ2_EXP_T3_SUPPORT_GLOVES",
+      "name": "Sunscar Wellspring Wraps",
+      "profile": "attack_defense",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support gloves: sunscar wellspring wraps, visible sunstone studs; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "support",
+      "slot": "legs",
+      "id": "EQ2_EXP_T3_SUPPORT_LEGS",
+      "name": "Sunscar Lifebloom Leggings",
+      "profile": "defense_health",
+      "material": "cloth",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support legs: sunscar lifebloom leggings, visible sunscale leather; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 3,
+      "role": "support",
+      "slot": "ring",
+      "id": "EQ2_EXP_T3_SUPPORT_RING",
+      "name": "Sunscar Renewal Signet",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support ring: sunscar renewal signet, visible dunewood fittings; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "id": "EQ2_EXP_T4_TANK_RING",
+      "name": "Glassbound Citadel Signet",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct tank ring: glassbound citadel signet, visible amberglass clasps; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 4,
+      "role": "damage",
+      "slot": "legs",
+      "id": "EQ2_EXP_T4_DAMAGE_LEGS",
+      "name": "Glassbound Razorwind Legguards",
+      "profile": "defense",
+      "material": "leather",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct damage legs: glassbound razorwind legguards, visible amberglass clasps; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "tier": 4,
+      "role": "support",
+      "slot": "amulet",
+      "id": "EQ2_EXP_T4_SUPPORT_AMULET",
+      "name": "Glassbound Starweave Pendant",
+      "profile": "health",
+      "material": "jewelry",
+      "kind": "coverage",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct support amulet: glassbound starweave pendant, visible amberglass clasps; grounded Style 4 dark-fantasy, same-slot camera and silhouette",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_TANK_CHEST",
+      "tier": 2,
+      "role": "tank",
+      "slot": "chest",
+      "profile": "defense",
+      "material": "steel",
+      "name": "Ironwood Deepplate Cuirass",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank chest; thicker solid chest plate, broad ironwood buckles. Must not be a recolor",
+      "distinctSilhouette": "thicker solid chest plate, broad ironwood buckles",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_TANK_BOOTS",
+      "tier": 2,
+      "role": "tank",
+      "slot": "boots",
+      "profile": "defense_health",
+      "material": "steel",
+      "name": "Ironwood Hearthstep Boots",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank boots; fitted bark-reinforced toe and padded shank. Must not be a recolor",
+      "distinctSilhouette": "fitted bark-reinforced toe and padded shank",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_DAMAGE_GLOVES",
+      "tier": 2,
+      "role": "damage",
+      "slot": "gloves",
+      "profile": "attack_defense",
+      "material": "leather",
+      "name": "Ironwood Scoutline Grips",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage gloves; sleek thumb guards and protective scale backs. Must not be a recolor",
+      "distinctSilhouette": "sleek thumb guards and protective scale backs",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_DAMAGE_RING",
+      "tier": 2,
+      "role": "damage",
+      "slot": "ring",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Ironwood Thornmark Ring",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage ring; thin triangular ironwood band, hidden inner engraving. Must not be a recolor",
+      "distinctSilhouette": "thin triangular ironwood band, hidden inner engraving",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_SUPPORT_CHEST",
+      "tier": 2,
+      "role": "support",
+      "slot": "chest",
+      "profile": "defense_health",
+      "material": "cloth",
+      "name": "Ironwood Groveward Vest",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support chest; soft robe torso with reinforced moss-leather mantle. Must not be a recolor",
+      "distinctSilhouette": "soft robe torso with reinforced moss-leather mantle",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T2_SUPPORT_AMULET",
+      "tier": 2,
+      "role": "support",
+      "slot": "amulet",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Ironwood Spiritseed Pendant",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support amulet; teardrop sprig crystal inside worn wooden ring. Must not be a recolor",
+      "distinctSilhouette": "teardrop sprig crystal inside worn wooden ring",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_TANK_CHEST",
+      "tier": 3,
+      "role": "tank",
+      "slot": "chest",
+      "profile": "defense",
+      "material": "steel",
+      "name": "Sunscar Duneplate Cuirass",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank chest; broad sunstone inset plates and waxed straps. Must not be a recolor",
+      "distinctSilhouette": "broad sunstone inset plates and waxed straps",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_TANK_RING",
+      "tier": 3,
+      "role": "tank",
+      "slot": "ring",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Sunscar Quartzguard Signet",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank ring; chunky ochre sunstone signet with angled relief. Must not be a recolor",
+      "distinctSilhouette": "chunky ochre sunstone signet with angled relief",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_DAMAGE_GLOVES",
+      "tier": 3,
+      "role": "damage",
+      "slot": "gloves",
+      "profile": "attack_defense",
+      "material": "leather",
+      "name": "Sunscar Thornstrike Wraps",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage gloves; sharp sunscale finger guards with sun-bleached bindings. Must not be a recolor",
+      "distinctSilhouette": "sharp sunscale finger guards with sun-bleached bindings",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_DAMAGE_BOOTS",
+      "tier": 3,
+      "role": "damage",
+      "slot": "boots",
+      "profile": "defense",
+      "material": "leather",
+      "name": "Sunscar Glassstep Boots",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage boots; hardened reinforced boots with amberglass toe plates. Must not be a recolor",
+      "distinctSilhouette": "hardened reinforced boots with amberglass toe plates",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_SUPPORT_HELMET",
+      "tier": 3,
+      "role": "support",
+      "slot": "helmet",
+      "profile": "defense_health",
+      "material": "cloth",
+      "name": "Sunscar Veilguard Hood",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support helmet; hooded cloth with narrow protective sunscale brow. Must not be a recolor",
+      "distinctSilhouette": "hooded cloth with narrow protective sunscale brow",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T3_SUPPORT_AMULET",
+      "tier": 3,
+      "role": "support",
+      "slot": "amulet",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Sunscar Miragesong Charm",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support amulet; violet bloom thread and honey glass pendant. Must not be a recolor",
+      "distinctSilhouette": "violet bloom thread and honey glass pendant",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_TANK_HELMET",
+      "tier": 4,
+      "role": "tank",
+      "slot": "helmet",
+      "profile": "defense_health",
+      "material": "steel",
+      "name": "Glassbound Oathplate Helm",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank helmet; layered visor with understated astral-script band. Must not be a recolor",
+      "distinctSilhouette": "layered visor with understated astral-script band",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_TANK_CAPE",
+      "tier": 4,
+      "role": "tank",
+      "slot": "cape",
+      "profile": "health",
+      "material": "steel",
+      "name": "Glassbound Hearthward Cloak",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing tank cape; mail-backed full cape with broad minimal drape. Must not be a recolor",
+      "distinctSilhouette": "mail-backed full cape with broad minimal drape",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_DAMAGE_BOOTS",
+      "tier": 4,
+      "role": "damage",
+      "slot": "boots",
+      "profile": "defense",
+      "material": "leather",
+      "name": "Glassbound Nightglass Boots",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage boots; low-profile armored shins with dark glass toe. Must not be a recolor",
+      "distinctSilhouette": "low-profile armored shins with dark glass toe",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_DAMAGE_RING",
+      "tier": 4,
+      "role": "damage",
+      "slot": "ring",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Glassbound Whirlcrest Band",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing damage ring; twisted blade-shaped ring with faceted amberglass. Must not be a recolor",
+      "distinctSilhouette": "twisted blade-shaped ring with faceted amberglass",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_SUPPORT_CHEST",
+      "tier": 4,
+      "role": "support",
+      "slot": "chest",
+      "profile": "defense_health",
+      "material": "cloth",
+      "name": "Glassbound Starloom Robe",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support chest; soft astral script panels supported by protective seams. Must not be a recolor",
+      "distinctSilhouette": "soft astral script panels supported by protective seams",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_ALT_T4_SUPPORT_RING",
+      "tier": 4,
+      "role": "support",
+      "slot": "ring",
+      "profile": "attack_health",
+      "material": "jewelry",
+      "name": "Glassbound Dawnthread Ring",
+      "kind": "alternative_statline",
+      "craftGate": "standard_after_eq2_release",
+      "artBrief": "Distinct same-tier alternative to existing support ring; silver moonlike open band with starloom inset. Must not be a recolor",
+      "distinctSilhouette": "silver moonlike open band with starloom inset",
+      "baseBudgetMultiplier": 1
+    },
+    {
+      "id": "EQ2_RARE_T2_IRONROOT_GUARD",
+      "tier": 2,
+      "role": "tank",
+      "slot": "chest",
+      "profile": "defense_health",
+      "material": "steel",
+      "name": "Ironwood Heartguard Carapace",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T2_IRONROOT_GUARD",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 5,
+        "eligible_zone_boss": 20
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.03,
+      "trait": {
+        "id": "ironroot_guard",
+        "description": "After repeated damage, briefly reduce next incoming hit; cooldown and stacking cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Ironwood Heartguard Carapace. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 2. No baked rarity glow."
+    },
+    {
+      "id": "EQ2_RARE_T2_WOODLAND_MENDING",
+      "tier": 2,
+      "role": "support",
+      "slot": "cape",
+      "profile": "health",
+      "material": "cloth",
+      "name": "Ironwood Whisperbloom Mantle",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T2_WOODLAND_MENDING",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 5,
+        "eligible_zone_boss": 20
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.03,
+      "trait": {
+        "id": "woodland_mending",
+        "description": "After healing another character, grant a small conditional absorb; cooldown and stacking cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Ironwood Whisperbloom Mantle. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 2. No baked rarity glow."
+    },
+    {
+      "id": "EQ2_RARE_T3_MIRAGE_PRECISION",
+      "tier": 3,
+      "role": "damage",
+      "slot": "gloves",
+      "profile": "attack_defense",
+      "material": "leather",
+      "name": "Sunscar Miragefang Gloves",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T3_MIRAGE_PRECISION",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 3,
+        "eligible_zone_boss": 12
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.04,
+      "trait": {
+        "id": "mirage_precision",
+        "description": "After a successful dodge, briefly improve next ability accuracy; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Sunscar Miragefang Gloves. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 3. No baked rarity glow."
+    },
+    {
+      "id": "EQ2_RARE_T3_AMBERGLASS_WARD",
+      "tier": 3,
+      "role": "support",
+      "slot": "ring",
+      "profile": "health",
+      "material": "jewelry",
+      "name": "Sunscar Amberglass Signet",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T3_AMBERGLASS_WARD",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 3,
+        "eligible_zone_boss": 12
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.04,
+      "trait": {
+        "id": "amberglass_ward",
+        "description": "After granting a shield, restore a very small amount of ally health; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Sunscar Amberglass Signet. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 3. No baked rarity glow."
+    },
+    {
+      "id": "EQ2_RARE_T4_STEADFAST_ANCHOR",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "profile": "defense_health",
+      "material": "steel",
+      "name": "Glassbound Oathforged Boots",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T4_STEADFAST_ANCHOR",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 2,
+        "eligible_zone_boss": 8
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.05,
+      "trait": {
+        "id": "steadfast_anchor",
+        "description": "The first elite heavy strike gets a small damage reduction; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Glassbound Oathforged Boots. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 4. No baked rarity glow."
+    },
+    {
+      "id": "EQ2_RARE_T4_SPELLTHREAD_ECHO",
+      "tier": 4,
+      "role": "damage",
+      "slot": "amulet",
+      "profile": "attack",
+      "material": "jewelry",
+      "name": "Glassbound Soulweft Pendant",
+      "kind": "rare_blueprint",
+      "craftGate": "requires_verified_character_blueprint_unlock",
+      "blueprintId": "EQ2_BP_T4_SPELLTHREAD_ECHO",
+      "blueprintDropSources": [
+        "eligible_zone_elite",
+        "eligible_zone_boss"
+      ],
+      "proposedDropChanceBps": {
+        "eligible_zone_elite": 2,
+        "eligible_zone_boss": 8
+      },
+      "craftMaterialCostMultiplier": 1.4,
+      "baseBudgetMultiplier": 1.05,
+      "trait": {
+        "id": "spellthread_echo",
+        "description": "A successful ability has a small capped cooldown refund opportunity; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "artBrief": "Rare blueprint item: Glassbound Soulweft Pendant. Hand-made distinctive silhouette, sealed material joins, one earned rune or emblem. Same Style 4 camera/scale as normal tier 4. No baked rarity glow."
+    }
+  ],
+  "economy": {
+    "normalCraft": {
+      "baseBudgetMultiplier": 1,
+      "recipeSources": [
+        "forge"
+      ],
+      "shopPurchase": false,
+      "recipeUnlock": "standard"
+    },
+    "alternativeCraft": {
+      "baseBudgetMultiplier": 1,
+      "change": "redistribute permitted existing ATK/DEF/HP slot profile; meaningful appearance change",
+      "noExtraRollPower": true,
+      "shopPurchase": false
+    },
+    "rareBlueprint": {
+      "baseBudgetMultiplierRange": [
+        1.03,
+        1.05
+      ],
+      "maxExtraTraitSlots": 1,
+      "blueprintDropOnly": true,
+      "blueprintDropTablesMustBeServerOwned": true,
+      "noShopOrMarketBlueprintPurchases": true,
+      "characterSpecificKnowledge": "proposed_not_yet_integrated",
+      "recipeCostMultiple": 1.4,
+      "traitExecution": "blocked_until_server_combat_policy_signed_off",
+      "dropRates": "draft_bps_not_authorized_live"
+    }
+  },
+  "rewards": {
+    "universalPolicy": {
+      "allowedGearAcquisition": [
+        "dungeon_boss_drop",
+        "dungeon_completion_chest",
+        "party_event_chest",
+        "world_boss_chest"
+      ],
+      "deny": [
+        "npc_shop",
+        "guild_shop",
+        "dungeon_shop",
+        "world_boss_shop",
+        "event_shop",
+        "shop_exchange",
+        "vendor_exchange",
+        "currency_exchange",
+        "crafted_from_reward_piece",
+        "player_market_purchase"
+      ],
+      "playerMarketStatus": "deny_pending_explicit_future_trade_policy",
+      "noShopOrExchange": true,
+      "sourceOwnedRoll": true,
+      "neverCraftable": true,
+      "tierRange": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "Only real drop/chest can issue these items. Shop previews may show locked collection info but must never offer Buy/Exchange."
+    },
+    "dungeon": {
+      "proposedBaseBudgetMultRange": [
+        1.03,
+        1.07
+      ],
+      "traitOrSetBonusPreferred": true,
+      "equipmentType": "combat",
+      "source": "boss_drop_or_completion_chest",
+      "tableStatus": "pending_exact_dungeon_item_manifest",
+      "neverOverwriteCurrentRates": true
+    },
+    "partyEvent": {
+      "proposedBaseBudgetMultRange": [
+        1.04,
+        1.08
+      ],
+      "traitOrSetBonusPreferred": true,
+      "sets": 8,
+      "uniqueItems": 20,
+      "setPieceCounts": [
+        2,
+        3
+      ],
+      "source": "party_event_chest_only",
+      "sourcePr": 1416,
+      "existingDraftViolation": "party_event_chest_or_exchange must be removed from issuing policy; existing hidden code is not release-ready",
+      "doNotChangeLiveLootOdds": true
+    },
+    "worldBoss": {
+      "equipmentType": "gathering_speed_specialization_only",
+      "statFamily": "gathering_speed",
+      "sameTierCombatStatAdvantage": 0,
+      "source": "world_boss_chest_only",
+      "bosses": [
+        "hollowroot",
+        "sunscar",
+        "frostmarch"
+      ],
+      "existingChanceBps": 100,
+      "existingDraftViolation": "V58 World Sigil equipment exchange quote contradicts chest-only requirement; remove/disable gear exchange before release",
+      "doNotChangeCurrentChance": true
+    }
+  },
+  "releaseGates": {
+    "client": false,
+    "server": false,
+    "shopHardDenyUntilExplicitVerified": true,
+    "rareBlueprintRuntime": false,
+    "eventGearRuntime": false,
+    "dropGrantRuntime": false,
+    "marketPurchaseRewardGear": false,
+    "readyForMergeToMain": false,
+    "readyForProduction": false
+  },
+  "remarks": [
+    "No gameplay/catalog/server manifests, SQL, shop routes, drops or Android assets changed by this review-only manifest.",
+    "Exact percentages/trait magnitudes require simulations and server-owned rollout; suggested multiplier ranges are not active equipment modifiers.",
+    "Class-specific weapons require separate compatibility review; dual-hand and offhand budget contracts remain unchanged."
+  ]
+}

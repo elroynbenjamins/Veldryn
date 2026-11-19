@@ -17,6 +17,8 @@ on:
       - 'backend/package.json'
       - 'apps/mobile/src/core/coop-qmode.ts'
       - 'apps/mobile/src/core/coop-presentation.ts'
+      - 'apps/mobile/src/core/dungeon-combat-preload.ts'
+      - 'apps/mobile/tests/dungeon-instant-preview-ui.cjs'
       - 'apps/mobile/src/components/coop/**'
       - 'apps/mobile/src/i18n/dungeon-room-modifiers.ts'
       - '.github/workflows/dungeon-mechanics-validation.yml'
@@ -51,6 +53,9 @@ jobs:
         working-directory: backend
       - name: Install mobile workspace types used by shared backend snapshots
         run: pnpm install --frozen-lockfile
+        working-directory: apps/mobile
+      - name: Verify immediate enemy-specific combat preview contracts
+        run: node tests/dungeon-instant-preview-ui.cjs
         working-directory: apps/mobile
       - name: Validate hidden Dungeon Marks Shop catalogue and purchase eligibility
         run: pnpm test:dungeon-shop-catalog

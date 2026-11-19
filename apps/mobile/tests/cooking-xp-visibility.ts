@@ -69,14 +69,27 @@ for(const language of ['en','de','es','nl','it','fr','ru','tr'] as const satisfi
 
 const component=readFileSync(join(process.cwd(),'src/components/RecipeCard.tsx'),'utf8');
 const translations=readFileSync(join(process.cwd(),'src/i18n/crafting-details.ts'),'utf8');
+const workshop=readFileSync(join(process.cwd(),'src/components/ConsumableWorkshop.tsx'),'utf8');
 ok(component.includes("recipe.skillId==='cooking'?<Text style={s.cookingXp}"),
  'Collapsed Cooking cards must show XP without opening recipe details');
 ok(component.includes("ct('+{xp} Cooking XP per batch'"),
  'Cooking XP value must be labeled as per-batch, not generic XP');
 ok(component.includes("meal?<Text style={s.mealBonusCompact}>"),'Collapsed cards must reveal improved special-meal buffs');
-ok(component.includes('const mealLabel=meal?ct('),'Special dish bonuses must use localized translations');
+ok(component.includes('const mealLabel=meal?cookingMealEffectText('),'Shared recipe card must use translated meal effect text');
 for(const key of ['+{value}% Gathering speed','+{value}% Crafting speed','+{value}% Combat XP','+{value}% Non-combat skill speed'])
  ok(translations.includes("'"+key+"'"),'Translated meal descriptor missing: '+key);
+
+ok(workshop.includes("skillId==='cooking'?<Text style={[s.xp"),
+ 'Cooking workshop tiles must show the XP estimate without requiring a tap');
+ok(workshop.includes('cookingXpLabel(detail)'),
+ 'Cooking workshop detail sheet must repeat the current XP estimate');
+ok(workshop.includes('detailXp?.usingReservedRate'),
+ 'Cooking workshop must disclose active reserved XP snapshots');
+ok(workshop.includes('cookingMealEffectText(language,meal)'),
+ 'Cooking workshop must show localized doubled special meal effects');
+ok(workshop.includes('Activate meal buffs from Inventory. Auto-eat only restores HP.'),
+ 'Cooking workshop must explain manual activation vs ordinary auto-eat');
+
 ok(component.includes('cookingXpPreview?.usingReservedRate'),'Cooking details must explain the active reserved XP snapshot');
 ok(component.includes('Cooking mastered · no more XP'),'Cooking card must display level-cap state');
 ok(component.includes('Activate meal buffs from Inventory. Auto-eat only restores HP.'),'Meal buff preview must distinguish activation from auto-eating');

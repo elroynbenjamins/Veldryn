@@ -159,7 +159,8 @@ for(const [petId,basename,portraitHash,mediumHash,smallHash] of approvedDungeonP
   assert.equal(hash,expectedHash,'unexpected approved pet asset: '+file);
   assert(!approvedArtHashes.has(hash),'two pet art files unexpectedly share the same image');
   approvedArtHashes.add(hash);
-  assert(dungeonPetArt.includes(`\${petId}:require('../../assets/dungeon-shop/pets/\${folder?folder+'/':''}\${filename}')`),'resolver misses approved asset '+filename);
+  const expectedRequire=petId+":require('../../assets/dungeon-shop/pets/"+(folder?folder+'/':'')+filename+"')";
+  assert(dungeonPetArt.includes(expectedRequire),'resolver misses approved asset '+filename);
  }
 }
 assert(dungeonPetArt.includes('dungeonShopPetOfferPortraitArt'),'shop must have a dedicated full-resolution portrait resolver');

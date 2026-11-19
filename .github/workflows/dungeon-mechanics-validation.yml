@@ -10,6 +10,8 @@ on:
       - 'backend/online/coop.ts'
       - 'backend/online/dungeon-weekly-quests.ts'
       - 'backend/online/tests/social-echo-recruitment.ts'
+      - 'backend/online/coop-social-echoes.ts'
+      - 'backend/online/tests/social-echo-automatic.ts'
       - 'backend/src/server/coop/social-echo-balance.ts'
       - 'apps/mobile/tests/dungeon-social-echo-picker-ui.cjs'
       - 'backend/supabase/migrations/20261119162000_coop_social_echo_candidates_v1.sql'
@@ -80,6 +82,9 @@ jobs:
       - name: Validate standalone weekly dungeon card and claim wiring
         run: pnpm test:dungeon-weekly-ui
         working-directory: apps/mobile
+      - name: Verify automatic friend/guild snapshots without a sharing switch
+        run: node dist/online/backend/online/tests/social-echo-automatic.js
+        working-directory: backend
       - name: Verify selected friend/guild Echo role and power safety
         run: node dist/online/backend/online/tests/social-echo-recruitment.js
         working-directory: backend

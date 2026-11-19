@@ -6,6 +6,8 @@
 
 **Approved direction (19 November 2026): Style 4 — painterly dark-fantasy storybook equipment.** It supersedes the previous rough pixel-cluster renderer for *new* Equipment 2.0 art only. The user's fourth concept sets the visual direction; **production-grade reference assets are still pending**. See the definitive [Style 4 slot pose guide](EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md) and [pose-lock JSON](equipment-2-0-pose-lock.json).
 
+**Corrected production unit:** one **canonical item ID** / 192px icon, **not** one full ten-slot gear set. Equipment 2.0 drafted compact sets of 2, 3, or 4 pieces, and the art queue must match those exact memberships. The ten-item atlas was a legacy packaging scheme that I had incorrectly treated as a set requirement.
+
 ## Authority and scope
 
 This standard governs **new Equipment/Crafting 2.0** crafted pieces, class/path sets, standalones, dungeon drops, Party Event chest gear, World Boss gathering gear, and future reward equipment. It is not permission to enable hidden systems. Source-of-truth identities, rarity, slots, material recipes, drop pools and tier eligibility must be read from their authoritative *current* code/manifest at generation time; never invent reward IDs, equipment slots, probability, or item sets to fill a visual grid.
@@ -25,17 +27,17 @@ Relevant existing sources:
 | Property | Rule |
 | --- | --- |
 | Final item art | One RGBA icon per slot on a **192 × 192** transparent canvas; all tiers/sources use this canvas |
-| Set atlas | **960 × 384** pixels, exactly five 192px cells across and two rows |
+| Optional legacy-format atlas | **960 × 384** pixels, five 192px cells across and two rows; **NOT** evidence that an EQ2 set has ten pieces |
 | Slots / indices (0-based) | helmet 0, chest 1, gloves 2, legs 3, boots 4 / weapon 5, offhand 6, cape 7, amulet 8, ring 9 |
 | Safe rectangle | Absolute alpha bounds inside **x/y 26..165** inclusive within each cell; a **26px fully transparent gutter** on every side. This is stricter than the existing legacy 23px validator |
 | Alpha | True transparency, no black/white/grey matte, halo, card, text, rarity border, floor or cast shadow |
 | Runtime exports | Optimized RGBA **WebP**, target **≤250 KiB** per 10-item atlas; >350 KiB requires review; >500 KiB fails until redesigned/optimized; never auto-sacrifice icon clarity. Single icon exports have a proportional budget |
 | Masters | Retain lossless **PNG** masters and generation notes in review/non-bundled folders, not the shipped asset folder |
-| Resolution/downsample | Generate individual isolated masters at convenient square source size (e.g. 1024px), confirm intact silhouette and alpha, preserve aspect ratio, center within safe bounds, then export exact 192px icon. Assemble 10 approved icons into the final atlas. Do not enlarge one tier relative to another |
+| Resolution/downsample | Generate each actual canonical item as isolated transparent master (e.g. 1024px), verify intact source, preserve aspect ratio, then export its own 192px icon. Only assemble optional atlases if the renderer explicitly requires them |
 | Visual checks | Compare at 32, **40**, 48, and 64px per icon; LANCZOS/actual mobile renderer previews on dark and light UI backgrounds |
 | No upscaling | A 192px icon is not a crop from a tiny 32px source scaled up; design at source size then deliberately resolve clustered edges at final size |
 
-**Two delivery modes:** Full ten-slot sets receive a ten-cell atlas. Partial/standalone chest rewards get **individual** 192px icons keyed by the canonical item ID; a twenty-piece Party collection is *not* forced into two invented ten-piece sets. World Boss gathering pieces likewise follow their actual item/slot map, not a fictional armor set. If runtime mapping later needs an atlas, use explicit approved slots and transparent empty slots in a separate format; never pass a sparse sheet to the legacy ten-slot validator.
+**Equipment 2.0 item-first export is mandatory:** the actual hidden catalog defines **15 compact T1–T4 crafted sets, each 2–4 items**, plus 24 standalone items and 52 class weapon/offhand templates (total 118), NOT any ten-piece class sets. Every actual crafted piece and every Party Event, World Boss or dungeon reward item receives a **192×192 transparent WebP keyed by canonical item ID**. The 960×384 legacy five-by-two format is retained **only as optional packaging for a renderer that needs it**, not as a rule to fill ten slots. Never invent nonexistent set pieces or duplicate graphics to fill the atlas. Any future atlas binding requires an explicit manifest of real IDs to positions and correct sparse-asset handling.
 
 **Important:** Normalize *each separate source icon*, not an already-cropped multi-item canvas that may hide an off-edge tip. Source-boundary inspection precedes any crop. Avoid the historic pipeline's risk of filling a cell by stretching a narrow weapon: use aspect-preserving `contain` only. Do not consider successful normalization proof that an originally cropped source was complete.
 
@@ -94,7 +96,7 @@ Before generating any icon, record in the art manifest:
 
 > Veldryn EQ2 equipment **single-item** production icon, styleLock veldryn-eq2-storybook-v1. Draw ONLY [ITEM ID / NAME], the [SLOT] for [CLASS / PATH OR UNIVERSAL], [TIER], acquired from [CANONICAL SOURCE]. Reproduce **selected Style 4 hand-painted dark-fantasy storybook gear**: controlled warm 10-o'clock upper-left key light, crisp outlined shape with softly painted weathering/metal/fabric, subtle cool lower-right occlusion and slot/family-specific view from EQUIPMENT_2_0_STYLE4_POSE_GUIDE.md. Match [APPROVED SAME-SLOT REFERENCE] scale and orientation; use exactly the same 192×192 transparent output canvas, subject entirely within x/y 26..165 with no crop. Construction [TIER-APPROPRIATE CRAFT / MATERIAL PLAN]. Main material [RESOURCE NAME] must match the provided actual in-game icon's [HUE / SHAPE / SURFACE] as [STRUCTURAL COMPONENT]. Controlled class accent [COLOR], localized [LOCATION]. Distinctive set motif [ONE LEGIBLE FEATURE]. Relative to [PRIOR-TIER / PEER], this gear is [CONSTRUCTION DELTA], NOT bigger or brighter. No character, mannequin, ground, frame, words, border, baked-in rarity, particles, glow cloud, second item, coarse pixel clusters, blurry airbrush, photoreal PBR, hard floor shadow, cropped piece, or different lighting.
 
-For a ten-item set, make each slot from the **same immutable packet**; never reroll camera, lighting, stroke or palette on each call. Assemble after individual approvals using the fixed slot order.
+For each *actual compact set*, use one shared design identity packet for only its defined members (2–4 in the present T1–T4 draft), without inventing missing slots. Individually render and approve each real ID; runtime packaging is a separate step.
 
 ### Negative prompt / immediate rejection
 
@@ -104,7 +106,7 @@ Wrong sword hilt/tip direction, backwards boot toes, wrong bow/axe/staff family,
 
 **Automated:** run `python tools/validate-equipment-v2-art.py <atlas.webp> --kind atlas` or `python tools/validate-equipment-v2-art.py <icon.webp> --kind icon` with Pillow installed. This strict 2.0 validator checks exact dimensions, real transparency, nonempty items, 26px gutters and byte budget. Optional `--reference` checks per-slot footprint parity. Also retain current production `tools/validate-equipment-atlas.mjs` for the normal legacy atlas contract. No validator can prove artistic sameness, correct item identity, correct 3D orientation, or that a source was previously cropped: these require **visual review**.
 
-**Human/mobile:** compare the full class/slot progression T1→T9 at the same 40px size, inspect hand-painted silhouette/texture at 100% and 300%, align on dark/light UI, compare resource silhouettes against the shipped ingredient icons, inspect alternate path side-by-side and inspect every generated source for pre-normalization clipping. Check actual Android inventory, crafting preview, chest result, shop and equipment comparison UI. Reject any mismatch; regenerate the single faulty slot rather than distorting the whole sheet.
+**Human/mobile:** compare actual catalogued tier and slot peers (T1–T4 for the current crafting foundation; higher tiers only when defined) at the same 40px size, inspect hand-painted silhouette/texture at 100% and 300%, align on dark/light UI, compare resource silhouettes against the shipped ingredient icons, inspect alternate path side-by-side and inspect every generated source for pre-normalization clipping. Check actual Android inventory, crafting preview, chest result, shop and equipment comparison UI. Reject any mismatch; regenerate the single faulty slot rather than distorting the whole sheet.
 
 **Art production states:** `identified → brief_ready → generating → candidate → visual_approved → normalized → tech_verified → mapped → device_verified`. Each step records evidence; unknown/unverified remains incomplete. `mapped` does **not** mean shipped. Release remains blocked until Equipment 2.0 physical item custody, approved drop tables, explicit go/no-go and corresponding gameplay release gate are complete.
 
@@ -112,18 +114,18 @@ Wrong sword hilt/tip direction, backwards boot toes, wrong bow/axe/staff family,
 
 Review-only source: `docs/art/equipment-2-0-masters/<source>/<item-id>/<candidate-id>.png` (outside the mobile app folder; for large originals consider dedicated art storage/LFS).
 Validated standalone export: `apps/mobile/assets/equipment-2-0/<source>/<item-id>.webp`.
-Validated full set export: `apps/mobile/assets/equipment-2-0/sets/<set-id>-atlas.webp`.
+Optional renderer-only atlas export (if later required): `apps/mobile/assets/equipment-2-0/atlases/<layout-id>-atlas.webp` with an exact item-ID→cell map. **Not** one ten-piece image per EQ2 compact set.
 Use lowercase file-safe slugs while retaining exact uppercase/case-sensitive gameplay item IDs in metadata. Never overwrite approved legacy art merely because names sound similar. Keep only production-optimized exports under `assets/` after the art and runtime mapping checks pass. Do not duplicate masters at multiple density variants.
 
 **Visual direction selected, production references pending.** The fourth sample remains a design example from this conversation, not approved transparent production source material. Archive the original in non-runtime reference storage and approve the ten real slot masters before bulk generation.
 
-**Initial queue tracking:** populate the accompanying manifest with real IDs from the latest synchronized Equipment 2.0, Party Event, World Boss and dungeon contracts. PR #1382 documents a hidden 118-template T1–T4 foundation; #1429 documents 8 Party sets / 20 pieces, and the World Boss draft documents boss-specific gathering rewards. These are *draft counts*, not an audited final inventory. Do not claim 100% coverage until a code-derived item-by-item audit is complete.
+**Initial queue tracking:** populate the accompanying manifest with real **piece IDs** from the latest synchronized Equipment 2.0, Party Event, World Boss and dungeon contracts. PR #1382 documents a hidden 118-template T1–T4 foundation; #1429 documents 8 Party sets / 20 pieces, and the World Boss draft documents boss-specific gathering rewards. These are *draft counts*, not an audited final inventory. Do not claim 100% coverage until a code-derived item-by-item audit is complete.
 
 ## Asset storage, compression and mobile size budget
 
 **Mandatory for every approved EQ2 icon.** The generator produces a lossless, transparent master PNG which is kept **outside `apps/mobile/`** (normally `docs/art/equipment-2-0-masters/`, or approved large-file art storage). Only one approved final **RGBA WebP** copy goes into `apps/mobile/assets/equipment-2-0/` when the item is ready to be statically wired. The PNG/oversized source, intermediate candidates, prompt reference images, QA contact sheets, and unapproved 2.0 gear must not be copied into the mobile runtime asset folder.
 
-Use `tools/pack-equipment-v2-atlas.py` to compose approved PNGs into a **960×384 WebP atlas** or single **192×192 WebP** for partial/drop rewards. It now automatically invokes `tools/equipment_v2_image_optimization.py`:
+Use `tools/pack-equipment-v2-atlas.py icon --slot <actual-slot> --input <approved-master> --out <canonical-item-id>.webp` for **every** actual EQ2 item by default. Its optional `atlas` mode can compose a 960×384 sheet **only** for renderer-specific use; no compact set should be forced into it. It now automatically invokes `tools/equipment_v2_image_optimization.py`:
 
 1. Normalize invisible RGB pixels to a clean transparent matte for more efficient encoding, without changing visible alpha.
 2. Try **lossless WebP** first and then lossy candidates at quality 80/84/88/92/96 (or stricter caller minimum).
@@ -135,8 +137,8 @@ Use `tools/pack-equipment-v2-atlas.py` to compose approved PNGs into a **960×38
 For example, a tested local production command (once approved PNG masters exist):
 
 ```bash
-python tools/pack-equipment-v2-atlas.py atlas --folder docs/art/equipment-2-0-masters/approved-set --out docs/art/equipment-2-0-review-exports/my-set-atlas.webp --report docs/art/equipment-2-0-review-exports/my-set-art-qa.json
-python tools/validate-equipment-v2-art.py docs/art/equipment-2-0-review-exports/my-set-atlas.webp --kind atlas
+python tools/pack-equipment-v2-atlas.py icon --slot helmet --input docs/art/equipment-2-0-masters/EQ2_FIELDBORN_GUARD_HELMET.png --out docs/art/equipment-2-0-review-exports/EQ2_FIELDBORN_GUARD_HELMET.webp --report docs/art/equipment-2-0-review-exports/EQ2_FIELDBORN_GUARD_HELMET-qa.json
+python tools/validate-equipment-v2-art.py docs/art/equipment-2-0-review-exports/EQ2_FIELDBORN_GUARD_HELMET.webp --kind icon
 python tools/audit-equipment-v2-bundle.py
 ```
 

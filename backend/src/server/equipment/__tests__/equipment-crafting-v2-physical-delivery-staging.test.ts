@@ -82,7 +82,7 @@ assert.throws(()=>runEquipmentV2PhysicalDelivery(input(claimed.state)),
 const collision=structuredClone(claimed.state);
 collision.bank.stacks.push({itemId:'basic_sword',instanceId:item.id,quantity:1});
 assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging(input(collision)),
- /v2_physical_duplicate_instance/);
+ /unreceipted_v2_physical_copy/);
 const broken=structuredClone(first.state);
 broken.character!.equipmentPouch!.stacks.push({
  itemId:item.exactItem.pieceId,instanceId:item.id,quantity:1,
@@ -99,6 +99,12 @@ const deferred=simulateEquipmentV2PhysicalDeliveryStaging(input(full,'physical-d
 assert.equal(deferred.deferred,true);
 assert.equal(deferred.receipt,null);
 assert.strictEqual(deferred.state,full,'Full storage preserves the entire original item/claim');
+const genuinelyDeferred=structuredClone(full);
+const deferredMetadata=genuinelyDeferred.account.equipmentV2Hidden as V2HiddenGameMetadata;
+deferredMetadata.storageReservations![0].destination='deferred';
+const mustRehome=simulateEquipmentV2PhysicalDeliveryStaging(input(genuinelyDeferred,'physical-rehome-01'));
+assert.equal(mustRehome.deferred,true,
+ 'A claim with deferred custody cannot be physically inserted until a versioned virtual rehome');
 const recovered=structuredClone(full);
 recovered.character!.equipmentPouch!.stacks.pop();
 const deliver=simulateEquipmentV2PhysicalDeliveryStaging(input(recovered,'physical-retry-01'));

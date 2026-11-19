@@ -77,7 +77,7 @@ begin
  returning * into v_row;
  return pg_catalog.jsonb_build_object('status',v_row.status,
   'requestId',v_row.request_id::text,
-  'requestedAtMs',pg_catalog.floor(pg_catalog.extract(epoch from v_row.requested_at)*1000)::bigint,
+  'requestedAtMs',pg_catalog.floor(extract(epoch from v_row.requested_at)*1000)::bigint,
   'erasureCompleted',false);
 end;
 $function$;
@@ -96,7 +96,7 @@ begin
  if not found then return '{"status":"none","erasureCompleted":false}'::jsonb;end if;
  return pg_catalog.jsonb_build_object('status',v_row.status,
   'requestId',v_row.request_id::text,
-  'requestedAtMs',pg_catalog.floor(pg_catalog.extract(epoch from v_row.requested_at)*1000)::bigint,
+  'requestedAtMs',pg_catalog.floor(extract(epoch from v_row.requested_at)*1000)::bigint,
   'erasureCompleted',false);
 end;
 $function$;

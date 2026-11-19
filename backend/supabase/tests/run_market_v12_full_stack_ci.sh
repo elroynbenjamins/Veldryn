@@ -34,14 +34,16 @@ for migration in \
   20261110105000_market_verified_sale_review_private_v11.sql \
   20261110110000_market_verified_browse_private_v12.sql \
   20261110112000_market_completed_sale_history_v13.sql \
-  20261119100000_market_bulk_partial_resource_fills_private_v17.sql
+  20261119100000_market_bulk_partial_resource_fills_private_v17.sql \
+  20261119103000_market_mixed_listing_expiry_private_v17b.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 25 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 26 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_bulk_partial_account_expiry.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_equipment_expiry.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
 do $check$
 begin
@@ -62,6 +64,7 @@ begin
  or has_function_privilege('anon','private.market_verified_completed_sales_v11(text,text,timestamptz)','EXECUTE')
  or has_function_privilege('authenticated','private.market_completed_price_chart_v13(text,text,integer,text)','EXECUTE')
  or has_function_privilege('authenticated','private.market_purchase_resource_quantity_v17(uuid,uuid,bigint,integer,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_queue_due_returns_v17(integer)','EXECUTE')
  then raise exception 'private_market_v12_post_rollback_release_gate_failure';end if;
 end
 $check$;

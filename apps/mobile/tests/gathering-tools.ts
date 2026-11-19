@@ -127,7 +127,7 @@ const legacyToolState={...state,character:{...state.character!,equippedToolIds:{
 ok(equippedGatheringTools(legacyToolState,'mining').length===1&&Math.abs(gatheringToolTimeMultiplier(legacyToolState,'mining')-.85)<.001,'Legacy single-tool saves should still load without duplicate contributions');
 
 // All twelve tools can coexist in independent per-skill, per-tier slots.
-let collection=createCharacter(newGame(0),'IRONWARDEN','Tool Collection Tester');
+let collection=createCharacter(newGame(0),'IRONWARDEN','Tool Collection');
 collection={...collection,character:{...collection.character!,level:46},skills:collection.skills.map(skill=>['mining','woodcutting','fishing'].includes(skill.skillId)?{...skill,level:46,xp:totalXpAtLevel(46)}:skill),inventory:{...collection.inventory,stacks:[...collection.inventory.stacks,...GATHERING_TOOLS.map(tool=>({itemId:tool.id,quantity:1}))]}};
 for(const skillId of ['mining','woodcutting','fishing'] as const){
  ok(Math.abs(gatheringToolTimeMultiplier(collection,skillId)-1.15)<.001,'No '+skillId+' tool must preserve the 15% missing-tool slowdown');

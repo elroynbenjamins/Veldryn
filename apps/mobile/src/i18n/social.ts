@@ -7,6 +7,18 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Dungeon Endurance: visible effects, boss exits and replay rewards.
+  "Boon gained": ["Segen erhalten","Bendición obtenida","Zegen ontvangen","Benedizione ottenuta","Bénédiction obtenue"],
+  "Choose an artifact": ["Artefakt wählen","Elige un artefacto","Kies een artefact","Scegli un manufatto","Choisissez un artefact"],
+  "BOSS EXIT AVAILABLE": ["BOSSAUSGANG VERFÜGBAR","SALIDA AL JEFE DISPONIBLE","UITGANG NAAR BAAS BESCHIKBAAR","USCITA VERSO IL BOSS DISPONIBILE","SORTIE VERS LE BOSS DISPONIBLE"],
+  "Choose your artifact above to continue.": ["Wähle oben dein Artefakt aus, um fortzufahren.","Elige tu artefacto de arriba para continuar.","Kies hierboven je artefact om verder te gaan.","Scegli il manufatto qui sopra per continuare.","Choisissez l’artefact ci-dessus pour continuer."],
+  "Vote to finish with the boss, or continue deeper together.": ["Stimmt ab, ob ihr beim Boss abschließt oder gemeinsam tiefer vordringt.","Votad si queréis terminar con el jefe o adentraros más juntos.","Stem om af te sluiten bij de baas of samen dieper te gaan.","Votate se terminare con il boss o scendere ancora insieme.","Votez pour finir avec le boss ou continuer plus loin ensemble."],
+  "Fight the boss to finish now, or continue deeper for a harder challenge.": ["Besiege jetzt den Boss oder gehe für eine größere Herausforderung tiefer.","Lucha contra el jefe para terminar o sigue más adentro para un reto mayor.","Versla nu de baas of ga verder voor een grotere uitdaging.","Affronta il boss per finire o prosegui più in profondità per una sfida maggiore.","Affrontez le boss pour terminer ou continuez plus loin pour un défi accru."],
+  "Combat Marks": ["Kampfmarken","Marcas de combate","Gevechtsmarken","Marchi da combattimento","Marques de combat"],
+  "Run Build": ["Laufbonus","Mejoras de expedición","Opbouw van de run","Bonus della spedizione","Bonus d’expédition"],
+  "boons": ["Segnungen","bendiciones","zegeningen","benedizioni","bénédictions"],
+  "artifacts": ["Artefakte","artefactos","artefacten","manufatti","artefacts"],
+  "final capped award": ["letzte begrenzte Belohnung","recompensa final limitada","laatste begrensde beloning","ricompensa finale limitata","récompense finale plafonnée"],
   // Online roster: compact, accessible social discovery across supported languages.
   "VELDRYN COMMUNITY": ["VELDRYN-GEMEINSCHAFT","COMUNIDAD DE VELDRYN","VELDRYN-GEMEENSCHAP","COMUNITÀ DI VELDRYN","COMMUNAUTÉ VELDRYN"],
   "Online players": ["Spieler online","Jugadores conectados","Online spelers","Giocatori online","Joueurs en ligne"],

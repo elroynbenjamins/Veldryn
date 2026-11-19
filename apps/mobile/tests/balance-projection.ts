@@ -36,7 +36,7 @@ const target=skillTargetEta(state,'woodcutting',7,gather.xpPerHour);
 ok((target.etaSeconds??0)>gather.levelPace.etaSeconds!,'Higher skill unlock ETA must include multiple levels of XP');
 const starterToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'GREENWOOD_HATCHET'}}};
 const ironToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'ASTER_IRON_HATCHET'}}};
-const oathToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'OATHSTONE_HATCHET'}}};
+const oathToolState={...state,character:{...state.character!,equippedToolIdsByTier:{woodcutting:{2:'ASTER_IRON_HATCHET',3:'OATHSTONE_HATCHET'}}}};
 const ironwood=GATHERING.find(row=>row.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(row=>row.id==='CROWNWOOD_TREE')!;
 const starterPace=gatheringBalanceProjection(starterToolState,greenwood,24),midPace=gatheringBalanceProjection(ironToolState,ironwood,24),crownTier2Pace=gatheringBalanceProjection(ironToolState,crownwood,24),highPace=gatheringBalanceProjection(oathToolState,crownwood,24);
 ok(midPace.xpPerHour>starterPace.xpPerHour,'Recommended tier-2 gathering must improve XP/hour over starter gathering');

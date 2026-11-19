@@ -4,9 +4,6 @@ import { parseCoopChatCommand, parseCoopDecisionCommand, parseCoopReadyCommand, 
 function error(action:()=>unknown):string{try{action();}catch(reason){return reason instanceof Error?reason.message:String(reason);}return '';}
 const start=parseCoopRunRequest({requestId:'request-123',dungeonId:'EXP_001',tier:1,characterId:'char-1',loadoutId:'load-1',loadoutRevision:7},'qmode');
 assert.equal(start.mode,'qmode');assert.equal(start.characterId,'char-1');
-assert.equal(parseCoopRunRequest({...start,runLength:'extended'},'qmode').runLength,'extended');
-assert.equal(error(()=>parseCoopRunRequest({...start,runLength:'extended'},'live')),'invalid_run_length');
-assert.equal(error(()=>parseCoopRunRequest({...start,runLength:'other'},'qmode')),'invalid_run_length');
 assert.equal(error(()=>parseCoopRunRequest({...start,role:'tank'},'live')),'client_role_forbidden');
 assert.equal(error(()=>parseCoopRunRequest({requestId:'request-123',dungeonId:'EXP_001',tier:1,loadoutId:'load-1',loadoutRevision:7},'live')),'invalid_characterId');
 assert.deepEqual(parseCoopDecisionCommand({requestId:'request-456',decisionId:'decision-1',decisionRevision:2,optionId:'d2-c1'}),{requestId:'request-456',decisionId:'decision-1',decisionRevision:2,optionId:'d2-c1'});

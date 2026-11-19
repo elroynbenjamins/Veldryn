@@ -228,7 +228,31 @@ export function createWorldBossChestPrivatePgV63(
        'WHERE event_id=$1::uuid AND account_id=$2::uuid AND source_key=$3::text',
        [eventId,accountId,sourceKey])).rows;
       if(rows.length>1)throw Error('world_boss_v63_duplicate_receipts');
-      return rows[0]?.receipt??null;
+      const receipt=rows[0]?.receipt??null;
+      if(!receipt)return null;
+      // This replay path must also prove that source bookkeeping and the
+      // exact frozen item survived. Do not silently accept partial grants.
+      const sources=(await db.query<{component:string}>(
+       'SELECT component FROM private.world_boss_chest_grant_sources_v61 '+
+       'WHERE source_key=$1::text',[sourceKey])).rows;
+      const expected=['gold','gem_dust','tempering_dust','companion_essence','inbox'];
+      if(receipt.gearHit)expected.push('equipment');
+      if(sources.length!==expected.length||
+       new Set(sources.map(x=>x.component)).size!==sources.length||
+       expected.some(component=>!sources.some(x=>x.component===component)))
+       throw Error('world_boss_v63_incomplete_stored_grant');
+      if(receipt.gearHit){
+       const owned=(await db.query<{instanceId:string;roll:unknown}>(
+        'SELECT instance_id::text AS "instanceId",roll '+
+        'FROM private.world_boss_gathering_items_v67 '+
+        'WHERE source_key=$1::text AND account_id=$2::uuid AND event_id=$3::uuid',
+        [sourceKey,accountId,eventId])).rows;
+       if(owned.length!==1||!receipt.frozenGear||
+        owned[0].instanceId!==receipt.frozenGear.instanceId||
+        JSON.stringify(owned[0].roll)!==JSON.stringify(receipt.frozenGear.roll))
+        throw Error('world_boss_v63_missing_frozen_item');
+      }
+      return receipt;
      },
      async issueExactGatheringItem(req:WorldBossEquipmentMintRequestV62){
       checkSource(req.sourceKey,eventId,accountId);

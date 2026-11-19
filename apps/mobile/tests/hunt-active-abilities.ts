@@ -17,6 +17,17 @@ const input={classId:'RAVAGER' as const,classSkillLevel:20,combatStartedAtMs:100
  companion:{id:'UNIT_001',name:'Ironwood Hound',abilityId:'UABL_001',abilityName:'Hamstring Pounce',role:'damage' as const,contributionPct:.1,cooldownSeconds:14}};
 const output=huntActiveDamageEvents(hits,input);
 assert.equal(total(output),total(hits),'Class burst and assist cannot create extra damage');
+const boostedClass=huntActiveDamageEvents(hits,{...input,abilityDamageBonus:.35,companion:undefined});
+assert.ok(total(boostedClass)>total(hits),'Forged Ability Damage must add real class-technique damage');
+assert.equal(boostedClass[3].activeAbility?.amount,boostedClass[3].damage,
+  'Ability damage must be reflected in the actual skill impact and banner');
+assert.equal(JSON.stringify(boostedClass),
+  JSON.stringify(huntActiveDamageEvents(hits,{...input,abilityDamageBonus:.35,companion:undefined})),
+  'Ability Damage must replay deterministically');
+const withoutDamageSkill=huntActiveDamageEvents(hits,{...input,classId:'BASTION',abilityDamageBonus:.35,companion:undefined});
+assert.equal(total(withoutDamageSkill),total(hits),
+  'Ability Damage must never globally multiply ordinary basic attacks');
+
 assert.equal(huntEnemyHpAt(100,output,1),0,'Class and companion effects must not change a completed kill');
 assert.ok(output[0].damage<hits[0].damage,'Class burst must change an earlier resolved strike');
 assert.ok(output[3].damage>hits[3].damage,'Class burst must concentrate real damage into the finisher');
@@ -169,6 +180,12 @@ assert.ok(Math.abs((dreadguard[0].classHealAbility?.amount??0)-(dreadguard[0].cl
 const dawn=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER'});
 assert.ok(dawn[0].classHealAbility?.amount&&dawn[0].healing>enemyHits[0].healing,'Sun Smite gains real bounded restoration, not a free attack');
 assert.equal(dawn[0].damage,enemyHits[0].damage,'Dawnkeeper must not secretly block a hit');
+const empoweredDawn=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'DAWNKEEPER',classHealingMultiplier:1.3});
+assert.ok((empoweredDawn[0].classHealingBudget??0)>(dawn[0].classHealingBudget??0),
+  'Forged Healing Power must strengthen a real class healing skill');
+assert.equal(empoweredDawn[0].damage,dawn[0].damage,
+  'Healing Power cannot alter enemy attacks or invent a defensive reduction');
+
 const stonecaller=huntClassSurvivalEvents(enemyHits,{...identityInput,classId:'STONECALLER'});
 assert.ok(stonecaller[0].classGuardAbility?.amount&&stonecaller[0].classHealingBudget,'Thunder Totem blocks damage and restores a small portion');
 assert.equal(stonecaller[0].classHealAbility?.name,'Thunder Totem','Stonecaller must show real totem restoration alongside absorption');

@@ -27,7 +27,7 @@ export function validateCompanionLoadout(input:AuthoritativeCompanionLoadoutInpu
 }
 export function sanitizePersistedCompanionLoadout(input:AuthoritativeCompanionLoadoutInput){const checked=validateCompanionLoadout(input);return checked.ok?checked.companionId:null;}
 export function companionLevelCap(companionId:string,ascensionTier:number){const rarity=COMPANION_RARITY[companionId];if(!rarity)throw new Error('unknown_companion');const tier=Math.max(0,Math.min(3,Math.floor(ascensionTier)));return Math.min(RARITY_MAX_LEVEL[rarity],STAGE_CAPS[rarity][tier]);}
-export function validateProgressionSnapshot(companionId:string,input:{level:number;xp:number;ascensionTier:number;bondLevel:number;bondXp:number;selectedTechniqueId?:string}){
+export function validateProgressionSnapshot(companionId:string,input:{level:number;xp:number;bankedXp?:number;ascensionTier:number;bondLevel:number;bondXp:number;selectedTechniqueId?:string}){
   const rarity=COMPANION_RARITY[companionId];if(!rarity)throw new Error('unknown_companion');const ascensionTier=Math.max(0,Math.min(3,Math.floor(input.ascensionTier))),cap=companionLevelCap(companionId,ascensionTier);
-  return {level:Math.max(1,Math.min(cap,RARITY_MAX_LEVEL[rarity],Math.floor(input.level))),xp:Math.max(0,Math.floor(input.xp)),ascensionTier,bondLevel:Math.max(1,Math.min(10,Math.floor(input.bondLevel))),bondXp:Math.max(0,Math.floor(input.bondXp)),selectedTechniqueId:input.selectedTechniqueId};
+  return {level:Math.max(1,Math.min(cap,RARITY_MAX_LEVEL[rarity],Math.floor(input.level))),xp:Math.max(0,Math.floor(input.xp)),bankedXp:Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(input.bankedXp??0))),ascensionTier,bondLevel:Math.max(1,Math.min(10,Math.floor(input.bondLevel))),bondXp:Math.max(0,Math.floor(input.bondXp)),selectedTechniqueId:input.selectedTechniqueId};
 }

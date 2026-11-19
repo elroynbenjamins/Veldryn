@@ -21,5 +21,5 @@ assert.match(stage,/anticipation\?\(bossEncounter\?/,'The temporary roster is us
 assert.match(stage,/replay=anticipation\?undefined/,'Never replay the previous room during a new fight');
 assert.match(portraits,/preview\?"Preparing battle":"Syncing"/,'Preview must not claim to know enemy HP');
 assert.match(preload,/Image\.prefetch\(uri\)/,'Native images are prefetched without a gameplay request');
-assert.doesNotMatch(preload,/supabase|fetch\(/,'Asset warming must never start server combat or precompute RNG');
+assert.doesNotMatch(preload,/supabase|\bfetch\(/,'Asset warming must never start server combat or precompute RNG');
 console.log('PASS immediate dungeon preview, exact enemy compositions, and offline image warming');

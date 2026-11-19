@@ -144,7 +144,7 @@ def validate(
         warnings.append("visual_parity_unverified:use_--reference_and_human_review")
 
     result["warnings"] = warnings
-    result["style_lock"] = "veldryn-eq2-icon-v1"
+    result["style_lock"] = "veldryn-eq2-storybook-v1"
     result["passed"] = not errors
     return result
 

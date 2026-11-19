@@ -15,6 +15,7 @@ import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} fr
 import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
+import {gatheringToolDef} from '../content/gathering-tools';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {setArenaSquadSlot} from './arena-squad';
 import {normalizeProgressionGoals} from './progression-goals-v40';
@@ -412,6 +413,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'gem_pouch_bulk_dismantle':state=disposeGemPouchSelected(state,stringArray(a,'ids',100,120),'dismantle');message='Selected Gem Pouch stacks dismantled';break;
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
+  case 'unequip_tool':{const toolId=text(a,'id'),tool=gatheringToolDef(toolId);if(!tool)throw new Error('Not a gathering tool');state=game.unequipGatheringTool(state,tool.skillId,now,toolId);break;}
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');state=socketGem(state,text(a,'id'),text(a,'gemId'),options.randomRoll);break;}

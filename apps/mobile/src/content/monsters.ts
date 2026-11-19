@@ -12,18 +12,18 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'SILVERFIN_SWARM',name:'Silverfin Swarm',level:5,hp:66,attack:9,defense:4,xp:34,gold:2,secondsPerKill:10,unlockLevel:5,zone:'Silverbrook',drops:[{itemId:'SILVERFIN',chance:.60,min:1,max:2},{itemId:'WISP_DUST',chance:.12,min:1,max:1}]},
 {id:'IRONWOOD_WOLF',name:'Ironwood Wolf',level:7,hp:96,attack:12,defense:7,xp:48,gold:3,secondsPerKill:12,unlockLevel:7,zone:'Ironwood Forest',drops:[{itemId:'WOLF_PELT',chance:.48,min:1,max:1},{itemId:'IRONWOOD_FANG',chance:.14,min:1,max:1},{itemId:'BOAR_HIDE',chance:.20,min:1,max:1}]},
 {id:'VENOM_WEAVER',name:'Venom Weaver',level:8,hp:108,attack:14,defense:6,xp:55,gold:4,secondsPerKill:13,unlockLevel:8,zone:'Ironwood Forest',drops:[{itemId:'THORN_SAP',chance:.30,min:1,max:1},{itemId:'MOSS_FIBER',chance:.28,min:1,max:2}]},
-{id:'THORNLING',name:'Thornling',level:10,hp:138,attack:16,defense:9,xp:72,gold:4,secondsPerKill:15,unlockLevel:10,zone:'Ironwood Forest',drops:[{itemId:'THORN_SAP',chance:.42,min:1,max:2},{itemId:'BP_ASTER_IRON_HATCHET',chance:.05,min:1,max:1}]},
+{id:'THORNLING',name:'Thornling',level:10,hp:138,attack:16,defense:9,xp:72,gold:4,secondsPerKill:15,unlockLevel:10,zone:'Ironwood Forest',drops:[{itemId:'THORN_SAP',chance:.42,min:1,max:2},{itemId:'BP_ASTER_IRON_HATCHET',chance:.016,min:1,max:1}]},
 {id:'BRIAR_HUSK',name:'Briar Husk',level:11,hp:154,attack:18,defense:10,xp:82,gold:5,secondsPerKill:16,unlockLevel:11,zone:'Ironwood Forest',drops:[{itemId:'THORN_SAP',chance:.38,min:1,max:2},{itemId:'GREENWOOD_LOG',chance:.24,min:1,max:2}]},
-{id:'MIRE_HERON',name:'Mire Heron',level:12,hp:166,attack:19,defense:9,xp:91,gold:5,secondsPerKill:16,unlockLevel:12,zone:'Silverbrook',drops:[{itemId:'RIVER_EEL',chance:.35,min:1,max:1},{itemId:'WISP_DUST',chance:.22,min:1,max:1},{itemId:'BP_IRONWOOD_ROD',chance:.05,min:1,max:1}]},
+{id:'MIRE_HERON',name:'Mire Heron',level:12,hp:166,attack:19,defense:9,xp:91,gold:5,secondsPerKill:16,unlockLevel:12,zone:'Silverbrook',drops:[{itemId:'RIVER_EEL',chance:.35,min:1,max:1},{itemId:'WISP_DUST',chance:.22,min:1,max:1},{itemId:'BP_IRONWOOD_ROD',chance:.015,min:1,max:1}]},
 {id:'FOREST_TROLL',name:'Forest Troll',level:14,hp:215,attack:23,defense:13,xp:118,gold:7,secondsPerKill:19,unlockLevel:14,zone:'Ironwood Forest',drops:[{itemId:'TROLL_HIDE',chance:.32,min:1,max:1},{itemId:'WOLF_PELT',chance:.24,min:1,max:1},{itemId:'IRONWOOD_FANG',chance:.12,min:1,max:1}]},
-{id:'ANCIENT_TREANT',name:'Ancient Treant',level:15,hp:242,attack:24,defense:15,xp:132,gold:8,secondsPerKill:20,unlockLevel:15,zone:'Ironwood Forest',drops:[{itemId:'IRONWOOD_LOG',chance:.52,min:1,max:2},{itemId:'THORN_SAP',chance:.30,min:1,max:1},{itemId:'BP_OATHSTONE_HATCHET',chance:.02,min:1,max:1}]},
-{id:'CAVE_SKITTER',name:'Cave Skitter',level:16,hp:255,attack:26,defense:14,xp:145,gold:8,secondsPerKill:20,unlockLevel:16,zone:'Old Mines',drops:[{itemId:'ASTER_IRON_ORE',chance:.16,min:1,max:1},{itemId:'BP_ASTER_IRON_PICKAXE',chance:.05,min:1,max:1}]},
+{id:'ANCIENT_TREANT',name:'Ancient Treant',level:15,hp:242,attack:24,defense:15,xp:132,gold:8,secondsPerKill:20,unlockLevel:15,zone:'Ironwood Forest',drops:[{itemId:'IRONWOOD_LOG',chance:.52,min:1,max:2},{itemId:'THORN_SAP',chance:.30,min:1,max:1},{itemId:'BP_OATHSTONE_HATCHET',chance:.012,min:1,max:1}]},
+{id:'CAVE_SKITTER',name:'Cave Skitter',level:16,hp:255,attack:26,defense:14,xp:145,gold:8,secondsPerKill:20,unlockLevel:16,zone:'Old Mines',drops:[{itemId:'ASTER_IRON_ORE',chance:.16,min:1,max:1},{itemId:'BP_ASTER_IRON_PICKAXE',chance:.017,min:1,max:1}]},
 {id:'IRONBACK_MOLE',name:'Ironback Mole',level:17,hp:280,attack:27,defense:18,xp:158,gold:9,secondsPerKill:21,unlockLevel:17,zone:'Old Mines',drops:[{itemId:'ASTER_IRON_ORE',chance:.40,min:1,max:2},{itemId:'COPPER_ORE',chance:.30,min:1,max:2}]},
 {id:'ECHO_BAT',name:'Echo Bat',level:18,hp:290,attack:29,defense:14,xp:170,gold:10,secondsPerKill:21,unlockLevel:18,zone:'Old Mines',drops:[{itemId:'WISP_DUST',chance:.35,min:1,max:2},{itemId:'OATHGLASS_SHARD',chance:.05,min:1,max:1},{itemId:'ECHO_BAT_WING',chance:.28,min:1,max:2}]},
-{id:'RUNEBOUND_MINER',name:'Runebound Miner',level:19,hp:320,attack:31,defense:18,xp:185,gold:11,secondsPerKill:22,unlockLevel:19,zone:'Old Mines',drops:[{itemId:'ASTER_IRON_ORE',chance:.42,min:1,max:2},{itemId:'OATHGLASS_SHARD',chance:.08,min:1,max:1},{itemId:'ECHO_QUARTZ',chance:.12,min:1,max:1},{itemId:'RUNEBOUND_CORE',chance:.08,min:1,max:1},{itemId:'BP_OATHSTONE_PICKAXE',chance:.02,min:1,max:1}]},
+{id:'RUNEBOUND_MINER',name:'Runebound Miner',level:19,hp:320,attack:31,defense:18,xp:185,gold:11,secondsPerKill:22,unlockLevel:19,zone:'Old Mines',drops:[{itemId:'ASTER_IRON_ORE',chance:.42,min:1,max:2},{itemId:'OATHGLASS_SHARD',chance:.08,min:1,max:1},{itemId:'ECHO_QUARTZ',chance:.12,min:1,max:1},{itemId:'RUNEBOUND_CORE',chance:.08,min:1,max:1},{itemId:'BP_OATHSTONE_PICKAXE',chance:.013,min:1,max:1}]},
 {id:'GLOAM_MITE',name:'Gloam Mite',level:20,hp:335,attack:33,defense:18,xp:198,gold:12,secondsPerKill:23,unlockLevel:20,zone:'Greenfields',drops:[{itemId:'WISP_DUST',chance:.32,min:1,max:2},{itemId:'MOSS_FIBER',chance:.28,min:1,max:2},{itemId:'GLOAM_DUST',chance:.24,min:1,max:1}]},
 {id:'LANTERN_WRETCH',name:'Lantern Wretch',level:21,hp:365,attack:35,defense:19,xp:216,gold:13,secondsPerKill:24,unlockLevel:20,zone:"King's Road",drops:[{itemId:'WISP_DUST',chance:.40,min:1,max:2},{itemId:'OATHGLASS_SHARD',chance:.10,min:1,max:1},{itemId:'LANTERNSTEEL_SHARD',chance:.18,min:1,max:1},]},
-{id:'DROWNED_PILGRIM',name:'Drowned Pilgrim',level:22,hp:390,attack:36,defense:21,xp:232,gold:14,secondsPerKill:25,unlockLevel:22,zone:'Silverbrook',drops:[{itemId:'RIVER_EEL',chance:.28,min:1,max:1},{itemId:'OATHGLASS_SHARD',chance:.12,min:1,max:1},{itemId:'BP_OATHSCALE_ROD',chance:.02,min:1,max:1}]},
+{id:'DROWNED_PILGRIM',name:'Drowned Pilgrim',level:22,hp:390,attack:36,defense:21,xp:232,gold:14,secondsPerKill:25,unlockLevel:22,zone:'Silverbrook',drops:[{itemId:'RIVER_EEL',chance:.28,min:1,max:1},{itemId:'OATHGLASS_SHARD',chance:.12,min:1,max:1},{itemId:'BP_OATHSCALE_ROD',chance:.010,min:1,max:1}]},
 {id:'OATHBOUND_SQUIRE',name:'Oathbound Squire',level:22,hp:405,attack:37,defense:22,xp:240,gold:14,secondsPerKill:25,unlockLevel:22,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.18,min:1,max:1},{itemId:'TORN_OATHCLOTH',chance:.20,min:1,max:1},{itemId:'FALLEN_RIVET',chance:.20,min:1,max:1},{itemId:'TROLL_HIDE',chance:.18,min:1,max:1},{itemId:'IRONWOOD_FANG',chance:.18,min:1,max:1}]},
 {id:'BANNER_SHADE',name:'Banner Shade',level:23,hp:435,attack:39,defense:22,xp:258,gold:15,secondsPerKill:26,unlockLevel:23,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.22,min:1,max:1},{itemId:'TORN_OATHCLOTH',chance:.28,min:1,max:1},{itemId:'BANNER_ASH',chance:.28,min:1,max:2},{itemId:'LANTERNSTEEL_SHARD',chance:.10,min:1,max:1},{itemId:'GLOAM_DUST',chance:.18,min:1,max:1},{itemId:'WOLF_PELT',chance:.28,min:1,max:1},{itemId:'THORN_SAP',chance:.24,min:1,max:1}]},
 {id:'FALLEN_SENTINEL',name:'Fallen Sentinel',level:24,hp:475,attack:42,defense:25,xp:282,gold:17,secondsPerKill:28,unlockLevel:24,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.28,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:.12,min:1,max:1},{itemId:'TORN_OATHCLOTH',chance:.32,min:1,max:2},{itemId:'LANTERNSTEEL_SHARD',chance:.18,min:1,max:1},{itemId:'FALLEN_RIVET',chance:.28,min:1,max:2},{itemId:'RUNEBOUND_CORE',chance:.12,min:1,max:1},{itemId:'TROLL_HIDE',chance:.20,min:1,max:1},]},
@@ -36,9 +36,9 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'MIRAGE_SHADE',name:'Mirage Shade',level:38,hp:905,attack:72,defense:41,xp:521,gold:32,secondsPerKill:39,unlockLevel:36,zone:'Sunscar',areaId:'ZONE_008',regionalAreaAutoUnlock:true,drops:[{itemId:'AMBERGLASS',chance:0.34,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:0.09,min:1,max:1},{itemId:'SUNSCALE',chance:0.24,min:1,max:1}]},
 {id:'OBSERVATORY_KEEPER',name:'Observatory Keeper',level:42,hp:1090,attack:79,defense:50,xp:622,gold:38,secondsPerKill:43,unlockLevel:41,zone:'Sunscar',areaId:'ZONE_010',regionalAreaAutoUnlock:true,drops:[{itemId:'GLASSBOUND_CORE',chance:0.25,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:0.18,min:1,max:1},{itemId:'AMBERGLASS',chance:0.3,min:1,max:1}]},
 {id:'ROYAL_SANDGUARD',name:'Royal Sandguard',level:45,hp:1240,attack:87,defense:58,xp:705,gold:43,secondsPerKill:47,unlockLevel:44,zone:'Sunscar',areaId:'ZONE_010',regionalAreaAutoUnlock:true,drops:[{itemId:'SUNSTONE_ORE',chance:0.45,min:1,max:2},{itemId:'GLASSBOUND_CORE',chance:0.3,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:0.12,min:1,max:1}]},
-{id:'FROSTWOLF',name:'Frostwolf',level:48,hp:1220,attack:88,defense:55,xp:710,gold:43,secondsPerKill:44,unlockLevel:46,zone:'Frostmarch',areaId:'ZONE_011',drops:[{itemId:'FROSTIRON',chance:.42,min:1,max:2},{itemId:'RIMEGLASS',chance:.08,min:1,max:1},{itemId:'RIME_RESIN',chance:.06,min:1,max:1},{itemId:'BP_FROSTIRON_HATCHET',chance:.01,min:1,max:1}]},
-{id:'BELLWRAITH',name:'Bellwraith',level:56,hp:1580,attack:106,defense:68,xp:920,gold:55,secondsPerKill:50,unlockLevel:53,zone:'Frostmarch',areaId:'ZONE_012',drops:[{itemId:'RIMEGLASS',chance:.36,min:1,max:2},{itemId:'CHOIR_BLOOM',chance:.10,min:1,max:1},{itemId:'BP_FROSTIRON_PICKAXE',chance:.01,min:1,max:1}]},
-{id:'CHOIR_HUNTER',name:'Choir Hunter',level:66,hp:2050,attack:132,defense:82,xp:1180,gold:70,secondsPerKill:58,unlockLevel:63,zone:'Frostmarch',areaId:'ZONE_015',drops:[{itemId:'FROSTIRON',chance:.50,min:1,max:2},{itemId:'RIMEGLASS',chance:.28,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.12,min:1,max:1},{itemId:'BULWARK_SIGIL',chance:.003,min:1,max:1},{itemId:'BP_RIMEGLASS_ROD',chance:.01,min:1,max:1}]},
+{id:'FROSTWOLF',name:'Frostwolf',level:48,hp:1220,attack:88,defense:55,xp:710,gold:43,secondsPerKill:44,unlockLevel:46,zone:'Frostmarch',areaId:'ZONE_011',drops:[{itemId:'FROSTIRON',chance:.42,min:1,max:2},{itemId:'RIMEGLASS',chance:.08,min:1,max:1},{itemId:'RIME_RESIN',chance:.06,min:1,max:1},{itemId:'BP_FROSTIRON_HATCHET',chance:.008,min:1,max:1}]},
+{id:'BELLWRAITH',name:'Bellwraith',level:56,hp:1580,attack:106,defense:68,xp:920,gold:55,secondsPerKill:50,unlockLevel:53,zone:'Frostmarch',areaId:'ZONE_012',drops:[{itemId:'RIMEGLASS',chance:.36,min:1,max:2},{itemId:'CHOIR_BLOOM',chance:.10,min:1,max:1},{itemId:'BP_FROSTIRON_PICKAXE',chance:.009,min:1,max:1}]},
+{id:'CHOIR_HUNTER',name:'Choir Hunter',level:66,hp:2050,attack:132,defense:82,xp:1180,gold:70,secondsPerKill:58,unlockLevel:63,zone:'Frostmarch',areaId:'ZONE_015',drops:[{itemId:'FROSTIRON',chance:.50,min:1,max:2},{itemId:'RIMEGLASS',chance:.28,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.12,min:1,max:1},{itemId:'BULWARK_SIGIL',chance:.003,min:1,max:1},{itemId:'BP_RIMEGLASS_ROD',chance:.008,min:1,max:1}]},
 {id:'ICEBOUND_RAIDER',name:'Icebound Raider',level:50,hp:1330,attack:93,defense:58,xp:766,gold:47,secondsPerKill:46,unlockLevel:49,zone:'Frostmarch',areaId:'ZONE_011',regionalAreaAutoUnlock:true,drops:[{itemId:'FROSTIRON',chance:0.44,min:1,max:2},{itemId:'RIME_RESIN',chance:0.12,min:1,max:1},{itemId:'RIMEGLASS',chance:0.08,min:1,max:1}]},
 {id:'SNOW_TREANT',name:'Snow Treant',level:53,hp:1460,attack:100,defense:67,xp:845,gold:51,secondsPerKill:48,unlockLevel:51,zone:'Frostmarch',areaId:'ZONE_012',regionalAreaAutoUnlock:true,drops:[{itemId:'WHITEPINE_LOG',chance:0.52,min:1,max:2},{itemId:'RIME_RESIN',chance:0.22,min:1,max:1},{itemId:'FROSTIRON',chance:0.1,min:1,max:1}]},
 {id:'RIME_STALKER',name:'Rime Stalker',level:59,hp:1770,attack:112,defense:71,xp:995,gold:60,secondsPerKill:53,unlockLevel:57,zone:'Frostmarch',areaId:'ZONE_013',regionalAreaAutoUnlock:true,drops:[{itemId:'RIMEGLASS',chance:0.4,min:1,max:2},{itemId:'CHOIR_BLOOM',chance:0.11,min:1,max:1},{itemId:'FROSTIRON',chance:0.2,min:1,max:1}]},
@@ -47,6 +47,15 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:2480,attack:154,defense:96,xp:1450,gold:86,secondsPerKill:63,unlockLevel:71,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.42,min:1,max:2},{itemId:'BLACKGLASS_CORE',chance:.08,min:1,max:1},{itemId:'RIMEGLASS',chance:.12,min:1,max:1}]},
 {id:'CINDER_TITAN',name:'Cinder Titan',level:80,hp:3200,attack:185,defense:118,xp:1840,gold:108,secondsPerKill:72,unlockLevel:78,zone:'Ashlands',drops:[{itemId:'SUNSTONE_ORE',chance:.34,min:1,max:2},{itemId:'CINDER_HEART',chance:.08,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.20,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.16,min:1,max:1},{itemId:'BOSSBANE_SIGIL',chance:.0025,min:1,max:1}]},
 {id:'ASHEN_REVENANT',name:'Ashen Revenant',level:88,hp:4100,attack:224,defense:142,xp:2320,gold:136,secondsPerKill:82,unlockLevel:86,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.55,min:1,max:2},{itemId:'CINDER_HEART',chance:.10,min:1,max:1},{itemId:'REGENT_SIGIL',chance:.04,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.28,min:1,max:1},{itemId:'RIMEGLASS',chance:.22,min:1,max:1},{itemId:'RENEWAL_SIGIL',chance:.0025,min:1,max:1}]},
+
+{id:'DUSTVEIL_RUNNER',name:'Dustveil Runner',level:32,hp:750,attack:67,defense:33,xp:450,gold:28,secondsPerKill:34,unlockLevel:31,zone:'Sunscar',areaId:'ZONE_006',regionalAreaAutoUnlock:true,drops:[{itemId:'DUNEWOOD',chance:.38,min:1,max:2},{itemId:'SUNSCALE',chance:.32,min:1,max:1},{itemId:'SCORPION_VENOM',chance:.04,min:1,max:1}]},
+{id:'SANDPLATE_JUGGERNAUT',name:'Sandplate Juggernaut',level:39,hp:1060,attack:77,defense:63,xp:630,gold:39,secondsPerKill:42,unlockLevel:38,zone:'Sunscar',areaId:'ZONE_007',regionalAreaAutoUnlock:true,drops:[{itemId:'SUNSTONE_ORE',chance:.48,min:1,max:2},{itemId:'AMBERGLASS',chance:.23,min:1,max:1},{itemId:'GLASSBOUND_CORE',chance:.12,min:1,max:1}]},
+{id:'PRISM_HEXER',name:'Prism Hexer',level:45,hp:1190,attack:99,defense:51,xp:780,gold:46,secondsPerKill:44,unlockLevel:44,zone:'Sunscar',areaId:'ZONE_008',regionalAreaAutoUnlock:true,drops:[{itemId:'AMBERGLASS',chance:.34,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:.16,min:1,max:1},{itemId:'SUNSCALE',chance:.20,min:1,max:1}]},
+{id:'CROWN_EXECUTIONER',name:'Crown Executioner',level:50,hp:1590,attack:114,defense:77,xp:1010,gold:59,secondsPerKill:51,unlockLevel:49,zone:'Sunscar',areaId:'ZONE_010',regionalAreaAutoUnlock:true,drops:[{itemId:'GLASSBOUND_CORE',chance:.32,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.20,min:1,max:1},{itemId:'AMBERGLASS',chance:.36,min:1,max:1}]},
+{id:'RIME_BERSERKER',name:'Rime Berserker',level:57,hp:1700,attack:120,defense:66,xp:1160,gold:63,secondsPerKill:49,unlockLevel:56,zone:'Frostmarch',areaId:'ZONE_011',regionalAreaAutoUnlock:true,drops:[{itemId:'FROSTIRON',chance:.48,min:1,max:2},{itemId:'RIME_RESIN',chance:.18,min:1,max:1},{itemId:'RIMEGLASS',chance:.10,min:1,max:1}]},
+{id:'FROSTNEEDLE_BROOD',name:'Frostneedle Brood',level:64,hp:2080,attack:135,defense:81,xp:1510,gold:80,secondsPerKill:52,unlockLevel:63,zone:'Frostmarch',areaId:'ZONE_012',regionalAreaAutoUnlock:true,drops:[{itemId:'WHITEPINE_LOG',chance:.35,min:1,max:2},{itemId:'RIMEGLASS',chance:.30,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.12,min:1,max:1}]},
+{id:'CHOIR_DEFILER',name:'Choir Defiler',level:70,hp:2530,attack:160,defense:96,xp:1910,gold:99,secondsPerKill:60,unlockLevel:69,zone:'Frostmarch',areaId:'ZONE_013',regionalAreaAutoUnlock:true,drops:[{itemId:'RIMEGLASS',chance:.35,min:1,max:2},{itemId:'CHOIR_BLOOM',chance:.19,min:1,max:1},{itemId:'RIME_RESIN',chance:.13,min:1,max:1}]},
+{id:'STORMGLASS_COLOSSUS',name:'Stormglass Colossus',level:75,hp:3230,attack:175,defense:127,xp:2400,gold:124,secondsPerKill:66,unlockLevel:74,zone:'Frostmarch',areaId:'ZONE_015',regionalAreaAutoUnlock:true,drops:[{itemId:'FROSTIRON',chance:.51,min:1,max:2},{itemId:'RIMEGLASS',chance:.38,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.22,min:1,max:1}]},
 {id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:180,secondsPerKill:75,unlockLevel:25,zone:"King's Road",boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:1,min:2,max:4},{itemId:'TORN_OATHCLOTH',chance:1,min:4,max:6}]},
 ];
 /** All nine tool-blueprint drops are eligible for the tool-only -25% adjustment. */
@@ -76,11 +85,42 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},...gem];
   return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1},...gem]:gem;
 };
-export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
+
+/** 25-level chapter ladder: existing monsters receive authored (pre-regional-multiplier)
+ * stats and XP at their new difficulty, retaining item IDs, drops and local area IDs.
+ * Asterfall and legacy dungeon/boss content remain untouched. */
+const REGIONAL_25_LEVEL_REBALANCE:Readonly<Record<string,Partial<MonsterDef>>>={
+ SUNSCAR_SCORPION:{level:26,hp:625,attack:51,defense:32,xp:360,gold:22,secondsPerKill:32,unlockLevel:26},
+ SAFFRON_MARAUDER:{level:31,hp:720,attack:60,defense:37,xp:425,gold:26,secondsPerKill:33,unlockLevel:30},
+ DUNE_ORACLE:{level:34,hp:815,attack:65,defense:40,xp:480,gold:29,secondsPerKill:35,unlockLevel:32},
+ GLASS_DUNE_STRIDER:{level:37,hp:900,attack:71,defense:43,xp:545,gold:33,secondsPerKill:37,unlockLevel:35},
+ MIRAGE_SHADE:{level:39,hp:950,attack:76,defense:45,xp:580,gold:35,secondsPerKill:39,unlockLevel:38},
+ GLASSBOUND_SENTINEL:{level:43,hp:1130,attack:84,defense:53,xp:690,gold:42,secondsPerKill:42,unlockLevel:41},
+ OBSERVATORY_KEEPER:{level:46,hp:1300,attack:94,defense:59,xp:825,gold:49,secondsPerKill:45,unlockLevel:44},
+ ROYAL_SANDGUARD:{level:48,hp:1420,attack:101,defense:67,xp:915,gold:55,secondsPerKill:48,unlockLevel:47},
+ FROSTWOLF:{level:51,hp:1390,attack:97,defense:63,xp:940,gold:53,secondsPerKill:45,unlockLevel:51},
+ ICEBOUND_RAIDER:{level:54,hp:1510,attack:106,defense:68,xp:1060,gold:59,secondsPerKill:47,unlockLevel:53},
+ SNOW_TREANT:{level:58,hp:1780,attack:117,defense:80,xp:1250,gold:66,secondsPerKill:49,unlockLevel:57},
+ BELLWRAITH:{level:61,hp:1930,attack:125,defense:82,xp:1370,gold:73,secondsPerKill:51,unlockLevel:60},
+ RIME_STALKER:{level:65,hp:2110,attack:136,defense:88,xp:1580,gold:84,secondsPerKill:54,unlockLevel:64},
+ LAKEBOUND_SPECTER:{level:68,hp:2280,attack:145,defense:94,xp:1750,gold:90,secondsPerKill:56,unlockLevel:67},
+ CHOIR_HUNTER:{level:70,hp:2540,attack:153,defense:99,xp:1880,gold:98,secondsPerKill:59,unlockLevel:69},
+ WYRMSPINE_GUARDIAN:{level:73,hp:2890,attack:165,defense:115,xp:2180,gold:114,secondsPerKill:63,unlockLevel:72},
+};
+/** New chapter hunts unlock gradually inside already-visited regions; existing
+ * monster/save access remains cumulative for backwards compatibility. */
+export const REGIONAL_CHAPTER_NEW_MONSTER_IDS:ReadonlySet<string>=new Set([
+ 'DUSTVEIL_RUNNER','SANDPLATE_JUGGERNAUT','PRISM_HEXER','CROWN_EXECUTIONER',
+ 'RIME_BERSERKER','FROSTNEEDLE_BROOD','CHOIR_DEFILER','STORMGLASS_COLOSSUS',
+]);
+const PREPARED_MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,...(REGIONAL_25_LEVEL_REBALANCE[monster.id]??{})}));
+export const MONSTERS:MonsterDef[]=PREPARED_MONSTERS.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
   const advancedScale=ADVANCED_MONSTER_REGIONS.has(monster.zone)?ADVANCED_REGION_MONSTER_MULTIPLIER:1;
   return {...monster,
-  unlockLevel:rebaseLevel(monster.unlockLevel),
+  // Regional chapter levels are now authored in the XP-rebased character scale.
+  // Preserve legacy Asterfall/Ashlands rebase behavior to avoid unrelated changes.
+  unlockLevel:monster.zone==='Sunscar'||monster.zone==='Frostmarch'?monster.unlockLevel:rebaseLevel(monster.unlockLevel),
   // Reduce other chance-based combat drops by 5% relative to their existing
   // chance. Holy Water's dedicated Faith catalog already contains the final
   // whole-percent rates after this 5% cut and a further 15% reduction.
@@ -91,7 +131,7 @@ export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
     const relativeChanceScale=drop.itemId===HOLY_WATER_ID?1:drop.chance<1?.95:1;
     const toolBlueprintScale=toolBlueprintItemIds.has(drop.itemId)?TOOL_BLUEPRINT_DROP_MULTIPLIER:1;
     const adjustedChance=drop.chance*(ordinaryMaterial?.5:1)*relativeChanceScale*toolBlueprintScale;
-    // Tool-only final rates: T2 3.5625% → 3.5%; T3 1.425% → 1.4%; T4 0.7125% → 0.7%.
+    // Final tool-blueprint rates are 0.5%-1.2% after the 25% blueprint and 5% general reductions, rounded down to 0.1%.
     return {...drop,chance:toolBlueprintScale!==1?roundDownToolBlueprintDropChance(adjustedChance):adjustedChance};
   }),
   // Idle combat uses authored cycle duration rather than HP to calculate kills.

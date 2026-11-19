@@ -4,6 +4,7 @@ import {OnlineCommandError,OnlineGameRepository,type OnlineSnapshot,type Pending
 import {supabase} from './supabase';
 import {peekOnlineSnapshot} from '../core/online-snapshot-cache';
 import {SessionPendingStore} from '../core/session-pending-store';
+import {parseStoredJsonObject} from '../core/stored-json';
 declare const process:{env:Record<string,string|undefined>};
 export const serverGameplayEnabled=process.env.EXPO_PUBLIC_SERVER_GAMEPLAY==='true';
 const url=process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -20,7 +21,7 @@ export function createOnlineGameRepository(accountId:string){
   }finally{clearTimeout(timeout);}
  }
  const durablePending=new SessionPendingStore<PendingGameCommand>({
-  read:async()=>{const raw=await AsyncStorage.getItem(pendingKey);return raw?JSON.parse(raw) as PendingGameCommand:null;},
+  read:async()=>{const raw=await AsyncStorage.getItem(pendingKey),value=parseStoredJsonObject<PendingGameCommand>(raw);if(raw&&!value)await AsyncStorage.removeItem(pendingKey);return value;},
   write:async value=>{if(value)await AsyncStorage.setItem(pendingKey,JSON.stringify(value));else await AsyncStorage.removeItem(pendingKey);},
  });
  const repository=new OnlineGameRepository(accountId,{read:()=>request(),send:request},durablePending,()=>`game-${Date.now()}-${Math.random().toString(36).slice(2,12)}`);

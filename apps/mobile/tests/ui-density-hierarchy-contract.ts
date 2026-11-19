@@ -85,7 +85,7 @@ const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
-ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
+ok(gatheringSkills.includes('Ready resources appear first. Travel to other unlocked regions for more.')&&gatheringSkills.includes('if(readyHere){onGather(activity.id);return;}'),'Gathering should describe location readiness and immediately start a tapped available resource');
 ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
 ok(gatheringSkills.includes("gt('Have: {count} {resource} · {seconds}s'")&&gatheringSkills.includes('formatGameNumber(available')&&gatheringSkills.includes('Math.ceil(view.cycleSeconds)'),'Gathering rows must show stored resource count and an easy-to-scan rounded action duration');
 ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
@@ -94,12 +94,12 @@ const balanceProjection=read('src/core/balance-projection.ts');
 ok(balanceProjection.includes('professionMasteryMultipliers')&&balanceProjection.includes('mastery.speed')&&balanceProjection.includes('mastery.xp')&&balanceProjection.includes('mastery.yield'),'Shared gathering balance projection must apply action-specific mastery to speed, XP and yield');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
-ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
+ok(craftingBrowser.includes("(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)"),'Crafting lists must allow V33 cross-class forging while still hiding other restricted recipes');
 ok(craftingBrowser.includes('label:gt("READY NOW"),tone:\'ready\'')&&craftingBrowser.includes('label:gt("NEEDS REQUIREMENTS"),tone:\'needs\'')&&craftingBrowser.includes('label:gt("LOCKED"),tone:\'locked\''),"Crafting recipes must remain grouped by actionable state");
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes('processingAvailability(state,recipe.id,undefined,true)'),'Timed skill recipes must remain startable while another activity is settled and replaced');
 ok(craftingBrowser.includes('preferredRecipeId'),'Crafting lists must preserve exact deep-linked recipe selection');
-ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}'),'Deep-linked crafting targets must arrive already expanded');
+ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}')||craftingBrowser.includes('initialExpanded={recipeGroup.rows.some(row=>row.recipe.id===preferredRecipeId)}'),'Deep-linked crafting targets must arrive already expanded, including the selected route of a grouped material recipe');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
@@ -345,8 +345,12 @@ ok(accountBonuses.includes('source:{minHeight:52'),'Account bonus sources must a
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('<GameButton compact title={st("Refresh")} tone="secondary"'),"Rankings refresh must remain a secondary compact action");
-ok(rankings.includes('const podium=activeSnapshot?.entries.filter(entry=>entry.rank<=3)')&&rankings.includes('const remaining=activeSnapshot?.entries.filter(entry=>entry.rank>3)'),"Rankings podium must not duplicate names in the compact list");
-ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>{setBoard(value.id);setBoardPickerOpen(false)}}'),"Rankings board selection must stay actionable and use the server board ID");
+ok(rankings.includes('splitRankingDisplay(activeSnapshot?.entries??[],page)'),"Ranking podium must cap at three highlights and retain all tied players in the main list");
+ok(rankings.includes('visible={boardPickerOpen}')&&rankings.includes('onPress={()=>selectBoard(value.id)}')&&rankings.includes('if(next===board)return;'),"Rankings board picker changes pages safely without resetting an unchanged board");
+ok(rankings.includes('function selectGroup(value:RankingGroup){')&&rankings.includes('if(value===group)return;'),"Selecting the active rankings group must preserve the loaded board");
+ok(rankings.includes('RANKING_PAGE_SIZE+1')&&rankings.includes('rankingPageOffset(page)')&&rankings.includes('projectRankingPage(next.entries,page)'),"Rankings pagination must use an authoritative server page with a one-row lookahead");
+ok(rankings.includes('const version=++request.current')&&rankings.includes('version===request.current')&&rankings.includes('request.current++'),"Rankings must guard against stale requests when changing boards or pages");
+ok(rankings.includes('scrollRef.current?.scrollTo({y:0,animated:false})'),"Moving between pages must return the player to the top of the board");
 ok(rankings.includes('activeSnapshot?.self')&&rankings.includes('s.selfCard'),"Rankings must keep own standing visible independently of the top places");
 const journalPage=read('src/screens/AdventurersJournalScreen.tsx');
 ok(journalPage.includes('journal?.unlockedAchievements')&&journalPage.includes('journal?.unlockedTitles')&&journalPage.includes('journal?.records'),"Journal summary must show earned counts, not full catalog counts");

@@ -9,7 +9,7 @@ import {migrateSave} from '../src/core/save-migrations';
 import {reconcileAccountCollections} from '../src/core/account-collections';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
 import {profileBackgroundUnlocked,profileTitleUnlocked} from '../src/core/profile-unlocks';
-import {EVENTS_RELEASED} from '../src/core/release-flags';
+import {EVENTS_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -18,7 +18,8 @@ validateCollectibleCatalog();
 validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,42,'canonical core pet count');
-equal(EVENT_PET_COLLECTIBLES.length,2,'released event pet count');
+equal(EVENT_PET_COLLECTIBLES.length,FROSTFALL_REWARDS_RELEASED?4:2,'Frostfall pets join the released catalog only at launch');
+equal(EVENT_PET_COLLECTIBLES.map(row=>row.id).sort().join(','),FROSTFALL_REWARDS_RELEASED?'EVT_PET_013,EVT_PET_014,EVT_PET_015,EVT_PET_017':'EVT_PET_013,EVT_PET_014','only released event pets enter the runtime collection catalog');
 equal(
   COLLECTIBLES.length,
   CORE_PET_COLLECTIBLES.length+GUILD_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>row.collectionGroup!=='event').length,
@@ -58,7 +59,7 @@ primary=reconcileAccountCollections(primary);
 if(!primary.account.unlockedTitleIds?.includes('oathbound'))fail('earned titles persist as account unlocks');
 if(!primary.account.unlockedProfileBackgroundIds?.includes('oathglass-hall'))fail('earned backgrounds persist as account unlocks');
 if(!primary.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('legacy character pet becomes account owned');
-let alternate=createAccountCharacter(primary,'BASTION','Collection Alt','male',now+1);
+let alternate=createAccountCharacter(primary,'DAWNKEEPER','Collection Alt','male',now+1);
 equal(alternate.character?.selectedCosmeticPetId,undefined,'new character has independent pet selection');
 if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('account pet collection shared across characters');
 if(!profileTitleUnlocked(alternate,'oathbound'))fail('account-earned title available to low-level alt');
@@ -75,7 +76,7 @@ if(!alternate.account.unlockedCosmeticPetIds?.includes('PET_018'))fail('deleting
 if(!alternate.account.unlockedTitleIds?.includes('oathbound'))fail('deleting original owner must preserve earned title');
 if(!alternate.account.unlockedProfileBackgroundIds?.includes('oathglass-hall'))fail('deleting original owner must preserve earned background');
 
-const legacyAltOnly=JSON.parse(JSON.stringify(createAccountCharacter(primary,'BASTION','Legacy Alt','male',now+7)));
+const legacyAltOnly=JSON.parse(JSON.stringify(createAccountCharacter(primary,'DAWNKEEPER','Legacy Alt','male',now+7)));
 legacyAltOnly.account.unlockedCosmeticPetIds=[];
 legacyAltOnly.otherCharacters[0].character.ownedPetIds=['PET_018'];
 legacyAltOnly.character.selectedCosmeticPetId='PET_018';

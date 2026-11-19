@@ -18,6 +18,7 @@ import {CLASSES} from '../content/classes';
 import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
+import {FEATURE_HUB_QA_ENABLED,type FeatureHubPreviewRoute} from '../core/feature-hub-routes';
 
 export type MoreDestination='Dungeon'|'Home'|'Party'|'Recruitment'|'Activity'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'NewUnlocks'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'ResourceCodex'|'SkillGuide'|'Profile'|'MasteryHall'|'AdventurersJournal'|'Bestiary'|'WorldMilestones'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
@@ -77,7 +78,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,onOpenGuildProjects,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,guildProjectRewardCount=0,socialAttentionCount=0,newUnlockCount=0,storyRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;onOpenGuildProjects?:()=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;guildProjectRewardCount?:number;socialAttentionCount?:number;newUnlockCount?:number;storyRewardCount?:number}){
+export function MoreScreen({language,character,accountStatus='local',onNavigate,onOpenAdminQa,onOpenUpdates,onOpenRoadmap,onOpenGuildProjects,onOpenFeaturePreview,newReleaseAvailable=false,companionAttention=false,companionUnlocked=true,lockedDestinations={},dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,guildProjectRewardCount=0,socialAttentionCount=0,newUnlockCount=0,questRewardCount=0}:{language:GameState['settings']['language'];character?:GameState['character'];accountStatus?:'guest'|'pending'|'linked'|'local';onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;onOpenUpdates?:()=>void;onOpenRoadmap?:()=>void;onOpenGuildProjects?:()=>void;onOpenFeaturePreview?:(route:FeatureHubPreviewRoute)=>void;newReleaseAvailable?:boolean;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;guildProjectRewardCount?:number;socialAttentionCount?:number;newUnlockCount?:number;questRewardCount?:number}){
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
@@ -88,7 +89,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const lockedReason=(id:MoreDestination)=>(lockedDestinations[id]?a(lockedDestinations[id]!):undefined)??(id==='Companions'&&!companionUnlocked?a("Complete Into Ironwood (Level 10)."):'');
   const attentionLabel=(id:MoreDestination)=>{
     if(lockedReason(id))return '';
-    if(id==='Quests'&&storyRewardCount>0)return a('{count} story rewards ready',{count:storyRewardCount});
+    if(id==='Quests'&&questRewardCount>0)return a('{count} quest rewards ready',{count:questRewardCount});
     if(id==='Party'&&socialAttentionCount>0)return a('{count} Party updates',{count:socialAttentionCount});
     if(id==='Friends'&&friendRequestCount>0)return a('{count} incoming friend requests',{count:friendRequestCount});
     if(id==='Guild'&&guildAttentionCount>0)return a('{count} guild updates',{count:guildAttentionCount});
@@ -99,7 +100,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   };
   const attention=(id:MoreDestination)=>{
     if(lockedReason(id))return null;
-    if(id==='Quests'&&storyRewardCount>0)return <AttentionCount count={storyRewardCount} label={a('{count} story rewards ready',{count:storyRewardCount})}/>;
+    if(id==='Quests'&&questRewardCount>0)return <AttentionCount count={questRewardCount} label={a('{count} quest rewards ready',{count:questRewardCount})}/>;
     if(id==='Party'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Party updates")}/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label={a("Incoming friend requests")}/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
@@ -112,7 +113,7 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
   const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=(lockedReason('Quests')?0:storyRewardCount)+(lockedReason('Party')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
+  const attentionTotal=(lockedReason('Quests')?0:questRewardCount)+(lockedReason('Party')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+newUnlockCount;
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <TutorialBeacon id="more-shortcuts"><View style={s.header}><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text>{attentionTotal>0?<View accessible accessibilityLabel={`${attentionTotal} ${a("NEEDS ATTENTION")}`} style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text></View>:null}</View></TutorialBeacon>
 
@@ -134,6 +135,16 @@ export function MoreScreen({language,character,accountStatus='local',onNavigate,
     {onOpenUpdates?<Pressable accessibilityRole="button" accessibilityLabel={a("What's New & Updates")} accessibilityHint={newReleaseAvailable?a("New release information available"):a("Release notes and app versions")} onPress={onOpenUpdates} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
       <UiIcon name="events" size={22}/><Text style={s.releaseTitle}>{a("What's New & Updates")}</Text>{newReleaseAvailable?<AttentionDot label={a("New update available")}/>:null}<UiIcon name="next" size={18}/>
     </Pressable>:null}
+    {FEATURE_HUB_QA_ENABLED&&onOpenFeaturePreview?<View style={s.quickSection}>
+       <Text style={s.sectionLabel}>FEATURE HUB QA · DEVELOPER ONLY</Text>
+       {([
+        ['WorldBossPreview','World Bosses'],
+        ['PartyEventPreview','Party Events'],
+        ['PlayerMarketPreview','Player Market'],
+       ] as const).map(([route,label])=><Pressable key={route} accessibilityRole="button" accessibilityLabel={'Preview '+label} onPress={()=>onOpenFeaturePreview(route)} style={({pressed})=>[s.releaseRow,pressed&&s.pressed]}>
+        <Text style={s.releaseTitle}>{label} · Preview</Text><Text style={s.sectionChevron}>›</Text>
+       </Pressable>)}
+      </View>:null}
     {(attentionDestinations.length>0||(guildProjectRewardCount>0&&!!onOpenGuildProjects))?<View style={s.attentionRail}>
       <Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text>
       {guildProjectRewardCount>0&&onOpenGuildProjects?<Pressable accessibilityRole="button"

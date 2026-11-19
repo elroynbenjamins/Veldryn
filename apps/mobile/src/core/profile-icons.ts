@@ -1,5 +1,7 @@
 import {CLASSES} from '../content/classes';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
+import {DUNGEON_SHOP_PROFILE_ICONS_V1} from '../content/dungeon-shop-collectibles-v1';
+import {DUNGEON_MARKS_SHOP_RELEASED} from './release-flags';
 import type {GameState} from './types';
 
 type ProfileIconCatalogRow={id:string;name:string;group:string;source:string;monsterId?:string;bossId?:string};
@@ -8,6 +10,7 @@ type ProfileIconCatalogRow={id:string;name:string;group:string;source:string;mon
 export const EVENT_PROFILE_ICON_ARTWORK_IDS=new Set([
  'event:veilbreak-2026-lantern-warden',
  'event:veilbreak-2026-pumpkin-moon',
+ 'event:frostfall-2026-snowbell',
 ]);
 
 export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
@@ -22,6 +25,7 @@ export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
  {id:'starter:dune-warden',name:'Dune Warden',group:'Starter',source:'Available from the start.'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
  {id:'guild:stormwatch-crest',name:'Stormwatch Crest',group:'Guild',source:'Guild Token Shop · Guild Level 4'},
+ ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
 ];
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}
 export function profileIconCollection(state:GameState):ProfileIconEntry[]{
@@ -30,7 +34,7 @@ export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const base=CLASSES.filter(row=>row.id===activeClass).map(row=>({id:`class:${row.id}`,name:row.name,group:'Class',source:'Your active character class.',unlocked:true,artworkReady:true,selected:selected===`class:${row.id}`}));
  const owned=new Set(state.account.unlockedProfileIconIds??[]);
  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)];
- const portraits=PROFILE_ICON_CATALOG.map(row=>({...row,artworkReady:true,selected:selected===row.id,unlocked:
+ const portraits=PROFILE_ICON_CATALOG.filter(row=>row.group!=='Dungeon'||DUNGEON_MARKS_SHOP_RELEASED||owned.has(row.id)).map(row=>({...row,artworkReady:true,selected:selected===row.id,unlocked:
   row.group==='Starter'||owned.has(row.id)
   ||(row.monsterId!==undefined&&characters.some(c=>(c?.monsterMasteryPoints?.[row.monsterId!]??0)>=10))
   ||(row.bossId!==undefined&&state.defeatedBossIds.includes(row.bossId))}));

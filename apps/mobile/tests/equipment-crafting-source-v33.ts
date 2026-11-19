@@ -1,9 +1,10 @@
 import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
-import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_PRIMARY_MATERIAL_REDUCTION,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_FORGE_GOLD_MULTIPLIER,EQUIPMENT_PRIMARY_MATERIAL_REDUCTION,T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER,T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER,T3_T4_DUNEWOOD_REDUCTION_FACTOR,T3_SMITHING_DUNEWOOD_FINAL_FACTOR,T2_ALT_IRONWOOD_FANG_FACTOR,T2_ALT_TROLL_HIDE_FACTOR,EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {recipeAvailability} from '../src/core/playability';
 import {itemDef} from '../src/content/items';
+import {equipmentCraftAvailability} from '../src/core/equipment-crafting-queue';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
@@ -14,8 +15,8 @@ import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} fro
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 import {ALCHEMY_EQUIPMENT_INFUSIONS} from '../src/content/alchemy';
 import {increasedCraftingGoldCost,roundEquipmentCraftingGoldCost} from '../src/content/crafting-gold-cost';
-import {isT5EquipmentAffixSlot,T5_AFFIX_MATERIAL_MULTIPLIER,T5_AFFIX_XP_MULTIPLIER} from '../src/content/t5-equipment-affix-spec';
-import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
+import {rebasedCombatLevelFromLegacyLevel as rebaseLevel,totalXpAtLevel} from '../src/core/progression';
+import {nextEquipmentTierGoal} from '../src/core/equipment-tier-progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -28,8 +29,8 @@ ok(roundEquipmentCraftingGoldCost(1286)===1300,'1286 Gold must round up to 1300'
 ok(roundEquipmentCraftingGoldCost(1249)===1200,'1249 Gold must round down to 1200');
 ok(roundEquipmentCraftingGoldCost(1250)===1300,'Halfway Gold amounts must round up');
 ok(roundEquipmentCraftingGoldCost(49)===100,'Positive gear crafts must not become free');
-// T5 was deliberately repriced (3500 → 6000 Gold, 1100 → 1200 XP) when the T5 affix
-// slots landed; every other tier stays pinned to its original baseline.
+// Preserve T5's broader tier baseline (6000 Gold, 1200 XP) independently of the retired
+// slot-specific affix surcharges; every other tier keeps its existing baseline.
 const originalTierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:6000,T6:10000,T7:18000,T8:30000,T9:50000};
 const originalTierXp:Record<string,number>={T1:165,T2:290,T3:450,T4:700,T5:1200,T6:1600,T7:2200,T8:2900,T9:3800};
 const originalSlotGold:Record<string,number>={helmet:.85,chest:1.2,gloves:.7,legs:1,boots:.75,weapon:1.35,offhand:1.15,cape:.85,amulet:.65,ring:.55};
@@ -58,11 +59,10 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const slot=itemDef(recipe.output.itemId).slot!;
   const tier=recipe.v33EquipmentTier,skill=recipe.skillId;
   const primaryId=primaryByTier[tier][skill];
-  const affixMultiplier=tier==='T5'&&isT5EquipmentAffixSlot(slot)?T5_AFFIX_MATERIAL_MULTIPLIER:1;
-  const scale=materialTierMultiplier[tier]*originalSlotGold[slot]*affixMultiplier;
+  const scale=materialTierMultiplier[tier]*originalSlotGold[slot];
   const basicQuantity=Math.max(1,Math.round(primaryBase[tier][skill]*scale));
   const undiscountedQuantity=tier==='T3'&&skill==='smithing'
-    ?Math.max(1,Math.round(basicQuantity*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR))
+    ?Math.max(1,Math.round(basicQuantity*3*T3_SMITHING_DUNEWOOD_FINAL_FACTOR))
     :tier==='T9'&&skill==='tailoring'?Math.max(23,basicQuantity):basicQuantity;
   const expectedQuantity=Math.max(1,undiscountedQuantity-EQUIPMENT_PRIMARY_MATERIAL_REDUCTION);
   ok(recipe.inputs.find(input=>input.itemId===primaryId)?.quantity===expectedQuantity,
@@ -73,7 +73,8 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
       ?(recipe.v33Path==='Alternate'?'IRONWOOD_FANG':'WOLF_PELT')
       :(recipe.v33Path==='Alternate'?'TROLL_HIDE':'THORN_SAP');
     const secondaryBase=skill==='smithing'?10:9;
-    const secondaryExpected=Math.max(1,Math.round(secondaryBase*scale));
+    const alternateFactor=recipe.v33Path==='Alternate'?(skill==='smithing'?T2_ALT_IRONWOOD_FANG_FACTOR:T2_ALT_TROLL_HIDE_FACTOR):1;
+    const secondaryExpected=Math.max(1,Math.round(secondaryBase*scale*alternateFactor));
     ok(recipe.inputs.find(input=>input.itemId===secondaryId)?.quantity===secondaryExpected,
       recipe.id+' T2 secondary/path material must not be discounted');
   }
@@ -88,10 +89,10 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   const baselineXp=Math.max(1,Math.round(originalTierXp[recipe.v33EquipmentTier]*originalSlotGold[slot]));
   const previousXp=baselineXp+(highSunscar?20:0);
   const boostedTier=['T2','T3','T4'].includes(recipe.v33EquipmentTier);
-  const standardXp=boostedTier?Math.round(previousXp*1.25):previousXp;
-  // Three of the ten T5 slots carry a secondary stat and pay for it in profession XP.
-  const t5Affix=recipe.v33EquipmentTier==='T5'&&isT5EquipmentAffixSlot(slot);
-  ok(recipe.xp===(t5Affix?Math.round(standardXp*T5_AFFIX_XP_MULTIPLIER):standardXp),recipe.id+' must apply 25% more equipment crafting XP only to T2–T4 and the T5 affix bonus only to affix slots, retaining the T3/T4 +20 baseline');
+  const standardXp=boostedTier?Math.round(previousXp*T2_T4_EQUIPMENT_CRAFT_XP_MULTIPLIER):previousXp;
+  const improvedXp=recipe.v33EquipmentTier==='T2'?Math.round(standardXp*T2_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER)
+    :highSunscar?Math.round(standardXp*T3_T4_ADDITIONAL_EQUIPMENT_CRAFT_XP_MULTIPLIER):standardXp;
+  ok(recipe.xp===improvedXp,recipe.id+' must preserve standard tier XP without any T5 slot surcharge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.xp===recipe.xp,recipe.id+' registered recipe XP must match the forge');
   ok(RECIPES.find(row=>row.id===recipe.id)?.gold===recipe.gold,recipe.id+' registered recipe price must match the forge');
 }
@@ -117,6 +118,50 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId))
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=rebaseLevel(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
+// Keep the T2-to-T3 bridge moderately challenging: profession Level 22 rather
+// than the old effective Level 23 or the earlier temporary Level 20 proposal.
+ok(TIER_CRAFTING_LEVEL_FLOOR.T3===22,'T3 profession bridge must remain at Level 22');
+for(const profession of ['smithing','tailoring'] as const){
+  const t3Recipes=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3'&&row.skillId===profession);
+  ok(t3Recipes.length>0,profession+' must have T3 gear recipes');
+  ok(t3Recipes.every(row=>row.level===22),profession+' T3 gear must unlock at profession Level 22');
+  const expectedClasses=profession==='smithing'?4:5;
+  ok(t3Recipes.length===expectedClasses*2*10,profession+' must have T3 recipes for every class, path, and slot');
+  for(const classId of new Set(t3Recipes.map(row=>row.classId))){
+    const classRecipes=t3Recipes.filter(row=>row.classId===classId);
+    ok(classRecipes.length===20,profession+' '+classId+' T3 must have ten pieces in both paths');
+    for(const path of ['Foundation','Alternate'])
+      ok(classRecipes.filter(row=>row.v33Path===path).length===10,profession+' '+classId+' '+path+' T3 must have ten pieces');
+  }
+  for(const path of ['Foundation','Alternate']){
+    const sample=t3Recipes.find(row=>row.v33Path===path)!;
+    const base=createCharacter(newGame(0),sample.classId,'Skill Gate');
+    const readyAt=(level:number)=>{
+      const state={
+        ...base,
+        character:{...base.character!,level:sample.characterLevel,gold:sample.gold},
+        skills:base.skills.map(row=>row.skillId===profession?{...row,level}:row),
+        inventory:{...base.inventory,stacks:sample.inputs.map(input=>({...input}))},
+      };
+      return equipmentCraftAvailability(state,sample.id,1000);
+    };
+    const locked=readyAt(21),unlocked=readyAt(22);
+    ok(!locked.ready&&locked.reason.includes('level 22'),profession+' '+path+' must reject Level 21 with a clear level requirement');
+    ok(unlocked.ready,profession+' '+path+' must accept Level 22 with exact gold and inputs: '+unlocked.reason);
+  }
+}
+// Both professions must show the exact same T3 goal and cumulative XP distance.
+for(const profession of ['smithing','tailoring'] as const){
+ const t3Goal=nextEquipmentTierGoal(profession,13,32886);
+ ok(t3Goal?.tier==='T3'&&t3Goal.requiredLevel===22,profession+' next equipment tier must be T3 at Level 22');
+ ok(t3Goal?.remainingXp===totalXpAtLevel(22)-32886,profession+' milestone must show remaining cumulative XP, not one-level XP');
+ const t4Goal=nextEquipmentTierGoal(profession,22,totalXpAtLevel(22));
+ ok(t4Goal?.tier==='T4'&&t4Goal.requiredLevel===37,profession+' milestone must advance to T4 after T3 unlock');
+ ok(nextEquipmentTierGoal(profession,100,totalXpAtLevel(100))===undefined,profession+' milestone must hide when no released tier remains');
+}
+const t3Components=RECIPES.filter(row=>['FORGE_ARMOR_RIVETS','FORGE_RECLAIMED_ARMOR_RIVETS','STITCH_REINFORCED_STRAPS','STITCH_RECYCLED_REINFORCED_STRAPS'].includes(row.id));
+ok(t3Components.length===4&&t3Components.every(row=>row.level===20),'T3 cross-profession components must unlock before T3 gear');
+
 const infusionByTier={T1:'VERDANT_BINDING_RESIN',T2:'IRONWOOD_BINDING_RESIN',T3:'SUNSCAR_DUNE_BINDER',T4:'GLASSBOUND_BINDER',T5:'SUNFUSED_FIXATIVE',T6:'SUNFUSED_FIXATIVE',T7:'RIMEWARD_DISTILLATE',T8:'RIMEWARD_DISTILLATE',T9:'CINDERHEART_ELIXIR'} as const;
 ok(ALCHEMY_EQUIPMENT_INFUSIONS.every(infusion=>V33_EQUIPMENT_RECIPES.some(recipe=>recipe.inputs.some(input=>input.itemId===infusion.id))||RECIPES.some(refine=>refine.inputs.some(input=>input.itemId===infusion.id)&&V33_EQUIPMENT_RECIPES.some(gear=>gear.inputs.some(input=>input.itemId===refine.output.itemId)))),'Every crafted infusion must feed equipment directly or through a verified conversion');
 for(const [tier,infusionId] of Object.entries(infusionByTier))ok(V33_EQUIPMENT_RECIPES.filter(recipe=>recipe.v33EquipmentTier===tier).every(recipe=>recipe.inputs.some(input=>input.itemId===infusionId)),tier+' equipment must require its regional Alchemy infusion');
@@ -128,14 +173,8 @@ for(const skillId of ['smithing','tailoring'] as const){
   ok(fullSetGold('T5',skillId)<fullSetGold('T6',skillId),skillId+' full-set Gold must increase from T5 to T6');
 }
 for(const recipe of V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T5')){
-  const slot=itemDef(recipe.output.itemId).slot!;
   const fixative=recipe.inputs.find(input=>input.itemId==='SUNFUSED_FIXATIVE');
-  ok(fixative,'T5 '+recipe.id+' must require Sunfused Fixative');
-  if(isT5EquipmentAffixSlot(slot)){
-    ok(fixative!.quantity===2,recipe.id+' affix slot must require 2 Sunfused Fixative (base + extra)');
-  }else{
-    ok(fixative!.quantity===1,recipe.id+' non-affix slot must require exactly 1 Sunfused Fixative');
-  }
+  ok(fixative?.quantity===1,recipe.id+' must require only the ordinary T5 Sunfused Fixative, without a slot surcharge');
 }
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
@@ -181,8 +220,8 @@ ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfal
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');
 const t3=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T3');
 const t4=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier==='T4');
-const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER']);
-const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER']);
+const t3Materials=new Set(['DUNEWOOD','SUNSTONE_ORE','SUNSCALE','AMBERGLASS','ASTRAL_SCRIPT','SUNSCAR_DUNE_BINDER','REINFORCED_STRAPS','ARMOR_RIVETS']);
+const t4Materials=new Set(['SUNSTONE_INGOT','SUNSCALE','DUNEWOOD','ASTRAL_SCRIPT','AMBERGLASS','GLASSBOUND_BINDER','REINFORCED_STRAPS','ARMOR_RIVETS']);
 ok(t3.every(recipe=>recipe.inputs.every(input=>t3Materials.has(input.itemId))),'T3 gear must use early-Sunscar sources only, without Asterfall solvent');
 ok(t3.length===180,'Nine classes × two paths × ten slots must retain all 180 T3 equipment recipes');
 for(const recipe of t3){
@@ -190,14 +229,14 @@ for(const recipe of t3){
   const woodBase=recipe.skillId==='tailoring'?10:22;
   const previousWood=Math.max(1,Math.round(woodBase*1.35*originalSlotGold[slot]));
   const wood=recipe.inputs.find(row=>row.itemId==='DUNEWOOD');
-  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*T3_T4_DUNEWOOD_REDUCTION_FACTOR))-(recipe.skillId==='smithing'?EQUIPMENT_PRIMARY_MATERIAL_REDUCTION:0),recipe.id+' must preserve the T3 20% timber cut and additionally discount primary smithing timber by two');
+  ok(wood?.quantity===Math.max(1,Math.round(previousWood*3*(recipe.skillId==='smithing'?T3_SMITHING_DUNEWOOD_FINAL_FACTOR:T3_T4_DUNEWOOD_REDUCTION_FACTOR)))-(recipe.skillId==='smithing'?EQUIPMENT_PRIMARY_MATERIAL_REDUCTION:0),recipe.id+' must preserve the T3 20% timber cut and additionally discount primary smithing timber by two');
   ok(recipe.inputs.find(row=>row.itemId==='SUNSCAR_DUNE_BINDER')?.quantity===1,recipe.id+' must preserve one Dune Binding Resin');
 }
 for(const classId of Object.keys(EQUIPMENT_CRAFT_SKILL_BY_CLASS)){
   for(const path of ['Foundation','Alternate']){
     const set=t3.filter(recipe=>recipe.classId===classId&&recipe.v33Path===path);
     const woodTotal=set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0),0);
-    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?623:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
+    ok(set.length===10&&woodTotal===(EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId as keyof typeof EQUIPMENT_CRAFT_SKILL_BY_CLASS]==='smithing'?570:290),classId+' / '+path+' T3 set must reflect the 20% cut, rounded for every piece');
     ok(set.reduce((total,recipe)=>total+(recipe.inputs.find(input=>input.itemId==='SUNSCAR_DUNE_BINDER')?.quantity??0),0)===10,classId+' / '+path+' complete T3 set must still require ten Dune Binders');
   }
 }
@@ -258,9 +297,9 @@ function projectedFarmHours(recipe:typeof t8){
 const highTierBands:Record<string,[number,number]>={
   // Regional ore -> ingot processing now includes its local wood fuel. T7 is the first Frostmarch tier,
   // so its ceiling includes the new Frostiron + Whitepine processing chain while staying below T8.
-  // T9 keeps a lower floor for Ring/Amulet slot multipliers; generated small-slot pieces may land near ~1.0h,
+  // T9 keeps a 54-minute baseline floor for smaller Ring/Amulet pieces after the primary-material reduction; they may land near ~1.0h,
   // while large-slot pieces still scale much higher. This floor guards against near-free recipes without flattening slot identity.
-  T5:[.75,5.4],T6:[1.0,6.6],T7:[1.2,7.9],T8:[1.5,9.6],T9:[1.0,10.8],
+  T5:[.75,5.4],T6:[1.0,6.6],T7:[1.2,7.9],T8:[1.5,9.6],T9:[.9,10.8],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);

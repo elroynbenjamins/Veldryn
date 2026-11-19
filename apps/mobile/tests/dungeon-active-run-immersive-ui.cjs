@@ -29,8 +29,8 @@ assert((app.match(/onRunActiveChange={setDungeonFlowActive}/g)||[]).length===1,'
 // above the Q-Mode/Live status banner.
 assert(app.includes("dungeonFlowActive&&tab==='Coop'"),'Only the standalone dungeon route becomes immersive');
 assert(app.includes('{!immersiveDungeonFlow&&<GameTopBar'),'Active runs hide the global character and activity HUD');
-assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
-assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'}"),'Dungeon tab hides the global World chat dock so it cannot duplicate Live party chat');
+assert(app.includes("showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar}"),'The activity bar is hidden on the entire Dungeon tab, including browser, loadout, shops and event details');
+assert(app.includes("hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock}"),'Dungeon tab hides the global World chat dock so it cannot duplicate Live party chat');
 assert(run.includes("run.mode==='live'&&onChatSend&&!terminal?<CoopLiveChatBar"),'Only active Live runs show the dedicated party chat dock');
 assert(run.indexOf('<CoopLiveChatBar')>run.indexOf('</ExpeditionScreenShell>'),'Party chat stays docked below the dungeon scroll content');
 assert(!run.includes("<DungeonDisclosure title={st('Party Chat')}"),'Party chat is no longer buried in a scroll disclosure');
@@ -55,5 +55,5 @@ assert(shell.includes('hideHeader=false')&&shell.includes('{!hideHeader&&<View s
 assert(shell.indexOf('{banner?<View style={s.banner}>')<shell.indexOf('<ScrollView style={s.scroll}'),'Mode/phase strip remains above the room list');
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf('Party & formation'),'Room choices stay ahead of optional details');
 assert(run.includes('Return to dungeon list'),'Completed run still has an explicit exit');
-assert(browser.includes('onBack={onBack} backLabel={a("Back")}'),'Normal browser retains its navigation');
+assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Compact dungeon toolbar retains its navigation');
 console.log('PASS standalone Account Dungeon screen, immersive run and safe exit; no World dungeon tabs');

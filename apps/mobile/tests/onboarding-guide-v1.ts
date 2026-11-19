@@ -1,6 +1,9 @@
 import {equal,deepEqual} from './assertions';
+import {createGameGuideReadPreferenceStore} from '../src/core/game-guide-read-preferences';
 import {acknowledgeGameGuide,guideDefinition,GAME_GUIDE_STEPS,newlyUnlockedGameGuide,normalizeOnboardingGuideState,unlockedGameGuide} from '../src/core/onboarding';
 import {migrateSave} from '../src/core/save-migrations';
+import {browseGameGuides} from '../src/core/game-guide-browse';
+import {GAME_GUIDE,GAME_GUIDE_CATEGORIES,type GameGuideId} from '../src/core/onboarding';
 import {newGame,createCharacter} from '../src/core/game';
 const state:any=createCharacter(newGame(1),'IRONWARDEN','Guide Tester');state.character.level=2;state.account.guildMember=false;state.account.unlockedCharacterSlots=1;
 equal(unlockedGameGuide(state).some(item=>item.id==='getting_started'),true,'starter guide unlocks');equal(newlyUnlockedGameGuide(state).length>=2,true,'initial guides are discoverable');
@@ -35,10 +38,41 @@ equal(unlockedGameGuide(state).some(row=>row.id==='live_events'),true,'released 
 state.character.level=1;
 state.otherCharacters=[{level:10,quests:[]}];
 equal(unlockedGameGuide(state).some(row=>row.id==='parties'),true,'Party Guide honors another character reaching Level 10');
-// The dungeon guide follows the separate Level 25 + Chapter I boss gate.
-state.character.level=24;state.defeatedBossIds=['FALLEN_KNIGHT'];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide stays locked at 24');
-state.character.level=25;state.defeatedBossIds=[];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide needs the Chapter I clear');
-state.defeatedBossIds=['FALLEN_KNIGHT'];
-equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide unlocks at 25 after boss');
+// Solo/NPC dungeons can be explained at Level 10; live entry still has separate server-owned requirements.
+state.character.level=9;state.defeatedBossIds=[];
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),false,'Dungeon guide waits until Level 10');
+state.character.level=10;
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide opens for Solo/NPC at Level 10');
+state.character.level=25;
+equal(unlockedGameGuide(state).some(row=>row.id==='coop_dungeons'),true,'Dungeon guide remains available regardless of a live boss gate');
+
+// Reading online help is a device preference. It must not mutate the authoritative game state.
+void (async()=>{
+ const stored=new Map<string,string>();
+ const adapter={getItem:async(key:string)=>stored.get(key)??null,setItem:async(key:string,value:string)=>{stored.set(key,value)}};
+ const readPreferences=createGameGuideReadPreferenceStore(adapter);
+ const snapshot=JSON.stringify(state);
+ await Promise.all([readPreferences.markRead('account-a','getting_started'),readPreferences.markRead('account-a','faith_blessings')]);
+ deepEqual(await readPreferences.load('account-a'),['getting_started','faith_blessings'],'multiple quick guide reads are kept');
+ const restarted=createGameGuideReadPreferenceStore(adapter);
+ deepEqual(await restarted.load('account-a'),['getting_started','faith_blessings'],'online guide read flags persist on device');
+ deepEqual(await restarted.load('account-b'),[],'guide read flags do not leak to another account');
+ equal(JSON.stringify(state),snapshot,'reading online guide never mutates server-owned game state');
+ console.log('online guide read preferences passed');
+})().catch(error=>{console.error(error);throw error;});
+
+// Guide library regression: search, categories, progress and locked previews.
+const guideState:any=createCharacter(newGame(2),'IRONWARDEN','Guide Hub Test');
+const openIds=new Set(unlockedGameGuide(guideState).map(entry=>entry.id));
+const readIds=new Set<GameGuideId>(['getting_started']);
+const browse=(category:'all'|'basics'|'progress'|'social'|'adventures',query='',unreadOnly=false)=>browseGameGuides({unlockedIds:openIds,readIds,category,query,unreadOnly});
+equal(Object.keys(GAME_GUIDE_CATEGORIES).length,GAME_GUIDE.length,'every topic has a category');
+equal(browse('basics').every(entry=>GAME_GUIDE_CATEGORIES[entry.id]==='basics'),true,'category filtering stays precise');
+equal(browse('all','expedition marks').some(entry=>entry.id==='dungeon_shop'),true,'search includes locked guide content');
+equal(browse('all','NO SUCH GUIDE').length,0,'no matches for an unrelated query');
+equal(browseGameGuides({unlockedIds:openIds,readIds,category:'all',query:'rüstung',unreadOnly:false,localize:copy=>copy==='Equipment & Inventory'?'Ausrüstung und Inventar':copy}).some(entry=>entry.id==='equipment_inventory'),true,'localized search indexes translated topics');
+equal(browse('all','',true).every(entry=>openIds.has(entry.id)&&!readIds.has(entry.id)),true,'unread filter excludes read and locked entries');
+equal(browse('all').some(entry=>entry.id==='coop_dungeons'),true,'locked features can be previewed');
+equal(guideDefinition('additional_characters').summary.includes('three'),true,'character guide reflects the three-character roster');
+equal(GAME_GUIDE_STEPS.coop_dungeons.some(step=>step.includes('Asterfall')),true,'dungeon guide describes Asterfall solo access');
+console.log('guide hub navigation and current-copy contract passed');

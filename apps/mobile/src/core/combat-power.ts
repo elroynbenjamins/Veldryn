@@ -19,12 +19,12 @@ export function redistributeCompanionCombatPower(personal:number,companion:numbe
   return {total,player:personal+reallocated,companion:reweightedCompanion,reallocated};
 }
 
-const statScore=(stats:{hp:number;attack:number;defense:number;power?:number;critChance?:number;critMultiplier?:number;accuracy?:number;evasion?:number;haste?:number;armor?:number;ward?:number;tenacity?:number;potency?:number;penetration?:number},level:number)=>Math.max(0,Math.round(
+const statScore=(stats:{hp:number;attack:number;defense:number;power?:number;critChance?:number;critMultiplier?:number;accuracy?:number;evasion?:number;haste?:number;armor?:number;ward?:number;tenacity?:number;potency?:number;penetration?:number;classHealing?:number},level:number)=>Math.max(0,Math.round(
   stats.attack*18+stats.defense*11+stats.hp*.7+(stats.power??0)*4+level*12+
   (stats.critChance??0)*220+(stats.critMultiplier??1.5)*18+(stats.accuracy??.84)*45+
   (stats.evasion??.04)*50+(stats.haste??.05)*150+
   (stats.armor??0)*110+(stats.ward??0)*140+(stats.tenacity??0)*60+
-  (stats.potency??0)*80+(stats.penetration??0)*135,
+  (stats.potency??0)*80+(stats.penetration??0)*135+Math.max(0,(stats.classHealing??1)-1)*80,
 ));
 
 /** A readable build comparison score, not a replacement for encounter damage simulation.

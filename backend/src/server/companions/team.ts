@@ -1,5 +1,5 @@
 import {COMPANION_RARITY_MAX_LEVEL,COMPANION_RARITY_TARGET,COMPANION_SYNERGY_COMBAT_CAP,companionServerDefinition} from './content';
-import {companionBalancedBaseStats} from './combat-adapter';
+import {companionBalancedBaseStats,companionVerifiedHousingStatMultiplier} from './combat-adapter';
 import type {CompanionSynergy,CompanionTeamMemberView,CompanionTrialRestriction,OwnedCompanionSnapshot} from './domain';
 
 export interface CompanionTeamValidationInput{
@@ -16,7 +16,7 @@ export function individualCompanionPower(progress:OwnedCompanionSnapshot){
  const traitMultiplier=progress.bondTraitUnlocked?1.01:1,techniqueMultiplier=progress.selectedTechniqueId?1.015:1;
  // Team Power is guidance, not combat simulation. It mirrors the already-balanced
  // progression budget and keeps role/ability identity to a narrow ±few-percent band.
- return Math.max(1,Math.round(950*levelMultiplier*rarityMultiplier*ascensionMultiplier*bondMultiplier*traitMultiplier*techniqueMultiplier*statIdentity*activeIdentity*Math.min(1.05,Math.max(1,Number.isFinite(progress.masteryStatMultiplier)?progress.masteryStatMultiplier!:1))));
+ return Math.max(1,Math.round(950*levelMultiplier*rarityMultiplier*ascensionMultiplier*bondMultiplier*traitMultiplier*techniqueMultiplier*statIdentity*activeIdentity*Math.min(1.05,Math.max(1,Number.isFinite(progress.masteryStatMultiplier)?progress.masteryStatMultiplier!:1))*companionVerifiedHousingStatMultiplier(progress)));
 }
 export function companionTeamViews(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>):CompanionTeamMemberView[]{return ids.map(id=>{const def=companionServerDefinition(id),p=owned[id];if(!def||!p)throw new Error('companion_not_owned');return {companionId:id,role:def.role,rarity:def.rarity,affinity:def.affinity,originId:def.originId,power:individualCompanionPower(p)};});}
 export function companionTeamPower(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>){const views=companionTeamViews(ids,owned);return Math.round(views.reduce((sum,x)=>sum+x.power,0));}

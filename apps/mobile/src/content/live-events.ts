@@ -1,15 +1,16 @@
 import {VEILBREAK_EVENT} from './veilbreak-event';
+import {FROSTFALL_EVENT} from './annual-events-v2';
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
 import type {LiveEventVisualKey} from './live-event-visual-keys';
 
-export type EventRewardKind='profile_icon'|'pet'|'companion'|'background'|'border'|'emote'|'title'|'candy'|'guild_name_color'|'guild_frame'|'guild_banner'|'gold'|'companion_essence'|'bondstones';
+export type EventRewardKind='profile_icon'|'pet'|'companion'|'background'|'border'|'emote'|'title'|'candy'|'guild_name_color'|'guild_frame'|'guild_banner'|'gold'|'companion_essence'|'bondstones'|'crafting_material';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
 export type EventRewardRarity='common'|'uncommon'|'rare'|'epic'|'mythic'|'legendary';
-export interface EventReward{kind:EventRewardKind;id:string;name:string;rarity:EventRewardRarity;quantity?:number;}
+export interface EventReward{kind:EventRewardKind;id:string;name:string;rarity:EventRewardRarity;quantity?:number;tier?:1|2|3|4;}
 export interface EventMilestone{points:number;reward:EventReward;}
 export interface EventObjectiveDef{id:string;name:string;description:string;source:EventActivitySource;required:number;rewardCurrency:number;rewardPrestige:number;}
-export interface EventShopOffer{id:string;reward:EventReward;currency:'common'|'prestige';cost:number;limit:number;minLevel?:number;legacy?:boolean;}
+export interface EventShopOffer{id:string;reward:EventReward;currency:'common'|'prestige';cost:number;limit:number;minLevel?:number;legacy?:boolean;perUtcWeek?:number;}
 export interface EventChoice{id:string;name:string;description:string;bonusLabel:string;dropMultipliers?:Partial<Record<EventActivitySource,number>>;contributionMultiplier?:number;}
 export interface EventDailyGift{day:number;rewardCurrency:number;rewardPrestige:number;}
 export interface EventCommunityMilestone{percent:number;rewardCurrency:number;rewardPrestige:number;reward?:EventReward;}
@@ -85,7 +86,7 @@ export function eventRewardPlan(definition:LiveEventDef,classId:ClassId):EventRe
  * cosmetics retain their identity and locked rewards remain discoverable.
  * Future authored events are added explicitly at release; the server controls
  * earning/claim windows independently of this catalog. */
-export const LIVE_EVENT_CATALOG:LiveEventDef[]=[VEILBREAK_EVENT];
+export const LIVE_EVENT_CATALOG:LiveEventDef[]=[VEILBREAK_EVENT,FROSTFALL_EVENT];
 
 export function annualEventSeriesId(id:string){const match=id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);return match?.[1];}
 

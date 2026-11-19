@@ -8,20 +8,26 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
+import {weaponBonusLine,weaponBonusCompactLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentArtwork} from './EquipmentArtwork';
 import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
+import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 type Props={
  state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'equipment_pouch';
  onClose:()=>void;onEquip?:()=>unknown|Promise<unknown>;onInspect?:()=>void;
+ onStoreInGear?:()=>unknown|Promise<unknown>;canStoreInGear?:boolean;
+ onMoveToBank?:()=>unknown|Promise<unknown>;
  onSell?:()=>void;onSalvage?:()=>void;canSell?:boolean;canSalvage?:boolean;
+ sellBlockReason?:string;salvageBlockReason?:string;
  favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>;
 };
 
@@ -31,19 +37,32 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
-export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false}:Props){
+export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false,onMoveToBank}:Props){
  const {gt,gl}=useGameplayText();
+ const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
  const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const detailsScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
  useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
+ async function moveToBank(){
+  if(!onMoveToBank||busy)return;
+  setBusy(true);setError('');
+  try{await onMoveToBank()}catch(cause){
+   setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
+  }finally{setBusy(false)}
+ }
  let projected:GameState;
  try{projected=previewEquipment(state,itemId,instanceId,source)}catch(cause){
   return <GameModalSurface visible reduceMotion={state.settings.reduceMotion} onClose={onClose}>
    <GameModalHeader title={gl('Compare equipment')} onClose={onClose}/>
-   <View style={s.errorBox}><Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text><GameButton title={gl('Back to Inventory')} onPress={onClose}/></View>
+   <View style={s.errorBox}>
+    <Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text>
+    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
+    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" loading={busy} disabled={busy} onPress={()=>void moveToBank()}/>:null}
+    <GameButton title={gl('Back to Inventory')} disabled={busy} onPress={onClose}/>
+   </View>
   </GameModalSurface>;
  }
  const item=itemDef(itemId),slot=item.slot!;
@@ -56,12 +75,22 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
+ const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>({
+  short:weaponBonusCompactLine(bonus),
+  detail:weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
+  strength:weaponBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
+ }))??[];
+ const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>({
+  short:weaponBonusCompactLine(bonus),
+  detail:weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
+  strength:weaponBonusStrength(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
+ }))??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
  const blocked=state.character&&state.character.level<(item.requiredLevel??1)
   ?gl('Requires level')+' '+String(item.requiredLevel??1)
-  :state.activity?.kind==='combat'?gl('Stop combat before equipping')
+  :state.activity?.kind==='combat'&&slot!=='weapon'?gl('Stop combat before equipping')
   :undefined;
  const sets=comparison.sets;
  const stats=[
@@ -74,6 +103,13 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   if(!onEquip||alreadyEquipped||blocked||busy)return;
   setBusy(true);setError('');
   try{await onEquip()}catch(cause){
+   setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
+  }finally{setBusy(false)}
+ }
+ async function storeInGear(){
+  if(!onStoreInGear||!canStoreInGear||busy)return;
+  setBusy(true);setError('');
+  try{await onStoreInGear()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
   }finally{setBusy(false)}
  }
@@ -102,6 +138,23 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
+   {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
+    <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
+    <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
+    {currentWeaponRolls.length?currentWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
+      <Text style={s.rollValue}>{roll.short}</Text>
+      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.muted}]}/></View>
+      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
+    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
+    <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
+    {newWeaponRolls.length?newWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
+      <View style={s.rollHead}><Text style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>
+        {roll.strength>=90?<Text style={[s.rollBadge,{color:C.good}]}>{gl(weaponBonusRollGrade(roll.strength))}</Text>:null}
+      </View>
+      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.good}]}/></View>
+      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
+    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
+   </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
@@ -120,9 +173,12 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
     {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
    </View>:null}
-   {(onSell||onSalvage)?<View style={s.disposalActions}>
-    <View style={s.disposalAction}><GameButton compact tone="secondary" title={gl('Sell')} disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>
-    <View style={s.disposalAction}><GameButton compact tone="danger" title={gl('Salvage')} disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>
+   {(onSell||onSalvage)?<View style={s.disposalSection}>
+    <EquipmentDisposalStatus sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>
+    <View style={s.disposalActions}>
+     <View style={s.disposalAction}><GameButton compact tone="secondary" title={gl('Sell copy')} disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>
+     <View style={s.disposalAction}><GameButton compact tone="danger" title={gl('Salvage copy')} disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>
+    </View>
    </View>:null}
    <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
     onPress={()=>setMore(v=>!v)} style={s.disclosure}>
@@ -156,6 +212,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       {onEquip?<View style={s.footerPrimary}><GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
         loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/></View>:null}
     </View>
+    {onStoreInGear?<GameButton title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy} onPress={()=>void storeInGear()}/>:null}
+    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" disabled={busy} loading={busy} onPress={()=>void moveToBank()}/>:null}
   </View>
  </GameModalSurface>;
 }
@@ -199,7 +257,17 @@ function makeStyles(C:ThemeColors){
   statNew:{...typography.bodyStrong,minWidth:38,textAlign:'right',color:C.text},
   statDelta:{...typography.bodyStrong,minWidth:48,textAlign:'right',fontWeight:'900'},
   setAlert:{padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,gap:6},
+  weaponRollPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,gap:6,backgroundColor:C.panel2},
+  rollGroupLabel:{...typography.caption,color:C.muted,fontSize:9,fontWeight:'800',letterSpacing:.5,marginTop:4},
+  rollEntry:{gap:4,paddingVertical:3},
+  rollHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5,flexWrap:'wrap'},
+  rollValue:{...typography.bodyStrong,color:C.text,fontWeight:'800',fontSize:12},
+  rollDetail:{...typography.caption,color:C.muted,fontSize:10},
+  rollBadge:{...typography.caption,fontWeight:'900',fontSize:10},
+  rollTrack:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.lineStrong},
+  rollFill:{height:'100%',borderRadius:3},
   setLine:{...typography.caption,fontWeight:'700'},
+  disposalSection:{gap:8},
   disposalActions:{flexDirection:'row',gap:8},
   disposalAction:{flex:1,minWidth:0},
   disclosure:{minHeight:44,paddingHorizontal:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},

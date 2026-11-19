@@ -11,16 +11,16 @@ const quickNav=read('src/components/GameTopBar.tsx');
 const eventHub=read('src/screens/EventScreen.tsx');
 const confirmation=read('src/components/ConfirmModal.tsx');
 
-ok(app.includes('...actionableClaimNotifications({storyRewards:storyClaimCount,overflowStacks:overflowStackCount})'),
- 'Only story rewards and real overflow contribute to claim notification badges');
+ok(app.includes('...actionableClaimNotifications({storyRewards:storyClaimCount,challengeRewards:questClaims.challenges,milestoneRewards:questClaims.milestones,overflowStacks:overflowStackCount})'),
+ 'Only truly claimable story, class challenge, milestone and overflow rewards contribute to badges');
 ok(!app.includes('eventReadyClaimCount(state,now)'),
  'Opening Veldryn must not create event reward attention notifications');
-ok(app.includes('storyRewardCount={storyClaimCount}')&&!app.includes('eventRewardCount={eventClaimCount}'),
- 'Account hub receives story attention but no event reward attention');
-ok(attention.includes("story_reward_ready:'Quests'")&&attention.includes("inventory_overflow:'Inventory'"),
- 'Actionable claims lead to existing destinations instead of adding tabs');
-ok(account.includes("if(id==='Quests'&&storyRewardCount>0)")&&!account.includes('eventRewardCount'),
- 'Account hub highlights story claims but never event claims');
+ok(app.includes('questRewardCount={questClaims.total}')&&!app.includes('eventRewardCount={eventClaimCount}'),
+ 'Account hub receives combined quest claim attention but no event reward attention');
+ok(attention.includes("story_reward_ready:'Quests'")&&attention.includes("class_challenge_reward_ready:'Quests'")&&attention.includes("quest_milestone_reward_ready:'Quests'")&&attention.includes("inventory_overflow:'Inventory'"),
+ 'All earned quest claim types lead to existing Quests, with overflow only in Inventory');
+ok(account.includes("if(id==='Quests'&&questRewardCount>0)")&&!account.includes('eventRewardCount'),
+ 'Account hub highlights earned quest claims without adding event claim badges');
 ok(quickNav.includes("([...QUICK_NAV_DESTINATIONS,'Events'] as QuickNavDestination[])"),
  'Event remains reachable in quick navigation without a claim-notification badge');
 ok(!account.includes("const attentionPriority:MoreDestination[]=['Quests','Events'")&&account.includes("const attentionPriority:MoreDestination[]=['NewUnlocks','Quests','DailySupplies'")&&account.includes("attentionDestinations.slice(0,3)"),

@@ -12,9 +12,10 @@ import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,COMPANION_BOND_CONFIG} from '../src/content/combat-companions';
+import {FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 import {companionBondProgress} from '../src/core/companion-bond-progress';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
-import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques,companionMission} from '../../../backend/src/server/companions/content';
+import {COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP,COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques,companionMission} from '../../../backend/src/server/companions/content';
 import {awardCompanionBondXpServer,companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -34,7 +35,7 @@ const bondDisplay=companionBondProgress(4,1380);
 ok(bondDisplay.current===270&&bondDisplay.required===630&&bondDisplay.remaining===360&&bondDisplay.nextMilestone===6&&bondDisplay.nextReward==='55 Essence','Bond UI shows within-level XP, remaining XP, and next reward');
 ok(companionBondProgress(10,7560).maxed&&companionBondProgress(10,7560).percent===100,'max Bond progress is complete');
 
-function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
+function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,3]));s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
   // Match the current food healing and mission duration instead of hardcoding ration quantities.
  const mission=type==='companion_assignment_start'?companionMission(String(args?.id??'')):undefined;
@@ -62,8 +63,9 @@ const expectedEventIds=Array.from({length:11},(_,index)=>`EVT_UNIT_${String(inde
  ok(regionalCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'regional companion ids remain UNIT_001 through UNIT_024');
  ok(guildCompanions.map(def=>def.id).sort().join(',')==='GUILD_UNIT_001,GUILD_UNIT_002,GUILD_UNIT_003','Guild Token Shop companion IDs remain stable');
 ok(eventCompanions.length===11,'event roster contains the 11 authored companion rewards');
- ok(COMBAT_COMPANIONS.length===30,'active catalog contains permanent companions and the three released Veilbreak companions only');
- ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')==='EVT_UNIT_007,EVT_UNIT_008,EVT_UNIT_011','active catalog contains only released Veilbreak companions');
+ const expectedActiveEventIds=['EVT_UNIT_007','EVT_UNIT_008','EVT_UNIT_011',...(FROSTFALL_REWARDS_RELEASED?['EVT_UNIT_009']:[])].sort();
+ ok(COMBAT_COMPANIONS.length===permanentCompanions.length+expectedActiveEventIds.length,'active roster contains permanent and only released event companions');
+ ok(COMBAT_COMPANIONS.filter(def=>def.origin.type==='event').map(def=>def.id).sort().join(',')===expectedActiveEventIds.join(','),'Frostfall Herald remains hidden until the release flag is enabled');
 ok(new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id)).size===ALL_COMBAT_COMPANIONS.length,'permanent and event companion ids are unique');
 ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids cover EVT_UNIT_001 through EVT_UNIT_011');
 const mobileIds=new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id));
@@ -215,8 +217,10 @@ const loadedQuest=parseSaveBackup(createSaveBackup({...quest,account:{...quest.a
 for(const payload of [{type:'companion_supplies',args:{gold:0}},{type:'companion_monthly',args:{id:'NO_PRESTIGE_15',complete:true}},{type:'companion_boss_rematch',args:{won:true}}])rejects(()=>validateGameCommand(payload),'new reward actions reject forged authority');
 let trained=fixture();for(const id of ids)trained.account.combatCompanionProgress![id]={...trained.account.combatCompanionProgress![id],level:20,ascensionTier:2};
 trained.account.companionSanctuary={...trained.account.companionSanctuary!,trainingGroundLevel:1,lastTrainingClaimAtMs:now-7*86400000};
-trained=command(trained,'companion_training');ok(trained.account.companionEssence===10048,'max-level Sanctuary training converts XP using shared weekly cap');
-ok(command(trained,'companion_training').account.companionEssence===10048,'training conversion cannot be repeatedly claimed');
+trained=command(trained,'companion_training');
+const convertedHousingEssence=trained.account.companionEssence!-10000;
+ok(convertedHousingEssence>0&&convertedHousingEssence<=COMPANION_MAX_XP_WEEKLY_ESSENCE_CAP&&trained.account.companionOverflow?.essenceConvertedThisWeek===convertedHousingEssence,'max-level Sanctuary training converts Housing-boosted XP within shared weekly cap');
+ok(command(trained,'companion_training').account.companionEssence===trained.account.companionEssence,'training conversion cannot be repeatedly claimed');
 let bondLadder=fixture();bondLadder.account.combatCompanionProgress!.UNIT_001=applyCompanionBondXp(bondLadder.account.combatCompanionProgress!.UNIT_001,7560);const beforeBondRewards=bondLadder.account.companionEssence!;for(const level of [2,4,6,8])bondLadder=command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level});ok(bondLadder.account.companionEssence===beforeBondRewards+190,'Bond 2/4/6/8 milestone rewards pay once');rejects(()=>command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level:8}),'Bond milestone cannot replay');ok(!(bondLadder.account.companionPhase2Profile?.codexRewardIds??[]).some(id=>id.startsWith('COMPANION_PORTRAIT_')||id.startsWith('COMPANION_TITLE_')),'Bond claims no longer mint retired portrait or title entitlements');
 let legacyBond=fixture();legacyBond.account.combatCompanionProgress!.UNIT_001=applyCompanionBondXp(legacyBond.account.combatCompanionProgress!.UNIT_001,7560);legacyBond.account.companionPhase2Profile={showcaseCompanionIds:[],showcaseSlotsUnlocked:1,codexRewardIds:['COMPANION_PORTRAIT_UNIT_001']};legacyBond=command(legacyBond,'companion_bond_reward',{id:'UNIT_001',level:8});ok(legacyBond.account.companionPhase2Profile?.codexRewardIds?.includes('COMPANION_PORTRAIT_UNIT_001'),'existing legacy IDs are preserved on claim');ok(!legacyBond.account.companionPhase2Profile?.codexRewardIds?.includes('COMPANION_TITLE_UNIT_001'),'Bond 8 does not grant a new retired title');
 ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTechniques('UNIT_017').some(t=>t.name==='Shatterfang'),'regional companions have authored techniques');
@@ -229,5 +233,5 @@ ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companion
 ok(companionAscensionCost(heartbondDef,3).materialId==='TRIAL_SANCTUARY_MATERIAL'&&companionAscensionCost(heartbondDef,'mastery').materialQuantity===10,'event Prestige progression remains available through Trial materials');
 ok(companionMaterialSources('BLACKGLASS_CORE').some(source=>source.includes('Blackglass Mireling'))&&companionMaterialSources('REGENT_SIGIL').some(source=>source.includes('Ashen Revenant')),'new Ashlands ascension catalysts have live sources');
 const bondBase=command(fixture(),'companion_equip',{id:'UNIT_001'}),bondBoost=structuredClone(bondBase);bondBoost.account.companionSanctuary!.bondHallLevel=3;
-ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting');
+ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting (Housing no longer boosts Bond XP)');
 console.log(`PASS companion integration: ${checks} checks`);

@@ -26,6 +26,10 @@ export interface FallenKnightPlayerSnapshot{
   classId:string;
   /** Primary combat class skill, as earned by the selected character. */
   classSkillLevel?:number;
+  /** Verified class passives; optional to keep old story snapshots compatible. */
+  armorPenetration?:number;
+  hexPotency?:number;
+  classHealingMultiplier?:number;
   maxHp:number;
   currentHp:number;
   attack:number;
@@ -97,6 +101,9 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const classAbility=classId?HUNT_CLASS_TECHNIQUES[classId]:undefined;
   const classRank=Number.isFinite(player.classSkillLevel)?Math.max(1,Math.min(100,Math.floor(player.classSkillLevel!))):1;
   const classScale=1+.3*(classRank-1)/99;
+  const armorBreak=classId==='RAVAGER'?clamp(player.armorPenetration??0,0,.05):0;
+  const hexPower=classId==='HEXWEAVER'?clamp(player.hexPotency??0,0,.05):0;
+  const classHealingScale=clamp(player.classHealingMultiplier??1,1,1.2);
   let nextClassReadyAtMs=0,fortressFollowup=false,hexMarkPending=false;
   const phasesReached:(1|2|3)[]=[1],events:StoryBossEvent[]=[];
   const playerHitChance=clamp(player.accuracy-bossSecondary.evasion,.55,.99);
@@ -141,7 +148,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
         const critical=random01(seed,rngIndex++)<clamp(player.critChance,0,.75);
         const variance=.94+random01(seed,rngIndex++)*.12;
         const bossWard=now<phaseWardUntilMs ? .86 : 1;
-        const base=Math.max(1,player.power*38+player.attack*14-monster.defense*15);
+        const base=Math.max(1,player.power*38+player.attack*14-monster.defense*(1-armorBreak)*15);
         const offensive=!!classAbility&&now>=nextClassReadyAtMs&&
           (classId==='WAYFINDER'||classId==='RAVAGER'||classId==='HEXWEAVER'||classId==='KNIFE_DANCER');
         // Offensive casts modify only landed, actually resolved player strikes.
@@ -149,7 +156,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
         const bonus=offensive
           ?classId==='WAYFINDER'?.025:classId==='RAVAGER'?.045:classId==='HEXWEAVER'?.020:.025:0;
         const markedBonus=hexMarkPending?.02:0;
-        const rolledAmount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*
+        const rolledAmount=Math.max(1,Math.round(base*variance*player.damageMultiplier*(1+hexPower)*bossWard*
           (critical?player.critMultiplier:1)*(1+Math.min(.05,bonus*classScale)+markedBonus)));
         let nextBossHp=Math.max(0,bossHp-rolledAmount);
         if(mode==='story'&&phase===1&&nextBossHp<=bossMaxHp*.65)nextBossHp=Math.max(1,Math.ceil(bossMaxHp*.65));
@@ -215,7 +222,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
         const restorationPct=classId==='DAWNKEEPER'?.12:classId==='DREADGUARD'?.3:classId==='STONECALLER'?.2:0;
         const restorationBase=classId==='DAWNKEEPER'?amount:prevented;
         if(playerHp>0&&restorationPct>0){
-          const healBudget=Math.floor(restorationBase*(classId==='DAWNKEEPER'?Math.min(.15,restorationPct*classScale):restorationPct*classScale));
+          const healBudget=Math.floor(restorationBase*(classId==='DAWNKEEPER'?Math.min(.18,restorationPct*classScale*classHealingScale):restorationPct*classScale*classHealingScale));
           restored=Math.max(0,Math.min(playerMaxHp-playerHp,healBudget));
           if(restored>0)playerHp+=restored;
         }

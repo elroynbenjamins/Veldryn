@@ -19,9 +19,12 @@ import {myGuild,VISIBLE_WORLD_CHANNELS} from '../online/social';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useAuthSession} from '../online/AuthSessionProvider';
+import {useOnlinePlayerRoster} from '../online/online-player-roster';
+import {ONLINE_PLAYER_ROSTER_RELEASED} from '../core/release-flags';
+import {ChatOnlinePlayersPanel} from './ChatOnlinePlayersPanel';
 
 type Channel='world'|'guild'|'party'|'system';
-type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild';visible:boolean;hideDock?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
+type ChatOverlayProps={state:GameState;initialChannel?:'world'|'guild'|'party';visible:boolean;hideDock?:boolean;allowPartyChatWhenWorldDisabled?:boolean;partyOnly?:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;onManageEmotes?:()=>void;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
 export function ChatOverlay(props:ChatOverlayProps){
  const {session}=useAuthSession();
@@ -29,15 +32,16 @@ export function ChatOverlay(props:ChatOverlayProps){
  return <AccountChatOverlay key={session?.user.id??('local:'+props.state.createdAtMs)} {...props}/>;
 }
 
-function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
+function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false,allowPartyChatWhenWorldDisabled=false,partyOnly=false,onOpen,onClose,onEmoteTrayChange,onManageEmotes,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,height,fontScale}=useWindowDimensions();
  const compactTabs=width<360||fontScale>=1.25;
- const [channel,setChannel]=useState<Channel>('world');
+ const [channel,setChannel]=useState<Channel>(partyOnly?'party':'world');
  const [guildHelpOpen,setGuildHelpOpen]=useState(false);
  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
  const [worldChannel,setWorldChannel]=useState(defaultVisibleWorldChatIndex(state.settings.defaultWorldChat));
  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
+ const [onlinePlayersOpen,setOnlinePlayersOpen]=useState(false);
  const [keyboardVisible,setKeyboardVisible]=useState(false);
  const [keyboardOverlap,setKeyboardOverlap]=useState(0);
  const modalRootRef=useRef<ElementRef<typeof View>>(null),keyboardTopRef=useRef<number|null>(null);
@@ -58,9 +62,11 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
  const guildCheckedAt=useRef(0),guildLoading=useRef(false),mounted=useRef(true);
  const {party,accountId,refresh}=usePartySocial();
- const chatEnabled=state.settings.autoJoinWorldChat!==false;
+ const chatEnabled=state.settings.autoJoinWorldChat!==false||(allowPartyChatWhenWorldDisabled&&Boolean(party));
+ const onlineRoster=useOnlinePlayerRoster(ONLINE_PLAYER_ROSTER_RELEASED&&visible&&chatEnabled&&!partyOnly);
  const wasVisible=useRef(false);
  const selectChannel=(next:Channel)=>{
+   if(partyOnly&&next!=='party')return;
   if(next!==channel)Keyboard.dismiss();
   pendingGuildChannel.current=false;
   setLanguageMenuOpen(false);
@@ -70,8 +76,8 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  };
 
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
- useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
- useEffect(()=>{if(!party&&channel==='party')selectChannel('world');},[party,channel]);
+ useEffect(()=>{if(visible)void refresh();else setOnlinePlayersOpen(false);},[visible,refresh]);
+ useEffect(()=>{if(!party&&channel==='party'){if(partyOnly){onClose();return;}selectChannel('world');}},[party,channel,partyOnly,onClose]);
  useEffect(()=>{guildCheckedAt.current=0;},[visible,state.account.guildMember]);
  useEffect(()=>{
   if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}
@@ -93,12 +99,12 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
  useEffect(()=>{if(!chatEnabled&&visible)onClose();},[chatEnabled,visible,onClose]);
  useEffect(()=>{
   if(visible&&!wasVisible.current){
-   selectChannel(initialChannel==='guild'&&guildAvailable?'guild':'world');
+   selectChannel(partyOnly?'party':initialChannel==='party'&&party?'party':initialChannel==='guild'&&guildAvailable?'guild':'world');
    pendingGuildChannel.current=initialChannel==='guild'&&!guildAvailable;
    setWorldChannel(defaultVisibleWorldChatIndex(state.settings.defaultWorldChat));
   }
   wasVisible.current=visible;
- },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable]);
+ },[visible,initialChannel,state.settings.defaultWorldChat,guildAvailable,party?.id,partyOnly]);
  useEffect(()=>{if(visible&&guildAvailable&&pendingGuildChannel.current)selectChannel('guild');},[visible,guildAvailable]);
  useEffect(()=>{
   if(!visible){keyboardTopRef.current=null;setKeyboardVisible(false);setKeyboardOverlap(0);return;}
@@ -117,33 +123,33 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
   return()=>{showing.remove();hiding.remove();};
  },[visible,measureKeyboardOverlap]);
  useEffect(()=>{if(visible&&keyboardVisible)measureKeyboardOverlap();},[visible,keyboardVisible,width,height,measureKeyboardOverlap]);
- const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);setGuildHelpOpen(false);onChatRead?.();onClose();};
+ const closeChat=()=>{Keyboard.dismiss();pendingGuildChannel.current=false;setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(false);onChatRead?.();onClose();};
  const activeLabel=channel==='world'?st("Global chat"):channel==='guild'?(guildTitle||st("Guild members")):channel==='party'?st("Your party"):st("Game notifications");
  const guildChatHelp=localizedGuildDetailedGuide(state.settings.language,'Chat');
 
  return <>
   {!visible&&!hideDock&&chatEnabled&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} selectedChannel={state.settings.defaultWorldChat??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
-  <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
+  <Modal visible={visible&&chatEnabled} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{if(onlinePlayersOpen)setOnlinePlayersOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}>
    <View ref={modalRootRef} onLayout={measureKeyboardOverlap} style={[s.modalRoot,{paddingTop:Math.max(insets.top,8)+4,paddingBottom:keyboardVisible?4+(Platform.OS==='android'?keyboardOverlap:0):Math.max(insets.bottom,8)}]}>
     <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
     <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} keyboardVerticalOffset={0} style={s.keyboard}>
-     <View accessibilityViewIsModal onAccessibilityEscape={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={s.window}>
+     <View accessibilityViewIsModal onAccessibilityEscape={()=>{if(onlinePlayersOpen)setOnlinePlayersOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}} style={s.window}>
       <View style={s.header}>
        <View style={s.brandBlock}>
         <Text style={s.eyebrow}>VELDRYN</Text>
-        <Text style={s.title}>{st("Chat")}</Text>
+        <Text style={s.title}>{partyOnly?st("Party Chat"):st("Chat")}</Text>
        </View>
        <View style={s.headerSpacer}/>
-       {onlineConfigured&&<View style={s.onlinePill}><View style={s.onlineDot}/><Text style={s.onlineText}>ONLINE</Text></View>}
+       {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlineConfigured&&<Pressable accessibilityRole="button" accessibilityLabel={st('Online players')+', '+(onlineRoster.count??st('loading'))} accessibilityHint={st('View the list of players online')} accessibilityState={{expanded:onlinePlayersOpen}} onPress={()=>{Keyboard.dismiss();setLanguageMenuOpen(false);setGuildHelpOpen(false);setOnlinePlayersOpen(true);void onlineRoster.refresh();}} style={({pressed})=>[s.onlinePill,pressed&&s.pressed]}><View style={s.onlineDot}/><Text numberOfLines={1} style={s.onlineText}>{st('Online')} {onlineRoster.count===null?'…':onlineRoster.count}</Text></Pressable>}
        <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
       </View>
-      <View accessibilityRole="tablist" style={[s.tabs,compactTabs&&s.tabsCompact]}>
-       <ChatTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>selectChannel('world')} compact={compactTabs}/>
-       <ChatTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildAvailable?guildUnread:0} mentions={guildAvailable?guildMentions:0} onPress={()=>selectChannel('guild')} compact={compactTabs}/>
+      <View accessibilityRole="tablist" accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'} style={[s.tabs,compactTabs&&s.tabsCompact]}>
+       {!partyOnly&&<ChatTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>selectChannel('world')} compact={compactTabs}/>}
+       {!partyOnly&&<ChatTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildAvailable?guildUnread:0} mentions={guildAvailable?guildMentions:0} onPress={()=>selectChannel('guild')} compact={compactTabs}/>}
        <PartyChatGate party={party} accountId={accountId}><ChatTab channel="party" label={st("Party")} selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>selectChannel('party')} compact={compactTabs}/></PartyChatGate>
-       <ChatTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>selectChannel('system')} compact={compactTabs}/>
+       {!partyOnly&&<ChatTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>selectChannel('system')} compact={compactTabs}/>}
       </View>
-      <View style={s.channelMeta}>
+      <View style={s.channelMeta} accessibilityElementsHidden={onlinePlayersOpen} importantForAccessibility={onlinePlayersOpen?'no-hide-descendants':'auto'}>
        <ChatChannelIcon channel={channel} color={C.accent}/>
        <Text numberOfLines={1} style={s.channelName}>{activeLabel}</Text>
        <View style={s.headerSpacer}/>
@@ -160,17 +166,17 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
        </ScrollView>
        <Pressable accessibilityRole="button" accessibilityLabel={guildGuideDoneText(state.settings.language)} onPress={()=>setGuildHelpOpen(false)} style={{minHeight:44,alignSelf:'flex-end',justifyContent:'center',paddingHorizontal:8}}><Text style={{color:C.accent,fontSize:12,fontWeight:'800'}}>{guildGuideDoneText(state.settings.language)}</Text></Pressable>
       </View>:null}
-      <View style={s.content} accessibilityElementsHidden={languageMenuOpen} importantForAccessibility={languageMenuOpen?'no-hide-descendants':'auto'}>
-       <View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
+      <View style={s.content} accessibilityElementsHidden={languageMenuOpen||onlinePlayersOpen} importantForAccessibility={languageMenuOpen||onlinePlayersOpen?'no-hide-descendants':'auto'}>
+       {!partyOnly&&<View style={[s.channelPanel,channel!=='world'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
         {onlineConfigured?<OnlineWorldChat active={visible&&channel==='world'} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character?.name??''} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:__DEV__?<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} embedded/>:<View style={s.chatUnavailable}><Text style={s.chatUnavailableTitle}>{socialLabel(state.settings.language,"Online chat unavailable")}</Text><Text style={s.chatUnavailableText}>{socialLabel(state.settings.language,"This release is missing its online service configuration. Update or reinstall the production build rather than using temporary demo chat.")}</Text></View>}
-       </View>
-       {visitedChannels.includes('guild')&&guildAvailable&&<View style={[s.channelPanel,channel!=='guild'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='guild'} importantForAccessibility={channel==='guild'?'auto':'no-hide-descendants'}>
+       </View>}
+       {!partyOnly&&visitedChannels.includes('guild')&&guildAvailable&&<View style={[s.channelPanel,channel!=='guild'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='guild'} importantForAccessibility={channel==='guild'?'auto':'no-hide-descendants'}>
         <GuildChat embedded active={visible&&channel==='guild'} onTitleChange={setGuildTitle} reduceMotion={state.settings.reduceMotion} language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} firstUnreadMessageId={guildFirstUnreadMessageId} onRead={onChatRead}/>
        </View>}
        {visitedChannels.includes('party')&&party&&<View style={[s.channelPanel,channel!=='party'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='party'} importantForAccessibility={channel==='party'?'auto':'no-hide-descendants'}>
         <OnlinePartyChat expanded active={visible&&channel==='party'} reduceMotion={state.settings.reduceMotion} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} onManageEmotes={onManageEmotes} firstUnreadMessageId={partyFirstUnreadMessageId} onRead={onChatRead}/>
        </View>}
-       {visitedChannels.includes('system')&&<View style={[s.channelPanel,channel!=='system'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='system'} importantForAccessibility={channel==='system'?'auto':'no-hide-descendants'}>
+       {!partyOnly&&visitedChannels.includes('system')&&<View style={[s.channelPanel,channel!=='system'&&s.hiddenPanel]} accessibilityElementsHidden={channel!=='system'} importantForAccessibility={channel==='system'?'auto':'no-hide-descendants'}>
         <SystemNoticeLog expanded state={state} active={visible&&channel==='system'}/>
        </View>}
       </View>
@@ -178,6 +184,7 @@ function AccountChatOverlay({state,initialChannel='world',visible,hideDock=false
       {languageMenuOpen&&channel==='world'&&<View accessibilityViewIsModal style={s.languagePopover}>
        <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{VISIBLE_WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
       </View>}
+      {!partyOnly&&ONLINE_PLAYER_ROSTER_RELEASED&&onlinePlayersOpen&&<ChatOnlinePlayersPanel count={onlineRoster.count} players={onlineRoster.players} loading={onlineRoster.loading} error={onlineRoster.error} onRefresh={()=>void onlineRoster.refresh()} onClose={()=>setOnlinePlayersOpen(false)} reduceMotion={state.settings.reduceMotion}/>}
      </View>
     </KeyboardAvoidingView>
    </View>
@@ -211,9 +218,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  eyebrow:{color:C.accent,fontSize:9,fontWeight:'900',letterSpacing:1.5},
  title:{color:C.accent,fontSize:20,fontWeight:'900'},
  headerSpacer:{flex:1,minWidth:0},
- onlinePill:{flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:7,paddingVertical:4,borderRadius:99},
+ onlinePill:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:6,paddingHorizontal:10,borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panelRaised},
  onlineDot:{width:7,height:7,borderRadius:4,backgroundColor:C.good},
- onlineText:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.7},
+ onlineText:{fontSize:11,color:C.good,fontWeight:'900',letterSpacing:.2},
  close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panelRaised},
  closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'400'},
  tabs:{minHeight:58,flexDirection:'row',alignItems:'center',gap:5,paddingHorizontal:9,paddingVertical:7,backgroundColor:C.panel2},

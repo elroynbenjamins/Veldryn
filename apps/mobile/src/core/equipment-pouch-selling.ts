@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from './equipment-vendor-value';
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import {entitlementStorageCapacity} from './account-entitlements';
@@ -34,7 +35,7 @@ function sellLegacySlot(state:GameState,index:number,itemId:string):GameState{
  if(characters.some(character=>character.savedLoadouts?.some(loadout=>
    Object.entries(loadout.equipment).some(([slot,id])=>id===itemId&&!loadout.equipmentInstanceIds?.[slot as GearSlot]))))
    throw new Error('Saved loadouts protect this equipment');
- const gold=state.character.gold+item.value;
+ const gold=state.character.gold+itemVendorSellGold(item);
  if(!Number.isSafeInteger(gold))throw new Error('Character Gold overflow');
  const stacks=pouch.stacks.slice();
  if(stack.quantity===1)stacks.splice(index,1);
@@ -90,9 +91,9 @@ export function equipmentPouchSaleCandidates(state:GameState):EquipmentPouchSale
    try{
      const next=sellEquipmentPouchSelected(candidateState,[id]);
      candidateState=next;
-     result.push({id,index,itemId:stack.itemId,rarity,gold:item.value,eligible:true});
+     result.push({id,index,itemId:stack.itemId,rarity,gold:itemVendorSellGold(item),eligible:true});
    }catch(error){
-     result.push({id,index,itemId:stack.itemId,rarity,gold:item.value,eligible:false,
+     result.push({id,index,itemId:stack.itemId,rarity,gold:itemVendorSellGold(item),eligible:false,
        reason:error instanceof Error?error.message:'Protected equipment'});
    }
  }

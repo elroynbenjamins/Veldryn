@@ -26,6 +26,8 @@ export interface CharacterState {
   classSkillRemainders?:Record<string,number>;
   classTraining?:ClassDrills;
   monsterMasteryPoints?:Record<string,number>;
+  /** Character-scoped type mastery; one point per verified ordinary kill even after species cap. */
+  familyMasteryPoints?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;
   classSkills?:ClassSkillState[];
   trainingFocus?:TrainingFocus;
@@ -90,6 +92,8 @@ export interface EquipmentCraftJob{
   /** Reservation snapshot keeps cancellation refunds stable if recipe balance changes later. */
   reservedGold?:number;
   reservedInputs?:ItemStack[];
+  /** Frozen odds for new gem merges; missing means a legacy, guaranteed combine. */
+  combineSuccessChancePercent?:number;
 }
 export interface CraftedGearInstance{
   id:string;
@@ -106,6 +110,10 @@ export interface CraftedGearInstance{
   enhancement:GearEnhancementState;
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
+  /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
+  weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
+  /** Roll table version recorded at mint, so later balance revisions cannot invalidate earned copies. */
+  weaponBonusRollVersion?:import('./weapon-bonus-rolls').WeaponBonusRollVersion;
 }
 export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
@@ -131,7 +139,7 @@ export interface GameState {
    * resolution. Not persisted; absent means no bonus (skills unreleased). */
   guildSkillEffects?:import('./guild-skill-effects').GuildSkillEffects;
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
@@ -142,6 +150,7 @@ export interface GameState {
   journalState?:import('./adventurers-journal-v42').JournalState;
   longTermMetrics?:Record<string,number>;
   seasonalContractProgress?:import('./seasonal-quests').SeasonalProgress;
+  monthlyQuestMilestones?:import('./monthly-quest-milestones').MonthlyQuestMilestoneState;
   dailySupplies?:import('./daily-supplies').DailySuppliesTrack;
   unlockedKnowledgeIds?:string[];
   /** Server-owned gem acquisition persistence. Pity is source-level, never one counter per family. */

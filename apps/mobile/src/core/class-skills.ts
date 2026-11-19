@@ -14,8 +14,10 @@ export function normalizeClassSkills(id:ClassId,raw:unknown):ClassSkillState[]{
 }
 export const characterClassSkills=(c:CharacterState)=>normalizeClassSkills(c.classId,c.classSkills);
 export function awardCombatClassXp(c:CharacterState,kills:number,perKill:number,firstFocus?:TrainingFocus){
- if(kills<=0)return {character:c,awards:characterClassSkills(c).map(s=>({skillId:s.skillId,xp:0}))};
- const first=awardClassSkillXp(c,kills>0?perKill:0,firstFocus??normalizeTrainingFocus(c.trainingFocus));
+ // Kill counts are whole and XP per kill finite; anything else would write NaN into the save.
+ kills=Number.isFinite(kills)?Math.floor(kills):0;
+ if(kills<=0||!Number.isFinite(perKill)||perKill<=0)return {character:c,awards:characterClassSkills(c).map(s=>({skillId:s.skillId,xp:0}))};
+ const first=awardClassSkillXp(c,perKill,firstFocus??normalizeTrainingFocus(c.trainingFocus));
  const rest=awardClassSkillXp(first.character,Math.max(0,kills-1)*perKill);
  return {character:rest.character,awards:rest.awards.map((a,i)=>({...a,xp:a.xp+first.awards[i].xp}))};
 }
@@ -23,34 +25,56 @@ export function normalizeClassDrills(raw:any):ClassDrills|undefined{
  if(!raw||!Number.isSafeInteger(raw.lastClaimAtMs)||raw.lastClaimAtMs<0)return undefined;
  return {lastClaimAtMs:raw.lastClaimAtMs,progressMs:Math.min(59999,Math.max(0,Math.floor(Number(raw.progressMs)||0))),focus:normalizeTrainingFocus(raw.focus),xpPerDrill:Math.max(CLASS_DRILL_BASE_XP,Math.min(120,Number(raw.xpPerDrill)||CLASS_DRILL_BASE_XP))};
 }
+/** XP split between the class's [primary, secondary] disciplines for a training focus. */
+export function trainingFocusShares(focus:TrainingFocus):readonly [number,number]{
+ return focus==='primary'?[.75,.25]:focus==='secondary'?[.25,.75]:[.5,.5];
+}
 export function awardClassSkillXp(c:CharacterState,pool:number,focus=normalizeTrainingFocus(c.trainingFocus)){
- const shares=focus==='primary'?[.75,.25]:focus==='secondary'?[.25,.75]:[.5,.5],remainders={...(c.classSkillRemainders??{})};
+ const shares=trainingFocusShares(focus),remainders={...(c.classSkillRemainders??{})};
+ // A non-finite pool (corrupt rate, bad meal multiplier) must award nothing rather than NaN XP.
+ if(!Number.isFinite(pool))pool=0;
  const awards:Array<{skillId:string;xp:number}>=[];
  const classSkills=characterClassSkills(c).map((s,i)=>{const prior=Number.isFinite(remainders[s.skillId])?Math.max(0,Math.min(.999999,remainders[s.skillId])):0;const amount=Math.max(0,pool)*shares[i]+prior;const whole=Math.floor(amount+1e-9),gain=Math.min(MAX_CLASS_SKILL_XP-s.xp,whole);remainders[s.skillId]=s.xp+gain>=MAX_CLASS_SKILL_XP?0:Math.max(0,amount-whole);awards.push({skillId:s.skillId,xp:gain});return {...s,xp:s.xp+gain,level:classCombatSkillLevelFromXp(s.xp+gain)};});
  return {character:{...c,classSkills,classSkillRemainders:remainders},awards};
 }
-/** Class training: primary stats are multipliers; accuracy/evasion are flat chance bonuses. */
-export function characterClassEffects(c:CharacterState){
+/** Class passive bonuses. Primary stats are multipliers (baseline 1).
+ * Secondary ratings are fractional bonuses (baseline 0) except classHealing.
+ * Keep the caps modest: class identity should not replace gear progression.
+ */
+export interface ClassSkillEffects{
+ attack:number;hp:number;defense:number;accuracy:number;evasion:number;
+ haste:number;ward:number;penetration:number;potency:number;classHealing:number;
+}
+export function characterClassEffects(c:CharacterState):ClassSkillEffects{
  const [a,b]=characterClassSkills(c).map(s=>(s.level-1)/99);
- const tank=['IRONWARDEN','BASTION','DREADGUARD'].includes(c.classId),support=['DAWNKEEPER','STONECALLER'].includes(c.classId);
- // Precision must improve the secondary stats named in its description, not Attack/Defense.
- const precision=c.classId==='KNIFE_DANCER';
- return tank?{attack:1,hp:1+.12*a,defense:1+.10*b,accuracy:0,evasion:0}
-  :support?{attack:1+.10*a,hp:1+.10*b,defense:1,accuracy:0,evasion:0}
-  :{attack:1+.07*a+(precision?0:.03*b),hp:1,defense:1+(precision?0:.06*b),
-    accuracy:precision?.03*b:0,evasion:precision?.06*b:0};
+ const base:ClassSkillEffects={attack:1,hp:1,defense:1,accuracy:0,evasion:0,haste:0,ward:0,penetration:0,potency:0,classHealing:1};
+ switch(c.classId){
+  case 'IRONWARDEN':return {...base,defense:1+.08*a,ward:.05*b};
+  case 'BASTION':return {...base,defense:1+.10*a,ward:.06*b};
+  case 'DREADGUARD':return {...base,attack:1+.07*a,ward:.05*b};
+  case 'DAWNKEEPER':return {...base,attack:1+.04*a,classHealing:1+.10*a,hp:1+.06*b,ward:.04*b};
+  case 'WAYFINDER':return {...base,attack:1+.07*a,accuracy:.04*b,haste:.02*b};
+  case 'RAVAGER':return {...base,attack:1+.07*a+.02*b,penetration:.05*b};
+  case 'HEXWEAVER':return {...base,attack:1+.07*a+.02*b,potency:.05*b};
+  case 'KNIFE_DANCER':return {...base,attack:1+.03*a,haste:.04*a,accuracy:.03*b,evasion:.06*b};
+  case 'STONECALLER':return {...base,attack:1+.04*a,classHealing:1+.08*a,defense:1+.08*b,ward:.03*b};
+ }
+ return base;
 }
 export function settleClassDrills(state:GameState,now:number,capSeconds:number):{state:GameState;reward:RewardBundle}{
  const c=state.character,drill=normalizeClassDrills(c?.classTraining);const empty:RewardBundle={xp:0,gold:0,kills:0,items:[],elapsedSeconds:0};
- if(!c||!drill||now<=drill.lastClaimAtMs)return {state,reward:empty};
- const elapsed=Math.min(capSeconds*1000,now-drill.lastClaimAtMs),speed=mealSpeedFactor(c,'noncombat');
+ if(!c||!drill||!Number.isFinite(now)||now<=drill.lastClaimAtMs)return {state,reward:empty};
+ const rawSpeed=mealSpeedFactor(c,'noncombat');
+ // speed divides qualifying time below; never let a malformed meal buff produce Infinity/NaN.
+ const speed=Number.isFinite(rawSpeed)&&rawSpeed>0?rawSpeed:1;
+ const elapsed=Math.min(Math.max(0,Number.isFinite(capSeconds)?capSeconds:0)*1000,now-drill.lastClaimAtMs);
  const total=elapsed*speed+drill.progressMs,actions=Math.floor(total/60000);
  let character=c;const awards:Record<string,number>={};
  const apply=(count:number,focus:TrainingFocus)=>{if(!count)return;const earned=awardClassSkillXp(character,drill.xpPerDrill*count,focus);character=earned.character;for(const a of earned.awards)awards[a.skillId]=(awards[a.skillId]??0)+a.xp;};
  const focus=normalizeTrainingFocus(c.trainingFocus);
  let completed=characterClassSkills(c).every(s=>s.level===100)?0:Math.min(1,actions);
  apply(completed,drill.focus);
- const shares=focus==='primary'?[.75,.25]:focus==='secondary'?[.25,.75]:[.5,.5];
+ const shares=trainingFocusShares(focus);
  const remainingToCap=Math.max(...characterClassSkills(character).map((s,i)=>Math.max(0,Math.ceil((MAX_CLASS_SKILL_XP-s.xp-(character.classSkillRemainders?.[s.skillId]??0))/(drill.xpPerDrill*shares[i])))));
  const rest=Math.min(Math.max(0,actions-completed),remainingToCap);
  apply(rest,focus);completed+=rest;

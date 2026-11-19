@@ -38,7 +38,7 @@ function lockFields(state:GameState,kind:'background'|'border'|'title',id:string
 
 function iconRows(state:GameState):WardrobeRow[]{
  return profileIconCollection(state).map(row=>({kind:'icon' as const,id:row.id,name:row.name,group:row.group,unlocked:row.unlocked,equipped:row.selected,
-  ...(row.unlocked?{}:{lockTag:row.group==='Event'?'EVENT':row.group==='Guild'?'GUILD':'COMBAT',sourceLabel:row.group==='Event'?'Festival reward':row.group+' unlock',sourceDetail:row.source,
+  ...(row.unlocked?{}:{lockTag:row.group==='Event'?'EVENT':row.group==='Guild'?'GUILD':row.group==='Dungeon'?'DUNGEON':'COMBAT',sourceLabel:row.group==='Event'?'Festival reward':row.group==='Dungeon'?'Dungeon Marks Shop':row.group+' unlock',sourceDetail:row.source,
    destination:(row.group==='Event'?'Events':row.group==='Guild'?'Guild':'Collections') as ProfileCustomizationDestination,actionLabel:row.group==='Event'?'Open Event':row.group==='Guild'?'Open Guild':'Open Collections'})}));
 }
 
@@ -47,7 +47,7 @@ function sceneRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const base=BASE_PROFILE_BACKGROUNDS.map(item=>({kind:'scene' as const,id:item.id,name:item.name,group:'Starter',unlocked:true,equipped:equipped===item.id}));
  const released=assets.scenes.filter(item=>!BASE_PROFILE_BACKGROUNDS.some(row=>row.id===item.id)&&profileCosmeticReleased(state,'background',item.id));
  return [...base,...released.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id);
-  return {kind:'scene' as const,id:item.id,name:item.name,group:'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
+  return {kind:'scene' as const,id:item.id,name:item.name,group:item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
 }
 
 function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
@@ -55,7 +55,7 @@ function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const released=assets.frames.filter(id=>profileCosmeticReleased(state,'border',id));
  return [{kind:'frame' as const,id:'',name:'No frame',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
   ...released.map(id=>{const unlocked=canUseProfileCosmetic(state,'border',id),source=profileRewardSource(state,'border',id);
-   return {kind:'frame' as const,id,name:source.name,group:source.destination==='Guild'?'Guild':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
+   return {kind:'frame' as const,id,name:source.name,group:source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
 function petRows(state:GameState):WardrobeRow[]{

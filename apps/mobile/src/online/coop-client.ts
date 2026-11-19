@@ -2,12 +2,14 @@ import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase,supabasePublicEndpoint} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {noteCoopEntryMutation} from '../core/coop-dungeon-browse-cache';
+import {parseStoredJsonObject} from '../core/stored-json';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
+import {parseDungeonCombatMarks,type DungeonCombatMarks} from '../core/dungeon-reward-display';
 import type {CoopEventExpeditionPreview,CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {LiveQueueView,LiveReadyView} from '../core/coop-live-lobby';
 import type {CoopLiveRecruitmentPost} from '../core/coop-live-recruitment';
@@ -73,7 +75,7 @@ async function request<T>(path:string,method='GET',body?:unknown,expectedAccount
 const journals=new Map<string,CoopCommandJournal>();
 async function journal(){
  const accountId=(await supabase?.auth.getSession())?.data.session?.user.id;if(!accountId)throw new Error('Sign in to use co-op expeditions.');
- let value=journals.get(accountId);if(!value){const key=`veldryn.coop.pending.${accountId}`;value=new CoopCommandJournal({read:async()=>{const raw=await AsyncStorage.getItem(key);return raw?JSON.parse(raw):null;},write:async command=>{if(command)await AsyncStorage.setItem(key,JSON.stringify(command));else await AsyncStorage.removeItem(key);}},command=>request(command.path,'POST',command.body,accountId));journals.set(accountId,value);}return value;
+ let value=journals.get(accountId);if(!value){const key=`veldryn.coop.pending.${accountId}`;value=new CoopCommandJournal({read:async()=>{const raw=await AsyncStorage.getItem(key),value=parseStoredJsonObject<PendingCoopCommand>(raw);if(raw&&!value)await AsyncStorage.removeItem(key);return value;},write:async command=>{if(command)await AsyncStorage.setItem(key,JSON.stringify(command));else await AsyncStorage.removeItem(key);}},command=>request(command.path,'POST',command.body,accountId));journals.set(accountId,value);}return value;
 }
 const mutate=async<T>(path:string,body:object)=>{
  // The request may settle even when the response times out. Invalidate
@@ -124,5 +126,6 @@ export const coopClient={
  retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},
+ combatMarks:async(runId:string):Promise<DungeonCombatMarks>=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('coop_run_combat_marks_self_v1',{p_run_id:runId});if(error)throw error;const receipt=parseDungeonCombatMarks(data);if(!receipt)throw new Error('Invalid dungeon combat Marks receipt.');return receipt;},
  claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');noteCoopEntryMutation();const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},
 };

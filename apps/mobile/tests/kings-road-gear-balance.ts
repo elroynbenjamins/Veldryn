@@ -16,8 +16,8 @@ const baselines=[
   {id:'MOSS_RAT',zone:'Greenfields',hp:28,attack:5,defense:2,seconds:7},
   {id:'LANTERN_WRETCH',zone:"King's Road",hp:365,attack:35,defense:19,seconds:24},
   {id:'FALLEN_KNIGHT',zone:"King's Road",hp:180000,attack:68,defense:36,seconds:75},
-  {id:'SUNSCAR_SCORPION',zone:'Sunscar',hp:610,attack:52,defense:31,seconds:31},
-  {id:'FROSTWOLF',zone:'Frostmarch',hp:1220,attack:88,defense:55,seconds:44},
+  {id:'SUNSCAR_SCORPION',zone:'Sunscar',hp:625,attack:51,defense:32,seconds:32},
+  {id:'FROSTWOLF',zone:'Frostmarch',hp:1390,attack:97,defense:63,seconds:45},
   {id:'BLACKGLASS_MIRELING',zone:'Ashlands',hp:2480,attack:154,defense:96,seconds:63},
 ];
 near(ADVANCED_REGION_MONSTER_MULTIPLIER,1.20,'late-region target multiplier');

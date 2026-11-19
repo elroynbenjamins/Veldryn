@@ -1,8 +1,8 @@
 import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES,combatCompanionDef} from '../content/combat-companions';
 import {normalizeClassSkills} from './class-skills';
 import {companionMasteryBonuses} from './companion-mastery';
-import {normalizeMonsterMastery} from './monster-mastery';
-import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
+import {normalizeMonsterMastery,monsterMasteryRankFromKills} from './monster-mastery';
+import {companionHousingEarnedTier,companionHousingLevelEssenceCost,companionHousingStatMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier,normalizeCompanionHousingTiers} from './companion-housing';
 import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,CompanionCombatContribution,CompanionDefinition,CompanionEffectKind,CompanionLevelCost,CompanionSanctuaryState,CompanionSanctuaryUpgrade,OwnedCompanionProgress,VeldrynClassId} from './combat-companion-types';
 
 interface HostItemStack{itemId:string;quantity:number;}
@@ -23,6 +23,8 @@ interface HostAccount{
   companionMasteryXp?:number;
   bondstones?:number;
   companionSanctuary?:CompanionSanctuaryState;
+  companionHousingTiers?:Record<string,number>;
+  companionHousingMigratedV1?:boolean;
   companionAssignments?:Array<{companionIds:string[];status:string}>;
   companionTrialProjection?:{activeRunId?:string;teamCompanionIds?:string[]};
   companionProvingGroundProjection?:unknown;companionCodexProjection?:unknown;companionPhase2Profile?:any;companionOverflow?:any;
@@ -76,7 +78,7 @@ export function companionXpToNextLevel(rarity:CompanionDefinition['rarity'],leve
   if(level>=COMPANION_RARITY_CONFIG[rarity].maxLevel)return 0;
   return Math.max(1,Math.round(COMPANION_LEVEL_CURVE.baseXp*Math.pow(COMPANION_LEVEL_CURVE.xpGrowth,Math.max(0,level-1))*COMPANION_RARITY_CONFIG[rarity].xpRequiredMultiplier));
 }
-/** Gold-only progression balance. All Companion Essence, Bondstone and material costs stay unchanged. */
+/** Core costs stay stable; Housing discounts only paid level-training Essence, never Ascension. */
 export const COMPANION_LEVEL_GOLD_MULTIPLIER=2;
 export const COMPANION_ASCENSION_GOLD_MULTIPLIER=5;
 const roundGoldUp=(value:number,increment:number)=>Math.ceil(value/increment)*increment;
@@ -100,6 +102,11 @@ export function companionRemainingLevelCost(def:CompanionDefinition,progress:Own
    // Do not pro-rate the already-rounded full price; that would overcharge partially trained companions.
    const baseRemainingGold=Math.max(1,Math.ceil(baseCompanionLevelGold(def.rarity,progress.level)*ratio));
    return {gold:roundGoldUp(baseRemainingGold*COMPANION_LEVEL_GOLD_MULTIPLIER,10),companionEssence:Math.max(1,Math.ceil(full.companionEssence*ratio))};
+}
+/** Display and command validation share this Housing-adjusted level-training cost. */
+export function companionHousingAdjustedLevelCost(def:CompanionDefinition,progress:OwnedCompanionProgress,housingTier:number):CompanionLevelCost{
+ const base=companionRemainingLevelCost(def,progress);
+ return {...base,companionEssence:companionHousingLevelEssenceCost(base.companionEssence,housingTier)};
 }
 export function companionCurrentLevelCap(def:CompanionDefinition,progress:OwnedCompanionProgress){
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel,COMPANION_STAGE_CAPS[def.rarity][Math.max(0,Math.min(3,progress.ascensionTier))]);
@@ -209,7 +216,12 @@ export function sanitizeCombatCompanionState<T extends CombatCompanionStateHost>
     const valid=!!id&&!!def&&owned.includes(id);
     return {...character,equippedCombatCompanionId:valid?id:undefined};
   };
-  return {...state,character:cleanCharacter(state.character),otherCharacters:(state.otherCharacters??[]).map(entry=>({...entry,character:cleanCharacter(entry.character)!})),account:{...state.account,...migrated,unlockedCombatCompanionIds:owned,combatCompanionProgress:progress}} as T;
+  const housing=normalizeCompanionHousingTiers(state.account.companionHousingTiers);
+  if(state.account.companionHousingMigratedV1!==true){
+    // Credit veterans once, without losing their existing progress or charging materials.
+    for(const [id,earned] of Object.entries(progress))housing[id]=Math.max(housing[id]??0,companionHousingEarnedTier(earned.level));
+  }
+  return {...state,character:cleanCharacter(state.character),otherCharacters:(state.otherCharacters??[]).map(entry=>({...entry,character:cleanCharacter(entry.character)!})),account:{...state.account,...migrated,unlockedCombatCompanionIds:owned,combatCompanionProgress:progress,companionHousingTiers:housing,companionHousingMigratedV1:true}} as T;
 }
 
 
@@ -221,8 +233,8 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   // satisfy a character-bound milestone, including an inactive roster slot.
   const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is HostCharacter=>!!row);
   if(target==='KNIFE_DANCER_SKILL_TOTAL')return characters.some(character=>character.classId==='KNIFE_DANCER'&&normalizeClassSkills('KNIFE_DANCER',character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount);
-  if(requirement.type==='monster_mastery')return characters.some(character=>Math.floor((normalizeMonsterMastery(character.monsterMasteryPoints)[target]??0)/25)>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
-  if(target==='ASTERFALL_MASTERY_20_ALL')return characters.some(character=>Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter(n=>n>=500).length>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
+  if(requirement.type==='monster_mastery')return characters.some(character=>monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target]??0)>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
+  if(target==='ASTERFALL_MASTERY_20_ALL')return characters.some(character=>Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter(n=>monsterMasteryRankFromKills(n)>=20).length>=amount)||(state.account.companionUnlockProgress?.[target]??0)>=amount;
   if(requirement.type==='meta'&&target.startsWith('COMPANION_BOND:')){
     const companionId=target.slice('COMPANION_BOND:'.length),progress=state.account.combatCompanionProgress?.[companionId];
     return (progress?.bondLevel??0)>=amount;
@@ -344,10 +356,10 @@ function setProgress<T extends CombatCompanionStateHost>(state:T,id:string,progr
 export function purchaseCompanionLevel<T extends CombatCompanionStateHost>(state:T,id:string):T{
   let clean=sanitizeCombatCompanionState(state);if(!clean.character)throw new Error('Create a character first.');
   const def=combatCompanionDef(id);if(!def||!(clean.account.unlockedCombatCompanionIds??[]).includes(id))throw new Error('Combat companion is locked.');
-  const p=progressFor(clean,id),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
+  const p=progressFor(clean,id),ascensionCap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
   if(p.level>=max)throw new Error('Maximum companion level reached.');
-  if(p.level>=cap)throw new Error('Ascension required before further leveling.');
-  const cost=companionRemainingLevelCost(def,p);
+  if(p.level>=ascensionCap)throw new Error('Ascension required before further leveling.');
+   const cost=companionHousingAdjustedLevelCost(def,p,companionHousingTier(id,clean.account.companionHousingTiers));
   if(clean.character.gold<cost.gold)throw new Error('Not enough Gold.');
   if((clean.account.companionEssence??0)<cost.companionEssence)throw new Error('Not enough Companion Essence.');
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence}} as T;
@@ -382,9 +394,10 @@ export function masterPrestigeCompanion<T extends CombatCompanionStateHost>(stat
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence,bondstones:(clean.account.bondstones??0)-cost.bondstones}} as T;clean=consumeMaterial(clean,cost.materialId,cost.materialQuantity??0);return setProgress(clean,id,{...p,mastered:true});
 }
 
-export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number):OwnedCompanionProgress{
-  let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
-  while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;cap=companionCurrentLevelCap(def,p);}
+/** The former fourth argument is accepted for old callers but cannot impose a Housing cap. */
+export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDefinition,amount:number,_deprecatedHousingCap?:number):OwnedCompanionProgress{
+   let p={...progress,xp:Math.max(0,progress.xp)},remaining=Math.max(0,Math.floor(amount)),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
+   while(remaining>0&&p.level<cap&&p.level<max){const need=companionXpToNextLevel(def.rarity,p.level)-p.xp;if(remaining<need){p.xp+=remaining;remaining=0;break;}remaining-=need;p.level++;p.xp=0;}
   if(p.level>=cap||p.level>=max)p.xp=0;return p;
 }
 const LEGACY_BOND_THRESHOLDS=[0,90,210,370,580,840,1160,1540,1990,2520] as const;
@@ -411,7 +424,8 @@ export function grantEquippedCompanionUse<T extends CombatCompanionStateHost>(st
   const clean=sanitizeCombatCompanionState(state),id=clean.character?.equippedCombatCompanionId;if(!id||units<=0)return clean;
   const def=combatCompanionDef(id)!;let p=progressFor(clean,id);const count=Math.max(1,Math.floor(units));
   const xpPerUnit=source==='boss'?120:source==='dungeon'?55:source==='companion_objective'?70:source==='future_activity'?20:9;
-  p=applyCompanionXp(p,def,xpPerUnit*count);
+  const housing=companionHousingTier(id,clean.account.companionHousingTiers);
+  p=applyCompanionXp(p,def,Math.round(xpPerUnit*count*companionHousingTrainingXpMultiplier(housing)));
   const bondBase=bondSourceXp(source)*count;p=applyCompanionBondXp(p,Math.round(bondBase*companionBondXpMultiplier(clean)));
   return setProgress(clean,id,p);
 }
@@ -427,7 +441,7 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:0};
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
-  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,baseContribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance),contribution=baseContribution*(1+companionMasteryBonuses(clean.account.companionMasteryXp).assistPct);
+  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,baseContribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance),contribution=baseContribution*(1+companionMasteryBonuses(clean.account.companionMasteryXp).assistPct)*companionHousingStatMultiplier(companionHousingTier(id,clean.account.companionHousingTiers));
   const effects=[def.activeAbility.effect.kind,def.passiveAbility.kind,...(p.bondTraitUnlocked?[def.bondTrait.effect.kind]:[])] as const;
   const has=(...kinds:CompanionEffectKind[])=>effects.some(kind=>kinds.includes(kind));
   const restorative=has('heal');
@@ -459,7 +473,7 @@ export function claimSanctuaryTraining<T extends CombatCompanionStateHost>(state
   let clean=sanitizeCombatCompanionState(state),sanctuary=clean.account.companionSanctuary??defaultCompanionSanctuary(),level=int(sanctuary.trainingGroundLevel,0,3);if(!level)return clean;
   const day=86400000,last=sanctuary.lastTrainingClaimAtMs;if(last===undefined)return {...clean,account:{...clean.account,companionSanctuary:{...sanctuary,lastTrainingClaimAtMs:nowMs}}} as T;
   const days=Math.min(7,Math.floor(Math.max(0,nowMs-last)/day));if(days<1)return clean;const gain=COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[level]*days,progress={...(clean.account.combatCompanionProgress??{})};
-  for(const id of clean.account.unlockedCombatCompanionIds??[]){const def=combatCompanionDef(id);const busy=(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id))||clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id);if(def&&progress[id]&&!busy)progress[id]=applyCompanionXp(progress[id],def,gain);}
+  for(const id of clean.account.unlockedCombatCompanionIds??[]){const def=combatCompanionDef(id);const busy=(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id))||clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id);if(def&&progress[id]&&!busy)progress[id]=applyCompanionXp(progress[id],def,Math.round(gain*companionHousingTrainingXpMultiplier(companionHousingTier(id,clean.account.companionHousingTiers))));}
   return {...clean,account:{...clean.account,combatCompanionProgress:progress,companionSanctuary:{...sanctuary,lastTrainingClaimAtMs:nowMs-Math.max(0,nowMs-last)%day}}} as T;
 }
 export function claimSanctuaryEssence<T extends CombatCompanionStateHost>(state:T,nowMs:number):T{
@@ -476,7 +490,7 @@ export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){r
 
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
   const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined;
-  const compatible=!!clean.character,cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionRemainingLevelCost(def,p):undefined,tier=p?nextCompanionAscension(def,p):undefined;
+  const compatible=!!clean.character,cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionHousingAdjustedLevelCost(def,p,companionHousingTier(id,clean.account.companionHousingTiers)):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }
 

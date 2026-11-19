@@ -81,10 +81,11 @@ export interface DungeonShopAccountViewV1 {
   marks:number;
   clearedRegions:readonly DungeonShopRegion[];
   ownedRewardIds:readonly string[];
+  unlockedCraftingTiers:readonly number[];
   /** Server-counted purchases of this offer within current UTC week, not client-supplied. */
   purchasesThisUtcWeek:Readonly<Record<string,number>>;
 }
-export type DungeonShopQuoteStatus='eligible'|'unknown_offer'|'region_locked'|'already_owned'|'weekly_limit'|'insufficient_marks';
+export type DungeonShopQuoteStatus='eligible'|'unknown_offer'|'region_locked'|'crafting_tier_locked'|'already_owned'|'weekly_limit'|'insufficient_marks';
 export function dungeonShopQuoteV1(itemId:string,account:DungeonShopAccountViewV1,serverPrice?:number):{
   status:DungeonShopQuoteStatus; marks:number; price:number; remaining:number|null;
 } {
@@ -97,6 +98,7 @@ export function dungeonShopQuoteV1(itemId:string,account:DungeonShopAccountViewV
   const ownedId=offer.grant.kind==='profile_collectible'?offer.grant.rewardId:null;
   const status:DungeonShopQuoteStatus =
     offer.firstClearRegion&&!account.clearedRegions.includes(offer.firstClearRegion)?'region_locked':
+    offer.grant.kind==='crafting_bundle'&&!account.unlockedCraftingTiers.includes(offer.grant.tier)?'crafting_tier_locked':
     ownedId&&account.ownedRewardIds.includes(ownedId)?'already_owned':
     remaining!==null&&remaining===0?'weekly_limit':
     account.marks<price?'insufficient_marks':'eligible';

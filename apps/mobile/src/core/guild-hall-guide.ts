@@ -10,7 +10,7 @@ type Guide={title:string;body:string;detail:string};
 const guides:Record<Exclude<Language,'ru'|'tr'>,Record<LegacyGuideSection,Guide>>={
  en:{
   Facilities:{title:'Guild Hall & construction',body:'Review facility upgrades and the materials your Guild still needs.',detail:'Only released, active construction can receive donations in the Guild Bank. Completed tiers give shared benefits, not free cosmetics. Only already-unlocked name colors can be selected.'},
-  Skills:{title:'Guild Skills',body:'Spend earned Guild skill points on shared progression branches.',detail:'Guild Skills are separate from material-funded Hall construction. Check the current bonus and next cost before upgrading.'},
+  Skills:{title:'Guild Skills',body:'Spend earned Guild skill points on shared progression branches.',detail:'Guilds earn 2 shared Skill Points per level gained after level 1. Guild Skills are separate from Hall construction; check the next cost before upgrading.'},
   Trophies:{title:'Guild Trophies',body:'Review your Guild history and major achievements here.',detail:'Future Guild Legacy records are not claimable rewards yet.'},
   Shop:{title:'Guild Token Shop',body:'Earn Guild Tokens from eligible activity and spend them on account cosmetics.',detail:'Guild Hall tiers can unlock access to higher-quality offers, but never give the items for free. Shop requirements and your balance still apply.'},
  },

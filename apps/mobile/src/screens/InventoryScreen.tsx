@@ -1,3 +1,4 @@
+import {itemVendorSellGold} from '../core/equipment-vendor-value';
 import {useGameplayText} from '../i18n/gameplay';
 import {SearchField} from '../components/SearchField';
 import {newInventoryScreenState,openInventoryFood,type InventoryScreenState} from '../core/inventory-screen-state';
@@ -17,6 +18,7 @@ import {GemPouchPanel} from '../components/GemPouchPanel';
 import {accountText} from '../i18n/account';
 import {gemPouch,gemDepositDestination} from '../core/gem-pouch';
 import {equipmentPouch} from '../core/equipment-pouch';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentPouchPanel} from '../components/EquipmentPouchPanel';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {DisposalPreview} from '../components/DisposalPreview';
@@ -28,6 +30,8 @@ import {Panel} from '../components/Panel';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentPreview} from '../components/EquipmentPreview';
+import {EquipmentDisposalStatus} from '../components/EquipmentDisposalStatus';
+import {equipmentCopyDisposalDecision,type EquipmentDisposalDecision} from '../core/equipment-disposal-guidance';
 import {ItemQuickInspect} from '../components/ItemQuickInspect';
 import {formatGameNumber} from '../core/number-format';
 import {displayStat} from '../core/stat-display';
@@ -47,9 +51,9 @@ import {inventoryFeedbackIntent,resolveInventoryActionFeedback,type InventoryAct
 
 import {mealBonusDef} from '../core/meal-buffs';
 
-type Pending={kind:'sell'|'bank_sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
+type Pending={kind:'sell'|'bank_sell'|'salvage'|'bank_salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
-type BulkPending={kind:BulkAction;ids:string[];protectedUnits?:number;protectedStacks?:number}|null;
+type BulkPending={kind:BulkAction;location:BulkStorageLocation;ids:string[];protectedUnits?:number;protectedStacks?:number}|null;
 const STORAGE_PAGE_SIZE=30;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
@@ -95,6 +99,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [inventoryIntent,setInventoryIntent]=useState<InventoryFeedbackIntent|null>(null),[inventoryFeedback,setInventoryFeedback]=useState<InventoryActionFeedback|null>(null);
   const [inventoryBusyLabel,setInventoryBusyLabel]=useState<string|null>(null),inventoryBusyRef=useRef(false);
   const carriedGold=state.character?.gold??0,bankGold=state.bank.gold??0,customGoldAmount=Number(bankGoldAmount),validCustomGold=Number.isSafeInteger(customGoldAmount)&&customGoldAmount>0;
+ const gearStorage=equipmentPouch(state),freeGearSlots=Math.max(0,gearStorage.capacity-gearStorage.stacks.length);
+ const gearLabel=(label:string,params:Record<string,string|number>={})=>equipmentPouchText(language,label,params);
   useEffect(()=>{const next=equipmentSnapshot,previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[equipmentSnapshot]);
   useEffect(()=>{if(!inventoryIntent)return;const result=resolveInventoryActionFeedback(inventoryIntent,state);if(result){setInventoryFeedback(result);setInventoryIntent(null)}},[state,inventoryIntent]);
   useEffect(()=>{if(!inventoryIntent)return;const timer=setTimeout(()=>setInventoryIntent(null),12000);return()=>clearTimeout(timer)},[inventoryIntent]);
@@ -108,6 +114,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const runInventory=(request:InventoryFeedbackRequest,action:()=>void|Promise<unknown>)=>{const intent=inventoryFeedbackIntent(state,request),label=request.kind==='sell'||request.kind==='bulk_sell'?gt("Selling items…"):request.kind==='withdraw'||request.kind==='bulk_transfer'&&request.direction==='withdraw'?gt("Moving items to Inventory…"):request.kind==='deposit'&&gemDepositDestination(state,request.itemId)==='gem_pouch'?gt("Moving gems to Gem Pouch…"):request.kind==='deposit'?gt("Moving items to Bank…"):request.kind==='bulk_transfer'?gt("Depositing selected items…"):gt("Updating inventory…");void beginInventorySubmission(label,async()=>{await action();setInventoryIntent(intent);setInventoryFeedback(null)})};
   const confirm=()=>{if(!pending)return;const action=pending;setPending(null);
     if(action.kind==='bank_sell'){void beginInventorySubmission(gt("Selling items…"),()=>onBankSell(action.item.id,action.quantity));return;}
+     if(action.kind==='bank_salvage'){if(onCommand)void beginInventorySubmission(gt("Updating inventory…"),()=>onCommand({type:'bank_salvage',args:{id:action.item.id}}));return;}
     const request:InventoryFeedbackRequest=action.kind==='deposit'?{kind:"deposit",itemId:action.item.id,quantity:action.quantity}:action.kind==='sell'?{kind:"sell",itemId:action.item.id,quantity:action.quantity}:{kind:"salvage",itemId:action.item.id,quantity:1};
     scheduleAfterPaint(()=>runInventory(request,()=>action.kind==='deposit'?onDeposit(action.item.id,action.quantity):action.kind==='sell'?onSell(action.item.id,action.quantity):onSalvage(action.item.id)));
   };
@@ -145,32 +152,52 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // Preview actions always target the NEW Inventory copy, never the equipped slot.
   // Dry-run the existing disposal reducers so protected and stale copies stay disabled.
   const previewDisposal=useMemo(()=>{
-    const unavailable={sell:false,salvage:false};
-    if(!previewId||!state.character)return unavailable;
+    const unavailable=(reason:string)=>({sell:false,salvage:false,sellReason:reason,salvageReason:reason});
+    if(!previewId||!state.character)return unavailable('Select an equipment copy first');
     const stack=state.inventory.stacks.find(row=>row.itemId===previewId&&row.instanceId===(previewInstanceId??undefined)&&row.quantity>0);
-    if(!stack||goalProtection.has(previewId)||favoriteSet.has(previewId)||lockedSet.has(previewId))return unavailable;
+    if(!stack)return unavailable('This equipment copy is no longer in Inventory. Refresh your selection.');
+    if(goalProtection.has(previewId))return unavailable('Equipment needed for a Working Toward goal is protected');
+    if(favoriteSet.has(previewId))return unavailable('Favorite equipment cannot be sold or salvaged');
+    if(lockedSet.has(previewId))return unavailable('This equipment type is locked');
     const item=itemDef(previewId);
-    if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable;
-    const eligible=(method:'sell'|'salvage')=>{
-      if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))return false;
-      if(method==='salvage'&&!equipmentSalvageReward(previewId))return false;
+    if(item.type!=='gear'||item.guildOnly||item.knowledgeUnlockId)return unavailable('This equipment is not available for disposal');
+    const eligible=(method:'sell'|'salvage'):EquipmentDisposalDecision=>{
+      if(method==='sell'&&(!Number.isSafeInteger(item.value)||item.value<=0))
+        return {allowed:false,reason:'This equipment has no vendor value'};
+      if(method==='salvage'&&!equipmentSalvageReward(previewId))
+        return {allowed:false,reason:'This equipment has no salvage recipe'};
+      if(previewInstanceId){
+        if(!onCommand)return {allowed:false,reason:'Equipment actions are unavailable while offline'};
+        return equipmentCopyDisposalDecision(state,previewInstanceId,method);
+      }
       try{
-        if(previewInstanceId){
-          if(!onCommand)return false;
-          disposeCraftedGearInstance(state,previewInstanceId,method);
-        }else{
-          if(!canDisposeLegacyEquipment(state,previewId,'inventory',1))return false;
-          if(method==='sell')sellItem(state,previewId,1);
-          else salvageItem(state,previewId);
-        }
-        return true;
-      }catch{return false;}
+        if(!canDisposeLegacyEquipment(state,previewId,'inventory',1))
+          return {allowed:false,reason:'Keep the last copy reserved for legacy enhancements'};
+        if(method==='sell')sellItem(state,previewId,1);
+        else salvageItem(state,previewId);
+        return {allowed:true};
+      }catch(error){
+        return {allowed:false,reason:error instanceof Error?error.message:'Equipment cannot be disposed'};
+      }
     };
-    return {sell:eligible('sell'),salvage:eligible('salvage')};
+    const sell=eligible('sell'),salvage=eligible('salvage');
+    return {sell:sell.allowed,salvage:salvage.allowed,sellReason:sell.reason,salvageReason:salvage.reason};
   },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,onCommand]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(inventoryBulkSelectionId(stack)));
    const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
+  // Keep bulk exclusions understandable without scanning every item while browsing.
+  const bulkBlockedExamples=useMemo(()=>{
+    if(!selectedIds.length)return [] as string[];
+    const ids=new Set(selectedIds);
+    return state[location].stacks.filter(stack=>!!stack.instanceId&&ids.has(inventoryBulkSelectionId(stack))).slice(0,12)
+      .map(stack=>{
+        const sell=equipmentCopyDisposalDecision(state,stack.instanceId!,'sell');
+        const salvage=equipmentCopyDisposalDecision(state,stack.instanceId!,'salvage');
+        const reason=sell.reason??salvage.reason;
+        return reason?localizedItemName(language,stack.itemId)+': '+reason:null;
+      }).filter((reason):reason is string=>Boolean(reason)).slice(0,2);
+  },[state,selectedIds,location,language]);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location&&!pouchOpen&&!equipmentPouchOpen)return;exitSelection();setPouchOpen(false);setEquipmentPouchOpen(false);setLocation(value);setError('')};
   const openPouch=()=>{exitSelection();restored.current=null;setEquipmentPouchOpen(false);setPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
@@ -188,7 +215,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     if(!ids.length)return;
     const eligibleUnits=kind==='sell'?selectionSummary.sellableUnitCount:selectionSummary.salvageableUnitCount;
     const eligibleStacks=kind==='sell'?selectionSummary.sellableStackCount:selectionSummary.salvageableStackCount;
-    setBulkPending({kind,ids,...(kind==='transfer'?{}:{protectedUnits:Math.max(0,selectionSummary.selectedUnitCount-eligibleUnits),protectedStacks:Math.max(0,selectionSummary.selectedStackCount-eligibleStacks)})});
+    setBulkPending({kind,location,ids,...(kind==='transfer'?{}:{protectedUnits:Math.max(0,selectionSummary.selectedUnitCount-eligibleUnits),protectedStacks:Math.max(0,selectionSummary.selectedStackCount-eligibleStacks)})});
   };
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
@@ -215,22 +242,22 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?gt("This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat."):'';
   const goalWarning=pending&&pending.kind!=='deposit'?goalProtection.get(pending.item.id):undefined;
   const goalWarningText=goalWarning?gt('Working Toward is using this item for {goal}. Additional goals: {count}.',{goal:goalWarning.goalTitles[0],count:goalWarning.goalTitles.length-1}):'';
-  const message=[(pending?.kind==='sell'||pending?.kind==='bank_sell')?gt('Sell {count} for {gold} gold. This cannot be undone.',{count:pending.quantity,gold:formatGameNumber(pending.item.value*pending.quantity,state.settings.numberMode,state.settings.language)}):pending?.kind==='deposit'?gt('Move {count}× {name} to {destination}?',{count:pending.quantity,name:localizedItemName(language,pending.item.id),destination:gemDepositDestination(state,pending.item.id)==='gem_pouch'?'Gem Pouch':'Bank'}):pending?.item&&equipmentSalvageReward(pending.item.id)?gt('Destroy 1 item for {count}× {name}.',{count:equipmentSalvageReward(pending.item.id)!.quantity,name:localizedItemName(language,equipmentSalvageReward(pending.item.id)!.itemId)}):'',pending?.kind==='deposit'||pending?.kind==='sell'||pending?.kind==='bank_sell'?foodWarning:'',goalWarningText].filter(Boolean).join(' ');
+  const message=[(pending?.kind==='sell'||pending?.kind==='bank_sell')?gt('Sell {count} for {gold} gold. This cannot be undone.',{count:pending.quantity,gold:formatGameNumber(itemVendorSellGold(pending.item)*pending.quantity,state.settings.numberMode,state.settings.language)}):pending?.kind==='deposit'?gt('Move {count}× {name} to {destination}?',{count:pending.quantity,name:localizedItemName(language,pending.item.id),destination:gemDepositDestination(state,pending.item.id)==='gem_pouch'?'Gem Pouch':'Bank'}):pending?.item&&equipmentSalvageReward(pending.item.id)?gt('Destroy 1 item for {count}× {name}.',{count:equipmentSalvageReward(pending.item.id)!.quantity,name:localizedItemName(language,equipmentSalvageReward(pending.item.id)!.itemId)}):'',pending?.kind==='deposit'||pending?.kind==='sell'||pending?.kind==='bank_sell'?foodWarning:'',goalWarningText].filter(Boolean).join(' ');
   const copyDisposalRecord=copyPending?exactRecordsById.get(copyPending.instanceId):undefined;
-  const copyDisposalValid=useMemo(()=>{
-    if(!copyPending||!onCommand)return false;
-    try{disposeCraftedGearInstance(state,copyPending.instanceId,copyPending.method);return true;}catch{return false;}
-  },[state,copyPending,onCommand]);
+  const copyDisposalDecision=useMemo(()=>copyPending&&onCommand
+    ?equipmentCopyDisposalDecision(state,copyPending.instanceId,copyPending.method)
+    :{allowed:false,reason:'Equipment actions are unavailable'},[state,copyPending,onCommand]);
+  const copyDisposalValid=copyDisposalDecision.allowed;
   // The modal owns an immutable set of IDs. Recheck those IDs against the latest
   // snapshot instead of relying on the selection behind the modal.
   const disposalSummary=useMemo(()=>bulkPending&&bulkPending.kind!=='transfer'
-    ?bulkSelectionSummary(state,bulkPending.ids,'inventory'):null,[state,bulkPending]);
+    ?bulkSelectionSummary(state,bulkPending.ids,bulkPending.location):null,[state,bulkPending]);
   const pendingEligibleIds=bulkPending?.kind==='sell'?disposalSummary?.sellableIds:disposalSummary?.salvageableIds;
   const disposalSelectionValid=bulkPending?.kind==='transfer'||!bulkPending
     ?true:!!pendingEligibleIds&&pendingEligibleIds.length===bulkPending.ids.length
       &&pendingEligibleIds.every(id=>bulkPending.ids.includes(id));
   const bulkDisposalStacks=bulkPending&&pendingEligibleIds
-    ?state.inventory.stacks.filter(stack=>pendingEligibleIds.includes(inventoryBulkSelectionId(stack))):[];
+    ?state[bulkPending.location].stacks.filter(stack=>pendingEligibleIds.includes(inventoryBulkSelectionId(stack))):[];
   const bulkDisposalItems=bulkDisposalStacks.map(stack=>{
     const copy=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined;
     return {itemId:stack.itemId,quantity:stack.quantity,rarity:copy?.rarity,quality:copy?craftedGearDisplayQuality(copy):undefined};
@@ -248,7 +275,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     :bulkPending?.kind==='sell'||bulkPending?.kind==='salvage'
       ?[bulkPending.kind==='sell'?gt('Sell {stacks} eligible stacks ({items} items) for {gold} gold?',{stacks:selectionSummary.sellableStackCount,items:selectionSummary.sellableUnitCount,gold:formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}):gt('Salvage {stacks} eligible equipment stacks ({items} items)?',{stacks:selectionSummary.salvageableStackCount,items:selectionSummary.salvageableUnitCount}),bulkPending.kind==='sell'?(selectionSummary.sellProtectedCount?(selectionSummary.sellProtectedCount?gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}):''):''):(selectionSummary.salvageProtectedCount?gt('{count} selected stacks are protected or not salvageable.',{count:selectionSummary.salvageProtectedCount}):''),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',gt('This cannot be undone.')].filter(Boolean).join(' ')
       :'';
-  const confirmBulk=()=>{if(!bulkPending||!disposalSelectionValid)return;const action=bulkPending,actionLocation=location,summary=disposalSummary??selectionSummary,request:InventoryFeedbackRequest=action.kind==='transfer'?{kind:'bulk_transfer',direction:actionLocation==='inventory'?"deposit":"withdraw",stacks:selectionSummary.transferableStackCount,units:selectionSummary.transferableUnitCount}:action.kind==='sell'?{kind:'bulk_sell',stacks:summary.sellableStackCount,units:summary.sellableUnitCount,gold:summary.sellGold}:{kind:'bulk_salvage',stacks:summary.salvageableStackCount,units:summary.salvageableUnitCount};setBulkPending(null);exitSelection();scheduleAfterPaint(()=>runInventory(request,()=>onBulkAction(action.kind,actionLocation,action.ids)))};
+  const confirmBulk=()=>{if(!bulkPending||!disposalSelectionValid)return;const action=bulkPending,actionLocation=bulkPending.location,summary=disposalSummary??selectionSummary,request:InventoryFeedbackRequest=action.kind==='transfer'?{kind:'bulk_transfer',direction:actionLocation==='inventory'?"deposit":"withdraw",stacks:selectionSummary.transferableStackCount,units:selectionSummary.transferableUnitCount}:action.kind==='sell'?{kind:'bulk_sell',stacks:summary.sellableStackCount,units:summary.sellableUnitCount,gold:summary.sellGold}:{kind:'bulk_salvage',stacks:summary.salvageableStackCount,units:summary.salvageableUnitCount};setBulkPending(null);exitSelection();scheduleAfterPaint(()=>{if(actionLocation==='bank'&&action.kind!=='transfer'){void beginInventorySubmission(action.kind==='sell'?gt('Selling items…'):gt('Updating inventory…'),()=>onBulkAction(action.kind,actionLocation,action.ids));}else runInventory(request,()=>onBulkAction(action.kind,actionLocation,action.ids));})};
   const remaining=useMemo(()=>claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0),[state]);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=useMemo(()=>storageUpgradePreview(state,'inventory'),[state]),bankUpgrade=useMemo(()=>storageUpgradePreview(state,'bank'),[state]);
@@ -263,6 +290,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
+  const inspectedCopySalvage=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'salvage'):null;
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
   const legacyStackIndex=inspected?state[location].stacks.findIndex(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):-1;
   const linkAudit=inspected?.type==='gear'?auditCraftedGearOwnership(state):undefined;
@@ -271,6 +300,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     :[];
   const inspectStock=inspected?state[location].stacks.reduce((total,stack)=>total+(stack.itemId===inspected.id&&!stack.instanceId?stack.quantity:0),0):0;
   const inspectAmount=Math.max(1,Math.min(inspectStock,inspectQuantity));
+  const gearMoveAmount=inspected?.type==='gear'?Math.min(inspectStock,transferAmount(inspectStock,quantity),100):0;
   const inspectFavorite=!!inspected&&favoriteSet.has(inspected.id);
   const inspectLocked=!!inspected&&(lockedSet.has(inspected.id)||selectedCopy?.locked===true);
   const previewRecord=previewInstanceId?exactRecordsById.get(previewInstanceId):undefined;
@@ -317,9 +347,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(healthState,inspected.id)===0?gt("Health full"):gt('Eat 1 · up to {hp} HP',{hp:formatGameNumber(displayStat(Math.round(foodHealingAmount(healthState,inspected.id))),state.settings.numberMode,state.settings.language)})} disabled={recoveryAmount(healthState,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
     <GameButton compact title={favoriteSet.has(inspected.id)?gt("Remove favorite"):gt("Favorite")} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>
     <GameButton compact title={lockedSet.has(inspected.id)?gt("Unlock item"):gt("Lock item")} tone="secondary" onPress={()=>{run(()=>onToggleLock(inspected.id));closeInspect()}}/>
-    {hasLegacyStack&&inspected.type==='gear'&&onCommand?<GameButton compact title={gl('To Equipment')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{await onCommand({type:'equipment_pouch_move',args:{itemId:inspected.id,quantity:1,from:location,to:'equipment_pouch'}});closeInspect()})}/>:null}
+    {hasLegacyStack&&inspected.type==='gear'&&onCommand?<GameButton compact title={freeGearSlots<gearMoveAmount?gearLabel('Not enough Gear slots'):gearLabel('Store {count} in Gear',{count:gearMoveAmount})} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||gearMoveAmount<1||freeGearSlots<gearMoveAmount} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{const result=await onCommand({type:'equipment_pouch_move',args:{itemId:inspected.id,quantity:gearMoveAmount,from:location,to:'equipment_pouch'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');closeInspect()})}/>:null}
     {hasLegacyStack&&inspected.type!=='material'&&(carried?<GameButton compact title={gt('Deposit {count}',{count:formatGameNumber(transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})+(gemDepositDestination(state,inspected.id)==='gem_pouch'?' · Gem Pouch':'')} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);if(state.character?.equippedFoodId===inspected.id)setPending({kind:"deposit",item:inspected,quantity:amount});else runInventory({kind:"deposit",itemId:inspected.id,quantity:amount},()=>onDeposit(inspected.id,amount));closeInspect()}}/>:<GameButton compact title={gt('Withdraw {count}',{count:formatGameNumber(transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);runInventory({kind:"withdraw",itemId:inspected.id,quantity:amount},()=>onWithdraw(inspected.id,amount));closeInspect()}}/>)}
     {hasLegacyStack&&inspected.type!=='material'&&!carried&&inspected.value>0&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);beginInventorySubmission(gt("Selling items…"),()=>onBankSell(inspected.id,amount));closeInspect()}}/>:null}
+    {hasLegacyStack&&inspected.type==='gear'&&!carried&&equipmentSalvageReward(inspected.id)&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)&&onCommand?<GameButton compact title={gt('Salvage 1')} tone="danger" onPress={()=>{setPending({kind:'bank_salvage',item:inspected,quantity:1});closeInspect()}}/>:null}
     {hasLegacyStack&&inspected.type!=='material'&&carried&&inspected.value>0&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:formatGameNumber(inspected.value*transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);setPending({kind:"sell",item:inspected,quantity:amount});closeInspect()}}/>:null}
     {hasLegacyStack&&inspected.type!=='material'&&carried&&equipmentSalvageReward(inspected.id)&&!favoriteSet.has(inspected.id)&&!lockedSet.has(inspected.id)?<GameButton compact title={gt("Salvage 1")} tone="danger" onPress={()=>{setPending({kind:"salvage",item:inspected,quantity:1});closeInspect()}}/>:null}
     {legacyStackIndex>=0&&unlinkedForgeCopies.length>0?<View style={s.quantityPanel}>
@@ -342,11 +373,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
           
           {carried?<GameButton compact title={gl('Compare & Equip')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>{setPreviewInstanceId(selectedCopy.id);setPreviewId(inspected.id);closeInspect()}}/>:null}
           <GameButton compact title={gl(carried?'To Bank':'Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Transferring equipment…',async()=>{await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:carried?'bank':'inventory'}});closeInspect()})}/>
-        {selectedCopy.ownerCharacterId===state.character?.id?<GameButton compact title={gl('To Equipment')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}});closeInspect()})}/>:null}
+        <GameButton compact title={freeGearSlots===0?gearLabel('Gear storage full'):gearLabel('Store in Gear')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||freeGearSlots===0} onPress={()=>void beginInventorySubmission('Storing equipment…',async()=>{const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');closeInspect()})}/>
         </View>
+        <EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>
         <View style={s.row}>
-          <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={!onCommand||selectedCopy.locked||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect()}}/>
-          {equipmentSalvageReward(inspected.id)?<GameButton compact title={gl('Salvage copy')} tone="danger" disabled={!onCommand||selectedCopy.locked||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'salvage',name:inspected.name});closeInspect()}}/>:null}
+          <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={!onCommand||!inspectedCopySell?.allowed||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'sell',name:inspected.name});closeInspect()}}/>
+          {equipmentSalvageReward(inspected.id)?<GameButton compact title={gl('Salvage copy')} tone="danger" disabled={!onCommand||!inspectedCopySalvage?.allowed||inventoryBusyLabel!==null} onPress={()=>{setCopyPending({instanceId:selectedCopy.id,method:'salvage',name:inspected.name});closeInspect()}}/>:null}
         </View>
       </View>:null}
     </View>:null}
@@ -367,11 +399,32 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {inventoryBusyLabel?<View accessibilityLiveRegion="polite" style={s.pouchStatus}><ActivityIndicator size="small" color={C.accent}/><Text style={s.sub}>{inventoryBusyLabel}</Text></View>:null}
     <GemPouchPanel standalone state={state} busy={inventoryBusyLabel!==null} onUpgrade={onCommand?()=>beginInventorySubmission('Upgrading Gem Pouch…',()=>onCommand({type:'gem_pouch_upgrade'})):undefined} onAction={onCommand?command=>beginInventorySubmission('Updating Gem Pouch…',()=>onCommand(command)):undefined} onFavorite={onToggleFavorite} onLock={onToggleLock}/>
   </ScrollView>;
-  return <><ConfirmModal visible={copyPending!==null} title={copyPending?.method==='sell'?gt('Sell this copy?'):gt('Salvage this copy?')} confirmDisabled={!copyDisposalValid||inventoryBusyLabel!==null} confirmLabel={copyPending?.method==='sell'?'Sell this copy':'Salvage this copy'} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const copy=copyPending;setCopyPending(null);if(copy&&onCommand)void beginInventorySubmission('Processing selected equipment…',()=>onCommand({type:copy.method==='sell'?'gear_sell':'gear_salvage',args:{instanceId:copy.instanceId}}))}} onCancel={()=>setCopyPending(null)}>{copyPending&&copyDisposalRecord?<DisposalPreview mode={copyPending.method} items={[{itemId:copyDisposalRecord.itemId,quantity:1,rarity:copyDisposalRecord.rarity,quality:craftedGearDisplayQuality(copyDisposalRecord)}]} gold={itemDef(copyDisposalRecord.itemId).value} rewards={copyPending.method==='salvage'?equipmentSalvageRewards(copyDisposalRecord.itemId,copyDisposalRecord):[]} note={copyDisposalValid?gt('Only this exact equipment copy is affected.'):gt('Selection has changed. Close and review the equipment.')}/>:null}</ConfirmModal><EquipmentPreview state={state} itemId={previewId} instanceId={previewInstanceId} favorite={previewFavorite} locked={previewLocked}
+  return <><ConfirmModal visible={copyPending!==null} title={copyPending?.method==='sell'?gt('Sell this copy?'):gt('Salvage this copy?')} confirmDisabled={!copyDisposalValid||inventoryBusyLabel!==null} confirmLabel={copyPending?.method==='sell'?'Sell this copy':'Salvage this copy'} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{const copy=copyPending;setCopyPending(null);if(copy&&onCommand)void beginInventorySubmission('Processing selected equipment…',()=>onCommand({type:copy.method==='sell'?'gear_sell':'gear_salvage',args:{instanceId:copy.instanceId}}))}} onCancel={()=>setCopyPending(null)}>{copyPending&&copyDisposalRecord?<DisposalPreview mode={copyPending.method} items={[{itemId:copyDisposalRecord.itemId,quantity:1,rarity:copyDisposalRecord.rarity,quality:craftedGearDisplayQuality(copyDisposalRecord)}]} gold={itemVendorSellGold(itemDef(copyDisposalRecord.itemId))} rewards={copyPending.method==='salvage'?equipmentSalvageRewards(copyDisposalRecord.itemId,copyDisposalRecord):[]} note={copyDisposalValid?gt('Only this exact copy is affected. Any installed gems and upgrades are permanently lost.'):gl(copyDisposalDecision.reason??'Selection has changed. Close and review the equipment.')}/>:null}</ConfirmModal><EquipmentPreview state={state} itemId={previewId} instanceId={previewInstanceId} favorite={previewFavorite} locked={previewLocked}
   onToggleFavorite={previewId?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(previewId)):undefined}
   onToggleLock={previewId?changePreviewLock:undefined}
   canSell={previewDisposal.sell&&inventoryBusyLabel===null}
   canSalvage={previewDisposal.salvage&&inventoryBusyLabel===null}
+  sellBlockReason={previewDisposal.sellReason} salvageBlockReason={previewDisposal.salvageReason}
+  canStoreInGear={freeGearSlots>0}
+  onMoveToBank={previewId&&onCommand?async()=>{
+    const id=previewId,instanceId=previewInstanceId;
+    const success=await beginInventorySubmission('Transferring equipment to shared Bank…',async()=>{
+      const result=await onCommand(instanceId?{type:'gear_move',args:{instanceId,to:'bank'}}
+        :{type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'bank'}});
+      if(result===false)throw new Error('Equipment transfer was not confirmed.');
+    });
+    if(!success)throw new Error('Unable to transfer this equipment to Bank.');
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
+  onStoreInGear={previewId&&onCommand?async()=>{
+    const id=previewId,instanceId=previewInstanceId;
+    const success=await beginInventorySubmission('Moving equipment to Gear…',async()=>{
+      const result=await onCommand(instanceId?{type:'gear_move',args:{instanceId,to:'equipment_pouch'}}:{type:'equipment_pouch_move',args:{itemId:id,quantity:1,from:'inventory',to:'equipment_pouch'}});
+      if(result===false)throw new Error('Equipment transfer was not confirmed.');
+    });
+    if(!success)throw new Error('Unable to store this equipment in Gear.');
+    setPreviewId(null);setPreviewInstanceId(null);
+  }:undefined}
   onSell={previewId?()=>{
     if(!previewDisposal.sell||inventoryBusyLabel!==null)return;
     const item=itemDef(previewId);
@@ -396,7 +449,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   favorite={inspectFavorite} locked={inspectLocked}
   onToggleFavorite={inspected?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(inspected.id)):undefined}
   onToggleLock={inspected?changeInspectLock:undefined}
-  onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspected?.type==='material'?undefined:inspectActions} quickActions={inspectQuickActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
+  onNavigate={destination=>{if(destination.kind==='inventory'&&destination.section==='gem_pouch'){closeInspect();openPouch();return;}closeInspect();onNavigateInspect(destination)}} actions={inspected?.type==='material'?undefined:inspectActions} quickActions={inspectQuickActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
     <Text accessibilityRole="header" style={s.h}>{gt(location==='inventory'?'Inventory':'Bank')}</Text>
     <Text style={s.sub}>{gt('{used}/{capacity} slots · {scope}',{used:activeCapacity.used,capacity:activeCapacity.capacity,scope:location==='bank'?gt('Shared across characters'):gt('Character storage')})}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>
@@ -413,6 +466,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>}
     </View>}
     {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} full · Free a slot or upgrade below.':'{location} · {free} slots left.',{location:gt(location==='inventory'?'Inventory':'Bank'),free:activeCapacity.free})}</Text>}
+    {location==='inventory'&&activeCapacity.level==='full'?<Text style={s.sub}>{gl('Salvage may need a free slot for returned materials. Selling or salvaging gear destroys its installed gems and upgrades.')}</Text>:null}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
 
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}
@@ -425,7 +479,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
     {!isFiltered&&activeStacks.length===0&&<Text style={s.emptyGridHint}>{gt('No items to show')}</Text>}
      {selectMode&&selectedIds.length===0&&<View style={s.selectionEmpty}><Text style={s.selectionEmptyText}>{gt("Select item stacks to manage them together.")}</Text><Pressable accessibilityRole="button" accessibilityState={{disabled:!hasUnselectedShown}} disabled={!hasUnselectedShown} onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,!hasUnselectedShown&&s.selectionQuickDisabled,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable></View>}
-    {selectMode&&selectedIds.length>0&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" accessibilityState={{disabled:!hasUnselectedShown}} disabled={!hasUnselectedShown} onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,!hasUnselectedShown&&s.selectionQuickDisabled,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {location==='inventory'&&<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}</Panel>}
+    {selectMode&&selectedIds.length>0&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>{gt('BULK MANAGEMENT · {count} SELECTED',{count:selectedIds.length})}</Text><Text style={s.sub}>{gt("Whole stacks only · up to 100 stacks per action")}</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" accessibilityState={{disabled:!hasUnselectedShown}} disabled={!hasUnselectedShown} onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,!hasUnselectedShown&&s.selectionQuickDisabled,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Select shown")}</Text></Pressable><Pressable accessibilityRole="button" onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>{gt("Clear")}</Text></Pressable></View></View><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?gt("Deposit"):gt("Withdraw")} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{<GameButton compact title={`${gt("Sell")} · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode,state.settings.language)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk("sell")}/>} {<GameButton compact title={`${gt("Salvage")} · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk("salvage")}/>}</View>{(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{[gt('{count} selected stacks are excluded by protection or sell rules.',{count:selectionSummary.sellProtectedCount}),selectionSummary.goalProtectedCount?gt('{count} Working Toward stacks remain protected.',{count:selectionSummary.goalProtectedCount}):'',selectionSummary.transferProtectedCount?gt('{count} auto-eat stacks stay in Inventory.',{count:selectionSummary.transferProtectedCount}):''].filter(Boolean).join(' ')}</Text>}{bulkBlockedExamples.length>0&&<Text style={s.selectionNote}>{gl('Examples:')} {bulkBlockedExamples.join(' · ')}</Text>}</Panel>}
     </View>} ListEmptyComponent={<View style={s.listSection}><EmptyState title={gt("No items to show")} message={gt("Try another storage tab or clear the search and category filter.")}/><GameButton title={gt("Clear filters")} tone="secondary" onPress={()=>{setQuery('');setFilter("all")}}/></View>} ListFooterComponent={<View style={s.listSection}>
     {gridPages>1&&<View style={s.storagePaging}>
       <GameButton compact tone="secondary" title={gt('Previous')} disabled={shownGridPage===0} onPress={()=>{setGridPage(page=>Math.max(0,page-1));scrollRef.current?.scrollToOffset({offset:0,animated:false})}}/>
@@ -465,10 +519,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         <View style={s.sheetActions}><View style={s.flex}><GameButton title={gt("Reset")} tone="secondary" onPress={()=>setFilter("all")}/></View><View style={s.flex}><GameButton title={gt("Done")} onPress={()=>setFilterOpen(false)}/></View></View>
   </GameModalSurface>
   <ConfirmModal visible={pending!==null} title={gt('{action} {name}?',{action:gt(pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'||pending?.kind==='bank_sell'?'Sell':'Salvage'),name:pending?.item?localizedItemName(language,pending.item.id):''})} message={pending?.kind==='deposit'?message:undefined} confirmLabel={pending?.kind==='deposit'?gt("Deposit"):pending?.kind==='sell'||pending?.kind==='bank_sell'?gt("Sell {count}",{count:pending.quantity}):gt("Salvage 1")} danger={pending?.kind!=='deposit'} reduceMotion={state.settings.reduceMotion} onConfirm={confirm} onCancel={()=>setPending(null)}>
-    {pending&&pending.kind!=='deposit'?<DisposalPreview mode={pending.kind==='salvage'?'salvage':'sell'} items={[{itemId:pending.item.id,quantity:pending.quantity}]} gold={pending.item.value*pending.quantity} rewards={pending.kind==='salvage'?equipmentSalvageRewards(pending.item.id):[]} note={[pending.kind==='bank_sell'?gt('Gold will be added to Bank.'):null,foodWarning,goalWarningText].filter(Boolean).join(' ')||undefined}/>:null}
+    {pending&&pending.kind!=='deposit'?<DisposalPreview mode={pending.kind==='salvage'||pending.kind==='bank_salvage'?'salvage':'sell'} items={[{itemId:pending.item.id,quantity:pending.quantity}]} gold={pending.item.value*pending.quantity} rewards={pending.kind==='salvage'||pending.kind==='bank_salvage'?equipmentSalvageRewards(pending.item.id):[]} note={[pending.kind==='bank_sell'?gt('Gold will be added to Bank.'):null,pending.kind==='bank_salvage'?'Salvage materials go to Inventory; space is required.':null,foodWarning,goalWarningText].filter(Boolean).join(' ')||undefined}/>:null}
   </ConfirmModal>
   <ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?gt('{action} selected stacks?',{action:gt(location==='inventory'?'Deposit':'Withdraw')}):bulkPending?.kind==='sell'?gt("Sell selected items?"):gt("Salvage selected equipment?")} message={bulkPending?.kind==='transfer'?bulkMessage:undefined} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?gt("Deposit selected"):gt("Withdraw selected")):bulkPending?.kind==='sell'?gt("Sell eligible"):gt("Salvage eligible")} danger={bulkPending?.kind!=='transfer'} confirmDisabled={!disposalSelectionValid||inventoryBusyLabel!==null} reduceMotion={state.settings.reduceMotion} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}>
-    {bulkPending&&bulkPending.kind!=='transfer'?<DisposalPreview mode={bulkPending.kind} items={bulkDisposalItems} gold={disposalSummary?.sellGold??0} rewards={bulkPending.kind==='salvage'?bulkSalvageRewards:[]} summary={{selected:(bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0)+(bulkPending.protectedUnits??0),eligible:bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0,protected:bulkPending.protectedUnits??0}} note={!disposalSelectionValid?gt('Selection has changed. Close and review the equipment.'):(bulkPending.protectedStacks??0)>0?gt('{count} selected stacks remain protected.',{count:bulkPending.protectedStacks??0}):undefined}/>:null}
+    {bulkPending&&bulkPending.kind!=='transfer'?<DisposalPreview mode={bulkPending.kind} items={bulkDisposalItems} gold={disposalSummary?.sellGold??0} rewards={bulkPending.kind==='salvage'?bulkSalvageRewards:[]} summary={{selected:(bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0)+(bulkPending.protectedUnits??0),eligible:bulkPending.kind==='sell'?disposalSummary?.sellableUnitCount??0:disposalSummary?.salvageableUnitCount??0,protected:bulkPending.protectedUnits??0}} note={[!disposalSelectionValid?gt('Selection has changed. Close and review the equipment.'):(bulkPending.protectedStacks??0)>0?gt('{count} selected stacks remain protected.',{count:bulkPending.protectedStacks??0}):'',bulkPending.location==='bank'?(bulkPending.kind==='sell'?gt('Gold will be added to Bank.'):'Salvage materials go to Inventory; space is required.'):''].filter(Boolean).join(' ')||undefined}/>:null}
   </ConfirmModal><Modal transparent visible={inventoryBusyLabel!==null} animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={()=>{}}><View style={s.transactionBackdrop}><View accessibilityRole="progressbar" accessibilityLabel={inventoryBusyLabel??gt("Updating inventory")} accessibilityState={{busy:true}} style={s.transactionCard}><ActivityIndicator size="large" color={C.accent}/><Text style={s.transactionTitle}>{inventoryBusyLabel}</Text><Text style={s.transactionCopy}>{gt("Please wait while your inventory is updated.")}</Text></View></View></Modal></>;
 }
 /** Concept 1: a squared, centered padlock badge that stays legible at item-card scale. */

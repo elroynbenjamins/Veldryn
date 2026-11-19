@@ -30,7 +30,11 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'event:spirit-lantern':require('../../assets/profile-icons-v1/spirit-lantern.webp'),
  'event:veilbreak-2026-lantern-warden':require('../../assets/profile-icons-v1/veilbreak-2026-lantern-warden_runtime.webp'),
  'event:veilbreak-2026-pumpkin-moon':require('../../assets/profile-icons-v1/veilbreak-2026-pumpkin-moon_runtime.webp'),
+ 'event:frostfall-2026-snowbell':require('../../assets/events/frostfall/badge.png'),
  'guild:stormwatch-crest':require('../../assets/profile-icons-v1/guild-stormwatch-crest.png'),
+ 'dungeon:asterfall:wardens-lantern':require('../../assets/profile-icons-v1/dungeon-asterfall-wardens-lantern.webp'),
+ 'dungeon:sunscar:solar-vault-key':require('../../assets/profile-icons-v1/dungeon-sunscar-solar-vault-key.webp'),
+ 'dungeon:frostmarch:resonant-bell':require('../../assets/profile-icons-v1/dungeon-frostmarch-resonant-bell.webp'),
 };
 export function profileIconArtwork(id:string|undefined):ImageSourcePropType|undefined{
  return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?profilePortraitIcons[id]:undefined;

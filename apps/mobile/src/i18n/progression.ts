@@ -3,6 +3,13 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+  // Released Sunscar/Frostmarch ranges and region action labels (source-exact).
+  "REGION II · LEVEL 26–50": ["REGION II · STUFE 26–50","REGIÓN II · NIVEL 26–50","REGIO II · NIVEAU 26–50","REGIONE II · LIVELLO 26–50","RÉGION II · NIVEAU 26–50"],
+  "REGION III · LEVEL 51–75": ["REGION III · STUFE 51–75","REGIÓN III · NIVEL 51–75","REGIO III · NIVEAU 51–75","REGIONE III · LIVELLO 51–75","RÉGION III · NIVEAU 51–75"],
+  "enemies": ["Gegner","enemigos","vijanden","nemici","ennemis"],
+  "gathering": ["Sammelstellen","puntos de recolección","verzamelplekken","punti di raccolta","sites de récolte"],
+  "Gathering": ["Sammeln","Recolección","Verzamelen","Raccolta","Récolte"],
+  "Gather": ["Sammeln","Recolectar","Verzamelen","Raccogli","Récolter"],
  "Scored attempts reset at 00:00 UTC.":["Gewertete Versuche werden um 00:00 UTC zurückgesetzt.","Los intentos puntuables se reinician a las 00:00 UTC.","Pogingen met score worden om 00:00 UTC gereset.","I tentativi validi si azzerano alle 00:00 UTC.","Les tentatives comptabilisées sont réinitialisées à 00:00 UTC."],
  "All scored attempts used today. Try again after the daily reset.":["Alle gewerteten Versuche für heute verbraucht. Nach dem täglichen Reset erneut versuchen.","Se agotaron los intentos puntuables de hoy. Vuelve a intentarlo tras el reinicio diario.","Alle pogingen met score voor vandaag gebruikt. Probeer opnieuw na de dagelijkse reset.","Tentativi validi di oggi esauriti. Riprova dopo il reset giornaliero.","Toutes les tentatives comptabilisées du jour ont été utilisées. Réessayez après la réinitialisation."],
  "Echo is for players who made no scored attempt before the defeat. One attempt is allowed during the post-defeat window; eligibility is checked on entry.":["Echo ist für Spieler ohne gewerteten Versuch vor der Niederlage des Bosses. Ein Versuch ist im Nachkampf-Zeitfenster erlaubt; die Berechtigung wird beim Eintritt geprüft.","Echo es para jugadores sin intentos puntuables antes de la derrota. Se permite un intento durante el plazo posterior; se comprueba el acceso al entrar.","Echo is voor spelers zonder gescoorde poging vóór de nederlaag. Eén poging is toegestaan in het venster erna; toegang wordt gecontroleerd bij het starten.","Eco è per i giocatori senza tentativi validi prima della sconfitta del boss. È consentito un tentativo nel periodo successivo; l’idoneità è verificata all’ingresso.","L’écho est réservé aux joueurs sans tentative comptabilisée avant la défaite. Une tentative est autorisée pendant la période prévue ; l’accès est vérifié à l’entrée."],
@@ -580,6 +587,7 @@ export const progressionTranslationRows = {
   "ECHO REMAINS": ["ECHO BLEIBT","ECO RESTANTE","ECHO RESTEERT","ECO RIMASTA","ÉCHO RESTANT"],
   "BOSS PRESENCE": ["BOSSPRÄSENZ","PRESENCIA DEL JEFE","BAASAANWEZIGHEID","PRESENZA BOSS","PRÉSENCE DU BOSS"],
   "GLOBAL HP": ["GLOBALE LP","VIDA GLOBAL","WERELDWIJDE HP","SALUTE GLOBALE","PV MONDIAUX"],
+  "TIME LEFT": ["VERBLEIBENDE ZEIT","TIEMPO RESTANTE","RESTERENDE TIJD","TEMPO RIMASTO","TEMPS RESTANT"],
   "ATTEMPTS LEFT": ["VERSUCHE ÜBRIG","INTENTOS RESTANTES","POGINGEN OVER","TENTATIVI RIMASTI","ESSAIS RESTANTS"],
   "YOUR RAID IMPACT": ["DEIN RAIDBEITRAG","TU IMPACTO DE BANDA","JOUW RAIDIMPACT","IL TUO IMPATTO RAID","VOTRE IMPACT DE RAID"],
   "APPLIED DAMAGE": ["ANGEWANDTER SCHADEN","DAÑO APLICADO","TOEGEPASTE SCHADE","DANNI APPLICATI","DÉGÂTS APPLIQUÉS"],

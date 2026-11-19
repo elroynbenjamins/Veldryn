@@ -12,6 +12,7 @@ import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,affordableFaithPracticeCount,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining,recordCompanionActivity} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
+import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
@@ -26,6 +27,7 @@ import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inven
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
+import {disposeGemPouchSelected} from './gem-pouch-bulk';
 import {upgradeEquipmentPouch,moveLegacyEquipmentPouchStack} from './equipment-pouch';
 import {EQUIPMENT_POUCH_SELECTION_ID_MAX_LENGTH,salvageEquipmentPouchSelected,sellEquipmentPouchSelected} from './equipment-pouch-selling';
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,researchEffectGemV1} from './gem-progression-v1';
@@ -38,6 +40,7 @@ import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 import {reconcileAccountCollections} from './account-collections';
+import {claimMonthlyQuestMilestone} from './monthly-quest-milestones';
 import {recordSeasonalActivity} from './seasonal-quests';
 import {ensurePersonalSeasonalState} from './personal-seasonal-state';
 import {snapshotEarnedLegacySeasonalClaims} from './legacy-seasonal-claim';
@@ -57,10 +60,10 @@ const fields:Record<string,readonly string[]>={
  create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
- bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],overflow:[],
+ bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id','choiceId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -83,7 +86,8 @@ export function validateGameCommand(value:unknown):GameCommand{
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration','alchemy','processing']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='alchemy'||kind==='processing'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
- if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
+ if(row.type==='gem_pouch_bulk_sell'||row.type==='gem_pouch_bulk_dismantle')stringArray(args as Record<string,unknown>,'ids',100,120);
+  if(row.type==='bulk_sell'||row.type==='bulk_salvage'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,180);if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank']);}
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
@@ -162,7 +166,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  // Event weekly contracts are automatic. Keep the retired accept command
  // compatible with older clients without needlessly settling an activity.
- const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
+ const settlementFreeCommand=(command.type==='queue_add'&&a.handoffGoal===undefined)||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='monthly_quest_milestone'||command.type==='roster_delete'||command.type==='inventory_preference'||command.type==='inventory_seen_all'||command.type==='event_accept'||command.type.startsWith('qa_');
  // Starting a new activity replaces the old one in a single trusted operation. This also
  // returns unfinished reserved work (such as brews) through its normal stop path.
  const activityStartCommand=['start','explore','class_training','faith_practice','alchemy_start','processing_start'].includes(command.type);
@@ -240,7 +244,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'companion_recruit':state=companions.recruitEligibleCombatCompanion(state,text(a,'id'),now);message='Companion recruited';break;
   case 'companion_equip':state=companions.equipCombatCompanion(state,text(a,'id'));break;
   case 'companion_unequip':state=companions.unequipCombatCompanion(state);break;
-  case 'companion_housing_upgrade':state=upgradeCompanionHousing(state,text(a,'id'));message='Companion quarters upgraded';break;
+  case 'companion_housing_upgrade':state=upgradeCompanionHousing(companions.sanitizeCombatCompanionState(state),text(a,'id'));message='Companion quarters upgraded';break;
   case 'companion_level':state=companions.purchaseCompanionLevel(state,text(a,'id'));break;
   case 'companion_ascend':state=companions.ascendCombatCompanion(state,text(a,'id'));break;
   case 'companion_master':state=companions.masterPrestigeCompanion(state,text(a,'id'));break;
@@ -324,7 +328,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · rarity upgrade':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
-    :`${result.gemAction==='refine'?'Refined':'Combined'} ${result.recipe.name} · Gem Pouch`;
+    :result.gemAction==='refine'
+      ?`Refined ${result.recipe.name} · Gem Pouch`
+      :result.gemSucceeded
+        ?`Combined ${result.recipe.name} · Gem Pouch`
+        :`Gem merge failed: ${result.recipe.name} · 1 gem lost, 2 returned · Gold and reagents spent`;
    break;
   }
   case 'craft_claim_all':{
@@ -342,7 +350,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
       ?`Check your equipment copies. ${result.blocked[0].reason}`
       :'Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.';
    message=result.claimed.length
-    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem claim${result.gemClaims===1?'':'s'}${result.gemFailed?` (${result.gemFailed} failed merge${result.gemFailed===1?'':'s'})`:''} · ${procCount} rarity upgrade${procCount===1?'':'s'}${blockedCount?` · ${blockedCount} still waiting. ${blockedReason}`:''}`
     :blockedCount?`${blockedCount} finished forge job${blockedCount===1?' is':'s are'} still waiting. ${blockedReason}`:'No finished forge jobs';
    break;
   }
@@ -360,7 +368,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'discard_preparation':state=game.discardPreparation(state);break;
   case 'gear_link_legacy':state=linkLegacyCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.from,['inventory','bank']),integer(a,'stackIndex',0,1000));message='Legacy Forge copy linked to its existing rarity and quality record';break;
   case 'gear_autosell':{if(typeof a.enabled!=='boolean')throw new Error('invalid_autosell_preference');state={...state,account:{...state.account,craftedGearAutoSellMode:a.enabled?'keep_best_seven':'off'}};message=a.enabled?'Keep Best 7 enabled — only verified, unprotected copies can be sold':'Automatic equipment selling disabled';break;}
-  case 'gear_equip':state=equipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy equipped';break;
+  case 'gear_equip':{
+   const healthBeforeSwap=state.activity?.kind==='combat'?state.character?.currentHp:undefined;
+   state=equipCraftedGearInstance(state,text(a,'instanceId',180));
+   // The previous hunt interval was settled with the old loadout above.
+   // Clamp HP against the new maximum without healing a combatant for swapping.
+   if(healthBeforeSwap!==undefined&&state.character)state.character.currentHp=Math.min(healthBeforeSwap,game.effectiveStats(state).hp);
+   message='Equipment copy equipped';break;
+  }
   case 'gear_unequip':state=unequipCraftedGearInstance(state,text(a,'instanceId',180));message='Equipment copy unequipped';break;
   case 'gear_move':state=moveCraftedGearInstance(state,text(a,'instanceId',180),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment copy transferred';break;
   case 'equipment_pouch_move':state=moveLegacyEquipmentPouchStack(state,text(a,'itemId'),integer(a,'quantity',1,100),oneOf(a.from,['inventory','bank','equipment_pouch']),oneOf(a.to,['inventory','bank','equipment_pouch']));message='Equipment moved';break;
@@ -380,17 +395,21 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
   case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
   case 'bank_sell':state=game.sellBankItem(state,text(a,'id'),integer(a,'quantity'));break;
+  case 'bank_salvage':state=game.salvageBankItem(state,text(a,'id'));break;
   case 'bank_gold_deposit':state=game.depositGoldToBank(state,integer(a,'amount'));break;
   case 'bank_gold_withdraw':state=game.withdrawGoldFromBank(state,integer(a,'amount'));break;
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
-  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
-  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
-  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
+  // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids',100,185),oneOf(a.location,['inventory','bank']));break;
+  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids',100,180),oneOf(a.location??'inventory',['inventory','bank'] as const));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'gem_pouch_upgrade':state=upgradeGemPouch(state);message='Gem Pouch capacity upgraded';break;
   case 'gem_pouch_sell':{const itemId=text(a,'itemId'),quantity=integer(a,'quantity');state=sellPouchGem(state,itemId,quantity);message='Gems sold from Gem Pouch';break;}
+  case 'gem_pouch_bulk_sell':state=disposeGemPouchSelected(state,stringArray(a,'ids',100,120),'sell');message='Selected Gem Pouch stacks sold';break;
+  case 'gem_pouch_bulk_dismantle':state=disposeGemPouchSelected(state,stringArray(a,'ids',100,120),'dismantle');message='Selected Gem Pouch stacks dismantled';break;
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
@@ -444,6 +463,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100));break;
+  case 'monthly_quest_milestone':state=claimMonthlyQuestMilestone(state,text(a,'month',7),integer(a,'threshold',30,100),text(a,'characterId',100),oneOf(a.skillId,['mining','woodcutting','fishing','herbalism','smithing','cooking','alchemy','exploration','tailoring','enchanting','faith']),now);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
   case 'inventory_preference':{
     // Only the requested preference changes; legacy settings cannot break locks.
@@ -494,7 +514,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Includes loot added by combat, quests, co-op and old save actions.
  // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
  // crafting or quests), not just those completed before it started.
- state=reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now));
+ state=recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now)));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

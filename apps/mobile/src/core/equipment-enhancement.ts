@@ -6,8 +6,8 @@ import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemSta
 import {gemRollPercentFromUnitV1,gemRolledValueV1,mobileGemFamilyV1,normalizeGemRollPercentV1} from '../content/gems-v1';
 import {v33EquipmentRecipeForItem} from '../content/equipment-recipes-v33';
 import {ASTERFALL_MINERAL_ESSENCE_ID} from '../content/mining-essence';
-import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1,gemUnsocketCostForStateV1} from './gem-progression-v1';
-import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
+import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1} from './gem-progression-v1';
+import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId} from './gem-pouch';
 
 /** Each regional kit has four optional improvements.  A full set gains 16%,
  * still below the base-stat jump to the next equipment tier. */
@@ -153,25 +153,15 @@ export function socketGem(state:GameState,itemId:string,gemId:string,randomRoll=
   if(kind==='effect')assertEffectGemEquipAllowedV1(state,itemId,gemId);
   if(kind==='stat'&&enhancement.statGemId)throw new Error('The Stat Gem socket is already filled');
   if(kind==='effect'&&enhancement.effectGemId)throw new Error('The Effect Gem socket is already filled');
-  const rollPercent=canonicalGemMetaV1(gemId)?gemRollPercentFromUnitV1(randomRoll):undefined;
+  const rollPercent=gemRollPercentFromUnitV1(randomRoll);
   let next=consumeAcross(state,gemId,1);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,
     statGemRollPercent:kind==='stat'?rollPercent:enhancement.statGemRollPercent,effectGemRollPercent:kind==='effect'?rollPercent:enhancement.effectGemRollPercent,gemIds:[]});
   return next;
 }
-function addInventory(state:GameState,itemId:string){if(isGemPouchItemId(itemId))return storePouchGem(state,itemId);const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.inventory.stacks,{itemId,quantity:1}];return {...state,inventory:{...state.inventory,stacks}};}
-export function unsocketGem(state:GameState,itemId:string,index:number){
-  requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');
-  const enhancement=gearEnhancement(state,itemId),gemId=index===0?enhancement.statGemId:enhancement.effectGemId;
-  if(!gemId)throw new Error(index===0?'The Stat Gem socket is empty':'The Effect Gem socket is empty');
-  const fee=gemUnsocketCostForStateV1(state,gemId);if(state.character!.gold<fee.gold)throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
-  if(fee.dust&&combinedQuantity(state,'GEM_DUST')<fee.dust)throw new Error(`Need ${fee.dust} Gem Dust to safely extract this gem`);
-  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-fee.gold}};
-  if(fee.dust)next=consumeAcross(next,'GEM_DUST',fee.dust);
-  next=addInventory(next,gemId);
-  next=setEnhancement(next,itemId,{...enhancement,statGemId:index===0?undefined:enhancement.statGemId,effectGemId:index===1?undefined:enhancement.effectGemId,
-    statGemRollPercent:index===0?undefined:enhancement.statGemRollPercent,effectGemRollPercent:index===1?undefined:enhancement.effectGemRollPercent,gemIds:[]});
-  return next;
+/** Gems cannot be extracted once installed. Old clients are blocked by the trusted reducer too. */
+export function unsocketGem(_state:GameState,_itemId:string,_index:number):GameState{
+  throw new Error('Socketed gems cannot be extracted. Replace them with another gem instead.');
 }
 export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll=Math.random()){
   requireEquipped(state,itemId);const gem=safeGem(gemId);if(!gem)throw new Error('That item is not a gem');
@@ -180,8 +170,6 @@ export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll
   // A second identical gem acts as a grindstone reroll. The consumable is
   // spent even on a lower roll, but the equipped bonus never decreases.
   if(currentId===gemId){
-    const meta=canonicalGemMetaV1(gemId);
-    if(!meta)throw new Error('Only graded gems can be rerolled');
     const candidate=gemRollPercentFromUnitV1(randomRoll);
     const previous=kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent;
     // Protect a fully perfected socket: spending another gem cannot improve it.
@@ -194,14 +182,9 @@ export function replaceGem(state:GameState,itemId:string,gemId:string,randomRoll
   }
   if(kind==='effect')assertEffectGemEquipAllowedV1(state,itemId,gemId);
   if(combinedQuantity(state,gemId)<1)throw new Error('You do not own this gem');
-  const fee=gemUnsocketCostForStateV1(state,currentId);
-  if(state.character!.gold<fee.gold)throw new Error(`Need ${fee.gold} gold to replace this gem`);
-  if(fee.dust&&combinedQuantity(state,'GEM_DUST')<fee.dust)throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
-  const rollPercent=canonicalGemMetaV1(gemId)?gemRollPercentFromUnitV1(randomRoll):undefined;
+  // Replacement permanently consumes the previous gem. No extraction fee and no gem refund.
+  const rollPercent=gemRollPercentFromUnitV1(randomRoll);
   let next=consumeAcross(state,gemId,1);
-  next={...next,character:{...next.character!,gold:next.character!.gold-fee.gold}};
-  if(fee.dust)next=consumeAcross(next,'GEM_DUST',fee.dust);
-  next=addInventory(next,currentId);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,
     statGemRollPercent:kind==='stat'?rollPercent:enhancement.statGemRollPercent,effectGemRollPercent:kind==='effect'?rollPercent:enhancement.effectGemRollPercent,gemIds:[]});
   return next;
@@ -258,10 +241,18 @@ export function equippedCanonicalStatGemBonusesV1(state:GameState){
   return {statPercent,statPercentagePoints};
 }
 
+/** Read a legacy shard/sigil's socket-specific roll without changing its original base stat. 
+ * Old saves intentionally default to 100% when no roll was persisted. */
+export function legacyGemBonusValue(gemId:string,rollPercent?:number){
+  const gem=itemDef(gemId);
+  const base=gem.gemStat?gem.gemPercent??0:gem.gemEffectValue??0;
+  return base*(normalizeGemRollPercentV1(rollPercent)??100)/100;
+}
+
 /** Older gems continue to affect their original Attack/Defense/HP stats.
  * Canonical gems are excluded so no bonus can be applied twice.
  */
-export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;if(canonicalGemMetaV1(gemId))continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
+export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;if(canonicalGemMetaV1(gemId))continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=legacyGemBonusValue(gemId,gearEnhancement(state,itemId).statGemRollPercent);}return result;}
 
 export type EquippedEffectGemBonuses=Record<GemEffectId,number>;
 export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonuses{
@@ -271,7 +262,7 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
     if(!itemId)continue;
     const enhancement=gearEnhancement(state,itemId),gemId=enhancement.effectGemId;if(!gemId)continue;
     const gem=itemDef(gemId),meta=canonicalGemMetaV1(gemId);
-    if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,meta?gemRolledValueV1(meta.familyId,meta.grade,enhancement.effectGemRollPercent):gem.gemEffectValue??0);
+    if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,meta?gemRolledValueV1(meta.familyId,meta.grade,enhancement.effectGemRollPercent):legacyGemBonusValue(gemId,enhancement.effectGemRollPercent));
   }
   result.combat_speed=Math.min(.10,result.combat_speed);
   result.boss_power=Math.min(.15,result.boss_power);
@@ -279,11 +270,11 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
   result.recovery=Math.min(.50,result.recovery);
   return result;
 }
-export function gemEffectDescription(gemId:string){
+export function gemEffectDescription(gemId:string,rollPercent?:number){
   const gem=itemDef(gemId);if(gem.type!=='gem')return '';
   if(gem.gemFamilyId){const family=mobileGemFamilyV1(gem.gemFamilyId);if(family?.kind==='effect')return family.description;}
   if(!gem.gemEffect)return gem.passive??'';
-  const pct=Number(((gem.gemEffectValue??0)*100).toFixed(3));
+  const pct=Number((legacyGemBonusValue(gemId,rollPercent)*100).toFixed(3));
   switch(gem.gemEffect){
     case 'combat_speed':return `+${pct}% combat speed`;
     case 'boss_power':return `+${pct}% combat power against bosses`;

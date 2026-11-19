@@ -24,7 +24,7 @@ assert.ok(chat.includes('guildUnread')&&chat.includes('guildMentions')&&chat.inc
 assert.ok(chat.includes('visitedChannels.includes('),'visited conversations remain mounted');
 assert.ok(chat.includes('style={s.channelMeta}')&&chat.includes('languageMenuOpen'),'language selection on secondary header');
 assert.ok(chat.includes('setWorldChannel(index);setLanguageMenuOpen(false);'),'World language switching retained');
-assert.ok(chat.includes('onRequestClose={()=>{if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}'),'Android back dismisses language menu first');
+assert.ok(chat.includes('onRequestClose={()=>{if(onlinePlayersOpen)setOnlinePlayersOpen(false);else if(languageMenuOpen)setLanguageMenuOpen(false);else closeChat();}}'),'Android back closes the online roster, then the language menu, then chat');
 assert.ok(chat.includes('Keyboard.addListener(')&&chat.includes("'keyboardDidShow'")&&chat.includes("'keyboardDidHide'"),'keyboard visibility lifecycle');
 assert.ok(chat.includes("behavior={Platform.OS==='ios'?'padding':undefined}"),'Android handles IME clearance without double-shrinking the modal');
 assert.ok(chat.includes('measureInWindow')&&chat.includes('keyboardTopRef')&&chat.includes('onLayout={measureKeyboardOverlap}'),'Android measures actual modal occlusion on keyboard and layout changes');
@@ -37,7 +37,8 @@ assert.ok(guild.includes('<ChatLog expanded={embedded}')&&guild.includes('embedd
 assert.ok(party.includes('<ChatLog expanded={expanded}')&&system.includes('<ChatLog expanded={expanded}'),'Party and System expand');
 assert.ok(rows.includes('compact&&s.compactRow')&&rows.includes('compact&&s.compactMessage'),'compact rows without removing profile action');
 assert.ok(rows.includes('compact={compact} style={[s.message,compact&&s.compactMessage]}'),'compact chat passes inline emote sizing to message text');
-assert.ok(messageText.includes('emoteImage:{width:20,height:20},emoteImageCompact:{width:17,height:17}'),'inline emotes fit regular and compact message line heights');
+assert.ok(messageText.includes('emoteImage:{width:24,height:24},emoteImageCompact:{width:21,height:21}'),'larger inline emotes are retained');
+assert.ok(messageText.includes('fontSize:14,lineHeight:26')&&messageText.includes('fontSize:13,lineHeight:23')&&rows.includes('compactMessage:{fontSize:13,lineHeight:23}')&&rows.includes('fontSize:14,lineHeight:26,paddingRight:2'),'regular and compact chat line heights fit the emote artwork without clipping');
 assert.ok(log.includes('inner:{paddingTop:2,paddingBottom:16}'),'chat scroll reserves safe clearance under final message');
 assert.ok(log.includes('onLayout={onViewportLayout}')&&log.includes('onContentSizeChange={onContentSizeChange}')&&log.includes('followLatestAfterLayout'),'chat follows the bottom after keyboard and content resize');
 assert.ok(composer.includes('<ChatEmotePicker {...emotes} compact'),'composer keeps quick emotes');

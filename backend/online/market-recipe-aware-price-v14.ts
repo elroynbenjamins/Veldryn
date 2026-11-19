@@ -133,7 +133,7 @@ function materialQuote(id:string,seen:Set<string>,depth:number):MaterialQuote|un
  if(depth>10||seen.has(id)||!validMaterial(id))return undefined;
  const producers=RECIPES.filter(r=>r.output.itemId===id
    &&r.output.quantity>0&&!r.requiredKnowledgeId
-   &&(r.skillId==='smithing'||r.skillId==='alchemy'||r.skillId==='enchanting'));
+   &&(r.skillId==='smithing'||r.skillId==='tailoring'||r.skillId==='alchemy'||r.skillId==='enchanting'));
  if(!producers.length)return inputAnchor(id);
  const next=new Set(seen);next.add(id);
  const costs=producers.map(r=>recipeCost(r,next,depth+1)).filter((row):row is MarketRecipeCostV14=>row!==undefined);
@@ -151,12 +151,17 @@ function materialQuote(id:string,seen:Set<string>,depth:number):MaterialQuote|un
  return {unitMin,unitMax,source:'crafted_recipe',
   minimumLot,recipeCost:cheapest};
 }
+/** Item and recipe catalogs are static, so a top-level quote never changes within a
+ * process. Recursive quotes are NOT cached because they depend on the cycle guard.
+ * Affordability audits otherwise re-walk the same ingot/binder trees per drop. */
+const TOP_LEVEL_QUOTES=new Map<string,MaterialQuote|undefined>();
 export function previewMarketResourceBandV14(itemId:string):MarketPriceDraftV14|undefined{
- const q=materialQuote(itemId,new Set(),0);
+ if(!TOP_LEVEL_QUOTES.has(itemId))TOP_LEVEL_QUOTES.set(itemId,materialQuote(itemId,new Set(),0));
+ const q=TOP_LEVEL_QUOTES.get(itemId);
  if(!q)return undefined;
  return {itemId,kind:'resource',unitMin:q.unitMin,unitMax:q.unitMax,
   tick:priceTick(q.unitMin),minimumLot:q.minimumLot,source:q.source,
-  recipeCost:q.recipeCost,modelVersion:14,approved:false,canListNow:false};
+  recipeCost:q.recipeCost&&{...q.recipeCost},modelVersion:14,approved:false,canListNow:false};
 }
 export function previewMarketGearBandV14(itemId:string,traits:MarketGearPriceTraitsV10):MarketPriceDraftV14|undefined{
  if(!traits||!Number.isInteger(traits.quality)||traits.quality<0||traits.quality>100

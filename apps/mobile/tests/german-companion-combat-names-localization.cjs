@@ -76,10 +76,10 @@ for(const [english,german] of descriptions){
 assert.equal(companionCombatDescriptionText('de','Untrusted text $&'),undefined);
 
 const customTechniques=[...backend.matchAll(/suffix:'[^']+',name:(?:"([^"]+)"|'([^']+)')/g)].map(m=>m[1]||m[2]);
-assert.equal(customTechniques.length,52);
+assert.equal(customTechniques.length,76);
 const defaults=['Fortified Shell','Reflective Shell','Executioner','Relentless','Deep Restoration','Rapid Aid'];
 const names=[...customTechniques,...defaults];
-assert.equal(new Set(names).size,58,'Technique translations should have unique English sources');
+assert.equal(new Set(names).size,82,'Technique translations should have unique English sources');
 assert.deepEqual(Object.keys(germanCompanionTechniqueNames).sort(),names.sort(),'German technique coverage drifted');
 for(const name of names){
  assert.ok(germanCompanionTechniqueNames[name]&&germanCompanionTechniqueNames[name]!==name,'Missing German technique: '+name);
@@ -124,4 +124,4 @@ for(const [component,needed] of Object.entries(markers)){
  for(const marker of needed)
   assert.ok(components[component].includes(marker),component+' lost German combat name integration: '+marker);
 }
-console.log('PASS: 38 German companion active abilities and Bond traits, 58 techniques, 12 replay signatures, 16 missing descriptions, 22 Trial enemy abilities/phases and battle presentation wiring');
+console.log('PASS: 38 German companion active abilities and Bond traits, 82 techniques, 12 replay signatures, 16 missing descriptions, 22 Trial enemy abilities/phases and battle presentation wiring');

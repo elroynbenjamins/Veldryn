@@ -16,7 +16,7 @@ function quantity(state:GameState,itemId:string){
 
 function processingRecipeFor(itemId:string):Recipe|undefined{
   return RECIPES.filter(recipe=>{
-    if(recipe.output.itemId!==itemId||recipe.skillId!=='smithing'||recipe.noviceSetId||timedEquipmentRecipe(recipe.id))return false;
+    if(recipe.output.itemId!==itemId||(recipe.skillId!=='smithing'&&recipe.skillId!=='tailoring')||recipe.noviceSetId||timedEquipmentRecipe(recipe.id))return false;
     return itemDef(recipe.output.itemId).type==='material';
   }).sort((a,b)=>a.level-b.level||a.gold-b.gold||a.seconds-b.seconds)[0];
 }
@@ -31,7 +31,7 @@ export function equipmentPrerequisiteCraftability(state:GameState,equipmentRecip
 export function craftEquipmentPrerequisites(state:GameState,equipmentRecipeId:string,nowMs:number):EquipmentPrerequisiteCraftResult{
   const equipment=timedEquipmentRecipe(equipmentRecipeId);if(!equipment)throw new Error('This equipment recipe does not use the forge');
   if(!state.character)throw new Error('Create a character first');
-  if(equipment.classId&&equipment.classId!==state.character.classId)throw new Error('This equipment recipe belongs to another class');
+  // Smithing and Tailoring produce gear for all classes; the equip gate stays separate.
   let next=structuredClone(state),stepClock=0;
   const craftedByRecipe=new Map<string,{recipeId:string;name:string;batches:number;outputItemId:string;quantity:number}>();
   const visiting=new Set<string>();

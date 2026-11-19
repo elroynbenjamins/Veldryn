@@ -5,6 +5,7 @@ import {eventCandies} from '../content/live-events';
 import type {GameState} from '../core/types';
 import {eventOfferPurchaseCount} from '../core/live-events';
 import {eventShopPurchaseStatus} from '../core/event-shop-presentation';
+import {equipmentShopTierUnlocked,equipmentShopTierLockReason} from '../core/equipment-shop-tier-unlock';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {localizeGameplay} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -17,9 +18,9 @@ import {ProfileScenePreview} from './ProfileScenePreview';
 
 const FILTERS=[{id:'all',label:'All'},{id:'collectibles',label:'Collectibles'},{id:'supplies',label:'Supplies'}] as const;
 type Filter=typeof FILTERS[number]['id'];
-const supply=(reward:EventReward)=>['candy','gold','companion_essence','bondstones'].includes(reward.kind);
+const supply=(reward:EventReward)=>['candy','gold','companion_essence','bondstones','crafting_material'].includes(reward.kind);
 function kindLabel(reward:EventReward){
- const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',bondstones:'Bondstone',profile_icon:'Profile icon',background:'Personal profile background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
+ const names:Record<EventReward['kind'],string>={pet:'Pet',companion:'Companion',emote:'Emote',title:'Title',candy:'Consumable',gold:'Gold',companion_essence:'Companion Essence',bondstones:'Bondstone',crafting_material:'Equipment resource',profile_icon:'Profile icon',background:'Personal profile background',border:'Border',guild_name_color:'Guild name color',guild_frame:'Guild frame',guild_banner:'Guild banner'};
  return names[reward.kind];
 }
 function description(reward:EventReward,definition:LiveEventDef){
@@ -27,6 +28,7 @@ function description(reward:EventReward,definition:LiveEventDef){
  if(reward.kind==='gold')return `Adds ${(reward.quantity??0).toLocaleString()} Gold to this character.`;
  if(reward.kind==='companion_essence')return `Adds ${(reward.quantity??0).toLocaleString()} Companion Essence to your account.`;
  if(reward.kind==='bondstones')return `Adds ${(reward.quantity??0).toLocaleString()} Bondstone to your account.`;
+ if(reward.kind==='crafting_material')return `Adds ${reward.quantity??100} ${reward.name.replace(/ ×100$/,'')} to the shared Bank. Requires unlocked Tier ${reward.tier} equipment crafting; one bundle per UTC week.`;
  if(reward.kind==='background')return 'Permanent background for your personal profile card. Equip it from Character → Customize → Backgrounds after unlocking.';
  return `Permanent ${kindLabel(reward).toLowerCase()} · Account unlock`;
 }
@@ -34,8 +36,8 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
  const C=useGameTheme(),language=useGameLanguage(),gl=(text:string)=>localizeGameplay(language,text),[filter,setFilter]=useState<Filter>('all'),[selected,setSelected]=useState<string|null>(null),[affordableOnly,setAffordableOnly]=useState(false),visuals=liveEventVisuals(definition.visualKey);
  const {width,fontScale}=useWindowDimensions(),twoColumns=width>=350&&fontScale<1.35;
  const entries=offers.map(offer=>{
-  const count=eventOfferPurchaseCount(state,definition.id,offer.id),purchase=eventShopPurchaseStatus(offer,count),locked=(state.character?.level??0)<(offer.minLevel??1),sold=purchase.complete,balance=offer.currency==='common'?currency:prestige,shortfall=Math.max(0,offer.cost-balance);
-  return {offer,purchase,locked,sold,balance,shortfall,owned:sold&&!supply(offer.reward)&&offer.limit===1,canBuy:!locked&&!sold&&shortfall===0};
+  const count=eventOfferPurchaseCount(state,definition.id,offer.id),purchase=eventShopPurchaseStatus(offer,count),tierLocked=offer.reward.kind==='crafting_material'&&(!offer.reward.tier||!equipmentShopTierUnlocked(state,offer.reward.tier)),locked=tierLocked||(state.character?.level??0)<(offer.minLevel??1),sold=purchase.complete,balance=offer.currency==='common'?currency:prestige,shortfall=Math.max(0,offer.cost-balance);
+  return {offer,purchase,locked,tierLocked,sold,balance,shortfall,owned:sold&&!supply(offer.reward)&&offer.limit===1,canBuy:!locked&&!sold&&shortfall===0};
  });
  const categoryEntries=entries.filter(({offer})=>filter==='all'||supply(offer.reward)===(filter==='supplies'));
  const available=categoryEntries.filter(row=>row.canBuy).length;
@@ -43,9 +45,9 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
  return <View style={s.stack}>
   <View style={s.toolbar}><View style={s.categories}><BoardTabs compact items={FILTERS.map(row=>({...row,label:gl(row.label)}))} value={filter} label={gl('Shop categories')} onChange={next=>{setFilter(next);setSelected(null)}}/></View><Pressable accessibilityRole="checkbox" aria-checked={affordableOnly} accessibilityState={{checked:affordableOnly}} accessibilityLabel={gl(`Show offers I can afford · ${available} available`)} onPress={()=>{setAffordableOnly(value=>!value);setSelected(null)}} style={({pressed})=>[s.affordable,{borderColor:affordableOnly?C.selectionLine:C.line,backgroundColor:affordableOnly?C.selection:C.panel},pressed&&s.pressed]}><Text style={[s.meta,{color:affordableOnly?C.text:C.muted}]}>{affordableOnly?'✓ ':''}{gl('Can afford')}</Text></Pressable></View>
   <Text accessibilityLiveRegion="polite" style={[s.meta,{color:C.muted}]}>{gl(`${visible.length} offers${affordableOnly?' · affordable':''}`)}</Text>
-  <View style={[s.offers,twoColumns&&s.offersGrid]}>{visible.map(({offer,purchase,locked,sold,balance,shortfall,owned})=>{
+  <View style={[s.offers,twoColumns&&s.offersGrid]}>{visible.map(({offer,purchase,locked,tierLocked,sold,balance,shortfall,owned})=>{
    const name=gl(offer.currency==='common'?definition.currencyName:definition.prestigeCurrencyName),icon=offer.currency==='common'?visuals.commonCurrencyIcon:visuals.prestigeCurrencyIcon,expanded=selected===offer.id;
-   const unavailable=sold?purchase.detail:locked?`Level ${offer.minLevel}+ required`:shortfall?`Need ${shortfall.toLocaleString(language)} more ${name}`:null;
+   const unavailable=sold?purchase.detail:tierLocked?equipmentShopTierLockReason(offer.reward.tier??1):locked?`Level ${offer.minLevel}+ required`:shortfall?`Need ${shortfall.toLocaleString(language)} more ${name}`:null;
    return <View key={offer.id} style={[s.offer,twoColumns&&s.offerHalf,{borderColor:expanded?C.selectionLine:C.line,backgroundColor:C.panel}]}>
     <Pressable accessibilityRole="button" accessibilityLabel={`${gl(expanded?'Close':'Inspect')} ${gl(offer.reward.name)}`} aria-expanded={expanded} accessibilityState={{expanded}} onPress={()=>setSelected(expanded?null:offer.id)} style={({pressed})=>[s.row,twoColumns&&s.rowCompact,pressed&&s.pressed]}>
      <View style={[s.art,{backgroundColor:C.panel2,borderColor:C.line}]}><RewardArt reward={offer.reward} definition={definition} size={52}/></View>
@@ -58,15 +60,15 @@ export function EventShopCatalogue({state,definition,offers,currency,prestige,bu
    </View>;
   })}</View>
   <GameModalSurface visible={selected!==null} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={()=>setSelected(null)}>
-  {selected?visible.filter(({offer})=>offer.id===selected).map(({offer,purchase,locked,sold,balance,shortfall,owned})=>{
+  {selected?visible.filter(({offer})=>offer.id===selected).map(({offer,purchase,locked,tierLocked,sold,balance,shortfall,owned})=>{
    const name=gl(offer.currency==='common'?definition.currencyName:definition.prestigeCurrencyName);
-   const unavailable=sold?purchase.detail:locked?'Level '+offer.minLevel+'+ required':shortfall?'Need '+shortfall.toLocaleString(language)+' more '+name:null;
+   const unavailable=sold?purchase.detail:tierLocked?equipmentShopTierLockReason(offer.reward.tier??1):locked?'Level '+offer.minLevel+'+ required':shortfall?'Need '+shortfall.toLocaleString(language)+' more '+name:null;
    return <View key={offer.id} style={s.detailShell}><GameModalHeader eyebrow={gl(kindLabel(offer.reward)).toLocaleUpperCase(language)} title={gl(offer.reward.name)} onClose={()=>setSelected(null)}/><ScrollView showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.modalBody}><View style={[s.detail,{borderColor:C.selectionLine,backgroundColor:C.panel}]}>
      {offer.reward.kind==='background'&&state.character?<ProfileScenePreview state={state} backgroundId={offer.reward.id}/>:null}
      <View style={s.preview}>{offer.reward.kind!=='background'?<RewardArt reward={offer.reward} definition={definition} size={92}/>:null}<View style={s.flex}><Text style={[s.eyebrow,{color:C.info}]}>{gl(offer.reward.rarity).toLocaleUpperCase(language)} · {gl(kindLabel(offer.reward)).toLocaleUpperCase(language)}</Text><Text style={[s.copy,{color:C.text}]}>{gl(description(offer.reward,definition))}</Text></View></View>
      <Text accessibilityLiveRegion="polite" style={[s.copy,{color:sold?C.good:C.muted}]}>{gl(purchase.detail)}</Text>
      {owned?null:<View style={[s.balanceReview,{backgroundColor:C.panel2}]}><Text style={[s.meta,{color:C.muted}]}>{name}</Text><View style={s.balanceNumbers}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{gl('Balance')}</Text><Text style={[s.amount,{color:C.text}]}>{balance.toLocaleString(language)}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{gl('Cost')}</Text><Text style={[s.amount,{color:C.text}]}>{offer.cost.toLocaleString(language)}</Text></View><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{gl(shortfall?'Missing':'After')}</Text><Text style={[s.amount,{color:shortfall?C.warning:C.good}]}>{(shortfall||balance-offer.cost).toLocaleString(language)}</Text></View></View></View>}
-     <GameButton title={pendingId===offer.id?gl('Purchasing…'):sold?gl(owned?'Owned ✓':'Purchase limit reached'):locked?gl(`Level ${offer.minLevel}+ required`):`${gl('Buy')} · ${offer.cost.toLocaleString(language)} ${name}`} disabled={busy||!!unavailable} loading={pendingId===offer.id} onPress={()=>onBuy(offer)}/>
+     <GameButton title={pendingId===offer.id?gl('Purchasing…'):sold?gl(owned?'Owned ✓':'Purchase limit reached'):tierLocked?gl(equipmentShopTierLockReason(offer.reward.tier??1)):locked?gl(`Level ${offer.minLevel}+ required`):`${gl('Buy')} · ${offer.cost.toLocaleString(language)} ${name}`} disabled={busy||!!unavailable} loading={pendingId===offer.id} onPress={()=>onBuy(offer)}/>
     </View></ScrollView></View>;
   }):null}
   </GameModalSurface>

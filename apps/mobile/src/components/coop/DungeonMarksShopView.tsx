@@ -1,17 +1,21 @@
 import {useRef,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
 import {ResourceIcon} from '../ResourceIcon';
 import {UiIcon} from '../UiIcon';
+import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
-import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopLockReason} from '../../i18n/dungeon-shop';
+import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason} from '../../i18n/dungeon-shop';
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
+import {dungeonShopPetOfferArt} from '../../theme/dungeon-shop-pet-art';
+import {dungeonShopCosmeticOfferArt} from '../../theme/dungeon-shop-cosmetic-art';
 export type {DungeonMarksShopSnapshot,DungeonMarksShopCard,DungeonMarksShopItemStatus} from '../../core/dungeon-marks-shop-types';
 
 type Shelf='Supplies'|'Collections'|'Owned';
@@ -30,6 +34,8 @@ const CATEGORY_PREVIEW_ART:Record<DungeonMarksShopCard['category'],UiIconName>={
  supply:'inventory',material:'inventory',companion:'companions',icon:'account',border:'character',background:'world',pet:'companions',
 };
 function DungeonShopOfferIcon({item}:{item:DungeonMarksShopCard}){
+ const cosmeticArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
+ if(cosmeticArt)return <Image source={cosmeticArt} resizeMode="contain" style={{width:44,height:44}}/>;
  const resourceId=item.materialItemId??OFFER_RESOURCE_ART[item.id];
  return resourceId?<ResourceIcon resourceId={resourceId} size={42}/>:<UiIcon name={CATEGORY_PREVIEW_ART[item.category]} size={36}/>;
 }
@@ -118,6 +124,9 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
+   const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
+   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
+   const previewArt=dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
    return <View key={item.id} style={[s.card,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
@@ -126,17 +135,28 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      <View style={s.fill}>
       <Text numberOfLines={2} style={s.title}>{localizedName}</Text>
       <Text style={[s.offerStatus,{color:offerEligible?C.good:C.muted}]}>{offerStatus}</Text>
-      <Text style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
-      <View style={s.price}><ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
+      <Text numberOfLines={2} style={s.meta}>{[item.rarity,item.region,item.category].filter(Boolean).map(label=>t(label!)).join(' · ')}</Text>
+      <View style={s.price}>{previewOnly?<Text style={s.priceHint}>{dungeonShopBonusLabel(language,'preview')}</Text>:null}<ExpeditionMarkIcon size={16}/><Text style={s.priceText}>{localizedMarks}</Text></View>
      </View>
      <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.detail}>
-     <Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>
+     {previewArt?<View style={s.cosmeticPreview}>{item.category==='border'
+      ?<View style={s.widePreviewImage}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={previewArt}/></View>
+      :<Image source={previewArt} resizeMode="contain" style={item.category==='background'?s.widePreviewImage:s.petPreviewImage}/>
+     }</View>:null}
+     {bonusDetails?<View style={s.bonusBlock}>
+      <Text style={s.bonusName}>{bonusDetails.stat}</Text>
+      <View style={s.bonusGrid}>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.equipped}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'equipped')}</Text></View>
+       <View style={s.bonusCell}><Text style={s.bonusAmount}>{bonusDetails.owned}</Text><Text style={s.bonusCaption}>{dungeonShopBonusLabel(language,'owned')}</Text></View>
+      </View>
+     </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
      {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
-     {item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
+     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
+      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
      {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
     </View>:null}
@@ -156,10 +176,19 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  itemHead:{minHeight:70,flexDirection:'row',alignItems:'center',gap:11,padding:10},
  art:{width:48,height:48,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panelRaised,alignItems:'center',justifyContent:'center'},
  title:{...typography.bodyStrong,color:C.text},
- price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},priceText:{...typography.bodyStrong,color:C.accent},
+ price:{flexDirection:'row',alignItems:'center',gap:5,marginTop:5,flexWrap:'wrap'},priceText:{...typography.bodyStrong,color:C.accent},
+ priceHint:{...typography.caption,color:C.muted,fontSize:11,marginRight:2},
  chevron:{fontSize:22,fontWeight:'700',color:C.muted,width:22,textAlign:'center'},
  detail:{borderTopWidth:1,borderTopColor:C.line,padding:12,gap:9},
- description:{...typography.body,color:C.text},
+ description:{...typography.body,color:C.text,lineHeight:22},
+ bonusBlock:{gap:8},bonusName:{...typography.bodyStrong,color:C.text,fontSize:15},
+ bonusGrid:{flexDirection:'row',gap:8},
+ bonusCell:{flex:1,minWidth:0,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panelRaised,padding:10,gap:3},
+ bonusAmount:{...typography.bodyStrong,color:C.good,fontSize:17},
+ bonusCaption:{...typography.caption,color:C.muted,lineHeight:16},
+ previewNote:{...typography.caption,color:C.muted,lineHeight:18},
+ cosmeticPreview:{alignItems:'center',justifyContent:'center',minHeight:104,backgroundColor:C.panelRaised,borderRadius:8,paddingVertical:6},
+ petPreviewImage:{width:96,height:96},widePreviewImage:{width:208,height:117,maxWidth:'100%',overflow:'hidden',borderRadius:5},
  offerStatus:{...typography.caption,fontWeight:'800'},
  owned:{...typography.caption,color:C.good,fontWeight:'800'},
  error:{...typography.caption,color:C.bad},notice:{...typography.caption,color:C.good},

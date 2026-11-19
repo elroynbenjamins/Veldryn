@@ -11,7 +11,7 @@ throws(()=>executeGameCommand(state,{type:'roster_create',args:{classId:'BASTION
 throws(()=>executeGameCommand(state,{type:'roster_create',args:{classId:'NOT_A_CLASS',name:'Invalid',body:'male'}},2,{characterId:secondId}),'unknown roster class must reject creation');
 throws(()=>executeGameCommand(state,{type:'roster_switch',args:{id:secondId}},2),'unknown roster member must reject switching');
 state={...state,version:11,account:{...state.account,unlockedCharacterSlots:2}};
-state=executeGameCommand(state,{type:'roster_create',args:{classId:'BASTION',name:'Second',body:'female'}},2,{characterId:secondId}).state;
+state=executeGameCommand(state,{type:'roster_create',args:{classId:'DAWNKEEPER',name:'Second',body:'female'}},2,{characterId:secondId}).state;
 equal(state.character?.id,secondId,'active created roster member');
 equal(state.version,11,'roster creation retains schema version');
 equal(state.otherCharacters?.length,1,'previous character retained');
@@ -27,7 +27,7 @@ equal(state.otherCharacters?.[0].character.gold,100,'inactive wallet retained');
 // World travel milestones belong to each character, not the shared account.
 let world=executeGameCommand(newGame(1),{type:'create',args:{classId:'IRONWARDEN',name:'Veteran',body:'male'}},1,{characterId:firstId}).state;
 world={...world,currentRegionId:'SUNSCAR',exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD'],defeatedBossIds:['FALLEN_KNIGHT'],unlockedMonsterIds:['MOSS_RAT','THORNLING'],quests:world.quests.map(q=>['QST_010','QST_014'].includes(q.questId)?{...q,status:'claimed',progress:1}:q),account:{...world.account,unlockedCharacterSlots:2}};
-world=executeGameCommand(world,{type:'roster_create',args:{classId:'BASTION',name:'Fresh',body:'female'}},2,{characterId:secondId}).state;
+world=executeGameCommand(world,{type:'roster_create',args:{classId:'DAWNKEEPER',name:'Fresh',body:'female'}},2,{characterId:secondId}).state;
 equal(world.defeatedBossIds.length,0,'new alternate must not inherit story boss');
 equal((world.exploredRouteIds??[]).length,0,'new alternate must not inherit scouting routes');
 equal(world.otherCharacters?.[0].defeatedBossIds?.[0],'FALLEN_KNIGHT','first character retains its boss clear');

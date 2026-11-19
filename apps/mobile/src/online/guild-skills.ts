@@ -83,7 +83,7 @@ export async function upgradeOnlineGuildSkill(skillId:string,requestKey:string):
    body:JSON.stringify({skillId,requestKey}),
   });
   const value=await response.json();
-  if(!response.ok)throw new Error(typeof value?.error==='string'?value.error:'Guild Skill upgrade failed.');
+  if(!response.ok)throw new Error(response.status>=500?'guild_skill_service_unavailable':typeof value?.error==='string'?value.error:'Guild Skill upgrade failed.');
   return value as GuildSkillUpgradeResult;
  }finally{clearTimeout(timeout);}
 }

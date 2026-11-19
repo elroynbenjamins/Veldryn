@@ -89,8 +89,8 @@ assert.equal(QUESTS.find(quest=>quest.id==='QST_005')?.required,8);
 assert.equal(QUESTS.find(quest=>quest.id==='QST_011')?.required,16);
 assert.equal(MONSTERS.find(monster=>monster.id==='FALLEN_KNIGHT')?.unlockLevel,20);
 assert.equal(WORLD_ZONES.find(zone=>zone.id==='KINGS_ROAD')?.minLevel,16);
-assert.equal(WORLD_ZONES.find(zone=>zone.id==='SUNSCAR')?.minLevel,20);
-assert.equal(REGIONAL_AREAS.find(area=>area.id==='ZONE_011')?.minLevel,34);
+assert.equal(WORLD_ZONES.find(zone=>zone.id==='SUNSCAR')?.minLevel,26);
+assert.equal(REGIONAL_AREAS.find(area=>area.id==='ZONE_011')?.minLevel,51);
 for(const requirement of [
  ...WORLD_ZONES.map(zone=>zone.minLevel),
  ...MONSTERS.map(monster=>monster.unlockLevel),

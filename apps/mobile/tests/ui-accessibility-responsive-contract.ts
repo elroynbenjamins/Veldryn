@@ -24,7 +24,7 @@ const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');
 ok(modal.includes('accessible={false}')&&modal.includes('no-hide-descendants'),'Modal backdrops must not become redundant screen-reader focus targets');
-ok(modal.includes("Platform.OS==='ios'?'padding':'height'"),'Shared modals must avoid Android keyboard overlap');
+ok(modal.includes("behavior={Platform.OS==='ios'?'padding':undefined}")&&modal.includes("Keyboard.addListener('keyboardDidHide'")&&modal.includes('keyboardOverlap>0&&{paddingBottom:keyboardOverlap}'),'Shared modals must preserve Android keyboard clearance and clear stale overlap on dismiss');
 
 const reward=read('src/components/RewardPopup.tsx');
 ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent'),'Reward results must honor modal safe areas on edge-to-edge devices');
@@ -136,7 +136,7 @@ ok(achievements.includes("entryRightStack:{width:'100%',maxWidth:'100%',flexDire
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px touch target');
 ok(rankings.includes('stackRows=width<360||fontScale>=1.25'),'Ranking rows must adapt to narrow phones and large text');
-ok(rankings.includes("scoreValueStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
+ok(rankings.includes('stackRows&&s.scoreWrapStack')&&rankings.includes("scoreWrapStack:{width:'100%',maxWidth:'100%',paddingLeft:53,alignItems:'flex-start'}")&&rankings.includes("scoreValueStack:{textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
 
 const petBonus=read('src/screens/PetBonusOverviewScreen.tsx');
 ok(petBonus.includes('useWindowDimensions')&&petBonus.includes("singleColumn=width<360||fontScale>=1.25"),'Pet Bonus Overview must adapt filters and cards for narrow phones and large text');

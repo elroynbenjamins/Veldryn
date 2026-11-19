@@ -201,7 +201,15 @@ async function run() {
  assert(weeklySpoof.status===400,'weekly reward amount cannot be set by client');
  const weeklyOk=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"}'}));
  assert(weeklyOk.status===200,'valid weekly reward forwarded');
- assert(weeklyCalls.length===1&&weeklyCalls[0].name==='guild_shop_claim_weekly_server_v1','weekly reward uses verified SQL');
+ const questClaim=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"quest"}'}));
+ assert(questClaim.status===200,'verified Guild Quest reward can be claimed');
+ assert(weeklyCalls.length===2&&weeklyCalls[1].args.p_kind==='quest','Quest reward kind reaches authoritative SQL');
+ const bonusClaim=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"project_bonus"}'}));
+ assert(bonusClaim.status===200,'earned project completion catch-up can be claimed');
+ assert(weeklyCalls.slice().length===3&&weeklyCalls[2].args.p_kind==='project_bonus','catch-up amount is never caller controlled');
+ const bonusSpoof=await weekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"project_bonus","amount":444}'}));
+ assert(bonusSpoof.status===400,'project bonus cannot be forged or inflated');
+ assert(weeklyCalls.every(x=>x.name==='guild_shop_claim_weekly_server_v1'),'weekly rewards use verified SQL');
  assert(weeklyCalls[0].args.p_account_id==='11111111-1111-4111-8111-111111111111','weekly claim account is authenticated');
  const treasuryWeekly=guildShopWeeklyClaimHandler({...services,rpc:async<T>()=>60 as unknown as T});
  assert((await treasuryWeekly(new Request(weeklyUri,{method:'POST',headers:{authorization:'Bearer valid'},body:'{"kind":"attendance"}'}))).status===200,

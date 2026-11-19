@@ -1,5 +1,6 @@
 import {COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,type CompanionAccountState} from './companion-runtime';
 import {normalizeCompanionMasteryXp} from './companion-mastery';
+import {normalizeCompanionHousingTiers} from './companion-housing';
 import {companionMission} from '../../../../backend/src/server/companions/content';
 import {combatCompanionDef} from '../content/combat-companions';
 import {newCompanionTrialSeasonState,newCompanionTrialLifetimeStats} from '../../../../backend/src/server/companions/trial-season';
@@ -14,6 +15,8 @@ export function normalizeCompanionRuntimeSave(raw:any):CompanionAccountState {
   const a=raw??{};
   if(a.companionSchemaVersion!==undefined&&a.companionSchemaVersion!==1)throw new Error('Unsupported companion save version.');
   const out:CompanionAccountState={companionSchemaVersion:1,companionMasteryXp:normalizeCompanionMasteryXp(a.companionMasteryXp),companionMaterials:record(a.companionMaterials),companionBossClears:record(a.companionBossClears),companionSpecialClears:list(a.companionSpecialClears),companionActionSequence:int(a.companionActionSequence),companionAssignmentBondstoneWeek:typeof a.companionAssignmentBondstoneWeek==='string'?a.companionAssignmentBondstoneWeek:undefined,companionAssignmentBondstones:int(a.companionAssignmentBondstones,1),companionRematchBondstoneWeek:typeof a.companionRematchBondstoneWeek==='string'?a.companionRematchBondstoneWeek:undefined,companionRematchBondstones:int(a.companionRematchBondstones,COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP)};
+  out.companionHousingTiers=normalizeCompanionHousingTiers(a.companionHousingTiers);
+  out.companionHousingMigratedV1=a.companionHousingMigratedV1===true;
   out.companionAssignments=Array.isArray(a.companionAssignments)?a.companionAssignments.filter((x:any)=>x&&typeof x.assignmentId==='string'&&companionMission(x.missionId)&&iso(x.startedAt)&&iso(x.endsAt)&&Array.isArray(x.companionIds)&&x.companionIds.length<=3&&x.companionIds.every((id:string)=>!!combatCompanionDef(id))&&['active','completed','claimed','cancelled'].includes(x.status)&&typeof x.seed==='string').slice(-12).map((x:any)=>({...x,companionIds:list(x.companionIds,3)})):[];
   // Retain only a legal Tank / Damage / Support formation across backup import.
   // Reject corrupt or duplicate IDs instead of restoring an invalid trial lineup.

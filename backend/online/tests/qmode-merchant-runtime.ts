@@ -8,14 +8,18 @@ import type {QModeRun} from '../../src/server/coop/qmode';
 
 async function main(){
  const player=launchPlayer('Ironwarden',25),runId='00000000-0000-4000-8000-000000000001',accountId='controller';
- let graph=generateCoopRouteGraph('merchant-seed','EXP_001',runId,'content-v1','balance-v1');
- let merchant=graph.nodes.find(node=>node.kind==='merchant');
- for(let seed=1;!merchant&&seed<100;seed++){
-  graph=generateCoopRouteGraph('merchant-seed','EXP_001',runId+'-'+seed,'content-v1','balance-v1');
-  merchant=graph.nodes.find(node=>node.kind==='merchant');
+ // New dungeon routes must never generate a Merchant room.
+ for(let seed=0;seed<25;seed++){
+  const candidate=generateCoopRouteGraph('merchant-retirement','EXP_001',runId+'-'+seed,'content-v1','balance-v1');
+  assert.ok(candidate.nodes.every(node=>node.kind!=='merchant'),'new Q-Mode routes must not sell Merchant offers');
  }
- if(!merchant)throw new Error('merchant_fixture_missing');
- const merchantNode=merchant;
+ // Reconstruct an *existing* historical Merchant node to keep old account
+ // receipts and replay safety covered without introducing new Merchant rooms.
+ const freshGraph=generateCoopRouteGraph('merchant-seed','EXP_001',runId,'content-v1','balance-v1');
+ const historicalNode=freshGraph.nodes.find(node=>node.kind==='event')??freshGraph.nodes.find(node=>node.kind==='battle');
+ if(!historicalNode)throw new Error('historical_room_fixture_missing');
+ const graph={...freshGraph,nodes:freshGraph.nodes.map(node=>node.nodeId===historicalNode.nodeId?{...node,kind:'merchant' as const,contentId:'COOP_HISTORICAL_MERCHANT'}:node)};
+ const merchantNode=graph.nodes.find(node=>node.kind==='merchant')!;
  const state={...initialPersistentRunState([player]),resources:5,visitedNodeIds:[merchantNode.nodeId]};
  const run:QModeRun={id:runId,requestId:'run-create-01',controllerAccountId:accountId,expeditionId:'EXP_001',tier:1,graph,currentNodeId:merchantNode.nodeId,phase:'awaiting_choice',players:[player],persistentState:state,echoSourceAccountIds:[]};
  const offerId=merchantNode.contentId+':boon',request={requestId:'merchant-purchase-001',expectedVersion:5,offerId};
@@ -29,9 +33,10 @@ async function main(){
    assert.equal(args.p_offer_id,offerId);
    assert.equal(args.p_actor_id,player.id);
    assert.equal(args.p_expected_version,5);
-   const client=args.p_client_projection as {merchantShop?:{resources:number;offers:Array<{id:string;purchased:boolean}>};lastRoomOutcome?:{kind:string;resourcesDelta:number;boonCount:number}};
-   assert.equal(client.merchantShop?.resources,3);
-   assert.equal(client.merchantShop?.offers.find(offer=>offer.id===offerId)?.purchased,true);
+   const client=args.p_client_projection as {resources:number;personalEffects:Record<string,{purchases:string[]}>;lastRoomOutcome?:{kind:string;resourcesDelta:number;boonCount:number}};
+   assert.equal(client.resources,3);
+   assert.ok(client.personalEffects[player.id]?.purchases.includes(offerId),'historical offer is recorded on the purchasing actor');
+   assert.ok(!Object.hasOwn(client,'merchantShop'),'retired Merchant shop offers are not exposed to current clients');
    assert.equal(client.lastRoomOutcome?.kind,'merchant_purchase');
    assert.equal(client.lastRoomOutcome?.resourcesDelta,-2);
    assert.equal(client.lastRoomOutcome?.boonCount,1);
@@ -41,11 +46,11 @@ async function main(){
   throw new Error('unexpected_rpc:'+name);
  }});
  const purchased=await runtime.purchaseMerchant(accountId,runId,request);
- assert.equal((purchased as {merchantShop?:{resources:number}}).merchantShop?.resources,3);
+ assert.equal((purchased as {resources:number}).resources,3);
  assert.deepEqual(await runtime.purchaseMerchant(accountId,runId,request),purchased);
  assert.equal(commits,1);
  assert.equal(loads,1);
  await assert.rejects(()=>runtime.purchaseMerchant(accountId,runId,{...request,offerId:merchantNode.contentId+':artifact'}),/idempotency_key_conflict/);
- console.log('PASS QMode Merchant: server-owned offer, funds, actor, receipt replay and changed-intent conflict');
+ console.log('PASS Q-Mode: Merchant rooms retired for new runs; historical server receipts remain replay-safe');
 }
 void main();

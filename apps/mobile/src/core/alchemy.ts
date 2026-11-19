@@ -97,11 +97,13 @@ const PREVIOUS_TONIC_INPUTS:Record<string,readonly ItemStack[]>={
  'BREW_GREATER_WARD_TONIC':[{itemId:'IRONBLOOM',quantity:3},{itemId:'CROWN_SAGE',quantity:2}],
 };
 function permittedReservationInputs(recipeId:string,current:readonly ItemStack[],saved:readonly ItemStack[]):boolean{
- // Preparation tonics were ×1 before the premium balance pass. Keep their paid escrow intact.
+ // Preserve paid brewing escrow across all tonic recipe revisions.
+ // The new 3 Holy Water and 2 Tempering Dust are added after ×5 herb scaling.
  const recipe=alchemyRecipeDef(recipeId),isTonic=recipe&&potionDef(recipe.output.itemId)?.effect.kind==='preparation';
- const priorTonicInputs=isTonic&&current.every(row=>row.quantity%COMBAT_POTION_CRAFT_COST_MULTIPLIER===0)
-  ?current.map(row=>({...row,quantity:row.quantity/COMBAT_POTION_CRAFT_COST_MULTIPLIER})):undefined;
- const allowed=[current,priorTonicInputs,PREVIOUS_TONIC_INPUTS[recipeId],
+ const priorInputs=isTonic?current.filter(row=>row.itemId!=='HOLY_WATER'&&row.itemId!=='TEMPERING_DUST'):current;
+ const priorTonicInputs=isTonic&&priorInputs.every(row=>row.quantity%COMBAT_POTION_CRAFT_COST_MULTIPLIER===0)
+  ?priorInputs.map(row=>({...row,quantity:row.quantity/COMBAT_POTION_CRAFT_COST_MULTIPLIER})):undefined;
+ const allowed=[current,priorInputs,priorTonicInputs,PREVIOUS_TONIC_INPUTS[recipeId],
   ...(recipeId==='BREW_RIVERHEART_DRAUGHT'?PREVIOUS_RIVERHEART_INPUTS:[])].filter((rows):rows is readonly ItemStack[]=>!!rows);
  return allowed.some(inputs=>inputs.length===saved.length&&inputs.every(input=>
   saved.filter(row=>row.itemId===input.itemId&&row.quantity===input.quantity).length===1));
@@ -129,12 +131,10 @@ export function normalizePreparation(value:unknown):ActivePreparation|undefined 
     throw new Error('Invalid saved combat preparation. Keep the save backup.');
   return {itemId:def.id,remainingEncounters:raw.remainingEncounters};
 }
-export function preparationEffects(preparation:ActivePreparation|undefined) {
-  const def=preparation&&preparation.remainingEncounters>0?potionDef(preparation.itemId):undefined;
-  return def?.effect.kind==='preparation'?
-    {attack:1+def.effect.attackFraction,outgoing:1+def.effect.damageDealtFraction,damage:1-def.effect.damageReductionFraction,
-     healing:1+def.effect.healingStrengthFraction,shielding:1+def.effect.shieldStrengthFraction,itemId:def.id}:
-    {attack:1,outgoing:1,damage:1,healing:1,shielding:1,itemId:undefined};
+/** Legacy preparation fields may exist in old saves but grant no bonuses.
+ * Dungeon tonics live only in the server-owned per-run combat snapshot. */
+export function preparationEffects(_preparation:ActivePreparation|undefined) {
+ return {attack:1,outgoing:1,damage:1,healing:1,shielding:1,itemId:undefined};
 }
 export function spendPreparationEncounter(preparation:ActivePreparation|undefined,itemId:string|undefined):ActivePreparation|undefined {
   if(!itemId||!preparation||preparation.itemId!==itemId)return preparation;

@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {EXPEDITIONS} from '../../expeditions/content/launch-content';
+import {LEGACY_DUNGEON_BASE_MARKS} from '../../expeditions/reward-base';
 import {EXPEDITION} from '../../expeditions/constants';
 import {marksForRun} from '../../expeditions/rewards';
 import {coopTierEnemyMultipliers} from '../../expeditions/tier-balance';
@@ -42,7 +43,7 @@ const run={id:'test-run',expeditionId:'EXP_001',tier:5,phase:'completed',tierSca
 } as unknown as QModeRun;
 assert.equal(enhancedDungeonMarks(run),126);
 const legacy={...run,tierScalingVersion:undefined} as QModeRun;
-assert.equal(enhancedDungeonMarks(legacy),Math.round(EXPEDITIONS.EXP_001.baseMarks*.8),'Legacy live in-progress payouts are preserved');
+assert.equal(enhancedDungeonMarks(legacy),Math.round(LEGACY_DUNGEON_BASE_MARKS.EXP_001*.8),'Legacy live in-progress payouts are preserved');
 const failedEarly={...run,phase:'failed',persistentState:{...seedState,visitedNodeIds:[first.nodeId]},lastResolution:{nodeId:first.nodeId,result:{summary:{kind:'combat'}}}} as unknown as QModeRun;
 assert.equal(enhancedDungeonMarks(failedEarly),6,'Early failures earn a small progress payment');
 const boss=graph.nodes.find(node=>node.kind==='boss')!;

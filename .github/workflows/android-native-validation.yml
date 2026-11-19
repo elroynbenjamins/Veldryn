@@ -17,7 +17,18 @@ on:
       - 'apps/mobile/plugins/**'
       - 'apps/mobile/modules/**'
       - 'apps/mobile/src/online/google-signin.ts'
+      # Release-candidate changes must also run the native AAB/emulator gates.
+      - 'apps/mobile/src/core/equipment-bonus-rolls.ts'
+      - 'apps/mobile/src/core/weapon-bonus-rolls.ts'
+      - 'apps/mobile/src/core/crafted-gear-instances.ts'
+      - 'apps/mobile/src/components/SocialNameEditor.tsx'
+      - 'apps/mobile/src/components/ProfileCharacterSelector.tsx'
+      - 'apps/mobile/src/online/profile-extension-v43.ts'
+      - 'apps/mobile/src/core/release-flags.ts'
       - 'apps/mobile/src/online/play-games.ts'
+      - 'apps/mobile/metro.config.js'
+      - 'apps/mobile/scripts/repair-frostfall-currency-images.cjs'
+      - 'apps/mobile/assets/events/frostfall/**'
       - '.github/workflows/android-native-validation.yml'
       - '.github/scripts/android-release-smoke.sh'
   workflow_dispatch:
@@ -71,6 +82,10 @@ jobs:
           test -f ../../backend/src/server/companions/trial-season.ts
           test -f ../../backend/src/server/companions/content.ts
           test -f ../../packages/guild-shop/src/catalogue.ts
+      - name: Repair and verify Frostfall currency PNG integrity
+        run: |
+          node scripts/repair-frostfall-currency-images.cjs
+          node scripts/repair-frostfall-currency-images.cjs --verify
       - name: Generate Android native project
         run: npx expo prebuild --platform android --clean --no-install
       - name: Build release AAB

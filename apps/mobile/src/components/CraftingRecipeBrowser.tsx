@@ -11,6 +11,7 @@ import {isTimedProcessingRecipe,processingAvailability} from '../core/processing
 import {equipmentCraftAvailability,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {RecipeCard} from './RecipeCard';
+import {groupTwoVariantCraftingRecipes} from '../core/crafting-recipe-variants';
 import {SearchField} from './SearchField';
 import {GameButton} from './GameButton';
 import {DisclosureControl} from './DisclosureControl';
@@ -20,19 +21,21 @@ import {useGameTheme} from '../theme/ThemeContext';
 type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'>;
 type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
 type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
+type GroupedRows={key:string;rows:Row[]};
 const recipeGroups=new Map<string,(typeof RECIPES)>();
 
 export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[guildMaterialsOnly,setGuildMaterialsOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
+ const [selectedVariants,setSelectedVariants]=useState<Record<string,string>>({});
  const skill=state.skills.find(row=>row.skillId===skillId),skillLevel=skill?.level??1,characterLevel=state.character?.level??1;
  // Filter recipes before expensive inventory, bank, alchemy and equipment checks.
  // Typing into search now evaluates only recipes that can actually be shown.
  const q=query.trim().toLowerCase();
  const recipes=useMemo(()=>{
   const key=skillId+':'+state.character?.classId,cached=recipeGroups.get(key);if(cached)return cached;
-  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
   recipeGroups.set(key,group);return group;
  },[skillId,state.character?.classId]);
  const stored=useMemo(()=>{
@@ -41,17 +44,19 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
   for(const row of state.bank.stacks)bank.set(row.itemId,(bank.get(row.itemId)??0)+row.quantity);
   return {inventory,bank};
  },[state.inventory.stacks,state.bank.stacks]);
- const visibleRecipes=useMemo(()=>recipes.filter(recipe=>{
+ const variantGroups=useMemo(()=>groupTwoVariantCraftingRecipes(recipes),[recipes]);
+ const visibleGroups=useMemo(()=>variantGroups.filter(group=>{
   try{
-   if(guildMaterialsOnly&&!itemDef(recipe.output.itemId).guildOnly)return false;
+   if(guildMaterialsOnly&&!itemDef(group.recipes[0].output.itemId).guildOnly)return false;
    if(category){
-    const isTool=itemDef(recipe.output.itemId).type==='tool';
-    if(category==='tools'?!isTool:isTool||!!recipe.v33SetId)return false;
+    const isTool=itemDef(group.recipes[0].output.itemId).type==='tool';
+    if(category==='tools'?!isTool:isTool||!!group.recipes[0].v33SetId)return false;
    }
-   return recipeMatchesLocalizedSearch(language,recipe,q);
-  }catch(error){console.warn('[CraftingRecipeBrowser] Invalid recipe output',recipe.id,error);return false}
- }),[recipes,category,q,guildMaterialsOnly,language]);
- const matching:Row[]=useMemo(()=>visibleRecipes.map(recipe=>{
+   // Searching an alternate route still opens the same unified output card.
+   return group.recipes.some(recipe=>recipeMatchesLocalizedSearch(language,recipe,q));
+  }catch(error){console.warn('[CraftingRecipeBrowser] Invalid recipe output',group.key,error);return false;}
+ }),[variantGroups,category,q,guildMaterialsOnly,language]);
+ const matching:GroupedRows[]=useMemo(()=>visibleGroups.map(group=>({key:group.key,rows:group.recipes.map(recipe=>{
   try{
    if(recipe.level>skillLevel||(recipe.characterLevel??1)>characterLevel)return {recipe,status:{ready:false,reason:recipe.level>skillLevel?gt('Requires {skill} level {level}.',{skill:gl(recipe.skillId),level:recipe.level}):gt('Requires character level {level}.',{level:recipe.characterLevel??1}),inputs:recipe.inputs.map(input=>({...input,inventory:stored.inventory.get(input.itemId)??0,bank:stored.bank.get(input.itemId)??0}))}};
    const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
@@ -61,16 +66,30 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
    console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);
    return {recipe,status:{ready:false,reason:gt("Recipe temporarily unavailable."),inputs:[]}};
   }
- }),[visibleRecipes,state,skillId,skillLevel,characterLevel,stored,gt,gl]);
- const ready=matching.filter(row=>row.status.ready),locked=matching.filter(row=>!row.status.ready&&(row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
- const lockedIds=new Set(locked.map(row=>row.recipe.id)),needs=matching.filter(row=>!row.status.ready&&!lockedIds.has(row.recipe.id));
- const groups:{label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[]=readyOnly?[{label:gt("READY NOW"),tone:'ready',rows:ready}]:[{label:gt("READY NOW"),tone:'ready',rows:ready},{label:gt("NEEDS REQUIREMENTS"),tone:'needs',rows:needs},{label:gt("LOCKED"),tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[];
+ })})),[visibleGroups,state,skillId,skillLevel,characterLevel,stored,gt,gl]);
+ // A craftable stays under READY NOW when either source is craftable.
+ const ready=matching.filter(group=>group.rows.some(row=>row.status.ready));
+ const locked=matching.filter(group=>!group.rows.some(row=>row.status.ready)&&group.rows.every(row=>row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
+ const needs=matching.filter(group=>!ready.includes(group)&&!locked.includes(group));
+ const groups:{label:string;tone:'ready'|'needs'|'locked';rows:GroupedRows[]}[]=readyOnly?[{label:gt("READY NOW"),tone:'ready',rows:ready}]:[{label:gt("READY NOW"),tone:'ready',rows:ready},{label:gt("NEEDS REQUIREMENTS"),tone:'needs',rows:needs},{label:gt("LOCKED"),tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:GroupedRows[]}[];
  const perGroup=Math.max(4,Math.ceil(limit/Math.max(1,groups.length))),hasMore=groups.some(group=>group.rows.length>perGroup);
+ const selectedRow=(group:GroupedRows):Row=>{
+  const explicit=group.rows.find(row=>row.recipe.id===selectedVariants[group.key]);
+  if(explicit)return explicit;
+  const preferred=group.rows.find(row=>row.recipe.id===preferredRecipeId);
+  if(preferred)return preferred;
+  // A material-ready route is the sensible first selection, but players can
+  // deliberately switch to an unavailable route to inspect requirements.
+  const searched=q?group.rows.filter(row=>recipeMatchesLocalizedSearch(language,row.recipe,q)):[];
+  // A query for an exact alternative opens that method. A shared item-name
+  // query instead defaults to whichever route can be crafted right now.
+  return (searched.length===1?searched[0]:undefined)??group.rows.find(row=>row.status.ready)??searched[0]??group.rows[0];
+ };
  return <View style={s.root}>
   <View style={s.searchRow}><View style={s.flex}><SearchField accessibilityLabel={gt("Search recipes")} value={query} onChangeText={value=>{setQuery(value);setLimit(12);}} placeholder={gt("Search recipes…")}/></View><DisclosureControl label={gt("Filters")+(readyOnly||guildMaterialsOnly?' · '+(Number(readyOnly)+Number(guildMaterialsOnly)):'')} expanded={filterOpen} onPress={()=>setFilterOpen(value=>!value)} compact/></View>
   {(skillId==='smithing'||skillId==='tailoring')?<Pressable accessibilityRole="button" accessibilityState={{selected:guildMaterialsOnly}} onPress={()=>{setGuildMaterialsOnly(value=>!value);setLimit(12);}} style={({pressed})=>[s.guildToggle,guildMaterialsOnly&&s.guildToggleSelected,pressed&&s.pressed]}><Text style={[s.guildToggleText,guildMaterialsOnly&&s.guildToggleTextActive]}>{guildMaterialsOnly?'✓ ':''}{gl('Guild materials')}</Text><Text style={s.guildToggleHint}>{gl('Craft supplies for Guild Construction')} ›</Text></Pressable>:null}
   {filterOpen?<View style={s.filterPanel}><Pressable accessibilityRole="button" accessibilityState={{selected:readyOnly}} onPress={()=>{setReadyOnly(value=>!value);setLimit(12);}} style={({pressed})=>[s.filterRow,readyOnly&&s.filterRowActive,pressed&&s.pressed]}><View style={s.flex}><Text style={s.filterTitle}>{gt("Craftable only")}</Text><Text style={s.filterHint}>{gt("Hide locked and missing-requirement recipes.")}</Text></View><Text style={[s.filterValue,readyOnly&&s.filterValueActive]}>{readyOnly?gt("ON"):gt("OFF")}</Text></Pressable></View>:null}
-  {groups.map(group=><View key={group.label} style={s.group}><View style={s.groupHead}><Text style={[s.groupLabel,group.tone==='ready'?s.ready:group.tone==='needs'?s.needs:s.locked]}>{group.label}</Text><Text style={s.groupCount}>{group.rows.length}</Text></View>{group.rows.slice(0,perGroup).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={onNavigate} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={onTrackPreparation} alchemy={skillId==='alchemy'} onAlchemyStart={onAlchemyStart} onProcessingStart={onProcessingStart} initialExpanded={recipe.id===preferredRecipeId}/>)}</View>)}
+  {groups.map(group=><View key={group.label} style={s.group}><View style={s.groupHead}><Text style={[s.groupLabel,group.tone==='ready'?s.ready:group.tone==='needs'?s.needs:s.locked]}>{group.label}</Text><Text style={s.groupCount}>{group.rows.length}</Text></View>{group.rows.slice(0,perGroup).map(recipeGroup=>{const selected=selectedRow(recipeGroup);return <RecipeCard key={recipeGroup.key} state={state} recipe={selected.recipe} status={selected.status} variantRecipes={recipeGroup.rows.length===2?recipeGroup.rows.map(row=>row.recipe):undefined} onSelectVariant={id=>setSelectedVariants(current=>({...current,[recipeGroup.key]:id}))} onCraft={onCraft} onNavigate={onNavigate} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={onTrackPreparation} alchemy={skillId==='alchemy'} onAlchemyStart={onAlchemyStart} onProcessingStart={onProcessingStart} initialExpanded={recipeGroup.rows.some(row=>row.recipe.id===preferredRecipeId)}/>})}</View>)}
   {hasMore?<GameButton title={gt("Show more recipes")} tone="secondary" onPress={()=>setLimit(value=>value+12)}/>:null}
   {matching.length===0?<Text style={s.empty}>{query.trim()?gt("No recipes match your search."):readyOnly?gt("No recipes are ready. Open Filters to show locked and missing-requirement recipes."):gt("No recipes available.")}</Text>:null}
  </View>;

@@ -47,11 +47,13 @@ for migration in \
   20261113112500_market_v12_browser_reconciliation_private_v24.sql \
   20261115210000_market_authenticated_read_bridge_private_v26.sql \
   20261115220000_market_read_rate_retention_private_v27.sql \
-  20261115224000_market_expiry_worker_internal_v28.sql
+  20261115224000_market_expiry_worker_internal_v28.sql \
+  20261119100000_market_bulk_partial_resource_fills_private_v17.sql \
+  20261119103000_market_mixed_listing_expiry_private_v17b.sql
 do
   psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/$migration"
 done
-echo "PASS: all 38 dependency-ordered private Market migrations compile on clean PG17"
+echo "PASS: all 40 dependency-ordered private Market migrations compile on clean PG17"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_acquisition_v18.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_provenance_v19.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_recipient_transfer_v20.sql"
@@ -64,6 +66,8 @@ psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_rat
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_expiry_worker_v28.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_resource_tax_lifecycle.sql"
 psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v12_equipment_tax_lifecycle.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_bulk_partial_account_expiry.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_v17_equipment_expiry.sql"
 psql -X -v ON_ERROR_STOP=1 -q <<'SQL'
 do $check$
 begin
@@ -78,6 +82,8 @@ begin
  or exists(select 1 from private.market_gold_intents_v2)
  or exists(select 1 from private.market_sale_offers_v3)
  or exists(select 1 from private.market_completed_sale_history_v13)
+ or exists(select 1 from private.market_partial_fills_v17)
+ or exists(select 1 from private.market_partial_custody_lineage_v17)
  or exists(select 1 from private.market_acquisition_policy_v18 where approved)
  or exists(select 1 from private.market_equipment_provenance_v19)
  or exists(select 1 from private.market_equipment_recipient_transfers_v20)
@@ -91,6 +97,8 @@ begin
  or has_function_privilege('authenticated','private.market_sale_tax_quote_v11(bigint)','EXECUTE')
  or has_function_privilege('anon','private.market_verified_completed_sales_v11(text,text,timestamptz)','EXECUTE')
  or has_function_privilege('authenticated','private.market_completed_price_chart_v13(text,text,integer,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_purchase_resource_quantity_v17(uuid,uuid,bigint,integer,bigint,bigint,text,text)','EXECUTE')
+ or has_function_privilege('authenticated','private.market_queue_due_returns_v17(integer)','EXECUTE')
  or has_table_privilege('authenticated','private.market_acquisition_policy_v18','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_provenance_v19','SELECT')
  or has_table_privilege('authenticated','private.market_equipment_recipient_transfers_v20','SELECT')

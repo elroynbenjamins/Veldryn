@@ -2,6 +2,7 @@ import {createSourceTranslator,type TranslationRow} from './source-catalog';
 import type {Language} from './languages';
 
 export const craftingDetailRows={
+ 'Next equipment tier':['Nächste Ausrüstungsstufe','Siguiente nivel de equipo','Volgende uitrustingsniveau','Prossimo livello di equipaggiamento','Prochain palier d’équipement'],
  'No active mastery bonus yet':['Noch kein aktiver Meisterschaftsbonus','Aún no hay bonos de maestría activos','Nog geen actieve meesterschapsbonus','Nessun bonus maestria attivo','Aucun bonus de maîtrise actif'],
  '+{value}% skill XP':['+{value}% Fertigkeits-EP','+{value}% EXP de habilidad','+{value}% vaardigheids-XP','+{value}% ESP abilità','+{value} % EXP de compétence'],
  '+{value}% XP':['+{value}% EP','+{value}% EXP','+{value}% XP','+{value}% ESP','+{value} % EXP'],
@@ -20,6 +21,14 @@ export const craftingDetailRows={
  'Next bonus · R{rank} {bonus}':['Nächster Bonus · R{rank} {bonus}','Siguiente bono · R{rank} {bonus}','Volgende bonus · R{rank} {bonus}','Prossimo bonus · R{rank} {bonus}','Prochain bonus · R{rank} {bonus}'],
  'Sustain +{hp} HP':['Regeneration +{hp} LP','Sustento +{hp} PV','Herstel +{hp} LP','Recupero +{hp} PV','Récupération +{hp} PV'],
  'Recipe known':['Rezept bekannt','Receta conocida','Recept bekend','Ricetta conosciuta','Recette connue'],
+ 'Standard recipe':['Standardrezept','Receta estándar','Standaardrecept','Ricetta standard','Recette standard'],
+ 'Recycled recipe':['Recyclingrezept','Receta reciclada','Recyclingrecept','Ricetta riciclata','Recette recyclée'],
+ 'Reclaimed recipe':['Rückgewinnungsrezept','Receta recuperada','Hergebruikrecept','Ricetta di recupero','Recette de récupération'],
+ 'CRAFTING METHOD':['HERSTELLUNGSART','MÉTODO DE FABRICACIÓN','MAAKMETHODE','METODO DI CREAZIONE','MÉTHODE DE FABRICATION'],
+ 'Same item, different materials':['Gleicher Gegenstand, andere Materialien','Mismo objeto, otros materiales','Zelfde item, andere materialen','Stesso oggetto, altri materiali','Même objet, autres matériaux'],
+ 'Standard':['Standard','Estándar','Standaard','Standard','Standard'],
+ 'Recycled':['Recycelt','Reciclada','Gerecycled','Riciclata','Recyclée'],
+ 'Reclaimed':['Wiederverwertet','Recuperada','Hergebruikt','Recuperata','Récupérée'],
  'Craft prerequisites · {count}':['Vorprodukte herstellen · {count}','Fabricar requisitos previos · {count}','Benodigdheden maken · {count}','Crea prerequisiti · {count}','Fabriquer les prérequis · {count}'],
  'All {active} active slots and all {waiting} waiting spaces are occupied':['Alle {active} aktiven Plätze und {waiting} Warteplätze sind belegt','Los {active} espacios activos y los {waiting} espacios de espera están ocupados','Alle {active} actieve plekken en {waiting} wachtplekken zijn bezet','Tutti i {active} slot attivi e i {waiting} posti in attesa sono occupati','Les {active} emplacements actifs et les {waiting} places d’attente sont occupés'],
  'Active slots are busy · reserves materials and joins waiting {position}/{capacity}':['Aktive Plätze belegt · reserviert Materialien und belegt Warteplatz {position}/{capacity}','Espacios activos ocupados · reserva materiales y entra en espera {position}/{capacity}','Actieve plekken bezet · reserveert materialen en gaat in de wachtrij {position}/{capacity}','Slot attivi occupati · riserva materiali ed entra in attesa {position}/{capacity}','Emplacements actifs occupés · réserve les matériaux et rejoint l’attente {position}/{capacity}'],

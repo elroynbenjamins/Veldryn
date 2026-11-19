@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-v10",
+    "rootDir": "src",
+    "strict": true
+  },
+  "include": [
+    "src/server/combat/guild-pve-pg-v10.ts",
+    "src/server/combat/content/launch-combat.ts"
+  ],
+  "exclude": []
+}

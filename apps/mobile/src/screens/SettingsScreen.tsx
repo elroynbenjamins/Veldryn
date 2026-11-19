@@ -1,6 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {accountDuration} from '../i18n/account';
 import {recentScreenText} from '../i18n/recent-screens';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
+import {CHAT_TRANSLATION_RELEASED} from '../core/release-flags';
+import {chatTranslationPrivacy} from '../i18n/chat-translation-privacy';
 import {appBuildText} from '../i18n/app-build';
 import {APP_BUILD_INFO} from '../app-build';
 import {useEffect,useMemo,useRef,useState} from 'react';
@@ -19,7 +22,8 @@ import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
 import {ChatEmotePicker} from '../components/ChatEmotePicker';
 import {GuideTopicModal} from '../components/GuideTopicModal';
-import {acknowledgeGameGuide,guideDefinition} from '../core/onboarding';
+import {acknowledgeGameGuide,guideDefinition,unlockedGameGuide} from '../core/onboarding';
+import {createGameGuideReadPreferenceStore} from '../core/game-guide-read-preferences';
 import {offlineCapBreakdown} from '../core/game';
 import {activityQueueCrossRegionAllowed} from '../core/activity-queue';
 import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
@@ -50,6 +54,7 @@ type Props={
 export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
 const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value==='store'?'account':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
+const guideReadPreferences=createGameGuideReadPreferenceStore(AsyncStorage);
 const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){
@@ -65,6 +70,27 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   // Respect deep links to Settings while normalizing retired section IDs.
   useEffect(()=>{setSelectedSection(normalizeSettingsSection(initialSection));},[initialSection]);
   const [guideId,setGuideId]=useState<GameGuideId>();
+  const guideScope=state.account.longTermAccountScopeId||state.character?.id||String(state.createdAtMs);
+  const [localGuideRead,setLocalGuideRead]=useState<{scope:string;ids:GameGuideId[]}>({scope:'',ids:[]});
+  useEffect(()=>{
+    if(!online)return;
+    let active=true;
+    void guideReadPreferences.load(guideScope).then(ids=>{
+      if(active)setLocalGuideRead(previous=>({scope:guideScope,ids:[...new Set([...(previous.scope===guideScope?previous.ids:[]),...ids])]}));
+    });
+    return()=>{active=false};
+  },[guideScope,online]);
+  const openGuide=(id:GameGuideId)=>{
+    setGuideId(id);
+    // A locked topic may be previewed for information, but must never mark progression unlocked.
+    if(!guideDefinition(id).unlock(state))return;
+    if(online){
+      setLocalGuideRead(previous=>({scope:guideScope,ids:[...new Set([...(previous.scope===guideScope?previous.ids:[]),id])]}));
+      void guideReadPreferences.markRead(guideScope,id);
+    }else onChange(acknowledgeGameGuide(state,id,true));
+  };
+  const availableGuideIds=unlockedGameGuide(state).map(entry=>entry.id);
+  const guideIndex=guideId?availableGuideIds.indexOf(guideId):-1;
   const [showAfkDetails,setShowAfkDetails]=useState(false),[showEmotes,setShowEmotes]=useState(focusChatEmotes),[showDeleteControls,setShowDeleteControls]=useState(false);
   const [confirmDefaults,setConfirmDefaults]=useState(false),[confirmDelete,setConfirmDelete]=useState(false);
   const {width}=useWindowDimensions(),phone=width<768;
@@ -101,7 +127,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       </Pressable>
     </View>
     {section==='display'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(uiThemeId??state.settings.uiTheme??'obsidian')===id} onPress={()=>onUiThemeChange?onUiThemeChange(id):update({uiTheme:id})}/>)}</View></Panel>}
-    {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
+    {section==='guide'&&<GameGuidePanel state={state} seenGuideIds={online&&localGuideRead.scope===guideScope?localGuideRead.ids:undefined} onStartTour={onStartMainScreenTour} onOpen={openGuide}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
 
@@ -125,6 +151,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         <View style={s.choices}>{([{id:1,label:'English'},{id:2,label:'Spanish'}] as const).map(channel=><SettingChip key={channel.id} label={channel.label} selected={defaultVisibleWorldChatIndex(state.settings.defaultWorldChat)+1===channel.id} onPress={()=>update({defaultWorldChat:channel.id})}/>)}</View>
       </View>:null}
     </Panel>
+    {CHAT_TRANSLATION_RELEASED?<Panel><Text style={[s.title,{color:theme.text}]}>{chatTranslationPrivacy(language).title}</Text><Text style={[s.muted,{color:theme.muted}]}>{chatTranslationPrivacy(language).description}</Text></Panel>:null}
     <View onLayout={event=>{emotesOffset.current=event.nativeEvent.layout.y;scrollToEmotes();}}><Panel><Pressable accessibilityRole="button" accessibilityState={{expanded:showEmotes}} onPress={()=>setShowEmotes(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
         <View style={s.flex}><Text style={[s.title,{color:theme.text}]}>{a("Chat emotes")}</Text><Text style={[s.muted,{color:theme.muted}]}>{a("Choose the five emotes available from the chat composer.")}</Text></View>
         
@@ -154,6 +181,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Panel>
         <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.privacy')}</Text>
         <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>
+        {CHAT_TRANSLATION_RELEASED?<Text style={[s.sub,{color:theme.muted}]}>{chatTranslationPrivacy(language).description}</Text>:null}
         <GameButton title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/>
       </Panel>
       {!online?<Panel>
@@ -175,7 +203,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
       {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>:null}
-  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmDefaults} title={a('Restore gameplay defaults?')} message={a('Combat safety and activity queue preferences will return to their defaults.')} confirmLabel={a('Restore defaults')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}} onCancel={()=>setConfirmDefaults(false)}/><ConfirmModal visible={confirmDelete} title={a('Delete local save?')} message={a('This permanently removes local progress from this device. Online characters are not affected.')} confirmLabel={a('Delete local save')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDelete(false);onReset();}} onCancel={()=>setConfirmDelete(false)}/></View>;
+  </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} canNavigate={guideId?guideDefinition(guideId).unlock(state):true} position={guideIndex>=0?{index:guideIndex+1,total:availableGuideIds.length}:undefined} onPrevious={guideIndex>0?()=>openGuide(availableGuideIds[guideIndex-1]):undefined} onNext={guideIndex>=0&&guideIndex<availableGuideIds.length-1?()=>openGuide(availableGuideIds[guideIndex+1]):undefined} onClose={()=>setGuideId(undefined)}/><ConfirmModal visible={confirmDefaults} title={a('Restore gameplay defaults?')} message={a('Combat safety and activity queue preferences will return to their defaults.')} confirmLabel={a('Restore defaults')} reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDefaults(false);restoreDefaults();}} onCancel={()=>setConfirmDefaults(false)}/><ConfirmModal visible={confirmDelete} title={a('Delete local save?')} message={a('This permanently removes local progress from this device. Online characters are not affected.')} confirmLabel={a('Delete local save')} danger reduceMotion={state.settings.reduceMotion} onConfirm={()=>{setConfirmDelete(false);onReset();}} onCancel={()=>setConfirmDelete(false)}/></View>;
 }
 
 function makeNavigationStyles(C:ThemeColors){return StyleSheet.create({

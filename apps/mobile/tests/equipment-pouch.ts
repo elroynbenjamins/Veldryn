@@ -9,7 +9,9 @@ import {equipmentPouchSaleCandidates,equipmentPouchSaleId,equipmentPouchQuickSel
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {itemRarity} from '../src/core/item-rarity';
 import {auditCraftedGearOwnership,equipCraftedGearInstance,moveCraftedGearInstance,unequipCraftedGearInstance} from '../src/core/crafted-gear-ownership';
-import {characterDeleteBlockReason} from '../src/core/account-actions';
+import {previewEquipment} from '../src/core/equipment-preview';
+import {bulkSelectionSummary,bulkTransferSelected} from '../src/core/inventory-bulk';
+import {characterDeleteBlockReason,deleteAccountCharacter} from '../src/core/account-actions';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import type {GameState} from '../src/core/types';
 
@@ -30,6 +32,17 @@ ok(equipmentPouch(transferred).stacks.filter(row=>row.itemId===output).length===
  'Manual legacy equipment transfer must preserve exactly one physical copy');
 const back=moveLegacyEquipmentPouchStack(transferred,output,1,'inventory','equipment_pouch');
 ok(equipmentPouch(back).stacks.filter(row=>row.itemId===output).length===2,'Manual character storage movement must be reversible');
+const groupedInventory:GameState={...base,inventory:{...base.inventory,stacks:[{itemId:output,quantity:3}]}};
+const groupedMoved=executeGameCommand(groupedInventory,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001).state;
+ok(equipmentPouch(groupedMoved).stacks.length===2&&groupedMoved.inventory.stacks[0]?.quantity===1,
+ 'Storing multiple ordinary copies must split Inventory stacks without losing or duplicating gear');
+ok(groupedInventory.inventory.stacks[0].quantity===3&&equipmentPouch(groupedInventory).stacks.length===0,
+ 'Inventory-to-Gear movement must not mutate the previous saved state');
+const noRoom:GameState={...groupedInventory,character:{...groupedInventory.character!,equipmentPouch:{capacity:30,stacks:Array.from({length:29},()=>({itemId:otherRecipe.output.itemId,quantity:1}))}}};
+let capacityRejected=false;
+try{executeGameCommand(noRoom,{type:'equipment_pouch_move',args:{itemId:output,quantity:2,from:'inventory',to:'equipment_pouch'}},1001)}catch{capacityRejected=true}
+ok(capacityRejected&&noRoom.inventory.stacks[0].quantity===3&&equipmentPouch(noRoom).stacks.length===29,
+ 'Storing more gear than free Gear slots must fail atomically without removing any Inventory copy');
 const inventoryFull={...back,inventory:{...back.inventory,capacity:back.inventory.stacks.length}};
 const legacyEquipped=executeGameCommand({...inventoryFull,character:{...back.character!,level:100}},{type:'equipment_pouch_equip',args:{itemId:output}},1002).state;
 ok(legacyEquipped.character?.equipment[itemDef(output).slot!]===output&&equipmentPouch(legacyEquipped).stacks.filter(row=>row.itemId===output).length===1,'Legacy equipment can be equipped directly from its character pouch');
@@ -45,15 +58,64 @@ ok(equipmentPouchUpgradePreview(base)?.capacity===40&&equipmentPouch(afterUpgrad
 const record=draftCraftedGearInstance({itemId:output,ownerCharacterId:base.character!.id,jobId:'pouch-unique-1',createdAtMs:1000,roll:.003});
 const tagged:GameState={...base,character:{...base.character!,level:100,equipmentPouch:{capacity:30,stacks:[{itemId:output,quantity:1,instanceId:record.id}]}},account:{...base.account,craftedGearInstances:[record]}};
 ok(auditCraftedGearOwnership(tagged).consistent,'Unique gear in Equipment Pouch must retain exact physical ownership');
+const verifiedInInventory:GameState={...tagged,inventory:{...tagged.inventory,stacks:[{itemId:output,quantity:1,instanceId:record.id}]},
+ character:{...tagged.character!,equipmentPouch:{capacity:30,stacks:[]}}};
+const verifiedStored=executeGameCommand(verifiedInInventory,{type:'gear_move',args:{instanceId:record.id,to:'equipment_pouch'}},1002).state;
+ok(verifiedStored.inventory.stacks.length===0&&equipmentPouch(verifiedStored).stacks[0]?.instanceId===record.id
+ &&auditCraftedGearOwnership(verifiedStored).consistent,
+ 'Moving exact crafted gear from Inventory to Gear must preserve the unique receipt and ownership audit');
 const equipped=equipCraftedGearInstance(tagged,record.id);
 ok(equipped.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id&&auditCraftedGearOwnership(equipped).consistent,
  'Direct equip from Equipment Pouch must preserve exact item rarity/quality receipts');
 const unequipped=unequipCraftedGearInstance(equipped,record.id);
 ok(equipmentPouch(unequipped).stacks.some(row=>row.instanceId===record.id),'Unequip should return exact gear to character Equipment Pouch');
-ok(characterDeleteBlockReason(unequipped,base.character!.id)?.includes('Transfer unique equipment')===true,'Character deletion cannot silently strip unique equipment identity');
+ok(!characterDeleteBlockReason(unequipped,base.character!.id),'Valid unique equipment must not prevent deletion when exact copies can be recovered');
+const deletion=deleteAccountCharacter(unequipped,base.character!.id,'DELETE '+base.character!.name,2000);
+ok(deletion.bank.stacks.some(row=>row.instanceId===record.id)&&auditCraftedGearOwnership(deletion).consistent,'Character deletion must recover the exact unique equipment copy into shared Bank, preserving its receipt');
 const inBank=moveCraftedGearInstance(unequipped,record.id,'bank');
 ok(auditCraftedGearOwnership(inBank).consistent&&inBank.bank.stacks.some(row=>row.instanceId===record.id),'Bank transfer must retain exact receipt and free pouch slot');
 ok(!characterDeleteBlockReason(inBank,base.character!.id),'Character can be deleted after moving exact owned copies to Bank');
+// A Forge receipt retains the original crafter for provenance, but the shared Bank
+// must let another character receive and equip the same physical item.
+const receiver:GameState={...inBank,
+ character:{...inBank.character!,id:'SECOND_CHAR',name:'Receiver',level:100,equipmentPouch:{capacity:30,stacks:[]}},
+ inventory:{stacks:[],capacity:30},
+ otherCharacters:[{character:inBank.character!,inventory:inBank.inventory,overflow:inBank.overflow,
+  activity:inBank.activity,skills:inBank.skills,quests:inBank.quests,currentRegionId:inBank.currentRegionId}],
+};
+const receiverGear=moveCraftedGearInstance(receiver,record.id,'equipment_pouch');
+ok(receiverGear.character!.equipmentPouch?.stacks.some(row=>row.instanceId===record.id)
+ &&auditCraftedGearOwnership(receiverGear).consistent
+ &&receiverGear.account.craftedGearInstances?.some(row=>row.id===record.id&&row.ownerCharacterId===base.character!.id),
+ 'The receiving character can claim a Bank copy without rewriting its original Forge provenance');
+const receiverPreview=previewEquipment(receiverGear,output,record.id,'equipment_pouch');
+ok(receiverPreview.character!.equipmentInstanceIds?.[itemDef(output).slot!]===record.id,
+ 'A Bank-transferred exact copy previews and equips for a compatible different character');
+const foreignClass=V33_EQUIPMENT_RECIPES.find(row=>row.classId!==recipe.classId)!;
+const incompatibleReceiver:GameState={...receiverGear,character:{...receiverGear.character!,classId:foreignClass.classId}};
+let otherClassDenied=false;
+try{previewEquipment(incompatibleReceiver,output,record.id,'equipment_pouch')}catch{otherClassDenied=true}
+ok(otherClassDenied,'Receiving another class gear must not bypass its equip restrictions');
+const reBanked=moveCraftedGearInstance(incompatibleReceiver,record.id,'bank');
+ok(reBanked.bank.stacks.some(row=>row.instanceId===record.id),'Incompatible-class gear must remain transferable to Bank');
+const mixedCarried:GameState={...verifiedInInventory,inventory:{...verifiedInInventory.inventory,
+ stacks:[{itemId:output,quantity:1,instanceId:record.id},{itemId:output,quantity:1}]}};
+const mixedTransferIds=[`copy:${record.id}`,output];
+ok(bulkSelectionSummary(mixedCarried,mixedTransferIds,'inventory').transferableStackCount===2,
+ 'Bulk transfer must select an exact Forge copy separately from ordinary copies with the same item ID');
+const mixedBank=bulkTransferSelected(mixedCarried,mixedTransferIds,'inventory');
+ok(mixedBank.inventory.stacks.length===0&&mixedBank.bank.stacks.some(row=>row.instanceId===record.id)
+ &&mixedBank.bank.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
+ 'Bulk Bank transfer must preserve exact receipts and ordinary stacks without losing either copy');
+const mixedBack=bulkTransferSelected(mixedBank,mixedTransferIds,'bank');
+ok(mixedBack.bank.stacks.length===0&&mixedBack.inventory.stacks.some(row=>row.instanceId===record.id)
+ &&mixedBack.inventory.stacks.some(row=>row.itemId===output&&row.instanceId===undefined),
+ 'Bulk Bank withdrawal must return exact and ordinary copies without losing identity');
+const oneSlotBank:GameState={...mixedCarried,bank:{...mixedCarried.bank,capacity:1,stacks:[]}};
+let fullBatchRejected=false;
+try{bulkTransferSelected(oneSlotBank,mixedTransferIds,'inventory')}catch{fullBatchRejected=true}
+ok(fullBatchRejected&&oneSlotBank.inventory.stacks.length===2&&oneSlotBank.bank.stacks.length===0,
+ 'If Bank fills midway through a mixed transfer, the original state must stay unchanged');
 const inactive={...base.character!,id:'SECOND_CHAR',name:'Second Character',equipmentPouch:{capacity:30,stacks:[]}};
 const multi:GameState={...base,otherCharacters:[{character:inactive,inventory:{stacks:[],capacity:30},overflow:{stacks:[],expiresAtMs:null},activity:null,skills:base.skills,quests:base.quests,currentRegionId:base.currentRegionId}]};
 const placed=tryStoreEquipmentInPouch(multi,{itemId:output,quantity:1},inactive.id)!;

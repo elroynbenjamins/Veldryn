@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {makeDungeonShopController} from '../dungeon-shop';
+import {DUNGEON_SHOP_CATALOG_V1} from '../../src/server/expeditions/dungeon-shop-catalog-v1';
 import {coopHandler} from '../coop';
 import {GameplayError,type GameplayServices} from '../gameplay';
 
@@ -12,7 +13,7 @@ async function run(){
    rpcCalls++;
    assert.equal(args.p_account_id,account,'authenticated account always anchors SQL');
    if(name==='dungeon_shop_snapshot_server_v1')return {
-    marks:1000,clearedRegions:['Sunscar'],ownedRewardIds:[],purchasesThisUtcWeek:{},
+    marks:1000,clearedRegions:['Sunscar'],ownedRewardIds:[],unlockedCraftingTiers:[1,2],purchasesThisUtcWeek:{},
     releasedPrices:{dshop_companion_essence:400,dshop_bondstone:750},
     shopEnabled,
    } as T;
@@ -30,7 +31,8 @@ async function run(){
  const disabled=await controller.snapshot(account,Date.UTC(2026,10,11));
  assert.equal(disabled.balance,1000);
  assert.equal(disabled.shopEnabled,false,'global DB gate must remain off');
- assert.equal(disabled.offers.length,17);
+ assert.equal(DUNGEON_SHOP_CATALOG_V1.filter(item=>item.grant.kind==='crafting_bundle').length,7,'all seven tiered x100 crafting bundles remain catalogued');
+ assert.equal(disabled.offers.length,DUNGEON_SHOP_CATALOG_V1.length);
  assert.ok(disabled.offers.every(item=>item.status==='unreleased'));
  assert.equal(disabled.nextUtcWeekReset,'2026-11-16T00:00:00.000Z');
  await assert.rejects(()=>controller.purchase(account,'dshop_bondstone','test_request_01'),/dungeon_shop_unreleased/);
@@ -58,7 +60,7 @@ async function run(){
  assert.equal(read.status,200);
  const body=await read.json() as {shopEnabled:boolean;offers:unknown[]};
  assert.equal(body.shopEnabled,true);
- assert.equal(body.offers.length,17);
+ assert.equal(body.offers.length,DUNGEON_SHOP_CATALOG_V1.length);
  const purchase=await handler(new Request('https://sample.test/coop/shop',{method:'POST',headers:authenticated,body:JSON.stringify({offerId:'dshop_bondstone',requestId:'test_request_03'})}));
  assert.equal(purchase.status,200);
  const badPurchase=await handler(new Request('https://sample.test/coop/shop',{method:'POST',headers:authenticated,body:JSON.stringify({offerId:'dshop_bondstone',requestId:'test_request_04',price:0})}));

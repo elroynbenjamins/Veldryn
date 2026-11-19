@@ -32,7 +32,7 @@ ok(!achievements.includes('ActivityIndicator'),'Achievements must not regress to
 
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('LoadingState')&&rankings.includes('ActionFeedback')&&rankings.includes('EmptyState'),'Rankings must use shared loading/error/empty feedback');
-ok(rankings.includes('loading={loading}'),'Rankings refresh must expose its loading state');
+ok(rankings.includes('accessibilityState={{disabled:loading,busy:loading}}')&&rankings.includes("accessibilityLabel={loading?st(\"Loading rankings\"):st(\"Refresh\")}")&&rankings.includes("disabled={loading} onPress={()=>{void load();}}"),'Rankings refresh must expose a busy, disabled, localized loading state');
 ok(!rankings.includes('ActivityIndicator'),'Rankings must not regress to a bare spinner');
 
 const friends=read('src/screens/FriendsScreen.tsx');

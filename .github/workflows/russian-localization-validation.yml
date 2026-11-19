@@ -10,6 +10,9 @@ on:
     paths:
       - 'apps/mobile/src/i18n/**'
       - 'apps/mobile/tests/russian-focus-localization.cjs'
+      - 'apps/mobile/tests/german-expedition-shop-localization.cjs'
+      - 'apps/mobile/tests/localization-social.mjs'
+      - 'apps/mobile/tests/companions-localization.cjs'
       - 'tools/run-mobile-localization-tests.mjs'
       - '.github/workflows/russian-localization-validation.yml'
   push:
@@ -17,6 +20,9 @@ on:
     paths:
       - 'apps/mobile/src/i18n/**'
       - 'apps/mobile/tests/russian-focus-localization.cjs'
+      - 'apps/mobile/tests/german-expedition-shop-localization.cjs'
+      - 'apps/mobile/tests/localization-social.mjs'
+      - 'apps/mobile/tests/companions-localization.cjs'
       - 'tools/run-mobile-localization-tests.mjs'
       - '.github/workflows/russian-localization-validation.yml'
   workflow_dispatch:

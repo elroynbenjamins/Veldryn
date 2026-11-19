@@ -8,9 +8,10 @@ import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {enhancedGearStats,enhancedGearStatsAtRank,equippedCraftedInstance,gearEnhancement,normalizeEnhancementGemSlots,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,legacyGemBonusValue,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
-import {mobileGemFamilyV1} from '../content/gems-v1';
+import {gemRolledValueV1,mobileGemFamilyV1} from '../content/gems-v1';
+import {gemPouchBonusDisplayV1} from './gem-pouch-bonus-display';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
@@ -18,9 +19,9 @@ import {craftedGearDisplayQuality,craftedGearInstances,craftedInstancesForItem,e
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {displayStat} from './stat-display';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
-import {t5EquipmentAffixForItem} from './t5-equipment-affixes';
+import {weaponBonusLine} from './weapon-bonus-rolls';
 
-export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
+export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'dismantling'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
 export interface ItemRecipeUse{recipeId:string;name:string;outputItemId:string;outputName:string;skill:string;level:number;quantity:number;isRecipeUnlock:boolean;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
@@ -134,10 +135,11 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
       const gems=enhancement.gemIds.map(id=>{
          const gem=itemDef(id),kind=gemSocketKind(id),meta=canonicalGemMetaV1(id);
          const family=meta?mobileGemFamilyV1(meta.familyId):undefined;
-         const value=meta&&family?family.values[meta.grade]:(kind==='stat'?gem.gemPercent:gem.gemEffectValue)??0;
+         const rollPercent=kind==='stat'?enhancement.statGemRollPercent:enhancement.effectGemRollPercent;
+         const value=meta&&family?gemRolledValueV1(meta.familyId,meta.grade,rollPercent):legacyGemBonusValue(id,rollPercent);
          const detail=kind==='stat'
-           ?meta?formatGemValueV1(meta.familyId,meta.grade):`+${Number((value*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`
-           :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id);
+           ?meta?formatGemValueV1(meta.familyId,meta.grade,rollPercent):`+${Number((value*100).toFixed(3))}% ${title(gem.gemStat??'stat')}`
+           :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id,rollPercent);
          return {id,name:gem.name,kind,detail,stat:kind==='stat'?family?.name??title(gem.gemStat??'stat'):'Effect',percent:value};
        });
       let after=before,maxAfter=before;
@@ -172,10 +174,8 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
-    const t5Affix=t5EquipmentAffixForItem(itemId,selectedCopy);
-    if(t5Affix){
-      const label=t5Affix.stat==='critRate'?'Crit Rate':t5Affix.stat==='haste'?'Haste':'Evasion';
-      effectLines.push(`T5 forged affix · +${Math.round(t5Affix.percent*100)}% ${label} · ${t5Affix.rarity} Q${t5Affix.quality}`);
+    if(selectedCopy?.weaponBonuses?.length){
+      for(const bonus of selectedCopy.weaponBonuses)effectLines.push(`Weapon roll · ${weaponBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.weaponBonusRollVersion)}`);
     }
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){
@@ -186,7 +186,9 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     const speed=Math.round((1-(item.actionTimeMultiplier??1))*100);
     effectLines.push(speed>0?`${speed}% shorter base action time`:'Baseline action time');
   }else if(item.type==='gem'){
-    const kind=gemSocketKind(item.id);effectLines.push(kind==='stat'?`Stat Gem · +${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat??'stat')} when socketed`:`Effect Gem · ${gemEffectDescription(item.id)}`);
+    const kind=gemSocketKind(item.id),bonus=gemPouchBonusDisplayV1(item.id);
+    effectLines.push((kind==='stat'?'Stat Gem · ':'Effect Gem · ')+bonus.bonus);
+    if(bonus.detail)effectLines.push(bonus.detail);
   }else if(item.passive){
     effectLines.push(item.passive);
   }

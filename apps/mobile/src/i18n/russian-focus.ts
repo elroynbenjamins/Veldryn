@@ -4789,6 +4789,7 @@ export const RUSSIAN_FOCUS_ROWS = {
   "ECHO REMAINS": "ОСТАТКИ ЭХО",
   "BOSS PRESENCE": "ПРИСУТСТВИЕ БОССА",
   "GLOBAL HP": "ОБЩЕЕ ЗДОРОВЬЕ",
+  "TIME LEFT": "ОСТАЛОСЬ ВРЕМЕНИ",
   "ATTEMPTS LEFT": "ОСТАЛОСЬ ПОПЫТОК",
   "YOUR RAID IMPACT": "ВАШ ВКЛАД В РЕЙД",
   "APPLIED DAMAGE": "НАНЕСЁННЫЙ УРОН",

@@ -50,7 +50,10 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
  const affordable=known&&costsKnown&&Object.entries(cost).length>0&&Object.entries(cost).every(([id,n])=>(metrics?.[`guild_bank_${id}`]??0)>=n);
  const ready=known&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3&&affordable;
  const reviewable=known&&costsKnown&&released&&canUpgrade&&!!onSpend&&(skillPoints??0)>0&&level<3;
- const bonus=(n:GuildSkillNode,r:number)=>`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
+ const bonus=(n:GuildSkillNode,r:number,compact=false)=>n.id==='fellowship_projects'
+  ? (r===0?(language==='de'?'0 % gespart':'0% saved'):`-${r*5}${language==='de'?' % Material':'% materials'}${r===3&&!compact?(language==='de'?' · +10 % Abschlussmarken':' · +10% completion Tokens'):''}`)
+  :n.id==='fellowship_quests'?`+${r*10}${language==='de'?' % Gildenmarken':'% Tokens'}`
+  :`+${r*n.perTier}${n.id==='fellowship_membership'?(language==='de'?' Mitglieder':' members'):'%'}`;
  const active=known?GUILD_SKILL_NODES.filter(n=>rank(n.id)>0):[];
  const changeBranch=(value:typeof GUILD_MAJOR_BRANCHES[number])=>{
   setBranch(value);setSelected(GUILD_SKILL_NODES.find(n=>n.major===value)?.id??selected);setReview(false);
@@ -69,7 +72,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
     <View style={s.flex}>
      <Text style={s.eyebrow}>{de('PERMANENT GUILD BONUSES')}</Text>
      <Text style={s.title} accessibilityRole="header">{de('Guild Skills')}</Text>
-     <Text style={s.copy}>{guildLevel===undefined?de('Shared guild progression'):language==='de'?`Gildenstufe ${guildLevel}`:`Guild Level ${guildLevel}`}</Text>
+     <Text style={s.copy}>{guildLevel===undefined?de('Shared guild progression'):language==='de'?`Gildenstufe ${guildLevel} · +2 pro Aufstieg`:`Guild Level ${guildLevel} · +2 per level-up`}</Text>
     </View>
     <View style={s.points}><Text style={s.pointsValue}>{skillPoints===undefined?'—':skillPoints.toLocaleString()}</Text><Text style={s.pointsLabel}>{de('Skill points')}</Text></View>
    </View>
@@ -77,7 +80,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
     <Text style={s.copy}>{de('Active skills')}</Text><Text style={s.summaryValue}>{known?`${active.length} / ${GUILD_SKILL_NODES.length}`:'—'}</Text>
    </View>
    {active.length?<View style={s.active}>
-    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{de(n.label)} {bonus(n,rank(n.id))}</Text></View>)}
+    {active.map(n=><View key={n.id} style={s.activeChip}><Text style={s.activeText}>{de(n.label)} {bonus(n,rank(n.id),true)}</Text></View>)}
    </View>:null}
   </View>
 
@@ -89,7 +92,7 @@ export function GuildSpecializationPaths({guildLevel,skillPoints,metrics,nodeCos
      style={({pressed})=>[s.tile,narrow&&s.tileNarrow,{borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panelRaised},pressed&&s.pressed]}>
     <Image source={guildSkillArtwork(n.id)} resizeMode="contain" style={s.tileIcon} accessible={false}/>
     <Text numberOfLines={2} style={s.tileName}>{de(n.name)}</Text>
-    <Text style={s.tileBonus}>{known?bonus(n,current):de('3 ranks')}</Text>
+    <Text style={s.tileBonus}>{known?bonus(n,current,true):de('3 ranks')}</Text>
     <View style={s.rankDots}>{[1,2,3].map(k=><View key={k} style={[s.rankDot,{backgroundColor:current>=k?C.accent:C.lineStrong}]}/>)}</View>
     {!live?<Text style={s.unreleased}>{de('NOT RELEASED')}</Text>:null}
    </Pressable>})}

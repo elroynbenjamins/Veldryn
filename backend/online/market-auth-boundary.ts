@@ -76,6 +76,7 @@ function validate(operation:string,method:string,query:URLSearchParams,body:unkn
       minTotalGold,maxTotalGold,limit:parse(limitText,25,1,50),
       offset:parse(offsetText,0,0,1000)};
   }
+  if(params.some(k=>!['view','action','history','offset'].includes(k)))bad();
   if(operation==='inbox'||operation==='my_offers'){
     if(method!=='GET'||body!==null)bad();
     if(params.some(k=>!['view','action','history','offset'].includes(k))
@@ -152,7 +153,9 @@ export async function bindAuthenticatedMarketRequest(
     if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>2048))
       throw new MarketRequestError('market_request_too_large',413);
     const raw=await request.text();
-    if(raw.length>2048)throw new MarketRequestError('market_request_too_large',413);
+    // Measure UTF-8 bytes, not UTF-16 code units: a 2,048-character body of
+    // multibyte text could otherwise be up to 6 KiB when Content-Length is absent.
+    if(new TextEncoder().encode(raw).byteLength>2048)throw new MarketRequestError('market_request_too_large',413);
     try{body=JSON.parse(raw);}catch{throw new MarketRequestError('market_invalid_json',400);}
   }
   return {actorAccountId:actor,operation:validate(action,request.method,url.searchParams,body)};

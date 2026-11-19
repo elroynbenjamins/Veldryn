@@ -31,7 +31,7 @@ export type CraftedGearRetentionDecision=
   |{action:'keep';reason:'under_limit'}
   |{action:'sell_incoming';reason:'incoming_is_weakest';instanceId:string}
   |{action:'sell_existing';reason:'replace_weaker_unprotected';instanceId:string}
-  |{action:'manual_review';reason:'disabled'|'over_limit'|'inconsistent_instances'|'legacy_unknown_quality'|'incoming_protected'|'no_eligible_copy'};
+  |{action:'manual_review';reason:'disabled'|'over_limit'|'inconsistent_instances'|'legacy_unknown_quality'|'incoming_protected'|'no_eligible_copy'|'weapon_bonus_choice'};
 
 /** Compare actual rarity-adjusted stat power; the full ±25% quality spread can outweigh some rarity differences. */
 export function craftedGearRetentionPower(instance:CraftedGearInstance){
@@ -75,6 +75,10 @@ export function planCraftedGearRetention(
   // a quality ranking before the item reaches its per-item copy limit.
   if(existing.length<TARGET_CRAFTED_GEAR_COPIES_PER_ITEM)return {action:'keep',reason:'under_limit'};
   if(mode==='off')return {action:'manual_review',reason:'disabled'};
+  // Rolled attributes represent playstyle, not a single comparable power score.
+  // Never auto-sell an earned weapon at the copy cap based on quality alone.
+  if(incoming.weaponBonuses?.length||existing.some(row=>row.instance.weaponBonuses?.length))
+    return {action:'manual_review',reason:'weapon_bonus_choice'};
   const validQuality=isValidCraftedGearQuality;
   if(existing.some(row=>!validQuality(row.instance.quality))||!validQuality(incoming.quality))
     return {action:'manual_review',reason:'legacy_unknown_quality'};
@@ -91,7 +95,7 @@ export function planCraftedGearRetention(
   if(!eligible.length)return {action:'manual_review',reason:'no_eligible_copy'};
   const weakestEligible=eligible[0];
   // The new item beat the weakest owned copy. If that copy is protected,
-  // selling the new item would violate Keep Best 7, so defer to manual review
+  // selling the new item would violate the keep-best copy cap, so defer to manual review
   // rather than disposing of an earned upgrade without the player's consent.
   if(compareCraftedGearRetentionPower(incoming,weakestEligible.instance)<=0)
     return {action:'manual_review',reason:'no_eligible_copy'};

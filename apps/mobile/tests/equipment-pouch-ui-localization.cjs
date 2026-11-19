@@ -11,7 +11,7 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,88,'all authored Equipment Pouch copy plus quick disposal, selection metrics, rarity and eligibility reasons');
+assert.equal(keys.length,92,'all authored Equipment Pouch copy plus quick disposal, selection metrics, rarity and eligibility reasons');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
@@ -55,8 +55,11 @@ for(const marker of [
  "p('Sell · {gold}g'",
  "p('quality {quality}'",
  "p('Protected')",
- "p('Enhanced, socketed and loadout gear cannot be sold.')",
- "p(saleCandidate?.eligible?'Selling this copy adds Gold to this character.':saleCandidate?.reason??'This equipment is protected.')"
+ "p('Protected copies are excluded from the sale.')",
+ "p('Selling this copy adds Gold to this character.')",
+ "sellReason={saleCandidate?.reason}",
+ "salvageReason={salvageCandidate?.reason}",
+ "p('Compare & Equip')"
  ])assert.ok(screen.includes(marker),'Equipment Pouch UI missing localized path '+marker);
 for(const marker of [
  "equipmentPouchSaleCandidates(state)","equipmentPouchQuickSellIds(saleCandidates)",
@@ -67,4 +70,4 @@ for(const marker of [
  ])assert.ok(screen.includes(marker),'canonical sale protection/action removed: '+marker);
 const ast=ts.createSourceFile('EquipmentPouchPanel.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Equipment Pouch must parse as TSX');
-console.log('PASS: 82 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');
+console.log('PASS: 92 owned Equipment Pouch templates and shared Gem Pouch keys in eight languages, 9+ sale guards and command wiring');

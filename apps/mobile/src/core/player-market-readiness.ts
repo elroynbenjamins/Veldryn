@@ -5,7 +5,7 @@ import {equipmentPouch} from './equipment-pouch';
 import {gemPouch} from './gem-pouch';
 import {PLAYER_MARKET_RELEASED} from './release-flags';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
-import type {GameState,ItemStack,GearSlot} from './types';
+import type {CharacterState,GameState,ItemStack,GearSlot} from './types';
 
 /**
  * Read-only preview for the future Player Market. It is deliberately NOT an
@@ -54,12 +54,36 @@ function stacksAt(state:GameState,location:MarketStorageLocation):readonly ItemS
   return gemPouch(state).stacks;
 }
 
-function loadoutReservesCopy(state:GameState,itemId:string,instanceId:string):boolean{
-  const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)];
-  return characters.some(character=>character?.savedLoadouts?.some(loadout=>
+/** Every character on the account, active first. */
+export function accountCharacters(state:GameState):CharacterState[]{
+  return [state.character,...(state.otherCharacters??[]).map(entry=>entry.character)]
+    .filter((row):row is CharacterState=>!!row);
+}
+
+/** A saved loadout on ANY character reserves this exact copy. A legacy loadout slot
+ * with no instance id conservatively reserves every copy of that item.
+ * Shared by the client preview and the server custody/escrow inspections.
+ */
+export function savedLoadoutReservesGearCopy(state:GameState,itemId:string,instanceId:string):boolean{
+  return accountCharacters(state).some(character=>character.savedLoadouts?.some(loadout=>
     Object.entries(loadout.equipment).some(([slot,id])=>
       id===itemId&&(loadout.equipmentInstanceIds?.[slot as GearSlot]===instanceId
         ||!loadout.equipmentInstanceIds?.[slot as GearSlot]))));
+}
+
+/** Items reserved by Working Toward goals of every character, not only the active one.
+ * verified=false means at least one character's goals could not be evaluated, so
+ * callers must treat the result as incomplete and block rather than allow.
+ */
+export function accountWorkingTowardReservations(state:GameState):{itemIds:Set<string>;verified:boolean}{
+  const itemIds=new Set<string>();let verified=true;
+  for(const character of accountCharacters(state)){
+    try{
+      const projection=character.id===state.character?.id?state:{...state,character};
+      for(const id of workingTowardInventoryProtectionMap(projection).keys())itemIds.add(id);
+    }catch{verified=false;}
+  }
+  return {itemIds,verified};
 }
 
 /** Checks only a specific stack in a specific storage location, never a whole
@@ -85,9 +109,9 @@ export function previewPlayerMarketListing(
   if(!marketCatalogCandidate(itemId))block('item_restricted');
   if(state.settings.favoriteItemIds?.includes(itemId))block('favorite_protected');
   if(state.settings.lockedItemIds?.includes(itemId))block('item_locked');
-  try{
-    if(workingTowardInventoryProtectionMap(state).has(itemId))block('working_toward_reserved');
-  }catch{block('working_toward_reserved');}
+  // Goals of alt characters reserve shared Bank / Gem Pouch stock too.
+  const reservations=accountWorkingTowardReservations(state);
+  if(!reservations.verified||reservations.itemIds.has(itemId))block('working_toward_reserved');
 
   let type:ReturnType<typeof itemDef>['type']|undefined;
   try{type=itemDef(itemId).type;}catch{block('item_restricted');}
@@ -101,7 +125,10 @@ export function previewPlayerMarketListing(
       const audit=auditCraftedGearOwnership(state);
       if(!audit.consistent)block('equipment_identity_conflict');
       const record=craftedGearInstances(state).find(row=>row.id===stack.instanceId);
-      if(!record||record.itemId!==itemId||record.ownerCharacterId!==state.character?.id)
+      // Forge receipts keep their ORIGINAL crafter. Gear moved between the account's
+      // characters through the Bank is still owned by this account and must stay listable.
+      if(!record||record.itemId!==itemId
+        ||!accountCharacters(state).some(character=>character.id===record.ownerCharacterId))
         block('equipment_not_owned');
       const match=audit.linked.filter(row=>row.instanceId===stack.instanceId);
       if(match.length!==1||match[0].place!==location
@@ -110,7 +137,7 @@ export function previewPlayerMarketListing(
       if(record?.locked)block('equipment_locked');
       if(record&&!isValidCraftedGearQuality(record.quality))
         block('legacy_quality_unverified');
-      if(loadoutReservesCopy(state,itemId,stack.instanceId))
+      if(savedLoadoutReservesGearCopy(state,itemId,stack.instanceId))
         block('saved_loadout_reserved');
     }
   }else if(stack.instanceId!==undefined){

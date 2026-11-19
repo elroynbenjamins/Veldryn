@@ -3,6 +3,7 @@ import {craftedGearRarity,craftedRarityStatMultiplier,deterministicCraftRarityRo
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import {normalizeGemRollPercentV1} from '../content/gems-v1';
+import {normalizeWeaponBonuses,rollWeaponBonuses,WEAPON_BONUS_ROLL_VERSION,type WeaponBonusRollVersion} from './weapon-bonus-rolls';
 
 export const MAX_CRAFTED_GEAR_INSTANCES=500;
 /** Existing Forge records have no quality roll. Show them at the neutral midpoint without rewriting their receipts or treating them as safe auto-sale candidates. */
@@ -60,12 +61,17 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         const item=itemDef(String(row.itemId));if(item.type!=='gear')return [];
         const rarity=(['common','uncommon','rare','epic','legendary','mythic'].includes(row.rarity)?row.rarity:itemRarity(item)) as ItemRarity;
         const enhancement=row.enhancement&&typeof row.enhancement==='object'?row.enhancement:{};
+        // Draft v1 receipts may predate a version marker. Unknown explicit versions fail closed.
+        const version:WeaponBonusRollVersion|undefined=row.weaponBonusRollVersion===1||row.weaponBonusRollVersion===2
+          ?row.weaponBonusRollVersion:row.weaponBonusRollVersion===undefined&&Array.isArray(row.weaponBonuses)?1:undefined;
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,
           // Preserve absence as a legacy marker. In particular, do not invent an authoritative Forge roll.
           quality:isValidCraftedGearQuality(row.quality)?row.quality:undefined,
           locked:row.locked===true,
           statRoll:clampStatRoll(row.statRoll),
+          weaponBonuses:version?normalizeWeaponBonuses(item.id,rarity,row.weaponBonuses,version):undefined,
+          weaponBonusRollVersion:version,
           acquireSource:'craft' as const,sourceReceiptKey:String(row.sourceReceiptKey??row.id).slice(0,200),
           createdAtMs:Math.max(0,Math.floor(Number(row.createdAtMs)||0)),
           enhancement:{rank:Math.max(0,Math.min(4,Math.floor(Number(enhancement.rank)||0))),failures:Math.max(0,Math.floor(Number(enhancement.failures)||0)),statGemId:typeof enhancement.statGemId==='string'?enhancement.statGemId:undefined,effectGemId:typeof enhancement.effectGemId==='string'?enhancement.effectGemId:undefined,statGemRollPercent:normalizeGemRollPercentV1(enhancement.statGemRollPercent),effectGemRollPercent:normalizeGemRollPercentV1(enhancement.effectGemRollPercent),gemIds:Array.isArray(enhancement.gemIds)?enhancement.gemIds.filter((x:any)=>typeof x==='string').slice(0,2):[]},
@@ -145,9 +151,15 @@ export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerChar
 }
 
 export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
+  const rarity=craftedGearRarity(args.itemId,args.roll);
+  const weaponBonuses=rollWeaponBonuses(args.itemId,rarity,args.jobId,args.roll);
   return {
     id:`gear:${args.ownerCharacterId}:${args.jobId}`,itemId:args.itemId,ownerCharacterId:args.ownerCharacterId,
-    rarity:craftedGearRarity(args.itemId,args.roll),quality:craftedGearQualityRoll(args.roll,args.jobId),
+    rarity,quality:craftedGearQualityRoll(args.roll,args.jobId),
+    weaponBonuses,
+    // Stamp the roll version only on receipts that actually carry rolled bonuses, so the
+    // marker and payload can never disagree (e.g. a T3+ weapon without a class role).
+    weaponBonusRollVersion:weaponBonuses?.length?WEAPON_BONUS_ROLL_VERSION:undefined,
     locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }
@@ -160,7 +172,7 @@ export function createCraftedGearInstance(state:GameState,args:{itemId:string;ow
 }
 
 export function craftClaimSubRoll(trustedRoll:number,jobId:string){
-  if(trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
+  if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);
 }
 
@@ -169,6 +181,12 @@ export function craftedInstanceResult(state:GameState,instance:CraftedGearInstan
   const copies=craftedInstancesForItem(state,instance.itemId,instance.ownerCharacterId),baseRarity:'common'='common';
   return {
     instanceId:instance.id,itemId:instance.itemId,rarity:instance.rarity,quality:instance.quality,baseRarity,
+    weaponBonuses:instance.weaponBonuses,weaponBonusRollVersion:instance.weaponBonusRollVersion,
+    // Trusted command response metadata for read-only public forge announcements.
+    itemName:itemDef(instance.itemId).name,
+    crafterName:state.character?.id===instance.ownerCharacterId
+      ?state.character.name
+      :(state.otherCharacters??[]).find(row=>row.character.id===instance.ownerCharacterId)?.character.name??'Adventurer',
     qualityProc:instance.rarity!==baseRarity,duplicateCount:Math.max(0,copies.length-1),
     statMultiplier:craftedRarityStatMultiplier(instance.itemId,instance.rarity)*(instance.quality===undefined?1:craftedGearQualityMultiplier(instance.quality)),
     autoSold:undefined as 'incoming'|'existing'|undefined,saleGold:0,

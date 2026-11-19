@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useRef,useState,type ComponentProps} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {EQUIPMENT_SETS} from '../content/equipment-sets';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../content/equipment-recipes-v33';
 import {isReleasedEquipmentTier} from '../content/equipment-release';
 import {RECIPES} from '../content/skills';
 import {alchemyRecipeDef} from '../content/alchemy';
@@ -20,6 +21,8 @@ import {EquipmentCraftQueuePanel} from './EquipmentCraftQueuePanel';
 import {ForgeOddsGuide} from './ForgeOddsGuide';
 import {ActivityArtwork} from './ActivityArtwork';
 import {progressWithinLevel} from '../core/progression';
+import {nextEquipmentTierGoal} from '../core/equipment-tier-progression';
+import {craftingDetailText} from '../i18n/crafting-details';
 import {ownedEquipmentDefinitionIds} from '../core/equipment-collection-ownership';
 import {workingTowardItemSourceEntries} from '../core/working-toward';
 import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-tier-memory';
@@ -31,8 +34,10 @@ const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape',
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
 
 export function EquipmentCraftingHeader({state,skillId='smithing'}:{state:Props['state'];onBack?:()=>void;skillId?:EquipmentCraftingSkill}){
- const C=useGameTheme(),{gl}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
- return <View style={{gap:10}}><View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View></View>;
+ const C=useGameTheme(),{gl,language}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
+ const nextTier=nextEquipmentTierGoal(skillId,skill?.level??1,skill?.xp??0);
+ const nextTierXp=nextTier?craftingDetailText(language,'{xp} XP to {skill} {level}',{xp:nextTier.remainingXp.toLocaleString(language),skill:gl(skillId),level:nextTier.requiredLevel}):'';
+ return <View style={{gap:10}}><View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View>{nextTier?<View accessible accessibilityLabel={craftingDetailText(language,'Next equipment tier')+' '+nextTier.tier+', '+nextTierXp} style={{borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:10,paddingVertical:8,gap:3}}><Text style={[s.caption,{color:C.muted}]}>{craftingDetailText(language,'Next equipment tier')}</Text><View style={[s.between,{flexWrap:'wrap'}]}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')} {nextTier.tier.slice(1)} · {gl(skillId)} {gl('Level')} {nextTier.requiredLevel}</Text><Text style={[s.caption,{color:C.muted}]}>{nextTierXp}</Text></View></View>:null}</View>;
 }
 
 /** @deprecated Use EquipmentCraftingHeader so Tailoring and Smithing stay in the same set browser. */
@@ -41,7 +46,10 @@ export const SmithingHeader=EquipmentCraftingHeader;
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
- const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||r.classId===state.character?.classId)&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId]);
+ const [showAllClasses,setShowAllClasses]=useState(false);
+ const ownProfession=!!state.character&&EQUIPMENT_CRAFT_SKILL_BY_CLASS[state.character.classId]===skillId;
+ // Forging another class's V33 equipment is allowed; its equip class restriction remains.
+ const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||(!r.v33SetId?r.classId===state.character?.classId:showAllClasses||!ownProfession||r.classId===state.character?.classId))&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId,showAllClasses,ownProfession]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId),characterId=state.character?.id;
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
@@ -94,8 +102,9 @@ export function SmithingCollection(props:Props){
   </Pressable>
   {queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>{setTab(value);setError('')}} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
+  {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);setDetailsOpen(false);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
   {tab==='equipment'&&set&&item&&recipe&&status?<>
-   <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{state.character?.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
+   <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{set.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
    <OptionPager options={tierOptions} value={set.tier} onChange={tier=>{const first=sets.find(row=>row.tier===tier);if(first)chooseSet(first.id)}}
     accessibilityLabel={gt('Equipment tier')} previousLabel={gt('Previous tier')} nextLabel={gt('Next tier')}
     reduceMotion={state.settings.reduceMotion}/>

@@ -86,12 +86,42 @@ const noRngBelow=(rng:CombatRng,label:string)=>rng.next(label)*2; // CombatRng h
 function emptyRole():WorldBossRoleLedger{return {bossHpDamage:0,guardDamage:0,effectiveHealing:0,shieldConsumed:0,tankProtection:0,cleansePrevented:0,interrupts:0,survived:true};}
 
 export function simulateWorldBossRounds(input:WorldBossRoundInput):WorldBossRoundResult{
+ return simulateWorldBossCore(input,false);
+}
+/** Hidden V25 only: real, verified same-account rosters of 1–5 characters.
+ * Keeps the existing 4-role Echo contract unchanged for legacy callers.
+ * Not a public route: Auth, ownership, RNG and snapshots are enforced by
+ * the external trusted server layer, never by client-provided combat stats.
+ */
+export function simulateWorldBossAccountRoundsV25(
+ input:WorldBossRoundInput,
+):WorldBossRoundResult{
+ return simulateWorldBossCore(input,true);
+}
+function simulateWorldBossCore(
+ input:WorldBossRoundInput,accountRaid:boolean,
+):WorldBossRoundResult{
  validateWorldBossScripts();
- if(!input.seed||input.players.length!==4)throw Error('world_boss_requires_four_players_and_seed');
+ if(!input||typeof input.seed!=='string'||!input.seed||
+  (accountRaid&&input.seed.length<24)||
+  !Array.isArray(input.players)||
+  (accountRaid?
+   input.players.length<1||input.players.length>5:
+   input.players.length!==4))
+  throw Error(accountRaid?'world_boss_v25_requires_1_to_5_verified_players':
+   'world_boss_requires_four_players_and_seed');
  const roles=input.players.map(x=>x.role);
- if(roles.filter(x=>x==='tank').length!==1||roles.filter(x=>x==='damage').length!==2||roles.filter(x=>x==='support').length!==1)throw Error('world_boss_invalid_roles');
- if(new Set(input.players.map(p=>p.id)).size!==4)throw Error('world_boss_duplicate_echo');
- if(input.players.some(p=>p.team!=='players'||p.stats.maxHp<=0||p.stats.attackPower<=0))throw Error('world_boss_invalid_resolved_snapshot');
+ if(!accountRaid&&(roles.filter(x=>x==='tank').length!==1||
+  roles.filter(x=>x==='damage').length!==2||
+  roles.filter(x=>x==='support').length!==1))
+  throw Error('world_boss_invalid_roles');
+ if(new Set(input.players.map(p=>p.id)).size!==input.players.length)
+  throw Error('world_boss_duplicate_echo');
+ if(input.players.some(p=>p.team!=='players'||
+  !['tank','damage','support'].includes(p.role)||
+  !Number.isFinite(p.stats.maxHp)||p.stats.maxHp<=0||
+  !Number.isFinite(p.stats.attackPower)||p.stats.attackPower<=0))
+  throw Error('world_boss_invalid_resolved_snapshot');
  if(!Number.isFinite(input.pressure??1)||(input.pressure??1)<.1||(input.pressure??1)>5)throw Error('world_boss_invalid_pressure');
  if(input.testOnlyFixedBossAttack!==undefined&&(!Number.isFinite(input.testOnlyFixedBossAttack)||input.testOnlyFixedBossAttack<=0||input.testOnlyFixedBossAttack>1e8))throw Error('world_boss_invalid_fixed_test_attack');
  if(input.testOnlyFixedBossDefense!==undefined&&(!Number.isFinite(input.testOnlyFixedBossDefense)||input.testOnlyFixedBossDefense<0||input.testOnlyFixedBossDefense>1e8))throw Error('world_boss_invalid_fixed_test_defense');

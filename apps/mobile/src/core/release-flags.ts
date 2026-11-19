@@ -1,5 +1,7 @@
 /** Enable the event client; the authoritative server window controls access and rewards. */
 export const EVENTS_RELEASED=true;
+/** Prepared Frostfall rewards stay out of all player catalogs until the seasonal launch is explicitly approved. */
+export const FROSTFALL_REWARDS_RELEASED=false;
 /** Pause shared event-wide contribution goals until the active population can support them.
  * Preserve authored rewards and earned records for a future opt-in release. */
 export const EVENT_COMMUNITY_ENABLED=false;
@@ -16,3 +18,12 @@ export const MARKET_AUTHENTICATED_SERVICE_READY=false;
 
 /** Dungeon Marks Shop authored across three regions; keep collectible passives and shop UI hidden until server and art release. */
 export const DUNGEON_MARKS_SHOP_RELEASED=false;
+
+/** Keep manual translation invisible until the provider, public privacy disclosure and staging QA pass. */
+export const CHAT_TRANSLATION_RELEASED=false;
+
+/** Production RPC verified: authenticated-only roster, block filtering, no emails or session secrets. */
+export const ONLINE_PLAYER_ROSTER_RELEASED=true;
+
+/** Vendor equipment resale uplift is source-prepared only. Gameplay Edge and staging payout parity must be proved before activation. */
+export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;

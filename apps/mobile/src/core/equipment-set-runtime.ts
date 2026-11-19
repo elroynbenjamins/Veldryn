@@ -1,7 +1,7 @@
 import {EQUIPMENT_SETS,equipmentSetDef,equippedSetPieceCount,type EquipmentSetDef} from '../content/equipment-sets';
 import {itemDef} from '../content/items';
 import {equippedCanonicalStatGemBonusesV1} from './equipment-enhancement';
-import {equippedT5EquipmentAffixStats} from './t5-equipment-affixes';
+import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import type {GameState} from './types';
 
 export type EquipmentSetStatKey=
@@ -23,6 +23,23 @@ export function isLiveSixPieceBonus(set:Pick<EquipmentSetDef,'tier'|'sixPiece'>)
   return /^T[1-4]$/.test(set.tier)&&/^\+\d+(?:\.\d+)?% (Max HP|Armor|Ward|Tenacity|Haste|Power|Accuracy|Penetration|Potency|Crit Rate|Crit Damage|Evasion)$/.test(set.sixPiece);
 }
 export function emptyEquipmentSetStats():EquipmentSetStats{return {...EMPTY_STATS};}
+
+/** Only the exact equipped weapon receipt grants its persistent rolled bonuses. */
+export function equippedWeaponBonusStats(state:GameState):Partial<EquipmentSetStats>{
+  const character=state.character,itemId=character?.equipment.weapon,instanceId=character?.equipmentInstanceIds?.weapon;
+  if(!character||!itemId||!instanceId)return {};
+  // ownerCharacterId identifies the original crafter, not the present holder.
+  // A verified account-owned copy may move via the shared Bank to another character.
+  // Match the current equipped instance marker and item definition, never the crafter ID.
+  const raw=state.account.craftedGearInstances?.find(row=>row?.id===instanceId&&row?.itemId===itemId);
+  // Normalize only the selected receipt, not up to 500 other crafted copies
+  // on every combat stat read. Invalid bonus payloads still grant nothing.
+  const copy=raw?normalizeCraftedGearInstances([raw])[0]:undefined;
+  if(!copy?.weaponBonuses?.length)return {};
+  const stats:Partial<EquipmentSetStats>={};
+  for(const bonus of copy.weaponBonuses)stats[bonus.stat]=(stats[bonus.stat]??0)+bonus.basisPoints/10_000;
+  return stats;
+}
 
 export function parseEquipmentSetStaticBonus(text:string):Partial<EquipmentSetStats>{
   const result:Partial<EquipmentSetStats>={};
@@ -69,7 +86,10 @@ export function activeEquipmentSetRuntime(state:GameState):EquipmentSetRuntimeSu
   const setIds=new Set<string>();
   for(const itemId of Object.values(state.character.equipment)){
     if(!itemId)continue;
-    const setId=itemDef(itemId).equipmentSetId;if(setId)setIds.add(setId);
+    // A retired or unknown item id in an old save must not break every combat stat read.
+    let setId:string|undefined;
+    try{setId=itemDef(itemId).equipmentSetId;}catch{continue;}
+    if(setId)setIds.add(setId);
   }
   const activeSets:ActiveEquipmentSetRuntime[]=[];
   for(const setId of setIds){
@@ -114,22 +134,22 @@ export function equipmentSetBonusCoverage(){
 export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
   const sets=activeEquipmentSetRuntime(state).stats;
   const gems=equippedCanonicalStatGemBonusesV1(state);
-  const t5Affixes=equippedT5EquipmentAffixStats(state);
+  const weapon=equippedWeaponBonusStats(state);
   const p=gems.statPercent,pp=gems.statPercentagePoints;
   const multiplied=(bonus:number,percent:number|undefined)=>(1+bonus)*(1+(percent??0))-1;
   return {
-    maxHp:multiplied(sets.maxHp,p.maxHp),
-    armor:multiplied(sets.armor,p.armor),
-    ward:multiplied(sets.ward,p.ward),
-    tenacity:multiplied(sets.tenacity,p.tenacity),
-    haste:multiplied(sets.haste,p.haste)+t5Affixes.haste,
+    maxHp:multiplied(sets.maxHp,p.maxHp)+(weapon.maxHp??0),
+    armor:multiplied(sets.armor,p.armor)+(weapon.armor??0),
+    ward:multiplied(sets.ward,p.ward)+(weapon.ward??0),
+    tenacity:multiplied(sets.tenacity,p.tenacity)+(weapon.tenacity??0),
+    haste:multiplied(sets.haste,p.haste)+(weapon.haste??0),
     power:multiplied(sets.power,p.power),
-    accuracy:sets.accuracy+(pp.accuracy??0),
-    penetration:sets.penetration+(pp.penetration??0),
-    potency:multiplied(sets.potency,p.potency),
-    critRate:sets.critRate+(pp.critRate??0)+t5Affixes.critRate,
+    accuracy:sets.accuracy+(pp.accuracy??0)+(weapon.accuracy??0),
+    penetration:sets.penetration+(pp.penetration??0)+(weapon.penetration??0),
+    potency:multiplied(sets.potency,p.potency)+(weapon.potency??0),
+    critRate:sets.critRate+(pp.critRate??0)+(weapon.critRate??0),
     critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5,
-    evasion:sets.evasion+(pp.evasion??0)+t5Affixes.evasion,
+    evasion:sets.evasion+(pp.evasion??0),
   };
 }
 
@@ -143,7 +163,9 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
   const baseCritDamage=0.50;
   const accuracyMultiplier=Math.min(.99,baseAccuracy+stats.accuracy)/baseAccuracy;
   const baseCritExpected=1+baseCritChance*baseCritDamage;
-  const setCritExpected=1+(baseCritChance+stats.critRate)*(baseCritDamage+stats.critDamage);
+  // Crit chance is a probability: stacked set, gem and weapon bonuses cannot exceed 100%.
+  const critChance=Math.max(0,Math.min(1,baseCritChance+stats.critRate));
+  const setCritExpected=1+critChance*(baseCritDamage+stats.critDamage);
   return {
     maxHpMultiplier:1+stats.maxHp,
     defenseMultiplier:1+stats.armor,

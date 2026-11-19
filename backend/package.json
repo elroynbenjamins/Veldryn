@@ -52,7 +52,7 @@
     "coop-phase10": "node dist/server/coop/__tests__/phase10-chat.js",
     "coop-phase11": "node dist/server/coop/__tests__/phase11-rewards.js",
     "test:coop-rewards": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/phase11-rewards.js",
-    "test:dungeon-tier-balance": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/tier-reward-balance.js",
+    "test:dungeon-tier-balance": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/tier-reward-balance.js && node dist-coop-rewards/server/coop/__tests__/dungeon-marks-progression.js",
     "test:dungeon-full-matrix": "tsc -p tsconfig.coop-rewards.json && node dist-coop-rewards/server/coop/__tests__/tier-full-matrix.js",
     "coop-phase12": "node dist/server/coop/__tests__/phase12-balance.js",
     "coop-phase13": "node dist/server/coop/__tests__/phase13-regional-content.js",
@@ -84,7 +84,8 @@
     "pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/pve-balance-cli.js",
     "test:release-economy": "tsc && node dist/server/__tests__/release-economy.js",
     "test:live-rematch": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-rematch.js",
-    "test:qmode-pressure": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/qmode-hit-variance.js && node dist/online/backend/online/tests/qmode-pressure-baseline.js && node dist/online/backend/online/tests/coop-published-balance.js"
+    "test:qmode-pressure": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/qmode-hit-variance.js && node dist/online/backend/online/tests/qmode-pressure-baseline.js && node dist/online/backend/online/tests/coop-published-balance.js",
+    "test:combat-v2-contract": "tsc && node dist/server/combat/__tests__/combat-stat-contract-v2.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

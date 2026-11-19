@@ -159,7 +159,7 @@ for(const tier of [1,2,3,4] as const){
   check(armaments.length===(character.hands==='one'?2:1),
    'Hand allocation must be class-correct at T'+tier+': '+character.classId);
   check(armaments.every(row=>row.classId===character.classId&&row.tier===tier),
-   'Original class tags must not change a different class's starting weapon list');
+   'Original class tags must not alter starting weapon lists');
   const total=armaments.reduce((sum,item)=>sum+equipmentV2StatBudget(equipmentV2ArmamentStats(item)),0);
   check(Math.abs(total-equipmentV2WeaponAndOffhandBudget(tier))<1e-7,
    'Two-handed, dual and one-handed/offhand loadouts must have the same weighted budget');

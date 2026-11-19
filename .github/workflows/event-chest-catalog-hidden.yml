@@ -7,6 +7,12 @@ on:
       - 'backend/src/server/party/weekly-party-event-combat-v59.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-combat-v59.ts'
       - 'backend/src/server/party/weekly-party-event-claim-v60.ts'
+      - 'backend/src/server/party/weekly-party-event-proof-v61.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-proof-v61.ts'
+      - 'backend/src/server/party/weekly-party-event-rewards-v62.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-rewards-v62.ts'
+      - 'backend/tests/party-event-reward-ledger-v61.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119070000_party_event_reward_ledger_v61.sql'
       - 'backend/src/server/party/__tests__/weekly-party-event-claim-v60.ts'
       - 'apps/mobile/src/screens/FeaturePreviewScreen.tsx'
       - 'apps/mobile/tests/party-event-treasure-preview-ui.cjs'
@@ -58,6 +64,12 @@ jobs:
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-combat-v59.js
       - name: Verify transactional Party Event chest and exchange replay
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-claim-v60.js
+      - name: Verify hidden Party Event V61 canonical reward evidence and V62 read model
+        run: |
+          node .event-chest-tests/server/party/__tests__/weekly-party-event-proof-v61.js
+          node .event-chest-tests/server/party/__tests__/weekly-party-event-rewards-v62.js
+      - name: Execute review-only Party Event reward ledger in disposable PGlite
+        run: node tests/party-event-reward-ledger-v61.mjs
       - name: Verify mobile Party Event treasure remains a read-only QA design
         run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
       - name: Guard mobile World Boss chest cards as read-only previews
@@ -81,6 +93,9 @@ jobs:
           grep -q 'PARTY_EVENT_CHESTS_V51_RELEASED=false' src/server/party/weekly-party-event-chests-v51.ts
           grep -q 'PARTY_EVENT_COMBAT_V59_RELEASED=false' src/server/party/weekly-party-event-combat-v59.ts
           grep -q 'PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED=false' src/server/party/weekly-party-event-claim-v60.ts
+          grep -q 'PARTY_EVENT_PROOF_V61_RELEASED=false' src/server/party/weekly-party-event-proof-v61.ts
+          grep -q 'PARTY_EVENT_REWARD_READ_V62_RELEASED=false' src/server/party/weekly-party-event-rewards-v62.ts
+          test ! -f supabase/migrations/20261119070000_party_event_reward_ledger_v61.sql
           grep -q 'WORLD_BOSS_CHESTS_V58_RELEASED=false' src/server/combat/world-boss-chests-v58.ts
           grep -q 'WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false' src/server/combat/world-boss-gathering-loot-v64.ts
           grep -q 'WORLD_BOSS_CHEST_PROOF_V59_LIVE=false' src/server/combat/world-boss-chest-proof-v59.ts

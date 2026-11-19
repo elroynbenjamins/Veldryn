@@ -10,7 +10,7 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS private;
 CREATE TABLE private.chest_earned_entitlements_v80(
  source_key text PRIMARY KEY,
- account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+ account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
  family text NOT NULL CHECK(family IN('party_event','world_boss')),
  tier smallint NOT NULL CHECK(tier BETWEEN 1 AND 9),
  boss_id text CHECK(boss_id IN('hollowroot','sunscar','frostmarch')),
@@ -43,7 +43,7 @@ BEGIN
  RAISE EXCEPTION 'CHEST_V80_ENTITLEMENT_IMMUTABLE';
 END $lock$;
 CREATE TRIGGER chest_v80_immutable
- BEFORE UPDATE OR DELETE ON private.chest_earned_entitlements_v80
+ BEFORE UPDATE ON private.chest_earned_entitlements_v80
  FOR EACH ROW EXECUTE FUNCTION private.chest_v80_immutable();
 ALTER TABLE private.chest_earned_entitlements_v80 ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON private.chest_earned_entitlements_v80

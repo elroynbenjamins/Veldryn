@@ -8,8 +8,8 @@ import {strict as assert} from 'node:assert';
 import type {CombatantDefinition,CombatInput} from '../../types';
 import {launchPlayer,rootboundHeartBoss,bellWardenBoss} from '../../content/launch-combat';
 import {simulateCombat} from '../../engine';
-import {CLASS_NAMES_V2,type ClassIdV2} from '../skill-catalog';
-import {SPECIALIZATIONS_V2} from '../skill-catalog';
+import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import type {ClassIdV2} from '../build-contract';
 import {RESOURCE_BY_CLASS_V2,RESOURCE_CAP_V2} from '../resource-runtime';
 import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2,
  type PersistedEnemyKitV2} from '../enemy-kit-composer';

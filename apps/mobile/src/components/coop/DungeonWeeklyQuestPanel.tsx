@@ -1,5 +1,7 @@
 import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
 import {useSocialText} from '../../i18n/social';
+import {dungeonWeeklyQuestCopy} from '../../i18n/dungeon-weekly-quest-copy';
+import type {Language} from '../../i18n';
 import type {DungeonWeeklyQuestSnapshot} from '../../core/dungeon-weekly-quests';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors} from '../../theme/coop-ui-theme';
@@ -9,21 +11,22 @@ import {FantasyPanel,StateChip} from './CoopVisualKit';
 
 /** Compact, dedicated dungeon-only weekly quest card on the dungeon home.
  * Its claim is separate from Class Challenges and all normal Quest Points. */
-export function DungeonWeeklyQuestPanel({quest,loading,error,busy=false,onRefresh,onClaim}:{
- quest?:DungeonWeeklyQuestSnapshot;loading:boolean;error?:string;busy?:boolean;
+export function DungeonWeeklyQuestPanel({language,quest,loading,error,busy=false,onRefresh,onClaim}:{
+ language:Language;quest?:DungeonWeeklyQuestSnapshot;loading:boolean;error?:string;busy?:boolean;
  onRefresh:()=>void;onClaim:()=>void;
 }){
  const st=useSocialText(),{colors:C,styles:s}=useCoopStyles(makeStyles);
- const reset=quest?new Date(quest.resetAtMs).toLocaleDateString('en-GB',{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC':undefined;
+ const copy=quest?dungeonWeeklyQuestCopy(quest.id,language):undefined;
+ const reset=quest?new Date(quest.resetAtMs).toLocaleDateString(language,{weekday:'short',hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC':undefined;
  const progress=quest?.progress??0,ready=!!quest&&!quest.claimed&&progress>=quest.target;
  return <FantasyPanel variant={quest?.claimed?'success':ready?'selected':'default'}>
   <View style={s.heading}>
    <View style={s.titleWrap}><Text style={s.eyebrow}>{st('WEEKLY DUNGEON QUEST')}</Text>
-    <Text style={s.title}>{quest?.name??st('Weekly dungeon challenge')}</Text>
+    <Text style={s.title}>{copy?.name??st('Weekly dungeon challenge')}</Text>
    </View>
    {quest?<StateChip label={quest.claimed?st('CLAIMED'):ready?st('READY'):st('WEEKLY')} tone={quest.claimed?'success':ready?'selected':'warning'}/>:null}
   </View>
-  {quest?<><Text style={s.description}>{quest.description}</Text>
+  {quest?<><Text style={s.description}>{copy?.description??quest.description}</Text>
     <View style={s.progressRow}>
      <View style={s.track}><View style={[s.fill,{width:(Math.min(100,Math.round(progress/quest.target*100))+'%') as `${number}%`}]}/></View>
      <Text style={s.progress}>{progress}/{quest.target}</Text>

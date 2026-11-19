@@ -4,7 +4,7 @@
 
 ## Why the extra controls exist
 
-A text prompt mentioning "pixel art" and "upper-left lighting" is not enough to prevent style drift across different models, sessions, classes, rewards or artists. Every batch must use **approved visual anchors, locked shape/composition, reproducible prompt/reference metadata, staged QA and explicit approvals**. These safeguards improve consistency; AI generation is stochastic, and perfect pixel-identical style cannot be guaranteed solely by a prompt.
+A text prompt mentioning "storybook painting" and "upper-left lighting" is not enough to prevent style drift across different models, sessions, classes, rewards or artists. Every batch must use **approved visual anchors, locked shape/composition, reproducible prompt/reference metadata, staged QA and explicit approvals**. These safeguards improve consistency; AI generation is stochastic, and perfect pixel-identical style cannot be guaranteed solely by a prompt.
 
 **Style lock:** `veldryn-eq2-storybook-v1`. **Selected direction:** Style 4 (2026-11-19). **Reference kit:** `veldryn-eq2-refkit-style4-v1` remains `not_approved` pending archival of the exact selected example and production slot masters. **Do not reuse** the prior rough-cluster reference kit or prompt lock.
 
@@ -24,7 +24,7 @@ Each reference kit contains:
 | Reward motif kit | Boss/event/biome source art approved for that reward collection | Distinct reward identity without changing renderer |
 | Dark/light UI proof | Real 32/40/48/64px in-app inventory backgrounds | Readability, alpha edges and color harmony |
 
-The per-slot **Style 4 painterly** master is mandatory for ALL new icons, including standalone drops. The same-class/path prior tier is mandatory for normal tier advancement. A new class/path should first have its **T1 master** approved, followed by one representative T5/T6 counterpart before bulk generation. The *style* master is shared across the entire game.
+The per-slot **Style 4 painterly** master is mandatory for ALL new icons, including standalone drops. The same-class/path prior tier is mandatory for normal tier advancement. Approve the **earliest real catalogued T1 items** first; then compare real T2–T4 items for material progression. Only test T5+ crafted items when they exist in the authoritative EQ2 catalog. The *style* master is shared across the entire game.
 
 **Asset lock:** Store each reference's repo path, SHA256 of source bytes, crop coordinates (if sourced from an atlas), status (`approved`), owner, approval date and kit version. If a source changes, bump the reference-kit version and review dependent assets; silently replacing the reference is forbidden. Crop reference icons before handing them to the generator, not just a list of filenames.
 
@@ -72,9 +72,9 @@ Do **not** automatically fail an icon simply because grayscale/HSV histogram dif
 
 ## E. Freeze the design vocabulary across whole sets
 
-Each **named set** gets a one-page identity sheet: unique iconographic emblem, 1–2 source materials, specific helmet crown, weapon head/blade profile, offhand profile, fastener motif, and defined cape/cloth language. Every piece repeats that identity subtly—not a large emblem on all ten slots.
+Each **canonical compact named set** (currently 2–4 pieces in the hidden EQ2 T1–T4 draft) gets an identity sheet for its **actual member slots only**. A helmet, weapon, offhand or cape must never be invented for a set that lacks it. Standalones and class weapons have item-specific identity briefs.
 
-**Two visual differences must exist between same-class same-tier alternate paths** (at minimum helmet profile AND weapon/offhand geometry). For reward collections, require a source-specific motif but do not invent a new class identity or force partial reward sets to contain ten gear slots.
+**Distinctiveness follows actual item IDs and slots**. For class-specific weapons/offhands, distinguish the real weapon silhouette and construction; for compact sets, differentiate the actual overlapping slots and material identity. For reward collections, require a source-specific motif but do not invent a new class identity or force partial reward sets to contain ten gear slots.
 
 Maintain an explicit **anti-clone review**: show similar same-class and same-tier pieces side by side. A recolor or gem pasted on a reused helmet/weapon does not pass; neither does a completely different rendering style. No mirroring a previous item to pass uniqueness.
 
@@ -100,8 +100,8 @@ Record **model/tool name, model version where exposed, generation date, prompt v
 - Trim only transparent bounds. Preserve width/height ratio when resizing. Never do independent X/Y scaling.
 - Export each 192px icon in the same sRGB interpretation, removing accidental embedded color profile mismatches, unwanted metadata and matte; verify alpha all the way through PNG→WebP.
 - No color overlays in the asset packer. Palette consistency is an art-authoring decision, not a destructive global filter.
-- Composite the ten approved slots into 5×2, following canonical indices; do not auto-fill missing items with similar legacy art.
-- If a standalone reward is 1 of 20 pieces, export it as its own **canonical item ID**; do not force a ten-piece atlas for convenience.
+- **Default: export one 192×192 WebP per canonical item ID**, including pieces from 2-, 3- and 4-piece sets, standalones and class weapons/offhands. Ten-slot 5×2 atlas is an **optional packaging tool** only if a future runtime renderer genuinely needs one, with explicit canonical ID-to-cell mapping and no invented art.
+- Party Event gear uses the five actual slots across a three-piece plus two-piece set per event, and World Boss/dungeon art uses its own authoritative piece IDs. Each distinct item gets its own export.
 - Keep source PNGs outside the shipped mobile bundle. Runtime exports are optimized WebP only; optimize without blurred edges, compression halos or corrupted transparency.
 
 ## H. Four gates for every item
@@ -133,8 +133,18 @@ Record **model/tool name, model version where exposed, generation date, prompt v
 | `MAPPING_UNKNOWN` | 2.0 item ID/slot/source not in authoritative reward/crafting manifest | Do not bind or ship |
 | `GATE_DISABLED` | Item source exists only in hidden WIP code | Keep as approved artwork, but **do not enable gameplay** |
 
-## First controlled calibration batch
+## First controlled calibration batch — real 2.0 compact sets
 
-Start with **one full T1 class foundation set**, then its matching T5 (or earliest class-equivalent advanced tier) with real approved resource icon crops. Compare weapon, helmet, chest, gloves, boots, cape, amulet and ring at the same 40px size. If the reference kit is coherent and the exporter has clean alpha, approve a second class with a very different material language (e.g. a cloth class), *then* freeze v1 and bulk-generate. This verifies cross-material consistency, not just one armored class.
+**Do not generate a full ten-slot class set.** Generate only the item IDs defined in the hidden EQ2 catalog (PR #1382):
+
+| Actual T1 set | Canonical pieces | Material / role |
+| --- | --- | --- |
+| Fieldborn Guard | `EQ2_FIELDBORN_GUARD_HELMET`, `EQ2_FIELDBORN_GUARD_CHEST` | Steel / tank |
+| Fieldborn Trail | `EQ2_FIELDBORN_TRAIL_GLOVES`, `EQ2_FIELDBORN_TRAIL_BOOTS` | Leather / damage |
+| Fieldborn Acolyte | `EQ2_FIELDBORN_ACOLYTE_CAPE`, `EQ2_FIELDBORN_ACOLYTE_AMULET` | Cloth / support |
+
+This is **six distinct T1 icons distributed across three two-piece sets**, not one complete 10-slot set. Next calibrate matching real *Ironwood T2*, *Sunscar T3* and *Glassbound T4* slot peers, plus **actual** class-specific weapon and offhand IDs. Do not assert T5+ crafted set IDs are defined until the synchronized EQ2 catalog provides them.
+
+**Important distinction:** maintaining reference poses for all **ten equipment slot types** does not imply that any equipment set has ten members. Full 5×2 atlases remain optional tooling for renderer requirements only, not the artwork production unit. The equipment source branch is unmerged and hidden; reconfirm its identifiers before mass production.
 
 A change to global renderer or lighting after approval is **a new styleLock version**, never a silent edit to old art.

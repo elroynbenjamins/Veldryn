@@ -96,6 +96,11 @@ try{
    return {tier:2};
   },
   creditGuaranteed:async(tx,receipt,index)=>{
+   const mode=(await tx.query('show transaction_isolation')).rows[0];
+   assert.equal(mode?.transaction_isolation,
+    receipt.sourceKey.startsWith('world-boss:')?
+     'read committed':'serializable',
+    'World Boss uses V57-compatible isolation; Party and generic remain serializable');
    const item=receipt.guaranteed[index];
    const grantId='g:'+receipt.sourceKey+':'+index;
    await tx.query(

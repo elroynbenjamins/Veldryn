@@ -7,7 +7,11 @@ on:
       - 'tools/audit-equipment-v2-expansion.mjs'
       - 'tools/test-equipment-v2-expansion.mjs'
       - 'tools/test-equipment-v2-exclusive-source.mjs'
+      - 'tools/test-equipment-v2-blueprints.mjs'
       - 'backend/src/server/equipment/equipment-v2-exclusive-acquisition-policy.mjs'
+      - 'backend/src/server/equipment/equipment-crafting-v2-blueprint-policy.mjs'
+      - 'apps/mobile/src/content/equipment-v2-expansion.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-expansion-manifest.ts'
       - 'apps/mobile/src/content/equipment-v2-catalog.ts'
       - 'apps/mobile/src/content/equipment-v2-armaments.ts'
       - 'apps/mobile/src/core/equipment-crafting-v2-foundation.ts'
@@ -19,7 +23,11 @@ on:
       - 'tools/audit-equipment-v2-expansion.mjs'
       - 'tools/test-equipment-v2-expansion.mjs'
       - 'tools/test-equipment-v2-exclusive-source.mjs'
+      - 'tools/test-equipment-v2-blueprints.mjs'
       - 'backend/src/server/equipment/equipment-v2-exclusive-acquisition-policy.mjs'
+      - 'backend/src/server/equipment/equipment-crafting-v2-blueprint-policy.mjs'
+      - 'apps/mobile/src/content/equipment-v2-expansion.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-expansion-manifest.ts'
       - 'apps/mobile/src/content/equipment-v2-catalog.ts'
       - 'apps/mobile/src/content/equipment-v2-armaments.ts'
       - 'apps/mobile/src/core/equipment-crafting-v2-foundation.ts'
@@ -40,4 +48,4 @@ jobs:
       - name: Compare 57 proposed items against real server/client hidden catalogs
         run: node tools/audit-equipment-v2-expansion.mjs
       - name: Source, tier, stat and rare-blueprint regression tests
-        run: node --test tools/test-equipment-v2-expansion.mjs tools/test-equipment-v2-exclusive-source.mjs
+        run: node --test tools/test-equipment-v2-expansion.mjs tools/test-equipment-v2-exclusive-source.mjs tools/test-equipment-v2-blueprints.mjs

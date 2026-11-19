@@ -55,6 +55,8 @@ export interface CoopRouteGraph {
 export interface CoopRunRequest {
   requestId: string;
   mode: CoopMode;
+  /** Solo-only length option; Live always uses the standard route. */
+  runLength?:'standard'|'extended';
   dungeonId: string;
   tier: ExpeditionTier;
   characterId: string;

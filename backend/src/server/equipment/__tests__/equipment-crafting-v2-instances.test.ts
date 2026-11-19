@@ -7,11 +7,11 @@ import {
  type V2ExactEquipmentTemplate,
 } from '../equipment-crafting-v2-instances';
 
-assert.equal(V2_SERVER_PIECES.length,118,'118 exact V2 equipment templates expected');
-assert.equal(V2_SERVER_RECIPES.length,236,'236 canonical methods must be retained');
+assert.equal(V2_SERVER_PIECES.length,169,'169 exact V2 normal equipment templates expected');
+assert.equal(V2_SERVER_RECIPES.length,338,'338 canonical methods must be retained');
 const pieceById=new Map(V2_SERVER_PIECES.map(piece=>[piece.id,piece]));
 const recipeByPiece=new Map(V2_SERVER_RECIPES.filter(r=>r.route==='foundation').map(r=>[r.pieceId,r]));
-assert.equal(recipeByPiece.size,118);
+assert.equal(recipeByPiece.size,169);
 const exactByPiece=new Map<string,V2ExactEquipmentTemplate>();
 for(const piece of V2_SERVER_PIECES){
  const recipe=recipeByPiece.get(piece.id);
@@ -102,4 +102,4 @@ assert.throws(()=>v2ServerCreateExactTemplate(legitimateSource,{
 }),/uncanonical_v2_item_template/,
  'A mint must use the exact canonical recipe that produces the selected gear');
 
-console.log('PASS: 118 immutable Equipment V2 exact templates, stats, class/hand equip preflight and tamper rejection');
+console.log('PASS: 169 immutable normally craftable Equipment V2 exact templates, stats, class/hand equip preflight and tamper rejection');

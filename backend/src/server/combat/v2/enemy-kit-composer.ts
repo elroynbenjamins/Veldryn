@@ -15,6 +15,7 @@ import {
 import {prepareAsterfallBossV2} from '../boss-v2-asterfall-prototype';
 import {prepareRegionalBossV2} from '../boss-v2-regional-prototype';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
+import {prepareTierOneIntroEnemyV2,t1IntroArchetypeV2,introProfileV2} from './enemy-t1-intro-kit';
 
 export const ENEMY_V2_KIT_VERSION='enemy-kit-composer-v1' as const;
 const KIT_TAG='enemy-v2:kit:v1';
@@ -104,7 +105,7 @@ export function prepareSoloEnemyKitsV2(
   'invalid_encounter_identity');
  assert((['asterfall','sunscar','frostmarch'] as string[]).includes(options.region)&&
    Number.isSafeInteger(options.equipmentTier)&&
-   options.equipmentTier>=2&&options.equipmentTier<=5,'unsupported_region_or_tier');
+   options.equipmentTier>=1&&options.equipmentTier<=5,'unsupported_region_or_tier');
  assert(Array.isArray(enemies)&&enemies.length>=1&&enemies.length<=4&&
   enemies.every(baseIsUncompiled)&&distinct(enemies.map(e=>e.id)),
   'unverified_or_already_compiled_enemy');
@@ -139,10 +140,17 @@ export function prepareSoloEnemyKitsV2(
    ]};
   }else{
    kind=eliteIds.includes(base.id)?'elite':'normal';
-   const result=prepareEnemyV2([base],options);
-   transformed=result.enemies[0];
-   traitIds=[...(result.preview[0]?.traitIds??[])];
-   profile=result.preview[0]?.archetype??'unrolled';
+   if(options.equipmentTier===1){
+     const archetype=t1IntroArchetypeV2(base);
+     assert(archetype,'unsupported_t1_archetype');
+     transformed=prepareTierOneIntroEnemyV2(base);
+     profile=introProfileV2(archetype);
+   }else{
+     const result=prepareEnemyV2([base],options);
+     transformed=result.enemies[0];
+     traitIds=[...(result.preview[0]?.traitIds??[])];
+     profile=result.preview[0]?.archetype??'unrolled';
+   }
   }
   const next=clone(transformed);
   next.tags=[...(next.tags??[]),KIT_TAG];
@@ -192,7 +200,7 @@ export function verifyPersistedEnemyKitsV2(
    typeof snapshot.seed==='string'&&snapshot.seed.length>=8&&snapshot.seed.length<=256&&
    Number.isSafeInteger(snapshot.revision)&&snapshot.revision>=1,'invalid_stored_kit');
  assert((['asterfall','sunscar','frostmarch'] as string[]).includes(snapshot.region)&&
-   Number.isSafeInteger(snapshot.equipmentTier)&&snapshot.equipmentTier>=2&&
+   Number.isSafeInteger(snapshot.equipmentTier)&&snapshot.equipmentTier>=1&&
    snapshot.equipmentTier<=5,'invalid_stored_region_or_tier');
  assert(Array.isArray(baseEnemies)&&Array.isArray(snapshot.enemyIds)&&
    Array.isArray(snapshot.preparedEnemies)&&Array.isArray(snapshot.bossIds)&&
@@ -240,6 +248,13 @@ export function verifyPersistedEnemyKitsV2(
     enemyV2SnapshotDigest(preservedPhases)===enemyV2SnapshotDigest(base.phases??[])&&
     (base.tags??[]).every((tag:string)=>(next.tags??[]).includes(tag)),
     'original_enemy_kit_mutated');
+  // A stored public preview must reflect the exact persisted kit, not a
+  // separately supplied set of ability names or phase labels.
+  const actualAbilities=next.abilities.filter(a=>!baseAbilityIds.has(a.id)).map(a=>a.name);
+  const actualPhases=(next.phases??[]).filter(p=>!basePhaseIds.has(p.id)).map(p=>p.name??p.id);
+  assert(enemyV2SnapshotDigest(p.abilityNames)===enemyV2SnapshotDigest(actualAbilities)&&
+    enemyV2SnapshotDigest(p.phaseNames)===enemyV2SnapshotDigest(actualPhases),
+    'stored_preview_does_not_match_kit');
   if(base.boss)
    assert(enemyV2SnapshotDigest(next.stats)===enemyV2SnapshotDigest(base.stats),
      'boss_base_stats_mutated');
@@ -253,7 +268,16 @@ export function verifyPersistedEnemyKitsV2(
   }
   assert(p.traitIds.length<=(p.kind==='elite'&&snapshot.equipmentTier>=3?2:1)&&
     distinct(p.traitIds),'invalid_stored_trait_count');
-  if(!base.boss){
+  if(!base.boss&&snapshot.equipmentTier===1){
+   const archetype=t1IntroArchetypeV2(base);
+   assert(archetype&&p.profile===introProfileV2(archetype)&&
+      p.traitIds.length===0,'invalid_stored_t1_intro_profile');
+   const regenerated=prepareTierOneIntroEnemyV2(base);
+   const expected={...regenerated,tags:[...(regenerated.tags??[]),KIT_TAG]};
+   assert(enemyV2SnapshotDigest(next)===enemyV2SnapshotDigest(expected),
+      'stored_t1_intro_kit_mismatch');
+  }
+  if(!base.boss&&snapshot.equipmentTier>=2){
    const actual=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:trait:'))
      .map((t:string)=>t.slice('enemy-v2:trait:'.length));
    const archetypes=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:archetype:'))

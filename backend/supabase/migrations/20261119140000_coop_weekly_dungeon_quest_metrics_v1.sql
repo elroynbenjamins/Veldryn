@@ -118,34 +118,7 @@ declare
 begin
  if p_account_id is null or p_request_id is null or
     p_request_id !~ '^[A-Za-z0-9_-]{8,128}$' or
-    p_week_key is null or p_week_key !~ '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3]) then raise exception 'invalid_dungeon_weekly_request';end if;
- perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('dungeon-weekly:'||p_account_id::text,0));
- v_snapshot:=public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
- if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;
- if (v_snapshot->>'claimed')::boolean then return v_snapshot; end if;
- if (v_snapshot->>'progress')::integer<1 then raise exception 'dungeon_weekly_quest_incomplete'; end if;
- v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.transaction_timestamp() at time zone 'UTC'))::date;
- v_id:=v_snapshot->>'id';
- insert into public.coop_dungeon_weekly_claims_v1(account_id,week_start,objective_id,reward_marks,request_id)
- values(p_account_id,v_week_start,v_id,25,p_request_id);
- insert into public.expedition_currency_ledger
-  (account_id,run_id,currency,amount,reason,idempotency_key)
- values(p_account_id,null,'expedition_mark',25,'coop_dungeon_weekly_quest',
-   'coop-dungeon-weekly-v1:'||p_account_id::text||':'||p_week_key)
- returning id into v_reward_ledger_id;
- if v_reward_ledger_id is null then raise exception 'dungeon_weekly_ledger_failed';end if;
- insert into public.expedition_wallets(account_id) values(p_account_id) on conflict(account_id) do nothing;
- update public.expedition_wallets
- set expedition_marks=expedition_marks+25,updated_at=pg_catalog.transaction_timestamp()
- where account_id=p_account_id;
- return public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
-end;
-$function$;
-revoke all on function public.coop_dungeon_weekly_quest_claim_server_v1(uuid,text,text) from public,anon,authenticated;
-grant execute on function public.coop_dungeon_weekly_quest_claim_server_v1(uuid,text,text) to service_role;
-commit;
-
- then raise exception 'invalid_dungeon_weekly_request';end if;
+    p_week_key is null or p_week_key !~ '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('dungeon-weekly:'||p_account_id::text,0));
  v_snapshot:=public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
  if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;

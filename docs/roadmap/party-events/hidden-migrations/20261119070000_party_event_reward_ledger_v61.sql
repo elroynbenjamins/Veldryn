@@ -26,6 +26,8 @@ create table private.party_event_reward_receipts_v61 (
   references private.party_event_roster_v11(party_id,event_starts_at,account_id)
   on delete cascade,
  constraint party_event_reward_receipt_v61_source_identity check (
+  extract(dow from event_starts_at)=1 and
+  (event_starts_at at time zone 'UTC')::time=time '00:00:00' and
   source_key='party-event:'||
    (floor(extract(epoch from event_starts_at)*1000))::bigint::text||':'||
    account_id::text||':'||
@@ -54,6 +56,9 @@ create table private.party_event_reward_receipts_v61 (
    and gem_dust=0 and companion_essence=0)
  ),
  constraint party_event_reward_receipt_v61_receipt_parity check (
+  receipt ?& array['sourceKey','accountId','rulesVersion','origin',
+   'partySigilsDelta','gold','gemDust','companionEssence',
+   'chestKind','pieceId','weekStartMs','frozenGear'] and
   receipt->>'sourceKey'=source_key and receipt->>'accountId'=account_id::text
   and receipt->>'rulesVersion'=rules_version
   and receipt->>'origin'=origin
@@ -63,6 +68,11 @@ create table private.party_event_reward_receipts_v61 (
   and receipt->>'companionEssence'=companion_essence::text
   and (receipt->>'chestKind') is not distinct from chest_kind
   and (receipt->>'pieceId') is not distinct from piece_id
+  and ((item_instance_id is null and receipt->'frozenGear'='null'::jsonb) or
+       (item_instance_id is not null and
+        receipt->'frozenGear'->>'itemInstanceId'=item_instance_id::text and
+        receipt->'frozenGear'->>'pieceId'=piece_id and
+        receipt->'frozenGear'->>'exactItemReceiptVersion'=exact_item_receipt_version))
   and (receipt->>'weekStartMs')::bigint =
    (floor(extract(epoch from event_starts_at)*1000))::bigint
  )

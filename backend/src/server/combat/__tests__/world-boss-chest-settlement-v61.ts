@@ -140,6 +140,12 @@ async function run(){
   store.state.gold===450&&store.state.essence===6&&store.state.gemDust===2&&
   store.state.temperingDust===2&&store.state.items.size===0,
   'one_account_reward_and_inbox');
+ // A corrupt persisted first result must fail closed rather than display
+ // invented gold, produce a new roll, or silently double-credit.
+ store.state.receipts.set(firstKey,{...initial,gold:999999});
+ await rejects(()=>claimWorldBossChestV61(
+  userInput,auth(store,loser),true),'corrupt_existing_receipt');
+ store.state.receipts.set(firstKey,initial);
  const beforeOwned=store.readOwnedCalls;
  const repeated=await claimWorldBossChestV61(userInput,auth(store,winner),true);
  check(JSON.stringify(initial)===JSON.stringify(repeated)&&
@@ -155,6 +161,13 @@ async function run(){
   concurrent.state.receipts.size===1&&concurrent.state.inbox.size===1&&
   concurrent.state.gold===450&&concurrent.state.items.size===1&&
   concurrent.issuedCalls===1,'two_concurrent_claims_one_grant');
+ if(a.frozenGear){
+  const forged={...a,frozenGear:{...a.frozenGear,tier:'T9' as const}};
+  concurrent.state.receipts.set(firstKey,forged);
+  await rejects(()=>claimWorldBossChestV61(
+   userInput,auth(concurrent,winner),true),'corrupt_existing_item');
+  concurrent.state.receipts.set(firstKey,a);
+ }
  check(a.gearHit&&a.frozenGear?.tier==='T3'&&
   a.frozenGear?.slot==='Ring'&&a.frozenGear?.roll.skill==='mining',
   'canonical_tier_exact_missing_slot_and_boss_skill');

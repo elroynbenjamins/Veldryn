@@ -122,7 +122,10 @@ async function lockedGame(tx:ChestSqlV70,accountId:string){
  const rows=(await tx.query<GameRow>(readGameSql,[accountId])).rows;
  if(rows.length!==1||!UUID.test(rows[0]!.character_id))
   throw Error('world_boss_v83_online_character_required');
- return {characterId:rows[0]!.character_id,game:state(rows[0]!.state)};
+ const game=state(rows[0]!.state);
+ if(game.character.id!==rows[0]!.character_id)
+  throw Error('world_boss_v83_active_character_mismatch');
+ return {characterId:rows[0]!.character_id,game};
 }
 function rewardBalance(s:GameStateV83,id:RewardId,
  custody?:Custody):number{

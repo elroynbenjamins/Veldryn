@@ -6,6 +6,7 @@ import {parseStoredJsonObject} from '../core/stored-json';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
+import type {DungeonWeeklyQuestSnapshot} from '../core/dungeon-weekly-quests';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
@@ -94,6 +95,8 @@ async function publicProfilePower(accountId:string):Promise<{combatPower:number}
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
  dungeonMarksShop:()=>request<DungeonMarksShopSnapshot>('/coop/shop'),
+ dungeonWeeklyQuest:()=>request<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest'),
+ claimDungeonWeeklyQuest:(weekKey:string,requestId:string)=>mutate<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest',{weekKey,requestId}),
  purchaseDungeonMarksShop:(offerId:string,requestId:string)=>mutate<{status:'purchased'|'already_owned';balance:number}>('/coop/shop',{offerId,requestId}),
  profilePower:publicProfilePower,
  liveQueue:()=>request<LiveQueueView>('/coop/queue'),

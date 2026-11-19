@@ -83,6 +83,21 @@ const removed=simulateEquipmentV2VirtualCustody(input(worn.state,
  request('unequip','virtual-unequip-01',15),15));
 assert.equal(removed.receipt.to,'pouch');
 assert.equal(removed.receipt.equippedSlot,undefined);
+const materialsRestored=structuredClone(removed.state);
+materialsRestored.inventory.stacks.push(...recipe.inputs.map(row=>({
+ itemId:row.itemId,quantity:row.quantity,
+})));
+const anotherForge=simulateEquipmentV2InGameState(forge(materialsRestored,{
+ kind:'start',requestId:'virtual-next-forge-01',expectedVersion:16,recipeId:recipe.id,
+},16));
+assert.deepEqual((anotherForge.state.account.equipmentV2Hidden as V2VirtualLedger).custodyReceipts,
+ (removed.state.account.equipmentV2Hidden as V2VirtualLedger).custodyReceipts,
+ 'Later Forge commands must not destroy earlier Bank custody receipts');
+assert.throws(()=>simulateEquipmentV2InGameState(forge(materialsRestored,{
+ kind:'start',requestId:'virtual-bank-0001',expectedVersion:16,recipeId:recipe.id,
+},16)),/v2_cross_command_request_id_conflict/,
+ 'Forge and custody cannot reuse the same idempotency key');
+
 assert.throws(()=>simulateEquipmentV2VirtualCustody(input(withdrawn.state,
  request('withdraw_bank','virtual-own-0001',14),14)),/invalid_v2_virtual_transition/,
  'Invalid duplicate or wrong virtual transitions must fail');

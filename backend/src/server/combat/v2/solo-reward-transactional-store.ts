@@ -85,22 +85,22 @@ function checkSnapshot(scope:TrustedSoloIdentityV2,row:LockedSnapshotRow|undefin
   (row.payload as {snapshotDigest?:string}).snapshotDigest!==receipt.snapshotDigest)
   fail('snapshot_provenance_conflict');
 }
-const SELECT_SNAPSHOT=\
+const SELECT_SNAPSHOT=
 `select account_id::text as account_id, character_id::text as character_id,
         snapshot_digest,payload
    from private.combat_v2_solo_snapshots_v1
   where encounter_id=$1 for update`;
-const SELECT_EXISTING=\
+const SELECT_EXISTING=
 `select receipt from private.combat_v2_solo_reward_receipts_v1
   where encounter_id=$1 for update`;
-const SELECT_READ=\
+const SELECT_READ=
 `select r.receipt from private.combat_v2_solo_reward_receipts_v1 r
   join private.combat_v2_solo_snapshots_v1 s
     on s.encounter_id=r.encounter_id
  where r.encounter_id=$1 and r.account_id=$2::uuid
    and r.character_id=$3::uuid
    and s.account_id=$2::uuid and s.character_id=$3::uuid`;
-const INSERT_RECEIPT=\
+const INSERT_RECEIPT=
 `insert into private.combat_v2_solo_reward_receipts_v1
  (encounter_id,account_id,character_id,source_key,snapshot_digest,
   outcome_digest,grant_digest,receipt_digest,policy_id,receipt)

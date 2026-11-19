@@ -10,7 +10,7 @@ export interface GatheringToolBlueprintDef{
 }
 export interface GatheringToolDef{
   id:string;name:string;skillId:GatheringSkillId;tier:1|2|3|4;
-  /** Standalone action-time reduction. Equipped tiers contribute additively, capped at 55% total. */
+  /** Standalone action-time reduction. Equipped tiers contribute additively, capped at 60% total. */
   actionTimeMultiplier:number;
   /** Required level in the tool's own gathering skill to equip and craft it. */
   unlockLevel:number;
@@ -64,11 +64,11 @@ const blueprint=(itemId:string,knowledgeId:string,sourceMonsterId:string,dropCha
 });
 
 export const GATHERING_TOOLS:GatheringToolDef[]=[
-  // Each tier is a permanent additive upgrade: 5% + 15% + 15% + 20% = 55% maximum reduction.
+  // Each tier is a permanent additive upgrade: 10% + 15% + 15% + 20% = 60% maximum reduction.
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
-  tool({id:'COPPER_PICKAXE',name:'Copper Pickaxe',skillId:'mining',tier:1,actionTimeMultiplier:.95,unlockLevel:3,requiredCharacterLevel:16,icon:'⛏',rarity:'common',value:120,recipe:{xp:110,gold:120,seconds:120,inputs:[{itemId:'COPPER_INGOT',quantity:8},{itemId:'GREENWOOD_LOG',quantity:14}]}}),
-  tool({id:'GREENWOOD_HATCHET',name:'Greenwood Hatchet',skillId:'woodcutting',tier:1,actionTimeMultiplier:.95,unlockLevel:3,requiredCharacterLevel:3,icon:'🪓',rarity:'common',value:110,recipe:{xp:105,gold:110,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:24},{itemId:'MOSS_FIBER',quantity:12}]}}),
-  tool({id:'REEDLINE_ROD',name:'Reedline Fishing Rod',skillId:'fishing',tier:1,actionTimeMultiplier:.95,unlockLevel:3,requiredCharacterLevel:3,icon:'🎣',rarity:'common',value:100,recipe:{xp:100,gold:100,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:20},{itemId:'MOSS_FIBER',quantity:10}]}}),
+  tool({id:'COPPER_PICKAXE',name:'Copper Pickaxe',skillId:'mining',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:16,icon:'⛏',rarity:'common',value:120,recipe:{xp:110,gold:120,seconds:120,inputs:[{itemId:'COPPER_INGOT',quantity:8},{itemId:'GREENWOOD_LOG',quantity:14}]}}),
+  tool({id:'GREENWOOD_HATCHET',name:'Greenwood Hatchet',skillId:'woodcutting',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:3,icon:'🪓',rarity:'common',value:110,recipe:{xp:105,gold:110,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:24},{itemId:'MOSS_FIBER',quantity:12}]}}),
+  tool({id:'REEDLINE_ROD',name:'Reedline Fishing Rod',skillId:'fishing',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:3,icon:'🎣',rarity:'common',value:100,recipe:{xp:100,gold:100,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:20},{itemId:'MOSS_FIBER',quantity:10}]}}),
 
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
   tool({id:'ASTER_IRON_PICKAXE',name:'Aster-Iron Pickaxe',skillId:'mining',tier:2,actionTimeMultiplier:.85,unlockLevel:10,requiredCharacterLevel:16,icon:'⛏',rarity:'uncommon',value:440,blueprint:blueprint('BP_ASTER_IRON_PICKAXE','tool_recipe:ASTER_IRON_PICKAXE','CAVE_SKITTER',.017),recipe:{xp:340,gold:650,seconds:240,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:16},{itemId:'IRONWOOD_LOG',quantity:26},{itemId:'REINFORCED_FITTING',quantity:3}]}}),

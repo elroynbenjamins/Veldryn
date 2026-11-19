@@ -1,8 +1,9 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {EquipmentCraftJob,GameState} from '../src/core/types';
 import {activateDailySupplyBoost,activeDailySupplyBoosts,dailySupplyBank} from '../src/core/daily-supplies';
-import {advanceForgeSupply,equipmentCraftingQueue,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
+import {advanceForgeSupply,cancelEquipmentCraft,claimEquipmentCraft,equipmentCraftingQueue,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 
 function equal(actual:unknown,expected:unknown,label:string){
  if(actual!==expected)throw new Error(label+': expected '+String(expected)+', received '+String(actual));
@@ -65,6 +66,44 @@ activation=activateDailySupplyBoost(activation,'crafting_speed');
 activation=advanceForgeSupply(activation,t0+2*HOUR);
 equal(equipmentCraftingQueue(activation)[0].completesAtMs,t0+5*HOUR-HOUR*.25,'Activating after one hour does not accelerate the prior hour');
 equal(dailySupplyBank(activation).crafting_speed?.length??0,0,'Activation removes exactly one saved account charge');
+
+// The queue-order control must preserve reservations and use the new speed ETA.
+const twoWaiting=scenario([...three,job('first-wait',t0+HOUR,HOUR),job('second-wait',t0+2*HOUR,HOUR)]);
+const moved=moveWaitingEquipmentCraft(twoWaiting,'second-wait','up',t0);
+const movedModel=equipmentCraftQueueModel(moved,t0);
+equal(movedModel.jobs.filter(j=>j.waiting)[0].id,'second-wait','Manual backlog priority wins before accelerated scheduling');
+equal(movedModel.jobs.filter(j=>j.waiting)[0].startInSeconds,2880,'Reordered first backlog job shares accelerated ready time');
+
+// Real crafting checks ensure reservation cancellation does not mint timer time
+// and claim at the accelerated deadline cannot settle a copy twice.
+const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001')!;
+const funded=():GameState=>{
+ const state=createCharacter(newGame(t0),recipe.classId,'Forge Reservation','male');
+ return {...state,character:{...state.character!,level:Math.max(10,recipe.characterLevel),gold:1000000},
+  skills:state.skills.map(skill=>({...skill,level:Math.max(30,recipe.level)})),
+  inventory:{...state.inventory,capacity:100,stacks:recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*10}))},
+  bank:{...state.bank,capacity:200,stacks:[]},
+  account:{...state.account,dailySupplies:{schemaVersion:2,totalClaims:1,forgeSettledAtMs:t0,
+   bank:{},active:{crafting_speed:{type:'crafting_speed',bonus:.25,seconds:7200,remainingSeconds:7200}},queued:{}}}};
+};
+const started=startEquipmentCraft(funded(),recipe.id,t0);
+const normalDuration=started.job.completesAtMs-t0;
+const elapsed=Math.max(1000,Math.floor(normalDuration/4));
+const mid=advanceForgeSupply(started.state,t0+elapsed);
+const remainingBeforeCancel=activeDailySupplyBoosts(mid).crafting_speed?.remainingSeconds;
+const cancelled=cancelEquipmentCraft(mid,started.job.id,t0+elapsed);
+equal(equipmentCraftingQueue(cancelled.state).length,0,'Cancelled job leaves the reserved Forge queue');
+equal(activeDailySupplyBoosts(advanceForgeSupply(cancelled.state,t0+2*HOUR)).crafting_speed?.remainingSeconds,
+ remainingBeforeCancel,'Cancellation stops future charge burn, but never refunds elapsed activity seconds');
+const startedToClaim=startEquipmentCraft(funded(),recipe.id,t0);
+const forecastClaim=equipmentCraftQueueModel(startedToClaim.state,t0).jobs.find(row=>row.id===startedToClaim.job.id)!;
+ok(forecastClaim.remainingSeconds>0&&forecastClaim.remainingSeconds<normalDuration/1000,'Forge ETA is shorter while blessing applies');
+const claimAt=t0+Math.ceil(normalDuration/1.25)+1000;
+const claimed=claimEquipmentCraft(startedToClaim.state,startedToClaim.job.id,claimAt,.45);
+equal(equipmentCraftingQueue(claimed.state).length,0,'Accelerated Forge job can be claimed once after real completion');
+let duplicateBlocked=false;
+try{claimEquipmentCraft(claimed.state,startedToClaim.job.id,claimAt,.45)}catch{duplicateBlocked=true}
+ok(duplicateBlocked,'The same accelerated Forge job cannot be claimed twice');
 
 const normalized=normalizeSave(activation);
 equal(normalized.account.dailySupplies?.forgeSettledAtMs,t0+2*HOUR,'Forge watermark persists in normalized save');

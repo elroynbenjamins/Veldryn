@@ -162,7 +162,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     const snapshot=validateDungeonWeeklyQuestSnapshot(await coopClient.dungeonWeeklyQuest());
     if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuest(snapshot);
    }catch(reason){
-    if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuestError(coopErrorMessage(reason,'Could not verify weekly dungeon quest.'));
+    if(weeklyQuestCharacterRef.current===characterId){setWeeklyQuest(undefined);setWeeklyQuestError(coopErrorMessage(reason,'Could not verify weekly dungeon quest.'));}
    }finally{if(weeklyQuestCharacterRef.current===characterId)setWeeklyQuestLoading(false);}
   },[entrySource.kind,characterId]);
   useEffect(()=>{

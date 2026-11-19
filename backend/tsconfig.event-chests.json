@@ -27,6 +27,8 @@
     "src/server/party/__tests__/weekly-party-event-chests-v51.ts",
     "src/server/combat/world-boss-chests-v58.ts",
     "src/server/combat/__tests__/world-boss-chests-v58.ts",
+    "src/server/loot/chest-loot-engine-v67.ts",
+    "src/server/loot/__tests__/chest-loot-engine-v67.ts",
     "src/server/loot/event-chest-server-roll-v1.ts",
     "src/server/loot/__tests__/event-chest-server-roll-v1.ts",
     "src/server/loot/event-chest-preview-v2.ts",

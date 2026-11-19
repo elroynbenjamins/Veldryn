@@ -9,7 +9,7 @@
 - While `ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED=false`, the UI links to the existing Privacy Policy/support process; it never exposes an unconfigured write button.
 - A future authenticated request/cancel/status RPC contract. It writes only a pending **review request** for a *linked* account; it never calls `auth.admin.deleteUser`, deletes characters, or impersonates account owners.
 - Single active request per account (PK + conditional UPSERT); duplicate button taps and retries preserve the original request ID. Cancellations are allowed only while pending.
-- Guard verifies `auth.uid()`, the active `auth.sessions` JWT session and a non-anonymous `auth.users` account. No user-supplied target account ID, service-role key in the mobile app, or direct authenticated table access.
+- Guard verifies `auth.uid()`, the active `auth.sessions` JWT session and a non-anonymous `auth.users` account. An expected account ID is accepted only to prevent stale-account UI races and must exactly match server-derived `auth.uid()` for submit/status/cancel; it is never an authorization target. No service-role key in the mobile app or direct authenticated table access.
 - RLS on the private queue, no anon/authenticated table grants. Public RPCs are deliberately owner-scoped and authenticated-only; the internal guard is not executable by a mobile role.
 
 ## Production Auth FK audit (read-only, 19 Nov 2026)

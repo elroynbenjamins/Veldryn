@@ -15,8 +15,10 @@ import type {
 } from './solo-reward-settlement';
 
 export interface CombatV2SqlQueryResult<Row> { readonly rows:readonly Row[]; }
-export interface CombatV2PinnedSqlClient {
+export interface CombatV2RewardSqlTransaction {
  query<Row=Record<string,unknown>>(sql:string,params?:readonly unknown[]):Promise<CombatV2SqlQueryResult<Row>>;
+}
+export interface CombatV2PinnedSqlClient extends CombatV2RewardSqlTransaction {
  release():void;
 }
 export interface CombatV2SqlPool {
@@ -25,9 +27,9 @@ export interface CombatV2SqlPool {
 export interface CombatV2RewardWriters {
  /** Implement with audited transaction-local source-unique grant ledgers.
   * Any error MUST throw; no asynchronous follow-up or partial success. */
- applyGrant(tx:CombatV2PinnedSqlClient,scope:TrustedSoloIdentityV2,grant:SoloRewardGrantV2):Promise<void>;
+ applyGrant(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,grant:SoloRewardGrantV2):Promise<void>;
  /** Create exactly one Inbox message under receipt.sourceKey IN this transaction. */
- appendInbox(tx:CombatV2PinnedSqlClient,scope:TrustedSoloIdentityV2,receipt:SoloRewardReceiptV2):Promise<void>;
+ appendInbox(tx:CombatV2RewardSqlTransaction,scope:TrustedSoloIdentityV2,receipt:SoloRewardReceiptV2):Promise<void>;
 }
 export interface CombatV2RewardSqlStoreDeps {
  readonly pool:CombatV2SqlPool;
@@ -154,10 +156,19 @@ export function transactionalSoloRewardStoreV2(
     }
     if(!deps.approvedPolicyIds.includes(receipt.policyId))
      fail('policy_not_approved');
+    // Expose only a scoped query facade: grant writers cannot release the
+    // pinned client or control transaction lifetime (BEGIN/COMMIT/ROLLBACK).
+    const grantTx:CombatV2RewardSqlTransaction={
+     query:<Row=Record<string,unknown>>(sql:string,params?:readonly unknown[])=>{
+      if(typeof sql!=='string'||/^\\s*(?:begin|commit|rollback|end|savepoint|release)\\b/i.test(sql))
+       fail('writer_transaction_control_forbidden');
+      return tx.query<Row>(sql,params);
+     },
+    };
     // Every grant + Inbox call MUST use the same pinned transaction.
     for(const grant of receipt.grants)
-     await deps.writers.applyGrant(tx,scope,clone(grant));
-    await deps.writers.appendInbox(tx,scope,clone(receipt));
+     await deps.writers.applyGrant(grantTx,scope,clone(grant));
+    await deps.writers.appendInbox(grantTx,scope,clone(receipt));
     await tx.query(INSERT_RECEIPT,[
      receipt.encounterId,receipt.accountId,receipt.characterId,
      receipt.sourceKey,receipt.snapshotDigest,receipt.outcomeDigest,

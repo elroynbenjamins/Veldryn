@@ -144,3 +144,27 @@ The evidence projection remains `combatReady:false`: it is **not live combat**, 
 - New backend regression tests cover the full/empty pouch, inventory fallback, deferred full-storage claim, original-crafter ownership across characters, V33 instance-ID collision, malformed frozen gear/receipts, duplicate claim IDs and legacy preservation. The focused Unique forged equipment workflow now executes the new test.
 
 **Refinement / polish constraints:** this is intentionally *not* physically delivered equipment. The V33 item catalog cannot yet safely resolve EQ2 templates. The actual production `executeGameCommand` → `commit_online_game_guild_pve_v1` adapter, permanent-gem replacement, storage overflow expiry policy, loadout protection, queue/Forge mastery integration and source-owned Combat 2.0 bonus effects are still required. Both 2.0 release flags remain disabled, the draft PR stays unmerged, and this work does not touch player balances or make new inventory items usable. Exact-head TypeScript, CI, staging, race/rollback and Android smoke checks remain pending until observed passing.
+
+
+## November 19 — two more hidden passes: no-overbooking reservations and permanent Stat Gem replay
+
+**Pass 1 — exact-copy storage reservation ledger**
+- Introduced `equipment-crafting-v2-storage-reservations.ts`, an account-scoped `storageReservations` sidecar in the *existing* hidden Forge metadata. One successful claim writes one stable reservation, with immutable `instanceId`, original crafter, item ID and proposed destination. This does not transfer any physical EQ2 stack into V33 storage.
+- Capacity now includes the other EQ2 claims already reserved for that character. The canonical Equipment Pouch capacity (including the base 30 when not yet saved) is used for both active and alternative characters. Multiple completed claims cannot all promise the same last available storage slot.
+- Order: original crafter's Equipment Pouch, then their Inventory, then **deferred** with item safely retained in its immutable hidden claim ledger. Bank/Overflow are deliberately NOT automatic fallback destinations because of custody and expiry semantics.
+- A reservation is only a capacity plan; physical space may change between claim and future release. **Release must revalidate every destination inside an authenticated, single-account CAS with the finalized EQ2 item catalog, copy ownership, protection flags and actual storage writes.** Existing unreserved hidden v1 claims require explicit reconciliation.
+
+**Pass 2 — irreversible Stat Gem socket and replacement shadow transaction**
+- Introduced `equipment-crafting-v2-gem-sidecar.ts` as an isolated, unmounted same-GameState settlement rehearsal. The Forge exact copy remains immutable; installed sockets and their one-time idempotent receipts live in a separate versioned account sidecar.
+- The authenticated active original owner may shadow-socket a confirmed EQ2 claim using **one real stat gem** from shared Gem Pouch, active Inventory or shared Bank, in that priority order, without fabricating a gem identity or touching another character's Inventory. Proposed server-generated roll is 80–120% in 5% steps.
+- Same-gem repeat socketing follows the existing grindstone rule: it consumes a second owned gem but retains the higher roll and rejects already-perfect 120% sockets. Replacing with a different Stat Gem burns the previous installed gem without refund or extraction. Equipped V33 copies, quality/rarity, immutable minted affixes and enhancement state are untouched.
+- Strictly reject forged account/owner, missing custody reservation, stale game version, consumed/unowned or protected gem, invalid roll, duplicate cross-command request ID and malformed receipt history. Receipt replay **must** return the original result without a second debit or reroll.
+- **Effect Gem replacement is intentionally blocked** pending authoritative 2.0 per-loadout resonance caps, class/skill proc resolution and Combat 2.0 effect ownership. The release gate refuses all public runtime access to this code. The hidden simulator changes only a returned, not-persisted GameState copy.
+
+**Refinement and polish**
+- Rebuild the current socket sidecar by replaying the immutable historical receipts, rejecting orphan slot changes and weaker same-gem rerolls.
+- Preserve socket history when later hidden Forge commands start or claim; prohibit reusing one request ID between Forge and gem commands.
+- Focused regressions cover three consecutive claims competing for one pouch and one Inventory slot, deferred claims, snapshot immutability, stat gem consumption, replacement, grindstone monotonic rolls, idempotent replay, state tampering, shared Bank fallback and effect gem rejection.
+- CI now has the dedicated Stat Gem test and new release-fence checks for accidental gem/storage imports into live gameplay.
+
+**Still not release ready:** No production `executeGameCommand` route, `commit_online_game_guild_pve_v1` integration, physically materialized EQ2 copy, applied database migration or attached public UI. Exact-head CI, staging concurrency/rollback, Combat 2.0 effect caps and Android device QA have **not been verified**. Keep both Equipment/Crafting 2.0 flags false, PR #1382 in draft, and do not merge as a release.

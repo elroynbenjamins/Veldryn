@@ -58,4 +58,23 @@ expect(world.gatheringSkill==='fishing'&&world.existingBossEquipmentUnchanged,
  'rimewarden_fishing_gear_unchanged');
 expect(world.targetedExchangeCost===80&&!world.exchangeButtonEnabled&&
  world.worldSigilsBalance===90,'world_sigil_quote_no_purchase');
+expect(world.collectedPieces===2&&world.missingPieces===8&&
+ world.gearDropPolicy==='1_percent_each_earned_chest_not_guaranteed',
+ 'accurate_one_percent_collection_notice');
+expect(world.chests.every(x=>typeof x.unlockHint==='string'&&
+ x.unlockHint.length>20),'accessible_three_milestone_hints');
+let duplicateRejected=false;
+try{
+ previewWorldBossTreasurePanelV2({
+  evidence:{
+   eventId:'22222222-2222-4222-8222-222222222222',
+   accountId:evidence.accountId,bossId:'frostmarch',
+   preparationGoalCompleted:true,personalCommittedDonations:1,
+   committedAttempts:2,communityDamageGoalCompleted:true,
+   personalProvenAttacks:2,
+  },
+  ownedGatheringGearSlots:['helmet','helmet'],trustedWorldSigilsBalance:90,
+ });
+}catch(e){duplicateRejected=String(e).includes('invalid_collection');}
+expect(duplicateRejected,'no_forged_duplicate_owned_slots');
 console.log('EVENT_CHEST_REWARD_PANEL_V2_OK: three visible cards, collection progress, exact odds, two Party sets, 10-slot world gear, no live actions');

@@ -216,6 +216,14 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
        </View>)}
       </FantasyPanel>
      </DungeonDisclosure>:null}
+    {!seasonal&&run.runBuild&&(run.runBuild.boons.length>0||run.runBuild.artifacts.length>0)?<DungeonDisclosure title={`${st('Run Build')} · ${run.runBuild.boons.length} ${st('boons')} / ${run.runBuild.artifacts.length} ${st('artifacts')}`} initiallyOpen={false}>
+     <FantasyPanel>
+      {[...run.runBuild.boons,...run.runBuild.artifacts].map(effect=><View key={effect.id} style={s.marksBreakdownLine}>
+       <View style={s.grow}><Text style={s.name}>{effect.name}</Text><Text style={s.copy}>{effect.description}</Text></View>
+       <StateChip label={`×${effect.stacks}`} tone="selected"/>
+      </View>)}
+     </FantasyPanel>
+    </DungeonDisclosure>:null}
     {!seasonal&&(dungeonTonic||healingPotion)&&run.phase==='awaiting_choice'?<DungeonDisclosure title={`${gt('DUNGEON HEALING')} · ${gt('DUNGEON TONIC')}`} initiallyOpen={Boolean(healingPotion?.canUse||dungeonTonic?.open)}>
     {!seasonal&&dungeonTonic&&run.phase==='awaiting_choice'?<FantasyPanel>
       <View style={s.summary}>

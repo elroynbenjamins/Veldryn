@@ -28,7 +28,8 @@ assert.ok(panel.includes("validAccountDeletionConfirmation(confirmation)")&&pane
 assert.ok(panel.includes('requestOnlineAccountDeletion(')&&panel.includes('cancelOnlineAccountDeletionRequest('),'Owner may submit and withdraw the intake request');
 assert.ok(panel.includes("Submitting a request does not delete your account immediately."),'UI may not promise instant erasure');
 assert.ok(api.includes("row.erasureCompleted!==false")&&api.includes("getUser(data.session.access_token)"),'The client verifies owner and never accepts a response claiming erasure');
-assert.ok(api.includes('Crypto.randomUUID()')&&api.includes('LINKED')===false,'RPC uses an opaque random request ID and no account identifier supplied to SQL');
+assert.ok(api.includes('Crypto.randomUUID()')&&api.includes('p_expected_account_id:accountId'),'Every request uses a random request ID and checks the displayed owner against the active Auth subject');
+assert.equal(sql.split("p_expected_account_id is distinct from v_actor").length-1,3,'Submit, status and cancel must all reject cross-account UI races');
 assert.ok(!api.includes('admin.deleteUser(')&&!panel.includes('admin.deleteUser('),'Client cannot delete Supabase Auth users');
 assert.match(sql,/alter table private\.online_account_deletion_requests_v1 enable row level security/i);
 assert.match(sql,/revoke all on table private\.online_account_deletion_requests_v1 from public, anon, authenticated/i);
@@ -37,7 +38,7 @@ assert.match(sql,/auth\.users u where u\.id=v_actor and u\.is_anonymous is false
 assert.match(sql,/p_confirmation is distinct from 'DELETE ACCOUNT'/i);
 assert.match(sql,/p_confirmation is distinct from 'KEEP ACCOUNT'/i);
 assert.match(sql,/on conflict\(account_id\) do update/i);
-assert.match(sql,/grant execute on function public\.submit_online_account_deletion_request_v1\(text,uuid\) to authenticated/i);
+assert.match(sql,/grant execute on function public\.submit_online_account_deletion_request_v1\(uuid,text,uuid\) to authenticated/i);
 assert.ok(!sql.includes('delete from auth.users')&&!sql.includes('admin.deleteUser'),'Request-only migration cannot erase an account');
 
 console.log('PASS account deletion intake: unreleased gate, independent UI, typed confirmation, owner/active-session guards, no destructive Auth operations');

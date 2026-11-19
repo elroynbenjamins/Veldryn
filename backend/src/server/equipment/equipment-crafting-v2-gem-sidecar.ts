@@ -183,8 +183,10 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  if(!validRoll(serverRollPercent))fail('untrusted_v2_socket_roll');
  const item=raw.items.find(row=>row.id===command.instanceId);
  if(!item||!v2ServerExactTemplateConsistent(item.exactItem))fail('unknown_v2_socket_copy');
- if(item.accountId!==accountId||item.ownerCharacterId!==onlineCharacterId)
-  fail('wrong_v2_socket_owner');
+ if(item.accountId!==accountId)
+  fail('wrong_v2_socket_account');
+ // The original crafter is immutable, but custody can legally change via
+ // account Bank transfer; actual holder is checked against replayed custody.
  // A socket is restricted to the actual shadow holder. Once a copy enters
  // the shared Bank, its original crafter cannot continue socketing it; the
  // withdrawing character becomes its authenticated holder instead.

@@ -27,7 +27,8 @@ const expected=[
 ok(MEAL_BONUSES.length===5,'exactly five special meal buffs');
 for(const [id,percent,hours,kind] of expected){
  const def=mealBonusDef(id);
- ok(def?.percent===percent&&def.durationHours===hours&&def.kind===kind,id+' must keep doubled approved rate and duration');
+ if(!def)throw new Error('Missing special meal definition: '+id);
+ ok(def.percent===percent&&def.durationHours===hours&&def.kind===kind,id+' must keep doubled approved rate and duration');
  const before=fresh(),after=executeGameCommand(before,{type:'meal_bonus',args:{id}},now).state,stats=characterPermanentMultipliers(after);
  ok(after.inventory.stacks.find(row=>row.itemId===id)?.quantity===3,'explicit meal consumes one inventory item');
  ok(after.character?.activeMealBuff?.itemId===id&&after.character.activeMealBuff.remainingSeconds===hours*3600,'meal grants exact duration');

@@ -30,10 +30,13 @@ async function main(){
  const modest=createCharacter(newGame(0),'WAYFINDER','Modest Ally');
  // Contact candidates are persisted online UUIDs, never LOCAL_CHAR_1 fixture IDs.
  modest.character!.id='00000000-0000-4000-8000-000000000003';
- modest.character!.level=10;
- modest.character!.xp=legacyCharacterTotalXpAtLevel(10);
+ // Level 15 rebases to a legal >=10 dungeon level; the old level-10 fixture
+ // rebased to 8, correctly failing the server's minimum-level eligibility.
+ modest.character!.level=15;
+ modest.character!.xp=legacyCharacterTotalXpAtLevel(15);
  modest.character!.equipment=Object.fromEntries(noviceSetFor('WAYFINDER').slots.map(slot=>[slot,noviceItemId('WAYFINDER',slot)]));
  const modestRecord=deriveOnlineCoopLoadout('modest-account',modest,22);
+ assert.ok(modestRecord.characterLevel>=10,'Low-power fixture must survive the actual level-10 dungeon entry gate');
  assert.ok((modestRecord.combatPower??0)<2500,'Fixture must be below the removed 2,500 CP restriction');
  assert.equal(assessOnlineCoopLoadout(modestRecord).readiness.ready,true,'Modest contact still meets the independent equipment/role floor');
  const modestRow={accountId:'modest-account',characterId:modest.character!.id,revision:22,state:modest,relationship:'guild' as const};

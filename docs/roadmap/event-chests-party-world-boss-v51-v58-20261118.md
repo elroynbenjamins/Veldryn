@@ -64,6 +64,18 @@ World Boss gear's existing tier, rarity, quality, rolled stats and item identiti
 - Marketplace rules for tradeable event gear, guild/party rewards per account, profile display, rollover/expiration and protection against item-selling/erasure exploits need explicit 2.0 and ledger validation.
 - Current isolated TypeScript assertions validate set parity, 3 maximum chests, chance odds, missing gear prioritization, role/account source keys, World Sigil conservation and release gates. The focused GitHub Actions job must pass before this becomes an integration candidate.
 
+## 19 November World Boss continuation
+
+Hidden source-only passes **V59 (canonical private proof boundary)** and **V60
+(1% chest roll to V64/V65 gathering-only gear resolution)** are now checked into
+this same draft branch. They are **not** database bindings, player grants, gear
+instances or a rollout. See
+[World Boss V59–V60 technical notes](world-boss-chest-proof-v59-resolution-v60-20261119.md).
+The separate V64/V65 PR #1402 used a conflicting guaranteed-piece-per-chest
+interpretation; its reusable 30-piece catalog/rarity roller has been copied here,
+but **this draft retains the later 1%-per-earned-chest policy**. Do not activate
+both source proposals as separate reward streams.
+
 ## Next dependent passes
 
 1. Add real 2.0 item catalog entries and icon/assets for 20 Party Event pieces; integrate set bonuses into the **server authoritative** ability/gear calculation with seeded tests for all nine classes.

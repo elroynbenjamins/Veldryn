@@ -118,8 +118,8 @@ class MockPool implements PartySqlPoolV63{
       {...receipt,partySigilsDelta:999}:receipt} as unknown as T]};
     }
     if(sql.startsWith('insert into private.party_event_reward_receipts_v61')){
-     const key=params[0] as string,receipt=JSON.parse(params[15] as string)
-      as PartyEventRewardReceiptV60;
+     const key=params[0] as string;
+     const receipt=JSON.parse(params[15] as string) as PartyEventRewardReceiptV60;
      ensure(params[3]===account&&params[2]===week,'source_bound_to_week');
      if(copy.receipts.has(key))throw Error('unique_violation');
      copy.receipts.set(key,receipt);

@@ -291,7 +291,8 @@ async function run(){
    guarantees:[],groups:[{id:'equipment',type:'equipment',chanceBps:10000,
     duplicatePolicy:'prefer_unowned',entries:[{id:'boots',weight:1}]}],
   });
-  const key=attempt('account_unclaimed');
+  const key='world-boss:44444444-4444-4444-8444-444444444444:'+
+   account+':donations_goal';
   const store=startFresh(key);
   store.proof={...store.proof,lootTable:gear,
    equipmentDeliveryMode:'account_unclaimed',recipientCharacterId:null};

@@ -227,6 +227,10 @@ export function createChestRewardSettlementV69(
    // Source custody is configured before the roll. A 99% World Boss
    // equipment miss must still pay its guaranteed rewards. Freeze NULL
    // custody on a miss; never write a fictitious character/item destination.
+   if(hasEquipment&&mode==='character'&&
+    (typeof destination!=='string'||!UUID.test(destination)||
+     !await tx.verifyRecipientCharacter(accountId,destination)))
+    throw Error('chest_v69_unverified_character_destination');
    if(!['character','account_unclaimed',null].includes(mode)||
     (mode==='character'&&
      (typeof destination!=='string'||!UUID.test(destination)))||
@@ -234,9 +238,6 @@ export function createChestRewardSettlementV69(
     (mode===null&&destination!==null)||
     (hasEquipment&&mode===null))
     throw Error('chest_v69_unapproved_custody_destination');
-   if(hasEquipment&&mode==='character'&&
-    !await tx.verifyRecipientCharacter(accountId,destination!))
-    throw Error('chest_v69_unverified_character_destination');
    const frozenMode=hasEquipment?mode:null;
    const frozenRecipient=hasEquipment?destination:null;
    const receipt:FrozenChestReceiptV69={

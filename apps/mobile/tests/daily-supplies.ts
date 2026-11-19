@@ -1,7 +1,7 @@
 import {migrateSave} from '../src/core/save-migrations';
 import {claimActivity,createCharacter,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
-import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,DAILY_SUPPLY_CHARGE_SECONDS,DAILY_SUPPLY_MILESTONES,dailySupplyBank,dailySupplyCoverage,dailySupplySpeedMultiplier,dailySuppliesStatus,dailySupplyRewardForDay,activeDailySupplyBoosts,dailySupplyQueued,previewDailySupplyTimedReward,commitDailySupplyTimedBoost,migrateLegacyDailySupplies} from '../src/core/daily-supplies';
+import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,DAILY_SUPPLY_CHARGE_SECONDS,DAILY_SUPPLY_MILESTONES,dailySupplyBank,dailySupplyCoverage,dailySupplySpeedMultiplier,dailySuppliesStatus,dailySupplyRewardForDay,activeDailySupplyBoosts,dailySupplyQueued,dailySupplyCraftWorkSeconds,dailySupplyAdjustTimedCraftReward,previewDailySupplyTimedReward,commitDailySupplyTimedBoost,migrateLegacyDailySupplies} from '../src/core/daily-supplies';
 import {normalizeSave} from '../src/core/save-normalization';
 import {dailySuppliesHomeSummary} from '../src/core/daily-supplies-home';
 
@@ -87,6 +87,16 @@ equal(dailySupplyQueued(committed).gathering_speed?.length??0,0,'Consumed queued
 const otherCategory=withAccountBoost(create('Combat'), 'combat_xp');
 equal(dailySupplySpeedMultiplier(otherCategory,'combat_speed',3600),1,'Combat XP must not affect combat speed');
 equal(dailySupplySpeedMultiplier(otherCategory,'gathering_speed',3600),1,'Combat XP must not affect gathering speed');
+
+const craftClock=withAccountBoost(create('Craft Clock'),'crafting_speed',.25,7200);
+const craftActivity={...craftClock,activity:{kind:'processing',lastClaimAtMs:t0}} as any;
+equal(dailySupplyCraftWorkSeconds(craftActivity,3600),4500,'Active 25% Crafting Speed adds 900s of work per hour');
+const workReward={xp:50,gold:0,items:[],kills:0,elapsedSeconds:4500,craftingCompletedAtMs:[t0+4500_000],nextProcessingRemaining:0};
+const realReward=dailySupplyAdjustTimedCraftReward(craftActivity,workReward,3600);
+equal(realReward.craftingCompletedAtMs?.[0],t0+3600_000,'Accelerated crafting completion timestamps stay on the real clock');
+equal(realReward.qualifyingActivitySeconds,3600,'Crafting timer burns real qualifying time, not accelerated work time');
+const craftCommitted=commitDailySupplyTimedBoost(craftActivity,previewDailySupplyTimedReward(craftActivity,realReward,'crafting'));
+equal(activeDailySupplyBoosts(craftCommitted).crafting_speed?.remainingSeconds,3600,'Partial crafting session preserves the remaining charge');
 
 let boostedGather=withAccountBoost(startGathering(create('Gather Active'),'GREENWOOD_TREE',t0),'gathering_speed');
 let baseGather={...boostedGather,account:{...boostedGather.account,dailySupplies:{schemaVersion:2,totalClaims:0,bank:{},active:{},queued:{}}}};

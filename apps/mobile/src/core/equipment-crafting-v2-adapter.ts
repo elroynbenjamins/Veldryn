@@ -2,6 +2,7 @@ import type {GameState} from './types';
 import type {EquipmentV2SourceStrategy} from './equipment-crafting-v2-economy';
 import type {EquipmentV2RecipePreviewInput} from './equipment-crafting-v2-screen';
 import {equipmentV2Set} from '../content/equipment-v2-catalog';
+import {v2EquipmentFamilyClasses} from './equipment-crafting-v2-weapon-families';
 import {EQUIPMENT_V2_ALL_CRAFTABLE_PIECES,equipmentV2CraftablePiece,equipmentV2RecipesForItem} from '../content/equipment-v2-recipes';
 import {equipmentCraftQueueModel} from './equipment-crafting-queue';
 import {equipmentV2PreparationPlan,type V2PreparationResult} from './equipment-crafting-v2-preparation';
@@ -42,7 +43,11 @@ export function equipmentV2PreviewRoutesForItem(
    profession:recipe.profession,name:piece.name,tier:piece.tier,slot:piece.slot,
    profile:piece.profile,setPiece:Boolean(piece.setId),
    hands:'hands' in piece?piece.hands:undefined,
-   equipClass:'classRestriction' in piece?piece.classRestriction:undefined,
+   originClass:'originClass' in piece?piece.originClass:undefined,
+    equipmentFamily:'equipmentFamily' in piece?piece.equipmentFamily:undefined,
+    equipClasses:'equipmentFamily' in piece&&piece.equipmentFamily
+     ?v2EquipmentFamilyClasses(piece.equipmentFamily)
+     :('classRestriction' in piece&&piece.classRestriction?[piece.classRestriction]:undefined),
    ingredients:recipe.inputs.map(input=>({
     itemId:input.itemId,required:input.quantity,owned:owned[input.itemId]??0,kind:input.kind,
    })),

@@ -25,7 +25,7 @@ import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActiv
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {advanceForgeSupply,cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
 import {disposeGemPouchSelected} from './gem-pouch-bulk';
 import {upgradeEquipmentPouch,moveLegacyEquipmentPouchStack} from './equipment-pouch';
@@ -62,7 +62,7 @@ const fields:Record<string,readonly string[]>={
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
- loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
+ loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId','choiceType'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
@@ -160,6 +160,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(options.accountId)state.account.longTermAccountScopeId=options.accountId;
  // Reconcile retired story rewards within the same authoritative command write.
  state=migrateRetiredStoryRewards(state,now);
+ // Advance all running Forge slots exactly once before a command can replace
+ // or activate a Supply tier. In particular, never give past work a fresh
+ // Crafting Speed boost. Alchemy/processing retains priority if concurrently
+ // running and uses the same category through its own activity settlement.
+ if(state.account.equipmentCraftingQueue?.length)state=advanceForgeSupply(state,now);
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;if(result.reward.activityResults){for(const segment of result.reward.activityResults){const {activity,reward:earned}=segment;if(earned.kills>0&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind)))contributions.push({kind:activity.kind==='combat'?'combat':'gathering',contentId:activity.targetId,units:earned.kills,startedAtMs:activity.lastClaimAtMs});}}else credit(source,result.reward);};
  const settleAndStop=()=>{settle();state=game.stopActivity(state,now);};
@@ -452,14 +457,17 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    state={...state,character:{...state.character,idleRulesV40:rules,activeIdleRuleIdV40}};break;
   }
   case 'daily_supplies_claim':{
-   const result=claimDailySupplies(state,text(a,'characterId'),now);state=result.state;
-   message=result.status.reward.kind==='premium'
-    ?`Daily Supplies milestone: +${result.status.reward.amount} premium currency.`
-    :`Daily Supplies: +2h ${dailySupplyBoostLabel(result.status.reward.type)} boost banked.`;
+   const choice=a.choiceType===undefined?undefined:oneOf(a.choiceType,DAILY_SUPPLY_BOOST_TYPES);
+   const result=claimDailySupplies(state,text(a,'characterId'),now,choice);state=result.state;
+   message=result.status.reward.kind==='milestone'
+    ?'Supply Blessing banked account-wide.'
+    :'Daily Supplies boost banked account-wide.';
    break;
   }
   case 'daily_supplies_activate':{
-   const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);state=activateDailySupplyBoost(state,type);message=`+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;break;
+   const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);
+   state=activateDailySupplyBoost(state,type);
+   message=dailySupplyBoostLabel(type)+' activated or queued account-wide.';break;
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now,a.choiceId===undefined?undefined:text(a,'choiceId',100));break;

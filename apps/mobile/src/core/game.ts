@@ -71,7 +71,7 @@ import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from '.
 import {combatTactic,normalizeCombatTactic} from './combat-tactics';
 import {huntGoalSnapshot,huntMomentumBonus,normalizeHuntGoalId,type HuntGoalId} from './hunt-goals';
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
-import {DAILY_SUPPLY_BONUS,activeDailySupplyBoosts,applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
+import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward,dailySupplySpeedMultiplier,dailySupplyCraftWorkSeconds,dailySupplyAdjustTimedCraftReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
@@ -462,7 +462,7 @@ function regionalHuntSeed(state:GameState,monsterId:string,index:number){
  const activity=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?state.activity:undefined;
  return `${state.character!.id}:${activity?.startedAtMs??0}:${monsterId}:${(activity?.sessionKills??0)+index}`;
 }
-function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now()){
+function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now(),elapsedForSupply=0){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const m=baseMonster,stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
   // Resolve overlapping mastery once for this encounter. A family bonus
@@ -486,6 +486,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier*classCounter.outputMultiplier*(1+skillEffects.potency)*
     (usesDamageDrivenHunts(m.zone)?1:1+skillEffects.penetration);
   const combatCandy=eventCandyUtilityMultiplier(state,nowMs,'combat');
+  const supplyCombatSpeed=dailySupplySpeedMultiplier(state,'combat_speed',elapsedForSupply);
   // Regional elites are the first real reason to finish the current tier. A
   // player can still scout them in starter gear, but the missing tier creates
   // a clear time and sustain cost instead of making early equipment optional.
@@ -508,7 +509,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
   const gearAttritionMultiplier=1+tierGap*MISSING_GEAR_HUNT_ATTRITION_PER_TIER;
   // Legacy preparations are inert outside dungeons; dungeon boosts use a server-owned snapshot.
   const outgoingPreparation=c.preparation?preparationEffects(c.preparation).outgoing:1;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*masteryBonuses.damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*progressionSpeedPenalty*outgoingPreparation;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*masteryBonuses.damageMultiplier*(1+effectGems.combat_speed)*setOutput*combatCandy*supplyCombatSpeed*progressionSpeedPenalty*outgoingPreparation;
   // Early regions resolve actual landed attacks rather than scaling an
   // authored monster timer. Crits and misses can change the number of swings;
   // the search phase limits easy-area kill rates without artificial HP.
@@ -519,7 +520,7 @@ function combatRuntimeDetails(state:GameState,monsterId:string,nowMs=Date.now())
     hitChance:secondary.playerHitChance,critChance:stats.critChance,critMultiplier:stats.critMultiplier,
     haste:stats.haste,enemyHaste:secondary.enemy.haste,
     // Role conversion applies only to ordinary solo-hunt strikes, never bosses or co-op.
-    tempo:style.speedMultiplier*style.soloHuntTempoMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed),
+    tempo:style.speedMultiplier*style.soloHuntTempoMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*supplyCombatSpeed,
     environmentTimeMultiplier:environment?.actionTimeMultiplier??1,
     seed:regionalHuntSeed(state,monsterId,0),
   }:undefined;
@@ -642,7 +643,7 @@ export function activeCombatRuntimeProjection(state:GameState){
 export interface ActiveHuntSkillEffect {atMs:number;name:string;kind:'recovery'|'damage'|'heal'|'shield';amount?:number;source?:'class'|'companion'}
 function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Date.now()){
  const c=state.character!,activity=state.activity!,startsAtMs=activity?.lastClaimAtMs??nowMs-elapsed*1000;
- const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs),prepared=combatRuntimeDetails(state,monsterId,startsAtMs);
+ const unprepared={...state,character:{...c,preparation:undefined}},plain=combatRuntimeDetails(unprepared,monsterId,startsAtMs,elapsed),prepared=combatRuntimeDetails(state,monsterId,startsAtMs,elapsed);
  const startCandy=eventCandyUtilityMultiplier(state,startsAtMs,'combat');
  const seedFor=(index:number)=>regionalHuntSeed(state,monsterId,index);
  const dynamic=!!plain.huntOptions;
@@ -862,18 +863,10 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]),affinity=activeSkillAffinity(state,g.skillId);
     const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.activity.herbalismMethodId??state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier);
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed));
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
-    // Apply gathering speed only while this charge has eligible activity time.
-    // Keep fractional action progress at expiry, including long offline claims.
-    const speedSeconds=Math.min(elapsed,activeDailySupplyBoosts(state.character).gathering_speed?.remainingSeconds??0);
-    const candy=eventCandyWindow(state,'skill'),start=state.activity.lastClaimAtMs,initialProgress=state.activity.progressFraction??0;
-    const boosted=speedSeconds>0?combatTimeline({startsAtMs:start,elapsedSeconds:speedSeconds,progressFraction:initialProgress,preparationEncounters:0,cycleSeconds:effectiveActionSeconds/(1+DAILY_SUPPLY_BONUS),preparedCycleSeconds:effectiveActionSeconds/(1+DAILY_SUPPLY_BONUS),candy}):undefined;
-    const ordinarySeconds=Math.max(0,elapsedMs/1000-speedSeconds);
-    const ordinary=ordinarySeconds>0?combatTimeline({startsAtMs:start+speedSeconds*1000,elapsedSeconds:ordinarySeconds,progressFraction:boosted?.nextProgressFraction??initialProgress,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy}):undefined;
-    const encounters=[...(boosted?.encounters??[]),...(ordinary?.encounters??[])];
-    const actions=encounters.length,candyActions=encounters.filter(row=>row.candy).length;
-    const nextProgressFraction=ordinary?.nextProgressFraction??boosted?.nextProgressFraction??initialProgress;
+    const timeline=combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,progressFraction:state.activity.progressFraction??0,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy:eventCandyWindow(state,'skill')});
+    const actions=timeline.encounters.length,candyActions=timeline.encounters.filter(row=>row.candy).length;
     const candyXpMultiplier=actions?1+.1*candyActions/actions:1;
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
     let baseQuantity=0;
@@ -904,7 +897,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
         if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
       }
     }
-    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction,nextRewardRemainders:{...(state.rewardRemainders??{}),[xpKey]:gain.remainder,[g.itemId]:Math.max(0,quantityFloat-quantity)}};
+    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction:timeline.nextProgressFraction,nextRewardRemainders:{...(state.rewardRemainders??{}),[xpKey]:gain.remainder,[g.itemId]:Math.max(0,quantityFloat-quantity)}};
     return {...reward,...gatheringEventRewards(state,reward.elapsedSeconds)};
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
@@ -1023,12 +1016,12 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,settled.reward,'skill').reward;
   }
   if(state.activity?.kind==='alchemy'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewAlchemyReward(state,elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
     const source=state.activity;
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewProcessingReward(state,elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),base={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])};
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
@@ -1212,7 +1205,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='alchemy'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewAlchemyReward(state,elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -1225,7 +1218,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='processing'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=previewProcessingReward(state,elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
     const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;

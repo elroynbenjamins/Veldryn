@@ -44,6 +44,8 @@ async function main(){
   '../core/coop-dungeon-browse-cache':{noteCoopEntryMutation:()=>{}},
   // The release-gate harness isolates unrelated dungeon reward parsing.
   '../core/dungeon-reward-display':{parseDungeonCombatMarks:()=>undefined},
+  // Real implementation: it is pure and has no imports of its own.
+  '../core/stored-json':load('src/core/stored-json.ts',{}),
   '../core/session-pending-store':{SessionPendingStore:class{constructor(storage){this.storage=storage;}read(){return this.storage.read();}write(value){return this.storage.write(value);}}},
  };
  const gameplay=load('src/online/gameplay.ts',{...services,'../core/online-game-repository':{OnlineCommandError:CommandError,OnlineGameRepository:class{constructor(account,transport){this.transport=transport;}}}});

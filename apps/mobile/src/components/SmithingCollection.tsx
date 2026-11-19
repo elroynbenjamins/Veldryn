@@ -21,6 +21,8 @@ import {EquipmentCraftQueuePanel} from './EquipmentCraftQueuePanel';
 import {ForgeOddsGuide} from './ForgeOddsGuide';
 import {ActivityArtwork} from './ActivityArtwork';
 import {progressWithinLevel} from '../core/progression';
+import {nextEquipmentTierGoal} from '../core/equipment-tier-progression';
+import {craftingDetailText} from '../i18n/crafting-details';
 import {ownedEquipmentDefinitionIds} from '../core/equipment-collection-ownership';
 import {workingTowardItemSourceEntries} from '../core/working-toward';
 import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-tier-memory';
@@ -32,8 +34,10 @@ const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape',
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
 
 export function EquipmentCraftingHeader({state,skillId='smithing'}:{state:Props['state'];onBack?:()=>void;skillId?:EquipmentCraftingSkill}){
- const C=useGameTheme(),{gl}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
- return <View style={{gap:10}}><View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View></View>;
+ const C=useGameTheme(),{gl,language}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
+ const nextTier=nextEquipmentTierGoal(skillId,skill?.level??1,skill?.xp??0);
+ const nextTierXp=nextTier?craftingDetailText(language,'{xp} XP to {skill} {level}',{xp:nextTier.remainingXp.toLocaleString(language),skill:gl(skillId),level:nextTier.requiredLevel}):'';
+ return <View style={{gap:10}}><View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View>{nextTier?<View accessible accessibilityLabel={craftingDetailText(language,'Next equipment tier')+' '+nextTier.tier+', '+nextTierXp} style={{borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:10,paddingVertical:8,gap:3}}><Text style={[s.caption,{color:C.muted}]}>{craftingDetailText(language,'Next equipment tier')}</Text><View style={[s.between,{flexWrap:'wrap'}]}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')} {nextTier.tier.slice(1)} · {gl(skillId)} {gl('Level')} {nextTier.requiredLevel}</Text><Text style={[s.caption,{color:C.muted}]}>{nextTierXp}</Text></View></View>:null}</View>;
 }
 
 /** @deprecated Use EquipmentCraftingHeader so Tailoring and Smithing stay in the same set browser. */

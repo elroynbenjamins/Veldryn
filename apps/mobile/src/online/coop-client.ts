@@ -2,6 +2,7 @@ import {versionedFetch as fetch} from './versioned-fetch';
 import {supabase,supabasePublicEndpoint} from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {noteCoopEntryMutation} from '../core/coop-dungeon-browse-cache';
+import {parseStoredJsonObject} from '../core/stored-json';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
@@ -74,7 +75,7 @@ async function request<T>(path:string,method='GET',body?:unknown,expectedAccount
 const journals=new Map<string,CoopCommandJournal>();
 async function journal(){
  const accountId=(await supabase?.auth.getSession())?.data.session?.user.id;if(!accountId)throw new Error('Sign in to use co-op expeditions.');
- let value=journals.get(accountId);if(!value){const key=`veldryn.coop.pending.${accountId}`;value=new CoopCommandJournal({read:async()=>{const raw=await AsyncStorage.getItem(key);return raw?JSON.parse(raw):null;},write:async command=>{if(command)await AsyncStorage.setItem(key,JSON.stringify(command));else await AsyncStorage.removeItem(key);}},command=>request(command.path,'POST',command.body,accountId));journals.set(accountId,value);}return value;
+ let value=journals.get(accountId);if(!value){const key=`veldryn.coop.pending.${accountId}`;value=new CoopCommandJournal({read:async()=>{const raw=await AsyncStorage.getItem(key),value=parseStoredJsonObject<PendingCoopCommand>(raw);if(raw&&!value)await AsyncStorage.removeItem(key);return value;},write:async command=>{if(command)await AsyncStorage.setItem(key,JSON.stringify(command));else await AsyncStorage.removeItem(key);}},command=>request(command.path,'POST',command.body,accountId));journals.set(accountId,value);}return value;
 }
 const mutate=async<T>(path:string,body:object)=>{
  // The request may settle even when the response times out. Invalidate

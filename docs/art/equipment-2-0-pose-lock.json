@@ -1,0 +1,247 @@
+{
+  "schemaVersion": 1,
+  "styleLock": "veldryn-eq2-storybook-v1",
+  "status": "direction_approved",
+  "selectedExample": "style-4-storybook-equipment-atlas-2026-11-19",
+  "visualAnchorRecorded": false,
+  "exampleIsProductionAtlas": false,
+  "coordinateSystem": {
+    "origin": "top-left",
+    "positiveX": "viewer-right",
+    "positiveY": "down",
+    "cellPx": [
+      192,
+      192
+    ],
+    "safeInsetPx": 26,
+    "visualCenterPx": [
+      96,
+      96
+    ]
+  },
+  "shared": {
+    "renderer": "storybook-hand-painted-dark-fantasy",
+    "light": "upper-left-10oclock",
+    "camera": "slot-specific-product-three-quarter",
+    "background": "transparent",
+    "floorShadow": false,
+    "wearer": false,
+    "fullSilhouette": true,
+    "rarityBorderBakedIn": false,
+    "approxGlobalElevationDeg": [
+      10,
+      15
+    ],
+    "artisticAngleIsHumanReviewed": true
+  },
+  "slots": [
+    {
+      "slot": "helmet",
+      "poseId": "helmet-front-right",
+      "face": "front-three-quarter-toward-viewer-right",
+      "yawGuideDeg": [
+        10,
+        15
+      ],
+      "upright": true,
+      "pairCount": 1,
+      "signature": "Opening/front toward camera; image-right shell thickness visible; brim near horizontal"
+    },
+    {
+      "slot": "chest",
+      "poseId": "chest-front-right",
+      "face": "front-three-quarter-toward-viewer-right",
+      "yawGuideDeg": [
+        10,
+        15
+      ],
+      "upright": true,
+      "pairCount": 1,
+      "signature": "Front closure visible; shoulders balanced; no arms/body"
+    },
+    {
+      "slot": "gloves",
+      "poseId": "gloves-down-left-pair",
+      "face": "backs-or-palms-matched-to-master",
+      "upright": false,
+      "pairCount": 2,
+      "signature": "Both cuffs upper, fingertips down-left; image-left slightly higher/behind image-right"
+    },
+    {
+      "slot": "legs",
+      "poseId": "legs-front-upright",
+      "face": "front-slight-three-quarter-right",
+      "upright": true,
+      "pairCount": 1,
+      "signature": "One trouser/greave garment with two dangling legs; waist nearly horizontal; no boots"
+    },
+    {
+      "slot": "boots",
+      "poseId": "boots-toes-left-pair",
+      "face": "toes-toward-image-left",
+      "upright": true,
+      "pairCount": 2,
+      "signature": "Two complete boots with openings up and toe caps image-left; image-left boot slightly higher/behind"
+    },
+    {
+      "slot": "weapon",
+      "poseId": "weapon-family-variant",
+      "face": "see-weaponFamilies",
+      "upright": false,
+      "pairCount": 1,
+      "signature": "Use matching functional weapon-family orientation and slot master"
+    },
+    {
+      "slot": "offhand",
+      "poseId": "offhand-family-variant",
+      "face": "see-offhandFamilies",
+      "upright": false,
+      "pairCount": 1,
+      "signature": "Use functional shield/book/focus/knife facing and class reference"
+    },
+    {
+      "slot": "cape",
+      "poseId": "cape-rear-upright",
+      "face": "back-side-to-camera",
+      "upright": true,
+      "pairCount": 1,
+      "signature": "Collar up, outside back cloth facing viewer; hem hanging down, slight pull image-right"
+    },
+    {
+      "slot": "amulet",
+      "poseId": "amulet-pendant-front",
+      "face": "pendant-front-to-camera",
+      "upright": true,
+      "pairCount": 1,
+      "signature": "Pendant centered below U-shaped chain; slight thickness visible"
+    },
+    {
+      "slot": "ring",
+      "poseId": "ring-open-three-quarter",
+      "face": "three-quarter-open-band",
+      "upright": false,
+      "pairCount": 1,
+      "signature": "Single tilted elliptical band; see inside of ring; top-front edge upper-left"
+    }
+  ],
+  "weaponFamilies": [
+    {
+      "family": "sword",
+      "poseId": "sword-hilt-ur-tip-ll",
+      "hilt": "upper-right",
+      "tip": "lower-left",
+      "axisAngleToVerticalDeg": [
+        35,
+        50
+      ],
+      "signature": "Flat blade face, guard between handle and blade; no flip"
+    },
+    {
+      "family": "dagger",
+      "poseId": "dagger-hilt-ur-tip-ll",
+      "hilt": "upper-right",
+      "tip": "lower-left",
+      "axisAngleToVerticalDeg": [
+        30,
+        45
+      ],
+      "signature": "Main dagger faces same diagonal as sword, but keeps class-appropriate size"
+    },
+    {
+      "family": "axe",
+      "poseId": "axe-head-ul-handle-lr",
+      "head": "upper-left",
+      "handle": "lower-right",
+      "signature": "Visible striking face; shaft diagonal, not sword pose"
+    },
+    {
+      "family": "mace",
+      "poseId": "mace-head-ul-handle-lr",
+      "head": "upper-left",
+      "handle": "lower-right",
+      "signature": "Visible striking face; handle lower-right"
+    },
+    {
+      "family": "hammer",
+      "poseId": "hammer-head-ul-handle-lr",
+      "head": "upper-left",
+      "handle": "lower-right",
+      "signature": "Hammer striking face upper-left; handle lower-right"
+    },
+    {
+      "family": "staff",
+      "poseId": "staff-top-ur-bottom-ll",
+      "top": "upper-right",
+      "bottom": "lower-left",
+      "axisAngleToVerticalDeg": [
+        15,
+        25
+      ],
+      "signature": "Tall, near-vertical; tip and foot visible"
+    },
+    {
+      "family": "spear",
+      "poseId": "spear-top-ur-bottom-ll",
+      "top": "upper-right",
+      "bottom": "lower-left",
+      "axisAngleToVerticalDeg": [
+        15,
+        25
+      ],
+      "signature": "Tall, near-vertical with spear point top"
+    },
+    {
+      "family": "bow",
+      "poseId": "bow-arc-left-string-right",
+      "arc": "image-left",
+      "string": "image-right",
+      "signature": "Upright bow; both nocks and string visible"
+    },
+    {
+      "family": "other",
+      "poseId": "other-use-approved-family-anchor",
+      "signature": "Must designate a matched family anchor before brief_ready; never guess"
+    }
+  ],
+  "offhandFamilies": [
+    {
+      "family": "shield",
+      "poseId": "shield-front-right",
+      "signature": "Shield face/crest front to camera, image-right edge depth; no back straps as main side"
+    },
+    {
+      "family": "book",
+      "poseId": "book-front-spine-left",
+      "signature": "Cover/front facing viewer, spine image-left, subtle top-page side"
+    },
+    {
+      "family": "focus",
+      "poseId": "focus-upright-front",
+      "signature": "Center magical focus recognizable and facing player, minimal controlled tilt, no glow cloud"
+    },
+    {
+      "family": "dagger",
+      "poseId": "offhand-dagger-steep-hilt-ur",
+      "signature": "ONE smaller different dagger, hilt upper-right tip lower-left; more vertical than main dagger"
+    },
+    {
+      "family": "other",
+      "poseId": "other-use-approved-offhand-anchor",
+      "signature": "Specify existing functional family and pose anchor before brief_ready"
+    }
+  ],
+  "constraints": {
+    "noMirroring": true,
+    "noRotationAfterApproval": true,
+    "flatSurfaceNotPhotographic": true,
+    "approxSameSlotVisualExtentPct": 10,
+    "scaleDriftReviewThresholdPct": 20,
+    "alphaInsetMachineVerified": true,
+    "orientationHumanVerifiedOnly": true,
+    "referenceKitId": "veldryn-eq2-refkit-style4-v1",
+    "referenceKitStatus": "not_approved",
+    "resolvedPoseForEveryItemRequired": true,
+    "weaponFamilyWhenSlotWeaponRequired": true,
+    "offhandFamilyWhenSlotOffhandRequired": true
+  }
+}

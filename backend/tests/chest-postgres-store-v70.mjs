@@ -118,14 +118,17 @@ try{
    return {grantId,itemInstanceId:null};
   },
   verifyPhysical:async(tx,receipt,legs)=>{
-   const [gs,ds,ins]=await Promise.all([
-    tx.query('select * from private.v70_test_guarantees where source_key=$1',
-     [receipt.sourceKey]),
-    tx.query('select * from private.v70_test_drops where source_key=$1',
-     [receipt.sourceKey]),
-    tx.query('select * from private.v70_test_inbox where source_key=$1',
-     [receipt.sourceKey]),
-   ]);
+   // Single physical connection: don't issue parallel queries on the
+   // same SERIALIZABLE session while verifying durable grant custody.
+   const gs=await tx.query(
+    'select * from private.v70_test_guarantees where source_key=$1',
+    [receipt.sourceKey]);
+   const ds=await tx.query(
+    'select * from private.v70_test_drops where source_key=$1',
+    [receipt.sourceKey]);
+   const ins=await tx.query(
+    'select * from private.v70_test_inbox where source_key=$1',
+    [receipt.sourceKey]);
    if(gs.rows.length!==receipt.guaranteed.length||
     ds.rows.length!==receipt.drops.length||ins.rows.length!==1)return false;
    for(const row of [...gs.rows.map(x=>({...x,kind:'guarantee'})),
@@ -190,6 +193,16 @@ try{
   [eqSource],
  )).rows[0].n;
  assert.equal(noItem,0,'unregistered EQ2 equipment is never paid or journaled');
+ const unissued=(await db.query(
+  'select count(*)::integer n from private.v70_test_guarantees where source_key=$1',
+  [eqSource],
+ )).rows[0].n;
+ const noInbox=(await db.query(
+  'select count(*)::integer n from private.v70_test_inbox where source_key=$1',
+  [eqSource],
+ )).rows[0].n;
+ assert.equal(unissued,0,'gear failure must roll back guaranteed Gold as well');
+ assert.equal(noInbox,0,'gear failure must not create an Inbox claim');
  const current=process.env.NODE_ENV;
  try{
   process.env.NODE_ENV='production';

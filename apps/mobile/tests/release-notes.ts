@@ -1,4 +1,4 @@
-import {compareReleaseVersions,firstInstalledReleaseVersion,parseReleaseNoteRow,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes} from '../src/core/release-notes';
+import {compareReleaseVersions,firstInstalledReleaseVersion,formatReleaseNoteDate,parseReleaseNoteRow,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes} from '../src/core/release-notes';
 
 function assert(condition:unknown,message:string){if(!condition)throw new Error(message)}
 assert(compareReleaseVersions('0.9.10','0.9.9')===1,'Version comparison must be numeric');
@@ -6,6 +6,11 @@ assert(compareReleaseVersions('1.0','1.0.0')===0,'Missing version components mus
 assert(compareReleaseVersions('0.9.5','1.0.0')===-1,'Older versions must compare lower');
 const note=parseReleaseNoteRow({version:'0.9.5',title:'Update',highlights:['Better crafting','Welcome back'],published_at:'2026-10-15T00:00:00Z'});
 assert(note?.highlights.length===2,'Valid release notes should be retained');
+assert(formatReleaseNoteDate(note?.publishedAt??'')==='15 Oct 2026','Release timestamps should show a compact publication date');
+assert(formatReleaseNoteDate('2026-11-19')==='19 Nov 2026','Date-only publications should display consistently');
+assert(formatReleaseNoteDate('2026-02-30T00:00:00Z')===null,'Invalid dates must stay hidden');
+assert(formatReleaseNoteDate('')===null,'Missing dates must not invent publication dates');
+
 assert(parseReleaseNoteRow({version:'broken',title:'Update',highlights:['Fix']})===null,'Invalid versions must be ignored');
 assert(parseReleaseNoteRow({version:'0.9.5',title:'Update',highlights:[]})===null,'Empty notes must not cause an automatic popup');
 assert(shouldAutoShowReleaseNotes(note?[note]:[],'0.9.5',false),'Installed release should be announced once');

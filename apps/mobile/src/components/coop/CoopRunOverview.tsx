@@ -116,7 +116,9 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   const [selectedBoonId,setSelectedBoonId]=useState<string|undefined>();
   const [reviewedRoomNodeId,setReviewedRoomNodeId]=useState<string|undefined>();
   useEffect(()=>setSelectedBoonId(undefined),[run.runId,run.lastRoomOutcome?.nodeId]);
-  const needsBoon=run.mode==='qmode'&&Boolean(run.boonOffers?.length);
+  const artifactDraft=Boolean(run.artifactOffers?.length);
+   const draftOffers=run.boonOffers?.length?run.boonOffers:run.artifactOffers;
+   const needsBoon=run.mode==='qmode'&&Boolean(draftOffers?.length);
   // Review server-confirmed utility rewards before presenting the next Solo route.
   // Live voting remains on its existing timer and does not await acknowledgement.
   const reviewingRoom=run.mode==='qmode'&&run.phase==='awaiting_choice'&&!!run.lastRoomOutcome&&!['merchant','merchant_purchase'].includes(run.lastRoomOutcome.kind)&&reviewedRoomNodeId!==run.lastRoomOutcome.nodeId;
@@ -188,8 +190,8 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
     <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'&&(run.mode==='live'||reviewingRoom)?run.lastRoomOutcome:undefined} onContinue={reviewingRoom?()=>setReviewedRoomNodeId(run.lastRoomOutcome!.nodeId):undefined}/>
     {run.lastCombat?.reason==='victory'&&run.lastCombatMarks&&!inCombat&&!enteringCombat?<FantasyPanel variant="success"><View style={s.summary}><ExpeditionMarkIcon size={20}/><Text style={s.name}>{st('+{marks} Expedition Marks earned',{marks:run.lastCombatMarks})}</Text></View></FantasyPanel>:null}
     {needsBoon&&run.phase==='awaiting_choice'&&!reviewingRoom?<FantasyPanel variant="selected">
-      <View style={s.boonHeader}><Text style={s.title}>{st('Choose a boon')}</Text><Text style={s.copy}>{st('Select one reward before entering the next room.')}</Text></View>
-      <View style={s.boonChoices}>{run.boonOffers!.map(offer=><Pressable key={offer.id} accessibilityRole="radio" accessibilityState={{selected:selectedBoonId===offer.id,disabled:busy}} disabled={busy} onPress={()=>setSelectedBoonId(offer.id)} style={[s.boonChoice,selectedBoonId===offer.id&&s.boonSelected]}>
+      <View style={s.boonHeader}><Text style={s.title}>{artifactDraft?st('Choose an artifact'):st('Choose a boon')}</Text><Text style={s.copy}>{st('Select one reward before entering the next room.')}</Text></View>
+      <View style={s.boonChoices}>{draftOffers!.map(offer=><Pressable key={offer.id} accessibilityRole="radio" accessibilityState={{selected:selectedBoonId===offer.id,disabled:busy}} disabled={busy} onPress={()=>setSelectedBoonId(offer.id)} style={[s.boonChoice,selectedBoonId===offer.id&&s.boonSelected]}>
        <View style={s.boonText}><Text style={s.name}>{offer.name}</Text><Text style={s.copy}>{offer.description}</Text></View>
        <Text style={s.boonMarker}>{selectedBoonId===offer.id?'✓':'○'}</Text>
       </Pressable>)}</View>
@@ -198,7 +200,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
       {run.routePath?<RoutePathStrip path={run.routePath} reduceMotion={reduceMotion}/>:null}
       <View style={s.routeHeader}><View style={s.grow}><Text style={s.routeEyebrow}>{modeLabel}</Text><Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text></View>{bossNext?<StateChip label={run.options.length>1?st('BOSS EXIT AVAILABLE'):st('FINAL BOSS')} tone="warning"/>:null}</View>
       {!seasonal&&(dungeonTonic?.open||dungeonTonic?.preparedName||healingPotion)?<View style={s.routeSupplies}>{dungeonTonic&&(dungeonTonic.open||dungeonTonic.preparedName)?<Text style={s.routeSupply} numberOfLines={1}>{dungeonTonic.preparedName?`${gt('DUNGEON TONIC')}: ${dungeonTonic.preparedName}`:gt('Choose a tonic before the first room.')}</Text>:null}{healingPotion?<Text style={s.routeSupply}>{gt('DUNGEON HEALING')} {healingPotion.remaining}/{healingPotion.capacity}</Text>:null}</View>:null}
-      {needsBoon&&!selectedBoonId?<Text style={s.copy}>{st('Choose your boon above to continue.')}</Text>:null}
+      {needsBoon&&!selectedBoonId?<Text style={s.copy}>{artifactDraft?st('Choose your artifact above to continue.'):st('Choose your boon above to continue.')}</Text>:null}
        {bossNext&&run.options.length>1?<Text style={s.copy}>{run.mode==='live'?st('Vote to finish with the boss, or continue deeper together.'):st('Fight the boss to finish now, or continue deeper for a harder challenge.')}</Text>:null}
       {run.mode==='live'?<Text style={s.copy}>{st('The route with the most votes will be selected.')}{secondsRemaining!==undefined?` · ${st('Vote ends in {seconds}s',{seconds:secondsRemaining})}`:''}</Text>:null}
       {!seasonal&&run.combatMarksEarned!==undefined?<Text style={s.routeEyebrow}>{st('Combat Marks')} · {run.combatMarksEarned}/{run.combatMarksCap??25}</Text>:null}

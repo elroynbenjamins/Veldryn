@@ -170,6 +170,24 @@ ok(!normalizeWeaponBonuses(t5,'common',null),'Legacy missing rolls remain missin
 
 const state=createCharacter(newGame(1),'WAYFINDER','Weapon Bonus Tester','male');
 const owner=state.character!.id;
+const starterWeapon=draftCraftedGearInstance({itemId:t1,ownerCharacterId:owner,jobId:'t1-weapon-affix',createdAtMs:1,roll:.31});
+ok(starterWeapon.weaponBonusRollVersion===6&&starterWeapon.weaponBonuses?.length===1,
+  'New T1 weapons need one persistent version-6 bonus');
+const loadedStarterWeapon=normalizeCraftedGearInstances([starterWeapon])[0];
+ok(JSON.stringify(loadedStarterWeapon.weaponBonuses)===JSON.stringify(starterWeapon.weaponBonuses),
+  'T1 forged weapon affix must survive exact-copy save normalization');
+const equippedStarter:GameState={...state,
+  account:{...state.account,craftedGearInstances:[loadedStarterWeapon]},
+  character:{...state.character!,equipment:{...state.character!.equipment,weapon:t1},
+    equipmentInstanceIds:{...state.character!.equipmentInstanceIds,weapon:loadedStarterWeapon.id}},
+};
+for(const roll of loadedStarterWeapon.weaponBonuses!)
+  close(equippedWeaponBonusStats(equippedStarter)[roll.stat]??0,roll.basisPoints/10_000,
+    'T1 exact-equipped weapon must apply its saved bonus');
+const unrolledStarter={...loadedStarterWeapon,weaponBonuses:undefined,weaponBonusRollVersion:undefined};
+ok(Object.keys(equippedWeaponBonusStats({...equippedStarter,account:{...equippedStarter.account,
+  craftedGearInstances:[unrolledStarter]}})).length===0,
+  'Legacy T1 equipment without a mint-time receipt must not inherit new bonuses');
 const copy=draftCraftedGearInstance({itemId:t5,ownerCharacterId:owner,jobId:'weapon-affix-test',createdAtMs:1,roll:.5});
 ok(copy.weaponBonuses?.length===2,'New T5 forged copy must receive two attributes');
 const normalized=normalizeCraftedGearInstances([copy])[0];

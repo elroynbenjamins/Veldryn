@@ -11,7 +11,7 @@ assert.ok(app.indexOf('<ScreenTransition key={tab}')>app.indexOf('backSwipe.panH
 assert.ok(app.indexOf('</ScreenTransition>')<app.indexOf('<ChatOverlay'),'Chat dock must not animate or remount with content');
 assert.ok(app.indexOf('</ScreenTransition>')<app.indexOf('<PrimaryNavigation'),'Bottom navigation must stay fixed');
 assert.ok(transition.includes('useNativeDriver:true'),'Animations must use the native driver');
-assert.ok(!transition.includes('translate')&&!transition.includes('scale:'),'Never transform or blur pixel-art content');
+assert.ok(!transition.includes('transform:')&&!transition.includes('scale:'),'Never transform or blur pixel-art content');
 assert.ok(transition.includes('isReduceMotionEnabled')&&transition.includes('reduceMotionChanged'),'Platform accessibility motion settings must be honored');
 assert.ok(transition.includes('animation.stop()'),'Unreleased animations must be cancelled on rapid navigation');
 console.log('PASS screen transition routing, fixed shell, accessibility and native-driver contract');

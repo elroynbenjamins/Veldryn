@@ -40,7 +40,7 @@ test('weekly quest is compact, accessible, and claims without entering detail mo
  const source=read('src/components/coop/DungeonWeeklyQuestPanel.tsx');
  assert.match(source,/accessibilityState=\{\{expanded\}\}/);
  assert.match(source,/onPress=\{\(\)=>setExpanded\(value=>!value\)\}/);
- assert.match(source,/ready\?<GameButton compact title=\{st\('Claim weekly reward'\)\}/);
+ assert.match(source,/ready\?<GameButton compact title=\{dungeonUxText\(language,'weeklyClaim'\)\}/);
  assert.match(source,/accessibilityRole="progressbar"/);
  assert.match(source,/expanded\?<Text style=\{s\.description\}/);
  assert.match(source,/resetAtMs/);

@@ -35,9 +35,9 @@ grant select on private.party_sigils_wallet_v65,
 -- Defense in depth: even an inadvertently privileged SQL caller cannot
 -- forge a ledger row with the wrong account, receipt delta or resulting wallet.
 create or replace function private.party_sigils_v65_insert_guard()
-returns trigger language plpgsql security invoker set search_path='' as $
+returns trigger language plpgsql security invoker set search_path='' as $$
 declare r private.party_event_reward_receipts_v61%rowtype;
-declare v_balance bigint;
+v_balance bigint;
 begin
  select * into r from private.party_event_reward_receipts_v61
  where source_key=new.source_key for update;
@@ -49,7 +49,7 @@ begin
     v_balance is distinct from new.balance_after
  then raise exception 'party_sigils_v65_noncanonical_ledger_row';end if;
  return new;
-end;$;
+end;$$;
 create trigger party_sigils_v65_ledger_insert_guard
  before insert on private.party_sigils_ledger_v65
  for each row execute function private.party_sigils_v65_insert_guard();

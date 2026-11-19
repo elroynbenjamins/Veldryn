@@ -47,7 +47,7 @@ import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster'
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
-import {gatheringPacing} from './gathering-tools';
+import {equippedGatheringTools,gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds,encounterLockRequirement} from './world-navigation';
@@ -1523,19 +1523,38 @@ export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now(
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
   if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
   const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
-  const currentId=state.character.equippedToolIds?.[tool.skillId];if(currentId===itemId)return state;
+  const previous=equippedGatheringTools(state,tool.skillId);
+  if(previous.some(entry=>entry.id===itemId))return state;
+  const sameTier=previous.find(entry=>entry.tier===tool.tier);
+  // Settle the active cycle before changing its speed; partial progress survives.
   const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
   let stacks=consume(settled.inventory.stacks,itemId,1);
-  if(currentId)stacks=stackItems(stacks,[{itemId:currentId,quantity:1}]);
-  return {...settled,inventory:{...settled.inventory,stacks},character:{...settled.character!,equippedToolIds:{...(settled.character!.equippedToolIds??{}),[tool.skillId]:itemId}}};
+  if(sameTier)stacks=stackItems(stacks,[{itemId:sameTier.id,quantity:1}]);
+  const tools=[...previous.filter(entry=>entry.tier!==tool.tier),tool].sort((a,b)=>a.tier-b.tier);
+  const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
+    [tool.skillId]:Object.fromEntries(tools.map(entry=>[entry.tier,entry.id]))};
+  const equippedToolIds={...(settled.character!.equippedToolIds??{}),[tool.skillId]:tools[tools.length-1].id};
+  return {...settled,inventory:{...settled.inventory,stacks},
+    character:{...settled.character!,equippedToolIds,equippedToolIdsByTier}};
 }
-export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now()):GameState{
-  if(!state.character)return state;const currentId=state.character.equippedToolIds?.[skillId];if(!currentId)return state;
+
+/** Without an item ID, remove the highest-tier equipped tool (legacy behavior). */
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string):GameState{
+  if(!state.character)return state;
+  const equipped=equippedGatheringTools(state,skillId);
+  const selected=itemId?equipped.find(entry=>entry.id===itemId):equipped[equipped.length-1];
+  if(!selected)return state;
   const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
-  const equippedToolIds={...(settled.character!.equippedToolIds??{})};delete equippedToolIds[skillId];
-  const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:currentId,quantity:1}]);
+  const remaining=equipped.filter(entry=>entry.id!==selected.id);
+  const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
+    [skillId]:Object.fromEntries(remaining.map(entry=>[entry.tier,entry.id]))};
+  const equippedToolIds={...(settled.character!.equippedToolIds??{})};
+  if(remaining.length)equippedToolIds[skillId]=remaining[remaining.length-1].id;
+  else delete equippedToolIds[skillId];
+  const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:selected.id,quantity:1}]);
   if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
-  return {...settled,inventory:{...settled.inventory,stacks:added.stacks},character:{...settled.character!,equippedToolIds}};
+  return {...settled,inventory:{...settled.inventory,stacks:added.stacks},
+    character:{...settled.character!,equippedToolIds,equippedToolIdsByTier}};
 }
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('No character');

@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Combat Marks capped": ["Лимит боевых знаков достигнут","Savaş Nişanı sınırına ulaşıldı"],
   // Dungeon Endurance screen translations (Russian/Turkish).
   "Boon gained": ["Получено благословение","Lütuf kazanıldı"],
   "Choose an artifact": ["Выберите артефакт","Bir eser seç"],

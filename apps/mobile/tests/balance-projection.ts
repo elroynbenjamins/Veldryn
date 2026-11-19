@@ -47,7 +47,7 @@ ok((starterPace.levelPace.etaSeconds??Infinity)>=8*60&&(starterPace.levelPace.et
 const firstUnlock=skillTargetEta(starterToolState,'woodcutting',7,starterPace.xpPerHour);
 ok((firstUnlock.etaSeconds??Infinity)>=4*3600&&(firstUnlock.etaSeconds??Infinity)<=12*3600,'The first major gathering tier should remain reachable within a long playday/offline session');
 const level7Wood={...ironToolState,skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:7,xp:totalXpAtLevel(7)}:row)};
-const level15Wood={...ironToolState,skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:15,xp:totalXpAtLevel(15)}:row)};
+const level15Wood={...ironToolState,character:{...ironToolState.character!,equippedToolIdsByTier:{woodcutting:{1:'GREENWOOD_HATCHET',2:'ASTER_IRON_HATCHET'}}},skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:15,xp:totalXpAtLevel(15)}:row)};
 const level7Pace=gatheringBalanceProjection(level7Wood,ironwood,24).levelPace,level15Pace=gatheringBalanceProjection(level15Wood,crownwood,24).levelPace;
 ok((level7Pace.etaSeconds??Infinity)<=3*3600,'A recommended mid-tier gathering node should keep a level around 7 within a few hours');
 ok((level15Pace.etaSeconds??Infinity)<=6*3600,'A recommended high Asterfall gathering node should keep level 15 progression within a long session');

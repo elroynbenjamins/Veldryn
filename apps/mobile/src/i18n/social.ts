@@ -7,6 +7,7 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Combat Marks capped": ["Kampfmarken-Limit erreicht","Límite de marcas de combate alcanzado","Limiet gevechtsmarken bereikt","Limite marchi da combattimento raggiunto","Plafond de marques de combat atteint"],
   // Dungeon Endurance: visible effects, boss exits and replay rewards.
   "Boon gained": ["Segen erhalten","Bendición obtenida","Zegen ontvangen","Benedizione ottenuta","Bénédiction obtenue"],
   "Choose an artifact": ["Artefakt wählen","Elige un artefacto","Kies een artefact","Scegli un manufatto","Choisissez un artefact"],

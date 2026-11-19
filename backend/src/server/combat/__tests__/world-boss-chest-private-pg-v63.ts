@@ -126,7 +126,12 @@ class PgFixture implements WorldBossChestPgDriverV63{
      .map(x=>({component:x.slice(key.length+1)})));
    }else if(sql.includes('SELECT instance_id::text AS "instanceId"')){
     const found=data.items.get(args[0] as string);
-    if(found)rows.push({instanceId:found.instanceId,roll:found.roll});
+    if(found){
+     // PostgreSQL jsonb may return differently ordered object keys.
+     const reordered=Object.fromEntries(
+      Object.entries(found.roll as Record<string,unknown>).reverse());
+     rows.push({instanceId:found.instanceId,roll:reordered});
+    }
    }else throw Error('world_boss_v63_unexpected_sql:'+sql.slice(0,90));
    return {rows:rows as T[]};
   };

@@ -74,6 +74,26 @@ assert.equal(again.enemies[0].phases?.length,1);
 assert.throws(()=>compileEnemiesForCombatV2([
  {...baseline('guardian'),team:'players'},
 ],true),/invalid_enemy_team/);
+// Authoritative Enemy 2.0 kits are not eligible for generic ability/phase
+// compilation; this prevents stacking two enemy powers on the same foe.
+const authoredFromOtherCompiler={
+ ...baseline('guardian'),tags:['pve:archetype:guardian','enemy-v2:kit:v1'],
+};
+assert.throws(()=>compileEnemiesForCombatV2([authoredFromOtherCompiler],true),
+ /mixed_enemy_compilers/);
+assert.equal(compileEnemiesForCombatV2([authoredFromOtherCompiler],false).enemies[0],
+ authoredFromOtherCompiler,'Disabled generic compiler must leave authored kits untouched');
+assert.throws(()=>compileEnemiesForCombatV2([{
+ ...baseline('guardian'),
+ abilities:[{id:'ENEMY_V2_SPOOF',name:'Authored',target:'self',cooldownMs:5000,
+  effects:[{kind:'shield',flat:1}]}],
+}],true),/mixed_enemy_compilers/);
+assert.throws(()=>compileEnemiesForCombatV2([{
+ ...baseline('guardian'),boss:true,
+ phases:[{id:'ENEMY_V2_BOSS_PHASE',name:'Authored phase',hpPct:.5,
+  target:'self',effects:[{kind:'shield',flat:1}]}],
+}],true),/mixed_enemy_compilers/);
+
 const hero=launchPlayer('Ironwarden',25);
 const input={seed:'v2-unified-bridge',players:[hero],enemies:[baseline('guardian')],
   maxDurationMs:3000};

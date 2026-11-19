@@ -389,7 +389,10 @@ ok(equipmentCraftingQueue(safelyBlocked.state).map(row=>row.id).join(',')===befo
 ok(craftedGearInstances(safelyBlocked.state).length===oversized.length,'Mass-claim storage failure must never evict equipment');
 
 ok(TARGET_CRAFTED_GEAR_COPIES_PER_ITEM===25,'Players must be able to keep 25 copies of each base equipment item');
-const copyTemplate=craftedGearInstances(state)[0];
+// The quality-only auto-retention policy remains valid for historical unrolled
+// copies. Modern 1.0.11 rolled equipment must instead require manual review.
+const rolledTemplate=craftedGearInstances(state)[0];
+const copyTemplate={...rolledTemplate,weaponBonuses:undefined,equipmentBonuses:undefined};
 const atLimitCopies=Array.from({length:TARGET_CRAFTED_GEAR_COPIES_PER_ITEM},(_,i)=>({
   instance:{...copyTemplate,id:`quality-${i}`,sourceReceiptKey:`quality-${i}`,rarity:'common' as const,quality:10+i*3},
   location:'inventory' as const,holderCharacterId:state.character!.id,ownershipVerified:true,protectionsVerified:true,locked:false,favorite:false,savedLoadout:false,
@@ -399,6 +402,11 @@ const incomingHigh={...copyTemplate,id:'new-high',quality:90,rarity:'epic' as co
 ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1),incomingHigh,'off').action==='keep','Copy limit should not affect crafts below 25, even when auto-sell is disabled');
 ok(planCraftedGearRetention(atLimitCopies.slice(0,TARGET_CRAFTED_GEAR_COPIES_PER_ITEM-1).map((entry,i)=>i===0?{...entry,instance:{...entry.instance,quality:undefined}}:entry),incomingHigh,'keep_best_seven').action==='keep','Legacy unrolled equipment must remain claimable while still below the copy limit');
 ok(planCraftedGearRetention(atLimitCopies,incomingHigh,'off').action==='manual_review','Mass craft auto-sell must be opt-in, never default');
+const rolledDecision=planCraftedGearRetention(atLimitCopies,{
+ ...incomingHigh,weaponBonuses:rolledTemplate.weaponBonuses,equipmentBonuses:rolledTemplate.equipmentBonuses,
+},'keep_best_seven');
+ok(rolledDecision.action==='manual_review'&&rolledDecision.reason==='weapon_bonus_choice',
+ 'Even a stronger modern rolled copy must not be auto-discarded or replace another player build');
 const lowDecision=planCraftedGearRetention(atLimitCopies,incomingLow,'keep_best_seven');
 ok(lowDecision.action==='sell_incoming'&&lowDecision.instanceId==='new-low','A weaker new roll should sell itself and preserve all 25 originals');
 const highDecision=planCraftedGearRetention(atLimitCopies,incomingHigh,'keep_best_seven');

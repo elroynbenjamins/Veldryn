@@ -24,6 +24,19 @@ const partyTabs:TabItem[]=[
  {id:'adventure',label:'Adventure'},{id:'stages',label:'Stages'},{id:'supplies',label:'Supplies'},
  {id:'vote',label:'Voting'},{id:'finale',label:'Finale'},{id:'results',label:'Results'},
 ];
+/** Static, deliberately NONENTITLED design catalog. Collection and balances
+ * must come from a future authenticated, short-leased server reward snapshot. */
+const partyTreasureSets:Readonly<Record<'caravan'|'hunt'|'wards'|'reliquary',readonly {name:string;pieces:number}[]>>={
+ caravan:[{name:"Wayfarer's Pact",pieces:3},{name:"Smuggler's Guile",pieces:2}],
+ hunt:[{name:'Moonfang Pursuit',pieces:3},{name:"Predator's Mark",pieces:2}],
+ wards:[{name:'Runebound Vigil',pieces:3},{name:"Warden's Seal",pieces:2}],
+ reliquary:[{name:'Echoheart Vestment',pieces:3},{name:"Curator's Oath",pieces:2}],
+};
+const partyChestDesign:readonly {name:string;chance:string;condition:string}[]=[
+ {name:'Adventure Chest',chance:'12%',condition:'15 verified personal Event Points'},
+ {name:'Preparation Chest',chance:'16%',condition:'Personal preparation + optional goal'},
+ {name:'Victory Chest',chance:'24%',condition:'Verified finale victory'},
+];
 const marketTabs:TabItem[]=[
  {id:'browse',label:'Browse'},{id:'sell',label:'Sell'},{id:'listings',label:'My Listings'},{id:'inbox',label:'Inbox'},{id:'history',label:'History'},
 ];
@@ -490,11 +503,30 @@ function PartyContents({s,C,accent,tab,onTab,storyId,onStoryChange,hasParty,rost
   <View style={s.empty}><UiIcon name="dungeon" size={34}/><Text style={s.choiceTitle}>Finale preview is under construction</Text><Text style={s.bodyText}>No combat, event points or claims can be initiated from this screen yet.</Text></View>
   <Action label="Enter finale · Not available" s={s} disabled/>
  </Card>;
- return <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Final rewards will be calculated once per verified event cycle. This screen cannot issue Event Points, refund items, or claim rewards."/>
-  <View style={s.statRow}><Stat s={s} label="RESULT" value="Not live"/><Stat s={s} label="CONTRIBUTION" value="No record"/><Stat s={s} label="CLAIM" value="Unavailable"/></View>
-  <View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>Awaiting a verified settlement</Text><Text style={s.bodyText}>Your Party's final outcome, stage choices and personal rewards will appear here only after the server closes and validates the adventure.</Text></View>
-  <Action label="Claim settlement · Not available" s={s} disabled/>
- </Card>;
+ return <>
+  <Card s={s}><SectionHeading s={s} kicker="DAY 8 · SETTLEMENT" title="Adventure results" sub="Day 8 settlement choices remain separate from event treasure chests. All payouts require verified server receipts."/>
+   <View style={s.statRow}><Stat s={s} label="RESULT" value="Not live"/><Stat s={s} label="CONTRIBUTION" value="No record"/><Stat s={s} label="CLAIM" value="Unavailable"/></View>
+   <View style={s.empty}><UiIcon name="rewards" size={34}/><Text style={s.choiceTitle}>Awaiting a verified settlement</Text><Text style={s.bodyText}>Your Party's final outcome, personal rewards and earned chest entitlements will appear after an authenticated server settlement.</Text></View>
+   <Action label="Claim settlement · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker="PARTY TREASURE · DESIGN QA" title="Three chests to earn" sub="Up to three per account per event week. These are baseline Standard gear chances, not guaranteed drops."/>
+   {partyChestDesign.map((chest,i)=><View key={chest.name} style={s.detailRow}>
+    <View style={[s.motif,{borderColor:accent}]}><UiIcon name="rewards" size={26}/></View>
+    <View style={s.flex}><Text style={s.choiceTitle}>{chest.name}</Text><Text style={s.choiceSub}>{chest.condition}</Text><Text style={s.finePrint}>No authenticated entitlement loaded</Text></View>
+    <Tag s={s} label={chest.chance+' base'} accent={i===2?accent:undefined}/>
+   </View>)}
+   <Text style={s.finePrint}>Veteran and Heroic difficulty improve these base chances. Opening a chest cannot be simulated or claimed in this preview.</Text>
+   <Action label="Open chest · Not available" s={s} disabled/>
+  </Card>
+  <Card s={s}><SectionHeading s={s} kicker={'EVENT EQUIPMENT · '+story.name.toUpperCase()} title="Two collections, five pieces" sub="A three-piece signature set and a two-piece support set. Bonuses only activate when the matching tier pieces are equipped."/>
+   {partyTreasureSets[story.id].map(set=><View key={set.name} style={s.detailRow}>
+    <View style={s.flex}><Text style={s.choiceTitle}>{set.name}</Text><Text style={s.choiceSub}>{set.pieces}-piece set · Collection unavailable until the private inventory read is connected</Text></View>
+    <Tag s={s} label={set.pieces===3?'2 / 3 bonus tiers':'2-piece bonus'}/>
+   </View>)}
+   <Text style={s.finePrint}>Party Sigils: balance unverified · One targeted missing piece may cost 60 Sigils per event week. No currency is debited in this screen.</Text>
+   <Action label="Exchange gear · Not available" s={s} disabled/>
+  </Card>
+ </>;
 }
 
 const samples:readonly MarketPreviewItem[]=[

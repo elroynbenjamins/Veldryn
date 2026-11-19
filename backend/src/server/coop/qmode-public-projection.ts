@@ -42,7 +42,8 @@ export interface PublicQModeRunProjection {
  * hidden graph nodes, RNG state and calculated-but-unentitled rewards stay private. */
 export function projectQModeRun(run:QModeRun,mode:'qmode'|'live'='qmode',serverSecret?:string):PublicQModeRunProjection{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current)throw new Error('invalid_qmode_current_node');
-  const bossNode=run.graph.nodes.find(node=>node.kind==='boss');
+  const currentNode=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
+   const bossNode=currentNode?.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).find(node=>node?.kind==='boss');
   const revealed=[run.graph.entryNodeId,...run.persistentState.visitedNodeIds,run.currentNodeId];
   const graph=coopRouteClientProjection(run.graph,revealed);
   const visible=new Set(graph.nodes.map(node=>node.nodeId));

@@ -15,6 +15,7 @@ on:
       - 'backend/src/server/combat/world-boss-chests-v58.ts'
       - 'backend/src/server/combat/__tests__/world-boss-chests-v58.ts'
       - 'backend/src/server/combat/world-boss-gathering-loot-v64.ts'
+      - 'backend/src/server/combat/__tests__/world-boss-gathering-regression-v64.ts'
       - 'backend/src/server/combat/world-boss-chest-proof-v59.ts'
       - 'backend/src/server/combat/__tests__/world-boss-chest-proof-v59.ts'
       - 'backend/src/server/combat/world-boss-chest-resolution-v60.ts'
@@ -66,6 +67,8 @@ jobs:
         run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
       - name: Guard mobile World Boss chest cards as read-only previews
         run: node ../apps/mobile/tests/world-boss-chest-preview-ui.cjs
+      - name: Verify consolidated V64/V65 30-piece catalog, rarity and skill-only set thresholds
+        run: node .event-chest-tests/server/combat/__tests__/world-boss-gathering-regression-v64.js
       - name: Verify original World Boss gathering gear, 1 percent odds, source caps
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chests-v58.js
       - name: Verify World Boss milestone proof and cross-account replay safety

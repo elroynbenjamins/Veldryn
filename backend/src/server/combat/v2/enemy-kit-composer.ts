@@ -301,6 +301,20 @@ export function verifyPersistedEnemyKitsV2(
     p.traitIds.length===0&&
     (next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:boss-profile:')).length===1,
     'stored_boss_profile_mismatch');
+   // A checksum alone only shows that bytes are internally consistent.
+   // Re-derive this VERSIONED hidden authored boss profile from the trusted
+   // base kit to reject altered damage coefficients, shields, cast properties,
+   // injected abilities or forged phases even when a digest was recomputed.
+   const authored=snapshot.region==='asterfall'
+    ?prepareAsterfallBossV2(base,ENEMY_V2_RULESET)
+    :prepareRegionalBossV2(base,ENEMY_V2_RULESET);
+   assert(authored!==base,'stored_boss_authored_source_unavailable');
+   const expected=clone({...authored,
+    phases:[...(base.phases??[]),...(authored.phases??[])],
+    tags:[...(authored.tags??[]),KIT_TAG],
+   });
+   assert(enemyV2SnapshotDigest(next)===enemyV2SnapshotDigest(expected),
+    'stored_boss_authored_kit_mismatch');
   }
  }
  return {

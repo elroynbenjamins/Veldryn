@@ -3,7 +3,7 @@ import {projectVerifiedCraftingV2BaseEvidence as project,EQUIPMENT_COMBAT_INTERO
 const item=(id,slot,baseStats,hands)=>({
  instanceId:id,receiptId:'receipt-'+id,ownerCharacterId:'hero-one',location:'equipped',slot,
  template:{pieceId:'EQ2_'+id,slot,tier:2,rarity:'epic',quality:87,role:'tank',
- classRestriction:'IRONWARDEN',...(hands?{hands}:{}),
+ classRestriction:'IRONWARDEN',...(slot==='weapon'?{equipmentFamily:'sword'}:slot==='offhand'?{equipmentFamily:'shield'}:{}),...(hands?{hands}:{}),
  manifestVersion:'eq2-manifest-pinned',rulesVersion:'eq2-rolls-pinned',
  baseStats,affixes:[{stat:'critRate',percent:1.5,grade:40}],gemSlots:[],enhancementRank:0}
 });
@@ -48,7 +48,8 @@ rejects(f=>f.equipped[0].template.rarity='','invalid_exact_template');
 rejects(f=>f.equipped[0].template.quality=101,'invalid_exact_template');
 rejects(f=>{f.actor.level=11},'tier_locked');
 rejects(f=>f.equipped[0].template.classRestriction='BASTION','wrong_class');
-rejects(f=>f.equipped[0].template.role='damage','role_mismatch');
+rejects(f=>f.equipped[0].template.role='unknown','invalid_role');
+rejects(f=>f.equipped[0].template.equipmentFamily='wand','incompatible_weapon_family');
 rejects(f=>f.equipped[0].template.hands='triple','invalid_hands');
 rejects(f=>f.equipped[1].template.hands='two','hands_on_nonweapon');
 rejects(f=>f.equipped[0].template.gemSlots=[{gemId:'g'}],'unmigrated_gems_or_enhancements');
@@ -65,6 +66,10 @@ rejects(f=>{
 },'two_hand_offhand_conflict');
 rejects(f=>f.actor.classId='BARD','unverified_actor');
 rejects(f=>f.equipped[0].template.tier=5,'invalid_exact_template');
+const validFamilies={
+ IRONWARDEN:'sword',BASTION:'sword',DREADGUARD:'sword',WAYFINDER:'bow',RAVAGER:'sword',
+ HEXWEAVER:'wand',KNIFE_DANCER:'daggers',DAWNKEEPER:'mace',STONECALLER:'staff'
+};
 const knownRoles={
  IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
  WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
@@ -76,9 +81,14 @@ for(const [classId,role] of Object.entries(knownRoles)){
  for(const gear of f.equipped){
   gear.template.role=role;
   gear.template.classRestriction=classId;
+  if(gear.slot==='weapon')gear.template.equipmentFamily=validFamilies[classId];
  }
  assert.equal(project(f).role,role,'canonical class role must survive the exact-copy bridge');
 }
+const crossRoleWeapon=fixture();
+crossRoleWeapon.equipped[0].template.role='damage';
+assert.equal(project(crossRoleWeapon).baseTotals.attackPower,12,
+ 'A weapon with a different recommended role is still wearable by a family-compatible class');
 const mixedRoleArmor=fixture();
 mixedRoleArmor.equipped[1].template.role='damage';
 delete mixedRoleArmor.equipped[1].template.classRestriction;
@@ -88,5 +98,5 @@ const validOffhand=fixture();
 validOffhand.equipped.push(item('shield','offhand',{attack:0,defense:3,hp:0}));
 assert.equal(project(validOffhand).sources.length,3,
  'Offhands contain no weapon-hand metadata and coexist with one-handed weapons');
-assert.equal(denied,30);
-console.log('PASS: Equipment/Crafting V2 frozen copies, all 9 classes and 30 negative guards; combat remains off');
+assert.equal(denied,31);
+console.log('PASS: Equipment/Crafting V2 frozen copies, all 9 classes and 31 negative guards; combat remains off');

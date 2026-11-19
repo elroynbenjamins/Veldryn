@@ -1,6 +1,6 @@
 import {useSocialText} from '../i18n/social';
 import {useMemo} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {VISIBLE_WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
 import {visibleWorldChatIndex} from '../core/world-chat-visibility';
 import {useChatFeed} from '../online/useChatFeed';
@@ -13,6 +13,8 @@ import {ThemedIcon} from './ThemedNavigationIcon';
 export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0,mentionCount=0,active=true}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;selectedChannel?:number;unreadCount?:number;mentionCount?:number;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const {width,fontScale}=useWindowDimensions();
+ const compactChannel=width<400||fontScale>=1.2;
  const channelIndex=visibleWorldChatIndex(selectedChannel-1),channelId=VISIBLE_WORLD_CHANNELS[channelIndex].id;
  const {value:history}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:enabled&&active,channelType:'world',channelId});
  const rows=enabled?history:[];
@@ -20,7 +22,7 @@ export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0
  const attention=[mentionCount>0?st('{count} mentions',{count:mentionCount}):null,unreadCount>0?st('{count} unread',{count:unreadCount}):null].filter(Boolean).join(', ');
  const label=latest?st('Open chat. Latest World message from {name}: {message}',{name:latest.sender_name,message:latest.body})+(attention?'. '+attention:''):st('Open chat')+(attention?'. '+attention:'');
  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={st("Opens full chat")} onPress={onOpen} style={({pressed})=>[s.dock,{minHeight:height},pressed&&s.pressed]}>
-   <View style={s.channelColumn}><ThemedIcon name="chat" size={22}/><Text style={s.channel}>{enabled?st("WORLD"):st("CHAT")}</Text></View>
+   <View style={[s.channelColumn,compactChannel&&s.channelColumnCompact]}><ThemedIcon name="chat" size={22}/>{!compactChannel&&<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={s.channel}>{enabled?st("WORLD"):st("CHAT")}</Text>}</View>
    <View style={s.messages}>{(shown.length?shown:[null]).map(row=><View key={row?.id??'empty'} style={s.line}>
      {row?<><GuildTaggedPlayerName accountId={row.account_id} badges={row.player_badges} name={row.sender_name} nameStyle={row.player_name_style??undefined} numberOfLines={0} style={s.name}/><View style={s.bodyWrap}><ChatMessageText body={row.body} compact numberOfLines={1} style={s.body}/></View></>:<Text numberOfLines={1} style={s.empty}>{enabled?st("World chat is quiet."):st("Tap to open chat.")}</Text>}
    </View>)}</View>
@@ -29,10 +31,11 @@ export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  dock:{width:'100%',zIndex:20,flexDirection:'row',alignItems:'center',gap:10,marginTop:8,paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:16,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.18,shadowRadius:8,shadowOffset:{width:0,height:3},elevation:4},
- channelColumn:{alignSelf:'stretch',width:42,alignItems:'center',justifyContent:'center',gap:2,paddingRight:10,borderRightWidth:StyleSheet.hairlineWidth,borderRightColor:C.line},
+ channelColumn:{alignSelf:'stretch',width:56,alignItems:'center',justifyContent:'center',gap:2,paddingRight:8,borderRightWidth:StyleSheet.hairlineWidth,borderRightColor:C.line},
+ channelColumnCompact:{width:32},
  line:{minHeight:22,alignItems:'stretch',gap:1},
  icon:{width:22,height:22},
- channel:{...typography.caption,color:C.accentSoft,fontSize:8,lineHeight:12,fontWeight:'900',letterSpacing:.9},
+ channel:{...typography.caption,width:'100%',textAlign:'center',color:C.accentSoft,fontSize:8,lineHeight:12,fontWeight:'900',letterSpacing:.9},
  messages:{flex:1,minWidth:0,gap:2},
  bodyWrap:{minWidth:0},
  name:{color:C.info,fontSize:12,lineHeight:18,fontWeight:'800'},

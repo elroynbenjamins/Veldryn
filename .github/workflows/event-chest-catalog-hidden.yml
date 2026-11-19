@@ -1,0 +1,57 @@
+name: Hidden Party Event chest and Equipment 2.0 contract validation
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/party/weekly-party-event-gear-v51.ts'
+      - 'backend/src/server/party/weekly-party-event-chests-v51.ts'
+      - 'backend/src/server/party/weekly-party-event-combat-v59.ts'
+      - 'backend/src/server/party/weekly-party-event-claim-v60.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-*.ts'
+      - 'backend/src/server/loot/event-chest-server-roll-v1.ts'
+      - 'backend/src/server/loot/__tests__/event-chest-server-roll-v1.ts'
+      - 'backend/tsconfig.event-chests.json'
+      - 'apps/mobile/src/screens/FeaturePreviewScreen.tsx'
+      - 'apps/mobile/tests/party-event-treasure-preview-ui.cjs'
+      - '.github/workflows/event-chest-catalog-hidden.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  party-chest-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck hidden Party Event chests and gear policy
+        run: pnpm exec tsc -p tsconfig.event-chests.json
+      - name: Verify eight sets and three chest sources
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chests-v51.js
+      - name: Verify Equipment 2.0 set hooks and stat caps
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-combat-v59.js
+      - name: Verify server-authoritative chest receipts, wallet and one exchange
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-claim-v60.js
+      - name: Verify domain-separated server-only entropy
+        run: node .event-chest-tests/server/loot/__tests__/event-chest-server-roll-v1.js
+      - name: Verify Party Event chest UI remains unclaimable in QA
+        run: node ../apps/mobile/tests/party-event-treasure-preview-ui.cjs
+      - name: Refuse premature live grants and migrations
+        run: |
+          set -euo pipefail
+          grep -q 'PARTY_EVENT_GEAR_V51_RELEASED=false' src/server/party/weekly-party-event-gear-v51.ts
+          grep -q 'PARTY_EVENT_CHESTS_V51_RELEASED=false' src/server/party/weekly-party-event-chests-v51.ts
+          grep -q 'PARTY_EVENT_COMBAT_V59_RELEASED=false' src/server/party/weekly-party-event-combat-v59.ts
+          grep -q 'PARTY_EVENT_REWARD_GATEWAY_V60_RELEASED=false' src/server/party/weekly-party-event-claim-v60.ts
+          grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
+          test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql
+          echo 'PARTY_EVENT_CHESTS_HIDDEN_OK'

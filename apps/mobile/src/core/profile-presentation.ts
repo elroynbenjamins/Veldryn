@@ -53,17 +53,17 @@ export function localProfileSummary(state:GameState){
 }
 
 export function profileAchievementShowcase(state:GameState,profile?:PublicPlayerProfileV43|null){
- if(profile?.achievementShowcaseIds.length)return profile.achievementShowcaseIds;
+ if(profile)return profile.achievementShowcaseIds;
  return localProfileSummary(state).recentAchievementIds;
 }
 
 export function profileRecordShowcase(state:GameState,profile?:PublicPlayerProfileV43|null){
- if(profile?.recordShowcaseIds.length)return profile.recordShowcaseIds;
+ if(profile)return profile.recordShowcaseIds;
  return localProfileSummary(state).recentRecordIds;
 }
 
 export function profileCollectionShowcase(state:GameState,profile?:PublicPlayerProfileV43|null):ProfileCollectionRefV43[]{
- if(profile?.collectionShowcase.length)return profile.collectionShowcase;
+ if(profile)return profile.collectionShowcase;
  const rows:ProfileCollectionRefV43[]=[];
  const add=(kind:ProfileCollectionRefV43['kind'],id?:string)=>{if(id&&!rows.some(row=>row.kind===kind&&row.id===id))rows.push({kind,id})};
  add('pet',state.character?.selectedCosmeticPetId);

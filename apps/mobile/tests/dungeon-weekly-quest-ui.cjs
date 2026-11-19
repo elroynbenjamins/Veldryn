@@ -13,7 +13,7 @@ const journal=source('src/screens/QuestRefinedScreen.tsx');
 const controller=fs.readFileSync(path.join(root,'../../backend/online/dungeon-weekly-quests.ts'),'utf8');
 const sql=fs.readFileSync(path.join(root,'../../backend/supabase/migrations/20261119140000_coop_weekly_dungeon_quest_metrics_v1.sql'),'utf8');
 assert(browser.includes('{weeklyQuestPanel??null}')&&browser.indexOf('{weeklyQuestPanel??null}')<browser.indexOf('{showCatalog?<>'),'Weekly objective must appear on the Dungeon home above the Finder');
-assert(game.includes('<DungeonWeeklyQuestPanel quest={weeklyQuest}')&&game.includes('weeklyQuestPanel={weeklyQuestPanel}'),'Dungeon screen must supply the authenticated quest snapshot');
+assert(game.includes('<DungeonWeeklyQuestPanel language={language} quest={weeklyQuest}')&&game.includes('weeklyQuestPanel={weeklyQuestPanel}'),'Dungeon screen must supply the authenticated quest snapshot');
 assert(game.includes('coopClient.dungeonWeeklyQuest()')&&game.includes('coopClient.claimDungeonWeeklyQuest(weeklyQuest.weekKey,coopRequestId())'),'Dungeon weekly quest uses a standalone read/claim flow');
 assert(client.includes("'/coop/weekly-quest'"),'Client must use a dedicated dungeon endpoint');
 assert(card.includes('Claim weekly reward')&&card.includes('ExpeditionMarkIcon')&&card.includes('resetAtMs')&&card.includes('One reward per account'),'Quest must display direct Marks payout, UTC reset and account scope');

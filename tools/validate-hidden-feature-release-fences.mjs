@@ -23,6 +23,16 @@ const paths={
   worldRuntime:'backend/online/world-boss-action-runtime-v64.ts',
   worldMobile:'apps/mobile/src/core/world-boss-action-request-v65.ts',
   worldErasure:'backend/online/world-boss-account-erasure-v56.ts',
+  worldPrivacy:'backend/online/world-boss-account-privacy-v58.ts',
+  worldTonic:'backend/online/world-boss-tonic-v58.ts',
+  worldChest:'backend/src/server/combat/world-boss-chests-v58.ts',
+  worldChestProof:'backend/src/server/combat/world-boss-chest-proof-v59.ts',
+  worldChestResolution:'backend/src/server/combat/world-boss-chest-resolution-v60.ts',
+  worldChestGateway:'backend/src/server/combat/world-boss-chest-settlement-v61.ts',
+  worldChestEquipment:'backend/src/server/combat/world-boss-gathering-instance-v62.ts',
+  worldChestPg:'backend/src/server/combat/world-boss-chest-private-pg-v63.ts',
+  worldChestGathering:'backend/src/server/combat/world-boss-gathering-loot-v64.ts',
+  worldChestTier:'backend/src/server/combat/world-boss-tier-policy-v67.ts',
   partyRead:'backend/online/party-event-read-route-v39.ts',
   guildProof:'backend/src/server/combat/guild-pve-reward-proof-v14.ts',
 };
@@ -54,6 +64,16 @@ function check(read,migrations){
   requireExportFalse('worldRuntime','WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE');
   requireExportFalse('worldMobile','WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE');
   requireExportFalse('worldErasure','WORLD_BOSS_V56_ERASURE_LIVE');
+  requireExportFalse('worldPrivacy','WORLD_BOSS_V58_PRIVATE_READ_LIVE');
+  requireExportFalse('worldTonic','WORLD_BOSS_V58_TONIC_LIVE');
+  requireExportFalse('worldChest','WORLD_BOSS_CHESTS_V58_RELEASED');
+  requireExportFalse('worldChestProof','WORLD_BOSS_CHEST_PROOF_V59_LIVE');
+  requireExportFalse('worldChestResolution','WORLD_BOSS_CHEST_RESOLUTION_V60_LIVE');
+  requireExportFalse('worldChestGateway','WORLD_BOSS_CHEST_GATEWAY_V61_LIVE');
+  requireExportFalse('worldChestEquipment','WORLD_BOSS_GATHERING_INSTANCE_V62_LIVE');
+  requireExportFalse('worldChestPg','WORLD_BOSS_CHEST_PRIVATE_PG_V63_LIVE');
+  requireExportFalse('worldChestGathering','WORLD_BOSS_GATHERING_LOOT_V64_LIVE');
+  requireExportFalse('worldChestTier','WORLD_BOSS_TIER_POLICY_V67_LIVE');
   requireExportFalse('partyRead','PARTY_EVENT_READ_ROUTE_V39_MOUNTED');
   requireExportFalse('guildProof','GUILD_PVE_V14_LIVE');
 
@@ -79,7 +99,7 @@ function check(read,migrations){
   // Never silently promote them to the executable Supabase migrations directory.
   if(migrations.some(name=>/^202611(?:13|15)\d{6}_party_event_/i.test(name)))
     failures.push('Hidden Party Event migrations must not be executable');
-  if(migrations.some(name=>/^202611(?:17|18)\d{6}_world_boss_/i.test(name)))
+  if(migrations.some(name=>/^202611(?:17|18|19)\d{6}_world_boss_/i.test(name)))
     failures.push('Hidden World Boss migrations must not be executable');
   return failures;
 }
@@ -96,6 +116,12 @@ function selfTest(){
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
     ['world-action-release',paths.worldAction,'WORLD_BOSS_V62_ACTION_HTTP_LIVE=false','WORLD_BOSS_V62_ACTION_HTTP_LIVE=true'],
+    ['world-private-reader-release',paths.worldPrivacy,'WORLD_BOSS_V58_PRIVATE_READ_LIVE=false','WORLD_BOSS_V58_PRIVATE_READ_LIVE=true'],
+    ['world-tonic-release',paths.worldTonic,'WORLD_BOSS_V58_TONIC_LIVE=false','WORLD_BOSS_V58_TONIC_LIVE=true'],
+    ['world-chest-claim-release',paths.worldChestGateway,'WORLD_BOSS_CHEST_GATEWAY_V61_LIVE=false','WORLD_BOSS_CHEST_GATEWAY_V61_LIVE=true'],
+    ['world-chest-pg-release',paths.worldChestPg,'WORLD_BOSS_CHEST_PRIVATE_PG_V63_LIVE=false','WORLD_BOSS_CHEST_PRIVATE_PG_V63_LIVE=true'],
+    ['world-chest-gear-release',paths.worldChestEquipment,'WORLD_BOSS_GATHERING_INSTANCE_V62_LIVE=false','WORLD_BOSS_GATHERING_INSTANCE_V62_LIVE=true'],
+    ['world-chest-tier-release',paths.worldChestTier,'WORLD_BOSS_TIER_POLICY_V67_LIVE=false','WORLD_BOSS_TIER_POLICY_V67_LIVE=true'],
     ['world-gate-release',paths.worldGate,'WORLD_BOSS_V63_GATE_ATTESTATION_LIVE=false','WORLD_BOSS_V63_GATE_ATTESTATION_LIVE=true'],
     ['world-runtime-release',paths.worldRuntime,'WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE=false','WORLD_BOSS_V64_PRIVATE_COMPOSITION_LIVE=true'],
     ['world-mobile-release',paths.worldMobile,'WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE=false','WORLD_BOSS_V65_MOBILE_ACTIONS_LIVE=true'],
@@ -115,7 +141,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects fifteen unsafe release regressions plus baseline');
+  console.log('PASS: hidden feature fence detects consolidated unsafe release regressions plus baseline');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

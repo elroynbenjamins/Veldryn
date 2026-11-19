@@ -10,6 +10,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
 import type {Language} from '../i18n/languages';
 import {accountDeletionText} from '../i18n/account-deletion';
+import {formatLocalizedDate} from '../i18n/translator';
 
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 
@@ -20,28 +21,32 @@ export function OnlineAccountDeletionPanel({language}:{language:Language}){
  const {session}=useAuthSession(),accountId=session?.user.id??'',linked=!!session&&!session.user.is_anonymous;
  const [expanded,setExpanded]=useState(false),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [status,setStatus]=useState<AccountDeletionRequestSnapshot|null>(null);
+ const [statusLoading,setStatusLoading]=useState(false),[statusReady,setStatusReady]=useState(false),[refreshSequence,setRefreshSequence]=useState(0);
  const accountRef=useRef(accountId);
  if(accountRef.current!==accountId){accountRef.current=accountId;}
- useEffect(()=>{setExpanded(false);setConfirmation('');setStatus(null);setBusy(false);setError('');},[accountId]);
+ useEffect(()=>{setExpanded(false);setConfirmation('');setStatus(null);setStatusLoading(false);setStatusReady(false);setBusy(false);setError('');setRefreshSequence(0);},[accountId]);
  useEffect(()=>{
   if(!expanded||!linked||!ONLINE_ACCOUNT_DELETION_REQUESTS_RELEASED)return;
   let active=true;
-  void readOnlineAccountDeletionRequest(accountId).then(result=>{if(active&&accountRef.current===accountId)setStatus(result);})
-   .catch(reason=>{if(active&&accountRef.current===accountId)setError(reason instanceof Error?reason.message:'Could not check deletion request.');});
+  setStatusLoading(true);setStatusReady(false);setError('');
+  void readOnlineAccountDeletionRequest(accountId)
+   .then(result=>{if(active&&accountRef.current===accountId){setStatus(result);setStatusReady(true);}})
+   .catch(reason=>{if(active&&accountRef.current===accountId)setError(reason instanceof Error?reason.message:'Could not check deletion request.');})
+   .finally(()=>{if(active&&accountRef.current===accountId)setStatusLoading(false);});
   return()=>{active=false;};
- },[expanded,linked,accountId]);
+ },[expanded,linked,accountId,refreshSequence]);
  const request=async()=>{
-  if(busy||!linked||!validAccountDeletionConfirmation(confirmation))return;
+  if(busy||!linked||!statusReady||!validAccountDeletionConfirmation(confirmation))return;
   setBusy(true);setError('');
   try{const next=await requestOnlineAccountDeletion(accountId,confirmation);if(accountRef.current===accountId){setStatus(next);setConfirmation('');}}
-  catch(cause){if(accountRef.current===accountId)setError(cause instanceof Error?cause.message:'Could not request deletion.');}
+  catch(cause){if(accountRef.current===accountId){setStatusReady(false);setError(cause instanceof Error?cause.message:'Could not request deletion. Check your request status before retrying.');}}
   finally{if(accountRef.current===accountId)setBusy(false);}
  };
  const cancel=async()=>{
-  if(busy||!linked)return;
+  if(busy||!linked||!statusReady)return;
   setBusy(true);setError('');
   try{const next=await cancelOnlineAccountDeletionRequest(accountId);if(accountRef.current===accountId)setStatus(next);}
-  catch(cause){if(accountRef.current===accountId)setError(cause instanceof Error?cause.message:'Could not withdraw request.');}
+  catch(cause){if(accountRef.current===accountId){setStatusReady(false);setError(cause instanceof Error?cause.message:'Could not withdraw request. Check your request status before retrying.');}}
   finally{if(accountRef.current===accountId)setBusy(false);}
  };
  const activeRequest=status?.status==='pending_review'||status?.status==='reviewing'||status?.status==='erasure_blocked';
@@ -65,15 +70,20 @@ export function OnlineAccountDeletionPanel({language}:{language:Language}){
      <GameButton title={a('Privacy & deletion support')} tone="secondary" onPress={()=>{void Linking.openURL(PRIVACY_POLICY_URL);}}/>
    </>:<>
      <Text style={s.body}>{a('Submitting a request does not delete your account immediately. Your account remains usable until an authorized review completes.')}</Text>
-     {activeRequest?<View style={s.statusBox}>
+     <View style={s.accountHint}><Text style={s.body}>{a('Signed-in VELDRYN account')}</Text><Text selectable style={s.accountIdentity}>{session?.user.email||a('Linked account')}</Text></View>
+     {!statusReady?<View style={s.statusBox}>
+       <Text accessibilityLiveRegion="polite" style={s.body}>{a(statusLoading?'Checking your deletion request status…':'We could not verify the latest request status. Refresh before submitting anything.')}</Text>
+       {!statusLoading&&<GameButton title={a('Refresh request status')} tone="secondary" onPress={()=>setRefreshSequence(value=>value+1)}/>}
+     </View>:activeRequest?<View accessibilityLiveRegion="polite" style={s.statusBox}>
        <Text style={s.status}>{a(status?.status==='pending_review'?'Deletion request received':status?.status==='reviewing'?'Deletion request under review':'Deletion request needs support review')}</Text>
+       {status?.requestedAtMs!==undefined&&<Text style={s.body}>{a('Requested on')}: {formatLocalizedDate(language,status.requestedAtMs,{dateStyle:'medium'})}</Text>}
        <Text style={s.body}>{a('Do not delete your character or local save to try to complete this request.')}</Text>
        {status?.status==='pending_review'&&<GameButton title={a('Withdraw deletion request')} tone="secondary" disabled={busy} loading={busy} onPress={()=>void cancel()}/>}
      </View>:<>
        <Text style={s.label}>{a('To request deletion, type DELETE ACCOUNT exactly.')}</Text>
        <GameTextInput value={confirmation} onChangeText={setConfirmation} editable={!busy} maxLength={40} autoCorrect={false} autoCapitalize="characters"
         accessibilityLabel={a('Type DELETE ACCOUNT to request online account deletion')} placeholder={ACCOUNT_DELETION_CONFIRMATION}/>
-       <GameButton title={a('Request online account deletion')} tone="danger" disabled={busy||!validAccountDeletionConfirmation(confirmation)} loading={busy} onPress={()=>void request()}/>
+       <GameButton title={a('Request online account deletion')} tone="danger" disabled={busy||!statusReady||!validAccountDeletionConfirmation(confirmation)} loading={busy} onPress={()=>void request()}/>
      </>}
      {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
    </>}
@@ -91,4 +101,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  error:{fontSize:12,lineHeight:18,color:C.bad},
  statusBox:{gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:8},
  status:{fontSize:13,fontWeight:'800',color:C.text},
+ accountHint:{gap:2,borderRadius:8,padding:9,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},
+ accountIdentity:{fontSize:12,fontWeight:'800',color:C.text},
  });}

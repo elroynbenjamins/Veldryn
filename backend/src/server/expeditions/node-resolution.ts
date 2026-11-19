@@ -97,7 +97,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
    const personalArtifacts=Math.min(3,personal?.artifacts.length??0);
    const relic= input.enduranceLootVersion===1?dungeonArtifactBonuses(state.artifacts,player.role,input.node.kind):{attack:1,defense:1,healing:1,haste:0,critChance:0};
    const attackMultiplier=(1+strikes*.05+fury*.075+roomBlessings*.012+sharedArtifacts*.018+personalBlessings*.025+personalArtifacts*.024)*relic.attack;
-   const defenseMultiplier=Math.max(.8,1+wards*.05+bulwark*(player.role==='tank'?.06:.025)+roomBlessings*.008+sharedArtifacts*.012+personalArtifacts*.018-curses*.035-fury*.025)*relic.defense;
+   const defenseMultiplier=Math.max(.8,1+wards*.05+bulwark*(player.role==='tank' ? .06 : .025)+roomBlessings*.008+sharedArtifacts*.012+personalArtifacts*.018-curses*.035-fury*.025)*relic.defense;
    return {...player,
     stats:{...player.stats,attackPower:player.stats.attackPower*attackMultiplier,defense:player.stats.defense*defenseMultiplier,
      healingPower:player.stats.healingPower*(1+harmony*.10)*relic.healing,

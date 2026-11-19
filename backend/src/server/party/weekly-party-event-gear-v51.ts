@@ -19,7 +19,7 @@ export type PartyGearEffectV51=
  |{kind:'stat';stat:PartyGearStatV51;valueBps:number}
  |{kind:'ability_momentum';abilityDamageBps:number;durationMs:number;internalCooldownMs:number}
  |{kind:'elite_execute';damageBps:number;enemyHpBelowBps:number}
- |{kind:'defensive_barrier';maxHpBps:number;durationMs:number;internalCooldownMs:number}
+ |{kind:'defensive_barrier';maxHpBps:number;hpBelowBps:number;durationMs:number;internalCooldownMs:number}
  |{kind:'echo_cooldown';procChanceBps:number;cooldownRefundBps:number;internalCooldownMs:number};
 
 export interface PartyGearBonusV51{
@@ -84,7 +84,7 @@ export const PARTY_EVENT_GEAR_SETS_V51:readonly PartyGearSetV51[]=[
   size:3,slots:['boots','gloves','cape'],
   bonuses:[
    {threshold:2,effects:[stat('maximum_hp',300)]},
-   {threshold:3,effects:[{kind:'defensive_barrier',maxHpBps:200,
+   {threshold:3,effects:[{kind:'defensive_barrier',maxHpBps:200,hpBelowBps:4000,
     durationMs:6000,internalCooldownMs:20000}]},
   ],
  },

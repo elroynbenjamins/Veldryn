@@ -18,6 +18,10 @@ on:
       - 'backend/src/server/combat/__tests__/world-boss-chest-proof-v59.ts'
       - 'backend/src/server/combat/world-boss-chest-resolution-v60.ts'
       - 'backend/src/server/combat/__tests__/world-boss-chest-resolution-v60.ts'
+      - 'backend/src/server/combat/world-boss-chest-settlement-v61.ts'
+      - 'backend/src/server/combat/__tests__/world-boss-chest-settlement-v61.ts'
+      - 'backend/src/server/combat/world-boss-gathering-instance-v62.ts'
+      - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/loot/event-chest-server-roll-v1.ts'
       - 'backend/src/server/loot/__tests__/event-chest-server-roll-v1.ts'
@@ -61,6 +65,8 @@ jobs:
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-proof-v59.js
       - name: Verify World Boss V60 1 percent settlement plans and gathering-only gear
         run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-resolution-v60.js
+      - name: Verify World Boss V61 exactly-once ledger, rollback, and V62 issued gear
+        run: node .event-chest-tests/server/combat/__tests__/world-boss-chest-settlement-v61.js
       - name: Verify server-only deterministic chest entropy and replay safety
         run: node .event-chest-tests/server/loot/__tests__/event-chest-server-roll-v1.js
       - name: Verify non-paying read-only Party/World chest panel states and collection
@@ -76,6 +82,9 @@ jobs:
           grep -q 'WORLD_BOSS_GATHERING_LOOT_V64_LIVE=false' src/server/combat/world-boss-gathering-loot-v64.ts
           grep -q 'WORLD_BOSS_CHEST_PROOF_V59_LIVE=false' src/server/combat/world-boss-chest-proof-v59.ts
           grep -q 'WORLD_BOSS_CHEST_RESOLUTION_V60_LIVE=false' src/server/combat/world-boss-chest-resolution-v60.ts
+          grep -q 'WORLD_BOSS_CHEST_GATEWAY_V61_LIVE=false' src/server/combat/world-boss-chest-settlement-v61.ts
+          grep -q 'WORLD_BOSS_GATHERING_INSTANCE_V62_LIVE=false' src/server/combat/world-boss-gathering-instance-v62.ts
+          test ! -f supabase/migrations/20261119_world_boss_chest_ledger_v61_review_only.sql
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
           grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts
           test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql

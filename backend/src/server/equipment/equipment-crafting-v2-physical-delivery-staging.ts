@@ -220,7 +220,7 @@ export function buildEquipmentV2StagingOnlineCommitCandidate(input:{
  authoritativeWalletGold:number;requestId:string;instanceId:string;
 }){
  // The existing online command hash uses sorted canonical object keys.
- const command={instanceId:input.instanceId,type:'equipment_v2_physical_delivery'};
+ const command={args:{instanceId:input.instanceId},type:'equipment_v2_physical_delivery'};
  const canonical=JSON.stringify(command);
  const requestHash=createHash('sha256').update(canonical).digest('hex');
  const response={

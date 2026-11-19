@@ -1,0 +1,43 @@
+name: Equipment 2.0 T1-T4 Expansion Review
+
+on:
+  pull_request:
+    paths:
+      - 'docs/equipment-2-0/**'
+      - 'tools/audit-equipment-v2-expansion.mjs'
+      - 'tools/test-equipment-v2-expansion.mjs'
+      - 'tools/test-equipment-v2-exclusive-source.mjs'
+      - 'backend/src/server/equipment/equipment-v2-exclusive-acquisition-policy.mjs'
+      - 'apps/mobile/src/content/equipment-v2-catalog.ts'
+      - 'apps/mobile/src/content/equipment-v2-armaments.ts'
+      - 'apps/mobile/src/core/equipment-crafting-v2-foundation.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-manifest.ts'
+      - '.github/workflows/equipment-v2-expansion-review.yml'
+  push:
+    paths:
+      - 'docs/equipment-2-0/**'
+      - 'tools/audit-equipment-v2-expansion.mjs'
+      - 'tools/test-equipment-v2-expansion.mjs'
+      - 'tools/test-equipment-v2-exclusive-source.mjs'
+      - 'backend/src/server/equipment/equipment-v2-exclusive-acquisition-policy.mjs'
+      - 'apps/mobile/src/content/equipment-v2-catalog.ts'
+      - 'apps/mobile/src/content/equipment-v2-armaments.ts'
+      - 'apps/mobile/src/core/equipment-crafting-v2-foundation.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-manifest.ts'
+      - '.github/workflows/equipment-v2-expansion-review.yml'
+
+jobs:
+  validate-hidden-eq2-expansion:
+    name: Audit catalog, source restrictions and expansion coverage
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare 57 proposed items against real server/client hidden catalogs
+        run: node tools/audit-equipment-v2-expansion.mjs
+      - name: Source, tier, stat and rare-blueprint regression tests
+        run: node --test tools/test-equipment-v2-expansion.mjs tools/test-equipment-v2-exclusive-source.mjs

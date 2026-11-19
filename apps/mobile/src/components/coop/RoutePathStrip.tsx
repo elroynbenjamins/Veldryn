@@ -30,10 +30,12 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
   const nextRoom=Math.min(cleared+1,path.totalDepth);
   const threatTier=Math.min(7,Math.floor((nextRoom-1)/7)+1);
   const nextBossAt=Math.min(path.totalDepth-1,checkpointAvailable?cleared:Math.ceil((cleared+1)/7)*7);
+  const checkpoints=Math.max(1,Math.ceil((path.totalDepth-1)/7));
+  const segment=Math.min(checkpoints,Math.max(1,Math.ceil(Math.max(cleared,1)/7)));
   return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(cleared,path.totalDepth)}} accessibilityLabel={st('Route progress: room {current} of {total}',{current:Math.min(cleared+1,path.totalDepth),total:path.totalDepth})}>
     <View style={s.header}><Text style={s.label}>{st('ENDURANCE ROUTE')} · {st('Threat')} {threatTier}</Text><Text style={s.counter}>{st('Room')} {nextRoom}</Text></View>
     <View style={s.strip}>{Array.from({length:7},(_,index)=><View key={index} style={[s.enduranceDot,index<completedThisSegment?s.visitedDot:s.futureDot]}/>)}</View>
-    <Text style={s.bossLegend}>{finalBossAvailable?st('Final boss · Complete the expedition'):checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text>
+    <View style={s.legendRow}><Text style={s.bossLegend}>{finalBossAvailable?st('Final boss · Complete the expedition'):checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text><Text style={s.segmentMeta}>{segment}/{checkpoints}</Text></View>
    </View>;
  }
  const steps=Array.from({length:path.totalDepth},(_,index)=>index);
@@ -62,7 +64,9 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
 
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  container:{gap:6,paddingVertical:8,paddingHorizontal:coopSpacing.sm,borderWidth:1,borderColor:C.goldDim,borderRadius:12,backgroundColor:C.surface},
- header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},headerRight:{flexDirection:'row',alignItems:'center',gap:10},bossLegend:{fontSize:9,lineHeight:13,color:C.gold,fontWeight:'700',letterSpacing:.3},
+ legendRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ segmentMeta:{fontSize:10,lineHeight:14,color:C.textMuted,fontWeight:'800'},
+ header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},headerRight:{flexDirection:'row',alignItems:'center',gap:10},bossLegend:{fontSize:10,lineHeight:14,color:C.gold,fontWeight:'700',letterSpacing:.2,flexShrink:1},
  label:{...coopTypography.meta,color:C.textMuted,fontWeight:'800',letterSpacing:.8,fontSize:10},
  counter:{...coopTypography.meta,color:C.gold,fontWeight:'800'},
  strip:{flexDirection:'row',alignItems:'center',gap:0},

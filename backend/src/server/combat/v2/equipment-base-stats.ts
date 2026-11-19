@@ -18,6 +18,15 @@ export interface EquipmentBaseDefinitionV2{
   readonly itemId:string;
   readonly tier:'T1'|'T2'|'T3'|'T4'|'T5';
   readonly slot:GearSlotV2;
+  /**
+   * Unscaled authored base stats only. A frozen crafting receipt that already
+   * contains its own rarity/quality multipliers CANNOT enter this resolver.
+   * Omitted marker is allowed for historical synthetic fixtures, not proof
+   * that a live crafted item is safe to import.
+   */
+  readonly statSource?:'authored-unscaled-v2'|'craft-frozen-pre-scaled-v2';
+  readonly rarityAndQualityAlreadyApplied?:boolean;
+  readonly sourceSchema?:string;
   /** Already includes the tier, not any rarity/quality bonuses. */
   readonly primaryStats:Readonly<Partial<Record<EquipmentBaseStatKeyV2,number>>>;
 }
@@ -110,6 +119,19 @@ export function resolveVerifiedEquipmentBaseV2(
   if(!def||def.itemId!==entry.itemId||def.slot!==slot||
     def.tier!==entry.tier||!/^T[1-5]$/.test(def.tier))
     throw Error('combat_v2_invalid_authoritative_base_definition');
+  // Equipment/Crafting 2.0 may persist FINAL rolled base stats, which this
+  // authoritative resolver would otherwise multiply a second time.
+  // Never infer the raw authored base from a pre-scaled crafting receipt.
+  if(def.statSource==='craft-frozen-pre-scaled-v2'||
+     def.rarityAndQualityAlreadyApplied===true||
+     def.sourceSchema==='eq2-cv2-exact-source-v1')
+    throw Error('combat_v2_crafting_pre_scaled_item_requires_exact_adapter');
+  if(def.statSource!==undefined&&def.statSource!=='authored-unscaled-v2'||
+     def.rarityAndQualityAlreadyApplied!==undefined&&
+       def.rarityAndQualityAlreadyApplied!==false||
+     def.sourceSchema!==undefined&&def.sourceSchema!=='authored-unscaled-v2')
+    throw Error('combat_v2_unapproved_equipment_source_provenance');
+
   if(!Number.isSafeInteger(entry.quality)||entry.quality<0||entry.quality>100)
     throw Error('combat_v2_invalid_item_quality');
   const rarity=policy.rarityMultipliers[entry.rarity];

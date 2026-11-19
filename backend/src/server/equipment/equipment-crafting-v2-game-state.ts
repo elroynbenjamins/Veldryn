@@ -160,8 +160,13 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  // successful claims cannot each promise the same last pouch/Inventory slot.
  // These receipts are metadata only; nothing is physically delivered.
  const storageReservations=[...(metadata.storageReservations??[])];
+ // A prior claim's original slot is freed if its copy was moved or equipped.
+ // Read only verified current shadow custody; do not regrant V33 space.
+ const occupied=readEquipmentV2VirtualCustody(
+  metadata.items,metadata.storageReservations??[],metadata.custodyReceipts??[],
+ );
  const planned=command.kind==='claim'&&plan.createdItem
-  ?reserveEquipmentV2HiddenClaim(next,accountId,plan.createdItem,storageReservations):null;
+  ?reserveEquipmentV2HiddenClaim(next,accountId,plan.createdItem,storageReservations,occupied):null;
  if(planned)storageReservations.push(planned.reservation);
  const updated:V2HiddenGameMetadata={
   schemaVersion:'eq2-hidden-game-state-v1',

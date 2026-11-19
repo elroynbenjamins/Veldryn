@@ -6,7 +6,7 @@ import {createWorldBossChestPrivatePgV63,createPinnedWorldBossPgDriverV63,
 import {worldBossCatalogTierUnlocksV67,worldBossTierForVerifiedAccountLevelV67}
  from '../world-boss-tier-policy-v67';
 import {deriveServerChestRollsV1} from '../../loot/event-chest-server-roll-v1';
-function check(v:unknown,msg:string):asserts v{
+function check(v:unknown,msg:string):void{
  if(!v)throw Error('world_boss_v63_test:'+msg);
 }
 async function rejects(fn:()=>Promise<unknown>|unknown,code:string){
@@ -29,12 +29,6 @@ for(let i=1;i<tiers.length;i++){
   highestOwnedCharacterLevel:tiers[i].minLevel-1})===tiers[i-1].tier,
   'no_early_tier_'+i);
 }
-await rejects(()=>worldBossTierForVerifiedAccountLevelV67({
- highestOwnedCharacterLevel:0}),'invalid_verified_level');
-await rejects(()=>worldBossTierForVerifiedAccountLevelV67({
- highestOwnedCharacterLevel:10,
- unlocks:[...tiers.slice(0,4),tiers[3],...tiers.slice(5)],
-}),'untrusted_tier_policy');
 function secretFor(hit:boolean){
  for(let i=0;i<6000;i++){
   const secret=createHash('sha256').update('world-boss-v63-pg-fixture-'+i).digest();
@@ -181,6 +175,12 @@ async function validatePinnedDriver(){
   'pinned_failure_rolls_back_and_releases');
 }
 async function run(){
+ await rejects(()=>worldBossTierForVerifiedAccountLevelV67({
+  highestOwnedCharacterLevel:0}),'invalid_verified_level');
+ await rejects(()=>worldBossTierForVerifiedAccountLevelV67({
+  highestOwnedCharacterLevel:10,
+  unlocks:[...tiers.slice(0,4),tiers[3],...tiers.slice(5)],
+ }),'untrusted_tier_policy');
  await validatePinnedDriver();
  await rejects(()=>createWorldBossChestPrivatePgV63(new PgFixture(),
   ports(new PgFixture())),'hidden_adapter_disabled');
@@ -211,7 +211,7 @@ async function run(){
  },true),'incomplete_stored_grant');
  pg.data.grants.add(source+':gem_dust');
  const frozenItem=pg.data.items.get(source);
- check(frozenItem,'stored_item_exists');
+ if(!frozenItem)throw Error('world_boss_v63_test:stored_item_exists');
  pg.data.items.delete(source);
  await rejects(()=>claimWorldBossChestV61(selection,{
   authenticate:async()=>account,secret:miss,store,

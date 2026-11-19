@@ -12,6 +12,7 @@ declare
  v_nodes jsonb;
  v_kind text;
  v_base_marks integer;
+ v_generator text;
  v_paid_marks integer;
  v_already_paid integer;
  v_member record;
@@ -19,7 +20,8 @@ declare
 begin
  if not new.success or new.result_json->>'kind' is distinct from 'combat' then return new; end if;
 
- select ps.state_json #> '{pending,run,graph,nodes}' into v_nodes
+ select ps.state_json #> '{pending,run,graph,nodes}', run.route_graph_json->>'generatorVersion'
+ into v_nodes, v_generator
  from public.coop_run_private_state as ps
  join public.expedition_runs as run on run.id=ps.run_id
  where ps.run_id=new.run_id and run.coop_mode in ('qmode','live');
@@ -44,7 +46,11 @@ begin
    where l.account_id=v_member.account_id and l.run_id=new.run_id
      and l.currency='expedition_mark' and l.reason='coop_combat_room';
 
-   v_paid_marks:=least(v_base_marks,greatest(0,25-v_already_paid));
+   -- Grandfather in-progress pre-Endurance runs; only the new shared queue
+   -- adopts the 25-Mark combat cap. Old routes keep their original payout.
+   v_paid_marks:=case when v_generator like '%-endurance-v1'
+      then least(v_base_marks,greatest(0,25-v_already_paid))
+      else v_base_marks end;
    if v_paid_marks=0 then continue; end if;
 
    v_ledger_id:=null;
@@ -81,6 +87,7 @@ declare
  v_normal integer;
  v_elite integer;
  v_partial integer;
+ v_generator text;
 begin
  if v_account_id is null then raise exception 'AUTH_REQUIRED';end if;
  select coalesce(sum(l.amount),0)::integer,
@@ -98,9 +105,12 @@ begin
  where l.account_id=v_account_id and l.run_id=p_run_id
    and l.reason='coop_combat_room' and l.currency='expedition_mark';
  v_partial:=greatest(0,v_total-v_normal*3-v_elite*5);
+ select run.route_graph_json->>'generatorVersion' into v_generator
+ from public.expedition_runs as run where run.id=p_run_id;
 
  return pg_catalog.jsonb_build_object(
-  'total',v_total,'normal',v_normal,'elite',v_elite,'partial',v_partial,'cap',25
+  'total',v_total,'normal',v_normal,'elite',v_elite,'partial',v_partial,
+  'cap',case when v_generator like '%-endurance-v1' then 25 else null end
  );
 end;
 $function$;

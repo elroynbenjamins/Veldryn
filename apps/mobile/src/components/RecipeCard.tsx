@@ -1,5 +1,5 @@
 import {useGameplayText} from '../i18n/gameplay';
-import {craftingDetailText,craftingDetailContent,type craftingDetailRows} from '../i18n/crafting-details';
+import {craftingDetailText,craftingDetailContent,cookingMealEffectText,type craftingDetailRows} from '../i18n/crafting-details';
 import {professionActionPace} from '../core/profession-action-pace';
 import {mealBonusDef} from '../core/meal-buffs';
 import {cookingRecipeXpPreview} from '../core/cooking-xp-preview';
@@ -48,7 +48,7 @@ export function RecipeCard({state,recipe,status,onCraft,onNavigate,onCraftPrereq
  // The recipe browser has already calculated availability; avoid duplicate checks.
  const effectiveStatus=status;
  const queue=timed?equipmentCraftQueueModel(state,Date.now()):undefined,duration=timed?equipmentCraftDurationSeconds(state,recipe.id):0,forgeFull=timed&&queue!.freeSlots<=0&&queue!.freeWaiting<=0,willWait=timed&&queue!.freeSlots<=0&&!forgeFull,craftReady=effectiveStatus.ready&&!forgeFull;
- const mealLabel=meal?ct(meal.kind==='gathering_speed'?'+{value}% Gathering speed':meal.kind==='crafting_speed'?'+{value}% Crafting speed':meal.kind==='combat_xp'?'+{value}% Combat XP':'+{value}% Non-combat skill speed',{value:meal.percent}):undefined;
+ const mealLabel=meal?cookingMealEffectText(language,meal):undefined;
  const f=(value:number)=>formatGameNumber(value,state.settings.numberMode,state.settings.language),skillLevel=state.skills.find(row=>row.skillId===recipe.skillId)?.level??1,characterLevel=state.character?.level??1,effectiveXpPerCraft=professionActionPace(state,recipe,alchemy||processing?'batch':timed?'forge':'instant').xpPerAction;
  const paceCycle=alchemy||processing?professionActionPace(state,recipe,'batch').cycleSeconds:timed?duration:0,pace=paceCycle>0?craftingPaceProjection(state,recipe,paceCycle,effectiveXpPerCraft,recipe.output.quantity*mastery.yield):undefined;
  const skillLocked=skillLevel<recipe.level,characterLocked=characterLevel<(recipe.characterLevel??1),multiplier=1,effectiveXp=Math.floor(effectiveXpPerCraft+1e-9);

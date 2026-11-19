@@ -3,7 +3,7 @@ import {join} from 'node:path';
 import {RECIPES} from '../src/content/skills';
 import {createCharacter,newGame} from '../src/core/game';
 import {professionActionPace} from '../src/core/profession-action-pace';
-import {startProcessingBatch,processingRecipeDef} from '../src/core/processing';
+import {startProcessingBatch,processingRecipeDef,previewProcessingReward} from '../src/core/processing';
 import {mealBonusDef} from '../src/core/meal-buffs';
 import type {GameState} from '../src/core/types';
 
@@ -25,6 +25,8 @@ for(const recipe of cooking.filter(recipe=>!!processingRecipeDef(recipe.id)).sli
  const reserved=startProcessingBatch(state,recipe.id,1,now).activity?.processing;
  ok(!!reserved,'Cooking recipe '+recipe.id+' should reserve one processing batch');
  equal(Math.floor((reserved?.xpPerBatch??0)+1e-9),displayedXp,recipe.id+' shown XP should use the same effective pace as the gameplay batch');
+ const earned=previewProcessingReward(startProcessingBatch(state,recipe.id,1,now),reserved!.cycleSeconds).xp;
+ equal(earned,displayedXp,recipe.id+' displayed Cooking XP must equal the actual one-batch XP settlement');
  ok(displayedXp>=0,recipe.id+' XP cannot be negative');
  tested++;
 }
@@ -41,6 +43,7 @@ ok(component.includes("recipe.skillId==='cooking'?<Text style={s.cookingXp}"),
  'Collapsed Cooking cards must show XP without opening recipe details');
 ok(component.includes("ct('+{xp} Cooking XP per batch'"),
  'Cooking XP value must be labeled as per-batch, not generic XP');
+ok(component.includes("meal?<Text style={s.mealBonusCompact}>"),'Collapsed cards must reveal improved special-meal buffs');
 ok(component.includes("meal?<Text style={s.mealBonus}>"),
  'Expanded Cooking recipes must display food utility buffs');
 ok(translations.includes("' +{xp} Cooking XP per batch'")||translations.includes("'+{xp} Cooking XP per batch'"),

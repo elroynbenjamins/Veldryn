@@ -170,13 +170,15 @@ begin
   v_offer_three:=(v_result->>'offerId')::uuid;
   update private.market_custody_holds_v1
     set expires_at=now()-interval '1 second' where hold_id=v_hold;
-  if private.market_queue_due_returns_v2(10)<>1
-    or private.market_queue_due_returns_v2(10)<>0
+  v_i:=private.market_queue_due_returns_v2(10);
+  if v_i<>1
     or (select status from private.market_sale_offers_v3
         where offer_id=v_offer_three)<>'cancelled'
     or (select count(*) from private.market_return_deliveries_v2
         where source_hold_id=v_hold and quantity=100 and status='pending')<>1
   then raise exception 'market_seven_day_expiry_return_invalid';end if;
+  if private.market_queue_due_returns_v2(10)<>0
+  then raise exception 'market_seven_day_expiry_repeat_delivery';end if;
 
   -- 800 resource units are accounted for: 600 purchased + 200 pending return.
   if (select coalesce(sum(quantity),0) from private.market_purchase_deliveries_v3

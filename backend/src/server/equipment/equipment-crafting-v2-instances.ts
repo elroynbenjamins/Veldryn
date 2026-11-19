@@ -1,4 +1,5 @@
 import {V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,v2ServerPiece,v2ServerRecipeAndPiece} from './equipment-crafting-v2-manifest';
+import {v2EquipmentFamilyCompatible,type V2EquipmentFamily} from './equipment-crafting-v2-weapon-families';
 import {
  EQUIPMENT_V2_SERVER_RULES_VERSION,V2_SERVER_RARITY_BANDS,V2_SERVER_RARITY_BASE_MULTIPLIER,V2_SERVER_AFFIX_RANGES,
  type V2DraftRollOutcome,type V2Affix,type V2Slot,type V2Tier,
@@ -14,7 +15,7 @@ export interface V2ExactEquipmentTemplate {
  rulesVersion:typeof EQUIPMENT_V2_SERVER_RULES_VERSION;
  pieceId:string;name:string;tier:V2Tier;slot:V2Slot;
  profile:V2ServerPiece['profile'];role:V2ServerPiece['role'];
- material:string;setId?:string;classRestriction?:string;
+ material:string;setId?:string;originClass?:string;equipmentFamily?:V2EquipmentFamily;classRestriction?:string;
  hands?:'one'|'two'|'dual';
  rarity:V2DraftRollOutcome['rarity'];quality:number;
  baseStats:V2ExactBaseStats;
@@ -93,7 +94,9 @@ export function v2ServerCreateExactTemplate(piece:V2ServerPiece,roll:V2DraftRoll
   pieceId:piece.id,name:piece.name,tier:piece.tier,slot:piece.slot,
   profile:piece.profile,role:piece.role,material:piece.material,
   ...(piece.setId?{setId:piece.setId}:{}),
-  ...(piece.classRestriction?{classRestriction:piece.classRestriction}:{}),
+  ...(piece.originClass?{originClass:piece.originClass}:{}),
+   ...(piece.equipmentFamily?{equipmentFamily:piece.equipmentFamily}:{}),
+   ...(piece.classRestriction?{classRestriction:piece.classRestriction}:{}),
   ...(piece.hands?{hands:piece.hands}:{}),
   rarity:roll.rarity,quality:roll.quality,baseStats:v2ServerBaseStatProjection(piece,roll.baseStatMultiplier),
   affixes:roll.affixes.map(a=>({...a})),gemSlots:[],enhancementRank:0,
@@ -109,6 +112,7 @@ export function v2ServerExactTemplateConsistent(item:V2ExactEquipmentTemplate){
   ||item.slot!==piece.slot||item.tier!==piece.tier||item.profile!==piece.profile
   ||item.role!==piece.role||item.material!==piece.material||item.name!==piece.name
   ||item.setId!==piece.setId||item.classRestriction!==piece.classRestriction
+   ||item.originClass!==piece.originClass||item.equipmentFamily!==piece.equipmentFamily
   ||item.hands!==piece.hands
   /** Until verified enhancement/socket mutation rules exist, ONLY the freshly
    * minted zero-enhancement, unsocketed snapshot can pass this draft preflight.
@@ -147,6 +151,10 @@ export function v2ServerEquipPreview(input:V2EquipIntent){
  if(!Number.isSafeInteger(characterLevel)||characterLevel<1)return {allowed:false,reason:'invalid_character_level',replace:[] as string[]};
  if(newItem.classRestriction&&newItem.classRestriction!==characterClass)
   return {allowed:false,reason:'wrong_class',replace:[] as string[]};
+ // Cross-class weapons obey the server-owned family matrix, not themed origin or role.
+ if((newItem.slot==='weapon'||newItem.slot==='offhand')&&
+   (!newItem.equipmentFamily||!v2EquipmentFamilyCompatible(characterClass,newItem.equipmentFamily)))
+  return {allowed:false,reason:'incompatible_weapon_family',replace:[] as string[]};
  const minLevels:Readonly<Record<V2Tier,number>>={1:2,2:12,3:26,4:40};
  if(characterLevel<minLevels[newItem.tier])
   return {allowed:false,reason:'level_locked',replace:[] as string[]};

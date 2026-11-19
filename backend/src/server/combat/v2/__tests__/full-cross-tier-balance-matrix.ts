@@ -55,14 +55,16 @@ const resultRows:{
 let authored=0,t1Gaps=0,deterministicChecks=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  const role=CLASS_ROLES_V2[classId];
- const selectedSkills=SKILL_IDENTITIES_V2.filter(skill=>skill.classId===classId).slice(0,2);
- assert.equal(selectedSkills.length,2);
  const specs=SPECIALIZATIONS_V2.filter(spec=>spec.classId===classId);
  assert.equal(specs.length,2);
  for(const spec of specs){
   roleCounts[role]++;
   for(const tier of tiers){
    const level=tier*10;
+   const selectedSkills=SKILL_IDENTITIES_V2.filter(skill=>
+    skill.classId===classId&&skill.unlockLevel<=level).slice(0,2);
+   assert.ok(selectedSkills.length>=1,
+    'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;
    const actor=launchPlayer(CLASS_NAMES_V2[classId],level);
    const classStats={...actor.stats};
@@ -77,7 +79,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      actor,verified:{classId,level,ownedInstanceIds:new Set([instanceId])},
      selected:{specializationId:spec.id,equipment:{helmet:instanceId},
       activeSkills:selectedSkills.map(s=>({skillId:s.id,variantId:s.variants[0].id})),
-      talentRanks:{},signaturePassiveIds:[],capstoneId:spec.capstoneId},
+      talentRanks:{},signaturePassiveIds:[],capstoneId:level>=50?spec.capstoneId:null},
      ownedItemsById:{[instanceId]:{
       instanceId,slot:'helmet',tier:gearTier,eligibleRoles:[role],requiredLevel:1,
      }},setsById:{},

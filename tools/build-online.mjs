@@ -33,11 +33,19 @@ for(const bundle of bundles){
  prepared.push({target:path.join(root,bundle.output),
   contents:result.outputFiles[0].contents,audit});
 }
-// Write only after every private-import boundary passed. The optional temp-file
-// staging avoids publishing a truncated function when a process is interrupted.
-for(const [index,item] of prepared.entries()){
- const temp=item.target+'.combat-v2-isolation-'+process.pid+'-'+index+'.tmp';
- await fs.writeFile(temp,item.contents);
- await fs.rename(temp,item.target);
- console.log('Legacy Edge bundle verified:',item.audit);
+// Stage BOTH outputs before replacing EITHER production artifact. A failed
+// compilation or disk write cannot leave only one newly generated function.
+const staged=[];
+try{
+ for(const [index,item] of prepared.entries()){
+  const temp=item.target+'.combat-v2-isolation-'+process.pid+'-'+index+'.tmp';
+  await fs.writeFile(temp,item.contents);
+  staged.push({...item,temp});
+ }
+ for(const item of staged){
+  await fs.rename(item.temp,item.target);
+  console.log('Legacy Edge bundle verified:',item.audit);
+ }
+}finally{
+ await Promise.all(staged.map(item=>fs.rm(item.temp,{force:true})));
 }

@@ -2,6 +2,7 @@ import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
 import {levelFromXp,totalXpAtLevel} from '../../../../apps/mobile/src/core/progression';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import {verifyEquipmentV2HiddenLedger,proposeEquipmentV2ClaimCustody} from './equipment-crafting-v2-delivery';
 import {planEquipmentV2AtomicCommit,type V2AtomicCommitPlan} from './equipment-crafting-v2-commit-plan';
 import {
  type V2DraftCommand,type V2DraftContext,type V2DraftItem,type V2DraftJob,
@@ -42,7 +43,8 @@ function requireHidden(s:GameState){
  if(stored.schemaVersion!=='eq2-hidden-game-state-v1'||!Array.isArray(stored.jobs)
   ||!Array.isArray(stored.items)||!Array.isArray(stored.receipts)
   ||!Array.isArray(stored.skillAwards))fail('corrupted_hidden_v2_metadata');
- return structuredClone(stored);
+ const checked=structuredClone(stored);
+ return checked;
 }
 function takeMaterial(stacks:ItemStack[],id:string,quantity:number){
  if(!safe(quantity))fail('invalid_material_debit');
@@ -110,6 +112,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  if(readiness.blocked||!readiness.projection)
   fail('v2_gameplay_not_ready:'+readiness.blockers.join(','));
  const metadata=requireHidden(state);
+ verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
  const previous={...readiness.projection,
   jobs:metadata.jobs,equipment:metadata.items,
   receipts:metadata.receipts,skillAwards:metadata.skillAwards,
@@ -117,7 +120,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  const ctx:V2DraftContext={accountId,characterId:onlineCharacterId,nowMs,
   randomId:input.randomId,randomInt:input.randomInt};
  const {plan,resolution}=planEquipmentV2AtomicCommit(previous,command,ctx);
- if(plan.replayed)return {state,plan,response:plan.response,replayed:true};
+ if(plan.replayed)return {state,plan,response:plan.response,replayed:true,delivery:null};
  if(plan.needsLegacyCoexistenceAdapter!==true)fail('missing_legacy_coexistence_guard');
  let next:GameState=structuredClone(state);
  if(command.kind==='start'){
@@ -137,10 +140,16 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
   receipts:resolution.next.receipts,skillAwards:resolution.next.skillAwards,
  };
  next.account={...next.account,equipmentV2Hidden:updated};
+ verifyEquipmentV2HiddenLedger(accountId,updated.jobs,updated.items,updated.receipts,updated.skillAwards);
+ // A claim always retains its immutable exact copy in the hidden ledger.
+ // This proposal ONLY identifies future physical destination/capacity; no
+ // EQ2 item is inserted into the public V33 catalogue or its storage.
+ const delivery=command.kind==='claim'&&plan.createdItem
+  ?proposeEquipmentV2ClaimCustody(next,plan.createdItem):null;
  // CAS is still owned by the existing online gameplay service. Never change
  // GameState.version (schema 6/11) to the server's online sequence number.
  if(next.version!==state.version)fail('game_schema_version_corrupted');
- return {state:next,plan,response:plan.response,replayed:false};
+ return {state:next,plan,response:plan.response,replayed:false,delivery};
 }
 /** No real gameplay command uses this. Exposing it later requires explicit
  * coordinated Equipment/Skills/Enemies 2.0 authorization and staging QA.

@@ -14,6 +14,15 @@ prog=p('UNIT_004',20,2,7);const first=selectCompanionTechnique(prog,'UNIT_004_EX
 const beforeSwitch=buildOwnedCompanionCombatant(first.progress,{mode:'companion_trial'});const switched=selectCompanionTechnique(first.progress,'UNIT_004_RELENTLESS',first.economy);eq(switched.progress.selectedTechniqueId,'UNIT_004_RELENTLESS','Technique switch did not replace old selection');eq(switched.economy.gold,first.economy.gold,'Technique switch should not cost Gold');ok(switched.economy.companionEssence<first.economy.companionEssence,'Technique switch did not deduct Companion Essence');const afterSwitch=buildOwnedCompanionCombatant(switched.progress,{mode:'companion_trial'});ok(afterSwitch.abilities[0].cooldownMs<beforeSwitch.abilities[0].cooldownMs,'Technique cooldown effect missing from combat snapshot');ok(afterSwitch.abilities[0].tags?.some(x=>x.startsWith('technique:cooldown')),'Technique effect metadata missing');const poor={...first.economy,gold:0,companionEssence:0},poorJson=JSON.stringify(poor);throws(()=>selectCompanionTechnique(first.progress,'UNIT_004_RELENTLESS',poor),'Technique switched without resources');eq(JSON.stringify(poor),poorJson,'Failed Technique switch mutated resources');
 // 40-44 duplicate conversion by rarity, always Companion Essence and never Pet Essence.
 const ids:[string,'standard'|'rare'|'elite'|'prestige'][]=[['UNIT_001','standard'],['UNIT_004','rare'],['UNIT_007','elite'],['UNIT_012','prestige']];for(const [id,rarity] of ids){const owned={[id]:p(id)};const r=grantCombatCompanionOrConvertDuplicate({companionId:id,owned,companionEssence:10});ok(r.duplicate,`${rarity} duplicate not detected`);eq(r.convertedEssence,COMPANION_DUPLICATE_ESSENCE[rarity],`${rarity} duplicate conversion wrong`);ok(!('petEssence' in (r as any)),'Duplicate used Pet Essence');}
+// XP at a temporary ascension cap remains banked, with a hard lifetime ceiling.
+const gate=p('UNIT_001',10,0,6),bank=awardCompanionXpServer({progress:gate,amount:1000,companionEssence:100,serverNowMs:Date.UTC(2026,8,11)});
+eq(bank.progress.level,10,'Ascension-gated companion exceeded its level cap');
+eq(bank.progress.bankedXp,1000,'Ascension-gated XP was discarded');
+eq(bank.companionEssence,100,'Ascension-gated XP must not convert to Essence');
+const repeated=awardCompanionXpServer({progress:bank.progress,amount:1000,companionEssence:100,serverNowMs:Date.UTC(2026,8,11)});
+eq(repeated.progress.bankedXp,2000,'Repeated awards did not accumulate in the bank');
+const lifetimeBank=awardCompanionXpServer({progress:repeated.progress,amount:10000000,companionEssence:100,serverNowMs:Date.UTC(2026,8,11)});
+ok((lifetimeBank.progress.bankedXp??0)<10000000&&lifetimeBank.droppedXp>0,'Banked XP exceeded the remaining lifetime maximum');
 // 45 max-level XP overflow converts at 10%.
 const max=p('UNIT_001',20,1,10),now=Date.UTC(2026,8,11);const overflow=awardCompanionXpServer({progress:max,amount:1000,companionEssence:0,serverNowMs:now});eq(overflow.convertedEssence,100,'Max XP overflow rate wrong');
 // 46 weekly cap.

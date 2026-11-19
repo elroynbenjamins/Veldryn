@@ -23,6 +23,7 @@ import {dungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
 import {DungeonCombatStage} from './DungeonCombatStage';
+import {preloadDungeonCombatArt} from '../../core/dungeon-combat-preload';
 import {CombatTheaterModal} from '../CombatTheaterModal';
 import {CoopLiveChatBar} from './CoopLiveChatBar';
 import {DungeonDisclosure} from './DungeonPreparation';
@@ -109,6 +110,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   const [enteringCombat,setEnteringCombat]=useState(false);
   const [battlePresentationReady,setBattlePresentationReady]=useState(false);
   const [entryCombatArchetypes,setEntryCombatArchetypes]=useState<Array<{id:string;label:string}>>([]);
+  const [entryCombatEnemies,setEntryCombatEnemies]=useState<Array<{name:string;boss:boolean}>>([]);
   const [entryCombatNodeId,setEntryCombatNodeId]=useState<string|undefined>();
   const [entryCombatKind,setEntryCombatKind]=useState<string|undefined>();
   const [enteringUtility,setEnteringUtility]=useState<{nodeId:string;kind:string;stateVersion?:number;decisionId?:string}>();
@@ -121,7 +123,10 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   // Live voting remains on its existing timer and does not await acknowledgement.
   const reviewingRoom=run.mode==='qmode'&&run.phase==='awaiting_choice'&&!!run.lastRoomOutcome&&!['merchant','merchant_purchase'].includes(run.lastRoomOutcome.kind)&&reviewedRoomNodeId!==run.lastRoomOutcome.nodeId;
   useEffect(()=>setCompanionMemberId(undefined),[run.runId]);
-  useEffect(()=>{setBattlePresentationReady(false);setEntryCombatArchetypes([]);},[run.runId]);
+  useEffect(()=>{setBattlePresentationReady(false);setEntryCombatArchetypes([]);setEntryCombatEnemies([]);},[run.runId]);
+  // Warm only the server-revealed room choices, including the party's class art.
+  // Native decoding can overlap the time spent reviewing the route.
+  useEffect(()=>{if(run.phase==='awaiting_choice')preloadDungeonCombatArt(run.options,run.roleSlots);},[run.phase,run.options,run.roleSlots]);
   useEffect(()=>{setEnteringUtility(undefined);},[run.runId]);
   const companionSlot=run.roleSlots.find(slot=>(slot.memberId??slot.name)===companionMemberId&&slot.companionId);
   const companionInfo=companionSlot?.companionId?combatCompanionDef(companionSlot.companionId):undefined;
@@ -148,6 +153,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
     enterFromNode.current=run.lastCombat?.nodeId;
     setEntryCombatNodeId(nodeId);setEntryCombatKind(option?.kind);
     setEntryCombatArchetypes(option?.encounterPreview?.archetypes??[]);
+    setEntryCombatEnemies(option?.encounterPreview?.enemies??[]);
     setBattlePresentationReady(false);
     setEnteringCombat(true);setTheaterOpen(true);
    }else if(onChoose&&run.mode==='qmode'&&option){
@@ -311,7 +317,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
     </View>
    </Modal>:null}
    {theaterOpen?<CombatTheaterModal visible tone={seasonal?'event':'dungeon'} onClose={closeTheater} title={combatName} eyebrow={st('DUNGEON COMBAT')} subtitle={modeLabel} reduceMotion={reduceMotion} footer={showBattleAction?<GameButton title={terminal?st('View rewards'):st('Continue dungeon')} onPress={closeTheater}/>:onRefresh&&(inCombat||enteringCombat||awaitingCombatPlayback)?<GameButton title={st('Refresh battle status')} tone="secondary" disabled={busy} onPress={onRefresh}/>:undefined}>
-    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={(entryCombatKind??run.selectedNodeKind)==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
+    <DungeonCombatStage run={run} anticipation={enteringCombat||awaitingCombatPlayback} entryNodeId={entryCombatNodeId} previewArchetypes={entryCombatArchetypes} previewEnemyRoster={entryCombatEnemies.length?entryCombatEnemies:run.pendingCombat?.combatants?.filter(enemy=>enemy.team==='enemies').map(enemy=>({name:enemy.name,boss:enemy.boss}))} onPresentationComplete={()=>setBattlePresentationReady(true)} seasonal={seasonal} eventName={eventName} reduceMotionSetting={reduceMotion} boss={enteringCombat||awaitingCombatPlayback?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean((run.pendingCombat??run.lastCombat)?.combatants?.some(member=>member.boss))} enemyLabel={(entryCombatKind??run.selectedNodeKind)==='boss'?run.bossMechanic?.telegraph?.bossName:undefined}/>
    </CombatTheaterModal>:null}
   </>;
 }

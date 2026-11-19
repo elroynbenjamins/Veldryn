@@ -59,6 +59,7 @@ export function liveEdgeCombatV2IsolationPlugin(){
   setup(build){
    build.onResolve({filter:/.*/},args=>{
     if(!args.importer.replaceAll(String.fromCharCode(92),'/').endsWith(ENGINE_SUFFIX))return;
+    if(!args.path.startsWith('./v2/')&&args.path!=='./enemy-v2-status-rules')return;
     if(!ALLOWED.has(args.path))throw Error('unexpected_combat_v2_legacy_shim:'+args.path);
     return {path:args.path,namespace:'live-edge-v2-disabled'};
    });

@@ -155,26 +155,31 @@ let copyLimitRefused=false;try{claimEquipmentCraft(cappedStart,cappedJob.id,capp
 ok(copyLimitRefused,'Without opt-in, a 26th Forge copy must be held ready, never placed over the 25-copy cap');
 const opted=executeGameCommand(cappedStart,{type:'gear_autosell',args:{enabled:true}},cappedJob.completesAtMs-100).state;
 const beforeAutoGold=opted.character!.gold;
-const autoWeak=claimEquipmentCraft(opted,cappedJob.id,cappedJob.completesAtMs,.5);
-ok(autoWeak.result.autoSold==='incoming','Weaker 26th Forge copy should auto-vendor itself after explicit opt-in');
-ok(autoWeak.state.character!.gold-beforeAutoGold===itemDef(recipe.output.itemId).value,'Selling weaker incoming gear must credit exactly its vendor Gold');
-ok(craftedGearCopyCapacity(autoWeak.state,recipe.output.itemId).count===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM&&
-  auditCraftedGearOwnership(autoWeak.state).consistent,'Auto-vendoring a weak new copy must preserve the 25 existing tagged physical items');
-ok(!equipmentCraftingQueue(autoWeak.state).some(row=>row.id===cappedJob.id),'Auto-vendored Forge jobs must complete and not claim twice');
-let autoReplayRejected=false;try{claimEquipmentCraft(autoWeak.state,cappedJob.id,cappedJob.completesAtMs,.5)}catch{autoReplayRejected=true}
-ok(autoReplayRejected,'Replaying auto-sale must never grant Gold twice');
+let rolledCopyBlocked=false;
+try{claimEquipmentCraft(opted,cappedJob.id,cappedJob.completesAtMs,.5)}
+catch(error){rolledCopyBlocked=error instanceof Error&&error.message.includes('Bonus stat rolls need your choice')}
+ok(rolledCopyBlocked,'Even with Keep Best enabled, full-cap rolled gear must require manual stat-choice review');
+ok(opted.character!.gold===beforeAutoGold
+ &&craftedGearCopyCapacity(opted,recipe.output.itemId).count===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM
+ &&auditCraftedGearOwnership(opted).consistent
+ &&equipmentCraftingQueue(opted).some(row=>row.id===cappedJob.id),
+ 'Refused rolled Forge claim must preserve Gold, all original copies and the claimable job');
 const replaceCopies=copiesAtCap.map(row=>({...row,rarity:'common' as const,quality:0}));
 const upgradeSeed={...cappedSeed,account:{...cappedSeed.account,craftedGearInstances:replaceCopies,craftedGearAutoSellMode:'keep_best_seven' as const}};
 const upgradeStarted=startEquipmentCraft(upgradeSeed,recipe.id,job.completesAtMs+12000).state;
 const upgradeJob=equipmentCraftingQueue(upgradeStarted)[0];
-const upgraded=claimEquipmentCraft(upgradeStarted,upgradeJob.id,upgradeJob.completesAtMs,.002);
-ok(upgraded.result.autoSold==='existing'&&upgraded.state.account.craftedGearInstances?.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,'A stronger new Forge roll must replace one exact eligible existing copy');
-ok(auditCraftedGearOwnership(upgraded.state).consistent,'Automatic replacement must not orphan, duplicate or silently erase another copy');
-ok(upgraded.state.inventory.stacks.some(row=>row.instanceId===upgraded.result.instanceId),'Better newly forged equipment must be physically delivered with its own exact instance ID');
+let rolledUpgradeBlocked=false;
+try{claimEquipmentCraft(upgradeStarted,upgradeJob.id,upgradeJob.completesAtMs,.002)}
+catch(error){rolledUpgradeBlocked=error instanceof Error&&error.message.includes('Bonus stat rolls need your choice')}
+ok(rolledUpgradeBlocked,'At capacity, an apparently stronger rarity or quality must not auto-evict another rolled build');
+ok(auditCraftedGearOwnership(upgradeStarted).consistent
+ &&equipmentCraftingQueue(upgradeStarted).some(row=>row.id===upgradeJob.id)
+ &&upgradeStarted.account.craftedGearInstances?.length===TARGET_CRAFTED_GEAR_COPIES_PER_ITEM,
+ 'Blocked stronger Forge roll must retain existing copies and the ready receipt');
 const protectedCopies=replaceCopies.map(row=>({...row,locked:true}));
 const protectedStarted=startEquipmentCraft({...upgradeSeed,account:{...upgradeSeed.account,craftedGearInstances:protectedCopies}},recipe.id,job.completesAtMs+13000).state;
 const protectedJob=equipmentCraftingQueue(protectedStarted)[0];
-let pendingProtected=false;try{claimEquipmentCraft(protectedStarted,protectedJob.id,protectedJob.completesAtMs,.002)}catch(error){pendingProtected=error instanceof Error&&error.message.includes('manual review')}
+let pendingProtected=false;try{claimEquipmentCraft(protectedStarted,protectedJob.id,protectedJob.completesAtMs,.002)}catch(error){pendingProtected=error instanceof Error&&(error.message.includes('manual review')||error.message.includes('Bonus stat rolls need your choice'))}
 ok(pendingProtected,'If all prior copies are locked, the higher-tier result must stay pending for manual selection');
 
 const physicalAudit=craftedGearLegacyOwnershipAudit(state,recipe.output.itemId);

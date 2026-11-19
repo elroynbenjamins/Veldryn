@@ -3,7 +3,7 @@ import type {GatherDef} from '../content/skills';
 import type {GameState,GatheringSkillId} from './types';
 
 export const NO_TOOL_TIME_MULTIPLIER=1.15;
-export const MAX_EQUIPPED_TOOL_TIME_REDUCTION=.55;
+export const MAX_EQUIPPED_TOOL_TIME_REDUCTION=.60;
 
 /** Old saves store one tool per skill. New saves use four independently equipped
  * tiers. Never count the legacy best-tool pointer twice. */

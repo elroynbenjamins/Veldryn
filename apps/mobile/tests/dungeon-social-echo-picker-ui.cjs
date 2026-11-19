@@ -21,14 +21,14 @@ const sql=backend('supabase/migrations/20261119162000_coop_social_echo_candidate
 assert(locale.includes('Dungeon Allies')&&picker.includes('partySlots')&&picker.includes('roleSlots(hostRole'),'Localized four-seat preview and compact summary are required');
 assert(picker.includes("['all','friend','guild']")&&locale.includes('Search character or class')&&picker.includes('onChangeText={setSearch}'),'All/friends/guild filters and search must work');
 assert(picker.includes('accessibilityRole="checkbox"')&&picker.includes('reasonFor(candidate'),'Role-safe accessible selection must be explicit');
-assert(loadout.includes('<CoopSocialEchoPicker language={language}')&&loadout.includes('preferredEchoProfileIds:selectedSocialEchoIds'),'Localized party choices belong on pre-run screen and must reach run intent');
+assert(loadout.includes('<CoopSocialEchoPicker language={language}')&&loadout.includes('preferredEchoCharacterIds:selectedSocialEchoIds'),'Localized party choices belong on pre-run screen and must reach run intent');
 assert(screen.includes('coopClient.socialEchoes(minimum)')&&screen.includes('socialEchoes={socialEchoes}'),'Screen must refresh the eligible contacts');
 assert(client.includes('socialEchoes:(minimumLevel:number)')&&client.includes('/coop/echo-allies'),'Browse endpoint must be authenticated');
-assert(source.includes('intent.preferredEchoProfileIds'),'Run start carries selected character IDs');
+assert(source.includes('intent.preferredEchoCharacterIds'),'Run start carries selected character IDs');
 assert(contracts.includes('new Set(ids).size!==ids.length')&&contracts.includes('invalid_echo_role_composition'),'Client still blocks duplicate accounts and invalid classes');
 assert(edge.includes('prepareSocialEchoCandidates(services,accountId,minLevel)'),'Source must be resolved by trusted backend, not raw clients');
 assert(prepared.includes('coop_social_echo_sources_server_v1')&&prepared.includes('deriveOnlineCoopLoadout')&&prepared.includes('assessOnlineCoopLoadout'),'Contact snapshots must come from server game states');
-assert(runtime.includes('requestedCharacters=request.preferredEchoProfileIds??[]')&&runtime.includes('publish_online_coop_loadout_server_v1')&&runtime.includes('validateSelectedSocialEchoIds'),'Server must re-authorize and freeze selected players without opt-in');
+assert(runtime.includes('requestedCharacters=request.preferredEchoCharacterIds??[]')&&runtime.includes('publish_online_coop_loadout_server_v1')&&runtime.includes('validateSelectedSocialEchoCharacterIds'),'Server must re-authorize and freeze selected players without opt-in');
 assert(domain.includes('const priority=allEligible.filter(row=>desired.includes(row.profileId))')&&domain.includes('invalid_echo_role_composition'),'Priority cannot bypass party roles');
 assert(sql.includes('public.coop_social_echo_sources_server_v1')&&sql.includes('public.online_game_states')&&sql.includes('public.player_blocks')&&sql.includes('public.friendships')&&sql.includes('public.guild_members'),'SQL must use current saved characters and require relationship/no block');
 assert(sql.includes('public.coop_social_echo_member_guard_v1')&&sql.includes('before insert on public.expedition_run_members'),'Relationships must be checked again at committed run-start');

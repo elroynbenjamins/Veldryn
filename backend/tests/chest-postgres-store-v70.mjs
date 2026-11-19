@@ -9,10 +9,14 @@ import {PGlite} from '@electric-sql/pglite';
 const require=createRequire(import.meta.url);
 const {createChestPostgresStoreV70}=require(
  '../.event-chest-tests/server/loot/chest-postgres-store-v70.js');
-const {createChestRewardSettlementV69}=require(
+const {createChestRewardSettlementV69,deriveChestSettlementRollsV69}=require(
  '../.event-chest-tests/server/loot/chest-reward-settlement-v69.js');
 const {defineChestLootTableV67}=require(
  '../.event-chest-tests/server/loot/chest-loot-engine-v67.js');
+const {createWorldBossChestSourcePortsV73}=require(
+ '../.event-chest-tests/server/loot/world-boss-chest-pg-source-v73.js');
+const {worldBossChestLootTableV68}=require(
+ '../.event-chest-tests/server/combat/world-boss-chests-v58.js');
 const sql=readFileSync(new URL(
  '../../docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql',
  import.meta.url),'utf8');
@@ -209,6 +213,141 @@ try{
  )).rows[0].n;
  assert.equal(unissued,0,'gear failure must roll back guaranteed Gold as well');
  assert.equal(noInbox,0,'gear failure must not create an Inbox claim');
+ // World Boss V73: execute the *actual* parameterized source SQL against
+ // disposable PostgreSQL tables on the SAME V70 connection. This is NOT a
+ // battle rehearsal or an actual V57 migration.
+ const bossTable=worldBossChestLootTableV68({
+  bossId:'hollowroot',kind:'donations_goal',
+ });
+ let bossEvent='';
+ let bossSource='';
+ for(let i=1;i<=250&&!bossSource;i++){
+  const candidate='44444444-4444-4444-8444-'+
+   i.toString(16).padStart(12,'0');
+  const key='world-boss:'+candidate+':'+account+':donations_goal';
+  if(deriveChestSettlementRollsV69(
+   bossTable,key,secret,
+  )[0].hitRoll>=100){bossEvent=candidate;bossSource=key}
+ }
+ assert.ok(bossSource,'deterministic 99-percent no-gear World Boss draw');
+ await assert.rejects(
+  ()=>open({authenticatedAccountId:account,sourceKey:bossSource}),
+  /world_boss_privacy_gate_required/,
+  'World Boss claim cannot use a generic, unfenced V70 store',
+ );
+ await db.exec(
+  'create table private.world_boss_events_v17('+
+  'id uuid primary key,boss_id text not null,status text not null,'+
+  'max_hp bigint not null,remaining_hp bigint not null);'+
+  'create table private.world_boss_war_camps_v27('+
+  'event_id uuid primary key,fortifications integer not null,'+
+  'field_provisions integer not null,siegecraft integer not null,'+
+  'fort_tier1 integer not null,fort_tier2 integer not null,'+
+  'field_tier1 integer not null,field_tier2 integer not null,'+
+  'siege_tier1 integer not null,siege_tier2 integer not null);'+
+  'create table private.world_boss_war_donations_v27('+
+  'event_id uuid not null,account_id uuid not null,request_id text not null,'+
+  'ordinal smallint not null);'+
+  'create table private.world_boss_attempts_v17('+
+  'event_id uuid not null,account_id uuid not null,request_id text not null,'+
+  'ordinal smallint not null,status text not null,replay_digest text);'+
+  'create table private.world_boss_replay_proofs_v28('+
+  'event_id uuid not null,account_id uuid not null,request_id text not null,'+
+  'replay_digest text not null);'+
+  'create table private.wb_v73_erasure_test_fences('+
+  'account_id uuid primary key);'
+ );
+ await db.exec(`
+  CREATE FUNCTION private.world_boss_v57_assert_write_open(p_account uuid)
+  RETURNS void LANGUAGE plpgsql AS $
+  BEGIN
+   IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'WB57_READ_COMMITTED_REQUIRED';
+   END IF;
+   PERFORM pg_advisory_xact_lock(
+    hashtextextended(p_account::text,570057::bigint));
+   IF EXISTS(SELECT 1 FROM private.wb_v73_erasure_test_fences
+    WHERE account_id=p_account) THEN
+    RAISE EXCEPTION 'WB57_ACCOUNT_ERASURE_FENCED';
+   END IF;
+  END $;
+ `);
+ await db.query(
+  'insert into private.world_boss_events_v17 '+
+  '(id,boss_id,status,max_hp,remaining_hp) values($1,$2,$3,$4,$5)',
+  [bossEvent,'hollowroot','closed',1000,300],
+ );
+ await db.query(
+  'insert into private.world_boss_war_camps_v27 '+
+  '(event_id,fortifications,field_provisions,siegecraft,'+
+  'fort_tier1,fort_tier2,field_tier1,field_tier2,siege_tier1,siege_tier2) '+
+  'values ($1,2,2,0,1,3,1,3,1,3)',[bossEvent],
+ );
+ await db.query(
+  'insert into private.world_boss_war_donations_v27 '+
+  '(event_id,account_id,request_id,ordinal) values($1,$2,$3,1)',
+  [bossEvent,account,'donation_0001'],
+ );
+ for(let ordinal=1;ordinal<=3;ordinal++){
+  const id='attack_000'+ordinal;
+  const digest=ordinal.toString(16).padStart(64,'0');
+  await db.query(
+   'insert into private.world_boss_attempts_v17 '+
+   '(event_id,account_id,request_id,ordinal,status,replay_digest) '+
+   'values ($1,$2,$3,$4,$5,$6)',
+   [bossEvent,account,id,ordinal,'committed',digest],
+  );
+  await db.query(
+   'insert into private.world_boss_replay_proofs_v28 '+
+   '(event_id,account_id,request_id,replay_digest) values ($1,$2,$3,$4)',
+   [bossEvent,account,id,digest],
+  );
+ }
+ const bossStore=createChestPostgresStoreV70(pool,{
+  ...ports,...createWorldBossChestSourcePortsV73(),
+ },true);
+ const bossOpen=createChestRewardSettlementV69(
+  bossStore,{secret},true);
+ const noGear=await bossOpen({
+  authenticatedAccountId:account,sourceKey:bossSource,
+ });
+ assert.equal(noGear.replayed,false);
+ assert.equal(noGear.receipt.tableId,'world_boss_chest');
+ assert.equal(noGear.receipt.drops.length,0);
+ assert.equal(noGear.receipt.guaranteed.length,4);
+ assert.equal(noGear.receipt.equipmentDeliveryMode,null);
+ assert.equal(noGear.receipt.recipientCharacterId,null);
+ const earnedGold=(await db.query(
+  'select quantity from private.v70_test_guarantees '+
+  'where source_key=$1 and reward_id=$2',[bossSource,'gold'],
+ )).rows;
+ assert.deepEqual(earnedGold.map(r=>r.quantity),[450]);
+ const earnedInbox=(await db.query(
+  'select count(*)::int n from private.v70_test_inbox where source_key=$1',
+  [bossSource],
+ )).rows[0].n;
+ assert.equal(earnedInbox,1,
+  'exactly one durable World Boss Inbox and four guarantees on gear miss');
+ const repeatedBoss=await bossOpen({
+  authenticatedAccountId:account,sourceKey:bossSource,
+ });
+ assert.equal(repeatedBoss.replayed,true);
+ assert.deepEqual(repeatedBoss.receipt,noGear.receipt,
+  'retries do not reroll after no-gear receipt');
+ await db.query(
+  'insert into private.wb_v73_erasure_test_fences values ($1)',
+  [account],
+ );
+ await assert.rejects(
+  ()=>bossOpen({authenticatedAccountId:account,sourceKey:bossSource}),
+  /WB57_ACCOUNT_ERASURE_FENCED/,
+  'even replay reads cannot bypass current account-erasure fence',
+ );
+ const noDuplicateInbox=(await db.query(
+  'select count(*)::int n from private.v70_test_inbox where source_key=$1',
+  [bossSource],
+ )).rows[0].n;
+ assert.equal(noDuplicateInbox,1);
  const current=process.env.NODE_ENV;
  try{
   process.env.NODE_ENV='production';

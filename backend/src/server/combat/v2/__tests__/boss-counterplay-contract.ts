@@ -20,7 +20,7 @@ const hero:CombatantDefinition={
 };
 const six=[
  ['BOSS_EXP_ROOT','Rootbound Heart','asterfall',2,1],
- ['BOSS_EXP_BELL','Asterfall Bell','asterfall',2,2],
+ ['BOSS_EXP_BELL','Bell-Warden','asterfall',2,2],
  ['BOSS_EXP_SOLAR','The Buried Heliarch','sunscar',3,1],
  ['BOSS_EXP_SPHINX','The Veiled Sphinx','sunscar',3,1],
  ['BOSS_EXP_BELLBEAST','The Bellbeast of Shiverlake','frostmarch',5,1],

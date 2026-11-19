@@ -192,15 +192,22 @@ export function deriveChestGroupRollsV67(input:{
  readonly table:ChestLootTableV67;
  readonly sourceKey:string;
  readonly secret:Uint8Array;
+ /** Actual DB-owned account collection for unbiased weighted selections. */
+ readonly ownedDropIds?:readonly string[];
 }):readonly ChestGroupRollV67[]{
  const table=defineChestLootTableV67(input?.table);
  if(!(input?.secret instanceof Uint8Array)||
   input.secret.byteLength<32||input.secret.byteLength>512||
-  typeof input.sourceKey!=='string'||!SAFE_KEY.test(input.sourceKey))
+  typeof input.sourceKey!=='string'||!SAFE_KEY.test(input.sourceKey)||
+  (input.ownedDropIds!==undefined&&
+   (!Array.isArray(input.ownedDropIds)||
+    input.ownedDropIds.some(x=>typeof x!=='string'||!SAFE_ENTRY_ID.test(x)))))
   throw Error('chest_v67_invalid_server_entropy_contract');
- const bound=Math.floor(WORD_RANGE/CHEST_ROLL_MODULUS_V67)*
-  CHEST_ROLL_MODULUS_V67;
- const draw=(groupId:string,label:'hit'|'select'):number=>{
+ const owned=new Set(input.ownedDropIds??[]);
+ const draw=(groupId:string,label:'hit'|'select',max:number):number=>{
+  if(!Number.isSafeInteger(max)||max<1||max>CHEST_ROLL_MODULUS_V67)
+   throw Error('chest_v67_invalid_entropy_range');
+  const bound=Math.floor(WORD_RANGE/max)*max;
   for(let counter=0;counter<64;counter++){
    const word=createHmac('sha256',Buffer.from(input.secret) as unknown as string)
     .update('veldryn:chest-loot:v67\0')
@@ -210,12 +217,20 @@ export function deriveChestGroupRollsV67(input:{
     .update(groupId).update('\0')
     .update(label).update('\0')
     .update(String(counter)).digest().readUInt32BE(0);
-   if(word<bound)return word%CHEST_ROLL_MODULUS_V67;
+   if(word<bound)return word%max;
   }
   throw Error('chest_v67_entropy_unavailable');
  };
- return table.groups.map(group=>({
-  groupId:group.id,hitRoll:draw(group.id,'hit'),
-  selectionRoll:draw(group.id,'select'),
- }));
+ return table.groups.map(group=>{
+  const remaining=group.entries.filter(e=>!owned.has(e.id));
+  const chosen=group.duplicatePolicy==='allow_duplicates'?group.entries:
+   remaining.length?remaining:group.duplicatePolicy==='prefer_unowned'?
+    group.entries:[];
+  const range=Math.max(1,chosen.reduce((sum,e)=>sum+e.weight,0));
+  return {
+   groupId:group.id,
+   hitRoll:draw(group.id,'hit',CHEST_ROLL_MODULUS_V67),
+   selectionRoll:draw(group.id,'select',range),
+  };
+ });
 }

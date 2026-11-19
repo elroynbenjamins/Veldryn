@@ -53,10 +53,12 @@ def normalize(src: Path, slot: str) -> Image.Image:
     w, h = cropped.size
     factor = min(max_size / w, max_size / h)
     new_size = (max(1, round(w * factor)), max(1, round(h * factor)))
-    # Nearest-neighbor keeps crisp hand-authored hard pixel clusters intact.
-    # If this produces poor results on a specific generated source, revise the
-    # source artwork instead of silently changing the production renderer.
-    fitted = cropped.resize(new_size, Image.Resampling.NEAREST)
+    # Style 4 uses fine painterly gradients and realistic brush edges, NOT
+    # chunky pixel clusters. LANCZOS preserves material and contour detail
+    # when downsampling the approved full-resolution transparent master.
+    # Pillow's RGBA resampler handles premultiplied-alpha interpolation;
+    # still inspect light/dark UI for unintended fringes after export.
+    fitted = cropped.resize(new_size, Image.Resampling.LANCZOS)
     output = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
     x, y = (CELL - new_size[0]) // 2, (CELL - new_size[1]) // 2
     output.alpha_composite(fitted, (x, y))

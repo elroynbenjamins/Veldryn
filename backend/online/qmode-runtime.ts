@@ -16,6 +16,7 @@ import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {validateSocialEchoCandidates,validateSelectedSocialEchoIds} from '../../apps/mobile/src/core/coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
@@ -67,10 +68,19 @@ export class OnlineQModeRuntime{
    if(echo.record.accountId!==echo.sourceAccountId)continue;
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:content,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
+  const preferredProfileIds=request.preferredEchoProfileIds??[];
+  if(preferredProfileIds.length){
+   // Fresh server-authorized friendship/guild membership is checked at start;
+   // the Browse list alone is never an authorization token.
+   const candidates=validateSocialEchoCandidates(await this.services.rpc(
+    'coop_social_echo_candidates_server_v1',{p_actor_account_id:accountId,p_min_level:minimum}));
+   validateSelectedSocialEchoIds(preferredProfileIds,candidates,record.classId,controller.readiness.role);
+   if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
+  }
   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots});
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots,preferredProfileIds});
   const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
    const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
    if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}

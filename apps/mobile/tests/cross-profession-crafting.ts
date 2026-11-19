@@ -2,7 +2,8 @@ import {CROSS_PROFESSION_COMPONENT_ITEMS,CROSS_PROFESSION_COMPONENT_RECIPES} fro
 import {V33_EQUIPMENT_RECIPES,CROSS_PROFESSION_ASSEMBLY_INPUTS} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
-import {newGame,createCharacter} from '../src/core/game';
+import {newGame,createCharacter,claimActivity} from '../src/core/game';
+import {executeGameCommand} from '../src/core/game-commands';
 import {startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {processingAvailability,startProcessingBatch} from '../src/core/processing';
 import {marketCatalogCandidate} from '../src/core/player-market-readiness';
@@ -106,5 +107,20 @@ for(const recipe of CROSS_PROFESSION_COMPONENT_RECIPES){
  ok(status.ready,'Component must be eligible for timed production: '+recipe.id+' ('+status.reason+')');
  const started=startProcessingBatch(state,recipe.id,1,1000);
  equal(started.activity?.processing?.recipeId,recipe.id,'Timed component crafting must reserve the expected output');
+
+ // Exercise the same server-authoritative command path used by the online
+ // gameplay handler, not only the lower-level processing primitive. One set
+ // of ingredients is supplied so automatic batch selection must equal one.
+ const commanded=executeGameCommand(state,{type:'processing_start',args:{id:recipe.id}},1000).state;
+ equal(commanded.activity?.kind,'processing','Component command must start timed processing: '+recipe.id);
+ equal(commanded.activity?.processing?.recipeId,recipe.id,'Component command must preserve recipe identity: '+recipe.id);
+ equal(commanded.activity?.processing?.remainingBatches,1,'Component command must reserve exactly one available batch: '+recipe.id);
+ equal(commanded.character!.gold,state.character!.gold-recipe.gold,'Component command must reserve Gold once: '+recipe.id);
+ for(const input of recipe.inputs){
+  equal(commanded.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,0,'Component ingredients must be reserved: '+recipe.id+'/'+input.itemId);
+ }
+ const settled=claimActivity(commanded,1000+recipe.seconds*1000+1000).state;
+ equal(settled.inventory.stacks.find(stack=>stack.itemId===recipe.output.itemId)?.quantity??0,recipe.output.quantity,'Component settlement must grant exactly one output: '+recipe.id);
+ equal(settled.activity?.processing?.remainingBatches??0,0,'Component batch must not remain claimable: '+recipe.id);
 }
 console.log('PASS: T1–T4 equipment requires tradeable, class-independent Smithing and Tailoring components with repeatable XP and no material cycles');

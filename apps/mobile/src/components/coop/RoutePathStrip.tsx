@@ -2,6 +2,8 @@ import {useEffect,useRef} from 'react';
 import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunRoutePathView} from '../../core/coop-presentation';
 import {useSocialText} from '../../i18n/social';
+import {useGameLanguage} from '../../i18n/GameLanguageProvider';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 
@@ -10,6 +12,7 @@ import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-th
 export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathView;reduceMotion?:boolean}){
  const {styles:s,colors:C}=useCoopStyles(makeStyles);
  const st=useSocialText();
+ const language=useGameLanguage();
  const pulse=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   if(reduceMotion||path.totalDepth>16){pulse.setValue(0);return;}
@@ -33,9 +36,9 @@ export function RoutePathStrip({path,reduceMotion=false}:{path:CoopRunRoutePathV
   const checkpoints=Math.max(1,Math.ceil((path.totalDepth-1)/7));
   const segment=Math.min(checkpoints,Math.max(1,Math.ceil(Math.max(cleared,1)/7)));
   return <View style={s.container} accessibilityRole="progressbar" accessibilityValue={{min:0,max:path.totalDepth,now:Math.min(cleared,path.totalDepth)}} accessibilityLabel={st('Route progress: room {current} of {total}',{current:Math.min(cleared+1,path.totalDepth),total:path.totalDepth})}>
-    <View style={s.header}><Text style={s.label}>{st('ENDURANCE ROUTE')} · {st('Threat')} {threatTier}</Text><Text style={s.counter}>{st('Room')} {nextRoom}</Text></View>
+    <View style={s.header}><Text style={s.label}>{dungeonUxText(language,'enduranceRoute')} · {dungeonUxText(language,'threat')} {threatTier}</Text><Text style={s.counter}>{dungeonUxText(language,'room')} {nextRoom}</Text></View>
     <View style={s.strip}>{Array.from({length:7},(_,index)=><View key={index} style={[s.enduranceDot,index<completedThisSegment?s.visitedDot:s.futureDot]}/>)}</View>
-    <View style={s.legendRow}><Text style={s.bossLegend}>{finalBossAvailable?st('Final boss · Complete the expedition'):checkpointAvailable?st('Boss available · End run or continue'):st('Next boss choice after room {room}',{room:nextBossAt})}</Text><Text style={s.segmentMeta}>{segment}/{checkpoints}</Text></View>
+    <View style={s.legendRow}><Text style={s.bossLegend}>{finalBossAvailable?dungeonUxText(language,'finalBossLegend'):checkpointAvailable?dungeonUxText(language,'bossCheckpoint'):dungeonUxText(language,'nextBossAt',{room:nextBossAt})}</Text><Text style={s.segmentMeta}>{segment}/{checkpoints}</Text></View>
    </View>;
  }
  const steps=Array.from({length:path.totalDepth},(_,index)=>index);

@@ -1,6 +1,8 @@
 # Veldryn — Equipment 2.0 icon production standard (draft v1)
 
-**Production calibration companion:** [EQUIPMENT_2_0_GENERATION_PLAYBOOK.md](EQUIPMENT_2_0_GENERATION_PLAYBOOK.md) adds mandatory reference-kit, prompt-version, slot silhouette, light/shade, pixel-cluster and visual comparison gates. Do not begin batch generation until its approved reference kit is recorded in the generation queue and the first cross-material calibration batch is reviewed.\n\n**Status:** authoring/QA contract only. No icons generated, replacement assets installed, 2.0 rewards issued, or release flags enabled by this document.
+**Production calibration companion:** [EQUIPMENT_2_0_GENERATION_PLAYBOOK.md](EQUIPMENT_2_0_GENERATION_PLAYBOOK.md) adds mandatory reference-kit, prompt-version, slot silhouette, light/shade, pixel-cluster and visual comparison gates. Do not begin batch generation until its approved reference kit is recorded in the generation queue and the first cross-material calibration batch is reviewed.
+
+**Status:** authoring/QA contract only. No icons generated, replacement assets installed, 2.0 rewards issued, or release flags enabled by this document.
 
 ## Authority and scope
 
@@ -25,7 +27,7 @@ Relevant existing sources:
 | Slots / indices (0-based) | helmet 0, chest 1, gloves 2, legs 3, boots 4 / weapon 5, offhand 6, cape 7, amulet 8, ring 9 |
 | Safe rectangle | Absolute alpha bounds inside **x/y 26..165** inclusive within each cell; a **26px fully transparent gutter** on every side. This is stricter than the existing legacy 23px validator |
 | Alpha | True transparency, no black/white/grey matte, halo, card, text, rarity border, floor or cast shadow |
-| Runtime exports | Optimized RGBA **WebP**, target **≤250 KiB** per 10-item atlas; >350 KiB requires review; >500 KiB fails without an explicitly recorded waiver. Single icon exports have a proportional budget |
+| Runtime exports | Optimized RGBA **WebP**, target **≤250 KiB** per 10-item atlas; >350 KiB requires review; >500 KiB fails until redesigned/optimized; never auto-sacrifice icon clarity. Single icon exports have a proportional budget |
 | Masters | Retain lossless **PNG** masters and generation notes in review/non-bundled folders, not the shipped asset folder |
 | Resolution/downsample | Generate individual isolated masters at convenient square source size (e.g. 1024px), confirm intact silhouette and alpha, preserve aspect ratio, center within safe bounds, then export exact 192px icon. Assemble 10 approved icons into the final atlas. Do not enlarge one tier relative to another |
 | Visual checks | Compare at 32, **40**, 48, and 64px per icon; nearest-neighbor/actual mobile renderer previews on dark and light UI backgrounds |
@@ -111,9 +113,36 @@ Different point of view, flipped directional highlights, soft blurred/airbrushed
 
 ## Naming / safe repository handoff
 
-Review-only source: `apps/mobile/art-review/equipment-2-0/<source>/<item-id>/<candidate-id>.png`.
+Review-only source: `docs/art/equipment-2-0-masters/<source>/<item-id>/<candidate-id>.png` (outside the mobile app folder; for large originals consider dedicated art storage/LFS).
 Validated standalone export: `apps/mobile/assets/equipment-2-0/<source>/<item-id>.webp`.
 Validated full set export: `apps/mobile/assets/equipment-2-0/sets/<set-id>-atlas.webp`.
 Use lowercase file-safe slugs while retaining exact uppercase/case-sensitive gameplay item IDs in metadata. Never overwrite approved legacy art merely because names sound similar. Keep only production-optimized exports under `assets/` after the art and runtime mapping checks pass. Do not duplicate masters at multiple density variants.
 
 **Initial queue tracking:** populate the accompanying manifest with real IDs from the latest synchronized Equipment 2.0, Party Event, World Boss and dungeon contracts. PR #1382 documents a hidden 118-template T1–T4 foundation; #1429 documents 8 Party sets / 20 pieces, and the World Boss draft documents boss-specific gathering rewards. These are *draft counts*, not an audited final inventory. Do not claim 100% coverage until a code-derived item-by-item audit is complete.
+
+## Asset storage, compression and mobile size budget
+
+**Mandatory for every approved EQ2 icon.** The generator produces a lossless, transparent master PNG which is kept **outside `apps/mobile/`** (normally `docs/art/equipment-2-0-masters/`, or approved large-file art storage). Only one approved final **RGBA WebP** copy goes into `apps/mobile/assets/equipment-2-0/` when the item is ready to be statically wired. The PNG/oversized source, intermediate candidates, prompt reference images, QA contact sheets, and unapproved 2.0 gear must not be copied into the mobile runtime asset folder.
+
+Use `tools/pack-equipment-v2-atlas.py` to compose approved PNGs into a **960×384 WebP atlas** or single **192×192 WebP** for partial/drop rewards. It now automatically invokes `tools/equipment_v2_image_optimization.py`:
+
+1. Normalize invisible RGB pixels to a clean transparent matte for more efficient encoding, without changing visible alpha.
+2. Try **lossless WebP** first and then lossy candidates at quality 80/84/88/92/96 (or stricter caller minimum).
+3. Decode every candidate and require **pixel-identical alpha**, exact dimensions, native visible-area RGB MAE ≤3.5, and **each individual 192px cell** resized to 40px with visible-area RGB MAE ≤2.0 on both light and dark backgrounds.
+4. Select the smallest passing candidate. Keep **lossless** if lossy saves less than 5%, protecting hard pixel clusters from pointless loss.
+5. Fail hard over **500 KiB per ten-slot atlas** or **70 KiB per standalone icon** rather than drop compression quality below acceptance. Simplify overly noisy artwork and review the source in that case. Preferred targets are **250 KiB per atlas** and **32 KiB per icon**, not guarantees.
+6. Optionally emit a machine-readable report outside the mobile assets using `--report` (saved bytes relative to a same-size optimized PNG baseline, codec chosen and color-error metrics); keep this evidence for reviewer approval.
+
+For example, a tested local production command (once approved PNG masters exist):
+
+```bash
+python tools/pack-equipment-v2-atlas.py atlas --folder docs/art/equipment-2-0-masters/approved-set --out docs/art/equipment-2-0-review-exports/my-set-atlas.webp --report docs/art/equipment-2-0-review-exports/my-set-art-qa.json
+python tools/validate-equipment-v2-art.py docs/art/equipment-2-0-review-exports/my-set-atlas.webp --kind atlas
+python tools/audit-equipment-v2-bundle.py
+```
+
+After visual and device approval, copy the **single** validated WebP to its canonical runtime path and bind its canonical ID. Do not ship the review export as a second file. **No redundant @2x/@3x**, no alternative PNG runtime asset, no duplicated set atlas and standalone icon containing the same pixels unless the actual runtime cannot use a shared asset and its cost is reviewed.
+
+The CI bundle auditor checks all future files under `apps/mobile/assets/equipment-2-0/`: WebP-only, dimensions, alpha, duplicate binary files, forbidden master/density variants and cumulative tracked bytes. Its initial **12 MiB warning / 20 MiB hard limit** applies only to NEW EQ2 runtime assets; revisit with measured inventory and product build budgets rather than assuming it is the final game-wide ceiling. These are **checked-in asset byte totals**, not measured Android App Bundle (AAB) or installed-device savings. Validate real release AAB sizes separately.
+
+**Do not assume hiding content at runtime reduces bundled MB.** Statically required images may still ship in the app even if their feature flag is OFF. Keep unapproved 2.0 art outside runtime `assets/` until it is actually scheduled for a release. Once approved, a loader maps item IDs to the **same shared asset** in Inventory, Forge, dungeon rewards, Party Event chests, World Boss chests and item comparison UI; do not copy the pixels into each screen's folder.

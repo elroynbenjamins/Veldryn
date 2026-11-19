@@ -144,6 +144,7 @@ class MockPool implements PartySqlPoolV63{
  }
 }
 const pool=new MockPool();
+const state=()=>pool.state;
 const ports:PartyEventAtomicPortsV63={
  readCanonicalProof:async tx=>(await tx.query<{proof:PrivatePartyRewardProofV61}>(
   'select canonical_reward_proof',[account,week])).rows[0]!.proof,
@@ -208,14 +209,14 @@ async function run(){
    rulesVersion:'party-event-reward-v60',
   });
  }),'incomplete_grant_transaction');
- ensure(pool.state.receipts.size===0&&pool.state.sigils===60,
+ ensure(state().receipts.size===0&&state().sigils===60,
   'direct_incomplete_reward_writes_rolled_back');
  pool.failResources=true;
  await reject(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,
  },true),'resource_writer_fault');
- ensure(pool.state.receipts.size===0&&pool.state.gold===0&&
-  pool.state.sigils===60&&pool.state.gemDust===0&&pool.state.essence===0,
+ ensure(state().receipts.size===0&&state().gold===0&&
+  state().sigils===60&&state().gemDust===0&&state().essence===0,
   'failure_rolls_back_receipt_wallet_and_resources');
  pool.failResources=false;
  const [first,replay]=await Promise.all([
@@ -223,9 +224,9 @@ async function run(){
   claimPartyEventChestV60({authority,kind:'participation',store},true),
  ]);
  ensure(first.sourceKey===replay.sourceKey&&
-  first.frozenGear===null&&pool.state.receipts.size===1&&
-  pool.state.sigils===68&&pool.state.gold===200&&
-  pool.state.gemDust===2&&pool.state.essence===4,
+  first.frozenGear===null&&state().receipts.size===1&&
+  state().sigils===68&&state().gold===200&&
+  state().gemDust===2&&state().essence===4,
   'two_connections_one_receipt_one_reward');
  ensure(pool.history.filter(x=>x==='commit').length===2,
   'one_transaction_per_successful_attempt');
@@ -236,8 +237,8 @@ async function run(){
  const again=await claimPartyEventChestV60({
   authority:rotated,kind:'participation',store,
  },true);
- ensure(again.sourceKey===first.sourceKey&&pool.state.receipts.size===1&&
-  pool.state.sigils===68&&pool.state.gold===200,
+ ensure(again.sourceKey===first.sourceKey&&state().receipts.size===1&&
+  state().sigils===68&&state().gold===200,
   'lost_ack_entropy_rotation_safe');
  pool.invalidReceipt=true;
  await reject(()=>claimPartyEventChestV60({
@@ -258,7 +259,7 @@ async function run(){
  await reject(()=>exchangePartyEventGearV60({
   authority,requestedPieceId:piece.id,store,
  },true),'eq2_event_issuer_not_ready');
- ensure(pool.state.receipts.size===1,'blocked_issuer_did_not_add_exchange_receipt');
+ ensure(state().receipts.size===1,'blocked_issuer_did_not_add_exchange_receipt');
  ensure(pool.released===pool.connections,
   'every_success_or_failure_releases_connection');
  console.log('PARTY_EVENT_ATOMIC_STORE_V63_OK: single-connection SERIALIZABLE lock, failure rollback, retry, key rotation, canonical source, no unverified EQ2 grant');

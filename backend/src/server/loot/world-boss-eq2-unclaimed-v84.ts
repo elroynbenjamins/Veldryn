@@ -108,7 +108,7 @@ export async function issueQuarantinedWorldBossGearV84(
   family:'world_boss',tier:Number(er.tier),
   bossId:er.boss_id,proofVersion:er.proof_version,
   tableId:er.table_id,tableVersion:er.table_version,
-  frozenLootTable:decoded(er.frozen_loot_table),
+  frozenLootTable:decoded<EarnedChestEntitlementV80['frozenLootTable']>(er.frozen_loot_table),
   opened:false,paid:false,equipmentRolled:false,claimEnabled:false,
   alreadyEarned:true,
  };

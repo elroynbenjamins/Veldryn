@@ -1,6 +1,6 @@
 import {gameAlert} from '../core/game-alerts';
 import {useSocialText} from '../i18n/social';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
@@ -19,6 +19,8 @@ import {GameButton} from './GameButton';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {formatProfileRecordValue,profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
 import {PublicProfileScene} from './PublicProfileScene';
+import {ProfileCharacterSelector} from './ProfileCharacterSelector';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../online/social-identity-client-gate';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';
@@ -35,13 +37,47 @@ export function ChatPlayerSheet({
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25;
  const {session}=useAuthSession();
+ const activeProfileAccount=useRef(message?.account_id??'');activeProfileAccount.current=message?.account_id??'';
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[combatPower,setCombatPower]=useState<number|undefined>(undefined),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
+ const [featuredCharacterId,setFeaturedCharacterId]=useState(''),[heroLoading,setHeroLoading]=useState(false),[heroError,setHeroError]=useState('');
  const [relationship,setRelationship]=useState<{relationship:FriendRelationship;requestId?:string}>({relationship:'none'}),[relationshipLoading,setRelationshipLoading]=useState(false),[relationshipError,setRelationshipError]=useState('');
  const [inviteCapabilities,setInviteCapabilities]=useState<SocialInviteCapabilities|null>(null),[inviteLoading,setInviteLoading]=useState(false),[inviteError,setInviteError]=useState('');
 
  const isSelf=!!session?.user.id&&!!message&&message.account_id===session.user.id;
  const setRelationshipAndNotify=(next:{relationship:FriendRelationship;requestId?:string})=>{setRelationship(next);if(message)onRelationshipChanged?.(message.account_id,next.relationship);};
- async function loadProfile(){if(!message)return;setLoading(true);setUnavailable(false);setLoadError('');setCombatPower(undefined);try{const row=await publicPlayerProfileV43(message.account_id);setProfile(row);setUnavailable(!row);if(row){const power=await coopClient.profilePower(message.account_id).catch(()=>null);setCombatPower(power?.combatPower);}}catch(error){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."));}finally{setLoading(false)}}
+ async function loadProfile(){
+  if(!message)return;
+  const account=message.account_id;
+  setLoading(true);setUnavailable(false);setLoadError('');setCombatPower(undefined);
+  try{
+   const row=await publicPlayerProfileV43(account);
+   if(activeProfileAccount.current!==account)return;
+   setProfile(row);setUnavailable(!row);setFeaturedCharacterId(row?.character.id??'');
+   if(row){
+    const power=await coopClient.profilePower(account).catch(()=>null);
+    if(activeProfileAccount.current===account)setCombatPower(power?.combatPower);
+   }
+  }catch(error){
+   if(activeProfileAccount.current===account){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."));}
+  }finally{
+   if(activeProfileAccount.current===account)setLoading(false);
+  }
+ }
+ async function chooseCharacter(characterId:string){
+  if(!message||!profile||heroLoading||characterId===profile.character.id)return;
+  const account=message.account_id;
+  setHeroLoading(true);setHeroError('');
+  try{
+   const next=await publicPlayerProfileV43(account,characterId);
+   if(activeProfileAccount.current!==account)return;
+   if(next?.accountId===account)setProfile(next);
+   else setHeroError('Character profile is unavailable.');
+  }catch{
+   if(activeProfileAccount.current===account)setHeroError('Unable to load this character profile.');
+  }finally{
+   if(activeProfileAccount.current===account)setHeroLoading(false);
+  }
+ }
  async function loadRelationship(){
   if(!message||isSelf){setRelationship({relationship:'none'});setRelationshipError('');return;}
   setRelationshipLoading(true);setRelationshipError('');
@@ -58,9 +94,10 @@ export function ChatPlayerSheet({
  }
  useEffect(()=>{
   let active=true;
-  if(!message){setProfile(null);setCombatPower(undefined);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
+  setHeroLoading(false);setHeroError('');
+  if(!message){setProfile(null);setFeaturedCharacterId('');setHeroError('');setCombatPower(undefined);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
   setLoading(true);setUnavailable(false);setLoadError('');setCombatPower(undefined);
-  void publicPlayerProfileV43(message.account_id).then(async row=>{if(!active)return;setProfile(row);setUnavailable(!row);if(row){const power=await coopClient.profilePower(message.account_id).catch(()=>null);if(active)setCombatPower(power?.combatPower)}}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."))}}).finally(()=>{if(active)setLoading(false)});
+  void publicPlayerProfileV43(message.account_id).then(async row=>{if(!active)return;setProfile(row);setUnavailable(!row);setFeaturedCharacterId(row?.character.id??'');if(row){const power=await coopClient.profilePower(message.account_id).catch(()=>null);if(active)setCombatPower(power?.combatPower)}}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."))}}).finally(()=>{if(active)setLoading(false)});
   if(message.account_id===session?.user.id){setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');}
   else{
    setRelationshipLoading(true);setRelationshipError('');
@@ -111,9 +148,14 @@ export function ChatPlayerSheet({
  </View>;
 
  return <GameModalSurface visible presentation="sheet" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close player profile" surfaceStyle={s.sheet}>
-  <GameModalHeader eyebrow={st("PLAYER PROFILE")} title={target.sender_name} onClose={onClose}/>
+  <GameModalHeader eyebrow={st("PLAYER PROFILE")} title={profile?.displayName??target.sender_name} onClose={onClose}/>
   <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
-    {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={{...profile,combatPower}}/>{socialActions}
+    {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?.accountId===message.account_id?<><PublicProfileScene profile={{...profile,combatPower:profile.character.id===featuredCharacterId?combatPower:undefined}}/>
+    {ACCOUNT_SOCIAL_IDENTITY_RELEASED?<ProfileCharacterSelector choices={profile.characterChoices} selectedId={profile.character.id}
+     onSelect={id=>void chooseCharacter(id)} disabled={heroLoading||busy}/>:null}
+    {heroLoading?<ActivityIndicator color={C.accent}/>:null}
+    {heroError?<Text accessibilityRole="alert" style={s.inviteError}>{heroError}</Text>:null}
+    {socialActions}
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>{st("PROFILE BIO")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
     {profile.equippedGear?<ProfileEquippedGearShowcase key={profile.accountId+':'+profile.character.id} gear={profile.equippedGear} reduceMotion={reduceMotion}/>:null}

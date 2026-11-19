@@ -1,6 +1,6 @@
 import {profileT,profileText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Switch,Text,View} from 'react-native';
 import type {GameState} from '../../core/types';
 import type {ProfileVisibilityV43} from '../../online/profile-extension-v43';
@@ -12,6 +12,8 @@ import {useGameTheme} from '../../theme/ThemeContext';
 import {GameButton} from '../GameButton';
 import {GameTextInput} from '../GameTextInput';
 import {Panel} from '../Panel';
+import {SocialNameEditor} from '../SocialNameEditor';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../../online/social-identity-client-gate';
 import {PlayerNameStyleEditor} from '../PlayerNameStyleEditor';
 
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
@@ -29,8 +31,9 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
 }){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const {value,busy,guest,dirty,error,notice}=draft;
- const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} draft={nameStyle} onDraftChange={onNameStyleChange}
+ const {value,busy,guest,identityDirty:dirty,error,notice}=draft;
+ const [socialName,setSocialName]=useState('');
+ const nameStyleCard=<Panel style={s.card}><PlayerNameStyleEditor state={state} previewName={socialName} draft={nameStyle} onDraftChange={onNameStyleChange}
   onSaveNameStyle={onSaveNameStyle} onInputDirtyChange={onNameInputDirtyChange} resetVersion={nameResetVersion} active={active}/></Panel>;
 
  if(!draft.online)return <View style={s.root}>
@@ -46,6 +49,7 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
  </View>;
 
  return <View style={s.root}>
+  {active&&ACCOUNT_SOCIAL_IDENTITY_RELEASED?<SocialNameEditor onNameChange={setSocialName}/>:null}
   {guest?<View style={s.warning}><Text style={s.warningTitle}>{profileT(language,"Secure this guest account first")}</Text>
    <Text style={s.copy}>{profileT(language,"Guest progress can continue normally, but public social-profile publishing is held until the account is linked.")}</Text></View>:null}
 
@@ -79,8 +83,8 @@ export function ProfileIdentityPanel({state,draft,nameStyle,onNameStyleChange,on
   </Panel>
 
   <View style={s.saveBar}>
-   <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revert}/></View>
-   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save profile"):profileT(language,"Profile saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.save()}/></View>
+   <View style={s.revert}><GameButton compact title={profileT(language,"Revert")} tone="secondary" disabled={!dirty||busy} onPress={draft.revertIdentity}/></View>
+   <View style={s.flex}><GameButton title={busy?profileT(language,"Saving…"):dirty?profileT(language,"Save profile"):profileT(language,"Profile saved")} loading={busy} disabled={guest||busy||!dirty} onPress={()=>void draft.saveIdentity()}/></View>
   </View>
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{profileText(language,notice)}</Text>:null}
   {error?<Text accessibilityRole="alert" style={s.error}>{profileText(language,error)}</Text>:null}

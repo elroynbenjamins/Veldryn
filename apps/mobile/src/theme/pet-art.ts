@@ -1,7 +1,7 @@
 import type {ImageSourcePropType} from 'react-native';
 import {masterPetSourceById} from './master-roster-assets';
 import {eventPetSourceById} from './event-collectible-assets-active';
-import {dungeonShopPetArtSource} from './dungeon-shop-pet-art';
+import {dungeonShopPetMediumArtSource,dungeonShopPetPortraitArtSource} from './dungeon-shop-pet-art';
 
 const guildPetSourceById=new Map<string,ImageSourcePropType>([
  ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/GUILD_PET_001_Stormwatch_Fox.webp')],
@@ -18,7 +18,7 @@ export function petArtSource(id:string):ImageSourcePropType|undefined{
   return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
     ??guildPetSourceById.get(id)
-    ??dungeonShopPetArtSource(id);
+    ??dungeonShopPetMediumArtSource(id);
 }
 
 /**
@@ -78,12 +78,13 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
 ]);
 
 // Only the Veilbreak event pets currently have portrait-grade artwork.
-// Frostfall and Dungeon Shop pets retain compact source images; the Collections
-// screen displays those in a 96px inset rather than enlarging them as portraits.
+// Frostfall pets retain compact source images; Dungeon Shop pets now have
+// dedicated 512px portraits, matching the existing master and Guild pet split.
 const EVENT_PET_PORTRAIT_IDS=new Set(['EVT_PET_013','EVT_PET_014']);
 
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{
  return masterPetPortraitSourceById.get(id)
    ??(EVENT_PET_PORTRAIT_IDS.has(id)?eventPetSourceById.get(id):undefined)
-   ??guildPetPortraitSourceById.get(id);
+   ??guildPetPortraitSourceById.get(id)
+   ??dungeonShopPetPortraitArtSource(id);
 }

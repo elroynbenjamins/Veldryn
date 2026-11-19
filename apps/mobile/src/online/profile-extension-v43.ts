@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
 import {RequestSingleflight} from '../core/request-singleflight';
 import {normalizeProfileGear,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
@@ -13,7 +14,9 @@ export interface ProfileExtensionSelfV43{
  accountId:string;visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;selectedCharacterId?:string|null;bio:string;
  favoriteSkillId?:string|null;favoriteCompanionId?:string|null;achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];revision:number;updatedAt?:string;
 }
+export interface PublicProfileCharacterChoice{id:string;name:string;classId:string;level:number}
 export interface PublicPlayerProfileV43{
+ characterChoices?:PublicProfileCharacterChoice[];
  guild?:ProfileGuildIdentity|null;
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
  combatPower?:number;
@@ -37,8 +40,54 @@ export async function updateProfileExtensionV43(input:{
   p_achievement_showcase_ids:input.achievementShowcaseIds,p_collection_showcase:input.collectionShowcase,p_record_showcase_ids:input.recordShowcaseIds,p_mastery_showcase_action_ids:input.masteryShowcaseActionIds,
  });if(error)throw error;return data as ProfileExtensionSelfV43;
 }
+/** Account bio and visibility, without ever changing the active or featured character. */
+export async function updateProfileIdentityV2(input:{visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;bio:string}){
+ const {data,error}=await client().rpc('profile_identity_update_v2',{
+  p_visibility:input.visibility,p_world_feed_opt_out:input.worldFeedOptOut,p_bio:input.bio,
+ });if(error)throw error;
+ return data as ProfileExtensionSelfV43;
+}
+
+/** Save only the chosen hero's showcase; changes never switch gameplay characters. */
+export async function updateCharacterShowcaseV2(characterId:string,input:CharacterShowcaseFieldsV1){
+ const {data,error}=await client().rpc('profile_character_showcase_update_v2',{
+  p_character_id:characterId,p_favorite_skill_id:input.favoriteSkillId??null,
+  p_favorite_companion_id:input.favoriteCompanionId??null,
+  p_achievement_showcase_ids:input.achievementShowcaseIds,
+  p_collection_showcase:input.collectionShowcase,
+  p_record_showcase_ids:input.recordShowcaseIds,
+  p_mastery_showcase_action_ids:input.masteryShowcaseActionIds,
+ });if(error)throw error;
+ return data as CharacterShowcaseFieldsV1;
+}
+
+/** Explicitly choose the public landing hero; this is not a gameplay roster switch. */
+export async function setFeaturedProfileCharacterV2(characterId:string){
+ const {data,error}=await client().rpc('profile_featured_character_update_v2',{p_character_id:characterId});
+ if(error)throw error;
+ return data as ProfileExtensionSelfV43;
+}
+
+/** Values persisted for one specific character, independent of the account bio/privacy. */
+export type CharacterShowcaseFieldsV1=Pick<ProfileExtensionSelfV43,
+ 'favoriteSkillId'|'favoriteCompanionId'|'achievementShowcaseIds'|
+ 'collectionShowcase'|'recordShowcaseIds'|'masteryShowcaseActionIds'>;
+export async function characterShowcaseSelfV1(characterId:string):Promise<CharacterShowcaseFieldsV1>{
+ const {data,error}=await client().rpc('character_showcase_self_v1',{p_character_id:characterId});
+ if(error)throw error;
+ const row=data as CharacterShowcaseFieldsV1;
+ return {
+  favoriteSkillId:row.favoriteSkillId??null,
+  favoriteCompanionId:row.favoriteCompanionId??null,
+  achievementShowcaseIds:Array.isArray(row.achievementShowcaseIds)?row.achievementShowcaseIds:[],
+  collectionShowcase:Array.isArray(row.collectionShowcase)?row.collectionShowcase:[],
+  recordShowcaseIds:Array.isArray(row.recordShowcaseIds)?row.recordShowcaseIds:[],
+  masteryShowcaseActionIds:Array.isArray(row.masteryShowcaseActionIds)?row.masteryShowcaseActionIds:[],
+ };
+}
+
 const pendingPublicProfiles=new RequestSingleflight<PublicPlayerProfileV43|null>();
-export async function publicPlayerProfileV43(accountId:string):Promise<PublicPlayerProfileV43|null>{
+export async function publicPlayerProfileV43(accountId:string,characterId?:string):Promise<PublicPlayerProfileV43|null>{
  const db=client(),{data:{session},error:sessionError}=await db.auth.getSession();
  if(sessionError)throw sessionError;
  const viewer=session?.user.id;
@@ -46,8 +95,13 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
  // Sharing only an in-flight authorized read avoids duplicate public-profile,
  // guild-identity and guild-name lookups when multiple panels open together.
  // Do not cache the result: privacy, blocks and guild visibility can change.
- return pendingPublicProfiles.run(viewer+':'+accountId,async()=>{
-  const {data,error}=await db.rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
+ return pendingPublicProfiles.run(viewer+':'+accountId+':'+(ACCOUNT_SOCIAL_IDENTITY_RELEASED?(characterId??'featured'):'legacy'),async()=>{
+  // Default-off compatibility: older production servers only expose the v43
+  // account profile RPC. Never require the new per-character RPC before rollout.
+  const {data,error}=ACCOUNT_SOCIAL_IDENTITY_RELEASED
+   ?await db.rpc('profile_character_public_v1',{p_target_account_id:accountId,p_character_id:characterId??null})
+   :await db.rpc('profile_public_v43',{p_target_account_id:accountId});
+  if(error)throw error;
   const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
   // The companion RPC uses the same visibility/block gate, returning only equipped item facts.
   // Older servers that have not deployed it still render the public profile normally.
@@ -55,7 +109,9 @@ export async function publicPlayerProfileV43(accountId:string):Promise<PublicPla
   // another full network round trip to opening a player's profile.
   // Optional gear failures must not block the existing identity/profile surface.
   const [gearResult,identities]=await Promise.all([
-   (async()=>{try{return await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
+   (async()=>{try{return ACCOUNT_SOCIAL_IDENTITY_RELEASED
+    ?await db.rpc('profile_character_gear_v1',{p_target_account_id:accountId,p_character_id:characterId??null})
+    :await db.rpc('profile_equipped_gear_v1',{p_target_account_id:accountId});}catch{return null;}})(),
    guildIdentities([accountId]),
   ]);
   const gearRows=gearResult?.data;

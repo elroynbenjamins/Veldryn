@@ -5,6 +5,8 @@ import {createCharacter,newGame} from '../src/core/game';
 import {professionActionPace} from '../src/core/profession-action-pace';
 import {cookingRecipeXpPreview} from '../src/core/cooking-xp-preview';
 import {totalXpAtLevel} from '../src/core/progression';
+import {craftingDetailText} from '../src/i18n/crafting-details';
+import type {Language} from '../src/i18n/languages';
 import {startProcessingBatch,processingRecipeDef,previewProcessingReward} from '../src/core/processing';
 import {mealBonusDef} from '../src/core/meal-buffs';
 import type {GameState} from '../src/core/types';
@@ -54,6 +56,15 @@ for(const recipe of cooking.filter(recipe=>!!mealBonusDef(recipe.output.itemId))
  const meal=mealBonusDef(recipe.output.itemId)!;
  ok(meal.percent>=4&&meal.percent<=10,recipe.id+' special meal should expose the doubled bonus');
  ok(meal.label.includes('+'+meal.percent+'%'),recipe.id+' bonus copy must match its runtime rate');
+}
+
+// All supported locales must produce usable text and interpolate exact XP/rates.
+for(const language of ['en','de','es','nl','it','fr','ru','tr'] as const satisfies readonly Language[]){
+ for(const [key,value] of [['+{xp} Cooking XP per batch','420'],['+{value}% Gathering speed','6']] as const){
+  const text=craftingDetailText(language,key,key.includes('{xp}')?{xp:value}:{value});
+  ok(text.includes(value)&&!text.includes('{xp}')&&!text.includes('{value}'),
+    'Cooking XP / meal rate must interpolate in '+language+': '+key);
+ }
 }
 
 const component=readFileSync(join(process.cwd(),'src/components/RecipeCard.tsx'),'utf8');

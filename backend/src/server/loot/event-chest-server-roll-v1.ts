@@ -26,7 +26,7 @@ function boundedDraw(
  // Independent domain and label prevent identical rolls across source types.
  // Reject the tiny modulo-bias tail instead of weakening long-run rarity.
  for(let counter=0;counter<32;counter++){
-  const digest=createHmac('sha256',secret)
+  const digest=createHmac('sha256',Buffer.from(secret))
    .update('veldryn:event-chest:v1\0')
    .update(domain).update('\0')
    .update(key).update('\0')

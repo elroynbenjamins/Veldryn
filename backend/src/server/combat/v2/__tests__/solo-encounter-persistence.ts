@@ -180,6 +180,20 @@ async function run(){
  assert.equal(recovered.preparedKit.revision,1);
  assert.equal(successfulWrites,2);
  assert.equal(recovered.snapshotDigest,prepared.snapshotDigest);
+ // In-memory CAS contention regression only: sixteen callers may compile the
+ // same frozen candidate, but exactly one storage write can win. This does NOT
+ // replace real Postgres transaction/concurrency validation on staging.
+ stored=null;gameRevision=12;buildRevision=4;
+ sourceSeed='persisted-solo-seed-original';
+ const writesBefore=successfulWrites;
+ const contenders=await Promise.all(Array.from({length:16},()=>service.reserve(scope,true)));
+ assert.equal(successfulWrites,writesBefore+1,
+  'Concurrent requests must not create additional immutable encounter rows');
+ assert.ok(contenders.every(item=>item.snapshotDigest===contenders[0].snapshotDigest),
+  'Concurrent retries must all read the identical first-write payload');
+ assert.deepEqual(await service.replay(scope,true),first,
+  'Replayed enemy traits and class abilities remain identical after contention');
+ console.log('PASS: 16 concurrent in-memory CAS reservations, exactly one stored row, deterministic replay');
  console.log('PASS: service-role RPC mapping, immutable first-write-wins, byte-identical replay, stale revisions, forgery rejection');
 }
 void run().catch(error=>{console.error(error);process.exitCode=1;});

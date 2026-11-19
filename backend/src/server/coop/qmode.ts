@@ -14,11 +14,12 @@ import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombat
 import {preparedCoopCombatants} from './potion-modifiers';
 import {dungeonDepthMultipliers} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
+import {assignDungeonContracts,type DungeonContractId} from './dungeon-contracts';
 
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; contractIds?:DungeonContractId[];
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -89,7 +90,7 @@ export class QModeService{
   const bossTuning=run.regionalBalanceVersion===1&&run.tier===1&&selected.contentId==='BOSS_EXP_SOLAR'
    ?{profileId:'sunscar-regional-solar-ward-cadence-v1',abilityCooldownMultipliers:{BOSS_EXP_SOLAR_WARD:3}}
    :undefined;
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';
@@ -107,7 +108,7 @@ export class QModeService{
  private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];qmodePressureVersion?:1;echoSourceAccountIds:string[];npcCharacterIds?:string[]}):QModeRun{
   const endurance=input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION;
   const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion,endurance?'endurance':'legacy');
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),...(endurance?{enduranceRouteVersion:1 as const}:{}),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),...(endurance?{enduranceRouteVersion:1 as const,contractIds:assignDungeonContracts(this.serverSecret,input.runId,input.contentVersion)}:{}),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
   this.repository.save(run);return structuredClone(run);
  }
 }

@@ -46,7 +46,7 @@ async function accountClient(accountId:string){
 }
 export async function readOnlineAccountDeletionRequest(accountId:string):Promise<AccountDeletionRequestSnapshot>{
  const client=await accountClient(accountId);
- const {data,error}=await client.rpc('online_account_deletion_request_status_v1');
+ const {data,error}=await client.rpc('online_account_deletion_request_status_v1',{p_expected_account_id:accountId});
  if(error)throw new Error('Unable to read the account deletion request. Please try again.');
  return normalizeSnapshot(data);
 }
@@ -54,7 +54,7 @@ export async function requestOnlineAccountDeletion(accountId:string,confirmation
  if(!validAccountDeletionConfirmation(confirmation))throw new Error('Type DELETE ACCOUNT exactly to continue.');
  const client=await accountClient(accountId);
  const {data,error}=await client.rpc('submit_online_account_deletion_request_v1',{
-  p_confirmation:confirmation,p_request_id:Crypto.randomUUID(),
+  p_expected_account_id:accountId,p_confirmation:confirmation,p_request_id:Crypto.randomUUID(),
  });
  if(error)throw new Error('Unable to submit the account deletion request. Your account was not deleted.');
  return normalizeSnapshot(data);
@@ -62,7 +62,7 @@ export async function requestOnlineAccountDeletion(accountId:string,confirmation
 export async function cancelOnlineAccountDeletionRequest(accountId:string):Promise<AccountDeletionRequestSnapshot>{
  const client=await accountClient(accountId);
  const {data,error}=await client.rpc('cancel_online_account_deletion_request_v1',{
-  p_confirmation:ACCOUNT_DELETION_CANCELLATION,
+  p_expected_account_id:accountId,p_confirmation:ACCOUNT_DELETION_CANCELLATION,
  });
  if(error)throw new Error('Unable to withdraw the deletion request. Please try again.');
  return normalizeSnapshot(data);

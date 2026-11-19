@@ -29,6 +29,22 @@ for(const cleared of [7,14,21,28,35]){
  assert.ok(options.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3),'Continue options lead to another room');
 }
 assert.deepEqual(generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance'),endurance,'Reconnected runs must retain the checkpoint graph');
+// Exercise a spread of runs: every optional boss must preserve the same frozen
+// boss variant, and both continuation rooms must feed into the next layer.
+for(let seed=0;seed<40;seed++){
+ const graph=generateCoopRouteGraph(secret,'EXP_001',`endurance-seed-${seed}`,'content-v1','balance-v1','endurance');
+ validateCoopRouteGraph(graph);
+ const finalBoss=graph.nodes.find(node=>node.nodeId===graph.bossNodeId)!;
+ for(const cleared of [7,14,21,28,35]){
+  const current=graph.nodes.find(node=>node.nodeId===`d${cleared}-c0`)!;
+  const choices=current.nextNodeIds.map(id=>graph.nodes.find(node=>node.nodeId===id)!);
+  assert.equal(choices.length,3);
+  assert.equal(choices.filter(node=>node.kind==='boss').length,1);
+  assert.equal(choices.find(node=>node.kind==='boss')?.contentId,finalBoss.contentId,'Continued runs cannot reroll boss identity');
+  assert.ok(choices.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3));
+ }
+}
+
 const tampered=structuredClone(endurance);
 tampered.nodes=tampered.nodes.map(node=>node.nodeId==='d8-c2'?{...node,kind:'battle' as const}:node);
 assert.throws(()=>validateCoopRouteGraph(tampered),'Checkpoint boss cannot be bypassed by client graph tampering');

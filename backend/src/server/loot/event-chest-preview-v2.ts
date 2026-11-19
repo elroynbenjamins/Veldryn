@@ -34,6 +34,8 @@ export interface EventChestPanelRowV2{
  readonly gearChancePercent:number;
  readonly showOpenButton:false;
  readonly showClaimButton:false;
+ /** Short, screen-reader-friendly prerequisite, never client entitlement proof. */
+ readonly unlockHint?:string;
 }
 export interface PartyEventTreasurePanelV2{
  readonly mode:'preview_only';
@@ -63,6 +65,9 @@ export interface WorldBossTreasurePanelV2{
  readonly targetedExchangeCost:80;
  readonly exchangeButtonEnabled:false;
  readonly existingBossEquipmentUnchanged:true;
+ readonly collectedPieces:number;
+ readonly missingPieces:number;
+ readonly gearDropPolicy:'1_percent_each_earned_chest_not_guaranteed';
 }
 function checkedWallet(balance:number):void{
  if(!Number.isSafeInteger(balance)||balance<0)
@@ -114,7 +119,8 @@ export function previewWorldBossTreasurePanelV2(input:{
 }):WorldBossTreasurePanelV2{
  checkedWallet(input.trustedWorldSigilsBalance);
  if(!Array.isArray(input.ownedGatheringGearSlots)||
-  input.ownedGatheringGearSlots.some(slot=>!WORLD_BOSS_GEAR_SLOTS_V58.includes(slot)))
+  input.ownedGatheringGearSlots.some(slot=>!WORLD_BOSS_GEAR_SLOTS_V58.includes(slot))||
+  new Set(input.ownedGatheringGearSlots).size!==input.ownedGatheringGearSlots.length
   throw Error('event_chest_preview_v2_invalid_collection');
  const available=previewVerifiedWorldBossChestsV58(input.evidence);
  const name:Readonly<Record<WorldBossChestKindV58,string>>={
@@ -122,12 +128,18 @@ export function previewWorldBossTreasurePanelV2(input:{
   three_attempts:'Warrior Chest',
   community_damage_goal:'Realm Victory Chest',
  };
+ const unlockHint:Readonly<Record<WorldBossChestKindV58,string>>={
+  donations_goal:'Two War Camp tracks at Tier I and one personal committed donation',
+  three_attempts:'Finish all three replay-verified account attacks',
+  community_damage_goal:'Deal 70% realm boss HP and finish one replay-verified attack',
+ };
  return {
   mode:'preview_only',context:'world_boss',
   chests:worldKinds.map(kind=>({
    kind,title:name[kind],unlocked:available.some(x=>x.kind===kind),
    gearChancePercent:WORLD_BOSS_CHEST_GEAR_CHANCE_BPS_V58/100,
    showOpenButton:false,showClaimButton:false,
+   unlockHint:unlockHint[kind],
   })),
   totalPossibleChests:3,
   gatheringSkill:WORLD_BOSS_GATHERING_SET_POLICY_V58[input.evidence.bossId].skill,
@@ -138,5 +150,8 @@ export function previewWorldBossTreasurePanelV2(input:{
   worldSigilsBalance:input.trustedWorldSigilsBalance,
   targetedExchangeCost:WORLD_BOSS_GEAR_CHOICE_COST_SIGILS_V58,
   exchangeButtonEnabled:false,existingBossEquipmentUnchanged:true,
+  collectedPieces:input.ownedGatheringGearSlots.length,
+  missingPieces:10-input.ownedGatheringGearSlots.length,
+  gearDropPolicy:'1_percent_each_earned_chest_not_guaranteed',
  };
 }

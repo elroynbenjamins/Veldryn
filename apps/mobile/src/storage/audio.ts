@@ -13,6 +13,8 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  *   and mixes with other apps' audio.
  */
 import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,type AudioPreferences} from '../core/audio-preferences';
+import type {ItemRarity} from '../core/item-rarity';
+import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
 export type {AudioLevel,AudioPreferences} from '../core/audio-preferences';
 const KEY='veldryn.device.audio.v1';
@@ -149,4 +151,16 @@ export function useAudioPreferences():[AudioPreferences,(next:AudioPreferences)=
  const [value,setValue]=useState(prefs);
  useEffect(()=>{listeners.add(setValue);void loadAudioPreferences().then(setValue);return()=>{listeners.delete(setValue);};},[]);
  return [value,next=>{void setAudioPreferences(next);}];
+}
+
+/**
+ * Plays the Epic / Legendary / Mythic stinger once the rarity reveal has landed.
+ * Nothing plays below Epic, or if the reveal closes before the stinger is due.
+ */
+export function useRarityRevealSound(rarity:ItemRarity|null|undefined,revealKey:unknown,{reduceMotion,after=0}:{reduceMotion:boolean;after?:number}){
+  useEffect(()=>{
+    const sound=rarityRevealSound(rarity);if(!sound)return;
+    const timer=setTimeout(()=>playSound(sound),rarityRevealDelayMs({reduceMotion,after}));
+    return()=>clearTimeout(timer);
+  },[revealKey,rarity]); // eslint-disable-line react-hooks/exhaustive-deps
 }

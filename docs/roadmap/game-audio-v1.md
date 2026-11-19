@@ -11,14 +11,15 @@
   - **world_boss:** the World Boss fight.
 
   Tracks crossfade when the place changes.
-- **Sound effects:** 36 effects for the moments that matter:
+- **Sound effects:** 39 effects for the moments that matter:
 
   | Moment | Sounds |
   | --- | --- |
   | Interface | button taps |
   | Rewards | coin collect, character level-up fanfare, skill-level fanfare, exceptional loot, unlocks |
   | Combat | eight impact kinds on every combat screen (hit, crit, heal, shield, interrupt, phase, cast, down), victory and defeat stingers, soft hits while hunting |
-  | Crafting | forge claim, exceptional forge, enhancement success and failure |
+  | Crafting | forge claim, enhancement success and failure |
+| Rarity reveals | an escalating stinger for Epic, Legendary and Mythic equipment: on the reward screen, the Forge result and the Claim-all summary. It plays once the rarity is on screen (about half a second in, right away with reduced motion, after the fanfare when you also level up). Epic+ gear you auto-sold does not trigger it. |
   | Gathering | pick and axe swings timed to the animation, fishing splash, a pop on every real yield |
   | World Boss | entrance, tonic, telegraph, special, guard break, role moment, world HP drop, killing blow, honors |
 - **Settings → Sound:** Music and Sound effects, each Off / Low / Medium / High. Stored on the device, defaulting to Medium, and translated into all languages.

@@ -118,6 +118,18 @@
       "seconds": 1.28,
       "volume": 0.8
     },
+    "rarity_epic": {
+      "seconds": 1.628,
+      "volume": 0.85
+    },
+    "rarity_legendary": {
+      "seconds": 2.271,
+      "volume": 0.9
+    },
+    "rarity_mythic": {
+      "seconds": 3.075,
+      "volume": 0.95
+    },
     "reward_collect": {
       "seconds": 0.325,
       "volume": 0.7

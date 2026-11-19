@@ -229,6 +229,50 @@ def _(): return mix(*[(i*.09, bell(note(n), .6, 6) * .7) for i, n in enumerate([
 @sfx('tonic', .6)
 def _(): return mix(*[(i*.06, osc(slide(note(60+i*5), note(67+i*5), .08), .08, 'sine') * decay(.08, 25)) for i in range(6)])
 
+# Rarity reveal stingers: play once the reveal card has landed, escalating epic -> legendary -> mythic.
+def echo(x, delay=.11, feedback=.35, repeats=4):
+    """Cheap feedback echo so stingers ring out instead of stopping dead."""
+    x = sig(x); out = sig(np.zeros(len(x) + int(SR * delay * repeats)))
+    for i in range(repeats + 1):
+        start = int(SR * delay * i); out[start:start + len(x)] += np.asarray(x) * feedback ** i
+    return out
+
+def swell(dur, lo=.35, hi=.85):
+    """Rising filtered-noise whoosh that leads into the reveal hit."""
+    n = noise(dur); ramp = sig(np.linspace(0, 1, len(n)) ** 2)
+    return (lowpass(n, hi) * (1 - ramp) + highpass(n, lo) * ramp) * ramp
+
+def pad(notes, dur, detune=.006, a=.04, r=.5):
+    """Soft detuned chord, a little choir-like, for the bigger reveals."""
+    voices = [osc(note(n) * (1 + d), dur, 'saw') for n in notes for d in (-detune, 0, detune)]
+    return lowpass(mix(*[(0, v) for v in voices]), .82) * env(dur, a, .2, .65, r) * (1 / len(voices))
+
+@sfx('rarity_epic', .85)
+def _():
+    lead = mix((0, swell(.22) * .35), (.2, thump(150, 55, .22, 12) * .55))
+    chord = mix(*[(.2 + i*.035, bell(note(n), 1.0, 4.5) * .55) for i, n in enumerate([76, 80, 83, 88])])
+    sparkle = mix(*[(.42 + i*.05, bell(note(n), .4, 9) * .3) for i, n in enumerate([95, 92, 100])])
+    return echo(mix((0, lead), (0, chord), (0, sparkle)), .12, .28, 3)
+
+@sfx('rarity_legendary', .9)
+def _():
+    lead = mix((0, swell(.3) * .4), (.28, thump(120, 40, .35, 9) * .8))
+    fanfare = mix(*[(.28 + i*.1, tone(n, .14, 'square', .35, 10, .5)) for i, n in enumerate([67, 72, 76])],
+                  (.58, osc(note(79), 1.1, 'square', .35, vibrato=.01) * env(1.1, .01, .15, .6, .5) * .4))
+    body = mix((.58, pad([67, 71, 74, 79], 1.2) * 1.6),
+               *[(.58 + i*.06, bell(note(n), 1.1, 4) * .45) for i, n in enumerate([83, 86, 91, 95])])
+    return echo(mix((0, lead), (0, fanfare), (0, body)), .13, .3, 4)
+
+@sfx('rarity_mythic', .95)
+def _():
+    rise = mix((0, swell(.5, .3, .9) * .45), (0, osc(slide(55, 110, .5, .6), .5, 'sine') * env(.5, .3, .05, .9, .05) * .5))
+    hit = mix((.48, thump(100, 30, .6, 6)), (.48, lowpass(noise(.35), .8) * decay(.35, 10) * .45))
+    choir = mix((.48, pad([62, 66, 69, 73, 76], 1.9, .008, .06, .8) * 2.0))
+    cascade = mix(*[(.5 + i*.055, bell(note(n), .9, 5) * .4) for i, n in enumerate([86, 90, 93, 97, 100, 105])])
+    crown = mix((1.0, bell(note(98), 1.6, 2.4) * .5), (1.0, bell(note(105), 1.4, 3) * .25))
+    return echo(mix((0, rise), (0, hit), (0, choir), (0, cascade), (0, crown)), .14, .32, 5)
+# (Registered last: noise() draws from one seeded stream, so earlier effects stay byte-identical.)
+
 # ----------------------------------------------------------------------------- music
 SCALES = {'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10], 'dorian': [0, 2, 3, 5, 7, 9, 10],
           'phrygian_dom': [0, 1, 4, 5, 7, 8, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10]}

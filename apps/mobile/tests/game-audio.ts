@@ -1,6 +1,7 @@
 import {assert} from './test-assert';
 import {backgroundMusicFor} from '../src/core/music-context';
 import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences} from '../src/core/audio-preferences';
+import {highestRarity,rarityRevealDelayMs,rarityRevealSound} from '../src/core/rarity-reveal-sound';
 const fs=require('fs') as {readFileSync(path:string,encoding:'utf8'):string;statSync(path:string):{size:number};existsSync(path:string):boolean;readdirSync(path:string):string[]};
 
 // Manifest, generated asset map and files stay in sync.
@@ -13,7 +14,7 @@ for(const [kind,rows] of [['sfx',manifest.sfx],['music',manifest.music]] as cons
   assert.ok(fs.existsSync(file),'Missing audio file '+file);
   assert.ok(assetMap.includes("require('../../assets/audio/"+kind+'/'+name+".mp3')"),'Asset map misses '+file);
   const size=fs.statSync(file).size;
-  if(kind==='sfx'){sfxBytes+=size;assert.ok(size<80_000,'Effect too large: '+name+' '+size);assert.ok(rows[name].seconds<=3,'Effect too long: '+name);}
+  if(kind==='sfx'){sfxBytes+=size;assert.ok(size<80_000,'Effect too large: '+name+' '+size);assert.ok(rows[name].seconds<=(name.startsWith('rarity_')?3.5:3),'Effect too long: '+name);}
   else{musicBytes+=size;assert.ok(size<700_000,'Music loop too large: '+name+' '+size);assert.ok(rows[name].seconds>=20,'Music loop too short to avoid fatigue: '+name);}
  }
  assert.equal(fs.readdirSync('assets/audio/'+kind).filter(f=>f.endsWith('.mp3')).length,Object.keys(rows).length,'Untracked '+kind+' files');
@@ -40,6 +41,19 @@ assert.deepEqual(parseAudioPreferences(null),DEFAULT_AUDIO_PREFERENCES);
 assert.deepEqual(parseAudioPreferences('{"music":0,"effects":3}'),{music:0,effects:3});
 for(const bad of ['{"music":7}','not json','null','[]'])assert.deepEqual(parseAudioPreferences(bad),DEFAULT_AUDIO_PREFERENCES,'Corrupt audio prefs fall back: '+bad);
 assert.equal(AUDIO_LEVEL_VOLUME[0],0);assert.ok(AUDIO_LEVEL_VOLUME[3]<=1);
+
+// Rarity reveal stingers: Epic and up only, escalating, and played after the reveal has landed.
+assert.equal(rarityRevealSound('rare'),null);assert.equal(rarityRevealSound(undefined),null);
+assert.equal(rarityRevealSound('epic'),'rarity_epic');assert.equal(rarityRevealSound('legendary'),'rarity_legendary');assert.equal(rarityRevealSound('mythic'),'rarity_mythic');
+for(const id of ['rarity_epic','rarity_legendary','rarity_mythic'])assert.ok(id in manifest.sfx,'Missing rarity stinger '+id);
+assert.ok(manifest.sfx.rarity_epic.seconds<manifest.sfx.rarity_legendary.seconds&&manifest.sfx.rarity_legendary.seconds<manifest.sfx.rarity_mythic.seconds,'Stingers escalate with rarity');
+assert.equal(highestRarity(['rare','mythic','epic']),'mythic');assert.equal(highestRarity([]),null);
+assert.ok(rarityRevealDelayMs({reduceMotion:false})>=400,'Stinger waits for the reveal animation');
+assert.ok(rarityRevealDelayMs({reduceMotion:true})<rarityRevealDelayMs({reduceMotion:false}),'Reduced motion has no animation to wait for');
+assert.equal(rarityRevealDelayMs({reduceMotion:false,after:900})-rarityRevealDelayMs({reduceMotion:false}),900);
+for(const file of ['src/components/RewardPopup.tsx','src/components/ForgeResultFeedback.tsx','src/components/ForgeClaimAllSummaryModal.tsx'])
+ assert.ok(fs.readFileSync(file,'utf8').includes('useRarityRevealSound('),file+' plays the rarity stinger');
+assert.ok(!fs.readFileSync('src/components/ForgeResultFeedback.tsx','utf8').includes("playSound('rare_drop')"),'Forge reveal uses the rarity stinger, not the generic drop chime');
 
 // Native module is only touched lazily inside the guarded engine.
 for(const file of ['src/components/GameButton.tsx','src/components/RewardPopup.tsx','src/components/WorldBossBattleStage.tsx'])

@@ -1,6 +1,6 @@
 import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef} from 'react';
-import {playSound} from '../storage/audio';
+import {playSound,useRarityRevealSound} from '../storage/audio';
 import {Animated,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {weaponBonusCompactLine,weaponBonusLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
@@ -26,7 +26,10 @@ export function forgeClaimBannerMessage(results:readonly ForgeCraftResult[]){
 export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onDismiss:()=>void}){
   const C=useGameTheme(),best=results.length?highest(results):undefined,meta=best?rarityMeta(best.rarity):undefined;
   const dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
-  useEffect(()=>{if(results.length&&!results.some(isExceptionalForgeResult))playSound('craft_complete');},[results]);
+  // Epic gear you kept gets its stinger once the banner is up; everything else gets the normal claim sound.
+  const keptBest=highest(results.filter(row=>row.autoSold!=='incoming')),epicKept=!results.some(isExceptionalForgeResult)&&keptBest?.rarity==='epic';
+  useEffect(()=>{if(results.length&&!results.some(isExceptionalForgeResult)&&!epicKept)playSound('craft_complete');},[results]); // eslint-disable-line react-hooks/exhaustive-deps
+  useRarityRevealSound(epicKept?'epic':null,results,{reduceMotion});
   useEffect(()=>{if(!results.length||results.some(isExceptionalForgeResult))return;const timer=setTimeout(()=>dismissRef.current(),results.some(row=>row.weaponBonuses?.length)?8000:4500);return()=>clearTimeout(timer)},[results]);
   if(!results.length||results.some(isExceptionalForgeResult))return null;
   return <ActionFeedback message={forgeClaimBannerMessage(results)} tone="success" reduceMotion={reduceMotion} compact accentColor={meta?.color} accentSurface={meta?.surface} highlightText={meta?.label} highlightTextColor={meta?(C.dark?meta.color:meta.lightTextColor):undefined}/>;
@@ -36,7 +39,7 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
  const {gt}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25,scale=useRef(new Animated.Value(1)).current;
   const procs=results.filter(isExceptionalForgeResult),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
-  useEffect(()=>{if(procs.length)playSound('rare_drop');},[results]); // eslint-disable-line react-hooks/exhaustive-deps
+  useRarityRevealSound(best?.rarity,results,{reduceMotion});
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:best?.rarity==='mythic'?1.085:1.045,damping:9,stiffness:200,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,best?.rarity,procs.length,reduceMotion,scale]);
   if(!procs.length)return null;
   return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt("Close Forge result")} surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color,borderWidth:best?.rarity==='mythic'?3:2}]}>

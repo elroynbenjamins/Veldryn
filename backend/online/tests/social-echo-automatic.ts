@@ -42,7 +42,18 @@ async function main(){
   throw new Error('unexpected_rpc:'+name);
  }},'host-account',10);
  assert.equal(sourceCalls.length,1,'Browsing must never publish another player automatically');
- assert.equal(listing.length,2,'Valid friends/guildmates must not require publication or 2,500 Combat Power');
+ if(listing.length!==2){
+  const diagnostic=[sourceRow,modestRow].map(source=>{
+   try{
+    const record=deriveOnlineCoopLoadout(source.accountId,source.state,source.revision);
+    const eligibility=assessOnlineCoopLoadout(record);
+    return {accountId:source.accountId,characterId:source.characterId,recordId:record.characterId,
+     level:record.characterLevel,legalEquipment:record.legalEquipment,
+     ready:eligibility.readiness.ready,failures:eligibility.readiness.failures};
+   }catch(error){return {accountId:source.accountId,error:String(error)};}
+  });
+  assert.equal(listing.length,2,'Valid friends/guildmates must not require publication or 2,500 Combat Power: '+JSON.stringify(diagnostic));
+ }
  assert.ok(listing.some(x=>x.candidate.characterId===modest.character!.id));
  assert.equal(listing[0].candidate.characterId,friend.character!.id);
  assert.equal(listing[0].candidate.relationship,'friend');

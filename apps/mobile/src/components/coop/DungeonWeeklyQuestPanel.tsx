@@ -24,30 +24,30 @@ export function DungeonWeeklyQuestPanel({language,quest,loading,error,busy=false
  const progress=quest?.progress??0,ready=!!quest&&!quest.claimed&&progress>=quest.target;
  return <FantasyPanel variant={quest?.claimed?'success':ready?'selected':'default'}>
   <Pressable accessibilityRole="button"
-   accessibilityState={{expanded}} accessibilityLabel={st('Weekly dungeon challenge')}
+   accessibilityState={{expanded}} accessibilityLabel={dungeonUxText(language,'weeklyFallback')}
    accessibilityHint={expanded?dungeonUxText(language,'weeklyCollapse'):dungeonUxText(language,'weeklyExpand')}
    onPress={()=>setExpanded(value=>!value)} style={({pressed})=>[s.heading,pressed&&s.pressed]}>
    <View style={s.titleWrap}>
-    <Text style={s.eyebrow}>{st('WEEKLY DUNGEON QUEST')}</Text>
-    <Text style={s.title} numberOfLines={1}>{copy?.name??st('Weekly dungeon challenge')}</Text>
+    <Text style={s.eyebrow}>{dungeonUxText(language,'weeklyHeader')}</Text>
+    <Text style={s.title} numberOfLines={1}>{copy?.name??dungeonUxText(language,'weeklyFallback')}</Text>
    </View>
-   {quest?<StateChip label={quest.claimed?st('CLAIMED'):ready?st('READY'):st('WEEKLY')} tone={quest.claimed?'success':ready?'selected':'warning'}/>:null}
+   {quest?<StateChip label={quest.claimed?st('CLAIMED'):ready?st('READY'):dungeonUxText(language,'weeklyStatus')} tone={quest.claimed?'success':ready?'selected':'warning'}/>:null}
    <Text style={s.chevron}>{expanded?'⌄':'›'}</Text>
   </Pressable>
   {quest?<>{expanded?<Text style={s.description}>{copy?.description??quest.description}</Text>:null}
-    <View style={s.progressRow} accessible accessibilityRole="progressbar" accessibilityValue={{min:0,max:quest.target,now:progress}} accessibilityLabel={st('{name}: {current} of {goal}',{name:copy?.name??quest.name,current:progress,goal:quest.target})}>
+    <View style={s.progressRow} accessible accessibilityRole="progressbar" accessibilityValue={{min:0,max:quest.target,now:progress}} accessibilityLabel={dungeonUxText(language,'weeklyProgress',{name:copy?.name??quest.name,current:progress,goal:quest.target})}>
      <View style={s.track}><View style={[s.fill,{width:(Math.min(100,Math.round(progress/quest.target*100))+'%') as `${number}%`}]}/></View>
      <Text style={s.progress}>{progress}/{quest.target}</Text>
     </View>
     <View style={s.foot}>
      <View style={s.reward}><ExpeditionMarkIcon size={18}/><Text style={s.rewardLabel}>+{quest.rewardMarks} {st('Expedition Marks')}</Text></View>
-     <Text style={s.reset}>{st('Resets')} {reset}</Text>
+     <Text style={s.reset}>{dungeonUxText(language,'weeklyReset')} {reset}</Text>
     </View>
-    {ready?<GameButton compact title={st('Claim weekly reward')} disabled={busy} onPress={onClaim}/>:null}
-    {expanded&&quest.claimed?<Text style={s.note}>{st('Weekly reward collected for this account.')}</Text>:null}
-    {expanded?<Text style={s.note}>{st('One reward per account each week. Solo and Live dungeons both count.')}</Text>:null}
-  </>:loading?<View style={s.loading}><ActivityIndicator color={C.cyan}/><Text style={s.note}>{st('Checking dungeon progress…')}</Text></View>:
-     <View style={s.loading}><Text style={s.note}>{error||st('Weekly dungeon quest is currently unavailable.')}</Text><GameButton compact title={st('Retry')} tone="secondary" onPress={onRefresh}/></View>}
+    {ready?<GameButton compact title={dungeonUxText(language,'weeklyClaim')} disabled={busy} onPress={onClaim}/>:null}
+    {expanded&&quest.claimed?<Text style={s.note}>{dungeonUxText(language,'weeklyClaimedNote')}</Text>:null}
+    {expanded?<Text style={s.note}>{dungeonUxText(language,'weeklyScope')}</Text>:null}
+  </>:loading?<View style={s.loading}><ActivityIndicator color={C.cyan}/><Text style={s.note}>{dungeonUxText(language,'weeklyLoading')}</Text></View>:
+     <View style={s.loading}><Text style={s.note}>{error||dungeonUxText(language,'weeklyUnavailable')}</Text><GameButton compact title={st('Retry')} tone="secondary" onPress={onRefresh}/></View>}
  </FantasyPanel>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

@@ -44,9 +44,9 @@ begin
     (v_seller,'market-v17-s-'||v_seller::text||'@example.invalid'),
     (v_buyer,'market-v17-b-'||v_buyer::text||'@example.invalid');
   insert into public.characters(id,account_id,name,class_id,gold) values
-    (v_seller_char,v_seller,'Seller17','BASTION',100),
-    (v_second_char,v_seller,'Alt17','BASTION',100),
-    (v_buyer_char,v_buyer,'Buyer17','BASTION',100000);
+    (v_seller_char,v_seller,'MarketSeller','BASTION',100),
+    (v_second_char,v_seller,'MarketAlt','BASTION',100),
+    (v_buyer_char,v_buyer,'MarketBuyer','BASTION',100000);
   insert into public.character_wallets(character_id,gold) values
     (v_seller_char,100),(v_second_char,100),(v_buyer_char,100000);
   insert into public.online_game_states(account_id,character_id,revision,state) values

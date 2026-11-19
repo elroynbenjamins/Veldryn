@@ -4,7 +4,7 @@ import {dungeonTonicView} from '../core/coop-tonic-view';
 import {rememberedDungeonTonic,rememberDungeonTonic,subscribeDungeonTonicPreference,autoDungeonTonicForRun,type DungeonTonicPreference} from '../core/coop-dungeon-tonic-preference';
 import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {AppState,BackHandler,Pressable,View,Text} from 'react-native';
+import {AppState,BackHandler,View,Text} from 'react-native';
 import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../components/coop/CoopDungeonBrowser';
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {presentCoopLoadout,type CoopLoadoutIntent} from '../core/coop-loadout-presentation';

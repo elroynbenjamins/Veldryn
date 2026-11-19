@@ -6,8 +6,11 @@
  * one canonical account/source, first-resolution persistence, all guaranteed
  * rewards + each independent rolled pool, replay and custody verification.
  *
- * ALL tx methods MUST use the same serializable SQL connection and take an
- * immutable account/source lock. Failed grants MUST roll back the receipt,
+ * ALL tx methods MUST use the same serializable SQL connection and take
+ * an ACCOUNT inventory lock (shared across every chest source) before the
+ * per-source unique receipt lock. Different chests for one account must not
+ * race on the missing-piece collection snapshot. Failed grants MUST roll
+ * back the receipt,
  * ledger and physical account inventory together. This is NOT a live route
  * and must not receive entitlement proof, RNG or loot tables from clients.
  */
@@ -60,7 +63,10 @@ export interface ChestGrantTransactionV69{
  verifyExactlyGranted(receipt:FrozenChestReceiptV69):Promise<boolean>;
 }
 export interface ChestGrantStoreV69{
- /** Includes DB BEGIN SERIALIZABLE, account-source lock, commit/rollback. */
+ /** Includes DB BEGIN SERIALIZABLE, canonical ACCOUNT inventory lock
+  * shared across different chest keys, UNIQUE source receipt, commit/rollback.
+  * If concurrent item/currency writers cannot share this lock, reject the
+  * deployment rather than trusting the prefer_unowned collection snapshot. */
  withLockedAccountSource<T>(
   accountId:string,sourceKey:string,
   work:(tx:ChestGrantTransactionV69)=>Promise<T>,

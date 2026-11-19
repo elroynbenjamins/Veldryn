@@ -81,7 +81,7 @@ begin
  then raise exception 'ACCOUNT_NOT_FOUND'; end if;
  v_week_start:=pg_catalog.date_trunc('week',v_now at time zone 'UTC') at time zone 'UTC';
  v_week_key:=pg_catalog.to_char(v_now at time zone 'UTC','IYYY-"W"IW');
- v_week_number:=pg_catalog.extract(week from v_now at time zone 'UTC')::integer;
+ v_week_number:=extract(week from v_now at time zone 'UTC')::integer;
  case v_week_number%3
   when 0 then v_id:='clears';v_name:='Dungeon Duty';v_description:='Defeat a dungeon boss this week.';
   when 1 then v_id:='deep15';v_name:='Deep Delver';v_description:='Reach room 15 in a single dungeon run this week.';
@@ -95,7 +95,7 @@ begin
  return pg_catalog.jsonb_build_object(
   'weekKey',v_week_key,'id',v_id,'name',v_name,'description',v_description,
   'progress',v_progress,'target',1,'rewardMarks',25,'claimed',v_claimed,
-  'resetAtMs',pg_catalog.floor(pg_catalog.extract(epoch from v_week_start+interval '7 days')*1000)::bigint
+  'resetAtMs',pg_catalog.floor(extract(epoch from v_week_start+interval '7 days')*1000)::bigint
  );
 end;
 $function$;

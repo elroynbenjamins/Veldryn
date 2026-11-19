@@ -235,8 +235,7 @@ export function createChestPostgresStoreV70(
        throw Error('chest_v70_eq2_manifest_and_custody_not_ready');
       }
       const grant=await ports.grantDrop(conn,receipt,index);
-      await writeLeg('drop',index,drop.entryId,drop.quantity,
-       grant,drop.type==='equipment');
+      await writeLeg('drop',index,drop.entryId,drop.quantity,grant);
       granted.add(index);
      },
      grantInbox:async receipt=>{

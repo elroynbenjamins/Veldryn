@@ -6,6 +6,7 @@
  * NOT synthesize EQ2_ gear from a Party Event chest.
  */
 import {partyEventGearPieceV51,type PartyGearPieceV51} from './weekly-party-event-gear-v51';
+import {partyEventTemplateV66} from './weekly-party-equipment-templates-v66';
 import type {PartyChestTierV51} from './weekly-party-event-chests-v51';
 import type {FrozenPartyGearGrantV60} from './weekly-party-event-claim-v60';
 
@@ -37,6 +38,8 @@ export interface PartyEventItemIssuancePlanV64{
   'eq2_physical_custody_unverified'
  )[];
  readonly readyForIssuance:false;
+ /** Draft-only template descriptor; not registered in the EQ2 item issuer. */
+ readonly candidateTemplateKey:string;
 }
 export interface PartyEventIssuerOutputV64 {
  readonly itemInstanceId:string;
@@ -86,7 +89,9 @@ export function planPartyEventEquipmentIssuanceV64(
  ];
  if(input.tier>EQUIPMENT_V2_CURRENT_DRAFT_MAX_TIER_V64)
   blockers.push('eq2_t5_to_t9_not_implemented');
- return {contract:input,blockers,readyForIssuance:false};
+ const candidateTemplateKey=partyEventTemplateV66(input.piece.id,input.tier).templateKey;
+ return {contract:input,blockers,readyForIssuance:false,
+  candidateTemplateKey};
 }
 /**
  * Structural cross-system receipt validation — never a replacement for the

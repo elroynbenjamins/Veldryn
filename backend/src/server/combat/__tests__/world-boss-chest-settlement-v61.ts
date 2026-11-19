@@ -162,7 +162,7 @@ async function run(){
   concurrent.state.gold===450&&concurrent.state.items.size===1&&
   concurrent.issuedCalls===1,'two_concurrent_claims_one_grant');
  if(a.frozenGear){
-  const forged={...a,frozenGear:{...a.frozenGear,tier:'T9' as const}};
+  const forged={...a,frozenGear:{...a.frozenGear,setId:'WB64_ROOTBOUND_HARVESTER'}};
   concurrent.state.receipts.set(firstKey,forged);
   await rejects(()=>claimWorldBossChestV61(
    userInput,auth(concurrent,winner),true),'corrupt_existing_item');

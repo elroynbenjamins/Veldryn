@@ -194,6 +194,22 @@ async function run(){
  }
  ensure(pool.connections===0,'production_never_checks_out_db');
  const store=createPartyEventRewardStoreV63(pool,ports,true);
+ await reject(()=>store.withLockedAccountWeek(account,week,async tx=>{
+  await tx.readVerifiedEvidence();
+  await tx.applyPartySigilsDelta('party-event:'+week+':'+account+':preparation',10);
+ }),'grant_without_receipt');
+ await reject(()=>store.withLockedAccountWeek(account,week,async tx=>{
+  await tx.readVerifiedEvidence();
+  await tx.insertReceiptOnce({
+   sourceKey:'party-event:'+week+':'+account+':preparation',
+   accountId:account,weekStartMs:week,origin:'chest',
+   chestKind:'preparation',pieceId:null,frozenGear:null,
+   partySigilsDelta:10,gold:300,gemDust:3,companionEssence:5,
+   rulesVersion:'party-event-reward-v60',
+  });
+ }),'incomplete_grant_transaction');
+ ensure(pool.state.receipts.size===0&&pool.state.sigils===60,
+  'direct_incomplete_reward_writes_rolled_back');
  pool.failResources=true;
  await reject(()=>claimPartyEventChestV60({
   authority,kind:'participation',store,

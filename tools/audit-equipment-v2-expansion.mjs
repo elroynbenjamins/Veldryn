@@ -52,6 +52,11 @@ export function readAuthoritativeBaseline(root=ROOT){
  const sets=parseLiteralArray(client,'export const EQUIPMENT_V2_SETS:');
  const standalones=parseLiteralArray(client,'export const EQUIPMENT_V2_STANDALONE:');
  const serverCore=parseLiteralArray(server,'const V2_SERVER_CORE_PIECES:');
+ const expansionText=readFileSync(resolve(root,'apps/mobile/src/content/equipment-v2-expansion.ts'),'utf8');
+ const expansionClient=expansionText.split('\\n').map(line=>line.trim()).filter(line=>line.startsWith('{"id":"EQ2_')).map(line=>JSON.parse(line.replace(/,$/,'')));
+ const expansionServerText=readFileSync(resolve(root,'backend/src/server/equipment/equipment-crafting-v2-expansion-manifest.ts'),'utf8');
+ const expansionServerPieces=parseLiteralArray(expansionServerText,'export const V2_SERVER_EXPANSION_PIECES:');
+ const expansionServerRecipes=parseLiteralArray(expansionServerText,'export const V2_SERVER_EXPANSION_RECIPES:');
  const core=[...sets.flatMap(set=>set.pieces.map(p=>({...p,tier:set.tier,role:set.role,kind:'set'}))),...standalones.map(x=>({...x,kind:'standalone'}))];
  const serverArmaments=parseLiteralArray(armaments,'export const V2_SERVER_ARMAMENT_PIECES:');
  // Class armament client array is constructed by 9 specs * 4 tiers, with
@@ -60,7 +65,7 @@ export function readAuthoritativeBaseline(root=ROOT){
  const builtIn={sets:sets.length,setPieces:sets.reduce((x,y)=>x+y.pieces.length,0),standalones:standalones.length,armaments:serverArmaments.length};
  const serverKeys=new Set(serverCore.map(x=>x.id));
  const clientKeys=new Set(core.map(x=>x.id));
- return {core,sets,standalones,serverCore,serverArmaments,serverKeys,clientKeys,profiles:slotProfiles(foundation),builtIn,catalogWeaponIds};
+ return {core,sets,standalones,serverCore,serverArmaments,serverKeys,clientKeys,profiles:slotProfiles(foundation),builtIn,catalogWeaponIds,expansionClient,expansionServerPieces,expansionServerRecipes};
 }
 export function auditExpansion(manifest, baseline){
  const errors=[];
@@ -92,6 +97,36 @@ export function auditExpansion(manifest, baseline){
   const key=tier+':'+role+':'+slot;
   if(!baselineCoverage.has(key))missing.add(key);
  }
+ const implemented=manifest.items.filter(x=>x.kind==='coverage'||x.kind==='alternative_statline');
+ const canonical=new Map(implemented.map(x=>[x.id,x]));
+ const clientExp=new Map(baseline.expansionClient.map(x=>[x.id,x]));
+ const serverExp=new Map(baseline.expansionServerPieces.map(x=>[x.id,x]));
+ add(baseline.expansionClient.length!==51||clientExp.size!==51,'client_expansion_not_51');
+ add(baseline.expansionServerPieces.length!==51||serverExp.size!==51,'server_expansion_not_51');
+ add(baseline.expansionServerRecipes.length!==102,'server_expansion_recipes_not_102');
+ for(const x of implemented){
+  const a=clientExp.get(x.id),b=serverExp.get(x.id);
+  for(const row of [a,b]){
+   if(!row){errors.push('missing_implemented_item:'+x.id);continue;}
+   for(const key of ['name','slot','tier','role','profile','material'])
+    add(row[key]!==x[key],'implementation_differs_from_design:'+x.id+':'+key);
+  }
+ }
+ for(const id of [...clientExp.keys(),...serverExp.keys()])add(!canonical.has(id),'unplanned_implemented_item:'+id);
+ const recipeIds=new Set();
+ for(const recipe of baseline.expansionServerRecipes){
+  const id=recipe.pieceId,expected=canonical.get(id);
+  add(!expected,'recipe_for_unplanned_item:'+id);
+  add(!['foundation','alternate'].includes(recipe.route)||recipe.id!==id+'_'+recipe.route.toUpperCase(),'invalid_recipe_route:'+recipe.id);
+  add(recipe.tier!==expected?.tier,'wrong_recipe_tier:'+recipe.id);
+  add(recipeIds.has(recipe.id),'duplicate_recipe_id:'+recipe.id);
+  add(recipe.gold<100||recipe.xp<=0||recipe.seconds<60||recipe.inputs.length<4||recipe.inputs.some(x=>x.quantity<=0),'bad_recipe_cost:'+recipe.id);
+  recipeIds.add(recipe.id);
+ }
+ for(const id of canonical.keys())for(const method of ['FOUNDATION','ALTERNATE'])
+  add(!recipeIds.has(id+'_'+method),'missing_expansion_recipe:'+id+':'+method);
+ for(const rare of manifest.items.filter(x=>x.kind==='rare_blueprint'))
+  add(clientExp.has(rare.id)||serverExp.has(rare.id)||recipeIds.has(rare.id+'_FOUNDATION'),'rare_blueprint_registered_as_unlocked_recipe:'+rare.id);
  const fills=new Set(),fullCoverage=new Set(baselineCoverage);
  for(const [index,x] of items.entries()){
   const id=x?.id||'missing',label='item['+index+']:'+id;

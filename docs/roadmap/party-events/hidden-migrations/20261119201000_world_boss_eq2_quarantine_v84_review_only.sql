@@ -18,7 +18,7 @@ CREATE TABLE private.world_boss_eq2_event_manifest_v84(
 CREATE TABLE private.world_boss_eq2_unclaimed_items_v84(
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  source_key text NOT NULL UNIQUE,
- account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE RESTRICT,
+ account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
  event_id uuid NOT NULL,
  drop_index smallint NOT NULL CHECK(drop_index BETWEEN 0 AND 19),
  template_key text NOT NULL REFERENCES private.world_boss_eq2_event_manifest_v84(template_key),
@@ -35,7 +35,7 @@ CREATE TABLE private.world_boss_eq2_unclaimed_items_v84(
  created_at timestamptz NOT NULL DEFAULT now(),
  FOREIGN KEY(source_key,account_id)
   REFERENCES private.chest_reward_receipts_v70(source_key,account_id)
-  ON DELETE RESTRICT,
+  ON DELETE CASCADE,
  CHECK(source_key ~ '^world-boss:[0-9a-f-]{36}:[0-9a-f-]{36}:(donations_goal|three_attempts|community_damage_goal)$'
   AND position(':'||account_id::text||':' in source_key)>0
   AND position('world-boss:'||event_id::text||':' in source_key)=1),

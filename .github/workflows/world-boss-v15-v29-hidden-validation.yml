@@ -45,6 +45,8 @@ on:
       - 'docs/roadmap/world-boss-account-erasure-v55-smoke.sql'
       - 'docs/roadmap/world-boss-account-write-fence-v57*.sql'
       - 'docs/roadmap/world-boss-account-write-fence-v57-race-ci.sh'
+      - 'docs/roadmap/world-boss-erasure-lease-v59*.sql'
+      - 'docs/roadmap/world-boss-erasure-lease-v59-race-ci.sh'
       - 'docs/roadmap/world-boss-account-erasure-preflight-v36-smoke.sql'
       - 'docs/roadmap/world-boss-account-save-donation-v37-smoke.sql'
       - 'docs/roadmap/world-boss-preparation-calendar-v38-smoke.sql'
@@ -225,3 +227,8 @@ jobs:
           # before a future World Boss action host may accept real requests.
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-gate-attestation-v63.sql
           psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-gate-attestation-v63-smoke.sql
+          # V59 private erasure recovery follows V57 write-fence checks.
+          # Synthetic PG fixtures only: no Auth Admin or Storage purge.
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-erasure-lease-v59.sql
+          psql -X -v ON_ERROR_STOP=1 -f docs/roadmap/world-boss-erasure-lease-v59-smoke.sql
+          bash docs/roadmap/world-boss-erasure-lease-v59-race-ci.sh

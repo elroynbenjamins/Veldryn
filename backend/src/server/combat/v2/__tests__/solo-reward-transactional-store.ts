@@ -15,6 +15,8 @@ const scope={
 const grants:SoloRewardGrantV2[]=[
  {kind:'gold',resourceId:'gold',amount:5,grantSourceId:'combat-v2:solo:V2_SYNTHETIC_TXN_1:0'},
  {kind:'skill_xp',resourceId:'combat',amount:3,grantSourceId:'combat-v2:solo:V2_SYNTHETIC_TXN_1:1'},
+ {kind:'companion_essence',resourceId:'essence',amount:2,grantSourceId:'combat-v2:solo:V2_SYNTHETIC_TXN_1:2'},
+ {kind:'material',resourceId:'ore',amount:1,grantSourceId:'combat-v2:solo:V2_SYNTHETIC_TXN_1:3'},
 ];
 const snapDigest='a'.repeat(64),outcomeDigest='b'.repeat(64);
 const body={
@@ -134,13 +136,13 @@ async function run(){
  assert.equal(saved,null);assert.equal(balances.length,0);assert.equal(inbox.length,0);
  failAfterCommit=true;
  await rejected(store.commitOnce(scope,receipt),/synthetic_commit_ack_lost/);
- assert.equal(issued,1);assert.equal(balances.length,2);assert.equal(inbox.length,1);
+ assert.equal(issued,1);assert.equal(balances.length,4);assert.equal(inbox.length,1);
  assert.ok(lastWriterClient!==null);
  assert.deepEqual(await store.load(scope),receipt);
  const repeat=await Promise.all(Array.from({length:16},()=>store.commitOnce(scope,receipt)));
  assert.ok(repeat.every(item=>item.receiptDigest===receipt.receiptDigest));
  assert.equal(issued,1,'16 transaction retries must not double-mint rewards');
- assert.equal(balances.length,2);assert.equal(inbox.length,1);
+ assert.equal(balances.length,4);assert.equal(inbox.length,1);
  const rotated=transactionalSoloRewardStoreV2({
   pool,writers,approvedPolicyIds:['different-new-policy'],
  });

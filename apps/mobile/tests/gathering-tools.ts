@@ -67,11 +67,41 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
  }
 }
 
-// Tier 3 blueprints no longer overlap the early Tier 2 encounter window.
-ok(GATHERING_TOOLS.find(t=>t.id==='OATHSTONE_HATCHET')?.blueprint?.sourceMonsterId==='OATHGLASS_REVENANT','Tier 3 hatchet blueprint must be awarded by the late Asterfall Revenant, not the level-15 Treant');
-ok(!MONSTERS.find(m=>m.id==='ANCIENT_TREANT')?.drops.some(d=>d.itemId==='BP_OATHSTONE_HATCHET'),'Early Treant must not retain a duplicate Tier 3 hatchet blueprint');
-const tier3SourceLevels=GATHERING_TOOLS.filter(t=>t.tier===3).map(t=>MONSTERS.find(m=>m.id===t.blueprint?.sourceMonsterId)?.level??0).sort((a,b)=>a-b);
-ok(tier3SourceLevels.join(',')==='19,22,25','Tier 3 blueprint hunts must be staggered across level 19, 22 and 25 enemies');
+// Keep blueprint hunts in distinct level bands, without multiple enemy sources for the same recipe.
+const expectedBlueprintEncounters:Readonly<Record<string,{source:string;level:number}>>={
+ BP_ASTER_IRON_HATCHET:{source:'THORNLING',level:10},
+ BP_IRONWOOD_ROD:{source:'MIRE_HERON',level:12},
+ BP_ASTER_IRON_PICKAXE:{source:'CAVE_SKITTER',level:16},
+ BP_OATHSCALE_ROD:{source:'DROWNED_PILGRIM',level:22},
+ BP_OATHSTONE_PICKAXE:{source:'FALLEN_SENTINEL',level:24},
+ BP_OATHSTONE_HATCHET:{source:'OATHGLASS_REVENANT',level:25},
+ BP_FROSTIRON_HATCHET:{source:'FROSTWOLF',level:51},
+ BP_FROSTIRON_PICKAXE:{source:'BELLWRAITH',level:61},
+ BP_RIMEGLASS_ROD:{source:'LAKEBOUND_SPECTER',level:68},
+};
+ok(Object.keys(expectedBlueprintEncounters).length===TOOL_BLUEPRINT_ITEMS.length,'Every blueprint must have one documented hunt');
+for(const tool of GATHERING_TOOLS.filter(tool=>!!tool.blueprint)){
+ const blueprint=tool.blueprint!,expected=expectedBlueprintEncounters[blueprint.itemId];
+ const source=MONSTERS.find(monster=>monster.id===blueprint.sourceMonsterId);
+ ok(!!expected&&!!source&&source.id===expected.source&&source.level===expected.level,tool.name+' must drop at its intended progression encounter');
+ ok(!source.boss,tool.name+' must remain obtainable from repeatable normal encounters');
+ ok(tool.tier<4?source.zone!=='Frostmarch':source.zone==='Frostmarch',tool.name+' blueprint source must match its chapter');
+ const actualSources=MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===blueprint.itemId));
+ ok(actualSources.length===1&&actualSources[0].id===source.id,tool.name+' blueprint must have exactly one correct monster source');
+}
+for(const skillId of ['mining','woodcutting','fishing'] as const){
+ const hunt=GATHERING_TOOLS.filter(tool=>tool.skillId===skillId&&!!tool.blueprint).sort((a,b)=>a.tier-b.tier);
+ const levels=hunt.map(tool=>MONSTERS.find(monster=>monster.id===tool.blueprint!.sourceMonsterId)!.level);
+ ok(levels[1]-levels[0]>=6,skillId+' Tier 3 hunt must not immediately follow its Tier 2 drop');
+ ok(levels[2]-levels[1]>=20,skillId+' Tier 4 must stay a later-region chase');
+}
+for(const [monsterId,blueprintId] of [
+ ['ANCIENT_TREANT','BP_OATHSTONE_HATCHET'],
+ ['RUNEBOUND_MINER','BP_OATHSTONE_PICKAXE'],
+ ['CHOIR_HUNTER','BP_RIMEGLASS_ROD'],
+] as const){
+ ok(!MONSTERS.find(monster=>monster.id===monsterId)?.drops.some(drop=>drop.itemId===blueprintId),monsterId+' must no longer drop the migrated blueprint');
+}
 
 // An existing save containing a single equipped tool remains readable.
 const legacyToolState={...state,character:{...state.character!,equippedToolIds:{mining:'OATHSTONE_PICKAXE'}}};

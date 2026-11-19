@@ -9,7 +9,7 @@ create table if not exists public.coop_dungeon_weekly_claims_v1 (
  objective_id text not null check (objective_id in ('clears','deep15','elite3')),
  reward_marks integer not null check (reward_marks=25),
  request_id text not null,
- claimed_at timestamptz not null default pg_catalog.clock_timestamp(),
+ claimed_at timestamptz not null default pg_catalog.transaction_timestamp(),
  primary key(account_id,week_start)
 );
 alter table public.coop_dungeon_weekly_claims_v1 enable row level security;
@@ -66,7 +66,7 @@ create or replace function public.coop_dungeon_weekly_quest_snapshot_server_v1(p
 returns jsonb language plpgsql stable security definer set search_path=''
 as $function$
 declare
- v_now timestamptz:=pg_catalog.clock_timestamp();
+ v_now timestamptz:=pg_catalog.transaction_timestamp();
  v_week_start timestamptz;
  v_week_key text;
  v_week_number integer;
@@ -88,7 +88,7 @@ begin
   else v_id:='elite3';v_name:='Elite Hunter';v_description:='Defeat 3 elite encounters in a single dungeon run this week.';
  end case;
  v_metrics:=public.coop_dungeon_weekly_metrics_server_v1(p_account_id,v_week_start);
- v_progress:=pg_catalog.least(1,pg_catalog.greatest(0,coalesce((v_metrics->>v_id)::integer,0)));
+ v_progress:=least(1,greatest(0,coalesce((v_metrics->>v_id)::integer,0)));
  select exists(select 1 from public.coop_dungeon_weekly_claims_v1 as c
     where c.account_id=p_account_id and c.week_start=(v_week_start at time zone 'UTC')::date)
  into v_claimed;
@@ -125,7 +125,7 @@ begin
  if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;
  if (v_snapshot->>'claimed')::boolean then return v_snapshot; end if;
  if (v_snapshot->>'progress')::integer<1 then raise exception 'dungeon_weekly_quest_incomplete'; end if;
- v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.clock_timestamp() at time zone 'UTC'))::date;
+ v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.transaction_timestamp() at time zone 'UTC'))::date;
  v_id:=v_snapshot->>'id';
  insert into public.coop_dungeon_weekly_claims_v1(account_id,week_start,objective_id,reward_marks,request_id)
  values(p_account_id,v_week_start,v_id,25,p_request_id);
@@ -137,7 +137,7 @@ begin
  if v_reward_ledger_id is null then raise exception 'dungeon_weekly_ledger_failed';end if;
  insert into public.expedition_wallets(account_id) values(p_account_id) on conflict(account_id) do nothing;
  update public.expedition_wallets
- set expedition_marks=expedition_marks+25,updated_at=pg_catalog.clock_timestamp()
+ set expedition_marks=expedition_marks+25,updated_at=pg_catalog.transaction_timestamp()
  where account_id=p_account_id;
  return public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
 end;
@@ -152,7 +152,7 @@ commit;
  if v_snapshot->>'weekKey' is distinct from p_week_key then raise exception 'dungeon_weekly_quest_expired'; end if;
  if (v_snapshot->>'claimed')::boolean then return v_snapshot; end if;
  if (v_snapshot->>'progress')::integer<1 then raise exception 'dungeon_weekly_quest_incomplete'; end if;
- v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.clock_timestamp() at time zone 'UTC'))::date;
+ v_week_start:=(pg_catalog.date_trunc('week',pg_catalog.transaction_timestamp() at time zone 'UTC'))::date;
  v_id:=v_snapshot->>'id';
  insert into public.coop_dungeon_weekly_claims_v1(account_id,week_start,objective_id,reward_marks,request_id)
  values(p_account_id,v_week_start,v_id,25,p_request_id);
@@ -164,7 +164,7 @@ commit;
  if v_reward_ledger_id is null then raise exception 'dungeon_weekly_ledger_failed';end if;
  insert into public.expedition_wallets(account_id) values(p_account_id) on conflict(account_id) do nothing;
  update public.expedition_wallets
- set expedition_marks=expedition_marks+25,updated_at=pg_catalog.clock_timestamp()
+ set expedition_marks=expedition_marks+25,updated_at=pg_catalog.transaction_timestamp()
  where account_id=p_account_id;
  return public.coop_dungeon_weekly_quest_snapshot_server_v1(p_account_id);
 end;

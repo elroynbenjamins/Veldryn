@@ -5,6 +5,7 @@ import {coopTierEnemyMultipliers} from './tier-balance';
 import type {ExpeditionTier} from './constants';
 import type { CombatantDefinition, EncounterBossTuning, PersistentActorState } from '../combat/types';
 import {rollDungeonArtifact,dungeonArtifactBonuses} from '../coop/dungeon-artifacts';
+import {ROOM_BOON_CHOICES} from '../coop/room-boon-choices';
 import { COOP_CLASS_ABILITY_MULTIPLIERS,ROOTBOUND_COOP_BALANCE_V2, type RootboundCoopBalance } from '../coop/config';
 
 export interface PersistentRunState {
@@ -116,7 +117,20 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  let awardedArtifact:string|undefined;
  switch(input.node.kind){
   case 'camp': state=healAtCamp(state,input.players); break;
-  case 'shrine': case 'forge': case 'echo': if(input.enemyDamageProfile!=='qmode-v1')state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]}; break;
+  case 'shrine': case 'forge': case 'echo': {
+   if(input.enemyDamageProfile!=='qmode-v1'){
+    if(input.enduranceLootVersion===1){
+     // Live parties do not use the Solo owner's boon picker: freeze one
+     // deterministic, shared combat boon when the room is actually resolved.
+     const pool=ROOM_BOON_CHOICES.filter(choice=>!['ROOM_BOON_SUPPLY','ROOM_BOON_RESERVE','ROOM_BOON_RECOVERY'].includes(choice.id));
+     const available=pool.filter(choice=>state.boons.filter(id=>id===choice.id).length<3);
+     const eligible=available.length?available:pool;
+     const selected=eligible[deterministicInt(input.serverSecret,0,eligible.length-1,'dungeon-live-boon-v1',input.runId,input.node.nodeId)];
+     state={...state,boons:[...state.boons,selected.id]};
+    }else state={...state,boons:[...state.boons,`${input.node.contentId}:${roll}`]};
+   }
+   break;
+  }
   case 'treasure': case 'secret': {
    awardedArtifact=input.enduranceLootVersion===1?rollDungeonArtifact(input.serverSecret,input.runId,input.node.nodeId,state.artifacts):`${input.node.contentId}:${roll}`;
    state={...state,artifacts:[...state.artifacts,awardedArtifact]};break;

@@ -61,10 +61,19 @@ assert.equal(substitute.resonance,3);
 assert.equal(substitute.maxEquippedCopies,3);
 assert.equal(substitute.combatReady,false);
 assert.equal(substitute.physicallyDelivered,false);
-const notEquipped=validateEquipmentV2EffectGemInstall({...base,
- custodyReceipts:custodyReceipts.slice(0,3)});
-assert.equal(notEquipped.equippedCopiesAfter,3,
- 'Copies that were never equipped must not affect resonance or the three-copy cap');
+const onlyThreeEquipped=validateEquipmentV2EffectGemInstall({...base,
+ custodyReceipts:custodyReceipts.slice(0,3),
+ installed:{...installed,slots:[...installed.slots,{
+  instanceId:items[3].id,effect:{gemId,rollPercent:100},
+ }]},
+ targetInstanceId:items[0].id,
+});
+assert.equal(onlyThreeEquipped.equippedCopiesAfter,3,
+ 'Gem-equipped copies that are not worn must not count toward the active loadout cap');
+assert.throws(()=>validateEquipmentV2EffectGemInstall({...base,
+ custodyReceipts:custodyReceipts.slice(0,3)}),
+ /v2_effect_requires_equipped_copy/,
+ 'An unequipped item cannot receive a new Effect Gem');
 const otherFamily=validateEquipmentV2EffectGemInstall({...base,
  incomingGemId:'gem:effect_execution:g1'});
 assert.equal(otherFamily.equippedCopiesAfter,1);

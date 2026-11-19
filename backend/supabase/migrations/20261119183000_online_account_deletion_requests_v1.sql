@@ -54,26 +54,26 @@ begin
  v_actor:=public.online_account_deletion_request_guard_v1();
  if p_confirmation is distinct from 'DELETE ACCOUNT' or p_request_id is null
  then raise exception 'INVALID_DELETION_CONFIRMATION';end if;
- insert into private.online_account_deletion_requests_v1
+ insert into private.online_account_deletion_requests_v1 as current_request
   (account_id,request_id,status,policy_version)
  values(v_actor,p_request_id,'pending_review','deletion-request-v1')
  on conflict(account_id) do update
  set request_id=case
-       when private.online_account_deletion_requests_v1.status='cancelled'
+       when current_request.status='cancelled'
        then excluded.request_id
-       else private.online_account_deletion_requests_v1.request_id end,
+       else current_request.request_id end,
      status=case
-       when private.online_account_deletion_requests_v1.status='cancelled'
+       when current_request.status='cancelled'
        then 'pending_review'
-       else private.online_account_deletion_requests_v1.status end,
+       else current_request.status end,
      requested_at=case
-       when private.online_account_deletion_requests_v1.status='cancelled'
+       when current_request.status='cancelled'
        then pg_catalog.transaction_timestamp()
-       else private.online_account_deletion_requests_v1.requested_at end,
+       else current_request.requested_at end,
      updated_at=case
-       when private.online_account_deletion_requests_v1.status='cancelled'
+       when current_request.status='cancelled'
        then pg_catalog.transaction_timestamp()
-       else private.online_account_deletion_requests_v1.updated_at end
+       else current_request.updated_at end
  returning * into v_row;
  return pg_catalog.jsonb_build_object('status',v_row.status,
   'requestId',v_row.request_id::text,

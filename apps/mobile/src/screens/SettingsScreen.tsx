@@ -16,6 +16,7 @@ import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
+import {OnlineAccountDeletionPanel} from '../components/OnlineAccountDeletionPanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
 import {typography,UI_THEMES,equipmentTheme,type ThemeColors,type UiThemeId} from '../theme/theme';
@@ -197,6 +198,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
         {CHAT_TRANSLATION_RELEASED?<Text style={[s.sub,{color:theme.muted}]}>{chatTranslationPrivacy(language).description}</Text>:null}
         <GameButton title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/>
       </Panel>
+      {online&&<OnlineAccountDeletionPanel language={language}/>}
       {!online?<Panel>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteControls}} onPress={()=>setShowDeleteControls(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
           <Text style={[s.disclosureLabel,{color:theme.bad}]}>{a("Delete local save")}</Text>

@@ -16,6 +16,8 @@ export interface DailySuppliesTrack{
  schemaVersion:2;
  totalClaims:number;
  lastClaimDayKey?:string;
+ /** UTC millisecond clock for shared Forge activity settlement; never derived from client UI time. */
+ forgeSettledAtMs?:number;
  bank?:Partial<Record<DailySupplyBoostType,DailySupplyCharge[]>>;
  active?:Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost>>;
  queued?:Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost[]>>;
@@ -112,7 +114,9 @@ export function normalizeDailySuppliesTrack(value:unknown):DailySuppliesTrack|un
  const row=value as Record<string,unknown>,totalClaims=Number(row.totalClaims);
  if((row.schemaVersion!==1&&row.schemaVersion!==2)||!Number.isSafeInteger(totalClaims)||totalClaims<0)return undefined;
  const lastClaimDayKey=typeof row.lastClaimDayKey==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(row.lastClaimDayKey)?row.lastClaimDayKey:undefined;
+ const forgeSettledAtMs=Number(row.forgeSettledAtMs);
  return {schemaVersion:2,totalClaims,...(lastClaimDayKey?{lastClaimDayKey}:{}),
+  ...(Number.isSafeInteger(forgeSettledAtMs)&&forgeSettledAtMs>0?{forgeSettledAtMs}:{}),
   bank:normalizeBoostBank(row.bank),active:normalizeBoostActive(row.active),queued:normalizeQueued(row.queued)};
 }
 /** The old character-bound charge counter is accepted only for save migration. */

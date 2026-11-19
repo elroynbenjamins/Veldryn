@@ -72,14 +72,25 @@ for(const [id,name,region,tier,castCount] of six){
  assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
   ...stored,preparedEnemies:weakerCast,
   preparedEnemyDigest:enemyV2SnapshotDigest(weakerCast),
- }),/cast_counter_contract_mismatch/);
+ }),/stored_boss_authored_kit_mismatch|cast_counter_contract_mismatch/);
  const forgedPhases=candidate.preparedEnemies.map(e=>({...e,
   phases:e.phases?.map(p=>p.id==='LEGACY_PHASE'?p:{...p,hpPct:.40}),
  }));
  assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
   ...stored,preparedEnemies:forgedPhases,
   preparedEnemyDigest:enemyV2SnapshotDigest(forgedPhases),
- }),/phase_counter_contract_mismatch/);
+ }),/stored_boss_authored_kit_mismatch|phase_counter_contract_mismatch/);
+ const forgedDamage=candidate.preparedEnemies.map(e=>({
+  ...e,abilities:e.abilities.map(a=>a.id===preview[0].casts[0].abilityId?{
+   ...a,effects:a.effects.map(fx=>({...fx,
+    ...(fx.coeff!==undefined?{coeff:fx.coeff*1.2}:{flat:999999})})),
+  }:a),
+ }));
+ assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
+  ...stored,preparedEnemies:forgedDamage,
+  preparedEnemyDigest:enemyV2SnapshotDigest(forgedDamage),
+ }),/stored_boss_authored_kit_mismatch/,
+  'Re-hashing a changed boss damage/shield should not authorize it');
  legacyChecks++;
 }
 assert.equal(legacyChecks,6);

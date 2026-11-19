@@ -32,6 +32,28 @@ grant select on private.party_sigils_wallet_v65,
 
 -- There is deliberately NO service-role INSERT/UPDATE grant. The eventual
 -- private writer must run as a separately audited transaction-capable role.
+-- Defense in depth: even an inadvertently privileged SQL caller cannot
+-- forge a ledger row with the wrong account, receipt delta or resulting wallet.
+create or replace function private.party_sigils_v65_insert_guard()
+returns trigger language plpgsql security invoker set search_path='' as $
+declare r private.party_event_reward_receipts_v61%rowtype;
+declare v_balance bigint;
+begin
+ select * into r from private.party_event_reward_receipts_v61
+ where source_key=new.source_key for update;
+ select balance into v_balance from private.party_sigils_wallet_v65
+ where account_id=new.account_id for update;
+ if not found or r.source_key is null or
+    r.account_id is distinct from new.account_id or
+    r.party_sigils_delta is distinct from new.delta or
+    v_balance is distinct from new.balance_after
+ then raise exception 'party_sigils_v65_noncanonical_ledger_row';end if;
+ return new;
+end;$;
+create trigger party_sigils_v65_ledger_insert_guard
+ before insert on private.party_sigils_ledger_v65
+ for each row execute function private.party_sigils_v65_insert_guard();
+
 -- Each ledger row is append-only; rollback can undo a whole transaction.
 create or replace function private.party_sigils_v65_append_only()
 returns trigger language plpgsql security invoker set search_path='' as $$
@@ -88,6 +110,8 @@ begin
   'replayed',false);
 end;$$;
 
+revoke all on function private.party_sigils_v65_insert_guard()
+ from public,anon,authenticated,service_role;
 revoke all on function private.party_sigils_v65_append_only()
  from public,anon,authenticated,service_role;
 revoke all on function private.apply_party_sigils_from_receipt_v65(uuid,text)

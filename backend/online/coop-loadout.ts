@@ -69,7 +69,9 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
    ...(combatCompanion?{combatCompanion:structuredClone(combatCompanion)}:{}),
    maxHp:kit.stats.maxHp*actual.hp/reference.hp*levelScale,
    attackPower:kit.stats.attackPower*actual.attack/reference.attack*levelScale*(1+bonus.power),
-   healingPower:kit.stats.healingPower*actual.attack/reference.attack*levelScale*(1+bonus.potency),
+   // The bonus is derived from the exact saved equipped copy. Apply only to
+   // dungeon healing output; attack Power, consumables and basic strikes stay separate.
+   healingPower:kit.stats.healingPower*actual.attack/reference.attack*levelScale*(1+bonus.potency)*(1+bonus.healingPower),
    defense:kit.stats.defense*actual.defense/reference.defense*levelScale,
    accuracy:kit.stats.accuracy*actual.accuracy/reference.accuracy*levelScale,
    evasion:kit.stats.evasion*actual.evasion/reference.evasion*levelScale,

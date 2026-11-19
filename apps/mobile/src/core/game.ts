@@ -175,7 +175,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1,abilityDamage:0,healingPower:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -213,7 +213,9 @@ export function effectiveStats(state:GameState){
     // Stack equipment and class wards multiplicatively.
     ward:1-(1-setStats.ward)*(1-mastery.ward),
     tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
-    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
+    penetration:setStats.penetration+mastery.penetration,
+     classHealing:mastery.classHealing*(1+setStats.healingPower),
+     abilityDamage:setStats.abilityDamage,healingPower:setStats.healingPower,
   }
 }
 
@@ -557,7 +559,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
  const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
- const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(1+stats.healingPower)*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // Healers reduce attrition, but exertion always retains a small food cost.
  const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
@@ -605,7 +607,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
- const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour*(1+runtime.stats.healingPower);
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
@@ -695,7 +697,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
    const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
-   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,abilityDamageBonus:runtime.stats.abilityDamage,
      companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
    const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});

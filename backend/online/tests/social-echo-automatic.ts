@@ -28,6 +28,8 @@ async function main(){
  // Lower-power donors are welcome if level, role and equipment are valid.
  // Only the host's Live dungeon entry retains a Combat Power gate.
  const modest=createCharacter(newGame(0),'WAYFINDER','Modest Ally');
+ // Contact candidates are persisted online UUIDs, never LOCAL_CHAR_1 fixture IDs.
+ modest.character!.id='00000000-0000-4000-8000-000000000003';
  modest.character!.level=10;
  modest.character!.xp=legacyCharacterTotalXpAtLevel(10);
  modest.character!.equipment=Object.fromEntries(noviceSetFor('WAYFINDER').slots.map(slot=>[slot,noviceItemId('WAYFINDER',slot)]));

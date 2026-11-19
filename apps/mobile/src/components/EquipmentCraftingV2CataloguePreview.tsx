@@ -28,7 +28,8 @@ export function EquipmentCraftingV2CataloguePreview({state,onInspect}:{state:Gam
   const text=search.trim().toLocaleLowerCase();
   return EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>(tier==='all'||piece.tier===tier)
    &&(role==='all'||piece.role===role)
-   &&(!text||(piece.name+' '+piece.slot+' '+piece.role+('classRestriction' in piece?' '+piece.classRestriction:'')).toLocaleLowerCase().includes(text)))
+   &&(!text||(piece.name+' '+piece.slot+' '+piece.role+('originClass' in piece&&piece.originClass?' '+piece.originClass:'')+
+    ('equipmentFamily' in piece&&piece.equipmentFamily?' '+piece.equipmentFamily:'')).toLocaleLowerCase().includes(text)))
    .map(piece=>{
     const routes=equipmentV2PreviewRoutesForItem(state,piece.id,'gather');
     const requiredGold=equipmentV2DraftAssembly(piece.tier,piece.slot,Boolean(piece.setId)).gold;
@@ -49,7 +50,7 @@ export function EquipmentCraftingV2CataloguePreview({state,onInspect}:{state:Gam
    <View style={s.iconSlot} accessibilityLabel={item.piece.slot}><Text style={s.iconLetter}>{SLOT_MARK[item.piece.slot]}</Text></View>
    <View style={s.itemBody}>
     <Text numberOfLines={2} style={s.itemName}>{item.piece.name}</Text>
-    <Text style={s.itemSub}>T{item.piece.tier} · {ROLE_NAMES[item.piece.role]} · {item.piece.slot}{item.piece.setId?' · Set':''}</Text>
+    <Text style={s.itemSub}>T{item.piece.tier} · {ROLE_NAMES[item.piece.role]} · {item.piece.slot}{item.piece.setId?' · Set':''}{'equipmentFamily' in item.piece&&item.piece.equipmentFamily?' · '+item.piece.equipmentFamily:''}</Text>
     <Text style={[s.itemStatus,{color:item.ready?C.good:C.muted}]}>
      {item.ready?'Ready for preview':item.locked?'Requires character or profession level':item.missingTypes?item.missingTypes+' material types still needed':'Check Gold or Forge queue'}
     </Text>

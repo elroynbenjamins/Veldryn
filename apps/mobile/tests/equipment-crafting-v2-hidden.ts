@@ -3,13 +3,14 @@ import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-prep
 import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
 import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
-import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef,ITEMS} from '../src/content/items';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
+import {V2_EQUIPMENT_FAMILY_CLASSES as MOBILE_FAMILIES,v2EquipmentFamilyCompatible as mobileFamilyAllowed} from '../src/core/equipment-crafting-v2-weapon-families';
+import {V2_EQUIPMENT_FAMILY_CLASSES as SERVER_FAMILIES,v2EquipmentFamilyCompatible as serverFamilyAllowed} from '../../../backend/src/server/equipment/equipment-crafting-v2-weapon-families';
 import {newGame,createCharacter} from '../src/core/game';
 import {equipmentV2PreviewRoutesForItem,equipmentV2HiddenCatalogueSummary} from '../src/core/equipment-crafting-v2-adapter';
 import {draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
@@ -65,8 +66,8 @@ check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.
  'Approved V2 catalogue should retain 15 sets, 42 set pieces, 24 standalone and nine weapon archetypes');
 check(catalogAudit.uniqueIds&&!catalogAudit.invalidProfiles.length&&!catalogAudit.badSets.length,
  'V2 catalogue IDs, slots, allowed 1-2 stat profiles and set thresholds are valid');
-check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===118&&EQUIPMENT_V2_RECIPES.length===236,
- '66 core pieces plus 52 class weapons/offhands each require two hidden methods');
+check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===122&&EQUIPMENT_V2_RECIPES.length===244,
+ '66 core pieces, 52 themed armaments and four axes each require two hidden methods');
 check(EQUIPMENT_V2_PIECES.every(p=>p.id.startsWith('EQ2_')&&!p.id.startsWith('T1P_')),
  'V2 IDs must not alias legacy V33 item IDs');
 for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
@@ -86,7 +87,7 @@ for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
  }
 }
 
-const oneHand=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>'classRestriction' in piece);
+const oneHand=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>'originClass' in piece);
 check(oneHand.length===52,'All 52 class armaments are present in the hidden craftable catalogue');
 for(const item of oneHand){
  const recipes=equipmentV2RecipesForItem(item.id);
@@ -102,7 +103,7 @@ check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='
  'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
 
 const model=equipmentV2HiddenCatalogueSummary();
-check(model.count===118&&model.t1===25&&model.t2===28&&model.t3===28&&model.t4===37,
+check(model.count===122&&model.t1===26&&model.t2===29&&model.t3===29&&model.t4===38,
  'Hidden catalogue tier counts include set pieces plus standalones');
 const hero=createCharacter(newGame(2000000000000),'IRONWARDEN');
 const t1Piece=EQUIPMENT_V2_PIECES.find(p=>p.tier===1)!;
@@ -142,7 +143,7 @@ let badRollRejected=false;
 try{draftEquipmentV2Outcome(trusted,()=>-1)}catch{badRollRejected=true}
 check(badRollRejected,'Out-of-range server RNG samples must fail closed');
 let randomSeed=77;
-const deterministic=max=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
+const deterministic=(max:number)=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
 for(let n=0;n<50;n++){
  const roll=draftEquipmentV2Outcome(trusted,deterministic);
  check(new Set(roll.affixes.map(x=>x.stat)).size===roll.affixes.length
@@ -150,20 +151,32 @@ for(let n=0;n<50;n++){
   'Server rolls must have distinct legal affix types and nonnegative magnitudes');
 }
 
-check(EQUIPMENT_V2_ARMAMENTS.length===52,'All nine class weapons and four optional offhands must exist at each of four tiers');
+check(EQUIPMENT_V2_ARMAMENTS.length===56,'All 52 themed armaments and four shared axes must exist across four tiers');
 for(const tier of [1,2,3,4] as const){
  for(const character of V2_CLASS_ARMAMENT_SPECS){
   const armaments=equipmentV2ClassLoadoutArmaments(tier,character.classId);
   check(armaments.length===(character.hands==='one'?2:1),
    'Hand allocation must be class-correct at T'+tier+': '+character.classId);
   check(armaments.every(row=>row.classId===character.classId&&row.tier===tier),
-   'Class weapon restrictions must not leak to another class');
+   'Original class tags must not alter starting weapon lists');
   const total=armaments.reduce((sum,item)=>sum+equipmentV2StatBudget(equipmentV2ArmamentStats(item)),0);
   check(Math.abs(total-equipmentV2WeaponAndOffhandBudget(tier))<1e-7,
    'Two-handed, dual and one-handed/offhand loadouts must have the same weighted budget');
  }
 }
 
+check(JSON.stringify(MOBILE_FAMILIES)===JSON.stringify(SERVER_FAMILIES),
+ 'Client and server must share exactly one compatibility matrix');
+for(const [family,classes] of Object.entries(MOBILE_FAMILIES)){
+ for(const spec of V2_CLASS_ARMAMENT_SPECS){
+  check(mobileFamilyAllowed(spec.classId,family)===serverFamilyAllowed(spec.classId,family)
+   &&mobileFamilyAllowed(spec.classId,family)===classes.includes(spec.classId as never),
+   'Weapon compatibility drift: '+spec.classId+' '+family);
+ }
+}
+check(mobileFamilyAllowed('IRONWARDEN','axe')&&mobileFamilyAllowed('DAWNKEEPER','wand')
+ &&mobileFamilyAllowed('HEXWEAVER','staff')&&!mobileFamilyAllowed('IRONWARDEN','wand'),
+ 'Shared weapon families must allow intended builds but reject incompatible pairings');
 check(V2_SERVER_PIECES.length===EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length,'Client and canonical server piece counts diverge');
 check(V2_SERVER_RECIPES.length===EQUIPMENT_V2_RECIPES.length,'Client and canonical server recipe counts diverge');
 check(V2_SERVER_MANIFEST_VERSION.startsWith('eq2-hidden-draft-'),'Manifest must remain clearly unreleased');
@@ -173,6 +186,8 @@ for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
   &&backend.role===piece.role&&backend.profile===piece.profile&&backend.material===piece.material
   &&backend.setId===piece.setId
   &&backend.classRestriction===('classRestriction' in piece?piece.classRestriction:undefined)
+  &&backend.originClass===('originClass' in piece?piece.originClass:undefined)
+  &&backend.equipmentFamily===('equipmentFamily' in piece?piece.equipmentFamily:undefined)
   &&backend.hands===('hands' in piece?piece.hands:undefined),
   'Client/server equipment manifest mismatch: '+piece.id);
 }

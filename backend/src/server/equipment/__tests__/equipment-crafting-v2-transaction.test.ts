@@ -6,10 +6,10 @@ import {assertEquipmentCraftingV2Released} from '../equipment-crafting-v2-gate';
 import {resolveEquipmentV2DraftCommand,runEquipmentV2Command,V2DraftCraftError,
  type V2DraftContext,type V2DraftSnapshot} from '../equipment-crafting-v2-transaction';
 
-assert.equal(V2_SERVER_PIECES.length,118,'Server only knows canonical 118 hidden item templates');
-assert.equal(V2_SERVER_RECIPES.length,236,'Two canonical recipes per hidden item');
-assert.equal(new Set(V2_SERVER_PIECES.map(x=>x.id)).size,118);
-assert.equal(new Set(V2_SERVER_RECIPES.map(x=>x.id)).size,236);
+assert.equal(V2_SERVER_PIECES.length,122,'Server only knows canonical 122 hidden item templates');
+assert.equal(V2_SERVER_RECIPES.length,244,'Two canonical recipes per hidden item');
+assert.equal(new Set(V2_SERVER_PIECES.map(x=>x.id)).size,122);
+assert.equal(new Set(V2_SERVER_RECIPES.map(x=>x.id)).size,244);
 for(const recipe of V2_SERVER_RECIPES){
  const source=v2ServerRecipeAndPiece(recipe.id);
  assert.ok(source,'All recipes must reference server-owned equipment');
@@ -18,7 +18,8 @@ for(const recipe of V2_SERVER_RECIPES){
  assert.equal(recipe.gold%100,0,'Gold assembly values must be rounded to 100');
  assert.ok(recipe.inputs.length>=4&&recipe.inputs.every(i=>Number.isSafeInteger(i.quantity)&&i.quantity>0));
  if(recipe.pieceId.startsWith('EQ2_WEAPON_')||recipe.pieceId.startsWith('EQ2_OFFHAND_')){
-  assert.ok(source.piece.classRestriction,'Server must enforce an explicit wearable class on V2 armaments');
+  assert.ok(source.piece.equipmentFamily,'Every V2 armament requires a canonical shared family');
+  assert.equal(source.piece.classRestriction,undefined,'Ordinary armaments must not be class-locked');
   if(source.piece.slot==='weapon')
    assert.ok(['one','two','dual'].includes(source.piece.hands??''),'Weapon must define its hand use');
   else assert.equal(source.piece.hands,undefined,'Offhands are not weapons with hand-count metadata');

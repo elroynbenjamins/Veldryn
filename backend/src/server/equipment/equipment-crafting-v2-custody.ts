@@ -26,7 +26,7 @@ export type V2CustodyIntent=
 export type V2CustodyDenial=
  |'ok'|'duplicate_instance'|'unknown_character'|'unknown_item'
  |'invalid_item_snapshot'|'unverified_template'|'wrong_owner'|'wrong_location'|'wrong_class'
- |'level_locked'|'invalid_character_level'|'must_unequip_conflicts';
+ |'level_locked'|'invalid_character_level'|'incompatible_weapon_family'|'must_unequip_conflicts';
 export interface V2CustodyPlan{
  allowed:boolean;reason:V2CustodyDenial;
  /** Explicit old item IDs: never silently lose, destroy or extract gear/gems. */

@@ -7,11 +7,11 @@ import {
  type V2ExactEquipmentTemplate,
 } from '../equipment-crafting-v2-instances';
 
-assert.equal(V2_SERVER_PIECES.length,118,'118 exact V2 equipment templates expected');
-assert.equal(V2_SERVER_RECIPES.length,236,'236 canonical methods must be retained');
+assert.equal(V2_SERVER_PIECES.length,122,'122 exact V2 equipment templates expected');
+assert.equal(V2_SERVER_RECIPES.length,244,'244 canonical methods must be retained');
 const pieceById=new Map(V2_SERVER_PIECES.map(piece=>[piece.id,piece]));
 const recipeByPiece=new Map(V2_SERVER_RECIPES.filter(r=>r.route==='foundation').map(r=>[r.pieceId,r]));
-assert.equal(recipeByPiece.size,118);
+assert.equal(recipeByPiece.size,122);
 const exactByPiece=new Map<string,V2ExactEquipmentTemplate>();
 for(const piece of V2_SERVER_PIECES){
  const recipe=recipeByPiece.get(piece.id);
@@ -25,6 +25,8 @@ for(const piece of V2_SERVER_PIECES){
  assert.ok(v2ServerExactTemplateConsistent(exact),piece.id+' exact copy is canonical');
  assert.equal(exact.name,piece.name);assert.equal(exact.slot,piece.slot);
  assert.equal(exact.classRestriction,piece.classRestriction);
+ assert.equal(exact.originClass,piece.originClass);
+ assert.equal(exact.equipmentFamily,piece.equipmentFamily);
  assert.equal(exact.hands,piece.hands);
  assert.equal(exact.quality,0);
  assert.equal(exact.rarity,'mythic');
@@ -46,10 +48,20 @@ const wayfinder=exactByPiece.get('EQ2_WEAPON_T2_WAYFINDER');
 const ironShield=exactByPiece.get('EQ2_OFFHAND_T2_IRONWARDEN');
 const ironSword=exactByPiece.get('EQ2_WEAPON_T2_IRONWARDEN');
 const fieldHelmet=exactByPiece.get('EQ2_FIELDBORN_GUARD_HELMET');
-assert.ok(wayfinder&&ironShield&&ironSword&&fieldHelmet);
+const axe=exactByPiece.get('EQ2_WEAPON_T2_AXE');
+const hexWand=exactByPiece.get('EQ2_WEAPON_T2_HEXWEAVER');
+const stoneStaff=exactByPiece.get('EQ2_WEAPON_T2_STONECALLER');
+assert.ok(wayfinder&&ironShield&&ironSword&&fieldHelmet&&axe&&hexWand&&stoneStaff);
 assert.equal(v2ServerEquipPreview({newItem:wayfinder,characterClass:'IRONWARDEN',
- characterLevel:30,equipped:[]}).reason,'wrong_class',
- 'Crafting is unrestricted but equipping the wrong class weapon is blocked');
+ characterLevel:30,equipped:[]}).reason,'incompatible_weapon_family',
+ 'Crafting is unrestricted; incompatible weapon families are blocked');
+assert.equal(v2ServerEquipPreview({newItem:axe,characterClass:'IRONWARDEN',characterLevel:30,equipped:[]}).allowed,true);
+assert.equal(v2ServerEquipPreview({newItem:axe,characterClass:'RAVAGER',characterLevel:30,equipped:[]}).allowed,true);
+assert.equal(v2ServerEquipPreview({newItem:hexWand,characterClass:'DAWNKEEPER',characterLevel:30,equipped:[]}).allowed,true);
+assert.equal(v2ServerEquipPreview({newItem:hexWand,characterClass:'STONECALLER',characterLevel:30,equipped:[]}).allowed,true);
+assert.equal(v2ServerEquipPreview({newItem:stoneStaff,characterClass:'HEXWEAVER',characterLevel:30,equipped:[]}).allowed,true);
+assert.equal(v2ServerEquipPreview({newItem:hexWand,characterClass:'IRONWARDEN',characterLevel:30,equipped:[]}).reason,'incompatible_weapon_family');
+assert.equal(v2ServerEquipPreview({newItem:ironShield,characterClass:'DAWNKEEPER',characterLevel:30,equipped:[]}).allowed,true);
 assert.equal(v2ServerEquipPreview({newItem:wayfinder,characterClass:'WAYFINDER',
  characterLevel:11,equipped:[]}).reason,'level_locked');
 assert.equal(v2ServerEquipPreview({newItem:wayfinder,characterClass:'WAYFINDER',
@@ -75,6 +87,8 @@ const invalid=[
  {...ironSword,quality:101},
  {...ironSword,slot:'ring'},
  {...ironSword,classRestriction:'ANY_CLASS'},
+ {...ironSword,originClass:'HEXWEAVER'},
+ {...ironSword,equipmentFamily:'wand'},
  {...ironSword,affixes:[ironSword.affixes[0],ironSword.affixes[0]]},
  {...ironSword,manifestVersion:'old'},
  {...ironSword,hands:'two'},
@@ -102,4 +116,4 @@ assert.throws(()=>v2ServerCreateExactTemplate(legitimateSource,{
 }),/uncanonical_v2_item_template/,
  'A mint must use the exact canonical recipe that produces the selected gear');
 
-console.log('PASS: 118 immutable Equipment V2 exact templates, stats, class/hand equip preflight and tamper rejection');
+console.log('PASS: 122 immutable Equipment V2 exact templates, stats, class/hand equip preflight and tamper rejection');

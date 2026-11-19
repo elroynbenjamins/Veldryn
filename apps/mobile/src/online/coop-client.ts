@@ -42,6 +42,9 @@ export function coopErrorMessage(error:unknown,fallback='Dungeons are temporaril
  if(message==='dungeon_level_requirement')return 'Requires level 10 for Asterfall or level 25 for Sunscar.';
  if(message==='dungeon_power_requirement')return 'Your Combat Power is below the selected dungeon tier requirement.';
  if(message==='dungeon_unavailable')return 'This dungeon is no longer open for new runs.';
+ if(message==='social_echo_unavailable')return 'A selected friend or guild Echo is no longer available. Refresh your party choices.';
+ if(message==='invalid_echo_role_composition'||message==='duplicate_damage_class')return 'Your dungeon team needs one Tank, two different Damage classes, and one Support.';
+ if(message==='duplicate_coop_account')return 'Choose only one character from each friend or guild member.';
  if(message==='stale_game_version')return 'Your character updated while joining the dungeon. Please try again.';
  if(error instanceof Error&&error.message.trim())return error.message;
  if(typeof error==='string'&&error.trim())return error;

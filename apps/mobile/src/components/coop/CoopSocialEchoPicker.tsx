@@ -5,7 +5,7 @@ import type {CoopColors} from '../../theme/coop-ui-theme';
 import {dungeonEchoPickerText} from '../../i18n/dungeon-social-echo-copy';
 import type {Language} from '../../i18n/languages';
 import {validateSelectedSocialEchoCharacterIds,type SocialEchoCandidate} from '../../core/coop-social-echoes';
-import {FantasyPanel,RoleBadge} from './CoopVisualKit';
+import {FantasyPanel} from './CoopVisualKit';
 import {GameButton} from '../GameButton';
 
 type Role='tank'|'damage'|'support';
@@ -54,15 +54,15 @@ export function CoopSocialEchoPicker({
   const q=search.trim().toLowerCase();
   return !q||row.name.toLowerCase().includes(q)||displayClass(row.classId).toLowerCase().includes(q);
  }).sort((a,b)=>Number(selectedIds.includes(b.characterId))-Number(selectedIds.includes(a.characterId))||a.name.localeCompare(b.name)),[candidates,filter,search,selectedIds]);
+ const disabledReason=(code:string)=>code==='duplicate_coop_account'?t('onePlayer'):
+  code==='duplicate_damage_class'?t('uniqueDamage'):t('slotFull');
  const toggle=(candidate:SocialEchoCandidate)=>{
   if(selectedIds.includes(candidate.characterId)){
    onChange(selectedIds.filter(id=>id!==candidate.characterId));setSelectionError('');return;
   }
   const errorCode=reasonFor(candidate,selectedIds,candidates,hostClassId,hostRole);
   if(errorCode){
-   setSelectionError(errorCode==='duplicate_coop_account'?t('onePlayer'):
-    errorCode==='duplicate_damage_class'?t('uniqueDamage'):
-    t('slotFull'));return;
+   setSelectionError(disabledReason(errorCode));return;
   }
   onChange([...selectedIds,candidate.characterId]);setSelectionError('');
  };
@@ -72,7 +72,7 @@ export function CoopSocialEchoPicker({
    <View style={s.emblem}><Text style={s.emblemText}>✦</Text></View>
    <View style={s.headerContent}>
     <Text style={s.heading}>{t('title')}</Text>
-    <Text style={s.subtitle}>{selectedIds.length
+    <Text style={s.subtitle} numberOfLines={2}>{selectedIds.length
      ?t('chosen',selectedIds.length)
      :t('subtitle')}</Text>
    </View>
@@ -80,7 +80,8 @@ export function CoopSocialEchoPicker({
    <Text style={s.chevron}>{expanded?'⌄':'›'}</Text>
   </Pressable>
 
-  <View style={s.partySlots} accessibilityLabel={t('title')}>
+  <View style={s.partySlots} accessible accessibilityLabel={t('title')}>
+
    {slots.map(slot=><View key={slot.key} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
     <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{t(slot.role)}</Text>
     <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name}</Text>
@@ -108,13 +109,14 @@ export function CoopSocialEchoPicker({
     <Text style={s.emptyTitle}>{t('emptyTitle')}</Text>
     <Text style={s.meta}>{t('emptyCopy')}</Text>
    </View>:null}
-   {available.map(candidate=>{
+   {!loading&&!error&&available.map(candidate=>{
     const chosen=selectedIds.includes(candidate.characterId);
     const why=chosen?'':selectedIds.length>=3?'max':reasonFor(candidate,selectedIds,candidates,hostClassId,hostRole);
     const disabled=!!why;
+    const reasonLabel=disabled?disabledReason(why):'';
     return <Pressable key={candidate.characterId} accessibilityRole="checkbox"
      accessibilityLabel={candidate.name+', '+displayClass(candidate.classId)+', '+candidate.role}
-     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?t('disabled'):undefined}
+     accessibilityState={{checked:chosen,disabled}} accessibilityHint={disabled?reasonLabel:t('explain')}
      disabled={disabled} onPress={()=>toggle(candidate)}
      style={({pressed})=>[s.person,chosen&&s.personChosen,disabled&&s.personDisabled,pressed&&s.pressed]}>
       <View style={[s.avatar,chosen&&s.avatarChosen]}>
@@ -123,9 +125,9 @@ export function CoopSocialEchoPicker({
       <View style={s.personInfo}>
        <Text style={s.personName} numberOfLines={1}>{candidate.name}</Text>
        <Text style={s.personSub} numberOfLines={1}>{displayClass(candidate.classId)}  ·  Lv {candidate.level}</Text>
-       <Text style={s.relationship}>{candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
+       <Text style={[s.relationship,disabled&&s.reason]} numberOfLines={2}>{disabled?reasonLabel:candidate.relationship==='both'?t('both'):candidate.relationship==='friend'?t('friend'):t('guildMember')}</Text>
       </View>
-      <RoleBadge role={candidate.role} label={candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}/>
+      <View style={s.rolePill}><Text style={s.rolePillText}>{candidate.role==='damage'?'DMG':candidate.role==='support'?'SUP':'TANK'}</Text></View>
       <View style={[s.selectIcon,chosen&&s.selectIconChosen]}>
        <Text style={[s.selectIconText,chosen&&s.selectIconTextChosen]}>{chosen?'✓':disabled?'–':'+'}</Text>
       </View>
@@ -157,19 +159,22 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  details:{gap:9,paddingTop:9,borderTopWidth:1,borderTopColor:C.line},
  explainer:{fontSize:11,lineHeight:17,color:C.textSecondary},
  filters:{flexDirection:'row',alignSelf:'flex-start',gap:5},
- filter:{borderWidth:1,borderColor:C.line,borderRadius:6,paddingVertical:7,paddingHorizontal:13,backgroundColor:C.surfaceRaised,minWidth:57,alignItems:'center'},
+ filter:{minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:6,paddingVertical:7,paddingHorizontal:12,backgroundColor:C.surfaceRaised,minWidth:57,alignItems:'center'},
  filterSelected:{borderColor:C.cyan,backgroundColor:C.surface},
  filterText:{fontSize:11,color:C.textSecondary,fontWeight:'800'},filterTextSelected:{color:C.cyan},
- search:{height:37,borderWidth:1,borderColor:C.line,borderRadius:6,paddingHorizontal:11,color:C.text,backgroundColor:C.surfaceRaised,fontSize:12},
- person:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,borderWidth:1,borderColor:C.line,borderRadius:8,paddingHorizontal:9,paddingVertical:7,backgroundColor:C.surface},
+ search:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:6,paddingHorizontal:11,color:C.text,backgroundColor:C.surfaceRaised,fontSize:12},
+ person:{minHeight:60,flexDirection:'row',alignItems:'center',gap:7,borderWidth:1,borderColor:C.line,borderRadius:8,paddingHorizontal:8,paddingVertical:6,backgroundColor:C.surface},
  personChosen:{borderColor:C.cyan,backgroundColor:C.surfaceRaised},
- personDisabled:{opacity:.4},
- avatar:{width:35,height:35,borderRadius:6,alignItems:'center',justifyContent:'center',backgroundColor:C.surfaceRaised,borderColor:C.goldDim,borderWidth:1},
+ personDisabled:{opacity:.66},
+ avatar:{width:32,height:32,borderRadius:6,alignItems:'center',justifyContent:'center',backgroundColor:C.surfaceRaised,borderColor:C.goldDim,borderWidth:1},
  avatarChosen:{borderColor:C.cyan},avatarLetter:{color:C.gold,fontSize:18,fontWeight:'900'},avatarLetterChosen:{color:C.cyan},
  personInfo:{flex:1,minWidth:0,gap:1},
  personName:{fontSize:12,fontWeight:'900',color:C.text},personSub:{fontSize:10,color:C.textSecondary},
- relationship:{fontSize:9,color:C.cyan,fontWeight:'800'},
- selectIcon:{borderWidth:1,borderColor:C.goldDim,borderRadius:5,width:24,height:24,alignItems:'center',justifyContent:'center'},
+ relationship:{fontSize:9,lineHeight:12,color:C.cyan,fontWeight:'800'},
+ reason:{color:C.textSecondary,fontWeight:'700'},
+ rolePill:{minWidth:34,paddingHorizontal:5,minHeight:25,justifyContent:'center',alignItems:'center',borderRadius:5,borderWidth:1,borderColor:C.goldDim,backgroundColor:C.surfaceRaised},
+ rolePillText:{fontSize:9,fontWeight:'900',color:C.gold},
+ selectIcon:{borderWidth:1,borderColor:C.goldDim,borderRadius:5,width:26,height:26,alignItems:'center',justifyContent:'center'},
  selectIconChosen:{backgroundColor:C.cyan,borderColor:C.cyan},
  selectIconText:{fontSize:16,fontWeight:'900',color:C.textSecondary},selectIconTextChosen:{color:C.surface},
  meta:{fontSize:11,lineHeight:17,color:C.textSecondary},

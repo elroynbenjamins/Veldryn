@@ -57,11 +57,13 @@ export class QModeService{
   validateUniqueDamageClasses([input.controllerSnapshot,...allies.map(ally=>ally.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   const player=regionalCombatant(input.controllerSnapshot,input.expeditionId,input.balanceVersion);
   const preferred=new Set(input.preferredProfileIds??[]);
+  const regionalEnabled=input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION;
+  const hostBoost=regionalCombatPowerBoost(input.expeditionId,input.controllerSnapshot.combatPower,regionalEnabled);
   const players=[player,...allies.map(ally=>{
    const base=regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion);
-   return ally.echo&&preferred.has(ally.echo.profileId)
-    ?scaleSocialEchoToHost(base,input.controllerSnapshot.combatPower,ally.snapshot.combatPower)
-    :base;
+   if(!ally.echo||!preferred.has(ally.echo.profileId))return base;
+   const donorBoost=regionalCombatPowerBoost(input.expeditionId,ally.snapshot.combatPower,regionalEnabled);
+   return scaleSocialEchoToHost(base,input.controllerSnapshot.combatPower,ally.snapshot.combatPower,hostBoost,donorBoost);
   })];
   return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,qmodePressureVersion:1,echoSourceAccountIds:allies.filter(ally=>ally.kind==='echo').map(ally=>ally.snapshot.accountId),npcCharacterIds:allies.filter(ally=>ally.kind==='npc').map(ally=>ally.snapshot.characterId)});
  }

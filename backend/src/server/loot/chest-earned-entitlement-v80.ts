@@ -68,7 +68,7 @@ function identity(accountId:string,sourceKey:string):Identity{
  }
  throw Error('chest_v80_cross_account_or_invalid_source');
 }
-interface EntitlementRow{
+interface EntitlementRow extends Record<string,unknown>{
  source_key:string;account_id:string;family:Family;tier:number;
  boss_id:string|null;proof_version:string;table_id:string;
  table_version:string;frozen_loot_table:unknown;

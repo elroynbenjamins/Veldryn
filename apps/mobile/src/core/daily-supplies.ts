@@ -3,7 +3,7 @@ import type {ActiveActivity,CharacterState,GameState,RewardBundle} from './types
 export const DAILY_SUPPLY_BONUS=0.10;
 export const DAILY_SUPPLY_CHARGE_SECONDS=2*60*60;
 export const DAILY_SUPPLY_TRACK_LENGTH=28;
-export const DAILY_SUPPLY_BOOST_TYPES=['gathering_yield','crafting_output','skill_xp','combat_xp'] as const;
+export const DAILY_SUPPLY_BOOST_TYPES=['gathering_speed','crafting_output','skill_xp','combat_xp'] as const;
 export type DailySupplyBoostType=typeof DAILY_SUPPLY_BOOST_TYPES[number];
 
 export interface DailySuppliesTrack{
@@ -31,7 +31,7 @@ export interface DailySupplyTimedResult{
 }
 
 const BOOST_LABELS:Record<DailySupplyBoostType,string>={
- gathering_yield:'Gathering Yield',
+ gathering_speed:'Gathering Speed',
  crafting_output:'Crafting / Processing Output',
  skill_xp:'Skill XP',
  combat_xp:'Combat XP',
@@ -50,7 +50,12 @@ export function normalizeDailySuppliesTrack(value:unknown):DailySuppliesTrack|un
 export function normalizeDailySupplyBank(value:unknown):Partial<Record<DailySupplyBoostType,number>>|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
  const row=value as Record<string,unknown>,out:Partial<Record<DailySupplyBoostType,number>>={};
- for(const type of DAILY_SUPPLY_BOOST_TYPES){const count=Number(row[type]);if(Number.isFinite(count)&&count>0)out[type]=Math.floor(count)}
+ for(const type of DAILY_SUPPLY_BOOST_TYPES){
+  const count=Number(row[type]),legacy=type==='gathering_speed'?Number(row.gathering_yield):0;
+  const current=Number.isFinite(count)&&count>0?Math.floor(count):0;
+  const prior=Number.isFinite(legacy)&&legacy>0?Math.floor(legacy):0;
+  if(current+prior>0)out[type]=current+prior;
+ }
  return Object.keys(out).length?out:undefined;
 }
 function numericRemainders(value:unknown){
@@ -61,7 +66,7 @@ function numericRemainders(value:unknown){
 }
 export function normalizeActiveDailySupplyBoost(value:unknown):ActiveDailySupplyBoost|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
- const row=value as Record<string,unknown>,type=row.type as DailySupplyBoostType,seconds=Number(row.remainingSeconds);
+ const row=value as Record<string,unknown>,rawType=row.type,type=(rawType==='gathering_yield'?'gathering_speed':rawType) as DailySupplyBoostType,seconds=Number(row.remainingSeconds);
  if(!DAILY_SUPPLY_BOOST_TYPES.includes(type)||!Number.isFinite(seconds)||seconds<=0)return undefined;
  const remainders=numericRemainders(row.remainders);
  return {type,remainingSeconds:Math.min(DAILY_SUPPLY_CHARGE_SECONDS,Math.max(1,Math.floor(seconds))),...(remainders?{remainders}:{})};
@@ -70,7 +75,10 @@ export function activeDailySupplyBoosts(character:CharacterState|null|undefined)
  if(!character)return {};
  const mapped=character.activeDailySupplyBoosts,valid:Partial<Record<DailySupplyBoostType,ActiveDailySupplyBoost>>={};
  if(mapped&&typeof mapped==='object'&&!Array.isArray(mapped)){
-  for(const type of DAILY_SUPPLY_BOOST_TYPES){const entry=normalizeActiveDailySupplyBoost(mapped[type]);if(entry&&entry.type===type)valid[type]=entry;}
+  for(const type of DAILY_SUPPLY_BOOST_TYPES){
+   const entry=normalizeActiveDailySupplyBoost(mapped[type]??(type==='gathering_speed'?(mapped as Record<string,unknown>).gathering_yield:undefined));
+   if(entry&&entry.type===type)valid[type]=entry;
+  }
  }
  if(!Object.keys(valid).length){const legacy=normalizeActiveDailySupplyBoost(character.activeDailySupplyBoost);if(legacy)valid[legacy.type]=legacy;}
  return valid;
@@ -129,7 +137,7 @@ export function activateDailySupplyBoost(state:GameState,type:DailySupplyBoostTy
 }
 function activityModeEligible(type:DailySupplyBoostType,mode:'combat'|'gathering'|'skill'|'crafting'|'training'){
  if(type==='combat_xp')return mode==='combat';
- if(type==='gathering_yield')return mode==='gathering';
+ if(type==='gathering_speed')return mode==='gathering';
  if(type==='crafting_output')return mode==='crafting';
  return mode==='gathering'||mode==='skill'||mode==='crafting'||mode==='training';
 }
@@ -143,7 +151,7 @@ export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundl
  let next={...reward,items:reward.items.map(item=>({...item}))};
  for(const type of DAILY_SUPPLY_BOOST_TYPES){
   const active=boosts[type];if(!active||!activityModeEligible(type,mode)||reward.elapsedSeconds<=0)continue;
-  const hasReward=type==='combat_xp'?reward.xp>0:type==='skill_xp'?reward.xp>0||(reward.faithXp??0)>0||(reward.classSkillXp??[]).some(row=>row.xp>0):reward.items.some(item=>item.quantity>0);
+  const hasReward=type==='gathering_speed'?true:type==='combat_xp'?reward.xp>0:type==='skill_xp'?reward.xp>0||(reward.faithXp??0)>0||(reward.classSkillXp??[]).some(row=>row.xp>0):reward.items.some(item=>item.quantity>0);
   if(!hasReward)continue;
   const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));if(qualifyingSeconds<=0)continue;
   const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),remainders={...(active.remainders??{})};
@@ -151,7 +159,7 @@ export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundl
   else if(type==='skill_xp'){
    if(reward.classSkillXp?.length)next.classSkillXp=reward.classSkillXp.map(row=>({...row,xp:row.xp+bonusInteger(row.xp,`class:${row.skillId}`,fraction,remainders)}));
    else{const extra=bonusInteger(reward.xp,'xp:skill',fraction,remainders);next.xp+=extra;if(reward.faithXp!==undefined)next.faithXp=(reward.faithXp??0)+extra;}
-  }else next.items=next.items.map(item=>({...item,quantity:item.quantity+bonusInteger(item.quantity,`item:${item.itemId}`,fraction,remainders)}));
+  }else if(type==='crafting_output')next.items=next.items.map(item=>({...item,quantity:item.quantity+bonusInteger(item.quantity,`item:${item.itemId}`,fraction,remainders)}));
   updates[type]={consumedSeconds,nextRemainders:remainders};
  }
  const first=DAILY_SUPPLY_BOOST_TYPES.map(type=>updates[type]).find(Boolean);

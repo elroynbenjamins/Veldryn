@@ -71,7 +71,7 @@ import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from '.
 import {combatTactic,normalizeCombatTactic} from './combat-tactics';
 import {huntGoalSnapshot,huntMomentumBonus,normalizeHuntGoalId,type HuntGoalId} from './hunt-goals';
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
-import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
+import {DAILY_SUPPLY_BONUS,activeDailySupplyBoosts,applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
@@ -864,8 +864,16 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
     const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
-    const timeline=combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,progressFraction:state.activity.progressFraction??0,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy:eventCandyWindow(state,'skill')});
-    const actions=timeline.encounters.length,candyActions=timeline.encounters.filter(row=>row.candy).length;
+    // Apply gathering speed only while this charge has eligible activity time.
+    // Keep fractional action progress at expiry, including long offline claims.
+    const speedSeconds=Math.min(elapsed,activeDailySupplyBoosts(state.character).gathering_speed?.remainingSeconds??0);
+    const candy=eventCandyWindow(state,'skill'),start=state.activity.lastClaimAtMs,initialProgress=state.activity.progressFraction??0;
+    const boosted=speedSeconds>0?combatTimeline({startsAtMs:start,elapsedSeconds:speedSeconds,progressFraction:initialProgress,preparationEncounters:0,cycleSeconds:effectiveActionSeconds/(1+DAILY_SUPPLY_BONUS),preparedCycleSeconds:effectiveActionSeconds/(1+DAILY_SUPPLY_BONUS),candy}):undefined;
+    const ordinarySeconds=Math.max(0,elapsedMs/1000-speedSeconds);
+    const ordinary=ordinarySeconds>0?combatTimeline({startsAtMs:start+speedSeconds*1000,elapsedSeconds:ordinarySeconds,progressFraction:boosted?.nextProgressFraction??initialProgress,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy}):undefined;
+    const encounters=[...(boosted?.encounters??[]),...(ordinary?.encounters??[])];
+    const actions=encounters.length,candyActions=encounters.filter(row=>row.candy).length;
+    const nextProgressFraction=ordinary?.nextProgressFraction??boosted?.nextProgressFraction??initialProgress;
     const candyXpMultiplier=actions?1+.1*candyActions/actions:1;
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
     let baseQuantity=0;
@@ -896,7 +904,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
         if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
       }
     }
-    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction:timeline.nextProgressFraction,nextRewardRemainders:{...(state.rewardRemainders??{}),[xpKey]:gain.remainder,[g.itemId]:Math.max(0,quantityFloat-quantity)}};
+    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction,nextRewardRemainders:{...(state.rewardRemainders??{}),[xpKey]:gain.remainder,[g.itemId]:Math.max(0,quantityFloat-quantity)}};
     return {...reward,...gatheringEventRewards(state,reward.elapsedSeconds)};
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');

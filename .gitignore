@@ -100,3 +100,4 @@ work/
 **/.search-loadouts-build/
 **/.visual-polish-core-check/
 **/.online-build/
+backend/dist-*/

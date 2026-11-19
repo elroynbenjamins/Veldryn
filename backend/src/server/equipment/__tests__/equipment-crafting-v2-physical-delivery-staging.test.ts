@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {simulateEquipmentV2InGameState,type V2HiddenGameInput,type V2HiddenGameMetadata} from '../equipment-crafting-v2-game-state';
+import {simulateEquipmentV2VirtualCustody} from '../equipment-crafting-v2-virtual-custody';
 import {
  simulateEquipmentV2PhysicalDeliveryStaging,runEquipmentV2PhysicalDelivery,
  verifyEquipmentV2StagingPhysicalReceipts,
@@ -146,6 +147,24 @@ deferredMetadata.storageReservations![0].destination='deferred';
 const mustRehome=simulateEquipmentV2PhysicalDeliveryStaging(input(genuinelyDeferred,'physical-rehome-01'));
 assert.equal(mustRehome.deferred,true,
  'A claim with deferred custody cannot be physically inserted until a versioned virtual rehome');
+
+const freeForRehome=structuredClone(claimed.state);
+(freeForRehome.account.equipmentV2Hidden as V2HiddenGameMetadata)
+ .storageReservations![0].destination='deferred';
+const rehomed=simulateEquipmentV2VirtualCustody({
+ state:freeForRehome,accountId,onlineVersion:12,
+ onlineCharacterId:freeForRehome.character!.id,
+ authoritativeWalletGold:freeForRehome.character!.gold,
+ command:{kind:'store_deferred',requestId:'physical-rehome-v1',expectedVersion:12,instanceId:item.id},
+});
+assert.equal(rehomed.receipt.from,'deferred');
+assert.equal(rehomed.receipt.to,'pouch');
+const afterRehome=simulateEquipmentV2PhysicalDeliveryStaging(input(
+ rehomed.state,'physical-after-rehome',13));
+assert.equal(afterRehome.deferred,false);
+assert.equal(afterRehome.receipt?.location,'equipment_pouch');
+assert.equal(afterRehome.state.character!.equipmentPouch!.stacks.filter(row=>row.instanceId===item.id).length,1);
+
 const recovered=structuredClone(full);
 recovered.character!.equipmentPouch!.stacks.pop();
 const deliver=simulateEquipmentV2PhysicalDeliveryStaging(input(recovered,'physical-retry-01'));

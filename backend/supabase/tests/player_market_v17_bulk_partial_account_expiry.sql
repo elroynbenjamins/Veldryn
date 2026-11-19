@@ -52,7 +52,7 @@ begin
   insert into public.online_game_states(account_id,character_id,revision,state) values
     (v_seller,v_seller_char,5,jsonb_build_object(
       'version',11,'character',jsonb_build_object(
-        'id',v_seller_char::text,'gold',100),
+        'id',v_seller_char::text,'gold',100,'xp',100,'classId','BASTION'),
       'inventory',jsonb_build_object('capacity',30,'stacks',jsonb_build_array(
         jsonb_build_object('itemId','COPPER_ORE','quantity',800))),
       'bank',jsonb_build_object('capacity',50,'stacks','[]'::jsonb),
@@ -60,7 +60,7 @@ begin
         'favoriteItemIds','[]'::jsonb))),
     (v_buyer,v_buyer_char,7,jsonb_build_object(
       'version',11,'character',jsonb_build_object(
-        'id',v_buyer_char::text,'gold',100000),
+        'id',v_buyer_char::text,'gold',100000,'xp',100,'classId','BASTION'),
       'inventory',jsonb_build_object('capacity',30,'stacks','[]'::jsonb),
       'bank',jsonb_build_object('capacity',50,'stacks','[]'::jsonb),
       'settings',jsonb_build_object('lockedItemIds','[]'::jsonb,
@@ -78,6 +78,15 @@ begin
     where item_id='COPPER_ORE';
   update private.market_listing_lot_policies_v11
     set approved=true where item_id='COPPER_ORE';
+  -- V18 acquisition policy is also hard-disabled by default. When this
+  -- fixture runs in the consolidated V18-V28 stack, approve only this
+  -- synthetic T1 resource INSIDE the surrounding rollback transaction.
+  if pg_catalog.to_regclass('private.market_acquisition_policy_v18') is not null then
+    execute 'alter table private.market_acquisition_policy_v18 drop constraint market_acquisition_v18_approved_check';
+    insert into private.market_acquisition_policy_v18(
+      item_id,asset_kind,source_tier,item_required_level,approved
+    ) values('COPPER_ORE','resource','T1',1,true);
+  end if;
 
   -- One seller ACCOUNT owns the listing, even though it has two characters.
   v_result:=private.market_reserve_stack_v2(

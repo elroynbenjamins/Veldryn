@@ -56,6 +56,13 @@ export function verifyEquipmentV2HiddenLedger(
  accountId:string,jobs:readonly V2DraftJob[],items:readonly V2DraftItem[],
  receipts:readonly V2DraftReceipt[],awards:readonly V2DraftSkillAward[],
 ):void{
+ if(!accountId||!Array.isArray(jobs)||!Array.isArray(items)
+  ||!Array.isArray(receipts)||!Array.isArray(awards)
+  ||jobs.some(job=>!job||typeof job!=='object')
+  ||items.some(item=>!item||typeof item!=='object')
+  ||receipts.some(row=>!row||typeof row!=='object')
+  ||awards.some(row=>!row||typeof row!=='object'))
+  fail('corrupted_hidden_v2_metadata');
  const unique=(values:readonly string[],reason:string)=>{
   if(values.some(value=>typeof value!=='string'||!value)||new Set(values).size!==values.length)
    fail(reason);
@@ -98,7 +105,7 @@ export function verifyEquipmentV2HiddenLedger(
   const job=jobMap.get(item.jobId);
   if(!job||job.status!=='claimed'||job.resultId!==item.id
    ||item.accountId!==accountId||item.ownerCharacterId!==job.ownerCharacterId
-   ||item.exactItem.pieceId!==job.pieceId
+   ||!item.exactItem||item.exactItem.pieceId!==job.pieceId
    ||!v2ServerExactTemplateConsistent(item.exactItem))fail('invalid_hidden_v2_exact_copy');
  }
  for(const award of awards){
@@ -140,7 +147,7 @@ export function verifyEquipmentV2HiddenLedger(
 export function proposeEquipmentV2ClaimCustody(
  state:GameState,accountId:string,item:V2DraftItem,
 ):V2HiddenClaimCustody{
- if(!state||!accountId||!item||!v2ServerExactTemplateConsistent(item.exactItem)
+ if(!state||!accountId||!item||!item.exactItem||!v2ServerExactTemplateConsistent(item.exactItem)
   ||!item.id||item.accountId!==accountId)fail('invalid_v2_delivery_copy');
  const owner=owned(state,item.ownerCharacterId);
  if(!owner)fail('unknown_v2_delivery_owner');

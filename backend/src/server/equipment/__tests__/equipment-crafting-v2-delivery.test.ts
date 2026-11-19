@@ -73,7 +73,7 @@ assert.throws(()=>verifyEquipmentV2HiddenLedger(accountId,[job],[{
 const originalStateJSON=JSON.stringify(state);
 // Independent successful Forge claims must not overbook the same single slot.
 const capacityState=structuredClone(state);
-capacityState.character!.equipmentPouch={stacks:[],capacity:1};
+capacityState.character!.equipmentPouch={stacks:Array.from({length:29},()=>({itemId:'basic_sword',quantity:1})),capacity:30};
 capacityState.inventory.capacity=capacityState.inventory.stacks.length+1;
 const copyTwo={...item,id:'delivery-copy-2',jobId:'delivery-job-2'};
 const copyThree={...item,id:'delivery-copy-3',jobId:'delivery-job-3'};
@@ -102,7 +102,7 @@ assert.throws(()=>reserveEquipmentV2HiddenClaim(capacityState,accountId,item,[
 ]),/duplicate_v2_storage_reservation/);
 
 const copyState=structuredClone(state);
-copyState.character!.equipmentPouch={stacks:[],capacity:1};
+copyState.character!.equipmentPouch={stacks:Array.from({length:29},()=>({itemId:'basic_sword',quantity:1})),capacity:30};
 const first=proposeEquipmentV2ClaimCustody(copyState,accountId,item);
 assert.throws(()=>proposeEquipmentV2ClaimCustody(copyState,'wrong-account',item),
  /invalid_v2_delivery_copy/,'A gear receipt may not be proposed under a different account');
@@ -124,7 +124,7 @@ assert.throws(()=>proposeEquipmentV2ClaimCustody({
 const different=createCharacter(newGame(now),'WAYFINDER');
 assert.ok(different.character);
 different.character.id='wayfinder-alternate';
-different.character.equipmentPouch={stacks:[],capacity:1};
+different.character.equipmentPouch={stacks:[],capacity:30};
 const alternateItem={...item,ownerCharacterId:'wayfinder-alternate'};
 const alternate=structuredClone(state);
 alternate.otherCharacters=[{

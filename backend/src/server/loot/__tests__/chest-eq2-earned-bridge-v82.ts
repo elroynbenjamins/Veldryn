@@ -95,6 +95,6 @@ rejects(()=>planFrozenEarnedChestGearV82(receipt,1,source),
  'invalid_drop_index');
 rejects(()=>planFrozenEarnedChestGearV82(receipt,0,{
  ...source,paid:true,
-} as EarnedChestEntitlementV80),'forged_earned_equipment_identity');
+} as unknown as EarnedChestEntitlementV80),'forged_earned_equipment_identity');
 console.log('CHEST_EQ2_V82_OK: '+tested+
  ' frozen tier/boss/receipt-equipment paths; no T6–T9 downgrades, swapped rewards, custody changes or minting');

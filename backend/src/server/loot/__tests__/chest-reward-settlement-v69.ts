@@ -249,6 +249,34 @@ async function run(){
   }),'unearned_or_foreign_source');
  }
  {
+  // A source may have a server-approved character even when its gear roll
+  // loses. The claim must still freeze null equipment custody and pay rewards.
+  const key=attempt('gear_miss');
+  const s=startFresh(key);
+  const gear=defineChestLootTableV67({
+   tableId:'equipment_event_test',version:'gear_miss_v1',
+   guarantees:[{id:'gold',quantity:100}],
+   groups:[{id:'equipment',type:'equipment',chanceBps:0,
+    duplicatePolicy:'prefer_unowned',entries:[{id:'EQUIPMENT_BOOTS',weight:1}]}],
+  });
+  s.proof={...s.proof,lootTable:gear,
+   equipmentDeliveryMode:'character',recipientCharacterId:character};
+  const result=await createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  });
+  check(result.receipt.drops.length===0&&
+   result.receipt.equipmentDeliveryMode===null&&
+   result.receipt.recipientCharacterId===null&&
+   result.receipt.guaranteed[0]?.quantity===100,
+   'equipment_miss_still_claims_guarantees_without_custody');
+  s.proof={...s.proof,recipientCharacterId:other};
+  const replay=await createChestRewardSettlementV69(s,{secret},true)({
+   authenticatedAccountId:account,sourceKey:key,
+  });
+  check(replay.replayed&&replay.receipt===result.receipt,
+   'equipment_miss_replay_frozen_before_proof_change');
+ }
+ {
   const gear=defineChestLootTableV67({
    tableId:'equipment_event_test',version:'gear_v1',
    guarantees:[],

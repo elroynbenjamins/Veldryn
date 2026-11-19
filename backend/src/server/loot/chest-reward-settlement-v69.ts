@@ -124,7 +124,10 @@ function checkedReceipt(receipt:FrozenChestReceiptV69,
   (receipt.equipmentDeliveryMode==='account_unclaimed'&&
    receipt.recipientCharacterId!==null)||
   (receipt.drops.some(drop=>drop.type==='equipment')&&
-   receipt.equipmentDeliveryMode===null))
+   receipt.equipmentDeliveryMode===null)||
+  (!receipt.drops.some(drop=>drop.type==='equipment')&&
+   (receipt.equipmentDeliveryMode!==null||
+    receipt.recipientCharacterId!==null)))
   throw Error('chest_v69_corrupt_committed_receipt');
  const ids=/^[a-zA-Z0-9][a-zA-Z0-9:_-]{0,127}$/;
  const groupIds=new Set<string>();
@@ -222,21 +225,26 @@ export function createChestRewardSettlementV69(
     rolls,ownedDropIds:owned,
    });
    const hasEquipment=resolved.drops.some(d=>d.type==='equipment');
+   // Trusted source proof freezes the *potential* gear destination before
+   // the server rolls. An ordinary equipment miss must still be claimable:
+   // the final receipt freezes null custody when no equipment was issued.
    const mode=trusted.equipmentDeliveryMode;
    const destination=trusted.recipientCharacterId;
-   if(hasEquipment&&mode==='character'&&
+   if(mode==='character'&&
     (typeof destination!=='string'||!UUID.test(destination)||
      !await tx.verifyRecipientCharacter(accountId,destination)))
     throw Error('chest_v69_unverified_character_destination');
-   if((hasEquipment&&mode!=='character'&&mode!=='account_unclaimed')||
+   if(!['character','account_unclaimed',null].includes(mode)||
     (mode==='account_unclaimed'&&destination!==null)||
-    (!hasEquipment&&mode!==null)||
-    (mode===null&&destination!==null))
+    (mode===null&&destination!==null)||
+    (hasEquipment&&mode===null))
     throw Error('chest_v69_unapproved_custody_destination');
+   const frozenMode=hasEquipment?mode:null;
+   const frozenCharacterId=hasEquipment?destination:null;
    const receipt:FrozenChestReceiptV69={
     rulesVersion:CHEST_REWARD_SETTLEMENT_VERSION_V69,
-    sourceKey,accountId,recipientCharacterId:destination,
-    equipmentDeliveryMode:mode,proofVersion:trusted.proofVersion,
+    sourceKey,accountId,recipientCharacterId:frozenCharacterId,
+    equipmentDeliveryMode:frozenMode,proofVersion:trusted.proofVersion,
     tableId:resolved.tableId,tableVersion:resolved.tableVersion,
     guaranteed:resolved.guarantees,
     groups:resolved.groups,drops:resolved.drops,committed:true,

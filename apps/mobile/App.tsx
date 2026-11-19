@@ -102,6 +102,8 @@ import type {QuickNavDestination} from './src/core/quick-navigation';
 import {CombatScreen} from './src/screens/CombatScreen';
 import type {SkillId} from './src/core/types';
 import {PrimaryNavigation} from './src/components/PrimaryNavigation';
+import {ScreenTransition,useSystemReduceMotion} from './src/components/ScreenTransition';
+import {screenTransitionFor,type ScreenTransitionKind} from './src/core/screen-transitions';
 import {primaryNavForRoute} from './src/core/primary-tab-routing';
 import {setNetworkMetricsRoute} from './src/core/network-request-metrics';
 import {attemptEquipmentUpgrade,replaceGem,socketGem} from './src/core/equipment-enhancement';
@@ -215,6 +217,8 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
+  const [transitionKind,setTransitionKind]=useState<ScreenTransitionKind>('none');
+  const systemReduceMotion=useSystemReduceMotion();
   const tabRef=useRef(tab);tabRef.current=tab;
   useEffect(()=>setNetworkMetricsRoute(tab),[tab]);
   // Background music follows the current screen and region; dungeons and bosses override it.
@@ -440,6 +444,7 @@ function VeldrynApp(){
       setProfileCustomizeDirty(false);
       setTabHistory(history=>rememberScreen(history,{route:tab,context:navigationContext},destination));
       setSettingsSection(undefined);
+      setTransitionKind(screenTransitionFor(tab,destination));
       setCurrentTab(destination);
     });
   },[tab,selectedSkill,settingsSection,navigationContext,confirmProfileCustomizeExit]);
@@ -465,7 +470,7 @@ function VeldrynApp(){
       setTabHistory(remaining);
       if(!previous){
         setSettingsSection(undefined);
-        if(tab!=='Home')setCurrentTab('Home');
+        if(tab!=='Home'){setTransitionKind(screenTransitionFor(tab,'Home',true));setCurrentTab('Home');}
         return;
       }
       const {context}=previous;
@@ -482,6 +487,7 @@ function VeldrynApp(){
       if(previous.route==='Combat')setGoalMonsterId(context.goalMonsterId);
       if(previous.route==='World')setGoalRegionId(context.goalRegionId);
       if(previous.route==='Coop')setGoalDungeonId(context.goalDungeonId);
+      setTransitionKind(screenTransitionFor(tab,previous.route,true));
       setCurrentTab(previous.route==='Social'?'Recruitment':previous.route);
     });
     return true;
@@ -961,6 +967,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   const featureHubShell=featureHubShellPolicy(tab);
   const mainTabGuide=MAIN_TAB_GUIDANCE[tab];
   return <GameThemeProvider themeId={displayedThemeId}><TutorialHighlightProvider active={(mainScreenTour?.highlightBeacon??visibleTutorialStep?.highlightBeacon)??null}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/>{!immersiveDungeonFlow&&<GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode(storyClaimCount>0?'story':questClaims.challenges>0||questClaims.milestones>0?'challenges':'story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} showActivityBar={tab!=='ProfileCustomize'&&tab!=='Coop'&&!featureHubShell.hideActivityBar} onOpenActivity={()=>{if(preview.stoppedReason){setTab('Home');return;}openActiveActivity()}} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>}{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>perform()}/></View>:null}{onlineActionError?<View style={{paddingHorizontal:12,paddingVertical:6}}><ActionFeedback tone="error" message={onlineActionError} compact actionLabel={appText(state.settings.language,'Close')} onAction={()=>setOnlineActionError('')}/></View>:null}<View style={s.body} {...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}>
+    <ScreenTransition key={tab} kind={transitionKind} reduceMotion={state.settings.reduceMotion||systemReduceMotion||immersiveDungeonFlow}>
     {!immersiveDungeonFlow&&mainTabGuide&&!mainScreenTour&&!visibleTutorialStep?<SectionGuide scope={auth.session?.user.id??state.character.id} area="main" section={tab} guide={mainTabGuide} showReplay={false}/>:null}
     {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} forgeReadyCount={equipmentForge.ready} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onSetCurrentHandoff={()=>{const id=stateRef.current?.activity?.targetId;if(id)void submitHomeQueueCommand({type:'queue_set_goal',args:{id,goal:{kind:'duration_seconds',value:14400}}});}} onQueueAdd={(entry,handoff)=>submitHomeQueueCommand({type:'queue_add',args:{kind:entry.kind,id:entry.targetId,...(entry.combatTacticId?{tacticId:entry.combatTacticId}:{}),...(entry.huntGoalId?{goalId:entry.huntGoalId}:{}),...(entry.faithPracticeCount?{count:entry.faithPracticeCount}:{}),...(entry.goal?{goal:entry.goal}:{}),...(handoff?.goal?{handoffGoal:handoff.goal,handoffTargetId:handoff.targetId}:{}),...(handoff?.keepCurrentRunning?{keepCurrentRunning:true}:{})}})} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
     {tab==='Combat'&&<CombatScreen state={state} onCommand={runCompanionCommand} onOpenInventory={()=>setTab('Inventory')} initialMonsterId={goalMonsterId} initialAreaId={selectedRegionalAreaId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',targetId:id,...(tacticId?{combatTacticId:tacticId}:{}),...(goalId?{huntGoalId:goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
@@ -1010,6 +1017,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
      {tab==='SkillGuide'&&<SkillGuideScreen state={state} onClose={()=>setTab('More')} onOpenSkill={id=>{if(id==='companion'){setTab('Companions');return;}setSelectedSkill(id);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(id)?'gathering':'crafting');setTab('Skills');}} onOpenCombat={()=>setTab('Combat')} onOpenMastery={()=>{setSelectedSkill('companion-mastery');setSkillsMode('gathering');setTab('Skills');}}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Customize'){setProfileCustomizeSection('Look');setTab('ProfileCustomize');return;}setTab(destination)}}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen key={profileAttentionScope} state={state} initialSection={profileCustomizeSection} onChange={commit} onSaveNameStyle={saveNameStyle} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>}
+    </ScreenTransition>
   </View>
   <EventStartPopup runtime={activeGlobalPopup==='event-start'?eventStartPopup:null} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay initialChannel={chatInitialChannel} state={state} visible={showChatOverlay} hideDock={tab==='ProfileCustomize'||tab==='Coop'||featureHubShell.hideGlobalChatDock} allowPartyChatWhenWorldDisabled={featureHubShell.showLocalPartyChatDock} partyOnly={featureHubShell.showLocalPartyChatDock} onOpen={()=>{setChatInitialChannel('world');setShowChatOverlay(true)}} onClose={()=>setShowChatOverlay(false)} onManageEmotes={openChatEmoteSettings} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>

@@ -215,9 +215,9 @@ export function simulateEquipmentV2VirtualCustody(input:V2VirtualMoveInput){
  if(command.kind==='deposit_bank'){target='bank';holder=null;}
  else if(command.kind==='equip')target='equipped';
  else if(command.kind==='withdraw_bank'||command.kind==='store_deferred'||command.kind==='unequip'){
-  target=countIn(state,all,'pouch',holder)?'pouch'
-   :countIn(state,all,'inventory',holder)?'inventory'
-   :(()=>{throw new V2DraftCraftError('v2_virtual_destination_full');})();
+  if(countIn(state,all,'pouch',holder))target='pouch';
+  else if(countIn(state,all,'inventory',holder))target='inventory';
+  else throw new V2DraftCraftError('v2_virtual_destination_full');
  }else throw new V2DraftCraftError('invalid_v2_virtual_move_command');
  if(!allowedTransition(command.kind,current.location,target))fail('invalid_v2_virtual_transition');
  if(command.kind==='withdraw_bank'){

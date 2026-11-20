@@ -5,6 +5,10 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 
 /** Fixed active Online Guild Projects UI; numbers and server-authored project text remain authoritative. */
 export const onlineGuildProjectUiRows={
+  "{count} contributors · Min {minimum}": ["{count} Mitwirkende · Min. {minimum}","{count} colaboradores · Mín. {minimum}","{count} bijdragers · Min. {minimum}","{count} contributori · Min. {minimum}","{count} contributeurs · Min. {minimum}","{count} участников · Мин. {minimum}","{count} katılımcı · En az {minimum}"],
+  "Daily effort": ["Tageseinsatz","Esfuerzo diario","Dagelijkse inzet","Impegno giornaliero","Effort du jour","Усилия за день","Günlük katkı"],
+  "Daily limit reached": ["Tageslimit erreicht","Límite diario alcanzado","Daglimiet bereikt","Limite giornaliero raggiunto","Limite quotidienne atteinte","Дневной лимит достигнут","Günlük sınıra ulaşıldı"],
+  "Resets at 00:00 UTC": ["Reset um 00:00 UTC","Se reinicia a las 00:00 UTC","Reset om 00:00 UTC","Si azzera alle 00:00 UTC","Réinitialisation à 00:00 UTC","Сброс в 00:00 UTC","00:00 UTC'de sıfırlanır"],
  "Rewards ready to claim": ["Abholbereite Belohnungen","Recompensas listas para reclamar","Beloningen klaar om te claimen","Ricompense pronte da riscattare","Récompenses prêtes à récupérer","Награды готовы к получению","Alınmaya hazır ödüller"],
  "Top 5 contributors · Expand for details": ["Top 5 Mitwirkende · Details öffnen","5 principales colaboradores · Ver detalles","Top 5 bijdragers · Details uitklappen","Primi 5 contributori · Mostra dettagli","Top 5 des contributeurs · Voir les détails","Топ-5 участников · Подробнее","En çok katkı yapan 5 üye · Ayrıntıları aç"],
  "View project details": ["Projektdetails anzeigen","Ver detalles del proyecto","Bekijk projectdetails","Visualizza dettagli del progetto","Voir les détails du projet","Посмотреть детали проекта","Proje ayrıntılarını gör"],

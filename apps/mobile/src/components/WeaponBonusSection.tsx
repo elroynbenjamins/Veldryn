@@ -16,7 +16,7 @@ const formatRange=(range:readonly [number,number])=>formatBonus(range[0])+'–'+
 export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;initialExpanded?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt,gl}=useGameplayText();
   const [expanded,setExpanded]=useState(initialExpanded);
-  const base=weaponBonusConfig(itemId,'common'),epic=weaponBonusConfig(itemId,'epic');
+  const base=weaponBonusConfig(itemId,'common');
   if(!base)return null;
   const twoAtAllRarities=base.count===2;
   return <View style={s.panel}>
@@ -40,7 +40,7 @@ export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;in
         </View>;
       })}
       <Text style={s.note}>{gt('Each bonus type can appear only once on a weapon.')}</Text>
-      <Text style={s.note}>{twoAtAllRarities?gt('Two different bonuses on every rarity.'):gt('One bonus at any rarity. Epic+ rolls two.')}</Text>
+      <Text style={s.note}>{twoAtAllRarities?gt('Two different bonuses on every rarity.'):gt('Common–Rare: 1 bonus. Epic+: 2 bonuses.')}</Text>
       <Text style={s.note}>{gt('Bonus stats, rarity and quality roll separately on claim.')}</Text>
     </View>:null}
   </View>;

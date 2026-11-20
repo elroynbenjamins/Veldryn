@@ -6,7 +6,7 @@ import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
-import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-history';
 import {validateEquipmentV2EffectGemInstall} from './equipment-crafting-v2-effect-gem-policy';
 import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,type V2DraftSkillAward} from './equipment-crafting-v2-transaction';
 

@@ -6,28 +6,38 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {useOnlineGuildProjectUiText} from '../i18n/online-guild-project-ui';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import type {ThemeColors} from '../theme/theme';
-import type {OnlineGuildProjectResourceGoal,OnlineGuildProjectSupplyItem} from '../online/guild-projects-v18';
+import type {OnlineGuildProjectResourceGoal,OnlineGuildProjectSupplyItem,OnlineGuildProjectSupplyAllowance} from '../online/guild-projects-v18';
 
-export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalShareCap,onDonate}:{
+export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalShareCap,supplyAllowances,onDonate}:{
  goals:readonly OnlineGuildProjectResourceGoal[];
  inventory:readonly OnlineGuildProjectSupplyItem[];
  busy:boolean;
  /** Server snapshot's per-member share limit (1 for solo guilds, 0.5 for multi-member). */
  personalShareCap?:number;
+ supplyAllowances?:readonly OnlineGuildProjectSupplyAllowance[];
  onDonate:(itemId:string,quantity:number)=>void;
 }){
  const language=useGameLanguage(),ui=useOnlineGuildProjectUiText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const [selectedId,setSelectedId]=useState<string|null>(null);
  const [quantity,setQuantity]=useState('1');
  const activeGoals=goals.filter(goal=>goal.resourceId.startsWith('supply:')&&goal.current<goal.target);
- const available=inventory.filter(item=>item.available>0&&activeGoals.some(goal=>goal.resourceId==='supply:'+item.category));
- const selected=available.find(item=>item.itemId===selectedId)??available[0];
+ const available=inventory.filter(item=>item.available>0&&item.value>0&&
+  activeGoals.some(goal=>goal.resourceId==='supply:'+item.category));
+ const usable=available.find(item=>{
+  const goal=activeGoals.find(row=>row.resourceId==='supply:'+item.category);
+  const share=supplyAllowances?.find(row=>row.category===item.category);
+  return !!goal&&(share?.remainingPersonal??goal.target*(personalShareCap??1))>=item.value
+   &&goal.target-goal.current>=item.value;
+ });
+ const selected=available.find(item=>item.itemId===selectedId)??usable??available[0];
  const goal=activeGoals.find(row=>row.resourceId==='supply:'+selected?.category);
+ const allowance=supplyAllowances?.find(row=>row.category===selected?.category);
  const goalRemaining=goal?Math.max(0,goal.target-goal.current):0;
  // Always constrain quick entry by inventory, outstanding category supply and
  // the project's per-member cap. Previous donations remain server-authoritative.
  const share=Number.isFinite(personalShareCap)?Math.max(0,Math.min(1,personalShareCap!)):1;
- const personalSupplyCeiling=goal?Math.ceil(goal.target*share):0;
+ const personalSupplyCeiling=allowance?.remainingPersonal??(goal?Math.ceil(goal.target*share):0);
+ const personalLimitReached=!!allowance&&allowance.remainingPersonal===0;
  const maxQuantity=selected&&goal&&selected.value>0?Math.max(0,Math.min(10000,Math.floor(selected.available),
   Math.floor(goalRemaining/selected.value),Math.floor(personalSupplyCeiling/selected.value))):0;
  const amount=Number(quantity),units=selected?amount*selected.value:0;
@@ -39,6 +49,7 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalSh
   });
  },[maxQuantity,selected?.itemId]);
  const quantityProblem=!selected||!goal?null
+  :personalLimitReached?ui('Your personal contribution limit is reached. Other members can finish this goal.')
   :maxQuantity<1?ui('No more of this material can be donated to this goal.')
   :!Number.isSafeInteger(amount)||amount<1?ui('Enter a positive whole number of resources.')
   :amount>10000?ui('You can donate up to 10,000 items at once.')
@@ -57,6 +68,12 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalSh
    return <View key={row.resourceId} style={s.goal}>
     <View style={s.between}><Text style={s.text}>{label}</Text><Text style={s.muted}>{row.current.toLocaleString(language)} / {row.target.toLocaleString(language)}</Text></View>
     <View style={s.track}><View style={[s.fill,{width:`${pct}%` as any}]}/></View>
+    {(()=>{const personal=supplyAllowances?.find(entry=>row.resourceId==='supply:'+entry.category);
+     return personal?<Text style={[s.muted,personal.remainingPersonal===0&&row.current<row.target&&s.limitReached]}>
+      {personal.remainingPersonal===0&&row.current<row.target?ui('Personal limit reached'):
+       ui('Your share: {donated} / {limit} supply',{donated:personal.donated.toLocaleString(language),limit:personal.personalLimit.toLocaleString(language)})}
+     </Text>:null;
+    })()}
    </View>;
   })}
   {available.length?<View style={s.selector}>
@@ -84,8 +101,11 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalSh
    </View>
    {selected&&goal?<View style={s.limitInfo}>
     <Text style={s.muted}>{ui('{remaining} supply still needed · You own {owned} of this resource',{remaining:goalRemaining.toLocaleString(language),owned:selected.available.toLocaleString(language)})}</Text>
-    <Text style={s.limitText}>{ui('Up to {count} items ({supply} supply) · Earlier donations may reduce this.',{
-     count:maxQuantity.toLocaleString(language),supply:(maxQuantity*selected.value).toLocaleString(language)})}</Text>
+    <Text style={[s.limitText,personalLimitReached&&s.limitReached]}>{allowance
+     ?ui('Up to {count} items ({supply} supply) available now.',{
+       count:maxQuantity.toLocaleString(language),supply:(maxQuantity*selected.value).toLocaleString(language)})
+     :ui('Up to {count} items ({supply} supply) · Earlier donations may reduce this.',{
+       count:maxQuantity.toLocaleString(language),supply:(maxQuantity*selected.value).toLocaleString(language)})}</Text>
    </View>:null}
    {maxQuantity>0?<View style={s.presets}>
     <Pressable accessibilityRole="button" accessibilityLabel={ui('Half')} disabled={busy}
@@ -115,6 +135,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  fill:{height:'100%',backgroundColor:C.good},
  selector:{gap:9,marginTop:4},options:{flexDirection:'row',flexWrap:'wrap',gap:7},flex:{flex:1,minWidth:0},
  limitInfo:{gap:3},limitText:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.good},
+ limitReached:{color:C.warning},
  presets:{flexDirection:'row',gap:7,justifyContent:'flex-end'},
  preset:{minWidth:70,minHeight:34,alignItems:'center',justifyContent:'center',borderRadius:7,borderWidth:1,
   borderColor:C.lineStrong,backgroundColor:C.panel,paddingHorizontal:10},

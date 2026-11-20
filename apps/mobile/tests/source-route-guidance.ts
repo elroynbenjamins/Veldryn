@@ -58,6 +58,8 @@ const glassbound=sourced.find(entry=>entry.destination.kind==='combat'&&entry.de
 assert(glassbound,'Material sources include the actual Glassbound Sentinel');
 assert(glassbound.destination.kind==='combat','Selected material source is combat');
 equal(glassbound.destination.areaId,'ZONE_008','Item source preserves the exact combat sub-area');
+equal(glassbound.destination.sourceItemId,'GLASSBOUND_CORE','Item source retains the requested material identity');
+equal(sourceRouteView(glassbound.destination)?.sourceItemId,'GLASSBOUND_CORE','World route retains the material identity');
 assert(glassbound.destination.detail.includes('Mirage Basin'),'Item source detail names the sub-area');
 assert(MONSTERS.find(row=>row.id==='GLASSBOUND_SENTINEL')?.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE'),
  'Source guidance is backed by authored monster drops, not invented data');

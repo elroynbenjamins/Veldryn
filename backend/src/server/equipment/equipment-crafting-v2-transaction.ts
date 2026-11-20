@@ -1,4 +1,5 @@
 import {randomUUID,randomInt} from 'node:crypto';
+import {isValidEquipmentV2ServerProjection} from './equipment-crafting-v2-server-projection';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {v2ServerRecipeAndPiece,V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,type V2ServerProfession} from './equipment-crafting-v2-manifest';
 import {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION,type V2DraftRollOutcome} from './equipment-crafting-v2-rolls';
@@ -85,6 +86,10 @@ function verifyCommand(command:V2DraftCommand){
 function verifyState(state:V2DraftSnapshot,ctx:V2DraftContext){
  if(!state||state.accountId!==ctx.accountId||state.activeCharacterId!==ctx.characterId
    ||!state.characters||!Object.prototype.hasOwnProperty.call(state.characters,ctx.characterId))fail('invalid_owner');
+ // Validate all character/Bank balances before the pure Forge resolver
+ // reads, debits or clones anything from an authenticated account snapshot.
+ if(!isValidEquipmentV2ServerProjection(state))
+  fail('invalid_trusted_snapshot');
  const active=state.characters[ctx.characterId];
  if(!safeCount(state.version)||!safeCount(state.forgeSlotCapacity)
    ||state.forgeSlotCapacity<MIN_EQUIPMENT_FORGE_SLOTS

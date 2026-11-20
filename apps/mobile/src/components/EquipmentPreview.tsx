@@ -8,7 +8,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
-import {weaponBonusLine,weaponBonusCompactLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
+import {weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -75,16 +75,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
-  strength:weaponBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
- }))??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
-  strength:weaponBonusStrength(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
- }))??[];
+ const currentWeaponRolls=oldRecord?.weaponBonuses?.map(weaponBonusCompactLine)??[];
+ const newWeaponRolls=instance?.weaponBonuses?.map(weaponBonusCompactLine)??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -139,21 +131,11 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     </View>
    </View>
    {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
-    <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
+    <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
     <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
-    {currentWeaponRolls.length?currentWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
-      <Text style={s.rollValue}>{roll.short}</Text>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.muted}]}/></View>
-      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
-    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
+    {currentWeaponRolls.length?currentWeaponRolls.map((line,index)=><Text key={index} style={s.rollValue}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
     <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
-    {newWeaponRolls.length?newWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
-      <View style={s.rollHead}><Text style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>
-        {roll.strength>=90?<Text style={[s.rollBadge,{color:C.good}]}>{gl(weaponBonusRollGrade(roll.strength))}</Text>:null}
-      </View>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.good}]}/></View>
-      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
-    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
+    {newWeaponRolls.length?newWeaponRolls.map((line,index)=><Text key={index} style={[s.rollValue,{color:C.good}]}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
    </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
@@ -259,13 +241,7 @@ function makeStyles(C:ThemeColors){
   setAlert:{padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,gap:6},
   weaponRollPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,gap:6,backgroundColor:C.panel2},
   rollGroupLabel:{...typography.caption,color:C.muted,fontSize:9,fontWeight:'800',letterSpacing:.5,marginTop:4},
-  rollEntry:{gap:4,paddingVertical:3},
-  rollHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5,flexWrap:'wrap'},
   rollValue:{...typography.bodyStrong,color:C.text,fontWeight:'800',fontSize:12},
-  rollDetail:{...typography.caption,color:C.muted,fontSize:10},
-  rollBadge:{...typography.caption,fontWeight:'900',fontSize:10},
-  rollTrack:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.lineStrong},
-  rollFill:{height:'100%',borderRadius:3},
   setLine:{...typography.caption,fontWeight:'700'},
   disposalSection:{gap:8},
   disposalActions:{flexDirection:'row',gap:8},

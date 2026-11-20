@@ -17,7 +17,7 @@ export function CraftQuantitySelector({value,max,onChange,disabled=false,unit,li
  };
  const drag=(x:number)=>{
   if(locked)return;
-  const ratio=Math.max(0,Math.min(1,x/Math.max(1,trackWidth)));
+  const ratio=Math.max(0,Math.min(1,(x-11)/Math.max(1,trackWidth-22)));
   select(upper===1?1:1+Math.round(ratio*(upper-1)));
  };
  const percent=upper<=1?(upper===1?100:0):100*(current-1)/(upper-1);
@@ -33,14 +33,14 @@ export function CraftQuantitySelector({value,max,onChange,disabled=false,unit,li
    <Pressable accessibilityRole="button" accessibilityLabel={gt('Increase quantity')} disabled={locked||current>=upper} onPress={()=>select(current+1)} style={[s.step,(locked||current>=upper)&&s.disabled]}><Text style={s.stepText}>+</Text></Pressable>
    <Pressable accessibilityRole="button" accessibilityLabel={gt('Maximum craftable quantity')+' '+upper} disabled={locked} onPress={()=>select(upper)} style={[s.max,locked&&s.disabled]}><Text style={s.maxText}>{gt('MAX')}</Text></Pressable>
   </View>
-  <View accessible accessibilityRole="adjustable" accessibilityLabel={gt('Craft quantity')} accessibilityValue={{min:0,max:Math.max(1,upper),now:current,text:current+' / '+upper+' '+unitLabel}}
+  <View accessible accessibilityRole="adjustable" accessibilityLabel={gt('Craft quantity')} accessibilityState={{disabled:locked}} accessibilityValue={{min:upper?1:0,max:Math.max(1,upper),now:current,text:current+' / '+upper+' '+unitLabel}}
    accessibilityActions={[{name:'increment'},{name:'decrement'}]} onAccessibilityAction={event=>select(current+(event.nativeEvent.actionName==='increment'?1:-1))}
    onLayout={event=>setTrackWidth(event.nativeEvent.layout.width)}
    onStartShouldSetResponder={()=>!locked} onMoveShouldSetResponder={()=>!locked}
    onResponderGrant={event=>drag(event.nativeEvent.locationX)} onResponderMove={event=>drag(event.nativeEvent.locationX)}
    style={[s.touchTrack,locked&&s.disabled]}>
     <View pointerEvents="none" style={s.track}><View style={[s.fill,{width:(percent+'%') as `${number}%`}]}/></View>
-    <View pointerEvents="none" style={[s.thumb,{left:(percent+'%') as `${number}%`,transform:[{translateX:-11}]}]}/>
+    <View pointerEvents="none" style={[s.thumb,{left:Math.max(0,trackWidth-22)*percent/100}]}/>
   </View>
   <View style={s.scale}><Text style={s.scaleText}>{upper?1:0} {unitLabel}</Text><Text style={s.scaleText}>{upper} · {gt('Max')}</Text></View>
  </View>;
@@ -60,7 +60,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  touchTrack:{height:44,justifyContent:'center',paddingHorizontal:11},
  track:{height:8,borderRadius:5,backgroundColor:C.line,overflow:'hidden'},
  fill:{height:8,backgroundColor:C.accent,borderRadius:5},
- thumb:{position:'absolute',marginLeft:11,width:22,height:22,borderRadius:11,borderWidth:3,borderColor:C.selectionLine,backgroundColor:C.accent},
+ thumb:{position:'absolute',width:22,height:22,borderRadius:11,borderWidth:3,borderColor:C.selectionLine,backgroundColor:C.accent},
  scale:{flexDirection:'row',justifyContent:'space-between',gap:8},
  scaleText:{fontSize:10,color:C.muted,fontWeight:'700'},
  disabled:{opacity:.4}

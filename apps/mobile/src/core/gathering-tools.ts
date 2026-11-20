@@ -1,6 +1,8 @@
 import {gatheringToolDef,gatheringToolsFor} from '../content/gathering-tools';
 import type {GatherDef} from '../content/skills';
 import type {GameState,GatheringSkillId} from './types';
+import {GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION,gatheringToolBaseMultiplier,validateGatheringToolRoll} from './gathering-tool-rolls';
+import type {CraftedGatheringTool} from './gathering-tool-rolls';
 
 export const NO_TOOL_TIME_MULTIPLIER=1.15;
 export const MAX_EQUIPPED_TOOL_TIME_REDUCTION=.60;
@@ -25,13 +27,36 @@ export function equippedGatheringTool(state:GameState,skillId:GatheringSkillId){
   return tools[tools.length-1];
 }
 
+/** Look up the precise equipped physical copy; never infer a roll for a
+ * pre-update tool or accidentally apply another character's copy. */
+export function equippedGatheringToolRoll(state:GameState,skillId:GatheringSkillId,tier:number):CraftedGatheringTool|undefined{
+ const tool=equippedGatheringTools(state,skillId).find(row=>row.tier===tier);
+ if(!tool)return undefined;
+ const copyId=state.character?.equippedToolInstanceIdsByTier?.[skillId]?.[tier as 1|2|3|4];
+ if(!copyId)return undefined;
+ const stored=state.account.craftedGatheringToolInstances?.find(row=>row.id===copyId&&row.itemId===tool.id);
+ return validateGatheringToolRoll(stored,tool.id);
+}
+
+export function gatheringToolEffects(state:GameState,skillId:GatheringSkillId){
+ if(skillId==='herbalism')return {baseReduction:0,rolledSpeedReduction:0,effectiveReduction:0,timeMultiplier:1,rarityChanceMultiplier:1,count:0};
+ const tools=equippedGatheringTools(state,skillId);
+ if(!tools.length)return {baseReduction:0,rolledSpeedReduction:0,effectiveReduction:-.15,timeMultiplier:NO_TOOL_TIME_MULTIPLIER,rarityChanceMultiplier:1,count:0};
+ let baseReduction=0,speedMultiplier=1,rarityBonus=0;
+ for(const tool of tools){
+  const copy=equippedGatheringToolRoll(state,skillId,tool.tier);
+  baseReduction+=(1-tool.actionTimeMultiplier)*gatheringToolBaseMultiplier(copy);
+  if(copy?.bonus.stat==='speed')speedMultiplier*=1-copy.bonus.basisPoints/10000;
+  if(copy?.bonus.stat==='rarity')rarityBonus+=copy.bonus.basisPoints/10000;
+ }
+ const timeMultiplier=Math.max(1-GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION,Math.max(0,1-baseReduction)*speedMultiplier);
+ return {baseReduction,rolledSpeedReduction:1-speedMultiplier,effectiveReduction:1-timeMultiplier,timeMultiplier,rarityChanceMultiplier:1+rarityBonus,count:tools.length};
+}
 export function gatheringToolTimeMultiplier(state:GameState,skillId:GatheringSkillId){
-  // Herbalism is hand-pickable and has no tool progression.
-  if(skillId==='herbalism')return 1;
-  const tools=equippedGatheringTools(state,skillId);
-  if(!tools.length)return NO_TOOL_TIME_MULTIPLIER;
-  const reduction=tools.reduce((sum,tool)=>sum+(1-tool.actionTimeMultiplier),0);
-  return Math.max(1-MAX_EQUIPPED_TOOL_TIME_REDUCTION,1-reduction);
+ return gatheringToolEffects(state,skillId).timeMultiplier;
+}
+export function gatheringToolRarityChanceMultiplier(state:GameState,skillId:GatheringSkillId){
+ return gatheringToolEffects(state,skillId).rarityChanceMultiplier;
 }
 
 export function gatheringPacing(state:GameState,activity:GatherDef){

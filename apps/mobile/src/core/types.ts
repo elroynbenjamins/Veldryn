@@ -52,6 +52,8 @@ export interface CharacterState {
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   /** All equipped tools, one per tier per gathering skill. Tools leave Inventory when equipped. */
   equippedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Exact physical copy in each tier. Missing IDs are pre-affix legacy tools. */
+  equippedToolInstanceIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   equippedFoodId?:string;
   /** Auto-eat backup order (up to four different food types); never consumes bank food. */
   foodQueueIds?:string[];
@@ -144,7 +146,7 @@ export interface GameState {
    * resolution. Not persisted; absent means no bonus (skills unreleased). */
   guildSkillEffects?:import('./guild-skill-effects').GuildSkillEffects;
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGatheringToolInstances?:import('./gathering-tool-rolls').CraftedGatheringTool[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;

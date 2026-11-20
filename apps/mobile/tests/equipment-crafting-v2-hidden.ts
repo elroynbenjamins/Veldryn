@@ -10,6 +10,10 @@ import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-
 import type {V2ReadinessSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
 import type {V2DraftSnapshot as V2ServerDraftSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
 import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
+import {equipmentPouchForCharacter,EQUIPMENT_POUCH_BASE_CAPACITY,
+ EQUIPMENT_POUCH_UPGRADES} from '../src/core/equipment-pouch';
+import {v2ServerLegacyPouchSnapshot,V2_LEGACY_POUCH_CAPACITIES} from
+ '../../../backend/src/server/equipment/equipment-crafting-v2-pouch-snapshot';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -28,6 +32,22 @@ const check=(ok:unknown,label:string)=>{if(!ok)throw new Error(label)};
 // remain structurally acceptable to the actual private Forge draft contract.
 const typeCompatible:V2ReadinessSnapshot extends V2ServerDraftSnapshot ? true : false=true;
 check(typeCompatible,'Hidden mobile readiness snapshot must fit private Forge contract');
+// Explicit cross-package parity: a server must never reinterpret an existing
+// V33 player's paid/earned pouch capacity or silently discard old exact copies.
+const mobilePouchCapacities=[EQUIPMENT_POUCH_BASE_CAPACITY,
+ ...EQUIPMENT_POUCH_UPGRADES.map(row=>row.capacity)];
+check(JSON.stringify(mobilePouchCapacities)===JSON.stringify(V2_LEGACY_POUCH_CAPACITIES),
+ 'Server V2 pouch capacities must match all existing mobile V33 upgrades');
+const parityCharacter=createCharacter(newGame(2_000_000_000_000),'IRONWARDEN').character!;
+for(const capacity of [...mobilePouchCapacities,39,999]){
+ parityCharacter.equipmentPouch={capacity,stacks:[
+  {itemId:'V33_EXISTING_COPY',quantity:1,instanceId:'original-copy'},
+ ]};
+ check(JSON.stringify(v2ServerLegacyPouchSnapshot(parityCharacter))===
+  JSON.stringify(equipmentPouchForCharacter(parityCharacter)),
+  'Server V2 and existing mobile pouch reader must agree for capacity '+capacity);
+}
+
 check(!EQUIPMENT_V2_RELEASED&&!CRAFTING_V2_RELEASED&&!EQUIPMENT_CRAFTING_V2_RELEASED&&!equipmentV2PublicEntryAvailable(),'V2 client release must stay hidden and atomic');
 check(Math.abs(EQUIPMENT_V2_RARITIES.reduce((sum,row)=>sum+row.chance,0)-1)<1e-10,'Rarity odds must sum to 100%');
 check(equipmentV2AffixCount(1,'epic')===1&&equipmentV2AffixCount(3,'epic')===2,'Epic affix breakpoint');

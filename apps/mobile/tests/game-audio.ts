@@ -5,7 +5,7 @@ import {highestRarity,rarityRevealDelayMs,rarityRevealSound} from '../src/core/r
 const fs=require('fs') as {readFileSync(path:string,encoding:'utf8'):string;statSync(path:string):{size:number};existsSync(path:string):boolean;readdirSync(path:string):string[]};
 
 // Manifest, generated asset map and files stay in sync.
-const manifest=JSON.parse(fs.readFileSync('assets/audio/manifest.json','utf8')) as {sfx:Record<string,{seconds:number;volume:number}>;music:Record<string,{seconds:number}>};
+const manifest=JSON.parse(fs.readFileSync('assets/audio/manifest.json','utf8')) as {sfx:Record<string,{seconds:number;volume:number}>;music:Record<string,{seconds:number;selection?:string;rights_status?:string}>};
 const assetMap=fs.readFileSync('src/theme/audio-assets.ts','utf8');
 let sfxBytes=0,musicBytes=0;
 for(const [kind,rows] of [['sfx',manifest.sfx],['music',manifest.music]] as const){
@@ -24,6 +24,13 @@ assert.ok(musicBytes<4_000_000,'Music budget exceeded: '+musicBytes);
 for(const required of ['ui_tap','reward_collect','level_up','rare_drop','unlock','hit','crit','heal','shield','interrupt','phase','cast','down','victory','defeat','craft_complete','upgrade_success','upgrade_fail','mine_hit','chop_hit','fish_splash','gather_yield','boss_entrance','boss_telegraph','boss_special','guard_break','role_moment','world_hp_drop','killing_blow','honor','tonic'])
  assert.ok(required in manifest.sfx,'Missing required effect '+required);
 for(const track of ['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
+
+// Two selected tracks were composed/rendered using original synthesis only.
+for(const [track,selection] of Object.entries({town:'Lanterns at Hearth',asterfall:'First Light'})){
+ assert.equal(manifest.music[track]?.selection,selection,'Wrong approved soundtrack for '+track);
+ assert.equal(manifest.music[track]?.rights_status,'original-synthesis-no-third-party-samples',
+   'Unexpected sample provenance for '+track);
+}
 
 // Every combat impact kind has a sound.
 const burst=fs.readFileSync('src/components/CombatImpactBurst.tsx','utf8');

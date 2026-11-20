@@ -1,8 +1,10 @@
 {
   "music": {
     "asterfall": {
-      "bpm": 100,
-      "seconds": 38.4
+      "bpm": 102,
+      "seconds": 38.09,
+      "selection": "First Light",
+      "rights_status": "original-synthesis-no-third-party-samples"
     },
     "boss": {
       "bpm": 144,
@@ -21,8 +23,10 @@
       "seconds": 36.92
     },
     "town": {
-      "bpm": 92,
-      "seconds": 41.74
+      "bpm": 88,
+      "seconds": 44.1,
+      "selection": "Lanterns at Hearth",
+      "rights_status": "original-synthesis-no-third-party-samples"
     },
     "world_boss": {
       "bpm": 112,
@@ -35,7 +39,7 @@
       "volume": 0.9
     },
     "boss_special": {
-      "seconds": 1.0,
+      "seconds": 1,
       "volume": 0.95
     },
     "boss_telegraph": {

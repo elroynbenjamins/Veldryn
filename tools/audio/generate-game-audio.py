@@ -355,7 +355,14 @@ def write_mp3(samples, path, rate, kbps):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--only', choices=['sfx', 'music'])
+    ap.add_argument('--replace-selected-music', action='store_true', help='Explicitly overwrite chosen/locked music assets')
     args = ap.parse_args(); manifest = {'sfx': {}, 'music': {}}
+    existing_manifest_path = os.path.join(OUT, 'manifest.json')
+    if args.only != 'sfx' and not args.replace_selected_music and os.path.isfile(existing_manifest_path):
+        with open(existing_manifest_path, encoding='utf-8') as f:
+            existing_manifest = json.load(f)
+        if any(row.get('selection') for row in existing_manifest.get('music', {}).values()):
+            ap.error('Selected music is locked. Use --only sfx or explicitly --replace-selected-music.')
     if args.only != 'music':
         for name, (fn, volume) in SFX.items():
             x = fade_tail(trim(normalize(fn())))

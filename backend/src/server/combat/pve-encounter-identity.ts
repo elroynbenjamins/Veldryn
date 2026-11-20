@@ -6,6 +6,8 @@ export type PveMechanicId='heavy_hit'|'focus'|'interrupt'|'aoe'|'dot'|'vulnerabi
 export interface PveMechanicPresentation{id:PveMechanicId;label:string;description:string;}
 export interface PveEncounterPreview{
   archetypes:Array<{id:PveArchetype;label:string}>;
+  /** Names and formation only: safe to reveal with the available room choice. */
+  enemies:Array<{name:string;boss:boolean}>;
   mechanics:PveMechanicPresentation[];
   summary:string;
 }
@@ -88,12 +90,13 @@ function parseMechanics(tags:readonly string[]):PveMechanicId[]{
 }
 export function pveEncounterPreview(definitions:readonly CombatantDefinition[]):PveEncounterPreview|undefined{
   const enemies=definitions.filter(definition=>definition.team==='enemies');if(!enemies.length)return undefined;
+  const previewEnemies=enemies.slice(0,4).map(enemy=>({name:enemy.name,boss:enemy.boss===true}));
   const archetypes=[...new Set(enemies.map(enemy=>parseArchetype(enemy.tags??[])).filter((value):value is PveArchetype=>Boolean(value)))].slice(0,2);
   const mechanicIds=[...new Set(enemies.flatMap(enemy=>parseMechanics(enemy.tags??[])))].slice(0,4);
-  if(!archetypes.length&&!mechanicIds.length)return undefined;
+  if(!archetypes.length&&!mechanicIds.length&&!previewEnemies.length)return undefined;
   const mechanics=mechanicIds.map(id=>MECHANICS[id]);
   const labels=[...archetypes.map(id=>ARCHETYPE_LABEL[id]),...mechanics.slice(0,2).map(item=>item.label)];
-  return{archetypes:archetypes.map(id=>({id,label:ARCHETYPE_LABEL[id]})),mechanics,summary:labels.join(' · ')};
+  return{archetypes:archetypes.map(id=>({id,label:ARCHETYPE_LABEL[id]})),enemies:previewEnemies,mechanics,summary:labels.join(' · ')||previewEnemies.map(enemy=>enemy.name).join(' · ')};
 }
 
 /** Presentation-safe boss plan for standard dungeons. Numeric combat stats and

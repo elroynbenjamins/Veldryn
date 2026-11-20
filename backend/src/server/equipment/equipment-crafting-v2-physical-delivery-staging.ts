@@ -14,7 +14,7 @@ import {verifyEquipmentV2StorageReservations} from './equipment-crafting-v2-stor
 import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-sidecar';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {readEquipmentV2VirtualCustody} from './equipment-crafting-v2-virtual-history';
-import type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-state';
+import type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
 import {V2DraftCraftError} from './equipment-crafting-v2-transaction';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';

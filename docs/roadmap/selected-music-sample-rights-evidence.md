@@ -60,3 +60,26 @@ Veldryn development
 - [ ] Only then remove draft status and merge the five sample-dependent tracks.
 
 No reply or clearance has been received as of this update. This document must not be treated as release approval.
+
+
+## Rights-holder referral and outreach — 20 November 2026
+
+- David Bolton replied to the original Gmail inquiry, saying the TimGM6mb
+  licensing notice reproduces an email he sent to the MuseScore group and
+  **Tim Brechbill is the person to contact**. Reply message ID:
+  `1a1f9eee082b2bb3` (Gmail thread `1a1f97480108989f`).
+  David did not grant clearance or interpret the license.
+- Tim Brechbill's official MIDI/SoundFont website,
+  https://www.timbrechbill.com/saxguru/Timidity.php, identifies him as the
+  creator of TimGM6mb.sf2 and the recorded saxophone samples. A publicly
+  available Heartland Boogie Band contact sheet names Tim Brechbill with a
+  contact email, with a saxophone/arranging biography consistent with the
+  author. Email attribution should still be confirmed by his reply:
+  https://heartlandboogieband.com/epk/HeartlandBoogieBand-About.pdf.
+- A focused licensing inquiry was **sent 20 Nov 2026** to that publicly
+  listed musician contact address, identifying the original five tracks,
+  commercial/proprietary game use, GPL-2.0, third-party sample rights,
+  distribution, edits, and attribution. Sent Gmail message ID:
+  `1a1fa04793ca8055`; Gmail thread ID: `1a1fa04793ca8055`.
+- Await Tim's reply. **No permission or clearance has been received**.
+  No sampled music may be shipped, and PR #1489 must remain draft.

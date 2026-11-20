@@ -1,5 +1,10 @@
 name: Regional combat simulation (read-only)
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Uses CURRENT combat balance and synthetic full sets. No production access,
 # schema changes, gear unlocks, game revisions, or migrations.
 on:

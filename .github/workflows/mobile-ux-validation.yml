@@ -1,5 +1,10 @@
 name: Mobile UX validation
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 on:
   push:
     branches: [main]
@@ -17,6 +22,7 @@ on:
 jobs:
   typecheck-and-core-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: apps/mobile
@@ -101,5 +107,6 @@ jobs:
           node tests/guild-guide-render-layout.cjs
       - name: Verify compact gathering Drops UI and real drop odds
         run: pnpm test:gathering-drops
-      - name: Run mobile core tests
-        run: pnpm test:core
+      # Full core suite is owned by mobile-core-validation.yml on the same
+      # mobile source / test-manifest paths. Avoid running it twice per PR.
+      # This workflow still runs all UX-specific contracts and typechecks.

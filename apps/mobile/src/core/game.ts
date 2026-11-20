@@ -60,8 +60,8 @@ import {monsterMasteryCombatBonuses,recordMonsterMastery} from './monster-master
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {reserveFaithPractice,settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {FAITH_TIERS,HOLY_WATER_ID} from '../content/faith';
-import {previewAlchemyReward,alchemyRefund,startAlchemyUntilLimited,preparationEffects,spendPreparationEncounter} from './alchemy';
-import {previewProcessingReward,processingRefund,startProcessingUntilLimited} from './processing';
+import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,startAlchemyUntilLimited,alchemyAvailability,preparationEffects,spendPreparationEncounter} from './alchemy';
+import {previewProcessingReward,processingRefund,startProcessingBatch,startProcessingUntilLimited,processingRunCapacity} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
 import {newJournalState} from './adventurers-journal-v42';
@@ -76,8 +76,24 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
-export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startAlchemyUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
-export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number){const ready=finishClassDrills(state,nowMs);return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));}
+/** Optional fixed batch count; omitted counts preserve existing AFK-limited production. */
+export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
+ const ready=finishClassDrills(state,nowMs);
+ if(batches===undefined)return startAlchemyUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
+ const status=alchemyAvailability(ready,recipeId,1);
+ if(!status.ready)throw new Error(status.reason);
+ const cycle=professionActionPace(ready,status.recipe!,'batch').cycleSeconds;
+ const capacity=Math.min(status.maxBatches,Math.floor(offlineCapSeconds(ready)/cycle));
+ if(!Number.isSafeInteger(batches)||batches<1||batches>capacity)throw new Error('Selected brew count exceeds available materials, Gold or AFK time.');
+ return startAlchemyBatch(ready,recipeId,batches,nowMs);
+}
+export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
+ const ready=finishClassDrills(state,nowMs);
+ if(batches===undefined)return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
+ const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready));
+ if(!Number.isSafeInteger(batches)||batches<1||batches>capacity.availableBatches)throw new Error('Selected processing count exceeds available materials, Gold or AFK time.');
+ return startProcessingBatch(ready,recipeId,batches,nowMs);
+}
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
 

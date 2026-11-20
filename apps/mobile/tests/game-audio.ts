@@ -31,7 +31,11 @@ for(const [track,selection] of Object.entries({
  world_boss:'Eclipse Protocol V9 — extended original instruments',
 }))assert.equal(manifest.music[track]?.selection,selection,'Wrong selected music for '+track);
 for(const track of ['dungeon','boss','world_boss'])assert.ok(manifest.music[track].seconds>=95,'Extended battle track is unexpectedly short: '+track);
-for(const track of Object.keys(manifest.music))assert.equal(manifest.music[track].rights_status,'pending-review','Never release this draft music before rights review');
+for(const track of ['town','asterfall'])
+ assert.equal(manifest.music[track].rights_status,'original-synthesis-no-third-party-samples',
+  'Original-synthesis track incorrectly marked as sampled: '+track);
+for(const track of ['sunscar','frostmarch','dungeon','boss','world_boss'])
+ assert.equal(manifest.music[track].rights_status,'pending-review','Sample-dependent music must not be treated as cleared: '+track);
 
 
 // Every combat impact kind has a sound.

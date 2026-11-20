@@ -85,16 +85,23 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
   run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:next.nodeId});
  }
  assert(run.phase!=='awaiting_choice','The calibration run must finish at its first seven-room Endurance boss checkpoint');
- return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId};
+ const terminal=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
+ return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId,
+  terminalDepth:terminal?.depth??-1,terminalKind:terminal?.kind??'unknown'};
 }
-for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){
+const releaseBalanceFailures:string[]=[];
+for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){try{
  const roster=calibratedRoster(id,tier),count=40;
  const results=Array.from({length:count},(_,seed)=>runOne(id,tier,seed,roster));
  const successes=results.filter(row=>row.clear);
+ const terminalSummary=Object.fromEntries([...new Set(results.map(row=>row.terminalDepth+':'+row.terminalKind))]
+  .map(key=>[key,results.filter(row=>row.terminalDepth+':'+row.terminalKind===key).length]));
  const bossResults:Record<string,{clears:number;attempts:number}>=Object.fromEntries([...new Set(results.map(row=>row.boss))].map(boss=>{
   const subset=results.filter(row=>row.boss===boss);
   return [boss,{clears:subset.filter(row=>row.clear).length,attempts:subset.length}];
  }));
+ console.log('REGIONAL_CHECKPOINT_TIER_AUDIT '+JSON.stringify({id,tier,clears:successes.length,
+  samples:count,terminalSummary,bossResults}));
  assert.equal(Object.keys(bossResults).length,2,'Each region should retain two reachable final bosses');
  assert.equal(Object.values(bossResults).reduce((sum,row)=>sum+row.attempts,0),count);
  // Keep a measurable release guard around the current 40-run synthetic
@@ -128,7 +135,9 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
   clears:successes.length,samples:count,bossResults,
   roster:roster.map(row=>({cp:row.cp,role:row.snapshot.readiness.role,readiness:Number(row.ready.toFixed(2))})),
  }));
+ }catch(error){releaseBalanceFailures.push(id+' T'+tier+': '+String(error));}
 }
+assert.deepEqual(releaseBalanceFailures,[],'All six regional tiers must pass their original balance and boss-lottery guards');
 
 /** Old or underpowered Echoes must never bypass the new regional tier gate.
  * A low-level player can still enter Q-Mode with correctly calibrated NPCs. */

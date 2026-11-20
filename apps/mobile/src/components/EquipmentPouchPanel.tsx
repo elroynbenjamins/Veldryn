@@ -296,5 +296,6 @@ function styles(C:ThemeColors){return StyleSheet.create({
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},
  detailFooter:{gap:spacing.xs},detailActions:{gap:spacing.sm},
  transferRow:{flexDirection:'row',gap:spacing.sm},transferAction:{flex:1,minWidth:0},
+ itemName:{...typography.bodyStrong,color:C.text},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  });}

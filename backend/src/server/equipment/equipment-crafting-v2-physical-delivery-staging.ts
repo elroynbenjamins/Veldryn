@@ -1,5 +1,13 @@
 import {createHash} from 'node:crypto';
-import type {GameState,ItemStack,InventoryState,CharacterState} from '../../../../apps/mobile/src/core/types';
+import type {V2LegacyAccountCustodyView,V2LegacyPouchStack as ItemStack,
+ V2LegacyInventory as InventoryState,V2LegacyCharacter as CharacterState}
+ from './equipment-crafting-v2-legacy-custody-view';
+/** Read-only minimum V33 serializer shape for staging verification. */
+export interface V2PhysicalGameState extends V2LegacyAccountCustodyView{
+ version:6|11;
+ character:(CharacterState&{gold:number})|null;
+ account:V2LegacyAccountCustodyView['account']&{equipmentV2Hidden?:unknown};
+}
 import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations} from './equipment-crafting-v2-storage-reservations';
@@ -26,8 +34,8 @@ export interface V2PhysicalDeliveryReceipt {
  expectedVersion:number;claimRequestId:string;
  physicallyDelivered:true;stagingOnly:true;
 }
-export interface V2StagingDeliveryInput {
- state:GameState;accountId:string;onlineVersion:number;
+export interface V2StagingDeliveryInput<TState extends V2PhysicalGameState=V2PhysicalGameState> {
+ state:TState;accountId:string;onlineVersion:number;
  onlineCharacterId:string|null;authoritativeWalletGold:number|null;
  requestId:string;expectedVersion:number;instanceId:string;
  /** Hard-coded staging fixture capability, NEVER issued by an online client. */
@@ -36,7 +44,7 @@ export interface V2StagingDeliveryInput {
 type Metadata=V2HiddenGameMetadata&{physicalDeliveryReceipts?:V2PhysicalDeliveryReceipt[]};
 const fail=(code:string):never=>{throw new V2DraftCraftError(code);};
 const safe=(n:number)=>Number.isSafeInteger(n)&&n>=0;
-function allPhysicalIds(state:GameState):string[]{
+function allPhysicalIds(state:V2PhysicalGameState):string[]{
  const stacks:readonly ItemStack[][]=[
   state.inventory.stacks,state.bank.stacks,state.overflow.stacks,
   state.character?.equipmentPouch?.stacks??[],
@@ -51,14 +59,14 @@ function allPhysicalIds(state:GameState):string[]{
   ...(state.otherCharacters??[]).flatMap(row=>Object.values(row.character.equipmentInstanceIds??{})),
  ].filter((id):id is string=>typeof id==='string'&&id.length>0);
 }
-function accountHolder(state:GameState,id:string):
+function accountHolder(state:V2PhysicalGameState,id:string):
  {character:CharacterState;inventory:InventoryState;isActive:boolean}|null{
  if(state.character?.id===id)return {character:state.character,inventory:state.inventory,isActive:true};
  const row=state.otherCharacters?.find(row=>row.character.id===id);
  return row?{character:row.character,inventory:row.inventory,isActive:false}:null;
 }
 export function verifyEquipmentV2StagingPhysicalReceipts(
- state:GameState,accountId:string,meta:Metadata,
+ state:V2PhysicalGameState,accountId:string,meta:Metadata,
 ):void {
  const receipts=meta.physicalDeliveryReceipts??[];
  if(!Array.isArray(receipts))fail('invalid_v2_physical_receipts');
@@ -92,7 +100,7 @@ export function verifyEquipmentV2StagingPhysicalReceipts(
  for(const id of physical)if(claimedIds.has(id)&&!usedIds.has(id))
   fail('unreceipted_v2_physical_copy');
 }
-function install(state:GameState,characterId:string,location:V2PhysicalDeliveryReceipt['location'],stack:ItemStack):GameState{
+function install<TState extends V2PhysicalGameState>(state:TState,characterId:string,location:V2PhysicalDeliveryReceipt['location'],stack:ItemStack):TState{
  const next=structuredClone(state);
  if(next.character?.id===characterId){
   if(location==='inventory')next.inventory.stacks.push(stack);
@@ -114,7 +122,7 @@ function install(state:GameState,characterId:string,location:V2PhysicalDeliveryR
 /** Single-CAS staging candidate. A lost reply replays the original receipt;
  * it never manufactures a second copy or silently switches destinations.
  */
-export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDeliveryInput){
+export function simulateEquipmentV2PhysicalDeliveryStaging<TState extends V2PhysicalGameState>(input:V2StagingDeliveryInput<TState>){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,
   requestId,expectedVersion,instanceId,stagingFixture}=input;
  if(stagingFixture!=='eq2-isolated-catalog-fixture-v1')throw new V2DraftCraftError('v2_staging_fixture_required');
@@ -196,9 +204,9 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
  };
  let next=install(state,holderId,physical.location,
   {itemId:physical.itemId,instanceId,quantity:1});
- next.account={...next.account,equipmentV2Hidden:{
+ next.account.equipmentV2Hidden={
   ...meta,physicalDeliveryReceipts:[...reserved,physical],
- }};
+ };
  verifyEquipmentV2StagingPhysicalReceipts(next,accountId,
   next.account.equipmentV2Hidden as Metadata);
  if(next.version!==state.version||next.character?.gold!==state.character.gold)
@@ -215,8 +223,8 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
  * NOT a DB write, commit or client-submittable request. Concurrency and
  * rollback must be validated against the real SQL function before release.
  */
-export function buildEquipmentV2StagingOnlineCommitCandidate(input:{
- state:GameState;accountId:string;onlineVersion:number;
+export function buildEquipmentV2StagingOnlineCommitCandidate<TState extends V2PhysicalGameState>(input:{
+ state:TState;accountId:string;onlineVersion:number;
  authoritativeWalletGold:number;requestId:string;instanceId:string;
 }){
  // The existing online command hash uses sorted canonical object keys.
@@ -241,7 +249,7 @@ export function buildEquipmentV2StagingOnlineCommitCandidate(input:{
  };
 }
 /** Do not mistake the isolated test candidate for a runtime command. */
-export function runEquipmentV2PhysicalDelivery(input:V2StagingDeliveryInput){
+export function runEquipmentV2PhysicalDelivery<TState extends V2PhysicalGameState>(input:V2StagingDeliveryInput<TState>){
  assertEquipmentCraftingV2Released();
  return simulateEquipmentV2PhysicalDeliveryStaging(input);
 }

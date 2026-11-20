@@ -859,8 +859,10 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     if(destination.kind==='combat'){setGoalMonsterId(destination.monsterId);setTab('Combat');return;}
     if(destination.kind==='skills'){
       setGoalActionId(destination.actionId);setGoalRecipeId(destination.recipeId);
-      if(destination.mode){setSelectedSkill(destination.skillId);setSkillsMode(destination.mode);setTab('Skills');return;}
-      setSelectedSkill(undefined);setTab('Skills');return;
+      // An in-Skills recipe deep link must not re-select the bottom tab:
+      // setTab('Skills') intentionally resets a detail page to the Skills hub.
+      if(destination.mode){setSelectedSkill(destination.skillId);setSkillsMode(destination.mode);if(tab!=='Skills')setTab('Skills');return;}
+      setSelectedSkill(undefined);if(tab!=='Skills')setTab('Skills');return;
     }
     if(destination.kind==='contracts'){openQuestMode('contracts');return;}
     if(destination.kind==='inventory'){setTab('Inventory');return;}

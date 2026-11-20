@@ -34,6 +34,7 @@ jobs:
             equipment-crafting-v2-instances \
             equipment-crafting-v2-custody \
             equipment-crafting-v2-commit-plan \
-            equipment-crafting-v2-pouch-snapshot; do
+            equipment-crafting-v2-pouch-snapshot \
+            equipment-crafting-v2-delivery-core; do
             node "backend/dist-equipment-v2-core/server/equipment/__tests__/${spec}.test.js"
           done

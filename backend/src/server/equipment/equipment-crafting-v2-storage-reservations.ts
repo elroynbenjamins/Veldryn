@@ -1,4 +1,5 @@
-import type {GameState,InventoryState} from '../../../../apps/mobile/src/core/types';
+import type {V2LegacyAccountCustodyView as GameState,
+ V2LegacyInventory as InventoryState} from './equipment-crafting-v2-legacy-custody-view';
 import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import type {V2DraftItem} from './equipment-crafting-v2-transaction';
 import {V2DraftCraftError} from './equipment-crafting-v2-transaction';

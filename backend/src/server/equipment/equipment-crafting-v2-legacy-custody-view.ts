@@ -1,4 +1,5 @@
 import type {V2LegacyPouchStack} from './equipment-crafting-v2-pouch-snapshot';
+export type {V2LegacyPouchStack} from './equipment-crafting-v2-pouch-snapshot';
 
 /** Minimum read-only slice of the existing V33 account needed for an EQ2
  * delivery preflight. This has NO imports from apps/mobile or UI/runtime.

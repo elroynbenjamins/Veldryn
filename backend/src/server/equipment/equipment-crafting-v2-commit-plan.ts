@@ -111,7 +111,7 @@ export function planEquipmentV2AtomicCommit(
    ||!equal(next.jobs.slice(0,-1),old.jobs)
    ||!equal(next.equipment,old.equipment)
    ||!equal(next.skillAwards,old.skillAwards))
-   fail('invalid_atomic_start_transition');
+   throw new V2DraftCraftError('invalid_atomic_start_transition');
   const job=next.jobs.at(-1)!;
   if(job.id!==result.response.jobId
    ||job.ownerCharacterId!==ctx.characterId
@@ -129,7 +129,7 @@ export function planEquipmentV2AtomicCommit(
   ||next.equipment.length!==old.equipment.length+1
   ||next.skillAwards.length!==old.skillAwards.length+1
   ||oldActive.gold!==nextActive.gold||changedInventory.length||bankChanges.length)
-  fail('invalid_atomic_claim_transition');
+  throw new V2DraftCraftError('invalid_atomic_claim_transition');
  const beforeJob=old.jobs.find(j=>j.id===command.jobId);
  const afterJob=next.jobs.find(j=>j.id===command.jobId);
  const otherJobs=old.jobs.filter(j=>j.id!==command.jobId);

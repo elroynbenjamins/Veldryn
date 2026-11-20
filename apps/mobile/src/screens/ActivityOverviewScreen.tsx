@@ -32,8 +32,10 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
    (state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null
  }));
  const slots=unlockedCharacterSlots(state),skillTotal=accountSkillLevel(state);
+ // Existing four- and five-character accounts are grandfathered for play, not new creation.
  const legacy=entries.length>MAX_NEW_ACCOUNT_CHARACTERS;
  const visibleSlots=legacy?slots:Math.min(slots,MAX_NEW_ACCOUNT_CHARACTERS);
+ // Keep the earned-slot watermark authoritative; it may preserve an old 550-skill unlock.
  const nextThreshold=slots<MAX_NEW_ACCOUNT_CHARACTERS?CHARACTER_SLOT_THRESHOLDS[slots]:undefined;
  const canCreate=!!onCreate&&entries.length<MAX_NEW_ACCOUNT_CHARACTERS&&entries.length<slots;
  const workingCount=entries.filter(entry=>!!entry.activity).length;
@@ -64,7 +66,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
   setBusy(true);setError('');
   try{
    await onDelete(target.character.id,confirmation);
-   setManagingId(undefined);setConfirmation('');setShowDeleteOptions(false);
+   setManagingId(undefined);setConfirmation('');setShowDeleteOptions(false);setShowDeleteDetails(false);
    if(recreate)onCreate?.();
   }catch(e){setError(e instanceof Error?e.message:"Character could not be deleted.");}
   finally{setBusy(false);}
@@ -91,7 +93,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     <View style={s.overviewLine}><Text style={s.sectionLabel}>{r('Character roster')}</Text><Text style={s.skillTotal}>{a('ACCOUNT SKILL')} {skillTotal.toLocaleString(language)}</Text></View>
     {nextThreshold!==undefined?<View style={s.slotProgress}>
       <View style={s.slotProgressHead}><Text style={s.slotHint}>{a('Next character slot unlocks at {count} combined account skill levels.',{count:nextThreshold})}</Text><Text style={s.slotCount}>{Math.min(skillTotal,nextThreshold).toLocaleString(language)}/{nextThreshold.toLocaleString(language)}</Text></View>
-      <View style={s.track} accessibilityRole="progressbar" accessibilityLabel={a('Account skill')} accessibilityValue={{min:0,max:nextThreshold,now:Math.min(nextThreshold,skillTotal)}}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,skillTotal/Math.max(1,nextThreshold)*100))}%`}]}/></View>
+      <View style={s.track} accessible accessibilityRole="progressbar" accessibilityLabel={a('Account skill')} accessibilityValue={{min:0,max:nextThreshold,now:Math.min(nextThreshold,skillTotal)}}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,skillTotal/Math.max(1,nextThreshold)*100))}%`}]}/></View>
      </View>:null}
     {slots>=MAX_NEW_ACCOUNT_CHARACTERS?<Text style={s.slotHint}>{legacy?r('Legacy roster preserved'):r('Three role slots unlocked')}</Text>:null}
    </View>
@@ -136,7 +138,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
      {target.character.id!==state.character?.id?<GameButton title={a('Switch')} onPress={()=>switchTo(target.character.id)}/>:null}
      {onDelete?<GameButton title={r('Review deletion options')} tone="secondary" onPress={()=>setShowDeleteOptions(true)}/>:null}
     </View>:<>
-     <GameButton title={r('Back to character')} compact tone="secondary" onPress={()=>{setShowDeleteOptions(false);setConfirmation('');setError('');setShowDeleteDetails(false)}}/>
+     <GameButton title={r('Back to character')} compact tone="secondary" onPress={()=>{Keyboard.dismiss();setShowDeleteOptions(false);setConfirmation('');setError('');setShowDeleteDetails(false)}}/>
      <View style={s.warning}><Text style={s.warningTitle}>{a('What you lose')}</Text><Text style={s.warningText}>{a('Your character, levels, Gold, skills, quests, loadouts and equipment upgrades are permanently removed.')}</Text>
       <Text style={s.warningText}>{a('Equipment and items return to the shared Bank or Overflow, with upgrades removed.')}</Text>
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showDeleteDetails}} style={s.detailsToggle} onPress={()=>setShowDeleteDetails(value=>!value)}><Text style={s.detailsToggleText}>{showDeleteDetails?a('Hide deletion details'):a('Read full deletion details')} {showDeleteDetails?'−':'+'}</Text></Pressable>

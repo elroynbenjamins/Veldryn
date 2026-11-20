@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import type {GameState,ItemStack,InventoryState,CharacterState} from '../../../../apps/mobile/src/core/types';
-import {equipmentPouchForCharacter} from '../../../../apps/mobile/src/core/equipment-pouch';
+import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations} from './equipment-crafting-v2-storage-reservations';
 import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-sidecar';
@@ -97,7 +97,7 @@ function install(state:GameState,characterId:string,location:V2PhysicalDeliveryR
  if(next.character?.id===characterId){
   if(location==='inventory')next.inventory.stacks.push(stack);
   else{
-   const pouch=equipmentPouchForCharacter(next.character);
+   const pouch=v2ServerLegacyPouchSnapshot(next.character);
    next.character.equipmentPouch={...pouch,stacks:[...pouch.stacks,stack]};
   }
   return next;
@@ -106,7 +106,7 @@ function install(state:GameState,characterId:string,location:V2PhysicalDeliveryR
  if(!other)throw new V2DraftCraftError('unknown_v2_physical_owner');
  if(location==='inventory')other.inventory.stacks.push(stack);
  else{
-  const pouch=equipmentPouchForCharacter(other.character);
+  const pouch=v2ServerLegacyPouchSnapshot(other.character);
   other.character.equipmentPouch={...pouch,stacks:[...pouch.stacks,stack]};
  }
  return next;
@@ -173,7 +173,7 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
  const eligible=(
   dest:'pouch'|'inventory',
  ):boolean=>{
-  const storage=dest==='pouch'?equipmentPouchForCharacter(holder.character):holder.inventory;
+  const storage=dest==='pouch'?v2ServerLegacyPouchSnapshot(holder.character):holder.inventory;
   if(!safe(storage.capacity)||!Array.isArray(storage.stacks)
    ||storage.stacks.some(row=>!row||!safe(row.quantity)||row.quantity<1))
    fail('invalid_v2_physical_storage');

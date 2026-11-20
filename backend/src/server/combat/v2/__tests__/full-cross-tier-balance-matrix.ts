@@ -70,7 +70,9 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    assert.ok(selectedSkills.length>=1,
     'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;
-   const actor=launchPlayer(CLASS_NAMES_V2[classId],level);
+   // Legacy launchPlayer IDs contain whitespace for Knife Dancer; persisted V2
+   // encounters require trusted, canonical IDs without whitespace.
+   const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),id:'QA_PLAYER_'+classId};
    const classStats={...actor.stats};
    const mainStat: keyof CombatStats =
     role==='tank'?'maxHp':role==='damage'?'attackPower':'healingPower';

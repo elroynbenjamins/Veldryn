@@ -80,7 +80,7 @@ export function verifyEquipmentV2StagingPhysicalReceipts(
    ||item.jobId!==receipt.jobId||item.exactItem.pieceId!==receipt.itemId)
    fail('orphan_v2_physical_receipt');
   const holder=accountHolder(state,receipt.holderCharacterId);
-  if(!holder)fail('missing_v2_physical_holder');
+  if(!holder)throw new V2DraftCraftError('missing_v2_physical_holder');
   const stacks=receipt.location==='inventory'?holder.inventory.stacks
    :holder.character.equipmentPouch?.stacks??[];
   const matches=stacks.filter(row=>row.instanceId===receipt.instanceId
@@ -103,7 +103,7 @@ function install(state:GameState,characterId:string,location:V2PhysicalDeliveryR
   return next;
  }
  const other=next.otherCharacters?.find(row=>row.character.id===characterId);
- if(!other)fail('unknown_v2_physical_owner');
+ if(!other)throw new V2DraftCraftError('unknown_v2_physical_owner');
  if(location==='inventory')other.inventory.stacks.push(stack);
  else{
   const pouch=equipmentPouchForCharacter(other.character);
@@ -117,17 +117,17 @@ function install(state:GameState,characterId:string,location:V2PhysicalDeliveryR
 export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDeliveryInput){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,
   requestId,expectedVersion,instanceId,stagingFixture}=input;
- if(stagingFixture!=='eq2-isolated-catalog-fixture-v1')fail('v2_staging_fixture_required');
- if(!state?.character||state.character.id!==onlineCharacterId
-  ||!safe(onlineVersion)||!safe(authoritativeWalletGold??NaN)
+ if(stagingFixture!=='eq2-isolated-catalog-fixture-v1')throw new V2DraftCraftError('v2_staging_fixture_required');
+ if(!state?.character||!onlineCharacterId||state.character.id!==onlineCharacterId
+  ||!safe(onlineVersion)||authoritativeWalletGold===null||!safe(authoritativeWalletGold)
   ||state.character.gold!==authoritativeWalletGold||!accountId)
-  fail('unauthenticated_v2_physical_snapshot');
+  throw new V2DraftCraftError('unauthenticated_v2_physical_snapshot');
  if(!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)||!safe(expectedVersion)
   ||typeof instanceId!=='string'||!instanceId)
   fail('invalid_v2_physical_command');
  const meta=state.account.equipmentV2Hidden as Metadata|undefined;
  if(!meta||meta.schemaVersion!=='eq2-hidden-game-state-v1')
-  fail('missing_v2_physical_ledger');
+  throw new V2DraftCraftError('missing_v2_physical_ledger');
  verifyEquipmentV2HiddenLedger(accountId,meta.jobs,meta.items,meta.receipts,meta.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,meta.items,meta.storageReservations??[]);
  if(meta.gemSocketState)verifyEquipmentV2GemSidecar(meta.items,meta.gemSocketState);
@@ -150,24 +150,24 @@ export function simulateEquipmentV2PhysicalDeliveryStaging(input:V2StagingDelive
   fail('v2_physical_copy_already_delivered');
  const item=meta.items.find(row=>row.id===instanceId);
  if(!item||item.accountId!==accountId||!v2ServerExactTemplateConsistent(item.exactItem))
-  fail('invalid_v2_physical_exact_copy');
+  throw new V2DraftCraftError('invalid_v2_physical_exact_copy');
  const claim=meta.receipts.find(row=>row.response.kind==='claimed'
   &&row.response.instanceId===instanceId);
- if(!claim)fail('missing_v2_physical_claim');
+ if(!claim)throw new V2DraftCraftError('missing_v2_physical_claim');
  const custody=readEquipmentV2VirtualCustody(meta.items,
   meta.storageReservations??[],meta.custodyReceipts??[]);
  const location=custody.find(row=>row.instanceId===instanceId);
  if(!location||location.location==='equipped'||location.location==='bank')
-  fail('v2_physical_requires_character_storage');
+  throw new V2DraftCraftError('v2_physical_requires_character_storage');
  // Deferred copies must first receive a separately versioned, replayable
  // store_deferred custody transition. Physicalizing without it leaves
  // hidden custody pointing to 'deferred' while a physical item exists.
  if(location.location==='deferred')
   return {state,replayed:false,deferred:true,receipt:null,commit:null};
  const holderId=location.holderCharacterId;
- if(!holderId)fail('unowned_v2_physical_copy');
+ if(!holderId)throw new V2DraftCraftError('unowned_v2_physical_copy');
  const holder=accountHolder(state,holderId);
- if(!holder)fail('unknown_v2_physical_owner');
+ if(!holder)throw new V2DraftCraftError('unknown_v2_physical_owner');
  const reserved=meta.physicalDeliveryReceipts??[];
  const physicallyDeliveredIds=new Set(reserved.map(row=>row.instanceId));
  const eligible=(

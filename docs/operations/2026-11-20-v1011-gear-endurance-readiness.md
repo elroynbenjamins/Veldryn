@@ -22,3 +22,11 @@
 
 ## Hard exclusions
 No full Equipment/Combat/Classes/Enemies 2.0 rollout, World Boss, Party Events, Market, Guild PvE, unlicensed sample-based music, or account-deletion activation. No production database changes, Edge deployments, release-policy minimum increases, Play uploads or publication performed by source reconciliation.
+
+## 20 November — clean consolidation pass (#1511)
+
+- Rebuilt from current `main` without reverting the inline gathering tool recipe and Bank withdrawal route. Clean branch `release/1.0.11-clean-consolidation-20261120` is the main-targeting integration candidate, superseding conflicted #1508.
+- Ported previously staged and merged tool PR #1507: immutable per-copy rarity, quality 0–100, one 2–8% speed or 2–5% gathering rare-find roll, stackable tool tiers (80% action-time cap), legacy neutrality, and test contracts. Ported #1510's localized precise speed/rarity/quality breakdown while preserving the inline recipe disclosure.
+- Canonical generated gameplay and co-op Edge source bundles rebuilt successfully by isolated workflow run [#44831532354](https://github.com/elroynbenjamins/Veldryn/actions/runs/44831532354) and committed at `31c6b946d34b74daa1f9ecbd0e313ab7c8da37c4`. No Supabase deployment or Google Play submission occurred.
+- Read-only Supabase verification: staging has four dungeon migrations (20261119113000, 20261119124500, 20261119140000, 20261119162000), whereas production has none. Staging's weekly claims table has RLS enabled, and sensitive Dungeon server functions are service-role-only; the authenticated combat-Marks self-read is explicitly allowed.
+- **Not yet release-approved:** require green exact-head CI after this documentation commit, staged authenticated dungeon and crafted-tool receipt tests, completed Android AAB smoke and real 1.0.10 save upgrade, current remote Play versionCode, review of the actual new Forge/Endurance visuals across themes, production migration/deployment order, and explicit release GO.

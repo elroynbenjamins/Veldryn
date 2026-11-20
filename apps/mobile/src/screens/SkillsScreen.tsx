@@ -237,19 +237,19 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  // trainable skills. Selectable 2.0 abilities/talents remain in Character → Builds.
  // Adding a new profession needs no redesign: unknown profession ids use 'other'.
  const combatRows:SkillNavigatorEntry[]=[
-  {id:'combat',name:gt('Combat'),kind:gt('Fight & train'),category:'combat',route:'combat'},
+  {id:'combat',name:gt('Combat'),subtitle:gt('Fight & train'),category:'combat',route:'combat'},
   ...classRows.map((row,i)=>({id:'class:'+row.skillId,name:classSkillsFor(state.character!.classId)[i]?.name??row.skillId,
-   level:row.level,xp:row.xp,kind:gt('Combat skill'),category:'combat' as const,route:'discipline' as const}))
+   level:row.level,xp:row.xp,subtitle:gt('Combat skill'),category:'combat' as const,route:'discipline' as const}))
  ];
  const professionRows:SkillNavigatorEntry[]=state.skills.map(row=>{
   const category=skillNavigatorCategoryFor(row.skillId);
   return {id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
-   kind:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
+   subtitle:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
    category,route:'skill'};
  });
  const companionRows:SkillNavigatorEntry[]=[
-  {id:'companion-mastery',name:gl('Companion Mastery'),kind:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
-  {id:'companion-training',name:gl('Companion Training'),kind:n('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel}
+  {id:'companion-mastery',name:gl('Companion Mastery'),subtitle:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
+  {id:'companion-training',name:gl('Companion Training'),subtitle:n('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel}
  ];
  const allEntries=[...combatRows,...professionRows,...companionRows];
  const categoryLabels:Record<SkillNavigatorCategory,string>={
@@ -281,7 +281,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   const icon=entry.route==='companion-mastery'||isSanctuary?uiIcons.companions:isDiscipline?classSkillIcon(entry.id.slice('class:'.length)):null;
   const disabled=entry.route==='combat'&&!onCombat;
   return <Pressable key={entry.id} accessibilityRole="button"
-   accessibilityLabel={entry.route==='combat'?gt('Open Combat'):gt('{name}, {kind}, level {level}',{name:entry.name,kind:entry.kind,level})}
+   accessibilityLabel={entry.route==='combat'?gt('Open Combat'):gt('{name}, {kind}, level {level}',{name:entry.name,kind:entry.subtitle,level})}
    accessibilityHint={entry.route==='combat'?gt('Choose an enemy and set your combat skill XP split'):gt('Open {name} information',{name:entry.name})}
    accessibilityState={{disabled}} disabled={disabled} onPress={()=>openEntry(entry)}
    style={({pressed})=>[hubStyles.navigatorRow,pressed&&hubStyles.cardPressed,disabled&&{opacity:.45}]}>
@@ -289,7 +289,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
      {icon?<Image source={icon} resizeMode="contain" style={hubStyles.skillIcon}/>:<ActivityArtwork id={entry.id as any} size={36}/>}
      <View style={hubStyles.navigatorCopy}>
       <Text numberOfLines={1} style={hubStyles.skillName}>{entry.name}</Text>
-      <Text numberOfLines={1} style={hubStyles.skillKind}>{entry.kind}</Text>
+      <Text numberOfLines={1} style={hubStyles.skillKind}>{entry.subtitle}</Text>
      </View>
      <View style={hubStyles.navigatorTrailing}>
       {entry.route!=='combat'?<Text style={hubStyles.skillLevel}>{isSanctuary?gt('Facility Lv {level}/3',{level}):gt('Level {value}',{value:level})}</Text>:null}

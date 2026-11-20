@@ -2,7 +2,7 @@
 name: Veldryn 1.0.11 reconcile Edge bundles
 on:
   push:
-    branches: ['release/1.0.11-feature-integration-20261119']
+    branches: ['release/1.0.11-stat-endurance-mainline-20261120']
     # Reconcile changed online sources on this isolated release branch.
     # Generated functions/index.ts are intentionally excluded to prevent loops.
     paths:
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: release/1.0.11-feature-integration-20261119
+          ref: release/1.0.11-stat-endurance-mainline-20261120
           fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
@@ -63,7 +63,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          branch=release/1.0.11-feature-integration-20261119
+          branch=release/1.0.11-stat-endurance-mainline-20261120
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts

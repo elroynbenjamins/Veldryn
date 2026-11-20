@@ -136,8 +136,8 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,goalAr
             <View style={s.zoneHereArtwork}><ZoneSceneArtwork regionId={artId}/></View>
             <View style={s.zoneHereShade}/>
             <View style={s.zoneHereBody}>
-              <Text style={s.zoneHereKicker}>{p('HERE')} · {t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
-              <Text numberOfLines={1} style={s.zoneHereName}>{p(zone.name)}{target?' · '+p('TARGET'):''}</Text>
+              <Text style={s.zoneHereKicker}>{p('HERE')} · {t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}{target?' · '+p('TARGET'):''}</Text>
+              <Text numberOfLines={1} style={s.zoneHereName}>{p(zone.name)}</Text>
               <Text numberOfLines={2} style={s.zoneHereSubtitle}>{subtitle}</Text>
               <View style={s.zoneHereActions}>
                 <View style={s.flex}><GameButton compact title={t('Combat')} onPress={()=>siblingRegion?onOpenCombat():onOpenCombat(zone.areaId)}/></View>
@@ -148,8 +148,8 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,goalAr
           return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked,target&&s.zoneTarget]}>
             <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={artId} muted={!access}/></View>
             <View style={s.flex}>
-              <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}{target?' · '+p('TARGET'):''}</Text>
-              <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
+              <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}</Text>
+              <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}{target?' · '+p('TARGET'):''}</Text>
               <Text numberOfLines={2} style={[s.zoneSubtitle,!access&&s.zoneSubtitleLocked]}>{subtitle}</Text>
             </View>
             <View style={s.zoneActions}>

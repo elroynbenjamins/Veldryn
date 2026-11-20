@@ -30,10 +30,11 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  const rootCorrection=rootbound?rootAttack/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
  // Correct only the final bosses. Normal rooms retain monotonic regional
  // scaling and saved runs retain their original boss definitions.
- // First-checkpoint Endurance probes show Asterfall T2 boss clears at 20/40,
- // below the existing 26/40 minimum, while 0.93/0.95 overcorrected to 40/40. Use a midpoint for both T2 boss templates;
+ // First-checkpoint Endurance probes show 20/40 clears with the original
+ // Bell-Warden T2 coefficient. Moderate Bell-Warden only while retaining the
+ // established Rootbound T2 correction to preserve a meaningful boss lottery.
  // keep normal encounters, Tier I/III, and unversioned legacy runs unchanged.
- const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .965 : 1):
+ const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .98 : 1):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .759:tier===2 ? .768:.77):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'?(tier===3?1.017:tier===2?1.015:1):
   expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'?(tier===3?1.025:tier===2?1.03:1):1;

@@ -57,7 +57,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_starter:['id'],companion_recruit:['id'],companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal','count','handoffGoal','handoffTargetId','keepCurrentRunning'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id','quantity'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],select_healing_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],gear_equip:['instanceId'],gear_unequip:['instanceId'],gear_move:['instanceId','to'],equipment_pouch_move:['itemId','quantity','from','to'],equipment_pouch_equip:['itemId'],equipment_pouch_upgrade:[],equipment_pouch_sell:['ids'],equipment_pouch_salvage:['ids'], gear_lock:['instanceId','locked'],gear_sell:['instanceId'],gear_salvage:['instanceId'],gear_autosell:['enabled'],gear_link_legacy:['instanceId','from','stackIndex'],food:['id'],food_queue:['ids'],eat:['id'],meal_bonus:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
@@ -73,10 +73,9 @@ export function validateGameCommand(value:unknown):GameCommand{
  const row=value as Record<string,unknown>;
  if(Object.keys(row).some(key=>key!=='type'&&key!=='args')||typeof row.type!=='string'||!Object.prototype.hasOwnProperty.call(fields,row.type))throw new Error('invalid_command');
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
- // Older clients send an explicit count of one. Accept that shape while enforcing
- // the single-craft rule before settling activity or reserving any ingredients.
- const countKey=row.type==='faith_practice'?'count':row.type==='alchemy_start'||row.type==='processing_start'?'batches':undefined;
- if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined&&(args as Record<string,unknown>)[countKey]!==1)throw new Error(`invalid_${countKey}`);
+ // Reject invalid quantities before settling the existing activity or reserving resources.
+ const countKey=row.type==='faith_practice'?'count':row.type==='alchemy_start'||row.type==='processing_start'?'batches':row.type==='craft'?'quantity':undefined;
+ if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined)integer(args as Record<string,unknown>,countKey,1,row.type==='craft'?999:10000);
  if(row.type==='create'||row.type==='roster_create'||row.type==='qa_prepare'||row.type==='qa_switch_class'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
@@ -234,8 +233,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
-  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now);break;
-  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now);break;
+  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now,a.batches===undefined?undefined:integer(a,'batches',1,10000));break;
+  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now,a.batches===undefined?undefined:integer(a,'batches',1,10000));break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
    state.character={...state.character,trainingFocus:focus};
@@ -315,13 +314,19 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'stop':state=game.stopActivity(state,now);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
-  case 'craft':{
-   const id=text(a,'id'),timed=timedEquipmentRecipe(id);
-   if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');
-   if(timed){const started=startEquipmentCraft(state,id,now);state=started.state;message=started.waiting?'Equipment added to forge backlog':'Equipment crafting started';}
-   else {state=game.craftRecipe(state,id,now);contributions.push({kind:'crafting',contentId:id,units:1});}
-   break;
-  }
+   case 'craft':{
+    const id=text(a,'id'),count=a.quantity===undefined?1:integer(a,'quantity',1,999),timed=timedEquipmentRecipe(id);
+    if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');
+    // Atomic command: a failure on any craft rejects the whole projected state.
+    // Each iteration rechecks materials, gold, available forge slots and output storage.
+    for(let batch=0;batch<count;batch++){
+     if(timed){state=startEquipmentCraft(state,id,now).state;}
+     else state=game.craftRecipe(state,id,now+batch);
+    }
+    if(timed)message=count+' equipment '+(count===1?'craft':'crafts')+' added to the forge';
+    else contributions.push({kind:'crafting',contentId:id,units:count});
+    break;
+   }
   case 'craft_claim':{
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');
    const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;

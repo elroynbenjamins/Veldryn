@@ -27,9 +27,9 @@ Source inspection:
 - GPL-2.0 allows commercial activity but does **not** itself offer an explicit output-recording exception for sample-based audio. Whether the embedded sample portions of commercial MP3 recordings can be distributed under Veldryn's intended license needs qualified review or a written permission covering the recordings. The GPL cannot be assumed irrelevant simply because the SF2 file is not itself shipped.
 - FluidR3Mono is an alternative with published MIT terms and an official SF3 release, documented in the same MuseScore handbook and https://github.com/musescore/MuseScore/blob/main/share/sound/FluidR3Mono_License.md . Any replacement must use the actual FluidR3Mono bank, not an unverified derivative, and keep required notices.
 
-## Written rights request — ready to send, NOT sent
+## Written rights request — sent 20 November 2026
 
-**Suggested addressees:** SoundFont rightsholders / authorized representatives indicated in the original TimGM6mb COPYING notice and official Tim Brechbill website. Confirm authority to license samples that originated from third parties.
+**Request sent to:** David Bolton (`davidkbolton@gmail.com`), email address explicitly listed in the upstream TimGM6mb copyright notice. Sender: Veldryn development via connected Gmail. Gmail sent message ID: `1a1f97480108989f`; thread ID: `1a1f97480108989f`. This is a licensing inquiry, not clearance; receipt and recipient authority are not yet confirmed. Confirm authority to license samples from third parties.
 
 **Subject:** TimGM6mb — permission for rendered music in commercial mobile game Veldryn
 
@@ -52,11 +52,11 @@ Veldryn development
 
 - [x] Verify selected seven track sources and recording provenance.
 - [x] Separate two original-synthesis tracks into draft PR #1492 (not merged).
-- [ ] Send the above request via an authorized communication account; retain the sent-message ID, date and reply.
+- [x] Send the licensing request through the connected Gmail account (20 Nov 2026; sent message ID `1a1f97480108989f`). The wording sent is substantially equivalent to the request above.
 - [ ] Receive written permission from appropriate rightsholders **or** record a legal review explaining an existing-license compliant release method.
 - [ ] If clearance cannot be achieved, obtain a genuine MIT-licensed FluidR3Mono asset (archive, hash, license), render from the exact original MIDI files and present A/B previews for explicit approval.
 - [ ] Review notices and package attribution as required.
 - [ ] Verify game playback, MP3 gapless transitions, tests and Android export.
 - [ ] Only then remove draft status and merge the five sample-dependent tracks.
 
-No clearance has been received. This document must not be treated as release approval.
+No reply or clearance has been received as of this update. This document must not be treated as release approval.

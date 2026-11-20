@@ -50,6 +50,7 @@ import {EnchantingRefineryPanel} from '../components/EnchantingRefineryPanel';
 import {skillMilestoneOverview} from '../core/skill-milestones';
 import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorCategory,type SkillNavigatorEntry} from '../core/skill-hub-navigator';
 import {sharedText} from '../i18n/shared';
+import {skillNavigatorText} from '../i18n/skill-navigator';
 import {gatheringToolsFor} from '../content/gathering-tools';
 import {equippedGatheringTool} from '../core/gathering-tools';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
@@ -211,6 +212,7 @@ function makeHubStyles(C:ThemeColors){return StyleSheet.create({
 function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=false,onMasteryClosed}:{state:GameState;now:number;onSelect:(id:string)=>void;onCombat?:()=>void;onCommand:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMasteryInfoOpen?:boolean;onMasteryClosed?:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const a=(source:string,params?:Record<string,string|number>)=>accountText(language,source,params);
+ const n=(key:Parameters<typeof skillNavigatorText>[1])=>skillNavigatorText(language,key);
  const C=useGameTheme(),hubStyles=useMemo(()=>makeHubStyles(C),[C]);
  const [classSkillId,setClassSkillId]=useState<string>();
  const [category,setCategory]=useState<'all'|SkillNavigatorCategory>('all');
@@ -239,18 +241,19 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   ...classRows.map((row,i)=>({id:'class:'+row.skillId,name:classSkillsFor(state.character!.classId)[i]?.name??row.skillId,
    level:row.level,xp:row.xp,kind:gt('Combat skill'),category:'combat' as const,route:'discipline' as const}))
  ];
- const professionRows:SkillNavigatorEntry[]=state.skills.map(row=>({
-  id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
-  kind:gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':skillNavigatorCategoryFor(row.skillId)==='crafting'?'crafting':skillNavigatorCategoryFor(row.skillId)==='other'?'Other':'gathering'),
-  category:skillNavigatorCategoryFor(row.skillId),route:'skill'
- }));
+ const professionRows:SkillNavigatorEntry[]=state.skills.map(row=>{
+  const category=skillNavigatorCategoryFor(row.skillId);
+  return {id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
+   kind:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
+   category,route:'skill'};
+ });
  const companionRows:SkillNavigatorEntry[]=[
-  {id:'companion-mastery',name:gl('Companion Mastery'),kind:gt('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
-  {id:'companion-training',name:gl('Companion Training'),kind:gt('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel}
+  {id:'companion-mastery',name:gl('Companion Mastery'),kind:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
+  {id:'companion-training',name:gl('Companion Training'),kind:n('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel}
  ];
  const allEntries=[...combatRows,...professionRows,...companionRows];
  const categoryLabels:Record<SkillNavigatorCategory,string>={
-  combat:gl('Combat'),gathering:gl('Gathering'),crafting:gl('Crafting'),other:gl('Other'),companions:gl('Companions')
+  combat:gl('Combat'),gathering:gl('Gathering'),crafting:gl('Crafting'),other:n('Other'),companions:gl('Companions')
  };
  const categoryOptions=[{id:'all' as const,label:gl('All'),count:allEntries.length},
   ...SKILL_NAVIGATOR_CATEGORIES.map(id=>({id,label:categoryLabels[id],count:allEntries.filter(row=>row.category===id).length})).filter(option=>option.count>0)];
@@ -308,7 +311,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  return <><ScrollView contentContainerStyle={hubStyles.hub} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
   <View style={hubStyles.navigatorHeader}><Text accessibilityRole="header" style={hubStyles.hubTitle}>{gt('Skills')}</Text><Text style={hubStyles.navigatorTotal}>{gt('SKILL TOTAL')} {total.toLocaleString(language)}</Text></View>
   <View style={hubStyles.navigatorToolbar}>
-   <Pressable accessibilityRole="button" accessibilityLabel={gl('Filter')+': '+(category==='all'?gl('All'):categoryLabels[category])}
+   <Pressable accessibilityRole="button" accessibilityLabel={n('Filter')+': '+(category==='all'?gl('All'):categoryLabels[category])}
     accessibilityState={{expanded:categoryPickerOpen}} onPress={()=>setCategoryPickerOpen(true)} style={({pressed})=>[hubStyles.navigatorFilter,pressed&&hubStyles.cardPressed]}>
     <Text numberOfLines={1} style={hubStyles.navigatorFilterText}>{category==='all'?gl('All'):categoryLabels[category]}</Text><Text style={hubStyles.navigatorChevron}>⌄</Text>
    </Pressable>
@@ -320,12 +323,12 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
     <View style={hubStyles.sectionHeading}><Text style={hubStyles.sectionLabel}>{group.label.toLocaleUpperCase(language)}</Text><Text style={hubStyles.sectionCount}>{group.rows.length}</Text></View>
     {group.rows.map(renderEntry)}
    </View>)}
-  </View>:<View style={hubStyles.navigatorEmpty}><Text style={hubStyles.hubSub}>{gt('No matching skills')}</Text>
+  </View>:<View style={hubStyles.navigatorEmpty}><Text style={hubStyles.hubSub}>{n('No matching skills')}</Text>
    <GameButton compact title={gt('Clear filters')} tone="secondary" onPress={()=>{setCategory('all');setSearchQuery('');}}/>
   </View>}
  </ScrollView>
  <GameModalSurface visible={categoryPickerOpen} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={()=>setCategoryPickerOpen(false)}>
-  <GameModalHeader title={gt('Skills')} eyebrow={gl('Filter').toLocaleUpperCase(language)} onClose={()=>setCategoryPickerOpen(false)}/>
+  <GameModalHeader title={gt('Skills')} eyebrow={n('Filter').toLocaleUpperCase(language)} onClose={()=>setCategoryPickerOpen(false)}/>
   <ScrollView style={hubStyles.navigatorOptionList} showsVerticalScrollIndicator={false}>
    {categoryOptions.map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityLabel={option.label} accessibilityState={{selected:category===option.id}}
     onPress={()=>{setCategory(option.id);setCategoryPickerOpen(false);}} style={[hubStyles.navigatorOption,category===option.id&&hubStyles.navigatorOptionSelected]}>

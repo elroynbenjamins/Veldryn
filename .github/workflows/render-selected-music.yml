@@ -9,6 +9,10 @@ on:
       - '.github/workflows/render-selected-music.yml'
   workflow_dispatch:
 
+concurrency:
+  group: selected-veldryn-music-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -50,5 +54,7 @@ jobs:
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
             git add apps/mobile/assets/audio/music apps/mobile/assets/audio/manifest.json
             git commit -m 'audio: package selected seven sample-free music tracks'
+            git fetch origin feature/selected-v11-game-music-20261120
+            git rebase origin/feature/selected-v11-game-music-20261120
             git push origin HEAD:feature/selected-v11-game-music-20261120
           fi

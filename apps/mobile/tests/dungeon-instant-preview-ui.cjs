@@ -19,7 +19,8 @@ assert.match(overview,/setEnteringCombat\(true\);setTheaterOpen\(true\)/,'Start 
 assert.match(stage,/previewEnemyRoster\?\.length/,'Prefer the exact server-supplied lineup over generic archetypes');
 assert.match(stage,/anticipation\?\(bossEncounter\?/,'The temporary roster is used during all pending battle phases');
 assert.match(stage,/replay=anticipation\?undefined/,'Never replay the previous room during a new fight');
-assert.match(portraits,/preview\?"Preparing battle":"Syncing"/,'Preview must not claim to know enemy HP');
+assert.match(portraits,/preview\?ui\("Preparing battle"\):st\("Syncing"\)/,'Unknown preview HP must use localized Preparing battle, never fake a value');
+assert.match(read("src/i18n/dungeon-combat-ui.ts"),/"Preparing battle": \[/,'Pending preview copy must be localized for all eight languages');
 assert.match(preload,/Image\.prefetch\(uri\)/,'Native images are prefetched without a gameplay request');
 assert.doesNotMatch(preload,/supabase|\bfetch\(/,'Asset warming must never start server combat or precompute RNG');
 console.log('PASS immediate dungeon preview, exact enemy compositions, and offline image warming');

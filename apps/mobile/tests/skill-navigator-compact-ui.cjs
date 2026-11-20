@@ -4,6 +4,7 @@ const ts=require('../node_modules/typescript');
 const read=path=>fs.readFileSync(path,'utf8');
 const screen=read('src/screens/SkillsScreen.tsx');
 const core=read('src/core/skill-hub-navigator.ts');
+const copy=read('src/i18n/skill-navigator.ts');
 
 const ast=ts.createSourceFile('SkillsScreen.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Skill Navigator JSX parses');
@@ -30,4 +31,10 @@ assert.match(core,/return 'other';/,'unknown profession ids stay visible in Othe
 assert.doesNotMatch(core,/talents?.*?:.*?profession|abilities?.*?:.*?profession/i,'2.0 abilities are not masquerading as XP professions');
 assert.match(screen,/onCommand\(\{type:'companion_training'\}\)/,'Companion Training claim preserved');
 assert.match(screen,/classSkillBonuses\(state\.character,classSkillId\)/,'class discipline detail remains available');
+for(const label of ['Filter','Other','No matching skills','Account-wide companion skill','Sanctuary facility']){
+ const start=copy.indexOf("'"+label+"':{");
+ assert.ok(start>=0,'Missing localized navigator label '+label);
+ const row=copy.slice(start,copy.indexOf('}',start)+1);
+ for(const language of ['en','de','es','nl','it','fr','ru','tr'])assert.ok(row.includes(language+':'),'Missing '+language+' for '+label);
+}
 console.log('PASS: Skills Navigator has one-row controls, no recommendation card, preserved progress and distinct 2.0 boundaries');

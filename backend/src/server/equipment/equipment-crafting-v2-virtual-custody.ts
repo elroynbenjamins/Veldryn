@@ -59,7 +59,7 @@ function sourceLedger(state:GameState,accountId:string):V2VirtualLedger{
   ||!Array.isArray(meta.receipts)||!Array.isArray(meta.skillAwards)
   ||!Array.isArray(meta.storageReservations)
   ||(meta.custodyReceipts!==undefined&&!Array.isArray(meta.custodyReceipts)))
-  fail('invalid_v2_virtual_ledger');
+  throw new V2DraftCraftError('invalid_v2_virtual_ledger');
  verifyEquipmentV2HiddenLedger(accountId,meta.jobs,meta.items,meta.receipts,meta.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,meta.items,meta.storageReservations);
  if(meta.gemSocketState)verifyEquipmentV2GemSidecar(meta.items,meta.gemSocketState);
@@ -125,7 +125,7 @@ export function readEquipmentV2VirtualCustody(
   const before=byId.get(row.instanceId);
   if(!before||before.location!==row.from||before.holderCharacterId!==row.oldHolder
    ||!allowedTransition(kind,row.from,row.to))
-   fail('v2_virtual_move_history_conflict');
+   throw new V2DraftCraftError('v2_virtual_move_history_conflict');
   const newHolder=row.to==='bank'?null:row.actorCharacterId;
   const mustAlreadyHold=kind!=='withdraw_bank';
   if(row.newHolder!==newHolder
@@ -146,7 +146,8 @@ export function readEquipmentV2VirtualCustody(
   const worn=current.filter(row=>row.holderCharacterId===owner&&row.location==='equipped');
   const slots=new Set<string>();
   for(const row of worn){
-   if(!row.equippedSlot||slots.has(row.equippedSlot))fail('duplicate_v2_virtual_equipped_slot');
+   if(!row.equippedSlot||slots.has(row.equippedSlot))
+    throw new V2DraftCraftError('duplicate_v2_virtual_equipped_slot');
    slots.add(row.equippedSlot);
   }
   const weapon=worn.find(row=>row.equippedSlot==='weapon');
@@ -163,14 +164,14 @@ function countIn(state:GameState,all:readonly V2VirtualCopy[],location:V2Virtual
   :location==='pouch'?owned?equipmentPouchForCharacter(owned.character):null
   :location==='inventory'?owned?.inventory:null;
  if(!storage||!safe(storage.capacity)||!Array.isArray(storage.stacks))
-  fail('invalid_v2_virtual_storage');
+  throw new V2DraftCraftError('invalid_v2_virtual_storage');
  const occupancy=storage.stacks.length+all.filter(row=>row.location===location
   &&row.holderCharacterId===holder).length;
  return occupancy<storage.capacity;
 }
 function rejectLiveEquipClash(state:GameState,actor:string,slot:GearSlot,hands?:string){
  const row=characterRow(state,actor);
- if(!row)fail('unknown_v2_virtual_character');
+ if(!row)throw new V2DraftCraftError('unknown_v2_virtual_character');
  if(row.character.equipment[slot])fail('v2_legacy_equipped_slot_conflict');
  if(slot==='weapon'&&hands!=='one'&&row.character.equipment.offhand)
   fail('v2_legacy_equipped_slot_conflict');
@@ -181,7 +182,7 @@ function rejectLiveEquipClash(state:GameState,actor:string,slot:GearSlot,hands?:
 export function simulateEquipmentV2VirtualCustody(input:V2VirtualMoveInput){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,command}=input;
  if(!state?.character||!onlineCharacterId||state.character.id!==onlineCharacterId)
-  fail('unauthenticated_v2_virtual_character');
+  throw new V2DraftCraftError('unauthenticated_v2_virtual_character');
  if(!safe(onlineVersion)||!safe(authoritativeWalletGold??NaN)
   ||state.character.gold!==authoritativeWalletGold)fail('untrusted_v2_virtual_wallet');
  const ready=equipmentV2AuthoritativeReadiness({
@@ -209,15 +210,15 @@ export function simulateEquipmentV2VirtualCustody(input:V2VirtualMoveInput){
  if(command.expectedVersion!==onlineVersion)fail('stale_v2_virtual_version');
  const current=all.find(row=>row.instanceId===command.instanceId);
  const item=meta.items.find(row=>row.id===command.instanceId);
- if(!current||!item)fail('unknown_v2_virtual_copy');
+ if(!current||!item)throw new V2DraftCraftError('unknown_v2_virtual_copy');
  let target:V2VirtualLocation,holder:string|null=onlineCharacterId;
  if(command.kind==='deposit_bank'){target='bank';holder=null;}
  else if(command.kind==='equip')target='equipped';
  else if(command.kind==='withdraw_bank'||command.kind==='store_deferred'||command.kind==='unequip'){
   target=countIn(state,all,'pouch',holder)?'pouch'
    :countIn(state,all,'inventory',holder)?'inventory'
-   :fail('v2_virtual_destination_full');
- }else fail('invalid_v2_virtual_move_command');
+   :(()=>{throw new V2DraftCraftError('v2_virtual_destination_full');})();
+ }else throw new V2DraftCraftError('invalid_v2_virtual_move_command');
  if(!allowedTransition(command.kind,current.location,target))fail('invalid_v2_virtual_transition');
  if(command.kind==='withdraw_bank'){
   if(current.holderCharacterId!==null)fail('v2_virtual_bank_holder_conflict');

@@ -63,7 +63,7 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
         const rarity=(['common','uncommon','rare','epic','legendary','mythic'].includes(row.rarity)?row.rarity:itemRarity(item)) as ItemRarity;
         const enhancement=row.enhancement&&typeof row.enhancement==='object'?row.enhancement:{};
         // Draft v1 receipts may predate a version marker. Unknown explicit versions fail closed.
-        const version:WeaponBonusRollVersion|undefined=row.weaponBonusRollVersion===1||row.weaponBonusRollVersion===2||row.weaponBonusRollVersion===3||row.weaponBonusRollVersion===4||row.weaponBonusRollVersion===5||row.weaponBonusRollVersion===6
+        const version:WeaponBonusRollVersion|undefined=row.weaponBonusRollVersion===1||row.weaponBonusRollVersion===2||row.weaponBonusRollVersion===3||row.weaponBonusRollVersion===4||row.weaponBonusRollVersion===5||row.weaponBonusRollVersion===6||row.weaponBonusRollVersion===7
           ?row.weaponBonusRollVersion:row.weaponBonusRollVersion===undefined&&Array.isArray(row.weaponBonuses)?1:undefined;
         return [{
           id:String(row.id).slice(0,180),itemId:item.id,ownerCharacterId:String(row.ownerCharacterId).slice(0,120),rarity,

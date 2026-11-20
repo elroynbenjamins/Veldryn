@@ -25,7 +25,7 @@ ok(bounded.length===24,'History remains bounded at 24 entries');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const appSource=fs.readFileSync('App.tsx','utf8'),guildSource=fs.readFileSync('src/screens/GuildScreen.tsx','utf8');
 ok(appSource.includes('goalRegionId,goalDungeonId]);'),'Dungeon destination must invalidate memoized back-history context when changed');
-ok(appSource.includes("useEffect(()=>{setTabHistory([]);},[auth.session?.user.id,state?.character?.id])"),'Back history must reset on account and character switch');
+ok(appSource.includes("useEffect(()=>{setTabHistory([]);setPendingGoalDestination(undefined);setGoalRegionId(undefined);setSelectedRegionalAreaId(undefined);},[auth.session?.user.id,state?.character?.id])"),'Back history must reset on account and character switch');
 ok(appSource.includes('guildNavigationMemory.current?.scope===')&&appSource.includes('onNavigationChange={context=>'),'Guild navigation must restore account-scoped tabs and keep their latest section');
 ok(guildSource.includes("onlineSection==='Hall'&&hallSection!=='Overview'?\u0060Hall/\u0024{hallSection}\u0060"),'Guild Hall sub-tabs must have separate first-visit guides');
 ok(guildSource.includes("onlineSection==='Hall'?guildHallSectionGuide(language,hallSection)"),'Guild Hall guidance must follow the actually visible Hall tab');

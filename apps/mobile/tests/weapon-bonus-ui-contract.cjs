@@ -14,6 +14,8 @@ const forged=read('src/components/ForgeResultFeedback.tsx');
 const locales=read('src/i18n/gameplay.ts');
 
 assert(rolls.includes('WEAPON_BONUS_ROLL_VERSION=3'),'New claims must be a new roll version');
+assert(rolls.includes('EARLY_WEAPON_BONUS_BPS')&&rolls.includes('tier<(version===3?1:3)'),
+ 'The shared pool must roll on every weapon tier while preserving legacy T1/T2 rules');
 const currentPool=rolls.split('export const WEAPON_BONUS_CURRENT_POOL')[1].split('/** Stat-sensitive')[0];
 assert(currentPool.includes("'maxHp'")&&currentPool.includes("'potency'"),'All active stat families must be in shared pool');
 assert(!currentPool.includes("'ward'")&&!currentPool.includes("'penetration'"),'2.0-only stats must not roll yet');

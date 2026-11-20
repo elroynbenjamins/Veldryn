@@ -5,7 +5,7 @@ import {evaluateEquipmentV2ShadowCommand,runEquipmentV2ShadowCommand,
 import {type V2DraftSnapshot,type V2DraftCommand,type V2DraftContext} from '../equipment-crafting-v2-transaction';
 
 const recipe=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
-assert.ok(recipe);
+if(!recipe)throw new Error('missing_eq2_test_recipe');
 const accountId='11111111-1111-4111-8111-111111111111';
 function snapshot():V2DraftSnapshot{return {
  accountId,activeCharacterId:'hero-1',version:0,forgeSlotCapacity:3,

@@ -6,6 +6,22 @@ import {accountText} from './account';
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
+  // One-page audio customization (DE, ES, NL, IT, FR, RU, TR).
+  "Preview theme": ["Thema anhören","Escuchar tema","Muziek beluisteren","Ascolta il tema","Écouter le thème","Прослушать тему","Temayı Dinle"],
+  "Music & Audio": ["Musik & Audio","Música y audio","Muziek & audio","Musica e audio","Musique et audio","Музыка и звук","Müzik ve Ses"],
+  "Choose a theme or mute individual areas.": ["Wähle ein Musikthema oder schalte einzelne Bereiche stumm.","Elige un tema o silencia zonas individuales.","Kies een muziekthema of demp afzonderlijke onderdelen.","Scegli un brano o disattiva la musica in singole aree.","Choisissez un thème ou coupez le son de certaines zones.","Выберите тему или отключите музыку в отдельных областях.","Bir tema seçin veya belirli alanların müziğini kapatın."],
+  "Regions": ["Regionen","Regiones","Regio's","Regioni","Régions","Регионы","Bölgeler"],
+  "Activities": ["Aktivitäten","Actividades","Activiteiten","Attività","Activités","Занятия","Etkinlikler"],
+  "Town & Menus": ["Stadt & Menüs","Ciudad y menús","Stad en menu's","Città e menu","Ville et menus","Город и меню","Şehir ve Menüler"],
+  "Dungeons & Co-op": ["Dungeons & Koop","Mazmorras y cooperativo","Kerkers en co-op","Dungeon e cooperativa","Donjons et coop","Подземелья и совместная игра","Zindanlar ve Eşli Oyun"],
+  "Boss battles": ["Bosskämpfe","Batallas contra jefes","Baasgevechten","Scontri con boss","Combats de boss","Бои с боссами","Boss Savaşları"],
+  "World boss encounters": ["Weltbosskämpfe","Encuentros con jefes mundiales","Wereldbaasgevechten","Scontri con boss mondiali","Combats de boss mondiaux","Бои с мировыми боссами","Dünya Bossu Savaşları"],
+  "Default theme": ["Standardthema","Tema predeterminado","Standaardmuziek","Tema predefinito","Thème par défaut","Тема по умолчанию","Varsayılan Tema"],
+  "Change theme": ["Thema ändern","Cambiar tema","Muziek wijzigen","Cambia tema","Changer de thème","Сменить тему","Temayı Değiştir"],
+  "Music for {area}": ["Musik für {area}","Música de {area}","Muziek voor {area}","Musica per {area}","Musique pour {area}","Музыка для {area}","{area} müziği"],
+  "Music volume Off mutes every area. Your individual choices are kept.": ["Bei Musik Aus bleiben alle Bereiche stumm. Deine Auswahl bleibt gespeichert.","Al apagar la música, se silencian todas las zonas. Tus elecciones se conservan.","Met Muziek uit zijn alle gebieden stil. Je keuzes blijven bewaard.","Disattivando la musica, tutte le aree sono mute. Le tue scelte restano salvate.","Musique désactivée coupe le son de toutes les zones. Vos choix sont conservés.","Отключение музыки заглушает все области. Ваши настройки сохраняются.","Müzik kapalıyken tüm alanlar sessizdir. Seçimleriniz korunur."],
+  "Each area uses its own theme unless you choose another.": ["Jeder Bereich spielt sein eigenes Thema, sofern du kein anderes wählst.","Cada zona usa su propio tema salvo que elijas otro.","Elk gebied speelt standaard zijn eigen muziek, tenzij je iets anders kiest.","Ogni area usa il proprio tema, a meno che tu non ne scelga un altro.","Chaque zone utilise son thème, sauf si vous en choisissez un autre.","Каждая область использует свою тему, если не выбрана другая.","Başka bir tema seçilmedikçe her alan kendi müziğini kullanır."],
+  "Restore area defaults": ["Bereichsmusik zurücksetzen","Restablecer música de las zonas","Gebiedsmuziek herstellen","Ripristina musica delle aree","Réinitialiser la musique des zones","Сбросить музыку областей","Alan Müziğini Sıfırla"],
   // Supply Journey 2.0 (DE, ES, NL, IT, FR, RU, TR).
   "ACCOUNT / DAILY REWARDS": ["KONTO / TÄGLICHE BELOHNUNGEN", "CUENTA / RECOMPENSAS DIARIAS", "ACCOUNT / DAGELIJKSE BELONINGEN", "ACCOUNT / RICOMPENSE GIORNALIERE", "COMPTE / RÉCOMPENSES QUOTIDIENNES", "АККАУНТ / ЕЖЕДНЕВНЫЕ НАГРАДЫ", "HESAP / GÜNLÜK ÖDÜLLER"],
   "Supply Journey": ["Vorratsreise", "Viaje de suministros", "Voorraadreis", "Viaggio delle provviste", "Voyage des provisions", "Путь припасов", "Erzak Yolculuğu"],

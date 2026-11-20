@@ -42,6 +42,19 @@ function collectAccountKeys(node){
  ts.forEachChild(node,collectAccountKeys);
 }
 collectAccountKeys(accountSource);
+// Screen-authored translations are equally valid for newly introduced Settings copy.
+// They contain reviewed Spanish (and DE/NL/IT/FR/RU/TR) rather than the legacy account table.
+const recentSource=ts.createSourceFile('recent-screens.ts',fs.readFileSync(path.join(root,'recent-screens.ts'),'utf8'),ts.ScriptTarget.Latest,true);
+function collectRecentKeys(node){
+ if(ts.isVariableDeclaration(node)&&node.name.getText(recentSource)==='recentScreenTranslationRows'&&node.initializer){
+  let initializer=node.initializer;
+  while(ts.isAsExpression(initializer)||ts.isSatisfiesExpression(initializer)||ts.isParenthesizedExpression(initializer))initializer=initializer.expression;
+  if(ts.isObjectLiteralExpression(initializer))
+   for(const entry of initializer.properties)if(ts.isPropertyAssignment(entry)&&ts.isStringLiteral(entry.name))accountKeys.add(entry.name.text);
+ }
+ ts.forEachChild(node,collectRecentKeys);
+}
+collectRecentKeys(recentSource);
 const checkedScreens=[
  'ResourceCodexScreen','MarketInboxPanel','MoreScreen','SettingsScreen',
  'CommunityRoadmapScreen','HomeScreen','RewardsInboxScreen','StoreScreen',

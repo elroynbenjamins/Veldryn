@@ -12,7 +12,7 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,type AudioPreferences} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,type AudioPreferences} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
@@ -35,17 +35,29 @@ function ensureMode(m:AudioModule){
  try{void m.setAudioModeAsync({playsInSilentMode:false,interruptionMode:'mixWithOthers',allowsRecording:false,shouldPlayInBackground:false}).catch(()=>{});}catch{/* optional */}
 }
 
-let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES},loaded=false;
+let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}},loaded=false;
+let saveQueue:Promise<void>=Promise.resolve();
 const listeners=new Set<(value:AudioPreferences)=>void>();
 export async function loadAudioPreferences():Promise<AudioPreferences>{
  if(loaded)return prefs;
- try{prefs=parseAudioPreferences(await AsyncStorage.getItem(KEY));}catch{/* defaults */}
- loaded=true;notify();return prefs;
+ try{
+  const stored=await AsyncStorage.getItem(KEY);
+  // A user choice made while the initial read was pending must win.
+  if(!loaded)prefs=parseAudioPreferences(stored);
+ }catch{/* defaults */}
+ if(!loaded){loaded=true;notify();}
+ return prefs;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
- prefs={...next};loaded=true;notify();applyMusicVolume();
- if(prefs.music===0)stopMusicPlayer();else if(wantedTrack)startTrack(wantedTrack);
- try{await AsyncStorage.setItem(KEY,JSON.stringify(prefs));}catch{/* applies this session */}
+ prefs=parseAudioPreferences(JSON.stringify(next));loaded=true;notify();
+ // Resolve current *context* again; the user may have muted or remapped it.
+ resolveTrack();
+ applyMusicVolume();
+ if(prefs.music===0){stopMusicPreview();stopMusicPlayer();}
+ const serialized=JSON.stringify(prefs);
+ // Preserve the most recent choice even when the player taps several controls quickly.
+ saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.setItem(KEY,serialized)).then(()=>{},()=>{});
+ await saveQueue;
 }
 function notify(){for(const l of listeners)l(prefs);}
 // Load saved levels as early as possible so the first sounds already respect them.
@@ -116,13 +128,36 @@ function applyTrack(track:MusicTrackId|null):void{
   if(player)fade(player,musicVolume(),0,()=>{if(musicPlayer===player)stopMusicPlayer();});
   return;
  }
- if(track!==playingTrack)startTrack(track);
+ if(track===playingTrack&&musicPlayer){
+  // Cancel an in-flight mute fade if the same scene becomes audible again.
+  if(fadeTimer){clearInterval(fadeTimer);fadeTimer=undefined;}
+  applyMusicVolume();
+  if(prefs.music>0&&isForeground())try{musicPlayer.play();}catch{/* ignore */}
+ }else startTrack(track);
 }
 
 // Screens push a temporary track (a boss fight over the region theme) and pop it on exit.
 let baseTrack:MusicTrackId|null=null,nextOverrideId=1;
 const overrides:{id:number;track:MusicTrackId}[]=[];
-function resolveTrack(){applyTrack(overrides.length?overrides[overrides.length-1].track:baseTrack);}
+let previewTrack:MusicTrackId|null=null,previewTimer:ReturnType<typeof setTimeout>|undefined;
+function resolveTrack(){
+ const context=overrides.length?overrides[overrides.length-1].track:baseTrack;
+ applyTrack(previewTrack??resolvePreferredMusicTrack(context,prefs));
+}
+/** Audition any packaged theme for a few seconds, regardless of the area's mute state. */
+export function playMusicPreview(track:MusicTrackId):void{
+ if(!loaded||prefs.music===0||!isForeground())return;
+ if(previewTimer)clearTimeout(previewTimer);
+ const sameTrack=playingTrack===track&&musicPlayer!==null;
+ previewTrack=track;resolveTrack();
+ if(sameTrack&&musicPlayer)try{void Promise.resolve(musicPlayer.seekTo(0)).catch(()=>{});}catch{/* ignore */}
+ previewTimer=setTimeout(()=>{previewTimer=undefined;previewTrack=null;resolveTrack();},8000);
+}
+/** Returning to other Settings sections must restore the correct scene immediately. */
+export function stopMusicPreview():void{
+ if(previewTimer){clearTimeout(previewTimer);previewTimer=undefined;}
+ if(previewTrack!==null){previewTrack=null;resolveTrack();}
+}
 /** The app's background music for the current place (region theme, town). */
 export function setBaseMusic(track:MusicTrackId|null):void{baseTrack=track;resolveTrack();}
 /** While mounted, play `track` over the base music; restores the previous track on unmount. */

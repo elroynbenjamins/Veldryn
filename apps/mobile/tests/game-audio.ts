@@ -1,6 +1,6 @@
 import {assert} from './test-assert';
 import {backgroundMusicFor} from '../src/core/music-context';
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences} from '../src/core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,MUSIC_CONTEXTS} from '../src/core/audio-preferences';
 import {highestRarity,rarityRevealDelayMs,rarityRevealSound} from '../src/core/rarity-reveal-sound';
 const fs=require('fs') as {readFileSync(path:string,encoding:'utf8'):string;statSync(path:string):{size:number};existsSync(path:string):boolean;readdirSync(path:string):string[]};
 
@@ -38,9 +38,29 @@ assert.equal(backgroundMusicFor({screen:'World',regionId:'SUNSCAR',hasCharacter:
 
 // Preferences: defaults on, corrupt values never throw.
 assert.deepEqual(parseAudioPreferences(null),DEFAULT_AUDIO_PREFERENCES);
-assert.deepEqual(parseAudioPreferences('{"music":0,"effects":3}'),{music:0,effects:3});
+assert.deepEqual(parseAudioPreferences('{"music":0,"effects":3}'),{music:0,effects:3,musicContexts:{}},'Existing v1 volume settings migrate');
 for(const bad of ['{"music":7}','not json','null','[]'])assert.deepEqual(parseAudioPreferences(bad),DEFAULT_AUDIO_PREFERENCES,'Corrupt audio prefs fall back: '+bad);
 assert.equal(AUDIO_LEVEL_VOLUME[0],0);assert.ok(AUDIO_LEVEL_VOLUME[3]<=1);
+assert.equal(MUSIC_CONTEXTS.length,7,'Every existing theme has a configurable context');
+const customized=parseAudioPreferences(JSON.stringify({
+ music:2,effects:1,musicContexts:{
+  sunscar:{enabled:false,track:'boss'},
+  dungeon:{enabled:true,track:'frostmarch'},
+  town:{enabled:true,track:'town'},
+  unknown:{enabled:false,track:'town'},
+  frostmarch:{enabled:true,track:'invalid'},
+ }
+}));
+assert.equal(resolvePreferredMusicTrack('sunscar',customized),null,'Muted region stays silent');
+assert.equal(resolvePreferredMusicTrack('dungeon',customized),'frostmarch','Dungeon can play another theme');
+assert.equal(resolvePreferredMusicTrack('town',customized),'town');
+assert.equal(resolvePreferredMusicTrack('boss',customized),'boss','Untouched activity uses default');
+assert.equal(resolvePreferredMusicTrack(null,customized),null,'No scene stays silent');
+assert.ok(!('unknown' in customized.musicContexts),'Unknown contexts are rejected');
+assert.ok(!('frostmarch' in customized.musicContexts),'Invalid track resets to default');
+assert.deepEqual(parseAudioPreferences(JSON.stringify(customized)),customized,'Preferences round-trip safely');
+assert.deepEqual(parseAudioPreferences('{"musicContexts":{"sunscar":{"enabled":false,"track":"not_a_track"}}}').musicContexts,
+ {sunscar:{enabled:false,track:null}},'Corrupt track cannot play unexpected audio');
 
 // Rarity reveal stingers: Epic and up only, escalating, and played after the reveal has landed.
 assert.equal(rarityRevealSound('rare'),null);assert.equal(rarityRevealSound(undefined),null);

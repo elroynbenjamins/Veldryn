@@ -29,7 +29,7 @@ export function validateGatheringToolRoll(raw:unknown,itemId:string):CraftedGath
  if(!raw||typeof raw!=='object'||Array.isArray(raw))return undefined;
  const row=raw as Partial<CraftedGatheringTool>,bonus=row.bonus;
  if(typeof row.id!=='string'||!row.id||row.itemId!==itemId||typeof row.ownerCharacterId!=='string'||!row.ownerCharacterId
-  ||!Number.isInteger(row.quality)||row.quality!<0||row.quality!>100
+  ||typeof row.quality!=='number'||!Number.isInteger(row.quality)||row.quality<0||row.quality>100
   ||!row.rarity||!(row.rarity in GATHERING_TOOL_BASE_RARITY)
   ||typeof row.sourceReceiptKey!=='string'||!Number.isFinite(row.createdAtMs)
   ||!bonus||!['speed','rarity'].includes(bonus.stat)||!Number.isInteger(bonus.basisPoints))return undefined;

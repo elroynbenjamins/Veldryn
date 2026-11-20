@@ -44,3 +44,55 @@ and boss-override code do not change. Existing sound effects are unchanged.
 `--only sfx` can still rebuild effects safely. Deliberately restoring the old
 procedural default music requires `--replace-selected-music` to prevent accidental
 loss of these approved compositions. Do not use that override casually.
+
+
+## Rights resolution plan (20 November 2026)
+
+The musical *compositions* can be preserved. The release blocker concerns the sampled
+instrument recordings embedded in the MP3 exports, not the MIDI note data.
+
+### Route A: keep the currently staged recordings (preferred for sound fidelity)
+
+1. Identify the exact SoundFont and any other sample libraries used for **each of the seven**
+   source mixes; store source/version/checksum and a copy of the license notices.
+2. Review TimGM6mb GPL-2.0 and its embedded sample provenance. The bank credits
+   Tim Brechbill (2004) and David Bolton (2010), and its historical notes indicate
+   some sampled instruments came from other GPL/public-domain sources. The GPL is not
+   a blanket commercial-use prohibition, but it also does not automatically prove
+   the rendered sample-based recordings can be shipped without obligations.
+3. Obtain written permission from all rights holders whose permission is necessary,
+   **or** obtain legal approval of a compliant release path under existing licenses.
+   Written permission should specifically cover sample-derived rendered audio in a
+   proprietary/commercial mobile game, App Store / Google Play distribution, territories,
+   updates, looping, processing, monetization, attribution, and any required notices.
+4. Store approval evidence and attribution instructions with this PR. A verbal assurance,
+   minor remaster, re-encoding, track extension or MP3 crossfade is not clearance.
+
+### Route B: commercially cleared re-render (fallback)
+
+1. Keep the same selected MIDI/score, tempo, structure, notes and recognizable motifs.
+2. Choose a documented audio-source bank with clear commercial recording rights.
+   FluidR3Mono is a candidate with a published MIT license; obtain the exact official
+   archive and preserve its license/attribution. GeneralUser GS permits commercial music
+   under its own license, but explicitly documents uncertainty about some sample origins,
+   so it is less desirable without follow-up review.
+3. Render and master all seven tracks with the chosen instruments; compare rhythm,
+   bass, guitar/brass character, loudness, loops and transitions against the currently
+   approved recordings. No substitute may silently replace an approved mix.
+4. Obtain explicit listening approval before swapping any staged binary assets.
+
+### Release gate
+
+- [ ] All seven track sources and relevant sample licenses inventoried
+- [ ] Written rights evidence or documented professional legal clearance
+- [ ] Required notices/credits packaged in the app if necessary
+- [ ] Final approved audible mixes rendered, verified and linked to source assets
+- [ ] Device playback, loop behavior, export size and CI tests pass
+- [ ] User explicitly authorizes release of the final master recordings
+- [ ] Only then mark PR ready / merge to main
+
+References:
+- TimGM6mb package/license: https://github.com/arbruijn/TimGM6mb
+- MuseScore SoundFont documentation: https://musescore.org/en/handbook/2/soundfonts-and-sfz-files
+- FluidR3Mono published license: https://github.com/musescore/MuseScore/blob/main/share/sound/FluidR3Mono_License.md
+- GeneralUser GS license: https://github.com/ROCKNIX/generaluser-gs/blob/main/LICENSE.txt

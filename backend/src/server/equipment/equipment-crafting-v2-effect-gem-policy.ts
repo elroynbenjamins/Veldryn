@@ -1,5 +1,5 @@
 import {findEffectGem,gemItemId,type GemGrade} from './gems/gem-catalog-v1';
-import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-history';
 import type {V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import type {V2DraftItem} from './equipment-crafting-v2-transaction';
 import type {V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';

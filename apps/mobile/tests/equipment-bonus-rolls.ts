@@ -29,7 +29,7 @@ for(const tier of tiers){
       for(const rarity of ['common','epic','mythic'] as const){
         const cfg=equipmentBonusConfig(itemId,rarity);
         ok(cfg,`Missing ${tier}/${cls.id}/${slot} roll configuration`);
-        const count=tier==='T5'||(tier!=='T1'&&tier!=='T2'&&rarity!=='common')?2:1;
+        const count=tier==='T5'||rarity!=='common'?2:1;
         ok(cfg!.count===count,`${tier} ${rarity} requires ${count} stat rolls`);
         const key=`equipment:${tier}:${cls.id}:${slot}:${rarity}`;
         const rolls=rollEquipmentBonuses(itemId,rarity,key,.43210)!;
@@ -37,7 +37,7 @@ for(const tier of tiers){
         ok(JSON.stringify(rolls)===JSON.stringify(same),'A Forge receipt must never reroll');
         ok(rolls.length===count&&new Set(rolls.map(roll=>roll.stat)).size===count,
           'No missing or duplicate rolled stats');
-        ok(rolls.every(roll=>cfg!.pool.includes(roll.stat)),'Rolled stats must belong to the class role');
+        ok(rolls.every(roll=>cfg!.pool.includes(roll.stat)),'Rolled stats must be valid for the shared all-class pool');
         ok(rolls.every(roll=>{
           const range=equipmentBonusRange(cfg!.tier,roll.stat,cfg!.slot,rarity);
           return !!range&&roll.basisPoints>=range[0]&&roll.basisPoints<=range[1]
@@ -52,11 +52,11 @@ for(const tier of tiers){
 }
 
 const t1=item('T1','WAYFINDER','gloves'),t2=item('T2','WAYFINDER','gloves'),t5=item('T5','WAYFINDER','gloves');
-ok(equipmentBonusConfig(t1,'mythic')?.count===1,'T1 Mythic still receives only one roll');
+ok(equipmentBonusConfig(t1,'mythic')?.count===2,'T1 Mythic receives two distinct rolls');
 ok(!equipmentBonusConfig(t1,'common',4),'Legacy v4 must not fabricate T1 bonuses');
 ok(equipmentBonusRange(1,'critRate','gloves')![1]<equipmentBonusRange(2,'critRate','gloves')![1],
   'T1 armor roll strength must remain below T2');
-ok(equipmentBonusConfig(t2,'mythic')?.count===1,'T2 Mythic stays one bonus');
+ok(equipmentBonusConfig(t2,'mythic')?.count===2,'T2 Mythic receives two distinct bonuses');
 ok(equipmentBonusRange(5,'critRate','amulet','mythic')![1]>
    equipmentBonusRange(5,'critRate','amulet','common')![1],
   'Mythic amulets have higher Critical Rate bounds than Common amulets');
@@ -71,7 +71,7 @@ ok(equipmentBonusConfig(t5,'common')?.count===2,'T5 Common has two bonuses');
 const earlyEquipmentPool=new Set(CLASSES.flatMap(cls=>equipmentBonusConfig(item('T5',cls.id,'gloves'),'uncommon')?.pool??[]));
 ok(earlyEquipmentPool.size===7,'Exactly seven cross-mode stats remain available for new equipment');
 for(const excluded of ['ward','penetration','potency','healingPower','abilityDamage','tenacity'] as const)
-  ok(!earlyEquipmentPool.has(excluded),'Deferred stat must not mint under new v5: '+excluded);
+  ok(!earlyEquipmentPool.has(excluded),'Deferred stat must not mint under new v6: '+excluded);
 ok(equipmentBonusConfig(t5,'uncommon',4)?.pool.includes('penetration'),
   'Historical v4 Damage rolls remain readable even after the launch pool shrinks');
 ok(!earlyEquipmentPool.has('abilityDamage')&&!earlyEquipmentPool.has('tenacity'),
@@ -100,12 +100,12 @@ ok(!normalizeEquipmentBonuses(t5,'common',[{stat:'haste',basisPoints:50},{stat:'
 
 const initial=createCharacter(newGame(1),'WAYFINDER','Roll Tester','male');
 const starter=draftCraftedGearInstance({itemId:t1,ownerCharacterId:initial.character!.id,jobId:'t1-gloves-receipt',createdAtMs:1,roll:.3});
-ok(starter.equipmentBonuses?.length===1&&starter.equipmentBonusRollVersion===5,
+ok(starter.equipmentBonuses?.length===1&&starter.equipmentBonusRollVersion===6,
   'T1 forged gloves must gain one permanent safe roll');
 ok(JSON.stringify(normalizeCraftedGearInstances([starter])[0].equipmentBonuses)===JSON.stringify(starter.equipmentBonuses),
   'T1 roll must survive the exact-copy save/load normalization');
 const crafted=draftCraftedGearInstance({itemId:t2,ownerCharacterId:initial.character!.id,jobId:'t2-gloves-receipt',createdAtMs:1,roll:.3});
-ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===5,
+ok(crafted.equipmentBonuses?.length===1&&crafted.equipmentBonusRollVersion===6,
   'A fresh T2 forged glove must gain a persistent single bonus');
 const loaded=normalizeCraftedGearInstances([crafted])[0];
 ok(!crafted.equipmentBonuses?.some(b=>b.stat==='abilityDamage'||b.stat==='tenacity'),

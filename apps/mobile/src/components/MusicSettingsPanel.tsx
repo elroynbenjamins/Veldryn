@@ -18,7 +18,7 @@ const LEVELS:readonly AudioLevel[]=[0,1,2,3];
 
 export function MusicSettingsPanel({language}:{language:Language}){
  const theme=useGameTheme(),s=useMemo(()=>styles(theme),[theme]);
- const a=(value:string)=>recentScreenText(language,value);
+ const a=(value:string,params?:Record<string,string|number>)=>recentScreenText(language,value,params);
  const [audio,setAudio]=useAudioPreferences();
  const [expanded,setExpanded]=useState<MusicContextId|null>(null);
  const chooseLevel=(channel:'music'|'effects',level:AudioLevel)=>{
@@ -37,7 +37,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
   return <View key={id} style={s.area}>
    <View style={s.areaHeader}>
     <Text style={s.areaName} numberOfLines={2}>{label}</Text>
-    <Pressable accessibilityRole="switch" accessibilityLabel={a('Music for {area}').replace('{area}',label)}
+    <Pressable accessibilityRole="switch" accessibilityLabel={a('Music for {area}',{area:label})}
       accessibilityState={{checked:choice.enabled}} onPress={()=>chooseContext(id,{enabled:!choice.enabled})}
       hitSlop={6} style={({pressed})=>[s.switchButton,pressed&&s.pressed]}>
       <View style={[s.switchTrack,choice.enabled&&s.switchOn]}>

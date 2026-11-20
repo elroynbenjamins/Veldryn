@@ -40,8 +40,13 @@ let saveQueue:Promise<void>=Promise.resolve();
 const listeners=new Set<(value:AudioPreferences)=>void>();
 export async function loadAudioPreferences():Promise<AudioPreferences>{
  if(loaded)return prefs;
- try{prefs=parseAudioPreferences(await AsyncStorage.getItem(KEY));}catch{/* defaults */}
- loaded=true;notify();return prefs;
+ try{
+  const stored=await AsyncStorage.getItem(KEY);
+  // A user choice made while the initial read was pending must win.
+  if(!loaded)prefs=parseAudioPreferences(stored);
+ }catch{/* defaults */}
+ if(!loaded){loaded=true;notify();}
+ return prefs;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
  prefs=parseAudioPreferences(JSON.stringify(next));loaded=true;notify();

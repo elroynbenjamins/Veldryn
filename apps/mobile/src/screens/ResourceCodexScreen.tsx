@@ -12,6 +12,7 @@ import {resourceCodexCategoryEntries,resourceCodexEntries,resourceCodexQuantity,
 import {rarityNameColor,rarityMeta} from '../core/item-rarity';
 import type {GameState} from '../core/types';
 import type {WorkingTowardDestination} from '../core/working-toward';
+import {resolveSourceRoute,sourceRouteView} from '../core/source-route-guidance';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 
@@ -84,8 +85,8 @@ export function ResourceCodexScreen({state,onNavigateSource,onOpenCompanions}:{s
      <View style={s.heroCopy}><Text style={[s.detailRarity,{color:rarityNameColor(selected.rarity,C.dark,C.text)}]}>{rarityMeta(selected.rarity).label}</Text><Text style={s.owned}>{a('Owned')}: {quantity.toLocaleString(language)}</Text><Text style={s.muted}>{a('Includes Inventory, Bank and companion storage')}</Text></View>
     </View>
     <Text style={s.sectionTitle}>{a('Where to get it')}</Text>
-    {sources.length?sources.map((source,index)=>{const canOpen=source.kind==='companion'||!!source.destination&&source.status!=='info';const status=source.status==='locked'?'Locked':source.status==='travel'?'Travel':null;return <Pressable key={source.kind+':'+source.title+':'+index} disabled={!canOpen} accessibilityRole="button" accessibilityState={{disabled:!canOpen}} accessibilityLabel={source.title} accessibilityHint={canOpen?source.kind==='companion'?'Open Companions':'Open source activity':undefined} onPress={()=>{onClose();if(source.kind==='companion')onOpenCompanions();else if(source.destination)onNavigateSource(source.destination)}} style={({pressed})=>[s.source,pressed&&canOpen&&s.pressed]}>
-      <View style={s.sourceCopy}><Text style={s.sourceTitle}>{source.title}</Text><Text style={s.sourceDetail}>{source.detail}</Text>{source.availabilityDetail?<Text style={s.sourceHint}>{source.availabilityDetail}</Text>:null}</View>
+    {sources.length?sources.map((source,index)=>{const canOpen=source.kind==='companion'||!!source.destination&&source.status!=='info';const route=source.destination?sourceRouteView(source.destination):undefined;const status=source.status==='locked'?'Locked':source.status==='travel'?'Travel':null;return <Pressable key={source.kind+':'+source.title+':'+index} disabled={!canOpen} accessibilityRole="button" accessibilityState={{disabled:!canOpen}} accessibilityLabel={source.title} accessibilityHint={canOpen?source.kind==='companion'?'Open Companions':'Open source activity':undefined} onPress={()=>{onClose();if(source.kind==='companion')onOpenCompanions();else if(source.destination)onNavigateSource(resolveSourceRoute(source.destination,selected.id))}} style={({pressed})=>[s.source,pressed&&canOpen&&s.pressed]}>
+      <View style={s.sourceCopy}><Text style={s.sourceTitle}>{source.title}</Text>{route?<Text style={s.sourceHint}>{route.breadcrumb}</Text>:null}<Text style={s.sourceDetail}>{source.detail}</Text>{source.availabilityDetail?<Text style={s.sourceHint}>{source.availabilityDetail}</Text>:null}</View>
       {status?<Text style={[s.sourceStatus,{color:source.status==='locked'?C.warning:C.info}]}>{a(status)}</Text>:null}
       {canOpen?<UiIcon name="next" size={18}/>:null}
      </Pressable>}):<View style={s.source}><Text style={s.sourceDetail}>{a('No confirmed source is currently listed for this resource.')}</Text></View>}

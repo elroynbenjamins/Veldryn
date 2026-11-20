@@ -324,7 +324,7 @@ const activityOverview=read('src/screens/ActivityOverviewScreen.tsx');
 ok(activityOverview.includes('combatTone:{color:C.bad}'),'Character Activity combat emphasis must use the active theme');
 ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity Faith emphasis must use the active theme');
 
-ok(activityOverview.includes('stackRows=width<380||fontScale>=1.2')&&activityOverview.includes('s.actionsStack'),'Character roster actions must remain accessible with larger text');
+ok(activityOverview.includes('stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25')&&activityOverview.includes('s.actionsStack')&&activityOverview.includes('s.activityRowStack'),'Character roster actions must remain accessible with larger text');
 ok(activityOverview.includes('characterDeleteBlockReason(state,target.character.id)')&&activityOverview.includes('characterDeleteConfirmation(target.character.name)')&&activityOverview.includes('onDelete(target.character.id,confirmation)'),'Character management must preserve permanent deletion validation and server action');
 const unlockHistory=read('src/screens/NewUnlocksScreen.tsx');
 ok(unlockHistory.includes("filter==='title'?row.kind==='title'")&&unlockHistory.includes('entries.slice')===false&&unlockHistory.includes('filtered.slice(0,20)'),'Unlock categories must filter owned entries before bounded rendering');

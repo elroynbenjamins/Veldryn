@@ -81,6 +81,8 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
+      - name: Validate compact Character Roster, eight-language copy and 800-skill UX
+        run: pnpm test:character-roster
       - name: Validate compact Rewards Inbox ledger
         run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI

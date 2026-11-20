@@ -120,6 +120,8 @@ ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'potency',basisPoints:200}]),'A D
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'ward',basisPoints:100}]),'New weapons cannot roll Ward before 2.0');
 ok(!normalizeWeaponBonuses(t3,'common',[{stat:'penetration',basisPoints:200}]),'New weapons cannot roll Penetration before 2.0');
 ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'penetration',basisPoints:200}],2),'Previous v2 Penetration receipts remain valid');
+ok(weaponBonusLine(t3,'common',{stat:'penetration',basisPoints:200},2).includes('Range 1.0–2.5%'),
+  'Existing v2 Penetration values must retain readable original range tooltips');
 ok(!!normalizeWeaponBonuses(weapon('T3','DREADGUARD'),'common',[{stat:'ward',basisPoints:100}],2),'Previous v2 Tank Ward receipts remain valid');
 ok(!normalizeWeaponBonuses(t3,'epic',[{stat:'haste',basisPoints:200},{stat:'haste',basisPoints:200}]),'Repeated bonuses are not legal');
 ok(!normalizeWeaponBonuses(t5,'common',[{stat:'haste',basisPoints:200}]),'Missing second roll must be rejected');

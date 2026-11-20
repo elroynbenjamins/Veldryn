@@ -67,7 +67,7 @@ export function reserveEquipmentV2HiddenClaim(
  if(prior.some(row=>row.instanceId===item.id))fail('duplicate_v2_storage_reservation');
  const verified=proposeEquipmentV2ClaimCustody(state,accountId,item);
  const owner=ownerStorage(state,item.ownerCharacterId);
- if(!owner)fail('unknown_v2_delivery_owner');
+ if(!owner)throw new V2DraftCraftError('unknown_v2_delivery_owner');
  const space=(storage:InventoryState|undefined,destination:'equipment_pouch'|'inventory')=>{
   if(!validateStorage(storage)||!storage)return false;
   const reserved=currentPlacements

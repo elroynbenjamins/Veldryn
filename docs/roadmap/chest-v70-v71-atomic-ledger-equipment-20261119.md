@@ -2,11 +2,17 @@
 
 **19 November 2026 — hidden draft only, not a migration or production deployment.**
 
+## V73 compatibility note (stacked World Boss PR #1454 only)
+
+The newer World Boss V73 prototype revises V70 to use a pinned **READ COMMITTED** transaction only for World Boss sources (other chest sources remain SERIALIZABLE) with an explicit per-account inventory row lock and an event-first V57 account-erasure preflight for World Boss sources. This resolves the incompatible assumption that V70's old SERIALIZABLE transaction could invoke V57, whose existing draft function explicitly rejects isolation other than READ COMMITTED to avoid stale erasure snapshots.
+
+The account-lock contract and rollback/readback remain mandatory. This is a **review proposal, not approval** to replace SERIALIZABLE in production. Real two-process PostgreSQL 16 contention and account-erasure races, plus the behavior of every other chest writer, still need to be proven before rollout. PGlite synthetic proof validation is insufficient for that final gate.
+
 ## V70: reusable account-locked SQL chest store
 
 The reusable V67 loot table and V69 receipt-first settlement worker are now backed by a proposed **single-connection PostgreSQL adapter** in `backend/src/server/loot/chest-postgres-store-v70.ts`.
 
-- Runs `BEGIN ISOLATION LEVEL SERIALIZABLE` and locks an **account-wide** `private.chest_account_fence_v70` row, not just a chest key. This prevents two different chests concurrently selecting the same supposedly unowned piece without coordinating inventory state.
+- In the stacked V73 proposal, World Boss sources run `BEGIN ISOLATION LEVEL READ COMMITTED`, other sources retain SERIALIZABLE, and both lock an **account-wide** `private.chest_account_fence_v70` row, not just a chest key. This prevents two different chests concurrently selecting the same supposedly unowned piece without coordinating inventory state.
 - Reads a **committed** receipt before checking the current drop table or deriving any new entropy. On replay it verifies the canonical reward-grant ledger and performs **independent read-back from physical wallet/items/Inbox stores**; the adapter cannot treat journal entries alone as delivery.
 - On first settlement, checks authoritative earned-source proof, registered loot table and account ownership, persists a frozen receipt, credits all guaranteed rewards, delivers each selected item, inserts exactly one Inbox record, verifies all effects, and **commits only after every leg succeeds**.
 - A single failure anywhere rolls back all receipt, wallet, resource, item, Inbox and grant-ledger writes. Postgres uniqueness and source keys deny double settlement. No second network connection, async queues or client-provided odds may be used inside injected physical ports.

@@ -40,17 +40,34 @@ on:
       - 'backend/src/server/combat/world-boss-gathering-instance-v62.ts'
       - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
-      - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/party/weekly-party-event-inbox-v80.ts'
       - 'backend/tests/party-event-inbox-v80.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261119120000_party_event_inbox_history_guard_v81.sql'
+      - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-chest-source-v77.ts'
+      - 'backend/src/server/loot/world-boss-eq2-unclaimed-v84.ts'
+      - 'backend/tests/world-boss-eq2-unclaimed-v84.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119201000_world_boss_eq2_quarantine_v84_review_only.sql'
+      - 'backend/src/server/loot/world-boss-real-reward-ports-v83.ts'
+      - 'backend/tests/world-boss-real-reward-ports-v83.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119200000_world_boss_real_wallet_v83_review_only.sql'
+      - 'backend/src/server/loot/chest-earned-entitlement-v80.ts'
+      - 'backend/src/server/loot/chest-eq2-release-gate-v81.ts'
+      - 'backend/src/server/loot/chest-eq2-earned-bridge-v82.ts'
+      - 'backend/src/server/loot/__tests__/chest-eq2-earned-bridge-v82.ts'
+      - 'backend/src/server/loot/__tests__/chest-eq2-release-gate-v81.ts'
+      - 'backend/tests/chest-earned-entitlement-v80.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261119172000_chest_earned_entitlements_v80_review_only.sql'
       - 'backend/src/server/loot/chest-postgres-store-v70.ts'
       - 'backend/src/server/loot/chest-equipment-bridge-v71.ts'
       - 'backend/src/server/loot/__tests__/chest-equipment-bridge-v71.ts'
       - 'backend/tests/chest-reward-ledger-v70.mjs'
       - 'backend/tests/chest-postgres-store-v70.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261119104500_universal_chest_ledger_v70.sql'
+      - 'backend/src/server/loot/world-boss-chest-pg-source-v73.ts'
+      - 'backend/src/server/loot/__tests__/world-boss-chest-pg-source-v73.ts'
+      - 'backend/src/server/loot/world-boss-chest-source-v72.ts'
+      - 'backend/src/server/loot/__tests__/world-boss-chest-source-v72.ts'
       - 'backend/src/server/loot/chest-reward-settlement-v69.ts'
       - 'backend/src/server/loot/__tests__/chest-reward-settlement-v69.ts'
       - 'backend/src/server/loot/chest-loot-engine-v67.ts'
@@ -121,14 +138,28 @@ jobs:
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chest-source-v77.js
       - name: Verify generic V67 chest tables and V68 legacy parity
         run: node .event-chest-tests/server/loot/__tests__/chest-loot-engine-v67.js
+      - name: Verify World Boss V72 account-bound replay-proof source for reusable chests
+        run: node .event-chest-tests/server/loot/__tests__/world-boss-chest-source-v72.js
+      - name: Verify V73 pinned World Boss SQL proof and V57 event-first privacy gate
+        run: node .event-chest-tests/server/loot/__tests__/world-boss-chest-pg-source-v73.js
       - name: Verify V69 shared receipt-first settlement, rollback, replay and source locks
         run: node .event-chest-tests/server/loot/__tests__/chest-reward-settlement-v69.js
       - name: Run V70 real SQL account-locked receipt/physical payout regression
         run: |
           node tests/chest-reward-ledger-v70.mjs
           node tests/chest-postgres-store-v70.mjs
-      - name: Verify V80 safe paid Party Event Inbox history against existing schema
+      - name: Verify original Party V80 paid-Inbox history and V81 legacy claim guard
         run: node tests/party-event-inbox-v80.mjs
+      - name: Verify V83 real World Boss wallet, account-state and Inbox custody in disposable PostgreSQL
+        run: node tests/world-boss-real-reward-ports-v83.mjs
+      - name: Verify V84 immutable World Boss Equipment 2.0 account-unclaimed custody
+        run: node tests/world-boss-eq2-unclaimed-v84.mjs
+      - name: Verify V80 immutable earned chests in disposable private PostgreSQL
+        run: node tests/chest-earned-entitlement-v80.mjs
+      - name: Verify V81 Equipment 2.0 T1–T5 gate and T6–T9 deferred guarantees
+        run: node .event-chest-tests/server/loot/__tests__/chest-eq2-release-gate-v81.js
+      - name: Verify V82 frozen earned-chest EQ2 candidate, tier and ownership parity
+        run: node .event-chest-tests/server/loot/__tests__/chest-eq2-earned-bridge-v82.js
       - name: Verify V71 Party/World Equipment 2.0 binding and owner custody
         run: node .event-chest-tests/server/loot/__tests__/chest-equipment-bridge-v71.js
       - name: Verify server-only deterministic chest entropy and replay safety
@@ -159,11 +190,21 @@ jobs:
           test ! -f supabase/migrations/20261119_world_boss_chest_ledger_v61_review_only.sql
           grep -q 'EVENT_CHEST_SERVER_ROLL_V1_RELEASED=false' src/server/loot/event-chest-server-roll-v1.ts
           grep -q 'CHEST_LOOT_ENGINE_V67_RELEASED=false' src/server/loot/chest-loot-engine-v67.ts
+          grep -q 'WORLD_BOSS_CHEST_PG_SOURCE_V73_RELEASED=false' src/server/loot/world-boss-chest-pg-source-v73.ts
+          grep -q 'WORLD_BOSS_REAL_REWARDS_V83_RELEASED=false' src/server/loot/world-boss-real-reward-ports-v83.ts
+          grep -q 'WORLD_BOSS_EQ2_ESCROW_V84_RELEASED=false' src/server/loot/world-boss-eq2-unclaimed-v84.ts
+          test ! -f supabase/migrations/20261119201000_world_boss_eq2_quarantine_v84_review_only.sql
+          test ! -f supabase/migrations/20261119200000_world_boss_real_wallet_v83_review_only.sql
+          grep -q 'WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false' src/server/loot/world-boss-chest-source-v72.ts
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
-          grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
-          test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
+          grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
+          test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
+          grep -q 'CHEST_EARNED_ENTITLEMENT_V80_RELEASED=false' src/server/loot/chest-earned-entitlement-v80.ts
+          grep -q 'CHEST_EQ2_RELEASE_GATE_V81_RELEASED=false' src/server/loot/chest-eq2-release-gate-v81.ts
+          grep -q 'CHEST_EARNED_EQ2_BRIDGE_V82_RELEASED=false' src/server/loot/chest-eq2-earned-bridge-v82.ts
+          test ! -f supabase/migrations/20261119172000_chest_earned_entitlements_v80_review_only.sql
           grep -q 'CHEST_EQUIPMENT_BRIDGE_V71_RELEASED=false' src/server/loot/chest-equipment-bridge-v71.ts
           test ! -f supabase/migrations/20261119104500_universal_chest_ledger_v70.sql
           grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts

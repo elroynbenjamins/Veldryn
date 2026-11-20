@@ -1,6 +1,6 @@
 /**
  * V70: review-only, UNMOUNTED Postgres adapter for shared V69 chest settlement.
- * The same connection handles SERIALIZABLE account inventory locks, frozen
+ * The same connection handles source-specific isolation, account inventory locks, frozen
  * receipt, resource/item/inbox delivery, leg audit, and physical read-back.
  *
  * Nothing here enables a reward. Injectable ports must be audited SQL-only
@@ -40,6 +40,13 @@ export interface ChestLedgerLegV70{
  readonly itemInstanceId:string|null;
 }
 export interface ChestPhysicalPortsV70{
+ /** Lock source event first and assert the V57 account-erasure fence BEFORE
+  * the shared account-inventory row. Required for World Boss sources. This
+  * runs on the same READ COMMITTED connection and must not issue a new BEGIN,
+  * network request, or untrusted/client-derived authorization. */
+ assertSourceWriteOpen?(
+  tx:ChestSqlV70,accountId:string,sourceKey:string,
+ ):Promise<void>;
  /** Each method MUST use only this transaction's SQL connection. */
  readCanonicalSource(tx:ChestSqlV70,accountId:string,sourceKey:string):
   Promise<TrustedChestSourceV69>;
@@ -65,7 +72,8 @@ export interface ChestPhysicalPortsV70{
  /** Independently read exact amounts, instances, owner and Inbox from the
   * ACTUAL writer tables; grant journal alone is not physical custody proof. */
  verifyPhysical(tx:ChestSqlV70,receipt:FrozenChestReceiptV69,
-  legs:readonly ChestLedgerLegV70[]):Promise<boolean>;
+  legs:readonly ChestLedgerLegV70[],
+  phase:'fresh'|'replay'):Promise<boolean>;
 }
 const receiptSql=[
  'select receipt from private.chest_reward_receipts_v70',
@@ -142,12 +150,23 @@ export function createChestPostgresStoreV70(
     process.env.NODE_ENV==='production')
     throw Error('chest_v70_unreleased');
    assertIdentity(accountId,sourceKey);
+   // V57 deliberately refuses SERIALIZABLE due to possible stale erasure
+   // snapshots. Keep existing SERIALIZABLE behavior for non-World-Boss
+   // chests; the guarded World Boss path needs READ COMMITTED plus locks.
+   const isWorldBoss=sourceKey.startsWith('world-boss:');
+   if(isWorldBoss&&
+    typeof ports?.assertSourceWriteOpen!=='function')
+    throw Error('chest_v70_world_boss_privacy_gate_required');
    const conn=await pool.connect();
    let began=false;
    try{
-    await conn.query('begin isolation level serializable');
+    await conn.query(isWorldBoss?
+     'begin isolation level read committed':
+     'begin isolation level serializable');
     began=true;
     await conn.query("set local lock_timeout='5s'");
+    if(ports.assertSourceWriteOpen)
+     await ports.assertSourceWriteOpen(conn,accountId,sourceKey);
     // Dedicated account fence, not a per-source-only lock: opening two
     // different chests cannot race the account-wide missing-piece snapshot.
     await conn.query(
@@ -271,7 +290,8 @@ export function createChestPostgresStoreV70(
         quantity,grantId,itemInstanceId:itemId as string|null,
        });
       }
-      return ports.verifyPhysical(conn,receipt,legs);
+      return ports.verifyPhysical(conn,receipt,legs,
+       inserted?'fresh':'replay');
      },
     };
     const result=await work(tx);

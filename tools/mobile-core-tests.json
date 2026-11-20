@@ -280,6 +280,7 @@
   ".core-build/apps/mobile/tests/companion-unlock-presentation.js",
   ".core-build/apps/mobile/tests/companion-bondstone-cadence.js",
   ".core-build/apps/mobile/tests/companion-economy-targets.js",
+  ".core-build/apps/mobile/tests/skill-hub-navigator.js",
   ".core-build/apps/mobile/tests/character-slot-800.js",
   ".core-build/apps/mobile/tests/character-delete-management.js",
   ".core-build/apps/mobile/tests/character-management-ui-contract.js",

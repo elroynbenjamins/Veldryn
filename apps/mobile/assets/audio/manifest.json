@@ -1,32 +1,46 @@
 {
   "music": {
     "asterfall": {
-      "bpm": 100,
-      "seconds": 38.4
+      "bpm": 102,
+      "render": "original sample-free synthesis",
+      "seconds": 37.65,
+      "selection": "First Light"
     },
     "boss": {
-      "bpm": 144,
-      "seconds": 26.67
+      "bpm": 168,
+      "render": "original sample-free synthesis",
+      "seconds": 51.43,
+      "selection": "Break the Sigil (JRPG V9)"
     },
     "dungeon": {
-      "bpm": 126,
-      "seconds": 30.48
+      "bpm": 146,
+      "render": "original sample-free synthesis",
+      "seconds": 52.6,
+      "selection": "Midnight Machinery (JRPG V9)"
     },
     "frostmarch": {
-      "bpm": 84,
-      "seconds": 45.71
+      "bpm": 78,
+      "render": "original sample-free synthesis",
+      "seconds": 49.23,
+      "selection": "Soft Snowfall (V2)"
     },
     "sunscar": {
-      "bpm": 104,
-      "seconds": 36.92
+      "bpm": 84,
+      "render": "original sample-free synthesis",
+      "seconds": 45.71,
+      "selection": "Evening Oasis (V3)"
     },
     "town": {
-      "bpm": 92,
-      "seconds": 41.74
+      "bpm": 88,
+      "render": "original sample-free synthesis",
+      "seconds": 43.64,
+      "selection": "Lanterns at Hearth"
     },
     "world_boss": {
-      "bpm": 112,
-      "seconds": 34.29
+      "bpm": 154,
+      "render": "original sample-free synthesis",
+      "seconds": 49.87,
+      "selection": "Eclipse Protocol (JRPG V9)"
     }
   },
   "sfx": {

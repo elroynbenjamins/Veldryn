@@ -7,6 +7,22 @@ const fs=require('fs') as {readFileSync(path:string,encoding:'utf8'):string;stat
 // Manifest, generated asset map and files stay in sync.
 const manifest=JSON.parse(fs.readFileSync('assets/audio/manifest.json','utf8')) as {sfx:Record<string,{seconds:number;volume:number}>;music:Record<string,{seconds:number}>};
 const assetMap=fs.readFileSync('src/theme/audio-assets.ts','utf8');
+const selectedTracks:Record<string,string>={
+  town:'Lanterns at Hearth',
+  asterfall:'First Light',
+  sunscar:'Evening Oasis (V3)',
+  frostmarch:'Soft Snowfall (V2)',
+  dungeon:'Midnight Machinery (JRPG V9)',
+  boss:'Break the Sigil (JRPG V9)',
+  world_boss:'Eclipse Protocol (JRPG V9)',
+};
+for(const [id,name] of Object.entries(selectedTracks)){
+ const row=(manifest.music as Record<string,{seconds:number;bpm?:number;selection?:string;render?:string}>)[id];
+ assert.equal(row?.selection,name,'Unexpected selected theme for '+id);
+ assert.equal(row?.render,'original sample-free synthesis','Unlicensed sample source for '+id);
+ assert.ok(row.seconds>=20&&row.seconds<=60,'Invalid loop duration for '+id);
+}
+
 let sfxBytes=0,musicBytes=0;
 for(const [kind,rows] of [['sfx',manifest.sfx],['music',manifest.music]] as const){
  for(const name of Object.keys(rows)){

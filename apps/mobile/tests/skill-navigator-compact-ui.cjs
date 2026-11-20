@@ -9,6 +9,9 @@ const copy=read('src/i18n/skill-navigator.ts');
 const ast=ts.createSourceFile('SkillsScreen.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Skill Navigator JSX parses');
 assert.match(screen,/navigatorToolbar:\{flexDirection:'row'/,'search and category selector must share one row');
+assert.match(screen,/narrowNavigator=width<380\|\|fontScale>=1\.3\|\|state\.settings\.textScale>=1\.3/,'large fonts and narrow screens collapse only search into an icon');
+assert.match(screen,/<UiIcon name="search" size=\{22\}\/>/,'search is reachable from the toolbar on narrow screens');
+assert.match(screen,/narrowNavigator&&searchExpanded\?<SearchField/,'search field opens only when needed on narrow screens');
 assert.match(screen,/width:'42%',maxWidth:180,minWidth:100/,'selector has a constrained width');
 assert.match(screen,/<SearchField style=\{hubStyles.navigatorSearch\}/,'search remains inline and accessible');
 assert.match(screen,/categoryPickerOpen/,'category selector opens a compact sheet');
@@ -27,11 +30,14 @@ for(const route of ["case 'combat'","case 'discipline'","case 'companion-mastery
 }
 assert.match(screen,/default:onSelect\(entry\.id\)/,'profession detail routing retained');
 assert.match(screen,/skillNavigatorCategoryFor\(row\.skillId\)/,'future trainable skills use the category registry');
+assert.match(screen,/route:skillNavigatorRouteFor\(row\.skillId\)/,'real skills with missing views use safe fallback');
+assert.match(screen,/case 'overview':setOverviewSkillId\(entry\.id\)/,'fallback opens a real progress overview');
+assert.match(screen,/<GameModalSurface visible=\{!!overviewSkill\}/,'fallback overview stays separate from live crafting or combat commands');
 assert.match(core,/return 'other';/,'unknown profession ids stay visible in Other rather than disappearing');
 assert.doesNotMatch(core,/talents?.*?:.*?profession|abilities?.*?:.*?profession/i,'2.0 abilities are not masquerading as XP professions');
 assert.match(screen,/onCommand\(\{type:'companion_training'\}\)/,'Companion Training claim preserved');
 assert.match(screen,/classSkillBonuses\(state\.character,classSkillId\)/,'class discipline detail remains available');
-for(const label of ['Filter','Other','No matching skills','Account-wide companion skill','Sanctuary facility']){
+for(const label of ['Filter','Other','No matching skills','Account-wide companion skill','Sanctuary facility','Skill overview','This skill has no dedicated activity screen. Its earned XP and levels are still tracked.']){
  const start=copy.indexOf("'"+label+"':{");
  assert.ok(start>=0,'Missing localized navigator label '+label);
  const row=copy.slice(start,copy.indexOf('}',start)+1);

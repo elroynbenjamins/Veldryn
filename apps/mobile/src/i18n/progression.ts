@@ -3,6 +3,10 @@ import {createTranslator} from './translator';
 
 // English source copy is the key. Proper names and player-authored text are never keys.
 export const progressionTranslationRows = {
+  // Where to Find objective route; names remain authoritative catalog proper nouns.
+  "WHERE TO FIND": ["FUNDORT","DÓNDE ENCONTRARLO","WAAR TE VINDEN","DOVE TROVARLO","OÙ LE TROUVER"],
+  "Dismiss source guidance": ["Fundort-Hinweis schließen","Cerrar indicaciones de origen","Vindplaatsaanwijzing sluiten","Chiudi indicazioni sulla fonte","Fermer les indications de provenance"],
+  "Hunt": ["Jagen","Cazar","Jagen","Caccia","Chasser"],
   // Released Sunscar/Frostmarch ranges and region action labels (source-exact).
   "REGION II · LEVEL 26–50": ["REGION II · STUFE 26–50","REGIÓN II · NIVEL 26–50","REGIO II · NIVEAU 26–50","REGIONE II · LIVELLO 26–50","RÉGION II · NIVEAU 26–50"],
   "REGION III · LEVEL 51–75": ["REGION III · STUFE 51–75","REGIÓN III · NIVEL 51–75","REGIO III · NIVEAU 51–75","REGIONE III · LIVELLO 51–75","RÉGION III · NIVEAU 51–75"],

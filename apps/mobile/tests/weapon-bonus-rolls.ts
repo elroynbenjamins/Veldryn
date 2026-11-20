@@ -30,9 +30,9 @@ for(const tier of ['T1','T2','T3','T4','T5','T6','T7','T8','T9'] as const){
     for(const rarity of ['common','epic'] as const){
       const itemId=recipe!.output.itemId,cfg=weaponBonusConfig(itemId,rarity)!;
       const rolls=rollWeaponBonuses(itemId,rarity,`all-classes-${tier}-${cls.id}-${rarity}`,.54321)!;
-      const expectedCount=tier>='T5'||(tier>='T3'&&rarity==='epic')?2:1;
+      const expectedCount=tier>='T5'||rarity==='epic'?2:1;
       ok(rolls.length===expectedCount,`${cls.name} ${tier} ${rarity}: expected ${expectedCount} rolls`);
-      ok(rolls.every(row=>cfg.pool.includes(row.stat)),`${cls.name} ${tier} must use role-relevant stats`);
+      ok(rolls.every(row=>cfg.pool.includes(row.stat)),`${cls.name} ${tier} must use the shared class-neutral pool`);
       ok(JSON.stringify(normalizeWeaponBonuses(itemId,rarity,rolls))===JSON.stringify(rolls),
         `${cls.name} ${tier} ${rarity} rolls must survive normalization`);
     }
@@ -41,11 +41,11 @@ for(const tier of ['T1','T2','T3','T4','T5','T6','T7','T8','T9'] as const){
 
 const t1=weapon('T1','WAYFINDER'),t2=weapon('T2','WAYFINDER');
 const t3=weapon('T3','WAYFINDER'),t4=weapon('T4','WAYFINDER'),t5=weapon('T5','WAYFINDER'),t9=weapon('T9','WAYFINDER');
-ok(rollWeaponBonuses(t1,'mythic','t1-roll',.25)?.length===1,'T1 must receive one smaller rarity-scaled bonus');
+ok(rollWeaponBonuses(t1,'mythic','t1-roll',.25)?.length===2,'T1 Mythic receives two smaller rarity-scaled bonuses');
 ok(!weaponBonusConfig(t1,'uncommon',5),'Historical v5 must not invent a roll on T1');
 ok(weaponBonusRange(1,'critRate')![1]<weaponBonusRange(2,'critRate')![1],'T1 Crit Rate cap remains below T2');
-ok(rollWeaponBonuses(t2,'epic','t2-epic',.25)?.length===1,'T2 now grants exactly one low-power roll, even Epic');
-ok(weaponBonusConfig(t2,'mythic')?.count===1,'T2 rarity cannot bypass the one-roll limit');
+ok(rollWeaponBonuses(t2,'epic','t2-epic',.25)?.length===2,'T2 Epic earns two distinct low-power rolls');
+ok(weaponBonusConfig(t2,'mythic')?.count===2,'T2 Mythic earns two distinct stat rolls');
 ok(weaponBonusConfig(t3,'common')?.count===1,'T3 Common gets one stat');
 ok(weaponBonusConfig(t3,'epic')?.count===2,'T3 Epic gets two stats');
 ok(weaponBonusConfig(t4,'legendary')?.count===2,'T4 Legendary gets two stats');
@@ -53,7 +53,7 @@ ok(weaponBonusConfig(t5,'common')?.count===2,'T5 Common gets two stats');
 ok(weaponBonusConfig(t9,'common')?.count===2,'T9 Common gets two stats');
 
 for(const [id,rarity,count] of [
-  [t1,'common',1],[t1,'mythic',1],[t2,'common',1],[t2,'epic',1],[t3,'common',1],[t3,'epic',2],
+  [t1,'common',1],[t1,'mythic',2],[t2,'common',1],[t2,'epic',2],[t3,'common',1],[t3,'epic',2],
   [t4,'mythic',2],[t5,'common',2],[t9,'rare',2],
 ] as const){
   const first=rollWeaponBonuses(id,rarity,'stable-receipt',.4);
@@ -145,9 +145,9 @@ for(const band of [3,5,7,9] as const){
 for(const classId of ['WAYFINDER','DREADGUARD','DAWNKEEPER'] as const){
   const id=weapon('T5',classId),cfg=weaponBonusConfig(id,'common')!;
   const bonuses=rollWeaponBonuses(id,'common','class-pool',.5)!;
-  ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for its class role');
+  ok(bonuses.every(row=>cfg.pool.includes(row.stat)),'Bonus must be valid for every class');
 }
-ok(WEAPON_BONUS_ROLL_VERSION===6,'Early-release weapons mint v6 with seven stats; v1–v5 stay readable');
+ok(WEAPON_BONUS_ROLL_VERSION===7,'Class-neutral T1–T9 weapons mint v7 with seven functional stats; v1–v6 stay readable');
 ok(weaponBonusRange(3,'critRate',1)?.join(',')==='100,300','Older v1 receipts keep their original T3 1–3% range');
 ok(!!normalizeWeaponBonuses(t3,'common',[{stat:'critRate',basisPoints:250}],1),
   'Already minted v1 high Crit Rate rolls must be preserved after rebalance');
@@ -171,8 +171,8 @@ ok(!normalizeWeaponBonuses(t5,'common',null),'Legacy missing rolls remain missin
 const state=createCharacter(newGame(1),'WAYFINDER','Weapon Bonus Tester','male');
 const owner=state.character!.id;
 const starterWeapon=draftCraftedGearInstance({itemId:t1,ownerCharacterId:owner,jobId:'t1-weapon-affix',createdAtMs:1,roll:.31});
-ok(starterWeapon.weaponBonusRollVersion===6&&starterWeapon.weaponBonuses?.length===1,
-  'New T1 weapons need one persistent version-6 bonus');
+ok(starterWeapon.weaponBonusRollVersion===7&&starterWeapon.weaponBonuses?.length===1,
+  'New T1 weapons need one persistent version-7 bonus');
 const loadedStarterWeapon=normalizeCraftedGearInstances([starterWeapon])[0];
 ok(JSON.stringify(loadedStarterWeapon.weaponBonuses)===JSON.stringify(starterWeapon.weaponBonuses),
   'T1 forged weapon affix must survive exact-copy save normalization');
@@ -192,7 +192,7 @@ const copy=draftCraftedGearInstance({itemId:t5,ownerCharacterId:owner,jobId:'wea
 ok(copy.weaponBonuses?.length===2,'New T5 forged copy must receive two attributes');
 const normalized=normalizeCraftedGearInstances([copy])[0];
 ok(JSON.stringify(normalized.weaponBonuses)===JSON.stringify(copy.weaponBonuses),'Saved attributes must survive round-trip');
-ok(normalized.weaponBonusRollVersion===6,'New copies use the cross-mode seven-stat weapon version');
+ok(normalized.weaponBonusRollVersion===7,'New copies use the cross-mode seven-stat weapon version');
 ok(!copy.weaponBonuses?.some(b=>b.stat==='abilityDamage'||b.stat==='tenacity'),
   'New weapon rolls must not mint Ability Damage or Tenacity before Combat 2.0');
 const priorV3={

@@ -2,7 +2,7 @@
 name: Veldryn 1.0.11 integrated candidate validation
 on:
   push:
-    branches: ['release/1.0.11-feature-integration-20261119']
+    branches: ['release/1.0.11-stat-endurance-mainline-20261120']
   workflow_dispatch:
 
 permissions:

@@ -13,7 +13,7 @@ INSERT INTO public.app_release_notes
  (platform, version, title, highlights, published_at, is_published, updated_at)
 VALUES
  ('android','1.0.11','Beyond the Depths',jsonb_build_array(
-  'Equipment Rolls: New T1–T9 gear can roll useful class-neutral bonus stats, while existing equipment keeps its progress.',
+  'Equipment Rolls: New T1–T5 gear can roll useful class-neutral bonus stats, while existing equipment keeps its progress.',
   'Gathering Tools: Stack tiers and forge individually rolled rarity, quality and Speed or Rare Find bonuses.',
   'Dungeon Endurance: Explore tougher rooms and choose a boss encounter at every seven-room checkpoint.',
   'Dungeon Weeklies: Take on dedicated weekly Dungeon challenges for Expedition Marks.',

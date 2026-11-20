@@ -1,5 +1,10 @@
 name: Hidden Guild PvE V12-V14 source, cue and proof QA
 
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Test-only. No Supabase credentials, real users, migrations or payouts.
 on:
   pull_request:

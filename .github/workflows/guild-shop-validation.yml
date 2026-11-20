@@ -1,4 +1,9 @@
 name: Guild Shop validation
+
+# Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 on:
   push:
     branches: [main]
@@ -9,7 +14,15 @@ on:
       - '.github/workflows/guild-shop-validation.yml'
   pull_request:
     paths:
-      - 'apps/mobile/src/**'
+      # Guild-specific UI, identity and bank changes; unrelated social/gear UI
+      # is already covered by the general mobile core and UX workflows.
+      - 'apps/mobile/src/components/OnlineGuild*.tsx'
+      - 'apps/mobile/src/components/Guild*.tsx'
+      - 'apps/mobile/src/components/profile/*Guild*.tsx'
+      - 'apps/mobile/src/screens/Guild*.tsx'
+      - 'apps/mobile/src/core/guild-*.ts'
+      - 'apps/mobile/src/online/guild*.ts'
+      - 'apps/mobile/src/content/guild*.ts'
       - 'backend/online/**'
       - 'backend/supabase/migrations/20261018*_guild*.sql'
       - 'backend/test-guild-shop-migrations.mjs'

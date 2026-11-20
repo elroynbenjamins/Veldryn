@@ -9,6 +9,9 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  // Exact-copy bonus presentation, kept localized in every supported language.
+  "BONUS STATS":["BONUS STATS","BONUSWERTE","ESTADÍSTICAS EXTRA","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATS BONUS"],
+  "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni für dieses Ausrüstungsexemplar.","Bonificaciones aleatorias de esta pieza de equipo.","Willekeurige bonussen op dit uitrustingsstuk.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],
  // Permanent socket rules and irreversible manual equipment disposal.
  "Gem extraction is no longer available.":["Gem extraction is no longer available.","Das Entfernen von Edelsteinen ist nicht mehr möglich.","Ya no se pueden extraer gemas.","Edelstenen kunnen niet meer worden verwijderd.","Non è più possibile estrarre le gemme.","L'extraction des gemmes n'est plus possible."],
  "The old gem is permanently destroyed when replaced.":["The old gem is permanently destroyed when replaced.","Der bisherige Edelstein wird beim Ersetzen endgültig zerstört.","La gema anterior se destruye definitivamente al sustituirla.","De oude edelsteen wordt bij vervanging definitief vernietigd.","La gemma precedente viene distrutta definitivamente quando viene sostituita.","L'ancienne gemme est définitivement détruite lors du remplacement."],
@@ -1497,6 +1500,15 @@ const gemMergeEarlyLocales={
  "Confirm merge":["Подтвердить слияние","Birleştirmeyi onayla"],
 } as const;
 for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Russian and Turkish: shared Gear Storage bonus-value presentation.
+const gearStorageBonusEarlyLocales={
+  "BONUS STATS":["БОНУСНЫЕ ХАРАКТЕРИСТИКИ","EK ÖZELLİKLER"],
+  "Random bonuses on this equipment copy.":["Случайные бонусы этого экземпляра снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
+} as const;
+for(const [english,pair] of Object.entries(gearStorageBonusEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

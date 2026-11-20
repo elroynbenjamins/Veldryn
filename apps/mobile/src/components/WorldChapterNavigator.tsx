@@ -19,6 +19,7 @@ type Props={
   state:GameState;
   currentRegionId:string;
   goalRegionId?:string;
+  goalAreaId?:string;
   onTravel:(regionId:string)=>void;
   onOpenCombat:(areaId?:string)=>void;
   onOpenSkills:(areaId?:string)=>void;
@@ -70,7 +71,7 @@ function chapterAvailability(chapter:WorldChapterGroup,state:GameState){
  * Chapter-level navigation. The current chapter shows its zones always expanded;
  * other chapters are one compact row each.
  */
-export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTravel,onOpenCombat,onOpenSkills,children}:Props){
+export function WorldChapterNavigator({state,currentRegionId,goalRegionId,goalAreaId,onTravel,onOpenCombat,onOpenSkills,children}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -114,6 +115,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
           // must not show every sub-area as HERE (including level-locked ones).
           // Keep its area rows compact with their level gates and action states.
           const here=!!siblingRegion&&siblingRegion.id===current.id;
+          const target=goalAreaId?zone.areaId===goalAreaId&&zone.areaRegionId===goalRegionId:!!siblingRegion&&siblingRegion.id===goalRegionId;
           let access:boolean,subtitle:string;
           if(siblingRegion){
             const availability=regionTravelAvailability(state,siblingRegion);
@@ -130,11 +132,11 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
               ?counts.enemies+' '+p('enemies')+' · '+counts.gathering+' '+p('gathering')
               :t('Unlocks at level {level}',{level:zone.minLevel});
           }
-          if(here)return <View key={zone.id} style={s.zoneHereCard}>
+          if(here)return <View key={zone.id} style={[s.zoneHereCard,target&&s.zoneTarget]}>
             <View style={s.zoneHereArtwork}><ZoneSceneArtwork regionId={artId}/></View>
             <View style={s.zoneHereShade}/>
             <View style={s.zoneHereBody}>
-              <Text style={s.zoneHereKicker}>{p('HERE')} · {t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
+              <Text style={s.zoneHereKicker}>{p('HERE')} · {t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}{target?' · '+p('TARGET'):''}</Text>
               <Text numberOfLines={1} style={s.zoneHereName}>{p(zone.name)}</Text>
               <Text numberOfLines={2} style={s.zoneHereSubtitle}>{subtitle}</Text>
               <View style={s.zoneHereActions}>
@@ -143,11 +145,11 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
               </View>
             </View>
           </View>;
-          return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked]}>
+          return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked,target&&s.zoneTarget]}>
             <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={artId} muted={!access}/></View>
             <View style={s.flex}>
               <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}</Text>
-              <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
+              <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}{target?' · '+p('TARGET'):''}</Text>
               <Text numberOfLines={2} style={[s.zoneSubtitle,!access&&s.zoneSubtitleLocked]}>{subtitle}</Text>
             </View>
             <View style={s.zoneActions}>
@@ -221,6 +223,7 @@ function styles(C:ThemeColors){
 
     /* Current chapter: hero header + always-visible zone list, in one bordered card. */
     current:{borderWidth:1,borderRadius:13,backgroundColor:C.panel,overflow:'hidden'},
+    zoneTarget:{borderColor:C.info,borderWidth:2},
     currentHero:{flexDirection:'row',alignItems:'center',gap:10,padding:10,minHeight:92},
     currentArtwork:{width:82,height:76,borderRadius:9,overflow:'hidden',backgroundColor:C.panel2},
     eyebrow:{fontSize:9,fontWeight:'800',letterSpacing:.9,color:equipmentColors.goldSoft},

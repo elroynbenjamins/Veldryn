@@ -37,7 +37,7 @@ ok(path.includes("craftTimeLabel:recipe.noviceSetId?'Instant':formatQueueTimeV31
 
 ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment crafting plan');
 ok(inspect.includes("it('{count} missing · {source}'"),'Quick Inspect must show exact missing material quantities');
-ok(inspect.includes('onNavigate(ingredient.source)'),'Quick Inspect material blockers must be actionable');
+ok(inspect.includes('onNavigate(resolveSourceRoute(ingredient.source,ingredient.itemId))'),'Quick Inspect material blockers must be actionable');
 ok(recipeCard.includes('MISSING SOURCES'),'Expanded recipe cards must surface missing material and prerequisite sources');
 ok(!recipeCard.includes('craft time'),'Recipe cards must not imply a live timer before the timed crafting queue runtime exists');
 ok(recipeCard.includes('onNavigate(row.destination)'),'Recipe source rows must navigate through the generalized Working Toward destination');

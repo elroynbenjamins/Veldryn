@@ -308,6 +308,8 @@
   ".core-build/apps/mobile/tests/v40-preferences-loadouts.js",
   ".core-build/apps/mobile/tests/v40-idle-rule-boundaries.js",
   ".core-build/apps/mobile/tests/working-toward-v2.js",
+  ".core-build/apps/mobile/tests/source-route-guidance.js",
+  "tests/source-route-guidance-ui.cjs",
   ".core-build/apps/mobile/tests/profile-social-identity.js",
   ".core-build/apps/mobile/tests/profile-customization-polish.js",
   ".core-build/apps/mobile/tests/profile-wardrobe.js",

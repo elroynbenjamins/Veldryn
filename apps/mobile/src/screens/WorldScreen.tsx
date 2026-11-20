@@ -2,9 +2,14 @@ import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionText} from '../i18n/progression';
+import {localizedItemName} from '../i18n/starter-item-names';
 import type {GameState} from '../core/types';
 import {currentRegionId} from '../core/combat-region';
 import {WorldChapterNavigator} from '../components/WorldChapterNavigator';
+import {GameButton} from '../components/GameButton';
+import type {WorkingTowardDestination} from '../core/working-toward';
+import {workingTowardDestinationAvailability} from '../core/working-toward';
+import {sourceRouteView} from '../core/source-route-guidance';
 import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
@@ -20,9 +25,11 @@ type Props={
   onOpenSkills:(areaId?:string)=>void;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
   goalRegionId?:string;
+  goalDestination?:WorkingTowardDestination;
+  onDismissGoal?:()=>void;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegionalRewardsChanged,goalRegionId}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegionalRewardsChanged,goalRegionId,goalDestination,onDismissGoal}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const p=(text:string)=>progressionText(language,text);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -41,13 +48,27 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegional
     return ()=>{mounted=false;};
   },[frostmarch]);
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
+  const goalRoute=goalDestination?sourceRouteView(goalDestination):undefined;
+  const goalStatus=goalDestination?workingTowardDestinationAvailability(state,goalDestination):undefined;
   const extraContent=!!storyRegion||(sunscar&&!!onRegionalRewardsChanged)||frostmarch;
 
   // World is only for regions, combat, gathering, and exploration.
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={s.heading}>{p('World')}</Text>
+    {goalRoute?<View style={s.goalRoute}>
+      <View style={s.goalCopy}>
+        <Text style={s.goalEyebrow} numberOfLines={2}>{p('WHERE TO FIND')}{goalRoute.sourceItemId?' · '+localizedItemName(language,goalRoute.sourceItemId):''}</Text>
+        <Text style={s.goalTitle} numberOfLines={1}>{p(goalDestination?.kind==='combat'?'Hunt':'Gather')+' '+p(goalRoute.target)}</Text>
+        <Text style={s.goalBreadcrumb}>{goalRoute.breadcrumb.split(' › ').map(p).join(' › ')}</Text>
+        {goalStatus?.status==='locked'?<Text style={s.goalBlocked}>{p(goalStatus.detail)}</Text>:null}
+      </View>
+      <View style={s.goalActions}>
+        {goalStatus?.status==='travel'&&goalRoute.regionId?<GameButton compact title={p('Travel')} onPress={()=>onTravel(goalRoute.regionId!)}/>:null}
+        {onDismissGoal?<Pressable accessibilityRole="button" accessibilityLabel={p('Dismiss source guidance')} onPress={onDismissGoal} style={s.goalDismiss}><Text style={s.goalDismissText}>×</Text></Pressable>:null}
+      </View>
+    </View>:null}
     <WorldChapterNavigator
-        state={state} currentRegionId={currentId} goalRegionId={goalRegionId}
+        state={state} currentRegionId={currentId} goalRegionId={goalRegionId} goalAreaId={goalRoute?.areaId}
         onTravel={onTravel} onOpenCombat={onOpenCombat} onOpenSkills={onOpenSkills}
       >
       {extraContent?<View style={s.extraWrap}>
@@ -74,6 +95,15 @@ function makeStyles(C:ThemeColors){
   return StyleSheet.create({
     root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
     heading:{...typography.hero,color:C.text},
+    goalRoute:{flexDirection:'row',alignItems:'flex-start',gap:8,padding:10,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
+    goalCopy:{flex:1,minWidth:0,gap:3},
+    goalActions:{gap:6,alignItems:'stretch',justifyContent:'flex-start'},
+    goalEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:C.info},
+    goalTitle:{fontSize:14,fontWeight:'800',color:C.text},
+    goalBreadcrumb:{fontSize:11,lineHeight:16,color:C.text},
+    goalBlocked:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.warning},
+    goalDismiss:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},
+    goalDismissText:{fontSize:22,lineHeight:25,color:C.muted},
     flex:{flex:1,minWidth:0},
     extraWrap:{borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel},
     extraToggle:{flexDirection:'row',alignItems:'center',gap:8,padding:spacing.md,minHeight:50},

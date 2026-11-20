@@ -106,6 +106,10 @@ for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as cons
  const bossSamples=Object.values(bossResults);
  assert.ok(bossSamples.every(row=>row.attempts>=10),'Both original bosses must be encountered in a representative test batch');
  const bossRates=bossSamples.map(row=>row.clears/row.attempts);
+ console.log('REGIONAL_FIRST_CHECKPOINT_BOSS_AUDIT '+JSON.stringify({
+  id,tier,clears:successes.length,count,bossResults,bossRates,
+  roster:roster.map(row=>({cp:row.cp,role:row.snapshot.readiness.role,readiness:Number(row.ready.toFixed(2))})),
+ }));
  assert.ok(Math.abs(bossRates[0]-bossRates[1])<=.45,'A random boss roll must not create an excessive difficulty lottery');
  // Wide, deliberately synthetic release guards rather than promised live
  // success rates. T1 must remain welcoming, T2 reasonably accessible, and

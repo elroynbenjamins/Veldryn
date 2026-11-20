@@ -81,7 +81,7 @@ ok(onlineProjects.includes('supplyAllowances={project.supplyAllowances}')&&proje
 ok(projectSupplies.includes('personalLimitReached')&&projectSupplies.includes('allowance?.remainingPersonal')&&projectSupplies.includes('allowance?.remainingGoal'),'Personal cap reached and concurrent goal updates must disable over-limit donations');
 ok(projectClient.includes('r.account_id=v_uid')===false,'Raw contribution receipt identities must not be embedded in the client bundle');
 
-ok(onlineProjects.includes("ui('{count}/{minimum} contributors'"),'Live Projects must surface anti-leech contributor progress');
+ok(onlineProjects.includes("ui('{count} contributors · Min {minimum}'"),'Live Projects must surface anti-leech contributor progress');
 ok(contributionPanel.includes("ui('Member contributions')")&&contributionPanel.includes("ui('Gather {count}',{count:member.gatheringPoints.toLocaleString(language)})"),'Inline contribution panel must expose per-member gathering contribution');
 ok(onlineProjects.includes('<GuildProjectContributionsPanel projects={active}/>')&&onlineProjects.includes('claimableCompleted')&&!onlineProjects.includes('View member contributions')&&!onlineProjects.includes('GuildProjectContributionsModal')&&projectClient.includes("db.rpc('guild_roster'"),'Project contributions must be visible directly below Weekly Projects with live roster data, without a launch button');
 ok(contributionPanel.includes('const TOP_COUNT=5')&&contributionPanel.includes('members.slice(0,TOP_COUNT)')&&contributionPanel.includes('Show {count} more members')&&contributionPanel.includes('<IdentityArtwork'),'Inline contributor rankings must show the top five with avatars and allow expanding the remaining members');

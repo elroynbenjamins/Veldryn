@@ -65,6 +65,8 @@ jobs:
         run: node tests/home-priority-dashboard-ui.cjs
       - name: Verify compact Quest screens, modal safety and reward semantics
         run: node tests/quest-refined-ui.cjs
+      - name: Validate Guild Project daily effort cap and UTC reset
+        run: node tests/guild-project-daily-effort.cjs
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Validate Frostfall 14-day preview and sealed rewards

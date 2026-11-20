@@ -132,7 +132,9 @@ console.log('dungeon potion transaction plan: stock, healing, tier caps, idempot
 /** Guard the cross-package source of truth without importing React Native into backend TypeScript. */
 import {HEALING_POTION_MAX_HP_FRACTIONS} from '../../../shared/healing-potion-catalog';
 import {readFileSync} from 'node:fs';
-const alchemySource=readFileSync('../apps/mobile/src/content/alchemy.ts','utf8');
+import {resolve} from 'node:path';
+// Resolve from this fixture (src/ or compiled dist/), not the invocation cwd.
+const alchemySource=readFileSync(resolve(__dirname,'../../../../../apps/mobile/src/content/alchemy.ts'),'utf8');
 for(const [id,fraction] of Object.entries(HEALING_POTION_MAX_HP_FRACTIONS)){
  const potionLine=alchemySource.split('\n').find(line=>line.includes(`id:'${id}'`)&&line.includes('maxHpFraction:'));
  assert.ok(potionLine,`mobile Alchemy catalog missing ${id}`);

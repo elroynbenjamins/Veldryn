@@ -32,7 +32,7 @@ let saved:SoloRewardReceiptV2|null=null;
 let balances:SoloRewardGrantV2[]=[];
 let inbox:SoloRewardReceiptV2[]=[];
 let failOnGrant=false,failOnInbox=false,failOnLedger=false,failAfterCommit=false;
-let forbiddenCommit=false;
+let forbiddenSql:string|null=null;
 let forgedGrantProof=false,forgedInboxProof=false;
 let lastWriterClient:CombatV2RewardSqlTransaction|null=null;
 let openConnections=0,commits=0,rollbacks=0,issued=0;
@@ -108,7 +108,7 @@ const pool:CombatV2SqlPool={
 };
 const writers={
  async applyGrant(tx:CombatV2RewardSqlTransaction,_scope:typeof scope,grant:SoloRewardGrantV2){
-  if(forbiddenCommit)await tx.query('COMMIT');
+  if(forbiddenSql)await tx.query(forbiddenSql);
   await tx.query('qa_grant',[grant]);
   return {...grant,grantSourceId:forgedGrantProof?'wrong-source':grant.grantSourceId};
  },
@@ -132,9 +132,14 @@ async function run(){
  failOnGrant=true;
  await rejected(store.commitOnce(scope,receipt),/synthetic_grant_failure/);
  failOnGrant=false;
- forbiddenCommit=true;
- await rejected(store.commitOnce(scope,receipt),/writer_transaction_control_forbidden/);
- forbiddenCommit=false;
+ for(const prohibited of [
+  'COMMIT',' ROLLBACK','SAVEPOINT forged','SELECT 1; COMMIT',
+  '-- forged comment\nCOMMIT','/* comment */ BEGIN',
+ ]){
+  forbiddenSql=prohibited;
+  await rejected(store.commitOnce(scope,receipt),/writer_transaction_control_forbidden/);
+ }
+ forbiddenSql=null;
  forgedGrantProof=true;
  await rejected(store.commitOnce(scope,receipt),/grant_write_not_verified/);
  forgedGrantProof=false;

@@ -176,7 +176,7 @@ const variants:Readonly<Record<string,readonly [VariantRecipe,VariantRecipe,Vari
   {shield:1.12,adds:[ward(.03)]},
  ],
  'River Stone':[
-  {heal:1.20,cooldownDelta:1000},
+  {heal:1.20,cooldownDelta:1000,healBelowHpPct:.40,healBonus:.25},
   {heal:.80,adds:[{kind:'cleanse'}]},
   {heal:1.05,adds:[{kind:'hot',coeff:.12,durationMs:4000,tickMs:2000}]},
  ],

@@ -86,7 +86,7 @@ assert.equal(compileEnemiesForCombatV2([authoredFromOtherCompiler],false).enemie
 assert.throws(()=>compileEnemiesForCombatV2([{
  ...baseline('guardian'),
  abilities:[{id:'ENEMY_V2_SPOOF',name:'Authored',target:'self',cooldownMs:5000,
-  effects:[{kind:'shield',flat:1}]}],
+  castTimeMs:0,priority:1,effects:[{kind:'shield',flat:1}]}],
 }],true),/mixed_enemy_compilers/);
 assert.throws(()=>compileEnemiesForCombatV2([{
  ...baseline('guardian'),boss:true,

@@ -45,6 +45,8 @@ const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
  tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
 const bossByRegion={asterfall:'BOSS_EXP_ROOT',sunscar:'BOSS_EXP_SOLAR',
  frostmarch:'BOSS_EXP_BELLBEAST'} as const;
+const bossNameByRegion={asterfall:'Rootbound Heart',sunscar:'The Buried Heliarch',
+ frostmarch:'The Bellbeast of Shiverlake'} as const;
 const roleCounts={tank:0,damage:0,support:0};
 const resultRows:{
  classId:string;spec:string;role:string;tier:GearTier;
@@ -68,7 +70,9 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    assert.ok(selectedSkills.length>=1,
     'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;
-   const actor=launchPlayer(CLASS_NAMES_V2[classId],level);
+   // Legacy launchPlayer IDs contain whitespace for Knife Dancer; persisted V2
+   // encounters require trusted, canonical IDs without whitespace.
+   const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),id:'QA_PLAYER_'+classId};
    const classStats={...actor.stats};
    const mainStat: keyof CombatStats =
     role==='tank'?'maxHp':role==='damage'?'attackPower':'healingPower';
@@ -125,7 +129,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      const isBoss=kind==='boss';
      const enemyId=isBoss?bossByRegion[locale]:'QA_ENEMY_'+kind;
      const enemy:CombatantDefinition={
-      id:enemyId,name:'Synthetic '+kind,team:'enemies',role:'enemy',
+      id:enemyId,name:isBoss?bossNameByRegion[locale]:'Synthetic '+kind,team:'enemies',role:'enemy',
       level,stats:{
        maxHp:8000+tier*3500,attackPower:60+tier*40,healingPower:0,
        defense:90+tier*40,accuracy:700+tier*40,evasion:100+tier*10,
@@ -183,7 +187,21 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
        'Resource overflow '+classId+' '+spec.id);
      }
      if(tier===1){t1Gaps++;assert.equal(trusted,undefined);}
-     else{authored++;assert.ok(a.enemyMechanicLabels.length>0);}
+     else {
+      authored++;
+      // A persisted V2 kit is not the same thing as an always-rolled trait:
+      // ordinary enemies intentionally have a region-dependent chance to
+      // remain unmodified, whereas elites and bosses author mechanics.
+      const expectedLabels=trusted!.snapshot.preview.flatMap(p=>[
+       ...p.abilityNames.map(name=>p.enemyId+': '+name),
+       ...p.phaseNames.map(name=>p.enemyId+': '+name),
+       ...p.traitIds.map(id=>p.enemyId+': '+id),
+      ]);
+      assert.deepEqual(a.enemyMechanicLabels,expectedLabels,
+       'Only frozen persisted enemy mechanics may be shown: '+seed);
+      if(kind!=='normal')assert.ok(expectedLabels.length>0,
+       'Elite/boss must have a persisted authored mechanic: '+seed);
+     }
      resultRows.push({
       classId,spec:spec.id,role,tier:gearTier,profile:profile.id,kind,
       enemyKit:tier===1?'generic-t1':'authored-v2',

@@ -174,7 +174,9 @@ export function transactionalSoloRewardStoreV2(
     // pinned client or control transaction lifetime (BEGIN/COMMIT/ROLLBACK).
     const grantTx:CombatV2RewardSqlTransaction={
      query:<Row=Record<string,unknown>>(sql:string,params?:readonly unknown[])=>{
-      if(typeof sql!=='string'||/^\\s*(?:begin|commit|rollback|end|savepoint|release)\\b/i.test(sql))
+       if(typeof sql!=='string'||!sql.trim()||
+         /(?:;|--|\/\*|\*\/)/.test(sql)||
+         /^\s*(?:begin|commit|rollback|end|savepoint|release)\b/i.test(sql))
        fail('writer_transaction_control_forbidden');
       return tx.query<Row>(sql,params);
      },

@@ -48,7 +48,8 @@ const READ_INBOX=`select source_key,account_id::text,character_id::text,receipt_
 function checkGrant(
  row:QaGrantRow|undefined,scope:TrustedSoloIdentityV2,grant:SoloRewardGrantV2,
 ):CombatV2RewardGrantWriteProof{
- if(!row||!same(row.grant_source_id,grant.grantSourceId)||
+ if(row===undefined)throw Error('combat_v2_disposable_qa_grant_provenance_mismatch');
+ if(!same(row.grant_source_id,grant.grantSourceId)||
   row.account_id!==scope.accountId||row.character_id!==scope.characterId||
   row.kind!==grant.kind||row.resource_id!==grant.resourceId||
   row.amount!==textAmount(grant.amount))reject('grant_provenance_mismatch');
@@ -60,7 +61,8 @@ function checkGrant(
 function checkInbox(
  row:QaInboxRow|undefined,scope:TrustedSoloIdentityV2,receipt:SoloRewardReceiptV2,
 ):CombatV2RewardInboxWriteProof{
- if(!row||row.source_key!==receipt.sourceKey||
+ if(row===undefined)throw Error('combat_v2_disposable_qa_inbox_provenance_mismatch');
+ if(row.source_key!==receipt.sourceKey||
   row.account_id!==scope.accountId||row.character_id!==scope.characterId||
   row.receipt_digest!==receipt.receiptDigest)reject('inbox_provenance_mismatch');
  return {

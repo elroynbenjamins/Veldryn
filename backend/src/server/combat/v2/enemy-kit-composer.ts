@@ -240,6 +240,15 @@ export function verifyPersistedEnemyKitsV2(
     enemyV2SnapshotDigest(preservedPhases)===enemyV2SnapshotDigest(base.phases??[])&&
     (base.tags??[]).every((tag:string)=>(next.tags??[]).includes(tag)),
     'original_enemy_kit_mutated');
+  // Preview names are part of the authoritative encounter contract. A
+  // persisted row must not invent an ability/phase that the frozen kit lacks.
+  const addedAbilities=next.abilities.filter((a:AbilityDefinition)=>
+    !baseAbilityIds.has(a.id)).map((a:AbilityDefinition)=>a.name);
+  const addedPhases=(next.phases??[]).filter((p:BossPhaseDefinition)=>
+    !basePhaseIds.has(p.id)).map((p:BossPhaseDefinition)=>p.name??p.id);
+  assert(JSON.stringify(p.abilityNames)===JSON.stringify(addedAbilities)&&
+    JSON.stringify(p.phaseNames)===JSON.stringify(addedPhases),
+    'stored_preview_mechanics_mismatch');
   if(base.boss)
    assert(enemyV2SnapshotDigest(next.stats)===enemyV2SnapshotDigest(base.stats),
      'boss_base_stats_mutated');

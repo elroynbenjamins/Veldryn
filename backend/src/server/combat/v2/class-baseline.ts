@@ -34,7 +34,8 @@ const statKeys:readonly (keyof CombatStats)[]=[
 ];
 const cloneAbility=(a:AbilityDefinition):AbilityDefinition=>({
  ...a,effects:a.effects.map(e=>({...e})),
- tags:a.tags?[...a.tags]:undefined,
+ // Preserve optional-field presence exactly while detaching any owned tags.
+ ...(a.tags?{tags:[...a.tags]}:{}),
 });
 function reject(reason:string):never{throw Error('combat_v2_baseline_'+reason);}
 /**

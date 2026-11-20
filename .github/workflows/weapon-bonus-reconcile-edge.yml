@@ -46,7 +46,7 @@ jobs:
             git reset --hard origin/feat/weapon-bonus-all-tiers-engine-20261120
             pnpm --dir backend build:online
             node tools/verify-gameplay-edge.mjs
-            unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\\.ts$' || true)
+            unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index[.]ts$' || true)
             if [ -n "$unexpected" ]; then
               printf 'Unexpected files modified by build:\\n%s\\n' "$unexpected" >&2
               exit 1

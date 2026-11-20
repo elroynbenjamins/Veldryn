@@ -86,3 +86,23 @@ ok(screenSource.includes('gearMoveAmount=')&&screenSource.includes('quantity:gea
 ok(screenSource.includes("const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'equipment_pouch'}})")&&!screenSource.includes("selectedCopy.ownerCharacterId===state.character?.id?<GameButton"),'Shared Bank copies must remain transferable to the active character Gear storage without tying the transfer to their original crafter');
 
 console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect gear decisions and availability, capacity feedback, rarity frames and rarity-colored names');
+
+const gearPanel=fs.readFileSync('src/components/EquipmentPouchPanel.tsx','utf8');
+ok(gearPanel.includes('<ItemQuickInspect state={state}')&&gearPanel.includes('source="equipment_pouch"')
+  &&!gearPanel.includes('visible={!!selected}'),
+  'Tapping stored gear must open shared Quick Inspect directly, not the old duplicate storage sheet');
+ok(gearPanel.includes('instanceId={selected?.instanceId}')&&gearPanel.includes('onToggleLock={onAction&&selected?()=>toggleLock(selected)')
+  &&gearPanel.includes('onToggleFavorite={onAction&&selected?()=>toggleFavorite(selected)'),
+  'Gear details must retain exact crafted-copy identity and working lock/favorite header actions');
+ok(gearPanel.includes('quickActions={selected?<View')&&gearPanel.includes("p('Compare & Equip')")
+  &&gearPanel.includes("p('To Inventory')")&&gearPanel.includes("p('To Bank')"),
+  'Compare/equip and both transfer destinations must stay in the compact visible footer');
+ok(gearPanel.includes('EquipmentDisposalStatus compact')&&gearPanel.includes("p('Sell copy')")
+  &&gearPanel.includes("p('Salvage copy')")&&gearPanel.includes("startSale([saleCandidate.id])")
+  &&gearPanel.includes("startSalvage([salvageCandidate.id])"),
+  'Sell and salvage must use the existing protected per-copy confirmation flow');
+ok(gearPanel.includes('onNavigate={onNavigate?destination=>')&&screenSource.includes('onNavigate={onNavigateInspect}'),
+  'Gear Quick Inspect source links must reuse the existing gameplay source navigation');
+ok(inspect.includes("source==='equipment_pouch'?gl('Gear')")
+  &&inspect.includes("equipmentPouch(state).stacks.reduce("),
+  'Gear Quick Inspect must identify character-local storage instead of showing only Inventory and Bank');

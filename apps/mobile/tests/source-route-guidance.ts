@@ -46,7 +46,7 @@ const early=sourceRouteView({
  button:'Hunt',detail:'',
 });
 assert(early?.breadcrumb==='Ironwood Forest › Combat › Ironwood Wolf',
- 'Asterfall's original region-only monsters never invent a sub-area');
+ "Asterfall region-only monsters never invent a sub-area");
 
 const state=createCharacter(newGame(0),'IRONWARDEN','Source Finder');
 const locked=workingTowardDestinationAvailability(state,route);
@@ -57,10 +57,11 @@ const sourced=workingTowardItemSourceEntries(state,'GLASSBOUND_CORE');
 const glassbound=sourced.find(entry=>entry.destination.kind==='combat'&&entry.destination.monsterId==='GLASSBOUND_SENTINEL');
 assert(glassbound,'Material sources include the actual Glassbound Sentinel');
 assert(glassbound.destination.kind==='combat','Selected material source is combat');
-equal(glassbound.destination.areaId,'ZONE_008','Item source preserves the exact combat sub-area');
-equal(glassbound.destination.sourceItemId,'GLASSBOUND_CORE','Item source retains the requested material identity');
-equal(sourceRouteView(glassbound.destination)?.sourceItemId,'GLASSBOUND_CORE','World route retains the material identity');
-assert(glassbound.destination.detail.includes('Mirage Basin'),'Item source detail names the sub-area');
+const itemRoute=resolveSourceRoute(glassbound.destination,'GLASSBOUND_CORE');
+equal(itemRoute.areaId,'ZONE_008','Client view resolves the exact combat sub-area without changing server metadata');
+equal(itemRoute.sourceItemId,'GLASSBOUND_CORE','Client view retains the requested material identity');
+equal(sourceRouteView(itemRoute)?.sourceItemId,'GLASSBOUND_CORE','World route retains the material identity');
+assert(sourceRouteView(itemRoute)?.breadcrumb.includes('Mirage Basin'),'Source route names the exact sub-area');
 assert(MONSTERS.find(row=>row.id==='GLASSBOUND_SENTINEL')?.drops.some(drop=>drop.itemId==='GLASSBOUND_CORE'),
  'Source guidance is backed by authored monster drops, not invented data');
 console.log('PASS: precise Where to Find routes and locked source guidance');

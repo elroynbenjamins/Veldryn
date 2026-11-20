@@ -8,7 +8,7 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
-import {weaponBonusLine,weaponBonusCompactLine,weaponBonusRollGrade,weaponBonusStrength} from '../core/weapon-bonus-rolls';
+import {WeaponBonusDetails} from './WeaponBonusSection';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -75,16 +75,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
-  strength:weaponBonusStrength(oldRecord.itemId,oldRecord.rarity,bonus,oldRecord.weaponBonusRollVersion),
- }))??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(bonus=>({
-  short:weaponBonusCompactLine(bonus),
-  detail:weaponBonusLine(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
-  strength:weaponBonusStrength(instance.itemId,instance.rarity,bonus,instance.weaponBonusRollVersion),
- }))??[];
+ const currentWeaponRolls=oldRecord?.weaponBonuses??[];
+ const newWeaponRolls=instance?.weaponBonuses??[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -139,22 +131,13 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     </View>
    </View>
    {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
-    <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
-    <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
-    {currentWeaponRolls.length?currentWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
-      <Text style={s.rollValue}>{roll.short}</Text>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.muted}]}/></View>
-      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
-    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
-    <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
-    {newWeaponRolls.length?newWeaponRolls.map((roll,index)=><View key={index} style={s.rollEntry}>
-      <View style={s.rollHead}><Text style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>
-        {roll.strength>=90?<Text style={[s.rollBadge,{color:C.good}]}>{gl(weaponBonusRollGrade(roll.strength))}</Text>:null}
-      </View>
-      <View style={s.rollTrack}><View style={[s.rollFill,{width:`${roll.strength}%` as `${number}%`,backgroundColor:C.good}]}/></View>
-      <Text style={s.rollDetail}>{roll.detail.split(' · ').slice(1).join(' · ')}</Text>
-    </View>):<Text style={s.note}>{gl('No bonus rolls')}</Text>}
-   </View>:null}
+     <Text style={s.sectionTitle}>{gl('WEAPON BONUS ROLLS')}</Text>
+     {old?<><Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
+       <WeaponBonusDetails itemId={old.id} rarity={oldRecord?.rarity??oldRarity?.id??'common'} rolls={oldRecord?.weaponBonuses} version={oldRecord?.weaponBonusRollVersion} showEmpty/>
+     </>:null}
+     <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
+     <WeaponBonusDetails itemId={item.id} rarity={instance?.rarity??rarity.id} rolls={instance?.weaponBonuses} version={instance?.weaponBonusRollVersion} showEmpty/>
+    </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>

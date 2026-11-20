@@ -61,12 +61,12 @@ check(purchasePreview.action==='prepare_components'&&!purchasePreview.canCraftNo
  'A hidden market never quotes or unlocks a purchase even if a preview asks for it');
 
 const catalogAudit=equipmentV2CatalogAudit();
-check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.standaloneCount===24&&catalogAudit.weaponArchetypes===9,
- 'Approved V2 catalogue should retain 15 sets, 42 set pieces, 24 standalone and nine weapon archetypes');
+check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.standaloneCount===75&&catalogAudit.weaponArchetypes===9,
+ 'Approved V2 catalogue should retain 15 sets, 42 set pieces, 75 standalone and nine weapon archetypes');
 check(catalogAudit.uniqueIds&&!catalogAudit.invalidProfiles.length&&!catalogAudit.badSets.length,
  'V2 catalogue IDs, slots, allowed 1-2 stat profiles and set thresholds are valid');
-check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===118&&EQUIPMENT_V2_RECIPES.length===236,
- '66 core pieces plus 52 class weapons/offhands each require two hidden methods');
+check(EQUIPMENT_V2_PIECES.length===117&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===169&&EQUIPMENT_V2_RECIPES.length===338,
+ '117 core pieces plus 52 class weapons/offhands each require two hidden methods');
 check(EQUIPMENT_V2_PIECES.every(p=>p.id.startsWith('EQ2_')&&!p.id.startsWith('T1P_')),
  'V2 IDs must not alias legacy V33 item IDs');
 for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
@@ -86,6 +86,32 @@ for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
  }
 }
 
+
+const newCoverage=EQUIPMENT_V2_PIECES.filter(p=>p.id.startsWith('EQ2_EXP_T'));
+const newVariants=EQUIPMENT_V2_PIECES.filter(p=>p.id.startsWith('EQ2_ALT_T'));
+check(newCoverage.length===33&&newVariants.length===18,'Hidden T1–T4 catalog must contain 33 role/slot fills and 18 stat variants');
+const nonWeaponSlots=['helmet','chest','gloves','legs','boots','cape','amulet','ring'] as const;
+const roleNames=['tank','damage','support'] as const;
+for(const tier of [1,2,3,4] as const){
+ for(const role of roleNames)for(const slot of nonWeaponSlots){
+  check(EQUIPMENT_V2_PIECES.some(p=>p.tier===tier&&p.role===role&&p.slot===slot),
+   'Missing T'+tier+' '+role+' '+slot+' after expansion');
+ }
+ const tierVariants=newVariants.filter(p=>p.tier===tier);
+ check(tierVariants.length===(tier===1?0:6),'Wrong number of distinct alternate-stat items in T'+tier);
+ for(const variant of tierVariants){
+  const earlier=EQUIPMENT_V2_PIECES.filter(p=>!p.id.startsWith('EQ2_ALT_T')&&
+   p.tier===tier&&p.role===variant.role&&p.slot===variant.slot);
+  check(earlier.length>0&&earlier.every(p=>p.profile!==variant.profile),
+   'An alternate-stat piece must offer different stats from every matching same-role base piece: '+variant.id);
+  for(const original of earlier){
+   check(Math.abs(equipmentV2StatBudget(equipmentV2PreviewBaseStats(tier,variant.slot,variant.profile))-
+      equipmentV2StatBudget(equipmentV2PreviewBaseStats(tier,original.slot,original.profile)))<1e-8,
+    'Alternate-stat items cannot create extra same-tier power: '+variant.id);
+  }
+ }
+}
+
 const oneHand=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>'classRestriction' in piece);
 check(oneHand.length===52,'All 52 class armaments are present in the hidden craftable catalogue');
 for(const item of oneHand){
@@ -102,7 +128,7 @@ check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='
  'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
 
 const model=equipmentV2HiddenCatalogueSummary();
-check(model.count===118&&model.t1===25&&model.t2===28&&model.t3===28&&model.t4===37,
+check(model.count===169&&model.t1===37&&model.t2===43&&model.t3===43&&model.t4===46,
  'Hidden catalogue tier counts include set pieces plus standalones');
 const hero=createCharacter(newGame(2000000000000),'IRONWARDEN');
 const t1Piece=EQUIPMENT_V2_PIECES.find(p=>p.tier===1)!;

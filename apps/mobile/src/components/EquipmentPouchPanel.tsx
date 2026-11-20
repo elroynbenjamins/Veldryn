@@ -124,13 +124,13 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   }finally{saleInFlight.current=false;}
  };
  const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
- const isFavorite=(stack:ItemStack|undefined)=>!!stack&&!!state.settings.favoriteItemIds?.includes(stack.itemId);
- const isLocked=(stack:ItemStack|undefined)=>!!stack&&(!!state.settings.lockedItemIds?.includes(stack.itemId)||!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked));
- const toggleFavorite=(stack:ItemStack|undefined)=>{
+ const isFavorite=(stack:ItemStack|null|undefined)=>!!stack&&!!state.settings.favoriteItemIds?.includes(stack.itemId);
+ const isLocked=(stack:ItemStack|null|undefined)=>!!stack&&(!!state.settings.lockedItemIds?.includes(stack.itemId)||!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked));
+ const toggleFavorite=(stack:ItemStack|null|undefined)=>{
   if(!stack||busy||!onAction)return;
   return onAction({type:'inventory_preference',args:{id:stack.itemId,kind:'favorite',enabled:!isFavorite(stack)}});
  };
- const toggleLock=(stack:ItemStack|undefined)=>{
+ const toggleLock=(stack:ItemStack|null|undefined)=>{
   if(!stack||busy||!onAction)return;
   const typeLocked=!!state.settings.lockedItemIds?.includes(stack.itemId);
   const exact=stack.instanceId?copyById.get(stack.instanceId):undefined;

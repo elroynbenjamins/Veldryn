@@ -20,13 +20,13 @@ const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
 function effectIdentity(id:string){
  if(typeof id!=='string')fail('invalid_v2_effect_gem_identity');
  const match=/^gem:(effect_[a-z0-9_]+):g([1-5])$/.exec(id);
- if(!match)fail('invalid_v2_effect_gem_identity');
+ if(!match)throw new V2DraftCraftError('invalid_v2_effect_gem_identity');
  let actual:ReturnType<typeof itemDef>;
  try{actual=itemDef(id);}catch{return fail('unknown_v2_effect_gem');}
  if(actual.type!=='gem'||actual.gemKind!=='effect'||actual.gemFamilyId!==match[1]
   ||actual.gemGrade!==Number(match[2]))fail('invalid_v2_effect_gem_identity');
  const definition=findEffectGem(match[1]);
- if(!definition)fail('unsupported_v2_effect_gem');
+ if(!definition)throw new V2DraftCraftError('unsupported_v2_effect_gem');
  return {definition,grade:Number(match[2]) as GemGrade};
 }
 export interface V2EffectGemPolicyInput{
@@ -50,7 +50,7 @@ export function validateEquipmentV2EffectGemInstall(input:V2EffectGemPolicyInput
  const {state,accountId,actorCharacterId,items,reservations,
   custodyReceipts,installed,targetInstanceId,incomingGemId}=input;
  if(!state?.character||!accountId||state.character.id!==actorCharacterId)
-  fail('untrusted_v2_effect_actor');
+  throw new V2DraftCraftError('untrusted_v2_effect_actor');
  if(!Array.isArray(items)||!Array.isArray(reservations)
   ||!Array.isArray(custodyReceipts)||!installed||!Array.isArray(installed.slots))
   fail('invalid_v2_effect_snapshot');

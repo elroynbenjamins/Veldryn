@@ -5,7 +5,9 @@ import type {
 export type {
  V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
 } from './equipment-crafting-v2-gem-sidecar-types';
-import {itemDef} from '../../../../apps/mobile/src/content/items';
+import {v2ServerSocketGemKind as gemKind} from './equipment-crafting-v2-gem-identity';
+import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
+export {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
@@ -38,14 +40,6 @@ const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
 const safe=(x:number)=>Number.isSafeInteger(x)&&x>=0;
 const validRoll=(value:number)=>safe(value)&&value>=80&&value<=120&&(value-80)%5===0;
 const fingerprint=(command:V2HiddenGemCommand)=>'gem:'+command.instanceId+':'+command.gemId;
-const gemKind=(id:string):V2GemSocketKind=>{
- let gem:ReturnType<typeof itemDef>;
- try{gem=itemDef(id);}catch{return fail('unknown_v2_socket_gem');}
- if(gem.type!=='gem')fail('invalid_v2_socket_gem');
- const kind=gem.gemKind??(gem.gemEffect?'effect':'stat');
- if(kind!=='stat'&&kind!=='effect')fail('invalid_v2_socket_gem');
- return kind;
-};
 const cleanStacks=(storage:InventoryState|undefined)=>{
  if(!storage)return;
  if(!safe(storage.capacity)||!Array.isArray(storage.stacks))fail('invalid_v2_gem_storage');
@@ -82,54 +76,6 @@ function requireSidecar(state:unknown):V2GemSidecarState{
  if(!state||typeof state!=='object'||!Array.isArray((state as V2GemSidecarState).slots)
   ||!Array.isArray((state as V2GemSidecarState).receipts))fail('invalid_v2_gem_sidecar');
  return structuredClone(state as V2GemSidecarState);
-}
-export function verifyEquipmentV2GemSidecar(
- items:readonly V2DraftItem[],sidecar:V2GemSidecarState,
-):void{
- if(!sidecar||!Array.isArray(sidecar.slots)||!Array.isArray(sidecar.receipts))fail('invalid_v2_gem_sidecar');
- const itemIds=new Set(items.map(row=>row.id));
- const ids=new Set<string>(),receiptIds=new Set<string>();
- const rebuilt=new Map<string,V2GemCopySockets>();
- let lastVersion=-1;
- for(const row of sidecar.slots){
-  if(!row||!itemIds.has(row.instanceId)||ids.has(row.instanceId))
-   fail('invalid_v2_gem_copy_sockets');
-  ids.add(row.instanceId);
-  for(const kind of ['stat','effect'] as const){
-   const gem=row[kind];
-   if(!gem)continue;
-   if(!validRoll(gem.rollPercent)||gemKind(gem.gemId)!==kind)
-    fail('invalid_v2_installed_gem');
-  }
- }
- for(const row of sidecar.receipts){
-  if(!row||typeof row.requestId!=='string'||!row.requestId
-   ||receiptIds.has(row.requestId)||!itemIds.has(row.instanceId)
-   ||row.fingerprint!=='gem:'+row.instanceId+':'+row.gemId
-   ||!validRoll(row.rollPercent)||gemKind(row.gemId)!==row.socket
-   ||!safe(row.version)||!['gem_pouch','inventory','bank'].includes(row.source)
-   ||(row.burnedGemId!==null&&gemKind(row.burnedGemId)!==row.socket))
-   fail('invalid_v2_gem_receipt');
-  if(row.version<=lastVersion)fail('out_of_order_v2_gem_receipt');
-  lastVersion=row.version;
-  const before:V2GemCopySockets=rebuilt.get(row.instanceId)??{instanceId:row.instanceId};
-  const previous=before[row.socket];
-  const burned=previous&&previous.gemId!==row.gemId?previous.gemId:null;
-  if(burned!==row.burnedGemId
-   ||(previous?.gemId===row.gemId&&
-    (previous.rollPercent>=120||row.rollPercent<previous.rollPercent)))
-   fail('invalid_v2_gem_receipt_history');
-  rebuilt.set(row.instanceId,{...before,[row.socket]:{
-   gemId:row.gemId,rollPercent:row.rollPercent,
-  }});
-  receiptIds.add(row.requestId);
- }
- if(rebuilt.size!==sidecar.slots.length)fail('v2_gem_sidecar_state_mismatch');
- for(const current of sidecar.slots){
-  const expected=rebuilt.get(current.instanceId);
-  if(!expected||JSON.stringify(expected)!==JSON.stringify(current))
-   fail('v2_gem_sidecar_state_mismatch');
- }
 }
 /** One authenticated-account CAS *rehearsal*: one gem is consumed from the
  * existing storage exactly once, and the new socket plus immutable receipt are

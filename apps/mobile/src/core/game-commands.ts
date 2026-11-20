@@ -54,7 +54,7 @@ export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';c
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
- class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
+ class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches','batchMode'],processing_start:['id','batches','batchMode'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_starter:['id'],companion_recruit:['id'],companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_formation:['ids'],companion_trial_fight:['ids','requestId'],companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
@@ -74,9 +74,16 @@ export function validateGameCommand(value:unknown):GameCommand{
  const row=value as Record<string,unknown>;
  if(Object.keys(row).some(key=>key!=='type'&&key!=='args')||typeof row.type!=='string'||!Object.prototype.hasOwnProperty.call(fields,row.type))throw new Error('invalid_command');
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
- // Reject invalid quantities before settling the existing activity or reserving resources.
- const countKey=row.type==='faith_practice'?'count':row.type==='alchemy_start'||row.type==='processing_start'?'batches':row.type==='craft'?'quantity':undefined;
- if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined)integer(args as Record<string,unknown>,countKey,1,row.type==='faith_practice'?1:row.type==='craft'?999:10000);
+ // Older app builds send {batches:1} as a placeholder for automatic AFK
+ // production. Preserve that behavior. Only new clients send batchMode:'selected'.
+ const batchCommand=row.type==='alchemy_start'||row.type==='processing_start',values=args as Record<string,unknown>;
+ if(batchCommand){
+  if(values.batchMode!==undefined&&values.batchMode!=='selected')throw new Error('invalid_batch_mode');
+  if(values.batchMode==='selected')integer(values,'batches',1,10000);
+  else if(values.batches!==undefined&&values.batches!==1)throw new Error('invalid_batches');
+ }
+ if(row.type==='faith_practice'&&values.count!==undefined)integer(values,'count',1,1);
+ if(row.type==='craft'&&values.quantity!==undefined)integer(values,'quantity',1,999);
  if(row.type==='create'||row.type==='roster_create'||row.type==='qa_prepare'||row.type==='qa_switch_class'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
@@ -234,8 +241,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
-  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now,a.batches===undefined?undefined:integer(a,'batches',1,10000));break;
-  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now,a.batches===undefined?undefined:integer(a,'batches',1,10000));break;
+  case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),now,a.batchMode==='selected'?integer(a,'batches',1,10000):undefined);break;
+  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),now,a.batchMode==='selected'?integer(a,'batches',1,10000):undefined);break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
    state.character={...state.character,trainingFocus:focus};

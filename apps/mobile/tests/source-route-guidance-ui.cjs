@@ -1,0 +1,20 @@
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+const read=file=>fs.readFileSync(path.join(root,file),'utf8');
+const app=read('App.tsx'),world=read('src/screens/WorldScreen.tsx');
+const navigator=read('src/components/WorldChapterNavigator.tsx');
+const combat=read('src/screens/CombatScreen.tsx');
+const skills=read('src/screens/SkillsScreen.tsx');
+function check(yes,detail){if(!yes)throw new Error(detail);}
+check(app.includes('resolveSourceRoute(rawDestination)'),'All existing source links must resolve canonical target IDs');
+check(app.includes('setSelectedRegionalAreaId(destination.areaId)'),'Exact area must survive navigation into Combat / Skills');
+check(app.includes('openGoalAtCurrentRegion(destination);'),'Travel continuation should reuse the same target handling');
+check(app.includes('goalDestination={pendingGoalDestination}'),'World must receive an active source route');
+check(world.includes('sourceRouteView(goalDestination)'),'World must show the actual selected target breadcrumb');
+check(world.includes('accessibilityLabel={p(\'Dismiss source guidance\')}'),'Route reminder must be dismissible');
+check(world.includes('goalAreaId={goalRoute?.areaId}'),'World must pass the exact local area to its navigator');
+check(navigator.includes('zone.areaId===goalAreaId'),'Chapter zone rows must highlight the selected sub-area');
+check(combat.includes('initialAreaId={')||combat.includes('initialAreaId'), 'Combat preserves area deep-link support');
+check(skills.includes('initialAreaId'), 'Skills preserves gathering area deep-link support');
+console.log('PASS: source navigation from materials to World and exact combat/gathering target is wired');

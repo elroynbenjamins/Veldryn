@@ -1498,6 +1498,19 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   if(added.overflow.length)throw new Error('Inventory is full');
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
+/** Move an explicitly selected physical tool without converting it to a
+ * generic catalog stack or losing its immutable quality / affix receipt. */
+export function moveGatheringToolCopy(state:GameState,instanceId:string,to:'inventory'|'bank'):GameState{
+ const copy=state.account.craftedGatheringToolInstances?.find(row=>row.id===instanceId);
+ if(!copy||!validateGatheringToolRoll(copy,copy.itemId)||!gatheringToolDef(copy.itemId))throw new Error('Unknown or unverified gathering tool copy');
+ const from=to==='inventory'?'bank':'inventory';
+ const owned=state[from].stacks.find(row=>row.instanceId===instanceId&&row.itemId===copy.itemId&&row.quantity===1);
+ if(!owned)throw new Error('Tool copy is not in the selected storage');
+ const added=addBounded(state[to].stacks,entitlementStorageCapacity(state,to),[owned]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Inventory is full');
+ return {...state,[from]:{...state[from],stacks:state[from].stacks.filter(row=>row.instanceId!==instanceId)},[to]:{...state[to],stacks:added.stacks}};
+}
+
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number;level:number}[]>={
   inventory:[{capacity:40,cost:10000,level:10},{capacity:50,cost:30000,level:20},{capacity:60,cost:80000,level:35},{capacity:75,cost:200000,level:50},{capacity:100,cost:500000,level:70}],

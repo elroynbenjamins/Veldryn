@@ -22,6 +22,7 @@ assert.match(consumables,/onStart\(id,batches\)/,'cooking and alchemy forward ch
 assert.match(consumables,/quantity:input\.quantity\*chosen\(recipe\)/,'ingredient totals reflect requested batches');
 assert.match(recipeCard,/CraftQuantitySelector key=\{recipe\.id\}/,'shared quantity control is reused in recipe browser');
 assert.match(recipeCard,/onCraft\(recipe\.id,quantity\)/,'recipe browser forwards chosen quantity');
+assert.match(commands,/batchMode==='selected'/,'older batches:1 keeps automatic semantics and new manual selections opt in');
 assert.match(commands,/craft:\['id','quantity'\]/,'craft command schema accepts explicit count');
 assert.match(commands,/integer\(a,'quantity',1,999\)/,'server validates craft bounds');
 assert.match(limits,/materialLimit/,'rightmost maximum uses materials');

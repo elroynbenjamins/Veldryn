@@ -9,6 +9,33 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Inline gathering-tool recipes and the equipment bonus inspect summary.
+  "Recipe known":["Recipe known","Rezept bekannt","Receta conocida","Recept bekend","Ricetta conosciuta","Recette connue"],
+  "Recipe details":["Recipe details","Rezeptdetails","Detalles de la receta","Receptdetails","Dettagli della ricetta","Détails de la recette"],
+  "CRAFTING RECIPE":["CRAFTING RECIPE","HERSTELLUNGSREZEPT","RECETA DE FABRICACIÓN","MAAKRECEPT","RICETTA DI CREAZIONE","RECETTE DE FABRICATION"],
+  "KNOWN":["KNOWN","BEKANNT","CONOCIDO","BEKEND","NOTO","CONNU"],
+  "BLUEPRINT":["BLUEPRINT","BAUPLAN","PLANO","BLAUWDRUK","PROGETTO","PLAN"],
+  "Character level":["Character level","Charakterstufe","Nivel de personaje","Personageniveau","Livello personaggio","Niveau du personnage"],
+  "Action time":["Action time","Aktionszeit","Tiempo de acción","Actietijd","Tempo d'azione","Temps d'action"],
+  "shorter":["shorter","kürzer","menos","korter","più breve","plus court"],
+  "Blueprint source unavailable":["Blueprint source unavailable","Bauplanquelle unbekannt","Fuente del plano no disponible","Bron van blauwdruk onbekend","Fonte del progetto non disponibile","Source du plan indisponible"],
+  "Monster drop":["Monster drop","Monsterbeute","Botín de monstruo","Monsterbuit","Bottino del mostro","Butin de monstre"],
+  "Hunt source":["Hunt source","Quelle jagen","Cazar objetivo","Jaag op bron","Caccia la fonte","Chasser la cible"],
+  "missing":["missing","fehlen","faltan","ontbreken","mancanti","manquants"],
+  "All materials ready":["All materials ready","Alle Materialien bereit","Todos los materiales listos","Alle materialen klaar","Tutti i materiali pronti","Tous les matériaux sont prêts"],
+  "Inventory + Bank":["Inventory + Bank","Inventar + Bank","Inventario + Banco","Inventaris + Bank","Inventario + Banca","Inventaire + Banque"],
+  "Source information unavailable":["Source information unavailable","Quelleninformation nicht verfügbar","Información de origen no disponible","Broninformatie niet beschikbaar","Informazioni sulla fonte non disponibili","Informations de source indisponibles"],
+  "Other sources":["Other sources","Weitere Quellen","Otras fuentes","Andere bronnen","Altre fonti","Autres sources"],
+  "base XP":["base XP","Basis-EP","EXP base","basis-XP","PE base","XP de base"],
+  "Gold ready":["Gold ready","Genug Gold vorhanden","Oro suficiente","Genoeg goud","Oro sufficiente","Or suffisant"],
+  "Not enough gold":["Not enough gold","Nicht genug Gold","Oro insuficiente","Niet genoeg goud","Oro insufficiente","Pas assez d'or"],
+  "Crafting availability is checked in Smithing.":["Crafting availability is checked in Smithing.","Die Herstellbarkeit wird in der Schmiede geprüft.","La disponibilidad de fabricación se comprueba en Herrería.","De maakbaarheid wordt gecontroleerd bij Smeden.","La disponibilità di creazione viene verificata in Forgiatura.","La disponibilité de fabrication est vérifiée en Forge."],
+  "Open in Smithing":["Open in Smithing","In Schmiedekunst öffnen","Abrir en Herrería","Openen bij Smeden","Apri in Forgiatura","Ouvrir en Forge"],
+  "{name} can drop the {tool} Blueprint.":["{name} can drop the {tool} Blueprint.","{name} kann den Bauplan für {tool} fallen lassen.","{name} puede soltar el plano de {tool}.","{name} kan de blauwdruk voor {tool} laten vallen.","{name} può lasciare il progetto di {tool}.","{name} peut laisser tomber le plan de {tool}."],
+  "Hide Recipe":["Hide Recipe","Rezept ausblenden","Ocultar receta","Recept verbergen","Nascondi ricetta","Masquer la recette"],
+  "Blueprint: {name}":["Blueprint: {name}","Bauplan: {name}","Plano: {name}","Blauwdruk: {name}","Progetto: {name}","Plan : {name}"],
+  "BONUS STATS":["BONUS STATS","BONUSWERTE","ATRIBUTOS ADICIONALES","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATISTIQUES BONUS"],
+  "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni auf diesem Ausrüstungsexemplar.","Bonificaciones aleatorias de esta copia del equipo.","Willekeurige bonussen op dit uitrustingsexemplaar.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],
  // Permanent socket rules and irreversible manual equipment disposal.
  "Gem extraction is no longer available.":["Gem extraction is no longer available.","Das Entfernen von Edelsteinen ist nicht mehr möglich.","Ya no se pueden extraer gemas.","Edelstenen kunnen niet meer worden verwijderd.","Non è più possibile estrarre le gemme.","L'extraction des gemmes n'est plus possible."],
  "The old gem is permanently destroyed when replaced.":["The old gem is permanently destroyed when replaced.","Der bisherige Edelstein wird beim Ersetzen endgültig zerstört.","La gema anterior se destruye definitivamente al sustituirla.","De oude edelsteen wordt bij vervanging definitief vernietigd.","La gemma precedente viene distrutta definitivamente quando viene sostituita.","L'ancienne gemme est définitivement détruite lors du remplacement."],
@@ -1497,6 +1524,38 @@ const gemMergeEarlyLocales={
  "Confirm merge":["Подтвердить слияние","Birleştirmeyi onayla"],
 } as const;
 for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+const toolRecipeEarlyLocales={
+ "Recipe known":["Рецепт изучен","Tarif biliniyor"],
+ "Recipe details":["Сведения о рецепте","Tarif ayrıntıları"],
+ "CRAFTING RECIPE":["РЕЦЕПТ ИЗГОТОВЛЕНИЯ","ÜRETİM TARİFİ"],
+ "KNOWN":["ИЗУЧЕНО","BİLİNİYOR"],
+ "BLUEPRINT":["ЧЕРТЁЖ","PLAN"],
+ "Character level":["Уровень персонажа","Karakter seviyesi"],
+ "Action time":["Время действия","Eylem süresi"],
+ "shorter":["короче","daha kısa"],
+ "Blueprint source unavailable":["Источник чертежа недоступен","Plan kaynağı kullanılamıyor"],
+ "Monster drop":["Добыча с монстра","Canavar ganimeti"],
+ "Hunt source":["Охотиться за чертежом","Kaynağı avla"],
+ "missing":["не хватает","eksik"],
+ "All materials ready":["Все материалы готовы","Tüm malzemeler hazır"],
+ "Inventory + Bank":["Инвентарь + Банк","Envanter + Banka"],
+ "Source information unavailable":["Информация об источнике недоступна","Kaynak bilgisi kullanılamıyor"],
+ "Other sources":["Другие источники","Diğer kaynaklar"],
+ "base XP":["базового опыта","temel XP"],
+ "Gold ready":["Золота хватает","Yeterli Altın"],
+ "Not enough gold":["Недостаточно золота","Yetersiz Altın"],
+ "Crafting availability is checked in Smithing.":["Возможность изготовления проверяется в Кузнечном деле.","Üretim uygunluğu Demircilikte kontrol edilir."],
+ "Open in Smithing":["Открыть в Кузнечном деле","Demircilikte aç"],
+ "{name} can drop the {tool} Blueprint.":["С {name} может выпасть чертёж для {tool}.","{name}, {tool} planını düşürebilir."],
+ "Hide Recipe":["Скрыть рецепт","Tarifi gizle"],
+ "Blueprint: {name}":["Чертёж: {name}","Plan: {name}"],
+ "BONUS STATS":["БОНУСНЫЕ ХАРАКТЕРИСТИКИ","BONUS ÖZELLİKLER"],
+ "Random bonuses on this equipment copy.":["Случайные бонусы на этом экземпляре снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
+} as const;
+for(const [english,pair] of Object.entries(toolRecipeEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

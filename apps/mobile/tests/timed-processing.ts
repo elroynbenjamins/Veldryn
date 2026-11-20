@@ -85,7 +85,9 @@ equal(processingRunCapacity(fresh(100,19),'SMELT_COPPER_INGOT',offlineCapSeconds
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',1);
 ok(availability.ready&&availability.maxBatches===10,'processing exposes all resource-limited crafts');
-throws(()=>executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5}},now),'client-selected processing batch counts remain rejected');
+const selected=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5}},now).state;
+equal(selected.activity?.processing?.remainingBatches,5,'selected processing count is reserved exactly');
+equal(qty(selected,'GREENWOOD_LOG'),10,'only the selected five processing batches consume fuel');
 const automatic=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT'}},now).state;
 equal(automatic.activity?.processing?.remainingBatches,10,'processing start reserves every affordable material batch');
 equal(qty(automatic,'GREENWOOD_LOG'),0,'automatic smelting reserves all 20 Greenwood logs for ten batches');
@@ -146,7 +148,7 @@ equal(drills.character!.classSkills?.reduce((sum,row)=>sum+row.xp,0),24,'earned 
 let replaced=startCombat(fresh(),'MOSS_RAT',now);
 replaced=executeGameCommand(replaced,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:1}},now+60_000).state;
 equal(replaced.activity?.kind,'processing','starting processing settles and replaces an active hunt');
-equal(replaced.activity?.processing?.remainingBatches,10,'replacement reserves every affordable processing batch');
+equal(replaced.activity?.processing?.remainingBatches,1,'replacement respects the explicitly selected single processing batch');
 const normalized=normalizeSave(structuredClone(state));
 equal(normalized.activity?.kind,'processing','save normalization preserves processing reservations');
 equal(normalized.activity?.processing?.remainingBatches,5,'save normalization preserves reserved batch count');

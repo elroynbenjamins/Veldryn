@@ -35,7 +35,7 @@ export function ForgeWeaponBonusPool({itemId}:{itemId:string}){
       {WEAPON_BONUS_CURRENT_POOL.map(stat=>{
         const range=weaponBonusRange(cfg.tier,stat);
         if(!range)return null;
-        return <View key={stat} style={[s.statRow,stacked&&s.statRowStack]}>
+        return <View key={stat} accessible accessibilityLabel={weaponBonusStatText(language,stat)+': '+format(range[0])+'–'+format(range[1])} style={[s.statRow,stacked&&s.statRowStack]}>
           <Text style={s.statName}>{weaponBonusStatText(language,stat)}</Text>
           <Text style={s.range}>{format(range[0])}–{format(range[1])}</Text>
         </View>;

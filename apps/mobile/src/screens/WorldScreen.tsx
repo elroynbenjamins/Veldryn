@@ -97,7 +97,7 @@ function makeStyles(C:ThemeColors){
     goalTitle:{fontSize:14,fontWeight:'800',color:C.text},
     goalBreadcrumb:{fontSize:11,lineHeight:16,color:C.text},
     goalBlocked:{fontSize:11,lineHeight:16,fontWeight:'700',color:C.warning},
-    goalDismiss:{width:38,height:38,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},
+    goalDismiss:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.line},
     goalDismissText:{fontSize:22,lineHeight:25,color:C.muted},
     flex:{flex:1,minWidth:0},
     extraWrap:{borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel},

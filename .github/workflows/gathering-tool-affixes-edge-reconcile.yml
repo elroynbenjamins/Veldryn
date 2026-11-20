@@ -1,0 +1,72 @@
+# Isolated PR branch only. Regenerate canonical, deployable Edge bundles.
+# Never touch main, release candidate base, staging or production services.
+name: Draft 1.0.11 gathering affixes Edge reconcile
+on:
+  push:
+    branches: ['feat/1-0-11-gathering-tool-affixes-20261120']
+    paths:
+      - '.github/workflows/gathering-tool-affixes-edge-reconcile.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: draft-gathering-tool-affixes-edge-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/1-0-11-gathering-tool-affixes-20261120
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Build and verify canonical gameplay and coop Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject non-generated tracked changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Refusing unrelated generator changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit only generated artifacts to this draft branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=feat/1-0-11-gathering-tool-affixes-20261120
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): reconcile gathering tool affix source with online bundles'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Branch moved during rebuild; refusing stale push.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"

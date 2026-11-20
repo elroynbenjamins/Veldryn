@@ -9,6 +9,24 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Gathering tool forging: typed labels, safe placeholders and all six base locales.
+ "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.",
+  "Jedes neue Werkzeug erhält genau einen Bonuswert: Sammeltempo +{min}–{max}% ODER Chance auf seltene Funde +{rareMin}–{rareMax}%. Die Bereiche gelten für alle Stufen und Seltenheiten.",
+  "Cada herramienta nueva obtiene exactamente una bonificación: velocidad de recolección +{min}–{max}% O probabilidad de hallazgos raros +{rareMin}–{rareMax}%. Los rangos son iguales para todos los niveles y rarezas.",
+  "Elk nieuw gereedschap krijgt precies één bonus: verzamelsnelheid +{min}–{max}% OF kans op zeldzame vondsten +{rareMin}–{rareMax}%. De bereiken zijn gelijk voor alle tiers en zeldzaamheden.",
+  "Ogni nuovo attrezzo ottiene esattamente un bonus: velocità di raccolta +{min}–{max}% O probabilità di ritrovamenti rari +{rareMin}–{rareMax}%. Gli intervalli sono uguali per tutti i livelli e le rarità.",
+  "Chaque nouvel outil reçoit exactement un bonus : vitesse de récolte +{min}–{max}% OU chance de trouvailles rares +{rareMin}–{rareMax}%. Les plages sont identiques pour tous les paliers et toutes les raretés."
+ ],
+ "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.",
+  "Der angezeigte Grundwert gilt für Ungewöhnlich mit Qualität 50. Seltenheit und Qualität 0–100 ändern den Grundbonus, nicht den möglichen Bonusbereich.",
+  "La velocidad base mostrada corresponde a Poco común y calidad 50. La rareza y la calidad 0–100 modifican la bonificación base, no el rango de tirada.",
+  "De getoonde basissnelheid geldt voor Ongewoon met kwaliteit 50. Zeldzaamheid en kwaliteit 0–100 veranderen de tierbonus, niet het bereik van de roll.",
+  "La velocità base mostrata corrisponde a Non comune, Qualità 50. Rarità e Qualità 0–100 modificano il bonus base, non l'intervallo dei tiri.",
+  "La vitesse de base affichée correspond à Peu commun, Qualité 50. La rareté et la Qualité 0–100 modifient le bonus de base, pas la plage du tirage."
+ ],
+
  // Permanent socket rules and irreversible manual equipment disposal.
  "Gem extraction is no longer available.":["Gem extraction is no longer available.","Das Entfernen von Edelsteinen ist nicht mehr möglich.","Ya no se pueden extraer gemas.","Edelstenen kunnen niet meer worden verwijderd.","Non è più possibile estrarre le gemme.","L'extraction des gemmes n'est plus possible."],
  "The old gem is permanently destroyed when replaced.":["The old gem is permanently destroyed when replaced.","Der bisherige Edelstein wird beim Ersetzen endgültig zerstört.","La gema anterior se destruye definitivamente al sustituirla.","De oude edelsteen wordt bij vervanging definitief vernietigd.","La gemma precedente viene distrutta definitivamente quando viene sostituita.","L'ancienne gemme est définitivement détruite lors du remplacement."],
@@ -1500,6 +1518,21 @@ const gemMergeEarlyLocales={
  "Confirm merge":["Подтвердить слияние","Birleştirmeyi onayla"],
 } as const;
 for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
+const gatheringToolAffixEarlyLocales={
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+    "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
+    "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."
+  ],
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+    "Показанная базовая скорость соответствует необычному инструменту качества 50. Редкость и качество 0–100 изменяют базовый бонус ранга, но не диапазон бонуса.",
+    "Gösterilen temel hız, Yaygın Olmayan ve Kalite 50 içindir. Nadirlik ve Kalite 0–100, temel kademe bonusunu etkiler; bonus aralığını değiştirmez."
+  ],
+} as const;
+for(const [english,pair] of Object.entries(gatheringToolAffixEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

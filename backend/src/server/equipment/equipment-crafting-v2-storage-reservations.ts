@@ -1,5 +1,6 @@
-import type {GameState,InventoryState} from '../../../../apps/mobile/src/core/types';
-import {equipmentPouchForCharacter} from '../../../../apps/mobile/src/core/equipment-pouch';
+import type {V2LegacyAccountCustodyView as GameState,
+ V2LegacyInventory as InventoryState} from './equipment-crafting-v2-legacy-custody-view';
+import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import type {V2DraftItem} from './equipment-crafting-v2-transaction';
 import {V2DraftCraftError} from './equipment-crafting-v2-transaction';
 import {proposeEquipmentV2ClaimCustody,type V2HiddenClaimCustody} from './equipment-crafting-v2-delivery';
@@ -20,10 +21,10 @@ const safe=(value:number)=>Number.isSafeInteger(value)&&value>=0;
 function ownerStorage(state:GameState,id:string):
  {inventory:InventoryState;pouch:InventoryState|undefined}|null {
  if(state.character?.id===id)return {
-  inventory:state.inventory,pouch:equipmentPouchForCharacter(state.character),
+  inventory:state.inventory,pouch:v2ServerLegacyPouchSnapshot(state.character),
  };
  const other=state.otherCharacters?.find(row=>row.character.id===id);
- return other?{inventory:other.inventory,pouch:equipmentPouchForCharacter(other.character)}:null;
+ return other?{inventory:other.inventory,pouch:v2ServerLegacyPouchSnapshot(other.character)}:null;
 }
 function validateStorage(state:InventoryState|undefined){
  if(!state)return false;
@@ -67,7 +68,7 @@ export function reserveEquipmentV2HiddenClaim(
  if(prior.some(row=>row.instanceId===item.id))fail('duplicate_v2_storage_reservation');
  const verified=proposeEquipmentV2ClaimCustody(state,accountId,item);
  const owner=ownerStorage(state,item.ownerCharacterId);
- if(!owner)fail('unknown_v2_delivery_owner');
+ if(!owner)throw new V2DraftCraftError('unknown_v2_delivery_owner');
  const space=(storage:InventoryState|undefined,destination:'equipment_pouch'|'inventory')=>{
   if(!validateStorage(storage)||!storage)return false;
   const reserved=currentPlacements

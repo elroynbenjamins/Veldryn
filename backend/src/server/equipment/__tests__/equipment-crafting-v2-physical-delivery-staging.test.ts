@@ -10,7 +10,7 @@ import {
 
 const now=2_000_000_000_000,accountId='physical-staging-fixture';
 const recipe=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
-assert.ok(recipe);
+if(!recipe)throw new Error('missing_eq2_test_recipe');
 function initial(){
  const state=createCharacter(newGame(now),'IRONWARDEN');
  assert.ok(state.character);

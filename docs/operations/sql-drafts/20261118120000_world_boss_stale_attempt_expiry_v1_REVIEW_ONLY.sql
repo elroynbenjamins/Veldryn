@@ -1,3 +1,12 @@
+-- REVIEW-ONLY WORLD BOSS STALE ATTEMPT EXPIRY (legacy shared-world v19)
+-- NOT A DEPLOYABLE MIGRATION. DO NOT APPLY TO STAGING OR PRODUCTION.
+-- Preserved from the hidden Equipment 2.0 foundation branch after the
+-- release activation fence found an unapproved executable migration.
+-- Reconcile this proposed recovery with World Boss 2.0 attempt accounting,
+-- existing function versions, authorized RPCs, controlled rollbacks and
+-- production schema before any separately approved migration promotion.
+-- A stale attempt must continue counting as spent, never enabling a reroll.
+
 -- World Boss v19 refinement: stale attempt reservations.
 --
 -- A reservation that is never settled (app closed mid-fight, lost connection, crashed combat worker)

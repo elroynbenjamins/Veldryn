@@ -34,11 +34,13 @@ for(const piece of V2_SERVER_PIECES){
  const expectedPoints=(V2_SERVER_SLOT_BUDGET[piece.slot]
   +(piece.slot==='weapon'&&piece.hands!=='one'?V2_SERVER_SLOT_BUDGET.offhand:0))
   *piece.tier*1.08*.75*1.85;
- assert.ok(Math.abs(v2ServerWeightedBaseBudget(exact.baseStats)-expectedPoints)<.008,
+ // Two weighted base stats are independently rounded to 2 decimals:
+ // the maximum possible summed quantization is 0.01 points.
+ assert.ok(Math.abs(v2ServerWeightedBaseBudget(exact.baseStats)-expectedPoints)<.01001,
   piece.id+' stat budget must include tier/rarity/quality and the offhand allowance');
  const neutral=v2ServerBaseStatProjection(piece,1);
  assert.ok(Math.abs(v2ServerWeightedBaseBudget(neutral)
-  -expectedPoints/(.75*1.85))<.008,
+  -expectedPoints/(.75*1.85))<.01001,
   'Neutral weighted stat budget must not depend on how many base stats the slot uses');
  exactByPiece.set(piece.id,exact);
 }

@@ -65,6 +65,8 @@ jobs:
         run: node tests/home-priority-dashboard-ui.cjs
       - name: Verify compact Quest screens, modal safety and reward semantics
         run: node tests/quest-refined-ui.cjs
+      - name: Validate Guild Project daily effort cap and UTC reset
+        run: node tests/guild-project-daily-effort.cjs
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Validate Frostfall 14-day preview and sealed rewards
@@ -79,6 +81,8 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
+      - name: Validate compact Rewards Inbox ledger
+        run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI
         run: pnpm exec tsc -p tsconfig.account-unlocks.json --noEmit
       - name: Typecheck core

@@ -26,6 +26,8 @@ check(preview.includes('compactBonusRows')&&preview.includes('rollCompareRowStac
   'Comparison must fit narrow/high-font screens');
 check(inspect.includes('Random bonuses on this equipment copy.'),
   'The current compact Item Quick Inspect panel must not be replaced with roll-grade bars');
+check(pool.includes('if(!cfg)return null;')&&pool.includes('twoAtEveryRarity'),
+  'Only eligible selected weapons should display tier- and rarity-correct possibilities');
 check(!forge.includes('WeaponBonusDetails')&&!preview.includes('WeaponBonusDetails'),
   'Do not duplicate verbose legacy roll-strength panels');
 console.log('PASS: selected Forge roll pool, compact preview, exact-copy comparison and inspect continuity');

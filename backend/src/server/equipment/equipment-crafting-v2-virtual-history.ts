@@ -1,6 +1,6 @@
 import type {V2LegacyGearSlot as GearSlot} from './equipment-crafting-v2-legacy-custody-view';
 import type {V2CustodyLocation} from './equipment-crafting-v2-custody';
-import type {V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
+import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {V2DraftCraftError,type V2DraftItem} from './equipment-crafting-v2-transaction';
 
 /** Server-only immutable receipt projection for hidden 2.0 custody.
@@ -58,6 +58,14 @@ export function readEquipmentV2VirtualCustody(
  }
  if(byId.size!==items.length||items.some(item=>!byId.has(item.id)))
   fail('unreconciled_v2_virtual_claim');
+ // Every claim reserve must match the original minted item and owner. This
+ // pure reader is used by Effect Gem checks without a higher-level ledger.
+ if(items.length){
+  const accountId=items[0].accountId;
+  if(!accountId||items.some(item=>item.accountId!==accountId))
+   fail('invalid_v2_virtual_claim_account');
+  verifyEquipmentV2StorageReservations(accountId,items,reservations);
+ }
  const seen=new Set<string>();
  let priorVersion=-1;
  for(const row of receipts){

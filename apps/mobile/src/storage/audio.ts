@@ -12,7 +12,7 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences,type AudioChannel} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
@@ -36,35 +36,38 @@ function ensureMode(m:AudioModule){
  try{void m.setAudioModeAsync({playsInSilentMode:false,interruptionMode:'mixWithOthers',allowsRecording:false,shouldPlayInBackground:false}).catch(()=>{});}catch{/* optional */}
 }
 
-let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES},loaded=false;
-let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES};
+let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}},loaded=false;
+let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}};
+let saveQueue:Promise<void>=Promise.resolve();
 const listeners=new Set<(value:AudioPreferences)=>void>();
-let persistence:Promise<void>=Promise.resolve();
 export async function loadAudioPreferences():Promise<AudioPreferences>{
  if(loaded)return prefs;
  try{
-  const [saved,savedRemembered]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
-  // A player can change a setting before this async load completes. Never overwrite that tap.
-  if(loaded)return prefs;
-  prefs=parseAudioPreferences(saved);
-  remembered=rememberAudibleAudioLevels(parseAudioPreferences(savedRemembered),prefs);
+  const [stored,lastAudible]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
+  // A user choice made while the initial read was pending must win.
+  if(!loaded){
+   prefs=parseAudioPreferences(stored);
+   remembered=rememberAudibleAudioLevels(parseAudioPreferences(lastAudible),prefs);
+  }
  }catch{/* defaults */}
- if(loaded)return prefs;
- loaded=true;notify();return prefs;
+ if(!loaded){loaded=true;notify();}
+ return prefs;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
- prefs={...next};remembered=rememberAudibleAudioLevels(remembered,prefs);
- loaded=true;notify();applyMusicVolume();
- if(prefs.music===0)stopMusicPlayer();else if(wantedTrack)startTrack(wantedTrack);
- // Serialize quick taps so the most recent level and its restore value win on disk.
- const nextPrefs=JSON.stringify(prefs),nextRemembered=JSON.stringify(remembered);
- persistence=persistence.catch(()=>{}).then(async()=>{
-  await AsyncStorage.multiSet([[KEY,nextPrefs],[REMEMBERED_KEY,nextRemembered]]);
- });
- try{await persistence;}catch{/* applies this session */}
+ prefs=parseAudioPreferences(JSON.stringify(next));
+ remembered=rememberAudibleAudioLevels(remembered,prefs);
+ loaded=true;notify();
+ // Resolve current *context* again; the user may have muted or remapped it.
+ resolveTrack();
+ applyMusicVolume();
+ if(prefs.music===0){stopMusicPreview();stopMusicPlayer();}
+ const serialized=JSON.stringify(prefs),savedAudible=JSON.stringify(remembered);
+ // Serialize rapid changes; never restore an older context/volume over the last tap.
+ saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.multiSet([[KEY,serialized],[REMEMBERED_KEY,savedAudible]])).then(()=>{},()=>{});
+ await saveQueue;
 }
-/** One-tap mute that restores each channel's previous audible level, even after relaunch. */
-export function toggleAudioMute(channel:keyof AudioPreferences):AudioPreferences[typeof channel]{
+/** One-tap mute remembers the previous audible level; area remapping stays intact. */
+export function toggleAudioMute(channel:AudioChannel):AudioPreferences[AudioChannel]{
  const next=audioAfterMuteToggle(prefs,remembered,channel);
  void setAudioPreferences(next);
  return next[channel];
@@ -109,12 +112,7 @@ function fade(player:Player,from:number,to:number,done?:()=>void){
  if(fadeTimer)clearInterval(fadeTimer);
  const steps=Math.max(1,Math.round(FADE_MS/40));let i=0;
  fadeTimer=setInterval(()=>{
-  i++;try{
-   // A user can adjust music while a scene fade is still running.
-   // Fade-ins follow the latest selected level; fade-outs still end at zero.
-   const target=done?to:musicVolume();
-   player.volume=from+(target-from)*Math.min(1,i/steps);
-  }catch{/* ignore */}
+  i++;try{player.volume=from+(to-from)*Math.min(1,i/steps);}catch{/* ignore */}
   if(i>=steps){clearInterval(fadeTimer);fadeTimer=undefined;done?.();}
  },40);
 }
@@ -143,13 +141,36 @@ function applyTrack(track:MusicTrackId|null):void{
   if(player)fade(player,musicVolume(),0,()=>{if(musicPlayer===player)stopMusicPlayer();});
   return;
  }
- if(track!==playingTrack)startTrack(track);
+ if(track===playingTrack&&musicPlayer){
+  // Cancel an in-flight mute fade if the same scene becomes audible again.
+  if(fadeTimer){clearInterval(fadeTimer);fadeTimer=undefined;}
+  applyMusicVolume();
+  if(prefs.music>0&&isForeground())try{musicPlayer.play();}catch{/* ignore */}
+ }else startTrack(track);
 }
 
 // Screens push a temporary track (a boss fight over the region theme) and pop it on exit.
 let baseTrack:MusicTrackId|null=null,nextOverrideId=1;
 const overrides:{id:number;track:MusicTrackId}[]=[];
-function resolveTrack(){applyTrack(overrides.length?overrides[overrides.length-1].track:baseTrack);}
+let previewTrack:MusicTrackId|null=null,previewTimer:ReturnType<typeof setTimeout>|undefined;
+function resolveTrack(){
+ const context=overrides.length?overrides[overrides.length-1].track:baseTrack;
+ applyTrack(previewTrack??resolvePreferredMusicTrack(context,prefs));
+}
+/** Audition any packaged theme for a few seconds, regardless of the area's mute state. */
+export function playMusicPreview(track:MusicTrackId):void{
+ if(!loaded||prefs.music===0||!isForeground())return;
+ if(previewTimer)clearTimeout(previewTimer);
+ const sameTrack=playingTrack===track&&musicPlayer!==null;
+ previewTrack=track;resolveTrack();
+ if(sameTrack&&musicPlayer)try{void Promise.resolve(musicPlayer.seekTo(0)).catch(()=>{});}catch{/* ignore */}
+ previewTimer=setTimeout(()=>{previewTimer=undefined;previewTrack=null;resolveTrack();},8000);
+}
+/** Returning to other Settings sections must restore the correct scene immediately. */
+export function stopMusicPreview():void{
+ if(previewTimer){clearTimeout(previewTimer);previewTimer=undefined;}
+ if(previewTrack!==null){previewTrack=null;resolveTrack();}
+}
 /** The app's background music for the current place (region theme, town). */
 export function setBaseMusic(track:MusicTrackId|null):void{baseTrack=track;resolveTrack();}
 /** While mounted, play `track` over the base music; restores the previous track on unmount. */

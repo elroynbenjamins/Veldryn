@@ -4,12 +4,11 @@
   "private": true,
   "main": "index.js",
   "scripts": {
+    "test:skill-navigator": "node tests/skill-navigator-compact-ui.cjs",
     "test:character-roster": "node tests/character-roster-compact-ui.cjs",
     "test:rewards-inbox-ledger": "node tests/rewards-inbox-ledger-ui.cjs",
     "test:feature-hubs": "node tests/feature-hub-preview-ui.cjs && node tests/world-boss-readonly-snapshot.cjs && node tests/party-event-readonly-snapshot.cjs && node tests/market-preview-quote.cjs && node tests/market-preview-filter.cjs",
     "test:dungeon-guide": "node tests/dungeon-home-guide-ui.cjs",
-    "test:dungeon-weekly-ui": "node tests/dungeon-weekly-quest-ui.cjs",
-    "test:dungeon-social-echo-ui": "node tests/dungeon-social-echo-picker-ui.cjs",
     "test:app-version-gate": "node tests/app-version-gate.cjs",
     "test:google-native-auth": "node tests/google-native-nonce.cjs && node tests/auth-account-link.cjs && node tests/account-auth-refinement-ui.cjs",
     "test:online-loading": "node tests/online-loading-interactions.cjs && node tests/chat-dock-responsive.cjs",
@@ -53,6 +52,8 @@
     "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs",
     "test:cross-profession-art": "node tests/cross-profession-art.cjs",
     "test:activity-icons": "node tests/activity-icon-ui.cjs",
+    "test:dungeon-weekly-ui": "node tests/dungeon-weekly-quest-ui.cjs",
+    "test:dungeon-social-echo-ui": "node tests/dungeon-social-echo-picker-ui.cjs",
     "test:audio-settings": "node tests/audio-settings-polish.cjs"
   },
   "dependencies": {

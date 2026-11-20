@@ -26,13 +26,13 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalSh
  const usable=available.find(item=>{
   const goal=activeGoals.find(row=>row.resourceId==='supply:'+item.category);
   const share=supplyAllowances?.find(row=>row.category===item.category);
-  return !!goal&&(share?.remainingPersonal??goal.target*(personalShareCap??1))>=item.value
+  return !!goal&&(share?.remainingPersonal??Math.ceil(goal.target*(personalShareCap??1)))>=item.value
    &&goal.target-goal.current>=item.value;
  });
  const selected=available.find(item=>item.itemId===selectedId)??usable??available[0];
  const goal=activeGoals.find(row=>row.resourceId==='supply:'+selected?.category);
  const allowance=supplyAllowances?.find(row=>row.category===selected?.category);
- const goalRemaining=goal?Math.max(0,goal.target-goal.current):0;
+ const goalRemaining=goal?Math.max(0,Math.min(goal.target-goal.current,allowance?.remainingGoal??Infinity)):0;
  // Always constrain quick entry by inventory, outstanding category supply and
  // the project's per-member cap. Previous donations remain server-authoritative.
  const share=Number.isFinite(personalShareCap)?Math.max(0,Math.min(1,personalShareCap!)):1;

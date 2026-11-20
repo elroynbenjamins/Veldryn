@@ -5,7 +5,7 @@
  * Additional trainable professions can appear under 'other' without a hub redesign.
  */
 export type SkillNavigatorCategory='combat'|'gathering'|'crafting'|'other'|'companions';
-export type SkillNavigatorRoute='combat'|'discipline'|'skill'|'companion-mastery'|'sanctuary';
+export type SkillNavigatorRoute='combat'|'discipline'|'skill'|'overview'|'companion-mastery'|'sanctuary';
 
 export interface SkillNavigatorEntry{
  id:string;
@@ -26,6 +26,11 @@ export function skillNavigatorCategoryFor(id:string):SkillNavigatorCategory{
  if(GATHERING_SKILLS.has(id))return 'gathering';
  if(CRAFTING_SKILLS.has(id))return 'crafting';
  return 'other';
+}
+
+/** A skill without a supported detail route still exposes its real XP in an overview, never a blank recipe screen. */
+export function skillNavigatorRouteFor(id:string):'skill'|'overview'{
+ return GATHERING_SKILLS.has(id)||CRAFTING_SKILLS.has(id)?'skill':'overview';
 }
 
 export function filterSkillNavigatorEntries(

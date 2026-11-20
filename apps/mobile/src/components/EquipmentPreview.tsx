@@ -148,7 +148,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       </View>
     </View>)}
     <Text style={s.note}>{weaponBonusUiText(language,'points')}</Text>
-   </View>:null>
+   </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>

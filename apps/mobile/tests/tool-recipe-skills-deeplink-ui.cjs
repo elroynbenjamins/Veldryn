@@ -17,7 +17,7 @@ assert.match(app,/if\(tab==='Skills'&&toolRecipeReturnRef\.current\)\{/,'Back sh
 assert.match(app,/setSkillsMode\(source\.mode\);setSelectedSkill\(source\.skillId\);setGoalActionId\(source\.actionId\);setGoalRecipeId\(source\.recipeId\)/,'Back should restore the originating skill and any target');
 assert.match(app,/if\(destination==='Skills'&&selectedSkill\)\{toolRecipeReturnRef\.current=null;setSelectedSkill\(undefined\);setGoalActionId\(undefined\);setGoalRecipeId\(undefined\);\}/,'Deliberate bottom-tab re-selection must still open Skills hub and clear the tool return route');
 assert.match(skills,/recipeId:'CRAFT_'\+tool\.id/,'Every tool Recipe button should point to the exact Smithing tool recipe');
-assert.match(skills,/onNavigateCraftingSource\?\(\)=>onNavigateCraftingSource\(recipeDestination\)/,'Tool actions use the working-toward deep link');
+assert.match(skills,/onOpenSmithing=\{\(\)=>onNavigateCraftingSource\?onNavigateCraftingSource\(recipeDestination\):onViewToolRecipes\(\)\}/,'Inline recipe preview retains exact Smithing deep-link navigation');
 assert.match(app,/onNavigateCraftingSource=\{openWorkingTowardDestination\}/,'The tool source navigation callback reaches the app router');
 assert.match(recipes,/import \{TOOL_RECIPES\} from '\.\/gathering-tools'/,'Smithing recipes must include the tool recipe catalog');
 assert.match(forge,/\[queueOpen,setQueueOpen\]=useState\(\(\)=>!preferred&&equipmentCraftQueueModel\(state,Date\.now\(\)\)\.ready>0\)/,'A focused tool recipe must take priority over the open forge queue');

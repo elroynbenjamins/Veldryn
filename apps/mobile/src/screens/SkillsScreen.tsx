@@ -3,6 +3,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {accountText} from '../i18n/account';
 import {RecipeCard} from '../components/RecipeCard';
 import {SearchField} from '../components/SearchField';
+import {UiIcon} from '../components/UiIcon';
 import {ActivityArtwork} from '../components/ActivityArtwork';
 import {useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
@@ -193,14 +194,16 @@ function makeHubStyles(C:ThemeColors){return StyleSheet.create({
  navigatorFilterText:{...typography.bodyStrong,color:C.text,flex:1,minWidth:0},
  navigatorChevron:{fontSize:17,color:C.muted},
  navigatorSearch:{flex:1,minWidth:0},
+ navigatorSearchToggle:{minHeight:48,minWidth:48,justifyContent:'center',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
+ navigatorSearchWide:{width:'100%',flex:undefined},
  navigatorRow:{minHeight:72,padding:10,gap:7,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
  navigatorTop:{flexDirection:'row',alignItems:'center',gap:9},
  navigatorCopy:{flex:1,minWidth:0,gap:2},
  navigatorTrailing:{alignItems:'flex-end',gap:3},
- navigatorProgress:{flexDirection:'row',alignItems:'center',gap:8},
- navigatorTrack:{height:5,flex:1,minWidth:0,backgroundColor:C.panel2,borderRadius:4,overflow:'hidden'},
+ navigatorProgress:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},
+ navigatorTrack:{height:5,flex:1,minWidth:80,backgroundColor:C.panel2,borderRadius:4,overflow:'hidden'},
  navigatorFill:{height:'100%',backgroundColor:C.good},
- navigatorHint:{...typography.caption,color:C.muted,fontSize:10},
+ navigatorHint:{...typography.caption,color:C.muted,fontSize:10,flexShrink:1},
  navigatorSection:{gap:7},
  navigatorEmpty:{padding:18,gap:10,alignItems:'center',borderColor:C.line,borderWidth:1,borderRadius:10,backgroundColor:C.panel},
  navigatorOption:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,paddingHorizontal:12,paddingVertical:9,borderBottomWidth:1,borderBottomColor:C.line},
@@ -214,6 +217,9 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  const a=(source:string,params?:Record<string,string|number>)=>accountText(language,source,params);
  const n=(key:Parameters<typeof skillNavigatorText>[1])=>skillNavigatorText(language,key);
  const C=useGameTheme(),hubStyles=useMemo(()=>makeHubStyles(C),[C]);
+ const {width,fontScale}=useWindowDimensions();
+ const narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3;
+ const [searchExpanded,setSearchExpanded]=useState(false);
  const [classSkillId,setClassSkillId]=useState<string>();
  const [category,setCategory]=useState<'all'|SkillNavigatorCategory>('all');
  const [categoryPickerOpen,setCategoryPickerOpen]=useState(false);
@@ -288,8 +294,8 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
     <View style={hubStyles.navigatorTop}>
      {icon?<Image source={icon} resizeMode="contain" style={hubStyles.skillIcon}/>:<ActivityArtwork id={entry.id as any} size={36}/>}
      <View style={hubStyles.navigatorCopy}>
-      <Text numberOfLines={1} style={hubStyles.skillName}>{entry.name}</Text>
-      <Text numberOfLines={1} style={hubStyles.skillKind}>{entry.subtitle}</Text>
+      <Text numberOfLines={narrowNavigator?2:1} style={hubStyles.skillName}>{entry.name}</Text>
+      <Text numberOfLines={narrowNavigator?2:1} style={hubStyles.skillKind}>{entry.subtitle}</Text>
      </View>
      <View style={hubStyles.navigatorTrailing}>
       {entry.route!=='combat'?<Text style={hubStyles.skillLevel}>{isSanctuary?gt('Facility Lv {level}/3',{level}):gt('Level {value}',{value:level})}</Text>:null}
@@ -315,9 +321,15 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
     accessibilityState={{expanded:categoryPickerOpen}} onPress={()=>setCategoryPickerOpen(true)} style={({pressed})=>[hubStyles.navigatorFilter,pressed&&hubStyles.cardPressed]}>
     <Text numberOfLines={1} style={hubStyles.navigatorFilterText}>{category==='all'?gl('All'):categoryLabels[category]}</Text><Text style={hubStyles.navigatorChevron}>⌄</Text>
    </Pressable>
-   <SearchField style={hubStyles.navigatorSearch} value={searchQuery} onChangeText={setSearchQuery}
-    placeholder={sharedText(language,'Search')} accessibilityLabel={sharedText(language,'Search')} />
+   {narrowNavigator?<Pressable accessibilityRole="button" accessibilityLabel={sharedText(language,'Search')}
+    accessibilityState={{expanded:searchExpanded}} onPress={()=>setSearchExpanded(open=>!open)}
+    style={({pressed})=>[hubStyles.navigatorSearchToggle,pressed&&hubStyles.cardPressed]}>
+     <UiIcon name="search" size={22}/>
+    </Pressable>:<SearchField style={hubStyles.navigatorSearch} value={searchQuery} onChangeText={setSearchQuery}
+     placeholder={sharedText(language,'Search')} accessibilityLabel={sharedText(language,'Search')}/>}
   </View>
+  {narrowNavigator&&searchExpanded?<SearchField style={hubStyles.navigatorSearchWide} value={searchQuery}
+   onChangeText={setSearchQuery} placeholder={sharedText(language,'Search')} accessibilityLabel={sharedText(language,'Search')}/>:null}
   {visibleCount?<View style={hubStyles.navigatorSection}>
    {groups.map(group=><View key={group.id} style={hubStyles.navigatorSection}>
     <View style={hubStyles.sectionHeading}><Text style={hubStyles.sectionLabel}>{group.label.toLocaleUpperCase(language)}</Text><Text style={hubStyles.sectionCount}>{group.rows.length}</Text></View>

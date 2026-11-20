@@ -10,6 +10,7 @@ import {Panel} from './Panel';
 import {QuestBoard} from './QuestBoard';
 import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
 import {claimableGuildProjectRewardIds} from '../core/guild-project-reward-attention';
+import {guildProjectDailyEffortStatus} from '../core/guild-project-daily-effort';
 import {GuildProjectSupplyDonationPanel} from './GuildProjectSupplyDonationPanel';
 import {gameAlert} from '../core/game-alerts';
 import {donateOnlineGuildProjectSupplies,pendingGuildProjectSupplyDonation,discardPendingGuildProjectSupplyDonation,type PendingGuildProjectSupplyDonation} from '../online/guild-project-supply-donations';
@@ -212,6 +213,7 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
  const projectArtwork=guildProjectArtwork(project.templateId);
  const readyToClaim=weekly&&claimOpen;
  const personalShortfall=Math.max(0,project.personalRewardThreshold-project.personalPoints);
+ const daily=weekly&&project.status==='active'&&project.projectMode!=='donation'?guildProjectDailyEffortStatus(project.dailyEffort):null;
  const contributorsMissing=Math.max(0,project.minimumMeaningfulContributors-project.meaningfulContributors);
  const rewardStatus=project.completionRewardClaimed?ui('Already claimed')
   :project.status!=='completed'?ui('Available after Guild completion')
@@ -229,10 +231,17 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
    </View>
    <View style={s.progressHead}><Text style={s.percent}>{pct}%</Text><View style={s.progressNumbers}><Text style={s.progressAmount}>{project.kind==='development'?ui('Resource goals'):`${project.completionPoints.toLocaleString(language)} / ${project.targetPoints.toLocaleString(language)}`}</Text><Text style={s.meta}>{ui('Guild progress')}</Text></View></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.min(100,pct)}%` as any}]}/></View>
-   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count}/{minimum} contributors',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
+   <View style={s.sectionHead}><Text style={[s.meta,s.flex]}>{ui('{count} contributors · Min {minimum}',{count:project.meaningfulContributors,minimum:project.minimumMeaningfulContributors})}</Text></View>
    {project.status==='active'&&contributorsMissing>0?<Text style={s.meta}>{ui('{count} more qualifying contributors needed to complete this project',{count:contributorsMissing})}</Text>:null}
    {weekly&&project.status==='active'&&!summaryOnly?<Text style={s.meta}>{ui('Weekly reset: Monday at 00:00 UTC')}</Text>:null}
    {summaryOnly?<Text style={s.meta}>{ui('Your contribution')}: {project.personalPoints.toLocaleString(language)}{project.personalRewardThreshold>0?' / '+project.personalRewardThreshold.toLocaleString(language):''}</Text>:null}
+   {daily?<View style={s.dailyStatus} accessibilityLabel={daily.complete?ui('Daily limit reached'):ui('Daily effort')}>
+    <View style={s.sectionHead}>
+     <Text numberOfLines={1} style={[s.dailyLabel,s.flex,daily.complete&&s.dailyComplete]}>{daily.complete?'✓ '+ui('Daily limit reached'):ui('Daily effort')}</Text>
+     <Text style={[s.dailyValue,daily.complete&&s.dailyComplete]}>{daily.creditedEffort.toLocaleString(language)} / {daily.capEffort.toLocaleString(language)}</Text>
+    </View>
+    {daily.complete?<Text style={s.dailyReset}>{ui('Resets at 00:00 UTC')}</Text>:null}
+   </View>:null}
    {onToggle?<Pressable accessibilityRole="button" accessibilityState={{expanded:!summaryOnly}} onPress={onToggle} style={s.accordion}>
     <Text style={s.expandLabel}>{ui(summaryOnly?'View project details':'Hide project details')}</Text><Text style={s.chevron}>{summaryOnly?'▾':'▴'}</Text>
    </Pressable>:null}
@@ -257,7 +266,7 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
     </View>:null}
   </View>:null}
   {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.resourceGoals.length>0?
-    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory}
+    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory} personalShareCap={project.personalShareCap} supplyAllowances={project.supplyAllowances}
      busy={busy||donationBlocked||!onDonate} onDonate={(itemId,quantity)=>onDonate?.(itemId,quantity)}/>:null}
   {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.projectMode!=='donation'?<View style={s.activities}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui(project.templateId==='guild_weekly_shared_effort'?'ANY ACTIVITY':'Activity requirements')} tone="info"/></View>
@@ -292,6 +301,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  fill:{height:'100%',backgroundColor:C.good},
  personal:{gap:8,padding:10,borderWidth:1,borderRadius:9,borderColor:C.good,backgroundColor:C.goodSurface},
  personalPoints:{fontSize:21,lineHeight:27,fontWeight:'800',color:C.text},
+ dailyStatus:{gap:2,paddingTop:1},dailyLabel:{fontSize:11,lineHeight:16,color:C.muted},
+ dailyValue:{fontSize:11,lineHeight:16,fontWeight:'800',color:C.text},dailyComplete:{color:C.good},
+ dailyReset:{fontSize:10,lineHeight:14,color:C.muted},
  smallTrack:{height:6,overflow:'hidden',backgroundColor:C.panel2,borderRadius:3},
  reward:{flexDirection:'row',alignItems:'center',gap:9,padding:10,borderWidth:1,borderRadius:7,borderColor:C.line,backgroundColor:C.panel},
  rewardIcon:{fontSize:24},rewardTitle:{fontSize:12,lineHeight:17,fontWeight:'800',color:C.text},

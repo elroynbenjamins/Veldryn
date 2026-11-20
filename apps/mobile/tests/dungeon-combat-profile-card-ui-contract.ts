@@ -49,7 +49,7 @@ ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={bossEncounter?bos
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
 ok(card.includes('boss?st("BOSS HP"):st("HP")')&&card.includes('enemyHpTrack'),'Enemy and boss cards must show localized replay-time HP');
-ok(card.includes('enemyPct===undefined?st("Syncing")')&&card.includes('enemyPct===undefined?<View style={s.enemyHpTrack}/>')&&!card.includes('{enemyPct!==undefined?<><View style={s.enemyHpHead}>'),'Boss HP heading and track must remain visible before the server replay becomes available');
+ok(card.includes('enemyPct===undefined?(preview?ui("Preparing battle"):st("Syncing"))')&&card.includes('enemyPct===undefined?<View style={s.enemyHpTrack}/>')&&!card.includes('{enemyPct!==undefined?<><View style={s.enemyHpHead}>'),'Boss HP heading and empty track must remain visible for unknown HP; preview labels preparing without inventing values');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={state?.hp}')&&stage.includes('combatShield={state?.shield??0}'),'Battlefield must drive each replay enemy HP and shield from authoritative snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
 ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');
@@ -88,7 +88,7 @@ ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(wi
 ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Stacked boss/enemy card width must adapt independently from the four-card row');
 ok(stage.includes('playbackEnemyCombatants(replay)')&&stage.includes('visibleEnemies.map((enemy,index)=>'),'Normal combat must render each replay enemy rather than collapse the encounter into one card');
-ok(stage.includes("visibleEnemies=bossEncounter?(bossEnemy?[bossEnemy]:[]):replayEnemies.length?replayEnemies.slice(0,4):previewEnemies"),'Boss combat must remain a singular emphasized card while normal rooms may show multiple enemies');
+ok(stage.includes('bossEncounter?previewEnemies.filter(enemy=>enemy.boss).slice(0,1):previewEnemies')&&stage.includes('bossEncounter?(bossEnemy?[bossEnemy]:[]):replayEnemies.length?replayEnemies.slice(0,4):[]'),'Boss combat must remain a singular emphasized card while normal rooms may show multiple enemies and pending roster previews');
 ok(stage.includes('enemyGroup')&&stage.includes('enemySlot')&&stage.includes('compact={!bossEncounter&&visibleEnemies.length>1}'),'Multi-enemy rooms must use a compact responsive enemy row');
 ok(card.includes('combatantId?currentCue.targetId===combatantId:currentCue.targetName===name'),'Enemy damage feedback must bind to combatant id so duplicate enemy names do not mirror feedback');
 ok(stage.includes('combatantId={enemy.id}')&&stage.includes('selectedForInspect={inspectKey===key}'),'Each enemy card must bind replay state and inspection to its authoritative combatant id');

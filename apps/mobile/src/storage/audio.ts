@@ -12,12 +12,13 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,type AudioPreferences} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
 export type {AudioLevel,AudioPreferences} from '../core/audio-preferences';
 const KEY='veldryn.device.audio.v1';
+const REMEMBERED_KEY='veldryn.device.audio.last-audible.v1';
 /** The same effect retriggered faster than this is dropped (e.g. a burst of hits). */
 const MIN_GAP_MS=70;
 const MUSIC_BASE=.55,FADE_MS=450;
@@ -36,16 +37,37 @@ function ensureMode(m:AudioModule){
 }
 
 let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES},loaded=false;
+let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES};
 const listeners=new Set<(value:AudioPreferences)=>void>();
+let persistence:Promise<void>=Promise.resolve();
 export async function loadAudioPreferences():Promise<AudioPreferences>{
  if(loaded)return prefs;
- try{prefs=parseAudioPreferences(await AsyncStorage.getItem(KEY));}catch{/* defaults */}
+ try{
+  const [saved,savedRemembered]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
+  // A player can change a setting before this async load completes. Never overwrite that tap.
+  if(loaded)return prefs;
+  prefs=parseAudioPreferences(saved);
+  remembered=rememberAudibleAudioLevels(parseAudioPreferences(savedRemembered),prefs);
+ }catch{/* defaults */}
+ if(loaded)return prefs;
  loaded=true;notify();return prefs;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
- prefs={...next};loaded=true;notify();applyMusicVolume();
+ prefs={...next};remembered=rememberAudibleAudioLevels(remembered,prefs);
+ loaded=true;notify();applyMusicVolume();
  if(prefs.music===0)stopMusicPlayer();else if(wantedTrack)startTrack(wantedTrack);
- try{await AsyncStorage.setItem(KEY,JSON.stringify(prefs));}catch{/* applies this session */}
+ // Serialize quick taps so the most recent level and its restore value win on disk.
+ const nextPrefs=JSON.stringify(prefs),nextRemembered=JSON.stringify(remembered);
+ persistence=persistence.catch(()=>{}).then(async()=>{
+  await AsyncStorage.multiSet([[KEY,nextPrefs],[REMEMBERED_KEY,nextRemembered]]);
+ });
+ try{await persistence;}catch{/* applies this session */}
+}
+/** One-tap mute that restores each channel's previous audible level, even after relaunch. */
+export function toggleAudioMute(channel:keyof AudioPreferences):AudioPreferences[typeof channel]{
+ const next=audioAfterMuteToggle(prefs,remembered,channel);
+ void setAudioPreferences(next);
+ return next[channel];
 }
 function notify(){for(const l of listeners)l(prefs);}
 // Load saved levels as early as possible so the first sounds already respect them.
@@ -87,7 +109,12 @@ function fade(player:Player,from:number,to:number,done?:()=>void){
  if(fadeTimer)clearInterval(fadeTimer);
  const steps=Math.max(1,Math.round(FADE_MS/40));let i=0;
  fadeTimer=setInterval(()=>{
-  i++;try{player.volume=from+(to-from)*Math.min(1,i/steps);}catch{/* ignore */}
+  i++;try{
+   // A user can adjust music while a scene fade is still running.
+   // Fade-ins follow the latest selected level; fade-outs still end at zero.
+   const target=done?to:musicVolume();
+   player.volume=from+(target-from)*Math.min(1,i/steps);
+  }catch{/* ignore */}
   if(i>=steps){clearInterval(fadeTimer);fadeTimer=undefined;done?.();}
  },40);
 }

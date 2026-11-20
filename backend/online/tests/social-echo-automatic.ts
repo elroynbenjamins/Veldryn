@@ -28,10 +28,15 @@ async function main(){
  // Lower-power donors are welcome if level, role and equipment are valid.
  // Only the host's Live dungeon entry retains a Combat Power gate.
  const modest=createCharacter(newGame(0),'WAYFINDER','Modest Ally');
- modest.character!.level=10;
- modest.character!.xp=legacyCharacterTotalXpAtLevel(10);
+ // Contact candidates are persisted online UUIDs, never LOCAL_CHAR_1 fixture IDs.
+ modest.character!.id='00000000-0000-4000-8000-000000000003';
+ // Level 15 rebases to a legal >=10 dungeon level; the old level-10 fixture
+ // rebased to 8, correctly failing the server's minimum-level eligibility.
+ modest.character!.level=15;
+ modest.character!.xp=legacyCharacterTotalXpAtLevel(15);
  modest.character!.equipment=Object.fromEntries(noviceSetFor('WAYFINDER').slots.map(slot=>[slot,noviceItemId('WAYFINDER',slot)]));
  const modestRecord=deriveOnlineCoopLoadout('modest-account',modest,22);
+ assert.ok(modestRecord.characterLevel>=10,'Low-power fixture must survive the actual level-10 dungeon entry gate');
  assert.ok((modestRecord.combatPower??0)<2500,'Fixture must be below the removed 2,500 CP restriction');
  assert.equal(assessOnlineCoopLoadout(modestRecord).readiness.ready,true,'Modest contact still meets the independent equipment/role floor');
  const modestRow={accountId:'modest-account',characterId:modest.character!.id,revision:22,state:modest,relationship:'guild' as const};
@@ -42,7 +47,18 @@ async function main(){
   throw new Error('unexpected_rpc:'+name);
  }},'host-account',10);
  assert.equal(sourceCalls.length,1,'Browsing must never publish another player automatically');
- assert.equal(listing.length,2,'Valid friends/guildmates must not require publication or 2,500 Combat Power');
+ if(listing.length!==2){
+  const diagnostic=[sourceRow,modestRow].map(source=>{
+   try{
+    const record=deriveOnlineCoopLoadout(source.accountId,source.state,source.revision);
+    const eligibility=assessOnlineCoopLoadout(record);
+    return {accountId:source.accountId,characterId:source.characterId,recordId:record.characterId,
+     level:record.characterLevel,legalEquipment:record.legalEquipment,
+     ready:eligibility.readiness.ready,failures:eligibility.readiness.failures};
+   }catch(error){return {accountId:source.accountId,error:String(error)};}
+  });
+  assert.equal(listing.length,2,'Valid friends/guildmates must not require publication or 2,500 Combat Power: '+JSON.stringify(diagnostic));
+ }
  assert.ok(listing.some(x=>x.candidate.characterId===modest.character!.id));
  assert.equal(listing[0].candidate.characterId,friend.character!.id);
  assert.equal(listing[0].candidate.relationship,'friend');

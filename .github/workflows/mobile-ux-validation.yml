@@ -55,6 +55,8 @@ jobs:
         run: node tests/dungeon-failure-consolation-ui.cjs
       - name: Validate chat emote Settings navigation
         run: node tests/chat-emote-settings-navigation.cjs
+      - name: Validate pixel audio settings and reversible mute
+        run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
         run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
@@ -65,6 +67,8 @@ jobs:
         run: node tests/home-priority-dashboard-ui.cjs
       - name: Verify compact Quest screens, modal safety and reward semantics
         run: node tests/quest-refined-ui.cjs
+      - name: Validate Guild Project daily effort cap and UTC reset
+        run: node tests/guild-project-daily-effort.cjs
       - name: Validate Gems storage and dungeon recovery UX
         run: node tests/storage-dungeon-refinement-ui.cjs
       - name: Validate Frostfall 14-day preview and sealed rewards
@@ -79,6 +83,10 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
+      - name: Validate compact Character Roster, eight-language copy and 800-skill UX
+        run: pnpm test:character-roster
+      - name: Validate compact Rewards Inbox ledger
+        run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI
         run: pnpm exec tsc -p tsconfig.account-unlocks.json --noEmit
       - name: Typecheck core

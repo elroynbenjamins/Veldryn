@@ -1,9 +1,10 @@
-import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
-import {useEffect,useMemo,useRef} from 'react';
+import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useState} from 'react';
 import type {CoopMode,CoopRouteOptionView} from '../../core/coop-presentation';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useDungeonDynamicUiText} from '../../i18n/dungeon-dynamic-ui';
 import {localizedDungeonEncounterPreview} from '../../i18n/dungeon-encounter-preview';
@@ -26,16 +27,28 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
  const stepKey=options.map(option=>option.nodeId).join('|');
+ const [reduceMotion,setReduceMotion]=useState(false);
  const anims=useMemo(()=>options.map(()=>new Animated.Value(0)),[stepKey]);
  useEffect(()=>{
+  let mounted=true;
+  void AccessibilityInfo.isReduceMotionEnabled().then(enabled=>{if(mounted)setReduceMotion(enabled);}).catch(()=>{});
+  const subscription=AccessibilityInfo.addEventListener('reduceMotionChanged',setReduceMotion);
+  return ()=>{mounted=false;subscription.remove();};
+ },[]);
+ useEffect(()=>{
+  if(reduceMotion){anims.forEach(value=>value.setValue(1));return;}
   anims.forEach(value=>value.setValue(0));
-  Animated.stagger(70,anims.map(value=>Animated.timing(value,{toValue:1,duration:260,easing:Easing.out(Easing.cubic),useNativeDriver:true}))).start();
- },[stepKey]);
+  const animation=Animated.stagger(70,anims.map(value=>Animated.timing(value,{toValue:1,duration:260,easing:Easing.out(Easing.cubic),useNativeDriver:true})));
+  animation.start();
+  return ()=>animation.stop();
+ },[anims,reduceMotion]);
  return <View style={s.list}>
   {options.map((option,optionIndex)=>{
    const enter=anims[optionIndex]??new Animated.Value(1);
    const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
+   const bossExit=option.kind==='boss'&&options.length>1;
+   const routeAction=bossExit?(live?dungeonUxText(language,'bossVote'):dungeonUxText(language,'bossFinish')):option.kind==='boss'&&!live?dungeonUxText(language,'bossFinal'):action;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
    const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
@@ -49,8 +62,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     const combatMarks=Math.min(roomMarks,Math.max(0,combatMarksRemaining));
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
-    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?action:ui('Unavailable')})}
-    accessibilityHint={preview}
+    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?(votedHere?ui('Your vote'):routeAction):ui('Unavailable')})}
+    accessibilityHint={bossExit?`${preview??''} ${dungeonUxText(language,'bossHint')}`:preview}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -64,9 +77,10 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
        <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}
       </View>:null}
-      <Text style={s.actionCue}>{votedHere?ui('Your vote'):action} <Text style={s.chevron}>{'›'}</Text></Text>
+      <Text style={[s.actionCue,bossExit&&s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
      {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
+     {bossExit?<Text numberOfLines={1} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier||roomMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
@@ -81,7 +95,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
 function makeStyles(C:CoopColors){return StyleSheet.create({
  list:{gap:6},
  card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
- bossCard:{borderColor:C.goldDim},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
+ bossCard:{borderColor:C.goldDim,backgroundColor:C.surfaceRaised},bossAction:{color:C.gold},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
  content:{flex:1,minWidth:0,justifyContent:'center',gap:2},

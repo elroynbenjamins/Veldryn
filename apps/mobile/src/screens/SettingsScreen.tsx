@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {accountDuration} from '../i18n/account';
 import {recentScreenText} from '../i18n/recent-screens';
 import {useHapticsPreference} from '../storage/haptics';
-import {playSound,useAudioPreferences} from '../storage/audio';
+import {AudioSettingsPanel} from '../components/AudioSettingsPanel';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {CHAT_TRANSLATION_RELEASED} from '../core/release-flags';
 import {chatTranslationPrivacy} from '../i18n/chat-translation-privacy';
@@ -65,7 +65,6 @@ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,onUiThemeChange,uiThemeId,online=false}:Props){
  const language=state.settings.language;
  const [hapticsOn,setHapticsOn]=useHapticsPreference();
- const [audio,setAudio]=useAudioPreferences();
  const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
@@ -171,14 +170,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <SettingToggle language={language} label={a("Reduced motion")} description={a("Disable repeating combat and progress effects.")} value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/>
       <SettingToggle language={language} label={a("Haptic feedback")} description={a("Vibrate on big combat moments, such as boss specials and finishing blows.")} value={hapticsOn} onValueChange={setHapticsOn}/>
     </Panel>
-    <Panel>
-      <Text style={[s.title,{color:theme.text}]}>{a("Sound")}</Text>
-      <Text style={[s.muted,{color:theme.muted}]}>{a("Sound plays only while Veldryn is open and follows your device's silent mode.")}</Text>
-      {(['music','effects'] as const).map(channel=><View key={channel}>
-        <Text style={[s.settingLabel,{color:theme.text}]}>{channel==='music'?a("Music"):a("Sound effects")}</Text>
-        <View style={s.choices}>{([0,1,2,3] as const).map(level=><SettingChip key={level} label={level===0?a("Off"):level===1?a("Low"):level===2?a("Medium"):a("High")} selected={audio[channel]===level} onPress={()=>{setAudio({...audio,[channel]:level});if(channel==='effects'&&level>0)playSound('ui_confirm');}}/>)}</View>
-      </View>)}
-    </Panel>
+    <AudioSettingsPanel translate={a}/>
     <Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.language')}</Text>
       

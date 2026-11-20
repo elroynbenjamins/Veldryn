@@ -11,6 +11,7 @@ import {rawGemSpriteSourceV1} from '../../theme/gem-assets';
 import {skillIcons} from '../../theme/skill-assets';
 import {SectionGuide} from '../SectionGuide';
 import {DUNGEON_HOME_GUIDE,dungeonGuideText} from '../../i18n/dungeon-home-guide';
+import {dungeonUxText} from '../../i18n/dungeon-ux-copy';
 import {liveEventDef} from '../../content/live-events';
 import {liveEventVisuals} from '../../ui/live-event-visuals-active';
 import {dungeonText as accountText} from '../../i18n/dungeon-preparation';
@@ -89,11 +90,10 @@ function DungeonCard({language,dungeon,currentLevel,currentPower,mode,onPress,on
  const status=dungeon.available?ct(language,'browse.available'):ct(language,'browse.locked')+': '+dungeon.lockedReason;
  const inDev=dungeon.lockedReason==='In Development';
  const selectedEligibility=coopTierEligibility(dungeon,selectedTier,currentLevel,mode==='live'?currentPower:Number.POSITIVE_INFINITY);
- const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
  return <View style={[s.questCard,expanded&&s.expandedQuest,!dungeon.available&&s.lockedQuest]}>
    <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={dungeon.name+'. '+status+'. '+ct(language,'browse.levels',{min:dungeon.minLevel,recommended:dungeon.recommendedLevel})} accessibilityHint={ct(language,'browse.open')} onPress={onPress} style={({pressed})=>[s.cardPressArea,pressed&&s.pressed]}>
      <View style={s.cardRow}><View style={s.cardThumbHolder}><CoopImageSlot assetId={dungeon.id==='EXP_001'?'rootbound_hero':dungeon.artId} size="thumbnail" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>{inDev?<View style={s.ribbon}><Text style={s.ribbonText}>{st('Soon')}</Text></View>:null}</View>
-       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})} · {dungeon.estimatedMinutes.min}–{dungeon.estimatedMinutes.max} {a('min')}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?roomCount+' '+a('rooms before the boss')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
+       <View style={s.cardCopy}><Text style={s.regionMini}>{dungeon.region??a('Other')}</Text><Text numberOfLines={2} style={s.compactCardTitle}>{dungeon.name}</Text><Text style={s.compactCardMeta}>{ct(language,'browse.requiresLevel',{level:dungeon.minLevel})}</Text><Text numberOfLines={1} style={dungeon.available?s.compactCardReward:s.lock}>{dungeon.available?dungeonUxText(language,'bossChoice')+(dungeon.expectedMarksByTier?.[1]?' · ~'+dungeon.expectedMarksByTier[1]+' '+a('Expedition Marks'):''):dungeon.lockedReason}</Text></View>
        <Text style={s.compactChevron}>{expanded?'⌄':'›'}</Text>
      </View>
    </Pressable>
@@ -196,10 +196,9 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
  const estimatedMarks=fullMarks===undefined?undefined:enhanced===false?Math.round(fullMarks*.2):fullMarks;
  const liveBonus=fullMarks!==undefined&&mode==='live'&&liveFellowshipRemaining>0?Math.max(1,Math.round(fullMarks*.25)):0;
  const tierPower=effectiveTier?dungeon.tierMinPower[effectiveTier]:dungeon.tierMinPower[1];
- const roomCount=dungeon.preBossRoomMin===dungeon.preBossRoomMax?String(dungeon.preBossRoomMin):dungeon.preBossRoomMin+'–'+dungeon.preBossRoomMax;
  return <ExpeditionScreenShell compactHeader hideHeader titleInHero eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={a('Prepare Loadout')} disabled={!canContinue||busy} loading={busy} onPress={()=>effectiveTier&&canContinue&&onContinue(effectiveTier)}/></View>}>
   <DungeonHero compact title={dungeon.name} source={dungeon.heroArtId?coopUiAssets[dungeon.heroArtId]:undefined} label={dungeon.region??ct(language,'details.kicker')} description="" onBack={onBack} backLabel={ct(language,'details.backList')}/>
-  <View style={s.quickFacts}><StateChip label={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><StateChip label={a('Boss choice every 7 rooms')}/><StateChip label={a('End run or continue deeper')}/><StateChip label={mode==='live'?a('Live'):a('Solo')} tone="selected"/></View>
+  <View style={s.quickFacts}><StateChip label={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><StateChip label={dungeonUxText(language,'bossChoice')}/><StateChip label={a('End run or continue deeper')}/><StateChip label={mode==='live'?a('Live'):a('Solo')} tone="selected"/></View>
   {!dungeon.available?<Text accessibilityRole="alert" style={s.lock}>{dungeon.lockedReason??ct(language,'browse.locked')}</Text>:null}
   {mode==='live'&&currentPower<tierPower?<Text style={s.notice}>{a('Required Combat Power')}: {tierPower.toLocaleString()} · {a('Current')}: {currentPower.toLocaleString()}</Text>:null}
   {mode==='qmode'?<FantasyPanel><View style={s.modeHead}><Text style={[s.cardTitle,s.flex]}>{ct(language,'details.difficulty')}</Text><Text style={s.questMeta}>{clt(language,'level')} {currentLevel}</Text></View><View style={s.tiers}>{dungeon.difficulties.filter(value=>value<=3).map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} requiredPower={0} currentLevel={currentLevel} currentPower={Number.POSITIVE_INFINITY} selected={tier===value} marks={dungeon.expectedMarksByTier?.[value]} onPress={()=>onTier(value)}/>)}</View>{!dungeon.difficulties.length?<Text style={s.lock}>{ct(language,'details.noDifficulty')}</Text>:null}</FantasyPanel>:<Text style={s.levels}>{ct(language,'details.liveAutoSelected',{tier:autoTier??'—'})}</Text>}
@@ -247,7 +246,7 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,currentPower=0
   </DungeonDisclosure>
   <DungeonDisclosure title={ct(language,'details.party')}><DungeonPartyRoles language={language}/></DungeonDisclosure>
   {dungeon.bossVariants.length?<DungeonDisclosure title={a('Possible final bosses')}><Text style={s.copy}>{a('One final boss is selected by the server at the start of each run (50/50). Reconnecting never changes it.')}</Text>{dungeon.bossVariants.map(boss=><DungeonBossPreview key={boss.bossId} name={boss.name} label={boss.chancePercent+'%'}/>)}</DungeonDisclosure>:null}
-  <DungeonDisclosure title={a('More information')}><Text style={s.copy}>{roomCount} {a('rooms before the boss')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text>{rewardBudget?.failureConsolationRemaining!==undefined?<Text style={s.copy}>{st('Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.',{remaining:rewardBudget.failureConsolationRemaining})}</Text>:null}{dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:null}</DungeonDisclosure>
+  <DungeonDisclosure title={a('More information')}><Text style={s.copy}>{dungeonUxText(language,'bossChoice')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text>{rewardBudget?.failureConsolationRemaining!==undefined?<Text style={s.copy}>{st('Failed runs do not spend charges. {remaining} of 12 weekly consolation rewards left.',{remaining:rewardBudget.failureConsolationRemaining})}</Text>:null}{dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:null}</DungeonDisclosure>
  </ExpeditionScreenShell>;
 }
 
@@ -281,11 +280,11 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   toolbarBackText:{fontSize:27,lineHeight:31,color:coopColors.cyan,fontWeight:'600'},
   toolbarTitle:{fontSize:15,lineHeight:22,fontWeight:'800',letterSpacing:1.1,color:coopColors.text},
   finderHeader:{flexDirection:'row',alignItems:'center',gap:12,marginTop:2},
-  finderTitle:{fontSize:23,lineHeight:28,fontWeight:'800',color:coopColors.text},
-  finderSubtitle:{fontSize:12,lineHeight:17,color:coopColors.textMuted,marginTop:3},
+  finderTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:coopColors.text},
+  finderSubtitle:{fontSize:11,lineHeight:15,color:coopColors.textMuted,marginTop:2},
   shopShortcut:{minWidth:74,minHeight:42,paddingHorizontal:7,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,borderWidth:1,borderColor:coopColors.cyan,borderRadius:10,backgroundColor:coopColors.surfaceRaised},
   shopShortcutText:{fontSize:13,fontWeight:'800',color:coopColors.text},
-  partyHeading:{fontSize:12,lineHeight:17,fontWeight:'800',color:coopColors.textSecondary,marginTop:4},
+  partyHeading:{fontSize:11,lineHeight:16,fontWeight:'800',color:coopColors.textSecondary,marginTop:3},
   modeSegment:{flexDirection:'row',gap:4,padding:4,borderWidth:1,borderColor:coopColors.line,borderRadius:12,backgroundColor:coopColors.surface},
   modeOption:{flex:1,minHeight:42,justifyContent:'center',alignItems:'center',borderRadius:9},
   modeOptionSelected:{backgroundColor:coopColors.selection,borderWidth:1,borderColor:coopColors.cyan},
@@ -296,15 +295,15 @@ const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   sectionDivider:{flexDirection:'row',alignItems:'center',gap:10,marginBottom:1},
   dividerLine:{flex:1,height:1,backgroundColor:coopColors.lineStrong,opacity:.7},
   sectionLabel:{fontSize:12,lineHeight:18,fontWeight:'800',letterSpacing:.7,color:coopColors.textSecondary,textTransform:'uppercase'},
-  availableSection:{gap:9,marginTop:6},
-  cardPressArea:{minHeight:86,padding:10,justifyContent:'center'},
+  availableSection:{gap:6,marginTop:5},
+  cardPressArea:{minHeight:86,paddingHorizontal:9,paddingVertical:6,justifyContent:'center'},
   expandedQuest:{borderColor:coopColors.cyan,backgroundColor:coopColors.surfaceRaised},
   regionMini:{fontSize:10,lineHeight:13,letterSpacing:.7,fontWeight:'700',textTransform:'uppercase',color:coopColors.cyan},
-  compactCardTitle:{fontSize:16,lineHeight:21,fontWeight:'800',color:coopColors.text},
-  compactCardMeta:{fontSize:12,lineHeight:17,color:coopColors.textSecondary},
-  compactCardReward:{fontSize:11,lineHeight:15,color:coopColors.gold,fontWeight:'600'},
+  compactCardTitle:{fontSize:15,lineHeight:20,fontWeight:'800',color:coopColors.text},
+  compactCardMeta:{fontSize:11,lineHeight:16,color:coopColors.textSecondary},
+  compactCardReward:{fontSize:11,lineHeight:15,color:coopColors.gold,fontWeight:'700'},
   compactChevron:{fontSize:22,lineHeight:25,color:coopColors.cyan},
-  expandArea:{gap:9,padding:12,paddingTop:8,borderTopWidth:1,borderTopColor:coopColors.line},
+  expandArea:{gap:8,paddingHorizontal:10,paddingVertical:8,borderTopWidth:1,borderTopColor:coopColors.line},
   tierHeading:{fontSize:12,lineHeight:17,color:coopColors.textSecondary,fontWeight:'700'},
   quickTierRow:{flexDirection:'row',gap:7},
   quickTierButton:{flex:1,minHeight:50,paddingHorizontal:4,justifyContent:'center',alignItems:'center',borderRadius:8,borderWidth:1,borderColor:coopColors.line,backgroundColor:coopColors.surface},

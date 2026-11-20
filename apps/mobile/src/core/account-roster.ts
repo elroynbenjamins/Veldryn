@@ -8,7 +8,8 @@ import {restoreCumulativeMonsterUnlocks,regionTravelLockReason} from './world-na
 import {ensurePersonalSeasonalState,personalSeasonalAccountView} from './personal-seasonal-state';
 /** New accounts recruit one Tank, one Damage and one Support in any order. */
 export const MAX_NEW_ACCOUNT_CHARACTERS=3;
-export const CHARACTER_SLOT_THRESHOLDS=[0,250,550] as const;
+// Third character requires 800 total account skill levels; previously earned slots remain unlocked.
+export const CHARACTER_SLOT_THRESHOLDS=[0,250,800] as const;
 export type AccountCharacterRole=(typeof CLASSES)[number]['role'];
 export const REGION_AFK_MILESTONES=['SUNSCAR','FROSTMARCH','ASHLANDS'] as const;
 export type RegionAfkMilestone=(typeof REGION_AFK_MILESTONES)[number];

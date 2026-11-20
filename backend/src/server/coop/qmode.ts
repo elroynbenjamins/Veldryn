@@ -3,7 +3,7 @@ import { combatantFromVerifiedSnapshot } from '../combat/snapshot-adapter';
 import type { CombatantDefinition } from '../combat/types';
 import { EXPEDITIONS } from '../expeditions/content/launch-content';
 import { initialPersistentRunState, purchaseMerchantOffer, resolveCoopNode, type PersistentRunState, type NodeResolutionResult } from '../expeditions/node-resolution';
-import { generateCoopRouteGraph } from '../expeditions/route-generation';
+import { generateCoopRouteGraph,DUNGEON_ENDURANCE } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
 import {currentDungeonBaseMarks,frozenRunBaseMarks} from '../expeditions/reward-base';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
@@ -99,7 +99,12 @@ export class QModeService{
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
   const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
-  const depth=dungeonDepthMultipliers(selected.depth,run.enduranceRouteVersion===1);
+  // The first Endurance boss is a baseline clear checkpoint at room 8;
+  // only continued seven-room chapters add boss pressure. Regular rooms keep
+  // the original per-room difficulty ramp. Solo and Live share this engine.
+  const encounterDepth=run.enduranceRouteVersion===1&&selected.kind==='boss'
+   ?Math.max(1,selected.depth-DUNGEON_ENDURANCE.checkpointInterval):selected.depth;
+  const depth=dungeonDepthMultipliers(encounterDepth,run.enduranceRouteVersion===1);
   // Solar's repeated 5,200-HP Ward disproportionately blocks the Hexweaver/
   // Knife Dancer pairing despite verified entry CP. Slow only that ability on
   // newly versioned regional Tier I runs; keep opening Ward, boss phases and all

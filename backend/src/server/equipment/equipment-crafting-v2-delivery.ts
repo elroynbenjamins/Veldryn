@@ -116,7 +116,7 @@ export function verifyEquipmentV2HiddenLedger(
   const response=receipt.response;
   if(!response||!safe(response.version))fail('invalid_hidden_v2_receipt');
   const job=jobMap.get(response.jobId);
-  if(!job)fail('orphan_hidden_v2_receipt');
+  if(!job)throw new V2DraftCraftError('orphan_hidden_v2_receipt');
   if(response.kind==='started'){
    if(receipt.commandFingerprint!=='start:'+job.recipeId
     ||startReceiptIds.has(job.id)||response.recipeId!==job.recipeId
@@ -151,7 +151,7 @@ export function proposeEquipmentV2ClaimCustody(
  if(!state||!accountId||!item||!item.exactItem||!v2ServerExactTemplateConsistent(item.exactItem)
   ||!item.id||item.accountId!==accountId)fail('invalid_v2_delivery_copy');
  const owner=owned(state,item.ownerCharacterId);
- if(!owner)fail('unknown_v2_delivery_owner');
+ if(!owner)throw new V2DraftCraftError('unknown_v2_delivery_owner');
  if(copies(state).includes(item.id))fail('v2_delivery_instance_collision');
  const itemId=item.exactItem.pieceId;
  if(!itemId.startsWith('EQ2_'))fail('invalid_v2_delivery_namespace');

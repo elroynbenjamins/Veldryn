@@ -9,6 +9,25 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Forge v7 shared stats and compact, non-percentile player-facing bonus information.
+ "Bonus stat changes":["Bonus stat changes","Änderungen der Bonuswerte","Cambios en los bonus","Verschillen in bonusstats","Variazioni delle statistiche bonus","Variations des bonus"],
+ "Random bonus stats":["Random bonus stats","Zufällige Bonuswerte","Estadísticas adicionales aleatorias","Willekeurige bonusstats","Statistiche bonus casuali","Statistiques bonus aléatoires"],
+ "Possible bonus stats":["Possible bonus stats","Mögliche Bonuswerte","Posibles estadísticas adicionales","Mogelijke bonusstats","Statistiche bonus possibili","Bonus possibles"],
+ "View possible rolls":["View possible rolls","Mögliche Würfe anzeigen","Ver posibles resultados","Bekijk mogelijke bonussen","Mostra i bonus possibili","Voir les bonus possibles"],
+ "Hide possible rolls":["Hide possible rolls","Mögliche Würfe ausblenden","Ocultar posibles resultados","Verberg mogelijke bonussen","Nascondi i bonus possibili","Masquer les bonus possibles"],
+ "possible stats":["possible stats","mögliche Werte","estadísticas posibles","mogelijke stats","statistiche possibili","statistiques possibles"],
+ "2 bonuses per weapon":["2 bonuses per weapon","2 Boni pro Waffe","2 bonificaciones por arma","2 bonussen per wapen","2 bonus per arma","2 bonus par arme"],
+ "1 bonus · Epic+ gets 2":["1 bonus · Epic+ gets 2","1 Bonus · Episch+ erhält 2","1 bonus · Épico+ obtiene 2","1 bonus · Episch+ krijgt 2","1 bonus · Epico+ ne ottiene 2","1 bonus · Épique+ en donne 2"],
+ "All eligible weapons share the same bonus pool.":["All eligible weapons share the same bonus pool.","Alle geeigneten Waffen haben dieselben möglichen Boni.","Todas las armas aptas comparten los mismos bonus posibles.","Alle geschikte wapens hebben dezelfde mogelijke bonusstats.","Tutte le armi idonee condividono gli stessi bonus possibili.","Toutes les armes éligibles partagent les mêmes bonus possibles."],
+ "Each bonus type can appear only once on a weapon.":["Each bonus type can appear only once on a weapon.","Jede Bonusart kann pro Waffe nur einmal auftreten.","Cada tipo de bonus solo puede aparecer una vez por arma.","Elke bonusstat kan maar één keer per wapen voorkomen.","Ogni tipo di bonus può apparire una sola volta per arma.","Chaque type de bonus ne peut apparaître qu'une fois par arme."],
+ "Two different bonuses on every rarity.":["Two different bonuses on every rarity.","Zwei verschiedene Boni bei jeder Seltenheit.","Dos bonus distintos en todas las rarezas.","Twee verschillende bonussen bij elke zeldzaamheid.","Due bonus diversi per ogni rarità.","Deux bonus distincts à chaque rareté."],
+ "Common–Rare: 1 bonus. Epic+: 2 bonuses.":["Common–Rare: 1 bonus. Epic+: 2 bonuses.","Gewöhnlich–Selten: 1 Bonus. Episch+: 2 Boni.","Común–Raro: 1 bonus. Épico+: 2 bonus.","Gewoon–Zeldzaam: 1 bonus. Episch+: 2 bonussen.","Comune–Raro: 1 bonus. Epico+: 2 bonus.","Commun–Rare : 1 bonus. Épique+ : 2 bonus."],
+ "Bonus stats, rarity and quality roll separately on claim.":["Bonus stats, rarity and quality roll separately on claim.","Bonuswerte, Seltenheit und Qualität werden beim Abholen getrennt gewürfelt.","Los bonus, la rareza y la calidad se generan por separado al recoger.","Bonusstats, zeldzaamheid en kwaliteit worden apart bepaald bij het ophalen.","Bonus, rarità e qualità vengono generati separatamente al ritiro.","Les bonus, la rareté et la qualité sont tirés séparément à la récupération."],
+ "Bonus range":["Bonus range","Bonusspanne","Rango del bonus","Bonusbereik","Intervallo bonus","Plage du bonus"],
+ "Older copy — no recorded bonus":["Older copy — no recorded bonus","Älteres Exemplar – kein Bonus gespeichert","Copia antigua: sin bonus registrado","Oud exemplaar — geen bonus geregistreerd","Copia precedente: nessun bonus registrato","Ancien exemplaire : aucun bonus enregistré"],
+ "Max HP":["Max HP","Max. LP","PV máx.","Max. HP","PS max","PV max"],
+ "Armor":["Armor","Rüstung","Armadura","Pantser","Armatura","Armure"],
+ "Crit Rate":["Crit Rate","Krit.-Chance","Prob. crítico","Critkans","Prob. critico","Taux critique"],
   // Exact-copy bonus stats: maintained across the mainline gear quick-inspect redesign.
   "BONUS STATS":["BONUS STATS","BONUSWERTE","ESTADÍSTICAS EXTRA","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATS BONUS"],
   "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni für dieses Ausrüstungsexemplar.","Bonificaciones aleatorias de esta pieza de equipo.","Willekeurige bonussen op dit uitrustingsstuk.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],

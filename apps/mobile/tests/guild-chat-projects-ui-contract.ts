@@ -77,6 +77,9 @@ ok(projectSupplies.includes('All supply goals are complete.')&&projectSupplies.i
 ok(projectSupplies.includes('maxQuantity')&&projectSupplies.includes('Math.floor(goalRemaining/selected.value)')&&projectSupplies.includes('personalSupplyCeiling')&&projectSupplies.includes('Math.floor(selected.available)'),'Supply quantity must be bounded by owned inventory, remaining supply and project member share');
 ok(projectSupplies.includes("next.replace(/\\D/g,'')")&&projectSupplies.includes('Math.min(Number(digits),maxQuantity)')&&projectSupplies.includes("ui('Half')")&&projectSupplies.includes("ui('Max')"),'Supply quantity editing and presets must never overfill the goal');
 ok(onlineProjects.includes('personalShareCap={project.personalShareCap}')&&projectClient.includes('single_account_completion_share_cap'),'Supply form must use the authoritative project member share fraction');
+ok(onlineProjects.includes('supplyAllowances={project.supplyAllowances}')&&projectClient.includes("db.rpc('guild_project_supply_allowance_v1'"),'Use the verified per-member supply read rather than a guessed previous-donations cap');
+ok(projectSupplies.includes('personalLimitReached')&&projectSupplies.includes('allowance?.remainingPersonal')&&projectSupplies.includes('allowance?.remainingGoal'),'Personal cap reached and concurrent goal updates must disable over-limit donations');
+ok(projectClient.includes('r.account_id=v_uid')===false,'Raw contribution receipt identities must not be embedded in the client bundle');
 
 ok(onlineProjects.includes("ui('{count}/{minimum} contributors'"),'Live Projects must surface anti-leech contributor progress');
 ok(contributionPanel.includes("ui('Member contributions')")&&contributionPanel.includes("ui('Gather {count}',{count:member.gatheringPoints.toLocaleString(language)})"),'Inline contribution panel must expose per-member gathering contribution');

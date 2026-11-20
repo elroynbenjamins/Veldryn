@@ -1,5 +1,5 @@
 import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
-import {levelFromXp,totalXpAtLevel} from '../../../../apps/mobile/src/core/progression';
+import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from './equipment-crafting-v2-skill-xp';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
@@ -104,9 +104,9 @@ function awardOwner(state:GameState,id:string,skill:'smithing'|'tailoring',point
  const changed=mapOwner(state,id,row=>{
   const current=row.skills.find(s=>s.skillId===skill);
   if(!current||!safe(current.xp))throw new V2DraftCraftError('missing_crafting_profession');
-  const xp=Math.min(totalXpAtLevel(100),current.xp+points);
+  const xp=Math.min(v2ServerSkillTotalXpAtLevel(100),current.xp+points);
   if(!safe(xp))fail('invalid_skill_xp');
-  return row.skills.map(s=>s.skillId===skill?{...s,xp,level:levelFromXp(xp)}:s);
+  return row.skills.map(s=>s.skillId===skill?{...s,xp,level:v2ServerSkillLevelFromXp(xp)}:s);
  });
  if(changed.isActive)return {...state,skills:changed.row};
  return {...state,otherCharacters:state.otherCharacters!.map(entry=>entry.character.id===id?

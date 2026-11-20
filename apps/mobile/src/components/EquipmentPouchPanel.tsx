@@ -15,6 +15,7 @@ import {ItemArtwork} from './ItemArtwork';
 import {DisposalPreview} from './DisposalPreview';
 import {GameButton} from './GameButton';
 import {EquipmentPreview} from './EquipmentPreview';
+import {WeaponBonusDetails} from './WeaponBonusSection';
 import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -248,7 +249,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction}:{state:GameState
       <Text style={s.meta}>{p('Stored on {character} · {slot}',{character:state.character?.name??p('this character'),slot:p(item.slot??'Gear')})}</Text>
       {record?<Text style={s.meta}>{record.locked?p('Locked · '):''}{record.enhancement.rank>0?'+'+record.enhancement.rank+p(' enhanced · '):''}{p('Unique forged copy')}</Text>:<Text style={s.meta}>{p('Standard equipment')}</Text>}</View>
     </View>
-    <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
+    {record?<WeaponBonusDetails itemId={item.id} rarity={record.rarity} rolls={record.weaponBonuses} version={record.weaponBonusRollVersion} showEmpty/>:null}
+     <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
       sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <View style={s.actions}>

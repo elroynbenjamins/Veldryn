@@ -7,6 +7,8 @@ import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../sr
 import {itemDef,ITEMS} from '../src/content/items';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
+import type {V2ReadinessSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
+import type {V2DraftSnapshot as V2ServerDraftSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
 import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
@@ -22,6 +24,10 @@ import {equipmentV2PreviewBaseStats,equipmentV2StatBudget,equipmentV2Budget,
 import {equipmentV2DraftAssembly,equipmentV2SourcePlan,equipmentV2CostSummary} from '../src/core/equipment-crafting-v2-economy';
 import {equipmentV2HiddenRecipeScreen,equipmentV2PublicEntryAvailable} from '../src/core/equipment-crafting-v2-screen';
 const check=(ok:unknown,label:string)=>{if(!ok)throw new Error(label)};
+// Node-only type regression: the crypto-free mobile readiness projection must
+// remain structurally acceptable to the actual private Forge draft contract.
+const typeCompatible:V2ReadinessSnapshot extends V2ServerDraftSnapshot ? true : false=true;
+check(typeCompatible,'Hidden mobile readiness snapshot must fit private Forge contract');
 check(!EQUIPMENT_V2_RELEASED&&!CRAFTING_V2_RELEASED&&!EQUIPMENT_CRAFTING_V2_RELEASED&&!equipmentV2PublicEntryAvailable(),'V2 client release must stay hidden and atomic');
 check(Math.abs(EQUIPMENT_V2_RARITIES.reduce((sum,row)=>sum+row.chance,0)-1)<1e-10,'Rarity odds must sum to 100%');
 check(equipmentV2AffixCount(1,'epic')===1&&equipmentV2AffixCount(3,'epic')===2,'Epic affix breakpoint');

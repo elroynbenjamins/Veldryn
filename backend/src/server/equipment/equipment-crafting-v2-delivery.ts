@@ -1,4 +1,5 @@
-import type {GameState,ItemStack,CharacterState} from '../../../../apps/mobile/src/core/types';
+import type {V2LegacyAccountCustodyView as GameState,
+ V2LegacyPouchStack as ItemStack,V2LegacyCharacter as CharacterState} from './equipment-crafting-v2-legacy-custody-view';
 import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
 import {

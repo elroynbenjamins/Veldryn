@@ -51,6 +51,24 @@ const base={state,accountId,actorCharacterId:actor,items,reservations,
  custodyReceipts:receipts,installed,targetInstanceId:items[3].id,incomingGemId:gemId};
 const initial=JSON.stringify(base);
 assert.equal(readEquipmentV2VirtualCustody(items,reservations,receipts).length,4);
+const forgedOwnerReservation=reservations.map((row,index)=>index===0?{
+ ...row,ownerCharacterId:'attacker-not-the-crafter',
+}:row);
+assert.throws(()=>readEquipmentV2VirtualCustody(items,forgedOwnerReservation,receipts),
+ /invalid_v2_storage_reservation/,
+ 'A reservation cannot overwrite the original mint owner');
+const forgedJobReservation=reservations.map((row,index)=>index===0?{
+ ...row,jobId:'fabricated-forge-job',
+}:row);
+assert.throws(()=>readEquipmentV2VirtualCustody(items,forgedJobReservation,receipts),
+ /invalid_v2_storage_reservation/,
+ 'A custody replay must be bound to the original Forge job');
+const foreignAccountItems=items.map((row,index)=>index===0?{
+ ...row,accountId:'foreign-account',
+}:row);
+assert.throws(()=>readEquipmentV2VirtualCustody(foreignAccountItems,reservations,receipts),
+ /invalid_v2_virtual_claim_account/,
+ 'A replay cannot combine item instances from multiple accounts');
 assert.throws(()=>validateEquipmentV2EffectGemInstall(base),
  /v2_effect_equipped_family_cap/,'Fourth concurrently worn copy of one family must fail');
 const replacement=validateEquipmentV2EffectGemInstall({...base,targetInstanceId:items[0].id});

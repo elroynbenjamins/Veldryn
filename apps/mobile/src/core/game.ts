@@ -449,6 +449,23 @@ function consume(stacks:ItemStack[],itemId:string,quantity:number){
   return next;
 }
 function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((n,s)=>n+s.quantity,0);}
+/** Preserve physical copy IDs through Inventory/Bank moves. Generic consume()
+ * intentionally refuses unique copies, as selling by type must not choose a
+ * valuable roll without an explicit choice. */
+function removeItemStacksPreservingCopies(stacks:ItemStack[],itemId:string,quantity:number){
+ if(!Number.isSafeInteger(quantity)||quantity<1)throw new Error('Invalid tool quantity');
+ let left=quantity;const moved:ItemStack[]=[];
+ const kept=stacks.flatMap(row=>{
+  if(left<=0||row.itemId!==itemId)return [row];
+  const taken=Math.min(row.quantity,left);
+  if(row.instanceId&&taken!==1)throw new Error('Invalid physical tool copy');
+  moved.push({...row,quantity:taken});left-=taken;
+  return row.quantity===taken?[]:[{...row,quantity:row.quantity-taken}];
+ });
+ if(left>0)throw new Error('Not enough tool copies');
+ return {kept,moved};
+}
+
 
 export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPressureBand{
  const m=MONSTERS.find(row=>row.id===monsterId);if(!m||m.boss)return 'hard';
@@ -1449,6 +1466,12 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   if(!Number.isSafeInteger(quantity))throw new Error('Invalid deposit quantity');
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  if(itemDef(itemId).type==='tool'){
+    const selected=removeItemStacksPreservingCopies(state.inventory.stacks,itemId,quantity);
+    const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),selected.moved);
+    if(added.overflow.length)throw new Error('Bank is full');
+    return {...state,inventory:{...state.inventory,stacks:selected.kept},bank:{...state.bank,stacks:added.stacks}};
+  }
   // One atomic state mutation: gems always target the shared account pouch first.
   // An existing pouch stack can grow even when all pouch slots are occupied.
   const removed=consume(state.inventory.stacks,itemId,quantity);
@@ -1464,6 +1487,12 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
   const bankQty=stackQty(state.bank.stacks,itemId);if(bankQty<quantity)throw new Error('Not enough items in Bank');
+  if(itemDef(itemId).type==='tool'){
+    const selected=removeItemStacksPreservingCopies(state.bank.stacks,itemId,quantity);
+    const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),selected.moved);
+    if(added.overflow.length)throw new Error('Inventory is full');
+    return {...state,bank:{...state.bank,stacks:selected.kept},inventory:{...state.inventory,stacks:added.stacks}};
+  }
   const removed=consume(state.bank.stacks,itemId,quantity);
   const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Inventory is full');

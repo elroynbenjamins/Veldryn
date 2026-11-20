@@ -70,14 +70,21 @@ function runOne(id:'EXP_001'|'EXP_003',tier:1|2|3,seed:number,roster:ReturnType<
   })),
  });
  const priority=['camp','shrine','event','treasure','merchant','echo','battle','risk','elite','boss'];
- for(let room=0;room<7&&run.phase==='awaiting_choice';room++){
+ // Endurance replaces the old seven-step forced boss with a choice after
+ // seven cleared rooms (boss option is at depth 8). Take the FIRST eligible
+ // boss checkpoint to preserve the original short-run calibration; never
+ // silently continue for 42 rooms or change server-owned boss mechanics.
+ for(let room=0;room<10&&run.phase==='awaiting_choice';room++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(nodeId=>run.graph.nodes.find(node=>node.nodeId===nodeId)!);
   if(!options.length)break;
+  const checkpointBoss=options.find(node=>node.kind==='boss');
+  if(checkpointBoss)assert.equal(current.depth,7,'The first Endurance boss exit follows seven normal rooms');
   options.sort((a,b)=>priority.indexOf(a.kind)-priority.indexOf(b.kind));
-  run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:options[0].nodeId});
+  const next=checkpointBoss??options[0];
+  run=service.choose({runId,controllerAccountId:characters[0].accountId,optionNodeId:next.nodeId});
  }
- assert(run.phase!=='awaiting_choice','The test must reach a terminal result');
+ assert(run.phase!=='awaiting_choice','The calibration run must finish at its first seven-room Endurance boss checkpoint');
  return {clear:run.phase==='completed',boss:run.graph.nodes.find(node=>node.kind==='boss')?.contentId};
 }
 for(const id of ['EXP_001','EXP_003'] as const)for(const tier of [1,2,3] as const){

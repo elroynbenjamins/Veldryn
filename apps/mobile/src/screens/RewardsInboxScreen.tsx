@@ -19,7 +19,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[expandedId,setExpandedId]=useState<string|null>(null),[history,setHistory]=useState(false),[marketTab,setMarketTab]=useState(false),[snapshot,setSnapshot]=useState<InboxSnapshot>(preview??{entries:[],pendingCount:0,total:0}),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[blockedClaims,setBlockedClaims]=useState<Record<string,string>>({});
- const {width,fontScale}=useWindowDimensions(),stackActions=width<430||fontScale>=1.2||state.settings.textScale>=1.2;
+ const {width,fontScale}=useWindowDimensions(),stackActions=width<430||fontScale>=1.2||state.settings.textScale>=1.2,stackHeader=width<360||fontScale>=1.3||state.settings.textScale>=1.3;
  const running=useRef(false),generation=useRef(0);
  const load=useCallback(async(append=false)=>{const token=++generation.current;if(preview)return;if(!online){setError(a('Sign in to receive rewards and gifts.'));return;}setLoading(true);try{const next=await loadRewardInbox(history,append?snapshot.entries.length:0);if(token===generation.current){setSnapshot(previous=>({...next,entries:append?[...previous.entries,...next.entries]:next.entries}));setError('');}}catch(e){if(token===generation.current)setError(e instanceof Error?e.message:a('Inbox unavailable.'));}finally{if(token===generation.current)setLoading(false);}},[history,online,preview,snapshot.entries.length]);
  useEffect(()=>{void load();return()=>{generation.current++;};},[history,online,preview]);
@@ -41,17 +41,17 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
  }catch(e){const message=e instanceof Error?e.message:a('Could not claim. Your rewards remain safe.');await load();setError(message);}finally{running.current=false;setBusy(false);}};
 
  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-  <View style={[s.header,stackActions&&s.headerStack]}>
+  <View style={[s.header,stackHeader&&s.headerStack]}>
     <View style={s.headCopy}>
       <View style={s.headTitle}><UiIcon name="rewards" size={26}/><Text accessibilityRole="header" style={s.heading}>{a('Rewards Inbox')}</Text></View>
       <Text style={s.sub}>{!history&&!marketTab&&pending>0?a('{count} rewards waiting',{count:pending}):a('Earned rewards and gifts stay safe here until claimed.')}</Text>
     </View>
-    {!marketTab&&!history&&pending>0?<View style={[s.headerAction,stackActions&&s.headerActionStack]}>
+    {!marketTab&&!history&&pending>0?<View style={[s.headerAction,stackHeader&&s.headerActionStack]}>
       <SocialActionButton primary label={a('Claim all')} busy={busy} disabled={loading||(!online&&!preview)} onPress={()=>run()}/>
     </View>:null}
   </View>
   <View accessibilityRole="tablist" style={s.tabs}>
-    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value&&!marketTab,disabled:busy}} disabled={busy} onPress={()=>{if(!preview)setSnapshot(previous=>({...previous,entries:[],total:0}));setMarketTab(false);setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});}} style={[s.tab,history===value&&!marketTab&&s.tabActive]}>
+    {[false,true].map(value=><Pressable key={String(value)} accessibilityRole="tab" accessibilityState={{selected:history===value&&!marketTab,disabled:busy}} disabled={busy} onPress={()=>{const changed=history!==value;if(!marketTab&&!changed)return;if(!preview&&changed)setSnapshot(previous=>({...previous,entries:[],total:0}));setMarketTab(false);setHistory(value);setNotice('');setExpandedId(null);setBlockedClaims({});if(marketTab&&!changed)void load();}} style={[s.tab,history===value&&!marketTab&&s.tabActive]}>
       <Text style={[s.tabText,history===value&&!marketTab&&s.tabTextActive]}>{value?a('Claimed history'):a('Inbox')+(pending?' · '+pending:'')}</Text>
     </Pressable>)}
     {PLAYER_MARKET_RELEASED&&MARKET_AUTHENTICATED_SERVICE_READY?<Pressable accessibilityRole="tab" accessibilityLabel={a('Market')} accessibilityState={{selected:marketTab,disabled:busy}}
@@ -143,8 +143,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  previewItem:{flexDirection:'row',alignItems:'center',gap:3,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8,paddingVertical:3,paddingHorizontal:5},
  previewQuantity:{fontSize:11,color:C.text,fontWeight:'800',flexShrink:1},
  moreCount:{fontSize:11,color:C.muted,fontWeight:'800'},
- actions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',flexWrap:'wrap',gap:6},
- actionsStack:{alignSelf:'flex-end'},
+ actions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',flexWrap:'wrap',gap:6,minWidth:0},
+ actionsStack:{alignSelf:'stretch',justifyContent:'flex-end'},
  detailsButton:{minHeight:44,minWidth:80,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:8,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  detailsButtonText:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1},
  chevron:{fontSize:16,color:C.muted},

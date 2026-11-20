@@ -63,6 +63,11 @@ rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
 const changedPreview=persisted.preview.map(p=>({...p,traitIds:[...p.traitIds]}));
 changedPreview[0].traitIds=['warded'];
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,preview:changedPreview}),/stored_trait_evidence_mismatch/);
+const forgedAbilityPreview=persisted.preview.map(p=>({...p,abilityNames:[...p.abilityNames]}));
+forgedAbilityPreview[0].abilityNames.push('Fabricated enemy ability');
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,preview:forgedAbilityPreview,
+}),/stored_preview_mechanics_mismatch/);
 
 const bosses=[
  {id:'BOSS_EXP_ROOT',region:'asterfall',name:'Asterfall Root'},
@@ -91,6 +96,14 @@ for(const {id,region,name} of bosses){
  assert.ok(plan.preparedEnemies[0].tags?.includes('enemy-v2:kit:v1'));
  const stored:PersistedEnemyKitV2={...plan,source:'server-persisted-v2',revision:3};
  assert.deepEqual(verifyPersistedEnemyKitsV2([boss],stored).enemies,plan.preparedEnemies);
+ if(id==='BOSS_EXP_ROOT'){
+  const forgedPhasePreview=stored.preview.map(p=>({...p,
+   phaseNames:[...p.phaseNames,'Fabricated boss phase'],
+  }));
+  rejects(()=>verifyPersistedEnemyKitsV2([boss],{
+   ...stored,preview:forgedPhasePreview,
+  }),/stored_preview_mechanics_mismatch/);
+ }
  const missingLegacy=plan.preparedEnemies.map(e=>({...e,
    phases:e.phases?.filter(p=>p.id!=='LEGACY_PHASE'),
  }));
@@ -108,5 +121,5 @@ rejects(()=>prepareSoloEnemyKitsV2([incorrectName],{...options,eliteEnemyIds:[]}
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
  ...persisted,preview:[null as never,...persisted.preview.slice(1)],
 }),/invalid_stored_preview/);
-assert.equal(failed,23);
-console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 23 fail-closed receipts');
+assert.equal(failed,25);
+console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 25 fail-closed receipts');

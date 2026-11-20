@@ -4,7 +4,7 @@
       "bpm": 102,
       "seconds": 38.09,
       "selection": "First Light",
-      "rights_status": "pending-review"
+      "rights_status": "original-synthesis-no-third-party-samples"
     },
     "boss": {
       "bpm": 168,
@@ -34,7 +34,7 @@
       "bpm": 88,
       "seconds": 44.1,
       "selection": "Lanterns at Hearth",
-      "rights_status": "pending-review"
+      "rights_status": "original-synthesis-no-third-party-samples"
     },
     "world_boss": {
       "bpm": 154,

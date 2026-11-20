@@ -110,7 +110,7 @@ export interface CraftedGearInstance{
   enhancement:GearEnhancementState;
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
-  /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
+  /** T1–T9 weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
   weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
   /** Roll table version recorded at mint, so later balance revisions cannot invalidate earned copies. */
   weaponBonusRollVersion?:import('./weapon-bonus-rolls').WeaponBonusRollVersion;

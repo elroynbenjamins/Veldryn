@@ -13,6 +13,7 @@ const pure=[
  'delivery','storage-reservations','pouch-snapshot','legacy-custody-view',
  'server-projection','virtual-history','gem-sidecar-types','gem-identity',
  'gem-verifier','effect-gem-policy','skill-xp',
+ 'game-metadata','physical-delivery-staging',
 ];
 const errors=[];
 for(const name of pure){

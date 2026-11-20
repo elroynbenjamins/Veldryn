@@ -128,7 +128,7 @@ export function weaponBonusRollGrade(strength:number):WeaponBonusRollGrade{
 }
 
 export function weaponBonusLine(itemId:string,rarity:ItemRarity,bonus:WeaponBonusRoll,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION){
-  const cfg=weaponBonusConfig(itemId,rarity);
+  const cfg=weaponBonusConfig(itemId,rarity,version);
   const range=cfg?.pool.includes(bonus.stat)?weaponBonusRange(cfg.tier,bonus.stat,version):undefined;
   if(!range)return '';
   return `${weaponBonusCompactLine(bonus)} · Range ${(range[0]/100).toFixed(1)}–${(range[1]/100).toFixed(1)}% · ${weaponBonusStrength(itemId,rarity,bonus,version)}/100 roll`;

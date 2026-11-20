@@ -1,8 +1,10 @@
 import {GATHERING_TOOLS} from '../src/content/gathering-tools';
-import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank} from '../src/core/game';
+import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
 import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier} from '../src/core/gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel} from '../src/core/gathering-tool-rolls';
 import {totalXpAtLevel} from '../src/core/progression';
+import {bulkTransferSelected} from '../src/core/inventory-bulk';
+import {validateGameCommand} from '../src/core/game-commands';
 import type {CraftedGatheringTool} from '../src/core/gathering-tool-rolls';
 import type {GameState} from '../src/core/types';
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -66,4 +68,15 @@ crafted=depositToBank(crafted,'GREENWOOD_HATCHET',2);
 assert([first.id,second.id].every(id=>crafted.bank.stacks.some(s=>s.instanceId===id)),'Bank deposit retains both rolled copies');
 crafted=withdrawFromBank(crafted,'GREENWOOD_HATCHET',2);
 assert([first.id,second.id].every(id=>crafted.inventory.stacks.some(s=>s.instanceId===id)),'Bank withdrawal retains both rolled copies');
+crafted=moveGatheringToolCopy(crafted,first.id,'bank');
+assert(crafted.bank.stacks.some(row=>row.instanceId===first.id)&&crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Exact transfer moves selected copy only');
+crafted=bulkTransferSelected(crafted,['copy:'+first.id],'bank');
+assert(crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Bulk transfer must preserve tool instance IDs');
+assert(validateGameCommand({type:'equip_tool',args:{id:'GREENWOOD_HATCHET',instanceId:second.id}}).args?.instanceId===second.id,'Physical equip is accepted by strict game command schema');
+const goldBefore=crafted.character!.gold;
+crafted=sellGatheringToolCopy(crafted,first.id);
+assert(!crafted.inventory.stacks.some(row=>row.instanceId===first.id)&&crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Sell only exact selected copy');
+assert(!crafted.account.craftedGatheringToolInstances?.some(row=>row.id===first.id)&&crafted.account.craftedGatheringToolInstances?.some(row=>row.id===second.id),'Sold copy metadata is purged, remaining copy persists');
+assert(crafted.character!.gold>goldBefore,'Inventory sale credits Gold');
+
 console.log('Gathering tool affixes: deterministic rolls, 80% cap, rarity, custody and legacy tests passed.');

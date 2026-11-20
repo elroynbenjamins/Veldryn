@@ -4,6 +4,7 @@ import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
+import {regionalArea} from '../content/regional-areas';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {isLiveSixPieceBonus} from './equipment-set-runtime';
 import {GameState,SkillId} from './types';
@@ -32,6 +33,7 @@ export interface ItemGearDecision{
  set?:{name:string;tier:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string};active:readonly {pieces:number;bonus:string;runtime:'live'|'trigger-hook-pending'}[]};
 }
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
+const sourceArea=(regionId:string,areaId?:string)=>regionalArea(regionId,areaId)?.name;
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
 export function itemInspectModel(state:GameState,itemId:string,instanceId?:string|null,source:'inventory'|'bank'|'equipment_pouch'='inventory'){
@@ -43,7 +45,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
 
   for(const node of [...GATHERING,...HERB_NODES]){
     if(node.itemId!==itemId)continue;
-    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${title(node.zoneId)}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
+    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${WORLD_ZONES.find(zone=>zone.id===node.zoneId)?.name??title(node.zoneId)}${sourceArea(node.zoneId,node.areaId)?' › '+sourceArea(node.zoneId,node.areaId):''}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,areaId:node.areaId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
   }
   for(const recipe of RECIPES){
     if(recipe.output.itemId!==itemId)continue;
@@ -53,7 +55,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     for(const drop of monster.drops){
       if(drop.itemId!==itemId)continue;
       const regionId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;
-      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone} · Lv ${monster.level} · ${pct(drop.chance)} drop`,navigation:{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId,button:'Open hunt',detail:`Open ${monster.name} in ${monster.zone}.`}});
+      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone}${regionId&&sourceArea(regionId,monster.areaId)?' › '+sourceArea(regionId,monster.areaId):''} · Lv ${monster.level} · ${pct(drop.chance)} drop`,navigation:{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId,areaId:monster.areaId,button:'Open hunt',detail:`Open ${monster.name} in ${monster.zone}.`}});
     }
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});

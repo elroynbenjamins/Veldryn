@@ -30,7 +30,7 @@ check(weaponBonusComparisonRows([],[]).length===0,'Unrolled copies should have n
 check(new Set(WEAPON_BONUS_CURRENT_POOL).size===7,'Seven class-neutral live roll types expected');
 
 for(const language of SUPPORTED_LANGUAGES){
-  for(const key of ['possible','possibleCount','single','double','shared','claim','current','candidate','points'] as const)
+  for(const key of ['possible','possibleCount','oneOrTwo','twoCount','single','double','shared','claim','current','candidate','points'] as const)
     check(!!weaponBonusUiText(language,key).trim(),language+' missing bonus UX label '+key);
   for(const stat of ['maxHp','armor','tenacity','critRate','haste','accuracy','potency','ward','penetration'] as const)
     check(!!weaponBonusStatText(language,stat).trim(),language+' missing stat name '+stat);

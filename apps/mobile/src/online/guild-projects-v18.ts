@@ -6,7 +6,7 @@ import {claimableGuildProjectRewardIds} from '../core/guild-project-reward-atten
 
 type ProjectRow={
  id:string;guild_id:string;template_id:string;definition_snapshot:Record<string,unknown>|null;kind:GuildProjectKind;focus:GuildProjectFocus;slot_index:number;status:'active'|'completed'|'expired'|'cancelled';
- target_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string;cycle_key?:string|null;meaningful_contributors:number;minimum_meaningful_contributors:number;meaningful_contributor_threshold:number;personal_reward_threshold:number;ends_at?:string|null;started_at:string;
+ target_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string;single_account_completion_share_cap:number|string;cycle_key?:string|null;meaningful_contributors:number;minimum_meaningful_contributors:number;meaningful_contributor_threshold:number;personal_reward_threshold:number;ends_at?:string|null;started_at:string;
 };
 type ProgressRow={project_instance_id:string;account_id:string;raw_points:number|string;completion_points:number|string;combat_points:number|string;skilling_points:number|string};
 type ResourceRow={project_instance_id:string;resource_kind:'gold'|'item';resource_id:string;target_amount:number|string;contributed_amount:number|string};
@@ -23,7 +23,7 @@ export interface OnlineGuildProjectSupplyItem{itemId:string;name:string;category
 export interface OnlineGuildProjectSummary{
  id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;personalShareCap:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean;guildXpReward:number;rewardGold:number;mode:'effort'|'donation'|'hybrid';difficulty:'easy'|'medium'|'hard';effortPerMember:number}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];choiceAvailable:boolean;activity:GuildActivityView[];supplyInventory?:OnlineGuildProjectSupplyItem[]}
@@ -91,7 +91,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  const prepared=await db.rpc('prepare_guild_projects_v2');if(prepared.error)throw prepared.error;
  const [projectResult,candidateResult,rosterResult,supplyResult]=await Promise.all([
   db.from('guild_project_instances')
-   .select('id,guild_id,template_id,definition_snapshot,kind,focus,slot_index,cycle_key,status,target_points,completion_points,combat_points,skilling_points,meaningful_contributors,minimum_meaningful_contributors,meaningful_contributor_threshold,personal_reward_threshold,ends_at,started_at')
+   .select('id,guild_id,template_id,definition_snapshot,kind,focus,slot_index,cycle_key,status,target_points,completion_points,combat_points,skilling_points,meaningful_contributors,minimum_meaningful_contributors,meaningful_contributor_threshold,personal_reward_threshold,single_account_completion_share_cap,ends_at,started_at')
    .eq('guild_id',membership.guild_id).in('status',['active','completed']).order('started_at',{ascending:false}).limit(12),
   db.rpc('guild_project_choice_ballot_v1'),
   db.rpc('guild_roster',{p_guild_id:membership.guild_id}),
@@ -151,6 +151,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
    targetPoints:num(row.target_points),completionPoints:num(row.completion_points),combatPoints:num(row.combat_points),skillingPoints:num(row.skilling_points),
    meaningfulContributors:Math.max(0,Math.floor(row.meaningful_contributors||0)),minimumMeaningfulContributors:Math.max(0,Math.floor(row.minimum_meaningful_contributors||0)),
    personalPoints:num(personal?.raw_points),personalRewardThreshold:num(row.personal_reward_threshold),
+   personalShareCap:Math.min(1,num(row.single_account_completion_share_cap)),
    endsAt:row.ends_at??undefined,startedAt:row.started_at,memberContributions,
    resourceGoals:resources.filter(goal=>goal.project_instance_id===row.id).map(goal=>({resourceKind:goal.resource_kind,resourceId:goal.resource_id,label:resourceLabel(snapshot,goal.resource_id,goal.resource_kind),target:num(goal.target_amount),current:num(goal.contributed_amount)})),
   } satisfies OnlineGuildProjectSummary;

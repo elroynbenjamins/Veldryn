@@ -46465,11 +46465,40 @@ function craftedRarityStatMultiplier(itemId, rarity) {
 }
 
 // ../apps/mobile/src/core/weapon-bonus-rolls.ts
-var WEAPON_BONUS_ROLL_VERSION = 2;
-var ROLE_POOL = {
+var WEAPON_BONUS_ROLL_VERSION = 3;
+var LEGACY_ROLE_POOL = {
   Tank: ["armor", "maxHp", "ward", "tenacity"],
   Damage: ["critRate", "haste", "penetration", "accuracy"],
   Support: ["potency", "haste", "ward", "maxHp"]
+};
+var WEAPON_BONUS_CURRENT_POOL = [
+  "maxHp",
+  "armor",
+  "tenacity",
+  "critRate",
+  "haste",
+  "accuracy",
+  "potency"
+];
+var EARLY_WEAPON_BONUS_BPS = {
+  1: {
+    maxHp: [80, 180],
+    armor: [40, 100],
+    tenacity: [70, 160],
+    critRate: [20, 50],
+    haste: [20, 60],
+    accuracy: [20, 50],
+    potency: [40, 110]
+  },
+  2: {
+    maxHp: [120, 250],
+    armor: [70, 170],
+    tenacity: [120, 260],
+    critRate: [30, 90],
+    haste: [40, 110],
+    accuracy: [30, 90],
+    potency: [80, 200]
+  }
 };
 var WEAPON_BONUS_BPS_BY_BAND = {
   3: {
@@ -46524,13 +46553,16 @@ var V1_RANGE_BY_BAND = {
   9: [400, 600]
 };
 function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
+  if (tier === 1 || tier === 2) {
+    return version === 3 && WEAPON_BONUS_CURRENT_POOL.includes(stat) ? EARLY_WEAPON_BONUS_BPS[tier][stat] : void 0;
+  }
   const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
   if (band === void 0) return void 0;
-  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 || version === 3 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
 }
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
 var STEP_BPS = 10;
-function weaponBonusConfig(itemId, rarity) {
+function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) {
   let item;
   try {
     item = itemDef(itemId);
@@ -46539,12 +46571,13 @@ function weaponBonusConfig(itemId, rarity) {
   }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role2) return void 0;
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < (version === 3 ? 1 : 3) || tier > 9 || version !== 3 && !role2) return void 0;
   const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
-  return { tier, role: role2, count, pool: ROLE_POOL[role2] };
+  const pool = version === 3 ? WEAPON_BONUS_CURRENT_POOL : LEGACY_ROLE_POOL[role2];
+  return { tier, role: role2, count, pool };
 }
 function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
-  const cfg = weaponBonusConfig(itemId, rarity);
+  const cfg = weaponBonusConfig(itemId, rarity, version);
   if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
   const seen = /* @__PURE__ */ new Set(), out = [];
   for (const entry2 of raw2) {
@@ -46583,7 +46616,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
-      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,

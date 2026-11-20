@@ -1,5 +1,5 @@
 import type {GameState,CharacterState,InventoryState,GearSlot} from '../../../../apps/mobile/src/core/types';
-import {equipmentPouchForCharacter} from '../../../../apps/mobile/src/core/equipment-pouch';
+import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
@@ -161,7 +161,7 @@ export function readEquipmentV2VirtualCustody(
 function countIn(state:GameState,all:readonly V2VirtualCopy[],location:V2VirtualLocation,holder:string|null):boolean{
  const owned=holder?characterRow(state,holder):null;
  const storage=location==='bank'?state.bank
-  :location==='pouch'?owned?equipmentPouchForCharacter(owned.character):null
+  :location==='pouch'?owned?v2ServerLegacyPouchSnapshot(owned.character):null
   :location==='inventory'?owned?.inventory:null;
  if(!storage||!safe(storage.capacity)||!Array.isArray(storage.stacks))
   throw new V2DraftCraftError('invalid_v2_virtual_storage');

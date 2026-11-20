@@ -34,10 +34,20 @@ test('source must be earned elite/zone boss, correct tier and stored encounter',
  assert.equal(view.canCraft,false);
  assert.equal(view.sourceVerifiedInDatabase,false);
  assert.throws(()=>assertBlueprintUnlockV1(proof),/issuer_unmounted/);
+ // A syntactically long, untrusted receipt string can be a review candidate,
+ // but can NEVER become a verified DB source, a live roll or an unlocked recipe.
+ const forgedLongKey={...proof,sourceReceiptKey:'untrusted-fabricated-receipt-with-sufficient-length'};
+ const forgedPreview=inspectBlueprintDropCandidateV1(forgedLongKey);
+ assert.equal(forgedPreview.reviewCandidate,true);
+ assert.equal(forgedPreview.sourceVerifiedInDatabase,false);
+ assert.equal(forgedPreview.readyToRoll,false);
+ assert.equal(forgedPreview.canUnlock,false);
+ assert.equal(forgedPreview.canCraft,false);
+ assert.throws(()=>assertBlueprintUnlockV1(forgedLongKey),/issuer_unmounted/);
  for(const bad of [
   {sourceKind:'npc_shop'},{sourceKind:'player_market_purchase'},
   {sourceTier:1},{committedEncounter:false},{accountBound:false},
-  {sourceReceiptKey:'client-supplied-short'},
+  {sourceReceiptKey:'short'},
  ]){
   const altered={...proof,...bad};
   assert.equal(inspectBlueprintDropCandidateV1(altered).reviewCandidate,false);

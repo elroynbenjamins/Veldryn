@@ -23,3 +23,5 @@ Date: 20 November 2026. Status: proposed PR, not merged into main.
 - The core tests cover V1 migration, corruption handling, isolated muting, track remapping, unchanged contexts, and JSON round trips. The Settings contract checks all seven contexts are accessible within the single outer scroll view.
 - Run the repository's mobile typecheck and game-audio test in CI before merging.
 - Listen-test scene overrides and rapidly toggling music on an Android release build.
+
+- CI contracts updated: existing Settings navigation assertions now cover six categories, and localization validation recognizes the reviewed recent-screen catalog for new labels.

@@ -50938,7 +50938,7 @@ function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId) {
   const rootbound = expeditionId === "EXP_001" && (encounterId?.startsWith("ROOT") || encounterId === "BOSS_EXP_ROOT");
   const rootAttack = encounterId === "BOSS_EXP_ROOT" && tier === 2 ? 0.92 : encounterId === "BOSS_EXP_ROOT" && tier === 3 ? 0.88 : ROOTBOUND_TIER_ATTACK[tier - 1];
   const rootCorrection = rootbound ? rootAttack / LEGACY_ROOTBOUND_ATTACK_MULTIPLIER : 1;
-  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.95 : tier === 2 ? 0.965 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
+  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
   const bossTierThree = tier === 3 && encounterId?.startsWith("BOSS_");
   const bossHpAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.965 : expeditionId === "EXP_003" ? 0.98 : 1 : 1;
   const bossDefenseAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.985 : expeditionId === "EXP_003" ? 0.99 : 1 : 1;

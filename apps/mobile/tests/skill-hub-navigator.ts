@@ -1,4 +1,4 @@
-import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorEntry} from '../src/core/skill-hub-navigator';
+import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,skillNavigatorRouteFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorEntry} from '../src/core/skill-hub-navigator';
 import {equal,test} from './account-test-helpers';
 const rows:SkillNavigatorEntry[]=[
  {id:'combat',name:'Combat',subtitle:'Fight & train',category:'combat',route:'combat'},
@@ -22,6 +22,13 @@ test('Skill Navigator filters groups, names, ids and localized visible kinds wit
  equal(filterSkillNavigatorEntries(rows,'all','class:guard').map(row=>row.id),['class:guardcraft'],'stable id search');
  equal(filterSkillNavigatorEntries(rows,'companions','account-wide').map(row=>row.id),['companion-mastery'],'subtitle search');
  equal(filterSkillNavigatorEntries(rows,'all','unmatched'),[],'empty state');
+});
+test('New tracked skills open a safe progress overview until their real activity route is implemented',()=>{
+ equal(skillNavigatorRouteFor('mining'),'skill','supported gathering details');
+ equal(skillNavigatorRouteFor('smithing'),'skill','supported crafting details');
+ equal(skillNavigatorRouteFor('faith'),'skill','supported devotion details');
+ equal(skillNavigatorRouteFor('future-profession'),'overview','future XP does not open blank crafting view');
+ equal(skillNavigatorRouteFor('hunting'),'overview','historical hunting skill remains visible but never opens an empty detail');
 });
 test('Skill Navigator does not map ability/talent selections to trainable profession XP',()=>{
  equal(rows.filter(row=>row.route==='skill').map(row=>row.id),['mining','smithing','future-profession'],'only true professions have open-skill route');

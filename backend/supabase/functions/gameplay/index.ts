@@ -50952,7 +50952,7 @@ function restoreCharacterWorldProgress(entry2) {
 
 // ../apps/mobile/src/core/account-roster.ts
 var MAX_NEW_ACCOUNT_CHARACTERS = 3;
-var CHARACTER_SLOT_THRESHOLDS = [0, 250, 550];
+var CHARACTER_SLOT_THRESHOLDS = [0, 250, 800];
 var REGION_AFK_MILESTONES = ["SUNSCAR", "FROSTMARCH", "ASHLANDS"];
 var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
 var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;

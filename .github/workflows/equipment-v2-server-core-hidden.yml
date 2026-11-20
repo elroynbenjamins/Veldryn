@@ -36,6 +36,7 @@ jobs:
             equipment-crafting-v2-commit-plan \
             equipment-crafting-v2-pouch-snapshot \
             equipment-crafting-v2-delivery-core \
-            equipment-crafting-v2-effect-gem-server; do
+            equipment-crafting-v2-effect-gem-server \
+            equipment-crafting-v2-gem-verifier-server; do
             node "backend/dist-equipment-v2-core/server/equipment/__tests__/${spec}.test.js"
           done

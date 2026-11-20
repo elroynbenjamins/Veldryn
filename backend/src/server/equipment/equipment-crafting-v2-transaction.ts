@@ -126,7 +126,7 @@ function nextSlot(jobs:readonly V2DraftJob[],nowMs:number,capacity:number){
 }
 function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'start'}>,ctx:V2DraftContext){
  const match=v2ServerRecipeAndPiece(command.recipeId);
- if(!match)fail('unknown_v2_recipe');
+ if(!match)throw new V2DraftCraftError('unknown_v2_recipe');
  const {recipe,piece}=match;
  const owner=state.characters[ctx.characterId];
  if(piece.tier!==recipe.tier||piece.id!==recipe.pieceId)fail('inconsistent_canonical_manifest');
@@ -166,11 +166,13 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
 }
 function applyClaim(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'claim'}>,ctx:V2DraftContext){
  const job=state.jobs.find(j=>j.id===command.jobId);
- if(!job||job.accountId!==ctx.accountId||!Object.prototype.hasOwnProperty.call(state.characters,job.ownerCharacterId))fail('unknown_owned_job');
+ if(!job||job.accountId!==ctx.accountId||!Object.prototype.hasOwnProperty.call(state.characters,job.ownerCharacterId))
+   throw new V2DraftCraftError('unknown_owned_job');
  if(job.status==='claimed')fail('already_claimed');
  if(ctx.nowMs<job.finishesAtMs)fail('job_not_finished');
  const matched=v2ServerRecipeAndPiece(job.recipeId);
- if(!matched||matched.recipe.pieceId!==job.pieceId)fail('unknown_job_recipe');
+ if(!matched||matched.recipe.pieceId!==job.pieceId)
+   throw new V2DraftCraftError('unknown_job_recipe');
  const {recipe,piece}=matched;
  const contract=job.craftContract;
  if(!contract||contract.manifestVersion!==V2_SERVER_MANIFEST_VERSION

@@ -28,6 +28,9 @@ check(legacy.length===3&&legacy.some(row=>row.stat==='ward'&&row.deltaBps===-100
   'Old Ward and Penetration roll values must remain visible in equipment comparisons');
 check(weaponBonusComparisonRows([],[]).length===0,'Unrolled copies should have no bonus table');
 check(new Set(WEAPON_BONUS_CURRENT_POOL).size===7,'Seven class-neutral live roll types expected');
+const nonWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='chest');
+check(nonWeapon&&!weaponBonusConfig(nonWeapon.output.itemId,'common'),
+  'Forge must not promise weapon-specific affixes on armor or other gear slots');
 
 for(const language of SUPPORTED_LANGUAGES){
   for(const key of ['possible','possibleCount','oneOrTwo','twoCount','single','double','shared','claim','current','candidate','points'] as const)

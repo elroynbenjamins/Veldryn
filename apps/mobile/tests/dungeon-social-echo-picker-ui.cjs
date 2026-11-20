@@ -23,7 +23,7 @@ assert(picker.includes("['all','friend','guild']")&&locale.includes('Search char
 assert(picker.includes('accessibilityRole="checkbox"')&&picker.includes('reasonFor(candidate'),'Role-safe accessible selection must be explicit');
 assert(loadout.includes('<CoopSocialEchoPicker language={language}')&&loadout.includes('preferredEchoCharacterIds:selectedSocialCharacterIds'),'Localized party choices belong on pre-run screen and must reach run intent');
 assert(screen.includes('coopClient.socialEchoes(minimum)')&&screen.includes('socialEchoes={socialEchoes}'),'Screen must refresh the eligible contacts');
-assert(client.includes('socialEchoes:(minimumLevel:number)')&&client.includes('/coop/echo-allies'),'Browse endpoint must be authenticated');
+assert(client.includes('socialEchoes:(minLevel:number)')&&client.includes('/coop/echo-allies?minLevel=')&&client.includes('supabase.auth.getSession()')&&client.includes('Authorization:`Bearer ${session.access_token}`'),'Friend/guild Echo browse must use the actual authenticated minLevel request');
 assert(source.includes('intent.preferredEchoCharacterIds'),'Run start carries selected character IDs');
 assert(contracts.includes('new Set(ids).size!==ids.length')&&contracts.includes('invalid_echo_role_composition'),'Client still blocks duplicate accounts and invalid classes');
 assert(edge.includes('prepareSocialEchoCandidates(services,accountId,minLevel)'),'Source must be resolved by trusted backend, not raw clients');

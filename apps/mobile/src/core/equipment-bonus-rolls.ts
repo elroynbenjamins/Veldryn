@@ -6,11 +6,11 @@ import {rarityAdjustedBonusRange} from './bonus-roll-rarity';
 import type {ItemRarity} from './item-rarity';
 import type {GearSlot} from './types';
 
-/** T2–T9 non-weapon bonus rolls, stored on the immutable crafted-copy receipt. */
+/** T1–T9 non-weapon bonus rolls, stored on the immutable crafted-copy receipt. */
 export type EquipmentBonusStat=WeaponBonusStat;
 export interface EquipmentBonusRoll{stat:EquipmentBonusStat;basisPoints:number;}
-export const EQUIPMENT_BONUS_ROLL_VERSION=5 as const;
-export type EquipmentBonusRollVersion=1|2|3|4|5;
+export const EQUIPMENT_BONUS_ROLL_VERSION=6 as const;
+export type EquipmentBonusRollVersion=1|2|3|4|5|6;
 
 const HIGH_RARITIES:readonly ItemRarity[]=['epic','legendary','mythic'];
 const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly EquipmentBonusStat[]>>={
@@ -52,30 +52,30 @@ function bandForTier(tier:number):2|3|5|7|9|undefined{
   return tier>=9?9:tier>=7?7:tier>=5?5:tier>=3?3:tier===2?2:undefined;
 }
 
-/** Any non-weapon set slot can roll a role-relevant stat. T2 always has one roll. */
+/** Any eligible T1–T9 non-weapon set slot rolls from the same class-neutral, live-combat-safe pool. */
 export function equipmentBonusConfig(itemId:string,rarity:ItemRarity,version:EquipmentBonusRollVersion=EQUIPMENT_BONUS_ROLL_VERSION){
   let item:ReturnType<typeof itemDef>;
   try{item=itemDef(itemId);}catch{return undefined;}
   const tier=Number(/^T([1-9])_/.exec(item.equipmentSetId??'')?.[1]??0);
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
-  if(item.type!=='gear'||!item.slot||!ELIGIBLE_SLOTS.has(item.slot)||tier<1||tier>9||(tier===1&&version!==5)||!role)return undefined;
-  const count=tier>=5||(tier>=3&&HIGH_RARITIES.includes(rarity))?2:1;
-  const pool:readonly EquipmentBonusStat[]=version===1?LEGACY_ROLE_POOL[role]:version===2?V2_ROLE_POOL[role]:version===3?V3_ROLE_POOL[role]:version===4?ROLE_POOL[role]:LAUNCH_SAFE_ROLE_POOL[role];
+  if(item.type!=='gear'||!item.slot||!ELIGIBLE_SLOTS.has(item.slot)||tier<1||tier>9||(tier===1&&version!==5&&version!==6)||(version!==6&&!role))return undefined;
+  const count=tier>=5||((version===6||tier>=3)&&HIGH_RARITIES.includes(rarity))?2:1;
+  const pool:readonly EquipmentBonusStat[]=version===6?LAUNCH_SAFE_BONUS_STATS:version===1?LEGACY_ROLE_POOL[role!]:version===2?V2_ROLE_POOL[role!]:version===3?V3_ROLE_POOL[role!]:version===4?ROLE_POOL[role!]:LAUNCH_SAFE_ROLE_POOL[role!];
   return {tier,role,slot:item.slot,count,pool};
 }
 
 /** Smaller per-slot percentages than weapons, guarding against nine-slot stacking. */
 export function equipmentBonusRange(tier:number,stat:EquipmentBonusStat,slot:GearSlot,rarity:ItemRarity='uncommon',version:EquipmentBonusRollVersion=EQUIPMENT_BONUS_ROLL_VERSION):readonly [number,number]|undefined{
-  const band=tier===1&&version===5?2:bandForTier(tier);
-  if(band===undefined||tier<1||tier>9||!ELIGIBLE_SLOTS.has(slot)||(version!==1&&version!==2&&version!==3&&version!==4&&version!==5))return undefined;
-  if(tier===1&&version!==5)return undefined;
-  if(version===5&&!LAUNCH_SAFE_BONUS_STATS.includes(stat))return undefined;
-  if((version===3||version===4||version===5)&&stat==='abilityDamage')return undefined;
-  if((version===4||version===5)&&stat==='tenacity')return undefined;
+  const band=tier===1&&(version===5||version===6)?2:bandForTier(tier);
+  if(band===undefined||tier<1||tier>9||!ELIGIBLE_SLOTS.has(slot)||(version!==1&&version!==2&&version!==3&&version!==4&&version!==5&&version!==6))return undefined;
+  if(tier===1&&version!==5&&version!==6)return undefined;
+  if((version===5||version===6)&&!LAUNCH_SAFE_BONUS_STATS.includes(stat))return undefined;
+  if((version===3||version===4||version===5||version===6)&&stat==='abilityDamage')return undefined;
+  if((version===4||version===5||version===6)&&stat==='tenacity')return undefined;
   const base=version===1
     ?stat==='evasion'||stat==='critDamage'
       ?EXTRA_RANGES[band][stat]:weaponBonusRange(tier,stat,2)
-    :weaponBonusRange(tier,stat,version===5?6:3,'uncommon');
+    :weaponBonusRange(tier,stat,version===6?7:version===5?6:3,'uncommon');
   if(!base)return undefined;
   const factor=slot==='offhand'?.8:slot==='amulet'||slot==='ring'?.7:.55;
   const min=Math.max(STEP_BPS,Math.ceil(base[0]*factor/STEP_BPS)*STEP_BPS);
@@ -91,11 +91,11 @@ export function rollEquipmentBonuses(itemId:string,rarity:ItemRarity,receiptKey:
   const available=[...cfg.pool],result:EquipmentBonusRoll[]=[];
   const seed=`${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for(let index=0;index<cfg.count;index++){
-    const choice=deterministicCraftRarityRoll(`equipment-affix:v5:stat:${seed}:${index}`);
+    const choice=deterministicCraftRarityRoll(`equipment-affix:v6:stat:${seed}:${index}`);
     const [stat]=available.splice(Math.min(available.length-1,Math.floor(choice*available.length)),1);
     const [minimum,maximum]=equipmentBonusRange(cfg.tier,stat,cfg.slot,rarity)!;
     const steps=(maximum-minimum)/STEP_BPS;
-    const roll=deterministicCraftRarityRoll(`equipment-affix:v5:value:${seed}:${index}`);
+    const roll=deterministicCraftRarityRoll(`equipment-affix:v6:value:${seed}:${index}`);
     result.push({stat,basisPoints:minimum+STEP_BPS*Math.min(steps,Math.floor(roll*(steps+1)))});
   }
   return result;
@@ -103,7 +103,7 @@ export function rollEquipmentBonuses(itemId:string,rarity:ItemRarity,receiptKey:
 
 /** Missing receipts remain unrolled. Reject any malformed/version-mismatched stat set. */
 export function normalizeEquipmentBonuses(itemId:string,rarity:ItemRarity,raw:unknown,version:unknown):EquipmentBonusRoll[]|undefined{
-  if(version!==1&&version!==2&&version!==3&&version!==4&&version!==5)return undefined;
+  if(version!==1&&version!==2&&version!==3&&version!==4&&version!==5&&version!==6)return undefined;
   const cfg=equipmentBonusConfig(itemId,rarity,version);
   if(!cfg||!Array.isArray(raw)||raw.length!==cfg.count)return undefined;
   const seen=new Set<EquipmentBonusStat>(),result:EquipmentBonusRoll[]=[];

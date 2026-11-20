@@ -8,7 +8,8 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
-import {weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
+import {weaponBonusComparisonRows,weaponBonusDisplayPercent,weaponBonusDisplayDelta} from '../core/weapon-bonus-display';
+import {weaponBonusStatText,weaponBonusUiText} from '../i18n/weapon-bonus-ux';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -38,7 +39,7 @@ function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.b
 /** Inventory's single, authoritative compare-before-equipping surface.
  * The footer deliberately stays outside the scroll area on small devices. */
 export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false,onMoveToBank}:Props){
- const {gt,gl}=useGameplayText();
+ const {gt,gl,language}=useGameplayText();
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
@@ -75,8 +76,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(weaponBonusCompactLine)??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(weaponBonusCompactLine)??[];
+ const weaponChanges=slot==='weapon'?weaponBonusComparisonRows(oldRecord?.weaponBonuses,instance?.weaponBonuses):[];
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -106,6 +106,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   }finally{setBusy(false)}
  }
  const shortScreen=height<690||fontScale>=1.3;
+ const compactBonusRows=width<380||fontScale>=1.2;
  const gearSize=width<355?54:shortScreen?56:66;
  return <GameModalSurface visible onClose={busy?()=>{}:onClose} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}
   backdropLabel={gl('Close equipment comparison')}
@@ -130,13 +131,22 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
-   {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
-    <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
-    <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
-    {currentWeaponRolls.length?currentWeaponRolls.map((line,index)=><Text key={index} style={s.rollValue}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
-    <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
-    {newWeaponRolls.length?newWeaponRolls.map((line,index)=><Text key={index} style={[s.rollValue,{color:C.good}]}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
-   </View>:null}
+   {slot==='weapon'&&weaponChanges.length>0?<View style={s.weaponRollPanel}>
+    <View style={s.rollCompareHead}>
+     <Text style={s.sectionTitle}>{gt('BONUS STATS')}</Text>
+     <Text style={s.rollLegend}>{weaponBonusUiText(language,'current')} → {weaponBonusUiText(language,'candidate')}</Text>
+    </View>
+    {weaponChanges.map(change=><View key={change.stat} style={[s.rollCompareRow,compactBonusRows&&s.rollCompareRowStack]}>
+      <Text numberOfLines={2} style={s.rollStatName}>{weaponBonusStatText(language,change.stat)}</Text>
+      <View style={s.rollNumbers}>
+       <Text style={s.rollBefore}>{weaponBonusDisplayPercent(change.beforeBps)}</Text>
+       <Text style={s.rollArrow}>→</Text>
+       <Text style={s.rollAfter}>{weaponBonusDisplayPercent(change.afterBps)}</Text>
+       <Text style={[s.rollDelta,{color:statColor(C,change.deltaBps)}]}>{weaponBonusDisplayDelta(change.deltaBps)}</Text>
+      </View>
+    </View>)}
+    <Text style={s.note}>{weaponBonusUiText(language,'points')}</Text>
+   </View>:null>
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
      <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
@@ -240,8 +250,16 @@ function makeStyles(C:ThemeColors){
   statDelta:{...typography.bodyStrong,minWidth:48,textAlign:'right',fontWeight:'900'},
   setAlert:{padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,gap:6},
   weaponRollPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,gap:6,backgroundColor:C.panel2},
-  rollGroupLabel:{...typography.caption,color:C.muted,fontSize:9,fontWeight:'800',letterSpacing:.5,marginTop:4},
-  rollValue:{...typography.bodyStrong,color:C.text,fontWeight:'800',fontSize:12},
+  rollCompareHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'},
+  rollLegend:{...typography.caption,color:C.muted,fontSize:10,fontWeight:'700'},
+  rollCompareRow:{minHeight:31,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,paddingVertical:5},
+  rollCompareRowStack:{alignItems:'stretch',flexDirection:'column',gap:3},
+  rollStatName:{...typography.bodyStrong,color:C.text,fontSize:12,flex:1,minWidth:0},
+  rollNumbers:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:5},
+  rollBefore:{...typography.caption,color:C.muted,fontSize:11,minWidth:40,textAlign:'right',fontVariant:['tabular-nums']},
+  rollArrow:{...typography.caption,color:C.muted,fontSize:11},
+  rollAfter:{...typography.bodyStrong,color:C.text,fontSize:11,minWidth:40,textAlign:'right',fontVariant:['tabular-nums']},
+  rollDelta:{...typography.caption,fontWeight:'900',fontSize:11,minWidth:58,textAlign:'right',fontVariant:['tabular-nums']},
   setLine:{...typography.caption,fontWeight:'700'},
   disposalSection:{gap:8},
   disposalActions:{flexDirection:'row',gap:8},

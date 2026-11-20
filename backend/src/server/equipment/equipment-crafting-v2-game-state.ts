@@ -2,6 +2,8 @@ import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
 import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from './equipment-crafting-v2-skill-xp';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';
+export type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
@@ -22,19 +24,6 @@ import {
  * Only V2 metadata is held in account; Gold/materials/skills are modified in
  * the ORIGINAL GameState. There is no second persisted wallet or Bank ledger.
  */
-export interface V2HiddenGameMetadata{
- schemaVersion:'eq2-hidden-game-state-v1';
- jobs:V2DraftJob[];
- items:V2DraftItem[];
- receipts:V2DraftReceipt[];
- skillAwards:V2DraftSkillAward[];
- /** Optional for older hidden V1 snapshots; no public EQ2 storage is modified. */
- storageReservations?:V2HiddenStorageReservation[];
- /** Separate irreversible socket history; never rewrites the minted exact item. */
- gemSocketState?:V2GemSidecarState;
- /** Replayed account-wide Bank/equip custody decisions; still hidden only. */
- custodyReceipts?:V2VirtualMoveReceipt[];
-}
 export interface V2HiddenGameInput{
  state:GameState;accountId:string;onlineVersion:number;
  onlineCharacterId:string|null;authoritativeWalletGold:number|null;

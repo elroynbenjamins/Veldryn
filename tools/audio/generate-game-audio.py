@@ -362,10 +362,17 @@ def main():
             write_mp3(x, os.path.join(OUT, 'sfx', name + '.mp3'), 22050, 64)
             manifest['sfx'][name] = {'seconds': round(len(x) / SR, 3), 'volume': volume}
     if args.only != 'sfx':
-        for name, cfg in TRACKS.items():
-            x = normalize(render_track(cfg), .8)
-            write_mp3(x, os.path.join(OUT, 'music', name + '.mp3'), 32000, 80)
-            manifest['music'][name] = {'seconds': round(len(x) / SR, 2), 'bpm': cfg['bpm']}
+        selected_scores = os.path.join(ROOT, 'tools', 'audio', 'selected-music-scores.zip')
+        if os.path.exists(selected_scores):
+            # Keep the approved soundtrack when regenerating audio assets.
+            # Requires numpy, pretty_midi and ffmpeg only at build-time.
+            subprocess.run([sys.executable, os.path.join(ROOT, 'tools', 'audio',
+                           'render-selected-music.py')], check=True)
+        else:
+            for name, cfg in TRACKS.items():
+                x = normalize(render_track(cfg), .8)
+                write_mp3(x, os.path.join(OUT, 'music', name + '.mp3'), 32000, 80)
+                manifest['music'][name] = {'seconds': round(len(x) / SR, 2), 'bpm': cfg['bpm']}
     path = os.path.join(OUT, 'manifest.json')
     old = json.load(open(path)) if os.path.exists(path) else {'sfx': {}, 'music': {}}
     for k in ('sfx', 'music'):

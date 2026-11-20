@@ -56,7 +56,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegional
     {goalRoute?<View style={s.goalRoute}>
       <View style={s.goalCopy}>
         <Text style={s.goalEyebrow}>{p('WHERE TO FIND')}</Text>
-        <Text style={s.goalTitle} numberOfLines={1}>{p(goalRoute.title)}</Text>
+        <Text style={s.goalTitle} numberOfLines={1}>{p(goalDestination?.kind==='combat'?'Hunt':'Gather')+' '+p(goalRoute.target)}</Text>
         <Text style={s.goalBreadcrumb}>{goalRoute.breadcrumb.split(' › ').map(p).join(' › ')}</Text>
         {goalStatus?.status==='locked'?<Text style={s.goalBlocked}>{p(goalStatus.detail)}</Text>:null}
       </View>

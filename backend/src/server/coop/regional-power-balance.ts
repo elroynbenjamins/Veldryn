@@ -30,7 +30,11 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  const rootCorrection=rootbound?rootAttack/LEGACY_ROOTBOUND_ATTACK_MULTIPLIER:1;
  // Correct only the final bosses. Normal rooms retain monotonic regional
  // scaling and saved runs retain their original boss definitions.
- const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .98 : 1):
+ // The first Endurance boss checkpoint exposed a Tier-I Rootbound/Bell
+ // win-rate gap (7/14 versus 26/26 in deterministic minimum-CP probes).
+ // Soften Rootbound Tier I only; leave the rest of the regional tiers,
+ // regular mobs, boss mechanics and unversioned historical runs unchanged.
+ const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .98 : .91):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .759:tier===2 ? .768:.77):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'?(tier===3?1.017:tier===2?1.015:1):
   expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'?(tier===3?1.025:tier===2?1.06:1):1;

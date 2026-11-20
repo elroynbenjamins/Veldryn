@@ -346,7 +346,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  </ScrollView>
  <GameModalSurface visible={categoryPickerOpen} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={()=>setCategoryPickerOpen(false)}>
   <GameModalHeader title={gt('Skills')} eyebrow={n('Filter').toLocaleUpperCase(language)} onClose={()=>setCategoryPickerOpen(false)}/>
-  <ScrollView style={hubStyles.navigatorOptionList} showsVerticalScrollIndicator={false}>
+  <ScrollView style={hubStyles.navigatorOptionList} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {categoryOptions.map(option=><Pressable key={option.id} accessibilityRole="button" accessibilityLabel={option.label} accessibilityState={{selected:category===option.id}}
     onPress={()=>{setCategory(option.id);setCategoryPickerOpen(false);}} style={[hubStyles.navigatorOption,category===option.id&&hubStyles.navigatorOptionSelected]}>
      <Text style={hubStyles.navigatorOptionText}>{option.label}</Text><Text style={hubStyles.navigatorOptionMeta}>{option.count}{category===option.id?' ✓':''}</Text>

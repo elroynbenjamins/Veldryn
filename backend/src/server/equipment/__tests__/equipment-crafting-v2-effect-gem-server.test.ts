@@ -99,7 +99,7 @@ assert.throws(()=>validateEquipmentV2EffectGemInstall({...base,state:otherActor}
 const tampered=receipts.map((row,index)=>index===0?{...row,
  fingerprint:'custody:withdraw_bank:'+row.instanceId}:row);
 assert.throws(()=>readEquipmentV2VirtualCustody(items,reservations,tampered),
- /invalid_v2_virtual_move_receipt/,
+ /v2_virtual_move_history_conflict/,
  'Replay history cannot forge a deposit or withdrawal into an equip receipt');
 const swapped=receipts.map((row,index)=>index===0?{
  ...row,equippedSlot:items[1].exactItem.slot,

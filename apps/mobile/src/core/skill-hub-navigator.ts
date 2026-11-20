@@ -10,7 +10,7 @@ export type SkillNavigatorRoute='combat'|'discipline'|'skill'|'companion-mastery
 export interface SkillNavigatorEntry{
  id:string;
  name:string;
- kind:string;
+ subtitle:string;
  category:SkillNavigatorCategory;
  route:SkillNavigatorRoute;
  level?:number;
@@ -37,6 +37,6 @@ export function filterSkillNavigatorEntries(
  const needle=query.trim().toLocaleLowerCase(language);
  return entries.filter(row=>
   (category==='all'||row.category===category)&&
-  (!needle||[row.name,row.kind,row.id].some(text=>text.toLocaleLowerCase(language).includes(needle)))
+  (!needle||[row.name,row.subtitle,row.id].some(text=>text.toLocaleLowerCase(language).includes(needle)))
  );
 }

@@ -2,6 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionText} from '../i18n/progression';
+import {localizedItemName} from '../i18n/starter-item-names';
 import type {GameState} from '../core/types';
 import {currentRegionId} from '../core/combat-region';
 import {WorldChapterNavigator} from '../components/WorldChapterNavigator';
@@ -55,7 +56,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegional
     <Text accessibilityRole="header" style={s.heading}>{p('World')}</Text>
     {goalRoute?<View style={s.goalRoute}>
       <View style={s.goalCopy}>
-        <Text style={s.goalEyebrow}>{p('WHERE TO FIND')}</Text>
+        <Text style={s.goalEyebrow} numberOfLines={2}>{p('WHERE TO FIND')}{goalRoute.sourceItemId?' · '+localizedItemName(language,goalRoute.sourceItemId):''}</Text>
         <Text style={s.goalTitle} numberOfLines={1}>{p(goalDestination?.kind==='combat'?'Hunt':'Gather')+' '+p(goalRoute.target)}</Text>
         <Text style={s.goalBreadcrumb}>{goalRoute.breadcrumb.split(' › ').map(p).join(' › ')}</Text>
         {goalStatus?.status==='locked'?<Text style={s.goalBlocked}>{p(goalStatus.detail)}</Text>:null}

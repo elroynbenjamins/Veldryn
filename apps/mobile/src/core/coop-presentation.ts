@@ -4,7 +4,7 @@ export function isCoopCombatNodeKind(kind:string|undefined):boolean{
  return kind==='battle'||kind==='elite'||kind==='boss';
 }
 
-export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
+export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;enemies?:Array<{name:string;boss:boolean}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
 export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;modifierId?:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
 export interface CoopRunObjectiveView {label:string;description:string;count:number;maxCount:number;completed:boolean;effectText:string;}
@@ -76,11 +76,14 @@ export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewVie
  if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');
  const row=value as Record<string,unknown>,summary=typeof row.summary==='string'?row.summary.trim():'';
  const rawArchetypes=Array.isArray(row.archetypes)?row.archetypes:[],rawMechanics=Array.isArray(row.mechanics)?row.mechanics:[];
- if(!summary||rawArchetypes.length>2||rawMechanics.length>4)throw new Error('invalid_encounter_preview');
+ const rawEnemies=row.enemies===undefined?undefined:Array.isArray(row.enemies)?row.enemies:undefined;
+ if(row.enemies!==undefined&&!rawEnemies)throw new Error('invalid_encounter_preview');
+ if(!summary||rawArchetypes.length>2||rawMechanics.length>4||(rawEnemies?.length??0)>4)throw new Error('invalid_encounter_preview');
  const archetypes=rawArchetypes.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'';if(!id||!label)throw new Error('invalid_encounter_preview');return{id,label};});
+ const enemies=rawEnemies?.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,name=typeof v.name==='string'?v.name.trim():'';if(!name||typeof v.boss!=='boolean')throw new Error('invalid_encounter_preview');return{name,boss:v.boss};});
  const mechanics=rawMechanics.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'',description=typeof v.description==='string'?v.description.trim():'';if(!id||!label||!description)throw new Error('invalid_encounter_preview');return{id,label,description};});
  if(new Set(archetypes.map(item=>item.id)).size!==archetypes.length||new Set(mechanics.map(item=>item.id)).size!==mechanics.length)throw new Error('invalid_encounter_preview');
- return{archetypes,mechanics,summary};
+ return{archetypes,...(enemies?{enemies}:{}),mechanics,summary};
 }
 
 export function validateCoopRunView(view:CoopRunView):void{

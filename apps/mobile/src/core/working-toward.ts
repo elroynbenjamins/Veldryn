@@ -15,8 +15,8 @@ import {GEM_DISMANTLE_DUST_V1} from './gem-progression-v1';
 import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 
 export type WorkingTowardDestination=
- |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;areaId?:string;button:string;detail:string}
- |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';actionId?:string;recipeId?:string;regionId?:string;areaId?:string;button:string;detail:string}
+ |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;areaId?:string;sourceItemId?:string;button:string;detail:string}
+ |{kind:'skills';skillId?:SkillId;mode?:'gathering'|'crafting'|'faith';actionId?:string;recipeId?:string;regionId?:string;areaId?:string;sourceItemId?:string;button:string;detail:string}
  |{kind:'contracts';button:string;detail:string}
  |{kind:'inventory';section?:'gem_pouch';button:string;detail:string}
  |{kind:'world';regionId:string;button:string;detail:string}
@@ -123,29 +123,29 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
    destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:1});
  }
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
-  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${locationForSource(gather.zoneId,gather.areaId)} · ${yieldText}.`};
+  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,sourceItemId:itemId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${locationForSource(gather.zoneId,gather.areaId)} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
  for(const [zoneId,essence] of Object.entries(HERBALISM_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===zoneId);
   for(const herb of HERB_NODES.filter(row=>row.zoneId===zoneId)){
-   const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,areaId:herb.areaId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${locationForSource(zoneId,herb.areaId)}. Careful Harvest improves the chance.`};
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,areaId:herb.areaId,sourceItemId:itemId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${locationForSource(zoneId,herb.areaId)}. Careful Harvest improves the chance.`};
    candidates.push({type:'gathering',typeLabel:'Gathering',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
   }
  }
  for(const [zoneId,essence] of Object.entries(MINING_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===zoneId);
   for(const mine of GATHERING.filter(row=>row.skillId==='mining'&&row.zoneId===zoneId)){
-   const destination:WorkingTowardDestination={kind:'skills',skillId:'mining',mode:'gathering',actionId:mine.id,regionId:zoneId,areaId:mine.areaId,button:`Mine ${mine.name}`,detail:`Rare ${itemId.replaceAll('_',' ').toLowerCase()} from Mining at ${mine.name} in ${locationForSource(zoneId,mine.areaId)} · ${(essence.baseChance*100).toFixed(0)}% base chance per completed action.`};
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'mining',mode:'gathering',actionId:mine.id,regionId:zoneId,areaId:mine.areaId,sourceItemId:itemId,button:`Mine ${mine.name}`,detail:`Rare ${itemId.replaceAll('_',' ').toLowerCase()} from Mining at ${mine.name} in ${locationForSource(zoneId,mine.areaId)} · ${(essence.baseChance*100).toFixed(0)}% base chance per completed action.`};
    candidates.push({type:'gathering',typeLabel:'Gathering',title:mine.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:mine.unlockLevel});
   }
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
-  const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} · makes ${recipe.output.quantity} per craft · ${skillLabel(recipe.skillId)} Lv ${recipe.level}.`};
+  const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,sourceItemId:itemId,button:`Craft ${recipe.name}`,detail:`${recipe.name} · makes ${recipe.output.quantity} per craft · ${skillLabel(recipe.skillId)} Lv ${recipe.level}.`};
   candidates.push({type:'crafting',typeLabel:'Crafting',title:recipe.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
  }
  for(const monster of MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===itemId))){
-  const drop=monster.drops.find(row=>row.itemId===itemId)!,region=regionForZoneName(monster.zone),quantity=drop.min===drop.max?`${drop.min}`:`${drop.min}–${drop.max}`,destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${region?locationForSource(region.id,monster.areaId):monster.zone} · ${sourceChanceLabel(drop.chance)} drop · ${quantity} on hit.`};
+  const drop=monster.drops.find(row=>row.itemId===itemId)!,region=regionForZoneName(monster.zone),quantity=drop.min===drop.max?`${drop.min}`:`${drop.min}–${drop.max}`,destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,sourceItemId:itemId,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${region?locationForSource(region.id,monster.areaId):monster.zone} · ${sourceChanceLabel(drop.chance)} drop · ${quantity} on hit.`};
   candidates.push({type:'monster_drop',typeLabel:'Monster Drop',title:monster.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
  }
  for(const dungeon of dungeonMaterialSourcesForItem(itemId)){

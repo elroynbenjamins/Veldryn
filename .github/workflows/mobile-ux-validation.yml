@@ -81,6 +81,8 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox
         run: node tests/account-unlock-inbox-ui.cjs
+      - name: Validate compact Rewards Inbox ledger
+        run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI
         run: pnpm exec tsc -p tsconfig.account-unlocks.json --noEmit
       - name: Typecheck core

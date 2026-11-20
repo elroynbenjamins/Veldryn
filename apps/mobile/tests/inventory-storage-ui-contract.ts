@@ -110,4 +110,15 @@ const pouchTranslations=fs.readFileSync('src/i18n/equipment-pouch-ui.ts','utf8')
 for(const label of ['Compare & Equip','To Inventory','To Bank','Sell copy','Salvage copy']){
  ok(pouchTranslations.includes('"'+label+'": ['),'Gear detail action must be localized: '+label);
 }
+ok(inspect.includes("const isBonusRoll=(line:string)=>line.startsWith('Equipment roll · ')")
+   &&inspect.includes("line.startsWith('Weapon roll · ')")
+   &&inspect.includes("const bonusRows=model.effectLines.filter(isBonusRoll)")
+   &&inspect.includes("source==='equipment_pouch'?gl('Gear')"),
+   'Shared Inspect must derive new and legacy bonus stats from exact item-inspection receipts in Gear Storage');
+ok(inspect.includes("gt('BONUS STATS')")&&inspect.includes("bonusRows.map(roll=>")
+   &&inspect.includes("otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line))"),
+   'Bonus stats must be prominent, compact, and not duplicated under expanded equipment details');
+ok(gearPreview.includes("gl('BONUS STATS')")&&!gearPreview.includes('rollTrack')
+   &&!gearPreview.includes('weaponBonusStrength')&&!gearPreview.includes('rollBadge'),
+   'Comparison must show bonus values without misleading roll-strength bars or ranking badges');
 console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect gear decisions and availability, capacity feedback, rarity frames and rarity-colored names');

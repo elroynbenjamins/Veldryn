@@ -6,6 +6,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../content/herbalism';
 import {MINING_ESSENCE_BY_ZONE} from '../content/mining-essence';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
+import {regionalArea} from '../content/regional-areas';
 import {ITEMS} from '../content/items';
 import {DUNGEON_MATERIAL_SOURCES,dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 import {recipeOutputOwnedQuantity} from './recipe-preparation-goals';
@@ -25,6 +26,7 @@ export type WorkingTowardDestination=
 const gatherDefs=[...GATHERING,...HERB_NODES];
 const skillLabel=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 const regionForZoneName=(name:string)=>WORLD_ZONES.find(zone=>zone.name===name);
+const locationForSource=(regionId:string,areaId?:string)=>[WORLD_ZONES.find(zone=>zone.id===regionId)?.name??regionId,regionalArea(regionId,areaId)?.name].filter(Boolean).join(' › ');
 const skillLevel=(state:GameState,id:string)=>state.skills.find(row=>row.skillId===id)?.level??1;
 const sourceChanceLabel=(chance:number)=>chance>=.1?`${Math.round(chance*100)}%`:`${(chance*100).toFixed(chance<.01?2:1)}%`;
 
@@ -121,20 +123,20 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
    destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:1});
  }
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
-  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} · ${yieldText}.`};
+  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${locationForSource(gather.zoneId,gather.areaId)} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
  for(const [zoneId,essence] of Object.entries(HERBALISM_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===zoneId);
   for(const herb of HERB_NODES.filter(row=>row.zoneId===zoneId)){
-   const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,areaId:herb.areaId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name??zoneId}. Careful Harvest improves the chance.`};
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,areaId:herb.areaId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${locationForSource(zoneId,herb.areaId)}. Careful Harvest improves the chance.`};
    candidates.push({type:'gathering',typeLabel:'Gathering',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
   }
  }
  for(const [zoneId,essence] of Object.entries(MINING_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===zoneId);
   for(const mine of GATHERING.filter(row=>row.skillId==='mining'&&row.zoneId===zoneId)){
-   const destination:WorkingTowardDestination={kind:'skills',skillId:'mining',mode:'gathering',actionId:mine.id,regionId:zoneId,areaId:herb.areaId,button:`Mine ${mine.name}`,detail:`Rare ${itemId.replaceAll('_',' ').toLowerCase()} from Mining at ${mine.name} in ${zone?.name??zoneId} · ${(essence.baseChance*100).toFixed(0)}% base chance per completed action.`};
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'mining',mode:'gathering',actionId:mine.id,regionId:zoneId,areaId:mine.areaId,button:`Mine ${mine.name}`,detail:`Rare ${itemId.replaceAll('_',' ').toLowerCase()} from Mining at ${mine.name} in ${locationForSource(zoneId,mine.areaId)} · ${(essence.baseChance*100).toFixed(0)}% base chance per completed action.`};
    candidates.push({type:'gathering',typeLabel:'Gathering',title:mine.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:mine.unlockLevel});
   }
  }
@@ -143,7 +145,7 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   candidates.push({type:'crafting',typeLabel:'Crafting',title:recipe.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
  }
  for(const monster of MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===itemId))){
-  const drop=monster.drops.find(row=>row.itemId===itemId)!,region=regionForZoneName(monster.zone),quantity=drop.min===drop.max?`${drop.min}`:`${drop.min}–${drop.max}`,destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} · ${sourceChanceLabel(drop.chance)} drop · ${quantity} on hit.`};
+  const drop=monster.drops.find(row=>row.itemId===itemId)!,region=regionForZoneName(monster.zone),quantity=drop.min===drop.max?`${drop.min}`:`${drop.min}–${drop.max}`,destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${region?locationForSource(region.id,monster.areaId):monster.zone} · ${sourceChanceLabel(drop.chance)} drop · ${quantity} on hit.`};
   candidates.push({type:'monster_drop',typeLabel:'Monster Drop',title:monster.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
  }
  for(const dungeon of dungeonMaterialSourcesForItem(itemId)){
@@ -171,11 +173,11 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
  }
  if(goal.kind==='monster_kills'){
   const monster=MONSTERS.find(row=>row.id===goal.monsterId),region=monster?regionForZoneName(monster.zone):undefined;
-  return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,button:`Hunt ${monster.name}`,detail:`${monster.name} is found in ${monster.zone}.`}:{kind:'info',button:'Target unavailable',detail:'This monster is not in the current encounter catalog.'};
+  return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,areaId:monster.areaId,button:`Hunt ${monster.name}`,detail:`${monster.name} is found in ${region?locationForSource(region.id,monster.areaId):monster.zone}.`}:{kind:'info',button:'Target unavailable',detail:'This monster is not in the current encounter catalog.'};
  }
  if(goal.kind==='mastery_rank'){
   const gather=gatherDefs.find(row=>row.id===goal.actionId);
-  if(gather){const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);return {kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,button:`Work ${gather.name}`,detail:`Mastery grows by repeating ${gather.name} in ${zone?.name??gather.zoneId}.`};}
+  if(gather){const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);return {kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,areaId:gather.areaId,button:`Work ${gather.name}`,detail:`Mastery grows by repeating ${gather.name} in ${locationForSource(gather.zoneId,gather.areaId)}.`};}
   const recipe=RECIPES.find(row=>row.id===goal.actionId);
   if(recipe)return {kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`Mastery grows by crafting ${recipe.name}.`};
   return {kind:'skills',button:'Open Skills',detail:'Open Skills to find the tracked mastery action.'};

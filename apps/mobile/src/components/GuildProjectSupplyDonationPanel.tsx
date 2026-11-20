@@ -65,15 +65,14 @@ export function GuildProjectSupplyDonationPanel({goals,inventory,busy,personalSh
   {goals.filter(row=>row.resourceId.startsWith('supply:')).map(row=>{
    const label=row.resourceId==='supply:wood'?ui('Wood supplies'):row.resourceId==='supply:fish'?ui('Food supplies'):ui('Ore supplies');
    const pct=row.target>0?Math.min(100,row.current/row.target*100):100;
+   const personal=supplyAllowances?.find(entry=>row.resourceId==='supply:'+entry.category);
    return <View key={row.resourceId} style={s.goal}>
     <View style={s.between}><Text style={s.text}>{label}</Text><Text style={s.muted}>{row.current.toLocaleString(language)} / {row.target.toLocaleString(language)}</Text></View>
     <View style={s.track}><View style={[s.fill,{width:`${pct}%` as any}]}/></View>
-    {(()=>{const personal=supplyAllowances?.find(entry=>row.resourceId==='supply:'+entry.category);
-     return personal?<Text style={[s.muted,personal.remainingPersonal===0&&row.current<row.target&&s.limitReached]}>
-      {personal.remainingPersonal===0&&row.current<row.target?ui('Personal limit reached'):
-       ui('Your share: {donated} / {limit} supply',{donated:personal.donated.toLocaleString(language),limit:personal.personalLimit.toLocaleString(language)})}
-     </Text>:null;
-    })()}
+    {personal?<Text style={[s.muted,personal.remainingPersonal===0&&row.current<row.target&&s.limitReached]}>
+     {personal.remainingPersonal===0&&row.current<row.target?ui('Personal limit reached'):
+      ui('Your share: {donated} / {limit} supply',{donated:personal.donated.toLocaleString(language),limit:personal.personalLimit.toLocaleString(language)})}
+    </Text>:null}
    </View>;
   })}
   {available.length?<View style={s.selector}>

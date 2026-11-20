@@ -183,7 +183,21 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
        'Resource overflow '+classId+' '+spec.id);
      }
      if(tier===1){t1Gaps++;assert.equal(trusted,undefined);}
-     else{authored++;assert.ok(a.enemyMechanicLabels.length>0);}
+     else {
+      authored++;
+      // A persisted V2 kit is not the same thing as an always-rolled trait:
+      // ordinary enemies intentionally have a region-dependent chance to
+      // remain unmodified, whereas elites and bosses author mechanics.
+      const expectedLabels=trusted!.snapshot.preview.flatMap(p=>[
+       ...p.abilityNames.map(name=>p.enemyId+': '+name),
+       ...p.phaseNames.map(name=>p.enemyId+': '+name),
+       ...p.traitIds.map(id=>p.enemyId+': '+id),
+      ]);
+      assert.deepEqual(a.enemyMechanicLabels,expectedLabels,
+       'Only frozen persisted enemy mechanics may be shown: '+seed);
+      if(kind!=='normal')assert.ok(expectedLabels.length>0,
+       'Elite/boss must have a persisted authored mechanic: '+seed);
+     }
      resultRows.push({
       classId,spec:spec.id,role,tier:gearTier,profile:profile.id,kind,
       enemyKit:tier===1?'generic-t1':'authored-v2',

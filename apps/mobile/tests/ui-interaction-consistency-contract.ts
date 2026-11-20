@@ -92,7 +92,7 @@ const split=read('src/components/CombatXpSplit.tsx');
 ok(split.includes("type:'class_focus'")&&split.includes('normalizeTrainingFocus'),'XP split must use the existing authoritative character setting');
 ok(split.includes('accessibilityRole="radiogroup"')&&split.includes('accessibilityRole="radio"')&&split.includes('minHeight:44'),'XP ratios must be accessible single-choice controls');
 const skills=read('src/screens/SkillsScreen.tsx');
-ok(skills.includes('section(gt("COMBAT SKILLS"),combat,true)')&&skills.includes('accessibilityLabel={gt("Open Combat")}')&&skills.includes('onPress={onCombat}'),"Skills must group both combat skills with a direct Combat action");
+ok(skills.includes('const combatRows:SkillNavigatorEntry[]')&&skills.includes('...classRows.map')&&skills.includes("route:'discipline'")&&skills.includes("case 'combat':onCombat?.();break;")&&skills.includes("entry.route==='combat'?gt('Open Combat')"),"Skills must show both class disciplines and route a distinct Combat action directly");
 for(const path of ['src/screens/HomeScreen.tsx','src/screens/WorldScreen.tsx','src/screens/CombatScreen.tsx','src/components/HerbalismMethodPanel.tsx','src/components/TravelRegionModal.tsx','src/components/RewardPopup.tsx','src/components/FrostmarchRegionPanel.tsx']){
  const source=read(path);
  ok(!source.includes('EnvironmentBanner')&&!source.includes('EnvironmentDetailsModal')&&!source.includes('weatherName'),'Weather detail panels must stay out of '+path);

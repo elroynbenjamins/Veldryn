@@ -65,7 +65,7 @@ for(const id of new Set(Object.values(CLASS_SKILLS).flat().map(row=>row.id))){
  ok(fs.existsSync(`assets/class-skill-icons-v1/${id}.webp`),'Runtime icon exists for '+id);
 }
 const screen=fs.readFileSync('src/screens/SkillsScreen.tsx','utf8');
-ok(screen.includes('classSkillIcon(card.id.slice(6))')&&!screen.includes('classEmblemIconArtwork'),'Skills cards use individual skill art, not duplicate class emblems');
+ok(screen.includes("isDiscipline?classSkillIcon(entry.id.slice('class:'.length))")&&!screen.includes('classEmblemIconArtwork'),'Skill Navigator rows use dedicated discipline art, never duplicate class emblems');
 ok(screen.includes('classSkillBonuses')&&screen.includes('AT LEVEL 100'),'Skill popup exposes runtime-backed bonus values');
 ok(screen.includes("selectedBonuses.map(bonus=>gl(bonus.label)).join(' · ')")&&!screen.includes('{gl(selectedDefinition.theme)}'),
  'Class skill popup summary always uses runtime stat labels, not potentially mismatched authored flavor text');

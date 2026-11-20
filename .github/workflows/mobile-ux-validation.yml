@@ -83,6 +83,8 @@ jobs:
         run: node tests/account-unlock-inbox-ui.cjs
       - name: Validate compact Character Roster, eight-language copy and 800-skill UX
         run: pnpm test:character-roster
+      - name: Validate single-row Skill Navigator and existing XP routes
+        run: pnpm test:skill-navigator
       - name: Validate compact Rewards Inbox ledger
         run: pnpm test:rewards-inbox-ledger
       - name: Typecheck Account unlock inbox UI

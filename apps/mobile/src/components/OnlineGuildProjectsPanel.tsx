@@ -266,7 +266,7 @@ export function GuildProjectPosting({project,compact=false,summaryOnly=false,onT
     </View>:null}
   </View>:null}
   {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.resourceGoals.length>0?
-    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory}
+    <GuildProjectSupplyDonationPanel goals={project.resourceGoals} inventory={supplyInventory} personalShareCap={project.personalShareCap} supplyAllowances={project.supplyAllowances}
      busy={busy||donationBlocked||!onDonate} onDonate={(itemId,quantity)=>onDonate?.(itemId,quantity)}/>:null}
   {weekly&&project.status==='active'&&!compact&&!summaryOnly&&project.projectMode!=='donation'?<View style={s.activities}>
    <View style={s.sectionHead}><Text style={s.sectionTitle}>{ui('Contribute now')}</Text><StatusPill label={ui(project.templateId==='guild_weekly_shared_effort'?'ANY ACTIVITY':'Activity requirements')} tone="info"/></View>

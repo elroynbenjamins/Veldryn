@@ -8,7 +8,6 @@ import {interpolateTranslation} from './translator';
  */
 const rows:Record<string,Partial<Record<Language,string>>>={
  'Currently playing':{en:'Currently playing',de:'Aktuell gespielt',es:'Jugando ahora',nl:'Nu actief',it:'Personaggio attivo',fr:'Personnage actuel',ru:'Текущий персонаж',tr:'Şu an oynanan'},
- 'Level {level}':{en:'Level {level}',de:'Stufe {level}',es:'Nivel {level}',nl:'Niveau {level}',it:'Livello {level}',fr:'Niveau {level}',ru:'Уровень {level}',tr:'Seviye {level}'},
  'Character roster':{en:'Character roster',de:'Charakterliste',es:'Lista de personajes',nl:'Personagelijst',it:'Elenco personaggi',fr:'Liste des personnages',ru:'Список персонажей',tr:'Karakter listesi'},
  '{count} characters · {working} working':{en:'{count} characters · {working} working',de:'{count} Charaktere · {working} aktiv',es:'{count} personajes · {working} activos',nl:'{count} personages · {working} bezig',it:'{count} personaggi · {working} attivi',fr:'{count} personnages · {working} actifs',ru:'Персонажей: {count} · заняты: {working}',tr:'{count} karakter · {working} çalışıyor'},
  '{count}/{total} slots':{en:'{count}/{total} slots',de:'{count}/{total} Plätze',es:'{count}/{total} espacios',nl:'{count}/{total} plekken',it:'{count}/{total} slot',fr:'{count}/{total} emplacements',ru:'Мест: {count}/{total}',tr:'{count}/{total} yuva'},

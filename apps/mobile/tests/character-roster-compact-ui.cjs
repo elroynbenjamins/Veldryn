@@ -50,7 +50,7 @@ test('narrow screen and larger fonts preserve readable activities',()=>{
 });
 
 test('new roster copy is localized in all eight languages',()=>{
- for(const label of ['Currently playing','Character roster','Level {level}','Role slots','Review deletion options','Legacy roster preserved','Tank','Damage','Support']){
+ for(const label of ['Currently playing','Character roster','Role slots','Review deletion options','Legacy roster preserved','Tank','Damage','Support']){
   const start=copy.indexOf("'"+label+"':{");
   assert.ok(start>=0,'Missing row '+label);
   const row=copy.slice(start,copy.indexOf('},',start)+2);

@@ -33,7 +33,7 @@ test('all new compact prompts exist in eight languages',()=>{
  const m=loadTypeScript('src/i18n/dungeon-ux-copy.ts');
  const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
  for(const lang of ['en','de','es','nl','it','fr','ru','tr'])
-  for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>4,lang+' '+key);
+  for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>=2,lang+' '+key); // Short UI labels such as Room/Oda must remain valid.
  assert.notEqual(m.dungeonUxText('en','bossChoice'),m.dungeonUxText('de','bossChoice'));
  assert.equal(m.dungeonUxText('fr','weeklyProgress',{name:'Élite',current:3,goal:3}),'Élite : 3 sur 3');
  assert.equal(m.dungeonUxText('en','nextBossAt',{room:21}),'Next boss option after room 21');

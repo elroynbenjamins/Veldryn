@@ -5,7 +5,7 @@ const rows:SkillNavigatorEntry[]=[
  {id:'class:guardcraft',name:'Guardcraft',subtitle:'Combat skill',category:'combat',route:'discipline',level:41,xp:100},
  {id:'mining',name:'Mining',subtitle:'Gathering',category:'gathering',route:'skill',level:24,xp:500},
  {id:'smithing',name:'Smithing',subtitle:'Crafting',category:'crafting',route:'skill',level:17,xp:100},
- {id:'future-profession',name:'New Profession',subtitle:'Other',category:'other',route:'skill',level:1,xp:0},
+ {id:'future-profession',name:'New Profession',subtitle:'Other',category:'other',route:'overview',level:1,xp:0},
  {id:'companion-mastery',name:'Companion Mastery',subtitle:'Account-wide companion skill',category:'companions',route:'companion-mastery',level:13,xp:450},
 ];
 test('Skill Navigator categories preserve legacy professions and leave future professions visible',()=>{
@@ -31,6 +31,7 @@ test('New tracked skills open a safe progress overview until their real activity
  equal(skillNavigatorRouteFor('hunting'),'overview','historical hunting skill remains visible but never opens an empty detail');
 });
 test('Skill Navigator does not map ability/talent selections to trainable profession XP',()=>{
- equal(rows.filter(row=>row.route==='skill').map(row=>row.id),['mining','smithing','future-profession'],'only true professions have open-skill route');
+ equal(rows.filter(row=>row.route==='skill').map(row=>row.id),['mining','smithing'],'only professions with implemented detail screens use the skill route');
+ equal(rows.filter(row=>row.route==='overview').map(row=>row.id),['future-profession'],'unsupported XP skills are shown via progress-only overview');
  equal(rows.find(row=>row.id==='class:guardcraft')?.route,'discipline','class combat disciplines remain distinct from future selectable abilities');
 });

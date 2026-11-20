@@ -9,6 +9,7 @@
  */
 import {
  worldBossRotationAtV50,assertWorldBossCanonicalEventV50,
+ worldBossScheduleAtV22,
  type WorldBossGlobalCycleV50,type WorldBossRotatingIdV50,
 } from '../src/server/combat/world-boss-weekend-v22';
 import {
@@ -98,6 +99,19 @@ export async function readAuthenticatedCurrentWorldBossOverviewV51(
  // the future account-erasure worker is STILL required before activation.
  if(await deps.accountPrivacy.allowRead(accountId)!==true)
   throw Error('world_boss_v54_account_privacy_hold');
+ // V60: private reads and the second privacy check may span a phase or
+ // cycle boundary. Re-sample trusted server UTC *after* both awaits. A
+ // two-minute-old packet is NOT valid once its action phase has changed.
+ const afterReadsNow=deps.serverNowUtcMs();
+ if(!integer(afterReadsNow)||afterReadsNow<now)
+  throw Error('world_boss_v60_clock_regressed');
+ if(worldBossRotationAtV50(deps.launchMondayUtcMs,afterReadsNow).index!==cycle.index)
+  throw Error('world_boss_v60_cycle_changed');
+ if(validated.readAtUtcMs<afterReadsNow-120000||
+  validated.readAtUtcMs>afterReadsNow+30000)
+  throw Error('world_boss_v60_status_lease_expired');
+ if(worldBossScheduleAtV22(cycle.startsAtUtcMs,afterReadsNow).phase!==validated.phase)
+  throw Error('world_boss_v60_phase_changed');
  // Re-verify the selected event against the private projection, not merely
  // against the catalogue label. Do not leak action recommendations.
  const {attemptsRemaining:_attemptsRemaining,donationsRemaining:_donationsRemaining,

@@ -83,11 +83,15 @@ export function decodeWorldBossReadOnlyStatusV46(
   !obj(raw.warCamp.contributions)||!obj(raw.warCamp.goals))
   return null;
  const start=raw.startsAtUtcMs as number,t=raw.readAtUtcMs as number;
- const phase:WorldBossPhaseV46=t<start?'upcoming':
-  t<start+5*dayMs?'preparation':
-  t<start+7*dayMs?'raid':
-  t<start+14*dayMs?'cooldown':'expired';
- if(raw.phase!==phase)return null;
+ const phaseAt=(clock:number):WorldBossPhaseV46=>clock<start?'upcoming':
+  clock<start+5*dayMs?'preparation':
+  clock<start+7*dayMs?'raid':
+  clock<start+14*dayMs?'cooldown':'expired';
+ const phase=phaseAt(t);
+ // V60: a valid read lease cannot display the former phase after its
+ // boundary. The hidden UI loader will show its refresh/error state.
+ const phaseAtDisplay=phaseAt(nowUtcMs);
+ if(raw.phase!==phase||phaseAtDisplay!==phase)return null;
  const counts={} as Record<Track,number>;
  const goals={} as Record<Track,{tier1At:number;tier2At:number}>;
  let total=0;

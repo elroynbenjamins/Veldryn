@@ -79,6 +79,19 @@ test('owner isolation, schema, stale/future packet and UTC cycle must fail close
  assert.equal(parse({...fresh(),endsAtUtcMs:START+8*DAY}),null);
  assert.equal(parse({...fresh(),readAtUtcMs:NaN}),null);
 });
+test('V60: a valid leased read cannot display an obsolete UTC phase',()=>{
+ const cutoff=START+5*DAY;
+ const before={...fresh(),readAtUtcMs:cutoff-50};
+ assert.equal(parse(before,ACCOUNT,cutoff-1)?.phase,'preparation');
+ assert.equal(parse(before,ACCOUNT,cutoff),null);
+ assert.equal(parse(before,ACCOUNT,cutoff+50),null);
+ // The previous cycle must also be rejected rather than appearing active
+ // for 120 seconds after the next global boss rotation begins.
+ const cooldown={...fresh(),phase:'cooldown',
+  readAtUtcMs:START+14*DAY-50};
+ assert.equal(parse(cooldown,ACCOUNT,START+14*DAY-1)?.phase,'cooldown');
+ assert.equal(parse(cooldown,ACCOUNT,START+14*DAY),null);
+});
 test('contributions, attempts, HP, and rewards cannot be fabricated',()=>{
  assert.equal(parse({...fresh(),attemptsUsed:3}),null);
  assert.equal(parse({...fresh(),donationsUsed:3}),null);

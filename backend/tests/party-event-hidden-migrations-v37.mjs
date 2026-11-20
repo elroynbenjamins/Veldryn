@@ -17,6 +17,13 @@ const files={
  v22:'20261113184500_party_event_audited_herb_v22.sql',
  v29:'20261115173500_party_event_paid_receipt_inbox_v29.sql',
  v30:'20261115190000_party_event_locked_claim_snapshot_v30.sql',
+ v45:'20261118143000_party_event_canonical_source_writer_v45.sql',
+ v46:'20261118173000_party_event_source_outbox_v46.sql',
+ v47:'20261118183000_party_event_source_leases_v47.sql',
+ v48:'20261118194500_party_event_server_gateway_v48.sql',
+ v49Source:'20261118212000_party_event_coop_node_attestation_v49.sql',
+ v49Credit:'20261118213000_party_event_v14_coop_attestation_patch_v49.sql',
+ v50:'20261118220000_party_event_coop_actor_outbox_v50.sql',
 };
 const sql=Object.fromEntries(Object.entries(files).map(([key,path])=>
  [key,read(base+path)]));
@@ -73,13 +80,45 @@ for(const [src,id,item] of [
 assert.match(sql.v29,/create table private\.party_event_paid_claim_receipts_v29/i);
 assert.match(sql.v29,/create table private\.party_event_paid_claim_inbox_v29/i);
 assert.match(sql.v30,/inspect_party_event_claim_lock_v30/i);
+assert.match(sql.v45,/private\.commit_online_game_party_sources_v45/i);
+assert.match(sql.v46,/private\.party_event_source_outbox_v46/i);
+assert.match(sql.v47,/private\.lease_party_event_sources_v47/i);
+assert.match(sql.v48,/public\.commit_online_game_party_sources_server_v48/i);
+assert.match(sql.v48,/grant execute on function public\.commit_online_game_party_sources_server_v48\([\s\S]*?\)\s*to service_role/i);
+assert.match(sql.v49Source,/after insert on public\.coop_node_results/i);
+assert.match(sql.v49Source,/private\.party_event_coop_node_actors_v49/i);
+assert.match(sql.v49Source,/m\.member_kind='human'/);
+assert.match(sql.v49Source,/m\.echo_profile_version is null/);
+assert.match(sql.v49Source,/access\.active/);
+assert.match(sql.v49Credit,/create or replace function private\.credit_party_event_activity_v14/i);
+assert.match(sql.v49Credit,/private\.party_event_coop_node_actors_v49 witness/i);
+assert.doesNotMatch(sql.v49Credit,/join public\.coop_run_access_memberships access/i,
+ 'Co-op credit must never depend on mutable live access status');
+assert.doesNotMatch(sql.v49Credit,/join public\.expedition_run_members/i,
+ 'Co-op credit must use committed human witnesses, not live roster');
+assert.match(sql.v50,/create table private\.party_event_coop_actor_outbox_v50/i);
+assert.match(sql.v50,/after insert on private\.party_event_coop_node_actors_v49/i);
+assert.match(sql.v50,/count\(distinct cohort\.account_id\)/i);
+assert.match(sql.v50,/for update of q skip locked/i);
+assert.match(sql.v50,/grant execute on function private\.lease_party_event_coop_actors_v50\([\s\S]*?\)\s*to service_role/i);
+const hiddenCoopWorker=read('backend/online/party-event-coop-source-dispatcher-v50.ts');
+assert.match(hiddenCoopWorker,/export const PARTY_EVENT_COOP_SOURCE_DISPATCH_V50_RELEASED=false;/);
+assert.doesNotMatch(hiddenCoopWorker,/fetch\(|\/rest\/v1\//i,
+ 'Server-only V50 worker must not become an HTTP endpoint');
+
+const commitPreview=read('backend/online/party-event-gameplay-commit-v48.ts');
+const gameplay=read('backend/online/gameplay.ts');
+assert.match(commitPreview,/export const PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED=false;/,
+ 'V48 gameplay route must remain hidden pending staging approval');
+assert.match(gameplay,/enableDraftBridge:PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED/,
+ 'normal gameplay must stay behind the shared release gate');
 for(const [key,source] of Object.entries(sql)){
  assert.doesNotMatch(source,/\bgrant\s+(?:all|execute|select|insert|update|delete)\b[^;]*\bto\s+(?:public|anon|authenticated)\b/i,
   'unapproved player-facing permission '+key);
 }
 const executable=readdirSync(join(root,'backend/supabase/migrations'));
 for(const filename of executable){
- assert.ok(!/20261113|20261115/.test(filename)||!filename.includes('party_event_'),
+ assert.ok(!/20261113|20261115|20261118/.test(filename)||!filename.includes('party_event_'),
   'draft hidden Party Event migration mistakenly added to live migration path '+filename);
 }
-console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: 28 columns align, RLS and private grants, Dewleaf Level 1 source, disabled Thorn Sap, drafts outside production migration path');
+console.log('PARTY_EVENTS_V37_DRAFT_SQL_OK: V45–V50 drafts unpromoted, source-time human/queue trust, V48/V50 OFF, RLS and source content aligned');

@@ -49496,6 +49496,13 @@ var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
 
+// online/party-event-canonical-source-packet-v44.ts
+var APPROVED_SCOUTS = Object.freeze([
+  "GREENWOOD_TREE",
+  "GREENFIELDS_COPPER_OUTCROP",
+  "DEWLEAF_PATCH"
+]);
+
 // online/gameplay.ts
 init_progression();
 var GameplayError = class extends Error {

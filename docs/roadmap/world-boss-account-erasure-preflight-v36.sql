@@ -42,6 +42,18 @@ BEGIN
   expected_account_columns:=array_append(expected_account_columns,
    'world_boss_erasure_fences_v57.account_id');
  END IF;
+ -- V59 private erasure recovery records survive Auth deletion until a
+ -- separately approved finalizer. Treat them as explicit identity columns.
+ IF pg_catalog.to_regclass('private.world_boss_erasure_jobs_v59')
+    IS NOT NULL THEN
+  expected_account_columns:=array_append(expected_account_columns,
+   'world_boss_erasure_jobs_v59.account_id');
+ END IF;
+ IF pg_catalog.to_regclass('private.world_boss_erasure_objects_v59')
+    IS NOT NULL THEN
+  expected_account_columns:=array_append(expected_account_columns,
+   'world_boss_erasure_objects_v59.account_id');
+ END IF;
  -- Every player-linked private World Boss table must be explicitly
  -- reviewed. Addition, deletion, renaming, or silent new account columns
  -- makes the preflight fail closed, rather than approving an incomplete wipe.

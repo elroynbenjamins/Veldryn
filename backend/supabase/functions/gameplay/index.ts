@@ -42943,7 +42943,7 @@ function combatTimeline(input) {
 
 // ../apps/mobile/src/core/combat-hit-timeline.ts
 var clamp2 = (value, lo, hi) => Math.max(lo, Math.min(hi, value));
-var finite = (value, fallback2) => Number.isFinite(value) ? value : fallback2;
+var finite = (value, fallback3) => Number.isFinite(value) ? value : fallback3;
 function huntBasePlayerHit(attack, defense, outputMultiplier = 1) {
   return Math.max(1, Math.round((Math.max(1, attack) * 1.35 - Math.max(0, defense) * 0.45) * Math.max(0.1, outputMultiplier)));
 }
@@ -43957,8 +43957,8 @@ function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFoc
   const classSkills = characterClassSkills(c).map((s, i) => {
     const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
     const amount = Math.max(0, pool) * shares[i] + prior;
-    const whole = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole);
-    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole);
+    const whole2 = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole2);
+    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole2);
     awards.push({ skillId: s.skillId, xp: gain });
     return { ...s, xp: s.xp + gain, level: classCombatSkillLevelFromXp(s.xp + gain) };
   });
@@ -44988,11 +44988,11 @@ function nextCompanionAscension(def, progress) {
   if (progress.ascensionTier === 2 && progress.level >= 25 && (def.rarity === "elite" || def.rarity === "prestige")) return 3;
   return void 0;
 }
-function normalizeProgress(def, value, fallback2) {
-  const max = companionMaxLevel(def), level = int(value?.level ?? fallback2.level, 1, max);
-  const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback2.ascensionTier, 0, 3));
-  let bondLevel = int(value?.bondLevel ?? fallback2.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp = int(value?.bondXp ?? fallback2.bondXp);
+function normalizeProgress(def, value, fallback3) {
+  const max = companionMaxLevel(def), level = int(value?.level ?? fallback3.level, 1, max);
+  const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback3.ascensionTier, 0, 3));
+  let bondLevel = int(value?.bondLevel ?? fallback3.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
+  const rawBondXp = int(value?.bondXp ?? fallback3.bondXp);
   let normalizedBondXp = value?.bondCurveVersion === 2 ? Math.max(bondThreshold(bondLevel), rawBondXp) : rebaseLegacyBondXp(bondLevel, rawBondXp);
   while (bondLevel < 10 && normalizedBondXp >= bondThreshold(bondLevel + 1)) bondLevel++;
   if (bondLevel >= 10) normalizedBondXp = bondThreshold(10);
@@ -45000,17 +45000,17 @@ function normalizeProgress(def, value, fallback2) {
   const safeLevel2 = Math.min(level, cap, max), nextXp = companionXpToNextLevel(def.rarity, safeLevel2);
   return {
     level: safeLevel2,
-    xp: safeLevel2 >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback2.xp), Math.max(0, nextXp - 1)),
-    bankedXp: safeLevel2 >= max ? 0 : Math.min(int(value?.bankedXp ?? fallback2.bankedXp), companionRemainingLifetimeXp(def, safeLevel2)),
+    xp: safeLevel2 >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback3.xp), Math.max(0, nextXp - 1)),
+    bankedXp: safeLevel2 >= max ? 0 : Math.min(int(value?.bankedXp ?? fallback3.bankedXp), companionRemainingLifetimeXp(def, safeLevel2)),
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
     bondCurveVersion: 2,
     bondTraitUnlocked: bondLevel >= 10,
     mastered: def.rarity === "prestige" && safeLevel2 === 35 && value?.mastered === true,
-    obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback2.obtainedAtMs,
-    originalEventReleaseYear: int(value?.originalEventReleaseYear ?? fallback2.originalEventReleaseYear, 0) || void 0,
-    veteranCosmeticEligible: value?.veteranCosmeticEligible === true || fallback2.veteranCosmeticEligible === true,
+    obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback3.obtainedAtMs,
+    originalEventReleaseYear: int(value?.originalEventReleaseYear ?? fallback3.originalEventReleaseYear, 0) || void 0,
+    veteranCosmeticEligible: value?.veteranCosmeticEligible === true || fallback3.veteranCosmeticEligible === true,
     selectedTechniqueId: typeof value?.selectedTechniqueId === "string" && value.selectedTechniqueId.startsWith(`${def.id}_`) ? value.selectedTechniqueId : void 0
   };
 }
@@ -48706,8 +48706,8 @@ function eventContributionValue(state, eventId, spent) {
 function eventDropQuantity(state, source, units, nowMs) {
   const event = activeLiveEvent(state, nowMs);
   if (!event || units <= 0) return 0;
-  const expected = units * eventEffectiveDropRate(state, event.definition.id, source, nowMs), whole = Math.floor(expected), fraction = expected - whole;
-  return whole + (random01(`${state.character?.id}:${event.definition.id}:${source}:${nowMs}`, 0) < fraction ? 1 : 0);
+  const expected = units * eventEffectiveDropRate(state, event.definition.id, source, nowMs), whole2 = Math.floor(expected), fraction = expected - whole2;
+  return whole2 + (random01(`${state.character?.id}:${event.definition.id}:${source}:${nowMs}`, 0) < fraction ? 1 : 0);
 }
 function timedEventRewards(state, source, completedAtMs) {
   const runtime = state.account.liveEvent;
@@ -48740,7 +48740,7 @@ function activityEventDiscoveries(state, source, units, nowMs) {
   const event = activeLiveEvent(state, nowMs);
   if (!event || units <= 0) return [];
   return event.definition.discoveries.filter((discovery) => discovery.source === source).map((discovery) => {
-    const expected = units * discovery.chance, whole = Math.floor(expected), fraction = expected - whole, quantity2 = whole + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
+    const expected = units * discovery.chance, whole2 = Math.floor(expected), fraction = expected - whole2, quantity2 = whole2 + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
     return { eventId: event.definition.id, discoveryId: discovery.id, name: discovery.name, quantity: quantity2 };
   }).filter((entry2) => entry2.quantity > 0);
 }
@@ -49787,8 +49787,8 @@ function settleAffinitySkillXp(rawXp, remainder = 0, remainingXp = Number.MAX_SA
   if (!Number.isFinite(rawXp) || rawXp < 0) throw new Error("Invalid profession XP.");
   const carry = Number.isFinite(remainder) && remainder >= 0 && remainder < 1 ? remainder : 0;
   const room = Number.isFinite(remainingXp) ? Math.max(0, Math.floor(remainingXp)) : Number.MAX_SAFE_INTEGER;
-  const raw2 = rawXp + carry, whole = Math.floor(raw2 + 1e-9), xp = Math.min(whole, room);
-  return { xp, remainder: xp >= room ? 0 : Math.max(0, Math.min(1 - Number.EPSILON, raw2 - whole)) };
+  const raw2 = rawXp + carry, whole2 = Math.floor(raw2 + 1e-9), xp = Math.min(whole2, room);
+  return { xp, remainder: xp >= room ? 0 : Math.max(0, Math.min(1 - Number.EPSILON, raw2 - whole2)) };
 }
 
 // ../apps/mobile/src/core/profession-action-pace.ts
@@ -50065,9 +50065,9 @@ function previewAlchemyReward(state, elapsed) {
   const progress = elapsed / brew.cycleSeconds + (activity.progressFraction ?? 0);
   const actions = Math.min(brew.remainingBatches, Math.max(0, Math.floor(progress + 1e-10)));
   const remaining = brew.remainingBatches - actions, remainders = { ...state.rewardRemainders ?? {} };
-  const mastery = professionMasteryMultipliers(brew.recipeId, state.account.professionMasteryByAction?.[brew.recipeId]), xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, "alchemy") : "xp:alchemy", raw2 = actions * brew.xpPerBatch + (remainders[xpKey] ?? 0), whole = Math.floor(raw2 + 1e-10);
-  const xp = Math.max(0, Math.min(whole, totalXpAtLevel(100) - (state.skills.find((s) => s.skillId === "alchemy")?.xp ?? 0)));
-  remainders[xpKey] = xp < whole ? 0 : Math.max(0, raw2 - whole);
+  const mastery = professionMasteryMultipliers(brew.recipeId, state.account.professionMasteryByAction?.[brew.recipeId]), xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, "alchemy") : "xp:alchemy", raw2 = actions * brew.xpPerBatch + (remainders[xpKey] ?? 0), whole2 = Math.floor(raw2 + 1e-10);
+  const xp = Math.max(0, Math.min(whole2, totalXpAtLevel(100) - (state.skills.find((s) => s.skillId === "alchemy")?.xp ?? 0)));
+  remainders[xpKey] = xp < whole2 ? 0 : Math.max(0, raw2 - whole2);
   const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * brew.cycleSeconds);
   const times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * brew.cycleSeconds) * 1e3));
   const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
@@ -54711,9 +54711,9 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   const mastery = monsterMasteryCombatBonuses(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
   if (mastery.materialBonus) for (const item of items) {
     if (itemDef(item.itemId).type !== "material") continue;
-    const extra = item.quantity * mastery.materialBonus + (materialRemainders[item.itemId] ?? 0), whole = Math.floor(extra + 1e-9);
-    item.quantity += whole;
-    materialRemainders[item.itemId] = Math.max(0, extra - whole);
+    const extra = item.quantity * mastery.materialBonus + (materialRemainders[item.itemId] ?? 0), whole2 = Math.floor(extra + 1e-9);
+    item.quantity += whole2;
+    materialRemainders[item.itemId] = Math.max(0, extra - whole2);
   }
   const combatXpScale = characterCombatXpScale(m.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
@@ -57365,7 +57365,7 @@ function characterLoadoutSlotCount(state) {
   return Math.min(MAX_CHARACTER_LOADOUT_SLOTS, CHARACTER_LOADOUT_SLOT_COUNT + accountEntitlementBenefits(state).loadoutSlots);
 }
 var slots = ["weapon", "offhand", "helmet", "chest", "legs", "boots", "gloves", "cape", "amulet", "ring"];
-var cleanName = (value, fallback2) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback2;
+var cleanName = (value, fallback3) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback3;
 function normalizeCharacterLoadouts(value, classId, slotCount = CHARACTER_LOADOUT_SLOT_COUNT) {
   if (!Array.isArray(value)) return [];
   const limit = Math.max(CHARACTER_LOADOUT_SLOT_COUNT, Math.min(MAX_CHARACTER_LOADOUT_SLOTS, slotCount)), bySlot = /* @__PURE__ */ new Map();
@@ -59779,6 +59779,110 @@ function executeGameCommand(previous, value, now, options = {}) {
   return { state, reward: reward3, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
 
+// online/party-event-canonical-source-packet-v44.ts
+var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+var REQUEST = /^[a-zA-Z0-9_-]{8,128}$/;
+var APPROVED_SCOUTS = Object.freeze([
+  "GREENWOOD_TREE",
+  "GREENFIELDS_COPPER_OUTCROP",
+  "DEWLEAF_PATCH"
+]);
+var GATHERING_KINDS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "herbalism"]);
+function invalid(reason) {
+  throw Error("party_event_v44_" + reason);
+}
+var whole = (value, min, max) => typeof value === "number" && Number.isSafeInteger(value) && value >= min && value <= max;
+function verifiedScoutContent() {
+  const result = /* @__PURE__ */ new Map();
+  const sources = [...GATHERING, ...HERB_NODES];
+  for (const id of APPROVED_SCOUTS) {
+    const matches = sources.filter((node2) => node2.id === id);
+    if (matches.length !== 1) invalid("missing_or_duplicate_scout_content:" + id);
+    const node = matches[0];
+    if (node.unlockLevel !== 1 || node.zoneId !== "GREENFIELDS" || !GATHERING_KINDS.has(node.skillId) || !whole(node.min, 1, 1e4) || !whole(node.max, node.min, 1e4) || !Number.isFinite(node.seconds) || node.seconds < 1 || typeof node.itemId !== "string" || node.itemId.length < 3)
+      invalid("invalid_scout_content:" + id);
+    result.set(id, { itemId: node.itemId, skillId: node.skillId });
+  }
+  return result;
+}
+function preparePartySourcePacketV44(input) {
+  const { accountId, characterId, requestId, trustedServerNowMs, adminQa, previousActivity, result } = input;
+  if (!UUID.test(accountId) || !UUID.test(characterId) || !REQUEST.test(requestId) || !whole(trustedServerNowMs, 1, Number.MAX_SAFE_INTEGER) || result?.state?.character?.id !== characterId || !Array.isArray(result.contributions) || result.contributions.length > 4)
+    invalid("untrusted_committed_context");
+  const base = {
+    kind: "party-event-canonical-source-packet-v44",
+    accountId,
+    characterId,
+    requestId,
+    writesAuthorized: false,
+    eventPointsGranted: 0,
+    rewardsGranted: false
+  };
+  if (adminQa) return { ...base, craft: [], idle: [] };
+  const scouts = verifiedScoutContent();
+  const craft = [];
+  for (const [index, source] of result.contributions.entries()) {
+    if (source.kind !== "crafting") continue;
+    if (!whole(source.units, 1, 1e5) || typeof source.contentId !== "string" || source.contentId.length < 3 || source.contentId.length > 120 || source.contentId.trim() !== source.contentId)
+      invalid("invalid_server_craft_source");
+    craft.push({
+      kind: "craft",
+      idempotencyKey: "pe44:" + requestId + ":craft:" + index,
+      recipeId: source.contentId,
+      quantity: source.units
+    });
+  }
+  const idle = [];
+  const reward3 = result.reward;
+  if (previousActivity && reward3 && !reward3.activityResults?.length && GATHERING_KINDS.has(previousActivity.kind)) {
+    const source = scouts.get(previousActivity.targetId);
+    if (source) {
+      const elapsedSec = Math.floor(reward3.elapsedSeconds);
+      const amount = reward3.items.filter((item) => item.itemId === source.itemId).reduce((sum, item) => sum + item.quantity, 0);
+      if (whole(elapsedSec, 60, 86400) && whole(reward3.xp, 0, Number.MAX_SAFE_INTEGER) && whole(amount, 1, Number.MAX_SAFE_INTEGER) && whole(reward3.kills, 1, 1e6) && whole(previousActivity.lastClaimAtMs, 0, trustedServerNowMs) && previousActivity.lastClaimAtMs + elapsedSec * 1e3 <= trustedServerNowMs) {
+        idle.push({
+          kind: "idle",
+          idempotencyKey: "pe44:" + requestId + ":idle:0",
+          activityId: previousActivity.targetId,
+          elapsedSec,
+          resourceAmount: amount,
+          xpAmount: reward3.xp
+        });
+      }
+    }
+  }
+  return { ...base, craft, idle };
+}
+
+// online/party-event-gameplay-commit-v48.ts
+var PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED = false;
+function fallback2(args) {
+  return { rpc: "commit_online_game_guild_pve_v1", args, sourceCount: 0, hidden: true };
+}
+function planHiddenPartyGameCommitV48(input) {
+  const { normalArgs: args } = input;
+  if (!input.enableDraftBridge || input.adminQa || /^(qa_|roster_|create$|delete$)/.test(input.commandType) || args.p_deleted_character_id !== void 0 || !input.result?.state?.character?.id || args.p_contributions.length > 4) {
+    return fallback2(args);
+  }
+  const packet = preparePartySourcePacketV44({
+    accountId: args.p_account_id,
+    characterId: input.result.state.character.id,
+    requestId: args.p_request_id,
+    trustedServerNowMs: input.trustedServerNowMs,
+    adminQa: input.adminQa,
+    previousActivity: input.previousActivity,
+    result: input.result
+  });
+  const sourceCount = packet.craft.length + packet.idle.length;
+  if (sourceCount === 0) return fallback2(args);
+  return {
+    rpc: "commit_online_game_party_sources_server_v48",
+    args: { ...args, p_packet: packet },
+    sourceCount,
+    hidden: true
+  };
+}
+
 // online/gameplay.ts
 init_progression();
 var GameplayError = class extends Error {
@@ -59922,8 +60026,29 @@ function gameplayHandler(services2) {
         ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
-      const commitRpc = "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const verifiedRequestId = body?.requestId;
+      if (typeof verifiedRequestId !== "string" || typeof requestHash !== "string")
+        throw new GameplayError("invalid_verified_game_request");
+      const normalCommitArgs = {
+        p_account_id: accountId,
+        p_expected_version: loaded.version,
+        p_expected_gold: loaded.walletGold,
+        p_request_id: verifiedRequestId,
+        p_request_hash: requestHash,
+        p_response: response,
+        p_contributions: contributions,
+        ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {}
+      };
+      const partyCommit = planHiddenPartyGameCommitV48({
+        enableDraftBridge: PARTY_EVENT_GAMEPLAY_COMMIT_V48_RELEASED,
+        adminQa,
+        commandType: command.type,
+        trustedServerNowMs: loaded.serverNow,
+        previousActivity: state.activity ?? null,
+        result,
+        normalArgs: normalCommitArgs
+      });
+      const committed = await services2.rpc(partyCommit.rpc, partyCommit.args);
       try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {

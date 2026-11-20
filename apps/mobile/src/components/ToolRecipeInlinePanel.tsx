@@ -51,7 +51,7 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
     <View style={s.statRow}>
       <View style={s.stat}><Text style={s.statLabel}>{gl(tool.skillId)}</Text><Text style={[s.statValue,{color:skillReady?C.good:C.warning}]}>{gt('Level {value}',{value:tool.unlockLevel})}{skillReady?' ✓':''}</Text></View>
       <View style={s.stat}><Text style={s.statLabel}>{gt('Character level')}</Text><Text style={[s.statValue,{color:characterReady?C.good:C.warning}]}>{tool.requiredCharacterLevel}{characterReady?' ✓':''}</Text></View>
-      <View style={s.stat}><Text style={s.statLabel}>{gt('Action speed')}</Text><Text style={[s.statValue,{color:C.info}]}>{Math.round((1-tool.actionTimeMultiplier)*100)}% {gt('faster')}</Text></View>
+      <View style={s.stat}><Text style={s.statLabel}>{gt('Action time')}</Text><Text style={[s.statValue,{color:C.info}]}>{Math.round((1-tool.actionTimeMultiplier)*100)}% {gt('shorter')}</Text></View>
     </View>
     <Text style={[s.blueprintText,{color:learned?C.good:blueprintHeld?C.info:C.warning}]}>{blueprintStatus}</Text>
     {!learned&&tool.blueprint&&!blueprintHeld?<View style={s.sourcePanel}>
@@ -61,7 +61,7 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
     </View>:null}
     <View style={s.materialHeading}>
       <Text style={s.sectionTitle}>{gt('Materials')}</Text>
-      <Text style={s.small}>{missing.length?missing.length+' '+gt('missing'):gt('All materials ready')} · {gt('Inventory + Bank')}</Text>
+      <Text style={s.small}>{gt('Owned / required')} · {missing.length?missing.length+' '+gt('missing'):gt('All materials ready')} · {gt('Inventory + Bank')}</Text>
     </View>
     {inputs.map(input=>{
       const enough=input.owned>=input.quantity,source=input.sources.find(row=>row.availability.canNavigate);
@@ -82,11 +82,11 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
           </View>
         </View>
         {!enough&&others.length>0&&onNavigate?<Pressable accessibilityRole="button" accessibilityLabel={gt('Other sources')+': '+localizedItemName(language,input.itemId)} accessibilityState={{expanded:!!otherSourcesOpen[input.itemId]}} onPress={()=>setOtherSourcesOpen(value=>({...value,[input.itemId]:!value[input.itemId]}))} style={s.otherToggle}><Text style={s.otherLabel}>{gt('Other sources')} · {others.length} {otherSourcesOpen[input.itemId]?'⌃':'⌄'}</Text></Pressable>:null}
-        {!enough&&otherSourcesOpen[input.itemId]&&onNavigate?others.map((row,index)=><Pressable key={row.type+row.title+index} accessibilityRole="button" accessibilityLabel={row.title+' · '+row.availability.label} accessibilityState={{disabled:!row.availability.canNavigate}} disabled={!row.availability.canNavigate} onPress={()=>onNavigate(row.destination)} style={({pressed})=>[s.otherRow,pressed&&s.pressed]}><View style={s.ingredientCopy}><Text style={s.otherName}>{row.typeLabel} · {row.title}</Text><Text numberOfLines={2} style={s.sourceCopy}>{row.destination.detail}</Text></View><Text style={s.otherState}>{row.availability.label} ›</Text></Pressable>):null}
+        {!enough&&otherSourcesOpen[input.itemId]&&onNavigate?others.map((row,index)=><Pressable key={row.type+row.title+index} accessibilityRole="button" accessibilityLabel={row.title+' · '+row.availability.label} accessibilityState={{disabled:!row.availability.canNavigate}} disabled={!row.availability.canNavigate} onPress={()=>onNavigate(row.destination)} style={({pressed})=>[s.otherRow,pressed&&s.pressed]}><View style={s.ingredientCopy}><Text style={s.otherName}>{row.typeLabel} · {row.title}</Text><Text numberOfLines={2} style={s.sourceCopy}>{row.destination.detail}</Text></View><Text style={s.otherState}>{row.availability.label}{row.availability.canNavigate?' ›':''}</Text></Pressable>):null}
       </View>;
     })}
     <View style={s.costRow}>
-      <Text style={s.cost}>{gt('Gold')} {f(state.character?.gold??0)} / {f(tool.recipe.gold)} · +{f(tool.recipe.xp)} XP</Text>
+      <Text style={s.cost}>{gt('Gold')} {f(state.character?.gold??0)} / {f(tool.recipe.gold)} · +{f(tool.recipe.xp)} {gt('base XP')}</Text>
       <Text style={[s.cost,{color:goldReady?C.good:C.warning}]}>{goldReady?gt('Gold ready'):gt('Not enough gold')}</Text>
     </View>
     <Text accessibilityLiveRegion="polite" style={[s.status,{color:availability.ready?C.good:C.warning}]}>{availability.ready?gt('Ready to craft'):availability.reason}</Text>

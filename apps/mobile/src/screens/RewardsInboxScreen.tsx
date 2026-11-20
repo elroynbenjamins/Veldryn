@@ -82,7 +82,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
             <Pressable accessibilityRole="button" accessibilityLabel={a('Reward details')+': '+row.title} accessibilityState={{expanded}} onPress={()=>setExpandedId(previous=>previous===row.id?null:row.id)} style={({pressed})=>[s.detailsButton,pressed&&s.pressed]}>
               <Text numberOfLines={1} style={s.detailsButtonText}>{a('Reward details')}</Text><Text style={s.chevron}>{expanded?'⌃':'⌄'}</Text>
             </Pressable>
-            {!row.claimedAt?<SocialActionButton label={a('Claim reward')} disabled={busy||(!online&&!preview)} onPress={()=>run(row.id)}/>:null}
+            {!row.claimedAt?<SocialActionButton label={a('Claim reward')} accessibilityLabel={a('Claim reward')+': '+row.title} disabled={busy||(!online&&!preview)} onPress={()=>run(row.id)}/>:null}
           </View>
         </View>
         {expanded?<View style={s.details}>
@@ -146,7 +146,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  actions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',flexWrap:'wrap',gap:6,minWidth:0},
  actionsStack:{alignSelf:'stretch',justifyContent:'flex-end'},
  detailsButton:{minHeight:44,minWidth:80,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:8,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
- detailsButtonText:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1},
+ detailsButtonText:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1,textAlign:'center'},
  chevron:{fontSize:16,color:C.muted},
  details:{gap:8,borderTopWidth:1,borderTopColor:C.line,paddingTop:9},
  body:{...typography.caption,color:C.muted,lineHeight:19},

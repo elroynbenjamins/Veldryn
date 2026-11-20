@@ -48,8 +48,10 @@ export interface CharacterState {
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** Character-only equipment storage: separate from Inventory, shared Bank and account Gem Pouch. */
   equipmentPouch?:InventoryState;
-  /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
+  /** Legacy best-tool pointer kept for existing character saves and older readers. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
+  /** All equipped tools, one per tier per gathering skill. Tools leave Inventory when equipped. */
+  equippedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   equippedFoodId?:string;
   /** Auto-eat backup order (up to four different food types); never consumes bank food. */
   foodQueueIds?:string[];
@@ -110,10 +112,13 @@ export interface CraftedGearInstance{
   enhancement:GearEnhancementState;
   /** Per-instance stat variance in [0,1); maps to roughly ±5% multiplier. 0.5 is "average". */
   statRoll?:number;
-  /** T3+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
+  /** T2+ weapon-only permanent per-copy secondary stat rolls; absent on legacy gear. */
   weaponBonuses?:import('./weapon-bonus-rolls').WeaponBonusRoll[];
   /** Roll table version recorded at mint, so later balance revisions cannot invalidate earned copies. */
   weaponBonusRollVersion?:import('./weapon-bonus-rolls').WeaponBonusRollVersion;
+  /** T2+ non-weapon per-copy secondary rolls; never inferred for legacy gear. */
+  equipmentBonuses?:import('./equipment-bonus-rolls').EquipmentBonusRoll[];
+  equipmentBonusRollVersion?:import('./equipment-bonus-rolls').EquipmentBonusRollVersion;
 }
 export interface ItemStack { itemId:string; quantity:number; /** Unique physical gear receipt; missing for legacy stacks. */ instanceId?:string; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

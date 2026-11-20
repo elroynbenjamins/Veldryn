@@ -47,7 +47,7 @@ import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster'
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
-import {gatheringPacing} from './gathering-tools';
+import {equippedGatheringTools,gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {regionTravelAvailability,regionTravelLockReason,cumulativeMonsterUnlockIds,encounterLockRequirement} from './world-navigation';
@@ -175,7 +175,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0,classHealing:1,abilityDamage:0,healingPower:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   let gearAttack=0,gearDefense=0;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;gearAttack+=stats.attack;gearDefense+=stats.defense;}
@@ -213,7 +213,9 @@ export function effectiveStats(state:GameState){
     // Stack equipment and class wards multiplicatively.
     ward:1-(1-setStats.ward)*(1-mastery.ward),
     tenacity:setStats.tenacity,potency:setStats.potency+mastery.potency,
-    penetration:setStats.penetration+mastery.penetration,classHealing:mastery.classHealing,
+    penetration:setStats.penetration+mastery.penetration,
+     classHealing:mastery.classHealing*(1+setStats.healingPower),
+     abilityDamage:setStats.abilityDamage,healingPower:setStats.healingPower,
   }
 }
 
@@ -558,7 +560,7 @@ function combatEncounterDamage(runtime:ReturnType<typeof combatRuntimeDetails>,c
  const incoming=runtime.huntOptions?Math.max(fatigue,combatPressure):combatPressure;
  const monsterDamage=runtime.huntOptions?Math.max(0,incoming-fatigue):combatPressure;
  const onKillHealing=Math.min(stats.attack*(style.onKillAttackHealPct??0),Math.max(0,incoming-Math.max(floor,fatigue)));
- const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
+ const rawHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600*(1+stats.healingPower)*(c.preparation?preparationEffects(c.preparation).healing:1)+onKillHealing;
  // Healers reduce attrition, but exertion always retains a small food cost.
  const healing=runtime.huntOptions?Math.min(rawHealing,monsterDamage+fatigue*.65):rawHealing;
  return {damage:incoming,monsterDamage,fatigue,healing,onKillHealing,net:incoming-healing};
@@ -606,7 +608,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const runtime=combatRuntimeDetails(state,monsterId),foodId=autoEatFoodOrder(state.character).find(id=>stackQty(state.inventory.stacks,id)>0)??state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const average=averagedRegionalHunt(state,monsterId,runtime),exchange=average??combatEncounterDamage(runtime),damagePerKill=exchange.damage;
  const killCycleSeconds=average?.killCycleSeconds??runtime.killCycleSeconds;
- const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour;
+ const killsPerHour=3600/Math.max(.1,killCycleSeconds),companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour*(1+runtime.stats.healingPower);
  const recoveryPerKill=exchange.onKillHealing,netDamagePerKill=exchange.net;
  const effect=state.activity?.kind==='combat'&&state.activity.targetId===monsterId?runtime.environment:undefined;
  const xpPerHour=killsPerHour*runtime.m.xp*characterCombatXpScale(runtime.m.level,runtime.m.boss)*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier;
@@ -696,7 +698,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
      hits=huntHitEvents({monsterHp:runtime.m.hp,basePlayerHit:huntBasePlayerHit(runtime.stats.attack,runtime.m.defense,runtime.secondary.playerOutputMultiplier),incomingDamage:exchange.damage,healingPerEncounter:exchange.healing,cycleSeconds:attackCadenceSeconds,critChance:runtime.stats.critChance,seed:seedFor(index)});
    }
    const cooldownTiming={combatStartedAtMs:activity.startedAtMs??startsAtMs,encounterStartedAtMs,cycleSeconds:runtime.killCycleSeconds};
-   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,
+   const offensive=huntActiveDamageEvents(hits,{...classTechniqueInput,...cooldownTiming,abilityDamageBonus:runtime.stats.abilityDamage,
      companion:commonCompanion?{...commonCompanion,contributionPct:Math.max(0,1-1/runtime.companion.outputMultiplier)}:undefined});
    const heals=huntSupportHealEvents(offensive,{...cooldownTiming,
      companion:commonCompanion?{...commonCompanion,healingPctPerHour:runtime.companion.directHealingPctPerHour}:undefined});
@@ -1524,19 +1526,38 @@ export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now(
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
   if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
   const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
-  const currentId=state.character.equippedToolIds?.[tool.skillId];if(currentId===itemId)return state;
+  const previous=equippedGatheringTools(state,tool.skillId);
+  if(previous.some(entry=>entry.id===itemId))return state;
+  const sameTier=previous.find(entry=>entry.tier===tool.tier);
+  // Settle the active cycle before changing its speed; partial progress survives.
   const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
   let stacks=consume(settled.inventory.stacks,itemId,1);
-  if(currentId)stacks=stackItems(stacks,[{itemId:currentId,quantity:1}]);
-  return {...settled,inventory:{...settled.inventory,stacks},character:{...settled.character!,equippedToolIds:{...(settled.character!.equippedToolIds??{}),[tool.skillId]:itemId}}};
+  if(sameTier)stacks=stackItems(stacks,[{itemId:sameTier.id,quantity:1}]);
+  const tools=[...previous.filter(entry=>entry.tier!==tool.tier),tool].sort((a,b)=>a.tier-b.tier);
+  const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
+    [tool.skillId]:Object.fromEntries(tools.map(entry=>[entry.tier,entry.id]))};
+  const equippedToolIds={...(settled.character!.equippedToolIds??{}),[tool.skillId]:tools[tools.length-1].id};
+  return {...settled,inventory:{...settled.inventory,stacks},
+    character:{...settled.character!,equippedToolIds,equippedToolIdsByTier}};
 }
-export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now()):GameState{
-  if(!state.character)return state;const currentId=state.character.equippedToolIds?.[skillId];if(!currentId)return state;
+
+/** Without an item ID, remove the highest-tier equipped tool (legacy behavior). */
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string):GameState{
+  if(!state.character)return state;
+  const equipped=equippedGatheringTools(state,skillId);
+  const selected=itemId?equipped.find(entry=>entry.id===itemId):equipped[equipped.length-1];
+  if(!selected)return state;
   const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
-  const equippedToolIds={...(settled.character!.equippedToolIds??{})};delete equippedToolIds[skillId];
-  const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:currentId,quantity:1}]);
+  const remaining=equipped.filter(entry=>entry.id!==selected.id);
+  const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
+    [skillId]:Object.fromEntries(remaining.map(entry=>[entry.tier,entry.id]))};
+  const equippedToolIds={...(settled.character!.equippedToolIds??{})};
+  if(remaining.length)equippedToolIds[skillId]=remaining[remaining.length-1].id;
+  else delete equippedToolIds[skillId];
+  const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:selected.id,quantity:1}]);
   if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
-  return {...settled,inventory:{...settled.inventory,stacks:added.stacks},character:{...settled.character!,equippedToolIds}};
+  return {...settled,inventory:{...settled.inventory,stacks:added.stacks},
+    character:{...settled.character!,equippedToolIds,equippedToolIdsByTier}};
 }
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('No character');

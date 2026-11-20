@@ -1,0 +1,47 @@
+import {strict as assert} from 'node:assert';
+import {dungeonDepthMultipliers} from '../dungeon-depth-scaling';
+import {availableDungeonCombatMarks,projectedDungeonCombatMarks} from '../dungeon-combat-marks-cap';
+import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../regional-power-balance';
+import {launchPlayer} from '../../combat/content/launch-combat';
+import {QModeService,MemoryQModeRunRepository} from '../qmode';
+import type {FrozenLoadoutSnapshot} from '../loadout-snapshots';
+import {createQModeNpcAllies} from '../qmode-npc-allies';
+
+assert.deepEqual(dungeonDepthMultipliers(1,true),{hp:1,attack:1,defense:1});
+for(const depth of [7,14,21,28,35,43]){
+ const previous=dungeonDepthMultipliers(depth-1,true);
+ const now=dungeonDepthMultipliers(depth,true);
+ assert.ok(now.hp>previous.hp&&now.attack>previous.attack&&now.defense>previous.defense);
+}
+assert.deepEqual(dungeonDepthMultipliers(43,false),{hp:1,attack:1,defense:1},'Legacy runs retain prior balance');
+assert.throws(()=>dungeonDepthMultipliers(44,true));
+
+assert.equal(projectedDungeonCombatMarks(['elite','elite','elite','elite','elite','elite']),25);
+assert.equal(projectedDungeonCombatMarks(['battle','battle','battle','battle','battle','battle','battle','battle','battle']),25);
+assert.equal(availableDungeonCombatMarks(24,'battle'),1);
+assert.equal(availableDungeonCombatMarks(24,'elite'),1);
+assert.equal(availableDungeonCombatMarks(25,'elite'),0);
+assert.equal(availableDungeonCombatMarks(0,'boss'),0);
+
+function frozen(accountId:string,classId:string,characterId:string):FrozenLoadoutSnapshot{
+ const player=launchPlayer(classId,25),role=player.role as 'tank'|'damage'|'support';
+ const snapshot={characterId,classId,role,level:25,...player.stats};
+ return {accountId,characterId,classId,loadoutId:`load-${characterId}`,revision:1,characterLevel:25,combatPower:0,
+  normalized:{snapshot,abilities:player.abilities,effectiveLevel:25,normalizationVersion:'test',before:{level:25,maxHp:snapshot.maxHp,attackPower:snapshot.attackPower,healingPower:snapshot.healingPower,defense:snapshot.defense}},
+  readiness:{ready:true,role,normalizedScore:1,failures:[]},snapshotHash:`hash-${characterId}`};
+}
+const controller=frozen('controller','Dawnkeeper','controller-char');
+const npc=createQModeNpcAllies({minimumLevel:10,syncLevel:25,controllerLevel:25});
+const solo=new QModeService(new MemoryQModeRunRepository(),'endurance-test').create({
+ requestId:'endurance-start',runId:'endurance-solo',controllerAccountId:'controller',controllerSnapshot:controller,
+ expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,
+ nowMs:10_000,profiles:[],npcSnapshots:npc,
+});
+assert.equal(solo.enduranceRouteVersion,1);
+assert.equal(solo.graph.preBossNodeCount,42);
+assert.equal(solo.graph.nodes.filter(node=>node.kind==='boss').length,6);
+const checkpoint=solo.graph.nodes.filter(node=>node.depth===8);
+assert.equal(checkpoint.filter(node=>node.kind==='boss').length,1);
+assert.equal(checkpoint.filter(node=>node.kind!=='boss').length,2);
+assert.equal(new Set(solo.players.filter(player=>player.role==='damage').map(player=>player.classId)).size,2);
+console.log('PASS: dungeon endurance scaling, shared checkpoint structure, level-only Solo and 25 room Marks cap');

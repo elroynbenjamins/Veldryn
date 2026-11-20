@@ -4,7 +4,7 @@ export function isCoopCombatNodeKind(kind:string|undefined):boolean{
  return kind==='battle'||kind==='elite'||kind==='boss';
 }
 
-export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
+export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;enemies?:Array<{name:string;boss:boolean}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
 export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;modifierId?:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
 export interface CoopRunObjectiveView {label:string;description:string;count:number;maxCount:number;completed:boolean;effectText:string;}
@@ -52,7 +52,7 @@ export interface CoopCombatReplayView{
  cues:CoopCombatReplayCueView[];
 }
 export type CoopPendingCombatView=Omit<CoopCombatReplayView,'reason'|'contributions'>&{elapsedMs:number;wallDurationMs:number};
-export interface CoopRoomOutcomeView {nodeId:string;kind:string;resourcesDelta:number;healedHp:number;damagedHp?:number;revivedCount:number;boonCount:number;artifactCount:number;curseCount:number;offerKind?:string;}
+export interface CoopRoomOutcomeView {nodeId:string;kind:string;resourcesDelta:number;healedHp:number;damagedHp?:number;revivedCount:number;boonCount:number;artifactCount:number;curseCount:number;offerKind?:string;artifactName?:string;boonName?:string;}
 export interface CoopMerchantShopView {resources:number;offers:Array<{id:string;kind:'boon'|'artifact'|'salve';cost:number;purchased:boolean}>;}
 export interface CoopRunBoonOfferView{id:string;name:string;description:string;}
 /** A depth-indexed mini-map of the current run. Visited includes every
@@ -61,7 +61,7 @@ export interface CoopRunRoutePathView {depth:number;totalDepth:number;}
 /** Regional ambience for the active run. Server-derived from the run's
  * expeditionId so the mobile UI can tint without storing dungeon maps. */
 export type CoopRunRegion='Asterfall'|'Sunscar'|'Frostmarch'|'Ashlands';
-export interface CoopRunView {runId:string;expeditionId?:string;mode:CoopMode;modeLabel?:string;phase:string;tier?:1|2|3|4|5;potionChargeCapacity?:number;healingPotionUsesByActor?:Record<string,number>;potionPreparationOpen?:boolean;preparedAlchemyPotionIdsByActor?:Record<string,string>;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];selectedNodeId?:string;selectedNodeKind?:string;presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;lastCombatMarks?:number;lastRoomOutcome?:CoopRoomOutcomeView;merchantShop?:CoopMerchantShopView;boonOffers?:CoopRunBoonOfferView[];pendingCombat?:CoopPendingCombatView;routePath?:CoopRunRoutePathView;region?:CoopRunRegion;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export interface CoopRunView {runId:string;expeditionId?:string;mode:CoopMode;modeLabel?:string;phase:string;tier?:1|2|3|4|5;potionChargeCapacity?:number;healingPotionUsesByActor?:Record<string,number>;potionPreparationOpen?:boolean;preparedAlchemyPotionIdsByActor?:Record<string,string>;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;npc?:boolean;classId?:string;profileIconId?:string|null;iconClassId?:string|null;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];selectedNodeId?:string;selectedNodeKind?:string;presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;lastCombatMarks?:number;combatMarksEarned?:number;combatMarksCap?:number;lastRoomOutcome?:CoopRoomOutcomeView;merchantShop?:CoopMerchantShopView;boonOffers?:CoopRunBoonOfferView[];artifactOffers?:CoopRunBoonOfferView[];runBuild?:{boons:Array<{id:string;name:string;description:string;stacks:number}>;artifacts:Array<{id:string;name:string;description:string;stacks:number}>};pendingCombat?:CoopPendingCombatView;routePath?:CoopRunRoutePathView;region?:CoopRunRegion;serverNow?:number;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
 /**
  * During a node-resolution timer the client can only show battle if that
  * selected server-owned node is actually combat (or live combat cues exist).
@@ -76,11 +76,14 @@ export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewVie
  if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');
  const row=value as Record<string,unknown>,summary=typeof row.summary==='string'?row.summary.trim():'';
  const rawArchetypes=Array.isArray(row.archetypes)?row.archetypes:[],rawMechanics=Array.isArray(row.mechanics)?row.mechanics:[];
- if(!summary||rawArchetypes.length>2||rawMechanics.length>4)throw new Error('invalid_encounter_preview');
+ const rawEnemies=row.enemies===undefined?undefined:Array.isArray(row.enemies)?row.enemies:undefined;
+ if(row.enemies!==undefined&&!rawEnemies)throw new Error('invalid_encounter_preview');
+ if(!summary||rawArchetypes.length>2||rawMechanics.length>4||(rawEnemies?.length??0)>4)throw new Error('invalid_encounter_preview');
  const archetypes=rawArchetypes.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'';if(!id||!label)throw new Error('invalid_encounter_preview');return{id,label};});
+ const enemies=rawEnemies?.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,name=typeof v.name==='string'?v.name.trim():'';if(!name||typeof v.boss!=='boolean')throw new Error('invalid_encounter_preview');return{name,boss:v.boss};});
  const mechanics=rawMechanics.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'',description=typeof v.description==='string'?v.description.trim():'';if(!id||!label||!description)throw new Error('invalid_encounter_preview');return{id,label,description};});
  if(new Set(archetypes.map(item=>item.id)).size!==archetypes.length||new Set(mechanics.map(item=>item.id)).size!==mechanics.length)throw new Error('invalid_encounter_preview');
- return{archetypes,mechanics,summary};
+ return{archetypes,...(enemies?{enemies}:{}),mechanics,summary};
 }
 
 export function validateCoopRunView(view:CoopRunView):void{
@@ -100,6 +103,7 @@ export function validateCoopRunView(view:CoopRunView):void{
  for(const option of view.options)if(option.encounterPreview)parseCoopEncounterPreview(option.encounterPreview);
  if(view.mode==='qmode'&&view.options.some(option=>option.votes!==undefined))throw new Error('qmode_cannot_show_votes');
  if(view.boonOffers&&(view.mode!=='qmode'||view.phase!=='awaiting_choice'||view.boonOffers.length!==3||new Set(view.boonOffers.map(offer=>offer.id)).size!==3||view.boonOffers.some(offer=>!offer.id.trim()||!offer.name.trim()||!offer.description.trim())))throw new Error('invalid_boon_offers');
+ if(view.artifactOffers&&(view.mode!=='qmode'||view.phase!=='awaiting_choice'||Boolean(view.boonOffers?.length)||view.artifactOffers.length!==3||new Set(view.artifactOffers.map(offer=>offer.id)).size!==3||view.artifactOffers.some(offer=>!offer.id.trim()||!offer.name.trim()||!offer.description.trim())))throw new Error('invalid_artifact_offers');
  if(view.mechanic&&(!view.mechanic.label.trim()||!view.mechanic.description.trim()||!Number.isFinite(view.mechanic.value)||!Number.isFinite(view.mechanic.maxValue)||view.mechanic.maxValue<=0||view.mechanic.value<0||view.mechanic.value>view.mechanic.maxValue||!['critical','steady','strong'].includes(view.mechanic.status)||!view.mechanic.bossEffect.trim()))throw new Error('invalid_run_mechanic');
  if(view.objective&&(!view.objective.label.trim()||!view.objective.description.trim()||!Number.isInteger(view.objective.count)||!Number.isInteger(view.objective.maxCount)||view.objective.maxCount<1||view.objective.count<0||view.objective.count>view.objective.maxCount||!view.objective.effectText.trim()))throw new Error('invalid_run_objective');
  if(view.bossMechanic&&(!view.bossMechanic.label.trim()||!view.bossMechanic.summary.trim()||!['benefit','mixed','danger'].includes(view.bossMechanic.tone)))throw new Error('invalid_boss_mechanic');
@@ -107,11 +111,11 @@ export function validateCoopRunView(view:CoopRunView):void{
   const t=view.bossMechanic.telegraph;
   if(!t.bossName.trim()||t.phases.some(phase=>!phase.id.trim()||!phase.label.trim()||!Number.isFinite(phase.hpPct)||phase.hpPct<=0||phase.hpPct>=100)||t.castAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()||!Number.isFinite(ability.castMs)||ability.castMs<0||!Number.isFinite(ability.cooldownMs)||ability.cooldownMs<0)||t.suppressedAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()))throw new Error('invalid_boss_telegraph');
  }
- if(view.lastCombatMarks!==undefined&&![3,5].includes(view.lastCombatMarks))throw new Error('invalid_combat_mark_reward');
+ if(view.lastCombatMarks!==undefined&&(!Number.isInteger(view.lastCombatMarks)||view.lastCombatMarks<1||view.lastCombatMarks>5))throw new Error('invalid_combat_mark_reward');
  if(view.lastRoomOutcome&&(!view.lastRoomOutcome.nodeId.trim()||!view.lastRoomOutcome.kind.trim()||![view.lastRoomOutcome.resourcesDelta,view.lastRoomOutcome.healedHp,view.lastRoomOutcome.revivedCount,view.lastRoomOutcome.boonCount,view.lastRoomOutcome.artifactCount,view.lastRoomOutcome.curseCount].every(Number.isFinite)))throw new Error('invalid_room_outcome');
  if(view.merchantShop&&(!Number.isSafeInteger(view.merchantShop.resources)||view.merchantShop.resources<0||view.merchantShop.offers.length>3||view.merchantShop.offers.some(offer=>!offer.id.trim()||!['boon','artifact','salve'].includes(offer.kind)||!Number.isInteger(offer.cost)||offer.cost<1)))throw new Error('invalid_merchant_shop');
  if(view.bossRecap&&(!Number.isFinite(view.bossRecap.durationMs)||view.bossRecap.durationMs<0||!Number.isInteger(view.bossRecap.downs)||view.bossRecap.downs<0||view.bossRecap.phasesTriggered.some(item=>!item.trim())||view.bossRecap.abilitiesCast.some(item=>!item.trim())))throw new Error('invalid_boss_recap');
- if(view.routePath&&(!Number.isInteger(view.routePath.depth)||view.routePath.depth<0||!Number.isInteger(view.routePath.totalDepth)||view.routePath.totalDepth<1||view.routePath.totalDepth>16||view.routePath.depth>view.routePath.totalDepth))throw new Error('invalid_route_path');
+ if(view.routePath&&(!Number.isInteger(view.routePath.depth)||view.routePath.depth<0||!Number.isInteger(view.routePath.totalDepth)||view.routePath.totalDepth<1||view.routePath.totalDepth>43||view.routePath.depth>view.routePath.totalDepth))throw new Error('invalid_route_path');
  if(view.pendingCombat){
   if(view.mode!=='live'||view.phase!=='resolving_node'||view.lastCombat||!Number.isFinite(view.pendingCombat.elapsedMs)||view.pendingCombat.elapsedMs<0||!Number.isFinite(view.pendingCombat.wallDurationMs)||view.pendingCombat.wallDurationMs<=0||view.pendingCombat.elapsedMs>view.pendingCombat.wallDurationMs||view.pendingCombat.cues.some(cue=>['victory','wipe','timeout'].includes(cue.type)))throw new Error('invalid_pending_combat');
   validateCoopRunView({...view,pendingCombat:undefined,lastCombat:{...view.pendingCombat,reason:'victory'}});

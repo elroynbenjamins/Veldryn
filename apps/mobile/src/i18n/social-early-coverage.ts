@@ -2,6 +2,19 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Combat Marks capped": ["Лимит боевых знаков достигнут","Savaş Nişanı sınırına ulaşıldı"],
+  // Dungeon Endurance screen translations (Russian/Turkish).
+  "Boon gained": ["Получено благословение","Lütuf kazanıldı"],
+  "Choose an artifact": ["Выберите артефакт","Bir eser seç"],
+  "BOSS EXIT AVAILABLE": ["ДОСТУПЕН ВЫХОД К БОССУ","BOSS ÇIKIŞI AÇILDI"],
+  "Choose your artifact above to continue.": ["Выберите артефакт выше, чтобы продолжить.","Devam etmek için yukarıdan eserini seç."],
+  "Vote to finish with the boss, or continue deeper together.": ["Проголосуйте: завершить поход боем с боссом или идти дальше вместе.","Boss ile bitirmek veya birlikte daha derine inmek için oy verin."],
+  "Fight the boss to finish now, or continue deeper for a harder challenge.": ["Сразитесь с боссом, чтобы закончить сейчас, или идите глубже ради более сложного испытания.","Şimdi bitirmek için boss ile savaş veya daha zorlu bir mücadele için ilerle."],
+  "Combat Marks": ["Боевые знаки","Savaş Nişanları"],
+  "Run Build": ["Усиления похода","Sefer geliştirmeleri"],
+  "boons": ["благословения","lütuflar"],
+  "artifacts": ["артефакты","eserler"],
+  "final capped award": ["последняя награда с учётом лимита","son sınırlı ödül"],
   // Online roster additions.
   "VELDRYN COMMUNITY": ["СООБЩЕСТВО VELDRYN","VELDRYN TOPLULUĞU"],
   "Online players": ["Игроки в сети","Çevrimiçi oyuncular"],

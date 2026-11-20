@@ -5,6 +5,7 @@
   "tests/profile-pet-art-assets.cjs",
   "tests/guild-pet-portrait-assets.cjs",
   "tests/app-version-gate.cjs",
+  ".core-build/apps/mobile/tests/equipment-bonus-rolls.js",
   ".core-build/apps/mobile/tests/resource-codex.js",
   ".core-build/apps/mobile/tests/recipe-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",

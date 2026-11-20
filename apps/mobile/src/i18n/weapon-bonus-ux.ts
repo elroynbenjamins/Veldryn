@@ -6,6 +6,8 @@ import type {WeaponBonusStat} from '../core/weapon-bonus-rolls';
 const ROWS={
   possible:['Possible bonus stats','Mögliche Bonuswerte','Posibles bonus','Mogelijke bonusstats','Bonus possibili','Bonus possibles','Возможные бонусы','Olası bonuslar'],
   possibleCount:['possible stats','mögliche Werte','bonus posibles','mogelijke stats','bonus possibili','bonus possibles','возможных бонусов','olası bonus'],
+  oneOrTwo:['1–2 bonuses','1–2 Boni','1–2 bonus','1–2 bonussen','1–2 bonus','1–2 bonus','1–2 бонуса','1–2 bonus'],
+  twoCount:['2 bonuses','2 Boni','2 bonus','2 bonussen','2 bonus','2 bonus','2 бонуса','2 bonus'],
   single:['Common–Rare: 1 bonus · Epic+: 2','Gewöhnlich–Selten: 1 Bonus · Episch+: 2','Común–Raro: 1 bonus · Épico+: 2','Gewoon–Zeldzaam: 1 bonus · Episch+: 2','Comune–Raro: 1 bonus · Epico+: 2','Commun–Rare : 1 bonus · Épique+ : 2','Обычное–редкое: 1 бонус · эпическое+: 2','Yaygın–Nadir: 1 bonus · Destansı+: 2'],
   double:['2 different bonuses at every rarity','2 verschiedene Boni bei jeder Seltenheit','2 bonus distintos en cada rareza','2 verschillende bonussen bij elke zeldzaamheid','2 bonus diversi per ogni rarità','2 bonus distincts à chaque rareté','2 разных бонуса любой редкости','Her nadirlikte 2 farklı bonus'],
   shared:['Same possible bonuses for every class.','Gleiche mögliche Boni für alle Klassen.','Los mismos bonus posibles para todas las clases.','Dezelfde mogelijke bonussen voor elke klasse.','Gli stessi bonus possibili per ogni classe.','Les mêmes bonus possibles pour toutes les classes.','Одинаковые бонусы для всех классов.','Tüm sınıflar için aynı olası bonuslar.'],

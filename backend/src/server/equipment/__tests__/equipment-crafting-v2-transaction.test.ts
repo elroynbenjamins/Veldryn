@@ -48,6 +48,32 @@ const create=():V2DraftSnapshot=>({
  bank:Object.fromEntries(recipe.inputs.map(i=>[i.itemId,Math.floor(i.quantity/2)])),
  jobs:[],equipment:[],skillAwards:[],receipts:[],
 });
+// A corrupted off-screen character or shared Bank is still part of the
+// authenticated account: never permit crafting or replay from that snapshot.
+const badSnapshots:Array<{name:string;state:V2DraftSnapshot}>=[];
+const badAltGold=create();badAltGold.characters['character-alt'].gold=-1;
+badSnapshots.push({name:'off-screen negative Gold',state:badAltGold});
+const badAltXp=create();badAltXp.characters['character-alt'].professionLevels.tailoring=1.5;
+badSnapshots.push({name:'off-screen fractional profession',state:badAltXp});
+const badAltItems=create();badAltItems.characters['character-alt'].inventory[recipe.inputs[0].itemId]=Number.MAX_SAFE_INTEGER+1;
+badSnapshots.push({name:'off-screen material overflow',state:badAltItems});
+const negativeBank=create();negativeBank.bank[recipe.inputs[0].itemId]=-1;
+badSnapshots.push({name:'negative shared Bank balance',state:negativeBank});
+const illicitEquipmentStack=create();illicitEquipmentStack.bank.EQ2_FORGED_COPY=1;
+badSnapshots.push({name:'EQ2 copy disguised as stackable Bank materials',state:illicitEquipmentStack});
+const forgedKey=create();
+Object.defineProperty(forgedKey.bank,'__proto__',{value:1,enumerable:true});
+badSnapshots.push({name:'prototype-poisoned inventory key',state:forgedKey});
+const tooManyOwners=create();
+for(let i=0;i<4;i++)tooManyOwners.characters['unverified-'+i]=structuredClone(tooManyOwners.characters['character-alt']);
+badSnapshots.push({name:'more than five projected account characters',state:tooManyOwners});
+for(const {name,state} of badSnapshots){
+ const unchanged=JSON.stringify(state);
+ assert.throws(()=>resolveEquipmentV2DraftCommand(state,
+  {kind:'start',requestId:'tampered-001',expectedVersion:10,recipeId:recipe.id},
+  makeContext(1_000_000)),/invalid_trusted_snapshot/,name);
+ assert.equal(JSON.stringify(state),unchanged,name+' must remain unchanged');
+}
 const original=create(),before=structuredClone(original);
 const startRequest={kind:'start' as const,requestId:'start-000001',expectedVersion:10,recipeId:recipe.id};
 const start=resolveEquipmentV2DraftCommand(original,startRequest,makeContext(1_000_000));

@@ -15,6 +15,7 @@ import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} fr
 import {recordAccountProgress} from './account-roster';
 import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
+import {recipeDef} from '../content/skills';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {setArenaSquadSlot} from './arena-squad';
 import {normalizeProgressionGoals} from './progression-goals-v40';
@@ -317,6 +318,10 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    case 'craft':{
     const id=text(a,'id'),count=a.quantity===undefined?1:integer(a,'quantity',1,999),timed=timedEquipmentRecipe(id);
     if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');
+    if(!timed&&count>1){
+     const recipe=recipeDef(id),kind=recipe?itemDef(recipe.output.itemId).type:undefined;
+     if(!recipe||recipe.noviceSetId||kind==='gear'||kind==='tool')throw new Error('This recipe is crafted one at a time.');
+    }
     // Atomic command: a failure on any craft rejects the whole projected state.
     // Each iteration rechecks materials, gold, available forge slots and output storage.
     for(let batch=0;batch<count;batch++){

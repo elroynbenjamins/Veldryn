@@ -289,7 +289,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   const anticipation=p&&level<100?progressAnticipation(p.current,p.need,{nearAt:.92,urgentAt:.98}):undefined;
   const skillRow=entry.route==='skill'?state.skills.find(row=>row.skillId===entry.id):undefined;
   const milestone=skillRow?skillMilestoneOverview(state,skillRow.skillId):undefined;
-  const icon=entry.route==='companion-mastery'||isSanctuary?uiIcons.companions:isDiscipline?classSkillIcon(entry.id.slice('class:'.length)):null;
+  const icon=entry.route==='companion-mastery'||isSanctuary?uiIcons.companions:isDiscipline?classSkillIcon(entry.id.slice('class:'.length)):entry.route==='overview'?uiIcons.skills:null;
   const disabled=entry.route==='combat'&&!onCombat;
   return <Pressable key={entry.id} accessibilityRole="button"
    accessibilityLabel={entry.route==='combat'?gt('Open Combat'):gt('{name}, {kind}, level {level}',{name:entry.name,kind:entry.subtitle,level})}

@@ -149,7 +149,7 @@ export function verifyEquipmentV2GemSidecar(
 export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,command,serverRollPercent}=input;
  if(!state||!state.character||!onlineCharacterId||state.character.id!==onlineCharacterId)
-  fail('unauthenticated_v2_socket_character');
+  throw new V2DraftCraftError('unauthenticated_v2_socket_character');
  if(!safe(onlineVersion)||!safe(authoritativeWalletGold??NaN)
   ||state.character.gold!==authoritativeWalletGold)fail('untrusted_v2_socket_wallet');
  const readiness=equipmentV2AuthoritativeReadiness({
@@ -167,7 +167,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
   gemSocketState?:V2GemSidecarState;
   custodyReceipts?:V2VirtualMoveReceipt[];
  }|undefined;
- if(!raw||raw.schemaVersion!=='eq2-hidden-game-state-v1')fail('missing_v2_socket_ledger');
+ if(!raw||raw.schemaVersion!=='eq2-hidden-game-state-v1')throw new V2DraftCraftError('missing_v2_socket_ledger');
  verifyEquipmentV2HiddenLedger(accountId,raw.jobs,raw.items,raw.receipts,raw.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,raw.items,raw.storageReservations??[]);
  const sidecar=requireSidecar(raw.gemSocketState);
@@ -184,7 +184,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  if(command.expectedVersion!==onlineVersion)fail('stale_v2_socket_version');
  if(!validRoll(serverRollPercent))fail('untrusted_v2_socket_roll');
  const item=raw.items.find(row=>row.id===command.instanceId);
- if(!item||!v2ServerExactTemplateConsistent(item.exactItem))fail('unknown_v2_socket_copy');
+ if(!item||!v2ServerExactTemplateConsistent(item.exactItem))throw new V2DraftCraftError('unknown_v2_socket_copy');
  if(item.accountId!==accountId)
   fail('wrong_v2_socket_account');
  // The original crafter is immutable, but custody can legally change via
@@ -195,7 +195,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  const custody=readEquipmentV2VirtualCustody(raw.items,
   raw.storageReservations??[],raw.custodyReceipts??[]);
  const location=custody.find(row=>row.instanceId===item.id);
- if(!location)fail('unreconciled_v2_socket_custody');
+ if(!location)throw new V2DraftCraftError('unreconciled_v2_socket_custody');
  if(location.holderCharacterId!==onlineCharacterId
   ||!['pouch','inventory','equipped'].includes(location.location))
   fail('v2_socket_copy_not_in_character_custody');

@@ -6,6 +6,7 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import type {GameState} from '../core/types';
 import {currentRegionId} from '../core/combat-region';
 import {WorldChapterNavigator} from '../components/WorldChapterNavigator';
+import {GameButton} from '../components/GameButton';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {workingTowardDestinationAvailability} from '../core/working-toward';
 import {sourceRouteView} from '../core/source-route-guidance';
@@ -61,7 +62,10 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegional
         <Text style={s.goalBreadcrumb}>{goalRoute.breadcrumb.split(' › ').map(p).join(' › ')}</Text>
         {goalStatus?.status==='locked'?<Text style={s.goalBlocked}>{p(goalStatus.detail)}</Text>:null}
       </View>
-      {onDismissGoal?<Pressable accessibilityRole="button" accessibilityLabel={p('Dismiss source guidance')} onPress={onDismissGoal} style={s.goalDismiss}><Text style={s.goalDismissText}>×</Text></Pressable>:null}
+      <View style={s.goalActions}>
+        {goalStatus?.status==='travel'&&goalRoute.regionId?<GameButton compact title={p('Travel')} onPress={()=>onTravel(goalRoute.regionId!)}/>:null}
+        {onDismissGoal?<Pressable accessibilityRole="button" accessibilityLabel={p('Dismiss source guidance')} onPress={onDismissGoal} style={s.goalDismiss}><Text style={s.goalDismissText}>×</Text></Pressable>:null}
+      </View>
     </View>:null}
     <WorldChapterNavigator
         state={state} currentRegionId={currentId} goalRegionId={goalRegionId} goalAreaId={goalRoute?.areaId}
@@ -93,6 +97,7 @@ function makeStyles(C:ThemeColors){
     heading:{...typography.hero,color:C.text},
     goalRoute:{flexDirection:'row',alignItems:'flex-start',gap:8,padding:10,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
     goalCopy:{flex:1,minWidth:0,gap:3},
+    goalActions:{gap:6,alignItems:'stretch',justifyContent:'flex-start'},
     goalEyebrow:{fontSize:9,fontWeight:'900',letterSpacing:1.1,color:C.info},
     goalTitle:{fontSize:14,fontWeight:'800',color:C.text},
     goalBreadcrumb:{fontSize:11,lineHeight:16,color:C.text},

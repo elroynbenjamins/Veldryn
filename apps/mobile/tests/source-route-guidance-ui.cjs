@@ -15,6 +15,7 @@ check(world.includes('sourceRouteView(goalDestination)'),'World must show the ac
 check(world.includes('localizedItemName(language,goalRoute.sourceItemId)'),'World objective identifies the material being searched for');
 check(world.includes('accessibilityLabel={p(\'Dismiss source guidance\')}'),'Route reminder must be dismissible');
 check(world.includes('goalAreaId={goalRoute?.areaId}'),'World must pass the exact local area to its navigator');
+check(world.includes("goalStatus?.status==='travel'")&&world.includes('onTravel(goalRoute.regionId!)'),'Available targets must offer explicit Travel without auto-moving the player');
 check(navigator.includes('zone.areaId===goalAreaId'),'Chapter zone rows must highlight the selected sub-area');
 check(combat.includes('initialAreaId={')||combat.includes('initialAreaId'), 'Combat preserves area deep-link support');
 check(skills.includes('initialAreaId'), 'Skills preserves gathering area deep-link support');

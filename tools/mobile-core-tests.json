@@ -168,6 +168,8 @@
   ".core-build/apps/mobile/tests/equipment-crafted-instance-results.js",
   ".core-build/apps/mobile/tests/equipment-tier-quality-parity.js",
   ".core-build/apps/mobile/tests/weapon-bonus-rolls.js",
+  ".core-build/apps/mobile/tests/weapon-bonus-display.js",
+  ".core-build/apps/mobile/tests/weapon-bonus-ux-contract.js",
   ".core-build/apps/mobile/tests/equipment-crafted-instance-ui-contract.js",
   ".core-build/apps/mobile/tests/admin-qa-sandbox.js",
   ".core-build/apps/mobile/tests/offline-smoke.js",

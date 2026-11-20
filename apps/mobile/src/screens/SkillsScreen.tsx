@@ -141,14 +141,18 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const blueprintOwned=!!tool.blueprint&&[...state.inventory.stacks,...state.bank.stacks].some(stack=>stack.itemId===tool.blueprint!.itemId&&stack.quantity>0);
           const sourceMonster=tool.blueprint?MONSTERS.find(monster=>monster.id===tool.blueprint!.sourceMonsterId):undefined;
           const sourceRegionId=sourceMonster?WORLD_ZONES.find(zone=>zone.name===sourceMonster.zone)?.id:undefined;
+          const actualBlueprintChance=sourceMonster?.drops.find(drop=>drop.itemId===tool.blueprint?.itemId)?.chance;
+          const blueprintChanceText=actualBlueprintChance===undefined?'':(actualBlueprintChance*100).toFixed(actualBlueprintChance<.01?2:1)+'%';
           const recipeDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'CRAFT_'+tool.id,button:gt('Craft {name}',{name:tool.name}),detail:gt('Open the Smithing recipe for {name}.',{name:tool.name})};
-          const blueprintDestination=sourceMonster&&sourceRegionId?{kind:'combat' as const,monsterId:sourceMonster.id,zoneName:sourceMonster.zone,regionId:sourceRegionId,button:gt('Hunt {name}',{name:sourceMonster.name}),detail:gt('{name} can drop the {tool} Blueprint · {chance}% base chance.',{name:sourceMonster.name,tool:tool.name,chance:Math.round((tool.blueprint?.dropChance??0)*100)})}:undefined;
+          const blueprintDestination=sourceMonster&&sourceRegionId?{kind:'combat' as const,monsterId:sourceMonster.id,zoneName:sourceMonster.zone,regionId:sourceRegionId,button:gt('Hunt {name}',{name:sourceMonster.name}),detail:gt('{name} can drop the {tool} Blueprint.',{name:sourceMonster.name,tool:tool.name})+' '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:'')}:undefined;
           const title=equipped?gt("Equipped"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
           const disabled=equipped||(carried&&(!skillReady||!characterReady));
           const expanded=expandedToolId===tool.id;
-           const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
-           const action=carried?()=>onEquipTool(tool.id):banked?onInventory:toggleRecipe;
-          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name} · {chance}% drop',{name:sourceMonster.name,chance:Math.round(tool.blueprint.dropChance*100)}):gt("blueprint required");
+          const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
+          const action=carried?()=>onEquipTool(tool.id):banked?onInventory:toggleRecipe;
+          const actionTitle=expanded&&!carried&&!banked?gt('Hide Recipe'):title;
+          const showDetailsToggle=equipped||carried||banked;
+          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
           return <View key={tool.id}>
            <View style={[s.toolRow,compactTools&&s.toolRowCompact]}>
            <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
@@ -157,8 +161,8 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
             <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
            </View></View>
            <View style={[s.toolActions,compactTools&&s.toolActionsCompact]}>
-             <View style={[s.toolButton,compactTools&&s.toolButtonCompact]}><GameButton title={title} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
-             <Pressable accessibilityRole="button" accessibilityLabel={expanded?gt('Hide recipe details'):gt('Show recipe details')} accessibilityHint={localizedItemName(language,tool.id)} accessibilityState={{expanded}} onPress={toggleRecipe} style={({pressed})=>[s.toolDetailsToggle,expanded&&s.toolDetailsExpanded,pressed&&s.pressed]}><DisclosureMark expanded={expanded}/></Pressable>
+             <View style={[s.toolButton,compactTools&&s.toolButtonCompact]}><GameButton title={actionTitle} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
+             {showDetailsToggle?<Pressable accessibilityRole="button" accessibilityLabel={expanded?gt('Hide recipe details'):gt('Show recipe details')} accessibilityHint={localizedItemName(language,tool.id)} accessibilityState={{expanded}} onPress={toggleRecipe} style={({pressed})=>[s.toolDetailsToggle,expanded&&s.toolDetailsExpanded,pressed&&s.pressed]}><DisclosureMark expanded={expanded}/></Pressable>:null}
            </View>
           </View>
           {expanded?<ToolRecipeInlinePanel state={state} tool={tool} blueprintDestination={blueprintDestination} onNavigate={onNavigateCraftingSource} onOpenSmithing={()=>onNavigateCraftingSource?onNavigateCraftingSource(recipeDestination):onViewToolRecipes()}/>:null}

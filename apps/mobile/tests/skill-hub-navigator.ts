@@ -1,12 +1,12 @@
 import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorEntry} from '../src/core/skill-hub-navigator';
 import {equal,test} from './account-test-helpers';
 const rows:SkillNavigatorEntry[]=[
- {id:'combat',name:'Combat',kind:'Fight & train',category:'combat',route:'combat'},
- {id:'class:guardcraft',name:'Guardcraft',kind:'Combat skill',category:'combat',route:'discipline',level:41,xp:100},
- {id:'mining',name:'Mining',kind:'Gathering',category:'gathering',route:'skill',level:24,xp:500},
- {id:'smithing',name:'Smithing',kind:'Crafting',category:'crafting',route:'skill',level:17,xp:100},
- {id:'future-profession',name:'New Profession',kind:'Other',category:'other',route:'skill',level:1,xp:0},
- {id:'companion-mastery',name:'Companion Mastery',kind:'Account-wide companion skill',category:'companions',route:'companion-mastery',level:13,xp:450},
+ {id:'combat',name:'Combat',subtitle:'Fight & train',category:'combat',route:'combat'},
+ {id:'class:guardcraft',name:'Guardcraft',subtitle:'Combat skill',category:'combat',route:'discipline',level:41,xp:100},
+ {id:'mining',name:'Mining',subtitle:'Gathering',category:'gathering',route:'skill',level:24,xp:500},
+ {id:'smithing',name:'Smithing',subtitle:'Crafting',category:'crafting',route:'skill',level:17,xp:100},
+ {id:'future-profession',name:'New Profession',subtitle:'Other',category:'other',route:'skill',level:1,xp:0},
+ {id:'companion-mastery',name:'Companion Mastery',subtitle:'Account-wide companion skill',category:'companions',route:'companion-mastery',level:13,xp:450},
 ];
 test('Skill Navigator categories preserve legacy professions and leave future professions visible',()=>{
  equal(SKILL_NAVIGATOR_CATEGORIES,['combat','gathering','crafting','other','companions'],'stable order');
@@ -20,7 +20,7 @@ test('Skill Navigator filters groups, names, ids and localized visible kinds wit
  equal(filterSkillNavigatorEntries(rows,'gathering','min').map(row=>row.id),['mining'],'category plus query');
  equal(filterSkillNavigatorEntries(rows,'all','SMITH').map(row=>row.id),['smithing'],'case-insensitive name');
  equal(filterSkillNavigatorEntries(rows,'all','class:guard').map(row=>row.id),['class:guardcraft'],'stable id search');
- equal(filterSkillNavigatorEntries(rows,'companions','account-wide').map(row=>row.id),['companion-mastery'],'kind search');
+ equal(filterSkillNavigatorEntries(rows,'companions','account-wide').map(row=>row.id),['companion-mastery'],'subtitle search');
  equal(filterSkillNavigatorEntries(rows,'all','unmatched'),[],'empty state');
 });
 test('Skill Navigator does not map ability/talent selections to trainable profession XP',()=>{

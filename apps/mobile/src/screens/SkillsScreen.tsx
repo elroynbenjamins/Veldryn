@@ -49,7 +49,7 @@ import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-p
 import {HerbalismMethodPanel} from '../components/HerbalismMethodPanel';
 import {EnchantingRefineryPanel} from '../components/EnchantingRefineryPanel';
 import {skillMilestoneOverview} from '../core/skill-milestones';
-import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorCategory,type SkillNavigatorEntry} from '../core/skill-hub-navigator';
+import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,skillNavigatorRouteFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorCategory,type SkillNavigatorEntry} from '../core/skill-hub-navigator';
 import {sharedText} from '../i18n/shared';
 import {skillNavigatorText} from '../i18n/skill-navigator';
 import {gatheringToolsFor} from '../content/gathering-tools';
@@ -210,7 +210,8 @@ function makeHubStyles(C:ThemeColors){return StyleSheet.create({
  navigatorOptionSelected:{backgroundColor:C.selection},
  navigatorOptionText:{...typography.bodyStrong,color:C.text},
  navigatorOptionMeta:{...typography.caption,color:C.muted},
- navigatorOptionList:{maxHeight:'70%'}
+ navigatorOptionList:{maxHeight:'70%'},
+ navigatorOverview:{gap:12,paddingBottom:12,paddingTop:8}
 });}
 function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=false,onMasteryClosed}:{state:GameState;now:number;onSelect:(id:string)=>void;onCombat?:()=>void;onCommand:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMasteryInfoOpen?:boolean;onMasteryClosed?:()=>void}){
  const {gt,gl,language}=useGameplayText();
@@ -221,6 +222,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  const narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3;
  const [searchExpanded,setSearchExpanded]=useState(false);
  const [classSkillId,setClassSkillId]=useState<string>();
+ const [overviewSkillId,setOverviewSkillId]=useState<string|null>(null);
  const [category,setCategory]=useState<'all'|SkillNavigatorCategory>('all');
  const [categoryPickerOpen,setCategoryPickerOpen]=useState(false);
  const [searchQuery,setSearchQuery]=useState('');
@@ -251,7 +253,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   const category=skillNavigatorCategoryFor(row.skillId);
   return {id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
    subtitle:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
-   category,route:'skill'};
+   category,route:skillNavigatorRouteFor(row.skillId)};
  });
  const companionRows:SkillNavigatorEntry[]=[
   {id:'companion-mastery',name:gl('Companion Mastery'),subtitle:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
@@ -267,12 +269,15 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   id,label:categoryLabels[id],rows:filterSkillNavigatorEntries(allEntries,id,searchQuery,language)
  })).filter(group=>(category==='all'||category===group.id)&&group.rows.length>0);
  const visibleCount=groups.reduce((sum,group)=>sum+group.rows.length,0);
+ const overviewSkill=allEntries.find(entry=>entry.id===overviewSkillId&&entry.route==='overview');
+ const overviewProgress=overviewSkill?.xp!==undefined?progressWithinLevel(overviewSkill.xp,overviewSkill.level??1):undefined;
  const openEntry=(entry:SkillNavigatorEntry)=>{
   switch(entry.route){
    case 'combat':onCombat?.();break;
    case 'discipline':setClassSkillId(entry.id.slice('class:'.length));break;
    case 'companion-mastery':setMasteryInfoOpen(true);break;
    case 'sanctuary':setTrainingInfoOpen(true);break;
+   case 'overview':setOverviewSkillId(entry.id);break;
    default:onSelect(entry.id);
   }
  };
@@ -348,7 +353,18 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
    </Pressable>)}
   </ScrollView>
  </GameModalSurface>
- <GameModalSurface visible={masteryInfoOpen} presentation="dialog" onClose={closeMasteryInfo}>
+ <GameModalSurface visible={!!overviewSkill} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={()=>setOverviewSkillId(null)}>
+  <GameModalHeader eyebrow={n('Skill overview').toLocaleUpperCase(language)} title={overviewSkill?.name??gt('Skills')} onClose={()=>setOverviewSkillId(null)}/>
+  {overviewSkill?<View style={hubStyles.navigatorOverview}>
+   <Text style={hubStyles.modalTheme}>{gt('Level {value}',{value:overviewSkill.level??1})}</Text>
+   {overviewProgress&&overviewSkill.level!==undefined?<View style={hubStyles.navigatorSection}>
+    <View style={hubStyles.navigatorTrack}><View style={[hubStyles.navigatorFill,{width:`${Math.min(100,(overviewSkill.level>=100?1:overviewProgress.current/Math.max(1,overviewProgress.need))*100)}%`}]}/></View>
+    <Text style={hubStyles.modalProgressText}>{overviewSkill.level>=100?gt('Mastered'):gt('{current} / {need} XP to next level',{current:overviewProgress.current.toLocaleString(language),need:overviewProgress.need.toLocaleString(language)})}</Text>
+   </View>:null}
+   <Text style={hubStyles.modalCopy}>{n('This skill has no dedicated activity screen. Its earned XP and levels are still tracked.')}</Text>
+  </View>:null}
+ </GameModalSurface>
+  <GameModalSurface visible={masteryInfoOpen} presentation="dialog" onClose={closeMasteryInfo}>
  <GameModalHeader eyebrow={a('ACCOUNT-WIDE SKILL')} title={a('Companion Mastery')} onClose={closeMasteryInfo}/>
  <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} style={{flexShrink:1}} contentContainerStyle={hubStyles.modalBody}>
   <Text style={hubStyles.modalCopy}>{a("Strengthen all companions through completed Expeditions, successful Trial floors and claimed Training Ground rewards. Mastery is shared across your characters.")}</Text>

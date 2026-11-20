@@ -5,6 +5,7 @@ import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,
 import {totalXpAtLevel} from '../src/core/progression';
 import {bulkTransferSelected} from '../src/core/inventory-bulk';
 import {validateGameCommand} from '../src/core/game-commands';
+import {normalizeSave} from '../src/core/save-normalization';
 import type {CraftedGatheringTool} from '../src/core/gathering-tool-rolls';
 import type {GameState} from '../src/core/types';
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -78,5 +79,17 @@ crafted=sellGatheringToolCopy(crafted,first.id);
 assert(!crafted.inventory.stacks.some(row=>row.instanceId===first.id)&&crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Sell only exact selected copy');
 assert(!crafted.account.craftedGatheringToolInstances?.some(row=>row.id===first.id)&&crafted.account.craftedGatheringToolInstances?.some(row=>row.id===second.id),'Sold copy metadata is purged, remaining copy persists');
 assert(crafted.character!.gold>goldBefore,'Inventory sale credits Gold');
+const reload=normalizeSave(JSON.parse(JSON.stringify(crafted)));
+assert(reload.account.craftedGatheringToolInstances?.some(row=>row.id===second.id),'Save reload must preserve the last owned tool roll');
+assert(reload.inventory.stacks.some(row=>row.instanceId===second.id),'Save reload must preserve its physical copy');
+assert(reload.account.craftedGatheringToolInstances?.every(row=>validateGatheringToolRoll(row,row.itemId)),'Reloaded tool copies must remain valid');
+const broken=JSON.parse(JSON.stringify(crafted));
+broken.account.craftedGatheringToolInstances.push({...second,id:'invalid:copy',bonus:{stat:'speed',basisPoints:900}});
+broken.account.craftedGatheringToolInstances.push({...second});
+const cleaned=normalizeSave(broken);
+assert(cleaned.account.craftedGatheringToolInstances?.length===1,'Save normalizer rejects invalid and duplicate copy metadata');
+const legacyReload=normalizeSave(JSON.parse(JSON.stringify(state)));
+assert(Math.abs(gatheringToolTimeMultiplier(legacyReload,'woodcutting')-.4)<1e-9,'Legacy four-tier 60% bonus remains stable across reload');
+
 
 console.log('Gathering tool affixes: deterministic rolls, 80% cap, rarity, custody and legacy tests passed.');

@@ -38,6 +38,7 @@ import {displayStat} from '../core/stat-display';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
+import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,craftedGearCopiesAt,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
@@ -219,12 +220,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   };
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null);setSelectedInstanceId(null)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(inventoryBulkSelectionId(stack)),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
-    const label=[gt('{name}, {count} owned',{name:localizedItemName(language,item.id),count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord?rarity.label:'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
+    const item=itemDef(stack.itemId),exactRecord=stack.instanceId?exactRecordsById.get(stack.instanceId):undefined,toolRecord=stack.instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===stack.instanceId),stack.itemId):undefined,favorite=favoriteSet.has(item.id),locked=lockedSet.has(item.id)||exactRecord?.locked===true,newItem=newItemSet.has(item.id),selected=selectedSet.has(inventoryBulkSelectionId(stack)),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(exactRecord?.rarity??toolRecord?.rarity??itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const label=[gt('{name}, {count} owned',{name:localizedItemName(language,item.id),count:formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}),favorite?gt('favorite'):'',locked?gt('Locked'):'',exactRecord||toolRecord?rarity.label:'',toolRecord?'Q'+toolRecord.quality+' · '+gatheringToolBonusLabel(toolRecord):'',newItem?gt('New'):'',goalProtected?gt('needed for Working Toward'):''].filter(Boolean).join(', ');
     return <View key={`${location}:${item.id}:${stack.instanceId??'legacy'}`} style={[s.itemTile,{width:tileSize,height:tileSize,borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:selected?C.selection:C.panel2}]}>
       <Pressable accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?gt(selected?'Deselect {label}':'Select {label}',{label}):label} accessibilityHint={selectMode?gt("Select this stack for bulk management"):item.type==='gear'&&location==='inventory'?gl("Preview the equipment swap before equipping"):gt("Open item details, sources and crafting uses")} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>{if(selectMode){toggleSelection(inventoryBulkSelectionId(stack));return;}if(item.type==='gear'&&location==='inventory'){setPreviewInstanceId(stack.instanceId??null);setPreviewId(item.id);return;}setSelectedInstanceId(stack.instanceId??null);setInspectQuantity(1);setInspectId(item.id)}} style={({pressed})=>[s.itemOpen,pressed&&s.pressed]}>
         <ItemArtwork itemId={item.id} size={iconSize}/>
-        <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?`Q${craftedGearDisplayQuality(exactRecord)}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
+        <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>{exactRecord?`Q${craftedGearDisplayQuality(exactRecord)}`:toolRecord?`Q${toolRecord.quality}`:`×${formatGameNumber(stack.quantity,state.settings.numberMode,state.settings.language)}`}</Text>
         {newItem?<View accessible={false} style={[s.itemNew,selectMode?s.itemNewTop:s.itemNewBottom]}><Text numberOfLines={1} style={s.itemNewText}>{gt("New").toLocaleUpperCase(language)}</Text></View>:null}
         {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
@@ -290,6 +291,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  const exactToolCopies=inspected?.type==='tool'?state[location].stacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(copy=>copy.id===row.instanceId),row.itemId);return verified?[verified]:[]}):[];
   const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
   const inspectedCopySalvage=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'salvage'):null;
   const hasLegacyStack=inspected?state[location].stacks.some(row=>row.itemId===inspected.id&&row.instanceId===undefined&&row.quantity>0):false;
@@ -336,6 +338,15 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>
   </View>:null;
   const inspectActions=inspected?<View style={s.inspectActions}>
+    {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.quantityPanel}>
+      <Text style={s.quantityTitle}>ROLLED GATHERING TOOLS · {exactToolCopies.length}</Text>
+      <Text style={s.sub}>Base tier bonus uses Uncommon · Quality 50. A roll is always one stat: Speed +2–8% or rare finds +2–5%.</Text>
+      {exactToolCopies.map(copy=><View key={copy.id} style={[s.row,{flexWrap:'wrap',alignItems:'center',paddingVertical:5}]}>
+        <Text style={[s.sub,s.flex,{minWidth:138,color:rarityMeta(copy.rarity).color}]}>{rarityMeta(copy.rarity).label} · Q{copy.quality} · {gatheringToolBonusLabel(copy)}</Text>
+        <GameButton compact title={carried?'Equip copy':'Withdraw'} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/>
+        {carried?<GameButton compact title="To Bank" tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/>:null}
+      </View>)}
+    </View>:null}
     {carried&&inspected.type==='gear'?<GameButton compact title={gt("Compare stats")} tone="secondary" onPress={()=>{setPreviewInstanceId(selectedInstanceId??(hasLegacyStack?null:selectedCopy?.id??null));setPreviewId(inspected.id);closeInspect()}}/>:null}
     {hasLegacyStack&&carried&&inspected.type==='gear'?<GameButton compact title={gt('Equip {slot}',{slot:gl(inspected.slot)})} onPress={()=>{setPreviewInstanceId(null);setPreviewId(inspected.id);closeInspect()}}/>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}

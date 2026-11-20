@@ -24,7 +24,7 @@ assert.equal(guildProjectDailyEffortStatus(progress(7200000),Date.parse('2026-11
 assert.equal(guildProjectDailyEffortStatus(undefined,now),null,'Missing RPC must not invent zero');
 assert.equal(guildProjectDailyEffortStatus({earnedDay:'2026-11-20',creditedMs:NaN,capMs:7200000},now),null);
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
-const sql=read('backend/supabase/migrations/20261120111500_guild_project_daily_effort_status_v1.sql');
+const sql=read('backend/supabase/migrations/20261120114000_guild_project_daily_effort_status_v1.sql');
 const client=read('apps/mobile/src/online/guild-projects-v18.ts');
 const ui=read('apps/mobile/src/components/OnlineGuildProjectsPanel.tsx');
 const i18n=read('apps/mobile/src/i18n/online-guild-project-ui.ts');

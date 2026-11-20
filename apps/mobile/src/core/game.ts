@@ -1511,6 +1511,25 @@ export function moveGatheringToolCopy(state:GameState,instanceId:string,to:'inve
  return {...state,[from]:{...state[from],stacks:state[from].stacks.filter(row=>row.instanceId!==instanceId)},[to]:{...state[to],stacks:added.stacks}};
 }
 
+/** Selling is an explicit per-copy operation; item-type selling intentionally
+ * cannot choose a rolled tool. Never lose a chosen valuable roll silently. */
+export function sellGatheringToolCopy(state:GameState,instanceId:string):GameState{
+ if(!state.character)throw new Error('Character required');
+ const copy=state.account.craftedGatheringToolInstances?.find(row=>row.id===instanceId);
+ if(!copy||!validateGatheringToolRoll(copy,copy.itemId)||!gatheringToolDef(copy.itemId))throw new Error('Unknown tool copy');
+ if(state.settings.favoriteItemIds?.includes(copy.itemId)||state.settings.lockedItemIds?.includes(copy.itemId))throw new Error('Favorite or locked tool is protected');
+ const from=state.inventory.stacks.some(row=>row.instanceId===instanceId&&row.itemId===copy.itemId)?'inventory'
+  :state.bank.stacks.some(row=>row.instanceId===instanceId&&row.itemId===copy.itemId)?'bank':undefined;
+ if(!from)throw new Error('The tool copy must be in Inventory or Bank to sell');
+ const gain=itemVendorSellGold(itemDef(copy.itemId));
+ if(!Number.isSafeInteger(gain)||!Number.isSafeInteger(from==='bank'?(state.bank.gold??0)+gain:state.character.gold+gain))throw new Error('Gold overflow');
+ return {...state,
+  [from]:{...state[from],stacks:state[from].stacks.filter(row=>row.instanceId!==instanceId),...(from==='bank'?{gold:(state.bank.gold??0)+gain}:{})},
+  character:from==='inventory'?{...state.character,gold:state.character.gold+gain}:state.character,
+  account:{...state.account,craftedGatheringToolInstances:state.account.craftedGatheringToolInstances?.filter(row=>row.id!==instanceId)},
+ };
+}
+
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number;level:number}[]>={
   inventory:[{capacity:40,cost:10000,level:10},{capacity:50,cost:30000,level:20},{capacity:60,cost:80000,level:35},{capacity:75,cost:200000,level:50},{capacity:100,cost:500000,level:70}],

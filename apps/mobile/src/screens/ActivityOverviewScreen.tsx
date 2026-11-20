@@ -85,7 +85,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     <View style={s.flex}>
      <Text style={s.eyebrow}>{r('Currently playing').toLocaleUpperCase(language)}</Text>
      <Text numberOfLines={1} style={s.playingName}>{activeEntry.character.name}</Text>
-     <Text numberOfLines={1} style={s.meta}>{activeClass?.name??activeEntry.character.classId} · {a('Level {level}',{level:activeEntry.character.level})}</Text>
+     <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:activeClass?.name??activeEntry.character.classId,level:activeEntry.character.level})}</Text>
     </View>
     <Text style={s.playingCheck}>✓</Text>
    </View>:null}
@@ -106,7 +106,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
         <View style={s.smallPortrait}><ProfileIcon id={character.profileIconId} classId={character.classId} size={44}/></View>
         <View style={s.flex}>
          <View style={s.nameRow}><Text numberOfLines={1} style={s.name}>{character.name}</Text>{active?<Text style={s.active}>{r('Playing').toLocaleUpperCase(language)}</Text>:null}</View>
-         <Text numberOfLines={1} style={s.meta}>{classDef?.name??character.classId} · {a('Level {level}',{level:character.level})}</Text>
+         <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:classDef?.name??character.classId,level:character.level})}</Text>
          <Text style={s.roleMeta}>{classDef?r(classDef.role):''}</Text>
         </View>
        </View>
@@ -131,7 +131,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     {!showDeleteOptions?<View style={s.manageOverview}>
      <View style={s.manageProfile}>
       <ProfileIcon id={target.character.profileIconId} classId={target.character.classId} size={58}/>
-      <View style={s.flex}><Text style={s.name}>{target.character.name}</Text><Text style={s.meta}>{targetClass?.name??target.character.classId} · {a('Level {level}',{level:target.character.level})}</Text><Text style={s.roleMeta}>{targetClass?r(targetClass.role):''}</Text></View>
+      <View style={s.flex}><Text style={s.name}>{target.character.name}</Text><Text style={s.meta}>{a('{className} · Level {level}',{className:targetClass?.name??target.character.classId,level:target.character.level})}</Text><Text style={s.roleMeta}>{targetClass?r(targetClass.role):''}</Text></View>
      </View>
      <Text style={s.meta}>{r('Class and role cannot be changed on an existing character.')}</Text>
      <View style={s.manageActivity}><View style={[s.dot,target.activity?s.dotOn:s.dotIdle]}/><Text style={s.activity}>{target.activity?a(activityLabel(target.activity))+' · '+a(activityTargetLabel(target.activity)):a('Idle')}</Text></View>

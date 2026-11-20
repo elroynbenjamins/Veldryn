@@ -25,7 +25,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const r=(text:string,params?:Record<string,string|number>)=>characterRosterText(language,text,params);
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const {width,fontScale}=useWindowDimensions(),stackRows=width<360||fontScale>=1.25||state.settings.textScale>=1.25;
+ const {width,fontScale}=useWindowDimensions(),stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25;
  const entries=accountCharacters(state).map(entry=>({
   character:entry.character,
   activity:entry.character.id===state.character?.id?state.activity:
@@ -58,7 +58,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const craftCount=target?equipmentCraftingQueue(state).filter(job=>job.ownerCharacterId===target.character.id).length:0;
  const close=()=>{if(busy)return;setManagingId(undefined);setConfirmation('');setError('');setShowDeleteDetails(false);setShowDeleteOptions(false)};
  const open=(id:string)=>{setManagingId(id);setConfirmation('');setError('');setShowDeleteDetails(false);setShowDeleteOptions(false)};
- const switchTo=(id:string)=>{close();onSwitch(id)};
+ const switchTo=(id:string)=>{Keyboard.dismiss();close();onSwitch(id)};
  const remove=async(recreate:boolean)=>{
   if(!target||!onDelete||!confirmed||blockReason||busy)return;
   setBusy(true);setError('');
@@ -110,10 +110,10 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
        </View>
        <View style={[s.actions,stackRows&&s.actionsStack]}>
         {!active?<GameButton compact title={a('Switch')} accessibilityLabel={a('Switch')+': '+character.name} onPress={()=>switchTo(character.id)}/>:null}
-        <Pressable accessibilityRole="button" accessibilityLabel={a('Manage')+': '+character.name} onPress={()=>open(character.id)} style={({pressed})=>[s.manageButton,pressed&&s.pressed]}><Text style={s.manageGlyph}>⋯</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={a('Manage')+': '+character.name} onPress={()=>open(character.id)} accessibilityHint={r('Review deletion options')} style={({pressed})=>[s.manageButton,pressed&&s.pressed]}><Text style={s.manageGlyph}>⋯</Text></Pressable>
        </View>
       </View>
-      <View style={s.activityRow}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><Text numberOfLines={2} style={[s.activity,activity?activityTone(activity.kind,s):s.idle]}>{activity?a(activityLabel(activity))+' · '+a(activityTargetLabel(activity)):a('Idle')}</Text>{activity?<Text numberOfLines={1} style={s.duration}>{accountDuration(language,(now-activity.startedAtMs)/1000)}</Text>:null}</View>
+      <View style={[s.activityRow,stackRows&&s.activityRowStack]}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><Text numberOfLines={2} style={[s.activity,activity?activityTone(activity.kind,s):s.idle]}>{activity?a(activityLabel(activity))+' · '+a(activityTargetLabel(activity)):a('Idle')}</Text>{activity?<Text numberOfLines={1} style={s.duration}>{accountDuration(language,(now-activity.startedAtMs)/1000)}</Text>:null}</View>
      </View>;
     })}
    </View>
@@ -197,17 +197,18 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  actionsStack:{alignSelf:'flex-end'},
  manageButton:{minWidth:44,minHeight:44,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
  manageGlyph:{fontSize:23,lineHeight:26,fontWeight:'800',color:C.text},
- activityRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:22,borderTopWidth:1,borderTopColor:C.line,paddingTop:7},
+ activityRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:26,borderTopWidth:1,borderTopColor:C.line,paddingTop:7},
+ activityRowStack:{flexWrap:'wrap'},
  dot:{width:8,height:8,borderRadius:4,flexShrink:0},
  dotOn:{backgroundColor:C.good},dotIdle:{backgroundColor:C.disabled},
  activity:{...typography.caption,color:C.good,flex:1,minWidth:0},
  idle:{color:C.muted},
  combatTone:{color:C.bad},gatheringTone:{color:equipmentColors.goldSoft},trainingTone:{color:C.info},faithTone:{color:C.special},
- duration:{...typography.caption,color:C.muted,flexShrink:0},
+ duration:{...typography.caption,color:C.muted,flexShrink:0,marginLeft:'auto'},
  rolesPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel,gap:8},
  rolesTitle:{...typography.caption,color:C.muted,fontWeight:'900'},
  roleRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},
- roleChip:{minHeight:30,paddingHorizontal:9,paddingVertical:6,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ roleChip:{minHeight:32,paddingHorizontal:9,paddingVertical:6,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  roleChipFilled:{borderColor:C.good},
  roleChipText:{fontSize:11,color:C.muted,fontWeight:'800'},
  roleChipTextFilled:{color:C.good},

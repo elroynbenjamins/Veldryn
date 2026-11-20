@@ -9,6 +9,7 @@
     "src/server/equipment/__tests__/equipment-crafting-v2-custody.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-pouch-snapshot.test.ts",
-    "src/server/equipment/__tests__/equipment-crafting-v2-delivery-core.test.ts"
+    "src/server/equipment/__tests__/equipment-crafting-v2-delivery-core.test.ts",
+    "src/server/equipment/__tests__/equipment-crafting-v2-effect-gem-server.test.ts"
   ]
 }

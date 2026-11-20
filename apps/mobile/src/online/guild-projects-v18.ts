@@ -20,10 +20,14 @@ export interface OnlineGuildProjectMemberContribution{
  accountId:string;displayName:string;role:string;points:number;combatPoints:number;gatheringPoints:number;craftingPoints:number;donationPoints?:number;meaningful:boolean;
 }
 export interface OnlineGuildProjectSupplyItem{itemId:string;name:string;category:'wood'|'fish'|'ore';value:number;available:number}
+/** Account-scoped snapshot: exact personal ceiling after this member's prior category donations. */
+export interface OnlineGuildProjectSupplyAllowance{
+ category:'wood'|'fish'|'ore';personalLimit:number;donated:number;remainingPersonal:number;remainingGoal:number;
+}
 export interface OnlineGuildProjectSummary{
  id:string;templateId:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;personalShareCap?:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;rewardGold:number;rewardDestination:'character'|'guild_bank';guildXpReward?:number;hallProgress?:number;difficulty?:'easy'|'medium'|'hard';projectMode?:'effort'|'donation'|'hybrid';activityTotals:Record<'combat'|'gathering'|'crafting',number>&{donation?:number};personalPoints:number;personalRewardThreshold:number;personalShareCap?:number;supplyAllowances?:OnlineGuildProjectSupplyAllowance[];endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];memberContributions:OnlineGuildProjectMemberContribution[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean;guildXpReward:number;rewardGold:number;mode:'effort'|'donation'|'hybrid';difficulty:'easy'|'medium'|'hard';effortPerMember:number}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];choiceAvailable:boolean;activity:GuildActivityView[];supplyInventory?:OnlineGuildProjectSupplyItem[]}
@@ -106,6 +110,35 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
  if(rosterResult.error)throw rosterResult.error;
  const projectData=projectResult.data,candidateData=candidateResult.error?[]:candidateResult.data;
  const rows=(projectData??[]) as ProjectRow[],ids=rows.map(row=>row.id),roster=(rosterResult.data??[]) as RosterRow[];
+ const allowancesByProject=new Map<string,OnlineGuildProjectSupplyAllowance[]>();
+ // Read only the viewer's own category totals for active supply projects.
+ // Missing RPCs are expected when an older backend is still serving this build:
+ // the existing conservative quantity cap remains usable during rollout.
+ const allowanceProjects=rows.filter(row=>row.status==='active'&&row.slot_index===2&&
+  (row.definition_snapshot?.mode==='donation'||row.definition_snapshot?.mode==='hybrid'));
+ if(allowanceProjects.length){
+  const reads=await Promise.all(allowanceProjects.map(async row=>({
+   id:row.id,result:await db.rpc('guild_project_supply_allowance_v1',{p_project:row.id}),
+  })));
+  for(const {id,result} of reads){
+   if(result.error){if(missingRpc(result.error))continue;throw result.error;}
+   if(!Array.isArray(result.data))continue;
+   const parsed:OnlineGuildProjectSupplyAllowance[]=[];
+   let valid=true;
+   for(const item of result.data as unknown[]){
+    if(!item||typeof item!=='object'){valid=false;break;}
+    const row=item as Record<string,unknown>;
+    if(row.category!=='wood'&&row.category!=='fish'&&row.category!=='ore'){valid=false;break;}
+    if(!['personalLimit','donated','remainingPersonal','remainingGoal'].every(key=>
+      Number.isSafeInteger(Number(row[key]))&&Number(row[key])>=0)){valid=false;break;}
+    if(parsed.some(entry=>entry.category===row.category)){valid=false;break;}
+    parsed.push({category:row.category,personalLimit:Number(row.personalLimit),
+     donated:Number(row.donated),remainingPersonal:Number(row.remainingPersonal),
+     remainingGoal:Number(row.remainingGoal)});
+   }
+   if(valid&&parsed.length)allowancesByProject.set(id,parsed);
+  }
+ }
  let progress:ProgressRow[]=[],resources:ResourceRow[]=[],activitySources:EffortSourceRow[]=[];
  if(ids.length){
   const [progressResult,resourceResult,sourceResult]=await Promise.all([
@@ -152,6 +185,7 @@ async function readGuildProjects(membership:NonNullable<Awaited<ReturnType<typeo
    meaningfulContributors:Math.max(0,Math.floor(row.meaningful_contributors||0)),minimumMeaningfulContributors:Math.max(0,Math.floor(row.minimum_meaningful_contributors||0)),
    personalPoints:num(personal?.raw_points),personalRewardThreshold:num(row.personal_reward_threshold),
    personalShareCap:Math.min(1,num(row.single_account_completion_share_cap)),
+   supplyAllowances:allowancesByProject.get(row.id),
    endsAt:row.ends_at??undefined,startedAt:row.started_at,memberContributions,
    resourceGoals:resources.filter(goal=>goal.project_instance_id===row.id).map(goal=>({resourceKind:goal.resource_kind,resourceId:goal.resource_id,label:resourceLabel(snapshot,goal.resource_id,goal.resource_kind),target:num(goal.target_amount),current:num(goal.contributed_amount)})),
   } satisfies OnlineGuildProjectSummary;

@@ -50,3 +50,37 @@ About 0.23 MB of effects and 2.4 MB of music; the Android export grows by about 
 - Listen-test on real phones and adjust per-effect volumes in the generator.
 - Commissioned boss themes can replace `boss.mp3` and `world_boss.mp3` at the same paths without code changes; see the [V59 briefs](world-boss-art-and-audio-briefs-v59.md).
 - Optional: ambient region beds (wind, birds) and per-class attack voices.
+
+## Selected soundtrack — 20 November 2026
+
+This selection replaces all seven **music tracks** while retaining the existing track IDs
+and all sound-effect assets, app settings, playback routing and music overrides:
+
+| In-game ID | Selected original composition |
+| --- | --- |
+| `town` | Lanterns at Hearth |
+| `asterfall` | First Light |
+| `sunscar` | Evening Oasis (Sunscar V3) |
+| `frostmarch` | Soft Snowfall (Frostmarch V2) |
+| `dungeon` | Midnight Machinery (JRPG V9) |
+| `boss` | Break the Sigil (JRPG V9) |
+| `world_boss` | Eclipse Protocol (JRPG V9) |
+
+**Rights and audio rendering:** The selected MIDI compositions are original. Several
+earlier concept MP3 previews were rendered with a GPL SoundFont and were *not*
+included in the shipped music. The committed MP3s use a sample-free deterministic
+additive synthesizer, with no external instrument samples. Timbres therefore differ
+from those previews while melodies and arrangements are preserved.
+
+**Regeneration:** `python3 tools/audio/render-selected-music.py` (requires `numpy`,
+`pretty_midi`, `ffmpeg` with libmp3lame). Scores are checked in at
+`tools/audio/selected-music-scores.zip`. The normal game-audio generator delegates
+music regeneration to this renderer when the selected score archive is present.
+The GitHub render workflow packages the final `apps/mobile/assets/audio/music/*.mp3`
+files and refreshes the manifest.
+
+**Playback:** The existing routing maps town, region, dungeon, boss and world boss
+situations onto these same seven IDs; no runtime API changes. All game music still
+follows the device audio preferences and stops in the background. Each theme is
+tempo-aligned for continuous looping; confirm loop joins and relative loudness on
+actual Android devices before enabling in the next Play Store build.

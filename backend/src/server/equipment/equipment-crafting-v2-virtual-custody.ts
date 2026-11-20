@@ -15,7 +15,8 @@ import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
-import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
+import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
+import type {V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar-types';
 import {v2ServerCustodyPreflight,type V2CustodyState,type V2CustodyLocation} from './equipment-crafting-v2-custody';
 import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,type V2DraftSkillAward} from './equipment-crafting-v2-transaction';
 

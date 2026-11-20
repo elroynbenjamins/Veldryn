@@ -1,4 +1,10 @@
 import type {GameState,ItemStack,InventoryState} from '../../../../apps/mobile/src/core/types';
+import type {
+ V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
+} from './equipment-crafting-v2-gem-sidecar-types';
+export type {
+ V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
+} from './equipment-crafting-v2-gem-sidecar-types';
 import {itemDef} from '../../../../apps/mobile/src/content/items';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
@@ -18,23 +24,6 @@ import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,t
  * Effect Gems remain fail-closed until Combat 2.0 has an authoritative
  * equipped-loadout resonance/duplicate-cap check for all characters.
  */
-export type V2GemSocketKind='stat'|'effect';
-export interface V2GemInstalled{gemId:string;rollPercent:number}
-export interface V2GemCopySockets {
- instanceId:string;
- stat?:V2GemInstalled;
- effect?:V2GemInstalled;
-}
-export interface V2GemReceipt {
- requestId:string;fingerprint:string;instanceId:string;
- socket:V2GemSocketKind;gemId:string;
- source:'gem_pouch'|'inventory'|'bank';
- rollPercent:number;burnedGemId:string|null;version:number;
-}
-export interface V2GemSidecarState{
- slots:V2GemCopySockets[];
- receipts:V2GemReceipt[];
-}
 export interface V2HiddenGemCommand{
  requestId:string;expectedVersion:number;instanceId:string;gemId:string;
 }

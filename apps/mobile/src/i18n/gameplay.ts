@@ -10,6 +10,9 @@ import {useMemo} from 'react';
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
  // Bulk crafting quantity controls shared by every profession.
+ "Choose quantity":["Choose quantity","Menge wählen","Elegir cantidad","Kies aantal","Scegli quantità","Choisir la quantité"],
+ "Production stops after your selected batches are completed.":["Production stops after your selected batches are completed.","Die Produktion endet nach den gewählten Durchgängen.","La producción termina cuando se completan las tandas elegidas.","De productie stopt nadat je gekozen batches klaar zijn.","La produzione termina quando sono completati i lotti scelti.","La production s’arrête lorsque les lots choisis sont terminés."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Stop the current activity to release reserved materials before starting another recipe.","Beende die aktuelle Aktivität, um reservierte Materialien für ein anderes Rezept freizugeben.","Detén la actividad actual para liberar los materiales reservados antes de empezar otra receta.","Stop de huidige activiteit om gereserveerde materialen vrij te maken voordat je een ander recept start.","Interrompi l’attività attuale per liberare i materiali riservati prima di avviare un’altra ricetta.","Arrêtez l’activité actuelle pour libérer les matériaux réservés avant de lancer une autre recette."],
  "Decrease quantity":["Decrease quantity","Menge verringern","Reducir cantidad","Aantal verlagen","Riduci quantità","Diminuer la quantité"],
  "Craft quantity":["Craft quantity","Herstellungsmenge","Cantidad a fabricar","Aantal om te maken","Quantità da creare","Quantité à fabriquer"],
  "Increase quantity":["Increase quantity","Menge erhöhen","Aumentar cantidad","Aantal verhogen","Aumenta quantità","Augmenter la quantité"],
@@ -1577,6 +1580,9 @@ for(const [english,pair] of Object.entries(toolRecipeEarlyLocales)){
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
 const craftingQuantityEarlyLocales={
+ "Choose quantity":["Выбрать количество","Miktarı seç"],
+ "Production stops after your selected batches are completed.":["Производство остановится после завершения выбранных партий.","Seçtiğin partiler tamamlandığında üretim durur."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Остановите текущее занятие, чтобы освободить зарезервированные материалы перед новым рецептом.","Başka bir tarife başlamadan önce ayrılan malzemeleri serbest bırakmak için mevcut etkinliği durdur."],
  "Decrease quantity":["Уменьшить количество","Miktarı azalt"],
  "Craft quantity":["Количество для изготовления","Üretim miktarı"],
  "Increase quantity":["Увеличить количество","Miktarı artır"],

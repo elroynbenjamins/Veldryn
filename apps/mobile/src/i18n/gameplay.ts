@@ -1521,6 +1521,21 @@ for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
+const gatheringToolAffixEarlyLocales={
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+    "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
+    "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."
+  ],
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+    "Показанная базовая скорость соответствует необычному инструменту качества 50. Редкость и качество 0–100 изменяют базовый бонус ранга, но не диапазон бонуса.",
+    "Gösterilen temel hız, Yaygın Olmayan ve Kalite 50 içindir. Nadirlik ve Kalite 0–100, temel kademe bonusunu etkiler; bonus aralığını değiştirmez."
+  ],
+} as const;
+for(const [english,pair] of Object.entries(gatheringToolAffixEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

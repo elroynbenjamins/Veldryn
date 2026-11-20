@@ -148,7 +148,7 @@ import {canAnnounceLiveEventStart} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
 import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,playerFacingGameplayError,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import type {WorkingTowardDestination} from './src/core/working-toward';
-import {resolveSourceRoute} from './src/core/source-route-guidance';
+import {resolveSourceRoute,type SourceRouteDestination} from './src/core/source-route-guidance';
 import {retireGoalPlanner} from './src/core/retired-goal-planner';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
@@ -240,7 +240,7 @@ function VeldrynApp(){
   const [selectedRegionalAreaId,setSelectedRegionalAreaId]=useState<string|undefined>();
   const [goalRegionId,setGoalRegionId]=useState<string|undefined>();
   const [goalDungeonId,setGoalDungeonId]=useState<string|undefined>();
-  const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
+  const [pendingGoalDestination,setPendingGoalDestination]=useState<SourceRouteDestination|undefined>();
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
   const companionNavigationMemory=useRef<{characterId:string;context:CompanionNavigationState}|null>(null);
   const guildNavigationMemory=useRef<{scope:string;context:GuildNavigationState}|null>(null);
@@ -855,7 +855,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     if(serverGameplayEnabled){void perform(command);return;}
     try{const result=executeGameCommand(state,command,Date.now());void commit(result.state);}catch(error){showAlert('Idle Rules',error instanceof Error?error.message:'Could not activate this stop rule.');}
   }
-  function openGoalAtCurrentRegion(destination:WorkingTowardDestination){
+  function openGoalAtCurrentRegion(destination:SourceRouteDestination){
     setPendingGoalDestination(undefined);setGoalRegionId(undefined);
     if(destination.kind==='combat'){setSelectedRegionalAreaId(destination.areaId);setGoalMonsterId(destination.monsterId);setTab('Combat');return;}
     if(destination.kind==='skills'){

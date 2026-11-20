@@ -19,10 +19,11 @@ assert.match(slider,/keyboardType="number-pad"/,'quantity can be directly entere
 assert.match(smithing,/forgeCraftBatchLimit\(state,recipe,now\)/,'forge max respects actual queue capacity');
 assert.match(smithing,/onCraft\(recipe\.id,craftCount\)/,'forge button forwards selected count');
 assert.match(consumables,/onStart\(id,batches\)/,'cooking and alchemy forward chosen batches');
-assert.match(consumables,/quantity:input\.quantity\*chosen\(recipe\)/,'ingredient totals reflect requested batches');
+assert.match(consumables,/quantity:input\.quantity\*Math\.max\(1,chosen\(recipe\)\)/,'ingredient totals reflect requested batches');
 assert.match(recipeCard,/CraftQuantitySelector key=\{recipe\.id\}/,'shared quantity control is reused in recipe browser');
 assert.match(recipeCard,/onCraft\(recipe\.id,quantity\)/,'recipe browser forwards chosen quantity');
 assert.match(commands,/batchMode==='selected'/,'older batches:1 keeps automatic semantics and new manual selections opt in');
+assert.match(read('src/screens/SkillsScreen.tsx'),/batchMode:'selected'/,'all new skill actions opt in explicitly');
 assert.match(commands,/craft:\['id','quantity'\]/,'craft command schema accepts explicit count');
 assert.match(commands,/integer\(a,'quantity',1,999\)/,'server validates craft bounds');
 assert.match(limits,/materialLimit/,'rightmost maximum uses materials');

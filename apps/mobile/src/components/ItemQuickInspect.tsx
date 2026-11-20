@@ -56,7 +56,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const isBonusRoll=(line:string)=>line.startsWith('Equipment roll · ')||line.startsWith('Weapon roll · ');
   const bonusRows=model.effectLines.filter(isBonusRoll).map((line,index)=>{
     const valueAndStat=line.split(' · ')[1]??'';
-    const match=/^([+-]\\d+(?:\\.\\d+)?%)\\s+(.+)$/.exec(valueAndStat);
+    const match=/^([+-]\d+(?:\.\d+)?%)\s+(.+)$/.exec(valueAndStat);
     return {id:index,label:match?.[2]??valueAndStat,value:match?.[1]??''};
   });
   const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line));

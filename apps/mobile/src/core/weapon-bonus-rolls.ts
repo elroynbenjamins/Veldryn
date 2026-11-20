@@ -87,7 +87,9 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity,version:Weapon
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
   if(item.type!=='gear'||item.slot!=='weapon'||tier<(version===3?1:3)||tier>9||(version!==3&&!role))return undefined;
   const count=tier>=5||HIGH_RARITIES.includes(rarity)?2:1;
-  return {tier,role,count,pool:version===3?WEAPON_BONUS_CURRENT_POOL:LEGACY_ROLE_POOL[role!]};
+  // Widen the returned pool type so v1/v2-only stats remain valid for normalization.
+  const pool:readonly WeaponBonusStat[]=version===3?WEAPON_BONUS_CURRENT_POOL:LEGACY_ROLE_POOL[role!];
+  return {tier,role,count,pool};
 }
 
 /** Trusted claim-roll + receipt seeded; independent of rarity/quality and stable across retries. */

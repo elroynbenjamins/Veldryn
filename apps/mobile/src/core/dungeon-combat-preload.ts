@@ -10,12 +10,18 @@ import type {CoopRunView} from './coop-presentation';
 // call, combat roll or hidden-room information is involved.
 const warmed=new Set<string>();
 function warm(source:Parameters<typeof Image.resolveAssetSource>[0]|undefined):void{
- if(!source)return;
- const uri=Image.resolveAssetSource(source)?.uri;
- if(!uri||warmed.has(uri))return;
- if(warmed.size>100)warmed.clear();
- warmed.add(uri);
- void Image.prefetch(uri).catch(()=>{}); // Some packaged asset URIs cannot be prefetched; do not retry every poll.
+ // Prewarming is optional: some renderer/test hosts have no native asset-cache APIs.
+ // Never let a missing cache method interrupt an actual dungeon choice or replay.
+ if(!source||typeof Image.resolveAssetSource!=='function'||typeof Image.prefetch!=='function')return;
+ try{
+  const uri=Image.resolveAssetSource(source)?.uri;
+  if(!uri||warmed.has(uri))return;
+  if(warmed.size>100)warmed.clear();
+  warmed.add(uri);
+  void Promise.resolve(Image.prefetch(uri)).catch(()=>{}); // Bundled assets are not always remotely prefetchable.
+ }catch{
+  // Asset warming is a best-effort presentation optimization only.
+ }
 }
 export function preloadDungeonCombatArt(options:readonly CoopRouteOptionView[],roleSlots:CoopRunView['roleSlots']):void{
  for(const slot of roleSlots)warm(dungeonCombatPortraitSource(slot.classId,slot.bodyPresentation??'male'));

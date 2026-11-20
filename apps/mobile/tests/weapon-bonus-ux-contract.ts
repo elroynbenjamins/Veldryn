@@ -18,6 +18,10 @@ check(preview.includes('weaponBonusComparisonRows(oldRecord?.weaponBonuses,insta
   'Compare & Swap must compare the selected exact weapon receipts');
 check(preview.includes('weaponBonusDisplayDelta(change.deltaBps)')&&preview.includes('statColor(C,change.deltaBps)'),
   'Comparison must show positive/negative percentage-point differences');
+check(pool.includes('accessible accessibilityLabel={weaponBonusStatText(language,stat)'),
+  'Every tier-specific roll range should have a usable screen-reader label');
+check(preview.includes("accessibilityLabel={weaponBonusStatText(language,change.stat)"),
+  'A screen reader should announce the whole current/new/difference comparison');
 check(preview.includes('compactBonusRows')&&preview.includes('rollCompareRowStack'),
   'Comparison must fit narrow/high-font screens');
 check(inspect.includes('Random bonuses on this equipment copy.'),

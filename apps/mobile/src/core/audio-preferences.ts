@@ -42,3 +42,15 @@ export function resolvePreferredMusicTrack(context:MusicContextId|null,prefs:Aud
  const choice=musicContextPreference(prefs,context);
  return choice.enabled?(choice.track??context):null;
 }
+
+/** Restore only audio channels: independent per-area preferences are never replaced. */
+export type AudioChannel='music'|'effects';
+export function rememberAudibleAudioLevels(previous:AudioPreferences,next:AudioPreferences):AudioPreferences{
+ return {...next,
+  music:next.music>0?next.music:previous.music||DEFAULT_AUDIO_PREFERENCES.music,
+  effects:next.effects>0?next.effects:previous.effects||DEFAULT_AUDIO_PREFERENCES.effects,
+ };
+}
+export function audioAfterMuteToggle(current:AudioPreferences,remembered:AudioPreferences,channel:AudioChannel):AudioPreferences{
+ return {...current,[channel]:current[channel]===0?(remembered[channel]||DEFAULT_AUDIO_PREFERENCES[channel]):0};
+}

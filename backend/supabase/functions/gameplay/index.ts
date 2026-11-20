@@ -42358,8 +42358,8 @@ var CROSS_PROFESSION_COMPONENT_RECIPES = [
 
 // ../apps/mobile/src/content/gathering-tools.ts
 init_progression();
-var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75;
-var TOOL_BLUEPRINT_DROP_ROUNDING_STEP = 1e-3;
+var TOOL_BLUEPRINT_DROP_MULTIPLIER = 0.75 * 0.5;
+var TOOL_BLUEPRINT_DROP_ROUNDING_STEP = 5e-4;
 function roundDownToolBlueprintDropChance(chance) {
   if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error("invalid_tool_blueprint_chance");
   const ticksPerUnit = Math.round(1 / TOOL_BLUEPRINT_DROP_ROUNDING_STEP);
@@ -42395,22 +42395,23 @@ var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
   dropChance: dropChance * TOOL_BLUEPRINT_DROP_MULTIPLIER
 });
 var GATHERING_TOOLS = [
+  // Each tier is a permanent additive upgrade: 10% + 15% + 15% + 20% = 60% maximum reduction.
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
-  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
-  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
-  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
+  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 0.9, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
+  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 0.9, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
+  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 0.9, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
-  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.017), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.016), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.015), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
-  // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
-  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.013), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
-  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.012), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
-  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.01), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
+  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.85, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.017), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.85, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.016), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.85, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.015), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
+  // Tier 3 is a late-Asterfall blueprint chase (levels 22-25), distinct from Tier 2's early-Asterfall hunts.
+  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.85, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "FALLEN_SENTINEL", 0.013), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
+  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.85, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "OATHGLASS_REVENANT", 0.012), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
+  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.85, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.01), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
   // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
-  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 9e-3), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
-  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 8e-3), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
-  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 8e-3), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
+  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.8, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 9e-3), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
+  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.8, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 8e-3), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
+  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.8, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "LAKEBOUND_SPECTER", 8e-3), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
 ];
 var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
 var TOOL_BLUEPRINT_ITEMS = GATHERING_TOOLS.flatMap((entry2) => entry2.blueprint ? [{
@@ -43037,32 +43038,58 @@ function huntActiveDamageEvents(events, input) {
       target2.damage += amount;
       return amount;
     };
-    let activation;
+    let activation, shiftedDamage = 0;
     switch (input.classId) {
       case "WAYFINDER": {
         const target2 = eligible.find((hit) => hit !== last);
-        if (target2 && shift(last, target2, 0.08 + 0.07 * scale) > 0) activation = target2;
+        if (target2) {
+          const moved = shift(last, target2, 0.08 + 0.07 * scale);
+          if (moved > 0) {
+            activation = target2;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
       case "RAVAGER": {
-        if (eligible.includes(last) && shift(first, last, 0.18 + 0.14 * scale) > 0) activation = last;
+        if (eligible.includes(last)) {
+          const moved = shift(first, last, 0.18 + 0.14 * scale);
+          if (moved > 0) {
+            activation = last;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
       case "HEXWEAVER": {
         if (eligible.includes(last)) {
           const middle = penultimate !== first && eligible.includes(penultimate) ? penultimate : void 0;
           const moved = middle ? shift(first, middle, 0.055 + 0.035 * scale) : 0;
-          if (shift(first, last, 0.11 + 0.07 * scale) > 0 || moved > 0) activation = last;
+          const final = shift(first, last, 0.11 + 0.07 * scale);
+          if (final > 0 || moved > 0) {
+            activation = last;
+            shiftedDamage += moved + final;
+          }
         }
         break;
       }
       case "KNIFE_DANCER": {
         const target2 = eligible.includes(penultimate) ? penultimate : eligible.find((hit) => hit !== last);
-        if (target2 && shift(last, target2, 0.1 + 0.1 * scale) > 0) activation = target2;
+        if (target2) {
+          const moved = shift(last, target2, 0.1 + 0.1 * scale);
+          if (moved > 0) {
+            activation = target2;
+            shiftedDamage += moved;
+          }
+        }
         break;
       }
     }
-    if (activation) activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
+    if (activation) {
+      const multiplier = Math.max(0, Math.min(0.5, Number(input.abilityDamageBonus) || 0));
+      if (multiplier > 0) activation.damage += Number((shiftedDamage * multiplier).toFixed(5));
+      activation.activeAbility = { source: "class", id: ability2.id, name: ability2.name, kind: "damage", amount: activation.damage };
+    }
   }
   const companion = input.companion;
   if (landed.length >= 2 && companion?.role === "damage" && companion.contributionPct > 0) {
@@ -43125,7 +43152,7 @@ function huntClassSurvivalEvents(events, input) {
   if (pulse === void 0) return result;
   const rank = Math.min(100, Math.max(1, Math.floor(Number.isFinite(input.classSkillLevel) ? input.classSkillLevel : 1)));
   const scale = 1 + 0.3 * (rank - 1) / 99;
-  const healScale = Math.max(1, Math.min(1.2, input.classHealingMultiplier ?? 1));
+  const healScale = Math.max(1, Math.min(1.5, input.classHealingMultiplier ?? 1));
   const eligible = result.filter((event) => (event.actor === "enemy" || profile.mechanic === "sun_heal" && event.actor === "fatigue") && event.damage > 0 && input.encounterStartedAtMs + event.fraction * input.cycleSeconds * 1e3 >= pulse - 1e-3);
   const first = eligible[0];
   if (!first) return result;
@@ -44458,18 +44485,18 @@ var MONSTERS_RAW = [
   { id: "BRIAR_HUSK", name: "Briar Husk", level: 11, hp: 154, attack: 18, defense: 10, xp: 82, gold: 5, secondsPerKill: 16, unlockLevel: 11, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.38, min: 1, max: 2 }, { itemId: "GREENWOOD_LOG", chance: 0.24, min: 1, max: 2 }] },
   { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.015, min: 1, max: 1 }] },
   { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.24, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.12, min: 1, max: 1 }] },
-  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.012, min: 1, max: 1 }] },
+  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }] },
   { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.017, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
-  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.013, min: 1, max: 1 }] },
+  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
   { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
   { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.01, min: 1, max: 1 }] },
   { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
-  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }] },
-  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }] },
+  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.013, min: 1, max: 1 }] },
+  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "WOLF_PELT", chance: 0.25, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.012, min: 1, max: 1 }] },
   { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", areaId: "ZONE_006", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "DUNEWOOD", chance: 0.36, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "SCORPION_VENOM", chance: 0.06, min: 1, max: 1 }] },
   { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", areaId: "ZONE_007", drops: [{ itemId: "DUNEWOOD", chance: 0.28, min: 1, max: 2 }, { itemId: "SUNSCALE", chance: 0.3, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
   { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", areaId: "ZONE_008", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }, { itemId: "GLASSBOUND_CORE", chance: 0.38, min: 1, max: 1 }] },
@@ -44480,11 +44507,11 @@ var MONSTERS_RAW = [
   { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
   { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 8e-3, min: 1, max: 1 }] },
   { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 9e-3, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 8e-3, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
   { id: "ICEBOUND_RAIDER", name: "Icebound Raider", level: 50, hp: 1330, attack: 93, defense: 58, xp: 766, gold: 47, secondsPerKill: 46, unlockLevel: 49, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.44, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.12, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
   { id: "SNOW_TREANT", name: "Snow Treant", level: 53, hp: 1460, attack: 100, defense: 67, xp: 845, gold: 51, secondsPerKill: 48, unlockLevel: 51, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.22, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.1, min: 1, max: 1 }] },
   { id: "RIME_STALKER", name: "Rime Stalker", level: 59, hp: 1770, attack: 112, defense: 71, xp: 995, gold: 60, secondsPerKill: 53, unlockLevel: 57, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.4, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.11, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.2, min: 1, max: 1 }] },
-  { id: "LAKEBOUND_SPECTER", name: "Lakebound Specter", level: 62, hp: 1880, attack: 124, defense: 76, xp: 1080, gold: 65, secondsPerKill: 55, unlockLevel: 61, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.09, min: 1, max: 1 }] },
+  { id: "LAKEBOUND_SPECTER", name: "Lakebound Specter", level: 62, hp: 1880, attack: 124, defense: 76, xp: 1080, gold: 65, secondsPerKill: 55, unlockLevel: 61, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.09, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 8e-3, min: 1, max: 1 }] },
   { id: "WYRMSPINE_GUARDIAN", name: "Wyrmspine Guardian", level: 69, hp: 2270, attack: 140, defense: 90, xp: 1310, gold: 78, secondsPerKill: 61, unlockLevel: 68, zone: "Frostmarch", areaId: "ZONE_015", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.52, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.32, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.14, min: 1, max: 1 }] },
   { id: "BLACKGLASS_MIRELING", name: "Blackglass Mireling", level: 72, hp: 2480, attack: 154, defense: 96, xp: 1450, gold: 86, secondsPerKill: 63, unlockLevel: 71, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.42, min: 1, max: 2 }, { itemId: "BLACKGLASS_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.12, min: 1, max: 1 }] },
   { id: "CINDER_TITAN", name: "Cinder Titan", level: 80, hp: 3200, attack: 185, defense: 118, xp: 1840, gold: 108, secondsPerKill: 72, unlockLevel: 78, zone: "Ashlands", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.34, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.08, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "BOSSBANE_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
@@ -51225,20 +51252,36 @@ function moveLegacyEquipmentPouchStack(state, itemId, quantity2, from, to) {
 
 // ../apps/mobile/src/core/gathering-tools.ts
 var NO_TOOL_TIME_MULTIPLIER = 1.15;
+var MAX_EQUIPPED_TOOL_TIME_REDUCTION = 0.6;
+function equippedGatheringTools(state, skillId) {
+  const slots2 = state.character?.equippedToolIdsByTier?.[skillId];
+  if (slots2 !== void 0) {
+    return Object.entries(slots2).flatMap(([tier, id]) => {
+      const tool2 = gatheringToolDef(id);
+      return tool2?.skillId === skillId && String(tool2.tier) === tier ? [tool2] : [];
+    }).sort((a, b) => a.tier - b.tier);
+  }
+  const legacy = gatheringToolDef(state.character?.equippedToolIds?.[skillId]);
+  return legacy?.skillId === skillId ? [legacy] : [];
+}
 function equippedGatheringTool(state, skillId) {
-  const id = state.character?.equippedToolIds?.[skillId];
-  const definition = gatheringToolDef(id);
-  return definition?.skillId === skillId ? definition : void 0;
+  const tools = equippedGatheringTools(state, skillId);
+  return tools[tools.length - 1];
 }
 function gatheringToolTimeMultiplier(state, skillId) {
   if (skillId === "herbalism") return 1;
-  return equippedGatheringTool(state, skillId)?.actionTimeMultiplier ?? NO_TOOL_TIME_MULTIPLIER;
+  const tools = equippedGatheringTools(state, skillId);
+  if (!tools.length) return NO_TOOL_TIME_MULTIPLIER;
+  const reduction = tools.reduce((sum, tool2) => sum + (1 - tool2.actionTimeMultiplier), 0);
+  return Math.max(1 - MAX_EQUIPPED_TOOL_TIME_REDUCTION, 1 - reduction);
 }
 function gatheringPacing(state, activity) {
   const tool2 = equippedGatheringTool(state, activity.skillId);
   const timeMultiplier = activity.difficultyMultiplier * gatheringToolTimeMultiplier(state, activity.skillId);
   const recommended = gatheringToolsFor(activity.skillId).find((entry2) => entry2.tier === activity.recommendedToolTier);
-  return { tool: tool2, recommended, timeMultiplier, atRecommendedTier: (tool2?.tier ?? 0) >= activity.recommendedToolTier };
+  const recommendedMultiplier = 1 - gatheringToolsFor(activity.skillId).filter((entry2) => entry2.tier <= activity.recommendedToolTier).reduce((sum, entry2) => sum + (1 - entry2.actionTimeMultiplier), 0);
+  const actualMultiplier = gatheringToolTimeMultiplier(state, activity.skillId);
+  return { tool: tool2, recommended, timeMultiplier, atRecommendedTier: !!tool2 && actualMultiplier <= recommendedMultiplier + 1e-9 };
 }
 
 // ../apps/mobile/src/core/combat-region.ts
@@ -51301,43 +51344,79 @@ function deterministicCraftRarityRoll(seed) {
   return hash3 % 1e6 / 1e6;
 }
 
+// ../apps/mobile/src/core/bonus-roll-rarity.ts
+var BONUS_ROLL_RARITY_MULTIPLIER = {
+  common: 0.85,
+  uncommon: 1,
+  rare: 1.2,
+  epic: 1.35,
+  legendary: 1.45,
+  mythic: 1.5
+};
+var STEP_BPS = 10;
+function rarityAdjustedBonusRange(base, rarity) {
+  const multiplier = BONUS_ROLL_RARITY_MULTIPLIER[rarity];
+  const min = Math.max(STEP_BPS, Math.round(base[0] * multiplier / STEP_BPS) * STEP_BPS);
+  const max = Math.max(min + STEP_BPS, Math.round(base[1] * multiplier / STEP_BPS) * STEP_BPS);
+  return [min, max];
+}
+
 // ../apps/mobile/src/core/weapon-bonus-rolls.ts
-var WEAPON_BONUS_ROLL_VERSION = 3;
+var WEAPON_BONUS_ROLL_VERSION = 7;
+var WEAPON_BONUS_LABELS = {
+  maxHp: "Max HP",
+  armor: "Armor",
+  ward: "Ward",
+  tenacity: "Tenacity",
+  critRate: "Crit Rate",
+  haste: "Haste",
+  penetration: "Penetration",
+  accuracy: "Accuracy",
+  potency: "Potency",
+  evasion: "Evasion",
+  critDamage: "Crit Damage",
+  abilityDamage: "Ability Damage",
+  healingPower: "Healing Power"
+};
 var LEGACY_ROLE_POOL = {
   Tank: ["armor", "maxHp", "ward", "tenacity"],
   Damage: ["critRate", "haste", "penetration", "accuracy"],
   Support: ["potency", "haste", "ward", "maxHp"]
 };
-var WEAPON_BONUS_CURRENT_POOL = [
-  "maxHp",
-  "armor",
-  "tenacity",
-  "critRate",
-  "haste",
-  "accuracy",
-  "potency"
-];
-var EARLY_WEAPON_BONUS_BPS = {
-  1: {
-    maxHp: [80, 180],
-    armor: [40, 100],
-    tenacity: [70, 160],
-    critRate: [20, 50],
-    haste: [20, 60],
-    accuracy: [20, 50],
-    potency: [40, 110]
-  },
-  2: {
-    maxHp: [120, 250],
-    armor: [70, 170],
-    tenacity: [120, 260],
-    critRate: [30, 90],
-    haste: [40, 110],
-    accuracy: [30, 90],
-    potency: [80, 200]
-  }
+var V3_ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V4_ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "critRate"]
+};
+var LAUNCH_SAFE_BONUS_STATS = ["maxHp", "armor", "critRate", "critDamage", "accuracy", "evasion", "haste"];
+var WEAPON_BONUS_CURRENT_POOL = LAUNCH_SAFE_BONUS_STATS;
+var LAUNCH_SAFE_ROLE_POOL = {
+  Tank: ["maxHp", "armor", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "accuracy", "evasion", "haste"],
+  Support: ["maxHp", "armor", "accuracy", "evasion", "haste"]
 };
 var WEAPON_BONUS_BPS_BY_BAND = {
+  2: {
+    maxHp: [100, 250],
+    armor: [80, 180],
+    ward: [30, 90],
+    tenacity: [100, 240],
+    critRate: [30, 80],
+    haste: [40, 110],
+    penetration: [50, 130],
+    accuracy: [30, 90],
+    potency: [80, 200]
+  },
   3: {
     maxHp: [200, 400],
     armor: [150, 300],
@@ -51383,22 +51462,40 @@ var WEAPON_BONUS_BPS_BY_BAND = {
     potency: [400, 650]
   }
 };
+var V3_EXTRA_BPS_BY_BAND = {
+  2: { evasion: [20, 70], critDamage: [100, 280], abilityDamage: [80, 200], healingPower: [80, 200] },
+  3: { evasion: [40, 120], critDamage: [200, 450], abilityDamage: [120, 300], healingPower: [120, 300] },
+  5: { evasion: [60, 150], critDamage: [300, 700], abilityDamage: [200, 500], healingPower: [200, 500] },
+  7: { evasion: [80, 180], critDamage: [400, 850], abilityDamage: [260, 600], healingPower: [260, 600] },
+  9: { evasion: [100, 200], critDamage: [500, 1e3], abilityDamage: [320, 700], healingPower: [320, 700] }
+};
 var V1_RANGE_BY_BAND = {
   3: [100, 300],
   5: [200, 400],
   7: [300, 500],
   9: [400, 600]
 };
-function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
-  if (tier === 1 || tier === 2) {
-    return version === 3 && WEAPON_BONUS_CURRENT_POOL.includes(stat) ? EARLY_WEAPON_BONUS_BPS[tier][stat] : void 0;
+function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION, rarity = "uncommon") {
+  const band = tier === 1 && (version === 6 || version === 7) ? 2 : tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : tier === 2 ? 2 : void 0;
+  if (band === void 0 || tier === 1 && version !== 6 && version !== 7) return void 0;
+  if ((version === 6 || version === 7) && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
+  const legacy = WEAPON_BONUS_BPS_BY_BAND[band][stat];
+  if (version === 1) return V1_RANGE_BY_BAND[band];
+  if (version === 2) return legacy;
+  if (version !== 3 && version !== 4 && version !== 5 && version !== 6 && version !== 7) return void 0;
+  if ((version === 4 || version === 5 || version === 6 || version === 7) && stat === "abilityDamage") return void 0;
+  if ((version === 5 || version === 6 || version === 7) && stat === "tenacity") return void 0;
+  const baseline = legacy ?? V3_EXTRA_BPS_BY_BAND[band][stat];
+  if (!baseline) return void 0;
+  if (tier === 1) {
+    const low = Math.max(10, Math.round(baseline[0] / 20) * 10);
+    const high = Math.max(low + 10, Math.round(baseline[1] / 20) * 10);
+    return rarityAdjustedBonusRange([low, high], rarity);
   }
-  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
-  if (band === void 0) return void 0;
-  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 || version === 3 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+  return rarityAdjustedBonusRange(baseline, rarity);
 }
 var HIGH_RARITIES = ["epic", "legendary", "mythic"];
-var STEP_BPS = 10;
+var STEP_BPS2 = 10;
 function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) {
   let item;
   try {
@@ -51408,9 +51505,9 @@ function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) 
   }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || item.slot !== "weapon" || tier < (version === 3 ? 1 : 3) || tier > 9 || version !== 3 && !role) return void 0;
-  const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
-  const pool = version === 3 ? WEAPON_BONUS_CURRENT_POOL : LEGACY_ROLE_POOL[role];
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 1 || tier > 9 || tier === 1 && version !== 6 && version !== 7 || version !== 7 && !role) return void 0;
+  const count = tier >= 5 || (version === 7 || tier >= 3) && HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  const pool = version === 7 ? WEAPON_BONUS_CURRENT_POOL : version === 6 ? LAUNCH_SAFE_ROLE_POOL[role] : version === 5 ? ROLE_POOL[role] : version === 4 ? V4_ROLE_POOL[role] : version === 3 ? V3_ROLE_POOL[role] : LEGACY_ROLE_POOL[role];
   return { tier, role, count, pool };
 }
 function rollWeaponBonuses(itemId, rarity, receiptKey, trustedRoll) {
@@ -51420,13 +51517,13 @@ function rollWeaponBonuses(itemId, rarity, receiptKey, trustedRoll) {
   const pool = [...cfg.pool], out = [];
   const seed = `${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
   for (let index = 0; index < cfg.count; index++) {
-    const statUnit = deterministicCraftRarityRoll(`weapon-affix:v3:stat:${seed}:${index}`);
+    const statUnit = deterministicCraftRarityRoll(`weapon-affix:v7:stat:${seed}:${index}`);
     const position = Math.min(pool.length - 1, Math.floor(statUnit * pool.length));
     const [stat] = pool.splice(position, 1);
-    const valueUnit = deterministicCraftRarityRoll(`weapon-affix:v3:value:${seed}:${index}`);
-    const range = weaponBonusRange(cfg.tier, stat);
-    const steps = (range[1] - range[0]) / STEP_BPS;
-    out.push({ stat, basisPoints: range[0] + STEP_BPS * Math.min(steps, Math.floor(valueUnit * (steps + 1))) });
+    const valueUnit = deterministicCraftRarityRoll(`weapon-affix:v7:value:${seed}:${index}`);
+    const range = weaponBonusRange(cfg.tier, stat, WEAPON_BONUS_ROLL_VERSION, rarity);
+    const steps = (range[1] - range[0]) / STEP_BPS2;
+    out.push({ stat, basisPoints: range[0] + STEP_BPS2 * Math.min(steps, Math.floor(valueUnit * (steps + 1))) });
   }
   return out;
 }
@@ -51437,12 +51534,111 @@ function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROL
   for (const entry2 of raw2) {
     if (!entry2 || typeof entry2 !== "object") return void 0;
     const { stat, basisPoints } = entry2;
-    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version) : void 0;
-    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS !== 0) return void 0;
+    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version, rarity) : void 0;
+    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS2 !== 0) return void 0;
     seen.add(stat);
     out.push({ stat, basisPoints });
   }
   return out;
+}
+
+// ../apps/mobile/src/core/equipment-bonus-rolls.ts
+var EQUIPMENT_BONUS_ROLL_VERSION = 6;
+var HIGH_RARITIES2 = ["epic", "legendary", "mythic"];
+var LEGACY_ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V2_ROLE_POOL = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "abilityDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var V3_ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "tenacity", "critRate"]
+};
+var ROLE_POOL2 = {
+  Tank: ["maxHp", "armor", "ward", "evasion", "haste"],
+  Damage: ["critRate", "critDamage", "haste", "penetration", "accuracy", "evasion"],
+  Support: ["healingPower", "potency", "haste", "ward", "maxHp", "critRate"]
+};
+var EXTRA_RANGES = {
+  2: { evasion: [20, 70], critDamage: [50, 160] },
+  3: { evasion: [40, 120], critDamage: [100, 300] },
+  5: { evasion: [60, 150], critDamage: [150, 400] },
+  7: { evasion: [80, 180], critDamage: [200, 450] },
+  9: { evasion: [100, 200], critDamage: [250, 500] }
+};
+var BONUS_LABELS = {
+  ...WEAPON_BONUS_LABELS
+};
+var STEP_BPS3 = 10;
+var ELIGIBLE_SLOTS = /* @__PURE__ */ new Set(["helmet", "chest", "gloves", "legs", "boots", "offhand", "cape", "amulet", "ring"]);
+function bandForTier(tier) {
+  return tier >= 9 ? 9 : tier >= 7 ? 7 : tier >= 5 ? 5 : tier >= 3 ? 3 : tier === 2 ? 2 : void 0;
+}
+function equipmentBonusConfig(itemId, rarity, version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
+  const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
+  const role = CLASSES.find((c) => c.id === item.classRestriction)?.role;
+  if (item.type !== "gear" || !item.slot || !ELIGIBLE_SLOTS.has(item.slot) || tier < 1 || tier > 9 || tier === 1 && version !== 5 && version !== 6 || version !== 6 && !role) return void 0;
+  const count = tier >= 5 || (version === 6 || tier >= 3) && HIGH_RARITIES2.includes(rarity) ? 2 : 1;
+  const pool = version === 6 ? LAUNCH_SAFE_BONUS_STATS : version === 1 ? LEGACY_ROLE_POOL2[role] : version === 2 ? V2_ROLE_POOL[role] : version === 3 ? V3_ROLE_POOL2[role] : version === 4 ? ROLE_POOL2[role] : LAUNCH_SAFE_ROLE_POOL[role];
+  return { tier, role, slot: item.slot, count, pool };
+}
+function equipmentBonusRange(tier, stat, slot, rarity = "uncommon", version = EQUIPMENT_BONUS_ROLL_VERSION) {
+  const band = tier === 1 && (version === 5 || version === 6) ? 2 : bandForTier(tier);
+  if (band === void 0 || tier < 1 || tier > 9 || !ELIGIBLE_SLOTS.has(slot) || version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) return void 0;
+  if (tier === 1 && version !== 5 && version !== 6) return void 0;
+  if ((version === 5 || version === 6) && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
+  if ((version === 3 || version === 4 || version === 5 || version === 6) && stat === "abilityDamage") return void 0;
+  if ((version === 4 || version === 5 || version === 6) && stat === "tenacity") return void 0;
+  const base = version === 1 ? stat === "evasion" || stat === "critDamage" ? EXTRA_RANGES[band][stat] : weaponBonusRange(tier, stat, 2) : weaponBonusRange(tier, stat, version === 6 ? 7 : version === 5 ? 6 : 3, "uncommon");
+  if (!base) return void 0;
+  const factor = slot === "offhand" ? 0.8 : slot === "amulet" || slot === "ring" ? 0.7 : 0.55;
+  const min = Math.max(STEP_BPS3, Math.ceil(base[0] * factor / STEP_BPS3) * STEP_BPS3);
+  const max = Math.max(min + STEP_BPS3, Math.floor(base[1] * factor / STEP_BPS3) * STEP_BPS3);
+  return version === 1 ? [min, max] : rarityAdjustedBonusRange([min, max], rarity);
+}
+function rollEquipmentBonuses(itemId, rarity, receiptKey, trustedRoll) {
+  if (!Number.isFinite(trustedRoll) || trustedRoll < 0 || trustedRoll >= 1) throw new Error("Invalid trusted equipment roll");
+  const cfg = equipmentBonusConfig(itemId, rarity);
+  if (!cfg) return void 0;
+  const available = [...cfg.pool], result = [];
+  const seed = `${trustedRoll.toFixed(12)}:${receiptKey}:${itemId}`;
+  for (let index = 0; index < cfg.count; index++) {
+    const choice = deterministicCraftRarityRoll(`equipment-affix:v6:stat:${seed}:${index}`);
+    const [stat] = available.splice(Math.min(available.length - 1, Math.floor(choice * available.length)), 1);
+    const [minimum, maximum] = equipmentBonusRange(cfg.tier, stat, cfg.slot, rarity);
+    const steps = (maximum - minimum) / STEP_BPS3;
+    const roll = deterministicCraftRarityRoll(`equipment-affix:v6:value:${seed}:${index}`);
+    result.push({ stat, basisPoints: minimum + STEP_BPS3 * Math.min(steps, Math.floor(roll * (steps + 1))) });
+  }
+  return result;
+}
+function normalizeEquipmentBonuses(itemId, rarity, raw2, version) {
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) return void 0;
+  const cfg = equipmentBonusConfig(itemId, rarity, version);
+  if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
+  const seen = /* @__PURE__ */ new Set(), result = [];
+  for (const entry2 of raw2) {
+    if (!entry2 || typeof entry2 !== "object") return void 0;
+    const { stat, basisPoints } = entry2;
+    if (!stat || !cfg.pool.includes(stat) || seen.has(stat)) return void 0;
+    const range = equipmentBonusRange(cfg.tier, stat, cfg.slot, rarity, version);
+    if (!range || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS3 !== 0) return void 0;
+    seen.add(stat);
+    result.push({ stat, basisPoints });
+  }
+  return result;
 }
 
 // ../apps/mobile/src/core/crafted-gear-instances.ts
@@ -51482,7 +51678,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
-      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 || row.weaponBonusRollVersion === 4 || row.weaponBonusRollVersion === 5 || row.weaponBonusRollVersion === 6 || row.weaponBonusRollVersion === 7 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -51494,6 +51690,8 @@ function normalizeCraftedGearInstances(raw2) {
         statRoll: clampStatRoll(row.statRoll),
         weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
         weaponBonusRollVersion: version,
+        equipmentBonuses: normalizeEquipmentBonuses(item.id, rarity, row.equipmentBonuses, row.equipmentBonusRollVersion),
+        equipmentBonusRollVersion: row.equipmentBonusRollVersion === 1 || row.equipmentBonusRollVersion === 2 || row.equipmentBonusRollVersion === 3 || row.equipmentBonusRollVersion === 4 || row.equipmentBonusRollVersion === 5 || row.equipmentBonusRollVersion === 6 ? row.equipmentBonusRollVersion : void 0,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -51550,6 +51748,7 @@ function effectiveOwnedGearRarity(state, itemId, ownerCharacterId = state.charac
 function draftCraftedGearInstance(args) {
   const rarity = craftedGearRarity(args.itemId, args.roll);
   const weaponBonuses = rollWeaponBonuses(args.itemId, rarity, args.jobId, args.roll);
+  const equipmentBonuses = rollEquipmentBonuses(args.itemId, rarity, args.jobId, args.roll);
   return {
     id: `gear:${args.ownerCharacterId}:${args.jobId}`,
     itemId: args.itemId,
@@ -51557,9 +51756,10 @@ function draftCraftedGearInstance(args) {
     rarity,
     quality: craftedGearQualityRoll(args.roll, args.jobId),
     weaponBonuses,
-    // Stamp the roll version only on receipts that actually carry rolled bonuses, so the
-    // marker and payload can never disagree (e.g. a T3+ weapon without a class role).
+    // Never stamp a version without an actual minted bonus payload.
     weaponBonusRollVersion: weaponBonuses?.length ? WEAPON_BONUS_ROLL_VERSION : void 0,
+    equipmentBonuses,
+    equipmentBonusRollVersion: equipmentBonuses?.length ? EQUIPMENT_BONUS_ROLL_VERSION : void 0,
     locked: false,
     statRoll: deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),
     acquireSource: "craft",
@@ -51589,6 +51789,8 @@ function craftedInstanceResult(state, instance) {
     baseRarity,
     weaponBonuses: instance.weaponBonuses,
     weaponBonusRollVersion: instance.weaponBonusRollVersion,
+    equipmentBonuses: instance.equipmentBonuses,
+    equipmentBonusRollVersion: instance.equipmentBonusRollVersion,
     // Trusted command response metadata for read-only public forge announcements.
     itemName: itemDef(instance.itemId).name,
     crafterName: state.character?.id === instance.ownerCharacterId ? state.character.name : (state.otherCharacters ?? []).find((row) => row.character.id === instance.ownerCharacterId)?.character.name ?? "Adventurer",
@@ -52210,7 +52412,9 @@ var EMPTY_STATS = {
   potency: 0,
   critRate: 0,
   critDamage: 0,
-  evasion: 0
+  evasion: 0,
+  abilityDamage: 0,
+  healingPower: 0
 };
 var STAT_KEY_BY_LABEL = {
   "max hp": "maxHp",
@@ -52241,6 +52445,21 @@ function equippedWeaponBonusStats(state) {
   if (!copy?.weaponBonuses?.length) return {};
   const stats4 = {};
   for (const bonus of copy.weaponBonuses) stats4[bonus.stat] = (stats4[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  return stats4;
+}
+function equippedEquipmentBonusStats(state) {
+  const character = state.character;
+  if (!character) return {};
+  const stats4 = {};
+  for (const [slot, itemId] of Object.entries(character.equipment)) {
+    if (!itemId || slot === "weapon") continue;
+    const instanceId = character.equipmentInstanceIds?.[slot];
+    if (!instanceId) continue;
+    const raw2 = state.account.craftedGearInstances?.find((row) => row?.id === instanceId && row?.itemId === itemId);
+    const copy = raw2 ? normalizeCraftedGearInstances([raw2])[0] : void 0;
+    if (!copy?.equipmentBonuses?.length) continue;
+    for (const bonus of copy.equipmentBonuses) stats4[bonus.stat] = (stats4[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  }
   return stats4;
 }
 function parseEquipmentSetStaticBonus(text2) {
@@ -52301,21 +52520,25 @@ function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const weapon = equippedWeaponBonusStats(state);
+  const equipment = equippedEquipmentBonusStats(state);
+  const rolled = (stat) => (weapon[stat] ?? 0) + (equipment[stat] ?? 0);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp) + (weapon.maxHp ?? 0),
-    armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
-    ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
-    tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
-    haste: multiplied(sets.haste, p.haste) + (weapon.haste ?? 0),
-    power: multiplied(sets.power, p.power),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
-    penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
-    potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
-    critRate: sets.critRate + (pp.critRate ?? 0) + (weapon.critRate ?? 0),
-    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
-    evasion: sets.evasion + (pp.evasion ?? 0)
+    maxHp: multiplied(sets.maxHp, p.maxHp) + rolled("maxHp"),
+    armor: multiplied(sets.armor, p.armor) + rolled("armor"),
+    ward: multiplied(sets.ward, p.ward) + rolled("ward"),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + rolled("tenacity"),
+    haste: multiplied(sets.haste, p.haste) + rolled("haste"),
+    power: multiplied(sets.power, p.power) + rolled("power"),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + rolled("accuracy"),
+    penetration: sets.penetration + (pp.penetration ?? 0) + rolled("penetration"),
+    potency: multiplied(sets.potency, p.potency) + rolled("potency"),
+    critRate: sets.critRate + (pp.critRate ?? 0) + rolled("critRate"),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5 + rolled("critDamage"),
+    evasion: sets.evasion + (pp.evasion ?? 0) + rolled("evasion"),
+    abilityDamage: rolled("abilityDamage"),
+    healingPower: rolled("healingPower")
   };
 }
 function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy = 0.84) {
@@ -52335,6 +52558,8 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
     critExpectedMultiplier: setCritExpected / baseCritExpected,
     penetrationMultiplier: 1 + stats4.penetration,
     recoveryMultiplier: 1 + stats4.potency,
+    abilityDamageMultiplier: 1 + stats4.abilityDamage,
+    healingPowerMultiplier: 1 + stats4.healingPower,
     tenacity: stats4.tenacity,
     stats: stats4
   };
@@ -54145,7 +54370,7 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0, classHealing: 1, abilityDamage: 0, healingPower: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   let gearAttack = 0, gearDefense = 0;
   for (const id of Object.values(c.equipment)) {
@@ -54199,7 +54424,9 @@ function effectiveStats(state) {
     tenacity: setStats.tenacity,
     potency: setStats.potency + mastery.potency,
     penetration: setStats.penetration + mastery.penetration,
-    classHealing: mastery.classHealing
+    classHealing: mastery.classHealing * (1 + setStats.healingPower),
+    abilityDamage: setStats.abilityDamage,
+    healingPower: setStats.healingPower
   };
 }
 function settleOutOfCombatRecovery(state, nowMs) {
@@ -54495,7 +54722,7 @@ function combatEncounterDamage(runtime, champion = false, enemyAttackCount, figh
   const incoming = runtime.huntOptions ? Math.max(fatigue, combatPressure) : combatPressure;
   const monsterDamage = runtime.huntOptions ? Math.max(0, incoming - fatigue) : combatPressure;
   const onKillHealing = Math.min(stats4.attack * (style.onKillAttackHealPct ?? 0), Math.max(0, incoming - Math.max(floor, fatigue)));
-  const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
+  const rawHealing = stats4.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600 * (1 + stats4.healingPower) * (c.preparation ? preparationEffects(c.preparation).healing : 1) + onKillHealing;
   const healing = runtime.huntOptions ? Math.min(rawHealing, monsterDamage + fatigue * 0.65) : rawHealing;
   return { damage: incoming, monsterDamage, fatigue, healing, onKillHealing, net: incoming - healing };
 }
@@ -54564,6 +54791,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
     const offensive = huntActiveDamageEvents(hits, {
       ...classTechniqueInput,
       ...cooldownTiming,
+      abilityDamageBonus: runtime.stats.abilityDamage,
       companion: commonCompanion ? { ...commonCompanion, contributionPct: Math.max(0, 1 - 1 / runtime.companion.outputMultiplier) } : void 0
     });
     const heals = huntSupportHealEvents(offensive, {
@@ -55435,12 +55663,45 @@ function equipGatheringTool(state, itemId, nowMs = Date.now()) {
   if (state.character.level < tool2.requiredCharacterLevel) throw new Error(`Requires Level ${tool2.requiredCharacterLevel}`);
   const skill2 = state.skills.find((entry2) => entry2.skillId === tool2.skillId);
   if (!skill2 || skill2.level < tool2.unlockLevel) throw new Error(`Requires ${tool2.skillId} level ${tool2.unlockLevel}`);
-  const currentId = state.character.equippedToolIds?.[tool2.skillId];
-  if (currentId === itemId) return state;
+  const previous = equippedGatheringTools(state, tool2.skillId);
+  if (previous.some((entry2) => entry2.id === itemId)) return state;
+  const sameTier = previous.find((entry2) => entry2.tier === tool2.tier);
   const settled = state.activity?.kind === tool2.skillId ? claimActivity(state, nowMs).state : state;
   let stacks = consume2(settled.inventory.stacks, itemId, 1);
-  if (currentId) stacks = stackItems(stacks, [{ itemId: currentId, quantity: 1 }]);
-  return { ...settled, inventory: { ...settled.inventory, stacks }, character: { ...settled.character, equippedToolIds: { ...settled.character.equippedToolIds ?? {}, [tool2.skillId]: itemId } } };
+  if (sameTier) stacks = stackItems(stacks, [{ itemId: sameTier.id, quantity: 1 }]);
+  const tools = [...previous.filter((entry2) => entry2.tier !== tool2.tier), tool2].sort((a, b) => a.tier - b.tier);
+  const equippedToolIdsByTier = {
+    ...settled.character.equippedToolIdsByTier ?? {},
+    [tool2.skillId]: Object.fromEntries(tools.map((entry2) => [entry2.tier, entry2.id]))
+  };
+  const equippedToolIds = { ...settled.character.equippedToolIds ?? {}, [tool2.skillId]: tools[tools.length - 1].id };
+  return {
+    ...settled,
+    inventory: { ...settled.inventory, stacks },
+    character: { ...settled.character, equippedToolIds, equippedToolIdsByTier }
+  };
+}
+function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId) {
+  if (!state.character) return state;
+  const equipped = equippedGatheringTools(state, skillId);
+  const selected2 = itemId ? equipped.find((entry2) => entry2.id === itemId) : equipped[equipped.length - 1];
+  if (!selected2) return state;
+  const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
+  const remaining = equipped.filter((entry2) => entry2.id !== selected2.id);
+  const equippedToolIdsByTier = {
+    ...settled.character.equippedToolIdsByTier ?? {},
+    [skillId]: Object.fromEntries(remaining.map((entry2) => [entry2.tier, entry2.id]))
+  };
+  const equippedToolIds = { ...settled.character.equippedToolIds ?? {} };
+  if (remaining.length) equippedToolIds[skillId] = remaining[remaining.length - 1].id;
+  else delete equippedToolIds[skillId];
+  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: selected2.id, quantity: 1 }]);
+  if (added.overflow.length) throw new Error("Free one Inventory slot before unequipping this tool");
+  return {
+    ...settled,
+    inventory: { ...settled.inventory, stacks: added.stacks },
+    character: { ...settled.character, equippedToolIds, equippedToolIdsByTier }
+  };
 }
 function craftRecipe(state, recipeId, nowMs = Date.now()) {
   if (!state.character) throw new Error("No character");
@@ -56557,7 +56818,7 @@ function planCraftedGearRetention(existing, incoming, mode) {
     return { action: "manual_review", reason: "inconsistent_instances" };
   if (existing.length < TARGET_CRAFTED_GEAR_COPIES_PER_ITEM) return { action: "keep", reason: "under_limit" };
   if (mode === "off") return { action: "manual_review", reason: "disabled" };
-  if (incoming.weaponBonuses?.length || existing.some((row) => row.instance.weaponBonuses?.length))
+  if (incoming.weaponBonuses?.length || incoming.equipmentBonuses?.length || existing.some((row) => row.instance.weaponBonuses?.length || row.instance.equipmentBonuses?.length))
     return { action: "manual_review", reason: "weapon_bonus_choice" };
   const validQuality = isValidCraftedGearQuality;
   if (existing.some((row) => !validQuality(row.instance.quality)) || !validQuality(incoming.quality))
@@ -57008,7 +57269,7 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
         mode,
         committedReceiptKeys: []
       });
-      if (proposed.status === "blocked") throw new Error(proposed.retention.reason === "weapon_bonus_choice" ? "Weapon bonus rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe." : "Equipment requires manual review: " + proposed.retention.reason);
+      if (proposed.status === "blocked") throw new Error(proposed.retention.reason === "weapon_bonus_choice" ? "Bonus stat rolls need your choice: copy limit reached. Review and sell or salvage a spare copy manually; your finished Forge job is safe." : "Equipment requires manual review: " + proposed.retention.reason);
       if (proposed.receipt.action === "sell_incoming") {
         const credit = proposed.receipt.credit;
         next = applyForgeSaleCredit(next, credit.amount, credit.destination, credit.characterId);
@@ -59001,6 +59262,7 @@ var fields = {
   gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id"],
+  unequip_tool: ["id"],
   equip_set: [],
   upgrade: ["id"],
   socket: ["id", "gemId"],
@@ -59628,6 +59890,12 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "equip_tool":
       state = equipGatheringTool(state, text(a, "id"), now);
       break;
+    case "unequip_tool": {
+      const toolId = text(a, "id"), tool2 = gatheringToolDef(toolId);
+      if (!tool2) throw new Error("Not a gathering tool");
+      state = unequipGatheringTool(state, tool2.skillId, now, toolId);
+      break;
+    }
     case "equip_set":
       state = equipNoviceSet(state);
       break;
@@ -60682,7 +60950,9 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
       ...combatCompanion ? { combatCompanion: structuredClone(combatCompanion) } : {},
       maxHp: kit.stats.maxHp * actual.hp / reference.hp * levelScale,
       attackPower: kit.stats.attackPower * actual.attack / reference.attack * levelScale * (1 + bonus.power),
-      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency),
+      // The bonus is derived from the exact saved equipped copy. Apply only to
+      // dungeon healing output; attack Power, consumables and basic strikes stay separate.
+      healingPower: kit.stats.healingPower * actual.attack / reference.attack * levelScale * (1 + bonus.potency) * (1 + bonus.healingPower),
       defense: kit.stats.defense * actual.defense / reference.defense * levelScale,
       accuracy: kit.stats.accuracy * actual.accuracy / reference.accuracy * levelScale,
       evasion: kit.stats.evasion * actual.evasion / reference.evasion * levelScale,

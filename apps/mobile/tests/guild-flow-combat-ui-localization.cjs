@@ -16,7 +16,7 @@ const locales=['de','es','nl','it','fr','ru','tr'];
 const fields=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const [rows,label,translate,count] of [
  [guildFlowUiRows,'guild',guildFlowUiText,46],
- [dungeonCombatUiRows,'combat',dungeonCombatUiText,12],
+ [dungeonCombatUiRows,'combat',dungeonCombatUiText,13],
 ]){
  assert.equal(Object.keys(rows).length,count,'Missing '+label+' translations');
  for(const [en,values] of Object.entries(rows)){
@@ -41,6 +41,7 @@ assert.equal(guildFlowFocusText('de','development'),'Ausbau');
 assert.equal(guildFlowFocusText('ru','skilling'),'Навыки');
 assert.equal(dungeonCombatUiText('nl','{count} more effects',{count:3}),'3 extra effecten');
 assert.equal(dungeonCombatUiText('ru','BARRIER +{amount}',{amount:125}),'БАРЬЕР +125');
+assert.equal(dungeonCombatUiText('ru','Preparing battle'),'Подготовка к бою');
 assert.equal(dungeonCombatUiText('tr','Inspect {name} combat details',{name:'NPC $& {name}'}),'NPC $& {name} savaş ayrıntılarını incele');
 const base=path.resolve(root,'src/components');
 const sources=Object.fromEntries(['GuildHubPanel.tsx','GuildProjectsPanel.tsx','GuildProjectDetailPanel.tsx','GuildDecreePanel.tsx','GuildMemberRosterPanel.tsx'].map(file=>[file,fs.readFileSync(path.join(base,file),'utf8')]));
@@ -68,4 +69,4 @@ for(const marker of [
  "localizedDungeonEffectLabel(language,status)",
 ])assert.ok(combat.includes(marker),'Dungeon combat UI missing localization: '+marker);
 assert.ok(combat.includes('statusCode(status)'),'Combat gem status codes must remain intact');
-console.log('PASS: 46 Guild and 12 Dungeon combat keys x 7 target locales; placeholder parity, UI wiring, unknown server copy and authoritative replay values');
+console.log('PASS: 46 Guild and 13 Dungeon combat keys x 7 target locales; placeholder parity, UI wiring, unknown server copy and authoritative replay values');

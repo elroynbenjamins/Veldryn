@@ -8,7 +8,8 @@ import {previewEquipment} from '../core/equipment-preview';
 import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
-import {weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
+import {WEAPON_BONUS_LABELS,weaponBonusCompactLine} from '../core/weapon-bonus-rolls';
+import {equipmentBonusCompactLine} from '../core/equipment-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -33,6 +34,8 @@ type Props={
 
 const percent=displayPercent;
 function signed(value:number){const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n);}
+function bonusPercent(bps:number){return bps===0?'—':'+'+(bps/100).toFixed(1)+'%';}
+function bonusDifference(bps:number){return bps===0?'—':(bps>0?'+':'')+(bps/100).toFixed(1)+'%';}
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 
 /** Inventory's single, authoritative compare-before-equipping surface.
@@ -75,8 +78,16 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldInstanceId=state.character?.equipmentInstanceIds?.[slot];
  const oldRecord=oldInstanceId?craftedGearInstances(state).find(row=>row.id===oldInstanceId):undefined;
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
- const currentWeaponRolls=oldRecord?.weaponBonuses?.map(weaponBonusCompactLine)??[];
- const newWeaponRolls=instance?.weaponBonuses?.map(weaponBonusCompactLine)??[];
+ const currentRolls=slot==='weapon'
+   ?oldRecord?.weaponBonuses?.map(bonus=>({...bonus,short:weaponBonusCompactLine(bonus)}))??[]
+   :oldRecord?.equipmentBonuses?.map(bonus=>({...bonus,short:equipmentBonusCompactLine(bonus)}))??[];
+ const newRolls=slot==='weapon'
+   ?instance?.weaponBonuses?.map(bonus=>({...bonus,short:weaponBonusCompactLine(bonus)}))??[]
+   :instance?.equipmentBonuses?.map(bonus=>({...bonus,short:equipmentBonusCompactLine(bonus)}))??[];
+ const bonusChanges=Array.from(new Set([...currentRolls,...newRolls].map(roll=>roll.stat))).map(stat=>({
+   stat,before:currentRolls.find(roll=>roll.stat===stat)?.basisPoints??0,
+   after:newRolls.find(roll=>roll.stat===stat)?.basisPoints??0,
+ }));
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -130,12 +141,18 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
-   {slot==='weapon'&&(currentWeaponRolls.length>0||newWeaponRolls.length>0)?<View style={s.weaponRollPanel}>
+   {(currentRolls.length>0||newRolls.length>0)?<View style={s.weaponRollPanel}>
     <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
     <Text style={s.rollGroupLabel}>{gl('CURRENTLY EQUIPPED')}</Text>
-    {currentWeaponRolls.length?currentWeaponRolls.map((line,index)=><Text key={index} style={s.rollValue}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
+    {currentRolls.length?currentRolls.map((roll,index)=><Text key={index} style={s.rollValue}>{roll.short}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
     <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
-    {newWeaponRolls.length?newWeaponRolls.map((line,index)=><Text key={index} style={[s.rollValue,{color:C.good}]}>{line}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
+    {newRolls.length?newRolls.map((roll,index)=><Text key={index} style={[s.rollValue,{color:C.good}]}>{roll.short}</Text>):<Text style={s.note}>{gl('No bonus stats')}</Text>}
+    <Text style={s.rollGroupLabel}>{gl('Bonus stat changes')}</Text>
+    {bonusChanges.map(change=><View key={change.stat} style={{flexDirection:'row',alignItems:'center',gap:6,minHeight:28}}>
+      <Text style={[s.rollValue,{flex:1}]}>{gl(WEAPON_BONUS_LABELS[change.stat])}</Text>
+      <Text style={s.note}>{bonusPercent(change.before)} → {bonusPercent(change.after)}</Text>
+      <Text style={[s.rollValue,{color:statColor(C,change.after-change.before),minWidth:52,textAlign:'right'}]}>{bonusDifference(change.after-change.before)}</Text>
+    </View>)}
    </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>

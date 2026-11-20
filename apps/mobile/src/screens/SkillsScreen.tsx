@@ -53,7 +53,7 @@ import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,skillNavigatorRout
 import {sharedText} from '../i18n/shared';
 import {skillNavigatorText} from '../i18n/skill-navigator';
 import {gatheringToolsFor} from '../content/gathering-tools';
-import {equippedGatheringTool} from '../core/gathering-tools';
+import {equippedGatheringTools,gatheringToolTimeMultiplier} from '../core/gathering-tools';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {DisclosureMark} from '../components/DisclosureControl';
 import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
@@ -130,10 +130,11 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&<>{(initialSkill==='smithing'||initialSkill==='tailoring'||initialSkill==='enchanting')?<><EquipmentCraftQueuePanel state={state} onClaim={onClaimCraft} onClaimAll={onClaimAllCrafts} onCancel={onCancelCraft} onMoveWaiting={onMoveCraftWaiting} forgeResults={forgeResults} onDismissForgeResults={onDismissForgeResults} onSetAutoSell={enabled=>onCommand({type:'gear_autosell',args:{enabled}})}/><Text style={s.sub}>{gt("Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.")}</Text></>:<Text style={s.sub}>{gt("Materials are taken from Inventory first, then Bank.")}</Text>}</>}
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
-      const gatheringSkill=sk.skillId as GatheringSkillId,equippedTool=mode==='gathering'?equippedGatheringTool(state,gatheringSkill):undefined;
+      const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
+      const equippedTool=equippedTools[equippedTools.length-1],totalToolPercent=Math.round((1-gatheringToolTimeMultiplier(state,gatheringSkill))*100);
       return <View key={sk.skillId} style={s.group}>
-        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTool?.name??gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTool?gt('Tier {tier} · {percent}% shorter action time',{tier:equippedTool.tier,percent:Math.round((1-equippedTool.actionTimeMultiplier)*100)}):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
-          const equipped=equippedTool?.id===tool.id;
+        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4':gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
+          const equipped=equippedTools.some(entry=>entry.id===tool.id);
           const carried=state.inventory.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
           const banked=state.bank.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
           const skillReady=sk.level>=tool.unlockLevel,characterReady=(state.character?.level??0)>=tool.requiredCharacterLevel;
@@ -145,11 +146,11 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const blueprintChanceText=actualBlueprintChance===undefined?'':(actualBlueprintChance*100).toFixed(actualBlueprintChance<.01?2:1)+'%';
           const recipeDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'CRAFT_'+tool.id,button:gt('Craft {name}',{name:tool.name}),detail:gt('Open the Smithing recipe for {name}.',{name:tool.name})};
           const blueprintDestination=sourceMonster&&sourceRegionId?{kind:'combat' as const,monsterId:sourceMonster.id,zoneName:sourceMonster.zone,regionId:sourceRegionId,button:gt('Hunt {name}',{name:sourceMonster.name}),detail:gt('{name} can drop the {tool} Blueprint.',{name:sourceMonster.name,tool:tool.name})+' '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:'')}:undefined;
-          const title=equipped?gt("Equipped"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
-          const disabled=equipped||(carried&&(!skillReady||!characterReady));
+          const title=equipped?gt("Unequip"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
+          const disabled=!equipped&&carried&&(!skillReady||!characterReady);
           const expanded=expandedToolId===tool.id;
           const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
-          const action=carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
+          const action=equipped?()=>onCommand({type:'unequip_tool',args:{id:tool.id}}):carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
           const actionTitle=expanded&&!carried&&!banked&&!equipped?gt('Hide Recipe'):title;
           const showDetailsToggle=equipped||carried||banked;
           const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
@@ -157,7 +158,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
            <View style={[s.toolRow,compactTools&&s.toolRowCompact]}>
            <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
             <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
-            <Text style={s.toolEffect}>{gt('{percent}% faster · {skill} {level} · Level {character}',{percent:Math.round((1-tool.actionTimeMultiplier)*100),skill:gl(tool.skillId),level:tool.unlockLevel,character:tool.requiredCharacterLevel})}</Text>
+            <Text style={s.toolEffect}>{gt('Tier {tier} · {percent}% shorter action time',{tier:tool.tier,percent:Math.round((1-tool.actionTimeMultiplier)*100)})+' · '+gl(tool.skillId)+' '+tool.unlockLevel+' · '+gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
             <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
            </View></View>
            <View style={[s.toolActions,compactTools&&s.toolActionsCompact]}>

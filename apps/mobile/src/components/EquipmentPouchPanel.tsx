@@ -261,8 +261,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <GameButton title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null);setTransferError('')}}/>
     <View style={s.transferRow}>
-     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} onPress={()=>move('inventory')}/></View>
-     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} onPress={()=>move('bank')}/></View>
+     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
+     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
     </View>
    </View>:undefined}
    actions={selected?<View style={s.detailActions}>

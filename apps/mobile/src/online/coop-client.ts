@@ -6,6 +6,8 @@ import {parseStoredJsonObject} from '../core/stored-json';
 import {CoopCommandJournal,CoopRequestError,type PendingCoopCommand} from '../core/coop-command-journal';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {DungeonMarksShopSnapshot} from '../core/dungeon-marks-shop-types';
+import type {DungeonWeeklyQuestSnapshot} from '../core/dungeon-weekly-quests';
+import type {SocialEchoCandidate} from '../core/coop-social-echoes';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
@@ -22,8 +24,8 @@ export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabas
 // Production has a deployed Live backend. An explicit false still provides an
 // emergency build-time kill switch for either co-op surface.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1===undefined?!isDevelopment:process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
-export interface CoopEntryData {rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
-export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopEntryData {rewardBudget?:{charges:number;chargeCapacity:number;weeklyRemaining:number;weeklyCapacity:number;nextChargeAtMs?:number|null;failureConsolationRemaining?:number;failureConsolationCapacity?:number};dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;gameVersion?:number;}
+export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;preferredEchoCharacterIds?:string[];}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;tier?:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
@@ -40,6 +42,9 @@ export function coopErrorMessage(error:unknown,fallback='Dungeons are temporaril
  if(message==='dungeon_level_requirement')return 'Requires level 10 for Asterfall or level 25 for Sunscar.';
  if(message==='dungeon_power_requirement')return 'Your Combat Power is below the selected dungeon tier requirement.';
  if(message==='dungeon_unavailable')return 'This dungeon is no longer open for new runs.';
+ if(message==='social_echo_unavailable')return 'A selected friend or guild Echo is no longer available. Refresh your party choices.';
+ if(message==='invalid_echo_role_composition'||message==='duplicate_damage_class')return 'Your dungeon team needs one Tank, two different Damage classes, and one Support.';
+ if(message==='duplicate_coop_account')return 'Choose only one character from each friend or guild member.';
  if(message==='stale_game_version')return 'Your character updated while joining the dungeon. Please try again.';
  if(error instanceof Error&&error.message.trim())return error.message;
  if(typeof error==='string'&&error.trim())return error;
@@ -93,7 +98,10 @@ async function publicProfilePower(accountId:string):Promise<{combatPower:number}
 }
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
+ socialEchoes:(minLevel:number)=>request<SocialEchoCandidate[]>(`/coop/echo-allies?minLevel=${encodeURIComponent(String(minLevel))}`),
  dungeonMarksShop:()=>request<DungeonMarksShopSnapshot>('/coop/shop'),
+ dungeonWeeklyQuest:()=>request<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest'),
+ claimDungeonWeeklyQuest:(weekKey:string,requestId:string)=>mutate<DungeonWeeklyQuestSnapshot>('/coop/weekly-quest',{weekKey,requestId}),
  purchaseDungeonMarksShop:(offerId:string,requestId:string)=>mutate<{status:'purchased'|'already_owned';balance:number}>('/coop/shop',{offerId,requestId}),
  profilePower:publicProfilePower,
  liveQueue:()=>request<LiveQueueView>('/coop/queue'),
@@ -124,7 +132,6 @@ export const coopClient={
  hasPending:async()=>(await journal()).pending(),
  hasPendingForRun:async(runId:string)=>(await journal()).pendingForRun(runId),
  retryPending:async()=>{noteCoopEntryMutation();return (await journal()).execute();},
- shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},
  combatMarks:async(runId:string):Promise<DungeonCombatMarks>=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('coop_run_combat_marks_self_v1',{p_run_id:runId});if(error)throw error;const receipt=parseDungeonCombatMarks(data);if(!receipt)throw new Error('Invalid dungeon combat Marks receipt.');return receipt;},
  claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');noteCoopEntryMutation();const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},

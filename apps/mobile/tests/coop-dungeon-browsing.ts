@@ -5,6 +5,9 @@ import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,coopPolicyText,translatedCoopMess
 function equal(actual:unknown,expected:unknown,message:string){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)}`)}
 const rootbound=presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',minLevel:10,recommendedLevel:25,syncLevel:25,available:true,tierMinLevels:{1:10,2:10,3:10},tierMinPower:{1:2500,2:3750,3:5000},enabledRoomTypes:['battle','elite','camp','boss'],difficulties:[1,2,3,4,5],preBossRoomMin:5,preBossRoomMax:5});
 validateCoopDungeonView(rootbound);
+const endurance=presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',minLevel:10,syncLevel:25,available:true,difficulties:[1],preBossRoomMin:7,preBossRoomMax:7,estimatedMinutes:{min:8,max:12}});
+validateCoopDungeonView(endurance);
+equal(endurance.preBossRoomMin,7,'New shared Endurance route must advertise the first checkpoint after seven rooms');
 equal(rootbound.difficulties,[1,2,3],'new dungeon selection must contain three tiers only');
 equal(rootbound.itemDropRates,[],'no fictional item drop odds are shown without server data');
 equal([rootbound.id,rootbound.name,rootbound.minLevel,rootbound.recommendedLevel],['EXP_001','Rootbound Vault',10,25],'canonical EXP_001 changed');

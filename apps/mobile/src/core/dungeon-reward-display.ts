@@ -56,15 +56,20 @@ export interface DungeonCombatMarks {
   total:number;
   normal:number;
   elite:number;
+  /** Partial final-room award when the 25-Mark cap is reached. */
+  partial?:number;
+  cap?:number;
 }
 
 /** Ignore partial/invalid receipts rather than showing an invented total. */
 export function parseDungeonCombatMarks(value:unknown):DungeonCombatMarks|undefined{
   if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
   const row=value as Record<string,unknown>;
-  const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite);
-  if(total===undefined||normal===undefined||elite===undefined||total!==normal*3+elite*5)return undefined;
-  return {total,normal,elite};
+  const total=safeMarks(row.total),normal=safeMarks(row.normal),elite=safeMarks(row.elite),partial=row.partial===undefined?0:safeMarks(row.partial);
+  const capped=row.cap===25;
+  // Legacy runs may have paid more than 25 before Endurance existed.
+  if(total===undefined||normal===undefined||elite===undefined||partial===undefined||total!==normal*3+elite*5+partial||(capped&&total>25)||(row.cap!==undefined&&row.cap!==null&&!capped))return undefined;
+  return {total,normal,elite,partial,...(capped?{cap:25}:{})};
 }
 
 export function dungeonRunMarksBreakdown(

@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const overview=read('src/components/coop/CoopRunOverview.tsx');
 const choices=read('src/components/coop/DungeonRouteChoices.tsx');
-assert(overview.includes('<DungeonRouteChoices options={run.options} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
+assert(overview.includes('<DungeonRouteChoices options={run.options} combatMarksRemaining={Math.max(0,(run.combatMarksCap??25)-(run.combatMarksEarned??0))} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
 assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
 assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');
@@ -17,6 +17,8 @@ assert(choices.includes('myVotedNodeId===option.nodeId'),'Voted-route highlight 
 assert(choices.includes('option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:')&&choices.includes('(room?st(room.description):undefined)'),'Authoritative encounter preview remains readable and falls back to the friendly room description when absent');
 assert(choices.includes('size="node"')&&choices.includes("minHeight:62")&&choices.includes("numberOfLines={1}"),'Room cards use small icons, a single-line preview and one-tap targets');
 assert(choices.includes("gap:6")&&choices.includes("paddingVertical:7"),'Room choices have reduced row spacing without shrinking the tap target below 48px');
+assert(choices.includes('roomMarks>0'),'The combat-Mark cap remains visible on a room after it is reached');
+assert(choices.includes('combatMarksRemaining=25'),'Legacy room selections can show uncapped room rewards');
 assert(!choices.includes('<GameButton'),'No duplicate Choose/Vote button is rendered under each room');
 const model=read('src/core/coop-qmode.ts');
 const contract=read('src/core/coop-presentation.ts');
@@ -32,7 +34,7 @@ assert(overview.includes("run.lastCombat?.nodeId!==run.selectedNodeId")&&overvie
 const stage=read('src/components/coop/DungeonCombatStage.tsx');
 assert(overview.includes('anticipation={enteringCombat||awaitingCombatPlayback}'),'The existing battle arena mounts immediately on a combat tap or an authoritative Q-Mode pending battle');
 assert(!overview.includes('<View style={s.battlePrelude}'),'The old static Entering battle panel must never replace the arena');
-assert(stage.includes('anticipation=false')&&stage.includes('const pending=run.pendingCombat,replay=anticipation?undefined:pending?'),'Anticipation does not use previous or unreleased combat data');
+assert(stage.includes('anticipation=false')&&stage.includes('const pending=run.pendingCombat,fastReplayAvailable=vipPlus&&!pending&&!anticipation')&&stage.includes('replay=anticipation?undefined:pending?'),'Anticipation does not use previous or unreleased combat data');
 assert(stage.includes('replay=anticipation?undefined:pending?'),'The previous room replay cannot be played during a new battle');
 assert(stage.includes('setInterval(()=>setAnticipationTick(tick=>tick+1),700)'),'A bounded visual-only attack loop begins on entering the arena');
 assert(stage.includes('anticipation-party:')&&stage.includes('anticipation-enemy:'),'Both party and enemy use existing animated attack artwork');

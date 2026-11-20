@@ -45,7 +45,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
 
   for(const node of [...GATHERING,...HERB_NODES]){
     if(node.itemId!==itemId)continue;
-    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${WORLD_ZONES.find(zone=>zone.id===node.zoneId)?.name??title(node.zoneId)}${sourceArea(node.zoneId,node.areaId)?' › '+sourceArea(node.zoneId,node.areaId):''}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,areaId:node.areaId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
+    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${WORLD_ZONES.find(zone=>zone.id===node.zoneId)?.name??title(node.zoneId)}${sourceArea(node.zoneId,node.areaId)?' › '+sourceArea(node.zoneId,node.areaId):''}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,areaId:node.areaId,sourceItemId:itemId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
   }
   for(const recipe of RECIPES){
     if(recipe.output.itemId!==itemId)continue;
@@ -55,7 +55,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     for(const drop of monster.drops){
       if(drop.itemId!==itemId)continue;
       const regionId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;
-      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone}${regionId&&sourceArea(regionId,monster.areaId)?' › '+sourceArea(regionId,monster.areaId):''} · Lv ${monster.level} · ${pct(drop.chance)} drop`,navigation:{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId,areaId:monster.areaId,button:'Open hunt',detail:`Open ${monster.name} in ${monster.zone}.`}});
+      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone}${regionId&&sourceArea(regionId,monster.areaId)?' › '+sourceArea(regionId,monster.areaId):''} · Lv ${monster.level} · ${pct(drop.chance)} drop`,navigation:{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId,areaId:monster.areaId,sourceItemId:itemId,button:'Open hunt',detail:`Open ${monster.name} in ${monster.zone}.`}});
     }
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});

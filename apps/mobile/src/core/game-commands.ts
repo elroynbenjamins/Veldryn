@@ -75,7 +75,7 @@ export function validateGameCommand(value:unknown):GameCommand{
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
  // Reject invalid quantities before settling the existing activity or reserving resources.
  const countKey=row.type==='faith_practice'?'count':row.type==='alchemy_start'||row.type==='processing_start'?'batches':row.type==='craft'?'quantity':undefined;
- if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined)integer(args as Record<string,unknown>,countKey,1,row.type==='craft'?999:10000);
+ if(countKey&&(args as Record<string,unknown>)[countKey]!==undefined)integer(args as Record<string,unknown>,countKey,1,row.type==='faith_practice'?1:row.type==='craft'?999:10000);
  if(row.type==='create'||row.type==='roster_create'||row.type==='qa_prepare'||row.type==='qa_switch_class'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
@@ -321,7 +321,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
     // Each iteration rechecks materials, gold, available forge slots and output storage.
     for(let batch=0;batch<count;batch++){
      if(timed){state=startEquipmentCraft(state,id,now).state;}
-     else state=game.craftRecipe(state,id,now+batch);
+     else state=game.craftRecipe(state,id,now,batch);
     }
     if(timed)message=count+' equipment '+(count===1?'craft':'crafts')+' added to the forge';
     else contributions.push({kind:'crafting',contentId:id,units:count});

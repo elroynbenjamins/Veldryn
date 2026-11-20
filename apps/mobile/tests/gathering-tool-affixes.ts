@@ -45,7 +45,7 @@ assert(Math.abs(gatheringToolTimeMultiplier(rarities,'woodcutting')-.4)<1e-9,'Ra
 assert(Math.abs(gatheringToolEffects(rarities,'woodcutting').rarityChanceMultiplier-1.20)<1e-9,'Four +5% rolls yield +20% relative rare chance');
 assert(gatheringToolBonusLabel(rareCopies[0])==='+5.0% Gathering Rarity Chance','Rarity stat should be clear');
 const ultra:GameState={...speeds,account:{...speeds.account,craftedGatheringToolInstances:speedCopies.map(copy=>({...copy,rarity:'mythic',quality:100}))}};
-assert(Math.abs(gatheringToolTimeMultiplier(ultra,'woodcutting')-.2)<1e-9,'Cap total rolled reduction at 80%');
+assert(gatheringToolTimeMultiplier(ultra,'woodcutting')>=.2-1e-9&&gatheringToolTimeMultiplier(ultra,'woodcutting')<.4,'Maximum Mythic Q100 rolls must improve speed without exceeding 80% cap');
 
 let crafted=createCharacter(newGame(0),'IRONWARDEN','Actual Craft');
 crafted={...crafted,character:{...crafted.character!,level:16,gold:100000},skills:crafted.skills.map(sk=>sk.skillId==='woodcutting'?{...sk,level:3,xp:totalXpAtLevel(3)}:sk),

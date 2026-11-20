@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {accountDuration} from '../i18n/account';
 import {recentScreenText} from '../i18n/recent-screens';
 import {useHapticsPreference} from '../storage/haptics';
-import {playSound,useAudioPreferences} from '../storage/audio';
+import {MusicSettingsPanel} from '../components/MusicSettingsPanel';
 import {defaultVisibleWorldChatIndex} from '../core/world-chat-visibility';
 import {CHAT_TRANSLATION_RELEASED} from '../core/release-flags';
 import {chatTranslationPrivacy} from '../i18n/chat-translation-privacy';
@@ -53,7 +53,7 @@ type Props={
   onOpenCoopUiGallery?:()=>void;
 };
 // Legacy section IDs remain accepted for existing navigation context; Store is now a separate Account destination.
-export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
+export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'sound'|'account'|'store'|'data'|'guide'|'developer';
 const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value==='store'?'account':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const guideReadPreferences=createGameGuideReadPreferenceStore(AsyncStorage);
@@ -65,7 +65,6 @@ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,onUiThemeChange,uiThemeId,online=false}:Props){
  const language=state.settings.language;
  const [hapticsOn,setHapticsOn]=useHapticsPreference();
- const [audio,setAudio]=useAudioPreferences();
  const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
@@ -100,9 +99,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['account','gameplay','chat','display','data'];
-  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
+  const sections:SettingsSection[]=['account','gameplay','chat','display','sound','data'];
+  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):value==='sound'?a('Sound'):a(value.charAt(0).toUpperCase()+value.slice(1));
+  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='sound'?a('Choose a theme or mute individual areas.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
   const scrollRef=useRef<ScrollViewInstance>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined),emotesOffset=useRef<number|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const scrollToEmotes=()=>{if(!focusChatEmotes||emotesOffset.current===undefined)return;
@@ -162,6 +161,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       </Pressable>
       {showEmotes?<View style={s.detailStack}><ChatEmotePicker settingsMode initiallyOpen={focusChatEmotes} unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/></View>:null}
     </Panel></View></>}
+    {section==='sound'&&<MusicSettingsPanel language={language}/>}
     {section==='display'&&<>
     <Panel>
       <Text style={[s.settingLabel,{color:theme.text,marginTop:0}]}>{a("Number display")}</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?a("Abbreviated · 1.2K"):a("Exact · 1,200")} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
@@ -172,12 +172,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <SettingToggle language={language} label={a("Haptic feedback")} description={a("Vibrate on big combat moments, such as boss specials and finishing blows.")} value={hapticsOn} onValueChange={setHapticsOn}/>
     </Panel>
     <Panel>
-      <Text style={[s.title,{color:theme.text}]}>{a("Sound")}</Text>
-      <Text style={[s.muted,{color:theme.muted}]}>{a("Sound plays only while Veldryn is open and follows your device's silent mode.")}</Text>
-      {(['music','effects'] as const).map(channel=><View key={channel}>
-        <Text style={[s.settingLabel,{color:theme.text}]}>{channel==='music'?a("Music"):a("Sound effects")}</Text>
-        <View style={s.choices}>{([0,1,2,3] as const).map(level=><SettingChip key={level} label={level===0?a("Off"):level===1?a("Low"):level===2?a("Medium"):a("High")} selected={audio[channel]===level} onPress={()=>{setAudio({...audio,[channel]:level});if(channel==='effects'&&level>0)playSound('ui_confirm');}}/>)}</View>
-      </View>)}
+      <Text style={[s.title,{color:theme.text}]}>{a('Sound')}</Text>
+      <Text style={[s.muted,{color:theme.muted}]}>{a('Choose a theme or mute individual areas.')}</Text>
+      <GameButton compact title={a('Music & Audio')} tone="secondary" onPress={()=>setSection('sound')}/>
     </Panel>
     <Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.language')}</Text>

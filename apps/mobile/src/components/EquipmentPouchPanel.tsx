@@ -65,14 +65,11 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
   return [...amounts].map(([itemId,quantity])=>({itemId,quantity}));
  };
- const salvageMaterials=(rows:typeof salvageCandidates)=>salvageRewards(rows)
-  .map(row=>`${row.quantity.toLocaleString(language)}× ${localizedItemName(language,row.itemId)}`).join(' · ');
  const disposalItems=(rows:readonly {itemId:string;index:number}[])=>rows.map(row=>{
   const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
   return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
  });
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
- const previewRecord=previewStack?.instanceId?copyById.get(previewStack.instanceId):undefined;
  const previewSale=previewStack?.instanceId?saleCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const previewSalvage=previewStack?.instanceId?salvageCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const candidateReason=(row:{index:number;reason?:string})=>{
@@ -299,7 +296,5 @@ function styles(C:ThemeColors){return StyleSheet.create({
  modal:{maxHeight:'90%'},details:{gap:spacing.md,paddingBottom:spacing.md},
  detailFooter:{gap:spacing.xs},detailActions:{gap:spacing.sm},
  transferRow:{flexDirection:'row',gap:spacing.sm},transferAction:{flex:1,minWidth:0},
- hero:{flexDirection:'row',gap:spacing.md,alignItems:'center'},
- art:{width:88,height:88,borderRadius:12,borderWidth:1,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
- itemName:{...typography.bodyStrong,color:C.text},actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  });}

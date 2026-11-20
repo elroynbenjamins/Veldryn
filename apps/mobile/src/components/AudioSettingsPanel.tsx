@@ -6,7 +6,7 @@ import type {AudioLevel,AudioPreferences} from '../core/audio-preferences';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-type Channel=keyof AudioPreferences;
+type Channel='music'|'effects';
 const CHANNELS:readonly Channel[]=['music','effects'];
 const LEVELS:readonly AudioLevel[]=[0,1,2,3];
 

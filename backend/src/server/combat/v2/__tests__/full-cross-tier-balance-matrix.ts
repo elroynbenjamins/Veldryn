@@ -45,6 +45,8 @@ const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
  tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
 const bossByRegion={asterfall:'BOSS_EXP_ROOT',sunscar:'BOSS_EXP_SOLAR',
  frostmarch:'BOSS_EXP_BELLBEAST'} as const;
+const bossNameByRegion={asterfall:'Rootbound Heart',sunscar:'The Buried Heliarch',
+ frostmarch:'The Bellbeast of Shiverlake'} as const;
 const roleCounts={tank:0,damage:0,support:0};
 const resultRows:{
  classId:string;spec:string;role:string;tier:GearTier;
@@ -125,7 +127,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      const isBoss=kind==='boss';
      const enemyId=isBoss?bossByRegion[locale]:'QA_ENEMY_'+kind;
      const enemy:CombatantDefinition={
-      id:enemyId,name:'Synthetic '+kind,team:'enemies',role:'enemy',
+      id:enemyId,name:isBoss?bossNameByRegion[locale]:'Synthetic '+kind,team:'enemies',role:'enemy',
       level,stats:{
        maxHp:8000+tier*3500,attackPower:60+tier*40,healingPower:0,
        defense:90+tier*40,accuracy:700+tier*40,evasion:100+tier*10,

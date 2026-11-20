@@ -20,11 +20,11 @@ export function ForgeWeaponBonusPool({itemId}:{itemId:string}){
   return <View style={s.panel}>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:open}}
       accessibilityLabel={label('possible')+', T'+cfg.tier}
-      accessibilityHint={open?label('shared'):label('single')}
+      accessibilityHint={open?label('shared'):label(twoAtEveryRarity?'double':'single')}
       onPress={()=>setOpen(value=>!value)} style={({pressed})=>[s.trigger,pressed&&s.pressed]}>
       <View style={s.flex}>
         <Text style={s.heading}>{label('possible')}</Text>
-        <Text style={s.summary}>T{cfg.tier} · {cfg.pool.length} {label('possibleCount')} · {twoAtEveryRarity?'2':'1–2'}</Text>
+        <Text style={s.summary}>T{cfg.tier} · {cfg.pool.length} {label('possibleCount')} · {label(twoAtEveryRarity?'twoCount':'oneOrTwo')}</Text>
       </View>
       <Text accessible={false} style={s.chevron}>{open?'−':'+'}</Text>
     </Pressable>

@@ -15,7 +15,7 @@ assert.match(route,/setSelectedSkill\(destination\.skillId\);setSkillsMode\(dest
 assert.match(route,/toolRecipeReturnRef\.current=\{skillId:selectedSkill,mode:skillsMode,actionId:goalActionId,recipeId:goalRecipeId\}/,'The source gathering skill must be remembered on a tool recipe deep link');
 assert.match(app,/if\(tab==='Skills'&&toolRecipeReturnRef\.current\)\{/,'Back should restore the originating gathering skill before showing the hub');
 assert.match(app,/setSkillsMode\(source\.mode\);setSelectedSkill\(source\.skillId\);setGoalActionId\(source\.actionId\);setGoalRecipeId\(source\.recipeId\)/,'Back should restore the originating skill and any target');
-assert.match(app,/if\(destination==='Skills'&&selectedSkill\)\{setSelectedSkill\(undefined\);setGoalActionId\(undefined\);setGoalRecipeId\(undefined\);\}/,'Deliberate bottom-tab re-selection must still open Skills hub');
+assert.match(app,/if\(destination==='Skills'&&selectedSkill\)\{toolRecipeReturnRef\.current=null;setSelectedSkill\(undefined\);setGoalActionId\(undefined\);setGoalRecipeId\(undefined\);\}/,'Deliberate bottom-tab re-selection must still open Skills hub and clear the tool return route');
 assert.match(skills,/recipeId:'CRAFT_'\+tool\.id/,'Every tool Recipe button should point to the exact Smithing tool recipe');
 assert.match(skills,/onNavigateCraftingSource\?\(\)=>onNavigateCraftingSource\(recipeDestination\)/,'Tool actions use the working-toward deep link');
 assert.match(app,/onNavigateCraftingSource=\{openWorkingTowardDestination\}/,'The tool source navigation callback reaches the app router');

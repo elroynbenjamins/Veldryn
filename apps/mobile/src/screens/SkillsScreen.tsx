@@ -50,6 +50,7 @@ import {EnchantingRefineryPanel} from '../components/EnchantingRefineryPanel';
 import {skillMilestoneOverview,skillTrainingFocus} from '../core/skill-milestones';
 import {gatheringToolsFor,roundDownToolBlueprintDropChance} from '../content/gathering-tools';
 import {equippedGatheringTools,equippedGatheringToolRoll,gatheringToolEffects} from '../core/gathering-tools';
+import {gatheringToolContribution,gatheringToolPercent,gatheringToolTotalBreakdown} from '../core/gathering-tool-presentation';
 import {gatheringToolBonusLabel,validateGatheringToolRoll} from '../core/gathering-tool-rolls';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {DisclosureMark} from '../components/DisclosureControl';
@@ -125,11 +126,16 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
       const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
-      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totalToolPercent=(effects.effectiveReduction*100).toFixed(1);
+      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToolTotalBreakdown(effects),totalToolPercent=gatheringToolPercent(totals.effectivePercent);
       return <View key={sk.skillId} style={s.group}>
-        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}))} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt('No tool equipped')}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4'+(effects.rarityChanceMultiplier>1?' · +'+Math.round((effects.rarityChanceMultiplier-1)*100)+'% rare finds':''):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
+        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}))} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt('No tool equipped')}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4'+(effects.rarityChanceMultiplier>1?' · +'+Math.round((effects.rarityChanceMultiplier-1)*100)+'% rare finds':''):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{openTools[sk.skillId]&&equippedTools.length>0?<View style={s.toolTotalBreakdown}>
+            <Text style={s.toolTotalStrong}>{gt('Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%',{base:gatheringToolPercent(totals.rawTierPercent),roll:gatheringToolPercent(totals.speedRollGainPoints),total:totalToolPercent})}</Text>
+            <Text style={s.toolRequirement}>{gt('Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.')}{totals.capped?' · '+gt('Speed cap reached'):''}</Text>
+            {totals.rarityChanceRelativePercent>0?<Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
+          </View>:null}{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
           const equipped=equippedTools.some(entry=>entry.id===tool.id);
           const equippedCopy=equippedGatheringToolRoll(state,gatheringSkill,tool.tier);
+          const contribution=gatheringToolContribution(tool,equippedCopy);
           const availableCopies=state.inventory.stacks.filter(stack=>stack.itemId===tool.id&&stack.quantity>0);
           const ownedCopies=availableCopies.map(stack=>({stack,copy:stack.instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===stack.instanceId),tool.id):undefined}));
           const carried=state.inventory.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
@@ -149,11 +155,14 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
            <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
             <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
             <Text style={s.toolEffect}>{gt('Tier {tier} · {percent}% shorter action time',{tier:tool.tier,percent:Math.round((1-tool.actionTimeMultiplier)*100)})+' · '+gl(tool.skillId)+' '+tool.unlockLevel+' · '+gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
-            {equipped?<Text style={s.toolRoll}>{equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality+' · '+gatheringToolBonusLabel(equippedCopy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text>:null}
+            {equipped?<><Text style={s.toolRoll}>{equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality+' · '+gatheringToolBonusLabel(equippedCopy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text>
+             <Text style={s.toolEffect}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
+             {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
+             </>:null}
             <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
            </View></View>
            <View style={[s.toolButton,compactTools&&s.toolButtonCompact]}><GameButton title={title} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
-          {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}><Text style={s.toolRequirement}>Owned copies · select one to equip (speed +2–8% / rare finds +2–5%)</Text>{ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={s.toolCopyOption}><Text style={[s.toolRequirement,{flex:1}]} numberOfLines={2}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text><View style={{minWidth:104}}><GameButton title={equipped?'Replace':'Equip copy'} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View></View>)}</View>:null}
+          {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}><Text style={s.toolRequirement}>Owned copies · select one to equip (speed +2–8% / rare finds +2–5%)</Text>{ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={s.toolCopyOption}><Text style={[s.toolRequirement,{flex:1}]} numberOfLines={2}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':('Legacy · Uncommon · Q50 · Base bonus only · '+gatheringToolPercent(gatheringToolContribution(tool).adjustedBasePercent)+'% tier')}</Text><View style={{minWidth:104}}><GameButton title={equipped?'Replace':'Equip copy'} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View></View>)}</View>:null}
           </View>;
         })}</Panel>}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}
@@ -171,6 +180,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  toolRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  toolRowCompact:{flexDirection:'column',alignItems:'stretch',gap:8},
  toolRoll:{...typography.caption,color:C.good,fontWeight:'800'},
+ toolTotalBreakdown:{gap:4,padding:10,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:9,marginBottom:4},
+ toolTotalStrong:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1},
  toolCopies:{width:'100%',gap:6,paddingLeft:8,paddingBottom:8},
  toolCopyOption:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:2},
  toolInfo:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm},

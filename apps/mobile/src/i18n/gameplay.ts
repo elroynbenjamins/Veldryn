@@ -9,6 +9,14 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Clear tier and rolled bonus math for gathering tools (six base locales).
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%","Stufenboni {base}% · Tempo-Würfe +{roll} Prozentpunkte · Effektiv {total}%","Bonos por niveles {base}% · Tiradas de velocidad +{roll} puntos · Efectivo {total}%","Tierbonussen {base}% · Snelheidsrollen +{roll} procentpunten · Effectief {total}%","Bonus dei livelli {base}% · Tiri velocità +{roll} punti · Effettivo {total}%","Bonus des paliers {base}% · Tirages vitesse +{roll} points · Effectif {total}%"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.","Tempo-Boni verkürzen die verbleibende Aktionszeit. Die Gesamtreduktion ist auf 80% begrenzt.","Los bonos de velocidad reducen el tiempo restante. La reducción total no puede superar el 80%.","Snelheidsbonussen verkorten de resterende actietijd. De totale vermindering is maximaal 80%.","I bonus velocità riducono il tempo rimanente. La riduzione totale non supera l'80%.","Les bonus de vitesse réduisent le temps restant. La réduction totale ne dépasse pas 80%."],
+ "Speed cap reached":["Speed cap reached","Tempolimit erreicht","Límite de velocidad alcanzado","Snelheidslimiet bereikt","Limite di velocità raggiunto","Limite de vitesse atteinte"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Rare finds: +{percent}% relative chance (eligible gathering drops only)","Seltene Funde: +{percent}% relative Chance (nur geeignete Sammelbeute)","Hallazgos raros: +{percent}% de probabilidad relativa (solo recompensas de recolección válidas)","Zeldzame vondsten: +{percent}% relatieve kans (alleen geschikte verzamelvondsten)","Ritrovamenti rari: +{percent}% probabilità relativa (solo ricompense di raccolta idonee)","Trouvailles rares : +{percent}% de chance relative (récoltes éligibles uniquement)"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Tier contribution: {base}% base → {adjusted}% with rarity and quality","Stufenbeitrag: {base}% Basis → {adjusted}% mit Seltenheit und Qualität","Aporte del nivel: {base}% base → {adjusted}% con rareza y calidad","Tierbijdrage: {base}% basis → {adjusted}% met zeldzaamheid en kwaliteit","Contributo livello: {base}% base → {adjusted}% con rarità e qualità","Contribution du palier : {base}% de base → {adjusted}% avec rareté et qualité"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Rarity {rarity}% · Quality {quality}% (relative to tier base)","Seltenheit {rarity}% · Qualität {quality}% (relativ zum Stufenbonus)","Rareza {rarity}% · Calidad {quality}% (respecto a la base del nivel)","Zeldzaamheid {rarity}% · Kwaliteit {quality}% (t.o.v. de tierbasis)","Rarità {rarity}% · Qualità {quality}% (rispetto alla base del livello)","Rareté {rarity}% · Qualité {quality}% (par rapport à la base du palier)"],
+
  // Gathering tool forging: typed labels, safe placeholders and all six base locales.
  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
   "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.",
@@ -1533,6 +1541,19 @@ const gatheringToolAffixEarlyLocales={
   ],
 } as const;
 for(const [english,pair] of Object.entries(gatheringToolAffixEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Compact tool-speed breakdown, including the extra RU/TR locales.
+const gatheringSpeedBreakdownEarlyLocales={
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Бонусы уровней {base}% · Бонус скорости +{roll} п.п. · Итог {total}%","Kademe bonusları %{base} · Hız bonusu +{roll} puan · Etkili %{total}"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Бонусы скорости сокращают оставшееся время действия. Общий предел сокращения — 80%.","Hız bonusları kalan eylem süresini azaltır. Toplam azalma %80'i aşamaz."],
+ "Speed cap reached":["Достигнут предел скорости","Hız sınırına ulaşıldı"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Редкие находки: +{percent}% к относительному шансу (только подходящие ресурсы сбора)","Nadir buluntular: uygun toplama ganimetlerinde göreli şans +%{percent}"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Вклад ранга: база {base}% → {adjusted}% с учётом редкости и качества","Kademe katkısı: %{base} taban → nadirlik ve kalite ile %{adjusted}"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Редкость {rarity}% · Качество {quality}% (относительно базового бонуса)","Nadirlik %{rarity} · Kalite %{quality} (temel kademe bonusuna göre)"],
+} as const;
+for(const [english,pair] of Object.entries(gatheringSpeedBreakdownEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

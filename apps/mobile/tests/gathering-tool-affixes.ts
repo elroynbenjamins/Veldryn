@@ -2,6 +2,7 @@ import {GATHERING_TOOLS} from '../src/content/gathering-tools';
 import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
 import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier} from '../src/core/gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel} from '../src/core/gathering-tool-rolls';
+import {gatheringToolContribution,gatheringToolTotalBreakdown,gatheringToolPercent} from '../src/core/gathering-tool-presentation';
 import {totalXpAtLevel} from '../src/core/progression';
 import {bulkTransferSelected} from '../src/core/inventory-bulk';
 import {validateGameCommand} from '../src/core/game-commands';
@@ -39,6 +40,21 @@ assert(Math.abs(gatheringToolTimeMultiplier(speeds,'woodcutting')-expected)<1e-9
 assert(gatheringToolTimeMultiplier(speeds,'woodcutting')<.4,'Gathering speed must exceed original 60% reduction');
 assert(Math.abs(gatheringToolEffects(speeds,'woodcutting').rarityChanceMultiplier-1)<1e-9,'Speed rolls must never become rare finds');
 assert(gatheringToolBonusLabel(speedCopies[0])==='+8.0% Gathering Speed','Speed stat should be clear');
+const legacyContribution=gatheringToolContribution(tools[0]);
+const rolledContribution=gatheringToolContribution(tools[0],speedCopies[0]);
+assert(Math.abs(legacyContribution.basePercent-10)<1e-9&&Math.abs(legacyContribution.adjustedBasePercent-10)<1e-9&&legacyContribution.legacy,'Uncommon Q50 legacy tier has unchanged contribution');
+assert(Math.abs(rolledContribution.adjustedBasePercent-10)<1e-9&&rolledContribution.speedRollPercent===8,'Individual speed rolls are not additive tier percentage points');
+const rarityQualityContribution=gatheringToolContribution(tools[0],{...speedCopies[0],rarity:'epic',quality:87});
+assert(Math.abs(rarityQualityContribution.adjustedBasePercent-(10*1.04*1.074))<1e-9,'Tier contribution must multiply rarity and quality');
+assert(gatheringToolPercent(rarityQualityContribution.adjustedBasePercent)==='11.2','Rounded adjusted tier contribution should be readable');
+const totals=gatheringToolTotalBreakdown(gatheringToolEffects(speeds,'woodcutting'));
+assert(Math.abs(totals.rawTierPercent-60)<1e-9,'Displayed combined tier bonuses must preserve real additive baseline');
+assert(Math.abs(totals.effectivePercent-(1-expected)*100)<1e-9,'Displayed combined speed must match gameplay multiplier');
+assert(Math.abs(totals.speedRollGainPoints-(totals.effectivePercent-60))<1e-9,'Displayed roll gain must be percentage-point difference, not raw 32%');
+assert(!totals.capped,'Default 4 speed rolls do not hit 80% cap');
+const cappedTotals=gatheringToolTotalBreakdown({...gatheringToolEffects(speeds,'woodcutting'),baseReduction:.90,effectiveReduction:.80});
+assert(cappedTotals.capped&&cappedTotals.effectivePercent===80&&cappedTotals.speedRollGainPoints===0,'At cap do not show invented extra speed gains');
+
 
 const rareCopies:CraftedGatheringTool[]=speedCopies.map(copy=>({...copy,bonus:{stat:'rarity' as const,basisPoints:500}}));
 const rarities:GameState={...speeds,account:{...speeds.account,craftedGatheringToolInstances:rareCopies}};

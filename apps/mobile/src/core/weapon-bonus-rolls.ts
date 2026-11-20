@@ -19,11 +19,24 @@ const LEGACY_ROLE_POOL:Readonly<Record<'Tank'|'Damage'|'Support',readonly Weapon
   Damage:['critRate','haste','penetration','accuracy'],
   Support:['potency','haste','ward','maxHp'],
 };
-/** Every eligible new weapon shares this pool, regardless of its class or role.
+/** Every new T1–T9 forged weapon shares this pool, regardless of its class or role.
  * Ward and Penetration are legacy-only until the 2.0 combat rework. */
-export const WEAPON_BONUS_CURRENT_POOL:readonly WeaponBonusStat[]=[
+export const WEAPON_BONUS_CURRENT_POOL=[
   'maxHp','armor','tenacity','critRate','haste','accuracy','potency',
-];
+] as const satisfies readonly WeaponBonusStat[];
+
+/** New T1/T2 weapons have deliberately smaller bonuses. Earlier roll versions
+ * did not create affixes on these tiers; do not change their legacy semantics. */
+export const EARLY_WEAPON_BONUS_BPS:Readonly<Record<1|2,Readonly<Record<typeof WEAPON_BONUS_CURRENT_POOL[number],readonly [number,number]>>>>={
+  1:{
+    maxHp:[80,180],armor:[40,100],tenacity:[70,160],
+    critRate:[20,50],haste:[20,60],accuracy:[20,50],potency:[40,110],
+  },
+  2:{
+    maxHp:[120,250],armor:[70,170],tenacity:[120,260],
+    critRate:[30,90],haste:[40,110],accuracy:[30,90],potency:[80,200],
+  },
+};
 /** Stat-sensitive ranges in basis points, grouped by weapon tier.
  * HP and Tenacity have wider budgets than combat tempo/crit/avoidance stats. */
 type WeaponTierBand=3|5|7|9;
@@ -54,6 +67,11 @@ const V1_RANGE_BY_BAND:Readonly<Record<WeaponTierBand,readonly [number,number]>>
 export function weaponBonusRange(
   tier:number,stat:WeaponBonusStat,version:WeaponBonusRollVersion=WEAPON_BONUS_ROLL_VERSION,
 ):readonly [number,number]|undefined{
+  if(tier===1||tier===2){
+    // v1/v2 never rolled T1/T2, and Ward/Penetration are not live v3 bonuses.
+    return version===3&&WEAPON_BONUS_CURRENT_POOL.includes(stat as typeof WEAPON_BONUS_CURRENT_POOL[number])
+      ?EARLY_WEAPON_BONUS_BPS[tier][stat as typeof WEAPON_BONUS_CURRENT_POOL[number]]:undefined;
+  }
   const band:WeaponTierBand|undefined=tier===9?9:tier>=7&&tier<=8?7:tier>=5&&tier<=6?5:tier>=3&&tier<=4?3:undefined;
   if(band===undefined)return undefined;
   return version===1?V1_RANGE_BY_BAND[band]:version===2||version===3?WEAPON_BONUS_BPS_BY_BAND[band][stat]:undefined;
@@ -67,7 +85,7 @@ export function weaponBonusConfig(itemId:string,rarity:ItemRarity,version:Weapon
   try{item=itemDef(itemId);}catch{return undefined;}
   const tier=Number(/^T([1-9])_/.exec(item.equipmentSetId??'')?.[1]??0);
   const role=CLASSES.find(c=>c.id===item.classRestriction)?.role;
-  if(item.type!=='gear'||item.slot!=='weapon'||tier<3||tier>9||(version!==3&&!role))return undefined;
+  if(item.type!=='gear'||item.slot!=='weapon'||tier<(version===3?1:3)||tier>9||(version!==3&&!role))return undefined;
   const count=tier>=5||HIGH_RARITIES.includes(rarity)?2:1;
   return {tier,role,count,pool:version===3?WEAPON_BONUS_CURRENT_POOL:LEGACY_ROLE_POOL[role!]};
 }

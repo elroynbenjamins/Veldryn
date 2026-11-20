@@ -136,7 +136,9 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.sectionTitle}>{gt('BONUS STATS')}</Text>
      <Text style={s.rollLegend}>{weaponBonusUiText(language,'current')} → {weaponBonusUiText(language,'candidate')}</Text>
     </View>
-    {weaponChanges.map(change=><View key={change.stat} style={[s.rollCompareRow,compactBonusRows&&s.rollCompareRowStack]}>
+    {weaponChanges.map(change=><View key={change.stat} accessible
+      accessibilityLabel={weaponBonusStatText(language,change.stat)+': '+weaponBonusUiText(language,'current')+' '+weaponBonusDisplayPercent(change.beforeBps)+', '+weaponBonusUiText(language,'candidate')+' '+weaponBonusDisplayPercent(change.afterBps)+', '+weaponBonusDisplayDelta(change.deltaBps)}
+      style={[s.rollCompareRow,compactBonusRows&&s.rollCompareRowStack]}>
       <Text numberOfLines={2} style={s.rollStatName}>{weaponBonusStatText(language,change.stat)}</Text>
       <View style={s.rollNumbers}>
        <Text style={s.rollBefore}>{weaponBonusDisplayPercent(change.beforeBps)}</Text>

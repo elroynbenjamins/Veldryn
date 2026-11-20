@@ -28,10 +28,12 @@ test('799 is locked and 800 unlocks the third character',()=>{
  const locked=atAccountLevel(second(),799,thirdSlotLevels);
  equal(accountSkillLevel(locked),799,'sum before third slot boundary');
  equal(unlockedCharacterSlots(locked),2,'799 must not unlock third slot');
+ equal(characterCreationError(locked)?.includes('800'),true,'UI reports the 800 requirement');
  throws(()=>createAccountCharacter(locked,'HEXWEAVER','Alia','male',1000),'799 denied');
  const ready=atAccountLevel(second(),800,thirdSlotLevels);
  equal(accountSkillLevel(ready),800,'third slot boundary exact');
  equal(unlockedCharacterSlots(ready),3,'800 unlocks third slot');
+ equal(characterCreationError(ready),undefined,'ready character can be recruited');
  equal(accountCharacters(createAccountCharacter(ready,'HEXWEAVER','Alia','male',1000)).length,3,'third created');
 });
 test('1050 account skills do not create a fourth character after three distinct roles',()=>{let state=createAccountCharacter(atAccountLevel(second(),800,thirdSlotLevels),'HEXWEAVER','Alia','male',1000);state=skillLevels(state,[100,100,100,100,100]);equal(unlockedCharacterSlots(state),3,'three slot cap');equal(occupiedCharacterRoles(state),['Tank','Damage','Support'],'all roles filled');throws(()=>createAccountCharacter(state,'RAVAGER','Fourth','female',1000),'fourth denied');});

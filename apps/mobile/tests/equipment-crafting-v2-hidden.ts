@@ -7,6 +7,7 @@ import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../sr
 import {itemDef,ITEMS} from '../src/content/items';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
+import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -412,8 +413,10 @@ const projectionBefore=JSON.stringify(liveProjectionFixture);
 const projectionInput={state:liveProjectionFixture,accountId:'account-v2-test',
  onlineVersion:17,onlineCharacterId:liveProjectionFixture.character!.id,authoritativeWalletGold:22222};
 const safeProjection=equipmentV2AuthoritativeReadiness(projectionInput);
-check(safeProjection.projection?.forgeSlotCapacity===3,
- 'Hidden projection inherits live base Forge slots, not a second queue constant');
+const liveForgeSlots=equipmentCraftSlotBreakdown(liveProjectionFixture);
+check(liveForgeSlots.base===3&&
+ safeProjection.projection?.forgeSlotCapacity===liveForgeSlots.capacity,
+ 'Hidden projection must inherit all earned live Forge slots, not hardcode base capacity');
 check(!safeProjection.blocked&&safeProjection.projection?.version===17,
  'Read-only gameplay projection must retain authenticated online version');
 check(safeProjection.projection?.characters[liveProjectionFixture.character!.id]?.gold===22222,

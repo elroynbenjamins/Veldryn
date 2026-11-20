@@ -11,6 +11,11 @@ export const equipmentPouchUiRows={
   "Store {count} in Gear": ["{count} in Ausrüstung lagern","Guardar {count} en equipo","{count} bij uitrusting opbergen","Riponi {count} nell'equipaggiamento","Ranger {count} dans l'équipement","Убрать {count} в снаряжение","{count} eşyayı ekipmana koy"],
   "Gear storage full": ["Ausrüstungslager voll","Almacén de equipo lleno","Uitrustingsopslag vol","Deposito equipaggiamento pieno","Stockage d'équipement plein","Хранилище снаряжения заполнено","Ekipman deposu dolu"],
   "Not enough Gear slots": ["Zu wenige Ausrüstungsplätze","No hay suficientes espacios de equipo","Niet genoeg uitrustingsvakken","Spazi equipaggiamento insufficienti","Pas assez d'emplacements d'équipement","Недостаточно ячеек снаряжения","Yeterli ekipman yuvası yok"],
+  "Compare & Equip": ["Vergleichen & ausrüsten","Comparar y equipar","Vergelijken & uitrusten","Confronta ed equipaggia","Comparer et équiper","Сравнить и экипировать","Karşılaştır ve kuşan"],
+  "To Inventory": ["Zum Inventar","Al inventario","Naar inventaris","Nell'inventario","Vers l'inventaire","В инвентарь","Envantere"],
+  "To Bank": ["Zur Bank","Al banco","Naar bank","Alla banca","Vers la banque","В банк","Bankaya"],
+  "Sell copy": ["Exemplar verkaufen","Vender ejemplar","Exemplaar verkopen","Vendi copia","Vendre l'exemplaire","Продать экземпляр","Kopyayı sat"],
+  "Salvage copy": ["Exemplar zerlegen","Desguazar ejemplar","Exemplaar ontmantelen","Smonta copia","Recycler l'exemplaire","Разобрать экземпляр","Kopyayı sök"],
 
   "Estimated sale · {gold} Gold": ["Voraussichtlicher Verkauf · {gold} Gold","Venta estimada · {gold} de oro","Verwachte verkoop · {gold} goud","Vendita prevista · {gold} oro","Vente estimée · {gold} or","Ожидаемая продажа · {gold} золота","Tahmini satış · {gold} altın"],
   "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],

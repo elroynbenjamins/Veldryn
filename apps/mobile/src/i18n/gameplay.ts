@@ -10,6 +10,7 @@ import {useMemo} from 'react';
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
  // Shared forge bonus UX, including existing stat names.
+ "Bonus stat changes":["Bonus stat changes","Änderungen der Bonuswerte","Cambios en los bonus","Verschillen in bonusstats","Variazioni delle statistiche bonus","Variations des bonus"],
  "Random bonus stats":["Random bonus stats","Zufällige Bonuswerte","Estadísticas adicionales aleatorias","Willekeurige bonusstats","Statistiche bonus casuali","Statistiques bonus aléatoires"],
  "Possible bonus stats":["Possible bonus stats","Mögliche Bonuswerte","Posibles estadísticas adicionales","Mogelijke bonusstats","Statistiche bonus possibili","Bonus possibles"],
  "View possible rolls":["View possible rolls","Mögliche Würfe anzeigen","Ver posibles resultados","Bekijk mogelijke bonussen","Mostra i bonus possibili","Voir les bonus possibles"],

@@ -1554,7 +1554,7 @@ export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,no
   if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
   return {...settled,inventory:{...settled.inventory,stacks:added.stacks},character:{...settled.character!,equippedToolIds}};
 }
-export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
+export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),sequence=0):GameState{
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
@@ -1599,7 +1599,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   }
   const xp=Math.min(totalXpAtLevel(100),sk.xp+boosted.xp);
   const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},account:{...boostedState.account,unlockedKnowledgeIds},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
+  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}${sequence?`:${sequence}`:""}`}).state;
   return outputDef.type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }
 

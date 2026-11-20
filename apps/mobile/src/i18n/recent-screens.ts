@@ -7,6 +7,7 @@ import {accountText} from './account';
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
   // One-page audio customization (DE, ES, NL, IT, FR, RU, TR).
+  "Preview theme": ["Thema anhören","Escuchar tema","Muziek beluisteren","Ascolta il tema","Écouter le thème","Прослушать тему","Temayı Dinle"],
   "Music & Audio": ["Musik & Audio","Música y audio","Muziek & audio","Musica e audio","Musique et audio","Музыка и звук","Müzik ve Ses"],
   "Choose a theme or mute individual areas.": ["Wähle ein Musikthema oder schalte einzelne Bereiche stumm.","Elige un tema o silencia zonas individuales.","Kies een muziekthema of demp afzonderlijke onderdelen.","Scegli un brano o disattiva la musica in singole aree.","Choisissez un thème ou coupez le son de certaines zones.","Выберите тему или отключите музыку в отдельных областях.","Bir tema seçin veya belirli alanların müziğini kapatın."],
   "Regions": ["Regionen","Regiones","Regio's","Regioni","Régions","Регионы","Bölgeler"],

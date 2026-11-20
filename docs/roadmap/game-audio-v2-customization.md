@@ -6,7 +6,7 @@ Date: 20 November 2026. Status: proposed PR, not merged into main.
 - Settings > Sound opens one vertically scrollable panel containing both global volume levels and all seven contexts.
 - Groups are Regions (Town & Menus, Asterfall, Sunscar, Frostmarch) and Activities (Dungeons & Co-op, Boss Battles, World Boss).
 - Each context has an independent accessible on/off switch and a compact inline music picker.
-- The picker expands within the same page, showing Default theme or any of the existing seven packaged tracks; only one picker expands at a time.
+- The picker expands within the same page, showing Default theme or any of the existing seven packaged tracks; only one picker expands at a time. Each choice has a short Play preview control. Preview automatically ends after eight seconds or when leaving Sound.
 - Globally turning Music Off mutes all contexts but retains per-area preferences; Sound Effects remain independent.
 - Reset area defaults does not change master volumes. Settings stay device-local.
 

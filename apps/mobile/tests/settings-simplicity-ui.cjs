@@ -49,4 +49,5 @@ assert(soundPanel.includes('REGIONS.map(regionRow)')&&soundPanel.includes('ACTIV
 assert(soundPanel.includes('accessibilityRole="switch"')&&soundPanel.includes('accessibilityState={{expanded:open}}'),'Area toggles and inline pickers are accessible');
 assert(!soundPanel.includes('<ScrollView')&&!soundPanel.includes('setTab('),'Sound uses the existing scrollable Settings page, without nested tabs');
 assert(soundPanel.includes("musicContexts:{}}"),'Area reset preserves the independent master volume levels');
+assert(soundPanel.includes("playMusicPreview(track??id)")&&soundPanel.includes("stopMusicPreview()"),'Inline track preview plays the selected theme and restores the scene');
 console.log('PASS six Settings categories, scrollable audio customization, Account Store route, Display and safe flows');

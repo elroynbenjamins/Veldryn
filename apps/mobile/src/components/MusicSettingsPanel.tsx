@@ -1,9 +1,9 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {Language} from '../i18n/languages';
 import {recentScreenText} from '../i18n/recent-screens';
 import {musicContextPreference,MUSIC_CONTEXTS,type MusicContextId,type AudioPreferences,type AudioLevel} from '../core/audio-preferences';
-import {playSound,useAudioPreferences} from '../storage/audio';
+import {playSound,playMusicPreview,stopMusicPreview,useAudioPreferences} from '../storage/audio';
 import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import {typography,type ThemeColors} from '../theme/theme';
@@ -21,6 +21,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
  const a=(value:string,params?:Record<string,string|number>)=>recentScreenText(language,value,params);
  const [audio,setAudio]=useAudioPreferences();
  const [expanded,setExpanded]=useState<MusicContextId|null>(null);
+ useEffect(()=>()=>stopMusicPreview(),[]);
  const chooseLevel=(channel:'music'|'effects',level:AudioLevel)=>{
   setAudio({...audio,[channel]:level});
   if(channel==='effects'&&level>0)playSound('ui_confirm');
@@ -29,6 +30,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
   const current=musicContextPreference(audio,id);
   const musicContexts:AudioPreferences['musicContexts']={...audio.musicContexts,[id]:{...current,...part}};
   setAudio({...audio,musicContexts});
+  if(part.track!==undefined)stopMusicPreview();
  };
  const regionRow=(id:MusicContextId)=>{
   const choice=musicContextPreference(audio,id),open=expanded===id;
@@ -57,11 +59,18 @@ export function MusicSettingsPanel({language}:{language:Language}){
     {([null,...MUSIC_CONTEXTS] as (MusicContextId|null)[]).map(track=>{
      const selected=choice.track===track;
      const text=track?a(LABELS[track]):a('Default theme');
-     return <Pressable key={track??'default'} accessibilityRole="button" accessibilityState={{selected}}
-       accessibilityLabel={text} onPress={()=>{chooseContext(id,{track});setExpanded(null);}}
-       style={({pressed})=>[s.option,selected&&s.optionSelected,pressed&&s.pressed]}>
-       <Text numberOfLines={2} style={[s.optionText,selected&&s.selectedText]}>{selected?'✓ ':''}{text}</Text>
-     </Pressable>;
+     return <View key={track??'default'} style={[s.option,selected&&s.optionSelected]}>
+       <Pressable accessibilityRole="button" accessibilityState={{selected}} accessibilityLabel={text}
+         onPress={()=>{chooseContext(id,{track});setExpanded(null);}}
+         style={({pressed})=>[s.optionPick,pressed&&s.pressed]}>
+        <Text numberOfLines={2} style={[s.optionText,selected&&s.selectedText]}>{selected?'✓ ':''}{text}</Text>
+       </Pressable>
+       <Pressable accessibilityRole="button" accessibilityLabel={a('Preview theme')+': '+text}
+         disabled={audio.music===0} onPress={()=>playMusicPreview(track??id)}
+         style={({pressed})=>[s.previewButton,audio.music===0&&s.disabled,pressed&&s.pressed]}>
+        <Text style={s.previewText}>▶</Text>
+       </Pressable>
+     </View>;
     })}
    </View>:null}
   </View>;
@@ -118,9 +127,13 @@ function styles(C:ThemeColors){return StyleSheet.create({
  dimText:{color:C.muted},
  chevron:{fontSize:17,color:C.muted},
  choices:{flexDirection:'row',flexWrap:'wrap',gap:6,paddingVertical:2},
- option:{flexBasis:'47%' as const,flexGrow:1,minWidth:0,minHeight:44,justifyContent:'center',borderWidth:1,borderRadius:8,borderColor:C.line,paddingHorizontal:10,backgroundColor:C.panel2},
+ option:{flexBasis:'47%' as const,flexGrow:1,minWidth:0,minHeight:48,flexDirection:'row',alignItems:'center',borderWidth:1,borderRadius:8,borderColor:C.line,backgroundColor:C.panel2},
  optionSelected:{backgroundColor:C.selection,borderColor:C.selectionLine},
+ optionPick:{flex:1,minWidth:0,minHeight:46,justifyContent:'center',paddingLeft:8,paddingRight:2},
  optionText:{...typography.caption,color:C.muted,fontWeight:'700'},
+ previewButton:{width:38,minHeight:46,alignItems:'center',justifyContent:'center',borderLeftWidth:StyleSheet.hairlineWidth,borderLeftColor:C.line},
+ previewText:{...typography.caption,color:C.info,fontWeight:'800'},
+ disabled:{opacity:.4},
  reset:{minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:9,marginTop:12},
  resetText:{...typography.caption,color:C.text,fontWeight:'700'},
  pressed:{opacity:.75},

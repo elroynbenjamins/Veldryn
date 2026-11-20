@@ -53,7 +53,7 @@ export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
  // Resolve current *context* again; the user may have muted or remapped it.
  resolveTrack();
  applyMusicVolume();
- if(prefs.music===0)stopMusicPlayer();
+ if(prefs.music===0){stopMusicPreview();stopMusicPlayer();}
  const serialized=JSON.stringify(prefs);
  // Preserve the most recent choice even when the player taps several controls quickly.
  saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.setItem(KEY,serialized)).then(()=>{},()=>{});
@@ -139,9 +139,24 @@ function applyTrack(track:MusicTrackId|null):void{
 // Screens push a temporary track (a boss fight over the region theme) and pop it on exit.
 let baseTrack:MusicTrackId|null=null,nextOverrideId=1;
 const overrides:{id:number;track:MusicTrackId}[]=[];
+let previewTrack:MusicTrackId|null=null,previewTimer:ReturnType<typeof setTimeout>|undefined;
 function resolveTrack(){
  const context=overrides.length?overrides[overrides.length-1].track:baseTrack;
- applyTrack(resolvePreferredMusicTrack(context,prefs));
+ applyTrack(previewTrack??resolvePreferredMusicTrack(context,prefs));
+}
+/** Audition any packaged theme for a few seconds, regardless of the area's mute state. */
+export function playMusicPreview(track:MusicTrackId):void{
+ if(!loaded||prefs.music===0||!isForeground())return;
+ if(previewTimer)clearTimeout(previewTimer);
+ const sameTrack=playingTrack===track&&musicPlayer!==null;
+ previewTrack=track;resolveTrack();
+ if(sameTrack&&musicPlayer)try{void Promise.resolve(musicPlayer.seekTo(0)).catch(()=>{});}catch{/* ignore */}
+ previewTimer=setTimeout(()=>{previewTimer=undefined;previewTrack=null;resolveTrack();},8000);
+}
+/** Returning to other Settings sections must restore the correct scene immediately. */
+export function stopMusicPreview():void{
+ if(previewTimer){clearTimeout(previewTimer);previewTimer=undefined;}
+ if(previewTrack!==null){previewTrack=null;resolveTrack();}
 }
 /** The app's background music for the current place (region theme, town). */
 export function setBaseMusic(track:MusicTrackId|null):void{baseTrack=track;resolveTrack();}

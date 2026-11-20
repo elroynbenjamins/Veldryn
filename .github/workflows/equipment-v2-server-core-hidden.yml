@@ -5,6 +5,7 @@ on:
       - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
       - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
       - 'backend/tsconfig.equipment-v2-core.json'
+      - 'tools/validate-eq2-server-boundary.mjs'
       - '.github/workflows/equipment-v2-server-core-hidden.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +26,8 @@ jobs:
           cache-dependency-path: backend/pnpm-lock.yaml
       - name: Install backend dependencies
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Reject mobile imports in isolated EQ2 server authority
+        run: node tools/validate-eq2-server-boundary.mjs
       - name: Typecheck server-only canonical EQ2 core (strict)
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-v2-core.json
       - name: Test canonical rolls, exact copies, custody and transactional receipts

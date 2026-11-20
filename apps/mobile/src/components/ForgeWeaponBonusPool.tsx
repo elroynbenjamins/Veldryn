@@ -1,5 +1,5 @@
 import {useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {weaponBonusConfig,weaponBonusRange,WEAPON_BONUS_CURRENT_POOL} from '../core/weapon-bonus-rolls';
 import {weaponBonusStatText,weaponBonusUiText} from '../i18n/weapon-bonus-ux';
 import {useGameplayText} from '../i18n/gameplay';
@@ -12,6 +12,8 @@ const format=(bps:number)=>'+'+(bps/100).toFixed(1)+'%';
  * roll config. It does not imply that all equipment slots have weapon affixes. */
 export function ForgeWeaponBonusPool({itemId}:{itemId:string}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{language}=useGameplayText();
+  const {width,fontScale}=useWindowDimensions();
+  const stacked=width<330||fontScale>=1.5;
   const [open,setOpen]=useState(false);
   const cfg=weaponBonusConfig(itemId,'common');
   if(!cfg)return null;
@@ -33,7 +35,7 @@ export function ForgeWeaponBonusPool({itemId}:{itemId:string}){
       {WEAPON_BONUS_CURRENT_POOL.map(stat=>{
         const range=weaponBonusRange(cfg.tier,stat);
         if(!range)return null;
-        return <View key={stat} style={s.statRow}>
+        return <View key={stat} style={[s.statRow,stacked&&s.statRowStack]}>
           <Text style={s.statName}>{weaponBonusStatText(language,stat)}</Text>
           <Text style={s.range}>{format(range[0])}–{format(range[1])}</Text>
         </View>;
@@ -53,7 +55,8 @@ function makeStyles(C:ThemeColors){
     summary:{...typography.caption,color:C.muted,fontSize:11},
     chevron:{fontSize:19,fontWeight:'800',color:C.accent,minWidth:24,textAlign:'center'},
     content:{padding:spacing.sm,gap:5,borderTopWidth:1,borderTopColor:C.line},
-    statRow:{minHeight:29,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+    statRow:{minHeight:29,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line,paddingVertical:2},
+    statRowStack:{alignItems:'stretch',flexDirection:'column',gap:1},
     statName:{...typography.bodyStrong,color:C.text,fontSize:12,flexShrink:1},
     range:{...typography.bodyStrong,color:C.good,fontSize:12,fontVariant:['tabular-nums'],textAlign:'right'},
     note:{...typography.caption,color:C.muted,fontSize:11,lineHeight:16,flexShrink:1},

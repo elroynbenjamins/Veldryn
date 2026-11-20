@@ -30,6 +30,7 @@ export interface SourceRouteView{
   breadcrumb:string;
   regionId?:string;
   areaId?:string;
+  sourceItemId?:string;
   target:string;
 }
 
@@ -45,5 +46,5 @@ export function sourceRouteView(destination:WorkingTowardDestination):SourceRout
     :gatheringNodes.find(row=>row.id===route.actionId)?.name??route.actionId!;
   const activity=route.kind==='combat'?'Combat':'Gathering';
   const path=[region?.name??route.regionId,area?.name,activity,target].filter((part):part is string=>!!part).join(' › ');
-  return {title:route.kind==='combat'?'Hunt '+target:'Gather '+target,breadcrumb:path,regionId,areaId:route.areaId,target};
+  return {title:route.kind==='combat'?'Hunt '+target:'Gather '+target,breadcrumb:path,regionId,areaId:route.areaId,sourceItemId:route.sourceItemId,target};
 }

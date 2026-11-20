@@ -51,7 +51,8 @@
     "test:class-affinities": "node -e \"require('fs').rmSync('.affinity-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .affinity-build && node .affinity-build/apps/mobile/tests/class-skill-affinities.js",
     "test:tool-artwork": "node tests/gathering-tool-individual-artwork.cjs",
     "test:cross-profession-art": "node tests/cross-profession-art.cjs",
-    "test:activity-icons": "node tests/activity-icon-ui.cjs"
+    "test:activity-icons": "node tests/activity-icon-ui.cjs",
+    "test:audio-settings": "node tests/audio-settings-polish.cjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

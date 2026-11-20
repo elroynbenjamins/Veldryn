@@ -5,6 +5,7 @@ import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../
 import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef,ITEMS} from '../src/content/items';
+import {EFFECT_GEMS_V1,gemItemId} from '../../../backend/src/server/equipment/gems/gem-catalog-v1';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
 import type {V2ReadinessSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
@@ -32,6 +33,18 @@ const check=(ok:unknown,label:string)=>{if(!ok)throw new Error(label)};
 // remain structurally acceptable to the actual private Forge draft contract.
 const typeCompatible:V2ReadinessSnapshot extends V2ServerDraftSnapshot ? true : false=true;
 check(typeCompatible,'Hidden mobile readiness snapshot must fit private Forge contract');
+// Guard the server/mobile Effect Gem item boundary without allowing mobile
+// item definitions to become the authority for combat socket eligibility.
+for(const family of EFFECT_GEMS_V1){
+ for(const grade of [1,2,3,4,5] as const){
+  const id=gemItemId(family.familyId,grade);
+  const mobile=itemDef(id);
+  check(mobile.type==='gem'&&mobile.gemKind==='effect'
+   &&mobile.gemFamilyId===family.familyId&&mobile.gemGrade===grade,
+   'Server authored Effect Gem missing or mismatched in mobile item catalogue: '+id);
+ }
+}
+
 // Explicit cross-package parity: a server must never reinterpret an existing
 // V33 player's paid/earned pouch capacity or silently discard old exact copies.
 const mobilePouchCapacities=[EQUIPMENT_POUCH_BASE_CAPACITY,

@@ -11,6 +11,9 @@ import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-
 import type {V2ReadinessSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
 import type {V2DraftSnapshot as V2ServerDraftSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
 import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
+import {levelFromXp,totalXpAtLevel} from '../src/core/progression';
+import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from
+ '../../../backend/src/server/equipment/equipment-crafting-v2-skill-xp';
 import {equipmentPouchForCharacter,EQUIPMENT_POUCH_BASE_CAPACITY,
  EQUIPMENT_POUCH_UPGRADES} from '../src/core/equipment-pouch';
 import {v2ServerLegacyPouchSnapshot,V2_LEGACY_POUCH_CAPACITIES} from
@@ -33,6 +36,18 @@ const check=(ok:unknown,label:string)=>{if(!ok)throw new Error(label)};
 // remain structurally acceptable to the actual private Forge draft contract.
 const typeCompatible:V2ReadinessSnapshot extends V2ServerDraftSnapshot ? true : false=true;
 check(typeCompatible,'Hidden mobile readiness snapshot must fit private Forge contract');
+// Guard the original V33 Smithing/Tailoring XP curve against hidden server
+// implementation drift, including every boundary and maximum skill level.
+for(let level=1;level<=100;level++){
+ const xp=totalXpAtLevel(level);
+ check(v2ServerSkillTotalXpAtLevel(level)===xp,
+  'Server/mobile profession XP threshold drift at level '+level);
+ for(const bank of [Math.max(0,xp-1),xp,xp+1]){
+  check(v2ServerSkillLevelFromXp(bank)===levelFromXp(bank),
+   'Server/mobile profession level drift at XP '+bank);
+ }
+}
+
 // Guard the server/mobile Effect Gem item boundary without allowing mobile
 // item definitions to become the authority for combat socket eligibility.
 for(const family of EFFECT_GEMS_V1){

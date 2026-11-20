@@ -9,6 +9,7 @@ import {equipmentComparison} from '../core/equipment-comparison';
 import {equipmentTradeOff} from '../core/equipment-trade-off';
 import {craftedGearDisplayQuality,craftedGearInstances,equippedCraftedGearRarity} from '../core/crafted-gear-instances';
 import {WeaponBonusDetails} from './WeaponBonusSection';
+import {WEAPON_BONUS_LABELS} from '../core/weapon-bonus-rolls';
 import type {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -33,6 +34,8 @@ type Props={
 
 const percent=displayPercent;
 function signed(value:number){const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n);}
+function bonusPercent(bps:number){return bps===0?'—':'+'+(bps/100).toFixed(1)+'%';}
+function bonusDifference(bps:number){return bps===0?'—':(bps>0?'+':'')+(bps/100).toFixed(1)+'%';}
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 
 /** Inventory's single, authoritative compare-before-equipping surface.
@@ -77,6 +80,10 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const oldRarity=old?rarityMeta(equippedCraftedGearRarity(state,slot)??itemRarity(old)):undefined;
  const currentWeaponRolls=oldRecord?.weaponBonuses??[];
  const newWeaponRolls=instance?.weaponBonuses??[];
+ const weaponBonusChanges=Array.from(new Set([...currentWeaponRolls,...newWeaponRolls].map(roll=>roll.stat))).map(stat=>({
+  stat,before:currentWeaponRolls.find(roll=>roll.stat===stat)?.basisPoints??0,
+  after:newWeaponRolls.find(roll=>roll.stat===stat)?.basisPoints??0,
+ }));
  const oldRank=oldId?gearEnhancement(state,oldId).rank:0;
  const oldSockets=oldId?gemSocketState(state,oldId):undefined;
  const alreadyEquipped=oldId===itemId&&(instanceId?instanceId===oldInstanceId:!oldInstanceId);
@@ -137,6 +144,12 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      </>:null}
      <Text style={s.rollGroupLabel}>{gl('NEW EQUIPMENT')}</Text>
      <WeaponBonusDetails itemId={item.id} rarity={instance?.rarity??rarity.id} rolls={instance?.weaponBonuses} version={instance?.weaponBonusRollVersion} showEmpty/>
+     <Text style={s.rollGroupLabel}>{gt('Bonus stat changes')}</Text>
+     {weaponBonusChanges.map(change=><View key={change.stat} style={s.bonusDeltaRow}>
+       <Text style={s.bonusDeltaLabel}>{gl(WEAPON_BONUS_LABELS[change.stat])}</Text>
+       <Text style={s.bonusDeltaValues}>{bonusPercent(change.before)} → {bonusPercent(change.after)}</Text>
+       <Text style={[s.bonusDeltaValue,{color:change.after>change.before?C.good:change.after<change.before?C.bad:C.muted}]}>{bonusDifference(change.after-change.before)}</Text>
+     </View>)}
     </View>:null}
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
     <View style={s.impactHead}>
@@ -242,6 +255,10 @@ function makeStyles(C:ThemeColors){
   setAlert:{padding:10,borderWidth:1,borderColor:C.warning,borderRadius:radii.sm,gap:6},
   weaponRollPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,gap:6,backgroundColor:C.panel2},
   rollGroupLabel:{...typography.caption,color:C.muted,fontSize:9,fontWeight:'800',letterSpacing:.5,marginTop:4},
+  bonusDeltaRow:{minHeight:28,flexDirection:'row',alignItems:'center',gap:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+  bonusDeltaLabel:{...typography.caption,color:C.text,fontSize:11,flex:1,minWidth:0},
+  bonusDeltaValues:{...typography.caption,color:C.muted,fontSize:10,fontVariant:['tabular-nums']},
+  bonusDeltaValue:{...typography.caption,fontWeight:'800',fontSize:11,minWidth:48,textAlign:'right',fontVariant:['tabular-nums']},
   rollEntry:{gap:4,paddingVertical:3},
   rollHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:5,flexWrap:'wrap'},
   rollValue:{...typography.bodyStrong,color:C.text,fontWeight:'800',fontSize:12},

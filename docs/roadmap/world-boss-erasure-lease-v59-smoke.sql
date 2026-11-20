@@ -5,6 +5,14 @@ BEGIN;
 INSERT INTO auth.users(id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
+-- V34 enforces character ownership on every attempt INSERT. Seed the
+-- corresponding synthetic characters *before* the committed receipts;
+-- the later erasure test still verifies immutable historical UUIDs.
+INSERT INTO public.characters(id,account_id) VALUES
+ ('20000000-0000-4000-8000-000000000059',
+  '10000000-0000-4000-8000-000000000059'),
+ ('20000000-0000-4000-8000-000000000060',
+  '10000000-0000-4000-8000-000000000060');
 -- Three synthetic committed battle receipts across two accounts, ALL
 -- inserted BEFORE either owner is fenced. One second-account locator is
 -- deliberately absent from its otherwise valid owned-key manifest.
@@ -13,6 +21,16 @@ INSERT INTO private.world_boss_events_v17
 VALUES('30000000-0000-4000-8000-000000000159','hollowroot','closed',
  '2036-02-04 00:00:00+00','2036-02-11 00:00:00+00',
  'wb59-fixture',100000,79850,3);
+-- V61 is default-deny for all NEW raids. Simulate the event's historical
+-- operator-approved admission BEFORE V59 takes its privacy/erasure snapshot,
+-- then pause new raids again. Do not disable or bypass the V61 trigger.
+INSERT INTO private.world_boss_ops_v61(event_id,changed_by,change_reason)
+VALUES('30000000-0000-4000-8000-000000000159','wb59-ci',
+ 'V59 synthetic historical replay setup begins in denied mode');
+UPDATE private.world_boss_ops_v61
+SET new_raids_open=true,revision=revision+1,changed_by='wb59-ci',
+ change_reason='V59 approved synthetic historical receipts before owner erasure'
+WHERE event_id='30000000-0000-4000-8000-000000000159';
 INSERT INTO private.world_boss_attempts_v17(
  event_id,account_id,request_id,ordinal,character_id,war_order,phase,
  rules_version,engine_version,server_seed,squad_digest,frozen_squad,
@@ -50,6 +68,12 @@ VALUES
   clock_timestamp()+interval '15 minutes','committed',clock_timestamp(),
   repeat('e',64),'synthetic/private/replays/missing060',
   50,10,79900,79850,50,false);
+-- Historical records are frozen; the privacy lease test must NEVER permit a
+-- fresh raid after the replay has been registered and account fencing starts.
+UPDATE private.world_boss_ops_v61
+SET new_raids_open=false,revision=revision+1,changed_by='wb59-ci',
+ change_reason='V59 historical replay snapshot finalized, new raids paused'
+WHERE event_id='30000000-0000-4000-8000-000000000159';
 INSERT INTO private.world_boss_erasure_fences_v57(account_id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');

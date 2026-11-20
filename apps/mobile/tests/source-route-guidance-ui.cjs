@@ -12,6 +12,7 @@ check(app.includes('setSelectedRegionalAreaId(destination.areaId)'),'Exact area 
 check(app.includes('openGoalAtCurrentRegion(destination);'),'Travel continuation should reuse the same target handling');
 check(app.includes('goalDestination={pendingGoalDestination}'),'World must receive an active source route');
 check(world.includes('sourceRouteView(goalDestination)'),'World must show the actual selected target breadcrumb');
+check(world.includes('localizedItemName(language,goalRoute.sourceItemId)'),'World objective identifies the material being searched for');
 check(world.includes('accessibilityLabel={p(\'Dismiss source guidance\')}'),'Route reminder must be dismissible');
 check(world.includes('goalAreaId={goalRoute?.areaId}'),'World must pass the exact local area to its navigator');
 check(navigator.includes('zone.areaId===goalAreaId'),'Chapter zone rows must highlight the selected sub-area');

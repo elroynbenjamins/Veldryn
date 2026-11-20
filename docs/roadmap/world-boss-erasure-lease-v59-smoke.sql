@@ -5,6 +5,14 @@ BEGIN;
 INSERT INTO auth.users(id) VALUES
  ('10000000-0000-4000-8000-000000000059'),
  ('10000000-0000-4000-8000-000000000060');
+-- V34 enforces character ownership on every attempt INSERT. Seed the
+-- corresponding synthetic characters *before* the committed receipts;
+-- the later erasure test still verifies immutable historical UUIDs.
+INSERT INTO public.characters(id,account_id) VALUES
+ ('20000000-0000-4000-8000-000000000059',
+  '10000000-0000-4000-8000-000000000059'),
+ ('20000000-0000-4000-8000-000000000060',
+  '10000000-0000-4000-8000-000000000060');
 -- Three synthetic committed battle receipts across two accounts, ALL
 -- inserted BEFORE either owner is fenced. One second-account locator is
 -- deliberately absent from its otherwise valid owned-key manifest.

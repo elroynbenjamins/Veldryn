@@ -133,7 +133,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    </View>
    {slot==='weapon'&&weaponChanges.length>0?<View style={s.weaponRollPanel}>
     <View style={s.rollCompareHead}>
-     <Text style={s.sectionTitle}>{gt('BONUS STATS')}</Text>
+     <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
      <Text style={s.rollLegend}>{weaponBonusUiText(language,'current')} → {weaponBonusUiText(language,'candidate')}</Text>
     </View>
     {weaponChanges.map(change=><View key={change.stat} accessible

@@ -23,11 +23,11 @@ export function resolveSourceRoute(destination:WorkingTowardDestination,sourceIt
     const monster=MONSTERS.find(row=>row.id===destination.monsterId);
     if(!monster)return base;
     const region=WORLD_ZONES.find(row=>row.name===monster.zone);
-    return {...base,zoneName:monster.zone,regionId:region?.id??destination.regionId,areaId:monster.areaId};
+    return {...destination,...(sourceItemId?{sourceItemId}:{}),zoneName:monster.zone,regionId:region?.id??destination.regionId,areaId:monster.areaId};
   }
   if(destination.kind==='skills'&&destination.mode==='gathering'&&destination.actionId){
     const node=gatheringNodes.find(row=>row.id===destination.actionId);
-    return node?{...base,regionId:node.zoneId,areaId:node.areaId}:base;
+    return node?{...destination,...(sourceItemId?{sourceItemId}:{}),regionId:node.zoneId,areaId:node.areaId}:base;
   }
   return base;
 }

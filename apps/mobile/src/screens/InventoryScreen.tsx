@@ -39,6 +39,8 @@ import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
 import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
+import {gatheringToolDef} from '../content/gathering-tools';
+import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,craftedGearCopiesAt,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
@@ -291,6 +293,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  const inspectedToolDef=inspected?.type==='tool'?gatheringToolDef(inspected.id):undefined;
   const exactToolCopies=inspected?.type==='tool'?state[location].stacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(copy=>copy.id===row.instanceId),row.itemId);return verified?[verified]:[]}):[];
   const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
   const inspectedCopySalvage=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'salvage'):null;
@@ -342,7 +345,11 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       <Text style={s.quantityTitle}>ROLLED GATHERING TOOLS · {exactToolCopies.length}</Text>
       <Text style={s.sub}>Base tier bonus uses Uncommon · Quality 50. A roll is always one stat: Speed +2–8% or rare finds +2–5%.</Text>
       {exactToolCopies.map(copy=><View key={copy.id} style={[s.row,{flexWrap:'wrap',alignItems:'center',paddingVertical:5}]}>
-        <Text style={[s.sub,s.flex,{minWidth:138,color:rarityMeta(copy.rarity).color}]}>{rarityMeta(copy.rarity).label} · Q{copy.quality} · {gatheringToolBonusLabel(copy)}</Text>
+        <View style={[s.flex,{minWidth:138,gap:3}]}>
+          <Text style={[s.sub,{color:rarityMeta(copy.rarity).color}]}>{rarityMeta(copy.rarity).label} · Q{copy.quality} · {gatheringToolBonusLabel(copy)}</Text>
+          {inspectedToolDef?<Text style={s.sub}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).basePercent),adjusted:gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).adjustedBasePercent)})}</Text>:null}
+          {inspectedToolDef?<Text style={s.sub}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(gatheringToolContribution(inspectedToolDef,copy).rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).rarityAdjustmentPercent),quality:(gatheringToolContribution(inspectedToolDef,copy).qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).qualityAdjustmentPercent)})}</Text>:null}
+        </View>
         <GameButton compact title={carried?'Equip copy':'Withdraw'} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/>
         {carried?<GameButton compact title="To Bank" tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/>:null}
         <GameButton compact title="Sell copy" tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/>

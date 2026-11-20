@@ -10,6 +10,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameModalSurface} from './GameModalSurface';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
+import {equipmentPouch} from '../core/equipment-pouch';
 import {prioritizeItemSources,prioritizeItemUses} from '../core/item-source-display';
 import {rarityNameColor} from '../core/item-rarity';
 import {formatGameNumber} from '../core/number-format';
@@ -48,6 +49,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
   const item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
+  const storedGearCount=source==='equipment_pouch'?equipmentPouch(state).stacks.reduce((count,stack)=>count+(stack.itemId===itemId?stack.quantity:0),0):0;
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const craftingOpen=!!craftingDisclosure[itemId],useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
@@ -61,7 +63,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text numberOfLines={2} style={s.owned}>{gl('Carried')} {formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)} · {gt('Bank')} {formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}{model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):''}</Text>
+            <Text numberOfLines={2} style={s.owned}>{source==='equipment_pouch'?gl('Gear')+' '+formatGameNumber(storedGearCount,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)+(model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):'')}</Text>
           </View>
           <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/>
         </View>

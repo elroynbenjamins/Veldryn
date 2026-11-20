@@ -58918,8 +58918,8 @@ var fields = {
   faith_blessing: ["id"],
   faith_favorite: ["id", "enabled"],
   faith_hide: ["enabled"],
-  alchemy_start: ["id", "batches"],
-  processing_start: ["id", "batches"],
+  alchemy_start: ["id", "batches", "batchMode"],
+  processing_start: ["id", "batches", "batchMode"],
   companion_monthly: ["id"],
   companion_supplies: [],
   companion_bond_reward: ["id", "level"],
@@ -59059,8 +59059,14 @@ function validateGameCommand(value) {
   if (Object.keys(row).some((key) => key !== "type" && key !== "args") || typeof row.type !== "string" || !Object.prototype.hasOwnProperty.call(fields, row.type)) throw new Error("invalid_command");
   const args = row.args ?? {};
   if (!args || typeof args !== "object" || Array.isArray(args) || Object.keys(args).some((key) => !fields[row.type].includes(key))) throw new Error("invalid_command_arguments");
-  const countKey = row.type === "faith_practice" ? "count" : row.type === "alchemy_start" || row.type === "processing_start" ? "batches" : row.type === "craft" ? "quantity" : void 0;
-  if (countKey && args[countKey] !== void 0) integer(args, countKey, 1, row.type === "faith_practice" ? 1 : row.type === "craft" ? 999 : 1e4);
+  const batchCommand = row.type === "alchemy_start" || row.type === "processing_start", values = args;
+  if (batchCommand) {
+    if (values.batchMode !== void 0 && values.batchMode !== "selected") throw new Error("invalid_batch_mode");
+    if (values.batchMode === "selected") integer(values, "batches", 1, 1e4);
+    else if (values.batches !== void 0 && values.batches !== 1) throw new Error("invalid_batches");
+  }
+  if (row.type === "faith_practice" && values.count !== void 0) integer(values, "count", 1, 1);
+  if (row.type === "craft" && values.quantity !== void 0) integer(values, "quantity", 1, 999);
   if (row.type === "create" || row.type === "roster_create" || row.type === "qa_prepare" || row.type === "qa_switch_class") {
     const creation = args;
     oneOf(creation.classId, CLASSES.map((item) => item.id));
@@ -59249,10 +59255,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = updateFaithPreference(state, "hide", void 0, a.enabled === true);
       break;
     case "alchemy_start":
-      state = beginAlchemyBatch(state, text(a, "id"), now, a.batches === void 0 ? void 0 : integer(a, "batches", 1, 1e4));
+      state = beginAlchemyBatch(state, text(a, "id"), now, a.batchMode === "selected" ? integer(a, "batches", 1, 1e4) : void 0);
       break;
     case "processing_start":
-      state = beginProcessingBatch(state, text(a, "id"), now, a.batches === void 0 ? void 0 : integer(a, "batches", 1, 1e4));
+      state = beginProcessingBatch(state, text(a, "id"), now, a.batchMode === "selected" ? integer(a, "batches", 1, 1e4) : void 0);
       break;
     case "class_focus": {
       const focus = oneOf(a.focus, ["balanced", "primary", "secondary"]);

@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {ItemRarity} from '../core/item-rarity';
+import {equipmentBonusConfig,equipmentBonusRange} from '../core/equipment-bonus-rolls';
 import {
   WEAPON_BONUS_LABELS,weaponBonusConfig,weaponBonusRange,
   type WeaponBonusRoll,type WeaponBonusRollVersion,
@@ -16,7 +17,9 @@ const formatRange=(range:readonly [number,number])=>formatBonus(range[0])+'–'+
 export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;initialExpanded?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt,gl}=useGameplayText();
   const [expanded,setExpanded]=useState(initialExpanded);
-  const base=weaponBonusConfig(itemId,'common');
+  const weapon=weaponBonusConfig(itemId,'common');
+  const armor=weapon?undefined:equipmentBonusConfig(itemId,'common');
+  const base=weapon??armor;
   if(!base)return null;
   const twoAtAllRarities=base.count===2;
   return <View style={s.panel}>
@@ -25,21 +28,21 @@ export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;in
       onPress={()=>setExpanded(value=>!value)} style={s.heading}>
       <View style={s.flex}>
         <Text style={s.title}>{gt('Possible bonus stats')}</Text>
-        <Text style={s.subtitle}>{base.pool.length} {gt('possible stats')} · {twoAtAllRarities?gt('2 bonuses per weapon'):gt('1 bonus · Epic+ gets 2')}</Text>
+        <Text style={s.subtitle}>{base.pool.length} {gt('possible stats')} · {twoAtAllRarities?gl('2 bonuses per item'):gt('1 bonus · Epic+ gets 2')}</Text>
       </View>
       <Text style={s.chevron}>{expanded?'−':'+'}</Text>
     </Pressable>
     {expanded?<View style={s.content}>
-      <Text style={s.note}>{gt('All eligible weapons share the same bonus pool.')}</Text>
+      <Text style={s.note}>{gl('All eligible equipment shares one class-neutral bonus pool.')}</Text>
       {base.pool.map(stat=>{
-        const range=weaponBonusRange(base.tier,stat);
+        const range=weapon?weaponBonusRange(base.tier,stat):equipmentBonusRange(base.tier,stat,armor!.slot);
         if(!range)return null;
         return <View key={stat} style={s.poolRow}>
           <Text style={s.statName}>{gl(WEAPON_BONUS_LABELS[stat])}</Text>
           <Text style={s.range}>{formatRange(range)}</Text>
         </View>;
       })}
-      <Text style={s.note}>{gt('Each bonus type can appear only once on a weapon.')}</Text>
+      <Text style={s.note}>{gl('Each bonus type appears at most once per equipment copy.')}</Text>
       <Text style={s.note}>{twoAtAllRarities?gt('Two different bonuses on every rarity.'):gt('Common–Rare: 1 bonus. Epic+: 2 bonuses.')}</Text>
       <Text style={s.note}>{gt('Bonus stats, rarity and quality roll separately on claim.')}</Text>
     </View>:null}

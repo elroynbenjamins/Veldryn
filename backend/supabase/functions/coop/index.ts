@@ -46483,7 +46483,7 @@ function rarityAdjustedBonusRange(base, rarity) {
 }
 
 // ../apps/mobile/src/core/weapon-bonus-rolls.ts
-var WEAPON_BONUS_ROLL_VERSION = 6;
+var WEAPON_BONUS_ROLL_VERSION = 7;
 var WEAPON_BONUS_LABELS = {
   maxHp: "Max HP",
   armor: "Armor",
@@ -46520,6 +46520,7 @@ var ROLE_POOL = {
   Support: ["healingPower", "potency", "haste", "ward", "maxHp", "critRate"]
 };
 var LAUNCH_SAFE_BONUS_STATS = ["maxHp", "armor", "critRate", "critDamage", "accuracy", "evasion", "haste"];
+var WEAPON_BONUS_CURRENT_POOL = LAUNCH_SAFE_BONUS_STATS;
 var LAUNCH_SAFE_ROLE_POOL = {
   Tank: ["maxHp", "armor", "evasion", "haste"],
   Damage: ["critRate", "critDamage", "accuracy", "evasion", "haste"],
@@ -46596,15 +46597,15 @@ var V1_RANGE_BY_BAND = {
   9: [400, 600]
 };
 function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION, rarity = "uncommon") {
-  const band = tier === 1 && version === 6 ? 2 : tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : tier === 2 ? 2 : void 0;
-  if (band === void 0 || tier === 1 && version !== 6) return void 0;
-  if (version === 6 && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
+  const band = tier === 1 && (version === 6 || version === 7) ? 2 : tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : tier === 2 ? 2 : void 0;
+  if (band === void 0 || tier === 1 && version !== 6 && version !== 7) return void 0;
+  if ((version === 6 || version === 7) && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
   const legacy = WEAPON_BONUS_BPS_BY_BAND[band][stat];
   if (version === 1) return V1_RANGE_BY_BAND[band];
   if (version === 2) return legacy;
-  if (version !== 3 && version !== 4 && version !== 5 && version !== 6) return void 0;
-  if ((version === 4 || version === 5 || version === 6) && stat === "abilityDamage") return void 0;
-  if ((version === 5 || version === 6) && stat === "tenacity") return void 0;
+  if (version !== 3 && version !== 4 && version !== 5 && version !== 6 && version !== 7) return void 0;
+  if ((version === 4 || version === 5 || version === 6 || version === 7) && stat === "abilityDamage") return void 0;
+  if ((version === 5 || version === 6 || version === 7) && stat === "tenacity") return void 0;
   const baseline = legacy ?? V3_EXTRA_BPS_BY_BAND[band][stat];
   if (!baseline) return void 0;
   if (tier === 1) {
@@ -46625,9 +46626,9 @@ function weaponBonusConfig(itemId, rarity, version = WEAPON_BONUS_ROLL_VERSION) 
   }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || item.slot !== "weapon" || tier < 1 || tier > 9 || tier === 1 && version !== 6 || !role2) return void 0;
-  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES.includes(rarity) ? 2 : 1;
-  const pool = version === 6 ? LAUNCH_SAFE_ROLE_POOL[role2] : version === 5 ? ROLE_POOL[role2] : version === 4 ? V4_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL[role2] : LEGACY_ROLE_POOL[role2];
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 1 || tier > 9 || tier === 1 && version !== 6 && version !== 7 || version !== 7 && !role2) return void 0;
+  const count = tier >= 5 || (version === 7 || tier >= 3) && HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  const pool = version === 7 ? WEAPON_BONUS_CURRENT_POOL : version === 6 ? LAUNCH_SAFE_ROLE_POOL[role2] : version === 5 ? ROLE_POOL[role2] : version === 4 ? V4_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL[role2] : LEGACY_ROLE_POOL[role2];
   return { tier, role: role2, count, pool };
 }
 function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
@@ -46646,7 +46647,7 @@ function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROL
 }
 
 // ../apps/mobile/src/core/equipment-bonus-rolls.ts
-var EQUIPMENT_BONUS_ROLL_VERSION = 5;
+var EQUIPMENT_BONUS_ROLL_VERSION = 6;
 var HIGH_RARITIES2 = ["epic", "legendary", "mythic"];
 var LEGACY_ROLE_POOL2 = {
   Tank: ["maxHp", "armor", "ward", "tenacity", "evasion", "haste"],
@@ -46692,19 +46693,19 @@ function equipmentBonusConfig(itemId, rarity, version = EQUIPMENT_BONUS_ROLL_VER
   }
   const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
   const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
-  if (item.type !== "gear" || !item.slot || !ELIGIBLE_SLOTS.has(item.slot) || tier < 1 || tier > 9 || tier === 1 && version !== 5 || !role2) return void 0;
-  const count = tier >= 5 || tier >= 3 && HIGH_RARITIES2.includes(rarity) ? 2 : 1;
-  const pool = version === 1 ? LEGACY_ROLE_POOL2[role2] : version === 2 ? V2_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL2[role2] : version === 4 ? ROLE_POOL2[role2] : LAUNCH_SAFE_ROLE_POOL[role2];
+  if (item.type !== "gear" || !item.slot || !ELIGIBLE_SLOTS.has(item.slot) || tier < 1 || tier > 9 || tier === 1 && version !== 5 && version !== 6 || version !== 6 && !role2) return void 0;
+  const count = tier >= 5 || (version === 6 || tier >= 3) && HIGH_RARITIES2.includes(rarity) ? 2 : 1;
+  const pool = version === 6 ? LAUNCH_SAFE_BONUS_STATS : version === 1 ? LEGACY_ROLE_POOL2[role2] : version === 2 ? V2_ROLE_POOL[role2] : version === 3 ? V3_ROLE_POOL2[role2] : version === 4 ? ROLE_POOL2[role2] : LAUNCH_SAFE_ROLE_POOL[role2];
   return { tier, role: role2, slot: item.slot, count, pool };
 }
 function equipmentBonusRange(tier, stat, slot, rarity = "uncommon", version = EQUIPMENT_BONUS_ROLL_VERSION) {
-  const band = tier === 1 && version === 5 ? 2 : bandForTier(tier);
-  if (band === void 0 || tier < 1 || tier > 9 || !ELIGIBLE_SLOTS.has(slot) || version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5) return void 0;
-  if (tier === 1 && version !== 5) return void 0;
-  if (version === 5 && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
-  if ((version === 3 || version === 4 || version === 5) && stat === "abilityDamage") return void 0;
-  if ((version === 4 || version === 5) && stat === "tenacity") return void 0;
-  const base = version === 1 ? stat === "evasion" || stat === "critDamage" ? EXTRA_RANGES[band][stat] : weaponBonusRange(tier, stat, 2) : weaponBonusRange(tier, stat, version === 5 ? 6 : 3, "uncommon");
+  const band = tier === 1 && (version === 5 || version === 6) ? 2 : bandForTier(tier);
+  if (band === void 0 || tier < 1 || tier > 9 || !ELIGIBLE_SLOTS.has(slot) || version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) return void 0;
+  if (tier === 1 && version !== 5 && version !== 6) return void 0;
+  if ((version === 5 || version === 6) && !LAUNCH_SAFE_BONUS_STATS.includes(stat)) return void 0;
+  if ((version === 3 || version === 4 || version === 5 || version === 6) && stat === "abilityDamage") return void 0;
+  if ((version === 4 || version === 5 || version === 6) && stat === "tenacity") return void 0;
+  const base = version === 1 ? stat === "evasion" || stat === "critDamage" ? EXTRA_RANGES[band][stat] : weaponBonusRange(tier, stat, 2) : weaponBonusRange(tier, stat, version === 6 ? 7 : version === 5 ? 6 : 3, "uncommon");
   if (!base) return void 0;
   const factor = slot === "offhand" ? 0.8 : slot === "amulet" || slot === "ring" ? 0.7 : 0.55;
   const min = Math.max(STEP_BPS3, Math.ceil(base[0] * factor / STEP_BPS3) * STEP_BPS3);
@@ -46712,7 +46713,7 @@ function equipmentBonusRange(tier, stat, slot, rarity = "uncommon", version = EQ
   return version === 1 ? [min, max] : rarityAdjustedBonusRange([min, max], rarity);
 }
 function normalizeEquipmentBonuses(itemId, rarity, raw2, version) {
-  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5) return void 0;
+  if (version !== 1 && version !== 2 && version !== 3 && version !== 4 && version !== 5 && version !== 6) return void 0;
   const cfg = equipmentBonusConfig(itemId, rarity, version);
   if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
   const seen = /* @__PURE__ */ new Set(), result = [];
@@ -46753,7 +46754,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
-      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 || row.weaponBonusRollVersion === 4 || row.weaponBonusRollVersion === 5 || row.weaponBonusRollVersion === 6 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 || row.weaponBonusRollVersion === 3 || row.weaponBonusRollVersion === 4 || row.weaponBonusRollVersion === 5 || row.weaponBonusRollVersion === 6 || row.weaponBonusRollVersion === 7 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -46766,7 +46767,7 @@ function normalizeCraftedGearInstances(raw2) {
         weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
         weaponBonusRollVersion: version,
         equipmentBonuses: normalizeEquipmentBonuses(item.id, rarity, row.equipmentBonuses, row.equipmentBonusRollVersion),
-        equipmentBonusRollVersion: row.equipmentBonusRollVersion === 1 || row.equipmentBonusRollVersion === 2 || row.equipmentBonusRollVersion === 3 || row.equipmentBonusRollVersion === 4 || row.equipmentBonusRollVersion === 5 ? row.equipmentBonusRollVersion : void 0,
+        equipmentBonusRollVersion: row.equipmentBonusRollVersion === 1 || row.equipmentBonusRollVersion === 2 || row.equipmentBonusRollVersion === 3 || row.equipmentBonusRollVersion === 4 || row.equipmentBonusRollVersion === 5 || row.equipmentBonusRollVersion === 6 ? row.equipmentBonusRollVersion : void 0,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),

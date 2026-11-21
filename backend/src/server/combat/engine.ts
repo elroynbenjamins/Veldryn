@@ -245,7 +245,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           abilityId:'V2_LIFESTEAL:'+abilityId,amount:Number(healed.toFixed(2))});}
     }
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
-    if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
+    if(eventType==='damage'&&!abilityId.startsWith('V2_COUNTER:')){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
     if(dealt>0){
       if(source.definition.team==='players'){
@@ -287,6 +287,24 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});
       if(source.combatV2&&target.definition.team==='enemies'&&!abilityId.startsWith('V2_'))
         runReactive(source,'kill',now,target);
+    }
+    // Iron Riposte is an actual reactive counter window, not only an on-cast
+    // attack: a surviving Ironwarden retaliates once per 8s after an enemy
+    // hit while its own server-authored Riposte ward is active. No counter
+    // may mint Guard, proc direct-hit gems, or chain into another counter.
+    if(eventType==='damage'&&source.definition.team==='enemies'&&
+      target.definition.team==='players'&&target.alive&&target.hp>0&&
+      source.alive&&target.combatV2&&target.combatV2.resource==='guard'&&
+      target.modifiers.some(m=>m.sourceId===target.definition.id&&
+        m.v2SourceAbilityId?.startsWith('SK2_IRON_RIPOSTE:v2:')&&
+        m.kind==='buff'&&m.tag==='damage_taken'&&m.expiresAt>now)){
+      const key='skill:iron_riposte_counter';
+      const v2=target.combatV2;
+      if(now-(v2.procCooldownAt[key]??-Infinity)>=8000){
+        v2.procCooldownAt[key]=now;
+        applyDamage(now,target,source,{kind:'damage',coeff:.32,damageType:'physical'},
+          'V2_COUNTER:IRON_RIPOSTE');
+      }
     }
   };
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=v2Encounter&&effect.healBelowHpPct!==undefined&&hpPct(target)<effect.healBelowHpPct

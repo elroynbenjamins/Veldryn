@@ -1,10 +1,11 @@
 # Veldryn Skills & Abilities 2.0 — two development passes + two polish passes
 Date: 2026-11-21 · Status: **hidden-only draft PR #1551** targeting the private canonical #1377 branch.
 
-## Development pass 1 — multi-hit combat fidelity
-- Before: V2 double-hit techniques such as Knife Dancer's Blade Flurry reused the same seeded hit, critical, and variance labels on a given tick. Twin hits could therefore not independently hit or miss.
-- Now: each hit on the same target from one authored V2 class ability receives its own deterministic strike ordinal after the first. First-strike and every legacy RNG label remains stable; no global RNG changes.
-- Regression: many seeded Knife Dancer Blade Flurry encounters must include split hit/miss outcomes and never grant two Rhythm stacks for one same-tick source.
+## Development pass 1 — Iron Riposte reactive counter
+- Review found that Knife Dancer multi-hit techniques already receive independent RNG rolls: `CombatRng` advances a cursor on each call. The attempted duplicate-roll fix was **removed** to preserve seeded combat. No multi-hit RNG logic changed.
+- Ironwarden's `Iron Riposte` is now a real reactive stance. After the server-authored Riposte ward is applied, a **surviving** Ironwarden retaliates with one physical 0.32-attack-coefficient counter when struck by an enemy, with an 8-second internal cooldown.
+- Counter triggers only from the authentic V2 class ward, does not stack unlimited counters, never grants Guard Marks, never triggers direct-hit gem procs, and does not recurse or run in legacy encounters.
+- Regression: several rapid enemy hits during the stance produce exactly one counter. A matched legacy actor produces none.
 
 ## Development pass 2 — persistent Thunder Totem
 - Before: Stonecaller's Thunder Totem applied its initial strike, while Ritual Surge used a synthetic 4-second expiration event without a persistent totem damage cycle.

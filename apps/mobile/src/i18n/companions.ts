@@ -7,6 +7,12 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Discovery progress": ["Entdeckungsfortschritt","Progreso de descubrimiento","Ontdekkingsvoortgang","Progresso scoperta","Progression des découvertes"],
+ "Reset filters": ["Filter zurücksetzen","Restablecer filtros","Filters wissen","Reimposta filtri","Réinitialiser les filtres"],
+ "Matching creatures": ["Gefundene Kreaturen","Criaturas coincidentes","Gevonden monsters","Creature corrispondenti","Créatures correspondantes"],
+ "View type mastery": ["Typenmeisterschaft ansehen","Ver maestría de tipo","Bekijk typemeesterschap","Vedi maestria del tipo","Voir la maîtrise du type"],
+ "Base drop rates shown. Bonuses may improve your actual rewards.": ["Angezeigt werden Grundchancen. Boni können die erhaltene Beute verbessern.","Se muestran las probabilidades base. Los bonos pueden mejorar las recompensas.","Dit zijn basiskansen. Bonussen kunnen de echte buit verbeteren.","Sono mostrate le probabilità base. I bonus possono aumentare le ricompense.","Les chances de butin de base sont affichées. Les bonus peuvent améliorer les récompenses."],
+ "Drop rate details unlock at species or type Rank 10.": ["Beutechancen werden ab Arten- oder Typenrang 10 sichtbar.","Las probabilidades se revelan al rango 10 de especie o tipo.","Dropkansen verschijnen bij rang 10 van de soort of het type.","Le probabilità si sbloccano al grado 10 della specie o del tipo.","Les chances de butin se dévoilent au rang 10 de l'espèce ou du type."],
  "Monster Codex": ["Monsterkodex","Códice de monstruos","Monstercodex","Codice dei mostri","Codex des monstres"],
  "Monsters": ["Monster","Monstruos","Monsters","Mostri","Monstres"],
  "Types": ["Typen","Tipos","Types","Tipi","Types"],

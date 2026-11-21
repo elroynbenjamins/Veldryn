@@ -97,3 +97,21 @@ export const authoredChanceForFinal=(final)=>{
   if(authored>=1)throw Error('Cannot express this chance in ordinary sub-100% branch');
   return authored;
 };
+
+export function existingAlchemyOutputs(source) {
+  const fragment=between(source,'export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=([','] as AlchemyRecipe[]');
+  const recipes=[];
+  for(const line of fragment.split('\n')){
+    if(!/^\s*\{id:/.test(line))continue;
+    const id=stringField(line,'id');
+    const output=line.match(/output:\{itemId:'([^']+)',quantity:(\d+)\}/);
+    if(!output)throw Error('Unexpected existing alchemy recipe: '+id);
+    const inputs=[...line.matchAll(/\{itemId:'([^']+)',quantity:(\d+)\}/g)]
+      .filter(m=>m[1]!==output[1]).map(m=>({itemId:m[1],quantity:Number(m[2])}));
+    recipes.push({id,outputId:output[1],outputQuantity:Number(output[2]),
+      skillLevel:numberField(line,'level'),xp:numberField(line,'xp'),
+      seconds:numberField(line,'seconds'),inputs});
+  }
+  if(recipes.length<8)throw Error('Alchemy source recipes missing');
+  return recipes;
+}

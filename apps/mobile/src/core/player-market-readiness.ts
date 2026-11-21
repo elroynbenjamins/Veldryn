@@ -40,6 +40,9 @@ export interface PlayerMarketReadinessPreview {
  * This never substitutes for the eventual server-owned tradability catalog.
  */
 export function marketCatalogCandidate(itemId:string):boolean{
+  // Historical compensation is not a market item, even when a future
+  // data migration gives it a positive vendor value.
+  if(itemId==='LEGACY_EMBERHEART_GEM_V2')return false;
   try{
     const item=itemDef(itemId);
     return !item.guildOnly&&!item.knowledgeUnlockId&&item.value>0

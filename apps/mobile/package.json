@@ -54,7 +54,8 @@
     "test:activity-icons": "node tests/activity-icon-ui.cjs",
     "test:dungeon-weekly-ui": "node tests/dungeon-weekly-quest-ui.cjs",
     "test:dungeon-social-echo-ui": "node tests/dungeon-social-echo-picker-ui.cjs",
-    "test:audio-settings": "node tests/audio-settings-polish.cjs"
+    "test:audio-settings": "node tests/audio-settings-polish.cjs",
+    "test:gems-v2-restoration": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/stat-gem-runtime-v1.js && node .core-build/apps/mobile/tests/gem-progression-v1.js && node .core-build/apps/mobile/tests/legacy-attack-gem-restoration-v2.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~58.0.17",

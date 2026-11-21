@@ -205,6 +205,8 @@ export function effectiveStats(state:GameState){
   // Preserve fractional equipment improvements until display/combat use. Rounding
   // each stage used to erase small upgrades, Iron gem Defense and class scaling.
   const setStats=activeEquipmentBuildStats(state);
+  // V2 Might Gems increase Attack exactly once; they never multiply derived Power.
+  attack*=1+setStats.attack;
   hp=Math.ceil(hp*(1+setStats.maxHp));
   defense*=1+setStats.armor;
   // Legacy gems keep their original primary-stat behavior; canonical Stat Gems

@@ -40,6 +40,8 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
 {id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
 {id:'EMBERHEART_GEM',name:'Emberheart Gem',type:'gem',gemStat:'attack',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+// Protected 2.0 restoration item: the on-save legacy exchange only rewrites EMBERHEART_GEM.
+{id:'LEGACY_EMBERHEART_GEM_V2',name:'Restored Emberheart Gem',type:'gem',gemStat:'attack',gemPercent:.05,gemTier:2,value:0,rarity:'legendary',passive:'+5% Attack (account restoration; not tradeable)'},
 {id:'WARD_SHARD',name:'Ward Shard',type:'gem',gemStat:'defense',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
 {id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
 {id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},

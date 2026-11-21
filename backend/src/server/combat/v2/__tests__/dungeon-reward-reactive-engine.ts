@@ -23,7 +23,7 @@ const boss:CombatantDefinition={
  id:'BOSS_EXP_ROOT',name:'Rootbound QA',team:'enemies',role:'enemy',level:50,boss:true,
  stats:{maxHp:100000,attackPower:0,healingPower:0,defense:80,
   accuracy:100000,evasion:0,critChance:0,critMultiplier:1.5,haste:0},
- basicAttackMs:2600,basicAttackCoeff:1,abilities:[],tags:['combat-v2'],
+ basicAttackMs:2600,basicAttackCoeff:1,abilities:[],tags:['enemy-v2:boss-profile:qa'],
 };
 const input:CombatInput={
  seed:'REWARD_PROC_SEEDED_QA',players:[player],enemies:[boss],maxDurationMs:8000,
@@ -80,6 +80,16 @@ assert.ok(reward.some(e=>e.abilityId==='V2_DUNGEON_REWARD:ROOM_BOON_CRIPPLING_BL
 assert.ok(reward.some(e=>e.abilityId==='V2_DUNGEON_REWARD:ROOM_BOON_BURST_WINDOW'));
 assert.ok(reward.some(e=>e.abilityId==='V2_DUNGEON_REWARD:RELIC_TEMPORAL_ECHO'));
 assert.ok(reward.some(e=>e.abilityId==='V2_DUNGEON_REWARD:RELIC_GLACIAL_CROWN'));
+// Crippling Blows must affect a signed Enemy V2 boss without relying on the
+// player's "combat-v2" tag. Compare identical RNG, skills and other rewards.
+const withoutSunder={...snap,receipts:receipts.filter(r=>
+ r.id!=='ROOM_BOON_CRIPPLING_BLOWS')};
+const withoutToken=issueDungeonRewardEngineAuthorityV2(draft.input,withoutSunder,verify);
+const noSunderFight=simulateCombat(draft.input,undefined,undefined,withoutToken);
+const laterBasic=(result:ReturnType<typeof simulateCombat>)=>result.events
+ .find(e=>e.type==='damage'&&e.actorId==='P'&&e.abilityId==='BASIC'&&e.atMs>=1000)?.amount??0;
+assert.ok(laterBasic(first)>laterBasic(noSunderFight),
+ 'Signed Crippling Blows must weaken enemy-boss defense on subsequent direct hits');
 assert.ok(reward.every(e=>e.actorId==='P'));
 const bleed=first.events.filter(e=>e.type==='dot_tick'&&
  e.abilityId==='V2_DUNGEON_REWARD:ROOM_BOON_BLOODTHIRST');

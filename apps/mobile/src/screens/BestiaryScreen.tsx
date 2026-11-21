@@ -66,13 +66,13 @@ export function BestiaryScreen({state}:{state:GameState}){
  }).sort((a,b)=>Number(b.known)-Number(a.known)||b.progress.rank-a.progress.rank||a.name.localeCompare(b.name));
  const tabChoices:readonly {id:CodexTab;label:string}[]=[{id:'monsters',label:'Monsters'},{id:'types',label:'Types'},{id:'rewards',label:'Rewards'}];
  return <>
- <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
+ <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <Text style={s.kicker}>{t("ADVENTURER'S JOURNAL")}</Text>
   <Text accessibilityRole="header" style={s.heading}>{t('Monster Codex')}</Text>
   <Text style={s.description}>{t('Hunt. Discover. Master. Every creature and enemy family in one place.')}</Text>
   <View style={s.summary}>
    <View style={s.flex}><Text style={s.summaryLabel}>{t('DISCOVERED')}</Text><Text style={s.summaryValue}>{number(discovered)}<Text style={s.summaryTotal}>/{number(visibleTotal)}</Text></Text></View>
-   <View style={s.summaryRight}><Text style={s.percent}>{completion}%</Text><View style={s.progressTrack}><View style={[s.progressFill,{width:String(completion)+'%'}]}/></View></View>
+   <View style={s.summaryRight}><Text style={s.percent}>{completion}%</Text><View accessibilityRole="progressbar" accessibilityLabel={t("Discovery progress")} accessibilityValue={{min:0,max:100,now:completion}} style={s.progressTrack}><View style={[s.progressFill,{width:String(completion)+'%'}]}/></View></View>
   </View>
   <View accessibilityRole="tablist" style={s.tabs}>{tabChoices.map(choice=><Pressable key={choice.id} accessibilityRole="tab" accessibilityState={{selected:tab===choice.id}} onPress={()=>setTab(choice.id)} style={[s.tab,tab===choice.id&&s.tabActive]}><Text numberOfLines={1} style={[s.tabText,tab===choice.id&&s.tabTextActive]}>{t(choice.label)}</Text></Pressable>)}</View>
   {tab==='monsters'?<>
@@ -80,21 +80,24 @@ export function BestiaryScreen({state}:{state:GameState}){
    <View style={s.filters}>{([
     ['all','All'],['known','Defeated'],['unknown','Unknown'],['mastered','Mastered']
    ] as const).map(([id,title])=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:filter===id}} onPress={()=>setFilter(id)} style={[s.filter,filter===id&&s.filterActive]}><Text style={[s.filterText,filter===id&&s.filterTextActive]}>{t(title)}</Text></Pressable>)}</View>
-   <View style={s.listHead}><Text style={s.sectionTitle}>{t('REGIONS & ZONES')}</Text><Text style={s.tiny}>{t('Mastered')}: {number(mastered)}</Text></View>
+   <View style={s.listHead}><Text style={s.sectionTitle}>{t('REGIONS & ZONES')}</Text>
+    <View style={s.listMeta}><Text style={s.tiny}>{t('Mastered')}: {number(mastered)}</Text>{autoExpand?<Pressable accessibilityRole="button" accessibilityLabel={t('Reset filters')} onPress={()=>{setQuery('');setFilter('all')}} style={s.resetLink}><Text style={s.resetText}>{t('Reset')}</Text></Pressable>:null}</View>
+   </View>
+   {autoExpand?<Text style={s.matchHint}>{t('Matching creatures')}: {number(matching.reduce((sum,region)=>sum+region.zones.reduce((count,zone)=>count+zone.monsters.length,0),0))}</Text>:null}
    {matching.map(region=>{
     const open=autoExpand||expandedRegion===region.id;
     const regionTotal=region.zones.reduce((n,z)=>n+z.monsters.length,0);
     const regionDiscovered=region.zones.reduce((n,z)=>n+z.monsters.filter(row=>row.entry.status!=='unknown'||row.entry.masteryPoints>0).length,0);
     return <View key={region.id} style={s.region}>
-     <Pressable accessibilityRole="button" accessibilityLabel={region.name} accessibilityState={{expanded:open,disabled:!region.available}} disabled={!region.available||autoExpand} onPress={()=>setExpandedRegion(current=>current===region.id?null:region.id)} style={s.regionHeader}>
+     <Pressable accessibilityRole="button" accessibilityLabel={region.name} accessibilityState={{expanded:open,disabled:!region.available||autoExpand}} disabled={!region.available||autoExpand} onPress={()=>setExpandedRegion(current=>current===region.id?null:region.id)} style={s.regionHeader}>
       <View style={s.regionIcon}><Text style={s.regionSymbol}>{region.id==='ASTERFALL'?'✦':region.id==='SUNSCAR'?'☼':region.id==='FROSTMARCH'?'❄':'◇'}</Text></View>
-      <View style={s.flex}><Text style={s.regionName}>{t(region.name)}</Text><Text style={s.meta}>{region.available?t('Lv {value0}–{value1}',{value0:region.minLevel,value1:region.maxLevel}):t('In development')}</Text></View>
+      <View style={s.flex}><Text numberOfLines={2} style={s.regionName}>{t(region.name)}</Text><Text style={s.meta}>{region.available?t('Lv {value0}–{value1}',{value0:region.minLevel,value1:region.maxLevel}):t('In development')}</Text></View>
       <Text style={s.regionCount}>{region.available?number(autoExpand?regionDiscovered:region.discovered)+'/'+number(autoExpand?regionTotal:region.total):t('LOCKED')}</Text>
       <Text style={s.chevron}>{region.available?(open?'⌃':'⌄'):'•'}</Text>
      </Pressable>
      {region.available&&open?<View style={s.regionBody}>
       {region.zones.map(zone=><View key={zone.id} style={s.zone}>
-       <View style={s.zoneHeader}><Text style={s.zoneTitle}>{t(zone.name)}</Text><Text style={s.zoneCount}>{number(zone.monsters.length)}</Text></View>
+       <View style={s.zoneHeader}><Text numberOfLines={2} style={s.zoneTitle}>{t(zone.name)}</Text><Text style={s.zoneCount}>{number(zone.monsters.filter(row=>row.entry.status!=='unknown'||row.entry.masteryPoints>0).length)}/{number(zone.monsters.length)}</Text></View>
        {zone.monsters.map(row=>{
         const known=row.entry.status!=='unknown'||row.entry.masteryPoints>0;
         const defeated=row.entry.status==='defeated'||row.entry.masteryPoints>0;
@@ -102,7 +105,7 @@ export function BestiaryScreen({state}:{state:GameState}){
         return <Pressable key={row.monster.id} accessibilityRole="button" accessibilityLabel={known?row.monster.name:t('Unknown Creature')} accessibilityHint={t('Open creature details')} onPress={()=>setDetailId(row.monster.id)} style={({pressed})=>[s.monsterRow,pressed&&s.pressed]}>
          <View style={s.portrait}>{known?<MonsterPortraitFrame monster={row.monster} size={compact?43:48} framed={false} reduceMotion={state.settings.reduceMotion}/>:<Text style={s.unknownMark}>?</Text>}</View>
          <View style={s.flex}><Text numberOfLines={1} style={s.monsterName}>{known?translated(row.monster.name):t('Unknown Creature')}</Text><Text numberOfLines={1} style={s.meta}>{known?(row.monster.boss?t('Boss'):t('Lv {value0}',{value0:row.monster.level}))+' · '+(defeated?t('Defeated'):t('Discovered')):t('Not discovered')}</Text></View>
-         <View style={s.monsterRight}><Text style={[s.rank,rank===30&&s.complete]}>{row.monster.boss?t('BOSS'):known?'R'+rank+'/30':'—'}</Text><Text style={s.chevron}>›</Text></View>
+         <View style={s.monsterRight}><View style={s.rankColumn}><Text style={[s.rank,rank===30&&s.complete]}>{row.monster.boss?t('BOSS'):known?'R'+rank+'/30':'—'}</Text>{known&&!row.monster.boss?<Text style={s.killsValue}>{number(row.entry.masteryPoints)}/{number(MONSTER_MASTERY_MAX_KILLS)}</Text>:null}</View><Text style={s.chevron}>›</Text></View>
         </Pressable>;
        })}
       </View>)}
@@ -149,7 +152,7 @@ export function BestiaryScreen({state}:{state:GameState}){
  </ScrollView>
  <GameModalSurface visible={!!selected} onClose={()=>setDetailId(null)} reduceMotion={state.settings.reduceMotion} surfaceStyle={s.sheet}>
   <GameModalHeader title={selectedKnown&&selected?translated(selected.monster.name):t('Unknown Creature')} onClose={()=>setDetailId(null)}/>
-  {selected?<ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} showsVerticalScrollIndicator={false}>
+  {selected?<ScrollView style={s.detailScroll} contentContainerStyle={s.detailContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.detailHero}>
     <View style={s.detailPortrait}>{selectedKnown?<MonsterPortraitFrame monster={selected.monster} size={96} framed={false} reduceMotion={state.settings.reduceMotion}/>:<Text style={s.unknownLarge}>?</Text>}</View>
     <View style={s.flex}><Text style={s.detailName}>{selectedKnown?translated(selected.monster.name):t('Unknown Creature')}</Text><Text style={s.meta}>{t(selected.monster.zone)} · {selectedKnown?t('Lv {value0}',{value0:selected.monster.level}):'???'}{selected.monster.boss?' · '+t('Boss'):''}</Text><Text style={s.status}>{selectedKnown?t(selected.entry.masteryPoints>0||selected.entry.status==='defeated'?'Defeated':'Discovered'):t('Unknown')}</Text></View>
@@ -187,15 +190,15 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tab:{flex:1,minHeight:42,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,paddingHorizontal:4},
  tabActive:{backgroundColor:C.selection,borderWidth:1,borderColor:C.accent},tabText:{fontSize:12,color:C.muted,fontWeight:'800'},tabTextActive:{color:C.text},
  filters:{flexDirection:'row',flexWrap:'wrap',gap:6},filter:{minHeight:36,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,paddingHorizontal:12,backgroundColor:C.panel},filterActive:{borderColor:C.accent,backgroundColor:C.selection},filterText:{...typography.caption,color:C.muted},filterTextActive:{color:C.text,fontWeight:'900'},
- listHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},sectionTitle:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:.7},tiny:{fontSize:10,color:C.muted},
+ listHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:32},listMeta:{flexDirection:'row',alignItems:'center',gap:9,flexWrap:'wrap'},resetLink:{minHeight:32,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm},resetText:{fontSize:11,color:C.accent,fontWeight:'800'},matchHint:{...typography.caption,color:C.muted,marginTop:-7},sectionTitle:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:.7},tiny:{fontSize:10,color:C.muted},
  region:{borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel,overflow:'hidden'},regionHeader:{flexDirection:'row',alignItems:'center',gap:10,padding:12,minHeight:62},
  regionIcon:{width:38,height:38,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},regionSymbol:{fontSize:21,color:C.accent,fontWeight:'900'},
- regionName:{...typography.bodyStrong,color:C.text},regionCount:{fontSize:11,fontWeight:'800',color:C.info},chevron:{width:16,fontSize:20,textAlign:'center',color:C.muted},
+ regionName:{...typography.bodyStrong,color:C.text},regionCount:{fontSize:11,fontWeight:'800',color:C.info,flexShrink:0},chevron:{width:16,fontSize:20,textAlign:'center',color:C.muted},
  regionBody:{paddingHorizontal:9,paddingVertical:9,gap:12,borderTopWidth:1,borderTopColor:C.line},
- zone:{gap:6},zoneHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingVertical:4,paddingHorizontal:4},zoneTitle:{...typography.caption,color:C.accent,fontWeight:'900'},zoneCount:{...typography.caption,color:C.muted},
+ zone:{gap:6},zoneHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:30,paddingVertical:4,paddingHorizontal:4},zoneTitle:{...typography.caption,color:C.accent,fontWeight:'900',flex:1},zoneCount:{...typography.caption,color:C.muted},
  monsterRow:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,padding:8,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line},
  portrait:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.bg},unknownMark:{fontSize:26,color:C.muted,fontWeight:'900'},
- monsterName:{fontSize:13,fontWeight:'800',color:C.text},meta:{...typography.caption,color:C.muted,lineHeight:17},monsterRight:{flexDirection:'row',alignItems:'center',gap:5},rank:{fontSize:12,color:C.info,fontWeight:'900'},
+ monsterName:{fontSize:13,fontWeight:'800',color:C.text},meta:{...typography.caption,color:C.muted,lineHeight:17},monsterRight:{flexDirection:'row',alignItems:'center',gap:4},rankColumn:{alignItems:'flex-end',gap:3},killsValue:{fontSize:9,color:C.muted,fontWeight:'700'},rank:{fontSize:12,color:C.info,fontWeight:'900'},
  complete:{color:C.good,fontWeight:'900'},pressed:{opacity:.75},empty:{padding:16,alignItems:'center',gap:9},
  family:{borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel,overflow:'hidden'},
  familyHeader:{flexDirection:'row',alignItems:'center',gap:10,padding:12,minHeight:62},typeIcon:{width:40,height:40,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.panel2},typeMark:{fontSize:20,color:C.accent,fontWeight:'900'},

@@ -43,7 +43,8 @@ assert(browser.includes("description=\"\" onBack={onBack} backLabel={ct(language
 assert(browser.includes("description={event.description} onBack={preparing?()=>setPreparing(false):onBack}"),'Seasonal dungeon detail back control preserves preparation step navigation');
 assert(hero.includes('accessibilityRole="button" accessibilityLabel={backLabel}')&&hero.includes("position:'absolute',top:10,left:10"),'A compact, accessible back control sits over the hero instead of using its own row');
 assert(app.includes('{!immersiveDungeonFlow&&mainTabGuide'),'World guidance does not take up room during a run');
-assert(app.includes('{...(immersiveDungeonFlow?{}:backSwipe.panHandlers)}'),'Back-edge gesture does not interrupt room selection');
+assert(app.includes('const disableHistorySwipe=immersiveDungeonFlow||'),'Active dungeon runs remain excluded from swipe history');
+assert(app.includes('{...(disableHistorySwipe?{}:backSwipe.panHandlers)}'),'Back-edge gesture does not interrupt room selection');
 
 // Keep the normal bottom navigation as a safe exit from active runs.
 assert(app.includes('<PrimaryNavigation destinations={primaryTabs}'),'App navigation remains present');

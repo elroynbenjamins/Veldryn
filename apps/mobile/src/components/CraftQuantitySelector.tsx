@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Text,TextInput,Pressable,StyleSheet,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
@@ -8,19 +8,27 @@ type Props={value:number;max:number;onChange:(value:number)=>void;disabled?:bool
 
 export function CraftQuantitySelector({value,max,onChange,disabled=false,unit,limitLabel}:Props){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt}=useGameplayText();
- const [trackWidth,setTrackWidth]=useState(1),[draft,setDraft]=useState(String(value));
+ const [trackWidth,setTrackWidth]=useState(1),[draft,setDraft]=useState(String(value)),[dragRatio,setDragRatio]=useState<number|null>(null);
+ const dragOrigin=useRef<{pageX:number;localX:number}|null>(null);
  const upper=Math.max(0,Math.floor(max)),current=upper>0?Math.max(1,Math.min(upper,value)):0,locked=disabled||upper===0;
+ const lastSelected=useRef(current);
  useEffect(()=>setDraft(String(current)),[current]);
+ useEffect(()=>{lastSelected.current=current;},[current]);
  const select=(next:number)=>{
   if(locked||!Number.isFinite(next))return;
-  onChange(Math.max(1,Math.min(upper,Math.round(next))));
+  const quantity=Math.max(1,Math.min(upper,Math.round(next)));
+  if(quantity===lastSelected.current)return;
+  lastSelected.current=quantity;
+  onChange(quantity);
  };
  const drag=(x:number)=>{
-  if(locked)return;
+  if(locked||upper<=1)return;
   const ratio=Math.max(0,Math.min(1,(x-11)/Math.max(1,trackWidth-22)));
-  select(upper===1?1:1+Math.round(ratio*(upper-1)));
+  setDragRatio(ratio);
+  select(1+Math.round(ratio*(upper-1)));
  };
  const percent=upper<=1?(upper===1?100:0):100*(current-1)/(upper-1);
+ const thumbPercent=dragRatio===null||upper<=1?percent:dragRatio*100;
  const unitLabel=unit??gt('batches');
  return <View style={s.root}>
   <View style={s.head}><Text style={s.label}>{gt('Quantity')}</Text><Text style={s.limit} accessibilityLiveRegion="polite">{limitLabel??(gt('Max')+': '+upper)}</Text></View>
@@ -36,11 +44,15 @@ export function CraftQuantitySelector({value,max,onChange,disabled=false,unit,li
   <View accessible accessibilityRole="adjustable" accessibilityLabel={gt('Craft quantity')} accessibilityState={{disabled:locked}} accessibilityValue={{min:upper?1:0,max:Math.max(1,upper),now:current,text:current+' / '+upper+' '+unitLabel}}
    accessibilityActions={[{name:'increment'},{name:'decrement'}]} onAccessibilityAction={event=>select(current+(event.nativeEvent.actionName==='increment'?1:-1))}
    onLayout={event=>setTrackWidth(event.nativeEvent.layout.width)}
-   onStartShouldSetResponder={()=>!locked} onMoveShouldSetResponder={()=>!locked}
-   onResponderGrant={event=>drag(event.nativeEvent.locationX)} onResponderMove={event=>drag(event.nativeEvent.locationX)}
+   onStartShouldSetResponder={()=>!locked&&upper>1} onMoveShouldSetResponder={()=>!locked&&upper>1}
+   onResponderGrant={event=>{dragOrigin.current={pageX:event.nativeEvent.pageX,localX:event.nativeEvent.locationX};drag(event.nativeEvent.locationX);}}
+   onResponderMove={event=>{const origin=dragOrigin.current;if(origin)drag(origin.localX+event.nativeEvent.pageX-origin.pageX);}}
+   onResponderTerminationRequest={()=>false}
+   onResponderRelease={()=>{dragOrigin.current=null;setDragRatio(null);}}
+   onResponderTerminate={()=>{dragOrigin.current=null;setDragRatio(null);}}
    style={[s.touchTrack,locked&&s.disabled]}>
-    <View pointerEvents="none" style={s.track}><View style={[s.fill,{width:(percent+'%') as `${number}%`}]}/></View>
-    <View pointerEvents="none" style={[s.thumb,{left:Math.max(0,trackWidth-22)*percent/100}]}/>
+    <View pointerEvents="none" style={s.track}><View style={[s.fill,{width:(thumbPercent+'%') as `${number}%`}]}/></View>
+    <View pointerEvents="none" style={[s.thumb,{left:Math.max(0,trackWidth-22)*thumbPercent/100}]}/>
   </View>
   <View style={s.scale}><Text style={s.scaleText}>{upper?1:0} {unitLabel}</Text><Text style={s.scaleText}>{upper} · {gt('Max')}</Text></View>
  </View>;

@@ -74,15 +74,15 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     <CoopImageSlot assetId={room?.art??'node_event'} size="node" accessibilityLabel={title}/>
     <View style={s.content}>
      <View style={s.heading}>
-      <Text style={s.title} numberOfLines={1}>{title}</Text>
+      <Text style={s.title} numberOfLines={2}>{title}</Text>
       {live?<View style={s.voteLine}>
        <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}
       </View>:null}
       <Text style={[s.actionCue,bossExit&&s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
-     {preview?<Text numberOfLines={1} style={s.preview}>{preview}</Text>:null}
-     {bossExit?<Text numberOfLines={1} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
+     {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
+     {bossExit?<Text numberOfLines={2} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier||roomMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}
       {!riskBaseline?<View style={s.riskTag}><Text style={s.riskText} numberOfLines={1}>{translatedRisk}</Text></View>:null}
@@ -96,14 +96,14 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
 }
 function makeStyles(C:CoopColors){return StyleSheet.create({
  list:{gap:6},
- card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
+ card:{minHeight:70,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
  bossCard:{borderColor:C.gold,backgroundColor:C.surfaceRaised},continueCard:{borderColor:C.cyan,backgroundColor:C.surface},bossAction:{color:C.gold},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
  content:{flex:1,minWidth:0,justifyContent:'center',gap:2},
  heading:{flexDirection:'row',alignItems:'center',gap:6,minHeight:19},
  title:{flex:1,minWidth:0,fontSize:15,lineHeight:20,color:C.text,fontWeight:'800'},
- tags:{flexDirection:'row',alignItems:'center',gap:5},
+ tags:{flexDirection:'row',alignItems:'center',gap:5,flexWrap:'wrap'},
  modifierTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
  modifierText:{fontSize:10,lineHeight:13,color:C.cyan,fontWeight:'800'},
  riskTag:{borderRadius:4,paddingHorizontal:5,paddingVertical:1,backgroundColor:C.surfaceRaised,maxWidth:'48%'},
@@ -114,6 +114,6 @@ function makeStyles(C:CoopColors){return StyleSheet.create({
  voteLine:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
  myVote:{alignItems:'center',justifyContent:'center'},
  votes:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800'},
- actionCue:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800',flexShrink:0},
+ actionCue:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800',flexShrink:1,maxWidth:'50%',textAlign:'right'},
  chevron:{fontSize:16,lineHeight:18,color:C.gold,fontWeight:'700'},
  });}

@@ -23,5 +23,6 @@ assert.match(recipes,/import \{TOOL_RECIPES\} from '\.\/gathering-tools'/,'Smith
 assert.match(forge,/\[queueOpen,setQueueOpen\]=useState\(\(\)=>!preferred&&equipmentCraftQueueModel\(state,Date\.now\(\)\)\.ready>0\)/,'A focused tool recipe must take priority over the open forge queue');
 assert.match(forge,/setItemId\(preferred\.output\.itemId\);setDetailsOpen\(false\);setQueueOpen\(false\)/,'Switching to a focused recipe closes the queue panel');
 assert.match(forge,/itemDef\(preferred\.output\.itemId\)\.type==='tool'\?'tools':'materials'/,'A tool recipe should open the Tools category');
-assert.match(browser,/initialExpanded=\{recipeGroup\.rows\.some\(row=>row\.recipe\.id===preferredRecipeId\)\}/,'The selected tool recipe must expand its details');
+assert.match(browser,/const initialExpandedKey=variantGroups\.find\(group=>group\.recipes\.some\(recipe=>recipe\.id===preferredRecipeId\)\)\?\.key\?\?null/,'Deep links must identify the exact grouped recipe first');
+assert.match(browser,/controlledExpanded=\{openRecipeKey===recipeGroup\.key\}/,'The focused tool recipe must open through the shared single-expanded-card state');
 console.log('PASS: tool Recipe deep links preserve the focused Smithing tool and its crafting details');

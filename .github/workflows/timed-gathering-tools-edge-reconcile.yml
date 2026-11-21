@@ -9,6 +9,14 @@ on:
       - 'apps/mobile/src/**'
       - 'apps/mobile/tests/**'
       - 'backend/online/**'
+  pull_request:
+    branches: ['main']
+    paths:
+      - '.github/workflows/timed-gathering-tools-edge-reconcile.yml'
+      - 'apps/mobile/App.tsx'
+      - 'apps/mobile/src/**'
+      - 'apps/mobile/tests/**'
+      - 'backend/online/**'
   workflow_dispatch:
 
 permissions:

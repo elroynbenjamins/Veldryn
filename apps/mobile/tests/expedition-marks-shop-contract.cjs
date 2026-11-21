@@ -58,6 +58,7 @@ assert(shopView.includes('matching.map(item=>renderOffer(item,true))'),'collecti
 assert(shopView.includes('{chosen?renderOffer(chosen):null}'),'selected collectible must show its detail below the entire row');
 assert(shopView.includes('expanded&&!compact'),'expanded collectible details must never be cramped inside a tile');
 assert(shopView.includes("width:'31.5%'"),'mobile layout should show three item tiles inline');
+assert(shopView.includes('viewportWidth<360')&&shopView.includes('horizontal nestedScrollEnabled'),'narrow devices must keep collectibles inline in a swipeable row');
 assert(shopView.includes('dungeonShopCollectionLabel(language,category)'),'all collection group titles must be localized');
 
 assert(screen.includes('<ExpeditionShopPanel'),'the existing Dungeon entry opens the finished shop');

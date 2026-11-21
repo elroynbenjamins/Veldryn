@@ -40,11 +40,19 @@ const canonical=[
  leg('inbox',0,'inbox:'+source,1),
 ];
 type Mode='valid'|'duplicate_missing'|'material_as_equipment'|
- 'guarantee_as_equipment'|'inbox_as_equipment'|'missing'|'quantity';
+ 'guarantee_as_equipment'|'inbox_as_equipment'|'missing'|'quantity'|
+ 'gear_missing_instance';
 let mode:Mode='valid';
+let gearPreview=false;
 let physicalChecks=0,connections=0,releases=0;
+let currentReceipt:FrozenChestReceiptV69=receipt;
 const rows=()=>{
  const copy=canonical.map(x=>({...x}));
+ if(gearPreview){
+  copy[2]!.reward_id='PE_WAYFARERS_PACT_BOOTS';
+  copy[2]!.quantity=1;
+  copy[2]!.item_instance_id=strayItem;
+ }
  switch(mode){
  case 'duplicate_missing':
   // Correct row count, but second guaranteed reward never existed.
@@ -59,6 +67,8 @@ const rows=()=>{
   copy.pop();break;
  case 'quantity':
   copy[1]!.quantity++;break;
+ case 'gear_missing_instance':
+  copy[2]!.item_instance_id=null;break;
  }
  return copy;
 };
@@ -72,14 +82,14 @@ const pool:ChestPoolV70={connect:async()=>{
    if(sql.startsWith('select account_id::text as account_id'))
     result=[{account_id:account}];
    else if(sql.startsWith('select receipt from private.chest_reward_receipts_v70'))
-    result=[{receipt}];
+    result=[{receipt:currentReceipt}];
    else if(sql.includes('from private.chest_reward_grant_legs_v70'))
     result=rows();
    else if(!sql.startsWith('begin isolation level')&&
     !sql.startsWith('set local')&&!sql.startsWith('insert into private.chest_account_fence_v70')&&
     sql!=='commit'&&sql!=='rollback')
     throw Error('chest_v85_unexpected_sql:'+sql);
-   return {rows:result as T[]};
+   return {rows:result as unknown as T[]};
   },
   release(){releases++},
  };
@@ -109,7 +119,24 @@ async function run(){
   check(!await verify(),'reject_'+bad);
   check(physicalChecks===1,'reject_before_physical_port_'+bad);
  }
- check(releases===connections&&connections===7,
+ // A future registered EQ2 chest replay must require an actual frozen
+ // item-instance UUID, while successful character-custody replay survives.
+ gearPreview=true;
+ currentReceipt={...receipt,
+  recipientCharacterId:'33333333-3333-4333-8333-333333333333',
+  equipmentDeliveryMode:'character',
+  groups:[{groupId:'equipment',type:'equipment',chanceBps:10000,
+   hit:true,entryId:'PE_WAYFARERS_PACT_BOOTS',quantity:1}],
+  drops:[{groupId:'equipment',type:'equipment',
+   entryId:'PE_WAYFARERS_PACT_BOOTS',quantity:1}],
+ };
+ mode='valid';
+ check(await verify(),'valid_frozen_equipment_instance');
+ check(physicalChecks===2,'valid_equipment_reaches_physical_port');
+ mode='gear_missing_instance';
+ check(!await verify(),'missing_equipment_instance_rejected');
+ check(physicalChecks===2,'missing_equipment_stops_before_port');
+ check(releases===connections&&connections===9,
   'all_replay_paths_release_transaction');
  console.log('CHEST_V85_REPLAY_GUARD_OK: duplicate/missing legs, phantom equipment custody, truncated grants and forged quantity reject before physical port; valid legacy replay retained');
 }

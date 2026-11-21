@@ -42,7 +42,7 @@ function rejects(fn:()=>unknown,match:RegExp){
 }
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,candidate as unknown as PersistedEnemyKitV2),/invalid_stored_kit/);
 rejects(()=>prepareSoloEnemyKitsV2(candidate.preparedEnemies,options),/unverified_or_already_compiled_enemy/);
-rejects(()=>prepareSoloEnemyKitsV2(enemies,{...options,equipmentTier:1}),/unsupported_region_or_tier/);
+rejects(()=>prepareSoloEnemyKitsV2([base('UNKNOWN','unclassified')],{...options,equipmentTier:1,eliteEnemyIds:[]}),/unsupported_t1_archetype/);
 rejects(()=>prepareSoloEnemyKitsV2(enemies,{...options,eliteEnemyIds:['OTHER']}),/invalid_elite_enemy_ids/);
 rejects(()=>prepareSoloEnemyKitsV2([...enemies,enemies[0]],options),/unverified_or_already_compiled_enemy/);
 rejects(()=>prepareSoloEnemyKitsV2([{...enemies[0],abilities:[
@@ -63,11 +63,65 @@ rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
 const changedPreview=persisted.preview.map(p=>({...p,traitIds:[...p.traitIds]}));
 changedPreview[0].traitIds=['warded'];
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,preview:changedPreview}),/stored_trait_evidence_mismatch/);
-const forgedAbilityPreview=persisted.preview.map(p=>({...p,abilityNames:[...p.abilityNames]}));
+
+// Tier 2+ receipts are verified against actual deterministic authoring, not
+// just a digest that a forged persisted object could recalculate.
+// Canonical-parent regression: a saved preview cannot claim extra actions.
+const forgedAbilityPreview=persisted.preview.map(p=>({
+ ...p,abilityNames:[...p.abilityNames],
+}));
 forgedAbilityPreview[0].abilityNames.push('Fabricated enemy ability');
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
  ...persisted,preview:forgedAbilityPreview,
-}),/stored_preview_mechanics_mismatch/);
+}),/stored_preview_does_not_match_kit/);
+
+const boosted=persisted.preparedEnemies.map((e,i)=>i===0?({
+ ...e,stats:{...e.stats,attackPower:e.stats.attackPower*1.5},
+}):e);
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,preparedEnemies:boosted,
+ preparedEnemyDigest:enemyV2SnapshotDigest(boosted),
+}),/stored_seeded_enemy_kit_mismatch/);
+const injected=persisted.preparedEnemies.map((e,i)=>i===0?({
+ ...e,abilities:[...e.abilities,{
+  id:'ENEMY_V2_FORGED_BURST',name:'Forged Burst',priority:60,
+  cooldownMs:15000,castTimeMs:1200,target:'current_target' as const,
+  effects:[{kind:'damage' as const,coeff:99,damageType:'physical' as const}],
+ }],
+}):e);
+const injectedPreview=persisted.preview.map((p,i)=>i===0?({
+ ...p,abilityNames:[...p.abilityNames,'Forged Burst'],
+}):p);
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,preparedEnemies:injected,preview:injectedPreview,
+ preparedEnemyDigest:enemyV2SnapshotDigest(injected),
+}),/stored_seeded_enemy_kit_mismatch/);
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,seed:'attacker-replaced-original-seed-7777',
+}),/stored_seeded_enemy_kit_mismatch|stored_seeded_enemy_preview_mismatch/);
+// Find and verify a deterministic Tier 2 normal that did not roll a trait.
+// Even an unrolled entry may not gain fabricated power on persisted replay.
+let plain:ReturnType<typeof prepareSoloEnemyKitsV2>|undefined;
+for(let i=0;i<100&&!plain;i++){
+ const attempt=prepareSoloEnemyKitsV2([base('UNROLLED','guardian')],{
+  ...options,region:'asterfall',equipmentTier:2,eliteEnemyIds:[],
+  serverSeed:'plain-seed-'+String(i).padStart(8,'0'),
+ });
+ if(attempt.preview[0].traitIds.length===0)plain=attempt;
+}
+assert.ok(plain,'Asterfall normal should offer some zero-trait rolls');
+const plainBase=[base('UNROLLED','guardian')];
+const plainReceipt:PersistedEnemyKitV2={...plain,
+ source:'server-persisted-v2',revision:1};
+assert.deepEqual(verifyPersistedEnemyKitsV2(plainBase,plainReceipt).enemies,
+ plain.preparedEnemies);
+const forgedPlain=plain.preparedEnemies.map(e=>({
+ ...e,stats:{...e.stats,maxHp:e.stats.maxHp*2},
+}));
+rejects(()=>verifyPersistedEnemyKitsV2(plainBase,{
+ ...plainReceipt,preparedEnemies:forgedPlain,
+ preparedEnemyDigest:enemyV2SnapshotDigest(forgedPlain),
+}),/stored_seeded_enemy_kit_mismatch/);
 
 const bosses=[
  {id:'BOSS_EXP_ROOT',region:'asterfall',name:'Asterfall Root'},
@@ -97,12 +151,12 @@ for(const {id,region,name} of bosses){
  const stored:PersistedEnemyKitV2={...plan,source:'server-persisted-v2',revision:3};
  assert.deepEqual(verifyPersistedEnemyKitsV2([boss],stored).enemies,plan.preparedEnemies);
  if(id==='BOSS_EXP_ROOT'){
-  const forgedPhasePreview=stored.preview.map(p=>({...p,
-   phaseNames:[...p.phaseNames,'Fabricated boss phase'],
+  const forgedPhasePreview=stored.preview.map(p=>({
+   ...p,phaseNames:[...p.phaseNames,'Fabricated boss phase'],
   }));
   rejects(()=>verifyPersistedEnemyKitsV2([boss],{
    ...stored,preview:forgedPhasePreview,
-  }),/stored_preview_mechanics_mismatch/);
+  }),/stored_preview_does_not_match_kit/);
  }
  const missingLegacy=plan.preparedEnemies.map(e=>({...e,
    phases:e.phases?.filter(p=>p.id!=='LEGACY_PHASE'),
@@ -121,5 +175,5 @@ rejects(()=>prepareSoloEnemyKitsV2([incorrectName],{...options,eliteEnemyIds:[]}
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
  ...persisted,preview:[null as never,...persisted.preview.slice(1)],
 }),/invalid_stored_preview/);
-assert.equal(failed,25);
-console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 25 fail-closed receipts');
+assert.equal(failed,29);
+console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 29 fail-closed receipts including forged seeded traits and unrolled normals');

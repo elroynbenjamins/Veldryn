@@ -103,6 +103,10 @@ for(const id of ['asterfall','sunscar','frostmarch','dungeon']){
         # This installer preserves that behavior, plus extra SFX rows on --only sfx.
         needle="if not manifest[k]: manifest[k] = old.get(k, {})"
         gen=replace_once(gen,needle,needle+"\n    if args.only == 'sfx':\n        for key, row in old.get('sfx', {}).items():\n            if row.get('source') == 'original procedural synthesis, no third-party samples':\n                manifest['sfx'][key] = row",gen_file)
+        # Keep generated imports pointing to the new .ogg files after future SFX re-renders.
+        old_asset_ref="../../assets/audio/{kind}/{name}.mp3"
+        new_asset_ref="../../assets/audio/{kind}/{name}.{manifest[kind][name].get('file_ext', 'mp3')}"
+        gen=replace_once(gen,old_asset_ref,new_asset_ref,gen_file)
         staged[MOBILE/'assets/audio/manifest.json']=(json.dumps(manifest_src,indent=2,sort_keys=True)+'\n').encode()
         staged[asset_file]=asset_map.encode()
         staged[test_file]=tests.encode()

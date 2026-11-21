@@ -44,6 +44,7 @@ const common={
  "Cloth and leather equipment":["Cloth and leather equipment","Stoff- und Lederausrüstung","Equipo de tela y cuero","Stoffen en leren uitrusting","Equipaggiamento in stoffa e pelle","Équipement en tissu et cuir"],
  "Gem refinement and combining":["Gem refinement and combining","Edelsteine veredeln und kombinieren","Refinar y combinar gemas","Edelstenen verfijnen en samenvoegen","Raffinare e combinare gemme","Affinage et fusion des gemmes"],
  "Open Forge":["Open Forge","Schmiede öffnen","Abrir forja","Open de smederij","Apri la forgia","Ouvrir la forge"],
+ "Queue, mastery & rewards":["Queue, mastery & rewards","Warteschlange, Meisterschaft & Belohnungen","Cola, maestría y recompensas","Wachtrij, meesterschap en beloningen","Coda, maestria e ricompense","File d’attente, maîtrise et récompenses"],
  "Manage crafting jobs and mastery":["Manage crafting jobs and mastery","Aufträge und Meisterschaft verwalten","Gestiona trabajos y maestría","Beheer opdrachten en meesterschap","Gestisci lavori e maestria","Gérer les travaux et la maîtrise"],
  // Bulk crafting quantity controls shared by every profession.
  "Choose quantity":["Choose quantity","Menge wählen","Elegir cantidad","Kies aantal","Scegli quantità","Choisir la quantité"],

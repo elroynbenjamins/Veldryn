@@ -11,7 +11,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
   authoredChanceForFinal,catalogIds,effectiveNormalMaterialChance,
-  existingSmelting,gatherNodes,monsterSources
+  existingAlchemyOutputs,existingSmelting,gatherNodes,monsterSources
 } from './lib/eq2-source-introspection-v1.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -27,13 +27,18 @@ const categories={
   'items.ts':read(base+'items.ts'),
   'herbalism.ts':read(base+'herbalism.ts'),
   'guild-components.ts':read(base+'guild-components.ts'),
-  'cross-profession-components.ts':read(base+'cross-profession-components.ts')
+  'cross-profession-components.ts':read(base+'cross-profession-components.ts'),
+  'alchemy.ts':read(base+'alchemy.ts'),
+  'novice-sets.ts':read(base+'novice-sets.ts'),
+  'gathering-tools.ts':read(base+'gathering-tools.ts'),
+  'gems-v1.ts':read(base+'gems-v1.ts')
 };
 const itemIds=catalogIds(categories);
 const nodes=[...gatherNodes(read(base+'skills.ts'),'gathering'),
   ...gatherNodes(categories['herbalism.ts'],'herbalism')];
 const monsters=monsterSources(read(base+'monsters.ts'));
 const smelts=existingSmelting(read(base+'skills.ts'));
+const alchemy=existingAlchemyOutputs(categories['alchemy.ts']);
 const exact=(a,b)=>JSON.stringify(Object.entries(a).sort())===JSON.stringify(Object.entries(b).sort());
 const toMap=ingredients=>Object.fromEntries(ingredients.map(x=>[x.itemId,x.quantity]));
 const claimed=new Set();
@@ -50,13 +55,14 @@ const allTiers=cfg.tierSpecs.map(tier=>{
     const matchingMonsters=monsters.filter(m=>m.itemId===id);
     const existingRecipe=smelts.find(r=>r.outputId===id);
     const proposedRecipe=tier.processing.find(r=>r.output===id);
+    const alchemyRecipes=alchemy.filter(r=>r.outputId===id);
     const existingMaterials=itemIds.get(id)||[];
     if(kind==='common'||kind==='rare'){
       // No proposed combat material is declared live until explicitly wired.
       // Existing drop ID matches are evidence of mobile definition only.
       check(!!id,'no combat id');
     }
-    if(!matchingNodes.length&&!matchingMonsters.length&&!existingRecipe&&!proposedRecipe&&!existingMaterials.length)
+    if(!matchingNodes.length&&!matchingMonsters.length&&!existingRecipe&&!proposedRecipe&&!alchemyRecipes.length&&!existingMaterials.length)
       claimed.add(id);
     const collision=existingRecipe&&proposedRecipe
       ?(!exact(toMap(existingRecipe.inputs),proposedRecipe.inputs)
@@ -68,9 +74,10 @@ const allTiers=cfg.tierSpecs.map(tier=>{
       itemId:id, role:kind, catalogDeclarations:existingMaterials,
       knownGatherNodes:matchingNodes, knownMonsterDrops:matchingMonsters,
       existingProcessing:existingRecipe||null,
+      existingAlchemyRecipes:alchemyRecipes,
       proposedProcessing:proposedRecipe||null,
       sameOutputDifferentRecipe:collision,
-      sourceReviewNeeded:!(matchingNodes.length||matchingMonsters.length||existingRecipe||proposedRecipe)
+      sourceReviewNeeded:!(matchingNodes.length||matchingMonsters.length||existingRecipe||proposedRecipe||alchemyRecipes.length)
     };
   });
   const commonId=tier.items.common,rareId=tier.items.rare;
@@ -102,21 +109,23 @@ const coverage=allTiers.flatMap(t=>t.materials).reduce((acc,row)=>{
   if(row.knownGatherNodes.length)acc.gathered++;
   if(row.knownMonsterDrops.length)acc.monsterDrops++;
   if(row.existingProcessing)acc.existingProcessing++;
+  if(row.existingAlchemyRecipes.length)acc.existingAlchemyOutputs++;
   if(row.proposedProcessing)acc.proposedProcessing++;
   if(row.sameOutputDifferentRecipe)acc.conflictingExistingRecipeIds.push(row.itemId);
   return acc;
-},{references:0,registered:0,gathered:0,monsterDrops:0,existingProcessing:0,proposedProcessing:0,conflictingExistingRecipeIds:[]});
+},{references:0,registered:0,gathered:0,monsterDrops:0,existingProcessing:0,existingAlchemyOutputs:0,proposedProcessing:0,conflictingExistingRecipeIds:[]});
 check(coverage.proposedProcessing===16,'processing source coverage');
 check(coverage.conflictingExistingRecipeIds.includes('SUNSTONE_INGOT'),
   'existing Sunstone Ingot conflict no longer present; review this audit');
 console.log(JSON.stringify({
   status:'REVIEW_ONLY_NO_RUNTIME',
-  scope:'Inspected mobile catalog, gather, herbalism and MONSTERS_RAW only. Neither production nor authenticated server drop commits audited.',
+  scope:'Inspected mobile catalog declarations, source nodes, existing Smithing/Alchemy recipes and MONSTERS_RAW only. Neither production nor authenticated server drop commits audited.',
   coverage,
   notObservedWithAnyDefinitionOrSourceInInspectedMobileFiles:[...claimed].sort(),
   observedGatherNodes:nodes.length,
   observedAuthoredMonsterDrops:monsters.length,
   existingSmeltingRecipesReviewed:smelts.length,
+  existingAlchemyRecipesReviewed:alchemy.length,
   cautions:[
     'An existing-looking ID may be in another imported catalog; this is a conservative source finding.',
     'No combat loot eligibility, PvE anti-abuse, server version, global drop caps or elite rates verified.',

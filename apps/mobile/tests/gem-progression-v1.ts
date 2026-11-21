@@ -165,7 +165,7 @@ ok(incompatibleLegacy.statGemId===might&&incompatibleLegacy.statGemRollPercent==
 const compatibleLegacy=normalizeEnhancementGemSlots({rank:0,failures:0,statGemId:might,statGemRollPercent:110,gemIds:[]});
 ok(compatibleLegacy.statGemRollPercent===110,'A valid existing named socket retains its saved roll');
 const legacyState={...rollState,character:{...rollState.character!,gearEnhancements:{basic_sword:{rank:0,failures:0,statGemId:might,gemIds:[]}}}};
-ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.power??0)-.004)<1e-10,'Older socketed gems preserve their original midpoint value');
+ok(Math.abs((equippedCanonicalStatGemBonusesV1(legacyState).statPercent.attack??0)-.01)<1e-10,'Existing unrolled Might sockets default to 100% of the V2 Attack grade');
 
 const legacyRollBase={...rollState,inventory:{...rollState.inventory,stacks:[{itemId:'EMBER_SHARD',quantity:5},{itemId:'SWIFT_SIGIL',quantity:4}]}};
 const legacyLow=socketGem(legacyRollBase,'basic_sword','EMBER_SHARD',0);

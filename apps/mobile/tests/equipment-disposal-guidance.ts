@@ -24,6 +24,31 @@ for(const action of ['sell','salvage'] as const){
 const upgraded:GameState={...state,account:{...state.account,craftedGearInstances:[{...copy,enhancement:{...copy.enhancement,rank:1}}]}};
 assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'sell').allowed,true,'upgraded exact copies are sellable when not manually protected');
 assert.equal(equipmentCopyDisposalDecision(upgraded,copy.id,'salvage').allowed,true,'upgraded exact copies are salvageable when not manually protected');
+// Regression: older saves retain an itemId-only +1 enchantment even after
+// independently tracked forged copies (sometimes socketed) replace that gear.
+// Manual exact-copy disposal must not be blocked by the orphaned legacy key.
+const legacyEnhancement={rank:1,failures:0,gemIds:[] as string[]};
+const legacyAndSocketed:GameState={...socketed,character:{...socketed.character!,
+ gearEnhancements:{...(socketed.character!.gearEnhancements??{}),[copy.itemId]:legacyEnhancement}}};
+for(const action of ['sell','salvage'] as const){
+ assert.equal(equipmentCopyDisposalDecision(legacyAndSocketed,copy.id,action).allowed,true,
+  'an unrelated itemId-only old enchantment must not block an exact copy');
+}
+const legacyPouch:GameState={...legacyAndSocketed,
+ inventory:{...legacyAndSocketed.inventory,stacks:[]},
+ character:{...legacyAndSocketed.character!,equipmentPouch:{capacity:30,stacks:[stack]}}};
+assert.equal(equipmentCopyDisposalDecision(legacyPouch,copy.id,'salvage').allowed,true,
+ 'a socketed, exact pouch copy can be salvaged despite a stale itemId +1 record');
+const legacyPouchSalvaged=disposeCraftedGearInstance(legacyPouch,copy.id,'salvage');
+assert.equal(legacyPouchSalvaged.account.craftedGearInstances?.some(row=>row.id===copy.id),false,
+ 'only the selected exact copy is destroyed');
+assert.equal(legacyPouchSalvaged.character!.equipmentPouch!.stacks.length,0,
+ 'the selected pouch copy is removed');
+assert.deepEqual(legacyPouchSalvaged.character!.gearEnhancements?.[copy.itemId],legacyEnhancement,
+ 'the unrelated historical enhancement record remains untouched for reconciliation');
+assert.equal(legacyPouch.account.craftedGearInstances?.some(row=>row.id===copy.id),true,
+ 'the original state retains its exact copy and receipt');
+
 const locked:GameState={...state,account:{...state.account,craftedGearInstances:[{...copy,locked:true}]}};
 assert.match(equipmentCopyDisposalDecision(locked,copy.id,'sell').reason??'',/locked/i,'per-copy lock persists');
 const typeLocked:GameState={...state,settings:{...state.settings,lockedItemIds:[copy.itemId]}};

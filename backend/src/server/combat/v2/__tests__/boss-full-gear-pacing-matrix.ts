@@ -67,8 +67,9 @@ function verifiedThreeSlotGear(
  const instances:Record<string,{
   id:string;itemId:string;tier:string;rarity:string;quality:number;ownerCharacterId:string;
  }>={};
+ // Authoritative item definitions require a literal tier union, not string.
  const definitions:Record<string,{
-  itemId:string;slot:GearSlotV2;tier:string;
+  itemId:string;slot:GearSlotV2;tier:Boss['tier'];
   primaryStats:Partial<Record<keyof CombatStats,number>>;
  }>={};
  const affixes:Record<string,{

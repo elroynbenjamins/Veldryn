@@ -81,3 +81,17 @@ Historical hidden catalogue milestones were 118/236, 122/244 and a later review 
 New tests and a narrow GitHub Actions workflow are committed. The exact-head workflow has been **queued**, not confirmed green. There is **no real DB integration, approved coefficient change, live flag, SQL migration, item minting, public UI or theme implementation**.
 
 **Status: HOLD — owner balance approval, actual visual mockup/theme approval and full staging+CI are still required.**
+
+
+## Verified original partial-set catalogue snapshot
+
+The audited pinned Forge manifest blob 48ac6ecccec70b215e419bf3252fad7965dd621f contains **66 core non-armament items**: 42 set pieces and 24 standalone pieces. Its actual 15 sets are **six 2-piece, six 3-piece and three 4-piece** sets, with no 6-piece set.
+
+| Tier | Existing complete authored sets | Valid set completion threshold |
+| --- | --- | --- |
+| T1 | Fieldborn Guard, Fieldborn Trail, Fieldborn Acolyte (3 × 2 pieces) | 2 only |
+| T2 | Ironwood Sentinel, Ironwood Stalker, Ironwood Mender (3 × 3 pieces) | 2 and 3 if authored |
+| T3 | Sunscar Thornhide, Sunscar Breaksteel, Sunscar Wildroot (3 × 3 pieces) | 2 and 3 if authored |
+| T4 | Glassbound Bulwark, Glassbound Shadowstep, Glassbound Lifewoven (3 × 4 pieces); Glassbound Retaliator, Spellweave, Dawnshield (3 × 2 pieces) | 2 and 4 for 4-piece; 2 for 2-piece |
+
+These are names and counts in the historical 118-item Forge source, **not** proof the later 169-item review has exactly the same complete set membership. A 6-piece threshold must remain **unavailable** until six actual legal pieces are present in one reconciled canonical set. Pairing unrelated set IDs cannot trigger an invented six-piece reward.

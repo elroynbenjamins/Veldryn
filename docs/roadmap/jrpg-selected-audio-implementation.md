@@ -18,6 +18,21 @@ Those are the exact user-selected composition previews; **do not substitute** th
 - 800 ms global cooldown, soft per-cue gain, and the existing Sound Effects Off/Low/Medium/High setting.
 - SFX are procedurally generated original files, no third-party samples.
 
+## November 22 implementation progress (review branch)
+The ten crafting cues now have original procedural synthesis source in
+`tools/audio/generate-game-audio.py`, confirmed-action trigger wiring, and
+`apps/mobile/tests/game-audio.ts` coverage. A branch-scoped Actions workflow
+(`.github/workflows/render-crafting-sfx-review.yml`) renders MP3s, updates the
+Metro asset map and manifest, checks duration/budget, and commits its outputs.
+Until its generated binary commit is verified, **do not claim the cues are packaged**.
+These self-synthesized crafting cues use no third-party audio samples.
+
+The earlier review ZIP is still the authoritative source for the **four exact
+music selections**, not the older tracks under the same runtime IDs. Neither
+an unverified ZIP nor the GPL-linked music preview should enter main/release.
+The ZIP installer now replaces existing cue entries instead of duplicating them,
+so a future reviewed source can be staged without breaking the asset map.
+
 ## Asset installation
 The ChatGPT audio review ZIP includes four music OGGs and ten SFX MP3s with the required file names and SHA-256 provenance.
 

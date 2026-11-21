@@ -298,6 +298,20 @@ try{
   })]);
  assert.equal((await open('participation')).replayed,true,
   'historical resource consumption cannot trigger a second payout');
+ // An independently settled week does not bypass incomplete optional
+ // preparation orders. Stop before any V70 source receipt or currency credit.
+ await db.query('UPDATE private.party_event_supply_orders_v16 '+
+  'SET donated_quantity=9 WHERE id=$1',[orderId]);
+ await assert.rejects(()=>open('preparation'),
+  /party_event_v77_unearned_or_foreign_chest/);
+ assert.equal((await db.query('SELECT COUNT(*)::int AS n FROM '+
+  'private.chest_reward_receipts_v70 WHERE source_key=$1',
+  [kindKey('preparation')])).rows[0].n,0);
+ assert.equal((await db.query('SELECT balance::text AS balance FROM '+
+  'private.party_sigils_wallet_v65 WHERE account_id=$1',
+  [account])).rows[0].balance,'8');
+ await db.query('UPDATE private.party_event_supply_orders_v16 '+
+  'SET donated_quantity=10 WHERE id=$1',[orderId]);
  // A full Inventory + Bank rejects the second chest; receipt, Sigils,
  // mutable game state, and audit all roll back in the SAME transaction.
  const blocked={...saved,character:{...saved.character,gold:250},

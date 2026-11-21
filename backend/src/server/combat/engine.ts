@@ -361,8 +361,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       }}return;}
     if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',expiresAt=now+(effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
+      const classSkillId=source.combatV2&&abilityId.includes(':v2:')?abilityId:undefined;
+      if(classSkillId){
+        // Refresh only an older copy of this exact authored buff/debuff.
+        // Distinct abilities, party sources and separate effects in one cast
+        // remain independent. Legacy status stacking stays unchanged.
+        target.modifiers=target.modifiers.filter(m=>
+          m.v2SourceAbilityId!==classSkillId||m.sourceId!==source.definition.id||
+          m.kind!==effect.kind||m.tag!==tag||m.createdAt===now);
+      }
       const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
-        ...(capstoneId?{v2CapstoneId:capstoneId}:{})};
+        ...(capstoneId?{v2CapstoneId:capstoneId}:{}),
+        ...(classSkillId?{v2SourceAbilityId:classSkillId}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.modifiers=applyEnemyV2Modifier(target.modifiers,modifierEntry).entries;
       else target.modifiers.push(modifierEntry);

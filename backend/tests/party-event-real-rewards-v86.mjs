@@ -9,8 +9,6 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {PGlite} from '@electric-sql/pglite';
 const require=createRequire(import.meta.url);
-const {createPartyEventRealRewardPortsV86}=require(
- '../.event-chest-tests/server/party/weekly-party-event-real-reward-ports-v86.js');
 const {createChestPostgresStoreV70}=require(
  '../.event-chest-tests/server/loot/chest-postgres-store-v70.js');
 const {createChestRewardSettlementV69,deriveChestSettlementRollsV69}=require(
@@ -200,7 +198,6 @@ try{
  )).rows[0];
  assert.equal(privileges.anon_write,false);
  assert.equal(privileges.service_write,false);
- const real=createPartyEventRealRewardPortsV86(true);
  const ports={
   ...createPartyEventAtomicPortsV88(true),
   readAccountOwnedDrops:async()=>[],
@@ -210,7 +207,6 @@ try{
    return rows.length===1;
   },
   readApprovedEquipmentContext:async()=>({tier:2}),
-  ...real,
  };
  const pool={connect:async()=>({query:(sql,args)=>db.query(sql,args),release(){}})};
  const store=createChestPostgresStoreV70(pool,ports,true);

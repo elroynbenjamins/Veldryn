@@ -165,7 +165,7 @@ for(const b of bosses){
    const candidate=prepareSoloEnemyKitsV2([base],{
     ruleset:'enemy-v2-prototype-1',serverSeed:seed,
     encounterId:'QA_BOSS_GEAR_'+b.id+'_'+classId,
-    region:b.region,equipmentTier:Number(b.tier.slice(1)),
+    region:b.region,equipmentTier:(b.tier==='T2'?2:b.tier==='T3'?3:5),
     eliteEnemyIds:[],
    });
    const stored:PersistedEnemyKitV2={

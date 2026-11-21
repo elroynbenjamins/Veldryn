@@ -15,6 +15,10 @@ check(!marketCatalogCandidate('nonexistent_item'),'Unknown items must always be 
 check(!marketCatalogCandidate('TRAVEL_RATION'),'Food is not part of the initial market scope');
 
 const resource:GameState={...clean,inventory:{...clean.inventory,stacks:[{itemId:'COPPER_ORE',quantity:50}]}};
+const boundShopMaterial:GameState={...clean,inventory:{...clean.inventory,stacks:[{itemId:'TEMPERING_DUST',quantity:10,bound:true}]}};
+check(previewPlayerMarketListing(boundShopMaterial,'inventory',0,1).blockedBy.includes('account_bound'),
+ 'Account-bound Dungeon Shop enhancement materials must never be listed or escrowed');
+
 const partial=previewPlayerMarketListing(resource,'inventory',0,12);
 check(partial.candidate&&partial.availableQuantity===50&&partial.requestedQuantity===12,
   'Partial-stack resource previews must preserve exact available and requested quantities');

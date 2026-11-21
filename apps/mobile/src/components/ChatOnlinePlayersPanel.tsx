@@ -32,7 +32,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
    <View style={s.heading}>
     <View style={s.headingText}>
      <Text style={s.eyebrow}>{st('VELDRYN COMMUNITY')}</Text>
-     <Text accessibilityRole="header" numberOfLines={1} style={s.title}>{st('Active in Last 30 Minutes')}</Text>
+     <Text accessibilityRole="header" numberOfLines={1} style={s.title}>{compact?st('Active (30m)'):st('Active in Last 30 Minutes')}</Text>
     </View>
     <View style={s.totalPill}><View style={s.dot}/><Text style={s.totalText}>{count===null?'—':count}</Text></View>
     <Pressable accessibilityRole="button" accessibilityLabel={st('Close active players')} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
@@ -48,7 +48,7 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
       <Text style={[s.filterCount,filter===id&&s.filterTextActive]}>{id==='all'&&count===null?'…':counts[id]}</Text>
      </Pressable>)}
     </View>
-    <View style={s.meta}><Text style={s.note}>{st('Recently active, not necessarily online now')}</Text>{loading&&<ActivityIndicator size="small" color={C.info}/>}</View>
+    <View style={s.meta}><Text numberOfLines={1} style={s.note}>{st('Recently active, not necessarily online now')}</Text>{loading&&<ActivityIndicator size="small" color={C.info}/>}</View>
    </View>
    {error&&<View style={s.warning}><Text style={s.warningText}>{st('Unable to refresh active players.')}</Text><Pressable accessibilityRole="button" onPress={onRefresh} style={s.retry}><Text style={s.retryText}>{st('Retry')}</Text></Pressable></View>}
    <FlatList
@@ -97,7 +97,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  filterTextActive:{color:C.text},
  filterCount:{fontSize:10,fontWeight:'800',color:C.muted},
  meta:{height:21,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
- note:{fontSize:10,color:C.muted},
+ note:{fontSize:10,color:C.muted,flexShrink:1},
  warning:{marginHorizontal:12,marginTop:8,paddingHorizontal:10,minHeight:42,borderColor:C.warning,borderWidth:1,borderRadius:9,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,backgroundColor:C.panel2},
  warningText:{color:C.warning,fontSize:11,flexShrink:1},
  retry:{minHeight:40,justifyContent:'center',paddingHorizontal:8},

@@ -53,7 +53,7 @@ const restoration=previewLegacyAttackGemRestorationV2(
 assert.deepEqual(restoration.map(row=>row.canRestoreNow),[2,1]);
 assert.deepEqual(restoration.map(row=>row.grant),[
  {itemId:'gem:stat_might:g3',quantity:2},
- {itemId:'EMBERHEART_GEM',quantity:1},
+ {itemId:'LEGACY_EMBERHEART_GEM_V2',quantity:1},
 ]);
 assert.deepEqual(restoration.map(row=>row.consume),[
  {itemId:'gem:stat_might:g1',quantity:6},

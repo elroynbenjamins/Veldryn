@@ -10,7 +10,7 @@ import {RegionArtwork} from '../RegionArtwork';
 import {GameButton} from '../GameButton';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {formatLocalizedNumber} from '../../i18n/translator';
-import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason,dungeonShopCollectionLabel} from '../../i18n/dungeon-shop';
+import {dungeonShopText,dungeonShopOfferName,dungeonShopOfferSummary,dungeonShopOfferBonusDetails,dungeonShopBonusLabel,dungeonShopLockReason,dungeonShopCollectionLabel,dungeonShopSupplyGroupLabel} from '../../i18n/dungeon-shop';
 
 import type {DungeonMarksShopSnapshot,DungeonMarksShopCard} from '../../core/dungeon-marks-shop-types';
 import type {UiIconName} from '../../theme/ui-icons';
@@ -173,7 +173,16 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}
   {!snapshot?<Text style={s.meta}>{t('The server has not supplied a verified Dungeon Shop catalogue.')}</Text>:null}
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>{t('Dungeon Shop is being prepared. Purchases are unavailable.')}</Text>:null}
-  {shelf==='Supplies'?items.map(item=>renderOffer(item)):COLLECTION_GROUPS.map(category=>{
+  {shelf==='Supplies'?<>
+   {items.filter(item=>item.category==='material').map(item=>renderOffer(item))}
+   {(['companion','supply'] as const).map(category=>{
+    const matching=items.filter(item=>item.category===category);
+    return matching.length?<View key={category} style={s.supplyGroup}>
+     <Text accessibilityRole="header" style={s.groupTitle}>{dungeonShopSupplyGroupLabel(language,category)}</Text>
+     {matching.map(item=>renderOffer(item))}
+    </View>:null;
+   })}
+  </>:COLLECTION_GROUPS.map(category=>{
    const matching=items.filter(item=>item.category===category);
    if(!matching.length)return null;
    const chosen=matching.find(item=>item.id===selected);
@@ -196,7 +205,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tabs:{flexDirection:'row',gap:6},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center',padding:6,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel},
  selectedTab:{borderColor:C.selectionLine,backgroundColor:C.selection},tabLabel:{...typography.caption,color:C.muted,fontWeight:'800'},activeLabel:{color:C.text},
  card:{borderWidth:1,borderRadius:radii.md,borderColor:C.line,backgroundColor:C.panel,overflow:'hidden'},cardSelected:{borderColor:C.selectionLine},
- collectionGroup:{gap:8,marginTop:5},
+ collectionGroup:{gap:8,marginTop:5},supplyGroup:{gap:8,marginTop:5},
  groupTitle:{...typography.bodyStrong,color:C.text,fontSize:14},
  collectionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,alignItems:'stretch'},
  collectionCard:{width:'31.5%',minHeight:152},

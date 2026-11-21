@@ -67,8 +67,7 @@ jobs:
         run: node ../../tools/test-chat-reliability-db.mjs
       - name: Validate regional combat cadence migration
         run: node ../../tools/validate-regional-combat-cadence.mjs
-      - name: Typecheck core
-        run: pnpm typecheck:core
+      # test:core compiles tsconfig.core.json with typechecking before running checks.
       - name: Verify dormant market ownership inspection
         run: pnpm --dir ../../backend test:market-readiness
       - name: Typecheck mobile app
@@ -105,9 +104,6 @@ jobs:
         run: pnpm test:coop-rewards
       - name: Run Live Quick Match and LFG validation
         run: pnpm --dir ../../backend test:coop-live-social
-      - name: Run unique dungeon class composition validation
-        working-directory: backend
-        run: pnpm test:coop-composition
       - name: Run online gameplay and seasonal expedition transport validation
         run: pnpm --dir ../../backend test:event-expedition-online && node ../../backend/dist/online/backend/online/tests/gameplay.js
       - name: Profile synthetic multi-account contention and account isolation

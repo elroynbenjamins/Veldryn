@@ -71,7 +71,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
     backdropLabel={gt("Close item quick inspect")} surfaceStyle={s.sheet}>
         <View style={[s.hero,compactHeader&&s.heroCompact]}>
           <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
-          <View style={s.heroCopy}>
+          <View style={[s.heroCopy,compactHeader&&s.heroCopyCompact]}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
             <Text numberOfLines={2} style={s.owned}>{item.type==='gear'?(source==='bank'?gt('Bank'):gl('Gear'))+' '+formatGameNumber(source==='bank'?model.bankQuantity:source==='equipment_pouch'?storedGearCount:model.inventoryQuantity,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}</Text>
@@ -163,9 +163,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   heroControls:{alignItems:'flex-end',justifyContent:'center'},
   heroControlsCompact:{marginLeft:'auto'},
   artBox:{width:60,height:60,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},
-  heroCopy:{flex:1,minWidth:0,gap:3},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
+  heroCopy:{flex:1,minWidth:0,gap:3},heroCopyCompact:{minWidth:160},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
   close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'700'},
-  scroll:{maxHeight:520,flexShrink:1},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
+  scroll:{maxHeight:520,flexShrink:1,minHeight:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
    footerActionScroll:{maxHeight:210,flexShrink:1},footerActionContent:{paddingBottom:spacing.xs},
    foodActions:{gap:spacing.xs},moreActionsToggle:{marginTop:spacing.xs},
    disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},

@@ -19,7 +19,7 @@ export function ActivityQueueResults({reward,numberMode,compact=false}:{reward:R
  const C=useGameTheme(),[expanded,setExpanded]=useState<Record<number,boolean>>({});
  const rows=reward.activityResults??[],current=reward.continuingActivity;
  return <View style={{gap:compact?8:12}}>
-  <Text style={{fontSize:compact?11:14,fontWeight:'700',color:C.text,letterSpacing:compact?.6:0}}>{gt("Activity timeline")}</Text>
+  <Text style={{fontSize:compact?11:14,fontWeight:'700',color:C.text,letterSpacing:compact?0.6:0}}>{gt("Activity timeline")}</Text>
   {rows.map((row,index)=>{
    const source=[...GATHERING,...HERB_NODES,...MONSTERS].find(entry=>entry.id===row.activity.targetId),combat=row.activity.kind==='combat',monster=combat?MONSTERS.find(entry=>entry.id===row.activity.targetId):undefined,last=index===rows.length-1;
    const status=row.goalReached?gt("Goal reached"):(row.reward.stoppedReason?gl(row.reward.stoppedReason):undefined)??(last&&current?gt("Still active"):gt("Completed"));

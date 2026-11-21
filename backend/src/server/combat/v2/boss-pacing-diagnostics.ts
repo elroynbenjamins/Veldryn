@@ -101,9 +101,10 @@ export function observeBossPacingV2(
    fail('invalid_event_order');
   prev=e.atMs;
   if(e.type==='phase'&&e.actorId===c.bossId){
-   if(!e.abilityId)fail('missing_phase_id');
-   if(!phases.has(e.abilityId)){
-    if(e.abilityId.includes('_V2_'))fail('unknown_v2_phase');
+   const phaseId=e.abilityId;
+   if(!phaseId)throw Error('combat_v2_boss_pacing_missing_phase_id');
+   if(!phases.has(phaseId)){
+    if(phaseId.includes('_V2_'))fail('unknown_v2_phase');
     continue; // Preexisting authored legacy phase is allowed.
    }
    if(e.abilityId===c.phases[0].phaseId){
@@ -115,21 +116,22 @@ export function observeBossPacingV2(
    }
   }
   if(e.type==='cast_start'&&e.actorId===c.bossId){
-   if(!e.abilityId)fail('missing_cast_id');
-   const spec=casts.get(e.abilityId);
+   const castId=e.abilityId;
+   if(!castId)throw Error('combat_v2_boss_pacing_missing_cast_id');
+   const spec=casts.get(castId);
    if(!spec){
-    if(e.abilityId.includes('_V2_'))fail('unknown_v2_cast');
+    if(castId.includes('_V2_'))fail('unknown_v2_cast');
     continue;
    }
-   if(active.has(e.abilityId))fail('overlapping_authored_cast');
-   active.set(e.abilityId,e.atMs);
+   if(active.has(castId))fail('overlapping_authored_cast');
+   active.set(castId,e.atMs);
    started++;
    if(firstCast===null)firstCast=e.atMs;
   }
   if(e.type==='cast_complete'&&e.actorId===c.bossId&&
    e.abilityId&&casts.has(e.abilityId)){
    const start=active.get(e.abilityId);
-   if(start===undefined)fail('completion_without_start');
+   if(start===undefined)throw Error('combat_v2_boss_pacing_completion_without_start');
    const required=casts.get(e.abilityId)!.castMs;
    if(e.atMs-start<required)fail('cast_completed_too_soon');
    windups.push(e.atMs-start);
@@ -139,7 +141,7 @@ export function observeBossPacingV2(
   if(e.type==='interrupt'&&e.targetId===c.bossId&&
    e.interruptedAbilityId&&casts.has(e.interruptedAbilityId)){
    const start=active.get(e.interruptedAbilityId);
-   if(start===undefined)fail('interrupt_without_start');
+   if(start===undefined)throw Error('combat_v2_boss_pacing_interrupt_without_start');
    if(!casts.get(e.interruptedAbilityId)!.interruptible)
     fail('uninterruptible_cast_interrupted');
    active.delete(e.interruptedAbilityId);

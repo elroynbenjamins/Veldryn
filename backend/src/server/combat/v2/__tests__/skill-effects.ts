@@ -175,7 +175,8 @@ assert.ok(focusFight.events.filter(x=>x.type.startsWith('resource_'))
 
 // Polish checks: conditional healing, precise support targeting and proper
 // execute-only damage must be represented in the actual compiled effects.
-function abilityFor(classId:ClassIdV2,skillName:string,variant:number){
+function abilityFor(classId:ClassIdV2,skillName:string,variant:number,
+ talentRanks:Record<string,number>={}){
   const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
   const spec=SPECIALIZATIONS_V2.find(s=>s.classId===classId)!;
   const skill=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName)!;
@@ -183,7 +184,7 @@ function abilityFor(classId:ClassIdV2,skillName:string,variant:number){
     actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
     selected:{specializationId:spec.id,capstoneId:spec.capstoneId,equipment:{},
       activeSkills:[{skillId:skill.id,variantId:skill.variants[variant].id}],
-      talentRanks:{},signaturePassiveIds:[]},
+      talentRanks,signaturePassiveIds:[]},
     ownedItemsById:{},setsById:{},
   };
   const compiled=compileServerSkillBuildV2(true,chosen);
@@ -202,6 +203,28 @@ assert.ok(execution.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
 const finisher=abilityFor('RAVAGER','Overpower',0);
 assert.ok(finisher.effects.some(e=>e.executeBelowHpPct===.35&&e.executeBonus===.30));
 assert.ok(finisher.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
+
+// Variant-added effects should receive class/talent bonuses without being
+// multiplied again by the primary variant's coefficient. This matters for
+// low-HP healer variants, reflective shields and bonus taunts.
+const reflectiveOath=abilityFor('IRONWARDEN','Oathwall',2);
+assert.equal(reflectiveOath.effects.find(e=>e.kind==='shield'&&e.shieldReflectPct===.15)?.coeff,1.325,
+ 'Sentinel shield bonus applies to the secondary reflective shield');
+assert.ok(reflectiveOath.effects.some(e=>e.kind==='shield'&&e.coeff===0),
+ 'the primary Oathwall shield stays disabled by the Reflective Oath variant');
+
+const dawnHoT=abilityFor('DAWNKEEPER','Dawn Mend',1,{
+  [passiveIdV2('DAWNKEEPER','Gentle Hands')]:1,
+  [passiveIdV2('DAWNKEEPER','Healing Flow')]:1,
+});
+assert.equal(dawnHoT.effects.find(e=>e.kind==='hot')?.coeff,.108,
+ 'secondary Dawn Mend HoT receives Lightbringer + Healing Flow, not primary heal multiplier');
+
+const enhancedTaunt=abilityFor('IRONWARDEN','Rune Challenge',1,{
+  [passiveIdV2('IRONWARDEN','Firm Challenge')]:1,
+});
+assert.equal(enhancedTaunt.effects.find(e=>e.kind==='taunt'&&e.value===945)?.value,945,
+ 'secondary Provocation taunt receives the invested threat modifier');
 
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),

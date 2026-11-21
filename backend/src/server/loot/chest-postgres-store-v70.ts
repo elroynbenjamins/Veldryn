@@ -133,11 +133,14 @@ function expectedLegs(receipt:FrozenChestReceiptV69):readonly
  return [
   ...receipt.guaranteed.map((g,i)=>({
    kind:'guarantee' as const,ordinal:i,rewardId:g.id,quantity:g.quantity,
+   equipment:false,
   })),
   ...receipt.drops.map((d,i)=>({
    kind:'drop' as const,ordinal:i,rewardId:d.entryId,quantity:d.quantity,
+   equipment:d.type==='equipment',
   })),
-  {kind:'inbox' as const,ordinal:0,rewardId:'inbox:'+receipt.sourceKey,quantity:1},
+  {kind:'inbox' as const,ordinal:0,rewardId:'inbox:'+receipt.sourceKey,
+   quantity:1,equipment:false},
  ];
 }
 export function createChestPostgresStoreV70(
@@ -274,6 +277,7 @@ export function createChestPostgresStoreV70(
       const expected=expectedLegs(receipt);
       if(rows.length!==expected.length)return false;
       const legs:ChestLedgerLegV70[]=[];
+      const observed=new Set<string>();
       for(const row of rows){
        const kind=row.leg_kind;
        const index=row.ordinal;
@@ -281,15 +285,24 @@ export function createChestPostgresStoreV70(
        const e=expected.find(x=>x.kind===kind&&x.ordinal===index);
        const grantId=row.grant_id;
        const itemId=row.item_instance_id??null;
-       if(!e||e.rewardId!==row.reward_id||e.quantity!==quantity||
+       // A corrupted or future schema/driver must not satisfy the expected
+       // leg count by duplicating one ordinal and omitting another. Item
+       // instance custody must also match the frozen roll, not merely be a
+       // valid UUID (guarantees/materials/inbox may never carry a gear ID).
+       const identity=String(kind)+':'+String(index);
+       if(!e||observed.has(identity)||
+        e.rewardId!==row.reward_id||e.quantity!==quantity||
         typeof grantId!=='string'||grantId.length===0||
-        (itemId!==null&&(typeof itemId!=='string'||!UUID.test(itemId))))
+        (itemId!==null&&(typeof itemId!=='string'||!UUID.test(itemId)))||
+        (itemId!==null)!==e.equipment)
         return false;
+       observed.add(identity);
        legs.push({
         sourceKey,accountId,kind:e.kind,ordinal:e.ordinal,rewardId:e.rewardId,
         quantity,grantId,itemInstanceId:itemId as string|null,
        });
       }
+      if(observed.size!==expected.length)return false;
       return ports.verifyPhysical(conn,receipt,legs,
        inserted?'fresh':'replay');
      },

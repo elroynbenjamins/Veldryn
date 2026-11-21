@@ -284,6 +284,26 @@ assert.equal(totemFight.events.filter(e=>e.type==='resource_gain'&&
   e.abilityId?.startsWith('V2_TOTEM:')).length,0,
  'persistent totem damage cannot generate free Resonance');
 
+// A refreshed V2 buff replaces only the previous cast from its same skill;
+// independent effects within a single cast remain intact. The legacy engine
+// intentionally retains its original modifier stacking/replay semantics.
+const statusActor={...compileServerSkillBuildV2(true,totemBuild),abilities:[{
+  id:'TEST_REFRESH:v2:0',name:'Synthetic V2 status',cooldownMs:1000,castTimeMs:0,
+  priority:100,target:'self' as const,effects:[
+    {kind:'buff' as const,tag:'haste',value:.015,durationMs:5000},
+    {kind:'buff' as const,tag:'haste',value:.01,durationMs:5000},
+  ],
+}]};
+const statusInput={seed:'v2-status-refresh',players:[statusActor],enemies:[enemy],
+  maxDurationMs:3500,tickMs:100};
+const statusFight=simulateCombat(statusInput);
+assert.equal(statusFight.players[0].modifiers.filter(m=>m.tag==='haste').length,2,
+ 'V2 same-skill recasts refresh both authored status effects instead of growing stacks');
+const legacyStatusActor={...statusActor,combatV2:undefined,tags:[]};
+const legacyStatus=simulateCombat({...statusInput,players:[legacyStatusActor]});
+assert.equal(legacyStatus.players[0].modifiers.filter(m=>m.tag==='haste').length,8,
+ 'existing legacy status stack behavior must not change');
+
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
  'Rupture must consume an already-active self-applied DoT');

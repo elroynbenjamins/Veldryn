@@ -275,6 +275,7 @@
   ".core-build/apps/mobile/tests/timed-processing.js",
   "tests/alchemy-recipe-tap-ui-contract.cjs",
   "tests/crafting-batch-quantity-ui.cjs",
+  "tests/crafting-compact-tabbed-details-ui.cjs",
   ".core-build/apps/mobile/tests/meal-buffs.js",
   ".core-build/apps/mobile/tests/cooking-xp-visibility.js",
   ".core-build/apps/mobile/tests/balance-telemetry.js",

@@ -93,7 +93,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   setSelectedIds(ids);setSelectMode(true);setSelectedIndex(null);
  };
  const selectSafeSalvage=()=>{
-  setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates));setSelectMode(true);setSelectedIndex(null);
+  setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100));setSelectMode(true);setSelectedIndex(null);
  };
  const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSale({ids,protectedCount})};
  const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
@@ -183,7 +183,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
     {!compactActions?<GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
-    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>:null}
+    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100),salvageCandidates.filter(row=>!row.eligible).length)}/>:null}
    </>}
   </View>
   {selectMode?<View style={[s.sellSummary,compactActions&&s.sellSummaryCompact]}>
@@ -204,7 +204,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    </View>
    {excludedSelected>0?<Text style={s.meta}>{p('Protected copies are excluded from the sale.')+' '+selectedSales.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(candidateReason(row))).join(' · ')}</Text>:null}
    {selectedSalvages.length>salvageCount?<Text style={s.meta}>{p('Salvage protection:')+' '+selectedSalvages.filter(row=>!row.eligible).slice(0,2).map(row=>localizedItemName(language,row.itemId)+': '+p(candidateReason(row))).join(' · ')}</Text>:null}
-  </View>:<Text style={s.hint}>{p('Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
+  </View>:<Text style={s.hint}>{p(compactActions?'Safe selection excludes Epic, Legendary and Mythic.':'Quick-selects only eligible Common, Uncommon and Rare gear. Epic, Legendary and Mythic need manual selection.')}</Text>}
   <View style={s.grid} onLayout={event=>{const width=Math.floor(event.nativeEvent.layout.width);setGridWidth(previous=>previous===width?previous:width)}}>
    {entries.map((stack,index)=>{
     const copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;

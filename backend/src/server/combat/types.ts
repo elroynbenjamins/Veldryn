@@ -41,6 +41,8 @@ export interface CombatV2State {
   pendingCritMultiplierBonus:number;
   pendingHealingBonus:number;
   scheduledTotemAt:number[];
+  /** One server-authored Stonecaller Thunder Totem per character; never saved between encounters. */
+  activeTotem?:{abilityId:string;nextPulseAtMs:number;pulsesRemaining:number;pulseCoeff:number};
 }
 export interface CombatV2AbilityMeta {
   spend?:'all'|number;

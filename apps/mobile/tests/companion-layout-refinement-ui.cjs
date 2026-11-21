@@ -64,9 +64,11 @@ assert(expedition.indexOf("t('Entry requirements')")<expedition.indexOf("t('Prep
 assert(expedition.includes('companionStaminaSelectionTotal(foodSelection)'),'Stamina must use real food selection');
 assert(expedition.includes("type:'companion_assignment_start'"),'Starting expeditions must still send the real command');
 assert(/CompanionDisclosure\s+title=\{t\(['"]Mission Details['"]\)\}/.test(expedition),'Detailed requirements must stay accessible');
-// Sanctuary Training is managed through Companions rather than shown as a trainable Skills hub row.
-assert(!skills.includes("subtitle:n('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel"),'Companion Training must remain hidden from trainable skills while retaining Sanctuary access');
-assert(skills.includes("Math.min(1,level/3)")&&skills.includes("gt('Facility Lv {level}/3',{level})"),'Facility progress must be shown out of 3 upgrades, not a fictitious 100 skill levels');
+// Companion Training is a Sanctuary facility, deliberately hidden from the skill navigator.
+// Keep a real 0–3 facility level and upgrade/claim functionality in its details modal.
+assert(!skills.includes("id:'companion-training',name"),'Do not re-add Companion Training as a levelable skill tile');
+assert(skills.includes("const facilityLevel=Math.max(0,Math.min(3,state.account.companionSanctuary?.trainingGroundLevel??0))"),'Facility must preserve the real persisted level, including zero');
+assert(skills.includes('{facilityLevel}/3'),'Facility detail must show the actual upgrade level out of 3');
 assert(skills.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[facilityLevel]'),'Training XP/day must follow the authoritative Sanctuary values');
 assert(skills.includes('trainingDaysReady*facilityXpPerDay')&&skills.includes('idleCompanions.length'),'Companion training claim must show accrued XP and eligible companions');
 assert(skills.includes("type:'companion_training'")&&skills.includes('disabled={!trainingClaimReady}'),'Skills hub uses an existing authenticated companion training claim with readiness gating');

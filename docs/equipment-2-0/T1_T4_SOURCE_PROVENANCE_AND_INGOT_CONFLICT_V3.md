@@ -40,6 +40,18 @@ Also distinguish recipe-defined future processed outputs (Copper Bar, Wolf Leath
 
 **No free material conversion or backfilled drops** should be inferred from similar names. The six rare blueprint-only items and Dungeon/Party Event/World Boss exclusive equipment remain gated.
 
+
+### Tier-entry accessibility check (candidate-only; not implemented)
+
+The read-only candidate matrix `t1-t4-combat-source-candidates-v1.json` now pins eight proposed common/scarce identities to **actual existing monster IDs** and their effective level gates. It is intentionally not a loot table.
+
+- **T1:** the thematic Roadside Boar source rebases to combat level **3**, while T1 equipment begins at **2**. If Boar Tusk is mandatory, an early level-2-eligible boar source or a deliberate level-3 first-craft requirement is necessary.
+- **T2:** the Ironwood Wolf and Forest Troll candidate sources are accessible by its level-12 entry, but the new Fang/Sinew items are still unregistered.
+- **T3:** Mirage Shade is now level **38** after the regional rebalance, far later than the level-26 tier entry. A proposed very-rare level-26 Sunscar Scorpion source would preserve first-craft access if separately approved. Without that bridge, early T3 chest/legs/weapon crafts requiring Miragefang Core are blocked.
+- **T4:** Glassbound Sentinel unlocks at level **41** versus a level-40 tier entry. The level-38 Sandplate Juggernaut is a potential early Plate/Glassheart source; no drops have been added.
+
+The candidate parser and test deliberately fail when monster level overrides, source IDs or tier-entry assumptions drift. Actual server-side eligibility, elite frequency and source supply still require independent confirmation.
+
 ## 3. Existing versus proposed SUNSTONE_INGOT: hard incompatibility
 
 Existing authored Smithing recipe **SMELT_SUNSTONE_INGOT**:

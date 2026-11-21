@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: v111-final-qa-\${{ github.ref }}
+  group: v111-final-qa-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

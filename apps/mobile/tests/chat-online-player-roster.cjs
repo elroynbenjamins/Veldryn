@@ -41,11 +41,11 @@ assert.ok(heartbeat.includes('heartbeat();')&&heartbeat.includes('2*60_000'),'fo
 assert.ok(moduleSource.includes("supabase.rpc('online_player_roster_v2')"),'read from server-authoritative presence');
 
 const migration=fs.readFileSync(path.join(root,'../../backend/supabase/migrations/20261121170000_chat_active_30m_roster_v2.sql'),'utf8');
-assert.match(migration,/create or replace function public\\.online_player_roster_v2\\(\\)/);
-assert.match(migration,/p\\.last_seen_at >= now\\(\\) - interval '30 minutes'/);
-assert.match(migration,/p\\.bucket_start >= now\\(\\) - interval '35 minutes'/);
-assert.match(migration,/revoke all on function public\\.online_player_roster_v2\\(\\) from public, anon;/);
-assert.match(migration,/grant execute on function public\\.online_player_roster_v2\\(\\) to authenticated;/);
+assert.match(migration,/create or replace function public\.online_player_roster_v2\(\)/);
+assert.match(migration,/p\.last_seen_at >= now\(\) - interval '30 minutes'/);
+assert.match(migration,/p\.bucket_start >= now\(\) - interval '35 minutes'/);
+assert.match(migration,/revoke all on function public\.online_player_roster_v2\(\) from public, anon;/);
+assert.match(migration,/grant execute on function public\.online_player_roster_v2\(\) to authenticated;/);
 assert.ok(!migration.includes('create or replace function public.online_player_roster_v1()'),'legacy seven-minute RPC is not changed');
 assert.ok(overlay.includes("compactActivityPill?'30m':st('Active (30m)')"),'30-minute header has compact small-screen variant');
 assert.ok(overlay.includes("st('Active in Last 30 Minutes')"),'header accessibility identifies the correct window');

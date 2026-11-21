@@ -117,7 +117,18 @@ export class OnlineQModeRuntime{
   const pending=loaded.privateState.pending;
   if(!pending||loaded.serverNow<pending.resolvesAtMs)return loaded.clientProjection;
   const run=pending.run,last=run.lastResolution!,final=settlement(run,loaded.stateVersion+1,loaded.privateState.seed);
-  return this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
+  try{
+   return await this.services.rpc('finalize_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_private_state:{run,seed:loaded.privateState.seed},p_client_projection:final.projection,p_node_id:last.nodeId,p_result:last.result,p_start_state_hash:pending.startStateHash,p_enhanced_marks:final.enhancedMarks,p_assistance_marks:final.assistanceMarks});
+  }catch(error){
+   // The due worker may commit this exact node between load and finalize.
+   // A revision conflict is not a failed run: reread the authoritative
+   // snapshot, but never resubmit the same reward or suppress other errors.
+   const reason=error instanceof Error?error.message:String(error);
+   if(!/\\bSTALE_STATE\\b/i.test(reason))throw error;
+   const refreshed=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
+   if(refreshed.stateVersion>loaded.stateVersion&&!refreshed.privateState.pending)return refreshed.clientProjection;
+   throw error;
+  }
  }
  async purchaseMerchant(accountId:string,runId:string,request:{requestId:string;expectedVersion:number;offerId:string}){
   const hash=digest(request),operation='qmode_merchant_purchase_v1';

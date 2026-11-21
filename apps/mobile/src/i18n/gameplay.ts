@@ -9,6 +9,11 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Quiet, in-place crafting confirmation (no modals or toasts).
+ "Added to queue":["Added to queue","Zur Warteschlange hinzugefügt","Añadido a la cola","Toegevoegd aan wachtrij","Aggiunto alla coda","Ajouté à la file d’attente"],
+ "Craft complete":["Craft complete","Herstellung abgeschlossen","Fabricación completada","Maken voltooid","Creazione completata","Fabrication terminée"],
+ "Add to forge":["Add to forge","Zur Schmiede hinzufügen","Añadir a la forja","Toevoegen aan smederij","Aggiungi alla forgia","Ajouter à la forge"],
+ "Crafting failed. Please retry.":["Crafting failed. Please retry.","Herstellung fehlgeschlagen. Bitte erneut versuchen.","No se pudo fabricar. Inténtalo de nuevo.","Maken mislukt. Probeer opnieuw.","Creazione non riuscita. Riprova.","Échec de fabrication. Réessayez."],
  // Bulk crafting quantity controls shared by every profession.
  "Choose quantity":["Choose quantity","Menge wählen","Elegir cantidad","Kies aantal","Scegli quantità","Choisir la quantité"],
  "Production stops after your selected batches are completed.":["Production stops after your selected batches are completed.","Die Produktion endet nach den gewählten Durchgängen.","La producción termina cuando se completan las tandas elegidas.","De productie stopt nadat je gekozen batches klaar zijn.","La produzione termina quando sono completati i lotti scelti.","La production s’arrête lorsque les lots choisis sont terminés."],
@@ -1634,6 +1639,10 @@ for(const [english,pair] of Object.entries(gatheringSpeedBreakdownEarlyLocales))
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
 const craftingQuantityEarlyLocales={
+ "Added to queue":["Добавлено в очередь","Kuyruğa eklendi"],
+ "Craft complete":["Изготовление завершено","Üretim tamamlandı"],
+ "Add to forge":["Добавить в кузницу","Demirhaneye ekle"],
+ "Crafting failed. Please retry.":["Не удалось изготовить. Попробуйте ещё раз.","Üretim başarısız. Tekrar dene."],
  "Choose quantity":["Выбрать количество","Miktarı seç"],
  "Production stops after your selected batches are completed.":["Производство остановится после завершения выбранных партий.","Seçtiğin partiler tamamlandığında üretim durur."],
  "Stop the current activity to release reserved materials before starting another recipe.":["Остановите текущее занятие, чтобы освободить зарезервированные материалы перед новым рецептом.","Başka bir tarife başlamadan önce ayrılan malzemeleri serbest bırakmak için mevcut etkinliği durdur."],

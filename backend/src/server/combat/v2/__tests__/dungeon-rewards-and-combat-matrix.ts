@@ -159,7 +159,7 @@ assert.ok(!previewDungeonRewardOffersV2(dps,snapshot(dps),artRoom,
 for(const row of DUNGEON_REWARDS_V2.filter(x=>x.stage==='needs_engine_hook'||x.stage==='engine_hook')){
  const room=row.type==='boon'?'shrine':'treasure';
  assert.throws(()=>compileDraftDungeonRewardCombatV2(base,
-  snapshot(base,[receipt(row.id,1,room)]),verified),/unimplemented_proc_/);
+  snapshot(base,[receipt(row.id,1,room)]),verified),/unimplemented_proc_|requires_authenticated_party/);
 }
 assert.throws(()=>compileDraftDungeonRewardCombatV2(base,sourceSnapshot,denied),
  /persisted_run_ledger_not_verified/);

@@ -91,3 +91,45 @@ test('review-only data never declares an active production release',()=>{
   assert.equal(proposal.recipes.length,338);
   assert.ok(proposal.recipes.every(x=>x.reviewOnly===true));
 });
+
+test('candidate source eligibility is pinned to observed monsters and flags the one tier-entry gap',()=>{
+  const suggestions=JSON.parse(read('docs/equipment-2-0/t1-t4-combat-source-candidates-v1.json'));
+  assert.equal(suggestions.status,'REVIEW_ONLY_DO_NOT_IMPORT_TO_RUNTIME');
+  assert.equal(suggestions.sources.length,8);
+  const monsterLines=between(source('monsters.ts'),'const MONSTERS_RAW:MonsterDef[]=[','];')
+    .split('\n').filter(line=>/^\s*\{id:/.test(line));
+  const rebalance=between(source('monsters.ts'),'const REGIONAL_25_LEVEL_REBALANCE:','};');
+  const modernNeed=level=>Math.floor(90*Math.pow(level,1.65)+level*35)*8;
+  const legacyNeed=level=>Math.floor(90*Math.pow(level,1.42)+level*35)*8;
+  const rebase=legacy=>{
+    let xp=0;for(let l=1;l<legacy;l++)xp+=legacyNeed(l);
+    let out=1;while(out<100&&xp>=modernNeed(out)){xp-=modernNeed(out);out++;}
+    return out;
+  };
+  let blocked=0;
+  for(const row of suggestions.sources){
+    const t=tier(row.tier);
+    assert.ok(t,'unknown tier');
+    assert.equal(row.itemId,t.items[row.role],'candidate item identity mismatch');
+    assert.equal(hasMonster(row.itemId),false,'source accidentally became a live mob drop');
+    const levels=[];
+    for(const candidate of row.candidates){
+      const raw=monsterLines.find(line=>line.includes("id:'"+candidate.monsterId+"'"));
+      assert.ok(raw,'unrecognized monster '+candidate.monsterId);
+      const zone=raw.match(/zone:'([^']+)'/)?.[1];
+      const rawUnlock=Number(raw.match(/\bunlockLevel:(\d+)/)?.[1]);
+      assert.ok(Number.isInteger(rawUnlock));
+      const override=rebalance.match(new RegExp('\\b'+candidate.monsterId+':\\{[^}]*unlockLevel:(\\d+)'))?.[1];
+      const effective=zone==='Sunscar'||zone==='Frostmarch'
+        ?(override?Number(override):rawUnlock):rebase(rawUnlock);
+      assert.equal(candidate.effectiveUnlockLevel,effective,'source level changed for '+candidate.monsterId);
+      levels.push(effective);
+    }
+    const reachable=levels.some(value=>value<=t.levels.character);
+    assert.equal(row.tierEntryReachable,reachable,'tier-entry gate changed for '+row.itemId);
+    if(row.requiredForOrdinary&&!reachable)blocked++;
+  }
+  // T1 Tusk is reached from the rebased L3 boar, one step above its L2 equipment entry.
+  assert.equal(blocked,1);
+  assert.equal(suggestions.sources.find(x=>x.itemId==='EQ2_BOAR_TUSK').tierEntryReachable,false);
+});

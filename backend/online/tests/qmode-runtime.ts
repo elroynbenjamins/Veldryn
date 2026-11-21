@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {OnlineQModeRuntime} from '../qmode-runtime';
+import {OnlineQModeRuntime,type OnlineQModeState} from '../qmode-runtime';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import {combatPowerRating} from '../../../apps/mobile/src/core/combat-power';
 import {legacyCharacterTotalXpAtLevel} from '../../../apps/mobile/src/core/progression';
@@ -52,6 +52,69 @@ async function main(){
  assert.equal(write.args.p_game_version,17,'server transaction must use the latest account revision');
  const members=write.args.p_members as Array<{snapshot:{revision:number}}>;
  assert.equal(members[0].snapshot.revision,17,'frozen controller must use current server equipment');
+
+ // Regression for the room-eight offline-worker incident: each newly queued
+ // decision must persist a server-authored settlement privately before the app
+ // disconnects. The preparing response must not leak the combat result.
+ const initialPrivate=write.args.p_private_state as OnlineQModeState;
+ const current=initialPrivate.run.graph.nodes.find(node=>node.nodeId===initialPrivate.run.currentNodeId);
+ const optionId=current?.nextNodeIds[0];
+ assert.ok(optionId,'A newly created dungeon run must offer its first route choice');
+ const decisionWrites:Array<{name:string;args:Record<string,unknown>}>=[];
+ const decisionRuntime=new OnlineQModeRuntime({
+  randomId:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   decisionWrites.push({name,args});
+   if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='load_online_qmode_server_v1')return {
+    stateVersion:1,serverNow:1_000,privateState:structuredClone(initialPrivate),
+    clientProjection:write.args.p_client_projection,
+   } as T;
+   if(name==='queue_online_qmode_node_server_v1')return args.p_client_projection as T;
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ const queuedClient=await decisionRuntime.choose('owned-account',started.runId,{
+  requestId:'qmode-persist-settlement-001',decisionId:initialPrivate.run.currentNodeId,
+  decisionRevision:1,optionId,
+ }) as {phase:string};
+ assert.equal(queuedClient.phase,'resolving_node','Client sees only the preparing phase');
+ const queuedArgs=decisionWrites.find(row=>row.name==='queue_online_qmode_node_server_v1')?.args;
+ assert.ok(queuedArgs,'Choice must be committed through the transactional queue RPC');
+ const queuedPrivate=queuedArgs.p_private_state as OnlineQModeState;
+ const pending=queuedPrivate.pending;
+ assert.ok(pending,'Queue must persist an offline pending node');
+ assert.ok(pending.settlement,'Offline worker needs a frozen settlement even after the client disconnects');
+ assert.equal(pending.run.lastResolution?.nodeId,optionId,'Private result is for the selected node');
+ assert.equal(pending.settlement.projection.stateVersion,3,'Final projection matches the queued version transition');
+ assert.ok(!('settlement' in queuedClient),'Pending settlement must not be exposed to clients');
+
+ // If the client returns after the timer, finalize once and then read the
+ // already-settled snapshot. A second load must not grant a duplicate result.
+ let persisted:{stateVersion:number;privateState:OnlineQModeState;clientProjection:unknown;serverNow:number}={
+  stateVersion:2,privateState:queuedPrivate,clientProjection:queuedClient,serverNow:pending.resolvesAtMs,
+ };
+ let finalized=0;
+ const resumeRuntime=new OnlineQModeRuntime({
+  randomId:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='load_online_qmode_server_v1')return persisted as T;
+   if(name==='finalize_online_qmode_node_server_v1'){
+    finalized++;
+    assert.equal(args.p_expected_version,2,'Resume finalizes the queued revision');
+    assert.equal(args.p_node_id,optionId,'Resume finalizes the original selected node');
+    assert.deepEqual(args.p_client_projection,pending.settlement?.projection,'Resume result matches the precomputed settlement');
+    persisted={stateVersion:3,privateState:args.p_private_state as OnlineQModeState,
+     clientProjection:args.p_client_projection,serverNow:persisted.serverNow};
+    return persisted.clientProjection as T;
+   }
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ assert.deepEqual(await resumeRuntime.load('owned-account',started.runId),pending.settlement.projection);
+ assert.deepEqual(await resumeRuntime.load('owned-account',started.runId),pending.settlement.projection);
+ assert.equal(finalized,1,'Repeated loads must not finalize the same completed room twice');
+
  await assert.rejects(()=>startRuntime.start('owned-account',{...startBody,requestId:'qmode-future-001',loadoutRevision:18}),/stale_game_version/);
  console.log('PASS QMode tolerates background gameplay revisions without trusting stale gear');
  console.log('PASS QMode concurrent receipt visibility and changed-intent conflict');

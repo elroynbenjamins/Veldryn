@@ -110,6 +110,7 @@ export function auditForgeAndCombatSetsV2():SetCatalogAuditV2{
   structuralIdsWithoutSameIdForgeMembership:TIERED_SETS_V2.filter(row=>!forgeIds.has(row.id))
    .map(row=>row.id).sort(),
   exactIdMatches,
+  forgeSixPieceSets:PINNED_FORGE_SETS_V2.filter(row=>row.slots.length===6).length,
   /** Mathematical count only, not an item mint proposal: assumes every one
    * of the original 42 set items could be reused for a distinct new set.
    * Actual source IDs and roles do not match, so reuse needs explicit proof.

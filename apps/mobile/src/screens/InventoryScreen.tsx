@@ -244,8 +244,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
       </Pressable>
-      {!selectMode&&locked?<View accessible={false} style={[s.itemStatusBadge,s.itemLockCorner]}><InventoryLockGlyph locked color={C.warning}/></View>:null}
-       {!selectMode&&favorite?<View accessible={false} style={[s.itemStatusBadge,s.itemFavoriteCorner]}><Text style={s.itemStarOn}>★</Text></View>:null}
+      {!selectMode&&locked?<View pointerEvents="none" accessible={false} style={[s.itemStatusBadge,s.itemLockCorner]}><InventoryLockGlyph locked color={C.warning}/></View>:null}
+       {!selectMode&&favorite?<View pointerEvents="none" accessible={false} style={[s.itemStatusBadge,s.itemFavoriteCorner]}><Text style={s.itemStarOn}>★</Text></View>:null}
     </View>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?gt("This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat."):'';

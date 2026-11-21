@@ -6,8 +6,9 @@ import {CLASS_ROLES_V2,type ClassIdV2,type GearSlotV2} from '../build-contract';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {
  simulateUnifiedEquipmentCombatV2,type TrustedEquipmentRuntimeV2,
- type TrustedPersistedEnemyKitV2
+ type TrustedPersistedEnemyKitV2,type TrustedDungeonRewardPortV2
 } from '../unified-equipment-encounter';
+import {DUNGEON_REWARD_V2_POLICY} from '../dungeon-rewards-v2';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {
@@ -122,7 +123,7 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number]){
  };
  return {build,runtime,port:verifiedPort,input,storedKit,receipt,expected:predicted};
 }
-let runs=0,traitEvents=0,sourceTests=0;
+let runs=0,traitEvents=0,sourceTests=0,rewardRuns=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
   for(const boss of bosses){
@@ -141,6 +142,29 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     'Real class should execute original attacks or authored abilities');
    assert.equal(expected.equipmentReceiptDigest.length,64);
    traitEvents+=first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length;
+   // Next Combat 2.0 pass: source-bound reward stats INSIDE the complete
+   // class+skills+exact equipment+authoritative enemy and trait execution.
+   const rewardPort:TrustedDungeonRewardPortV2={
+    snapshot:{source:'server-persisted-dungeon-v2',policy:DUNGEON_REWARD_V2_POLICY,
+     runId:'QA_DUNGEON_'+input.seed,accountId:'QA_ACCOUNT_'+classId,
+     characterId:runtime.characterId,actorId:input.players[0].id,
+     revision:1,seed:input.seed,enduranceRouteVersion:2,mode:'solo',
+     receipts:[{id:'ROOM_BOON_STRIKE',nodeId:'QA_SHRINE_1',depth:1,room:'shrine'}],
+    },
+    verifyPersisted:(row,digest)=>row.seed===input.seed&&/^[a-f0-9]{64}$/.test(digest),
+   };
+   const withReward=simulateUnifiedEquipmentCombatV2(
+    input,[build],[runtime],true,storedKit,port,rewardPort);
+   const withRewardAgain=simulateUnifiedEquipmentCombatV2(
+    input,[build],[runtime],true,storedKit,port,rewardPort);
+   assert.deepEqual(withReward,withRewardAgain,'Authored reward encounters must replay exactly');
+   assert.equal(withReward.equipmentEvidence[0].afterDungeonReward?.attackPower,
+    first.equipmentEvidence[0].statStages.afterAffixes.attackPower*1.05,
+    'Run reward applied only after fully verified gear+skills, once');
+   assert.ok(withReward.combat.events.some(e=>e.type==='combat_start'));
+   assert.equal(first.equipmentEvidence[0].afterDungeonReward,undefined,
+    'No reward port preserves exact existing equipment evidence');
+   rewardRuns++;
    runs++;if(which!==0||classId!=='IRONWARDEN')continue;
    const tampered={...port,receiptsByInstanceId:{
      ...port.receiptsByInstanceId,
@@ -165,11 +189,23 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    const denied={...port,verifyPersisted:()=>false};
    assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
     storedKit,denied),/persisted_ledger_not_verified/);sourceTests++;
+   assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
+    storedKit,port,{...rewardPort,verifyPersisted:()=>false}),
+    /persisted_run_ledger_not_verified/);sourceTests++;
+   assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
+    storedKit,port,{...rewardPort,snapshot:{...rewardPort.snapshot,
+     receipts:[{id:'RELIC_THORNBOUND_AEGIS',nodeId:'QA_TREASURE_1',
+      depth:1,room:'treasure'}]}}),/unimplemented_proc_/);sourceTests++;
+   assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
+    undefined,undefined,rewardPort),/dungeon_reward_requires_persisted_solo_encounter/);
+   sourceTests++;
   }
  }
 }
 assert.equal(runs,9*2*6);
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
-assert.equal(sourceTests,30);
-console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+
- ' gated trait events, '+sourceTests+' fail-closed exact-copy checks (test-only ledgers)');
+assert.equal(sourceTests,48);
+assert.equal(rewardRuns,108);
+console.log('PASS: '+runs+' hidden class-spec-regional boss encounters, '+rewardRuns+
+ ' verified-equipment/skills/rewards interaction cases, '+traitEvents+
+ ' gated trait events, '+sourceTests+' fail-closed custody checks (test-only ledgers)');

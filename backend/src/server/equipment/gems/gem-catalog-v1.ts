@@ -4,23 +4,23 @@ export type GemGrade=1|2|3|4|5;
 export type GemType='stat'|'effect';
 export const GEM_GRADE_NAMES:Readonly<Record<GemGrade,string>>={1:'Cut',2:'Polished',3:'Refined',4:'Flawless',5:'Radiant'};
 
-export interface StatGemDefinition{familyId:string;name:string;stat:GearStatKey;unit:'percent'|'percentage_point';values:Readonly<Record<GemGrade,number>>;}
+export interface StatGemDefinition{familyId:string;name:string;stat:GearStatKey|'attack';unit:'percent'|'percentage_point';values:Readonly<Record<GemGrade,number>>;}
 export interface EffectGemDefinition{familyId:string;name:string;category:'damage'|'defense'|'support'|'hybrid';values:Readonly<Record<GemGrade,number>>;maxEquippedCopies:3;baseDescription:string;resonance2:string;resonance3:string;triggerCooldownMs?:number;durationMs?:number;}
 const vals=(a:number,b:number,c:number,d:number,e:number):Readonly<Record<GemGrade,number>>=>({1:a,2:b,3:c,4:d,5:e});
 
 export const STAT_GEMS_V1:readonly StatGemDefinition[]=[
- {familyId:'stat_might',name:'Might',stat:'power',unit:'percent',values:vals(.004,.005,.0065,.008,.01)},
- {familyId:'stat_vitality',name:'Vitality',stat:'maxHp',unit:'percent',values:vals(.006,.008,.01,.0125,.015)},
- {familyId:'stat_iron',name:'Iron',stat:'armor',unit:'percent',values:vals(.005,.0065,.008,.01,.0125)},
- {familyId:'stat_ward',name:'Ward',stat:'ward',unit:'percent',values:vals(.005,.0065,.008,.01,.0125)},
- {familyId:'stat_precision',name:'Precision',stat:'accuracy',unit:'percentage_point',values:vals(.003,.004,.005,.0065,.008)},
- {familyId:'stat_keen',name:'Keen',stat:'critRate',unit:'percentage_point',values:vals(.002,.003,.004,.005,.006)},
- {familyId:'stat_savage',name:'Savage',stat:'critDamage',unit:'percent',values:vals(.01,.013,.016,.02,.025)},
- {familyId:'stat_piercing',name:'Piercing',stat:'penetration',unit:'percentage_point',values:vals(.0025,.0035,.0045,.006,.0075)},
- {familyId:'stat_swift',name:'Swift',stat:'haste',unit:'percent',values:vals(.0035,.0045,.0055,.0065,.008)},
- {familyId:'stat_potent',name:'Potent',stat:'potency',unit:'percent',values:vals(.005,.0065,.008,.01,.012)},
- {familyId:'stat_elusive',name:'Elusive',stat:'evasion',unit:'percentage_point',values:vals(.002,.0025,.003,.004,.005)},
- {familyId:'stat_resolute',name:'Resolute',stat:'tenacity',unit:'percent',values:vals(.004,.005,.006,.0075,.009)},
+ {familyId:'stat_might',name:'Might',stat:'attack',unit:'percent',values:vals(.01,.015,.02,.0275,.035)},
+ {familyId:'stat_vitality',name:'Vitality',stat:'maxHp',unit:'percent',values:vals(.015,.02,.0275,.0375,.05)},
+ {familyId:'stat_iron',name:'Iron',stat:'armor',unit:'percent',values:vals(.01,.015,.02,.0275,.035)},
+ {familyId:'stat_ward',name:'Ward',stat:'ward',unit:'percent',values:vals(.005,.0075,.01,.0125,.015)},
+ {familyId:'stat_precision',name:'Precision',stat:'accuracy',unit:'percentage_point',values:vals(.004,.0055,.007,.009,.011)},
+ {familyId:'stat_keen',name:'Keen',stat:'critRate',unit:'percentage_point',values:vals(.0025,.0035,.0045,.006,.008)},
+ {familyId:'stat_savage',name:'Savage',stat:'critDamage',unit:'percent',values:vals(.015,.02,.025,.035,.05)},
+ {familyId:'stat_piercing',name:'Piercing',stat:'penetration',unit:'percentage_point',values:vals(.003,.0045,.006,.008,.01)},
+ {familyId:'stat_swift',name:'Swift',stat:'haste',unit:'percent',values:vals(.005,.007,.009,.012,.015)},
+ {familyId:'stat_potent',name:'Potent',stat:'potency',unit:'percent',values:vals(.007,.01,.013,.0165,.02)},
+ {familyId:'stat_elusive',name:'Elusive',stat:'evasion',unit:'percentage_point',values:vals(.002,.003,.004,.0055,.007)},
+ {familyId:'stat_resolute',name:'Resolute',stat:'tenacity',unit:'percent',values:vals(.006,.008,.01,.013,.016)},
 ] as const;
 
 export const EFFECT_GEMS_V1:readonly EffectGemDefinition[]=[

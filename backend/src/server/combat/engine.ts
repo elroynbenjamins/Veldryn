@@ -563,7 +563,37 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       for(const at of due)runCapstone(actor,'totem_expires',now);
     }
     for(const state of all){ if(!state.alive)continue; state.modifiers=state.modifiers.filter(m=>m.expiresAt>now);
-      for(const p of [...state.periodic]){ if(p.nextTickAt<=now&&p.expiresAt>=now){ const src=all.find(x=>x.definition.id===p.sourceId); if(src?.alive){ const fx:AbilityEffect={kind:p.kind,coeff:p.coeff,flat:p.flat,damageType:p.damageType,tag:p.tag}; p.kind==='dot'?applyDamage(now,src,state,fx,p.effectId,'dot_tick'):applyHeal(now,src,state,fx,p.effectId,'hot_tick'); } p.nextTickAt+=p.tickMs; } }
+      for(const p of [...state.periodic]){
+        if(!state.alive)break;
+        if(p.nextTickAt<=now&&p.expiresAt>=now){
+          const src=all.find(x=>x.definition.id===p.sourceId);
+          if(src?.alive){
+            if(dungeonRewards&&p.effectId.startsWith('V2_DUNGEON_REWARD:')&&
+               p.sourceId===dungeonRewards.actorId&&p.kind==='dot'){
+              // Authorized Bleed is an HP tick, not a second direct hit.
+              // No new accuracy/crit RNG, ward, gem, class resource or trait proc.
+              const actual=Math.min(state.hp,Math.max(0,p.flat));
+              if(actual>0){
+                state.hp-=actual;state.damageTaken+=actual;src.damageDone+=actual;
+                events.push({atMs:now,type:'dot_tick',actorId:src.definition.id,
+                  targetId:state.definition.id,abilityId:p.effectId,
+                  amount:Number(actual.toFixed(2)),detail:'no_recursive_reward_trigger'});
+                if(state.hp<=0){
+                  state.alive=false;state.downed=state.definition.team==='players';
+                  events.push({atMs:now,type:state.downed?'down':'death',
+                    actorId:src.definition.id,targetId:state.definition.id,abilityId:p.effectId});
+                }
+              }
+            }else{
+              const fx:AbilityEffect={kind:p.kind,coeff:p.coeff,flat:p.flat,
+                damageType:p.damageType,tag:p.tag};
+              p.kind==='dot'?applyDamage(now,src,state,fx,p.effectId,'dot_tick'):
+                applyHeal(now,src,state,fx,p.effectId,'hot_tick');
+            }
+          }
+          p.nextTickAt+=p.tickMs;
+        }
+      }
       state.periodic=state.periodic.filter(p=>p.expiresAt>now);
     }
     if(!living(enemies).length){events.push({atMs:now,type:'combat_end',detail:'victory'});return{victory:true,durationMs:now,reason:'victory',events,players,enemies};}

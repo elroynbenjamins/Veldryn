@@ -1,5 +1,5 @@
 import {useMemo,useRef,useState} from 'react';
-import {Pressable,StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState,ItemStack} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {equipmentPouch,equipmentPouchUpgradePreview} from '../core/equipment-pouch';
@@ -27,6 +27,9 @@ type PendingPouchDisposal={ids:string[];protectedCount:number};
  * rarity and quality, and can be equipped without passing through Inventory. */
 export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{state:GameState;busy?:boolean;onAction?:(command:GameCommand)=>void|Promise<unknown>;onNavigate?:(destination:WorkingTowardDestination)=>void|Promise<unknown>}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {width,fontScale}=useWindowDimensions();
+ // Narrow-phone Option A only: preserve the existing S24+ action layout.
+ const compactActions=width<380||fontScale>=1.25;
  const language=useGameLanguage();
  const p=(text:string,params?:Record<string,string|number>)=>equipmentPouchText(language,text,params);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
@@ -161,16 +164,16 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
   <Text style={s.hint}>{p('Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
-  <View style={s.sellToolbar}>
+  <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
    {selectMode?<>
-    <GameButton compact tone="secondary" title={p('Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
+    <GameButton compact tone="secondary" title={p(compactActions?'Select safe to sell':'Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
     <GameButton compact tone="secondary" title={p('Select safe to salvage')} disabled={busy||!onAction} onPress={selectSafeSalvage}/>
     {selectedIds.length>0?<GameButton compact tone="secondary" title={p('Clear')} disabled={busy} onPress={()=>setSelectedIds([])}/>:null}
     <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
-    <GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
-    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>
+    {!compactActions?<GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
+    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>:null}
    </>}
   </View>
   {selectMode?<View style={s.sellSummary}>
@@ -288,6 +291,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  selectionCheckText:{fontSize:12,fontWeight:'900',color:C.bg},
  paging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
  sellToolbar:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
+ sellToolbarCompact:{gap:6,rowGap:6},
  sellSummary:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
  selectionStats:{flexDirection:'row',gap:6},selectionStat:{flex:1,alignItems:'center',gap:2,paddingVertical:8,paddingHorizontal:4,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:11,fontWeight:'800'},

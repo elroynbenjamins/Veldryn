@@ -336,7 +336,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.periodic=applyEnemyV2Periodic(target.periodic,periodic).entries;
-      else target.periodic.push(periodic);
+      else {
+        // A V2 class skill refreshes its own previously cast DoT/HoT instead
+        // of multiplying periodic instances indefinitely. Preserve distinct
+        // sources and any separately authored same-cast ticks.
+        if(source.combatV2&&abilityId.includes(':v2:')){
+          target.periodic=target.periodic.filter(p=>
+            p.sourceId!==source.definition.id||p.effectId!==abilityId||
+            p.kind!==periodic.kind||p.tag!==periodic.tag||
+            p.nextTickAt-p.tickMs===now);
+        }
+        target.periodic.push(periodic);
+      }
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
       // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,

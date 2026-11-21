@@ -166,6 +166,8 @@ export interface ActivePeriodicEffect {
   expiresAt: number;
   tickMs: number;
   extendedV2?:boolean;
+  /** V2 class-skill application tick, used only for exact-source refresh policy. */
+  v2AppliedAtMs?:number;
 }
 
 export interface ActiveTimedModifier {

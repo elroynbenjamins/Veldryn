@@ -18,9 +18,9 @@ import {RegionEncounterList} from '../components/RegionEncounterList';
 import {StatBar} from '../components/StatBar';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 import {CombatXpSplit} from '../components/CombatXpSplit';
-import {progressionT} from '../i18n/progression';
+import {progressionT,progressionText} from '../i18n/progression';
 
-export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onBoss,onOpenCodex,initialMonsterId,initialAreaId}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>;onChangeRegion:()=>void;onStart:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void;onOpenCodex:()=>void;initialMonsterId?:string;initialAreaId?:string}){
+export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onBoss,onOpenCodex,initialMonsterId,initialAreaId}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>;onChangeRegion:()=>void;onStart:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void;onOpenCodex?:()=>void;initialMonsterId?:string;initialAreaId?:string}){
  const {gt}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const character=state.character!,progress=characterProgressWithinLevel(character.xp,character.level);
@@ -65,7 +65,7 @@ export function CombatScreen({state,onCommand,onChangeRegion,onStart,onQueue,onQ
       <Pressable accessibilityRole="button" accessibilityState={{expanded:showTraining}} onPress={()=>setShowTraining(value=>!value)} style={s.trainingToggle}><LineworkIcon name="skills" size={23}/><View style={s.flex}><Text style={s.dockTitle}>{gt("Training XP")}</Text></View><Text style={s.trainingMark}>{showTraining?'⌃':'⌄'}</Text></Pressable>
       {showTraining?<CombatXpSplit state={state} onCommand={onCommand}/>:null}
     </View>
-    <View style={s.codexShortcut}><View style={s.flex}><Text style={s.dockTitle}>{gt('Monster Codex')}</Text><Text style={s.sub}>{gt('Species, enemy types and mastery rewards')}</Text></View><GameButton compact tone="secondary" title={gt('Open Codex')} onPress={onOpenCodex}/></View>
+    {onOpenCodex?<View style={s.codexShortcut}><View style={s.flex}><Text style={s.dockTitle}>{progressionText(state.settings.language,'Monster Codex')}</Text><Text style={s.sub}>{progressionText(state.settings.language,'Species, enemy types and mastery rewards')}</Text></View><GameButton compact tone="secondary" title={progressionText(state.settings.language,'Open Codex')} onPress={onOpenCodex}/></View>:null}
   </ScrollView></View>;
 }
 

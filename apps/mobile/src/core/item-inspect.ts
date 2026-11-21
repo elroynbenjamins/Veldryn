@@ -99,8 +99,10 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }));
   });
 
-  const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
-  const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
+  // Individual rolled copies each occupy their own stack. Sum all copies so
+  // the inspector never reports '1 owned' when multiple tools are present.
+  const inventoryQuantity=state.inventory.stacks.reduce((total,stack)=>total+(stack.itemId===itemId?stack.quantity:0),0);
+  const bankQuantity=state.bank.stacks.reduce((total,stack)=>total+(stack.itemId===itemId?stack.quantity:0),0);
   const pouchQuantity=isGemPouchItemId(itemId)?gemPouch(state).stacks.find(stack=>stack.itemId===itemId)?.quantity??0:0;
   const effectLines:string[]=[];
   if(itemId==='ASTERFALL_MINERAL_ESSENCE')effectLines.push('Rare Mining find · improves T1/T2 equipment (+1 to +4). Verdant Binding Resin remains a Forge material.');

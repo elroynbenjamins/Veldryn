@@ -86,10 +86,10 @@ const traitOrigins=new Set<EquipmentV2AcquisitionSource>([
 ]);
 const roleTraitSources:Readonly<Record<ExecutableEquipmentTraitV2,ReadonlySet<EquipmentV2AcquisitionSource>>>={
  sword_dance:traitOrigins,
- echoing_strike:new Set(['rare_blueprint_craft','dungeon_boss_chest']),
- thornbound_riposte:new Set(['dungeon_boss_chest','party_event_chest']),
- mending_echo:new Set(['rare_blueprint_craft','party_event_chest']),
- restorative_bloom:new Set(['rare_blueprint_craft','dungeon_boss_chest']),
+ echoing_strike:new Set<EquipmentV2AcquisitionSource>(['rare_blueprint_craft','dungeon_boss_chest']),
+ thornbound_riposte:new Set<EquipmentV2AcquisitionSource>(['dungeon_boss_chest','party_event_chest']),
+ mending_echo:new Set<EquipmentV2AcquisitionSource>(['rare_blueprint_craft','party_event_chest']),
+ restorative_bloom:new Set<EquipmentV2AcquisitionSource>(['rare_blueprint_craft','dungeon_boss_chest']),
 };
 const allowedTraits=new Set<string>(EXECUTABLE_EQUIPMENT_TRAITS_V2);
 const id=(x:unknown):x is string=>typeof x==='string'&&x.length>0&&x.length<=128&&

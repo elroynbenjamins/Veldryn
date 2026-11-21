@@ -3,6 +3,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {itemDetailText,itemDetailContent,type itemDetailRows} from '../i18n/item-details';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {localizedRecipeName} from '../i18n/crafting-recipe-names';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 
 import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
@@ -42,6 +43,7 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
 export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
+ const ui=(label:string)=>equipmentPouchText(language,label);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
   const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false),[actionsOpen,setActionsOpen]=useState(false);
@@ -87,8 +89,8 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             </View>)}
           </View>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
-          <Pressable accessibilityRole="button" accessibilityLabel={gt('Details & sources')} accessibilityState={{expanded:detailsOpen}} accessibilityHint={gt('Tap to show equipment details, crafting and sources')} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
-            <Text style={s.disclosureText}>{gt('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+            <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
           </Pressable>
           {detailsOpen&&<>
           {(model.stats||otherEffectLines.length>0)&&<Section title={gt("WHAT IT DOES")}><View style={s.statRow}>{model.stats&&<><Stat label="ATK" value={model.stats.attack}/><Stat label="DEF" value={model.stats.defense}/><Stat label="HP" value={model.stats.hp}/></>}</View>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}</Section>}
@@ -135,10 +137,10 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           {item.type==='food'&&actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
         {(quickActions||(actions&&item.type!=='food'))?<View style={s.quickFooter}>
-          {actions&&actionsOpen&&item.type!=='food'?<ScrollView nestedScrollEnabled style={s.footerActionScroll} contentContainerStyle={s.footerActionContent} showsVerticalScrollIndicator={true} accessibilityLabel={gt('More actions')}>{actions}</ScrollView>:null}
+          {actions&&actionsOpen&&item.type!=='food'?<ScrollView nestedScrollEnabled style={s.footerActionScroll} contentContainerStyle={s.footerActionContent} showsVerticalScrollIndicator={true} accessibilityLabel={ui('More actions')}>{actions}</ScrollView>:null}
           {quickActions}
-          {actions&&item.type!=='food'?<Pressable accessibilityRole="button" accessibilityLabel={actionsOpen?gt('Less actions'):gt('More actions')} accessibilityState={{expanded:actionsOpen}} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,s.moreActionsToggle,pressed&&s.pressed]}>
-            <Text style={s.disclosureText}>{gt('More actions')}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text>
+          {actions&&item.type!=='food'?<Pressable accessibilityRole="button" accessibilityLabel={ui(actionsOpen?'Less actions':'More actions')} accessibilityState={{expanded:actionsOpen}} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,s.moreActionsToggle,pressed&&s.pressed]}>
+            <Text style={s.disclosureText}>{ui(actionsOpen?'Less actions':'More actions')}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text>
           </Pressable>:null}
         </View>:null}
   </GameModalSurface>;

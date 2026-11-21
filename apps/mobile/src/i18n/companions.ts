@@ -7,6 +7,23 @@ import {companionCombatDescriptionText} from './companion-combat-names-de';
 
 // Each row supplies German, Spanish, Dutch, Italian and French; its key is English.
 export const companionTranslationRows={
+ "Discovery progress": ["Entdeckungsfortschritt","Progreso de descubrimiento","Ontdekkingsvoortgang","Progresso scoperta","Progression des découvertes"],
+ "Reset filters": ["Filter zurücksetzen","Restablecer filtros","Filters wissen","Reimposta filtri","Réinitialiser les filtres"],
+ "Matching creatures": ["Gefundene Kreaturen","Criaturas coincidentes","Gevonden monsters","Creature corrispondenti","Créatures correspondantes"],
+ "View type mastery": ["Typenmeisterschaft ansehen","Ver maestría de tipo","Bekijk typemeesterschap","Vedi maestria del tipo","Voir la maîtrise du type"],
+ "Base drop rates shown. Bonuses may improve your actual rewards.": ["Angezeigt werden Grundchancen. Boni können die erhaltene Beute verbessern.","Se muestran las probabilidades base. Los bonos pueden mejorar las recompensas.","Dit zijn basiskansen. Bonussen kunnen de echte buit verbeteren.","Sono mostrate le probabilità base. I bonus possono aumentare le ricompense.","Les chances de butin de base sont affichées. Les bonus peuvent améliorer les récompenses."],
+ "Drop rate details unlock at species or type Rank 10.": ["Beutechancen werden ab Arten- oder Typenrang 10 sichtbar.","Las probabilidades se revelan al rango 10 de especie o tipo.","Dropkansen verschijnen bij rang 10 van de soort of het type.","Le probabilità si sbloccano al grado 10 della specie o del tipo.","Les chances de butin se dévoilent au rang 10 de l'espèce ou du type."],
+ "Monster Codex": ["Monsterkodex","Códice de monstruos","Monstercodex","Codice dei mostri","Codex des monstres"],
+ "Monsters": ["Monster","Monstruos","Monsters","Mostri","Monstres"],
+ "Types": ["Typen","Tipos","Types","Tipi","Types"],
+ "REGIONS & ZONES": ["REGIONEN & ZONEN","REGIONES Y ZONAS","REGIO'S EN ZONES","REGIONI E ZONE","RÉGIONS ET ZONES"],
+ "SPECIES MASTERY": ["ARTENMEISTERSCHAFT","MAESTRÍA DE ESPECIE","SOORTMEESTERSCHAP","MAESTRIA DELLA SPECIE","MAÎTRISE DE L'ESPÈCE"],
+ "TYPE MASTERY": ["TYPENMEISTERSCHAFT","MAESTRÍA DE TIPO","TYPEMEESTERSCHAP","MAESTRIA DEL TIPO","MAÎTRISE DU TYPE"],
+ "Undiscovered type": ["Unentdeckter Typ","Tipo sin descubrir","Onontdekt type","Tipo sconosciuto","Type non découvert"],
+ "Hunt. Discover. Master. Every creature and enemy family in one place.": ["Jagen. Entdecken. Meistern. Alle Kreaturen und Gegnertypen an einem Ort.","Caza, descubre y domina. Todas las criaturas y familias enemigas en un solo lugar.","Jaag, ontdek en beheers. Alle monsters en vijandfamilies op één plek.","Caccia, scopri e domina. Tutte le creature e le famiglie di nemici in un unico luogo.","Chassez, découvrez, maîtrisez. Toutes les créatures et familles ennemies au même endroit."],
+ "Rates unlock at mastery Rank 10": ["Dropchancen ab Meisterschaftsrang 10","Probabilidades disponibles en rango de maestría 10","Dropkansen vanaf meesterschapsrang 10","Probabilità disponibili al grado maestria 10","Probabilités débloquées au rang de maîtrise 10"],
+ "30 ranks · 1,500 kills per species": ["30 Ränge · 1.500 Siege pro Art","30 rangos · 1500 bajas por especie","30 rangen · 1.500 kills per soort","30 gradi · 1.500 uccisioni per specie","30 rangs · 1 500 éliminations par espèce"],
+ "30 ranks · 50,000 points per type": ["30 Ränge · 50.000 Punkte pro Typ","30 rangos · 50 000 puntos por tipo","30 rangen · 50.000 punten per type","30 gradi · 50.000 punti per tipo","30 rangs · 50 000 points par type"],
  // New Companion Quarters training guidance — authored across all supported UI languages.
  // Housing is optional: explain its benefits rather than a level gate.
  "Housing improves training and companion stats. Only Ascension and rarity limit levels.": ["Das Quartier verbessert Training und Gefährtenwerte. Nur Aufstieg und Seltenheit begrenzen das Level.","El alojamiento mejora el entrenamiento y los atributos del compañero. Solo la ascensión y la rareza limitan el nivel.","Het verblijf verbetert training en metgezelstatistieken. Alleen ascensie en zeldzaamheid bepalen het maximale niveau.","Gli alloggi migliorano l'addestramento e le statistiche dei compagni. Solo ascensione e rarità limitano il livello.","Les quartiers améliorent l'entraînement et les statistiques du compagnon. Seuls l'ascension et la rareté limitent le niveau."],

@@ -5,6 +5,8 @@ import {spanishUiGap} from './spanish-ui-gaps';
 // Each row contains English, German, Spanish, Dutch, Italian and French.
 // English source keys also let owned views translate core-generated presentation text.
 export const accountTranslationRows = {
+ "Monster Codex": ["Monster Codex","Monsterkodex","Códice de monstruos","Monstercodex","Codice dei mostri","Codex des monstres"],
+ "Creatures, enemy types, drops and mastery": ["Creatures, enemy types, drops and mastery","Kreaturen, Gegnertypen, Beute und Meisterschaft","Criaturas, tipos de enemigos, botín y maestría","Monsters, vijandtypes, buit en meesterschap","Creature, tipi di nemici, bottini e maestria","Créatures, types d’ennemis, butin et maîtrise"],
   // Guides introduced by the refreshed learning library (source-exact, five localized variants).
   "Equipment & Inventory": ["Equipment & Inventory","Ausrüstung & Inventar","Equipo e inventario","Uitrusting en inventaris","Equipaggiamento e inventario","Équipement et inventaire"],
   "Equip stronger gear, compare stats and keep your materials organized.": ["Equip stronger gear, compare stats and keep your materials organized.","Rüste stärkere Ausrüstung aus, vergleiche Werte und organisiere deine Materialien.","Equipa objetos más potentes, compara estadísticas y organiza tus materiales.","Draag sterkere uitrusting, vergelijk statistieken en orden je materialen.","Equipaggia oggetti più potenti, confronta le statistiche e organizza i materiali.","Équipez du matériel plus puissant, comparez les caractéristiques et organisez vos matériaux."],

@@ -165,12 +165,8 @@ const baseline={
     "setViewFilter(option)"
   ],
   "apps/mobile/src/screens/BestiaryScreen.tsx": [
-    "setStatus('all')",
-    "setStatus('all')",
-    "setStatus(value)",
-    "setZone('all')",
-    "setZone('all')",
-    "setZone(value)"
+    "setTab('types')",
+    "setTab(choice.id)"
   ],
   "apps/mobile/src/components/CombatCompanionPanel.tsx": [
     "act('companion_essence')",

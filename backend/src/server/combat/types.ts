@@ -176,6 +176,8 @@ export interface ActiveTimedModifier {
   createdAt?: number;
   kind?: 'buff'|'debuff'|'gem';
   v2CapstoneId?:string;
+  /** V2 class ability provenance for refresh-only buffs and debuffs. */
+  v2SourceAbilityId?:string;
 }
 
 export interface CombatantState {

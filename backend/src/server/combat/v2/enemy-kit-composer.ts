@@ -277,7 +277,7 @@ export function verifyPersistedEnemyKitsV2(
    assert(enemyV2SnapshotDigest(next)===enemyV2SnapshotDigest(expected),
       'stored_t1_intro_kit_mismatch');
   }
-  if(!base.boss&&snapshot.equipmentTier>=2){
+  else if(!base.boss&&snapshot.equipmentTier>=2){
    const actual=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:trait:'))
      .map((t:string)=>t.slice('enemy-v2:trait:'.length));
    const archetypes=(next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:archetype:'))
@@ -296,6 +296,28 @@ export function verifyPersistedEnemyKitsV2(
      p.profile===(archetypes[0]??'unrolled')&&archetypes.length<2&&
      (archetypes.length===0||originalArchetypes[old??'']===archetypes[0]),
      'stored_trait_evidence_mismatch');
+   // A digest is NOT proof of the expected seeded traits: an attacker who can
+   // alter a stored receipt can rehash inflated stats, new abilities or a new
+   // selection. Re-compose from the trusted base, encounter ID and frozen
+   // versioned server seed; even unrolled normals must remain unchanged.
+   // This only validates persisted bytes. Authenticated ownership of the
+   // receipt and the seed is a separate, mandatory storage boundary.
+   const replay=prepareEnemyV2([base],{
+    ruleset:ENEMY_V2_RULESET,serverSeed:snapshot.seed,
+    encounterId:snapshot.encounterId,region:snapshot.region,
+    equipmentTier:snapshot.equipmentTier,
+    eliteEnemyIds:snapshot.eliteEnemyIds,
+   });
+   const expected=clone({...replay.enemies[0],
+    tags:[...(replay.enemies[0].tags??[]),KIT_TAG],
+   });
+   assert(enemyV2SnapshotDigest(next)===enemyV2SnapshotDigest(expected),
+     'stored_seeded_enemy_kit_mismatch');
+   const expectedPreview=replay.preview[0];
+   assert(JSON.stringify(p.traitIds)===
+     JSON.stringify(expectedPreview?.traitIds??[])&&
+     p.profile===(expectedPreview?.archetype??'unrolled'),
+     'stored_seeded_enemy_preview_mismatch');
   }else{
    assert(p.profile===snapshot.region+'-boss-v1'&&
     p.traitIds.length===0&&

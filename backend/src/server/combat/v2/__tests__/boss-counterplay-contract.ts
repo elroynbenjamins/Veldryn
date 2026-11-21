@@ -95,6 +95,20 @@ for(const [id,name,region,tier,castCount] of six){
  traitChecks++;
  assert.equal(candidate.preparedEnemies[0].phases?.length,3,
   'Legacy phase must be preserved alongside the two V2 phases');
+ assert.equal(stored.preview[0].profile,region+'-boss-v2',
+  'Revised authored boss traits require the new versioned kit profile');
+ assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
+  ...stored,preview:[{...stored.preview[0],profile:region+'-boss-v1'}],
+ }),/stored_boss_profile_mismatch/,
+  'An old profile marker cannot authorize a revised boss trait kit');
+ const removedTrait=candidate.preparedEnemies.map(e=>({
+  ...e,tags:e.tags?.filter(t=>!t.startsWith('enemy-v2:boss-trait:')),
+ }));
+ assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
+  ...stored,preparedEnemies:removedTrait,
+  preparedEnemyDigest:enemyV2SnapshotDigest(removedTrait),
+ }),/stored_boss_authored_kit_mismatch/,
+  'Even a rehashed snapshot may not remove its signed boss trait');
  assert.equal(JSON.stringify(raw),original);
  assert.deepEqual(simulateCombat(legacyInput),before,
   'Old in-flight dungeon/boss replays must not be recompiled');
@@ -128,6 +142,20 @@ for(const [id,name,region,tier,castCount] of six){
   ...stored,preparedEnemies:forgedPhases,
   preparedEnemyDigest:enemyV2SnapshotDigest(forgedPhases),
  }),/stored_boss_authored_kit_mismatch|phase_counter_contract_mismatch/);
+ if(id==='BOSS_EXP_ROOT'||id==='BOSS_EXP_SPHINX'){
+  const forgedReflection=candidate.preparedEnemies.map(e=>({
+   ...e,abilities:e.abilities.map(a=>({
+    ...a,effects:a.effects.map(fx=>fx.shieldReflectPct!==undefined?{
+     ...fx,shieldReflectPct:.5,
+    }:fx),
+   })),
+  }));
+  assert.throws(()=>projectPersistedBossCounterplayV2([raw],{
+   ...stored,preparedEnemies:forgedReflection,
+   preparedEnemyDigest:enemyV2SnapshotDigest(forgedReflection),
+  }),/stored_boss_authored_kit_mismatch/,
+   'Even a rehashed 50% reflected shield must fail closed');
+ }
  const forgedDamage=candidate.preparedEnemies.map(e=>({
   ...e,abilities:e.abilities.map(a=>a.id===preview[0].casts[0].abilityId?{
    ...a,effects:a.effects.map(fx=>({...fx,

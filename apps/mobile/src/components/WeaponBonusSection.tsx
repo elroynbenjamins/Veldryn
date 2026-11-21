@@ -81,16 +81,16 @@ export function WeaponBonusDetails({itemId,rarity,rolls,version,compact=false,sh
 
 function styles(C:ThemeColors){
   return StyleSheet.create({
-    panel:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,overflow:'hidden'},
-    heading:{minHeight:44,paddingHorizontal:spacing.sm,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:8},
+    panel:{borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.panel2,overflow:'hidden'},
+    heading:{minHeight:48,paddingHorizontal:spacing.sm,paddingVertical:8,flexDirection:'row',alignItems:'center',gap:8},
     flex:{flex:1,minWidth:0,gap:2},
     title:{...typography.bodyStrong,color:C.text,fontWeight:'800',fontSize:12},
     subtitle:{...typography.caption,color:C.muted,fontSize:11},
     chevron:{fontSize:19,fontWeight:'700',color:C.muted,minWidth:25,textAlign:'center'},
     content:{borderTopWidth:1,borderTopColor:C.line,gap:3,padding:spacing.sm},
-    poolRow:{minHeight:29,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+    poolRow:{minHeight:34,flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6,paddingVertical:4,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
     statName:{...typography.bodyStrong,color:C.text,fontSize:12,flexShrink:1},
-    range:{...typography.bodyStrong,color:C.good,fontSize:12,fontVariant:['tabular-nums']},
+    range:{...typography.bodyStrong,color:C.good,fontSize:12,fontVariant:['tabular-nums'],textAlign:'right',flexShrink:0},
     note:{...typography.caption,color:C.muted,fontSize:10,lineHeight:15,flexShrink:1},
     details:{borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,padding:spacing.sm,gap:7},
     detailsHead:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},

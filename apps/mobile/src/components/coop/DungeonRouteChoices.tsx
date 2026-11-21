@@ -47,8 +47,10 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const enter=anims[optionIndex]??new Animated.Value(1);
    const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
-   const bossExit=option.kind==='boss'&&options.length>1;
-   const routeAction=bossExit?(live?dungeonUxText(language,'bossVote'):dungeonUxText(language,'bossFinish')):option.kind==='boss'&&!live?dungeonUxText(language,'bossFinal'):action;
+   const bossAvailable=options.length>1&&options.some(candidate=>candidate.kind==='boss');
+   const bossExit=option.kind==='boss'&&bossAvailable;
+   const continueChoice=bossAvailable&&option.kind!=='boss';
+   const routeAction=bossExit?(live?dungeonUxText(language,'bossVote'):dungeonUxText(language,'bossFinish')):continueChoice?dungeonUxText(language,live?'continueVote':'continueDeeper'):option.kind==='boss'&&!live?dungeonUxText(language,'bossFinal'):action;
    const votedHere=live&&myVotedNodeId===option.nodeId;
    const room=dungeonRoomPresentation(option.kind);
    const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
@@ -67,7 +69,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
-    style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
+    style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,continueChoice&&s.continueCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
    >
     <CoopImageSlot assetId={room?.art??'node_event'} size="node" accessibilityLabel={title}/>
     <View style={s.content}>
@@ -95,7 +97,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
 function makeStyles(C:CoopColors){return StyleSheet.create({
  list:{gap:6},
  card:{minHeight:62,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
- bossCard:{borderColor:C.goldDim,backgroundColor:C.surfaceRaised},bossAction:{color:C.gold},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
+ bossCard:{borderColor:C.gold,backgroundColor:C.surfaceRaised},continueCard:{borderColor:C.cyan,backgroundColor:C.surface},bossAction:{color:C.gold},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
  content:{flex:1,minWidth:0,justifyContent:'center',gap:2},
@@ -112,6 +114,6 @@ function makeStyles(C:CoopColors){return StyleSheet.create({
  voteLine:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
  myVote:{alignItems:'center',justifyContent:'center'},
  votes:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800'},
- actionCue:{fontSize:11,lineHeight:16,color:C.gold,fontWeight:'800',flexShrink:0},
+ actionCue:{fontSize:11,lineHeight:16,color:C.cyan,fontWeight:'800',flexShrink:0},
  chevron:{fontSize:16,lineHeight:18,color:C.gold,fontWeight:'700'},
  });}

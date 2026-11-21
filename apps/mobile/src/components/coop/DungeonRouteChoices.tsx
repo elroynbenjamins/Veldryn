@@ -56,7 +56,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const checkpointCamp=option.kind==='camp'&&option.modifierId==='checkpoint-camp-v2';
    const checkpointBoon=option.kind==='shrine'&&option.modifierId==='checkpoint-boon-v2';
    const title=checkpointCamp?dungeonUxText(language,'checkpointCamp'):checkpointBoon?dungeonUxText(language,'checkpointBoon'):room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
-   const preview=checkpointCamp?dungeonUxText(language,'checkpointCampHint'):checkpointBoon?dungeonUxText(language,'checkpointBoonHint'):option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
+   const encounterPreview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
+   const preview=checkpointCamp?dungeonUxText(language,'checkpointCampHint'):checkpointBoon?dungeonUxText(language,'checkpointBoonHint'):encounterPreview;
    const modifier=option.kind==='elite'?localizedDungeonRoomModifier(language,option.modifierId):undefined;
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');

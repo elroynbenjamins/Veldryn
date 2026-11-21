@@ -49,6 +49,7 @@ on:
       - 'backend/src/server/party/weekly-party-event-real-reward-ports-v86.ts'
       - 'backend/src/server/party/weekly-party-event-canonical-pg-v87.ts'
       - 'backend/src/server/party/weekly-party-event-atomic-ports-v88.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-atomic-ports-v88.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-canonical-pg-v87.ts'
       - 'backend/tests/party-event-canonical-source-v87.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql'
@@ -170,6 +171,8 @@ jobs:
         run: |
           node .event-chest-tests/server/party/__tests__/weekly-party-event-canonical-pg-v87.js
           node tests/party-event-canonical-source-v87.mjs
+      - name: Verify V88 no-live-writer composition gate
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-atomic-ports-v88.js
       - name: Exercise V88 integrated V87 authoritative SQL plus V86 real rewards in one V70 transaction
         run: node tests/party-event-real-rewards-v86.mjs
       - name: Verify original Party V80 paid-Inbox history and V81 legacy claim guard

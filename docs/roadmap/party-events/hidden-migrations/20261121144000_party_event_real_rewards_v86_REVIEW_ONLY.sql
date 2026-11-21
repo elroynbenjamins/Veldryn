@@ -48,7 +48,7 @@ CREATE OR REPLACE FUNCTION private.party_event_v86_immutable_update()
 RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $party_v86$
 BEGIN
  RAISE EXCEPTION 'party_event_v86_immutable_audit';
-END
+END;
 $party_v86$;
 CREATE TRIGGER party_event_v86_no_update
  BEFORE UPDATE ON private.party_event_chest_resource_grants_v86

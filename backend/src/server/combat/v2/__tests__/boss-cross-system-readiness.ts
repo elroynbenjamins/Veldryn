@@ -48,7 +48,10 @@ for(const config of bosses){
   const specs=SPECIALIZATIONS_V2.filter(s=>s.classId===classId);
   assert.equal(specs.length,2);
   for(const spec of specs){
-   const player=launchPlayer(CLASS_NAMES_V2[classId],config.level);
+   // Human-readable launch names (notably Knife Dancer) are not valid
+   // server persistence actor IDs. Use an immutable QA-only canonical ID.
+   const player={...launchPlayer(CLASS_NAMES_V2[classId],config.level),
+    id:'QA_BOSS_PLAYER_'+classId};
    player.combatV2={
     version:2,resource:RESOURCE_BY_CLASS_V2[classId],
     specializationId:spec.id,

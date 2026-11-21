@@ -51720,11 +51720,12 @@ var OnlineQModeRuntime = class {
     const { run: before, seed } = loaded.privateState, repository = new MemoryQModeRunRepository();
     repository.save(before);
     const domain = new QModeService(repository, seed), run = domain.choose({ runId, controllerAccountId: accountId, optionNodeId: request.optionId, boonId: request.boonId });
+    const final = settlement(run, loaded.stateVersion + 2, seed);
     const chosen = run.graph.nodes.find((node) => node.nodeId === request.optionId);
     const duration = chosen?.kind === "boss" ? 1800 : chosen?.kind === "elite" ? 1400 : chosen?.kind === "battle" ? 900 : 0;
     const resolvesAtMs = loaded.serverNow + duration;
     const client = { ...projection(before, loaded.stateVersion + 1, seed), phase: "resolving_node", options: [], selectedNodeId: request.optionId, resolvesAtMs, boonOffers: void 0, artifactOffers: void 0 };
-    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState) } }, p_client_projection: client });
+    return this.services.rpc("queue_online_qmode_node_server_v1", { p_account_id: accountId, p_run_id: runId, p_expected_version: loaded.stateVersion, p_request_id: request.requestId, p_request_hash: hash, p_private_state: { run: before, seed, pending: { run, resolvesAtMs, startStateHash: digest(before.persistentState), settlement: final } }, p_client_projection: client });
   }
 };
 

@@ -8,7 +8,7 @@ const home=read('components/coop/CoopDungeonBrowser.tsx');
 const route=read('components/coop/DungeonRouteChoices.tsx');
 const echo=read('components/coop/CoopSocialEchoPicker.tsx');
 const copy=read('i18n/dungeon-ux-copy.ts');
-assert.match(forge,/<WeaponBonusPool key=\{item.id\} itemId=\{item.id\} initialExpanded\/>/,'Shared real slot-specific bonus roll pool in Forge');
+assert.match(forge,/<WeaponBonusPool key=\{item.id\} itemId=\{item.id\} expanded=\{bonusPoolOpenByItem\[item.id\]\?\?true\}/,'Shared real slot-specific bonus pool stays initially open and follows the controlled disclosure state');
 assert.doesNotMatch(forge,/<ForgeWeaponBonusPool/,'No weapon-only panel that hides armor rolls');
 assert.ok(forge.indexOf('<CraftQuantitySelector')<forge.indexOf('<WeaponBonusPool')&&forge.indexOf('<WeaponBonusPool')<forge.indexOf('<Pressable accessibilityRole="button" accessibilityState={{disabled:!ready||craftCount<1}}'),'Resource-aware quantity → actual roll options → forge action');
 assert.match(pool,/equipmentBonusConfig\(itemId,'common'\)/,'Armor, ring and other nonweapon pools supported');

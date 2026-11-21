@@ -754,7 +754,7 @@ function VeldrynApp(){
   // palette. Retry once that action clears rather than issuing a competing command.
   useEffect(()=>{if(!online.busy&&!online.pending&&requestedThemeRef.current&&!themeSavingRef.current)scheduleThemeSave(0);},[online.busy,online.pending]);
   useEffect(()=>()=>{if(themeSaveTimerRef.current!==null)clearTimeout(themeSaveTimerRef.current);},[]);
-  async function commit(candidate:GameState){
+  async function commit(candidate:GameState,options?:{confirmSaved?:boolean}){
     const current=stateRef.current;
     if(serverGameplayEnabled){
       if(!current)return;
@@ -774,7 +774,12 @@ function VeldrynApp(){
         const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};
       }
     }
-const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candidate,Date.now())));queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
+const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candidate,Date.now())));
+ // For crafting, save before claiming success or updating the visible queue; a failed
+ // local save must not look like a completed transaction.
+ if(options?.confirmSaved)await repo.save(next);
+ queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);
+ if(!options?.confirmSaved){try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}}
   async function exportSave(){if(!state){showAlert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){showAlert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
   async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=normalizeProfileIcon(migrateRetiredStoryRewards(parseSaveBackup(raw),Date.now()));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);showAlert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null,before?:GameState|null,after?:GameState|null){const progressionMoments=rewardProgressionMoments(before,after);if(rewardHasProgress(reward)||progressionMoments.length)setCollected({reward,activity,progressionMoments})}
@@ -1014,7 +1019,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     next=timed?startEquipmentCraft(next,id,craftNow).state:craftRecipe(next,id,craftNow,batch);
   }
   // Confirm only after saving locally; errors are rendered in the recipe's status area.
-  await commit(next);
+  await commit(next,{confirmSaved:true});
   if(!timed)queueMasteryNotice(state,next);
 }}/>}
     {tab==='Inventory'&&<InventoryScreen key={`${state.createdAtMs}:${state.character.id}`} state={state} viewMemory={inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]??(inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]=newInventoryScreenState())} foodRequest={inventoryFoodScope===`${state.createdAtMs}:${state.character.id}`?inventoryFoodRequest:0} onEquip={id=>runCompanionCommand({type:'equip',args:{id}})} onFood={id=>void quickFoodCommand({type:'food',args:{id}}).catch(error=>showAlert('Food',error.message))} onEat={id=>void quickFoodCommand({type:'eat',args:{id}}).catch(error=>showAlert('Food',error.message))} onSell={(id,quantity)=>inventoryCommand({type:'sell',args:{id,quantity}},()=>sellItem(state,id,quantity))} onSalvage={id=>inventoryCommand({type:'salvage',args:{id}},()=>salvageItem(state,id))} onDeposit={(id,quantity)=>inventoryCommand({type:'deposit',args:{id,quantity}},()=>depositToBank(state,id,quantity))} onDepositMaterials={()=>inventoryCommand({type:'deposit_materials'},()=>depositAllMaterials(state))} onUpgradeStorage={location=>inventoryCommand({type:'storage',args:{location}},()=>upgradeStorage(state,location))} onBankSell={(id,quantity)=>inventoryCommand({type:'bank_sell',args:{id,quantity}},()=>sellBankItem(state,id,quantity))} onBankGoldTransfer={(direction,amount)=>inventoryCommand({type:direction==='deposit'?'bank_gold_deposit':'bank_gold_withdraw',args:{amount}},()=>direction==='deposit'?depositGoldToBank(state,amount):withdrawGoldFromBank(state,amount))} onWithdraw={(id,quantity)=>inventoryCommand({type:'withdraw',args:{id,quantity}},()=>withdrawFromBank(state,id,quantity))} onOverflow={()=>inventoryCommand({type:'overflow'},()=>claimOverflowToBank(state))} onToggleFavorite={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(id)}}):void commit(toggleInventoryFavorite(state,id))} onToggleLock={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(id)}}):void commit(toggleInventoryLock(state,id))} onAcknowledgeItem={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'seen',enabled:true}}):void commit(acknowledgeInventoryItem(state,id))} onAcknowledgeAll={()=>serverGameplayEnabled?void perform({type:'inventory_seen_all'}):void commit(acknowledgeAllInventoryItems(state))} onBulkAction={(kind,location,ids)=>inventoryCommand({type:kind==='transfer'?'bulk_transfer':kind==='sell'?'bulk_sell':'bulk_salvage',args:{location,ids}},()=>kind==='transfer'?bulkTransferSelected(state,ids,location):kind==='sell'?bulkSellSelected(state,ids,location):bulkSalvageSelected(state,ids,location))} onNavigateInspect={openWorkingTowardDestination} onCommand={runCompanionCommand}/>}

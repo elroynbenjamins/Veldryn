@@ -38,6 +38,23 @@ assert.ok(panel.includes('<ChatPlayerSheet'),'reuse existing secure player/profi
 assert.ok(panel.includes('FlatList')&&panel.includes('TextInput'),'searchable scrollable roster');
 assert.ok(panel.includes("filter==='friends'")&&panel.includes("filter!=='all'"),'friend/guild list filters');
 assert.ok(heartbeat.includes('heartbeat();')&&heartbeat.includes('2*60_000'),'foreground heartbeat begins immediately');
-assert.ok(moduleSource.includes("supabase.rpc('online_player_roster_v1')"),'read from server-authoritative presence');
+assert.ok(moduleSource.includes("supabase.rpc('online_player_roster_v2')"),'read from server-authoritative presence');
 
-console.log('PASS: online roster response, chat integration, search, safety and presence cadence');
+const migration=fs.readFileSync(path.join(root,'../../backend/supabase/migrations/20261121170000_chat_active_30m_roster_v2.sql'),'utf8');
+assert.match(migration,/create or replace function public\.online_player_roster_v2\(\)/);
+assert.match(migration,/p\.last_seen_at >= now\(\) - interval '30 minutes'/);
+assert.match(migration,/p\.bucket_start >= now\(\) - interval '35 minutes'/);
+assert.match(migration,/revoke all on function public\.online_player_roster_v2\(\) from public, anon;/);
+assert.match(migration,/grant execute on function public\.online_player_roster_v2\(\) to authenticated;/);
+assert.ok(!migration.includes('create or replace function public.online_player_roster_v1()'),'legacy seven-minute RPC is not changed');
+assert.ok(overlay.includes("compactActivityPill?'30m':st('Active (30m)')"),'30-minute header has compact small-screen variant');
+assert.ok(overlay.includes("st('Active in Last 30 Minutes')"),'header accessibility identifies the correct window');
+assert.ok(panel.includes("st('Active in Last 30 Minutes')"),'player list uses the same explicit activity window');
+assert.ok(panel.includes("st('Recently active, not necessarily online now')"),'30-minute presence is not mislabeled as live online');
+assert.ok(panel.includes("st('No recently active players')"),'empty state is accurate');
+for(const key of ['Active (30m)','Active in Last 30 Minutes','Recently active, not necessarily online now','No recently active players']){
+ assert.ok(read('src/i18n/social.ts').includes(JSON.stringify(key)+':'),'main locales translate '+key);
+ assert.ok(read('src/i18n/social-early-coverage.ts').includes(JSON.stringify(key)+':'),'Russian and Turkish locales translate '+key);
+}
+
+console.log('PASS: 30-minute activity roster RPC, backward compatibility, UI labels, translations and presence cadence');

@@ -19,7 +19,7 @@ const currentArtifacts=[
  'RELIC_EMBER_HEART','RELIC_IRON_BARK','RELIC_QUICK_SILVER','RELIC_EAGLE_EYE',
  'RELIC_MOON_WELL','RELIC_HUNTER_MARK','RELIC_BOSS_WARD','RELIC_PARTY_OATH',
 ];
-assert.deepEqual(DUNGEON_REWARD_V2_TOTALS,{boons:16,artifacts:14,executable:6,pending:3});
+assert.deepEqual(DUNGEON_REWARD_V2_TOTALS,{boons:16,artifacts:14,executable:9,pending:0});
 assert.equal(new Set(DUNGEON_REWARDS_V2.map(item=>item.id)).size,30);
 assert.ok(currentBoons.every(id=>DUNGEON_REWARDS_V2.some(row=>row.id===id&&row.type==='boon')));
 assert.ok(currentArtifacts.every(id=>DUNGEON_REWARDS_V2.some(row=>row.id===id&&row.type==='artifact')));

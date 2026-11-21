@@ -73,7 +73,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'NewUnlocks':return {title:a('New Unlocks'),description:a('Titles, pets, emotes and profile cosmetics you earned.')};
     case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
     case 'AdventurersJournal':return {title:a("Adventurer's Journal"),description:a("Achievements, records and collection progress")};
-    case 'Bestiary':return {title:a("Bestiary"),description:a("Discover creatures and their known drops")};
+    case 'Bestiary':return {title:a("Monster Codex"),description:a("Creatures, enemy types, drops and mastery")};
     case 'WorldMilestones':return {title:a("World Milestones"),description:a("Recent public achievements across Veldryn")};
   }
 }

@@ -162,7 +162,7 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
     ward:multiplied(sets.ward,p.ward)+rolled('ward'),
     tenacity:multiplied(sets.tenacity,p.tenacity)+rolled('tenacity'),
     haste:multiplied(sets.haste,p.haste)+rolled('haste'),
-    power:multiplied(sets.power,p.power)+rolled('power'),
+    power:sets.power+rolled('power'), // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
     attack:multiplied(sets.attack,p.attack)+rolled('attack'),
     accuracy:sets.accuracy+(pp.accuracy??0)+rolled('accuracy'),
     penetration:sets.penetration+(pp.penetration??0)+rolled('penetration'),

@@ -273,12 +273,12 @@ function RoomTile({language,room}:{language:Language;room:CoopRoomType}){
  const {styles:s}=useCoopStyles(makeStyles);return <View style={s.room}><CoopImageSlot assetId={roomAsset[room]} size="node" accessibilityLabel={ct(language,roomKey[room])}/><Text numberOfLines={2} style={s.roomLabel}>{ct(language,roomKey[room])}</Text></View>}
 
 const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
-  browseToolbar:{flexDirection:'row',alignItems:'center',gap:6,minHeight:44},
-  toolbarChat:{minWidth:38,minHeight:40,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:8,backgroundColor:coopColors.surfaceRaised},
+  browseToolbar:{flexDirection:'row',alignItems:'center',gap:4,minHeight:48},
+  toolbarChat:{minWidth:44,minHeight:44,justifyContent:'center',alignItems:'center',borderWidth:1,borderColor:coopColors.line,borderRadius:8,backgroundColor:coopColors.surfaceRaised},
   toolbarChatText:{fontSize:20,lineHeight:25,color:coopColors.cyan,fontWeight:'700'},
-  toolbarBack:{width:34,minHeight:40,justifyContent:'center',alignItems:'center'},
+  toolbarBack:{width:44,minHeight:44,justifyContent:'center',alignItems:'center'},
   toolbarBackText:{fontSize:27,lineHeight:31,color:coopColors.cyan,fontWeight:'600'},
-  toolbarTitle:{fontSize:15,lineHeight:22,fontWeight:'800',letterSpacing:1.1,color:coopColors.text},
+  toolbarTitle:{fontSize:14,lineHeight:21,fontWeight:'800',letterSpacing:.5,color:coopColors.text},
   finderHeader:{flexDirection:'row',alignItems:'center',gap:12,marginTop:2},
   finderTitle:{fontSize:19,lineHeight:24,fontWeight:'900',color:coopColors.text},
   finderSubtitle:{fontSize:11,lineHeight:15,color:coopColors.textMuted,marginTop:2},

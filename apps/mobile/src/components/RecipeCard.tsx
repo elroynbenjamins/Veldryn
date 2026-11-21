@@ -40,6 +40,7 @@ import {characterPermanentMultipliers} from '../core/permanent-boosts';
 import {recipePreparationRoute,recipePreparationRouteLabel,type RecipePreparationRoute,type RecipePreparationStep} from '../core/material-acquisition-plan';
 import {recipePreparationTrackingView} from '../core/recipe-preparation-tracking';
 import {trackedRecipePreparationGoal} from '../core/recipe-preparation-goals';
+import {playCraftStarted} from '../core/crafting-audio';
 
 type Status=ReturnType<typeof recipeAvailability>;
 
@@ -72,8 +73,8 @@ export function RecipeCard({state,recipe,status,onCraft,craftFeedback,onNavigate
  const statusStyle=craftReady?s.ready:skillLocked||characterLocked?s.locked:s.blocked;
  const detailsReady=expanded||detailsOnly;
  const skillAction=detailsReady?recipeSkillTrainingAction(state,recipe):undefined,characterAction=detailsReady?recipeCharacterTrainingAction(state,recipe):undefined,sourceRows=detailsReady?recipeProgressionSources(state,recipe,effectiveStatus.inputs):[],preparationRoute=detailsReady?recipePreparationRoute(state,recipe,multiplier):undefined,trackedGoal=trackedRecipePreparationGoal(state,recipe.id),trackedPreparation=trackedGoal?recipePreparationTrackingView(state,trackedGoal):undefined;
- const runAlchemy=async()=>{if(!onAlchemyStart||!craftReady||startingRef.current)return;startingRef.current=true;setStarting(true);setActionError('');try{await onAlchemyStart(recipe.id,quantity);}catch(error){setActionError(error instanceof Error?error.message:gt("Could not start brewing."));}finally{startingRef.current=false;setStarting(false);}};
- const runProcessing=async()=>{if(!onProcessingStart||!craftReady||startingRef.current)return;startingRef.current=true;setStarting(true);setActionError('');try{await onProcessingStart(recipe.id,quantity);}catch(error){setActionError(error instanceof Error?error.message:gt("Could not start processing."));}finally{startingRef.current=false;setStarting(false);}};
+ const runAlchemy=async()=>{if(!onAlchemyStart||!craftReady||startingRef.current)return;startingRef.current=true;setStarting(true);setActionError('');try{await onAlchemyStart(recipe.id,quantity);playCraftStarted(recipe.id);}catch(error){setActionError(error instanceof Error?error.message:gt("Could not start brewing."));}finally{startingRef.current=false;setStarting(false);}};
+ const runProcessing=async()=>{if(!onProcessingStart||!craftReady||startingRef.current)return;startingRef.current=true;setStarting(true);setActionError('');try{await onProcessingStart(recipe.id,quantity);playCraftStarted(recipe.id);}catch(error){setActionError(error instanceof Error?error.message:gt("Could not start processing."));}finally{startingRef.current=false;setStarting(false);}};
  const variantLabel=(candidate:Recipe)=>candidate.id.includes('RECYCLED')?ct('Recycled'):candidate.id.includes('RECLAIMED')?ct('Reclaimed'):ct('Standard');
  const toggleDetails=()=>setExpanded(value=>!value);
  return <View style={[s.card,regionalTag&&s.regionalCard,regionalTag==='SUNSCAR'&&s.sunscarCard,regionalTag==='FROSTMARCH'&&s.frostmarchCard,regionalTag==='ASHLANDS'&&s.ashlandsCard]}>

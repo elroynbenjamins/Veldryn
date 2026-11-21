@@ -64,6 +64,33 @@ for(const family of families){
   'never_mutate_existing_hp_attack_defense_'+family);
  check(ready.abilities.length===2&&ready.phases?.length===2,
   'no_double_generic_kit_'+family);
+ const phase70=ready.phases?.[0],phase35=ready.phases?.[1];
+ const allEffects=ready.abilities.flatMap(a=>a.effects);
+ if(family==='broken_caravan'){
+  check(allEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken')&&
+   phase70?.effects.some(e=>e.kind==='shield')&&
+   phase35?.effects.some(e=>e.kind==='buff'),
+   'caravan_formation_and_rally');
+ }else if(family==='nightfall_hunt'){
+  check(allEffects.some(e=>e.kind==='dot'&&e.tag==='bleed')&&
+   allEffects.some(e=>e.kind==='damage'&&
+    e.executeBelowHpPct===.30)&&
+   phase70?.effects.some(e=>e.kind==='dot'&&e.tag==='bleed'),
+   'nightfall_bleed_execute_not_generic_ward');
+ }else if(family==='broken_wards'){
+  check(allEffects.some(e=>e.kind==='damage'&&e.damageType==='arcane')&&
+   phase70?.effects.some(e=>e.kind==='shield')&&
+   phase35?.effects.some(e=>e.kind==='debuff'&&
+    e.tag==='damage_taken'),
+   'guardian_arcane_ward_and_vulnerability_window');
+ }else{
+  check(allEffects.some(e=>e.kind==='damage'&&e.damageType==='shadow')&&
+   phase70?.effects.some(e=>e.kind==='shield')&&
+   phase35?.effects.some(e=>e.kind==='buff')&&
+   phase35?.effects.some(e=>e.kind==='debuff'&&
+    e.tag==='damage_taken'),
+   'reliquary_mirror_risk_reward_phase');
+ }
  check(ready.phases?.[0]?.hpPct===.7&&ready.phases?.[1]?.hpPct===.35,
   'two_distinct_phase_thresholds_'+family);
  check(ready.abilities.every(a=>a.interruptible&&a.castTimeMs>=800)&&

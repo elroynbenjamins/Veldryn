@@ -62,7 +62,7 @@ for(const [familyId,row] of Object.entries(expected)){
 const might=effectiveStats(withGem('stat_might'));
 close(might.attack,without.attack*1.035,'V2 Might must directly increase Attack by 3.5%');
 ok(might.power>without.power,'Derived Power can increase indirectly because the hero has more Attack');
-close(equippedCanonicalStatGemBonusesV1(withGem('stat_might')).statPercent.power??0,0,
+ok(!('power' in equippedCanonicalStatGemBonusesV1(withGem('stat_might')).statPercent),
  'Might cannot separately increase Power a second time');
 const vitality=effectiveStats(withGem('stat_vitality'));
 ok(vitality.hp>without.hp,'Vitality must increase effective Max HP');

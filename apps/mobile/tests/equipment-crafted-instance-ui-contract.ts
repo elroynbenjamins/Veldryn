@@ -51,11 +51,11 @@ const craftButton=collection.indexOf('accessibilityState={{disabled:!ready||craf
 const detailsAt=collection.indexOf('<RecipeCard key={recipe.id}');
 ok(craftButton>collection.indexOf('style={s.itemHero}')&&detailsAt>craftButton&&collection.includes('detailsOnly externalQuantity={craftCount}'),
  'Selected gear must offer a craft action before compact details');
-ok(recipeCard.includes('<ForgeOddsGuide itemId={output.id}/>')&&recipeCard.includes("detailTab==='stats'")&&!collection.includes('<ForgeOddsGuide'),
+ok(recipeCard.includes("<ForgeOddsGuide itemId={output.id} forgeLevel={state.skills.find(row=>row.skillId==='forge')?.level??1}/>")&&recipeCard.includes("detailTab==='stats'")&&!collection.includes('<ForgeOddsGuide'),
  'Rarity odds guide must be inside equipment Stats tab without duplicate queue contents');
 ok(collection.includes("type EquipmentCraftingSkill='smithing'|'tailoring'")&&read('src/screens/SkillsScreen.tsx').includes("initialSkill==='smithing'||initialSkill==='tailoring'"),
  'Smithing and Tailoring must use the same odds-bearing equipment crafting collection');
-ok(oddsGuide.includes('craftedGearRarityOutcomes(item.id)')&&oddsGuide.includes('outcomes.filter('),
+ok(oddsGuide.includes('craftedGearRarityOutcomes(item.id,forgeRarityBonusPercent(forgeLevel))')&&oddsGuide.includes('outcomes.filter('),
  'Recipe-specific rarity odds must be used for both collapsed summary and expanded rarity choices');
 ok(oddsGuide.includes('accessibilityState={{selected}}')&&oddsGuide.includes('setSelectedRarity(row.rarity)'),
  'Each colored rarity outcome must be interactive');

@@ -25,8 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install locked backend dependencies
-        run: pnpm --dir backend install --frozen-lockfile
+      - name: Install locked mobile and backend dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
       - name: Regenerate Edge bundles from shared game engine
         run: pnpm --dir backend build:online
       - name: Commit generated code to the feature branch only

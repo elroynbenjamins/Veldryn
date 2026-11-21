@@ -117,6 +117,46 @@ async function main(){
  assert.deepEqual(await resumeRuntime.load('owned-account',started.runId),pending.settlement.projection);
  assert.equal(finalized,1,'Repeated loads must not finalize the same completed room twice');
 
+ // A due worker may finish before a reconnecting client finalizes the same
+ // node. A stale-version conflict must return the freshly committed run,
+ // not strand the player on Preparing or attempt a second reward payout.
+ let racingReads=0,racingFinalizes=0;
+ const racingRuntime=new OnlineQModeRuntime({
+  randomId:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string):Promise<T>=>{
+   if(name==='load_online_qmode_server_v1'){
+    racingReads++;
+    return (racingReads===1?{
+     stateVersion:2,privateState:queuedPrivate,clientProjection:queuedClient,serverNow:pending.resolvesAtMs,
+    }:{
+     stateVersion:3,privateState:{run:pending.run,seed:queuedPrivate.seed},
+     clientProjection:pending.settlement!.projection,serverNow:pending.resolvesAtMs,
+    }) as T;
+   }
+   if(name==='finalize_online_qmode_node_server_v1'){
+    racingFinalizes++;throw new Error('STALE_STATE');
+   }
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ assert.deepEqual(await racingRuntime.load('owned-account',started.runId),pending.settlement.projection,
+  'A worker-winning race recovers the authoritative result');
+ assert.equal(racingReads,2,'A stale conflict must trigger exactly one guarded reread');
+ assert.equal(racingFinalizes,1,'Racing recovery must never send a second finalize');
+ const stillPending=new OnlineQModeRuntime({
+  randomId:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string):Promise<T>=>{
+   if(name==='load_online_qmode_server_v1')return {
+    stateVersion:2,privateState:queuedPrivate,clientProjection:queuedClient,serverNow:pending.resolvesAtMs,
+   } as T;
+   if(name==='finalize_online_qmode_node_server_v1')throw new Error('STALE_STATE');
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ await assert.rejects(()=>stillPending.load('owned-account',started.runId),/STALE_STATE/,
+  'A stale conflict without a committed result must not be mistaken for success');
+
+
  // Reproduce the specific Endurance transition that broke in production:
  // seven ordinary clears must be allowed to queue and settle room eight.
  // The path to room seven is reconstructed from the frozen, valid graph;

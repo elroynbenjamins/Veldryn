@@ -48787,9 +48787,6 @@ function possibleDungeonCompanionCounters(dungeonId) {
   return [...result];
 }
 
-// ../apps/mobile/src/core/game-commands.ts
-init_faith2();
-
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
@@ -48798,6 +48795,9 @@ init_progression();
 
 // ../apps/mobile/src/core/working-toward.ts
 var gatherDefs = [...GATHERING, ...HERB_NODES];
+
+// ../apps/mobile/src/core/game-commands.ts
+init_faith2();
 
 // ../apps/mobile/src/core/profile-unlocks.ts
 init_progression();

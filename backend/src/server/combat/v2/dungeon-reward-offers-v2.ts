@@ -33,13 +33,37 @@ export function previewDungeonRewardOffersV2(
  const kind=next.room==='treasure'||next.room==='secret'?'artifact':'boon';
  const counts=new Map<string,number>();
  for(const row of snapshot.receipts)counts.set(row.id,(counts.get(row.id)??0)+1);
+ const role=input.players[0].role;
  const ready=DUNGEON_REWARDS_V2.filter(row=>row.type===kind&&
-  row.stage!=='needs_engine_hook'&&(counts.get(row.id)??0)<row.maxStacks);
+  row.stage!=='needs_engine_hook'&&(counts.get(row.id)??0)<row.maxStacks&&
+  (!row.stat?.role||row.stat.role===role||
+   row.stat.role==='tank_or_support'&&(role==='tank'||role==='support')));
  if(ready.length<3)fail('not_enough_available_options');
- const selected=deterministicShuffle(
+ const shuffled=deterministicShuffle(
   serverSecret,ready,snapshot.runId,snapshot.characterId,
   next.nodeId,next.depth,DUNGEON_REWARD_V2_POLICY,'dungeon-reward-choice');
- return selected.slice(0,3);
+ // Refine: where the pool permits it, show three different playstyles instead
+ // of accidentally drafting three near-identical Attack/Crit modifiers.
+ const family=(row:DungeonRewardV2):string=>{
+  if(row.id==='ROOM_BOON_BULWARK')return 'defense';
+  if(row.stage==='room_only')return 'utility';
+  if(row.stat?.heal)return 'healing';
+  if(row.stat?.attack||row.stat?.crit)return 'offense';
+  if(row.stat?.defense)return 'defense';
+  if(row.stat?.haste)return 'tempo';
+  return 'other';
+ };
+ const chosen:DungeonRewardV2[]=[],used=new Set<string>();
+ for(const row of shuffled){
+  const group=family(row);
+  if(!used.has(group)){chosen.push(row);used.add(group);}
+  if(chosen.length===3)break;
+ }
+ if(chosen.length<3)for(const row of shuffled){
+  if(!chosen.includes(row))chosen.push(row);
+  if(chosen.length===3)break;
+ }
+ return chosen;
 }
 /** Returns a CANDIDATE for a privileged transaction; no authoritative
  * state is mutated and no client-submitted ID is accepted unless offered. */

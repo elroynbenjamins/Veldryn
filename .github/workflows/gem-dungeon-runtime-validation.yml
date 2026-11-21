@@ -47,12 +47,10 @@ jobs:
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm --dir apps/mobile install --frozen-lockfile
       - run: pnpm --dir backend install --frozen-lockfile
-      - name: Typecheck all mobile gameplay modules and tests
-        run: pnpm --dir apps/mobile typecheck:core
-      - name: Typecheck mobile app
-        run: pnpm --dir apps/mobile typecheck
-      - name: Run all mobile core regressions
-        run: pnpm --dir apps/mobile test:core
+      # Full app and core typechecks plus all 429 checks run in mobile-core-validation.yml.
+      # Keep this workflow's early, domain-specific failure signal only.
+      - name: Run focused mobile gem regressions
+        run: node tools/run-mobile-core-tests.mjs --match gem
 
   dungeon:
     name: Dungeon combat, effect gems and co-op simulation

@@ -115,17 +115,45 @@ assert.equal(aggregate[0].cases,3);
 assert.equal(aggregate[0].wins,1);
 assert.equal(aggregate[0].wipes,1);
 assert.equal(aggregate[0].timeouts,1);
+assert.equal(aggregate[0].durationP10Ms,2000);
 assert.equal(aggregate[0].durationP50Ms,5000);
+assert.equal(aggregate[0].bossHpP50Percent,12);
+assert.equal(aggregate[0].playerHpP50Percent,70);
 assert.equal(aggregate[0].durationP90Ms,9000);
 assert.equal(aggregate[0].phase70Cases,2);
 assert.equal(aggregate[0].phase35Cases,1);
 assert.equal(aggregate[0].castStarts,3);
 assert.equal(aggregate[0].castCompletes,2);
 assert.equal(aggregate[0].castInterrupts,1);
+assert.equal(aggregate[0].winsBeforeFirstTell,0);
+assert.equal(aggregate[0].wipesBeforeFirstTell,0);
+assert.equal(aggregate[0].timeoutsWithBossHpAbove70,0);
 assert.deepEqual(aggregateBossPacingV2([obs,second,third]),aggregate,
  'Pacing diagnostics must ignore the order of class/spec observations');
 assert.throws(()=>aggregateBossPacingV2([obs,obs]),/duplicate_class_spec/);
 assert.throws(()=>aggregateBossPacingV2([{...obs,castsStarted:3}]),
  /invalid_sample/);
 assert.throws(()=>aggregateBossPacingV2([]),/empty_samples/);
+
+// A short victory, a sudden wipe and an HP wall are distinct diagnostics.
+// Observational thresholds must not change a boss stat or fail release gates.
+const wall=sample([terminal(2000,'timeout')],'timeout',2000);
+wall.enemies[0].hp=920;
+const rapidWipe=sample([terminal(2500,'wipe')],'wipe',2500);
+const cases=aggregateBossPacingV2([
+ {...observeBossPacingV2(contract,quick),
+  classId:'KNIFEDANCER',specId:'QUICK'},
+ {...observeBossPacingV2(contract,wall),
+  classId:'IRONWARDEN',specId:'WALL'},
+ {...observeBossPacingV2(contract,rapidWipe),
+  classId:'DUSKMENDER',specId:'WIPE'},
+]);
+assert.equal(cases[0].winsBeforeFirstTell,1);
+assert.equal(cases[0].wipesBeforeFirstTell,1);
+assert.equal(cases[0].timeoutsWithBossHpAbove70,1);
+assert.equal(cases[0].bossHpP50Percent,50);
+assert.equal(cases[0].durationP10Ms,1500);
+assert.ok(cases[0].warnings.includes('timeout_low_boss_hp_progress:1/3'));
+assert.ok(cases[0].warnings.includes('wins_before_first_tell:1/3'));
+assert.ok(cases[0].warnings.includes('wipes_before_first_tell:1/3'));
 console.log('PASS: boss pacing read-only phase/cast timelines, terminal casts, 13 tamper regressions and order-invariant synthetic aggregates');

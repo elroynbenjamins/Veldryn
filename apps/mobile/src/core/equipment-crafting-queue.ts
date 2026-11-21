@@ -1,5 +1,6 @@
 import {captureSkillAffinity,normalizeSkillAffinitySnapshot,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {professionActionPace} from './profession-action-pace';
+import {forgeLevel,forgeRarityBonusPercent,forgeXpForRecipe} from './forge-mastery';
 import {RECIPES,recipeDef,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import {unlockedCharacterSlots,accountSkillLevel} from './account-roster';
@@ -59,6 +60,7 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       completesAtMs:Math.max(0,Math.floor(Number(row.completesAtMs)||0)),
       xpPerCraft:typeof row.xpPerCraft==='number'&&Number.isFinite(row.xpPerCraft)&&row.xpPerCraft>=0&&row.xpPerCraft<=1000000?row.xpPerCraft:undefined,
       skillAffinity:normalizeSkillAffinitySnapshot(row.skillAffinity),
+       forgeRarityBonusPercent:([0,5,10,15] as const).find(value=>value===row.forgeRarityBonusPercent),
       reservedGold:Number.isFinite(Number(row.reservedGold))?Math.max(0,Math.floor(Number(row.reservedGold))):undefined,
       reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
       // A malformed odds field must not become a guaranteed legacy claim.
@@ -245,6 +247,7 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
     recipeId,ownerCharacterId:projected.character!.id,
     startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
     reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
+    forgeRarityBonusPercent:forgeRarityBonusPercent(forgeLevel(projected)),
     xpPerCraft:professionActionPace(projected,recipe,'forge').xpPerAction,skillAffinity:captureSkillAffinity(projected,recipe.skillId),
   };
   const scheduled=scheduleWaiting([...existingQueue,job],slots.capacity,nowMs);
@@ -406,6 +409,19 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Pick<R
   return {...next,otherCharacters:(state.otherCharacters??[]).map(entry=>entry.character.id===ownerCharacterId?{...entry,skills:award(entry.skills)}:entry)};
 }
 
+/** Forge progression is granted only once, after successful equipment settlement. */
+function awardOwnerForgeXp(state:GameState,ownerCharacterId:string,recipeXp:number):GameState{
+ const gain=forgeXpForRecipe(recipeXp);
+ const add=(skills:SkillState[]):SkillState[]=>{
+  const current=skills.find(row=>row.skillId==='forge');
+  const xp=Math.min(totalXpAtLevel(100),(current?.xp??0)+gain);
+  const entry:SkillState={skillId:'forge',xp,level:levelFromXp(xp)};
+  return current?skills.map(row=>row.skillId==='forge'?entry:row):[...skills,entry];
+ };
+ if(state.character?.id===ownerCharacterId)return {...state,skills:add(state.skills)};
+ return {...state,otherCharacters:(state.otherCharacters??[]).map(row=>row.character.id===ownerCharacterId?{...row,skills:add(row.skills)}:row)};
+}
+
 export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
@@ -414,7 +430,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
   if(!recipe)throw new Error('Crafting recipe is no longer available');
   let next=projected;
   if(equipmentRecipe){
-    const itemId=equipmentRecipe.output.itemId,args={itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll};
+    const itemId=equipmentRecipe.output.itemId,args={itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll,forgeRarityBonusPercent:job.forgeRarityBonusPercent};
     const draft=draftCraftedGearInstance(args),capacity=craftedGearCopyCapacity(next,itemId),mode=next.account.craftedGearAutoSellMode??'off';
     let saleGold=0,autoSold:'incoming'|'existing'|undefined;
     if(capacity.count>=capacity.limit){
@@ -443,7 +459,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
       next=deliverExactForgeCopy(next,itemId,draft.id,job.ownerCharacterId);
       next=createCraftedGearInstance(next,args).state;
     }
-    next=awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job);
+    next=awardOwnerForgeXp(awardOwnerSkillXp(next,job.ownerCharacterId,equipmentRecipe,job),job.ownerCharacterId,equipmentRecipe.xp);
     next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
     next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
     return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:draft,

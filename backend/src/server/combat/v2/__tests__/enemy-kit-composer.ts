@@ -66,6 +66,15 @@ rejects(()=>verifyPersistedEnemyKitsV2(enemies,{...persisted,preview:changedPrev
 
 // Tier 2+ receipts are verified against actual deterministic authoring, not
 // just a digest that a forged persisted object could recalculate.
+// Canonical-parent regression: a saved preview cannot claim extra actions.
+const forgedAbilityPreview=persisted.preview.map(p=>({
+ ...p,abilityNames:[...p.abilityNames],
+}));
+forgedAbilityPreview[0].abilityNames.push('Fabricated enemy ability');
+rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
+ ...persisted,preview:forgedAbilityPreview,
+}),/stored_preview_does_not_match_kit/);
+
 const boosted=persisted.preparedEnemies.map((e,i)=>i===0?({
  ...e,stats:{...e.stats,attackPower:e.stats.attackPower*1.5},
 }):e);
@@ -141,6 +150,14 @@ for(const {id,region,name} of bosses){
  assert.ok(plan.preparedEnemies[0].tags?.includes('enemy-v2:kit:v1'));
  const stored:PersistedEnemyKitV2={...plan,source:'server-persisted-v2',revision:3};
  assert.deepEqual(verifyPersistedEnemyKitsV2([boss],stored).enemies,plan.preparedEnemies);
+ if(id==='BOSS_EXP_ROOT'){
+  const forgedPhasePreview=stored.preview.map(p=>({
+   ...p,phaseNames:[...p.phaseNames,'Fabricated boss phase'],
+  }));
+  rejects(()=>verifyPersistedEnemyKitsV2([boss],{
+   ...stored,preview:forgedPhasePreview,
+  }),/stored_preview_does_not_match_kit/);
+ }
  const missingLegacy=plan.preparedEnemies.map(e=>({...e,
    phases:e.phases?.filter(p=>p.id!=='LEGACY_PHASE'),
  }));
@@ -158,5 +175,5 @@ rejects(()=>prepareSoloEnemyKitsV2([incorrectName],{...options,eliteEnemyIds:[]}
 rejects(()=>verifyPersistedEnemyKitsV2(enemies,{
  ...persisted,preview:[null as never,...persisted.preview.slice(1)],
 }),/invalid_stored_preview/);
-assert.equal(failed,27);
-console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 27 fail-closed receipts including forged seeded traits and unrolled normals');
+assert.equal(failed,29);
+console.log('PASS: one seeded enemy kit, 6 handcrafted bosses, baseline phase preservation, 29 fail-closed receipts including forged seeded traits and unrolled normals');

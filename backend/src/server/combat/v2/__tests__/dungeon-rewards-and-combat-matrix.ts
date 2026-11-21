@@ -89,6 +89,20 @@ const artOffer=previewDungeonRewardOffersV2(base,sourceSnapshot,artRoom,
  'PRIVATE_QA_SECRET_16CHARS',verified);
 assert.equal(artOffer.length,3);
 assert.ok(artOffer.every(x=>x.type==='artifact'&&x.stage!=='needs_engine_hook'));
+assert.ok(!artOffer.some(x=>x.id==='RELIC_DAWN_RELIQUARY'),
+ 'A support-only artifact should never be offered to a tank');
+const family=(id:string)=>{
+ const row=DUNGEON_REWARDS_V2.find(x=>x.id===id)!;
+ if(row.id==='ROOM_BOON_BULWARK')return 'defense';
+ if(row.stage==='room_only')return 'utility';
+ if(row.stat?.heal)return 'healing';
+ if(row.stat?.attack||row.stat?.crit)return 'offense';
+ if(row.stat?.defense)return 'defense';
+ if(row.stat?.haste)return 'tempo';
+ return 'other';
+};
+assert.equal(new Set(firstOffer.map(x=>family(x.id))).size,3,
+ 'Boon offer should contain different playstyles when available');
 
 // QA actual engine: 6 regional boss identities x 9 role/class labels x two reward
 // states, using synthetic level/stat budgets. NOT canonical boss V2 authored kits.
@@ -136,6 +150,9 @@ const dps:CombatInput={...base,players:[player('WAYFINDER','damage','focus')]};
 const dpsSnap=snapshot(dps,[receipt('RELIC_DAWN_RELIQUARY',1,'treasure')]);
 assert.equal(compileDraftDungeonRewardCombatV2(dps,dpsSnap,verified).
  input.players[0].stats.healingPower,180);
+assert.ok(!previewDungeonRewardOffersV2(dps,snapshot(dps),artRoom,
+ 'PRIVATE_QA_SECRET_16CHARS',verified).some(x=>x.id==='RELIC_PARTY_OATH'),
+ 'Damage characters must not be offered tank/support-only artifacts');
 
 // Hard failures: unimplemented reactive hooks, client forged choices, stale
 // player state, spoofed account/actor/seed and duplicate room receipts.

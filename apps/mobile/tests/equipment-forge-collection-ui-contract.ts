@@ -24,8 +24,8 @@ const card=read('src/components/RecipeCard.tsx');
 check(card.includes('ATK {displayStat(output.attack??0)}'),'Recipe details must also show whole-number gear stats');
 const novice=read('src/components/NoviceWorkshop.tsx');
 check(novice.includes('ATK {displayStat(item.attack??0)}'),'Novice gear previews must also show whole-number gear stats');
-check(collection.includes('workingTowardItemSourceEntries(state,input.itemId)')&&collection.includes('props.onNavigate(source.destination)'),'Missing material tiles must route to a valid material source');
-check(collection.indexOf('onCraft(recipe.id)')<collection.indexOf('status.inputs.map(input=>'),'Craft CTA must be visible before long material details');
+check(collection.includes('detailsOnly externalQuantity={craftCount}')&&card.includes('onNavigate(row.destination)')&&card.includes('sourceHelpOpen?<>{preparationRoute'),'Missing material routes must stay available in the shared compact source panel');
+check(collection.indexOf('void onCraft(recipe.id,craftCount)')>0&&collection.indexOf('void onCraft(recipe.id,craftCount)')<collection.indexOf('<RecipeCard key={recipe.id}'),'Craft CTA must remain above compact material details');
 check(screen.includes('<SmithingCollection state={state} skillId={initialSkill}'),'Smithing and Tailoring must continue sharing the same refined component');
 
 // Nine tiers used to wrap into three rows of buttons above the set browser.

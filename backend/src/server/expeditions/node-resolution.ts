@@ -65,8 +65,8 @@ export function purchaseMerchantOffer(input:{runId:string;node:CoopRouteNode;act
 }
 
 function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[],campfireBalanceVersion?:2):PersistentRunState{
- const healFraction=campfireBalanceVersion===2?.20:.30;
- const reviveFraction=campfireBalanceVersion===2?.15:.25;
+ const healFraction=campfireBalanceVersion===2 ? 0.20 : 0.30;
+ const reviveFraction=campfireBalanceVersion===2 ? 0.15 : 0.25;
  const actors={...state.actors}; let revived=false;
  for(const player of players){const current=actors[player.id];if(!current)continue;if(current.downed&&!revived){actors[player.id]={...current,downed:false,hp:Math.max(1,player.stats.maxHp*reviveFraction)};revived=true;}else actors[player.id]={...current,hp:Math.min(player.stats.maxHp,current.hp+player.stats.maxHp*healFraction)};}
  return {...state,actors};

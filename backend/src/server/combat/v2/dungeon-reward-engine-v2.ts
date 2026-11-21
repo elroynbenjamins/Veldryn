@@ -174,25 +174,92 @@ export class DungeonRewardRuntimeV2{
   }
   return acts;
  }
- /** After enemy-origin direct HP loss crosses 30%, once per combat.
-  * Boss phase hits/telegraphs are explicitly never qualifying inputs. */
+ /** An ORIGINAL effective class shield may copy a small share to one
+  * OTHER party member. Generated shields never trigger this method again. */
+ afterOriginalShield(args:{
+  now:number;sourceId:string;originalTargetId:string;recipientId:string;
+  abilityId:string;actualShield:number;recipientMaxHp:number;recipientShield:number;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,originalTargetId,recipientId,abilityId,actualShield,
+   recipientMaxHp,recipientShield}=args;
+  if(!this.has('ROOM_BOON_WARDWEAVE',sourceId)||
+   !this.hasMember(originalTargetId)||!this.hasMember(recipientId)||
+   recipientId===sourceId||recipientId===originalTargetId||
+   abilityId==='BASIC'||!eligible(abilityId)||
+   !Number.isSafeInteger(now)||now<0||!legal(actualShield)||
+   actualShield===0||!legal(recipientMaxHp)||recipientMaxHp===0||
+   !legal(recipientShield))return [];
+  const amount=round(Math.min(actualShield*.12,recipientMaxHp*.02,
+   Math.max(0,recipientMaxHp*.10-recipientShield)));
+  if(amount<=0||
+   !this.ready('ROOM_BOON_WARDWEAVE',now,20000,sourceId))return [];
+  return [{rewardId:'ROOM_BOON_WARDWEAVE',kind:'secondary_shield',
+   target:'ally',recipientId,amount}];
+ }
+ /** An ORIGINAL direct, effective ALLY heal (not self/HoT/trait/gem heal)
+  * sends one bounded separate heal to a third party member. */
+ afterOriginalAllyHeal(args:{
+  now:number;sourceId:string;healedId:string;recipientId:string;
+  abilityId:string;actualHeal:number;recipientMissingHp:number;recipientMaxHp:number;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,healedId,recipientId,abilityId,actualHeal,
+   recipientMissingHp,recipientMaxHp}=args;
+  if(!this.has('RELIC_SOUL_LANTERN',sourceId)||
+   !this.hasMember(healedId)||!this.hasMember(recipientId)||
+   healedId===sourceId||recipientId===sourceId||recipientId===healedId||
+   !eligible(abilityId)||abilityId==='BASIC'||
+   !Number.isSafeInteger(now)||now<0||!legal(actualHeal)||
+   actualHeal===0||!legal(recipientMissingHp)||recipientMissingHp===0||
+   !legal(recipientMaxHp)||recipientMaxHp===0)return [];
+  const amount=round(Math.min(actualHeal*(this.stacks('RELIC_SOUL_LANTERN',sourceId)===2?.15:.10),
+   recipientMaxHp*.015,recipientMissingHp));
+  if(amount<=0||!this.ready('RELIC_SOUL_LANTERN',now,24000,sourceId))return [];
+  return [{rewardId:'RELIC_SOUL_LANTERN',kind:'secondary_heal',
+   target:'ally',recipientId,amount}];
+ }
+ /** After original direct enemy HP damage: once-per-fight Last Stand and
+  * a limited Thornbound Aegis reflection. Equipment affixes & Thornbound
+  * Riposte reserve from the SAME attacker-specific rolling five-second cap. */
  afterOriginalEnemyHit(args:{
   now:number;sourceId:string;targetId:string;abilityId:string;
   hpBeforePct:number;hpAfterPct:number;actualHpDamage:number;boss:boolean;
+  attackerMaxHp?:number;defenderMaxHp?:number;
  }):readonly DungeonRewardProcActionV2[]{
-  const {now,sourceId,targetId,abilityId,hpBeforePct,hpAfterPct,actualHpDamage,boss}=args;
+  const {now,sourceId,targetId,abilityId,hpBeforePct,hpAfterPct,
+   actualHpDamage,boss,attackerMaxHp,defenderMaxHp}=args;
   if(!this.hasMember(targetId)||sourceId===targetId||
-   !this.has('ROOM_BOON_LAST_STAND',targetId)||this.lastStandUsed.has(targetId)||
    !Number.isSafeInteger(now)||now<0||!legal(actualHpDamage)||
    actualHpDamage===0||!legal(hpBeforePct)||!legal(hpAfterPct)||
-   hpBeforePct<=.30||hpAfterPct>.30||hpAfterPct<=0||
-   !eligible(abilityId)||(boss&&abilityId!=='BASIC'))return [];
-  this.lastStandUsed.add(targetId);
-  return [
-   {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
-    tag:'defense_pct',amount:.10,durationMs:6000},
-   {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
-    tag:'healing_received',amount:.10,durationMs:6000},
-  ];
+   hpAfterPct<=0||!eligible(abilityId)||(boss&&abilityId!=='BASIC'))return [];
+  const actions:DungeonRewardProcActionV2[]=[];
+  if(this.has('ROOM_BOON_LAST_STAND',targetId)&&
+     !this.lastStandUsed.has(targetId)&&
+     hpBeforePct>.30&&hpAfterPct<=.30){
+   this.lastStandUsed.add(targetId);
+   actions.push(
+    {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
+     tag:'defense_pct',amount:.10,durationMs:6000},
+    {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
+     tag:'healing_received',amount:.10,durationMs:6000});
+  }
+  if(this.has('RELIC_THORNBOUND_AEGIS',targetId)&&
+     attackerMaxHp!==undefined&&defenderMaxHp!==undefined&&
+     legal(attackerMaxHp)&&attackerMaxHp>0&&
+     legal(defenderMaxHp)&&defenderMaxHp>0){
+   const key=targetId+':RELIC_THORNBOUND_AEGIS',last=this.cooldown.get(key)??-Infinity;
+   if(now-last>=15000){
+    const stacks=this.stacks('RELIC_THORNBOUND_AEGIS',targetId);
+    const requested=Math.min(actualHpDamage*(stacks===2?.12:.08),
+      defenderMaxHp*.015);
+    const amount=this.reflectionBudget.reserve({
+     atMs:now,attackerId:sourceId,attackerMaxHp,regionalBoss:boss,requested});
+    if(amount>0){
+     this.cooldown.set(key,now);
+     actions.push({rewardId:'RELIC_THORNBOUND_AEGIS',
+      kind:'retaliation_damage',target:'enemy',amount});
+    }
+   }
+  }
+  return actions;
  }
 }

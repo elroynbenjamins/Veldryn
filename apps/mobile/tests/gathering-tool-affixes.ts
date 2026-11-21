@@ -8,7 +8,7 @@ import {bulkTransferSelected} from '../src/core/inventory-bulk';
 import {validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {itemInspectModel} from '../src/core/item-inspect';
-import {startEquipmentCraft,claimForgeJob,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
+import {startEquipmentCraft,claimForgeJob,cancelEquipmentCraft,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
 import type {CraftedGatheringTool} from '../src/core/gathering-tool-rolls';
 import type {GameState} from '../src/core/types';
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -158,7 +158,6 @@ const cancelReady={...cancelState,character:{...cancelState.character!,level:20,
  skills:cancelState.skills.map(sk=>sk.skillId==='woodcutting'?{...sk,level:20,xp:totalXpAtLevel(20)}:sk),
  inventory:{...cancelState.inventory,stacks:timedTool.recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*2}))}};
 const pending=startEquipmentCraft(cancelReady,'CRAFT_GREENWOOD_HATCHET',12000);
-const {cancelEquipmentCraft}=require('../src/core/equipment-crafting-queue') as typeof import('../src/core/equipment-crafting-queue');
 const cancelled=cancelEquipmentCraft(pending.state,pending.job.id,12001);
 assert(cancelled.state.account.equipmentCraftingQueue?.length===0,'Cancelled tool job leaves the Forge queue');
 assert(cancelled.state.character!.gold===pending.state.character!.gold,'Forge cancellation does not refund gold');

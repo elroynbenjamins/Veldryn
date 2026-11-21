@@ -9,6 +9,7 @@
  */
 import {simulateCombat} from '../engine';
 import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
+import {issueDungeonRewardEngineAuthorityV2} from './dungeon-reward-engine-v2';
 import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
 import {
  compileExactEquipmentTraitSourceV2,type TrustedEquipmentTraitReceiptPortV2,
@@ -219,7 +220,7 @@ export function simulateUnifiedEquipmentCombatV2(
   // equipment; the resulting encounter is rebound to both engine authorities.
   const finalInput=dungeonRewardPort?
    compileDraftDungeonRewardCombatV2(
-     assembledInput,dungeonRewardPort.snapshot,dungeonRewardPort.verifyPersisted).input:
+     assembledInput,dungeonRewardPort.snapshot,dungeonRewardPort.verifyPersisted,true).input:
    assembledInput;
   const authority=issueEnemyV2EngineAuthority({
     source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,mode:'solo',
@@ -230,8 +231,11 @@ export function simulateUnifiedEquipmentCombatV2(
   const traitAuthority=traitPort?issueEquipmentV2TraitAuthority(finalInput,[
     compileExactEquipmentTraitSourceV2(builds[0],runtime[0],traitPort),
    ],traitPort.verifyPersisted):undefined;
+  const rewardAuthority=dungeonRewardPort?
+    issueDungeonRewardEngineAuthorityV2(finalInput,dungeonRewardPort.snapshot,
+      dungeonRewardPort.verifyPersisted):undefined;
   return {
-    combat:simulateCombat(finalInput,authority,traitAuthority),
+    combat:simulateCombat(finalInput,authority,traitAuthority,rewardAuthority),
     enemyMechanicLabels:proof.preview.flatMap(p=>[
       ...p.abilityNames.map(name=>p.enemyId+': '+name),
       ...p.phaseNames.map(name=>p.enemyId+': '+name),

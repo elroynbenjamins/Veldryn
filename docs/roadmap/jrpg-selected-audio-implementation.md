@@ -33,6 +33,33 @@ an unverified ZIP nor the GPL-linked music preview should enter main/release.
 The ZIP installer now replaces existing cue entries instead of duplicating them,
 so a future reviewed source can be staged without breaking the asset map.
 
+## Sample-free original replacements (November 22)
+
+The generator `tools/audio/render-cleared-jrpg-music.py` now contains **four
+new, sample-free compositions**, with exact eight-bar durations and muted
+JRPG-style instrument synthesis:
+
+| Scene | New arrangement | Tempo | Loop length |
+| --- | --- | ---: | ---: |
+| Asterfall | First Light | 91 bpm | 21.099 s |
+| Sunscar | Amber Dunes | 99 bpm | 19.394 s |
+| Frostmarch | Crystal Snow | 82 bpm | 23.415 s |
+| Dungeon/Co-op | Forgotten Citadel | 116 bpm | 16.552 s |
+
+No TimGM6mb data, pre-recorded SoundFonts, third-party samples, or proprietary
+instrument recordings are required. The synthesis source was committed and the
+review ZIP contains OGG, MP3 and WAV renderings and hash manifest. This is an
+**original reinterpretation**, not a note-for-note reproduction of the
+inaccessible older preview audio. In particular, the **older preview recordings
+must remain excluded from release** because their licensing is unresolved.
+
+The branch-scoped `render-crafting-sfx-review.yml` workflow now renders these
+new tracks and ten crafting effects, then attempts to commit the resulting
+packaged MP3 files, asset manifest and test updates to this **review branch**.
+Until binary files and CI are confirmed, the feature remains **not build-ready**.
+For Android audio QA, listen for loop clicks/gaps, balance, muted mode and
+switching scenes; MP3 playback may require native loop-delay validation.
+
 ## Asset installation
 The ChatGPT audio review ZIP includes four music OGGs and ten SFX MP3s with the required file names and SHA-256 provenance.
 

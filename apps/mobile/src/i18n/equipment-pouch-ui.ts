@@ -8,6 +8,9 @@ import {interpolateTranslation,type TranslationParams} from './translator';
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
   "Store in Gear": ["In Ausrüstung lagern","Guardar en equipo","Opbergen bij uitrusting","Riponi nell'equipaggiamento","Ranger dans l'équipement","Убрать в снаряжение","Ekipmana koy"],
+  "Move to Bank": ["Zur Bank verschieben","Mover al banco","Verplaatsen naar bank","Sposta in banca","Déplacer vers la banque","Переместить в банк","Bankaya taşı"],
+  "Other item actions": ["Weitere Gegenstandsaktionen","Otras acciones del objeto","Andere voorwerpacties","Altre azioni sull'oggetto","Autres actions sur l'objet","Другие действия с предметом","Diğer eşya işlemleri"],
+  "Hide other item actions": ["Weitere Gegenstandsaktionen schließen","Ocultar otras acciones del objeto","Andere voorwerpacties verbergen","Nascondi altre azioni sull'oggetto","Masquer les autres actions sur l'objet","Скрыть другие действия с предметом","Diğer eşya işlemlerini gizle"],
   "Store {count} in Gear": ["{count} in Ausrüstung lagern","Guardar {count} en equipo","{count} bij uitrusting opbergen","Riponi {count} nell'equipaggiamento","Ranger {count} dans l'équipement","Убрать {count} в снаряжение","{count} eşyayı ekipmana koy"],
   "Gear storage full": ["Ausrüstungslager voll","Almacén de equipo lleno","Uitrustingsopslag vol","Deposito equipaggiamento pieno","Stockage d'équipement plein","Хранилище снаряжения заполнено","Ekipman deposu dolu"],
   "Not enough Gear slots": ["Zu wenige Ausrüstungsplätze","No hay suficientes espacios de equipo","Niet genoeg uitrustingsvakken","Spazi equipaggiamento insufficienti","Pas assez d'emplacements d'équipement","Недостаточно ячеек снаряжения","Yeterli ekipman yuvası yok"],

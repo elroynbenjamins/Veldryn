@@ -50547,16 +50547,18 @@ function purchaseMerchantOffer(input) {
   }
   return { success: true, state: { ...input.state, actors, resources: input.state.resources - offer.cost, personalEffects: { ...input.state.personalEffects, [input.actorId]: { ...nextPersonal, boons, artifacts } } }, summary: { kind: "merchant_purchase", actorId: input.actorId, offerId: offer.id, offerKind: offer.kind, cost: offer.cost, resourcesDelta: -offer.cost, healedHp: Math.max(0, (actors[input.actorId]?.hp ?? 0) - actor.hp), revivedCount: actor.downed && !actors[input.actorId]?.downed ? 1 : 0, boonCount: boons.length - current.boons.length, artifactCount: artifacts.length - current.artifacts.length } };
 }
-function healAtCamp(state, players) {
+function healAtCamp(state, players, campfireBalanceVersion) {
+  const healFraction = campfireBalanceVersion === 2 ? 0.2 : 0.3;
+  const reviveFraction = campfireBalanceVersion === 2 ? 0.15 : 0.25;
   const actors = { ...state.actors };
   let revived = false;
   for (const player2 of players) {
     const current = actors[player2.id];
     if (!current) continue;
     if (current.downed && !revived) {
-      actors[player2.id] = { ...current, downed: false, hp: Math.max(1, player2.stats.maxHp * 0.25) };
+      actors[player2.id] = { ...current, downed: false, hp: Math.max(1, player2.stats.maxHp * reviveFraction) };
       revived = true;
-    } else actors[player2.id] = { ...current, hp: Math.min(player2.stats.maxHp, current.hp + player2.stats.maxHp * 0.3) };
+    } else actors[player2.id] = { ...current, hp: Math.min(player2.stats.maxHp, current.hp + player2.stats.maxHp * healFraction) };
   }
   return { ...state, actors };
 }
@@ -50612,7 +50614,7 @@ function resolveCoopNode(input) {
   let awardedBoon;
   switch (input.node.kind) {
     case "camp":
-      state = healAtCamp(state, input.players);
+      state = healAtCamp(state, input.players, input.campfireBalanceVersion);
       break;
     case "shrine":
     case "forge":
@@ -50736,8 +50738,10 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   const def = EXPEDITIONS[expeditionId];
   if (!def) throw new Error("unknown_expedition");
   if (!def.coopImplemented) throw new Error("expedition_not_implemented");
-  const generatorVersion = routeMode === "endurance" ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + "-endurance-v1" : COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
-  const preBossNodeCount = routeMode === "endurance" ? DUNGEON_ENDURANCE.maxNormalRooms : deterministicInt(secret, COOP_ROGUELITE_CONFIG.preBossNodeMin, COOP_ROGUELITE_CONFIG.preBossNodeMax, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "length");
+  const isEndurance = routeMode !== "legacy";
+  const checkpointChoiceV2 = routeMode === "endurance";
+  const generatorVersion = isEndurance ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + (checkpointChoiceV2 ? "-endurance-v2" : "-endurance-v1") : COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+  const preBossNodeCount = isEndurance ? DUNGEON_ENDURANCE.maxNormalRooms : deterministicInt(secret, COOP_ROGUELITE_CONFIG.preBossNodeMin, COOP_ROGUELITE_CONFIG.preBossNodeMax, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "length");
   const finalBosses = dungeonBossVariantsFor(expeditionId);
   const bossId = finalBosses.length ? finalBosses[deterministicInt(secret, 0, finalBosses.length - 1, "regional-boss-v1", runId, expeditionId, contentVersion, balanceVersion)].bossId : def.bossId;
   const nodes = [];
@@ -50745,11 +50749,18 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) });
   for (let depth = 1; depth <= preBossNodeCount; depth++) {
     const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
-    const checkpoint = routeMode === "endurance" && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
+    const checkpoint = isEndurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
     const usedContentIds = /* @__PURE__ */ new Set();
     for (let choice = 0; choice < COOP_ROGUELITE_CONFIG.choicesPerDepth; choice++) {
       if (checkpoint && choice === 2) {
         nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: "boss", contentId: bossId, modifierId: "checkpoint", risk: 1.25, rewardTag: "boss", nextNodeIds: [] });
+        continue;
+      }
+      if (checkpoint && checkpointChoiceV2) {
+        const kind2 = choice === 0 ? "camp" : "shrine";
+        const pool = coopContentPool(expeditionId, kind2);
+        const index = deterministicInt(secret, 0, pool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "checkpoint-choice", depth, kind2);
+        nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt(depth + 1) });
         continue;
       }
       const kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
@@ -50768,7 +50779,8 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   return graph2;
 }
 function validateCoopRouteGraph(graph2, limits) {
-  const endurance = graph2.generatorVersion.endsWith("-endurance-v1");
+  const enduranceV2 = graph2.generatorVersion.endsWith("-endurance-v2");
+  const endurance = enduranceV2 || graph2.generatorVersion.endsWith("-endurance-v1");
   if (limits) {
     if (!Number.isInteger(graph2.preBossNodeCount) || graph2.preBossNodeCount < limits.preBossNodeMin || graph2.preBossNodeCount > limits.preBossNodeMax) throw new Error("invalid_coop_route_length");
   } else if (endurance) {
@@ -50815,9 +50827,10 @@ function validateCoopRouteGraph(graph2, limits) {
     if (layer.length !== 3) throw new Error("insufficient_route_layer");
     if (depth === 1 && layer.some((node) => node.kind !== "battle")) throw new Error("mandatory_combat_missing");
     if (depth === 2 && layer.filter((node) => node.kind === "battle").length < 2) throw new Error("opening_combat_missing");
-    if (depth > 2 && !layer.some((node) => node.kind === "battle")) throw new Error("combat_option_missing");
+    if (depth > 2 && !layer.some((node) => node.kind === "battle") && !(enduranceV2 && layer.some((node) => node.kind === "boss"))) throw new Error("combat_option_missing");
     if (endurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0) {
       if (layer.filter((node) => node.kind === "boss").length !== 1 || layer.filter((node) => node.kind !== "boss").length !== 2) throw new Error("checkpoint_choices_invalid");
+      if (enduranceV2 && (layer[0].kind !== "camp" || layer[0].modifierId !== "checkpoint-camp-v2" || layer[1].kind !== "shrine" || layer[1].modifierId !== "checkpoint-boon-v2" || layer[2].kind !== "boss")) throw new Error("checkpoint_recovery_boon_choices_invalid");
     } else if (layer.some((node) => node.kind === "boss")) throw new Error("unexpected_checkpoint");
   }
   if (!graph2.nodes.some((node) => node.kind === "camp" || node.kind === "shrine")) throw new Error("recovery_option_missing");
@@ -51149,7 +51162,7 @@ var QModeService = class {
     const encounterDepth = run.enduranceRouteVersion === 1 && selected2.kind === "boss" ? Math.max(1, selected2.depth - DUNGEON_ENDURANCE.checkpointInterval) : selected2.depth;
     const depth = dungeonDepthMultipliers(encounterDepth, run.enduranceRouteVersion === 1);
     const bossTuning = run.regionalBalanceVersion === 1 && run.tier === 1 && selected2.contentId === "BOSS_EXP_SOLAR" ? { profileId: "sunscar-regional-solar-ward-cadence-v1", abilityCooldownMultipliers: { BOSS_EXP_SOLAR_WARD: 3 } } : void 0;
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1) * depth.attack, enemyHpMultiplier: (regional2?.hp ?? 1) * depth.hp, enemyDefenseMultiplier: (regional2?.defense ?? 1) * depth.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, enduranceLootVersion: run.enduranceRouteVersion, deferArtifactChoice: run.enduranceRouteVersion === 1 && run.qmodePressureVersion === 1, bossTuning, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1) * depth.attack, enemyHpMultiplier: (regional2?.hp ?? 1) * depth.hp, enemyDefenseMultiplier: (regional2?.defense ?? 1) * depth.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, enduranceLootVersion: run.enduranceRouteVersion, campfireBalanceVersion: run.graph.generatorVersion?.endsWith("-endurance-v2") ? 2 : void 0, deferArtifactChoice: run.enduranceRouteVersion === 1 && run.qmodePressureVersion === 1, bossTuning, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;

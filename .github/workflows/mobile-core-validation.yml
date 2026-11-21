@@ -1,8 +1,5 @@
 name: Mobile core validation
 
-permissions:
-  contents: write # trusted same-repo timed-tools branch only; temporary generation step
-
 # Cancel superseded PR checks; never cancel main, scheduled, or manual release checks.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -33,9 +30,6 @@ jobs:
         working-directory: apps/mobile
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref }}
-          persist-credentials: true
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -51,19 +45,6 @@ jobs:
         run: pnpm test:cross-profession-art
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
-      - name: Rebuild Edge bundles for trusted timed-tool PR
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'fix/tools-inspect-and-timed-forging-20261121' }}
-        working-directory: .
-        run: |
-          pnpm --dir backend build:online
-          node tools/verify-gameplay-edge.mjs
-          if ! git diff --quiet -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
-            git commit -m "build(edge): reconcile canonical bundles for timed gathering tools"
-            git push origin HEAD:fix/tools-inspect-and-timed-forging-20261121
-          fi
       - name: Verify generated gameplay Edge bundle matches shared engine
         run: node ../../tools/verify-gameplay-edge.mjs
       - name: Validate mandatory update, maintenance, and fail-closed release gates

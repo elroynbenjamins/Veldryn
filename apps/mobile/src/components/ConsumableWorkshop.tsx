@@ -94,7 +94,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  }),[all,state,skillId,afkCap]);
  const counts=new Map(capacities);
  const count=(recipe:Recipe)=>counts.get(recipe.id)??0;
- const chosen=(recipe:Recipe)=>count(recipe)>0?Math.max(1,Math.min(count(recipe),selectedBatches[recipe.id]??1)):0;
+ const chosen=(recipe:Recipe)=>count(recipe)>0?Math.max(1,Math.min(count(recipe),selectedBatches[recipe.id]??1)):1;
  const visible=all.filter(r=>categoryOf(r)===category&&(!readyOnly||r.id===activeId||(r.level<=skillLevel&&count(r)>0)));
  const potionRows=skillId==='alchemy'&&category==='Potions'
   ?alchemyPotionRows(all.filter(r=>categoryOf(r)==='Potions'),count,skillLevel,{
@@ -154,17 +154,17 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
       </View>
     </View>:null}
     <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {recipe.output.quantity} {gt('items')} · {recipe.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,recipe,'batch').cycleSeconds)} · +{recipe.xp} {gt('Base XP')}</Text>
-    <CraftQuantitySelector key={recipe.id} value={chosen(recipe)} max={count(recipe)} onChange={value=>setSelectedBatches(prev=>({...prev,[recipe.id]:value}))} disabled={busy||activeId===recipe.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(recipe)}/>
+    {count(recipe)>0?<CraftQuantitySelector key={recipe.id} value={chosen(recipe)} max={count(recipe)} onChange={value=>setSelectedBatches(prev=>({...prev,[recipe.id]:value}))} disabled={busy||activeId===recipe.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(recipe)}/>:null}
      {count(recipe)>0?<Text style={[s.caption,{color:C.text}]}>{gt('Selected')}: {chosen(recipe)*recipe.output.quantity} {gt('items')} · {chosen(recipe)*recipe.gold} {gt('Gold')} · +{Math.floor(chosen(recipe)*professionActionPace(state,recipe,'batch').xpPerAction)} {gt('XP')} · {timeLabel(chosen(recipe)*professionActionPace(state,recipe,'batch').cycleSeconds)}</Text>:<Text style={[s.caption,{color:C.warning}]}>{activity?gt('Stop the current activity to release reserved materials before starting another recipe.'):missingReason(recipe)}</Text>}
     <IngredientList inputs={recipe.inputs.map(input=>({...input,quantity:input.quantity*Math.max(1,chosen(recipe)),inventory:state.inventory.stacks.filter(stack=>stack.itemId===input.itemId).reduce((total,stack)=>total+stack.quantity,0),bank:state.bank.stacks.filter(stack=>stack.itemId===input.itemId).reduce((total,stack)=>total+stack.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
-    <Pressable accessibilityRole="button" disabled={busy||activeId===recipe.id||count(recipe)<1} accessibilityState={{disabled:busy||activeId===recipe.id||count(recipe)<1}} onPress={()=>start(recipe)} style={[s.primary,{backgroundColor:C.accent,opacity:(busy||activeId===recipe.id||count(recipe)<1)?0.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===recipe.id?gt('Active'):gt('Brew')+' '+chosen(recipe)+' '+gt('batches')}</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy||activeId===recipe.id||count(recipe)<1} accessibilityState={{disabled:busy||activeId===recipe.id||count(recipe)<1}} onPress={()=>start(recipe)} style={[s.primary,{backgroundColor:C.accent,opacity:(busy||activeId===recipe.id||count(recipe)<1)?0.5:1}]}><Text style={[s.bold,{color:C.panel}]}>{activeId===recipe.id?gt('Active'):count(recipe)<1?missingReason(recipe):gt('Brew')+' '+chosen(recipe)+' '+gt('batches')}</Text></Pressable>
      {potionDef(recipe.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}
   </View>
  );
  const renderPotionRow=(recipe:Recipe)=>{
   const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel,isExpanded=detailId===detailKey(recipe),reason=missingReason(recipe);
   return <View key={recipe.output.itemId} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Choose quantity'):reason)} accessibilityState={{disabled:busy||isActive||(available<1&&!activity)}} disabled={busy||isActive||(available<1&&!activity)} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Choose quantity'):reason)} accessibilityState={{disabled:busy||isActive||(available<1&&!activity)}} disabled={busy||isActive} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
       <ItemArtwork itemId={recipe.output.itemId} size={44}/>
       <View style={s.potionRowCopy}>
         <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemName(recipe.output.itemId)}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>
@@ -233,7 +233,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
         {detailXp?.usingReservedRate?<Text style={[s.caption,{color:C.muted}]}>{ct('Current cooking run uses the XP rate reserved when it started.')}</Text>:null}
         {detailMeal?<><Text style={[s.buff,{color:C.info}]}>{cookingMealEffectText(language,detailMeal)} · {detailMeal.durationHours}h</Text><Text style={[s.caption,{color:C.muted}]}>{ct('Activate meal buffs from Inventory. Auto-eat only restores HP.')}</Text></>:null}
         <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
-        <CraftQuantitySelector key={detail.id} value={chosen(detail)} max={count(detail)} onChange={value=>setSelectedBatches(prev=>({...prev,[detail.id]:value}))} disabled={busy||activeId===detail.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(detail)}/>
+        {count(detail)>0?<CraftQuantitySelector key={detail.id} value={chosen(detail)} max={count(detail)} onChange={value=>setSelectedBatches(prev=>({...prev,[detail.id]:value}))} disabled={busy||activeId===detail.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(detail)}/>:null}
          {count(detail)>0?<Text style={[s.caption,{color:C.text}]}>{gt('Selected')}: {chosen(detail)*detail.output.quantity} {gt('items')} · {chosen(detail)*detail.gold} {gt('Gold')} · {timeLabel(chosen(detail)*professionActionPace(state,detail,'batch').cycleSeconds)}</Text>:<Text style={[s.caption,{color:C.warning}]}>{activity?gt('Stop the current activity to release reserved materials before starting another recipe.'):missingReason(detail)}</Text>}
         <IngredientList inputs={detail.inputs.map(r=>({...r,quantity:r.quantity*Math.max(1,chosen(detail)),inventory:state.inventory.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0),bank:state.bank.stacks.filter(s=>s.itemId===r.itemId).reduce((n,s)=>n+s.quantity,0)}))} numberMode={state.settings.numberMode} showStorage/>
         {skillId==='alchemy'&&potionDef(detail.output.itemId)?.effect.kind==='healing'?<Text style={[s.caption,{color:C.info}]}>{gt('Healing potions work in boss fights and between dungeon rooms. Food is disabled there. Choose a potion from the HP menu.')}</Text>:null}

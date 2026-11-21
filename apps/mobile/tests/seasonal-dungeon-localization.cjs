@@ -51,7 +51,7 @@ for(const [group,rows] of Object.entries({label:SEASONAL_BOSS_LABEL_ROWS,numbere
 assert.equal(Object.keys(SEASONAL_BOSS_LABEL_ROWS).length,9);
 assert.equal(Object.keys(SEASONAL_BOSS_NUMBERED_ROWS).length,7);
 assert.equal(Object.keys(SEASONAL_BOSS_MOVE_ROWS).length,6);
-assert.equal(Object.keys(SEASONAL_BOSS_SUMMARY_ROWS).length,10);
+assert.equal(Object.keys(SEASONAL_BOSS_SUMMARY_ROWS).length,11,'10 server summaries plus one fixed client combat-limit notice');
 assert.equal(seasonalBossDisplayName('nl','Chronicle Fracture 4'),'Chronicle Fracture 4','Unknown phases must not be guessed');
 assert.equal(seasonalBossDisplayName('ru','A new seasonal move'),'A new seasonal move');
 assert.equal(seasonalBossDisplaySummary('tr','2 new open rifts will erupt.'),'2 new open rifts will erupt.','Unreviewed dynamic mechanic text remains original');

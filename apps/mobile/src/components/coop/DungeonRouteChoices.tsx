@@ -55,7 +55,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const room=dungeonRoomPresentation(option.kind);
    const checkpointCamp=option.kind==='camp'&&option.modifierId==='checkpoint-camp-v2';
    const checkpointBoon=option.kind==='shrine'&&option.modifierId==='checkpoint-boon-v2';
-   const title=checkpointCamp?dungeonUxText(language,'checkpointCamp'):checkpointBoon?dungeonUxText(language,'checkpointBoon'):room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
+   const title=room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
+   const displayTitle=checkpointCamp?dungeonUxText(language,'checkpointCamp'):checkpointBoon?dungeonUxText(language,'checkpointBoon'):title;
    const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
    const displayPreview=checkpointCamp?dungeonUxText(language,'checkpointCampHint'):checkpointBoon?dungeonUxText(language,'checkpointBoonHint'):preview;
    const modifier=option.kind==='elite'?localizedDungeonRoomModifier(language,option.modifierId):undefined;
@@ -67,17 +68,17 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
     const combatMarks=Math.min(roomMarks,Math.max(0,combatMarksRemaining));
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
-    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?(votedHere?ui('Your vote'):routeAction):ui('Unavailable')})}
+    accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title:displayTitle,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?(votedHere?ui('Your vote'):routeAction):ui('Unavailable')})}
     accessibilityHint={bossExit?`${displayPreview??''} ${dungeonUxText(language,'bossHint')}`:displayPreview}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
     style={({pressed})=>[s.card,option.kind==='boss'&&s.bossCard,continueChoice&&s.continueCard,votedHere&&s.myChoice,option.hidden&&s.hiddenCard,pressed&&canPress&&s.pressed]}
    >
-    <CoopImageSlot assetId={room?.art??'node_event'} size="node" accessibilityLabel={title}/>
+    <CoopImageSlot assetId={room?.art??'node_event'} size="node" accessibilityLabel={displayTitle}/>
     <View style={s.content}>
      <View style={s.heading}>
-      <Text style={s.title} numberOfLines={2}>{title}</Text>
+      <Text style={s.title} numberOfLines={2}>{displayTitle}</Text>
       {live?<View style={s.voteLine}>
        <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}

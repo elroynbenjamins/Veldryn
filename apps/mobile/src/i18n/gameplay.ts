@@ -9,6 +9,17 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Timed gathering tools use the shared Forge and its six-locale labels.
+ "Crafting time":["Crafting time","Herstellungszeit","Tiempo de fabricación","Maaktijd","Tempo di creazione","Temps de fabrication"],
+ "Tool bonus revealed on claim":["Tool bonus revealed on claim","Werkzeugbonus beim Abholen sichtbar","Bonus de herramienta al recoger","Gereedschapsbonus zichtbaar bij ophalen","Bonus attrezzo visibile al ritiro","Bonus de l’outil révélé à la récupération"],
+ "No equipment or tools are being crafted. Start a gear or tool recipe in Smithing or Tailoring.":[
+  "No equipment or tools are being crafted. Start a gear or tool recipe in Smithing or Tailoring.",
+  "Derzeit wird keine Ausrüstung und kein Werkzeug hergestellt. Starte ein Rezept in Schmiedekunst oder Schneiderei.",
+  "No se está fabricando equipo ni herramientas. Inicia una receta en Herrería o Sastrería.",
+  "Er wordt geen uitrusting of gereedschap gemaakt. Start een recept bij Smeden of Kleermakerij.",
+  "Nessun equipaggiamento o attrezzo in produzione. Avvia una ricetta in Forgiatura o Sartoria.",
+  "Aucun équipement ni outil en cours de fabrication. Lancez une recette en Forge ou Couture."
+ ],
  // Quiet, in-place crafting confirmation (no modals or toasts).
  "Added to queue":["Added to queue","Zur Warteschlange hinzugefügt","Añadido a la cola","Toegevoegd aan wachtrij","Aggiunto alla coda","Ajouté à la file d’attente"],
  "Craft complete":["Craft complete","Herstellung abgeschlossen","Fabricación completada","Maken voltooid","Creazione completata","Fabrication terminée"],

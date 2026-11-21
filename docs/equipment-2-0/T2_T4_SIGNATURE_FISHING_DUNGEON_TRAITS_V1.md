@@ -34,6 +34,25 @@ This gives a player a reason to fish, gather, trade or complete difficult dungeo
 
 Fishing P90 uses the *doubled* authored base cycle: Rootstream Trout 54 sec, Oasis Carp 100 sec, Glassfin 112 sec. Real tools, travel, interruptions, buffs, AFK idle rules and fishing eligibility may change results; dungeon completion time, queue, character strength, success rate, drops when weekly bonuses expire and boss rotation were not modeled. Market escrow for fishing ingredients may shorten self-farming, once separately enabled.
 
+## Six exact source-anchored draft crafting costs
+
+The preview compiler `tools/lib/eq2-signature-recipes-v1.mjs` now derives **one** signature route from a named, canonical, *foundation-only* recipe of the same tier/role/slot. The resulting immutable review artifact is `t2-t4-signature-generated-recipes-v1.json`, checked against 169 source item identities and 338 ordinary crafting routes. No route is registered in a real Forge.
+
+| Tier / piece | Profession | Refined or processed inputs | Existing combat/binder inputs retained | Extra source catalyst | Gold / seconds |
+| --- | --- | --- | --- | --- | --- |
+| T2 **Riverthorn Grips** | Tailoring | 25 Wolf Leather; 10 Thorn Cloth; 5 Ironwood Planks | 5 Wolf Fang; 1 Ironwood Resin | 1 Ironwood Riverpearl | **1,400 / 210** |
+| T2 **Heartwood Mantle** | Smithing | 18 Iron Bars; 18 Wolf Leather; 5 Ironwood Planks | 6 Wolf Fang; 1 Ironwood Resin | 1 Heartwood Dungeon Shard | **1,700 / 255** |
+| T3 **Oasistide Signet** | Smithing | 7 Sunstone Ingots; 4 Amberglass; 5 Dune Cloth | 5 Sunscar Scale; 1 Dune Binder | 1 Oasistide Pearl | **4,200 / 289** |
+| T3 **Scorpionstrike Grips** | Smithing | 27 Sunstone Ingots; 9 Treated Dunewood; 7 Sunscale Leather | 7 Sunscar Scale; 1 Dune Binder | 1 Dunewarden Sigil | **5,300 / 368** |
+| T4 **Glassfin Mantle** | Smithing | 29 Glassbound Alloy Bars; 29 Hardened Sunscale; 8 Reinforced Dunewood | 11 Glassbound Plates; **1 Glassheart Fragment**; 1 Glassbound Binder | 1 Glassfin Mirrorscale | **12,800 / 702** |
+| T4 **Riftfang Pendant** | Tailoring | 35 Soulweave Cloth; 14 Hardened Sunscale; 7 Glassbound Alloy Bars | 7 Glassbound Plates; **1 Glassheart Fragment**; 1 Glassbound Binder | 1 Riftfang Dungeon Core | **9,800 / 537** |
+
+The exact source-preserving transform is: **ceil(1.25×) for same-tier refined resources; unchanged common/rare combat loot and Alchemy binder; one additional signature catalyst; Gold ceil(1.5× source to next 100); seconds ceil(1.25×); equipment skill XP unchanged.** These are material-cost proposals, not final Gold/Xp balancing. There is no free rare resource, no NPC/Dungeon Mark buyout and no rewrite of an ordinary item or its two recipes.
+
+**Upstream blockers remain:** T3 uses the same `SUNSTONE_INGOT` ID as an incompatible existing Smelting formula; the planned EQ2 common and scarce combat items still need registered server-authoritative drops; T4 Glassbound Dust remains a mining proposal; the Fishing and Dungeon signature materials have not been registered or earned by players. Material bills are not release-ready just because their integers are pinned.
+
+Nine additional regression checks lock the identity/source roles, rarity/binder conservation, all six source catalysts, cost/XP/seconds arithmetic and disablement under tampering. They also ensure T4 Glassheart Fragments remain mandatory and that no real Forge route or existing recipe is overwritten.
+
 ## Combat 2.0 safety contract
 
 - **One deterministic, immutable trait ID** per exact-item instance; server verifies original source/recipe, ownership, bound status, slot and equipment snapshot. Rarity, quality and affixes already affect base combat stats; trait coefficients are never multiplied again.

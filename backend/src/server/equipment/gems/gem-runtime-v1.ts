@@ -27,4 +27,3 @@ export function applyStatGemsV1<T extends Record<GearStatKey,number>&{attack?:nu
    (next as Record<string,number>)[k]=Number((value*(1+pct)+pp).toFixed(5));
  }return next;
 }
-}

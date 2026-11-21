@@ -18,17 +18,17 @@ existing active IDs (including their known 1.0.x identities). Add:
 |---|---|---|
 | Boon | Vanguard Step (small defense + haste) | Stat preview |
 | Boon | Battle Trance (small attack + crit) | Stat preview |
-| Boon | Bloodthirst (bleed on original crit) | Pending engine hook |
-| Boon | Last Stand (health-threshold defense window) | Pending engine hook |
-| Boon | Crippling Blows (limited armor debuff) | Pending engine hook |
-| Boon | Wardweave (ally shield synergy) | Pending engine hook |
-| Boon | Burst Window (class-skill synergy) | Pending engine hook |
+| Boon | Bloodthirst (bleed on original crit) | Hidden solo engine hook (Pass 4) |
+| Boon | Last Stand (health-threshold defense window) | Hidden solo engine hook (Pass 4) |
+| Boon | Crippling Blows (limited armor debuff) | Hidden solo engine hook (Pass 4) |
+| Boon | Wardweave (ally shield synergy) | Hidden four-player shield hook (Pass 5) |
+| Boon | Burst Window (class-skill synergy) | Hidden solo engine hook (Pass 4) |
 | Artifact | Ashen Sigil (attack + crit) | Stat preview |
 | Artifact | Dawn Reliquary (support heal + defense) | Stat preview |
-| Artifact | Thornbound Aegis (bounded reflection) | Pending shared-reflect hook |
-| Artifact | Temporal Echo (single secondary effect) | Pending engine hook |
-| Artifact | Soul Lantern (other-ally secondary heal) | Pending engine hook |
-| Artifact | Glacial Crown (limited slow) | Pending boss-safe hook |
+| Artifact | Thornbound Aegis (bounded reflection) | Hidden shared-cap reflection (Pass 5) |
+| Artifact | Temporal Echo (single secondary effect) | Hidden solo engine hook (Pass 4) |
+| Artifact | Soul Lantern (other-ally secondary heal) | Hidden four-player heal hook (Pass 5) |
+| Artifact | Glacial Crown (limited slow) | Hidden solo engine hook (Pass 4) |
 
 Preserve the current distinction: Shrine/Forge/Echo award a three-card boon
 draft; Treasure/Secret award a three-card artifact draft; Camps heal, Events
@@ -102,8 +102,9 @@ events. In particular:
 Skills 2.0 ability parity branch, exactly persisted equipment/skill snapshots,
 server-authoritative dungeon run HP/room receipts (including migration),
 the new 2.0 enemy kits, trait source precedence and cross-system 5s budgets.
-Then implement and test the nine pending proc handlers in the actual engine,
-full 4-character Live authority / voting, seeded matrix with real skills,
+The nine draft proc handlers now have signed engine prototypes (Passes 4–5);
+still implement the real privileged party Live authority / room voting and
+persistence, seeded matrix with real skills,
 rarities/quality and T1–T4 gear, and UI screenshot/design acceptance.
 
 ## Pass 4: Real engine reactive hooks (21 November continuation)
@@ -152,6 +153,61 @@ Echo, defensive Last Stand threshold (direct rule and actual engine),
 repeat-seed replay, and old combat identical without a token. The fake
 QA ledger callback is **not a working database verifier**.
 
+## Pass 5: Four-player support and shared reflected-damage cap
+
+The last three candidate mechanics now have **hidden runtime implementations**,
+separately gated by server-issued solo or four-member party encounter tokens.
+They are NOT accessible through current dungeon, party, Live, Q-Mode, mobile
+or Edge routes; there is no production DB ledger verifier.
+
+- **Wardweave:** an effective ORIGINAL, authored class shield (not a gem,
+  trait, passive or generated shield) sends a second shield to the lowest
+  effective-HP eligible third party member, never to the source or original
+  recipient. Up to 12% of the effective original shield, additionally
+  capped at 2% recipient maximum HP and 10% total preexisting shield
+  occupancy; 20-second per-caster cooldown. The copy does not generate
+  resources, capstones, extra shield-reflect instances, gem actions or
+  further Wardweave effects.
+- **Soul Lantern:** an effective ORIGINAL direct class heal applied to
+  ANOTHER player may send one bounded third-party heal to the lowest-HP
+  eligible OTHER party member. One artifact: 10% of original effective heal;
+  two: 15%; in either case <=1.5% of the third character's max HP and
+  never overheal; 24-second per-caster cooldown. No self-heal, HoT,
+  lifesteal, gem, trait or secondary-healing loop.
+- **Thornbound Aegis:** original avoidable enemy direct HP loss allows
+  8%/12% reflected loss at one/two relics, capped by 1.5% defender Max HP
+  and 15-second cooldown. Boss phase abilities and boss skill casts do
+  NOT generate a reflection (boss basics only). The same per-encounter,
+  attacker-specific five-second allocator is now shared by Equipment 2.0
+  Reflect% and Thornbound Riposte. Every source together has a maximum
+  0.1% regional-boss Max HP reflected per rolling five seconds, or
+  0.2% for other enemies. Per-encounter history never leaks to another fight.
+
+Party authority is explicitly **four players**, with unique and ordered
+actor IDs, canonical persisted node order, per-character grants and
+owned account/character identities. The strict validator requires a
+privileged persisted digest callback with matching run/seed/revision,
+denies duplicates, missing members, wrong rooms, stale initial HP,
+foreign grants, legacy inputs and unknown rewards. **This validation
+contract is not a working production persistence implementation**:
+current tests deliberately supply a synthetic callback and fictitious
+account/item IDs.
+
+The dedicated real-engine test runs four synthetic V2 characters with
+class shield, class heal and an AoE boss to test actual ability hooks,
+deterministic replay and nonrecursive secondary effects. It also binds
+four QA Equipment 2.0 sources to prove relic and gear reflection share a
+single 5-second boss budget, including ownership/seed/digest tampering
+cases. Exactly-authored nine-class skills, real persisted dungeon state
+and regional boss kits still need dedicated integration testing.
+
+**No new reactive reward is offered by the public/hidden 3-choice
+preview**, even though all nine engine hooks exist. The offer/grant route
+must be implemented transactionally and approved before enabling any
+of these mechanics for users. Party-wide room rewards versus individual
+grants also require explicit design approval before persistence semantics
+are finalized.
+
 ## Validation
 
 PR CI:
@@ -159,6 +215,8 @@ PR CI:
 - hidden catalog, three-choice draft and 108 seeded synthetic encounters;
 - 108 genuine hidden full-equipment/skills/six-boss reward integration cases;
 - existing exact-copy equipment trait and six-boss scenario tests;
+- signed four-player party reward grant and real engine triad integration;
+- cross-equipment five-second reflection budget adversarial tests;
 - legacy engine smoke;
 - grep hard-fence preventing imports from online/mobile/Edge.
 

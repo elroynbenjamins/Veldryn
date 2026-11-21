@@ -1,0 +1,63 @@
+name: Render original crafting SFX (review)
+on:
+  push:
+    branches:
+      - feature/selected-jrpg-music-crafting-audio
+    paths:
+      - tools/audio/generate-game-audio.py
+      - .github/workflows/render-crafting-sfx-review.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    if: github.ref_name == 'feature/selected-jrpg-music-crafting-audio'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/selected-jrpg-music-crafting-audio
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deterministic synth dependencies
+        run: |
+          python -m pip install numpy==2.2.6
+          ffmpeg -version
+      - name: Render only effects; never replace approved music
+        run: python tools/audio/generate-game-audio.py --only sfx
+      - name: Verify generated assets and size budget
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, subprocess
+          root=Path('apps/mobile/assets/audio')
+          manifest=json.loads((root/'manifest.json').read_text())
+          names=('smith_hammer_1','smith_hammer_2','smelt_bellows','smelt_pour',
+            'forge_ignite','forge_quench','woodwork_plane','tailor_stitch',
+            'alchemy_bubble','cooking_sizzle')
+          asset_map=Path('apps/mobile/src/theme/audio-assets.ts').read_text()
+          for name in names:
+              f=root/'sfx'/f'{name}.mp3'
+              assert f.exists() and 100 < f.stat().st_size < 80000, f
+              assert name in manifest['sfx'], name
+              assert f"sfx/{name}.mp3" in asset_map, name
+              subprocess.run(['ffprobe','-v','error','-show_entries','format=duration',
+                '-of','default=noprint_wrappers=1',str(f)],check=True,
+                stdout=subprocess.DEVNULL)
+          assert sum(p.stat().st_size for p in (root/'sfx').glob('*.mp3')) < 600000
+          assert (root/'music'/'asterfall.mp3').exists(), 'Selected Asterfall must remain'
+          print('Verified ten original crafting cues; existing music unchanged.')
+          PY
+      - name: Commit generated MP3s, manifest and Metro asset map
+        run: |
+          git add apps/mobile/assets/audio/sfx apps/mobile/assets/audio/manifest.json apps/mobile/src/theme/audio-assets.ts
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build(audio): include ten synthesized crafting cues"
+            git push origin HEAD:feature/selected-jrpg-music-crafting-audio
+          fi

@@ -18,7 +18,8 @@
     "Every T2+ chest, leg and weapon requires a scarce combat material; rarer requirements expand in T3-T4",
     "Alternative routes trade refined-resource quantities but NEVER bypass common or rare combat materials",
     "Keep existing item IDs, set membership, stat profiles, Gold, XP, crafting seconds and level gates while validating material-only rework",
-    "No gameplay writes, drop authorizations, market offers, recipes or migration in this review artifact"
+    "No gameplay writes, drop authorizations, market offers, recipes or migration in this review artifact",
+    "Smelting XP contributes to Smithing; tanning/weaving XP to Tailoring; plank-processing XP to Woodcutting; Forge is a separate future skill decision"
   ],
   "slotWeight": {
     "chest": 1,
@@ -187,44 +188,48 @@
       },
       "processing": [
         {
-          "skill": "smelting",
           "output": "EQ2_COPPER_BAR",
           "quantity": 1,
           "inputs": {
             "EQ2_COPPER_ORE": 3
           },
           "xp": 8,
-          "seconds": 18
+          "seconds": 18,
+          "activity": "smelting",
+          "xpSkill": "smithing"
         },
         {
-          "skill": "wood_processing",
           "output": "EQ2_GREENWOOD_PLANK",
           "quantity": 1,
           "inputs": {
             "GREENWOOD_LOG": 3
           },
           "xp": 7,
-          "seconds": 16
+          "seconds": 16,
+          "activity": "wood_processing",
+          "xpSkill": "woodcutting"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_BOAR_LEATHER",
           "quantity": 1,
           "inputs": {
             "BOAR_HIDE": 3
           },
           "xp": 8,
-          "seconds": 20
+          "seconds": 20,
+          "activity": "tanning",
+          "xpSkill": "tailoring"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_MOSS_CLOTH",
           "quantity": 1,
           "inputs": {
             "MOSS_FIBER": 4
           },
           "xp": 8,
-          "seconds": 20
+          "seconds": 20,
+          "activity": "weaving",
+          "xpSkill": "tailoring"
         }
       ]
     },
@@ -265,44 +270,48 @@
       },
       "processing": [
         {
-          "skill": "smelting",
           "output": "EQ2_IRON_BAR",
           "quantity": 1,
           "inputs": {
             "EQ2_IRON_ORE": 3
           },
           "xp": 18,
-          "seconds": 27
+          "seconds": 27,
+          "activity": "smelting",
+          "xpSkill": "smithing"
         },
         {
-          "skill": "wood_processing",
           "output": "EQ2_IRONWOOD_PLANK",
           "quantity": 1,
           "inputs": {
             "IRONWOOD_LOG": 3
           },
           "xp": 17,
-          "seconds": 24
+          "seconds": 24,
+          "activity": "wood_processing",
+          "xpSkill": "woodcutting"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_WOLF_LEATHER",
           "quantity": 1,
           "inputs": {
             "WOLF_PELT": 3
           },
           "xp": 18,
-          "seconds": 30
+          "seconds": 30,
+          "activity": "tanning",
+          "xpSkill": "tailoring"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_THORN_CLOTH",
           "quantity": 1,
           "inputs": {
             "EQ2_THORN_FIBRE": 4
           },
           "xp": 18,
-          "seconds": 30
+          "seconds": 30,
+          "activity": "weaving",
+          "xpSkill": "tailoring"
         }
       ]
     },
@@ -345,44 +354,48 @@
       },
       "processing": [
         {
-          "skill": "smelting",
           "output": "SUNSTONE_INGOT",
           "quantity": 1,
           "inputs": {
             "SUNSTONE_ORE": 3
           },
           "xp": 32,
-          "seconds": 38
+          "seconds": 38,
+          "activity": "smelting",
+          "xpSkill": "smithing"
         },
         {
-          "skill": "wood_processing",
           "output": "EQ2_TREATED_DUNEWOOD",
           "quantity": 1,
           "inputs": {
             "DUNEWOOD": 4
           },
           "xp": 31,
-          "seconds": 36
+          "seconds": 36,
+          "activity": "wood_processing",
+          "xpSkill": "woodcutting"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_SUNSCALE_LEATHER",
           "quantity": 1,
           "inputs": {
             "SUNSCALE": 3
           },
           "xp": 33,
-          "seconds": 42
+          "seconds": 42,
+          "activity": "tanning",
+          "xpSkill": "tailoring"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_DUNE_CLOTH",
           "quantity": 1,
           "inputs": {
             "EQ2_DUNE_FIBRE": 4
           },
           "xp": 33,
-          "seconds": 42
+          "seconds": 42,
+          "activity": "weaving",
+          "xpSkill": "tailoring"
         }
       ]
     },
@@ -430,7 +443,6 @@
       },
       "processing": [
         {
-          "skill": "smelting",
           "output": "EQ2_GLASSBOUND_ALLOY_BAR",
           "quantity": 1,
           "inputs": {
@@ -438,10 +450,11 @@
             "EQ2_GLASSBOUND_DUST": 1
           },
           "xp": 55,
-          "seconds": 56
+          "seconds": 56,
+          "activity": "smelting",
+          "xpSkill": "smithing"
         },
         {
-          "skill": "wood_processing",
           "output": "EQ2_REINFORCED_DUNEWOOD",
           "quantity": 1,
           "inputs": {
@@ -449,10 +462,11 @@
             "EQ2_GLASSBOUND_DUST": 1
           },
           "xp": 52,
-          "seconds": 52
+          "seconds": 52,
+          "activity": "wood_processing",
+          "xpSkill": "woodcutting"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_HARDENED_SUNSCALE",
           "quantity": 1,
           "inputs": {
@@ -460,10 +474,11 @@
             "EQ2_GLASSBOUND_DUST": 1
           },
           "xp": 54,
-          "seconds": 57
+          "seconds": 57,
+          "activity": "tanning",
+          "xpSkill": "tailoring"
         },
         {
-          "skill": "tailoring",
           "output": "EQ2_SOULWEAVE_CLOTH",
           "quantity": 1,
           "inputs": {
@@ -471,7 +486,9 @@
             "EQ2_GLASSBOUND_DUST": 1
           },
           "xp": 54,
-          "seconds": 57
+          "seconds": 57,
+          "activity": "weaving",
+          "xpSkill": "tailoring"
         }
       ]
     }

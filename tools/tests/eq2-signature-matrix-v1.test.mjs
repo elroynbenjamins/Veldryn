@@ -16,8 +16,9 @@ const report=evaluateSignatureSyntheticMatrix({contract,signature,seed:20261121}
 test('real current mobile nine-class IDs and roles match manually pinned 18-spec contracts',()=>{
  const classes=read('apps/mobile/src/content/classes.ts');
  for(const row of contract.rolesAndSpecializations){
-  assert.ok(classes.includes("id:'"+row.classId+"'"),'class removed '+row.classId);
-  assert.ok(classes.includes("role:'"+(row.role==='tank'?'Tank':row.role==='support'?'Support':'Damage')+"'"));
+  const role=row.role==='tank'?'Tank':row.role==='support'?'Support':'Damage';
+  assert.ok(new RegExp("\\bid:'"+row.classId+"'\\s*,\\s*name:'[^']+'\\s*,\\s*role:'"+role+"'").test(classes),
+   'class identity and role mismatch '+row.classId+':'+role);
   assert.equal(row.specializations.length,2);
  }
  const verified=validateSyntheticFixture({contract,signature});

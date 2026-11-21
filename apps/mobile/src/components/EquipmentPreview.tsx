@@ -122,6 +122,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const stackOtherActions=width<375||fontScale>=1.18;
  const hasOtherActions=Boolean(onStoreInGear||onMoveToBank||onSell||onSalvage);
  const disposalBlocked=Boolean((onSell&&!canSell)||(onSalvage&&!canSalvage));
+ const bonusChangeCount=slot==='weapon'?weaponChanges.filter(row=>row.deltaBps!==0).length:bonusChanges.filter(row=>row.before!==row.after).length;
  const gearSize=width<355?54:shortScreen?56:66;
  return <GameModalSurface visible onClose={busy?()=>{}:onClose} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}
   backdropLabel={gl('Close equipment comparison')}
@@ -145,6 +146,41 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
+   <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
+    <View style={s.impactHead}>
+     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
+     <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
+    </View>
+    {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
+    {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
+    {bonusChangeCount>0?<Text style={s.impactText}>{gl('BONUS STATS')}: {bonusChangeCount} · {gl('Full stats')}</Text>:null}
+   </View>
+   <View style={s.statChips}>
+    {stats.slice(0,3).map(row=><View key={row.id} style={s.statChip}>
+     <Text style={s.chipLabel}>{row.label}</Text>
+     <Text style={[s.chipValue,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
+    </View>)}
+   </View>
+   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
+    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
+    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
+   </View>:null}
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
+    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
+    <Text style={s.disclosureTitle}>{gl('Full stats, gems & upgrades')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
+   </Pressable>
+   {more?<View style={s.extra}>
+   <View style={s.statPanel}>
+    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text style={s.legend}>{gl('Current → New')}</Text></View>
+    {stats.map(row=><View key={row.id} style={s.statRow}>
+     <Text style={s.statLabel}>{row.label}</Text>
+     <Text style={s.statOld}>{displayStat(row.before)}</Text>
+     <Text style={s.arrow}>→</Text>
+     <Text style={s.statNew}>{displayStat(row.after)}</Text>
+     <Text style={[s.statDelta,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
+    </View>)}
+   </View>
+   
    {slot==='weapon'&&weaponChanges.length>0?<View style={s.weaponRollPanel}>
     <View style={s.rollCompareHead}>
      <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
@@ -176,40 +212,6 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       <Text style={[s.rollValue,{color:statColor(C,change.after-change.before),minWidth:52,textAlign:'right'}]}>{bonusDifference(change.after-change.before)}</Text>
     </View>)}
    </View>:null}
-   <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
-    <View style={s.impactHead}>
-     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
-     <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
-    </View>
-    {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
-    {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
-   </View>
-   <View style={s.statChips}>
-    {stats.slice(0,3).map(row=><View key={row.id} style={s.statChip}>
-     <Text style={s.chipLabel}>{row.label}</Text>
-     <Text style={[s.chipValue,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
-    </View>)}
-   </View>
-   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
-    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
-    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
-   </View>:null}
-   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
-    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
-    <Text style={s.disclosureTitle}>{gl('Full stats, gems & upgrades')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
-   </Pressable>
-   {more?<View style={s.extra}>
-   <View style={s.statPanel}>
-    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text style={s.legend}>{gl('Current → New')}</Text></View>
-    {stats.map(row=><View key={row.id} style={s.statRow}>
-     <Text style={s.statLabel}>{row.label}</Text>
-     <Text style={s.statOld}>{displayStat(row.before)}</Text>
-     <Text style={s.arrow}>→</Text>
-     <Text style={s.statNew}>{displayStat(row.after)}</Text>
-     <Text style={[s.statDelta,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
-    </View>)}
-   </View>
-   
     <Text style={s.note}>{gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
     <Text style={s.detail}>{gl('Enhancement')} +{enhancement.rank} · {gl('Stat gem')} {sockets.statGemId?itemDef(sockets.statGemId).name:gl('Empty')} · {gl('Effect gem')} {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>
     {sets.map(row=><Text key={row.id} style={s.detail}>{row.tier} · {row.name} · {row.before} → {row.after}/10 {gl('pieces')}</Text>)}

@@ -94,3 +94,33 @@ Both preview variants deliberately converge on the **same existing-style layout 
 4. Offline report narrow-device polish (coordinate with open PR #1546).
 
 **This document is audit/design planning only.** It does not authorize a runtime implementation, deploy or build.
+
+
+## Pass 2A — three further visual-polish iterations (21 Nov 2026)
+
+**Artifact:** Standalone, local interactive HTML review file `veldryn_pass2_inventory_pouch_polished_v3.html` provided in the conversation. HTML does **not** contain live APIs, inventory commands or real player data. It is not committed to the app, since the user must approve rendered UI/theme appearance first.
+
+### Refinement 1 — layout, geometry, and touch zones
+
+- Rebalanced compact 320/360dp preview spacing, source-style buttons, inventory grid, comparison hierarchy and bottom action areas.
+- Preserved the same existing-style presentation for both concepts at the **384dp / Galaxy S24+ reference**.
+- Normalized key touch targets to **44dp or greater** in the preview wherever possible; avoided increasing screen density by shrinking all text.
+
+### Refinement 2 — interaction semantics and disposal safeguards
+
+- Decoupled both preview phones' state so choosing an item in Option A cannot unexpectedly alter Option B.
+- Corrected inspection to use the **actual selected demo item**, its name, its type, quantity, rarity and sample stats rather than a fixed shield.
+- Introduced a persistent selection-mode state even when zero items are chosen, explicit Select safe, per-copy lock/favorite states, and capped batch selection.
+- Auto-selection excludes Epic/Mythic examples. Manual higher-rarity selection raises an explicit confirmation warning; **equipped** sample gear stays protected even after its separate lock is cleared.
+- Replaced fake immediate disposal with one dedicated review step; never modifies actual inventory or currency.
+
+### Refinement 3 — themes, accessibility, interaction QA
+
+- Harmonized Blackout/Ember/Paper Mint contrast, selected states, button focus, toolbar legibility, navigation and action labels.
+- Added **Normal / 125% text-size preview**, Escape dismissal, numeric-amount clamping, scrolling preservation during local rerenders and an event-safe quantity edit that avoids the blur/rerender race found in browser QA.
+- Browser-rendered and structurally checked **72 phone configurations**: 2 screens × 3 widths (320/360/384dp) × 3 themes × 2 text scales × 2 A/B variations. Separate behavior tests covered item switching, independent A/B state, empty selection, rarity/lock/favorite protection, explicit confirmation, Cancel/Escape, quantity caps and non-live feedback.
+- QA result: **0 JavaScript errors; 0 detected horizontal layout-overflow checks** across the matrix. This is prototype QA, **not** native Android screenshots or staging end-to-end testing.
+
+### Owner review recommendation
+
+**Option A** remains the preferred candidate for compact phones because it retains rapid Bank access and one pinned primary action while putting destructive actions under disclosure. **Option B** remains available as a less busy alternative. Preserve S24+ unchanged. Review the actual preview at 320dp, 360dp and 384dp in all three existing themes before approval. No app UI runtime patch is authorized by this document.

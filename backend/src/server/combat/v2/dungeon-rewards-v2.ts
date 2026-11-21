@@ -40,7 +40,7 @@ const boon=(id:string,name:string,stat:DungeonRewardStatV2,maxStacks:1|2|3=3):
 const artifact=(id:string,name:string,stat:DungeonRewardStatV2):
  DungeonRewardV2=>({id,name,type:'artifact',stage:'stat',stat,maxStacks:2});
 const room=(id:string,name:string):DungeonRewardV2=>({
- id,name,type:'boon',stage:'room_only',maxStacks:1});
+ id,name,type:'boon',stage:'room_only',maxStacks:3});
 const deferred=(id:string,name:string,type:'boon'|'artifact',
  mechanic:DungeonRewardMechanicV2,trigger:DungeonRewardTriggerV2,cooldownMs:number,
  designNote:string):DungeonRewardV2=>({

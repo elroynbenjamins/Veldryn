@@ -8,6 +8,7 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat} from '../engine';
+import {compileDraftDungeonRewardCombatV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
 import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
 import {
  compileExactEquipmentTraitSourceV2,type TrustedEquipmentTraitReceiptPortV2,
@@ -66,12 +67,20 @@ export interface EquipmentEncounterEvidenceV2 {
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
  readonly composition?:PowerCompositionDiagnosticV2;
+ /** QA-only: verified reward overlay applied after all equipment/skill stats. */
+ readonly afterDungeonReward?:CombatStats;
 }
 /** Trusted server-only storage dependency. Callbacks and snapshots must never
  * be constructed from incoming client JSON or forwarded by a public route. */
 export interface TrustedPersistedEnemyKitV2 {
  readonly snapshot:PersistedEnemyKitV2;
  readonly verifyPersisted:(snapshot:PersistedEnemyKitV2,combatInputDigest:string)=>boolean;
+}
+/** Hidden trust boundary. Future privileged dungeon transactions must
+ * verify current run revision and resolved room receipts atomically. */
+export interface TrustedDungeonRewardPortV2 {
+ readonly snapshot:VerifiedDungeonRewardSnapshotV2;
+ readonly verifyPersisted:(snapshot:VerifiedDungeonRewardSnapshotV2,inputDigest:string)=>boolean;
 }
 export interface UnifiedEquipmentEncounterResultV2 {
  readonly combat:CombatResult;
@@ -153,9 +162,11 @@ export function simulateUnifiedEquipmentCombatV2(
  serverEnabled=false,
  authoredEnemyKit?:TrustedPersistedEnemyKitV2,
  traitPort?:TrustedEquipmentTraitReceiptPortV2,
+ dungeonRewardPort?:TrustedDungeonRewardPortV2,
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled){
   if(traitPort)throw Error('combat_v2_trait_port_requires_complete_v2');
+  if(dungeonRewardPort)throw Error('combat_v2_dungeon_reward_requires_complete_v2');
   if(authoredEnemyKit)throw Error('combat_v2_enemy_kit_requires_complete_v2');
   return {combat:simulateCombat(input),enemyMechanicLabels:[],equipmentEvidence:[]};
  }
@@ -164,6 +175,10 @@ export function simulateUnifiedEquipmentCombatV2(
  if(traitPort&&(!authoredEnemyKit||input.players.length!==1||
    runtime.length!==1||builds.length!==1))
   throw Error('combat_v2_trait_requires_persisted_solo_enemy_and_gear');
+ if(dungeonRewardPort&&(!authoredEnemyKit||input.players.length!==1||
+   runtime.length!==1||builds.length!==1||
+   typeof dungeonRewardPort.verifyPersisted!=='function'))
+  throw Error('combat_v2_dungeon_reward_requires_persisted_solo_encounter');
  if(authoredEnemyKit&&(
    input.players.length!==1||runtime.length!==1||builds.length!==1||
    input.enemyDamageProfile!==undefined||
@@ -199,7 +214,13 @@ export function simulateUnifiedEquipmentCombatV2(
   const proof=verifyPersistedEnemyKitsV2(input.enemies,snapshot);
   if(snapshot.seed!==input.seed)
    throw Error('combat_v2_enemy_kit_seed_mismatch');
-  const finalInput:CombatInput={...input,players,enemies:[...proof.enemies]};
+  const assembledInput:CombatInput={...input,players,enemies:[...proof.enemies]};
+  // Source-validated room bonuses are applied AFTER class, skills and exact
+  // equipment; the resulting encounter is rebound to both engine authorities.
+  const finalInput=dungeonRewardPort?
+   compileDraftDungeonRewardCombatV2(
+     assembledInput,dungeonRewardPort.snapshot,dungeonRewardPort.verifyPersisted).input:
+   assembledInput;
   const authority=issueEnemyV2EngineAuthority({
     source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,mode:'solo',
     encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
@@ -216,7 +237,9 @@ export function simulateUnifiedEquipmentCombatV2(
       ...p.phaseNames.map(name=>p.enemyId+': '+name),
       ...p.traitIds.map(id=>p.enemyId+': '+id),
     ]),
-    equipmentEvidence:evidence,
+    equipmentEvidence:dungeonRewardPort?evidence.map(row=>({...row,
+     afterDungeonReward:{...finalInput.players.find(p=>p.id===row.actorId)!.stats},
+    })):evidence,
   };
  }
  const enemies=compileEnemiesForCombatV2(input.enemies,true);

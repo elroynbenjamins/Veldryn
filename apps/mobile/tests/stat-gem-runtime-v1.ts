@@ -83,6 +83,17 @@ const oldGem={...base,character:{...base.character!,gearEnhancements:{
  basic_sword:{rank:0,failures:0,gemIds:['WARD_SHARD'],statGemId:'WARD_SHARD'},
 }}};
 ok(effectiveStats(oldGem).defense>without.defense,'Older Defense Gems retain their existing effect');
+const restoredEmberheart={...base,character:{...base.character!,gearEnhancements:{
+  basic_sword:{rank:0,failures:0,gemIds:['LEGACY_EMBERHEART_GEM_V2'],
+    statGemId:'LEGACY_EMBERHEART_GEM_V2'},
+}}};
+close(effectiveStats(restoredEmberheart).attack,without.attack*1.05,
+  'Restored Emberheart must retain its original +5% Attack effect');
+ok(itemDef('LEGACY_EMBERHEART_GEM_V2').type==='gem'&&
+  itemDef('LEGACY_EMBERHEART_GEM_V2').gemStat==='attack',
+  'Protected restoration item must be a compatible socketable Attack gem');
+close(equippedCanonicalStatGemBonusesV1(restoredEmberheart).statPercent.attack??0,0,
+  'Restored Emberheart cannot also apply canonical Might on top of its legacy Attack effect');
 ok(Object.keys(equippedCanonicalStatGemBonusesV1(oldGem).statPercent).length===0,
  'Older gems must not enter canonical totals');
 close(equippedGemBonuses(withGem('stat_iron')).defense,0,'Canonical Iron must not be counted twice as legacy Defense');

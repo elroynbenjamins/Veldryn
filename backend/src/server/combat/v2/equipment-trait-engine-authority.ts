@@ -74,7 +74,7 @@ export function issueEquipmentV2TraitAuthority(
  verifyPersisted:(sources:readonly VerifiedV2EquipmentEffectSource[],inputDigest:string)=>boolean,
 ):EquipmentV2TraitEngineAuthority{
  if(typeof verifyPersisted!=='function'||!Array.isArray(sources)||
-    sources.length!==input?.players?.length||sources.length!==1||
+    sources.length!==input?.players?.length||sources.length<1||sources.length>4||
     typeof input.seed!=='string'||!input.seed)
    fail('verified_storage_required');
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||
@@ -82,14 +82,13 @@ export function issueEquipmentV2TraitAuthority(
     input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2)||
     input.enemies.some(e=>e.team!=='enemies'))
    fail('no_legacy_or_inflight_encounter');
- const ids=new Set<string>(),accounts=new Set<string>(),characters=new Set<string>();
+ const ids=new Set<string>(),characters=new Set<string>();
  for(const source of sources){
   validate(source);
   if(ids.has(source.actorId)||!input.players.some(p=>p.id===source.actorId)||
-    accounts.size>0&&!accounts.has(source.accountId)||
     characters.has(source.characterId))
     fail('source_actor_or_owner_mismatch');
-  ids.add(source.actorId);accounts.add(source.accountId);characters.add(source.characterId);
+  ids.add(source.actorId);characters.add(source.characterId);
  }
  const digest=enemyV2SnapshotDigest(input);
  let accepted=false;

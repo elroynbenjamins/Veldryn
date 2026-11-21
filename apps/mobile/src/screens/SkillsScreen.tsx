@@ -295,8 +295,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
    category,route:skillNavigatorRouteFor(row.skillId)};
  });
  const companionRows:SkillNavigatorEntry[]=[
-  {id:'companion-mastery',name:gl('Companion Mastery'),subtitle:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp},
-  {id:'companion-training',name:gl('Companion Training'),subtitle:n('Sanctuary facility'),category:'companions',route:'sanctuary',level:facilityLevel}
+  {id:'companion-mastery',name:gl('Companion Mastery'),subtitle:n('Account-wide companion skill'),category:'companions',route:'companion-mastery',level:mastery.level,xp:mastery.xp}
  ];
  const allEntries=[...combatRows,...professionRows,...companionRows];
  const categoryLabels:Record<SkillNavigatorCategory,string>={

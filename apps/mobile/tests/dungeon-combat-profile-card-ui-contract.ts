@@ -76,7 +76,7 @@ ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('Encounter totals')&&sta
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');
 ok(stage.includes('DMG')&&stage.includes('INT')&&!stage.includes('MVP'),'Contribution recap must show damage and interrupts without ranking players');
 ok(!stage.includes('setPaused(true)')&&!stage.includes('paused||cueIndex'),'Combat inspection must never strand Solo or Live replay in an unresumable pause');
-ok(stage.includes('complete?st("ENCOUNTER RECAP"):st("LIVE COMBAT")'),'Automatic playback must show a clear in-progress vs completed label');
+ok(stage.includes('complete?st("ENCOUNTER RECAP"):pending?st("LIVE COMBAT"):dungeonDynamicUiText(language,\'COMBAT REPLAY\')'),'Automatic playback must show a clear in-progress vs completed label');
 ok(stage.includes('accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")}')&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
 ok(stage.includes('setCueIndex(reduceMotion&&cues.length?cues.length-1:0);setShowLog(false);setInspectKey(undefined);'),'A new encounter must reset the cursor, combat log and inspection state');
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');

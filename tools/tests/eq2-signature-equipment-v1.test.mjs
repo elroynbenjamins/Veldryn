@@ -11,7 +11,7 @@ const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const parse=file=>JSON.parse(read(file));
 const config=parse('docs/equipment-2-0/t2-t4-signature-equipment-fishing-dungeon-v1.json');
 const economy=parse('docs/equipment-2-0/t1-t4-economy-review-v1.json');
-const clone=()=>structuredClone(config);
+const clone=()=>JSON.parse(JSON.stringify(config));
 function literalArray(file,name){
  const source=read(file),start=source.indexOf(name),a=source.indexOf('=[',start),b=source.indexOf('];',a);
  assert.ok(start>=0&&a>=0&&b>a,'missing hidden manifest '+name);

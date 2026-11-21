@@ -44,6 +44,8 @@ Fishing P90 uses the *doubled* authored base cycle: Rootstream Trout 54 sec, Oas
 
 The Combat 2.0 draft already explores 13 affix families and physical versus nonphysical DoT paths. Actual signature trait resolver, offhand compatibility, proc scheduling, loadout caps and nine-class boss/dungeon power testing are **not implemented** by this review.
 
+A pure, **unmounted preview-only** verifier now demonstrates the proposed 3% mitigation on a 1,000-point enemy direct hit (970 after the signature reduction), a seeded 10% Bleed roll with one roll per ability use, boss-half Bleed coefficient, no proc-from-proc, and no two offensive traits together. See `tools/lib/eq2-signature-combat-preview-v1.mjs` and its regression tests. This does **not** run within real combat, settle DoT ticks or grant equipment.
+
 ## Fishing and dungeon material ownership
 
 **Fishing:** keep the original catch and grant at most one supplemental rare signature reagent on an independently verified server roll tied to a credited gathering settlement. The rare materials and their crafted fishing signature gear are **proposed** for eventual market listing, only after exact-instance Market escrow and sink validation. Fishing speed/rare-find modifiers must apply at most once; any rare-find multiplier cap needs a separately verified real implementation.

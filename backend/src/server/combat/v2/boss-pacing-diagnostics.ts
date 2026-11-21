@@ -32,8 +32,12 @@ export interface BossPacingAggregateV2 {
  readonly provenance:'synthetic_unapproved_boss_pacing_v2';
  readonly bossId:string;readonly cases:number;readonly wins:number;
  readonly wipes:number;readonly timeouts:number;
- readonly durationP50Ms:number;readonly durationP90Ms:number;
- readonly firstCastP50Ms:number|null;
+ readonly durationP10Ms:number;readonly durationP50Ms:number;
+ readonly durationP90Ms:number;readonly firstCastP50Ms:number|null;
+ readonly bossHpP50Percent:number;readonly playerHpP50Percent:number;
+ /** Descriptive synthetic categories, NOT difficulty pass/fail thresholds. */
+ readonly winsBeforeFirstTell:number;readonly wipesBeforeFirstTell:number;
+ readonly timeoutsWithBossHpAbove70:number;
  readonly castStarts:number;readonly castCompletes:number;
  readonly castInterrupts:number;readonly unresolvedAtEnd:number;
  readonly phase70Cases:number;readonly phase35Cases:number;
@@ -196,7 +200,23 @@ export function aggregateBossPacingV2(
   const timeouts=rows.filter(r=>r.reason==='timeout').length;
   const noCast=rows.filter(r=>r.firstCastAtMs===null).length;
   const noPhase=rows.filter(r=>r.phase70AtMs===null).length;
+  const winsBeforeFirstTell=rows.filter(r=>r.reason==='victory'&&
+   r.firstCastAtMs===null).length;
+  const wipesBeforeFirstTell=rows.filter(r=>r.reason==='wipe'&&
+   r.firstCastAtMs===null).length;
+  // 70% is an inspection threshold, not a proposed or approved tuning goal.
+  const timeoutsWithBossHpAbove70=rows.filter(r=>
+   r.reason==='timeout'&&r.bossHpPercent>70).length;
   const warnings:string[]=[];
+  if(timeoutsWithBossHpAbove70>0)
+   warnings.push('timeout_low_boss_hp_progress:'+
+    timeoutsWithBossHpAbove70+'/'+rows.length);
+  if(winsBeforeFirstTell>0)
+   warnings.push('wins_before_first_tell:'+
+    winsBeforeFirstTell+'/'+rows.length);
+  if(wipesBeforeFirstTell>0)
+   warnings.push('wipes_before_first_tell:'+
+    wipesBeforeFirstTell+'/'+rows.length);
   if(noCast>0)warnings.push('unseen_boss_tells:'+noCast+'/'+rows.length);
   if(noPhase>0)warnings.push('unseen_phase_70:'+noPhase+'/'+rows.length);
   if(rows.every(r=>r.phase35AtMs===null))warnings.push('no_phase_35_observed');
@@ -205,9 +225,13 @@ export function aggregateBossPacingV2(
   return {
    provenance:'synthetic_unapproved_boss_pacing_v2' as const,
    bossId,cases:rows.length,wins,wipes,timeouts,
+   durationP10Ms:quantile(rows.map(r=>r.durationMs),.1),
    durationP50Ms:quantile(rows.map(r=>r.durationMs),.5),
    durationP90Ms:quantile(rows.map(r=>r.durationMs),.9),
    firstCastP50Ms:starts.length?quantile(starts,.5):null,
+   bossHpP50Percent:quantile(rows.map(r=>r.bossHpPercent),.5),
+   playerHpP50Percent:quantile(rows.map(r=>r.playerHpPercent),.5),
+   winsBeforeFirstTell,wipesBeforeFirstTell,timeoutsWithBossHpAbove70,
    castStarts:rows.reduce((n,r)=>n+r.castsStarted,0),
    castCompletes:rows.reduce((n,r)=>n+r.castsCompleted,0),
    castInterrupts:rows.reduce((n,r)=>n+r.castsInterrupted,0),

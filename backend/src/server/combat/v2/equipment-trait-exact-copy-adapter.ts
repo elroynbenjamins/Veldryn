@@ -179,10 +179,11 @@ export function compileExactEquipmentTraitSourceV2(
  const selectedTraits=new Set<string>();
  for(const instanceId of port.selectedTraitInstanceIds){
   const row=receipts.find(r=>r.instanceId===instanceId);
-  if(!row||!row.signatureTraitId||!allowedTraits.has(row.signatureTraitId)||
-    selectedTraits.has(row.signatureTraitId))
+  if(row===undefined)throw Error('combat_v2_exact_trait_copy_trait_not_selected_from_equipped_copy');
+  const selectedId=row.signatureTraitId;
+  if(!selectedId||!allowedTraits.has(selectedId)||selectedTraits.has(selectedId))
    fail('trait_not_selected_from_equipped_copy');
-  const traitId=row.signatureTraitId as ExecutableEquipmentTraitV2;
+  const traitId=selectedId as ExecutableEquipmentTraitV2;
   if(!roleTraitSources[traitId].has(row.acquisition))fail('trait_source_not_approved');
   selectedTraits.add(traitId);selected.push({traitId,instanceId});
  }

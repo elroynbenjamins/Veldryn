@@ -7,6 +7,7 @@ import {totalXpAtLevel} from '../src/core/progression';
 import {bulkTransferSelected} from '../src/core/inventory-bulk';
 import {validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
+import {itemInspectModel} from '../src/core/item-inspect';
 import type {CraftedGatheringTool} from '../src/core/gathering-tool-rolls';
 import type {GameState} from '../src/core/types';
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -74,6 +75,11 @@ assert(crafted.inventory.stacks.some(row=>row.itemId==='GREENWOOD_HATCHET'&&row.
 crafted=craftRecipe(crafted,'CRAFT_GREENWOOD_HATCHET',1000);
 const second=crafted.account.craftedGatheringToolInstances?.[1];
 assert(!!second&&first.id!==second.id,'Two crafting claims at the same timestamp must still produce distinct copies');
+const toolInspect=itemInspectModel(crafted,'GREENWOOD_HATCHET',second.id);
+assert(toolInspect.selectedQuality===second.quality&&toolInspect.rarityId===second.rarity,'Tapping rolled tool resolves its receipt without treating it as equipment');
+assert(toolInspect.effectLines.some(line=>line.includes(gatheringToolBonusLabel(second))),'Exact tool inspector displays actual bonus');
+assert(toolInspect.inventoryQuantity===2,'Tool inspector counts multiple rolled physical copies rather than first stack only');
+assert(itemInspectModel(crafted,'GREENWOOD_HATCHET').selectedQuality===undefined,'Unselected legacy-style tool inspect never invents a quality roll');
 crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',2000,first.id);
 assert(equippedGatheringToolRoll(crafted,'woodcutting',1)?.id===first.id,'Selected physical copy must equip');
 crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',3000,second.id);
@@ -87,6 +93,8 @@ crafted=withdrawFromBank(crafted,'GREENWOOD_HATCHET',2);
 assert([first.id,second.id].every(id=>crafted.inventory.stacks.some(s=>s.instanceId===id)),'Bank withdrawal retains both rolled copies');
 crafted=moveGatheringToolCopy(crafted,first.id,'bank');
 assert(crafted.bank.stacks.some(row=>row.instanceId===first.id)&&crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Exact transfer moves selected copy only');
+const bankInspect=itemInspectModel(crafted,'GREENWOOD_HATCHET',first.id,'bank');
+assert(bankInspect.selectedQuality===first.quality&&bankInspect.bankQuantity===1,'Bank tool inspector retains exact receipt and quantity');
 crafted=bulkTransferSelected(crafted,['copy:'+first.id],'bank');
 assert(crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Bulk transfer must preserve tool instance IDs');
 assert(validateGameCommand({type:'equip_tool',args:{id:'GREENWOOD_HATCHET',instanceId:second.id}}).args?.instanceId===second.id,'Physical equip is accepted by strict game command schema');

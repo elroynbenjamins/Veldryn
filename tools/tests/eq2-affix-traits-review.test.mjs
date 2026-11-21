@@ -44,8 +44,8 @@ test('basic attacks are not a second general Attack Power or skill multiplier',(
  const basic=c.affixes.find(x=>x.id==='basic_attack_damage_pct');
  assert.deepEqual(basic.eligibleSlots,['weapon','gloves','amulet','ring']);
  assert.ok(basic.maxEquipmentOnlyContribution>=basic.tiers.T4[1]*basic.eligibleSlots.length);
- expectFailure(d=>{d.combatChannelPolicy.basicAttack.ultimateAttackPowerMultiplier=true;},'basic_attack_source_isolation');
- expectFailure(d=>{d.combatChannelPolicy.basicAttack.excludes=[];},'basic_attack_source_isolation');
+ expectFailure(d=>{d.combatChannelPolicy.basicAttackDamage.ultimateAttackPowerMultiplier=true;},'basic_attack_source_isolation');
+ expectFailure(d=>{d.combatChannelPolicy.basicAttackDamage.excludes=[];},'basic_attack_source_isolation');
 });
 test('reflect is post-shield actual HP damage, with shared anti-boss-cheese cap and no recursion',()=>{
  const c=fresh();

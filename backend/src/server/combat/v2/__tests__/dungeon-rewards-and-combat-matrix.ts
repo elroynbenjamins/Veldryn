@@ -19,12 +19,12 @@ const currentArtifacts=[
  'RELIC_EMBER_HEART','RELIC_IRON_BARK','RELIC_QUICK_SILVER','RELIC_EAGLE_EYE',
  'RELIC_MOON_WELL','RELIC_HUNTER_MARK','RELIC_BOSS_WARD','RELIC_PARTY_OATH',
 ];
-assert.deepEqual(DUNGEON_REWARD_V2_TOTALS,{boons:16,artifacts:14,pending:9});
+assert.deepEqual(DUNGEON_REWARD_V2_TOTALS,{boons:16,artifacts:14,executable:6,pending:3});
 assert.equal(new Set(DUNGEON_REWARDS_V2.map(item=>item.id)).size,30);
 assert.ok(currentBoons.every(id=>DUNGEON_REWARDS_V2.some(row=>row.id===id&&row.type==='boon')));
 assert.ok(currentArtifacts.every(id=>DUNGEON_REWARDS_V2.some(row=>row.id===id&&row.type==='artifact')));
 assert.ok(DUNGEON_REWARDS_V2.every(row=>row.maxStacks<=3&&
- (row.stage==='needs_engine_hook'?
+ (row.stage==='needs_engine_hook'||row.stage==='engine_hook'?
   Boolean(row.mechanic&&row.trigger&&row.cooldownMs&&row.cooldownMs>0):true)));
 const stats=(hp=3500,attack=180)=>({
  maxHp:hp,attackPower:attack,healingPower:180,defense:80,
@@ -72,7 +72,7 @@ const firstOffer=previewDungeonRewardOffersV2(base,sourceSnapshot,firstRoom,
  'PRIVATE_QA_SECRET_16CHARS',verified);
 assert.equal(firstOffer.length,3);
 assert.equal(new Set(firstOffer.map(x=>x.id)).size,3);
-assert.ok(firstOffer.every(x=>x.type==='boon'&&x.stage!=='needs_engine_hook'));
+assert.ok(firstOffer.every(x=>x.type==='boon'&&(x.stage==='stat'||x.stage==='room_only')));
 assert.deepEqual(previewDungeonRewardOffersV2(base,sourceSnapshot,firstRoom,
  'PRIVATE_QA_SECRET_16CHARS',verified),firstOffer);
 assert.deepEqual(candidateDungeonRewardReceiptV2(base,sourceSnapshot,firstRoom,
@@ -88,7 +88,7 @@ const artRoom={nodeId:'ROOM_2',depth:2,room:'treasure' as const};
 const artOffer=previewDungeonRewardOffersV2(base,sourceSnapshot,artRoom,
  'PRIVATE_QA_SECRET_16CHARS',verified);
 assert.equal(artOffer.length,3);
-assert.ok(artOffer.every(x=>x.type==='artifact'&&x.stage!=='needs_engine_hook'));
+assert.ok(artOffer.every(x=>x.type==='artifact'&&x.stage==='stat'));
 assert.ok(!artOffer.some(x=>x.id==='RELIC_DAWN_RELIQUARY'),
  'A support-only artifact should never be offered to a tank');
 const family=(id:string)=>{
@@ -156,7 +156,7 @@ assert.ok(!previewDungeonRewardOffersV2(dps,snapshot(dps),artRoom,
 
 // Hard failures: unimplemented reactive hooks, client forged choices, stale
 // player state, spoofed account/actor/seed and duplicate room receipts.
-for(const row of DUNGEON_REWARDS_V2.filter(x=>x.stage==='needs_engine_hook')){
+for(const row of DUNGEON_REWARDS_V2.filter(x=>x.stage==='needs_engine_hook'||x.stage==='engine_hook')){
  const room=row.type==='boon'?'shrine':'treasure';
  assert.throws(()=>compileDraftDungeonRewardCombatV2(base,
   snapshot(base,[receipt(row.id,1,room)]),verified),/unimplemented_proc_/);

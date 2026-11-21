@@ -31,7 +31,7 @@ export interface SkillMilestoneOverview{
  next:SkillMilestone[];
 }
 const gatheringIds=new Set<SkillId>(['mining','woodcutting','fishing','herbalism']);
-const craftingIds=new Set<SkillId>(['smithing','cooking','alchemy','tailoring','enchanting']);
+const craftingIds=new Set<SkillId>(['smithing','cooking','alchemy','tailoring','enchanting','forge']);
 const pretty=(value:string)=>value.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
 const classRelevant=(state:GameState,recipe:Recipe)=>!recipe.classId||recipe.classId===state.character?.classId;
 export const skillMilestoneCategory=(kind:SkillMilestoneKind)=>kind==='gathering_node'?'GATHERING':kind==='tool'?'TOOL TIER':kind==='recipe'?'RECIPE':kind==='method'?'METHOD':kind==='service'?'SERVICE':kind==='faith_practice'?'PRACTICE':kind==='faith_blessing'?'BLESSING':'CROSS-SKILL';

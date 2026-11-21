@@ -19,16 +19,23 @@ const forgeRarityRolls:ReadonlyArray<{rarity:ItemRarity;chance:number}>=[
   {rarity:'common',chance:CRAFTED_COMMON_CHANCE},
 ];
 const order:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
+/** Raise Rare+ odds proportionally, taking the difference from Common. */
+function forgeOdds(bonusPercent:number){
+ const factor=1+([0,5,10,15].includes(bonusPercent)?bonusPercent:0)/100;
+ const elevated=forgeRarityRolls.map(row=>({rarity:row.rarity,chance:row.rarity==='common'?0:row.rarity==='uncommon'?row.chance:row.chance*factor}));
+ const sum=elevated.reduce((total,row)=>total+row.chance,0);
+ return elevated.map(row=>row.rarity==='common'?{...row,chance:1-sum}:row);
+}
 export function higherRarity(a:ItemRarity,b:ItemRarity){return order.indexOf(a)>=order.indexOf(b)?a:b;}
 
 /** Every equipment tier uses the same Forge roll table. Tier identity controls gear stats, not rarity odds. */
-export function craftedGearRarity(itemId:string,roll:number):ItemRarity{
+export function craftedGearRarity(itemId:string,roll:number,bonusPercent=0):ItemRarity{
   if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Crafted rarity only applies to equipment');
   // Integer buckets avoid floating-point drift at exact rarity cutoffs (e.g. 0.009).
   const sample=Math.floor(roll*1_000_000);
   let cutoff=0;
-  for(const outcome of forgeRarityRolls){
+  for(const outcome of forgeOdds(bonusPercent)){
     cutoff+=Math.round(outcome.chance*1_000_000);
     if(sample<cutoff)return outcome.rarity;
   }
@@ -36,11 +43,11 @@ export function craftedGearRarity(itemId:string,roll:number):ItemRarity{
 }
 
 /** Rarity odds for timed Forge are identical for every tier and recipe. */
-export function craftedGearRarityOutcomes(itemId:string):Array<{rarity:ItemRarity;chance:number;statMultiplier:number}>{
+export function craftedGearRarityOutcomes(itemId:string,bonusPercent=0):Array<{rarity:ItemRarity;chance:number;statMultiplier:number}>{
   const item=itemDef(itemId);
   if(item.type!=='gear')throw new Error('Forge rarity odds require equipment');
   return order.map(rarity=>{
-    const chance=forgeRarityRolls.find(outcome=>outcome.rarity===rarity)!.chance;
+    const chance=forgeOdds(bonusPercent).find(outcome=>outcome.rarity===rarity)!.chance;
     return {rarity,chance,statMultiplier:craftedRarityStatMultiplier(itemId,rarity)};
   });
 }

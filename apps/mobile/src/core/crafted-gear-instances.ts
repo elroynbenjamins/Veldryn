@@ -153,8 +153,8 @@ export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerChar
   return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));
 }
 
-export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}):CraftedGearInstance{
-  const rarity=craftedGearRarity(args.itemId,args.roll);
+export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number;forgeRarityBonusPercent?:number}):CraftedGearInstance{
+  const rarity=craftedGearRarity(args.itemId,args.roll,args.forgeRarityBonusPercent);
   const weaponBonuses=rollWeaponBonuses(args.itemId,rarity,args.jobId,args.roll);
   const equipmentBonuses=rollEquipmentBonuses(args.itemId,rarity,args.jobId,args.roll);
   return {
@@ -168,7 +168,7 @@ export function draftCraftedGearInstance(args:{itemId:string;ownerCharacterId:st
     locked:false,statRoll:deterministicCraftRarityRoll(`stat:${args.jobId}:${args.ownerCharacterId}`),acquireSource:'craft',sourceReceiptKey:args.jobId,createdAtMs:args.createdAtMs,enhancement:emptyEnhancement(),
   };
 }
-export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}){
+export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number;forgeRarityBonusPercent?:number}){
   const previous=craftedGearInstances(state);
   if(previous.some(row=>row.sourceReceiptKey===args.jobId))throw new Error('Crafting receipt has already been claimed');
   if(previous.length>=MAX_CRAFTED_GEAR_INSTANCES)throw new Error('Crafted equipment storage is full; existing equipment was not removed');

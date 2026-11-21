@@ -18,7 +18,7 @@ export interface QueuedActivity {kind:'combat'|'gathering'|'faith'|'exploration'
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
-export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
+export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith'|'forge';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
   /** Own daily, weekly and monthly challenge progress, claims and reward selections. */
@@ -98,6 +98,8 @@ export interface EquipmentCraftJob{
   reservedInputs?:ItemStack[];
   /** Frozen odds for new gem merges; missing means a legacy, guaranteed combine. */
   combineSuccessChancePercent?:number;
+  /** Relative rarity bonus captured at job reservation. */
+  forgeRarityBonusPercent?:0|5|10|15;
 }
 export interface CraftedGearInstance{
   id:string;

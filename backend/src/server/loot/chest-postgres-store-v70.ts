@@ -129,7 +129,8 @@ function decodeReceipt(value:unknown):FrozenChestReceiptV69{
  return result as FrozenChestReceiptV69;
 }
 function expectedLegs(receipt:FrozenChestReceiptV69):readonly
- Pick<ChestLedgerLegV70,'kind'|'ordinal'|'rewardId'|'quantity'>[]{
+ (Pick<ChestLedgerLegV70,'kind'|'ordinal'|'rewardId'|'quantity'>&
+ {equipment:boolean})[]{
  return [
   ...receipt.guaranteed.map((g,i)=>({
    kind:'guarantee' as const,ordinal:i,rewardId:g.id,quantity:g.quantity,

@@ -56925,11 +56925,6 @@ function protectedGear(state, record) {
   const characters = [state.character, ...(state.otherCharacters ?? []).map((entry2) => entry2.character)].filter(Boolean);
   if (characters.some((character) => character?.savedLoadouts?.some((preset) => Object.values(preset.equipmentInstanceIds ?? {}).includes(record.id) || Object.entries(preset.equipment).some(([slot, id]) => id === record.itemId && !preset.equipmentInstanceIds?.[slot]))))
     throw new Error("A saved loadout protects this equipment copy");
-  if (characters.some((character) => {
-    const old = character?.gearEnhancements?.[record.itemId];
-    return !!old && (old.rank > 0 || !!old.statGemId || !!old.effectGemId || (old.gemIds?.length ?? 0) > 0);
-  }))
-    throw new Error("Legacy equipment enhancements require manual review before disposal");
 }
 function disposeCraftedGearInstance(state, instanceId, method) {
   if (!state.character) throw new Error("No active character");

@@ -238,8 +238,11 @@ function protectedGear(state:GameState,record:CraftedGearInstance){
   const characters=[state.character,...(state.otherCharacters??[]).map(entry=>entry.character)].filter(Boolean);
   if(characters.some(character=>character?.savedLoadouts?.some(preset=>Object.values(preset.equipmentInstanceIds??{}).includes(record.id)||Object.entries(preset.equipment).some(([slot,id])=>id===record.itemId&&!preset.equipmentInstanceIds?.[slot as GearSlot]))))
     throw new Error('A saved loadout protects this equipment copy');
-  if(characters.some(character=>{const old=character?.gearEnhancements?.[record.itemId];return !!old&&(old.rank>0||!!old.statGemId||!!old.effectGemId||(old.gemIds?.length??0)>0)}))
-    throw new Error('Legacy equipment enhancements require manual review before disposal');
+  // Legacy itemId-only enchantments have no verified association with a
+  // Forge receipt. They remain protected when disposing UNMARKED legacy gear
+  // (canDisposeLegacyEquipment), but must not lock every independent, tagged
+  // copy of the same item type. Exact copies carry their own enhancement and
+  // still pass all per-copy, saved-loadout, ownership and storage checks above.
 }
 export function disposeCraftedGearInstance(state:GameState,instanceId:string,method:'sell'|'salvage'):GameState{
   if(!state.character)throw new Error('No active character');

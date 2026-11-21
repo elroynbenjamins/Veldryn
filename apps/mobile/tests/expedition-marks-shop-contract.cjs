@@ -49,6 +49,17 @@ assert(!client.includes("rpc('expedition_shop_purchase_v1'"),'never call the pha
 assert(panel.includes('<DungeonMarksShopView'),'one visible Shop UI shares the approved catalogue');
 assert(panel.includes('onRewardsChanged'),'successful purchase refreshes GameState');
 assert(panel.includes('snapshot?.shopEnabled'),'purchase controls require server enablement');
+// Collectibles stay in a predictable item-type order; each region's three pets
+// appear together in a compact inline row. Expanded purchase details retain
+// their full-size artwork and are never squeezed into 3-column mini-cards.
+assert(shopView.includes("const COLLECTION_GROUPS=['pet','border','background','icon']"),'collectibles must be grouped by item type');
+assert(shopView.includes("shelf==='Supplies'?items.map(item=>renderOffer(item)):COLLECTION_GROUPS.map(category=>"),'supplies must keep existing full-width rows');
+assert(shopView.includes('matching.map(item=>renderOffer(item,true))'),'collection groups must render compact tiles');
+assert(shopView.includes('{chosen?renderOffer(chosen):null}'),'selected collectible must show its detail below the entire row');
+assert(shopView.includes('expanded&&!compact'),'expanded collectible details must never be cramped inside a tile');
+assert(shopView.includes("width:'31.5%'"),'mobile layout should show three item tiles inline');
+assert(shopView.includes('dungeonShopCollectionLabel(language,category)'),'all collection group titles must be localized');
+
 assert(screen.includes('<ExpeditionShopPanel'),'the existing Dungeon entry opens the finished shop');
 assert(backend.includes('account.releasedPrices[offer.id]'),'server prices come from the DB');
 assert(backend.includes("published?quote.status:'unreleased'"),'disabled offers cannot render as purchasable');

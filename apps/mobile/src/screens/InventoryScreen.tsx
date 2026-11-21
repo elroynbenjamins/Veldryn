@@ -328,9 +328,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     <View style={s.inspectAmountRow}>
       <Text style={s.inspectAmountLabel}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gl('available')}</Text>
       <View style={s.inspectStepper}>
-        <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} accessibilityState={{disabled:inspectAmount<=1}} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
         <Text style={s.inspectAmountValue}>{formatGameNumber(inspectAmount,state.settings.numberMode,language)}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={gl('Increase amount')} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Increase amount')} accessibilityState={{disabled:inspectAmount>=inspectStock}} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={gt('All')} accessibilityState={{disabled:inspectAmount===inspectStock}} disabled={inspectAmount===inspectStock} onPress={()=>setInspectQuantity(inspectStock)} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount===inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepAll}>{gt('All')}</Text></Pressable>
       </View>
     </View>

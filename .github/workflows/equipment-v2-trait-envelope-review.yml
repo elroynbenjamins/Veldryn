@@ -1,0 +1,28 @@
+name: Equipment 2.0 trait event balance (private review)
+on:
+  pull_request:
+    paths:
+      - 'tools/eq2-trait-event-model.mjs'
+      - 'tools/eq2-trait-balance-matrix.mjs'
+      - 'tools/tests/eq2-trait-event-envelope.test.mjs'
+      - 'docs/equipment-2-0/eq2-combat-affix-trait-proposal-v1.json'
+      - 'docs/equipment-2-0/EQ2_TRAIT_EVENT_BALANCE_REVIEW.md'
+      - '.github/workflows/equipment-v2-trait-envelope-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check immutable draft affix and trait contracts
+        run: node tools/validate-eq2-affix-traits-review.mjs
+      - name: Validate synthetic event sources, rolling reflection and matchup matrix
+        run: node --test tools/tests/eq2-trait-event-envelope.test.mjs
+      - name: Print synthetic-only role matchup summary
+        run: node tools/eq2-trait-balance-matrix.mjs

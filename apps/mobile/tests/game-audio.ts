@@ -23,6 +23,18 @@ assert.ok(sfxBytes<600_000,'Effects budget exceeded: '+sfxBytes);
 assert.ok(musicBytes<4_000_000,'Music budget exceeded: '+musicBytes);
 for(const required of ['ui_tap','reward_collect','level_up','rare_drop','unlock','hit','crit','heal','shield','interrupt','phase','cast','down','victory','defeat','craft_complete','upgrade_success','upgrade_fail','mine_hit','chop_hit','fish_splash','gather_yield','boss_entrance','boss_telegraph','boss_special','guard_break','role_moment','world_hp_drop','killing_blow','honor','tonic'])
  assert.ok(required in manifest.sfx,'Missing required effect '+required);
+// Ten original, low-volume crafting effects are packed and routed only on actions.
+for(const cue of ['smith_hammer_1','smith_hammer_2','smelt_bellows','smelt_pour','forge_ignite','forge_quench','woodwork_plane','tailor_stitch','alchemy_bubble','cooking_sizzle']){
+ assert.ok(cue in manifest.sfx,'Missing crafting cue '+cue);
+ assert.ok(manifest.sfx[cue].volume<=.45,'Crafting cue too loud '+cue);
+ assert.ok(manifest.sfx[cue].seconds<1,'Crafting cue too repetitive '+cue);
+}
+const craftingAudio=fs.readFileSync('src/core/crafting-audio.ts','utf8');
+assert.ok(craftingAudio.includes('now-lastAt<800'),'Craft cues must be rate limited');
+for(const file of ['src/components/RecipeCard.tsx','src/components/useCraftActionFeedback.ts'])
+ assert.ok(fs.readFileSync(file,'utf8').includes('playCraftStarted('),file+' needs confirmed crafting feedback');
+assert.ok(fs.readFileSync('src/components/EquipmentCraftQueuePanel.tsx','utf8').includes('playForgeClaimed('),'Forge claim needs quench feedback');
+
 for(const track of ['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
 
 // Two selected tracks were composed/rendered using original synthesis only.

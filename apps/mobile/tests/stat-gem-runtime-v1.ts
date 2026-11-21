@@ -90,7 +90,8 @@ const restoredEmberheart={...base,character:{...base.character!,gearEnhancements
 close(effectiveStats(restoredEmberheart).attack,without.attack*1.05,
   'Restored Emberheart must retain its original +5% Attack effect');
 ok(itemDef('LEGACY_EMBERHEART_GEM_V2').type==='gem'&&
-  itemDef('LEGACY_EMBERHEART_GEM_V2').gemStat==='attack',
+  itemDef('LEGACY_EMBERHEART_GEM_V2').gemStat==='attack'&&
+  itemDef('LEGACY_EMBERHEART_GEM_V2').value===0,
   'Protected restoration item must be a compatible socketable Attack gem');
 close(equippedCanonicalStatGemBonusesV1(restoredEmberheart).statPercent.attack??0,0,
   'Restored Emberheart cannot also apply canonical Might on top of its legacy Attack effect');

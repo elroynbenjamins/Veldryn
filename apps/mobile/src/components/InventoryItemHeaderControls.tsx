@@ -34,7 +34,7 @@ export function InventoryItemHeaderControls({favorite=false,locked=false,onFavor
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   row:{flexDirection:'row',alignItems:'center',gap:4,flexShrink:0},
-  button:{width:36,height:40,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+  button:{width:40,height:44,alignItems:'center',justifyContent:'center',borderRadius:10,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
   protectedButton:{borderColor:C.warning,backgroundColor:C.warningSurface},
   pressed:{opacity:.65},
   star:{fontSize:23,color:C.muted,lineHeight:27,fontWeight:'700'},

@@ -304,6 +304,26 @@ const legacyStatus=simulateCombat({...statusInput,players:[legacyStatusActor]});
 assert.equal(legacyStatus.players[0].modifiers.filter(m=>m.tag==='haste').length,8,
  'existing legacy status stack behavior must not change');
 
+// Repeated V2 DoT casts refresh exactly their original source/tag, but
+// retain both intentional same-cast ticks. Legacy periods remain untouched.
+const dotAbilityId='TEST_DOT_REFRESH:v2:0';
+const dotActor:CombatantDefinition={...statusActor,abilities:[{
+  id:dotAbilityId,name:'Synthetic V2 double DoT',cooldownMs:1000,castTimeMs:0,
+  priority:100,target:'current_target',effects:[
+    {kind:'dot',coeff:.05,damageType:'shadow',durationMs:5000,tickMs:2000},
+    {kind:'dot',coeff:.05,damageType:'shadow',durationMs:5000,tickMs:2000},
+  ],
+}]};
+const dotInput={seed:'v2-periodic-refresh',players:[dotActor],enemies:[enemy],
+  maxDurationMs:3500,tickMs:100};
+const dotRun=simulateCombat(dotInput);
+assert.equal(dotRun.enemies[0].periodic.filter(p=>p.effectId===dotAbilityId).length,2,
+ 'V2 same-ability DoTs refresh without destroying intentional same-cast twin effects');
+const legacyDotActor={...dotActor,combatV2:undefined,tags:[]};
+const legacyDot=simulateCombat({...dotInput,players:[legacyDotActor]});
+assert.equal(legacyDot.enemies[0].periodic.filter(p=>p.effectId===dotAbilityId).length,8,
+ 'legacy DoT stacking remains unchanged');
+
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
  'Rupture must consume an already-active self-applied DoT');

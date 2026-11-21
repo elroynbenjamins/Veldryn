@@ -1,0 +1,293 @@
+{
+  "schema": "eq2-signature-equipment-review-v1",
+  "status": "REVIEW_ONLY_NO_RUNTIME",
+  "release": {
+    "gameEnabled": false,
+    "serverEnabled": false,
+    "combatProcsEnabled": false,
+    "materialDropsEnabled": false,
+    "craftRoutesEnabled": false,
+    "clientUxApproved": false,
+    "readyToMerge": false
+  },
+  "scope": {
+    "tiers": [
+      2,
+      3,
+      4
+    ],
+    "signatureCraftedItems": 6,
+    "existingOrdinaryItemsUntouched": 169,
+    "existingOrdinaryRecipesUntouched": 338,
+    "existingRareBlueprintsUntouched": 6,
+    "signatureItemsNotAddedToActiveManifest": true
+  },
+  "policy": {
+    "materialOrigin": [
+      "fishing_secondary_catch",
+      "dungeon_completion_material"
+    ],
+    "gearAcquisition": "distinct signature-crafted canonical item only; never convert chest/drop-exclusive equipment into craftables",
+    "baseStatBudgetMultiplier": 1,
+    "identity": "one predetermined combat trait per item, plus authored look; normal rarity/quality/affix rolls retained, never double-scale trait",
+    "craftCost": "start from original same-slot role/tier foundation recipe; keep common/scarce combat inputs and binder, multiply only refined resource inputs by roughly 1.25 (ceil), spend one source-exclusive catalyst, suggested Gold x1.5, duration x1.25, equipment XP unchanged; exact recipe not executable and must be priced after final economy approval",
+    "trade": {
+      "fishingMaterial": "proposed tradeable only after Market escrow integration; no direct purchase from NPC shop",
+      "fishingSignatureGear": "proposed tradeable only after exact-instance escrow approvals",
+      "dungeonMaterial": "account_bound, no guild/dungeon shop, no Expedition Marks exchange, no market trade, no mail or bank loophole",
+      "dungeonSignatureGear": "account_bound, cannot enter Player Market; account ownership validated before equip/Bank access",
+      "earnedExclusiveGear": "dungeon/party/world boss chest exclusive gear still reward-only and never craftable"
+    },
+    "frequency": "no guaranteed special fish or dungeon material; one server-authoritative roll per eligible catch/settled dungeon completion; duplicates do not reroll on receipt retry",
+    "concurrency": "same account-wide receipt and item ownership lineage; no character-switch dupes; existing 12-run/weekly marks entitlement must not be used as automatic material drop guarantee",
+    "failedDungeon": "no rare completion material; a dungeon boss entry, failed run, app close, or repeat receipt cannot grant material",
+    "rareBlueprints": "existing six elite/boss blueprint items remain separate: fishing and dungeon components alone cannot unlock blueprint-only recipes"
+  },
+  "combatContract": {
+    "maxSignatureTraitsEquipped": 2,
+    "familyCaps": {
+      "offensive": 1,
+      "defensive_or_support": 1
+    },
+    "stackWithExistingRareBlueprints": "proposed count toward same two-trait family budget; no stacking duplicate traits or multiple identical triggers",
+    "trigger": "server-authored deterministic event with domain-separated randomness; never client declared or generated on replay",
+    "procsNotProccingProcs": true,
+    "oneRollPerAbilityUse": true,
+    "healingAndShieldEvents": "count actual positive heal/shield applied, not self-casts with zero effect",
+    "bleed": {
+      "type": "physical_damage_over_time",
+      "applicable": "direct damaging physical hit; no reflective damage, DoT ticks, pet echo or multi-hit duplicate rolls",
+      "scalesFrom": "eligible post-mitigation direct hit; quality/rarity and affixes already folded into that hit once",
+      "stacking": "one same-source bleed per attacker per target; refresh but never stack; strongest remaining contribution retained",
+      "bossRule": "50% damage coefficient versus bosses, total damage over 4 seconds; immune bosses receive no proc",
+      "deterministicPacing": "cooldown advanced by server encounter time, not device clock"
+    },
+    "mitigation": {
+      "type": "direct_damage_reduction",
+      "scope": "incoming enemy direct non-true damage only; applied multiplicatively after armor/ward",
+      "unconditionalSignatureCapFraction": 0.03,
+      "noStackingWithSameFamily": true,
+      "excludes": [
+        "true_damage",
+        "damage_over_time_ticks",
+        "environmental_unchanneled_damage"
+      ]
+    },
+    "releaseBlockers": [
+      "confirm final Combat 2.0 proc and buff scheduler, threat/DoT normalization and server HMAC",
+      "9-class/18-spec/8-archetype boss+dungeon matrix incl 3% mitigation cap",
+      "mixed Effect Gem and set bonus rules",
+      "server-authenticated dungeon reward receipts and retries",
+      "fishing side-drop eligibility and tool boosts",
+      "exact-craft ownership/Market escrow and bind flags"
+    ]
+  },
+  "materials": [
+    {
+      "id": "EQ2_SIG_IRONWOOD_RIVERPEARL",
+      "name": "Ironwood Riverpearl",
+      "tier": 2,
+      "origin": "fishing_secondary_catch",
+      "fishingNodeId": "ROOTSTREAM_TROUT_POOL",
+      "baseFinalChance": 0.01,
+      "unitsPerProc": 1,
+      "requiredFishingSkill": 7,
+      "requiredCharacterLevel": 12,
+      "tradeMode": "proposed_market_tradeable",
+      "doNotReplaceFishCatch": true
+    },
+    {
+      "id": "EQ2_SIG_IRONWOOD_HEARTSHARD",
+      "name": "Heartwood Dungeon Shard",
+      "tier": 2,
+      "origin": "dungeon_completion_material",
+      "region": "ASTERFALL",
+      "dungeonDifficulty": 2,
+      "baseFinalChance": 0.24,
+      "unitsPerProc": 1,
+      "requiredCharacterLevel": 12,
+      "binding": "account",
+      "acceptedSource": "one completed authenticated regional dungeon reward claim; no extra boss roll",
+      "tradeMode": "non_tradeable"
+    },
+    {
+      "id": "EQ2_SIG_SUNSCAR_OASISPEARL",
+      "name": "Oasistide Pearl",
+      "tier": 3,
+      "origin": "fishing_secondary_catch",
+      "fishingNodeId": "OASIS_CARP_POOL",
+      "baseFinalChance": 0.008,
+      "unitsPerProc": 1,
+      "requiredFishingSkill": 26,
+      "requiredCharacterLevel": 26,
+      "tradeMode": "proposed_market_tradeable",
+      "doNotReplaceFishCatch": true
+    },
+    {
+      "id": "EQ2_SIG_SUNSCAR_DUNE_SIGIL",
+      "name": "Dunewarden Sigil",
+      "tier": 3,
+      "origin": "dungeon_completion_material",
+      "region": "SUNSCAR",
+      "dungeonDifficulty": 1,
+      "baseFinalChance": 0.18,
+      "unitsPerProc": 1,
+      "requiredCharacterLevel": 26,
+      "binding": "account",
+      "acceptedSource": "one completed authenticated regional dungeon reward claim; no extra boss roll",
+      "tradeMode": "non_tradeable"
+    },
+    {
+      "id": "EQ2_SIG_GLASSBOUND_MIRRORSCALE",
+      "name": "Glassfin Mirrorscale",
+      "tier": 4,
+      "origin": "fishing_secondary_catch",
+      "fishingNodeId": "GLASSFIN_POOL",
+      "baseFinalChance": 0.006,
+      "unitsPerProc": 1,
+      "requiredFishingSkill": 36,
+      "requiredCharacterLevel": 40,
+      "tradeMode": "proposed_market_tradeable",
+      "doNotReplaceFishCatch": true
+    },
+    {
+      "id": "EQ2_SIG_GLASSBOUND_RIFTFANG",
+      "name": "Riftfang Dungeon Core",
+      "tier": 4,
+      "origin": "dungeon_completion_material",
+      "region": "SUNSCAR",
+      "dungeonDifficulty": 3,
+      "baseFinalChance": 0.15,
+      "unitsPerProc": 1,
+      "requiredCharacterLevel": 40,
+      "binding": "account",
+      "acceptedSource": "one completed authenticated regional dungeon reward claim; no extra boss roll",
+      "tradeMode": "non_tradeable"
+    }
+  ],
+  "items": [
+    {
+      "id": "EQ2_SIG_T2_RIVERTHORN_GRIPS",
+      "name": "Ironwood Riverthorn Grips",
+      "tier": 2,
+      "slot": "gloves",
+      "role": "damage",
+      "origin": "fishing_secondary_catch",
+      "materialId": "EQ2_SIG_IRONWOOD_RIVERPEARL",
+      "materialQty": 1,
+      "traitId": "riverthorn_cut",
+      "trait": {
+        "family": "offensive",
+        "trigger": "direct_physical_hit",
+        "chance": 0.06,
+        "physicalBleedShareOfHit": 0.12,
+        "durationSeconds": 4,
+        "cooldownSeconds": 12,
+        "description": "6% chance on a direct physical hit to apply a short, weak bleed (12% of that hit over 4s; 12s internal cooldown)"
+      }
+    },
+    {
+      "id": "EQ2_SIG_T2_HEARTWOOD_MANTLE",
+      "name": "Ironwood Heartwood Mantle",
+      "tier": 2,
+      "slot": "cape",
+      "role": "tank",
+      "origin": "dungeon_completion_material",
+      "materialId": "EQ2_SIG_IRONWOOD_HEARTSHARD",
+      "materialQty": 1,
+      "traitId": "heartwood_retort",
+      "trait": {
+        "family": "defensive_or_support",
+        "trigger": "damage_taken_direct_enemy_hit_at_least_15pct_max_hp",
+        "damageReductionFraction": 0.02,
+        "durationSeconds": 5,
+        "cooldownSeconds": 18,
+        "description": "After a heavy direct enemy hit (≥15% max HP), take 2% less direct damage for 5s; 18s cooldown"
+      }
+    },
+    {
+      "id": "EQ2_SIG_T3_OASISTIDE_SIGNET",
+      "name": "Sunscar Oasistide Signet",
+      "tier": 3,
+      "slot": "ring",
+      "role": "support",
+      "origin": "fishing_secondary_catch",
+      "materialId": "EQ2_SIG_SUNSCAR_OASISPEARL",
+      "materialQty": 1,
+      "traitId": "oasis_afterglow",
+      "trait": {
+        "family": "defensive_or_support",
+        "trigger": "positive_heal_or_shield_ally",
+        "shieldFractionOfTargetMaxHp": 0.02,
+        "cooldownSeconds": 18,
+        "description": "On a qualifying heal or shield, add a shield worth 2% of the target's max HP; 18s cooldown, ally target only"
+      }
+    },
+    {
+      "id": "EQ2_SIG_T3_SCORPIONSTRIKE_GRIPS",
+      "name": "Sunscar Scorpionstrike Grips",
+      "tier": 3,
+      "slot": "gloves",
+      "role": "damage",
+      "origin": "dungeon_completion_material",
+      "materialId": "EQ2_SIG_SUNSCAR_DUNE_SIGIL",
+      "materialQty": 1,
+      "traitId": "scorpionstrike_bleed",
+      "trait": {
+        "family": "offensive",
+        "trigger": "direct_physical_skill_hit",
+        "chance": 0.08,
+        "physicalBleedShareOfHit": 0.18,
+        "durationSeconds": 4,
+        "cooldownSeconds": 10,
+        "description": "8% chance after a direct physical skill hit to apply a 4s bleed (18% of hit total; 10s cooldown)"
+      }
+    },
+    {
+      "id": "EQ2_SIG_T4_GLASSFIN_MANTLE",
+      "name": "Glassbound Glassfin Mantle",
+      "tier": 4,
+      "slot": "cape",
+      "role": "tank",
+      "origin": "fishing_secondary_catch",
+      "materialId": "EQ2_SIG_GLASSBOUND_MIRRORSCALE",
+      "materialQty": 1,
+      "traitId": "glassfin_guard",
+      "trait": {
+        "family": "defensive_or_support",
+        "trigger": "passive_equipped",
+        "damageReductionFraction": 0.03,
+        "cooldownSeconds": 0,
+        "description": "3% less direct enemy non-true damage taken while equipped; capped at 3% across all signature gear"
+      }
+    },
+    {
+      "id": "EQ2_SIG_T4_RIFTFANG_PENDANT",
+      "name": "Glassbound Riftfang Pendant",
+      "tier": 4,
+      "slot": "amulet",
+      "role": "damage",
+      "origin": "dungeon_completion_material",
+      "materialId": "EQ2_SIG_GLASSBOUND_RIFTFANG",
+      "materialQty": 1,
+      "traitId": "riftfang_bleed",
+      "trait": {
+        "family": "offensive",
+        "trigger": "direct_physical_hit",
+        "chance": 0.1,
+        "physicalBleedShareOfHit": 0.24,
+        "durationSeconds": 4,
+        "cooldownSeconds": 10,
+        "description": "10% chance on a direct physical hit to apply a 4s bleed (24% of hit total; 10s cooldown), halved vs bosses"
+      }
+    }
+  ],
+  "assertions": [
+    "six signature pieces are not the six rare-blueprint candidates",
+    "fishing is an independent rare secondary catch, not replacing ordinary fish reward",
+    "dungeon rare materials are account-bound, one eligible completed run claim",
+    "all signature items use a common/scarce combat material base recipe plus one signature catalyst",
+    "signature procs do not participate in quality or rarity scaling",
+    "all proc effects remain disabled until Combat/Equipment/Enemies 2.0 coordinated release and balance acceptance"
+  ]
+}

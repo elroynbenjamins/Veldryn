@@ -21,6 +21,15 @@ export const equipmentPouchUiRows={
   "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],
   "Quick salvage": ["Schnell zerlegen","Desguace rápido","Snel ontmantelen","Smontaggio rapido","Recyclage rapide","Быстрая разборка","Hızlı sök"],
 
+  "Safe selection excludes Epic, Legendary and Mythic.": [
+    "Sichere Auswahl schließt epische, legendäre und mythische Ausrüstung aus.",
+    "La selección segura excluye equipo épico, legendario y mítico.",
+    "Veilig selecteren sluit epische, legendarische en mythische uitrusting uit.",
+    "La selezione sicura esclude equipaggiamento epico, leggendario e mitico.",
+    "La sélection sûre exclut les équipements épiques, légendaires et mythiques.",
+    "Безопасный выбор исключает эпическое, легендарное и мифическое снаряжение.",
+    "Güvenli seçim, Destansı, Efsanevi ve Mitik ekipmanı hariç tutar."
+  ],
   "Tap a piece to inspect, equip or move it to Bank.": [
     "Tippe auf ein Stück, um es anzusehen, anzulegen oder zur Bank zu verschieben.",
     "Toca una pieza para inspeccionarla, equiparla o moverla al banco.",

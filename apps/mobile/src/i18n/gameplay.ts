@@ -9,6 +9,15 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Focused crafting UX labels, kept in all six shared locale dictionaries.
+ 'Professions':["Professions","Berufe","Profesiones","Beroepen","Professioni","Métiers"],
+ 'Components':["Components","Komponenten","Componentes","Componenten","Componenti","Composants"],
+ 'Requirements':["Requirements","Anforderungen","Requisitos","Vereisten","Requisiti","Prérequis"],
+ 'No Gold refunded':["No Gold refunded","Kein Gold erstattet","No se devuelve oro","Geen goud terug","Nessun oro rimborsato","Or non remboursé"],
+ 'Crafting summary':["Crafting summary","Herstellungsübersicht","Resumen de fabricación","Maakoverzicht","Riepilogo creazione","Récapitulatif de fabrication"],
+ 'Total cost':["Total cost","Gesamtkosten","Coste total","Totale kosten","Costo totale","Coût total"],
+ 'types':["types","Arten","tipos","soorten","tipi","types"],
+ 'Missing a material?':["Missing a material?","Fehlt ein Material?","¿Te falta un material?","Mis je een materiaal?","Ti manca un materiale?","Il vous manque un matériau ?"],
  // Compact crafting details tabs and optional material acquisition help.
  'Progress':['Progress','Fortschritt','Progreso','Voortgang','Progressi','Progression'],
  'Materials & sources':['Materials & sources','Materialien & Fundorte','Materiales y fuentes','Materialen en vindplaatsen','Materiali e fonti','Matériaux et sources'],

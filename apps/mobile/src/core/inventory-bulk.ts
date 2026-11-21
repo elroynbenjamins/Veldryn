@@ -43,7 +43,7 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   const transferable=stacks.filter(stack=>location==='bank'||stack.itemId!==autoEatId);
   const sellable=stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    if(stack.itemId===autoEatId||stack.itemId===HOLY_WATER_ID||item.value<=0||item.guildOnly||item.knowledgeUnlockId||goalProtectedIds.has(stack.itemId))return false;
+    if(stack.bound||stack.itemId===autoEatId||stack.itemId===HOLY_WATER_ID||item.value<=0||item.guildOnly||item.knowledgeUnlockId||goalProtectedIds.has(stack.itemId))return false;
     if(stack.instanceId){
       if(state.settings.lockedItemIds?.includes(stack.itemId)||state.settings.favoriteItemIds?.includes(stack.itemId))return false;
       try{disposeCraftedGearInstance(state,stack.instanceId,'sell');return true;}catch{return false;}
@@ -107,7 +107,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[],locat
   let next=state;
   for(const id of summary.sellableIds){
     if(id.startsWith('copy:')){next=disposeCraftedGearInstance(next,id.slice(5),'sell');continue;}
-    const quantity=next[location].stacks.find(stack=>stack.itemId===id&&stack.instanceId===undefined)?.quantity??0;
+    const quantity=next[location].stacks.filter(stack=>stack.itemId===id&&stack.instanceId===undefined&&!stack.bound).reduce((sum,stack)=>sum+stack.quantity,0);
     if(quantity>0)next=location==='bank'?sellBankItem(next,id,quantity):sellItem(next,id,quantity);
   }
   return next;

@@ -17,7 +17,7 @@ import type {CharacterState,GameState,ItemStack,GearSlot} from './types';
 export type MarketStorageLocation='inventory'|'bank'|'equipment_pouch'|'gem_pouch';
 export type MarketBlockReason=
   |'market_not_released'|'character_required'|'missing_stack'|'invalid_quantity'
-  |'item_restricted'|'favorite_protected'|'item_locked'|'working_toward_reserved'
+  |'item_restricted'|'account_bound'|'favorite_protected'|'item_locked'|'working_toward_reserved'
   |'stack_identity_invalid'|'legacy_equipment_unverified'|'equipment_identity_conflict'
   |'equipment_not_owned'|'equipment_location_mismatch'|'equipment_locked'
   |'saved_loadout_reserved'|'legacy_quality_unverified';
@@ -103,6 +103,7 @@ export function previewPlayerMarketListing(
     candidate:false,canListNow:false,blockedBy,
   };}
   if(!Number.isSafeInteger(stack.quantity)||stack.quantity<=0)block('stack_identity_invalid');
+  if(stack.bound===true)block('account_bound');
   if(!Number.isSafeInteger(requestedQuantity)||requestedQuantity<1||requestedQuantity>stack.quantity)
     block('invalid_quantity');
   const itemId=stack.itemId;

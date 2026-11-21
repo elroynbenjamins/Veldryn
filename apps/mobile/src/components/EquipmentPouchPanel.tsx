@@ -182,8 +182,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     <GameButton compact tone="secondary" title={p('Done')} disabled={busy} onPress={()=>{setSelectMode(false);setSelectedIds([])}}/>
    </>:<>
     <GameButton compact tone="secondary" title={p('Select gear')} disabled={busy||!onAction||!pouch.stacks.length} onPress={()=>{setSelectedIndex(null);setSelectMode(true);setSelectedIds([])}}/>
-    {!compactActions?<GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
-    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100),salvageCandidates.filter(row=>!row.eligible).length)}/>:null}
+    {!compactActions?<><GameButton compact title={p('Quick sell')} disabled={busy||!onAction||!equipmentPouchQuickSellIds(saleCandidates).length} onPress={()=>startSale(equipmentPouchQuickSellIds(saleCandidates),saleCandidates.filter(row=>!row.eligible).length)}/>
+    <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100),salvageCandidates.filter(row=>!row.eligible).length)}/></>:null}
    </>}
   </View>
   {selectMode?<View style={[s.sellSummary,compactActions&&s.sellSummaryCompact]}>

@@ -51,11 +51,11 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
   </View>
   <View style={[s.accountTotal,stackTiles&&s.accountTotalStack]}><View style={s.flex}><Text style={s.overline}>{t("Account Progress")}</Text><Text style={s.accountLevels}>{(currentLevels+reserveLevels).toLocaleString(language)}</Text></View><Text style={[s.totalDescription,stackTiles&&s.totalDescriptionStack]}>{t("Combined account skill levels across your character roster.")}</Text></View>
   <View style={s.section}>
-    <View style={s.sectionTitle}><Text style={s.title}>{t("Monster Codex")}</Text><Text style={s.sectionValue}>{codexDiscovered}/{codexTotal}</Text></View>
-    <View accessibilityRole="progressbar" accessibilityLabel={t("Monster Codex")} accessibilityValue={{min:0,max:100,now:discoveryPercent}} style={s.track}><View style={[s.trackFill,{width:`${discoveryPercent}%`}]}/></View>
+    <View style={s.sectionTitle}><Text style={s.title}>{p("Monster Codex")}</Text><Text style={s.sectionValue}>{codexDiscovered}/{codexTotal}</Text></View>
+    <View accessibilityRole="progressbar" accessibilityLabel={p("Monster Codex")} accessibilityValue={{min:0,max:100,now:discoveryPercent}} style={s.track}><View style={[s.trackFill,{width:`${discoveryPercent}%`}]}/></View>
     <Text style={s.sub}>{t("{found}/{total} creatures discovered · {percent}% current discovery completion.",{found:codexDiscovered,total:codexTotal,percent:discoveryPercent})}</Text>
     <View style={[s.destinations,stackTiles&&s.destinationsStack]}>
-      <Pressable accessibilityRole="button" accessibilityLabel={t("Open Monster Codex")} onPress={()=>onNavigate('Bestiary')} style={({pressed})=>[s.destination,pressed&&s.pressed]}><UiIcon name="world" size={25}/><Text style={s.destinationLabel}>{t("Open Bestiary")}</Text><UiIcon name="next" size={16}/></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={p("Open Monster Codex")} onPress={()=>onNavigate('Bestiary')} style={({pressed})=>[s.destination,pressed&&s.pressed]}><UiIcon name="world" size={25}/><Text style={s.destinationLabel}>{p("Open Monster Codex")}</Text><UiIcon name="next" size={16}/></Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={t("Open Collections")} onPress={()=>onNavigate('Collections')} style={({pressed})=>[s.destination,pressed&&s.pressed]}><UiIcon name="inventory" size={25}/><Text style={s.destinationLabel}>{t("Open Collections")}</Text><UiIcon name="next" size={16}/></Pressable>
     </View>
   </View>

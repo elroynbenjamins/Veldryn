@@ -28,7 +28,7 @@ export interface DungeonRewardStatV2 {
 export interface DungeonRewardV2 {
  readonly id:string;readonly name:string;readonly type:'boon'|'artifact';
  readonly maxStacks:1|2|3;
- readonly stage:'stat'|'room_only'|'needs_engine_hook';
+ readonly stage:'stat'|'room_only'|'engine_hook'|'needs_engine_hook';
  readonly stat?:DungeonRewardStatV2;
  readonly trigger?:DungeonRewardTriggerV2;
  readonly mechanic?:DungeonRewardMechanicV2;
@@ -47,6 +47,12 @@ const deferred=(id:string,name:string,type:'boon'|'artifact',
  id,name,type,stage:'needs_engine_hook',maxStacks:type==='artifact'?2:1,
  mechanic,trigger,cooldownMs,designNote,
 });
+const executable=(id:string,name:string,type:'boon'|'artifact',
+ mechanic:DungeonRewardMechanicV2,trigger:DungeonRewardTriggerV2,cooldownMs:number,
+ designNote:string):DungeonRewardV2=>({
+ id,name,type,stage:'engine_hook',maxStacks:type==='artifact'?2:1,
+ mechanic,trigger,cooldownMs,designNote,
+});
 export const DUNGEON_REWARDS_V2:readonly DungeonRewardV2[]=Object.freeze([
  // Preserve all nine currently offered 1.0.x boons by ID and broad intent.
  boon('ROOM_BOON_STRIKE','Battle Focus',{attack:.05}),
@@ -62,15 +68,15 @@ export const DUNGEON_REWARDS_V2:readonly DungeonRewardV2[]=Object.freeze([
  // Seven NEW proposed 2.0 boons: two simple modifiers + five reactive hooks.
  boon('ROOM_BOON_VANGUARD_STEP','Vanguard Step',{defense:.025,haste:.02},2),
  boon('ROOM_BOON_BATTLE_TRANCE','Battle Trance',{attack:.03,crit:.01},2),
- deferred('ROOM_BOON_BLOODTHIRST','Bloodthirst','boon','bleed',
+ executable('ROOM_BOON_BLOODTHIRST','Bloodthirst','boon','bleed',
   'original_critical_hit',12000,'One bounded Bleed; cannot proc from DoT, reflect, trait or gem ticks.'),
- deferred('ROOM_BOON_LAST_STAND','Last Stand','boon','last_stand',
+ executable('ROOM_BOON_LAST_STAND','Last Stand','boon','last_stand',
   'self_below_30pct',45000,'Once per fight; defensive window after actual direct HP loss.'),
- deferred('ROOM_BOON_CRIPPLING_BLOWS','Crippling Blows','boon','sunder',
+ executable('ROOM_BOON_CRIPPLING_BLOWS','Crippling Blows','boon','sunder',
   'original_direct_hit',18000,'Short armor debuff, boss resistance and per-target limit.'),
  deferred('ROOM_BOON_WARDWEAVE','Wardweave','boon','shield_link',
   'original_shield',20000,'Protect another ally, no recursion on generated shields.'),
- deferred('ROOM_BOON_BURST_WINDOW','Burst Window','boon','burst_window',
+ executable('ROOM_BOON_BURST_WINDOW','Burst Window','boon','burst_window',
   'original_class_skill',25000,'Controlled damage window after direct class skill; no proc-on-proc.'),
  // Eight pre-existing Endurance run artifacts.
  artifact('RELIC_EMBER_HEART','Ember Heart',{attack:.05}),
@@ -86,17 +92,18 @@ export const DUNGEON_REWARDS_V2:readonly DungeonRewardV2[]=Object.freeze([
  artifact('RELIC_DAWN_RELIQUARY','Dawn Reliquary',{heal:.06,defense:.03,role:'support'}),
  deferred('RELIC_THORNBOUND_AEGIS','Thornbound Aegis','artifact','thorn_reflect',
   'original_direct_hp_loss',15000,'Must share the EQ2 reflection 5-second enemy budget.'),
- deferred('RELIC_TEMPORAL_ECHO','Temporal Echo','artifact','temporal_echo',
+ executable('RELIC_TEMPORAL_ECHO','Temporal Echo','artifact','temporal_echo',
   'original_class_skill',30000,'At most one secondary effect, never an extra skill cast or action.'),
  deferred('RELIC_SOUL_LANTERN','Soul Lantern','artifact','soul_lantern',
   'original_ally_heal',24000,'Bounded secondary heal on a different ally; no healing loops.'),
- deferred('RELIC_GLACIAL_CROWN','Glacial Crown','artifact','frostbind',
+ executable('RELIC_GLACIAL_CROWN','Glacial Crown','artifact','frostbind',
   'original_direct_hit',20000,'Slow on original direct hit; bosses must retain cast counterplay.'),
 ]);
 const catalog=new Map(DUNGEON_REWARDS_V2.map(row=>[row.id,row]));
 export const DUNGEON_REWARD_V2_TOTALS=Object.freeze({
  boons:DUNGEON_REWARDS_V2.filter(row=>row.type==='boon').length,
  artifacts:DUNGEON_REWARDS_V2.filter(row=>row.type==='artifact').length,
+ executable:DUNGEON_REWARDS_V2.filter(row=>row.stage==='engine_hook').length,
  pending:DUNGEON_REWARDS_V2.filter(row=>row.stage==='needs_engine_hook').length,
 });
 export interface DungeonRewardReceiptV2 {
@@ -169,23 +176,36 @@ function matchesRole(rule:DungeonRewardStatV2,role:CombatRole):boolean{
  return !rule.role||rule.role===role||
   rule.role==='tank_or_support'&&(role==='tank'||role==='support');
 }
-/** Only a QA harness may call this after its trusted *server* receipt verifier.
- * A callback returning true in a test is not a production authority or a
- * substitute for an atomic DB snapshot / resolved room ledger. */
-export function compileDraftDungeonRewardCombatV2(
+/** This is a source-authentication boundary only; the current QA callback is
+ * NOT an implementation of the required privileged database transaction. */
+export function assertVerifiedDungeonRewardSnapshotV2(
  input:CombatInput,snapshot:VerifiedDungeonRewardSnapshotV2,
  verifyPersisted:(snapshot:VerifiedDungeonRewardSnapshotV2,inputDigest:string)=>boolean,
-):DungeonRewardOverlayV2{
+):void{
  assertSnapshot(input,snapshot);
  if(typeof verifyPersisted!=='function')fail('persisted_verifier_required');
  let confirmed=false;
  try{confirmed=verifyPersisted(snapshot,enemyV2SnapshotDigest(input))===true;}
  catch{confirmed=false;}
  if(!confirmed)fail('persisted_run_ledger_not_verified');
- const counts=new Map<string,number>(),roomOnly:string[]=[];
  for(const receipt of snapshot.receipts){
   const def=catalog.get(receipt.id)!;
   if(def.stage==='needs_engine_hook')fail('unimplemented_proc_'+receipt.id);
+ }
+}
+/** Only a QA harness may call this after its trusted *server* receipt verifier.
+ * A callback returning true in a test is not a production authority or a
+ * substitute for an atomic DB snapshot / resolved room ledger. */
+export function compileDraftDungeonRewardCombatV2(
+ input:CombatInput,snapshot:VerifiedDungeonRewardSnapshotV2,
+ verifyPersisted:(snapshot:VerifiedDungeonRewardSnapshotV2,inputDigest:string)=>boolean,
+ allowEngineHooks=false,
+):DungeonRewardOverlayV2{
+ assertVerifiedDungeonRewardSnapshotV2(input,snapshot,verifyPersisted);
+ const counts=new Map<string,number>(),roomOnly:string[]=[];
+ for(const receipt of snapshot.receipts){
+  const def=catalog.get(receipt.id)!;
+  if(def.stage==='engine_hook'&&!allowEngineHooks)fail('unimplemented_proc_'+receipt.id);
   if(def.stage==='room_only')roomOnly.push(def.id);
   counts.set(def.id,(counts.get(def.id)??0)+1);
  }

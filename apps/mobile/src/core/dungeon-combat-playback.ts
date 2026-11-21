@@ -101,6 +101,16 @@ export function playbackProgress(replay:CoopCombatReplayView,index:number):numbe
   return replay.durationMs<=0?1:Math.max(0,Math.min(1,at/replay.durationMs));
 }
 
+/** The displayed combat clock follows authoritative simulated timestamps, not
+ * how quickly a compact 48-cue replay is animated on the device. */
+export function playbackSimulatedElapsedMs(replay:CoopCombatReplayView,index:number,complete=false):number{
+ const duration=Math.max(0,replay.durationMs);
+ if(complete)return duration;
+ if(!replay.cues.length)return 0;
+ const safe=Math.max(0,Math.min(Math.trunc(index),replay.cues.length-1));
+ return Math.max(0,Math.min(duration,replay.cues[safe].atMs));
+}
+
 export function playbackCombatant(replay:CoopCombatReplayView|undefined,idOrName:string|undefined):CoopCombatReplayCombatantView|undefined{
   if(!replay||!idOrName?.trim())return undefined;
   const key=idOrName.trim().toLocaleLowerCase();

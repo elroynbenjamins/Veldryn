@@ -123,6 +123,7 @@ const bossLimitCopy='3:00 combat limit. Defeat the boss before time expires; sur
 equal(seasonalBossDisplaySummary('en',bossLimitCopy),bossLimitCopy);
 for(const language of ['de','es','nl','it','fr','ru','tr'] as const){
  assert(seasonalBossDisplaySummary(language,bossLimitCopy).includes('3:00'),'Boss time limit must be localized without losing the duration');
+ assert(dungeonDynamicUiText(language,'COMBAT REPLAY').length>3,'Compressed combat replay heading must be localized');
  assert(dungeonDynamicUiText(language,'Combat limit reached at {time}',{time:'03:00'}).includes('03:00'),'Localized timeout must state the full simulated duration');
 }
 equal(dungeonDynamicUiText('en','Combat limit reached at {time}',{time:'03:00'}),'Combat limit reached at 03:00');

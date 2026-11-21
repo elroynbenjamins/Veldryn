@@ -226,6 +226,36 @@ const enhancedTaunt=abilityFor('IRONWARDEN','Rune Challenge',1,{
 assert.equal(enhancedTaunt.effects.find(e=>e.kind==='taunt'&&e.value===945)?.value,945,
  'secondary Provocation taunt receives the invested threat modifier');
 
+// Knife Dancer's two same-tick strikes must not share a keyed hit roll.
+// One cast still awards at most one source/tick resource stack, while the
+// independent rolls can yield one hit and one miss in a real encounter.
+const comboActor=launchPlayer('Knife Dancer',50);
+const comboSkill=SKILL_IDENTITIES_V2.find(x=>x.classId==='KNIFE_DANCER'&&x.name==='Blade Flurry')!;
+const comboBuild:VerifiedSkillBuildV2={
+  actor:comboActor,verified:{classId:'KNIFE_DANCER',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:specializationIdV2('KNIFE_DANCER','Bladedancer'),equipment:{},
+    activeSkills:[{skillId:comboSkill.id,variantId:comboSkill.variants[0].id}],
+    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{},
+};
+const dodgeEnemy:CombatantDefinition={...enemy,
+  stats:{...enemy.stats,evasion:comboActor.stats.accuracy+600}};
+let splitHits=0;
+for(let attempt=0;attempt<64;attempt++){
+  const seed='blade-flurry-distinct-strikes-'+attempt;
+  const input={seed,players:[comboActor],enemies:[dodgeEnemy],maxDurationMs:100};
+  const a=simulateCombatWithSkillsV2(input,[comboBuild],true);
+  const b=simulateCombatWithSkillsV2(input,[comboBuild],true);
+  assert.deepEqual(a,b,'V2 strike rolls must be deterministic for a seed');
+  const swings=a.events.filter(x=>x.actorId===comboActor.id&&
+    x.abilityId?.includes(':v2:')&&(x.type==='damage'||x.type==='miss'));
+  assert.equal(swings.length,2,'Blade Flurry must resolve exactly two strikes');
+  if(new Set(swings.map(x=>x.type)).size===2)splitHits++;
+  assert.ok(a.events.filter(x=>x.actorId===comboActor.id&&x.type==='resource_gain').length<=1,
+    'one two-strike cast cannot farm multiple Rhythm stacks');
+}
+assert.ok(splitHits>0,'distinct strike rolls must allow mixed hit/miss outcomes');
+
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
  'Rupture must consume an already-active self-applied DoT');

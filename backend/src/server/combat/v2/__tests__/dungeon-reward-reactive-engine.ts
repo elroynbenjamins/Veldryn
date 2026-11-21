@@ -130,5 +130,29 @@ assert.deepEqual(noThreshold.afterOriginalEnemyHit({now:0,sourceId:'B',targetId:
  abilityId:'BASIC',actualHpDamage:250,hpBeforePct:.28,hpAfterPct:.2,boss:false}),[]);
 assert.deepEqual(noThreshold.afterOriginalEnemyHit({now:100,sourceId:'B',targetId:'P',
  abilityId:'BASIC',actualHpDamage:3000,hpBeforePct:.8,hpAfterPct:0,boss:false}),[]);
+// Verify Last Stand in the ACTUAL Combat 2.0 damage lifecycle, not only the
+// stand-alone rule helper. Two normal boss basics cross 30% without killing.
+const vulnerable:CombatantDefinition={...player,
+ stats:{...player.stats,maxHp:1000,attackPower:0,defense:0,critChance:0},
+ basicAttackCoeff:0,abilities:[]};
+const strikingBoss:CombatantDefinition={...boss,
+ stats:{...boss.stats,attackPower:400},basicAttackMs:2600};
+const lastInput:CombatInput={seed:'QA_LAST_STAND_REAL_ENGINE',
+ players:[vulnerable],enemies:[strikingBoss],maxDurationMs:4000};
+const lastSnapshot:VerifiedDungeonRewardSnapshotV2={...snap,seed:lastInput.seed,
+ runId:'QA_LAST_STAND_REAL_ENGINE',
+ receipts:[{id:'ROOM_BOON_LAST_STAND',nodeId:'SHRINE_1',depth:1,room:'shrine'}]};
+const lastToken=issueDungeonRewardEngineAuthorityV2(lastInput,lastSnapshot,verify);
+const lastFight=simulateCombat(lastInput,undefined,undefined,lastToken);
+const triggered=lastFight.events.filter(e=>e.type==='dungeon_reward_trigger'&&
+ e.abilityId==='V2_DUNGEON_REWARD:ROOM_BOON_LAST_STAND');
+assert.equal(triggered.length,2,
+ 'Real engine should grant exactly two defensive modifiers on 30% crossing');
+assert.deepEqual(lastFight.events.filter(e=>e.type==='status_apply'&&
+ e.abilityId==='V2_DUNGEON_REWARD:ROOM_BOON_LAST_STAND')
+ .map(e=>e.statusTag).sort(),['defense_pct','healing_received']);
+assert.deepEqual(lastFight,simulateCombat(lastInput,undefined,undefined,lastToken),
+ 'Threshold reaction and modifier expiry must replay deterministically');
+
 console.log('PASS six signed Dungeon 2.0 reactive hooks, 3 nonrecursive bleed ticks, '+
  'boss phase exclusions, once-only Last Stand, bounded Echo, ICDs and legacy isolation');

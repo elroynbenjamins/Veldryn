@@ -1,0 +1,54 @@
+name: One-time V2 Gem Edge bundle regeneration (branch only)
+
+on:
+  push:
+    branches:
+      - feature/v2-gem-attack-balance-legacy-protection-20261121
+    paths:
+      - .github/workflows/v2-gem-regenerate-edge-bundles.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regenerate-v2-gem-edge-bundles-only
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v2-gem-attack-balance-legacy-protection-20261121
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Build canonical gameplay and co-op Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated files ONLY to feature branch
+        run: |
+          set -euo pipefail
+          test "$(git symbolic-ref --short HEAD)" = "feature/v2-gem-attack-balance-legacy-protection-20261121"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Generated bundles already match."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build(gems-v2): regenerate gameplay and co-op Edge bundles"
+          git push origin HEAD:refs/heads/feature/v2-gem-attack-balance-legacy-protection-20261121

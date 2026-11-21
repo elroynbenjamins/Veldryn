@@ -256,6 +256,34 @@ for(let attempt=0;attempt<64;attempt++){
 }
 assert.ok(splitHits>0,'distinct strike rolls must allow mixed hit/miss outcomes');
 
+// Thunder Totem is a persistent server-owned actor state, not an instant
+// generic strike with a cosmetically named expiration. Its pulses do not
+// recursively mint resonance, gem direct-hit procs or passive combos.
+const totemActor=launchPlayer('Stonecaller',50);
+const totemSkill=SKILL_IDENTITIES_V2.find(x=>x.classId==='STONECALLER'&&x.name==='Thunder Totem')!;
+const runeshaper=SPECIALIZATIONS_V2.find(x=>x.id===specializationIdV2('STONECALLER','Runeshaper'))!;
+const totemBuild:VerifiedSkillBuildV2={
+  actor:totemActor,verified:{classId:'STONECALLER',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:runeshaper.id,equipment:{},
+    activeSkills:[{skillId:totemSkill.id,variantId:totemSkill.variants[0].id}],
+    talentRanks:{},signaturePassiveIds:[],capstoneId:runeshaper.capstoneId},
+  ownedItemsById:{},setsById:{},
+};
+const totemEncounter={seed:'stonecaller-persistent-totem',players:[totemActor],enemies:[enemy],
+  maxDurationMs:6500,tickMs:100};
+const totemFight=simulateCombatWithSkillsV2(totemEncounter,[totemBuild],true);
+assert.deepEqual(totemFight,simulateCombatWithSkillsV2(totemEncounter,[totemBuild],true),
+ 'totem pulse cadence and capstone replay must be deterministic');
+const pulses=totemFight.events.filter(e=>e.type==='dot_tick'&&e.abilityId?.startsWith('V2_TOTEM:'));
+assert.deepEqual(pulses.map(e=>e.atMs),[2000,4000,6000],
+ 'one Thunder Totem has exactly three bounded pulses at 2s intervals');
+assert.ok(totemFight.events.some(e=>e.type==='capstone_trigger'&&
+  e.abilityId===runeshaper.capstoneId&&e.atMs===6000),
+ 'Ritual Surge triggers on actual totem expiration, not the old 4s shortcut');
+assert.equal(totemFight.events.filter(e=>e.type==='resource_gain'&&
+  e.abilityId?.startsWith('V2_TOTEM:')).length,0,
+ 'persistent totem damage cannot generate free Resonance');
+
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
  'Rupture must consume an already-active self-applied DoT');

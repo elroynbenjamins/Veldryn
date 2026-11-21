@@ -7,6 +7,7 @@
  * No secondary damage/healing event is fed into a trigger.
  */
 import type {VerifiedV2EquipmentEffectSource} from './equipment-trait-engine-authority';
+import {ReactiveReflectionBudgetV2} from './reactive-reflection-budget';
 export type ExecutedTraitId='sword_dance'|'echoing_strike'|'thornbound_riposte'|'mending_echo'|'restorative_bloom';
 const round=(v:number)=>Math.round(v*1e6)/1e6;
 const positive=(v:number)=>Number.isFinite(v)&&v>=0;
@@ -27,9 +28,10 @@ export interface EquipmentTraitTriggerV2{
 }
 export class EquipmentTraitRuntimeV2{
  private readonly states=new Map<string,RunnerState>();
- /** Shared across all defenders in the SAME encounter: no four-tank boss cap bypass. */
- private retaliationHistory:Array<{atMs:number;attackerId:string;amount:number}>=[];
- constructor(private readonly sources:ReadonlyMap<string,VerifiedV2EquipmentEffectSource>){
+ /** One allocator also used by a signed Dungeon 2.0 relic if provided.
+  * A standalone equipment-only simulation still gets its own budget. */
+ constructor(private readonly sources:ReadonlyMap<string,VerifiedV2EquipmentEffectSource>,
+  private readonly reflectionBudget=new ReactiveReflectionBudgetV2()){
   for(const id of sources.keys())this.states.set(id,{
    streak:0,targetId:null,swordProcAt:-Infinity,echoProcAt:-Infinity,
    thornProcAt:-Infinity,mendingProcAt:-Infinity,bloomProcAt:-Infinity,lastGlobalTraitProcAt:-Infinity,
@@ -92,20 +94,17 @@ export class EquipmentTraitRuntimeV2{
      !positive(actualHpLost)||actualHpLost===0||
      !positive(defenderMaxHp)||!positive(attackerMaxHp)||
      !defenderMaxHp||!attackerMaxHp)return;
-  this.retaliationHistory=this.retaliationHistory.filter(entry=>atMs-entry.atMs<5000);
   const thornReady=snapshotTrait(source,'thornbound_riposte')&&
     atMs-state.thornProcAt>=15000&&atMs-state.lastGlobalTraitProcAt>=1000;
   const reflect=actualHpLost*source.reflectDamagePct/100;
   const thorn=thornReady?Math.min(actualHpLost*.08,defenderMaxHp*.015):0;
-  const budget=attackerMaxHp*(isRegionalBoss?0.001:0.002);
-  const spent=this.retaliationHistory.filter(entry=>entry.attackerId===attackerId)
-   .reduce((n,entry)=>n+entry.amount,0);
-  const amount=Math.max(0,Math.min(reflect+thorn,defenderMaxHp*.015,budget-spent));
+  const requested=Math.min(reflect+thorn,defenderMaxHp*.015);
+  const amount=this.reflectionBudget.reserve({atMs,attackerId,attackerMaxHp,
+   regionalBoss:isRegionalBoss,requested});
   if(amount<=0)return;
   const reflectPart=Math.min(reflect,amount);
   const thornPart=amount-reflectPart;
   if(thornPart>0){state.thornProcAt=atMs;state.lastGlobalTraitProcAt=atMs;}
-  this.retaliationHistory.push({atMs,attackerId,amount});
   return {traitId:thornPart>0?'thornbound_riposte':'reflect_damage_affix',
    actorId:defenderId,targetId:attackerId,atMs,effect:'retaliation_damage',amount:round(amount)};
  }

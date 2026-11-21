@@ -85,6 +85,7 @@ export function CoopSocialEchoPicker({
   <View style={s.partySlots} accessibilityLabel={t('title')}>
    {slots.map(slot=><View key={slot.key} accessible accessibilityLabel={t(slot.role)+': '+(slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name)} style={[s.slot,slot.kind==='chosen'&&s.slotChosen,slot.kind==='host'&&s.slotHost]}>
     <Text style={[s.slotRole,slot.kind==='auto'&&s.slotDim]}>{t(slot.role)}</Text>
+    <Image accessible={false} source={coopUiAssets[slot.role==='damage'?'role_damage':slot.role==='support'?'role_support':'role_tank']} style={[s.slotRoleIcon,slot.kind==='auto'&&s.slotRoleIconDim]} resizeMode="contain"/>
     <Text style={[s.slotName,slot.kind==='auto'&&s.slotDim,slot.kind==='host'&&s.slotYou]} numberOfLines={1}>{slot.kind==='host'?t('you'):slot.kind==='auto'?t('auto'):slot.name}</Text>
     <View style={[s.slotMark,slot.kind==='chosen'&&s.slotMarkChosen,slot.kind==='host'&&s.slotMarkHost]}/>
    </View>)}
@@ -151,14 +152,15 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  slot:{flex:1,minWidth:0,borderWidth:1,borderColor:C.line,borderRadius:6,backgroundColor:C.surfaceRaised,paddingHorizontal:4,paddingTop:7,paddingBottom:5,alignItems:'center',gap:4},
  slotChosen:{borderColor:C.cyan},slotHost:{borderColor:C.goldDim},
  slotRole:{fontSize:8,fontWeight:'900',letterSpacing:.15,color:C.textSecondary},
+ slotRoleIcon:{width:21,height:21},slotRoleIconDim:{opacity:.48},
  slotName:{fontSize:10,lineHeight:14,fontWeight:'900',color:C.text,textAlign:'center',width:'100%'},
  slotYou:{color:C.gold},slotDim:{color:C.textMuted},
  slotMark:{height:2,width:'45%',backgroundColor:C.line,borderRadius:2},
  slotMarkChosen:{backgroundColor:C.cyan},slotMarkHost:{backgroundColor:C.gold},
  details:{gap:9,paddingTop:9,borderTopWidth:1,borderTopColor:C.line},
  explainer:{fontSize:11,lineHeight:17,color:C.textSecondary},
- filters:{flexDirection:'row',alignSelf:'flex-start',gap:5},
- filter:{minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:6,paddingVertical:7,paddingHorizontal:12,backgroundColor:C.surfaceRaised,minWidth:57,alignItems:'center'},
+ filters:{flexDirection:'row',alignSelf:'stretch',gap:5},
+ filter:{flex:1,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:6,paddingVertical:7,paddingHorizontal:12,backgroundColor:C.surfaceRaised,minWidth:57,alignItems:'center'},
  filterSelected:{borderColor:C.cyan,backgroundColor:C.surface},
  filterText:{fontSize:11,color:C.textSecondary,fontWeight:'800'},filterTextSelected:{color:C.cyan},
  search:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:6,paddingHorizontal:11,color:C.text,backgroundColor:C.surfaceRaised,fontSize:12},

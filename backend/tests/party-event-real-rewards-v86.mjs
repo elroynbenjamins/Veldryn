@@ -168,6 +168,18 @@ try{
   ['party_sigils','party_sigils',8],['gold','character_wallet',200],
   ['gem_dust','inventory',2],['companion_essence','account_state',4],
  ]);
+ await assert.rejects(()=>db.query(
+  'UPDATE private.party_event_chest_resource_grants_v86 SET quantity=999 '+
+  'WHERE source_key=$1',[kindKey('participation')]),
+  /party_event_v86_immutable_audit/);
+ await assert.rejects(()=>db.query(
+  'INSERT INTO private.party_event_chest_resource_grants_v86 '+
+  '(source_key,account_id,credited_character_id,ordinal,reward_id,'+
+  'quantity,custody,balance_before,balance_after) '+
+  "VALUES($1,$2,$3,0,'party_sigils',8,'party_sigils',0,8)",
+  [kindKey('participation'),foreign,character]),
+  /foreign key|duplicate key/,
+  'cross-account source audit may never be inserted');
  const history=(await db.query('SELECT source_kind,attachments,claimed_at '+
   'FROM private.reward_inbox_v1 WHERE source_key=$1',
   [kindKey('participation')])).rows;
@@ -214,6 +226,9 @@ try{
   'private.party_sigils_wallet_v65 WHERE account_id=$1',[account])).rows[0].balance,'8');
  assert.equal((await db.query('SELECT gold::text AS gold FROM '+
   'public.character_wallets WHERE character_id=$1',[character])).rows[0].gold,'250');
+ assert.deepEqual((await db.query('SELECT state FROM public.online_game_states '+
+  'WHERE account_id=$1',[account])).rows[0].state,blocked,
+  'rejected payout cannot modify game state');
  await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
   'WHERE account_id=$1',[account,JSON.stringify({
    ...blocked,inventory:{capacity:2,stacks:[{itemId:'GEM_DUST',quantity:1}]},

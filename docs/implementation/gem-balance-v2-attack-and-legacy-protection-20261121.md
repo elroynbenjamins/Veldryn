@@ -64,22 +64,29 @@ rewrite the player's inventory:
 
 - Eligibility is determined ONLY by the original trusted
   `private.legacy_gem_conversion_backup_v1` snapshot, not by a client claim.
-- Store cumulative successful restorations in a server-side per-account,
-  per-original-item **unique receipt ledger**. Account and state are locked in
-  the transaction; consume and grant are atomic; repeat claims grant nothing.
+- Record each claim in a **unique (account_id, request_id) receipt ledger**;
+  sum its quantities per legacy item against the verified backup. Game state is
+  row-locked after the same advisory lock used by normal online saves; consume,
+  grant, revision increment and receipt insertion are atomic. Identical retries
+  return the original receipt without modifying state.
 - The pure, tested preview in
   `backend/src/server/equipment/gems/legacy-attack-gem-reconciliation-v2.ts`
   computes eligibility, current convertible quantities and manual-review cases.
 - Never consume more than the current available unbound quantities. When gems
   were already socketed, merged, sold or transferred, show **manual review**
   rather than minting extras or deleting equipment.
-- The pure preview is deliberately **not** a live RPC/migration. The receipt
-  ledger and production transaction are a separate 2.0 rollout gate and need
-  validation on staging against real save patterns before activation.
+- The 2.0 SQL migration implements the ledger and authenticated preview/claim
+  RPCs, with a **default-disabled** server-side feature gate. It has been
+  installed on *staging only*, with no live account changes. In staging, the
+  rollback-only synthetic-account-state test passed claim, retry, stale-revision,
+  historical cap, disabled-gate, and protected-Emberheart persistence checks.
+  The exact same migration must not be enabled for production 1.0.x.
 - Old +5% Emberheart stays a supported legacy socket item; do **not**
   downgrade it to a weaker new-grade gem or make it newly farmable.
-- The old 1.0.x on-save exchange remains unchanged until the 2.0 migration
-  is formally activated; no production SQL is to be executed for this branch.
+- The old 1.0.x on-save exchange stays unchanged. The protected new Emberheart
+  item ID is intentionally outside that converter; pre-existing socketed
+  legacy items keep their old effects. No production SQL or account restoration
+  has been executed in this 2.0 development task.
 
 ## Release and QA gates
 
@@ -90,8 +97,37 @@ rewrite the player's inventory:
 4. Check 1, 3 and 10 equipped Might gems at min/base/max rolls, ensuring
    true Attack increases only once and any CP rise is indirect.
 5. Verify +2% / +5% already-socketed legacy Attack gems are unaffected.
-6. Test 2.0 legacy exchange claims on staging with a transactional receipt
-   and conversion backups before enabling a player-facing claim.
+6. **Staging completed:** full restoration SQL installed with gate OFF;
+   `backend/supabase/tests/legacy_attack_gem_restoration_v2.sql` ran
+   successfully and rolled back. Still test real migrated save patterns and
+   simultaneous-save contention before enabling the 2.0 player claim.
 7. Review T1–T5 solo and dungeon combat simulations with 10 max-grade gems,
    and later classes/tiers before approving the 2.0 release.
 8. Once approved, update release notes and publish a migration/rollout plan.
+
+## Implementation and activation contract (2.0 only)
+
+- Migration: `backend/supabase/migrations/20261121143000_v2_legacy_attack_gem_restoration_gate.sql`
+- Staging fixture: `backend/supabase/tests/legacy_attack_gem_restoration_v2.sql` (always `ROLLBACK`)
+- Mobile RPC adapter (no UI): `apps/mobile/src/core/legacy-attack-gem-restoration-v2.ts`
+- Gate: `private.legacy_attack_gem_restoration_settings_v2.enabled` defaults to **false**.
+  Only turn on when the 2.0 client is required and the game owner has approved rollout.
+- Preview: `public.preview_legacy_attack_gem_restoration_v2()` reads the caller
+  from `auth.uid()` and returns `enabled`, current `revision`, and two
+  legacy-gem options (available, redeemed, remaining, manual-review).
+- Claim: `public.claim_legacy_attack_gem_restoration_v2(p_legacy_id text,
+  p_quantity integer, p_request_id uuid, p_expected_revision bigint)`.
+  Caller is always `auth.uid()`; no arbitrary account ID is accepted.
+  A claim must use the latest revision from preview or an up-to-date game load.
+- After claiming, **reload game state**; existing cached writes with an old
+  revision are rejected with `stale_state` rather than reverting the restoration.
+  If the first request times out, reuse the **same** request UUID to obtain the
+  exact original receipt. Do not mint a new UUID until the previous result is known.
+- Manual-review remains required if original converted gems were consumed, sold,
+  fused, transferred, socketed, or locked: no bonus gems are auto-created.
+- There is intentionally no live 1.0.x screen or claim button. Player-facing
+  appearance still requires review under the 2.0 UI design gate.
+- Staging-only validation completed: feature gate OFF after script rollback,
+  no persistent restoration receipts or fake backups created. Supabase database
+  RLS and RPC permissions verified. Full mobile/backend TS compile and
+  combat matrix must still be executed in a checkout with dependencies.

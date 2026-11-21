@@ -156,7 +156,7 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
    if(layer.length!==3)throw new Error('insufficient_route_layer');
    if(depth===1&&layer.some(node=>node.kind!=='battle'))throw new Error('mandatory_combat_missing');
    if(depth===2&&layer.filter(node=>node.kind==='battle').length<2)throw new Error('opening_combat_missing');
-   if(depth>2&&!layer.some(node=>node.kind==='battle'))throw new Error('combat_option_missing');
+   if(depth>2&&!layer.some(node=>node.kind==='battle')&&!(enduranceV2&&layer.some(node=>node.kind==='boss')))throw new Error('combat_option_missing');
    if(endurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0){
      if(layer.filter(node=>node.kind==='boss').length!==1||layer.filter(node=>node.kind!=='boss').length!==2)throw new Error('checkpoint_choices_invalid');
      if(enduranceV2&&(layer[0].kind!=='camp'||layer[0].modifierId!=='checkpoint-camp-v2'||layer[1].kind!=='shrine'||layer[1].modifierId!=='checkpoint-boon-v2'||layer[2].kind!=='boss'))throw new Error('checkpoint_recovery_boon_choices_invalid');

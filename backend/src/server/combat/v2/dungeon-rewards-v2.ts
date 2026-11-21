@@ -191,6 +191,10 @@ export function assertVerifiedDungeonRewardSnapshotV2(
  for(const receipt of snapshot.receipts){
   const def=catalog.get(receipt.id)!;
   if(def.stage==='needs_engine_hook')fail('unimplemented_proc_'+receipt.id);
+  // A party-wide secondary heal/shield has no eligible recipient in a solo
+  // run. Do not accept a solo signed token for these party-only rewards.
+  if(def.id==='ROOM_BOON_WARDWEAVE'||def.id==='RELIC_SOUL_LANTERN')
+   fail('requires_authenticated_party_'+receipt.id);
  }
 }
 /** Only a QA harness may call this after its trusted *server* receipt verifier.

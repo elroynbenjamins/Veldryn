@@ -75,7 +75,7 @@ export function analyzeTraitTriggerReadiness(contract=loadReviewContract()){
  return {
   version:'eq2-hidden-trigger-readiness-1',violations,entries,
   distinctEventHooks:totalFamilies.size,requiredTrustedFields:[...features].sort(),
-  allTrailsNotMounted:true, // intentionally no dispatcher; informational label
+  allTraitsNotMounted:true, // intentionally no dispatcher; informational label
   roleCounts:categories,unsafeReentrySources:neverGenerated,
  };
 }

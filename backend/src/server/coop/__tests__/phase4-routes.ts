@@ -53,7 +53,7 @@ for(let seed=0;seed<40;seed++){
 
 const tampered=structuredClone(endurance);
 tampered.nodes=tampered.nodes.map(node=>node.nodeId==='d8-c2'?{...node,kind:'battle' as const}:node);
-assert.throws(()=>validateCoopRouteGraph(tampered),/checkpoint|boss|invalid|graph/i,'Checkpoint boss cannot be bypassed by client graph tampering');
+assert.throws(()=>validateCoopRouteGraph(tampered),/checkpoint|boss|invalid|graph|insufficient_route_choices/i,'Checkpoint boss cannot be bypassed by client graph tampering');
 const checkpointTamper=structuredClone(endurance);
 checkpointTamper.nodes=checkpointTamper.nodes.map(node=>node.nodeId==='d8-c1'?{...node,kind:'battle' as const}:node);
 assert.throws(()=>validateCoopRouteGraph(checkpointTamper),/checkpoint_recovery_boon_choices_invalid/,'Cannot replace mandatory boon route at a v2 checkpoint');

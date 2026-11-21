@@ -56,9 +56,9 @@ test('existing Guild chat contract points to the emote-aware translated wrapper'
  assert.match(validation,/ChatTranslatableBody\.tsx/);
 });
 
-test('manual translation remains disabled until service and privacy release gates clear',()=>{
+test('manual translation release remains gated by the verified opt-in implementation',()=>{
  const flags=read(mobile,'src/core/release-flags.ts');
- assert.match(flags,/CHAT_TRANSLATION_RELEASED=false/);
+ assert.match(flags,/CHAT_TRANSLATION_RELEASED=true/);
  const ui=read(mobile,'src/components/ChatTranslatableBody.tsx');
  assert.match(ui,/CHAT_TRANSLATION_RELEASED&&Boolean/);
  const settings=read(mobile,'src/screens/SettingsScreen.tsx');

@@ -68,8 +68,7 @@ begin
   insert into public.coop_outbox(semantic_key,run_id,channel_epoch,event_type,client_payload)
   values(p_semantic_key,p_run_id,v_channel_epoch,p_event_type,p_event_payload);
   return jsonb_build_object('runId',p_run_id,'stateVersion',v_next_version,'eventCursor',p_event_cursor);
-end; $function$
-
+end; $function$;
 
 revoke all on function public.commit_coop_runtime_server_v1(uuid,uuid,bigint,text,text,integer,jsonb,jsonb,bigint,text,jsonb,text)
   from public,anon,authenticated;

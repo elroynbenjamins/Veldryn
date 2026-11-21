@@ -5,6 +5,7 @@ import {
  retaliationReview,swordDanceReview,echoingStrikeReview,healingEchoReview
 } from '../eq2-trait-event-model.mjs';
 import {runReferenceMatrix,simulateReferenceEncounter,CLASS_ROLES,ENEMY_TAGS} from '../eq2-trait-balance-matrix.mjs';
+import {analyzeTraitTriggerReadiness} from '../eq2-trait-trigger-readiness.mjs';
 const c=loadReviewContract(),trait=id=>c.traits.find(t=>t.id===id);
 const reflectEvent=(changes={})=>({
  timestampMs:1000,targetId:'ENEMY_A',source:'enemy_direct_hit_post_shield_hp_loss',
@@ -137,4 +138,27 @@ test('benchmark pairings have bounded improvement without claiming class balance
  const bloom=simulateReferenceEncounter(c,{...supportBase,profile:'heal_plus_echo_bloom'});
  assert.ok(echo.healing>healBase.healing&&bloom.healing>=echo.healing);
  assert.equal(healBase.trait,0);
+});
+
+test('all 28 traits have explicit source-owned event hook requirements, with no mounted engine claims',()=>{
+ const report=analyzeTraitTriggerReadiness(c);
+ assert.deepEqual(report.violations,[]);
+ assert.equal(report.entries.length,28);
+ assert.equal(report.distinctEventHooks,22);
+ assert.deepEqual(report.roleCounts,{tank:9,damage:9,support:9,utility:1});
+ assert.equal(report.allTraitsNotMounted,true);
+ assert.ok(report.requiredTrustedFields.includes('boss_status_exemption'));
+ assert.ok(report.requiredTrustedFields.includes('post_shield_hp_loss'));
+ assert.ok(report.entries.every(entry=>entry.engineStatus==='UNIMPLEMENTED_NEEDS_NEW_RUN_SERVER_ADAPTER'));
+});
+test('detect unknown event triggers, leaked World Boss traits and unsafe proc configuration',()=>{
+ const broken=structuredClone(c);
+ broken.traits.find(t=>t.id==='echoing_strike').trigger='after_reactive_damage_from_trait';
+ assert.ok(analyzeTraitTriggerReadiness(broken).violations.includes('unmapped_trigger:echoing_strike'));
+ const badSource=structuredClone(c);
+ badSource.traits.find(t=>t.id==='sword_dance').source=['world_boss_chest'];
+ assert.ok(analyzeTraitTriggerReadiness(badSource).violations.includes('combat_trait_source_leak:sword_dance'));
+ const brokenPolicy=structuredClone(c);
+ brokenPolicy.traitPolicy.effectGemCanTriggerTrait=true;
+ assert.ok(analyzeTraitTriggerReadiness(brokenPolicy).violations.includes('unsafe_proc_policy:effectGemCanTriggerTrait'));
 });

@@ -3,6 +3,7 @@ import {ActiveActivity,CombatTacticId,GameState,RewardBundle} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
 import {gatheringToolDef} from '../content/gathering-tools';
+import {equipmentCraftAvailability} from './equipment-crafting-queue';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
@@ -43,6 +44,9 @@ export function recipeAvailability(state:GameState,recipeId:string){
     const skill=state.skills.find(row=>row.skillId===tool.skillId);
     if((skill?.level??0)<tool.unlockLevel)return {ready:false,reason:`Requires ${tool.skillId} level ${tool.unlockLevel}`,inputs};
   }
+  // Timed tools reserve materials at the Forge; a full Inventory at start is
+  // not a blocker when the finished physical copy can be claimed later.
+  if(tool){const availability=equipmentCraftAvailability(state,recipeId);return {...availability,inputs};}
   try{craftRecipe(state,recipeId);return {ready:true,reason:'Ready to craft',inputs}}
   catch(error){return {ready:false,reason:error instanceof Error?error.message:'Cannot craft yet',inputs}}
 }

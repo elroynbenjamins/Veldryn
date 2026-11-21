@@ -39,10 +39,8 @@ test('no extra shield from overheal, self-heal, pet/gem procs or hot ticks',()=>
  assert.equal(r.shields[0].amount,100);
  assert.equal(r.shields[0].triggeredBy,'heal-6');
 });
-test('a bound target cannot have overlapping six-second Afterglow shields from the same effect',()=>{
- const r=previewOasisAfterglow({trait:{...trait('oasis_afterglow'),cooldownSeconds:0},events:[heal(0),heal(3),heal(7)]});
- // Force cooldown policy must fail closed before the target cap can even be assessed.
- assert.equal(r.procs,1);
+test('zero-cooldown recursive shield reapplication fails closed',()=>{
+ assert.throws(()=>previewOasisAfterglow({trait:{...trait('oasis_afterglow'),cooldownSeconds:0},events:[heal(0),heal(3),heal(7)]}),/trait/);
 });
 test('Retort starts after 15%-max-HP hit, never retroactively protects triggering hit',()=>{
  const r=previewHeartwoodRetort({trait:trait('heartwood_retort'),maxHp:1000,events:[

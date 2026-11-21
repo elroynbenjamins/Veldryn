@@ -250,8 +250,8 @@ export function verifyPersistedEnemyKitsV2(
     'original_enemy_kit_mutated');
   // A stored public preview must reflect the exact persisted kit, not a
   // separately supplied set of ability names or phase labels.
-  const actualAbilities=next.abilities.filter(a=>!baseAbilityIds.has(a.id)).map(a=>a.name);
-  const actualPhases=(next.phases??[]).filter(p=>!basePhaseIds.has(p.id)).map(p=>p.name??p.id);
+  const actualAbilities=next.abilities.filter((a:AbilityDefinition)=>!baseAbilityIds.has(a.id)).map((a:AbilityDefinition)=>a.name);
+  const actualPhases=(next.phases??[]).filter((p:BossPhaseDefinition)=>!basePhaseIds.has(p.id)).map((p:BossPhaseDefinition)=>p.name??p.id);
   assert(enemyV2SnapshotDigest(p.abilityNames)===enemyV2SnapshotDigest(actualAbilities)&&
     enemyV2SnapshotDigest(p.phaseNames)===enemyV2SnapshotDigest(actualPhases),
     'stored_preview_does_not_match_kit');

@@ -2,6 +2,7 @@ import {strict as assert} from 'node:assert';
 import {EFFECT_GEMS_V1,STAT_GEMS_V1,validateGemCatalogV1} from './gem-catalog-v1';
 import {combineGemV1,dismantleGemV1,gemCombineSuccessPercentV1,type GemWallet} from './gem-progression-v1';
 import {applyStatGemsV1,summarizeGemLoadoutV1} from './gem-runtime-v1';
+import {previewLegacyAttackGemRestorationV2} from './legacy-attack-gem-reconciliation-v2';
 import {buildGemDropsForSourceV1,gemPoolForSourceV1,settleGemSourceV1,validateGemAcquisitionV1} from './gem-acquisition-v1';
 
 assert.equal(STAT_GEMS_V1.length,12);
@@ -42,6 +43,36 @@ for(const family of STAT_GEMS_V1){
 }
 const maxAttackFromTenPerfectG5=10*STAT_GEMS_V1.find(g=>g.familyId==='stat_might')!.values[5]*1.2;
 assert.ok(maxAttackFromTenPerfectG5<=.45,'Ten perfected G5 ATK gems exceed the preview budget');
+
+// 2.0 opt-in legacy restoration is exactly equivalent per socket, never
+// grants more than the verified pre-conversion counts, and is receipt-aware.
+const restoration=previewLegacyAttackGemRestorationV2(
+ {EMBER_SHARD:2,EMBERHEART_GEM:1},
+ {'gem:stat_might:g1':6,'gem:stat_might:g3':4},
+);
+assert.deepEqual(restoration.map(row=>row.canRestoreNow),[2,1]);
+assert.deepEqual(restoration.map(row=>row.grant),[
+ {itemId:'gem:stat_might:g3',quantity:2},
+ {itemId:'EMBERHEART_GEM',quantity:1},
+]);
+assert.deepEqual(restoration.map(row=>row.consume),[
+ {itemId:'gem:stat_might:g1',quantity:6},
+ {itemId:'gem:stat_might:g3',quantity:4},
+]);
+const repeatRestoration=previewLegacyAttackGemRestorationV2(
+ {EMBER_SHARD:2,EMBERHEART_GEM:1},
+ {'gem:stat_might:g1':6,'gem:stat_might:g3':4},
+ {EMBER_SHARD:2,EMBERHEART_GEM:1},
+);
+assert.ok(repeatRestoration.every(row=>row.status==='already_restored'&&row.canRestoreNow===0));
+const spentOrMerged=previewLegacyAttackGemRestorationV2(
+ {EMBER_SHARD:2},{'gem:stat_might:g1':2},
+);
+assert.equal(spentOrMerged[0].status,'manual_review','Cannot consume unprovenanced or missing converted gems');
+assert.equal(spentOrMerged[0].needsReview,2);
+const partial=previewLegacyAttackGemRestorationV2({EMBER_SHARD:3},{'gem:stat_might:g1':6});
+assert.equal(partial[0].canRestoreNow,2);
+assert.equal(partial[0].needsReview,1);
 
 const wallet:GemWallet={gold:100000,dust:100,regionalCatalysts:2,radiantCatalysts:1,gems:[{familyId:'stat_might',grade:1,quantity:3}]};
 assert.deepEqual([1,2,3,4,5,6,7].map(gemCombineSuccessPercentV1),[90,80,70,60,55,50,45]);

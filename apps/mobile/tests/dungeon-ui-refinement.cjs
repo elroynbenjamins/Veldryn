@@ -31,7 +31,7 @@ test('weekly quest snapshot validates actual objective targets, not a hard-coded
 });
 test('all new compact prompts exist in eight languages',()=>{
  const m=loadTypeScript('src/i18n/dungeon-ux-copy.ts');
- const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
+ const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','continueDeeper','continueVote','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
  for(const lang of ['en','de','es','nl','it','fr','ru','tr'])
   for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>=2,lang+' '+key); // Short UI labels such as Room/Oda must remain valid.
  assert.notEqual(m.dungeonUxText('en','bossChoice'),m.dungeonUxText('de','bossChoice'));
@@ -80,7 +80,9 @@ test('hub and loadout use one correct progression path and compact readiness',()
 test('Endurance boss exits are distinct without changing server-owned route submission',()=>{
  const route=read('src/components/coop/DungeonRouteChoices.tsx');
  const strip=read('src/components/coop/RoutePathStrip.tsx');
- assert.match(route,/const bossExit=option\.kind==='boss'&&options\.length>1/);
+ assert.match(route,/const bossAvailable=options\.length>1&&options\.some\(candidate=>candidate\.kind==='boss'\)/);
+ assert.match(route,/const bossExit=option\.kind==='boss'&&bossAvailable/);
+ assert.match(route,/const continueChoice=bossAvailable&&option\.kind!=='boss'/);
  assert.match(route,/dungeonUxText\(language,'bossHint'\)/);
  assert.match(route,/live\?dungeonUxText\(language,'bossVote'\)/);
  assert.match(route,/AccessibilityInfo\.isReduceMotionEnabled\(\)/);

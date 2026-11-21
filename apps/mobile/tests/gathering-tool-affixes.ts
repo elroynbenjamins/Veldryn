@@ -148,8 +148,6 @@ if(firstClaim.kind==='tool'){
   const transferredBack=moveGatheringToolCopy(moved,firstClaim.tool.id,'inventory');
   assert(transferredBack.inventory.stacks.some(row=>row.instanceId===firstClaim.tool.id),'Moving claimed tool back preserves receipt identity');
 }
-}
-
 
 // Cancellation returns reserved crafting ingredients but does not silently
 // create a tool, grant XP or refund the charged Gold (existing Forge policy).

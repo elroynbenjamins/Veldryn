@@ -273,6 +273,70 @@ def _():
     return echo(mix((0, rise), (0, hit), (0, choir), (0, cascade), (0, crown)), .14, .32, 5)
 # (Registered last: noise() draws from one seeded stream, so earlier effects stay byte-identical.)
 
+# Ten quiet, original crafting cues. Registered after existing SFX so their seeded
+# noise generation cannot alter the previously shipped effect waveforms.
+@sfx('smith_hammer_1', .42)
+def _():
+    strike = metal(680, .27, 19) * .55 + thump(105, 48, .16, 22) * .45
+    return strike + highpass(noise(.045), .52) * decay(.045, 80) * .17
+
+@sfx('smith_hammer_2', .40)
+def _():
+    strike = metal(490, .30, 17) * .50 + thump(98, 42, .18, 18) * .42
+    return strike + highpass(noise(.04), .57) * decay(.04, 88) * .15
+
+@sfx('smelt_bellows', .38)
+def _():
+    air = lowpass(noise(.56), .91) * env(.56, .10, .14, .65, .27)
+    hum = osc(slide(90, 115, .4), .4, 'sine') * env(.4, .04, .08, .45, .14) * .10
+    return air * .7 + hum
+
+@sfx('smelt_pour', .36)
+def _():
+    flow = lowpass(noise(.56), .83) * env(.56, .08, .10, .68, .26) * .48
+    drops = mix((.08, bell(510, .18, 23) * .11), (.23, bell(420, .2, 22) * .11),
+                (.39, bell(335, .18, 25) * .10))
+    return flow + drops
+
+@sfx('forge_ignite', .42)
+def _():
+    flare = lowpass(noise(.46), .77) * env(.46, .12, .11, .77, .19)
+    warmth = osc(slide(90, 165, .37), .37, 'triangle') * env(.37, .045, .09, .45, .15) * .12
+    return flare * .62 + warmth
+
+@sfx('forge_quench', .39)
+def _():
+    hiss = lowpass(noise(.55), .53) * env(.55, .014, .17, .42, .33)
+    ping = metal(720, .30, 22) * .15
+    return hiss * .43 + ping
+
+@sfx('woodwork_plane', .35)
+def _():
+    scrape = lowpass(highpass(noise(.36), .58), .72) * env(.36, .035, .08, .61, .14)
+    knock = thump(170, 110, .09, 35) * .18
+    return scrape * .58 + knock
+
+@sfx('tailor_stitch', .32)
+def _():
+    click = bell(1000, .095, 38, ((1, 1), (1.6, .27))) * .22
+    rustle = highpass(noise(.16), .87) * env(.16, .018, .025, .6, .075) * .20
+    return mix((0, click), (.10, click * .7), (0, rustle))
+
+@sfx('alchemy_bubble', .36)
+def _():
+    bubbles = mix((0, osc(slide(220, 390, .16), .16, 'sine') * decay(.16, 13) * .24),
+                  (.12, osc(slide(270, 440, .18), .18, 'sine') * decay(.18, 15) * .18),
+                  (.28, osc(slide(180, 340, .20), .20, 'sine') * decay(.20, 13) * .22))
+    return bubbles + lowpass(noise(.4), .92) * decay(.4, 6) * .17
+
+@sfx('cooking_sizzle', .34)
+def _():
+    hiss = lowpass(noise(.53), .68) * env(.53, .06, .08, .55, .23)
+    crackle = mix((.11, noise(.024) * decay(.024, 85) * .13),
+                  (.24, noise(.02) * decay(.02, 95) * .11),
+                  (.34, noise(.022) * decay(.022, 90) * .12))
+    return hiss * .46 + crackle
+
 # ----------------------------------------------------------------------------- music
 SCALES = {'major': [0, 2, 4, 5, 7, 9, 11], 'minor': [0, 2, 3, 5, 7, 8, 10], 'dorian': [0, 2, 3, 5, 7, 9, 10],
           'phrygian_dom': [0, 1, 4, 5, 7, 8, 10], 'mixolydian': [0, 2, 4, 5, 7, 9, 10]}

@@ -111,7 +111,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   if(mode==='crafting'&&initialSkill==='forge')return <ForgeScreen state={state} now={now} onOpenProfession={id=>onSelectSkill?.(id)} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>;
    if(mode==='crafting'&&(initialSkill==='smithing'||initialSkill==='tailoring'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <EquipmentCraftingHeader state={state} skillId={initialSkill}/>
-    <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} onOpenForge={()=>onSelectSkill?.('forge')} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>
+    <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} onOpenForge={()=>onSelectSkill?.('forge')}/>
   </ScrollView>;
   if(mode==='crafting'&&(initialSkill==='cooking'||initialSkill==='alchemy'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <SkillHero state={state} skillId={initialSkill} kind={gt('Crafting skill')}/>
@@ -292,7 +292,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  ];
  const professionRows:SkillNavigatorEntry[]=state.skills.map(row=>{
   const category=skillNavigatorCategoryFor(row.skillId);
-  return {id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
+  return {id:row.skillId,name:row.skillId==='forge'?gt('Forge'):gl(row.skillId),level:row.level,xp:row.xp,
    subtitle:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
    category,route:skillNavigatorRouteFor(row.skillId)};
  });

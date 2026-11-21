@@ -268,7 +268,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,skills:Array.isArray(entry.skills)?(entry.skills.some((row:any)=>row?.skillId==='forge')?entry.skills:[...entry.skills,{skillId:'forge',xp:0,level:1}]):[{skillId:'forge',xp:0,level:1}],character:{...entry.character,
  familyMasteryPoints:entry.character.familyMasteryPoints===undefined
   ?backfillEnemyFamilyMastery(entry.character.monsterMasteryPoints)
   :normalizeEnemyFamilyMastery(entry.character.familyMasteryPoints),

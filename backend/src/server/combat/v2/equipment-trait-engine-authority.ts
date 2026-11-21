@@ -74,7 +74,7 @@ export function issueEquipmentV2TraitAuthority(
  verifyPersisted:(sources:readonly VerifiedV2EquipmentEffectSource[],inputDigest:string)=>boolean,
 ):EquipmentV2TraitEngineAuthority{
  if(typeof verifyPersisted!=='function'||!Array.isArray(sources)||
-    sources.length!==input?.players?.length||sources.length<1||sources.length>4||
+    sources.length!==input?.players?.length||sources.length!==1||
     typeof input.seed!=='string'||!input.seed)
    fail('verified_storage_required');
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||

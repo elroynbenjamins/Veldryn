@@ -170,6 +170,6 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
 }
 assert.equal(runs,9*2*6);
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
-assert.equal(sourceTests,10);
+assert.equal(sourceTests,30);
 console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+
  ' gated trait events, '+sourceTests+' fail-closed exact-copy checks (test-only ledgers)');

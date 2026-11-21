@@ -180,6 +180,36 @@ try{
   'WHERE source_key=$1',[blockedSource])).rows[0].n,0);
  await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
   'WHERE account_id=$1',[account,JSON.stringify(stored)]);
+ // A foreign character can match the online state's embedded UUID while
+ // still belonging to someone else. This must never credit that wallet,
+ // even if the state row is corrupted or an unrelated binding bug occurs.
+ const foreignCharacter='66666666-6666-4666-8666-666666666666';
+ await db.query('INSERT INTO public.characters VALUES($1,$2)',
+  [foreignCharacter,other]);
+ await db.query('INSERT INTO public.character_wallets VALUES($1,77)',
+  [foreignCharacter]);
+ const foreignState=structuredClone(stored);
+ foreignState.character={id:foreignCharacter,gold:77};
+ await db.query('UPDATE public.online_game_states SET character_id=$2::uuid,'+
+  'state=$3::jsonb WHERE account_id=$1',
+  [account,foreignCharacter,JSON.stringify(foreignState)]);
+ await assert.rejects(()=>open({
+  authenticatedAccountId:account,sourceKey:blockedSource,
+ }),/character_not_owned/);
+ assert.equal((await db.query(
+  'SELECT gold::text AS gold FROM public.character_wallets '+
+  'WHERE character_id=$1',[foreignCharacter])).rows[0].gold,'77',
+  'a World Boss chest must not credit another account\'s character');
+ assert.equal((await db.query(
+  'SELECT COUNT(*)::int n FROM private.chest_reward_receipts_v70 '+
+  'WHERE source_key=$1',[blockedSource])).rows[0].n,0,
+  'foreign character ownership must roll back chest settlement');
+ assert.equal((await db.query(
+  'SELECT COUNT(*)::int n FROM private.world_boss_chest_resource_grants_v83 '+
+  'WHERE source_key=$1',[blockedSource])).rows[0].n,0);
+ await db.query('UPDATE public.online_game_states SET character_id=$2::uuid,'+
+  'state=$3::jsonb WHERE account_id=$1',
+  [account,character,JSON.stringify(stored)]);
  // Force inventory+bank to full with no matching stacks and ensure Gold,
  // Essence and all V70 receipts roll back together.
  const original=structuredClone(stored);

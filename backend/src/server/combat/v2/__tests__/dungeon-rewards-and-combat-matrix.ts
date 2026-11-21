@@ -3,7 +3,6 @@ import {simulateCombat} from '../../engine';
 import type {CombatInput,CombatantDefinition,CombatRole,CombatV2Resource} from '../../types';
 import {CLASS_ROLES_V2} from '../build-contract';
 import {ROOM_BOON_CHOICES} from '../../../coop/room-boon-choices';
-import {DUNGEON_ARTIFACTS} from '../../../coop/dungeon-artifacts';
 import {
  DUNGEON_REWARDS_V2,DUNGEON_REWARD_V2_TOTALS,DUNGEON_REWARD_V2_POLICY,
  compileDraftDungeonRewardCombatV2,simulateDraftDungeonRewardCombatV2,
@@ -14,7 +13,12 @@ import {
 } from '../dungeon-reward-offers-v2';
 
 const currentBoons=ROOM_BOON_CHOICES.filter(item=>item.id!=='ROOM_BOON_SUPPLY').map(item=>item.id);
-const currentArtifacts=Object.keys(DUNGEON_ARTIFACTS);
+// This stacked hidden branch predates the current 1.0.x artifact module.
+// Pin the eight audited mainline IDs without copying live dungeon runtime.
+const currentArtifacts=[
+ 'RELIC_EMBER_HEART','RELIC_IRON_BARK','RELIC_QUICK_SILVER','RELIC_EAGLE_EYE',
+ 'RELIC_MOON_WELL','RELIC_HUNTER_MARK','RELIC_BOSS_WARD','RELIC_PARTY_OATH',
+];
 assert.deepEqual(DUNGEON_REWARD_V2_TOTALS,{boons:16,artifacts:14,pending:9});
 assert.equal(new Set(DUNGEON_REWARDS_V2.map(item=>item.id)).size,30);
 assert.ok(currentBoons.every(id=>DUNGEON_REWARDS_V2.some(row=>row.id===id&&row.type==='boon')));

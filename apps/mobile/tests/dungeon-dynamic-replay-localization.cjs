@@ -12,7 +12,7 @@ const {playbackCueLabel}=require('../src/core/dungeon-combat-playback.ts');
 const {dungeonDynamicUiRows,dungeonDynamicUiText,localizedDungeonPlaybackCue,localizedDungeonCueType}=require('../src/i18n/dungeon-dynamic-ui.ts');
 const languages=['de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],['en',...languages]);
-assert.equal(Object.keys(dungeonDynamicUiRows).length,70);
+assert.equal(Object.keys(dungeonDynamicUiRows).length,72); // Includes boss timeout details and condensed replay label.
 const tokens=x=>[...x.matchAll(/\{(\w+)\}/g)].map(m=>m[1]).sort();
 for(const [en,translations] of Object.entries(dungeonDynamicUiRows)){
  assert.equal(translations.length,7,'language parity '+en);

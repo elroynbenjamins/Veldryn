@@ -73,7 +73,7 @@ export function catalogIds(sources){
 }
 export function existingSmelting(source){
   const fragment=between(source,"{id:'SMELT_COPPER_INGOT'","{id:'ENCHANT_REGIONAL_CATALYST'");
-  const lines=["{id:'SMELT_COPPER_INGOT'"+fragment].split('\n');
+  const lines=("{id:'SMELT_COPPER_INGOT'"+fragment).split('\n');
   const recipes=[];
   for(const line of lines){
     if(!/^\s*\{id:'SMELT_/.test(line))continue;

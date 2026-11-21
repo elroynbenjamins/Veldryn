@@ -7,7 +7,7 @@ export const monsterPortraits:Record<MonsterDef['id'],ImageSourcePropType>={
  GLOAM_MITE:require('../../assets/monsters/gloam_mite.webp'),LANTERN_WRETCH:require('../../assets/monsters/lantern_wretch.webp'),DROWNED_PILGRIM:require('../../assets/monsters/drowned_pilgrim.webp'),OATHBOUND_SQUIRE:require('../../assets/monsters/oathbound_squire.webp'),BANNER_SHADE:require('../../assets/monsters/banner_shade.webp'),
  FALLEN_SENTINEL:require('../../assets/monsters/fallen_sentinel.webp'),OATHGLASS_REVENANT:require('../../assets/monsters/oathglass_revenant.webp'),FALLEN_KNIGHT:require('../../assets/monsters/fallen_knight.webp'),
  SUNSCAR_SCORPION:require('../../assets/monsters/sunscar_scorpion.png'),DUNE_ORACLE:require('../../assets/monsters/dune_oracle.png'),GLASSBOUND_SENTINEL:require('../../assets/monsters/glassbound_sentinel.png'),
- DUSTVEIL_RUNNER:require('../../assets/monsters/dustveil_runner.webp'),SANDPLATE_JUGGERNAUT:require('../../assets/monsters/sandplate_juggernaut.webp'),
+ DUSTVEIL_RUNNER:require('../../assets/monsters/dustveil_runner.webp'),SANDPLATE_JUGGERNAUT:require('../../assets/monsters/sandplate_juggernaut.webp'),PRISM_HEXER:require('../../assets/monsters/prism_hexer.webp'),CROWN_EXECUTIONER:require('../../assets/monsters/crown_executioner.webp'),
 };
 
 /** Eight approved regional icons share one native 48px transparent atlas. */

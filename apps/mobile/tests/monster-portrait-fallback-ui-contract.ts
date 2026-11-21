@@ -19,7 +19,7 @@ ok(frame.includes('regionalMonsterPortraitAtlas'),'Portrait frame must render th
 ok(frame.includes("monster.name.slice(0,1).toUpperCase()"),'Unknown future monsters must retain a stable themed fallback');
 ok(!frame.includes('monsterPortraits[monster.id]'),'Portrait frame must not pass undefined sources directly to Image');
 
-for(const [id,file] of [['DUSTVEIL_RUNNER','dustveil_runner.webp'],['SANDPLATE_JUGGERNAUT','sandplate_juggernaut.webp']]){
+for(const [id,file] of [['DUSTVEIL_RUNNER','dustveil_runner.webp'],['SANDPLATE_JUGGERNAUT','sandplate_juggernaut.webp'],['PRISM_HEXER','prism_hexer.webp'],['CROWN_EXECUTIONER','crown_executioner.webp']]){
  ok(assets.includes(id+":require('../../assets/monsters/"+file+"')"),'Dedicated full-resolution portrait mapping missing for '+id);
  ok(fs.existsSync('assets/monsters/'+file),'Dedicated portrait file missing for '+id);
 }

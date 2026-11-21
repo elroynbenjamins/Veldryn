@@ -247,6 +247,11 @@ try{
  await pool.query('INSERT INTO public.character_wallets VALUES($1,100,now())',
   [hero]);
  for(const file of migrations)await pool.query(sql(file));
+ // The worker-attested V23 boss alone cannot grant any chest.
+ await assert.rejects(()=>open('participation'),
+  /party_event_v87_settlement_certificate_missing_or_ambiguous/);
+ assert.equal(await getCount('private.chest_reward_receipts_v70'),0);
+ assert.equal(await getCount('private.party_sigils_ledger_v65'),0);
  await pool.query('INSERT INTO private.party_event_settlement_certificates_v87('+
   'party_id,event_starts_at,reservation_id,source_digest,verified_tiers_cleared,'+
   'independently_verified_victory,settled_at,issued_at) VALUES('+
@@ -254,6 +259,11 @@ try{
   'to_timestamp($5::double precision/1000),'+
   'to_timestamp($6::double precision/1000))',
   [party,week,reservation,digest,attested,issued]);
+ // The settlement certificate without the frozen actor/tier is insufficient.
+ await assert.rejects(()=>open('participation'),
+  /party_event_v87_settlement_certificate_missing_or_ambiguous/);
+ assert.equal(await getCount('private.chest_reward_receipts_v70'),0);
+ assert.equal(await getCount('private.party_event_reward_receipts_v61'),0);
  await pool.query('INSERT INTO private.party_event_member_tier_certificates_v87('+
   'party_id,event_starts_at,account_id,frozen_character_id,'+
   'frozen_level,frozen_loadout_hash,eligible_gear_tier) VALUES('+

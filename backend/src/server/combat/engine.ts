@@ -97,6 +97,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
+  // Class V2 multi-strike abilities need independent deterministic rolls for
+  // each strike. Legacy ability/RNG labels must remain byte-for-byte unchanged.
+  const v2StrikeOrdinals=new Map<string,number>();
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{
@@ -145,10 +148,15 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const v2Evasion=target.definition.tags?.includes('combat-v2')?modifier(target,'evasion',now):0;
     const sourceGear=v2Encounter?source.definition.combatV2?.equipmentEffects:undefined;
     const targetGear=v2Encounter?target.definition.combatV2?.equipmentEffects:undefined;
+    const v2Strike=v2Encounter&&Boolean(source.combatV2)&&eventType==='damage'&&abilityId.includes(':v2:');
+    const strikeKey=source.definition.id+':'+target.definition.id+':'+abilityId;
+    const ordinal=v2Strike?(v2StrikeOrdinals.get(strikeKey)??0):0;
+    if(v2Strike)v2StrikeOrdinals.set(strikeKey,ordinal+1);
+    const strikeSuffix=ordinal?':strike_'+(ordinal+1):'';
     const hc=clamp(hitChance(source.definition.stats.accuracy,
       target.definition.stats.evasion+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
-    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit${strikeSuffix}`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
@@ -156,7 +164,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const authoredPenetration=v2Encounter&&source.definition.combatV2?
       clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
-    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
+    const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit${strikeSuffix}`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
     // New Q-Mode has a wider hit spread around the legacy average and a rare heavy blow
@@ -164,7 +172,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // The legacy CombatRng returns [0, .5) with its existing portable
     // denominator. Scale Q-Mode-only draws by two to reach the intended
     // probabilities; changing that RNG globally would invalidate old replays.
-    const varianceRoll=rng.next(`${now}:${abilityId}:var`);
+    const varianceRoll=rng.next(`${now}:${abilityId}:var${strikeSuffix}`);
     const variance=qmodeStrike?.925+varianceRoll*.20:.95+varianceRoll*.10;
     const heavyHit=qmodeStrike&&!crit&&rng.next(`${now}:${source.definition.id}:${target.definition.id}:${abilityId}:heavy`)*2<.04;
     const roleAttack=roleAdjustedAttackPower({team:source.definition.team,role:source.definition.role,attackPower:source.definition.stats.attackPower,defense:source.definition.stats.defense,maxHp:source.definition.stats.maxHp,healingPower:source.definition.stats.healingPower});
@@ -392,6 +400,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   };
 
   for(let now=0; now<=maxMs; now+=tick){
+    v2StrikeOrdinals.clear();
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
       const due=v2.scheduledTotemAt.filter(at=>at<=now);

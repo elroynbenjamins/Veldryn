@@ -8,6 +8,10 @@ on:
     paths:
       - '.github/workflows/forge-mastery-codegen.yml'
 
+concurrency:
+  group: forge-mastery-codegen
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -38,5 +42,6 @@ jobs:
           git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
           if ! git diff --cached --quiet; then
             git commit -m "build(forge): regenerate authoritative gameplay and coop Edge bundles"
+            git pull --rebase origin feature/forge-mastery-dedicated-screen-20261121
             git push origin HEAD:refs/heads/feature/forge-mastery-dedicated-screen-20261121
           fi

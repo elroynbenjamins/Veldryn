@@ -20,7 +20,8 @@ const q=(arr,p)=>{
 const average=arr=>Number((arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(5));
 export function validateSyntheticFixture({contract,signature}){
  if(contract?.status!=='REVIEW_ONLY_NO_RUNTIME'||signature?.status!=='REVIEW_ONLY_NO_RUNTIME'
-  ||contract.noImplementationAuthorized!==true)fail('review_gate');
+  ||contract.noImplementationAuthorized!==true||!signature.release
+  ||Object.values(signature.release).some(enabled=>enabled!==false))fail('review_gate');
  const c=contract.rolesAndSpecializations;
  if(!Array.isArray(c)||c.length!==9||new Set(c.map(x=>x.classId)).size!==9)fail('nine_classes');
  const allSpecs=c.flatMap(x=>x.specializations.map(s=>x.classId+':'+s));

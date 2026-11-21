@@ -1,0 +1,254 @@
+name: Combat 2.0 skills validation
+
+on:
+  push:
+    branches:
+      - feature/combat-v2-foundation-contract-20261118
+    paths:
+      - 'backend/src/server/combat/**'
+      - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
+      - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/tests/combat-v2-pg17-disposable-concurrency.sh'
+      - 'backend/tests/combat-v2-pg17-disposable-reward-ledger.sh'
+      - 'backend/src/server/combat/v2/solo-reward-settlement.ts'
+      - 'backend/src/server/combat/v2/__tests__/solo-reward-settlement.ts'
+      - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
+      - 'backend/online/combat-v2-build-auth-boundary.ts'
+      - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
+      - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
+      - 'apps/mobile/src/components/ClassResourceMeterV2.tsx'
+      - 'apps/mobile/src/components/EquipmentPowerBreakdownV2.tsx'
+      - 'apps/mobile/src/content/skills-v2-preview.ts'
+      - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
+      - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
+      - '.github/workflows/combat-v2-skills-validation.yml'
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/**'
+      - 'backend/supabase/migrations/20261118124500_combat_v2_build_persistence_hidden_v1.sql'
+      - 'backend/tests/combat-v2-build-sql-contract.cjs'
+      - 'backend/tests/combat-v2-solo-snapshot-sql-contract.cjs'
+      - 'backend/tests/combat-v2-pg17-disposable-concurrency.sh'
+      - 'backend/tests/combat-v2-pg17-disposable-reward-ledger.sh'
+      - 'backend/src/server/combat/v2/solo-reward-settlement.ts'
+      - 'backend/src/server/combat/v2/__tests__/solo-reward-settlement.ts'
+      - 'backend/supabase/migrations/20261118213000_combat_v2_solo_snapshot_hidden_v1.sql'
+      - 'backend/online/combat-v2-build-auth-boundary.ts'
+      - 'backend/online/tests/combat-v2-build-auth-boundary.ts'
+      - 'apps/mobile/src/screens/SkillsV2PreviewScreen.tsx'
+      - 'apps/mobile/src/components/ClassResourceMeterV2.tsx'
+      - 'apps/mobile/src/components/EquipmentPowerBreakdownV2.tsx'
+      - 'apps/mobile/src/content/skills-v2-preview.ts'
+      - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
+      - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'tools/build-online.mjs'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
+      - '.github/workflows/combat-v2-skills-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Server skills, variants and legacy combat parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile authoritative backend
+        run: pnpm --dir backend build
+      - name: Validate Combat 2.0 build contract
+        run: node backend/dist/server/combat/v2/__tests__/build-contract.js
+      - name: Validate Combat 2.0 set catalogue
+        run: node backend/dist/server/combat/v2/__tests__/set-catalog.js
+      - name: Validate nine Combat 2.0 resource meters
+        run: node backend/dist/server/combat/v2/__tests__/resource-runtime.js
+      - name: Validate all 18 capstone trigger contracts
+        run: node backend/dist/server/combat/v2/__tests__/capstone-runtime.js
+      - name: Validate additional 25 passive-to-ability rules
+        run: node backend/dist/server/combat/v2/__tests__/passive-ability-rules.js
+      - name: Validate all 31 reactive passive triggers
+        run: node backend/dist/server/combat/v2/__tests__/reactive-passive-runtime.js
+      - name: Validate versioned build save and switch planner
+        run: node backend/dist/server/combat/v2/__tests__/build-mutations.js
+      - name: Validate authenticated build storage adapter
+        run: node backend/dist/server/combat/v2/__tests__/build-server-service.js
+      - name: Validate legacy gear and enemy integration
+        run: node backend/dist/server/combat/v2/__tests__/cross-system-bridge.js
+      - name: Validate server-token Enemy 2.0 engine co-existence and legacy replay parity
+        run: node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
+      - name: Verify Enemy 2.0 authority is not mounted in public service routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+            echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
+            exit 1
+          fi
+      - name: Validate source-owned affix ranges and typed combat modifiers
+        run: node backend/dist/server/combat/v2/__tests__/equipment-affixes.js
+      - name: Validate approved quality and rarity scaling policy
+        run: node backend/dist/server/combat/v2/__tests__/equipment-scaling-policy.js
+      - name: Validate six advanced affix combat effects and legacy isolation
+        run: node backend/dist/server/combat/v2/__tests__/advanced-affix-combat.js
+      - name: Reject legacy stat contamination in nine class-only baselines
+        run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
+      - name: Validate deterministic Enemy/Boss 2.0 kit composition and six profiles
+        run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
+      - name: Validate private solo V2 encounter reservation, RPC adapter and replay
+        run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
+      - name: Validate disabled-by-default solo reward settlement contract
+        run: node backend/dist/server/combat/v2/__tests__/solo-reward-settlement.js
+      - name: Validate pinned SQL reward transaction, rollback and 16 retries
+        run: node backend/dist/server/combat/v2/__tests__/solo-reward-transactional-store.js
+      - name: Validate QA reward grant writers and source uniqueness
+        run: node backend/dist/server/combat/v2/__tests__/solo-reward-disposable-qa-writers.js
+      - name: Validate full class, approved gear base, set and affix pipeline
+        run: node backend/dist/server/combat/v2/__tests__/unified-equipment-encounter.js
+      - name: Validate all nine class roles through the full gear pipeline
+        run: node backend/dist/server/combat/v2/__tests__/full-equipment-role-matrix.js
+      - name: Validate hidden database migration permissions
+        run: node backend/tests/combat-v2-build-sql-contract.cjs
+      - name: Validate hidden solo encounter persistence SQL, RLS and CAS isolation
+        run: node backend/tests/combat-v2-solo-snapshot-sql-contract.cjs
+      - name: Validate class identity, 18 styles and nine early resource loops
+        run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
+      - name: Capture deterministic 18-spec balance baseline
+        run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
+      - name: Validate Combat 2.0 executable skills
+        run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+
+  mobile_preview:
+    name: Hidden Skills 2.0 preview typecheck and UX contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies for cross-root shared combat imports
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck the React Native mobile app including the hidden Skills 2.0 screen
+        run: pnpm --dir apps/mobile typecheck
+      - name: Verify preview catalogue, accessible interactions and isolation from production
+        run: node apps/mobile/tests/skills-v2-preview-ui.cjs
+
+  build_api_boundary:
+    name: Hidden authenticated Combat 2.0 build transport
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Install mobile dependencies for shared UI theme types in online contracts
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Compile isolated online contracts
+        run: pnpm --dir backend exec tsc -p tsconfig.online.json
+      - name: Reject build spoofing and verify disabled transport
+        run: node backend/dist/online/backend/online/tests/combat-v2-build-auth-boundary.js
+
+  legacy_edge_isolation:
+    name: Live Edge isolation and legacy combat parity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Verify fail-closed V2 import shims and leaked-module rejection
+        run: node tools/tests/combat-v2-edge-isolation.test.mjs
+      - name: Compile production gameplay and co-op bundles WITHOUT experimental V2 runtime
+        run: node tools/build-online.mjs
+      - name: Compile real private engine and legacy combat fixtures
+        run: pnpm --dir backend build
+      - name: Verify deterministic pre-2.0 combat and party matrix
+        run: |
+          node backend/dist/server/combat/__tests__/combat-smoke.js
+          node backend/dist/server/combat/__tests__/party-matrix.js
+      - name: Verify unchanged live Q-Mode rules
+        run: node backend/dist/server/coop/__tests__/phase6-qmode.js
+      - name: Validate private enemy/class V2 rules and no-authority legacy replay
+        run: node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
+
+  disposable_pg17:
+    name: PG17 actual migrations, concurrent CAS and service-only grants
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: combat_v2_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d combat_v2_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: combat_v2_test
+      COMBAT_V2_DISPOSABLE_DB: YES_TEST_DATABASE
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure psql client is available
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+      - name: Exercise actual hidden migrations with 16 independent sessions
+        run: bash backend/tests/combat-v2-pg17-disposable-concurrency.sh
+      - name: Validate disposable reward ledger source uniqueness and rollback with 16 PG sessions
+        run: bash backend/tests/combat-v2-pg17-disposable-reward-ledger.sh
+
+  cross_system_balance_matrix:
+    name: Synthetic 9-class 18-spec T1-T5 and Enemy V2 matchup matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile private Equipment, Skills and Enemies 2.0 contracts
+        run: pnpm --dir backend build
+      - name: Validate deterministic role/tier outlier diagnostics
+        run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
+      - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
+        run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js

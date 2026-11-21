@@ -63,7 +63,9 @@ jobs:
           pnpm --dir apps/mobile typecheck:core
           pnpm --dir apps/mobile typecheck
       - name: Run Q-Mode room-8 settlement and reconnect regression
-        run: node backend/dist/online/backend/online/tests/qmode-runtime.js
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/qmode-runtime.js
       - name: Verify repeatable cross-profession timed recipe reservation and refunds
         run: node tools/run-mobile-tests.mjs cross-profession-crafting timed-processing
       - name: Validate all mobile core tests and legacy saves

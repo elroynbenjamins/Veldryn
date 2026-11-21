@@ -1,0 +1,762 @@
+{
+  "contractVersion": "eq2-combat-affix-traits-review-v1",
+  "status": "REVIEW_ONLY_NOT_APPROVED",
+  "releaseActivation": false,
+  "notes": {
+    "authority": "Not a live item generator or combat policy; derived from hidden Equipment/Crafting 2.0 and 13-affix Combat 2.0 prototype. No player items are transformed.",
+    "scope": "New authenticated Equipment 2.0 instances and new-rule encounters only; V33/1.0.x and ongoing dungeons retain old rules.",
+    "values": "Per-item ranges are percent or percentage points as declared by unit; these are PROPOSED review numbers, not approved rollout balance.",
+    "caps": "maxEquipmentOnlyContribution limits affix rolls from the eligible ten-slot loadout only. Set effects, gems, class passives and temporary combat effects need separate end-to-end caps, never covertly clamped.",
+    "deterministic": "Server-pinned approved version and immutable exact-item rolls only; no client RNG or auto-migration of ambiguous old affixes."
+  },
+  "existingDraftRollCounts": {
+    "T1T2": {
+      "common": 1,
+      "uncommon": 1,
+      "rare": 1,
+      "epic": 1,
+      "legendary": 2,
+      "mythic": 2
+    },
+    "T3T4": {
+      "common": 1,
+      "uncommon": 1,
+      "rare": 1,
+      "epic": 2,
+      "legendary": 2,
+      "mythic": 3
+    }
+  },
+  "affixes": [
+    {
+      "id": "attack_pct",
+      "unit": "relative_percent",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "gloves",
+        "amulet",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          0.5,
+          1
+        ],
+        "T2": [
+          0.8,
+          1.6
+        ],
+        "T3": [
+          1.2,
+          2.2
+        ],
+        "T4": [
+          1.5,
+          2.6
+        ]
+      },
+      "maxEquipmentOnlyContribution": 12,
+      "engine": "attackPower after verified item base",
+      "roleHint": "damage"
+    },
+    {
+      "id": "defense_pct",
+      "unit": "relative_percent",
+      "category": "defense",
+      "eligibleSlots": [
+        "helmet",
+        "chest",
+        "legs",
+        "boots",
+        "offhand"
+      ],
+      "tiers": {
+        "T1": [
+          0.6,
+          1.2
+        ],
+        "T2": [
+          1,
+          2
+        ],
+        "T3": [
+          1.5,
+          3
+        ],
+        "T4": [
+          1.8,
+          3.5
+        ]
+      },
+      "maxEquipmentOnlyContribution": 18,
+      "engine": "defense after verified item base",
+      "roleHint": "tank"
+    },
+    {
+      "id": "max_hp_pct",
+      "unit": "relative_percent",
+      "category": "defense",
+      "eligibleSlots": [
+        "helmet",
+        "chest",
+        "legs",
+        "cape",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          0.8,
+          1.6
+        ],
+        "T2": [
+          1.2,
+          2.5
+        ],
+        "T3": [
+          2,
+          4
+        ],
+        "T4": [
+          2.5,
+          4.5
+        ]
+      },
+      "maxEquipmentOnlyContribution": 24,
+      "engine": "maxHp and current HP update policy, never instant full heal",
+      "roleHint": "tank"
+    },
+    {
+      "id": "haste_pp",
+      "unit": "percentage_points",
+      "category": "offense",
+      "eligibleSlots": [
+        "gloves",
+        "boots",
+        "cape",
+        "ring",
+        "weapon"
+      ],
+      "tiers": {
+        "T1": [
+          0.3,
+          0.9
+        ],
+        "T2": [
+          0.5,
+          1.3
+        ],
+        "T3": [
+          0.8,
+          2
+        ],
+        "T4": [
+          1,
+          2.2
+        ]
+      },
+      "maxEquipmentOnlyContribution": 12,
+      "engine": "action pacing; minimum global action interval enforced",
+      "roleHint": "damage"
+    },
+    {
+      "id": "crit_rate_pp",
+      "unit": "percentage_points",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "gloves",
+        "amulet",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          0.2,
+          0.7
+        ],
+        "T2": [
+          0.3,
+          1
+        ],
+        "T3": [
+          0.5,
+          1.5
+        ],
+        "T4": [
+          0.6,
+          1.7
+        ]
+      },
+      "maxEquipmentOnlyContribution": 8,
+      "engine": "eligible direct hit critical probability; no double proc",
+      "roleHint": "damage"
+    },
+    {
+      "id": "crit_damage_pct",
+      "unit": "relative_percent",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "amulet",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          1,
+          2.5
+        ],
+        "T2": [
+          1.5,
+          3.5
+        ],
+        "T3": [
+          2.5,
+          5.5
+        ],
+        "T4": [
+          3,
+          6
+        ]
+      },
+      "maxEquipmentOnlyContribution": 22,
+      "engine": "critical damage multiplier, not flat critical chance",
+      "roleHint": "damage"
+    },
+    {
+      "id": "accuracy_pp",
+      "unit": "percentage_points",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "gloves",
+        "amulet",
+        "cape"
+      ],
+      "tiers": {
+        "T1": [
+          0.2,
+          0.7
+        ],
+        "T2": [
+          0.3,
+          1
+        ],
+        "T3": [
+          0.5,
+          1.5
+        ],
+        "T4": [
+          0.6,
+          1.7
+        ]
+      },
+      "maxEquipmentOnlyContribution": 8,
+      "engine": "chance to hit direct avoidable attacks, not guaranteed cast hazards",
+      "roleHint": "damage"
+    },
+    {
+      "id": "evasion_pp",
+      "unit": "percentage_points",
+      "category": "defense",
+      "eligibleSlots": [
+        "helmet",
+        "gloves",
+        "boots",
+        "cape"
+      ],
+      "tiers": {
+        "T1": [
+          0.2,
+          0.6
+        ],
+        "T2": [
+          0.3,
+          0.9
+        ],
+        "T3": [
+          0.4,
+          1.2
+        ],
+        "T4": [
+          0.5,
+          1.4
+        ]
+      },
+      "maxEquipmentOnlyContribution": 7,
+      "engine": "chance to evade eligible direct attacks, not mandatory boss mechanics",
+      "roleHint": "tank"
+    },
+    {
+      "id": "penetration_pp",
+      "unit": "percentage_points",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "gloves",
+        "amulet",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          0.4,
+          1.1
+        ],
+        "T2": [
+          0.7,
+          1.7
+        ],
+        "T3": [
+          1,
+          2.5
+        ],
+        "T4": [
+          1.2,
+          2.8
+        ]
+      },
+      "maxEquipmentOnlyContribution": 12,
+      "engine": "ignore eligible armor mitigation only, not shields or true damage",
+      "roleHint": "damage"
+    },
+    {
+      "id": "ward_pp",
+      "unit": "percentage_points",
+      "category": "defense",
+      "eligibleSlots": [
+        "helmet",
+        "chest",
+        "cape",
+        "offhand"
+      ],
+      "tiers": {
+        "T1": [
+          0.2,
+          0.7
+        ],
+        "T2": [
+          0.3,
+          1
+        ],
+        "T3": [
+          0.5,
+          1.5
+        ],
+        "T4": [
+          0.6,
+          1.8
+        ]
+      },
+      "maxEquipmentOnlyContribution": 10,
+      "engine": "reduce fire ice arcane nature shadow damage, not physical or true",
+      "roleHint": "tank"
+    },
+    {
+      "id": "shield_strength_pct",
+      "unit": "relative_percent",
+      "category": "support",
+      "eligibleSlots": [
+        "chest",
+        "gloves",
+        "cape",
+        "offhand"
+      ],
+      "tiers": {
+        "T1": [
+          0.6,
+          1.2
+        ],
+        "T2": [
+          1,
+          2.2
+        ],
+        "T3": [
+          1.6,
+          3.3
+        ],
+        "T4": [
+          2,
+          3.8
+        ]
+      },
+      "maxEquipmentOnlyContribution": 18,
+      "engine": "shield created by player abilities, not enemy shields",
+      "roleHint": "support"
+    },
+    {
+      "id": "class_healing_pct",
+      "unit": "relative_percent",
+      "category": "support",
+      "eligibleSlots": [
+        "weapon",
+        "chest",
+        "amulet",
+        "offhand"
+      ],
+      "tiers": {
+        "T1": [
+          0.8,
+          1.8
+        ],
+        "T2": [
+          1.2,
+          2.8
+        ],
+        "T3": [
+          2,
+          4.5
+        ],
+        "T4": [
+          2.5,
+          5
+        ]
+      },
+      "maxEquipmentOnlyContribution": 22,
+      "engine": "class heal output before overheal, excluding leech and consumables",
+      "roleHint": "support"
+    },
+    {
+      "id": "hex_potency_pct",
+      "unit": "relative_percent",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "amulet",
+        "ring",
+        "cape"
+      ],
+      "tiers": {
+        "T1": [
+          0.5,
+          1.3
+        ],
+        "T2": [
+          0.8,
+          2
+        ],
+        "T3": [
+          1.2,
+          3
+        ],
+        "T4": [
+          1.5,
+          3.4
+        ]
+      },
+      "maxEquipmentOnlyContribution": 16,
+      "engine": "shadow arcane nature DoT potency; no physical DoT or direct-hit bonuses",
+      "roleHint": "damage"
+    },
+    {
+      "id": "tenacity_pp",
+      "unit": "percentage_points",
+      "category": "defense",
+      "eligibleSlots": [
+        "helmet",
+        "chest",
+        "legs",
+        "boots",
+        "offhand"
+      ],
+      "tiers": {
+        "T1": [
+          0.8,
+          1.6
+        ],
+        "T2": [
+          1.2,
+          2.6
+        ],
+        "T3": [
+          2,
+          4
+        ],
+        "T4": [
+          2.5,
+          4.5
+        ]
+      },
+      "maxEquipmentOnlyContribution": 24,
+      "engine": "NEW ADAPTER: reduce eligible non-boss CC/debuff duration only, floor and boss immunity respected",
+      "roleHint": "tank"
+    },
+    {
+      "id": "ability_damage_pct",
+      "unit": "relative_percent",
+      "category": "offense",
+      "eligibleSlots": [
+        "weapon",
+        "gloves",
+        "amulet",
+        "ring"
+      ],
+      "tiers": {
+        "T1": [
+          0.8,
+          1.8
+        ],
+        "T2": [
+          1.2,
+          2.8
+        ],
+        "T3": [
+          2,
+          4.5
+        ],
+        "T4": [
+          2.5,
+          5
+        ]
+      },
+      "maxEquipmentOnlyContribution": 22,
+      "engine": "NEW ADAPTER: direct damaging class skills only; excludes basic, DoT, healing and procs",
+      "roleHint": "damage"
+    }
+  ],
+  "legacyMapping": {
+    "armor": {
+      "to": "defense_pct",
+      "status": "NEEDS_SEMANTIC_AUDIT"
+    },
+    "maxHp": {
+      "to": "max_hp_pct",
+      "status": "REQUIRES_FROZEN_RECEIPT_POLICY"
+    },
+    "ward": {
+      "to": "ward_pp",
+      "status": "NEEDS_ELEMENTAL_ONLY_PROOF"
+    },
+    "tenacity": {
+      "to": "tenacity_pp",
+      "status": "NEW_COMBAT_ADAPTER_REQUIRED"
+    },
+    "critRate": {
+      "to": "crit_rate_pp",
+      "status": "REQUIRES_UNIT_CONVERSION"
+    },
+    "critDamage": {
+      "to": "crit_damage_pct",
+      "status": "REQUIRES_UNIT_CONVERSION"
+    },
+    "haste": {
+      "to": "haste_pp",
+      "status": "REQUIRES_UNIT_CONVERSION"
+    },
+    "penetration": {
+      "to": "penetration_pp",
+      "status": "REQUIRES_UNIT_CONVERSION"
+    },
+    "accuracy": {
+      "to": "accuracy_pp",
+      "status": "REQUIRES_UNIT_CONVERSION"
+    },
+    "potency": {
+      "to": null,
+      "status": "AMBIGUOUS_NO_AUTOMATIC_MAPPING"
+    },
+    "abilityDamage": {
+      "to": "ability_damage_pct",
+      "status": "NEW_COMBAT_ADAPTER_REQUIRED"
+    },
+    "healingPower": {
+      "to": "class_healing_pct",
+      "status": "REQUIRES_EFFECT_SCOPE_CHECK"
+    }
+  },
+  "traitPolicy": {
+    "oneTraitDefinitionPerSpecialItem": true,
+    "sourceEligibility": [
+      "rare_blueprint_craft",
+      "dungeon_boss_chest",
+      "party_event_chest",
+      "world_boss_chest"
+    ],
+    "ordinaryCraftedGearHasProcTrait": false,
+    "combatTraitsActivePerBuild": 2,
+    "sameTraitActivePerBuild": 1,
+    "extraWornTraits": "EQUIPPABLE_BUT_DORMANT_UNTIL_SELECTED",
+    "serverSelectedTraitReceiptsOnly": true,
+    "pendingUIApproval": true,
+    "globalProcCooldownSeconds": 1,
+    "procCanTriggerProc": false,
+    "effectGemCanTriggerTrait": false,
+    "generatedDamageCannotLifestealOrCrit": false,
+    "persistOnEncounterSnapshot": [
+      "traitInstanceId",
+      "traitId",
+      "contractVersion",
+      "selectedBuildId",
+      "cooldownState",
+      "rngSeed"
+    ],
+    "sourceLootNotSellableByNPC": true,
+    "traitSourcesExcludedFromCurrencyExchanges": true
+  },
+  "traits": [
+    {
+      "id": "bastion_heart",
+      "role": "tank",
+      "source": [
+        "rare_blueprint_craft",
+        "dungeon_boss_chest"
+      ],
+      "trigger": "after_direct_damage_taken_alive",
+      "params": {
+        "healthAfterMaxPercent": 40,
+        "shieldMaxHpPercent": 6
+      },
+      "cooldownSeconds": 30,
+      "oncePerEncounter": false,
+      "notes": "Shield respects player shield limit, cannot undo a killing blow"
+    },
+    {
+      "id": "hardened_resolve",
+      "role": "tank",
+      "source": [
+        "rare_blueprint_craft",
+        "party_event_chest"
+      ],
+      "trigger": "before_direct_damage_taken",
+      "params": {
+        "minimumRawHitMaxHpPercent": 10,
+        "damageReductionPercent": 8
+      },
+      "cooldownSeconds": 20,
+      "oncePerEncounter": false,
+      "notes": "Only one hit, never passive all-time reduction"
+    },
+    {
+      "id": "thornbound_riposte",
+      "role": "tank",
+      "source": [
+        "dungeon_boss_chest",
+        "party_event_chest"
+      ],
+      "trigger": "after_direct_damage_taken_alive",
+      "params": {
+        "reflectedTakenDamagePercent": 8,
+        "reflectOwnMaxHpCapPercent": 2
+      },
+      "cooldownSeconds": 15,
+      "oncePerEncounter": false,
+      "notes": "Physical counter; cannot reflect/trigger another trait, no crit or leech"
+    },
+    {
+      "id": "first_light",
+      "role": "damage",
+      "source": [
+        "rare_blueprint_craft",
+        "dungeon_boss_chest"
+      ],
+      "trigger": "before_first_successful_direct_hit",
+      "params": {
+        "directDamageBonusPercent": 7
+      },
+      "cooldownSeconds": 0,
+      "oncePerEncounter": true,
+      "notes": "One eligible hit per encounter, including raid bosses; no DoT/trait hit"
+    },
+    {
+      "id": "ruthless_edge",
+      "role": "damage",
+      "source": [
+        "rare_blueprint_craft",
+        "party_event_chest"
+      ],
+      "trigger": "before_direct_damage_dealt",
+      "params": {
+        "targetHealthBeforeMaxPercent": 30,
+        "directDamageBonusPercent": 5
+      },
+      "cooldownSeconds": 14,
+      "oncePerEncounter": false,
+      "notes": "Measured at pre-hit HP; does not stack with generic execute multiplier"
+    },
+    {
+      "id": "quickened_focus",
+      "role": "damage",
+      "source": [
+        "dungeon_boss_chest",
+        "party_event_chest"
+      ],
+      "trigger": "after_direct_ability_critical_hit",
+      "params": {
+        "nextAbilityDamageBonusPercent": 5,
+        "expiresAfterSeconds": 6,
+        "maxCharges": 1
+      },
+      "cooldownSeconds": 20,
+      "oncePerEncounter": false,
+      "notes": "Non-stacking charge consumed on next eligible direct class skill"
+    },
+    {
+      "id": "graceful_mend",
+      "role": "support",
+      "source": [
+        "rare_blueprint_craft",
+        "dungeon_boss_chest"
+      ],
+      "trigger": "before_direct_ally_heal",
+      "params": {
+        "allyHealthBeforeMaxPercent": 40,
+        "healingBonusPercent": 7
+      },
+      "cooldownSeconds": 15,
+      "oncePerEncounter": false,
+      "notes": "No self heal, leech, potion, HoT or overheal multiplication"
+    },
+    {
+      "id": "warding_hands",
+      "role": "support",
+      "source": [
+        "rare_blueprint_craft",
+        "party_event_chest"
+      ],
+      "trigger": "before_ally_shield_created",
+      "params": {
+        "shieldBonusPercent": 7
+      },
+      "cooldownSeconds": 18,
+      "oncePerEncounter": false,
+      "notes": "Respects same shield limits as normal class shield output"
+    },
+    {
+      "id": "soothing_light",
+      "role": "support",
+      "source": [
+        "dungeon_boss_chest",
+        "party_event_chest"
+      ],
+      "trigger": "after_direct_ally_heal",
+      "params": {
+        "removesDispellableStatusCount": 1
+      },
+      "cooldownSeconds": 35,
+      "oncePerEncounter": false,
+      "notes": "Only tagged dispellable ordinary debuffs; never clears boss phase/telegraph locks"
+    },
+    {
+      "id": "worldwalker",
+      "role": "utility",
+      "source": [
+        "world_boss_chest"
+      ],
+      "trigger": "out_of_combat_gather_action",
+      "params": {
+        "gatheringActionTimeReductionPercent": 2,
+        "maxUtilityContributionPercent": 2
+      },
+      "cooldownSeconds": 0,
+      "oncePerEncounter": false,
+      "notes": "Best copy only; post-tool action duration, combat attacks and loot rates unchanged"
+    }
+  ],
+  "inheritance": {
+    "legacyDungeonAnd1_0_x": "UNTOUCHED",
+    "enemyTraitCatalogue": "SEPARATE_NAMESPACES_AND_ROLLS",
+    "combatRunRuleset": "SERVER_SELECTS_AND_FREZE_ON_NEW_ENCOUNTER",
+    "tier5Plus": "NOT_AUTHORED_YET",
+    "gems": "SEPARATE_FROM_RANDOM_AFFIX_CAPS; APPLY ONCE FROM_SIDECAR; NO_GEM_EXTRACTION",
+    "sets": "SEPARATE_TIERED_SET_POLICY; NO_8_OR_10_PIECE_NEW_SET_ASSUMPTIONS",
+    "migration": "NO_SILENT_CONVERSION_OR_RE_ROLL_OF_EXISTING_EQUIPMENT"
+  }
+}

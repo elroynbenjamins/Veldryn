@@ -1,0 +1,42 @@
+name: Combat 2.0 hidden dungeon reward QA
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2/dungeon-reward*.ts'
+      - 'backend/src/server/combat/v2/dungeon-rewards-v2.ts'
+      - 'backend/src/server/combat/v2/__tests__/dungeon-rewards-and-combat-matrix.ts'
+      - '.github/workflows/combat-v2-hidden-dungeon-rewards.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hidden-dungeon-reward-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Strict backend compile
+        run: pnpm --dir backend build
+      - name: Hidden dungeon reward choice/authority/combat matrix
+        run: node backend/dist/server/combat/v2/__tests__/dungeon-rewards-and-combat-matrix.js
+      - name: Existing V2 equipment trait engine safety regression
+        run: |
+          node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
+          node backend/dist/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.js
+      - name: Legacy combat parity
+        run: node backend/dist/server/combat/__tests__/combat-smoke.js
+      - name: Reject hidden reward path imports in public runtime
+        run: |
+          if grep -R -E 'dungeon-rewards-v2|dungeon-reward-offers-v2|compileDraftDungeonRewardCombatV2|simulateDraftDungeonRewardCombatV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+            echo 'Hidden Dungeon 2.0 reward implementation leaked into public routes'
+            exit 1
+          fi

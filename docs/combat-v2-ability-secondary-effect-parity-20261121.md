@@ -14,7 +14,7 @@ therefore ignored the same class modifiers as its parent technique.
 - Taunt bonus scaling now also covers taunts introduced by a variant. Never accept a client-provided coefficient.
 
 ## Regression tests
-- Ironwarden Sentinel `Oathwall / Reflective Oath`: reflective shield 1.25 × 1.06 = **1.325** even though primary shield is zeroed.
+- Ironwarden Sentinel `Oathwall / Reflective Oath`: reflective shield 1.25 × 1.06 (general Sentinel) × 1.06 (Oathwall style) = **1.4045** even though primary shield is zeroed.
 - Dawnkeeper Lightbringer `Dawn Mend / Steady Dawn` with one Gentle Hands + Healing Flow rank: secondary HoT .10 × (1 + .06 + .02) = **.108**, independent of the variant's primary heal scale.
 - Ironwarden `Rune Challenge / Provocation` with Firm Challenge rank 1: added 900 threat taunt gains 5% = **945**.
 

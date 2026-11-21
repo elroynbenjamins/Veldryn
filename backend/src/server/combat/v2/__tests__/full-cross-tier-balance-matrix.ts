@@ -71,7 +71,8 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    assert.ok(selectedSkills.length>=1,
     'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;
-   const actor=launchPlayer(CLASS_NAMES_V2[classId],level);
+   // Legacy display-name IDs can contain spaces; V2 persistence needs stable IDs.
+   const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),id:'QA_PLAYER_'+classId};
    const classStats={...actor.stats};
    const mainStat: keyof CombatStats =
     role==='tank'?'maxHp':role==='damage'?'attackPower':'healingPower';
@@ -193,7 +194,18 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      }
      authored++;
      if(tier===1)t1Authored++;
-     assert.ok(a.enemyMechanicLabels.length>0,'Each tier needs authored mechanics');
+     // A normal enemy can intentionally have no rolled traits. The public
+     // mechanic labels must match the immutable server-signed snapshot.
+     const expectedLabels=trusted.snapshot.preview.flatMap(p=>[
+      ...p.abilityNames.map(name=>p.enemyId+': '+name),
+      ...p.phaseNames.map(name=>p.enemyId+': '+name),
+      ...p.traitIds.map(id=>p.enemyId+': '+id),
+     ]);
+     assert.deepEqual(a.enemyMechanicLabels,expectedLabels,
+      'Only server-persisted enemy mechanics may be shown: '+seed);
+     if(kind!=='normal'||tier===1)
+      assert.ok(expectedLabels.length>0,
+       'Boss, elite and Tier 1 introduction must show authored mechanics: '+seed);
      resultRows.push({
       classId,spec:spec.id,role,tier:gearTier,profile:profile.id,kind,
       enemyKit:tier===1?'t1-authored':'authored-v2',

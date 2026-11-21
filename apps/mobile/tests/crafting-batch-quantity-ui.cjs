@@ -32,7 +32,7 @@ assert.match(commands,/craft:\['id','quantity'\]/,'craft command schema accepts 
 assert.match(commands,/integer\(a,'quantity',1,999\)/,'server validates craft bounds');
 assert.match(limits,/materialLimit/,'rightmost maximum uses materials');
 assert.match(limits,/goldLimit/,'rightmost maximum respects Gold');
-assert.match(app,/perform\(\{type:'craft',args:\{id,quantity:count\}\}\)/,'online client forwards craft count');
+assert.match(app,/perform\(\{type:'craft',args:\{id,quantity:count\}\}(?:,false,false,true,true)?\)/,'online client forwards craft count');
 assert.match(app,/tab==='Skills'&&skillsMode==='crafting'&&!!selectedSkill/,'crafting detail screens opt out of history swipe');
 assert.match(app,/disableHistorySwipe\?\{\}:backSwipe\.panHandlers/,'crafting history swipe is detached from screen body');
 console.log('PASS: crafting quantity UI contracts and authoritative batch propagation');

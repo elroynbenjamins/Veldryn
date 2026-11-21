@@ -32,7 +32,7 @@ Server-minted immutable instance has: `instanceId`, catalogue/ruleset version, a
 
 Ten slots remain: helmet, chest, legs, boots, gloves, cape, ring, amulet, weapon and offhand. The active weapon-family allowlist may span classes; skill ownership does **not** transfer with a weapon. Two-handed/dual-hand configurations consume the offhand budget and cannot double count an offhand.
 
-**Do not conflate catalogues:** hidden Crafting foundations progressed from 118/236 to 122/244 to a separate 169 ordinary templates/338 recipe-route analysis. The Combat branch also has its own set/gear assumptions. These counts are snapshots from different branch revisions, **not additive item pools**. Reconcile to one signed template manifest and only then pin launch counts.
+**Do not conflate catalogues:** hidden Crafting foundations progressed from 118/236 to 122/244 to **169 ordinary item templates/338 recipe routes**, including **15 named Forge sets/42 actual set pieces** (source-verified) and 51 new standalone/variant pieces. The separate Combat V2 structural catalogue defines **12 set families × T1–T5 = 60 tiered definitions**, of which 48 are T1–T4 concepts with potential 2/3/4/6 thresholds. Those 60 are NOT 60 implemented/obtainable gear sets: exact item-ID matches with the 15 Forge set IDs are currently zero, no six-piece Forge set exists, and every 6p effect remains gated on authored owned pieces. See [expanded set reconciliation](./EXPANDED_SET_FAMILIES_INTEGRATION_V1.md). These are snapshots from different branches, **not additive item pools**. Reconcile to one signed template/set-member manifest and only then pin launch counts.
 
 ### 2.2 Progression/tier assumptions
 

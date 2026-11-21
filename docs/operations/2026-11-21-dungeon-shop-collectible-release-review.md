@@ -1,8 +1,8 @@
 # Dungeon Shop grouped collectibles — release review (21 Nov 2026)
 
 ## Scope
-- The existing Supplies / Collections / Owned tabs remain. Supplies keep full-width rows, tier selection and authenticated purchase requests.
-- Collections and Owned group items Pets → Frames → Backgrounds → Avatars; all three regional items appear adjacent in compact cards, with full-size details below the selected row.
+- The existing Supplies / Collections / Owned tabs remain. Supplies are grouped into selected-tier crafting materials, companion resources and enhancement supplies, retaining full-width rows, tier selection and authenticated purchase requests.
+- Collections and Owned group items Pets → Frames → Backgrounds → Avatars; all three regional items appear adjacent in compact cards, with full-size details below the selected row. Below 360dp, the same groups form horizontal swipeable rows rather than squeezing three card names into tiny columns.
 - Region locks, ownership, server prices, Mark affordability and weekly caps remain server-owned.
 
 ## Live state checked (read-only)

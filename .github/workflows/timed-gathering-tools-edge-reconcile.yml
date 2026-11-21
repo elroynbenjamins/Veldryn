@@ -52,7 +52,31 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\\.ts$' || true)
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Refusing unrelated generator changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated artifacts to this branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=fix/tools-inspect-and-timed-forging-20261121
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Generated Edge bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): reconcile timed tool crafting gameplay bundles'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Branch moved during rebuild; refusing stale generated push.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"
+ || true)
           if [ -n "$unexpected" ]; then
             printf 'Refusing unrelated generator changes:\\n%s\\n' "$unexpected"
             exit 1

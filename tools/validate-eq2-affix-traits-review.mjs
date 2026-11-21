@@ -110,6 +110,11 @@ export function validateEq2AffixTraits(contract){
    (reflectedAffix?.maxEquipmentOnlyContribution??101)>8||
    (basicAffix?.maxEquipmentOnlyContribution??101)>19)
     fail('new_affix_role_or_upper_limits');
+ const sameSlots=(actual,expected)=>Array.isArray(actual)&&actual.length===expected.length&&
+   expected.every(s=>actual.includes(s));
+ if(!sameSlots(basicAffix?.eligibleSlots,['weapon','gloves','amulet','ring'])||
+   !sameSlots(reflectedAffix?.eligibleSlots,['chest','legs','offhand','ring']))
+    fail('new_affix_slot_policy');
  const policy=contract.traitPolicy;
  if(!policy||policy.combatTraitsActivePerBuild!==2||policy.sameTraitActivePerBuild!==1||
   policy.ordinaryCraftedGearHasProcTrait!==false||policy.procCanTriggerProc!==false||
@@ -120,8 +125,11 @@ export function validateEq2AffixTraits(contract){
   policy.sharedRetaliationBudgetRef!=='combatChannelPolicy.reflection'||
   policy.traitExecution!=='NOT_IMPLEMENTED_REVIEW_ONLY')
   fail('trait_runtime_guardrails');
- const allowedSources=new Set(policy?.sourceEligibility??[]);
- if(!unique([...allowedSources])||allowedSources.size!==4)fail('trait_source_policy');
+ const sources=policy?.sourceEligibility;
+ const allowedSources=new Set(Array.isArray(sources)?sources:[]);
+ const approvedSources=new Set(['rare_blueprint_craft','dungeon_boss_chest','party_event_chest','world_boss_chest']);
+ if(!Array.isArray(sources)||!unique(sources)||allowedSources.size!==4||
+    [...allowedSources].some(x=>!approvedSources.has(x)))fail('trait_source_policy');
  const traits=contract.traits;
  if(!Array.isArray(traits)||traits.length!==28)return [...errors,'expected_exactly_28_traits'];
  if(!unique(traits.map(t=>t?.id)))fail('duplicate_trait_id');
@@ -149,7 +157,7 @@ export function validateEq2AffixTraits(contract){
   ['tank','damage','support'].some(role=>traits.filter(t=>t.role===role).length!==9))
   fail('trait_role_distribution');
  const riposte=traits.find(t=>t.id==='thornbound_riposte');
- if(!riposte||riposte.params?.reflectOwnMaxHpCapPercent>reflected.maxPlayerMaxHpPercentPerSourceHit||
+ if(!riposte||riposte.params?.reflectOwnMaxHpCapPercent>(reflected?.maxPlayerMaxHpPercentPerSourceHit??0)||
    !riposte.notes?.includes('Shared per-hit retaliation budget'))fail('riposte_shared_budget');
  const roleAllowed=new Set(['tank','damage','support','utility']);
  if(traits.some(t=>!roleAllowed.has(t.role)))fail('unknown_trait_role');

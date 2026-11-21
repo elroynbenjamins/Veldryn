@@ -1,0 +1,232 @@
+{
+  "schema": "eq2-review-only-drop-gathering-policy-v1",
+  "status": "REVIEW_ONLY_DO_NOT_IMPORT_TO_RUNTIME",
+  "note": "PROPOSAL ONLY. The numbers here are expected FINAL per eligible ordinary kill, not authored MONSTERS_RAW chances. No new source is active. Never import into gameplay.",
+  "normalDrops": [
+    {
+      "tier": 1,
+      "common": {
+        "id": "EQ2_BOAR_TUSK",
+        "finalChance": 0.14,
+        "sources": [
+          {
+            "monsterId": "ROADSIDE_BOAR",
+            "zone": "Greenfields",
+            "sourceUnlockNow": 3,
+            "proposed2Unlock": 2,
+            "requiresEnemy2Change": true
+          }
+        ]
+      },
+      "rare": {
+        "id": "EQ2_VERDANT_ESSENCE",
+        "finalChance": 0.04,
+        "ordinaryGearRequires": false,
+        "sources": [
+          {
+            "monsterId": "FIELD_WISP",
+            "zone": "Greenfields",
+            "sourceUnlockNow": 2,
+            "proposed2Unlock": 2,
+            "requiresEnemy2Change": false
+          }
+        ]
+      },
+      "eligibleEliteRareChance": 0.2
+    },
+    {
+      "tier": 2,
+      "common": {
+        "id": "WOLF_FANG",
+        "finalChance": 0.1,
+        "sources": [
+          {
+            "monsterId": "IRONWOOD_WOLF",
+            "zone": "Ironwood Forest",
+            "sourceUnlockNow": 6,
+            "proposed2Unlock": 6,
+            "requiresEnemy2Change": false
+          }
+        ]
+      },
+      "rare": {
+        "id": "EQ2_TROLL_SINEW",
+        "finalChance": 0.015,
+        "ordinaryGearRequires": true,
+        "sources": [
+          {
+            "monsterId": "FOREST_TROLL",
+            "zone": "Ironwood Forest",
+            "sourceUnlockNow": 11,
+            "proposed2Unlock": 11,
+            "requiresEnemy2Change": false
+          }
+        ]
+      },
+      "eligibleEliteRareChance": 0.1
+    },
+    {
+      "tier": 3,
+      "common": {
+        "id": "EQ2_SUNSCAR_SCALE",
+        "finalChance": 0.07,
+        "sources": [
+          {
+            "monsterId": "SUNSCAR_SCORPION",
+            "zone": "Sunscar",
+            "areaId": "ZONE_006",
+            "sourceUnlockNow": 26,
+            "proposed2Unlock": 26,
+            "requiresEnemy2Change": false
+          }
+        ]
+      },
+      "rare": {
+        "id": "EQ2_MIRAGEFANG_CORE",
+        "finalChance": 0.006,
+        "ordinaryGearRequires": true,
+        "sources": [
+          {
+            "monsterId": "SUNSCAR_SCORPION",
+            "zone": "Sunscar",
+            "areaId": "ZONE_006",
+            "sourceUnlockNow": 26,
+            "proposed2Unlock": 26,
+            "requiresEnemy2Change": false,
+            "sourceRole": "starter-bridge"
+          },
+          {
+            "monsterId": "MIRAGE_SHADE",
+            "zone": "Sunscar",
+            "areaId": "ZONE_008",
+            "sourceUnlockNow": 38,
+            "proposed2Unlock": 38,
+            "requiresEnemy2Change": false,
+            "sourceRole": "later-hunt"
+          }
+        ]
+      },
+      "eligibleEliteRareChance": 0.06
+    },
+    {
+      "tier": 4,
+      "common": {
+        "id": "EQ2_GLASSBOUND_PLATE",
+        "finalChance": 0.05,
+        "sources": [
+          {
+            "monsterId": "SANDPLATE_JUGGERNAUT",
+            "zone": "Sunscar",
+            "areaId": "ZONE_007",
+            "sourceUnlockNow": 38,
+            "proposed2Unlock": 38,
+            "requiresEnemy2Change": false
+          },
+          {
+            "monsterId": "GLASSBOUND_SENTINEL",
+            "zone": "Sunscar",
+            "areaId": "ZONE_008",
+            "sourceUnlockNow": 41,
+            "proposed2Unlock": 41,
+            "requiresEnemy2Change": false
+          }
+        ]
+      },
+      "rare": {
+        "id": "EQ2_GLASSHEART_FRAGMENT",
+        "finalChance": 0.0025,
+        "ordinaryGearRequires": true,
+        "sources": [
+          {
+            "monsterId": "SANDPLATE_JUGGERNAUT",
+            "zone": "Sunscar",
+            "areaId": "ZONE_007",
+            "sourceUnlockNow": 38,
+            "proposed2Unlock": 38,
+            "requiresEnemy2Change": false,
+            "sourceRole": "starter-bridge"
+          },
+          {
+            "monsterId": "GLASSBOUND_SENTINEL",
+            "zone": "Sunscar",
+            "areaId": "ZONE_008",
+            "sourceUnlockNow": 41,
+            "proposed2Unlock": 41,
+            "requiresEnemy2Change": false,
+            "sourceRole": "later-hunt"
+          }
+        ]
+      },
+      "eligibleEliteRareChance": 0.04
+    }
+  ],
+  "elitePolicy": {
+    "status": "BLOCKED_UNTIL_AUTHORITATIVE_ELITE_SPAWN_AND_KILL_ELIGIBILITY",
+    "note": "Eligible elite chance is per independently verified elite kill, not a second roll on every normal kill. Only a server-authoritative 2.0 elite reward settlement may apply this.",
+    "noGuaranteedRareDrops": true,
+    "noClientDeclaredElite": true,
+    "noClientProvidedRng": true,
+    "noCrossTierLootBypass": true
+  },
+  "dust": {
+    "itemId": "EQ2_GLASSBOUND_DUST",
+    "tradeability": "PROPOSED_TRADEABLE_MATERIAL_SUBJECT_TO_MARKET_ESCROW_REVIEW",
+    "access": {
+      "regionId": "SUNSCAR",
+      "areaId": "ZONE_008",
+      "areaMinimumCharacterLevel": 38,
+      "minimumMiningSkillLevel": 34,
+      "minimumEquipmentTier": 4
+    },
+    "nodeProposal": {
+      "id": "EQ2_MIRAGE_GLASSSAND_SEAM",
+      "name": "Mirage Glass-Sand Seam",
+      "skillId": "mining",
+      "primaryItemId": "SUNSTONE_ORE",
+      "bonusItemId": "EQ2_GLASSBOUND_DUST"
+    },
+    "scenarios": [
+      {
+        "id": "slow-base",
+        "orePerAction": 1,
+        "bonusDustChance": 0.3,
+        "bonusDustMin": 1,
+        "bonusDustMax": 3,
+        "cycleSeconds": 124,
+        "reason": "Single ore income only; risks making T4 especially time-consuming"
+      },
+      {
+        "id": "balanced-coupled",
+        "orePerAction": 2,
+        "bonusDustChance": 0.3,
+        "bonusDustMin": 1,
+        "bonusDustMax": 3,
+        "cycleSeconds": 128,
+        "reason": "Candidate default: better later-tier ore output; dust acquisition linked to mining without guaranteed Dust each action"
+      },
+      {
+        "id": "rare-dust",
+        "orePerAction": 2,
+        "bonusDustChance": 0.15,
+        "bonusDustMin": 1,
+        "bonusDustMax": 2,
+        "cycleSeconds": 128,
+        "reason": "Stress case: Dust becomes separate bottleneck and may overwhelm the rare combat-drop gating"
+      }
+    ],
+    "selectedForFurtherReview": "balanced-coupled",
+    "cycleNote": "The cycle seconds are theoretical full effective baseline with generic gathering time multiplier. Real pace modifiers, equipment bonuses, weather, event effects and server settlement are not modeled.",
+    "resourceCostNote": "The T4 ten-slot tank examples need 506 Dust, 1870 ore under the proposed T3 ingot draft or 1264 ore if existing T3 ingot recipe is preserved, including 10 existing Glassbound Alchemy binders. These are not live balances.",
+    "noCreationOrDropsAuthorized": true
+  },
+  "validationRequirements": [
+    "Every mandatory common/rare source must be reachable at its tier entry after considering enemy and area gates.",
+    "Keep exact item IDs; WOLF_FANG != IRONWOOD_FANG and SUNSCALE is botanical.",
+    "Normal drop chances are post-normalization; do not apply legacy material multiplier twice.",
+    "Confirm rare T1 is optional; other rare slot rules from the 338 draft recipes remain enforced.",
+    "Never put optional elite chance on every normal kill; elite spawn frequency and source domains are separate.",
+    "Ensure Glassbound Dust source is area accessible to char40 and mining skill34, with new server-only side-drop rules approved.",
+    "Compare P50/P90/P95 and market supply for low- to high-power players before implementation.",
+    "No client/UI changes without actual look/theme approval; no runtime implementation without separate release approval."
+  ]
+}

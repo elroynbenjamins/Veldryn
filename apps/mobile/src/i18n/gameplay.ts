@@ -9,6 +9,9 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Compact crafting details tabs and optional material acquisition help.
+ 'Progress':['Progress','Fortschritt','Progreso','Voortgang','Progressi','Progression'],
+ 'Materials & sources':['Materials & sources','Materialien & Fundorte','Materiales y fuentes','Materialen en vindplaatsen','Materiali e fonti','Matériaux et sources'],
  // Timed gathering tools use the shared Forge and its six-locale labels.
  "Crafting time":["Crafting time","Herstellungszeit","Tiempo de fabricación","Maaktijd","Tempo di creazione","Temps de fabrication"],
  "Tool bonus revealed on claim":["Tool bonus revealed on claim","Werkzeugbonus beim Abholen sichtbar","Bonus de herramienta al recoger","Gereedschapsbonus zichtbaar bij ophalen","Bonus attrezzo visibile al ritiro","Bonus de l’outil révélé à la récupération"],

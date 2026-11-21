@@ -15,7 +15,7 @@ export type OnlinePlayer={
 type OnlineRoster={count:number;players:OnlinePlayer[]};
 
 /** The server decides the visibility, count and unique-account semantics.
- * Never infer "online" from chat messages or cached local character saves.
+ * Never infer recent activity from chat messages or cached local character saves.
  */
 export function parseOnlineRoster(value:unknown):OnlineRoster{
  if(!value||typeof value!=='object')throw new Error('Invalid online player response.');
@@ -42,7 +42,7 @@ export function useOnlinePlayerRoster(active:boolean){
   pendingForAccount.current=accountId;
   if(currentAccount.current===accountId)setLoading(true);
   try{
-   const {data,error:requestError}=await supabase.rpc('online_player_roster_v1');
+   const {data,error:requestError}=await supabase.rpc('online_player_roster_v2');
    if(requestError)throw requestError;
    if(currentAccount.current===accountId){setRoster(parseOnlineRoster(data));setError('');}
   }catch(e){

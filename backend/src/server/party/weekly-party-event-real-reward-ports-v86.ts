@@ -117,6 +117,7 @@ function check(receipt:FrozenChestReceiptV69){
   receipt.drops.length!==0||receipt.groups.length!==1||
   receipt.groups[0]?.groupId!=='equipment'||
   receipt.groups[0]?.type!=='equipment'||
+  receipt.groups[0]?.hit!==false||
   receipt.groups[0]?.entryId!==null||
   receipt.groups[0]?.quantity!==0)
   throw Error('party_event_v86_untrusted_or_eq2_chest');
@@ -178,11 +179,11 @@ async function ensureV61(tx:ChestSqlV70,receipt:FrozenChestReceiptV69,
   if(rows.length!==1)throw Error('party_event_v86_v61_receipt_missing');
   const stored=typeof rows[0]!.receipt==='string'?
    JSON.parse(rows[0]!.receipt as string) as unknown:rows[0]!.receipt;
-  if(JSON.stringify(stored)!==JSON.stringify(expected)&&
-   (!stored||typeof stored!=='object'||Array.isArray(stored)||
-    Object.entries(expected).some(([k,v])=>
-     JSON.stringify((stored as Record<string,unknown>)[k])!==
-      JSON.stringify(v))))
+  if(!stored||typeof stored!=='object'||Array.isArray(stored)||
+   Object.keys(stored).length!==Object.keys(expected).length||
+   Object.entries(expected).some(([k,v])=>
+    JSON.stringify((stored as Record<string,unknown>)[k])!==
+     JSON.stringify(v)))
    throw Error('party_event_v86_v61_receipt_mismatch');
  }
  return r;

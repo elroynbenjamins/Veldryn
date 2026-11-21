@@ -20,7 +20,7 @@ export interface SkillNavigatorEntry{
 export const SKILL_NAVIGATOR_CATEGORIES:readonly SkillNavigatorCategory[]=['combat','gathering','crafting','other','companions'];
 
 const GATHERING_SKILLS=new Set(['mining','woodcutting','fishing','herbalism','exploration']);
-const CRAFTING_SKILLS=new Set(['smithing','cooking','alchemy','tailoring','enchanting','faith']);
+const CRAFTING_SKILLS=new Set(['smithing','cooking','alchemy','tailoring','enchanting','faith','forge']);
 
 export function skillNavigatorCategoryFor(id:string):SkillNavigatorCategory{
  if(GATHERING_SKILLS.has(id))return 'gathering';

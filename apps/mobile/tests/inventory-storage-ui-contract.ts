@@ -60,7 +60,7 @@ ok(inspectModel.includes('equippedSetPieceCount')&&inspectModel.includes('MAX_UP
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 const headerControls=fs.readFileSync('src/components/InventoryItemHeaderControls.tsx','utf8');
 ok(inspect.includes('InventoryItemHeaderControls')&&inspect.includes('onFavorite={onToggleFavorite}')&&inspect.includes('onLock={onToggleLock}')&&screenSource.includes('favorite={inspectFavorite} locked={inspectLocked}')&&headerControls.includes('accessibilityState={{selected:favorite,disabled}}'),'Quick Inspect must place working lock and favorite controls together in its header');
-ok(inspect.includes('quickActions?<View style={s.quickFooter}')&&screenSource.includes('quickActions={inspectQuickActions}')&&screenSource.includes('setInspectQuantity(inspectStock)')&&screenSource.includes("kind:carried?'sell':'bank_sell'"),'Resource Quick Inspect must show a separate all-or-custom quantity footer and confirm inventory or bank sales');
+ok(inspect.includes("(quickActions||(actions&&item.type!=='food'))?<View style={s.quickFooter}")&&screenSource.includes('quickActions={inspectQuickActions}')&&screenSource.includes('setInspectQuantity(inspectStock)')&&screenSource.includes("kind:carried?'sell':'bank_sell'"),'Resource Quick Inspect must show a separate all-or-custom quantity footer and confirm inventory or bank sales');
 ok(screenSource.includes('inspectLocked||inspectFavorite||goalProtection.has(inspected.id)'),'Quick Inspect must disable selling for locked, favorite and Working Toward items');
 ok(screenSource.includes("type:'gear_lock'")&&screenSource.includes('previewRecord')&&screenSource.includes('selectedCopy'),'Gear header locking must target the selected unique crafted copy');
 ok(screenSource.includes('InventoryLockGlyph')&&screenSource.includes('itemLockCorner')&&screenSource.includes('itemFavoriteCorner')&&screenSource.includes('onToggleLock(item.id)')&&screenSource.includes('onToggleFavorite(item.id)'),'Each occupied inventory slot must have independently tappable lock and favorite corners');
@@ -102,7 +102,7 @@ ok(gearPanel.includes('EquipmentDisposalStatus compact')&&gearPanel.includes("p(
   'Sell and salvage must use the existing protected per-copy confirmation flow');
 ok(gearPanel.includes('onNavigate={onNavigate?destination=>')&&screenSource.includes('onNavigate={onNavigateInspect}'),
   'Gear Quick Inspect source links must reuse the existing gameplay source navigation');
-ok(inspect.includes("source==='equipment_pouch'?gl('Gear')")
+ok(inspect.includes("source==='bank'?gt('Bank'):gl('Gear')")
   &&inspect.includes("equipmentPouch(state).stacks.reduce("),
   'Gear Quick Inspect must identify character-local storage instead of showing only Inventory and Bank');
 
@@ -113,9 +113,9 @@ for(const label of ['Compare & Equip','To Inventory','To Bank','Sell copy','Salv
 ok(inspect.includes("const isBonusRoll=(line:string)=>line.startsWith('Equipment roll · ')")
    &&inspect.includes("line.startsWith('Weapon roll · ')")
    &&inspect.includes("const bonusRows=model.effectLines.filter(isBonusRoll)")
-   &&inspect.includes("source==='equipment_pouch'?gl('Gear')"),
+   &&inspect.includes("source==='bank'?gt('Bank'):gl('Gear')"),
    'Shared Inspect must derive new and legacy bonus stats from exact item-inspection receipts in Gear Storage');
-ok(inspect.includes("gt('BONUS STATS')")&&inspect.includes("bonusRows.map(roll=>")
+ok(!inspect.includes("gt('BONUS STATS')")&&inspect.includes("bonusRows.map(roll=>")
    &&inspect.includes("otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line))"),
    'Bonus stats must be prominent, compact, and not duplicated under expanded equipment details');
 ok(gearPreview.includes("gl('BONUS STATS')")&&!gearPreview.includes('rollTrack')

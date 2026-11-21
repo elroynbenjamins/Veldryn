@@ -17,12 +17,12 @@ assert.equal(sold.bank.stacks.find(row=>row.itemId===dust&&row.bound)?.quantity,
  'selling freely earned dust must never spend account-bound stock');
 assert.equal(sold.bank.stacks.find(row=>row.itemId===dust&&!row.bound)?.quantity,3);
 assert.throws(()=>sellBankItem(sold,dust,4),/Account-bound Dungeon Shop materials cannot be sold/);
-sold=withdrawFromBank(sold,dust,8);
-assert.equal(sold.inventory.stacks.reduce((sum,row)=>sum+(row.itemId===dust&&row.bound?row.quantity:0),0),5,
+sold=withdrawFromBank(sold,dust,13);
+assert.equal(sold.inventory.stacks.reduce((sum,row)=>sum+(row.itemId===dust&&row.bound?row.quantity:0),0),10,
  'withdrawal must retain original bound quantity and flag');
 assert.equal(sold.inventory.stacks.reduce((sum,row)=>sum+(row.itemId===dust&&!row.bound?row.quantity:0),0),3);
 assert.throws(()=>sellItem(sold,dust,4),/Account-bound Dungeon Shop materials cannot be sold/);
-sold=depositToBank(sold,dust,8);
+sold=depositToBank(sold,dust,13);
 assert.equal(sold.bank.stacks.find(row=>row.itemId===dust&&row.bound)?.quantity,10,
  'Bank deposit must never strip the bound flag');
 assert.equal(sold.bank.stacks.find(row=>row.itemId===dust&&!row.bound)?.quantity,3);

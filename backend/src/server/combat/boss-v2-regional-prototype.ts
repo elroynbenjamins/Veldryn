@@ -101,7 +101,7 @@ export function prepareRegionalBossV2(
   boss:CombatantDefinition,
   ruleset?:typeof ENEMY_V2_RULESET,
 ):CombatantDefinition{
-  if(ruleset!==ENEMY_V2_RULESET||boss.team!=='enemies'||!boss.boss||(boss.tags??[]).includes(MARK))return boss;
+  if(ruleset!==ENEMY_V2_RULESET||boss.team!=='enemies'||!boss.boss||(boss.tags??[]).some(tag=>tag.startsWith('enemy-v2:boss-profile:')))return boss;
   const profile=authored(boss);
   if(!profile||boss.name!==profile.name)return boss;
   // No silent replacement of existing kit: preserve its identity and only add

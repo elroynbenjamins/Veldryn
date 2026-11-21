@@ -13,9 +13,6 @@ import {SupplyJourneyGlyph} from '../components/SupplyJourneyGlyph';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-const ICONS:Record<DailySupplyBoostType,string>={
- gathering_speed:'⛏',crafting_speed:'⚒',skill_xp:'✦',combat_xp:'⚔',combat_speed:'ϟ',
-};
 const CHAPTERS=[1,2,3,4] as const;
 const durationHours=(seconds:number)=>Math.round(seconds/3600)+'h';
 
@@ -76,7 +73,7 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
    <Panel accentColor={milestone?C.special:C.selectionLine} accentSurface={milestone?C.specialSurface:undefined} style={s.rewardPanel}>
     <View style={s.between}><Text style={s.kicker}>{a('DAY {day} REWARD',{day:selectedDay})}</Text><StatusPill label={isClaimed?a('COLLECTED'):isToday?a('AVAILABLE'):a('PREVIEW')} tone={isClaimed?'muted':isToday?'good':'info'}/></View>
     <View style={s.rewardRow}><View style={[s.rewardGlyph,milestone&&s.rewardGlyphSpecial]}><SupplyJourneyGlyph kind={milestone?'milestone':reward.type} size={46}/></View><View style={s.flex}><Text style={s.rewardName}>{milestone?a('Supply Blessing'):a(dailySupplyBoostLabel(reward.type))}</Text><Text style={s.rewardAmount}>{dailySupplyBonusText(reward.bonus)} · {durationHours(reward.seconds)}</Text><Text style={s.meta}>{milestone?a('Choose one enhanced buff to store'):a('Stored until activated · time drains only during eligible activity')}</Text></View></View>
-    {milestone&&isToday?<View style={s.blessingBox}><Text style={s.label}>{a('CHOOSE YOUR BLESSING')}</Text><View style={s.choices}>{DAILY_SUPPLY_BOOST_TYPES.map(type=><Pressable key={type} accessibilityRole="radio" accessibilityState={{selected:blessing===type}} disabled={busy} onPress={()=>setBlessing(type)} style={[s.choice,blessing===type&&s.choiceSelected]}><Text style={[s.choiceText,blessing===type&&s.choiceTextSelected]}>{ICONS[type]} {a(dailySupplyBoostLabel(type))}</Text></Pressable>)}</View></View>:null}
+    {milestone&&isToday?<View style={s.blessingBox}><Text style={s.label}>{a('CHOOSE YOUR BLESSING')}</Text><View style={s.choices}>{DAILY_SUPPLY_BOOST_TYPES.map(type=><Pressable key={type} accessibilityRole="radio" accessibilityState={{selected:blessing===type}} disabled={busy} onPress={()=>setBlessing(type)} style={[s.choice,blessing===type&&s.choiceSelected]}><SupplyJourneyGlyph kind={type} size={24}/><Text style={[s.choiceText,blessing===type&&s.choiceTextSelected]}>{a(dailySupplyBoostLabel(type))}</Text></Pressable>)}</View></View>:null}
     {isToday?<GameButton title={milestone?a('Claim Supply Blessing'):a('Claim Today’s Supply')} disabled={busy} loading={busy} onPress={()=>run({type:'daily_supplies_claim',args:{characterId:state.character!.id,...(todayReward.kind==='milestone'?{choiceType:blessing}:{})}},a('Reward banked account-wide.'))}/>:isClaimed?<GameButton title={a('Reward Collected')} disabled onPress={()=>{}}/>:<GameButton tone="secondary" title={a('View Current Claim')} onPress={resetToday}/>}
    </Panel>
    <Panel>
@@ -129,7 +126,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  rewardGlyphSpecial:{backgroundColor:C.specialSurface,borderColor:C.special},
  rewardName:{...typography.title,color:C.text},rewardAmount:{...typography.bodyStrong,color:C.good},
  blessingBox:{gap:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:7},
- choice:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:7,paddingHorizontal:12,paddingVertical:10,backgroundColor:C.panel2,justifyContent:'center'},
+ choice:{flexDirection:'row',alignItems:'center',gap:6,minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:7,paddingHorizontal:10,paddingVertical:7,backgroundColor:C.panel2,justifyContent:'center'},
  choiceSelected:{borderColor:C.special,backgroundColor:C.specialSurface},choiceText:{...typography.caption,color:C.muted,fontWeight:'700'},choiceTextSelected:{color:C.text},
  milestones:{flexDirection:'row',gap:6},milestone:{flex:1,minWidth:0,backgroundColor:C.panel2,borderWidth:1,borderColor:C.special,borderRadius:8,paddingVertical:12,paddingHorizontal:3,alignItems:'center',gap:4},
  milestoneDone:{borderColor:C.good,backgroundColor:C.goodSurface},milestoneGlyph:{fontSize:19,color:C.special},milestoneLabel:{fontSize:10,fontWeight:'900',color:C.text},

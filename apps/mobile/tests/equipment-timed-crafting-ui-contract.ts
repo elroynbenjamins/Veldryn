@@ -26,7 +26,7 @@ ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character 
 ok(panel.includes('Crafting Queue')&&panel.includes('Forge capacity'),'Skills must expose a compact equipment crafting queue and capacity summary');
 ok(panel.includes('model.slotInfo.max'),'Queue UI must render the authoritative hard cap');
 ok(panel.includes('Supporter')||panel.includes('slotInfo.sources'),'Queue UI must expose unlock-source progression');
-ok(card.includes('Start craft ·'),'Equipment recipe CTA must start a timed craft rather than complete instantly');
+ok(card.includes("gt('Start')+' '+f(quantity)+' '+gt('crafts')")&&card.includes('onCraft(recipe.id,quantity)'),'Equipment recipe CTA must submit the selected count to the timed forge rather than complete instantly');
 ok(card.includes('equipmentCraftQueueModel')&&card.includes('freeWaiting'),'Recipe cards must stay available while backlog space exists and block only when forge + backlog are full');
 ok(skills.includes('EquipmentCraftQueuePanel'),'Crafting mode must display the timed queue');
 ok(commands.includes("case 'craft_claim'")&&commands.includes("case 'craft_claim_all'"),'Online-authoritative gameplay needs claim commands');
@@ -35,7 +35,7 @@ ok(app.includes("type:'craft_claim'")&&app.includes("type:'craft_claim_all'"),'M
 ok(app.includes('forgeClaimAllInFlight.current')&&app.includes('for(const job of finished)'),'Claim All must prevent double-taps and retry rejected bulk calls as independent authoritative claims');
 ok(app.includes("perform({type:'craft_claim_all'},true,false,true)")&&app.includes("perform({type:'craft_claim',args:{id:job.id}},false,false,true)"),'Rejected bulk claims must fall back to signed, server-persisted single claims without spamming error alerts');
 ok(queue.includes('blocked.push({jobId:job.id,reason})')&&commands.includes('result.blocked.length'),'Bulk claims must retain unclaimable jobs and report the blocked count');
-ok(app.includes('startEquipmentCraft(state,id,Date.now())'),'Offline/local equipment crafting must use the same timed domain path');
+ok(app.includes('startEquipmentCraft(next,id,craftNow).state')&&app.includes('for(let batch=0;batch<count;batch++)'),'Offline/local multi-crafting must reserve each selected job through the same authoritative timed domain path');
 ok(save.includes('normalizeEquipmentCraftingQueue'),'Timed queue must persist safely through save normalization');
 ok(save.includes('entitlements:booleanRecord'),'Supporter/VIP+ flags must survive save normalization');
 

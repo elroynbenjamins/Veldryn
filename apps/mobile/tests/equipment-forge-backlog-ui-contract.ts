@@ -20,7 +20,7 @@ ok(panel.includes('WAITING BACKLOG'),'Forge UI must separate waiting jobs from a
 ok(panel.includes('Cancelling returns all reserved materials and no Gold.'),'Waiting jobs must explain the material-only refund');
 ok(panel.includes("onMoveWaiting(job.id,'up')")&&panel.includes("onMoveWaiting(job.id,'down')"),'Waiting rows must expose earlier/later priority controls');
 ok(panel.includes('Starts in ~'),'Waiting rows must show approximate automatic start timing');
-ok(card.includes('Queue craft ·'),'Recipe CTA must switch to Queue craft when active slots are full but backlog space remains');
+ok(card.includes("willWait?gt('Queue')")&&card.includes("gt('crafts')")&&card.includes('onCraft(recipe.id,quantity)'),'Recipe CTA must queue the selected craft count when active slots are full but backlog space remains');
 ok(card.includes('freeWaiting'),'Recipe availability must consider waiting backlog capacity');
 const collection=read('src/components/SmithingCollection.tsx');
 ok(collection.includes("'Add to forge'"),'Equipment set crafting must make adding another piece to an available forge slot explicit');

@@ -16,8 +16,8 @@ function close(actual:number,expected:number,label:string){
 }
 
 const backend=fs.readFileSync('../../backend/src/server/equipment/gems/gem-catalog-v1.ts','utf8');
-ok(formatGemValueV1('stat_might',5).includes('Power')&&!formatGemValueV1('stat_might',5).includes('Attack'),
- 'Canonical Might description must match its real Power bonus');
+ok(formatGemValueV1('stat_might',5).includes('Attack')&&!formatGemValueV1('stat_might',5).includes('Power'),
+ 'V2 Might description must show its direct Attack bonus');
 ok(formatGemValueV1('stat_iron',4).includes('Armor'),
  'Canonical Iron description must match its Armor bonus');
 const keys=Object.keys(CANONICAL_STAT_GEM_KEYS_V1);
@@ -45,28 +45,30 @@ const withGem=(familyId:string,grade=5)=>({
  }},
 });
 const expected={
- stat_ward:{field:'ward',value:.0125},
- stat_precision:{field:'accuracy',value:.008},
- stat_keen:{field:'critChance',value:.006},
- stat_piercing:{field:'penetration',value:.0075},
- stat_swift:{field:'haste',value:.008},
- stat_potent:{field:'potency',value:.012},
- stat_elusive:{field:'evasion',value:.005},
- stat_resolute:{field:'tenacity',value:.009},
+ stat_ward:{field:'ward',value:.015},
+ stat_precision:{field:'accuracy',value:.011},
+ stat_keen:{field:'critChance',value:.008},
+ stat_piercing:{field:'penetration',value:.01},
+ stat_swift:{field:'haste',value:.015},
+ stat_potent:{field:'potency',value:.02},
+ stat_elusive:{field:'evasion',value:.007},
+ stat_resolute:{field:'tenacity',value:.016},
 } as const;
 for(const [familyId,row] of Object.entries(expected)){
  const actual=effectiveStats(withGem(familyId));
  close(actual[row.field]-without[row.field],row.value,'Gem must affect Character '+row.field+': '+familyId);
 }
-const power=effectiveStats(withGem('stat_might'));
-ok(power.power>without.power,'Might must affect derived Power');
-close(power.attack,without.attack,'Might must not masquerade as legacy Attack');
+const might=effectiveStats(withGem('stat_might'));
+close(might.attack,without.attack*1.035,'V2 Might must directly increase Attack by 3.5%');
+ok(might.power>without.power,'Derived Power can increase indirectly because the hero has more Attack');
+ok(!('power' in equippedCanonicalStatGemBonusesV1(withGem('stat_might')).statPercent),
+ 'Might cannot separately increase Power a second time');
 const vitality=effectiveStats(withGem('stat_vitality'));
 ok(vitality.hp>without.hp,'Vitality must increase effective Max HP');
 const iron=effectiveStats(withGem('stat_iron'));
 ok(iron.defense>without.defense&&iron.armor>without.armor,'Iron must increase effective Armor and Defense');
 const savage=effectiveStats(withGem('stat_savage'));
-close(savage.critMultiplier,1.5+.5*.025,'Savage applies to the actual base critical-damage bonus');
+close(savage.critMultiplier,1.5+.5*.05,'Savage applies to the actual base critical-damage bonus');
 
 const unequippedWard=withGem('stat_ward');
 const noSocketedGear={...unequippedWard,character:{...unequippedWard.character,equipment:{}}};
@@ -81,6 +83,16 @@ const oldGem={...base,character:{...base.character!,gearEnhancements:{
  basic_sword:{rank:0,failures:0,gemIds:['WARD_SHARD'],statGemId:'WARD_SHARD'},
 }}};
 ok(effectiveStats(oldGem).defense>without.defense,'Older Defense Gems retain their existing effect');
+const oldEmber={...base,character:{...base.character!,gearEnhancements:{
+  basic_sword:{rank:0,failures:0,gemIds:['EMBER_SHARD'],statGemId:'EMBER_SHARD'},
+}}};
+const oldEmberheart={...base,character:{...base.character!,gearEnhancements:{
+  basic_sword:{rank:0,failures:0,gemIds:['EMBERHEART_GEM'],statGemId:'EMBERHEART_GEM'},
+}}};
+close(effectiveStats(oldEmber).attack,without.attack*1.02,
+ 'Original socketed Ember Shard keeps +2% Attack');
+close(effectiveStats(oldEmberheart).attack,without.attack*1.05,
+ 'Original socketed Emberheart keeps +5% Attack');
 ok(Object.keys(equippedCanonicalStatGemBonusesV1(oldGem).statPercent).length===0,
  'Older gems must not enter canonical totals');
 close(equippedGemBonuses(withGem('stat_iron')).defense,0,'Canonical Iron must not be counted twice as legacy Defense');
@@ -110,21 +122,21 @@ const setWithGem={...setState,character:{...setState.character,gearEnhancements:
 }}};
 const setOnly=activeEquipmentBuildStats(setState);
 const stacked=activeEquipmentBuildStats(setWithGem);
-close(stacked.armor,(1+setOnly.armor)*(1+.0125)-1,
+close(stacked.armor,(1+setOnly.armor)*(1+.035)-1,
  'Iron and active 4-piece Armor set multiplier must stack exactly');
 ok(effectiveStats(setWithGem).defense>effectiveStats(setState).defense,
  'Set+gem stacking must affect total effective Defense');
 
 const ward=withGem('stat_ward'),piercing=withGem('stat_piercing'),swift=withGem('stat_swift'),potent=withGem('stat_potent');
-close(equipmentSetCombatModifiers(ward).stats.ward,.0125,'Ward must feed incoming-damage mitigation');
-close(equipmentSetCombatModifiers(piercing).penetrationMultiplier,1.0075,'Piercing must feed combat penetration');
-close(equipmentSetCombatModifiers(swift).speedMultiplier,1.008,'Swift must feed action-speed modifier');
-close(equipmentSetCombatModifiers(potent).recoveryMultiplier,1.012,'Potent must feed recovery modifier');
+close(equipmentSetCombatModifiers(ward).stats.ward,.015,'Ward must feed incoming-damage mitigation');
+close(equipmentSetCombatModifiers(piercing).penetrationMultiplier,1.01,'Piercing must feed combat penetration');
+close(equipmentSetCombatModifiers(swift).speedMultiplier,1.015,'Swift must feed action-speed modifier');
+close(equipmentSetCombatModifiers(potent).recoveryMultiplier,1.02,'Potent must feed recovery modifier');
 
 // The boss timer already uses effectiveStats.haste; actionSpeedMultiplier
 // must not apply the same Swift/4-piece Haste bonus again.
 const baseBoss=fallenKnightPlayerSnapshot(base),swiftBoss=fallenKnightPlayerSnapshot(swift);
-close(swiftBoss.haste-baseBoss.haste,.008,
+close(swiftBoss.haste-baseBoss.haste,.015,
  'Fallen Knight must receive the canonical Swift Haste bonus in the combat snapshot');
 close(swiftBoss.actionSpeedMultiplier,baseBoss.actionSpeedMultiplier,
  'Swift must not also change the separate action-speed multiplier');
@@ -161,7 +173,7 @@ const forgedState={...base,character:{...base.character!,equipment:forgedEquipme
 close(effectiveStats(forgedState).accuracy-effectiveStats({
  ...forgedState,character:{...forgedState.character,gearEnhancements:{},
  equipmentInstanceIds:{...instanceSlots,[itemDef(forgedIds[0]).slot!]:'NOT_EQUIPPED'}},
-}).accuracy,.0065,'Canonical Stat Gem on a forged equipment copy must affect Accuracy');
+}).accuracy,.009,'Canonical Stat Gem on a forged equipment copy must affect Accuracy');
 ok(equippedCanonicalGemIdsV1(forgedState).includes('gem:stat_precision:g4'),
  'Canonical gem discovery must read forged Stat Gem sockets');
 ok(resonanceForFamilyV1(forgedState,'effect_bulwark').resonance===3,

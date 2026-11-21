@@ -660,18 +660,18 @@ var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless",
 var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
 var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
 var MOBILE_GEM_FAMILIES_V1 = [
-  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
-  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
-  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
-  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
-  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
-  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
-  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
-  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
+  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(0.01, 0.015, 0.02, 0.0275, 0.035), unit: "percent", description: "Increases Attack.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
+  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(0.015, 0.02, 0.0275, 0.0375, 0.05), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
+  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(0.01, 0.015, 0.02, 0.0275, 0.035), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
+  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 75e-4, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(4e-3, 55e-4, 7e-3, 9e-3, 0.011), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 8e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
+  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.015, 0.02, 0.025, 0.035, 0.05), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
+  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(3e-3, 45e-4, 6e-3, 8e-3, 0.01), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
+  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(5e-3, 7e-3, 9e-3, 0.012, 0.015), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(7e-3, 0.01, 0.013, 0.0165, 0.02), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 55e-4, 7e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
+  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.013, 0.016), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
   { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
   { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
   { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
@@ -46913,7 +46913,7 @@ function enhancedGearStats(state, itemId) {
   return enhancedGearStatsAtRank(state, itemId, gearEnhancement(state, itemId).rank);
 }
 var CANONICAL_STAT_GEM_KEYS_V1 = {
-  stat_might: "power",
+  stat_might: "attack",
   stat_vitality: "maxHp",
   stat_iron: "armor",
   stat_ward: "ward",
@@ -47044,6 +47044,7 @@ var EMPTY_STATS = {
   tenacity: 0,
   haste: 0,
   power: 0,
+  attack: 0,
   accuracy: 0,
   penetration: 0,
   potency: 0,
@@ -47167,7 +47168,9 @@ function activeEquipmentBuildStats(state) {
     ward: multiplied(sets.ward, p.ward) + rolled("ward"),
     tenacity: multiplied(sets.tenacity, p.tenacity) + rolled("tenacity"),
     haste: multiplied(sets.haste, p.haste) + rolled("haste"),
-    power: multiplied(sets.power, p.power) + rolled("power"),
+    power: sets.power + rolled("power"),
+    // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
+    attack: multiplied(sets.attack, p.attack) + rolled("attack"),
     accuracy: sets.accuracy + (pp.accuracy ?? 0) + rolled("accuracy"),
     penetration: sets.penetration + (pp.penetration ?? 0) + rolled("penetration"),
     potency: multiplied(sets.potency, p.potency) + rolled("potency"),
@@ -47328,6 +47331,7 @@ function effectiveStats(state) {
   attack += classGear.attack;
   defense += classGear.defense;
   const setStats = activeEquipmentBuildStats(state);
+  attack *= 1 + setStats.attack;
   hp = Math.ceil(hp * (1 + setStats.maxHp));
   defense *= 1 + setStats.armor;
   const gems = equippedGemBonuses(state);
@@ -47753,18 +47757,18 @@ import { createHash } from "node:crypto";
 // src/server/equipment/gems/gem-catalog-v1.ts
 var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
 var STAT_GEMS_V1 = [
-  { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
-  { familyId: "stat_vitality", name: "Vitality", stat: "maxHp", unit: "percent", values: vals2(6e-3, 8e-3, 0.01, 0.0125, 0.015) },
-  { familyId: "stat_iron", name: "Iron", stat: "armor", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
-  { familyId: "stat_ward", name: "Ward", stat: "ward", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.0125) },
-  { familyId: "stat_precision", name: "Precision", stat: "accuracy", unit: "percentage_point", values: vals2(3e-3, 4e-3, 5e-3, 65e-4, 8e-3) },
-  { familyId: "stat_keen", name: "Keen", stat: "critRate", unit: "percentage_point", values: vals2(2e-3, 3e-3, 4e-3, 5e-3, 6e-3) },
-  { familyId: "stat_savage", name: "Savage", stat: "critDamage", unit: "percent", values: vals2(0.01, 0.013, 0.016, 0.02, 0.025) },
-  { familyId: "stat_piercing", name: "Piercing", stat: "penetration", unit: "percentage_point", values: vals2(25e-4, 35e-4, 45e-4, 6e-3, 75e-4) },
-  { familyId: "stat_swift", name: "Swift", stat: "haste", unit: "percent", values: vals2(35e-4, 45e-4, 55e-4, 65e-4, 8e-3) },
-  { familyId: "stat_potent", name: "Potent", stat: "potency", unit: "percent", values: vals2(5e-3, 65e-4, 8e-3, 0.01, 0.012) },
-  { familyId: "stat_elusive", name: "Elusive", stat: "evasion", unit: "percentage_point", values: vals2(2e-3, 25e-4, 3e-3, 4e-3, 5e-3) },
-  { familyId: "stat_resolute", name: "Resolute", stat: "tenacity", unit: "percent", values: vals2(4e-3, 5e-3, 6e-3, 75e-4, 9e-3) }
+  { familyId: "stat_might", name: "Might", stat: "attack", unit: "percent", values: vals2(0.01, 0.015, 0.02, 0.0275, 0.035) },
+  { familyId: "stat_vitality", name: "Vitality", stat: "maxHp", unit: "percent", values: vals2(0.015, 0.02, 0.0275, 0.0375, 0.05) },
+  { familyId: "stat_iron", name: "Iron", stat: "armor", unit: "percent", values: vals2(0.01, 0.015, 0.02, 0.0275, 0.035) },
+  { familyId: "stat_ward", name: "Ward", stat: "ward", unit: "percent", values: vals2(5e-3, 75e-4, 0.01, 0.0125, 0.015) },
+  { familyId: "stat_precision", name: "Precision", stat: "accuracy", unit: "percentage_point", values: vals2(4e-3, 55e-4, 7e-3, 9e-3, 0.011) },
+  { familyId: "stat_keen", name: "Keen", stat: "critRate", unit: "percentage_point", values: vals2(25e-4, 35e-4, 45e-4, 6e-3, 8e-3) },
+  { familyId: "stat_savage", name: "Savage", stat: "critDamage", unit: "percent", values: vals2(0.015, 0.02, 0.025, 0.035, 0.05) },
+  { familyId: "stat_piercing", name: "Piercing", stat: "penetration", unit: "percentage_point", values: vals2(3e-3, 45e-4, 6e-3, 8e-3, 0.01) },
+  { familyId: "stat_swift", name: "Swift", stat: "haste", unit: "percent", values: vals2(5e-3, 7e-3, 9e-3, 0.012, 0.015) },
+  { familyId: "stat_potent", name: "Potent", stat: "potency", unit: "percent", values: vals2(7e-3, 0.01, 0.013, 0.0165, 0.02) },
+  { familyId: "stat_elusive", name: "Elusive", stat: "evasion", unit: "percentage_point", values: vals2(2e-3, 3e-3, 4e-3, 55e-4, 7e-3) },
+  { familyId: "stat_resolute", name: "Resolute", stat: "tenacity", unit: "percent", values: vals2(6e-3, 8e-3, 0.01, 0.013, 0.016) }
 ];
 var EFFECT_GEMS_V1 = [
   { familyId: "effect_momentum", name: "Momentum", category: "damage", values: vals2(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), maxEquippedCopies: 3, baseDescription: "Successful direct attacks build stacking damage for 4s; max 5.", resonance2: "Maximum stacks becomes 6.", resonance3: "Stacks decay one at a time after expiry.", triggerCooldownMs: 500, durationMs: 4e3 },

@@ -85,7 +85,7 @@ const traitOrigins=new Set<EquipmentV2AcquisitionSource>([
  'rare_blueprint_craft','dungeon_boss_chest','party_event_chest',
 ]);
 const roleTraitSources:Readonly<Record<ExecutableEquipmentTraitV2,ReadonlySet<EquipmentV2AcquisitionSource>>>={
- sword_dance:traitOrigins,
+ sword_dance:new Set<EquipmentV2AcquisitionSource>(['dungeon_boss_chest','party_event_chest']),
  echoing_strike:new Set<EquipmentV2AcquisitionSource>(['rare_blueprint_craft','dungeon_boss_chest']),
  thornbound_riposte:new Set<EquipmentV2AcquisitionSource>(['dungeon_boss_chest','party_event_chest']),
  mending_echo:new Set<EquipmentV2AcquisitionSource>(['rare_blueprint_craft','party_event_chest']),

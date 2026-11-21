@@ -6,6 +6,7 @@ import {itemDef} from '../content/items';
 import {equipmentSalvageReward,equipmentSalvageRewards,inventoryWithSalvageRewards} from './equipment-salvage';
 import {equipmentPouch,equipmentPouchForCharacter} from './equipment-pouch';
 import {workingTowardInventoryProtectionMap} from './working-toward-inventory';
+import {validateGatheringToolRoll} from './gathering-tool-rolls';
 
 export type VerifiedGearPlace='inventory'|'bank'|'equipment_pouch'|'overflow'|'equipped';
 export interface VerifiedGearLocation{
@@ -42,6 +43,16 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   }
   const observed=new Map<string,VerifiedGearLocation>();
   const trackedItemIds=new Set(definitions.map(row=>row.itemId));
+  // Gathering tools also carry exact-copy IDs in Inventory/Bank, but belong
+  // to their own receipt ledger. Never interpret valid tool IDs as forged gear.
+  const gatheringToolById=new Map<string,NonNullable<GameState['account']['craftedGatheringToolInstances']>[number]>();
+  for(const raw of state.account.craftedGatheringToolInstances??[]){
+    const record=validateGatheringToolRoll(raw,raw.itemId);
+    if(!record)continue;
+    if(gatheringToolById.has(record.id))audit.problems.push(`Duplicate gathering tool record: ${record.id}`);
+    else gatheringToolById.set(record.id,record);
+  }
+  const observedGatheringTools=new Set<string>();
   const register=(instanceId:string,itemId:string,place:VerifiedGearPlace,holderCharacterId?:string,slot?:GearSlot)=>{
     const record=byId.get(instanceId);
     if(!record){audit.problems.push(`Unrecognized crafted instance marker: ${instanceId}`);return;}
@@ -60,6 +71,15 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
       }
       if(typeof stack.instanceId!=='string'||!stack.instanceId.trim()||stack.quantity!==1){
         audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
+        continue;
+      }
+      // Respect independent tool custody without weakening the gear ID check.
+      // Invalid, unknown and duplicated tool IDs still fail closed.
+      const tool=!byId.has(stack.instanceId)?gatheringToolById.get(stack.instanceId):undefined;
+      if(tool){
+        if(tool.itemId!==stack.itemId)audit.problems.push(`Gathering tool item mismatch: ${stack.instanceId}`);
+        else if(observedGatheringTools.has(stack.instanceId))audit.problems.push(`Duplicate gathering tool copy marker: ${stack.instanceId}`);
+        else observedGatheringTools.add(stack.instanceId);
         continue;
       }
       register(stack.instanceId,stack.itemId,place,holderCharacterId);

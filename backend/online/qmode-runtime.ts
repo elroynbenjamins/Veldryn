@@ -21,7 +21,7 @@ import {prepareSocialEchoCandidates} from './coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
-export interface OnlineQModeState {run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string};}
+export interface OnlineQModeState {run:QModeRun;seed:string;pending?:{run:QModeRun;resolvesAtMs:number;startStateHash:string;settlement?:ReturnType<typeof settlement>};}
 interface Loaded {stateVersion:number;eventCursor:number;privateState:OnlineQModeState;clientProjection:unknown;serverNow:number;}
 type Services=Pick<GameplayServices,'rpc'|'randomId'>;
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');

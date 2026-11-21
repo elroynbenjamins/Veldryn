@@ -50,7 +50,9 @@ assert.equal(draft.input.players[0].stats.attackPower,player.stats.attackPower,
  'Reactives must not duplicate stat-channel boosts');
 const token=issueDungeonRewardEngineAuthorityV2(draft.input,snap,verify);
 assert.ok(authorizeDungeonRewardEngineV2(draft.input,token));
-assert.throws(()=>authorizeDungeonRewardEngineV2(input,token),/compiled_encounter_mismatch/,
+assert.throws(()=>authorizeDungeonRewardEngineV2({...input,players:[{...player,
+ stats:{...player.stats,attackPower:player.stats.attackPower+1}}]},token),
+ /compiled_encounter_mismatch/,
  'Signed execution token belongs to the exact compiled actor/encounter');
 assert.throws(()=>authorizeDungeonRewardEngineV2(
  {...draft.input,seed:'REPLAY_TAMPER'},token),/compiled_encounter_mismatch/);

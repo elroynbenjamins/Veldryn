@@ -22,11 +22,13 @@ export function prepareAsterfallBossV2(
       abilities=[...boss.abilities,{
         id:'ROOT_V2_LIVING_BARK',name:'Living Bark',cooldownMs:28000,
         castTimeMs:1200,target:'self',priority:76,
-        effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.04)}],
+        effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.04),
+          shieldReflectPct:.08}],
       }];
       phases=[
         {id:'ROOT_V2_PHASE_70',name:'Bark Awakens',hpPct:.70,target:'self',
-          effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.04)}]},
+          effects:[{kind:'shield',flat:Math.round(boss.stats.maxHp*.04),
+            shieldReflectPct:.06}]},
         {id:'ROOT_V2_PHASE_35',name:'Heart Exposed',hpPct:.35,target:'self',
           effects:[
             {kind:'buff',tag:'damage_done',value:.10,durationMs:14000},
@@ -42,6 +44,7 @@ export function prepareAsterfallBossV2(
         effects:[
           {kind:'damage',coeff:.65,damageType:'shadow'},
           {kind:'debuff',tag:'damage_done',value:-.07,durationMs:4500},
+          {kind:'debuff',tag:'healing_received',value:-.10,durationMs:4000},
         ],
       },{
         id:'BELL_V2_VEIL_MIRROR',name:'Veil Mirror',cooldownMs:22000,
@@ -50,7 +53,9 @@ export function prepareAsterfallBossV2(
       }];
       phases=[
         {id:'BELL_V2_PHASE_70',name:'Echoing Toll',hpPct:.70,target:'all_enemies',
-          effects:[{kind:'damage',coeff:.34,damageType:'shadow'}]},
+          effects:[{kind:'damage',coeff:.34,damageType:'shadow'},
+            {kind:'dot',coeff:.045,damageType:'shadow',tag:'echo',
+             durationMs:4000,tickMs:2000}]}, 
         {id:'BELL_V2_PHASE_35',name:'Shattered Veil',hpPct:.35,target:'self',
           effects:[{kind:'debuff',tag:'damage_taken',value:.12,durationMs:4000}]},
       ];
@@ -58,5 +63,7 @@ export function prepareAsterfallBossV2(
     }
     default:return boss;
   }
-  return {...boss,abilities,phases,tags:[...(boss.tags??[]),V2_TAG]};
+  return {...boss,abilities,phases,tags:[...(boss.tags??[]),V2_TAG,
+    boss.id==='BOSS_EXP_ROOT'?'enemy-v2:boss-trait:reflective_bark':
+     'enemy-v2:boss-trait:weakening_hex']};
 }

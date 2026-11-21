@@ -122,6 +122,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/boss-counterplay-contract.js
       - name: Validate boss phase/cast ordering and QA-only synthetic pacing aggregation
         run: node backend/dist/server/combat/v2/__tests__/boss-pacing-diagnostics.js
+      - name: Exercise six boss-exclusive combat traits under snapshot authority
+        run: node backend/dist/server/combat/v2/__tests__/boss-trait-runtime.js
       - name: Observe six bosses across 108 deterministic class/spec baseline encounters
         run: node backend/dist/server/combat/v2/__tests__/boss-cross-system-readiness.js
       - name: Validate private solo V2 encounter reservation, RPC adapter and replay

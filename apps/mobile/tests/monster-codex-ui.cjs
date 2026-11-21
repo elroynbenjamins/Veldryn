@@ -17,5 +17,10 @@ assert(screen.includes("completeDrops")&&screen.includes("Rates unlock at master
 assert(!combat.includes('<MonsterMasteryPanel')&&!combat.includes('<EnemyFamilyMasteryPanel'),'Combat no longer renders two long mastery lists');
 assert(combat.includes('onOpenCodex')&&app.includes("onOpenCodex={()=>setTab('Bestiary')}"),'Combat shortcut navigates to the stable Codex route');
 assert(journal.includes("Open Monster Codex")&&more.includes("title:a(\"Monster Codex\")"),'Journal and Account both link to the renamed Codex');
-assert(regions.includes("available:id==='ASTERFALL'||world?.availability==='released'"),'Unreleased region data is hidden');
+assert(regions.includes("const available=id==='ASTERFALL'||world?.availability==='released'")&&regions.includes("if(available){"),'Unreleased region data is hidden');
+assert(screen.includes('showsHorizontalScrollIndicator={false}')&&screen.includes('resetLink:{minHeight:32'),'Compact filters, bounded details and hidden scroll indicators are maintained');
+assert(screen.includes('zone.monsters.filter(row=>row.entry.status')&&screen.includes('s.killsValue'),'Per-zone discovery and per-monster kill progress appear inline');
+assert(screen.includes('setTab(\'types\')')&&screen.includes('onPress={()=>setDetailId(id)}'),'Species-to-family and family-to-monster drilldowns remain connected');
+assert(screen.includes('releasedMonsterIds.has(id)'),'Family discovery does not expose unreleased species');
+assert(screen.includes('Base drop rates shown.')&&screen.includes('Drop rate details unlock'),'Codex differentiates known drops from exact base-rate knowledge');
 console.log('PASS: Monster Codex tab, accordion, portrait, mastery, rewards and navigation UI contract');

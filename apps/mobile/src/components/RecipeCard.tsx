@@ -117,7 +117,7 @@ export function RecipeCard({state,recipe,status,onCraft,craftFeedback,onNavigate
       <Text style={s.materialActionsTitle}>{gt('Missing a material?')}</Text>
       <View style={s.materialActionRow}>
        {firstAvailableSource&&onNavigate?<View style={s.materialActionItem}><GameButton compact title={gt('Find source')} tone="secondary" onPress={()=>onNavigate(firstAvailableSource.destination)}/></View>:null}
-       {canQuickTrack&&preparationRoute&&onTrackPreparation?<View style={s.materialActionItem}><GameButton compact title={gt('Track preparation')} tone="secondary" onPress={()=>void onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)}/></View>:null}
+       {canQuickTrack&&preparationRoute&&onTrackPreparation?<View style={s.materialActionItem}><GameButton compact title={gt('Track preparation')} tone="secondary" onPress={()=>onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)}/></View>:null}
        {canQuickPrereq&&onCraftPrerequisites?<View style={s.materialActionItem}><GameButton compact title={ct('Craft prerequisites · {count}',{count:prereq!.processableMissing})} tone="secondary" onPress={()=>onCraftPrerequisites(recipe.id)}/></View>:null}
       </View>
      </View>:null}

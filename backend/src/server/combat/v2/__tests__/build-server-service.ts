@@ -97,6 +97,19 @@ async function main(){
   },true);
   assert.equal(wrongClass.ok,false);
   assert.equal(wrongClass.issues[0].code,'item_not_owned');
+  // Bank-held (null-owned) copies are valid snapshot records, not equipped
+  // ownership. Malformed non-null owner types must still fail closed.
+  const malformedClient:V2ServiceRpcClient={
+    async rpc<T>(){
+      return {data:{...payload,craftedGearInstances:[{
+        id:'corrupt',itemId:'helmet_t2',ownerCharacterId:42,
+      }]} as T,error:null};
+    },
+  };
+  await assert.rejects(
+    ()=>new SupabaseV2BuildStorage(malformedClient).load(account,character),
+    /combat_v2_corrupt_gear_instance/,
+  );
   const lowLevelService=new CharacterBuildServiceV2({
     storage:{
       async load(){return {...payload,characterLevel:10,builds:null} as TrustedBuildSnapshotV2},

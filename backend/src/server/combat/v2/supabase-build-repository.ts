@@ -77,7 +77,8 @@ function readSnapshot(raw:unknown,accountId:string,characterId:string):TrustedBu
   const crafted:PersistedGearInstanceV2[]=[];
   for(const entry of raw.craftedGearInstances){
     if(!isObj(entry)||typeof entry.id!=='string'||typeof entry.itemId!=='string'||
-      typeof entry.ownerCharacterId!=='string')throw Error('combat_v2_corrupt_gear_instance');
+      !(entry.ownerCharacterId===null||typeof entry.ownerCharacterId==='string'))
+      throw Error('combat_v2_corrupt_gear_instance');
     crafted.push({
       id:entry.id,itemId:entry.itemId,ownerCharacterId:entry.ownerCharacterId,
     });

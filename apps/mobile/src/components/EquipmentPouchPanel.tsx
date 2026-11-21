@@ -260,18 +260,16 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    quickActions={selected?<View style={s.detailFooter}>
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <GameButton title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null);setTransferError('')}}/>
-    <View style={s.transferRow}>
-     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
-     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
-    </View>
+    <GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/>
    </View>:undefined}
    actions={selected?<View style={s.detailActions}>
-    <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
-     sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
+    <GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/>
     <View style={s.transferRow}>
      <View style={s.transferAction}><GameButton compact title={p('Sell copy')} tone="secondary" disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/></View>
      <View style={s.transferAction}><GameButton compact title={p('Salvage copy')} tone="danger" disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/></View>
     </View>
+    <EquipmentDisposalStatus compact sellAllowed={!!saleCandidate?.eligible} salvageAllowed={!!salvageCandidate?.eligible}
+     sellReason={saleCandidate?.reason} salvageReason={salvageCandidate?.reason}/>
    </View>:undefined}/>
 
  </View>;

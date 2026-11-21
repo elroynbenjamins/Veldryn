@@ -141,9 +141,9 @@ export function BestiaryScreen({state}:{state:GameState}){
   </>:<>
    <Text style={s.description}>{t('Two independent mastery paths. These rewards come from your existing kills and do not need to be claimed.')}</Text>
    <View style={s.rewardSummary}><Text style={s.sectionTitle}>{t('SPECIES MASTERY')}</Text><Text style={s.meta}>{t('30 ranks · 1,500 kills per species')}</Text></View>
-   {MONSTER_MASTERY_MILESTONES.map(milestone=><View key={'species'+milestone.rank} style={s.rewardRow}><View style={s.milestoneRank}><Text style={s.milestoneNumber}>R{milestone.rank}</Text></View><View style={s.flex}><Text style={s.rewardTitle}>{translated(milestone.label)}</Text><Text style={s.meta}>{translated(milestone.detail)}</Text></View></View>)}
+   {MONSTER_MASTERY_MILESTONES.map(milestone=><View key={'species'+milestone.rank} style={s.rewardRow}><View style={s.milestoneRank}><Text style={s.milestoneNumber}>{'R'}{milestone.rank}</Text></View><View style={s.flex}><Text style={s.rewardTitle}>{translated(milestone.label)}</Text><Text style={s.meta}>{translated(milestone.detail)}</Text></View></View>)}
    <View style={s.rewardSummary}><Text style={s.sectionTitle}>{t('TYPE MASTERY')}</Text><Text style={s.meta}>{t('30 ranks · 50,000 points per type')}</Text></View>
-   {ENEMY_FAMILY_MASTERY_MILESTONES.map(milestone=><View key={'family'+milestone.rank} style={s.rewardRow}><View style={s.milestoneRank}><Text style={s.milestoneNumber}>R{milestone.rank}</Text></View><View style={s.flex}><Text style={s.rewardTitle}>{translated(milestone.label)}</Text><Text style={s.meta}>{translated(milestone.detail)}</Text></View></View>)}
+   {ENEMY_FAMILY_MASTERY_MILESTONES.map(milestone=><View key={'family'+milestone.rank} style={s.rewardRow}><View style={s.milestoneRank}><Text style={s.milestoneNumber}>{'R'}{milestone.rank}</Text></View><View style={s.flex}><Text style={s.rewardTitle}>{translated(milestone.label)}</Text><Text style={s.meta}>{translated(milestone.detail)}</Text></View></View>)}
    <Text style={s.mutedNote}>{t('Type mastery awards 1–6 points per eligible kill according to enemy difficulty. Boss entries do not grant ordinary monster mastery.')}</Text>
   </>}
  </ScrollView>
@@ -156,11 +156,11 @@ export function BestiaryScreen({state}:{state:GameState}){
    </View>
    {!selectedKnown?<Text style={s.detailText}>{t('Encounter this creature through normal progression to reveal its entry.')}</Text>:<>
     {species?<View style={s.detailSection}>
-     <View style={s.progressLabel}><Text style={s.detailTitle}>{t('SPECIES MASTERY')} · R{species.rank}/30</Text><Text style={s.meta}>{number(species.points)}/{number(MONSTER_MASTERY_MAX_KILLS)}</Text></View>
+     <View style={s.progressLabel}><Text style={s.detailTitle}>{t('SPECIES MASTERY')}{' · R'}{species.rank}/30</Text><Text style={s.meta}>{number(species.points)}/{number(MONSTER_MASTERY_MAX_KILLS)}</Text></View>
      <StatBar reduceMotion={state.settings.reduceMotion} current={species.currentRankProgress} max={species.currentRankTarget} label={species.rank>=30?t('Mastery complete'):t('{value0} kills to next rank',{value0:species.killsToNextRank})}/>
      <View style={s.bonusRow}><Text style={s.bonus}>+{percent(species.damageBonus)}% {t('damage')}</Text><Text style={s.bonus}>+{percent(species.materialBonus)}% {t('normal materials')}</Text></View>
-     {species.next?<Text style={s.next}>{t('Next')}: R{species.next.rank} · {translated(species.next.label)} · {number(species.killsToNextMilestone)} {t('kills remaining')}</Text>:<Text style={s.complete}>{t('All species mastery milestones unlocked.')}</Text>}
-     {bonuses?.family&&<Text style={s.detailText}>{t('Enemy type')}: {translated(familyName??'')} · R{bonuses.family.rank}/30 · +{percent(bonuses.family.damageBonus)}% {t('type damage')}</Text>}
+     {species.next?<Text style={s.next}>{t('Next')}{': R'}{species.next.rank} · {translated(species.next.label)} · {number(species.killsToNextMilestone)} {t('kills remaining')}</Text>:<Text style={s.complete}>{t('All species mastery milestones unlocked.')}</Text>}
+     {bonuses?.family&&<Text style={s.detailText}>{t('Enemy type')}: {translated(familyName??'')}{' · R'}{bonuses.family.rank}/30 · +{percent(bonuses.family.damageBonus)}% {t('type damage')}</Text>}
     </View>:<Text style={s.detailText}>{t('Boss entry · ordinary species and type mastery do not apply.')}</Text>}
     <View style={s.detailSection}><Text style={s.detailTitle}>{t('KNOWN DROPS')}</Text>
      {selected.entry.drops.length?selected.entry.drops.map(drop=>{

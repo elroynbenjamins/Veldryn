@@ -12,6 +12,10 @@ const limits=read('src/core/craft-batch-limit.ts');
 const app=read('App.tsx');
 assert.match(slider,/accessibilityRole="adjustable"/,'drag slider is accessible');
 assert.match(slider,/onResponderMove/,'dragging updates selected count');
+assert.match(slider,/origin\.localX\+event\.nativeEvent\.pageX-origin\.pageX/,'drag uses stable page displacement across the full track');
+assert.match(slider,/onResponderTerminationRequest=\{\(\)=>false\}/,'slider holds touch ownership against scroll and back swipe');
+assert.match(slider,/setDragRatio\(ratio\)/,'thumb follows touch smoothly between integral quantities');
+assert.match(slider,/if\(quantity===lastSelected\.current\)return/,'unchanged drag values do not spam parent updates');
 assert.match(slider,/onAccessibilityAction/,'hardware accessibility increments supported');
 assert.match(slider,/accessibilityLabel=\{gt\('Maximum craftable quantity'\)/,'MAX button has a specific accessibility label');
 assert.match(slider,/Math\.round\(ratio\*\(upper-1\)\)/,'slider rightmost maps to live maximum');
@@ -29,4 +33,6 @@ assert.match(commands,/integer\(a,'quantity',1,999\)/,'server validates craft bo
 assert.match(limits,/materialLimit/,'rightmost maximum uses materials');
 assert.match(limits,/goldLimit/,'rightmost maximum respects Gold');
 assert.match(app,/perform\(\{type:'craft',args:\{id,quantity:count\}\}\)/,'online client forwards craft count');
+assert.match(app,/tab==='Skills'&&skillsMode==='crafting'&&!!selectedSkill/,'crafting detail screens opt out of history swipe');
+assert.match(app,/disableHistorySwipe\?\{\}:backSwipe\.panHandlers/,'crafting history swipe is detached from screen body');
 console.log('PASS: crafting quantity UI contracts and authoritative batch propagation');

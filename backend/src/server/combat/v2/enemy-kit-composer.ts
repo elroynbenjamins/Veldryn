@@ -128,7 +128,7 @@ export function prepareSoloEnemyKitsV2(
    transformed=options.region==='asterfall'?
      prepareAsterfallBossV2(base,ENEMY_V2_RULESET):
      prepareRegionalBossV2(base,ENEMY_V2_RULESET);
-   profile=options.region+'-boss-v1';
+   profile=options.region+'-boss-v2';
    assert(transformed!==base&&
      (transformed.tags??[]).some((t:string)=>t.startsWith('enemy-v2:boss-profile:')),
      'unrecognized_authored_boss');

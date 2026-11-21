@@ -1,0 +1,487 @@
+{
+  "schema": "eq2-review-only-economy-v1",
+  "status": "REVIEW_ONLY_NO_RUNTIME",
+  "basedOn": "T1-T4 169 ordinary item templates, 338 foundation/alternate recipe routes; 6 blueprint items excluded",
+  "expected": {
+    "tiers": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "ordinaryPieces": 169,
+    "recipeRoutes": 338,
+    "blueprintCraftables": 0
+  },
+  "principles": [
+    "All ordinary equipment consumes at least one combat-obtained common material",
+    "Every T2+ chest, leg and weapon requires a scarce combat material; rarer requirements expand in T3-T4",
+    "Alternative routes trade refined-resource quantities but NEVER bypass common or rare combat materials",
+    "Keep existing item IDs, set membership, stat profiles, Gold, XP, crafting seconds and level gates while validating material-only rework",
+    "No gameplay writes, drop authorizations, market offers, recipes or migration in this review artifact"
+  ],
+  "slotWeight": {
+    "chest": 1,
+    "legs": 0.82,
+    "weapon": 1.12,
+    "offhand": 0.66,
+    "helmet": 0.72,
+    "gloves": 0.56,
+    "boots": 0.63,
+    "cape": 0.65,
+    "amulet": 0.43,
+    "ring": 0.39
+  },
+  "materialPlans": {
+    "steel": {
+      "primary": [
+        "metal",
+        1
+      ],
+      "secondary": [
+        "timber",
+        1
+      ],
+      "trim": [
+        "leather",
+        0.2
+      ]
+    },
+    "mail": {
+      "primary": [
+        "metal",
+        0.72
+      ],
+      "secondary": [
+        "leather",
+        0.6
+      ],
+      "trim": [
+        "timber",
+        0.55
+      ]
+    },
+    "leather": {
+      "primary": [
+        "leather",
+        1
+      ],
+      "secondary": [
+        "cloth",
+        0.34
+      ],
+      "trim": [
+        "timber",
+        0.65
+      ]
+    },
+    "cloth": {
+      "primary": [
+        "cloth",
+        1
+      ],
+      "secondary": [
+        "leather",
+        0.42
+      ],
+      "trim": [
+        "metal",
+        0.2
+      ]
+    },
+    "jewelry": {
+      "primary": [
+        "metal",
+        0.35
+      ],
+      "secondary": [
+        "gem",
+        1
+      ],
+      "trim": [
+        "cloth",
+        0.18
+      ]
+    }
+  },
+  "weaponPlans": {
+    "steel": {
+      "primary": [
+        "metal",
+        1.12
+      ],
+      "secondary": [
+        "timber",
+        1.35
+      ],
+      "trim": [
+        "leather",
+        0.17
+      ]
+    },
+    "leather": {
+      "primary": [
+        "timber",
+        2.5
+      ],
+      "secondary": [
+        "leather",
+        0.65
+      ],
+      "trim": [
+        "metal",
+        0.23
+      ]
+    },
+    "cloth": {
+      "primary": [
+        "timber",
+        2.2
+      ],
+      "secondary": [
+        "cloth",
+        0.72
+      ],
+      "trim": [
+        "metal",
+        0.12
+      ]
+    }
+  },
+  "alternateRoute": {
+    "primaryMultiplier": 0.8,
+    "secondaryMultiplier": 1.35,
+    "trimMultiplier": 1
+  },
+  "tierSpecs": [
+    {
+      "tier": 1,
+      "name": "Fieldborn",
+      "levels": {
+        "character": 2,
+        "profession": 1
+      },
+      "amounts": {
+        "metal": 18,
+        "timber": 8,
+        "leather": 24,
+        "cloth": 28,
+        "gem": 4,
+        "common": 6
+      },
+      "rareBySlot": {},
+      "items": {
+        "metal": "EQ2_COPPER_BAR",
+        "timber": "EQ2_GREENWOOD_PLANK",
+        "leather": "EQ2_BOAR_LEATHER",
+        "cloth": "EQ2_MOSS_CLOTH",
+        "gem": "EQ2_RIVERSTONE",
+        "common": "EQ2_BOAR_TUSK",
+        "rare": "EQ2_VERDANT_ESSENCE",
+        "binder": "VERDANT_BINDING_RESIN"
+      },
+      "drops": {
+        "commonKill": 0.14,
+        "scarceKill": 0.04,
+        "scarceElite": 0.2
+      },
+      "processing": [
+        {
+          "skill": "smelting",
+          "output": "EQ2_COPPER_BAR",
+          "quantity": 1,
+          "inputs": {
+            "EQ2_COPPER_ORE": 3
+          },
+          "xp": 8,
+          "seconds": 18
+        },
+        {
+          "skill": "wood_processing",
+          "output": "EQ2_GREENWOOD_PLANK",
+          "quantity": 1,
+          "inputs": {
+            "GREENWOOD_LOG": 3
+          },
+          "xp": 7,
+          "seconds": 16
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_BOAR_LEATHER",
+          "quantity": 1,
+          "inputs": {
+            "BOAR_HIDE": 3
+          },
+          "xp": 8,
+          "seconds": 20
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_MOSS_CLOTH",
+          "quantity": 1,
+          "inputs": {
+            "MOSS_FIBER": 4
+          },
+          "xp": 8,
+          "seconds": 20
+        }
+      ]
+    },
+    {
+      "tier": 2,
+      "name": "Ironwood",
+      "levels": {
+        "character": 12,
+        "profession": 8
+      },
+      "amounts": {
+        "metal": 28,
+        "timber": 10,
+        "leather": 34,
+        "cloth": 40,
+        "gem": 5,
+        "common": 8
+      },
+      "rareBySlot": {
+        "chest": 1,
+        "legs": 1,
+        "weapon": 1
+      },
+      "items": {
+        "metal": "EQ2_IRON_BAR",
+        "timber": "EQ2_IRONWOOD_PLANK",
+        "leather": "EQ2_WOLF_LEATHER",
+        "cloth": "EQ2_THORN_CLOTH",
+        "gem": "EQ2_THORNSTONE",
+        "common": "WOLF_FANG",
+        "rare": "EQ2_TROLL_SINEW",
+        "binder": "IRONWOOD_BINDING_RESIN"
+      },
+      "drops": {
+        "commonKill": 0.1,
+        "scarceKill": 0.015,
+        "scarceElite": 0.1
+      },
+      "processing": [
+        {
+          "skill": "smelting",
+          "output": "EQ2_IRON_BAR",
+          "quantity": 1,
+          "inputs": {
+            "EQ2_IRON_ORE": 3
+          },
+          "xp": 18,
+          "seconds": 27
+        },
+        {
+          "skill": "wood_processing",
+          "output": "EQ2_IRONWOOD_PLANK",
+          "quantity": 1,
+          "inputs": {
+            "IRONWOOD_LOG": 3
+          },
+          "xp": 17,
+          "seconds": 24
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_WOLF_LEATHER",
+          "quantity": 1,
+          "inputs": {
+            "WOLF_PELT": 3
+          },
+          "xp": 18,
+          "seconds": 30
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_THORN_CLOTH",
+          "quantity": 1,
+          "inputs": {
+            "EQ2_THORN_FIBRE": 4
+          },
+          "xp": 18,
+          "seconds": 30
+        }
+      ]
+    },
+    {
+      "tier": 3,
+      "name": "Sunscar",
+      "levels": {
+        "character": 26,
+        "profession": 20
+      },
+      "amounts": {
+        "metal": 36,
+        "timber": 12,
+        "leather": 44,
+        "cloth": 52,
+        "gem": 7,
+        "common": 12
+      },
+      "rareBySlot": {
+        "chest": 1,
+        "legs": 1,
+        "weapon": 1,
+        "helmet": 1,
+        "offhand": 1
+      },
+      "items": {
+        "metal": "SUNSTONE_INGOT",
+        "timber": "EQ2_TREATED_DUNEWOOD",
+        "leather": "EQ2_SUNSCALE_LEATHER",
+        "cloth": "EQ2_DUNE_CLOTH",
+        "gem": "AMBERGLASS",
+        "common": "EQ2_SUNSCAR_SCALE",
+        "rare": "EQ2_MIRAGEFANG_CORE",
+        "binder": "SUNSCAR_DUNE_BINDER"
+      },
+      "drops": {
+        "commonKill": 0.07,
+        "scarceKill": 0.006,
+        "scarceElite": 0.06
+      },
+      "processing": [
+        {
+          "skill": "smelting",
+          "output": "SUNSTONE_INGOT",
+          "quantity": 1,
+          "inputs": {
+            "SUNSTONE_ORE": 3
+          },
+          "xp": 32,
+          "seconds": 38
+        },
+        {
+          "skill": "wood_processing",
+          "output": "EQ2_TREATED_DUNEWOOD",
+          "quantity": 1,
+          "inputs": {
+            "DUNEWOOD": 4
+          },
+          "xp": 31,
+          "seconds": 36
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_SUNSCALE_LEATHER",
+          "quantity": 1,
+          "inputs": {
+            "SUNSCALE": 3
+          },
+          "xp": 33,
+          "seconds": 42
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_DUNE_CLOTH",
+          "quantity": 1,
+          "inputs": {
+            "EQ2_DUNE_FIBRE": 4
+          },
+          "xp": 33,
+          "seconds": 42
+        }
+      ]
+    },
+    {
+      "tier": 4,
+      "name": "Glassbound",
+      "levels": {
+        "character": 40,
+        "profession": 34
+      },
+      "amounts": {
+        "metal": 48,
+        "timber": 14,
+        "leather": 58,
+        "cloth": 64,
+        "gem": 9,
+        "common": 16
+      },
+      "rareBySlot": {
+        "chest": 2,
+        "legs": 2,
+        "weapon": 2,
+        "offhand": 1,
+        "helmet": 1,
+        "gloves": 1,
+        "boots": 1,
+        "cape": 1,
+        "ring": 1,
+        "amulet": 1
+      },
+      "items": {
+        "metal": "EQ2_GLASSBOUND_ALLOY_BAR",
+        "timber": "EQ2_REINFORCED_DUNEWOOD",
+        "leather": "EQ2_HARDENED_SUNSCALE",
+        "cloth": "EQ2_SOULWEAVE_CLOTH",
+        "gem": "EQ2_GLASSBOUND_SHARD",
+        "common": "EQ2_GLASSBOUND_PLATE",
+        "rare": "EQ2_GLASSHEART_FRAGMENT",
+        "binder": "GLASSBOUND_BINDER"
+      },
+      "drops": {
+        "commonKill": 0.05,
+        "scarceKill": 0.0025,
+        "scarceElite": 0.04
+      },
+      "processing": [
+        {
+          "skill": "smelting",
+          "output": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 1,
+          "inputs": {
+            "SUNSTONE_INGOT": 2,
+            "EQ2_GLASSBOUND_DUST": 1
+          },
+          "xp": 55,
+          "seconds": 56
+        },
+        {
+          "skill": "wood_processing",
+          "output": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 1,
+          "inputs": {
+            "DUNEWOOD": 5,
+            "EQ2_GLASSBOUND_DUST": 1
+          },
+          "xp": 52,
+          "seconds": 52
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_HARDENED_SUNSCALE",
+          "quantity": 1,
+          "inputs": {
+            "SUNSCALE": 4,
+            "EQ2_GLASSBOUND_DUST": 1
+          },
+          "xp": 54,
+          "seconds": 57
+        },
+        {
+          "skill": "tailoring",
+          "output": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 1,
+          "inputs": {
+            "EQ2_SOUL_FIBRE": 5,
+            "EQ2_GLASSBOUND_DUST": 1
+          },
+          "xp": 54,
+          "seconds": 57
+        }
+      ]
+    }
+  ],
+  "safeguards": {
+    "dropSources": "Design-only eligible regional enemy and elite family selection pending live kill telemetry; no generic guaranteed enemy roll",
+    "inflation": "Monitor drops entering market per active character/day and median material price; never adjust live drops from an offline estimate alone",
+    "eliteFrequency": "Elite odds are per eligible elite kill, not per normal kill; spawn cadence and anti-abuse remain independent",
+    "rareBlueprints": "Six T2-T4 blueprint-only craft candidates excluded; existing blueprint odds are separately gated",
+    "salvage": "Do not return scarce materials through ordinary salvage; basic-material recovery to be specified after economy simulation",
+    "noExclusiveGearTrade": "Dungeon / Party Event / World Boss exclusive gear remains earned-only and nonmarket per existing design"
+  }
+}

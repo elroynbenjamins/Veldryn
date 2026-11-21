@@ -16,6 +16,7 @@
     "src/server/party/weekly-party-event-real-reward-ports-v86.ts",
     "src/server/party/weekly-party-event-canonical-pg-v87.ts",
     "src/server/party/weekly-party-event-atomic-ports-v88.ts",
+    "src/server/party/__tests__/weekly-party-event-atomic-ports-v88.ts",
     "src/server/party/__tests__/weekly-party-event-canonical-pg-v87.ts",
     "src/server/party/weekly-party-event-chest-source-v77.ts",
     "src/server/party/__tests__/weekly-party-event-chest-source-v77.ts",

@@ -49,6 +49,9 @@ on:
       - 'backend/src/server/party/weekly-party-event-real-reward-ports-v86.ts'
       - 'backend/src/server/party/weekly-party-event-canonical-pg-v87.ts'
       - 'backend/src/server/party/weekly-party-event-atomic-ports-v88.ts'
+      - 'backend/src/server/party/weekly-party-event-claim-retry-v89.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-claim-retry-v89.ts'
+      - 'backend/tests/party-event-postgres17-v89.mjs'
       - 'backend/src/server/party/__tests__/weekly-party-event-atomic-ports-v88.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-canonical-pg-v87.ts'
       - 'backend/tests/party-event-canonical-source-v87.mjs'
@@ -173,6 +176,8 @@ jobs:
           node tests/party-event-canonical-source-v87.mjs
       - name: Verify V88 no-live-writer composition gate
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-atomic-ports-v88.js
+      - name: Verify V89 bounded PostgreSQL serialization and deadlock retry only
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-event-claim-retry-v89.js
       - name: Exercise V88 integrated V87 authoritative SQL plus V86 real rewards in one V70 transaction
         run: node tests/party-event-real-rewards-v86.mjs
       - name: Verify original Party V80 paid-Inbox history and V81 legacy claim guard
@@ -235,6 +240,7 @@ jobs:
           grep -q 'PARTY_EVENT_REAL_REWARDS_V86_RELEASED=false' src/server/party/weekly-party-event-real-reward-ports-v86.ts
           grep -q 'PARTY_EVENT_CANONICAL_PG_V87_RELEASED=false' src/server/party/weekly-party-event-canonical-pg-v87.ts
           grep -q 'PARTY_EVENT_ATOMIC_PORTS_V88_RELEASED=false' src/server/party/weekly-party-event-atomic-ports-v88.ts
+          grep -q 'PARTY_EVENT_CLAIM_RETRY_V89_RELEASED=false' src/server/party/weekly-party-event-claim-retry-v89.ts
           test ! -f supabase/migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql
           test ! -f supabase/migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql
           test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
@@ -247,3 +253,54 @@ jobs:
           grep -q 'EVENT_CHEST_REWARD_PANEL_V2_RELEASED=false' src/server/loot/event-chest-preview-v2.ts
           test ! -f supabase/migrations/20261118_event_chests_v51_v58.sql
           echo 'EVENT_CHESTS_HIDDEN_VALIDATION_OK'
+
+  party-pg17-two-session-v89:
+    # Isolated ephemeral CI Postgres, never a Supabase project.
+    # This job must fail if PostgreSQL rejects an unsafe double credit.
+    runs-on: ubuntu-latest
+    services:
+      party-postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: party_v89_disposable
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      PARTY_V89_PG_URL: postgres://postgres:party_v89_disposable@127.0.0.1:54329/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Compile exact hidden V88/V89 Party chest code
+        run: pnpm exec tsc -p tsconfig.event-chests.json
+      - name: Install pinned test-only PG driver outside project
+        run: |
+          npm install --prefix "$RUNNER_TEMP/party-pg-v89" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund pg@8.16.3
+      - name: True PostgreSQL 17.6 two-session V89 reward concurrency and rollback
+        env:
+          PARTY_V89_PG_MODULE: ${{ runner.temp }}/party-pg-v89/node_modules/pg
+        run: node tests/party-event-postgres17-v89.mjs
+      - name: Assert no Party Event live release or migration
+        run: |
+          grep -q 'PARTY_EVENT_CLAIM_RETRY_V89_RELEASED=false' src/server/party/weekly-party-event-claim-retry-v89.ts
+          grep -q 'PARTY_EVENT_ATOMIC_PORTS_V88_RELEASED=false' src/server/party/weekly-party-event-atomic-ports-v88.ts
+          grep -q 'PARTY_EVENT_REAL_REWARDS_V86_RELEASED=false' src/server/party/weekly-party-event-real-reward-ports-v86.ts
+          test ! -f supabase/migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql
+          test ! -f supabase/migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql

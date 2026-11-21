@@ -10,7 +10,15 @@ assert.match(screen,/sellBlockReason=\{previewDisposal\.sellReason\}/,'compariso
 assert.match(screen,/salvageBlockReason=\{previewDisposal\.salvageReason\}/,'comparison receives exact salvage reason');
 assert.match(screen,/equipmentCopyDisposalDecision\(state,selectedCopy\.id,'salvage'\)/,'unique-copy inspect uses validated salvage');
 assert.match(screen,/Salvage may need a free slot/,'full Inventory explains salvage limits');
-assert.match(preview,/<EquipmentDisposalStatus/,'comparison shows the action status panel');
+assert.match(preview,/<EquipmentDisposalStatus compact/,'expanded secondary actions explain blocked sell/salvage permissions');
+assert.match(preview,/accessibilityState=\{\{expanded:actionsOpen\}\}/,'secondary actions remain a clearly labelled accessible accordion');
+assert.match(preview,/hasOtherActions\?<View style=\{s.otherActionsSection\}>/,'storage, bank, sell and salvage are collapsed by default');
+assert.match(preview,/title=\{gearText\('Move to Bank'\)\}/,'bank destination must be explicit and never truncated to To');
+assert.doesNotMatch(preview,/title=\{gearText\('To Bank'\)\}/,'comparison must not use the ambiguous To Bank label');
+assert.doesNotMatch(preview,/footerSecondary|footerActions|onContentSizeChange/,'footer must contain one primary action without auto-scroll jumps');
+assert.match(preview,/width<375\|\|fontScale>=1\.18/,'secondary actions stack for narrow screens or accessibility font scaling');
+assert.match(preview,/disabled=\{busy\|\|!canSalvage\}/,'salvage permissions stay enforced');
+assert.match(preview,/disabled=\{busy\|\|!canSell\}/,'sell permissions stay enforced');
 assert.match(pouch,/<EquipmentDisposalStatus/,'Gear pouch uses the same action status panel');
 assert.doesNotMatch(pouch,/Compare & Equip to Extract/,'Gear pouch must not offer extraction');
 assert.match(pouch,/Installed gems and upgrades are destroyed/,'Gear pouch warns that installed gems and upgrades are lost');

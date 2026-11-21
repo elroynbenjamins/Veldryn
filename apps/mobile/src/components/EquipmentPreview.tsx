@@ -1,5 +1,4 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
-import type {ComponentRef} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {displayPercent,displayStat} from '../core/stat-display';
@@ -41,22 +40,21 @@ function bonusDifference(bps:number){return bps===0?'—':(bps>0?'+':'')+(bps/10
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 
 /** Inventory's single, authoritative compare-before-equipping surface.
- * The footer deliberately stays outside the scroll area on small devices. */
+ * Only the primary equip action stays pinned; optional actions expand on demand. */
 export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false,onMoveToBank}:Props){
  const {gt,gl,language}=useGameplayText();
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
- const [more,setMore]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const detailsScrollRef=useRef<ComponentRef<typeof ScrollView>>(null);
- useEffect(()=>{setMore(false);setBusy(false);setError('');},[itemId,instanceId,source]);
+ const [more,setMore]=useState(false),[actionsOpen,setActionsOpen]=useState(false),[busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState<'equip'|'gear'|'bank'|null>(null),[error,setError]=useState('');
+ useEffect(()=>{setMore(false);setActionsOpen(false);setBusy(false);setBusyAction(null);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
  async function moveToBank(){
   if(!onMoveToBank||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('bank');setError('');
   try{await onMoveToBank()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  let projected:GameState;
  try{projected=previewEquipment(state,itemId,instanceId,source)}catch(cause){
@@ -65,7 +63,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    <View style={s.errorBox}>
     <Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text>
     {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
-    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" loading={busy} disabled={busy} onPress={()=>void moveToBank()}/>:null}
+    {onMoveToBank?<GameButton title={gearText('Move to Bank')} tone="secondary" loading={busy&&busyAction==='bank'} disabled={busy} onPress={()=>void moveToBank()}/>:null}
     <GameButton title={gl('Back to Inventory')} disabled={busy} onPress={onClose}/>
    </View>
   </GameModalSurface>;
@@ -107,20 +105,24 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  ];
  async function submit(){
   if(!onEquip||alreadyEquipped||blocked||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('equip');setError('');
   try{await onEquip()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  async function storeInGear(){
   if(!onStoreInGear||!canStoreInGear||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('gear');setError('');
   try{await onStoreInGear()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  const shortScreen=height<690||fontScale>=1.3;
  const compactBonusRows=width<380||fontScale>=1.2;
+ const stackOtherActions=width<375||fontScale>=1.18;
+ const hasOtherActions=Boolean(onStoreInGear||onMoveToBank||onSell||onSalvage);
+ const disposalBlocked=Boolean((onSell&&!canSell)||(onSalvage&&!canSalvage));
+ const bonusChangeCount=slot==='weapon'?weaponChanges.filter(row=>row.deltaBps!==0).length:bonusChanges.filter(row=>row.before!==row.after).length;
  const gearSize=width<355?54:shortScreen?56:66;
  return <GameModalSurface visible onClose={busy?()=>{}:onClose} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}
   backdropLabel={gl('Close equipment comparison')}
@@ -129,8 +131,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <View style={s.headerCopy}><Text style={s.headerEyebrow}>{gl('EQUIPMENT PREVIEW')}</Text><Text numberOfLines={1} style={[s.headerTitle,(width<355||fontScale>=1.25)&&{fontSize:16}]}>{gl('Compare & Swap')}</Text></View>
     <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose} disabled={busy} closeLabel={gl('Close equipment comparison')}/>
    </View>
-  <ScrollView ref={detailsScrollRef} style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}
-    onContentSizeChange={()=>{if(more)detailsScrollRef.current?.scrollToEnd({animated:!state.settings.reduceMotion})}}>
+  <ScrollView style={s.scroll} contentContainerStyle={s.body} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.pair}>
     <View style={s.gearCard}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
@@ -145,6 +146,41 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
      <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
     </View>
    </View>
+   <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
+    <View style={s.impactHead}>
+     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
+     <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
+    </View>
+    {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
+    {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
+    {bonusChangeCount>0?<Text style={s.impactText}>{gl('BONUS STATS')}: {bonusChangeCount} · {gl('Full stats')}</Text>:null}
+   </View>
+   <View style={s.statChips}>
+    {stats.slice(0,3).map(row=><View key={row.id} style={s.statChip}>
+     <Text style={s.chipLabel}>{row.label}</Text>
+     <Text style={[s.chipValue,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
+    </View>)}
+   </View>
+   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
+    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
+    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
+   </View>:null}
+   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
+    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
+    <Text style={s.disclosureTitle}>{gl('Full stats, gems & upgrades')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
+   </Pressable>
+   {more?<View style={s.extra}>
+   <View style={s.statPanel}>
+    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text style={s.legend}>{gl('Current → New')}</Text></View>
+    {stats.map(row=><View key={row.id} style={s.statRow}>
+     <Text style={s.statLabel}>{row.label}</Text>
+     <Text style={s.statOld}>{displayStat(row.before)}</Text>
+     <Text style={s.arrow}>→</Text>
+     <Text style={s.statNew}>{displayStat(row.after)}</Text>
+     <Text style={[s.statDelta,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
+    </View>)}
+   </View>
+   
    {slot==='weapon'&&weaponChanges.length>0?<View style={s.weaponRollPanel}>
     <View style={s.rollCompareHead}>
      <Text style={s.sectionTitle}>{gl('BONUS STATS')}</Text>
@@ -176,47 +212,6 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       <Text style={[s.rollValue,{color:statColor(C,change.after-change.before),minWidth:52,textAlign:'right'}]}>{bonusDifference(change.after-change.before)}</Text>
     </View>)}
    </View>:null}
-   <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>
-    <View style={s.impactHead}>
-     <Text style={[s.impactTitle,{color:trade.grade==='improvement'?C.good:trade.grade==='downgrade'?C.bad:trade.grade==='tradeoff'?C.warning:C.muted}]}>{combatOnly?gl('Other combat bonuses changed'):gl(trade.title)}</Text>
-     <Text style={[s.impactPower,{color:statColor(C,after.power-before.power)}]}>{gl('Power')} {signed(after.power-before.power)}</Text>
-    </View>
-    {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
-    {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
-   </View>
-   <View style={s.statChips}>
-    {stats.slice(0,3).map(row=><View key={row.id} style={s.statChip}>
-     <Text style={s.chipLabel}>{row.label}</Text>
-     <Text style={[s.chipValue,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
-    </View>)}
-   </View>
-   {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>
-    <Text style={s.sectionTitle}>{gl('SET PROGRESS')}</Text>
-    {sets.filter(row=>row.before!==row.after).map(row=><Text key={row.id} style={[s.setLine,{color:row.after<row.before?C.warning:C.good}]}>{row.tier} · {row.name}: {row.before} → {row.after}/10{row.milestones.map(m=>m.threshold===6?' · '+gl('6-piece trigger not active'):' · '+m.threshold+'pc '+(m.direction==='gained'?gl('bonus active'):gl('bonus lost'))).join('')}</Text>)}
-   </View>:null}
-   {(onSell||onSalvage)?<View style={s.disposalSection}>
-    <EquipmentDisposalStatus sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>
-    <View style={s.disposalActions}>
-     <View style={s.disposalAction}><GameButton compact tone="secondary" title={gl('Sell copy')} disabled={busy||!canSell} onPress={()=>onSell?.()}/></View>
-     <View style={s.disposalAction}><GameButton compact tone="danger" title={gl('Salvage copy')} disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/></View>
-    </View>
-   </View>:null}
-   <Pressable accessibilityRole="button" accessibilityState={{expanded:more}} accessibilityLabel={more?gl('Hide equipment details'):gl('Show equipment details')}
-    onPress={()=>setMore(v=>!v)} style={s.disclosure}>
-    <Text style={s.disclosureTitle}>{gl('Full stats, gems & upgrades')}</Text><Text style={s.disclosureIcon}>{more?'−':'+'}</Text>
-   </Pressable>
-   {more?<View style={s.extra}>
-   <View style={s.statPanel}>
-    <View style={s.sectionHeader}><Text style={s.sectionTitle}>{gl('TOTAL LOADOUT')}</Text><Text style={s.legend}>{gl('Current → New')}</Text></View>
-    {stats.map(row=><View key={row.id} style={s.statRow}>
-     <Text style={s.statLabel}>{row.label}</Text>
-     <Text style={s.statOld}>{displayStat(row.before)}</Text>
-     <Text style={s.arrow}>→</Text>
-     <Text style={s.statNew}>{displayStat(row.after)}</Text>
-     <Text style={[s.statDelta,{color:statColor(C,row.after-row.before)}]}>{signed(row.after-row.before)}</Text>
-    </View>)}
-   </View>
-   
     <Text style={s.note}>{gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
     <Text style={s.detail}>{gl('Enhancement')} +{enhancement.rank} · {gl('Stat gem')} {sockets.statGemId?itemDef(sockets.statGemId).name:gl('Empty')} · {gl('Effect gem')} {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>
     {sets.map(row=><Text key={row.id} style={s.detail}>{row.tier} · {row.name} · {row.before} → {row.after}/10 {gl('pieces')}</Text>)}
@@ -224,17 +219,39 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     {comparison.effects.map(row=><Text key={row.key} style={s.detail}>{gl(row.label)}: {percent(row.before)} → {percent(row.after)}</Text>)}
     {onInspect?<GameButton compact tone="secondary" title={gl('Sources & crafting uses')} onPress={onInspect}/>:null}
    </View>:null}
+   {hasOtherActions?<View style={s.otherActionsSection}>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:actionsOpen}}
+     accessibilityLabel={actionsOpen?gearText('Hide other item actions'):gearText('Other item actions')}
+     onPress={()=>setActionsOpen(value=>!value)} style={s.disclosure}>
+     <Text style={s.disclosureTitle}>{gearText('Other item actions')}</Text>
+     <Text style={s.disclosureIcon}>{actionsOpen?'−':'+'}</Text>
+    </Pressable>
+    {actionsOpen?<View style={s.otherActionsBody}>
+     <View style={s.otherActionsGrid}>
+      {onStoreInGear?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
+       <GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy&&busyAction==='gear'} onPress={()=>void storeInGear()}/>
+      </View>:null}
+      {onMoveToBank?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
+       <GameButton compact title={gearText('Move to Bank')} tone="secondary" disabled={busy} loading={busy&&busyAction==='bank'} onPress={()=>void moveToBank()}/>
+      </View>:null}
+      {onSell?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
+       <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={busy||!canSell} onPress={()=>onSell?.()}/>
+      </View>:null}
+      {onSalvage?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
+       <GameButton compact title={gl('Salvage copy')} tone="danger" disabled={busy||!canSalvage} onPress={()=>onSalvage?.()}/>
+      </View>:null}
+     </View>
+     {(onSell||onSalvage)?disposalBlocked
+      ?<EquipmentDisposalStatus compact sellAllowed={canSell} salvageAllowed={canSalvage} sellReason={sellBlockReason} salvageReason={salvageBlockReason}/>
+      :<Text style={s.actionHint}>{gl('This copy can be sold or salvaged. Installed gems and upgrades will be permanently lost.')}</Text>:null}
+    </View>:null}
+   </View>:null}
   </ScrollView>
   <View style={s.footer}>
    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
    {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
-   <View style={s.footerActions}>
-      <View style={s.footerSecondary}><GameButton title={more?gl('Hide details'):gl('Full stats')} tone="secondary" disabled={busy} onPress={()=>setMore(value=>!value)}/></View>
-      {onEquip?<View style={s.footerPrimary}><GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
-        loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/></View>:null}
-    </View>
-    {onStoreInGear?<GameButton title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy} onPress={()=>void storeInGear()}/>:null}
-    {onMoveToBank?<GameButton title={gearText('To Bank')} tone="secondary" disabled={busy} loading={busy} onPress={()=>void moveToBank()}/>:null}
+   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy&&busyAction==='equip'?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
+    loading={busy&&busyAction==='equip'} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
   </View>
  </GameModalSurface>;
 }
@@ -292,9 +309,12 @@ function makeStyles(C:ThemeColors){
   rollAfter:{...typography.bodyStrong,color:C.text,fontSize:11,minWidth:40,textAlign:'right',fontVariant:['tabular-nums']},
   rollDelta:{...typography.caption,fontWeight:'900',fontSize:11,minWidth:58,textAlign:'right',fontVariant:['tabular-nums']},
   setLine:{...typography.caption,fontWeight:'700'},
-  disposalSection:{gap:8},
-  disposalActions:{flexDirection:'row',gap:8},
-  disposalAction:{flex:1,minWidth:0},
+  otherActionsSection:{gap:7},
+  otherActionsBody:{padding:10,gap:10,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+  otherActionsGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  otherActionCell:{flexBasis:'47%',flexGrow:1,minWidth:0},
+  otherActionCellStack:{flexBasis:'100%'},
+  actionHint:{...typography.caption,color:C.muted,lineHeight:17},
   disclosure:{minHeight:44,paddingHorizontal:10,flexDirection:'row',justifyContent:'space-between',alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
   disclosureTitle:{...typography.bodyStrong,color:C.text},
   disclosureIcon:{fontSize:19,color:E.goldSoft},
@@ -302,8 +322,7 @@ function makeStyles(C:ThemeColors){
   note:{...typography.caption,color:C.muted,lineHeight:17},
   detail:{...typography.caption,color:C.text,lineHeight:18},
   footer:{borderTopWidth:1,borderTopColor:C.lineStrong,paddingTop:10,paddingBottom:3,gap:7,backgroundColor:E.panel},
-  footerActions:{flexDirection:'row',gap:8,alignItems:'stretch'},footerSecondary:{flex:1,minWidth:0},footerPrimary:{flex:1.45,minWidth:0},
-  footerNote:{...typography.caption,fontSize:10,color:C.muted,textAlign:'center'},
+
   errorBox:{paddingVertical:12,gap:12},
   error:{...typography.caption,color:C.bad},
   warning:{...typography.caption,color:C.warning,textAlign:'center'},

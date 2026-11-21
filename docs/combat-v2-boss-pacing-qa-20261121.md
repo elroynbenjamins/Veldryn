@@ -22,6 +22,25 @@ The validator **rejects** impossible or forged synthetic replays: non-monotone t
 
 Pure 13-negative-case / legitimate-interruption / early-kill / same-tick-crossing tests are wired to private Combat 2.0 CI. The existing real-engine 108 boss scenarios produce the audit output and verify order independence. No damage formula, stat or boss definition changed.
 
+## Verified first 20-second baseline report (commit 4f30ca4)
+
+The private `Server skills, variants and legacy combat parity` GitHub job
+[136892725965](https://github.com/elroynbenjamins/Veldryn/actions/runs/44919661660/job/136892725965)
+completed successfully after fixing strict TypeScript optional-event guards. It includes 13 deliberately invalid timeline cases, authored phase/cast ordering, and 108 actual engine replays. The completed `Synthetic 9-class 18-spec T1–T5 and Enemy V2 matchup matrix` and `Live Edge isolation` jobs passed on the same SHA.
+
+The **20-second synthetic baseline** found:
+
+| Boss | 70% phase seen / 18 | 35% phase seen / 18 | Wins / 18 | Timeouts / 18 | First authored cast P50 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Rootbound Heart | 0 | 0 | 0 | 12 | 2.4 seconds |
+| Bell-Warden | 0 | 0 | 0 | 12 | 1.6 seconds |
+| Buried Heliarch | 8 | 0 | 0 | 18 | 0 seconds |
+| Veiled Sphinx | 8 | 0 | 0 | 18 | 0 seconds |
+| Bellbeast of Shiverlake | 10 | 6 | 0 | 18 | 0 seconds |
+| Frozen Cantor | 12 | 8 | 1 | 17 | 0 seconds |
+
+This reveals a **coverage gap for Asterfall boss phases**, but does not establish that boss HP is wrong: the baseline actors lack complete 2.0 equipment/ability scaling and the window is only 20 seconds. A cast starting at 0s still has a multi-second authored windup, and is **not** an instant hit. The additional read-only median boss/player HP and pre-tell defeat/clear counters distinguish future possible HP walls from counterplay exposure issues; their exact-head CI is pending, so no claim of final passing or final tuning is made.
+
 ## What this does NOT establish
 
 - The existing 108 scenarios use **legacy launch-class baseline profiles with V2 class-resource identity**, not final 2.0 gear, gems, affixes, class variants or companion builds; all boss numbers and the 20-second window are synthetic.

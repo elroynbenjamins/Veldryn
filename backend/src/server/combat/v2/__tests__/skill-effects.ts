@@ -294,6 +294,32 @@ const legacyDot=simulateCombat({...dotInput,players:[legacyDotActor]});
 assert.equal(legacyDot.enemies[0].periodic.filter(p=>p.effectId===dotAbilityId).length,8,
  'legacy DoT stacking remains unchanged');
 
+// An Ironwarden's selected Riposte creates a short retaliatory stance.
+const ironBase=launchPlayer('Ironwarden',50);
+const riposteSkill=SKILL_IDENTITIES_V2.find(x=>x.classId==='IRONWARDEN'&&x.name==='Iron Riposte')!;
+const riposteBuild:VerifiedSkillBuildV2={
+  actor:ironBase,verified:{classId:'IRONWARDEN',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:specializationIdV2('IRONWARDEN','Sentinel'),equipment:{},
+    activeSkills:[{skillId:riposteSkill.id,variantId:riposteSkill.variants[0].id}],
+    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{},
+};
+const riposteActor=compileServerSkillBuildV2(true,riposteBuild);
+const closeCombatEnemy:CombatantDefinition={...enemy,
+  stats:{...enemy.stats,accuracy:100000,attackPower:5},
+  basicAttackMs:500,basicAttackCoeff:.15};
+const counterInput={seed:'ironwarden-counter-window',players:[riposteActor],
+  enemies:[closeCombatEnemy],maxDurationMs:2500,tickMs:100};
+const riposteFight=simulateCombat(counterInput);
+assert.equal(riposteFight.events.filter(e=>e.abilityId==='V2_COUNTER:IRON_RIPOSTE'&&
+  e.type==='damage').length,1,'Riposte triggers one bounded counter during its ward window');
+assert.equal(riposteFight.events.filter(e=>e.abilityId==='V2_COUNTER:IRON_RIPOSTE'&&
+  e.type==='resource_gain').length,0,'counter cannot mint Guard Marks');
+const legacyRiposteActor={...riposteActor,combatV2:undefined,tags:[]};
+assert.equal(simulateCombat({...counterInput,players:[legacyRiposteActor]}).events.filter(e=>
+  e.abilityId==='V2_COUNTER:IRON_RIPOSTE').length,0,
+ 'the counter only executes with an authenticated V2 stance');
+
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),
  'Rupture must consume an already-active self-applied DoT');

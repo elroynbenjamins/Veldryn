@@ -16,7 +16,7 @@ import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from '
 import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem} from './gem-pouch';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
-import {accountEntitlementBenefits} from './account-entitlements';
+import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {tryStoreEquipmentInPouch,equipmentPouchForCharacter} from './equipment-pouch';
 import {activeDailySupplyBoosts,commitDailySupplyTimedBoost,dailySupplyQueued,migrateLegacyDailySupplies} from './daily-supplies';
 
@@ -383,9 +383,9 @@ function deliverExactForgeCopy(state:GameState,itemId:string,instanceId:string,o
 /** Tool copies remain individually tracked, even after an offline claim or character switch. */
 function deliverExactToolCopy(state:GameState,itemId:string,instanceId:string,ownerId:string):GameState{
   const stack:ItemStack={itemId,quantity:1,instanceId};
-  if(state.character?.id===ownerId&&state.inventory.stacks.length<state.inventory.capacity)
+  if(state.character?.id===ownerId&&state.inventory.stacks.length<entitlementStorageCapacity(state,'inventory'))
     return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,stack]}};
-  if(state.bank.stacks.length<state.bank.capacity)
+  if(state.bank.stacks.length<entitlementStorageCapacity(state,'bank'))
     return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,stack]}};
   throw new Error(state.character?.id===ownerId?'Inventory and Bank are full':'Bank is full; free Bank space before claiming this character\'s tool');
 }

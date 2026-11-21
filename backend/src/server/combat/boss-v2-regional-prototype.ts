@@ -25,10 +25,14 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
         cast('SOLAR_V2_SUNFALL','Sunfall',19000,1800,91,'all_enemies',[
           {kind:'damage',coeff:.48,damageType:'fire'},
           {kind:'dot',coeff:.06,damageType:'fire',tag:'burn',durationMs:4000,tickMs:2000},
+          {kind:'debuff',tag:'damage_taken',value:.04,durationMs:4000},
         ],true),
       ],
       phases:[
-        v2Phase('SOLAR_V2_PHASE_70','Solar Ascendance',.70,'self',[{kind:'shield',flat:ward(boss,.04)}]),
+        v2Phase('SOLAR_V2_PHASE_70','Solar Ascendance',.70,'self',[
+          {kind:'shield',flat:ward(boss,.04)},
+          {kind:'buff',tag:'damage_done',value:.04,durationMs:6000},
+        ]),
         v2Phase('SOLAR_V2_PHASE_35','Cracked Corona',.35,'self',[
           {kind:'buff',tag:'damage_done',value:.08,durationMs:18000},
           {kind:'debuff',tag:'damage_taken',value:.12,durationMs:4500},
@@ -38,10 +42,14 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
     case 'BOSS_EXP_SPHINX':return{
       id:boss.id,name:'The Veiled Sphinx',
       abilities:[
-        cast('SPHINX_V2_MIRAGE','Mirage Veil',23000,1200,74,'self',[{kind:'shield',flat:ward(boss,.035)}]),
+        cast('SPHINX_V2_MIRAGE','Mirage Veil',23000,1200,74,'self',[
+          {kind:'shield',flat:ward(boss,.035),shieldReflectPct:.09},
+        ]),
       ],
       phases:[
-        v2Phase('SPHINX_V2_PHASE_70','Three Reflections',.70,'self',[{kind:'shield',flat:ward(boss,.03)}]),
+        v2Phase('SPHINX_V2_PHASE_70','Three Reflections',.70,'self',[
+          {kind:'shield',flat:ward(boss,.03),shieldReflectPct:.07},
+        ]),
         v2Phase('SPHINX_V2_PHASE_35','True Reflection',.35,'self',[
           {kind:'debuff',tag:'damage_taken',value:.12,durationMs:5000},
         ]),
@@ -52,10 +60,15 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
       abilities:[
         cast('BELLBEAST_V2_SHATTER','Glacial Shatter',20000,2000,92,'current_target',[
           {kind:'damage',coeff:1.30,damageType:'ice',executeBelowHpPct:.40,executeBonus:.15},
+          {kind:'dot',coeff:.08,damageType:'physical',tag:'bleed',
+           durationMs:4000,tickMs:2000},
         ],true),
       ],
       phases:[
-        v2Phase('BELLBEAST_V2_PHASE_70','Resonant Ice',.70,'self',[{kind:'shield',flat:ward(boss,.04)}]),
+        v2Phase('BELLBEAST_V2_PHASE_70','Resonant Ice',.70,'self',[
+          {kind:'shield',flat:ward(boss,.04)},
+          {kind:'buff',tag:'defense_pct',value:.06,durationMs:6000},
+        ]),
         v2Phase('BELLBEAST_V2_PHASE_35','Shattered Horn',.35,'self',[
           {kind:'buff',tag:'damage_done',value:.09,durationMs:18000},
           {kind:'debuff',tag:'damage_taken',value:.10,durationMs:4500},
@@ -73,6 +86,7 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
       phases:[
         v2Phase('CANTOR_V2_PHASE_70','Broken Harmony',.70,'all_enemies',[
           {kind:'dot',coeff:.08,damageType:'ice',durationMs:6000,tickMs:2000,tag:'dissonance'},
+          {kind:'debuff',tag:'haste',value:-.05,durationMs:5000},
         ]),
         v2Phase('CANTOR_V2_PHASE_35','Final Echo',.35,'self',[
           {kind:'debuff',tag:'damage_taken',value:.12,durationMs:4500},
@@ -92,6 +106,13 @@ export function prepareRegionalBossV2(
   if(!profile||boss.name!==profile.name)return boss;
   // No silent replacement of existing kit: preserve its identity and only add
   // experimental actions/phases for explicit 2.0-only test snapshots.
+  const traitByBoss:Readonly<Record<string,string>>={
+    BOSS_EXP_SOLAR:'searing_exposure',
+    BOSS_EXP_SPHINX:'mirage_reflection',
+    BOSS_EXP_BELLBEAST:'rending_frost',
+    BOSS_EXP_CANTOR:'chilling_dissonance',
+  };
   return {...boss,abilities:[...boss.abilities,...profile.abilities],
-    phases:profile.phases,tags:[...(boss.tags??[]),MARK]};
+    phases:profile.phases,tags:[...(boss.tags??[]),MARK,
+      'enemy-v2:boss-trait:'+traitByBoss[boss.id]]};
 }

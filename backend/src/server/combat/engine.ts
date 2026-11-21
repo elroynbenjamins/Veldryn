@@ -318,6 +318,29 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
+    // Hidden runtime is gated by an exact signed reward token and original
+    // ability provenance. Secondary effects never call this path recursively.
+    if(dungeonRewards&&eventType==='damage'&&dealt>0&&source.alive&&target.alive&&
+      source.definition.team==='players'&&target.definition.team==='enemies'&&
+      target.hp>0&&(abilityId==='BASIC'||source.definition.abilities.some(a=>a.id===abilityId))&&
+      !abilityId.startsWith('V2_')){
+      for(const action of dungeonRewards.afterOriginalDirectHit({now,
+        sourceId:source.definition.id,targetId:target.definition.id,abilityId,
+        critical:crit,actualHpDamage:dealt,attackPower:source.definition.stats.attackPower,
+        targetMaxHp:target.definition.stats.maxHp,boss:Boolean(target.definition.boss)}))
+        applyDungeonRewardAction(now,source,target,action);
+    }
+    if(dungeonRewards&&eventType==='damage'&&dealt>0&&target.alive&&target.hp>0&&
+      source.definition.team==='enemies'&&target.definition.team==='players'&&
+      (abilityId==='BASIC'||source.definition.abilities.some(a=>a.id===abilityId))&&
+      !(source.definition.phases??[]).some(p=>p.id===abilityId)&&
+      !abilityId.startsWith('V2_')){
+      for(const action of dungeonRewards.afterOriginalEnemyHit({now,
+        sourceId:source.definition.id,targetId:target.definition.id,abilityId,
+        hpBeforePct:hpBeforeReactive,hpAfterPct:hpPct(target),actualHpDamage:dealt,
+        boss:Boolean(source.definition.boss)}))
+        applyDungeonRewardAction(now,target,source,action);
+    }
     if(dealt>0){
       if(source.definition.team==='players'){
         resource(source,eventType==='dot_tick'?'periodic_hit':'direct_hit',now,abilityId);

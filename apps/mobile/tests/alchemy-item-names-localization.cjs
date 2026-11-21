@@ -35,7 +35,7 @@ for(const text of ["localizedItemName(language,itemId)","itemName(recipe.output.
  assert.ok(screen.includes(text),'workshop lost localized name '+text);
 }
 assert.ok(!screen.includes('itemName(selected.output.itemId)'), 'removed activity-switch confirmation should not be referenced');
-for(const source of ["onStart(id)","alchemyAvailability(state,r.id)","processingRunCapacity(state,r.id"]){
+for(const source of ["onStart(id,batches)","alchemyAvailability(state,r.id)","processingRunCapacity(state,r.id"]){
  assert.ok(screen.includes(source),'authoritative production flow changed '+source);
 }
 const parsed=ts.createSourceFile('ConsumableWorkshop.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

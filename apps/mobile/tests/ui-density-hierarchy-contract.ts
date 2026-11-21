@@ -104,10 +104,10 @@ ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes(
 ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
-ok(recipeCard.includes("processing?gl('Process available resources')")&&recipeCard.includes("gl('Runs until materials, Gold, or your AFK time runs out.')")&&recipeCard.includes('outputPerHour'),'Processing cards must expose its continuous offline rule and material throughput');
+ok(recipeCard.includes("processing?gt('Process')+' '+f(quantity)")&&recipeCard.includes('CraftQuantitySelector')&&recipeCard.includes('outputPerHour'),'Processing cards must expose selected batch quantity, resource-aware controls and material throughput');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
 ok(recipeCard.includes("statusText=starting?")&&recipeCard.includes("gt(\"Forge + backlog full\")")&&recipeCard.includes('craftText(effectiveStatus.reason)'),'Collapsed recipe cards must expose starting and blocking states');
-ok(recipeCard.includes("alchemy?ct('Brew · {time}'")&&recipeCard.includes('instantStart=craftReady&&(alchemy||processing)')&&recipeCard.includes('startInstant')&&recipeCard.includes('expandToggle'),'Alchemy recipe cards must immediately start a continuous brew while retaining a separate details control');
+ok(recipeCard.includes("alchemy?gt('Brew')+' '+f(quantity)")&&recipeCard.includes('onAlchemyStart(recipe.id,quantity)')&&recipeCard.includes('expandToggle'),'Alchemy recipe cards must first expose quantity controls and start the explicitly selected number of brews');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('Other sources ·')&&recipeCard.includes('sourceTypeLabel')&&recipeCard.includes('accessibilityState={{expanded:!!openSources[row.key]}}'),'Recipe material sources must keep one primary route compact and disclose typed alternatives on demand');

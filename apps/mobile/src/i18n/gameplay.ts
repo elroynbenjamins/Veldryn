@@ -9,6 +9,26 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Bulk crafting quantity controls shared by every profession.
+ "Choose quantity":["Choose quantity","Menge wählen","Elegir cantidad","Kies aantal","Scegli quantità","Choisir la quantité"],
+ "Production stops after your selected batches are completed.":["Production stops after your selected batches are completed.","Die Produktion endet nach den gewählten Durchgängen.","La producción termina cuando se completan las tandas elegidas.","De productie stopt nadat je gekozen batches klaar zijn.","La produzione termina quando sono completati i lotti scelti.","La production s’arrête lorsque les lots choisis sont terminés."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Stop the current activity to release reserved materials before starting another recipe.","Beende die aktuelle Aktivität, um reservierte Materialien für ein anderes Rezept freizugeben.","Detén la actividad actual para liberar los materiales reservados antes de empezar otra receta.","Stop de huidige activiteit om gereserveerde materialen vrij te maken voordat je een ander recept start.","Interrompi l’attività attuale per liberare i materiali riservati prima di avviare un’altra ricetta.","Arrêtez l’activité actuelle pour libérer les matériaux réservés avant de lancer une autre recette."],
+ "Decrease quantity":["Decrease quantity","Menge verringern","Reducir cantidad","Aantal verlagen","Riduci quantità","Diminuer la quantité"],
+ "Craft quantity":["Craft quantity","Herstellungsmenge","Cantidad a fabricar","Aantal om te maken","Quantità da creare","Quantité à fabriquer"],
+ "Increase quantity":["Increase quantity","Menge erhöhen","Aumentar cantidad","Aantal verhogen","Aumenta quantità","Augmenter la quantité"],
+ "Maximum craftable quantity":["Maximum craftable quantity","Maximal herstellbare Menge","Cantidad máxima fabricable","Maximaal maakbaar aantal","Quantità massima creabile","Quantité maximale fabricable"],
+ "Quantity":["Quantity","Menge","Cantidad","Aantal","Quantità","Quantité"],
+ "Max":["Max","Max.","Máx.","Max.","Max","Max"],
+ "crafts":["crafts","Herstellungen","fabricaciones","maakbeurten","creazioni","fabrications"],
+ "per craft":["per craft","pro Herstellung","por fabricación","per maakbeurt","per creazione","par fabrication"],
+ "Forge capacity":["Forge capacity","Schmiedekapazität","Capacidad de la forja","Smederijcapaciteit","Capacità della forgia","Capacité de la forge"],
+ "Choose brew quantity":["Choose brew quantity","Braumen­ge wählen","Elegir cantidad a preparar","Kies aantal brouwsels","Scegli quantità da preparare","Choisir la quantité à préparer"],
+ "Choose processing quantity":["Choose processing quantity","Verarbeitungsmenge wählen","Elegir cantidad a procesar","Kies aantal verwerkingen","Scegli quantità da lavorare","Choisir la quantité à traiter"],
+ "Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.":["Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.","Wähle die Anzahl der Durchgänge. Zutaten, Gold und AFK-Zeit begrenzen die Menge.","Elige cuántas tandas reservar. El límite depende de los ingredientes, el oro y el tiempo AFK.","Kies hoeveel batches je reserveert. Grondstoffen, goud en AFK-tijd bepalen de limiet.","Scegli quanti lotti prenotare. Ingredienti, oro e tempo AFK determinano il limite.","Choisissez le nombre de lots à réserver. Les ingrédients, l’or et le temps AFK fixent la limite."],
+ "Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.":["Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.","Wähle ein Rezept und die Anzahl der Durchgänge. Materialien und Gold werden beim Start reserviert.","Selecciona una receta y la cantidad de tandas. Los materiales y el oro se reservan al comenzar.","Kies een recept en het aantal batches. Materialen en goud worden bij de start gereserveerd.","Seleziona una ricetta e il numero di lotti. Materiali e oro vengono riservati all’avvio.","Choisissez une recette et le nombre de lots. Les matériaux et l’or sont réservés au démarrage."],
+ "Process":["Process","Verarbeiten","Procesar","Verwerken","Lavora","Traiter"],
+ "Queue":["Queue","Einreihen","En cola","In wachtrij","In coda","Mettre en file"],
+ "Start":["Start","Starten","Iniciar","Starten","Avvia","Démarrer"],
  // Inline gathering-tool recipes and the equipment bonus inspect summary.
   "Recipe known":["Recipe known","Rezept bekannt","Receta conocida","Recept bekend","Ricetta conosciuta","Recette connue"],
   "Recipe details":["Recipe details","Rezeptdetails","Detalles de la receta","Receptdetails","Dettagli della ricetta","Détails de la recette"],
@@ -1556,6 +1576,31 @@ const toolRecipeEarlyLocales={
  "Random bonuses on this equipment copy.":["Случайные бонусы на этом экземпляре снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
 } as const;
 for(const [english,pair] of Object.entries(toolRecipeEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+const craftingQuantityEarlyLocales={
+ "Choose quantity":["Выбрать количество","Miktarı seç"],
+ "Production stops after your selected batches are completed.":["Производство остановится после завершения выбранных партий.","Seçtiğin partiler tamamlandığında üretim durur."],
+ "Stop the current activity to release reserved materials before starting another recipe.":["Остановите текущее занятие, чтобы освободить зарезервированные материалы перед новым рецептом.","Başka bir tarife başlamadan önce ayrılan malzemeleri serbest bırakmak için mevcut etkinliği durdur."],
+ "Decrease quantity":["Уменьшить количество","Miktarı azalt"],
+ "Craft quantity":["Количество для изготовления","Üretim miktarı"],
+ "Increase quantity":["Увеличить количество","Miktarı artır"],
+ "Maximum craftable quantity":["Максимальное количество для изготовления","Üretilebilecek en yüksek miktar"],
+ "Quantity":["Количество","Miktar"],
+ "Max":["Макс.","Maks."],
+ "crafts":["изготовлений","üretim"],
+ "per craft":["за изготовление","üretim başına"],
+ "Forge capacity":["Вместимость кузницы","Demirhane kapasitesi"],
+ "Choose brew quantity":["Выберите количество зелий","Demleme miktarını seç"],
+ "Choose processing quantity":["Выберите количество обработок","İşleme miktarını seç"],
+ "Choose the number of batches to reserve. The limit includes your ingredients, Gold, and AFK time.":["Выберите число партий. Максимум зависит от материалов, золота и времени AFK.","Ayıracağın parti sayısını seç. Sınır malzemelerine, Altınına ve AFK sürene bağlıdır."],
+ "Select a recipe, choose a batch quantity, then start. Materials and Gold are reserved when the run begins.":["Выберите рецепт и число партий. Материалы и золото резервируются при запуске.","Tarifi ve parti sayısını seç. Malzemeler ve Altın başlatırken ayrılır."],
+ "Process":["Обработать","İşle"],
+ "Queue":["В очередь","Kuyruğa al"],
+ "Start":["Начать","Başlat"],
+} as const;
+for(const [english,pair] of Object.entries(craftingQuantityEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

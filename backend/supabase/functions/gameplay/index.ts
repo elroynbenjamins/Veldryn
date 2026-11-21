@@ -54036,13 +54036,22 @@ function recordFallenKnightWeeklyVictory(state, nowMs) {
 }
 
 // ../apps/mobile/src/core/game.ts
-function beginAlchemyBatch(state, recipeId, nowMs) {
+function beginAlchemyBatch(state, recipeId, nowMs, batches) {
   const ready = finishClassDrills(state, nowMs);
-  return startAlchemyUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
+  if (batches === void 0) return startAlchemyUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
+  const status = alchemyAvailability(ready, recipeId, 1);
+  if (!status.ready) throw new Error(status.reason);
+  const cycle = professionActionPace(ready, status.recipe, "batch").cycleSeconds;
+  const capacity = Math.min(status.maxBatches, Math.floor(offlineCapSeconds(ready) / cycle));
+  if (!Number.isSafeInteger(batches) || batches < 1 || batches > capacity) throw new Error("Selected brew count exceeds available materials, Gold or AFK time.");
+  return startAlchemyBatch(ready, recipeId, batches, nowMs);
 }
-function beginProcessingBatch(state, recipeId, nowMs) {
+function beginProcessingBatch(state, recipeId, nowMs, batches) {
   const ready = finishClassDrills(state, nowMs);
-  return startProcessingUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
+  if (batches === void 0) return startProcessingUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
+  const capacity = processingRunCapacity(ready, recipeId, offlineCapSeconds(ready));
+  if (!Number.isSafeInteger(batches) || batches < 1 || batches > capacity.availableBatches) throw new Error("Selected processing count exceeds available materials, Gold or AFK time.");
+  return startProcessingBatch(ready, recipeId, batches, nowMs);
 }
 function longTermAccountScope(state) {
   return state.account.longTermAccountScopeId ?? `local-account:${state.createdAtMs}`;
@@ -55442,7 +55451,7 @@ function equipGatheringTool(state, itemId, nowMs = Date.now()) {
   if (currentId) stacks = stackItems(stacks, [{ itemId: currentId, quantity: 1 }]);
   return { ...settled, inventory: { ...settled.inventory, stacks }, character: { ...settled.character, equippedToolIds: { ...settled.character.equippedToolIds ?? {}, [tool2.skillId]: itemId } } };
 }
-function craftRecipe(state, recipeId, nowMs = Date.now()) {
+function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (!state.character) throw new Error("No character");
   if (recipeId.startsWith("BREW_")) throw new Error("Timed alchemy recipes must be started as a batch.");
   const r = recipeDef(recipeId);
@@ -55492,7 +55501,7 @@ function craftRecipe(state, recipeId, nowMs = Date.now()) {
   }
   const xp = Math.min(totalXpAtLevel(100), sk.xp + boosted.xp);
   const next = { ...boostedState, character: { ...boostedState.character, gold: boostedState.character.gold - r.gold, ...r.noviceSetId ? { craftedNoviceItemIds: [.../* @__PURE__ */ new Set([...boostedState.character.craftedNoviceItemIds ?? [], r.output.itemId])] } : {} }, inventory: { ...boostedState.inventory, stacks: inv }, bank: { ...boostedState.bank, stacks: bank }, account: { ...boostedState.account, unlockedKnowledgeIds }, skills: boostedState.skills.map((x) => x.skillId === r.skillId ? { ...x, xp, level: levelFromXp(xp) } : x) };
-  const progressed = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: r.id, units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(boostedState), eventId: `craft:${state.character.id}:${r.id}:${nowMs}` }).state;
+  const progressed = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: r.id, units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(boostedState), eventId: `craft:${state.character.id}:${r.id}:${nowMs}${sequence ? `:${sequence}` : ""}` }).state;
   return outputDef.type === "gear" ? recordCompanionActivity(refreshQuests(grantEventActivity(progressed, "crafting", nowMs)), "crafting", r.output.itemId, r.output.quantity, nowMs) : refreshQuests(grantEventActivity(progressed, "crafting", nowMs));
 }
 function equipNoviceSet(state) {
@@ -58909,8 +58918,8 @@ var fields = {
   faith_blessing: ["id"],
   faith_favorite: ["id", "enabled"],
   faith_hide: ["enabled"],
-  alchemy_start: ["id", "batches"],
-  processing_start: ["id", "batches"],
+  alchemy_start: ["id", "batches", "batchMode"],
+  processing_start: ["id", "batches", "batchMode"],
   companion_monthly: ["id"],
   companion_supplies: [],
   companion_bond_reward: ["id", "level"],
@@ -58951,7 +58960,7 @@ var fields = {
   stop: [],
   travel: ["id"],
   boss: [],
-  craft: ["id"],
+  craft: ["id", "quantity"],
   craft_claim: ["id"],
   craft_claim_all: [],
   craft_cancel: ["id"],
@@ -59050,8 +59059,14 @@ function validateGameCommand(value) {
   if (Object.keys(row).some((key) => key !== "type" && key !== "args") || typeof row.type !== "string" || !Object.prototype.hasOwnProperty.call(fields, row.type)) throw new Error("invalid_command");
   const args = row.args ?? {};
   if (!args || typeof args !== "object" || Array.isArray(args) || Object.keys(args).some((key) => !fields[row.type].includes(key))) throw new Error("invalid_command_arguments");
-  const countKey = row.type === "faith_practice" ? "count" : row.type === "alchemy_start" || row.type === "processing_start" ? "batches" : void 0;
-  if (countKey && args[countKey] !== void 0 && args[countKey] !== 1) throw new Error(`invalid_${countKey}`);
+  const batchCommand = row.type === "alchemy_start" || row.type === "processing_start", values = args;
+  if (batchCommand) {
+    if (values.batchMode !== void 0 && values.batchMode !== "selected") throw new Error("invalid_batch_mode");
+    if (values.batchMode === "selected") integer(values, "batches", 1, 1e4);
+    else if (values.batches !== void 0 && values.batches !== 1) throw new Error("invalid_batches");
+  }
+  if (row.type === "faith_practice" && values.count !== void 0) integer(values, "count", 1, 1);
+  if (row.type === "craft" && values.quantity !== void 0) integer(values, "quantity", 1, 999);
   if (row.type === "create" || row.type === "roster_create" || row.type === "qa_prepare" || row.type === "qa_switch_class") {
     const creation = args;
     oneOf(creation.classId, CLASSES.map((item) => item.id));
@@ -59240,10 +59255,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = updateFaithPreference(state, "hide", void 0, a.enabled === true);
       break;
     case "alchemy_start":
-      state = beginAlchemyBatch(state, text(a, "id"), now);
+      state = beginAlchemyBatch(state, text(a, "id"), now, a.batchMode === "selected" ? integer(a, "batches", 1, 1e4) : void 0);
       break;
     case "processing_start":
-      state = beginProcessingBatch(state, text(a, "id"), now);
+      state = beginProcessingBatch(state, text(a, "id"), now, a.batchMode === "selected" ? integer(a, "batches", 1, 1e4) : void 0);
       break;
     case "class_focus": {
       const focus = oneOf(a.focus, ["balanced", "primary", "secondary"]);
@@ -59412,16 +59427,19 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "craft": {
-      const id = text(a, "id"), timed = timedEquipmentRecipe(id);
+      const id = text(a, "id"), count = a.quantity === void 0 ? 1 : integer(a, "quantity", 1, 999), timed = timedEquipmentRecipe(id);
       if (isTimedProcessingRecipe(id)) throw new Error("Repeatable processing must be started as a timed batch.");
-      if (timed) {
-        const started = startEquipmentCraft(state, id, now);
-        state = started.state;
-        message = started.waiting ? "Equipment added to forge backlog" : "Equipment crafting started";
-      } else {
-        state = craftRecipe(state, id, now);
-        contributions.push({ kind: "crafting", contentId: id, units: 1 });
+      if (!timed && count > 1) {
+        const recipe2 = recipeDef(id), kind = recipe2 ? itemDef(recipe2.output.itemId).type : void 0;
+        if (!recipe2 || recipe2.noviceSetId || kind === "gear" || kind === "tool") throw new Error("This recipe is crafted one at a time.");
       }
+      for (let batch = 0; batch < count; batch++) {
+        if (timed) {
+          state = startEquipmentCraft(state, id, now).state;
+        } else state = craftRecipe(state, id, now, batch);
+      }
+      if (timed) message = count + " equipment " + (count === 1 ? "craft" : "crafts") + " added to the forge";
+      else contributions.push({ kind: "crafting", contentId: id, units: count });
       break;
     }
     case "craft_claim": {

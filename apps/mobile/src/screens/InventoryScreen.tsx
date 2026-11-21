@@ -74,12 +74,13 @@ function EquipmentSwapMoment({moment,reduceMotion,onDismiss}:{moment:EquipmentCh
     {moment.setChanges.map(change=><View key={change.type+':'+change.setId+':'+change.pieces} style={[s.setChange,{borderColor:change.type==='activated'?C.good:C.warning,backgroundColor:change.type==='activated'?C.goodSurface:C.warningSurface}]}><Text style={[s.setChangeTitle,{color:change.type==='activated'?C.good:C.warning}]}>{change.type==='activated'?gt("SET BONUS ACTIVATED"):gt("SET BONUS LOST")} · {gt("{count} pieces",{count:change.pieces})} · {change.setName}</Text><Text style={s.equipMomentMeta}>{gl(change.bonus)}</Text></View>)}
   </Animated.View>;
 }
-export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onBankSell,onBankGoldTransfer,onOverflow,onToggleFavorite,onToggleLock,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect,onCommand}:{state:GameState;viewMemory?:InventoryScreenState;foodRequest?:number;onEquip:(id:string)=>void|Promise<unknown>;onFood:(id:string)=>void|Promise<unknown>;onEat:(id:string)=>void|Promise<unknown>;onSell:(id:string,quantity:number)=>void|Promise<unknown>;onSalvage:(id:string)=>void|Promise<unknown>;onDeposit:(id:string,quantity:number)=>void|Promise<unknown>;onDepositMaterials:()=>void|Promise<unknown>;onUpgradeStorage:(location:StorageLocation)=>void|Promise<unknown>;onWithdraw:(id:string,quantity:number)=>void|Promise<unknown>;onBankSell:(id:string,quantity:number)=>void|Promise<unknown>;onBankGoldTransfer:(direction:'deposit'|'withdraw',amount:number)=>void|Promise<unknown>;onOverflow:()=>void|Promise<unknown>;onToggleFavorite:(id:string)=>void|Promise<unknown>;onToggleLock:(id:string)=>void|Promise<unknown>;onAcknowledgeItem:(id:string)=>void|Promise<unknown>;onAcknowledgeAll:()=>void|Promise<unknown>;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void|Promise<unknown>;onNavigateInspect:(destination:WorkingTowardDestination)=>void|Promise<unknown>;onCommand?:(command:GameCommand)=>Promise<unknown>}){
+export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onBankSell,onBankGoldTransfer,onOverflow,onToggleFavorite,onToggleLock,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onBulkPreference,onNavigateInspect,onCommand}:{state:GameState;viewMemory?:InventoryScreenState;foodRequest?:number;onEquip:(id:string)=>void|Promise<unknown>;onFood:(id:string)=>void|Promise<unknown>;onEat:(id:string)=>void|Promise<unknown>;onSell:(id:string,quantity:number)=>void|Promise<unknown>;onSalvage:(id:string)=>void|Promise<unknown>;onDeposit:(id:string,quantity:number)=>void|Promise<unknown>;onDepositMaterials:()=>void|Promise<unknown>;onUpgradeStorage:(location:StorageLocation)=>void|Promise<unknown>;onWithdraw:(id:string,quantity:number)=>void|Promise<unknown>;onBankSell:(id:string,quantity:number)=>void|Promise<unknown>;onBankGoldTransfer:(direction:'deposit'|'withdraw',amount:number)=>void|Promise<unknown>;onOverflow:()=>void|Promise<unknown>;onToggleFavorite:(id:string)=>void|Promise<unknown>;onToggleLock:(id:string)=>void|Promise<unknown>;onAcknowledgeItem:(id:string)=>void|Promise<unknown>;onAcknowledgeAll:()=>void|Promise<unknown>;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void|Promise<unknown>;onBulkPreference:(kind:'lock'|'favorite',enabled:boolean,ids:string[])=>void|Promise<unknown>;onNavigateInspect:(destination:WorkingTowardDestination)=>void|Promise<unknown>;onCommand?:(command:GameCommand)=>Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const healthState=liveHealthState(state,Date.now());
   const {width,fontScale}=useWindowDimensions();
   const stackStorageActions=width<380||fontScale>=1.25;
+  const compactProtectionToolbar=width<540||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
   const gridColumns=gridWidth<235?3:gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(48,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
@@ -90,13 +91,14 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [equipmentPouchOpen,setEquipmentPouchOpen]=useState(false);
   const [query,setQuery]=useState(initial.query),[filter,setFilter]=useState<InventoryFilter>(initial.filter),[sort,setSort]=useState<InventorySort>(initial.sort);
   useEffect(()=>{Object.assign(memory,{location,query,filter,sort,scrollY:scrollY.current,pouchOpen});},[memory,location,query,filter,sort,pouchOpen]);
-  useEffect(()=>{if(foodRequest<=memory.foodRequest)return;Object.assign(memory,openInventoryFood(memory,foodRequest));setLocation('inventory');setPouchOpen(false);setEquipmentPouchOpen(false);setQuery('');setFilter('food');setSelectMode(false);setSelectedIds([]);setInspectId(null);setPreviewId(null);setPreviewInstanceId(null);scrollY.current=0;scrollRef.current?.scrollToOffset({offset:0,animated:false});},[foodRequest,memory]);
+  useEffect(()=>{if(foodRequest<=memory.foodRequest)return;Object.assign(memory,openInventoryFood(memory,foodRequest));setLocation('inventory');setPouchOpen(false);setEquipmentPouchOpen(false);setQuery('');setFilter('food');setSelectMode(false);setSelectedIds([]);setProtectionMode(null);setInspectId(null);setPreviewId(null);setPreviewInstanceId(null);scrollY.current=0;scrollRef.current?.scrollToOffset({offset:0,animated:false});},[foodRequest,memory]);
   const [quantity,setQuantity]=useState<number|'all'>(1),[quantityInput,setQuantityInput]=useState('');
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null),[previewInstanceId,setPreviewInstanceId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null),[selectedInstanceId,setSelectedInstanceId]=useState<string|null>(null),[inspectQuantity,setInspectQuantity]=useState(1);
   const [gridPage,setGridPage]=useState(0),[showGoldTransfer,setShowGoldTransfer]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
+  const [protectionMode,setProtectionMode]=useState<'lock'|'favorite'|null>(null),[protectionFeedback,setProtectionFeedback]=useState<string|null>(null);
   const equipmentSnapshot=useMemo(()=>equipmentFeedbackSnapshot(state),[state]);
   const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentSnapshot);
   const [inventoryIntent,setInventoryIntent]=useState<InventoryFeedbackIntent|null>(null),[inventoryFeedback,setInventoryFeedback]=useState<InventoryActionFeedback|null>(null);
@@ -188,10 +190,10 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   },[state,previewId,previewInstanceId,goalProtection,favoriteSet,lockedSet,onCommand]);
   const selectedSet=useMemo(()=>new Set(selectedIds),[selectedIds]);
    const hasUnselectedShown=gridEntries.some(stack=>stack!==null&&!selectedSet.has(inventoryBulkSelectionId(stack)));
-   const selectionSummary=useMemo(()=>bulkSelectionSummary(state,selectedIds,location),[state,selectedIds,location]);
+   const selectionSummary=useMemo(()=>bulkSelectionSummary(state,protectionMode?[]:selectedIds,location),[state,selectedIds,location,protectionMode]);
   // Keep bulk exclusions understandable without scanning every item while browsing.
   const bulkBlockedExamples=useMemo(()=>{
-    if(!selectedIds.length)return [] as string[];
+    if(!selectedIds.length||protectionMode)return [] as string[];
     const ids=new Set(selectedIds);
     return state[location].stacks.filter(stack=>!!stack.instanceId&&ids.has(inventoryBulkSelectionId(stack))).slice(0,12)
       .map(stack=>{
@@ -200,8 +202,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         const reason=sell.reason??salvage.reason;
         return reason?localizedItemName(language,stack.itemId)+': '+reason:null;
       }).filter((reason):reason is string=>Boolean(reason)).slice(0,2);
-  },[state,selectedIds,location,language]);
-  const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
+  },[state,selectedIds,location,language,protectionMode]);
+  const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setProtectionMode(null);setBulkPending(null)};
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location&&!pouchOpen&&!equipmentPouchOpen)return;exitSelection();setPouchOpen(false);setEquipmentPouchOpen(false);setLocation(value);setError('')};
   const openPouch=()=>{exitSelection();restored.current=null;setEquipmentPouchOpen(false);setPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
   const openEquipmentPouch=()=>{exitSelection();restored.current=null;setPouchOpen(false);setEquipmentPouchOpen(true);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
@@ -212,7 +214,17 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
      setSelectedIds(combined.slice(0,100));
      setError(combined.length>100?gt('Select up to 100 item stacks at once.'):'');
    };
-  const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
+  const beginSelection=(mode:'lock'|'favorite'|null=null)=>{setSelectMode(true);setSelectedIds([]);setProtectionMode(mode);setProtectionFeedback(null);setPreviewId(null);setPreviewInstanceId(null);setInspectId(null);setError('')};
+  const chooseProtectionMode=(mode:'lock'|'favorite')=>{if(selectMode){setProtectionMode(mode);setError('')}else beginSelection(mode)};
+  const applySelectedProtection=async(enabled:boolean)=>{
+    if(!protectionMode||!selectedIds.length||inventoryBusyRef.current)return;
+    const kind=protectionMode,count=selectedIds.length;
+    const success=await beginInventorySubmission(gt("Updating item protection…"),()=>onBulkPreference(kind,enabled,selectedIds));
+    if(success){
+      exitSelection();
+      setProtectionFeedback(gt(kind==='lock'?(enabled?'Locked {count} selected stacks.':'Unlocked {count} selected stacks.'):enabled?'Favorited {count} selected stacks.':'Removed favorites from {count} selected stacks.',{count}));
+    }
+  };
   const beginBulk=(kind:BulkAction)=>{
     const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;
     if(!ids.length)return;
@@ -232,14 +244,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
         {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>{gt("EAT")}</Text>:null}
         {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
       </Pressable>
-      {!selectMode&&<>
-        <Pressable accessibilityRole="button" accessibilityLabel={locked?gt('Unlock {name}',{name:localizedItemName(language,item.id)}):gt('Lock {name}',{name:localizedItemName(language,item.id)})} accessibilityState={{selected:locked}} hitSlop={2} onPress={()=>{if(lockedSet.has(item.id)){void onToggleLock(item.id);return;}if(stack.instanceId&&exactRecord&&onCommand){void beginInventorySubmission('Updating equipment lock…',()=>onCommand({type:'gear_lock',args:{instanceId:stack.instanceId!,locked:!exactRecord.locked}}));return;}void onToggleLock(item.id)}} style={({pressed})=>[s.itemCorner,s.itemLockCorner,locked&&s.itemCornerActive,pressed&&s.pressed]}>
-          <InventoryLockGlyph locked={locked} color={locked?C.warning:C.muted}/>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={favorite?gt('Remove {name} from favorites',{name:localizedItemName(language,item.id)}):gt('Favorite {name}',{name:localizedItemName(language,item.id)})} accessibilityState={{selected:favorite}} hitSlop={2} onPress={()=>{void onToggleFavorite(item.id)}} style={({pressed})=>[s.itemCorner,s.itemFavoriteCorner,favorite&&s.itemCornerActive,pressed&&s.pressed]}>
-          <Text accessible={false} style={[s.itemStar,favorite&&s.itemStarOn]}>{favorite?'★':'☆'}</Text>
-        </Pressable>
-      </>}
+      {!selectMode&&locked?<View accessible={false} style={[s.itemStatusBadge,s.itemLockCorner]}><InventoryLockGlyph locked color={C.warning}/></View>:null}
+       {!selectMode&&favorite?<View accessible={false} style={[s.itemStatusBadge,s.itemFavoriteCorner]}><Text style={s.itemStarOn}>★</Text></View>:null}
     </View>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?gt("This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat."):'';
@@ -636,10 +642,17 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   quantityInput:{height:42,paddingHorizontal:9,paddingVertical:0,color:C.text,textAlign:'center',textAlignVertical:'center',fontSize:12,lineHeight:18,fontWeight:'800'},
   viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:5},amountTrigger:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},amountText:{fontSize:10,color:C.text,fontWeight:'900'},sortChevron:{...typography.body,color:C.muted,transform:[{translateY:-3}]},sortValue:{...typography.bodyStrong,color:C.text},textAction:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center',paddingHorizontal:6},
   resultRow:{flexDirection:'row',alignItems:'center',gap:8},
+  resultRowCompact:{flexWrap:'wrap',rowGap:4},
   resultSummary:{flex:1,minWidth:0},
   markSeen:{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
   markSeenText:{fontSize:10,color:C.info,fontWeight:'900'},
-  resultActions:{flexDirection:'row',alignItems:'center',gap:6},
+  resultActions:{flexDirection:'row',alignItems:'center',gap:5},
+  resultActionsCompact:{width:'100%',justifyContent:'flex-end'},
+  protectionToolbarButton:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:8,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel2},
+  protectionToolbarActive:{borderColor:C.warning,backgroundColor:C.warningSurface},
+  protectionToolbarText:{fontSize:10,fontWeight:'900',color:C.text},
+  protectionToolbarStar:{fontSize:15,color:C.warning,fontWeight:'900'},
+  protectionSuccess:{...typography.caption,color:C.good,fontWeight:'700'},
   selectModeButton:{minHeight:44,justifyContent:'center',paddingHorizontal:11,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   selectModeButtonActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   selectModeText:{fontSize:10,color:C.text,fontWeight:'900'},
@@ -662,9 +675,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
    storagePaging:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
   itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},
   itemOpen:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},
-  itemCorner:{position:'absolute',top:2,width:25,height:25,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:6,borderColor:C.line,backgroundColor:C.panel},
-  itemCornerActive:{borderColor:C.warning},itemLockCorner:{left:2},itemFavoriteCorner:{right:2},
-  itemStar:{fontSize:18,lineHeight:22,fontWeight:'900',color:C.muted},itemStarOn:{color:C.warning},
+  itemStatusBadge:{position:'absolute',top:2,width:18,height:18,alignItems:'center',justifyContent:'center',borderRadius:5,backgroundColor:C.panel},
+  itemLockCorner:{left:2},itemFavoriteCorner:{right:2},
+  itemStarOn:{fontSize:13,lineHeight:16,fontWeight:'900',color:C.warning},
   itemQuantity:{position:'absolute',right:3,bottom:3,paddingHorizontal:4,borderRadius:7,overflow:'hidden',fontSize:9,lineHeight:14,fontWeight:'900',backgroundColor:C.panel},
   itemNew:{position:'absolute',left:3,height:16,maxHeight:16,alignSelf:'flex-start',flexGrow:0,flexShrink:0,alignItems:'center',justifyContent:'center',paddingHorizontal:4,borderRadius:3,backgroundColor:C.info},itemNewBottom:{bottom:16},itemNewTop:{top:3},itemNewText:{fontSize:9,lineHeight:11,includeFontPadding:false,color:C.panel,fontWeight:'900',letterSpacing:.3},
   itemAuto:{position:'absolute',left:3,bottom:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,overflow:'hidden',fontSize:6,lineHeight:8,color:C.panel,fontWeight:'900',letterSpacing:.35,backgroundColor:C.good},

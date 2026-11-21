@@ -32,7 +32,7 @@ import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-t
 import {OptionPager,type PagerOption} from './OptionPager';
 
 type EquipmentCraftingSkill='smithing'|'tailoring';
-type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill};
+type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill;onOpenForge?:()=>void};
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'];
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
 
@@ -48,7 +48,7 @@ export const SmithingHeader=EquipmentCraftingHeader;
 
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
- const {state,preferredRecipeId,onCraft,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
+ const {state,preferredRecipeId,onCraft,queueProps,onOpenForge,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
  const [showAllClasses,setShowAllClasses]=useState(false),[requestedCraftCount,setRequestedCraftCount]=useState(1);
  // Keep each item's disclosure choice stable across live forge timer updates.
  const [bonusPoolOpenByItem,setBonusPoolOpenByItem]=useState<Record<string,boolean>>({});
@@ -106,7 +106,7 @@ export function SmithingCollection(props:Props){
     <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[s.caption,{color:queue.ready>0?C.good:C.muted,fontWeight:'700',maxWidth:92,textAlign:'right'}]}>{queueOpen?gt("Back to crafting"):gt("Manage & collect")}</Text>
     <Text style={muted}>{queueOpen?'⌃':'›'}</Text>
   </Pressable>
-  {queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>
+  {queueOpen?<Pressable accessibilityRole="button" onPress={onOpenForge} style={[s.control,panel]}><Text style={[s.body,text,{fontWeight:'800'}]}>{gt('Open Forge')} ›</Text><Text style={[s.caption,muted]}>{queue.ready>0?queue.ready+' '+gt('Ready')+' · ':''}{gt('Manage crafting jobs and mastery')}</Text></Pressable>:<>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>{setTab(value);setError('')}} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
   {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);setDetailsOpen(false);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
   {tab==='equipment'&&set&&item&&recipe&&status?<>
@@ -137,7 +137,7 @@ export function SmithingCollection(props:Props){
     <View style={[s.materials,{borderTopColor:C.line}]}><View style={s.between}><Text style={[s.body,text]}>{gl('Materials')}</Text><Text style={[s.caption,muted]}>{gl('Owned / required')}</Text></View><View style={s.ingredients}>{status.inputs.map(input=>{const infusion=alchemyRecipeDef('BREW_'+input.itemId);return <Pressable key={input.itemId} accessibilityRole="button" accessibilityLabel={localizedItemName(language,input.itemId)+', '+(input.inventory+input.bank)+' / '+(input.quantity*craftCount)} onPress={()=>{const missing=input.inventory+input.bank<input.quantity;const source=missing&&props.onNavigate?workingTowardItemSourceEntries(state,input.itemId).find(row=>row.availability.canNavigate):undefined;if(source&&props.onNavigate)props.onNavigate(source.destination);else setDetailsOpen(true)}} style={[s.ingredient,{backgroundColor:C.panel2,borderColor:C.line}]}><ItemArtwork itemId={input.itemId} size={32}/><View style={s.flex}><Text numberOfLines={2} style={[s.caption,text]}>{localizedItemName(language,input.itemId)}</Text><Text style={[s.body,{color:input.inventory+input.bank>=input.quantity*craftCount?C.good:C.warning}]}>{input.inventory+input.bank} / {input.quantity*craftCount}</Text>{infusion?<Text style={[s.caption,muted]}>{gl('Alchemy')} · {gl('Level')} {infusion.level}</Text>:null}{input.inventory+input.bank<input.quantity&&props.onNavigate?<Text style={[s.caption,{color:C.info}]}>{gt('Find source')} ›</Text>:null}</View></Pressable>})}</View></View>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(!detailsOpen)} style={[s.disclosure,panel]}><Text style={[s.body,muted]}>{gl('Details & sources')}</Text><Text style={muted}>{detailsOpen?'⌃':'⌄'}</Text></Pressable>
     {detailsOpen?<RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={props.onNavigate} onCraftPrerequisites={props.onCraftPrerequisites} onTrackPreparation={props.onTrackPreparation} detailsOnly/>:null}
-    <ForgeOddsGuide key={recipe.output.itemId} itemId={recipe.output.itemId}/>
+    <ForgeOddsGuide key={recipe.output.itemId} itemId={recipe.output.itemId} forgeLevel={state.skills.find(row=>row.skillId==='forge')?.level??1}/>
     {error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}
 
    </View>

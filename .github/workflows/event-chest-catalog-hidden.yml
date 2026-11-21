@@ -46,6 +46,9 @@ on:
       - 'docs/operations/sql-drafts/20261119_world_boss_chest_ledger_v61_review_only.sql'
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/party/weekly-party-event-inbox-v80.ts'
+      - 'backend/src/server/party/weekly-party-event-real-reward-ports-v86.ts'
+      - 'backend/tests/party-event-real-rewards-v86.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql'
       - 'backend/tests/party-event-inbox-v80.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261119120000_party_event_inbox_history_guard_v81.sql'
       - 'backend/src/server/party/weekly-party-event-chest-source-v77.ts'
@@ -158,6 +161,8 @@ jobs:
         run: |
           node tests/chest-reward-ledger-v70.mjs
           node tests/chest-postgres-store-v70.mjs
+      - name: Exercise V86 real Party Sigils, Gold, Gem Dust and Essence payout in disposable PostgreSQL
+        run: node tests/party-event-real-rewards-v86.mjs
       - name: Verify original Party V80 paid-Inbox history and V81 legacy claim guard
         run: node tests/party-event-inbox-v80.mjs
       - name: Verify V83 real World Boss wallet, account-state and Inbox custody in disposable PostgreSQL
@@ -215,6 +220,8 @@ jobs:
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
+          grep -q 'PARTY_EVENT_REAL_REWARDS_V86_RELEASED=false' src/server/party/weekly-party-event-real-reward-ports-v86.ts
+          test ! -f supabase/migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql
           test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
           grep -q 'CHEST_EARNED_ENTITLEMENT_V80_RELEASED=false' src/server/loot/chest-earned-entitlement-v80.ts
           grep -q 'CHEST_EQ2_RELEASE_GATE_V81_RELEASED=false' src/server/loot/chest-eq2-release-gate-v81.ts

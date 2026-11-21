@@ -56140,20 +56140,6 @@ function migrateRetiredStoryRewards(input, nowMs) {
   return { ...cleaned, ...routed, account };
 }
 
-// ../apps/mobile/src/core/playability.ts
-function transitionActivity(state, nowMs, next) {
-  const claimed = claimActivity(state, nowMs);
-  const stopped = stopActivity(claimed.state, nowMs);
-  const updated = next ? next.kind === "combat" ? startCombat(stopped, next.id, nowMs, next.tacticId ?? "balanced", next.goalId ?? "open") : startGathering(stopped, next.id, nowMs) : stopped;
-  return { state: updated, reward: claimed.reward };
-}
-
-// ../apps/mobile/src/i18n/languages.ts
-var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr", "ru", "tr"];
-
-// ../apps/mobile/src/core/game-commands.ts
-init_faith2();
-
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
@@ -57081,7 +57067,7 @@ function equipmentCraftingQueue(state) {
 }
 function isTimedEquipmentRecipe(recipe2) {
   const output = itemDef(recipe2.output.itemId);
-  return output.type === "gear" && !recipe2.noviceSetId;
+  return output.type === "gear" && !recipe2.noviceSetId || output.type === "tool";
 }
 function timedEquipmentRecipe(recipeId) {
   const recipe2 = recipeDef(recipeId);
@@ -57111,6 +57097,12 @@ function validateStart(state, recipe2) {
   if (!state.character) throw new Error("Create a character first");
   if (!isTimedEquipmentRecipe(recipe2)) throw new Error("This recipe does not use the equipment crafting queue");
   if (state.character.level < (recipe2.characterLevel ?? 1)) throw new Error(`Requires character level ${recipe2.characterLevel}`);
+  const tool2 = gatheringToolDef(recipe2.output.itemId);
+  if (tool2) {
+    const gathering = state.skills.find((row) => row.skillId === tool2.skillId);
+    if (!gathering || gathering.level < tool2.unlockLevel) throw new Error(`Requires ${tool2.skillId} level ${tool2.unlockLevel}`);
+    if (tool2.blueprint && !(state.account.unlockedKnowledgeIds ?? []).includes(tool2.blueprint.knowledgeId) && combinedQuantity2(state, tool2.blueprint.itemId) < 1) throw new Error(`Requires ${itemDef(tool2.blueprint.itemId).name}`);
+  }
   const skill2 = state.skills.find((row) => row.skillId === recipe2.skillId);
   if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires ${recipe2.skillId} level ${recipe2.level}`);
   if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
@@ -57223,6 +57215,14 @@ function startEquipmentCraft(state, recipeId, nowMs) {
   if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished equipment before starting more crafts");
   if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
   projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  const tool2 = gatheringToolDef(recipe2.output.itemId), blueprint2 = tool2?.blueprint;
+  if (blueprint2 && !(projected.account.unlockedKnowledgeIds ?? []).includes(blueprint2.knowledgeId)) {
+    projected = consumeAcross2(projected, blueprint2.itemId, 1);
+    projected = { ...projected, account: {
+      ...projected.account,
+      unlockedKnowledgeIds: [.../* @__PURE__ */ new Set([...projected.account.unlockedKnowledgeIds ?? [], blueprint2.knowledgeId])]
+    } };
+  }
   for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
   const seconds = equipmentCraftDurationSeconds(projected, recipeId), durationMs = seconds * 1e3;
   const existingQueue = equipmentCraftingQueue(projected);
@@ -57361,6 +57361,14 @@ function deliverExactForgeCopy(state, itemId, instanceId, ownerId) {
     return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
   throw new Error(state.character?.id === ownerId ? "Equipment Pouch, Inventory and Bank are full" : "Equipment Pouch and Bank are full; free space before claiming this character's equipment");
 }
+function deliverExactToolCopy(state, itemId, instanceId, ownerId) {
+  const stack = { itemId, quantity: 1, instanceId };
+  if (state.character?.id === ownerId && state.inventory.stacks.length < entitlementStorageCapacity(state, "inventory"))
+    return { ...state, inventory: { ...state.inventory, stacks: [...state.inventory.stacks, stack] } };
+  if (state.bank.stacks.length < entitlementStorageCapacity(state, "bank"))
+    return { ...state, bank: { ...state.bank, stacks: [...state.bank.stacks, stack] } };
+  throw new Error(state.character?.id === ownerId ? "Inventory and Bank are full" : "Bank is full; free Bank space before claiming this character's tool");
+}
 function forgeIncomingDelivery(state, ownerId) {
   const active2 = state.character?.id === ownerId;
   const owner = active2 ? state.character : state.otherCharacters?.find((entry2) => entry2.character.id === ownerId)?.character;
@@ -57415,6 +57423,24 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
   const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemCombineRecipe = gemCombineRecipeV1(job.recipeId), gemRefineRecipe = gemRefineRecipeV1(job.recipeId), gemRecipe = gemCombineRecipe ?? gemRefineRecipe, recipe2 = equipmentRecipe ?? gemRecipe;
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
   let next = projected;
+  if (equipmentRecipe && itemDef(equipmentRecipe.output.itemId).type === "tool") {
+    const tool2 = mintGatheringTool(equipmentRecipe.output.itemId, job.ownerCharacterId, job.id, nowMs);
+    next = deliverExactToolCopy(next, tool2.itemId, tool2.id, job.ownerCharacterId);
+    next = { ...next, account: { ...next.account, craftedGatheringToolInstances: [
+      ...next.account.craftedGatheringToolInstances ?? [],
+      tool2
+    ] } };
+    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe, job);
+    next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
+    next = applyTrustedLongTermProgression(
+      next,
+      [{ kind: "crafting", contentId: equipmentRecipe.id, units: 1, startedAtMs: job.startedAtMs }],
+      void 0,
+      nowMs,
+      { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }
+    ).state;
+    return { state: next, recipe: equipmentRecipe, job, kind: "tool", tool: tool2 };
+  }
   if (equipmentRecipe) {
     const itemId = equipmentRecipe.output.itemId, args = { itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll };
     const draft = draftCraftedGearInstance(args), capacity = craftedGearCopyCapacity(next, itemId), mode = next.account.craftedGearAutoSellMode ?? "off";
@@ -57474,7 +57500,7 @@ function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
   return { state: next, recipe: gemRecipe, job, kind: "gem", gemSucceeded, gemAction: gemRefineRecipe ? "refine" : "combine" };
 }
 function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
-  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0;
+  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0, gemFailed = 0, toolClaims = 0;
   const blocked = [];
   for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
     try {
@@ -57482,6 +57508,7 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       next = result.state;
       claimed.push(job.id);
       if (result.kind === "equipment") results.push(result.result);
+      else if (result.kind === "tool") toolClaims++;
       else {
         gemClaims++;
         if (!result.gemSucceeded) gemFailed++;
@@ -57495,7 +57522,7 @@ function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random())
       throw error;
     }
   }
-  return { state: next, claimed, results, gemClaims, gemFailed, blocked };
+  return { state: next, claimed, results, gemClaims, gemFailed, toolClaims, blocked };
 }
 var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0;
 function addStackable(stacks, capacity, itemId, quantityToAdd) {
@@ -57555,6 +57582,20 @@ function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
   const scheduled = scheduleWaiting(queue, equipmentCraftSlotBreakdown(projected).capacity, nowMs, reordered.map((row) => row.id));
   return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
 }
+
+// ../apps/mobile/src/core/playability.ts
+function transitionActivity(state, nowMs, next) {
+  const claimed = claimActivity(state, nowMs);
+  const stopped = stopActivity(claimed.state, nowMs);
+  const updated = next ? next.kind === "combat" ? startCombat(stopped, next.id, nowMs, next.tacticId ?? "balanced", next.goalId ?? "open") : startGathering(stopped, next.id, nowMs) : stopped;
+  return { state: updated, reward: claimed.reward };
+}
+
+// ../apps/mobile/src/i18n/languages.ts
+var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr", "ru", "tr"];
+
+// ../apps/mobile/src/core/game-commands.ts
+init_faith2();
 
 // ../apps/mobile/src/core/pet-collection.ts
 function normalizeOwnedPetIds(...sources) {
@@ -59856,7 +59897,7 @@ function executeGameCommand(previous, value, now, options = {}) {
           state = startEquipmentCraft(state, id, now).state;
         } else state = craftRecipe(state, id, now, batch);
       }
-      if (timed) message = count + " equipment " + (count === 1 ? "craft" : "crafts") + " added to the forge";
+      if (timed) message = count + " " + (gatheringToolDef(recipeDef(id)?.output.itemId) ? "tool" : "equipment") + " " + (count === 1 ? "craft" : "crafts") + " added to the forge";
       else contributions.push({ kind: "crafting", contentId: id, units: count });
       break;
     }
@@ -59869,7 +59910,7 @@ function executeGameCommand(previous, value, now, options = {}) {
         forgeResults = [result.result];
       }
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
-      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : result.gemAction === "refine" ? `Refined ${result.recipe.name} \xB7 Gem Pouch` : result.gemSucceeded ? `Combined ${result.recipe.name} \xB7 Gem Pouch` : `Gem merge failed: ${result.recipe.name} \xB7 1 gem lost, 2 returned \xB7 Gold and reagents spent`;
+      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 rarity upgrade" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : result.kind === "tool" ? `${result.recipe.name} crafted \xB7 ${result.tool.rarity} \xB7 Q${result.tool.quality} \xB7 +${(result.tool.bonus.basisPoints / 100).toFixed(1)}% ${result.tool.bonus.stat === "speed" ? "Gathering Speed" : "Gathering Rarity Chance"}` : result.gemAction === "refine" ? `Refined ${result.recipe.name} \xB7 Gem Pouch` : result.gemSucceeded ? `Combined ${result.recipe.name} \xB7 Gem Pouch` : `Gem merge failed: ${result.recipe.name} \xB7 1 gem lost, 2 returned \xB7 Gold and reagents spent`;
       break;
     }
     case "craft_claim_all": {
@@ -59884,10 +59925,10 @@ function executeGameCommand(previous, value, now, options = {}) {
         const job = previous.account.equipmentCraftingQueue?.find((row) => row.id === id);
         if (job) contributions.push({ kind: "crafting", contentId: job.recipeId, units: 1 });
       }
-      const equipmentCount = result.claimed.length - result.gemClaims, procCount = result.results.filter((row) => row.qualityProc).length;
+      const equipmentCount = result.claimed.length - result.gemClaims - result.toolClaims, procCount = result.results.filter((row) => row.qualityProc).length;
       const blockedCount = result.blocked.length;
       const blockedReason = result.blocked.some((row) => row.reason === "Crafting recipe is no longer available") ? "Some jobs use retired recipes; please contact support." : result.blocked.some((row) => row.reason.startsWith("Equipment copy") || row.reason.startsWith("Equipment requires") || row.reason.startsWith("Crafted equipment")) ? `Check your equipment copies. ${result.blocked[0].reason}` : "Free Gem Pouch, Inventory or Bank space, then claim the remaining jobs.";
-      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"}${result.gemFailed ? ` (${result.gemFailed} failed merge${result.gemFailed === 1 ? "" : "s"})` : ""} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
+      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.toolClaims} tool${result.toolClaims === 1 ? "" : "s"} \xB7 ${result.gemClaims} gem claim${result.gemClaims === 1 ? "" : "s"}${result.gemFailed ? ` (${result.gemFailed} failed merge${result.gemFailed === 1 ? "" : "s"})` : ""} \xB7 ${procCount} rarity upgrade${procCount === 1 ? "" : "s"}${blockedCount ? ` \xB7 ${blockedCount} still waiting. ${blockedReason}` : ""}` : blockedCount ? `${blockedCount} finished forge job${blockedCount === 1 ? " is" : "s are"} still waiting. ${blockedReason}` : "No finished forge jobs";
       break;
     }
     case "craft_cancel": {

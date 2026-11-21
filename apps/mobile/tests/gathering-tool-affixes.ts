@@ -8,6 +8,7 @@ import {bulkTransferSelected} from '../src/core/inventory-bulk';
 import {validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {itemInspectModel} from '../src/core/item-inspect';
+import {startEquipmentCraft,claimForgeJob,cancelEquipmentCraft,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
 import type {CraftedGatheringTool} from '../src/core/gathering-tool-rolls';
 import type {GameState} from '../src/core/types';
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
@@ -79,7 +80,7 @@ const toolInspect=itemInspectModel(crafted,'GREENWOOD_HATCHET',second.id);
 assert(toolInspect.selectedQuality===second.quality&&toolInspect.rarityId===second.rarity,'Tapping rolled tool resolves its receipt without treating it as equipment');
 assert(toolInspect.effectLines.some(line=>line.includes(gatheringToolBonusLabel(second))),'Exact tool inspector displays actual bonus');
 assert(toolInspect.inventoryQuantity===2,'Tool inspector counts multiple rolled physical copies rather than first stack only');
-assert(itemInspectModel(crafted,'GREENWOOD_HATCHET').selectedQuality===undefined,'Unselected legacy-style tool inspect never invents a quality roll');
+
 crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',2000,first.id);
 assert(equippedGatheringToolRoll(crafted,'woodcutting',1)?.id===first.id,'Selected physical copy must equip');
 crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',3000,second.id);
@@ -95,6 +96,7 @@ crafted=moveGatheringToolCopy(crafted,first.id,'bank');
 assert(crafted.bank.stacks.some(row=>row.instanceId===first.id)&&crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Exact transfer moves selected copy only');
 const bankInspect=itemInspectModel(crafted,'GREENWOOD_HATCHET',first.id,'bank');
 assert(bankInspect.selectedQuality===first.quality&&bankInspect.bankQuantity===1,'Bank tool inspector retains exact receipt and quantity');
+
 crafted=bulkTransferSelected(crafted,['copy:'+first.id],'bank');
 assert(crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Bulk transfer must preserve tool instance IDs');
 assert(validateGameCommand({type:'equip_tool',args:{id:'GREENWOOD_HATCHET',instanceId:second.id}}).args?.instanceId===second.id,'Physical equip is accepted by strict game command schema');
@@ -114,6 +116,60 @@ const cleaned=normalizeSave(broken);
 assert(cleaned.account.craftedGatheringToolInstances?.length===1,'Save normalizer rejects invalid and duplicate copy metadata');
 const legacyReload=normalizeSave(JSON.parse(JSON.stringify(state)));
 assert(Math.abs(gatheringToolTimeMultiplier(legacyReload,'woodcutting')-.4)<1e-9,'Legacy four-tier 60% bonus remains stable across reload');
+
+
+// Regression: tapping an exact crafted tool must use the tool receipt, not the
+// distinct gear-record collection. Legacy untracked copies also remain safe.
+const inspected=itemInspectModel(reload,'GREENWOOD_HATCHET',second.id);
+assert(inspected.selectedQuality===second.quality&&inspected.rarityId===second.rarity,'Exact tool inspector resolves rarity/quality without throwing a gear-copy error');
+assert(inspected.effectLines.some(line=>line.includes(gatheringToolBonusLabel(second))),'Tool inspector shows the actual rolled stat');
+assert(itemInspectModel(state,'GREENWOOD_HATCHET').selectedQuality===undefined,'Legacy tool inspection remains neutral');
+
+// Regression: tool forging is timed, makes no item on reservation and stores
+// one verifiable physical receipt when the ready job is claimed.
+const timedTool=GATHERING_TOOLS.find(row=>row.id==='GREENWOOD_HATCHET')!;
+assert(!!timedEquipmentRecipe('CRAFT_GREENWOOD_HATCHET'),'Gathering tool recipes use the shared Forge queue');
+let timed=createCharacter(newGame(0),'IRONWARDEN','Timed Tool Smith');
+timed={...timed,character:{...timed.character!,level:20,gold:200000},
+  skills:timed.skills.map(sk=>sk.skillId==='woodcutting'||sk.skillId==='smithing'?{...sk,level:20,xp:totalXpAtLevel(20)}:sk),
+  inventory:{...timed.inventory,capacity:100,stacks:timedTool.recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*3}))}};
+const firstQueue=startEquipmentCraft(timed,'CRAFT_GREENWOOD_HATCHET',10000);
+assert(firstQueue.seconds>0&&firstQueue.job.completesAtMs>10000,'Tool job has a real timed Forge duration');
+assert(!firstQueue.state.inventory.stacks.some(row=>row.itemId==='GREENWOOD_HATCHET'),'Tool does not appear when work begins');
+const secondQueue=startEquipmentCraft(firstQueue.state,'CRAFT_GREENWOOD_HATCHET',10000);
+assert(firstQueue.job.id!==secondQueue.job.id,'Same-time tool reservations receive unique job IDs');
+// A timer is enforceable, not a cosmetic delay.
+let earlyClaimBlocked=false;
+try{claimForgeJob(secondQueue.state,firstQueue.job.id,10001,0.5);}catch(error){earlyClaimBlocked=error instanceof Error&&error.message.includes('still in progress');}
+assert(earlyClaimBlocked,'Tool cannot be claimed until its real Forge timer completes');
+const firstClaim=claimForgeJob(secondQueue.state,firstQueue.job.id,firstQueue.job.completesAtMs+1000,0.5);
+assert(firstClaim.kind==='tool','Finished tool job is returned as a tool, never gear or gem');
+if(firstClaim.kind==='tool'){
+  assert(!!validateGatheringToolRoll(firstClaim.tool,'GREENWOOD_HATCHET'),'A claimed timed tool receives a valid deterministic roll');
+  assert(firstClaim.state.inventory.stacks.some(row=>row.instanceId===firstClaim.tool.id),'Claim retains exact rolled physical item');
+  const view=itemInspectModel(firstClaim.state,'GREENWOOD_HATCHET',firstClaim.tool.id);
+  assert(view.selectedQuality===firstClaim.tool.quality,'Newly queued tool can be inspected without crashing');
+  const moved=moveGatheringToolCopy(firstClaim.state,firstClaim.tool.id,'bank');
+  const bankView=itemInspectModel(moved,'GREENWOOD_HATCHET',firstClaim.tool.id,'bank');
+  assert(bankView.selectedQuality===firstClaim.tool.quality,'Exact claimed tool remains inspectable after transfer into shared Bank');
+  assert(bankView.bankQuantity===1,'Tool copy counts include Bank custody');
+  const transferredBack=moveGatheringToolCopy(moved,firstClaim.tool.id,'inventory');
+  assert(transferredBack.inventory.stacks.some(row=>row.instanceId===firstClaim.tool.id),'Moving claimed tool back preserves receipt identity');
+}
+
+// Cancellation returns reserved crafting ingredients but does not silently
+// create a tool, grant XP or refund the charged Gold (existing Forge policy).
+const cancelState=createCharacter(newGame(0),'IRONWARDEN','Cancel Timed Tool');
+const cancelReady={...cancelState,character:{...cancelState.character!,level:20,gold:100000},
+ skills:cancelState.skills.map(sk=>sk.skillId==='woodcutting'?{...sk,level:20,xp:totalXpAtLevel(20)}:sk),
+ inventory:{...cancelState.inventory,stacks:timedTool.recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*2}))}};
+const pending=startEquipmentCraft(cancelReady,'CRAFT_GREENWOOD_HATCHET',12000);
+const cancelled=cancelEquipmentCraft(pending.state,pending.job.id,12001);
+assert(cancelled.state.account.equipmentCraftingQueue?.length===0,'Cancelled tool job leaves the Forge queue');
+assert(cancelled.state.character!.gold===pending.state.character!.gold,'Forge cancellation does not refund gold');
+assert(!cancelled.state.inventory.stacks.some(row=>row.itemId==='GREENWOOD_HATCHET'),'Cancelled tool job creates no physical copy');
+for(const input of timedTool.recipe.inputs)
+  assert(cancelled.state.inventory.stacks.some(row=>row.itemId===input.itemId&&row.quantity===input.quantity*2),'Cancelling tool forging restores reserved ingredient '+input.itemId);
 
 
 console.log('Gathering tool affixes: deterministic rolls, 80% cap, rarity, custody and legacy tests passed.');

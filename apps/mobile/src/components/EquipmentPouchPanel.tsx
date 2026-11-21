@@ -38,6 +38,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const [transferError,setTransferError]=useState('');
  const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]);
  const [pendingSale,setPendingSale]=useState<PendingPouchDisposal|null>(null),[pendingSalvage,setPendingSalvage]=useState<PendingPouchDisposal|null>(null),saleInFlight=useRef(false);
+ const [disposalBusy,setDisposalBusy]=useState(false),[disposalError,setDisposalError]=useState('');
  const columns=gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4;
  const slotWidth=Math.max(54,Math.floor((gridWidth-(columns-1)*5)/columns));
  const pages=Math.max(1,Math.ceil(Math.max(pouch.capacity,pouch.stacks.length)/PAGE_SIZE)),shownPage=Math.min(page,pages-1),start=shownPage*PAGE_SIZE;
@@ -52,6 +53,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const selectedSalvages=useMemo(()=>selectedIds.length?equipmentPouchSalvageCandidates(state,selectedIds):[],[state,selectedIds]);
  const eligibleSalvages=selectedSalvages.filter(row=>row.eligible);
  const salvageCount=eligibleSalvages.length;
+ const unavailableSelectedCount=selectedIds.filter(id=>!eligibleSales.some(row=>row.id===id)&&!eligibleSalvages.some(row=>row.id===id)).length;
  const unlockableSales=selectedSales.filter(row=>{const stack=pouch.stacks[row.index];return !!stack&&(!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked)||!!state.settings.lockedItemIds?.includes(stack.itemId));});
  const pendingSet=new Set(pendingSale?.ids??[]),pendingRows=saleCandidates.filter(row=>pendingSet.has(row.id));
  const pendingSalvageRows=useMemo(()=>pendingSalvage?equipmentPouchSalvageCandidates(state,pendingSalvage.ids):[],[state,pendingSalvage]);
@@ -89,8 +91,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const selectSafeSalvage=()=>{
   setSelectedIds(equipmentPouchQuickSalvageIds(state,salvageCandidates));setSelectMode(true);setSelectedIndex(null);
  };
- const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSale({ids,protectedCount})};
- const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||!onAction)return;setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
+ const startSale=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSale({ids,protectedCount})};
+ const startSalvage=(ids:string[],protectedCount=0)=>{if(!ids.length||busy||disposalBusy||!onAction)return;setDisposalError('');setSelectedIndex(null);setPendingSalvage({ids,protectedCount})};
  const unlockSelected=async()=>{
   if(busy||!onAction||!unlockableSales.length)return;
   const updatedTypes=new Set<string>();
@@ -111,20 +113,24 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const confirmSale=async()=>{
   const ids=pendingSale?.ids;
   if(!ids||busy||!confirmationValid||saleInFlight.current||!onAction)return;
-  saleInFlight.current=true;
+  saleInFlight.current=true;setDisposalBusy(true);setDisposalError('');
   try{
    const result=await onAction({type:'equipment_pouch_sell',args:{ids}});
-   if(result!==false){setSelectedIds([]);setSelectMode(false);setPendingSale(null);}
-  }finally{saleInFlight.current=false;}
+   if(result===false){setDisposalError(p('The action was not confirmed. Try again.'));return;}
+   setSelectedIds([]);setSelectMode(false);setPendingSale(null);
+  }catch{setDisposalError(p('The action was not confirmed. Try again.'));}
+  finally{saleInFlight.current=false;setDisposalBusy(false);}
  };
  const confirmSalvage=async()=>{
   const ids=pendingSalvage?.ids;
   if(!ids||busy||!salvageConfirmationValid||saleInFlight.current||!onAction)return;
-  saleInFlight.current=true;
+  saleInFlight.current=true;setDisposalBusy(true);setDisposalError('');
   try{
    const result=await onAction({type:'equipment_pouch_salvage',args:{ids}});
-   if(result!==false){setSelectedIds([]);setSelectMode(false);setPendingSalvage(null);}
-  }finally{saleInFlight.current=false;}
+   if(result===false){setDisposalError(p('The action was not confirmed. Try again.'));return;}
+   setSelectedIds([]);setSelectMode(false);setPendingSalvage(null);
+  }catch{setDisposalError(p('The action was not confirmed. Try again.'));}
+  finally{saleInFlight.current=false;setDisposalBusy(false);}
  };
  const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
  const isFavorite=(stack:ItemStack|null|undefined)=>!!stack&&!!state.settings.favoriteItemIds?.includes(stack.itemId);
@@ -184,6 +190,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     </View>)}
    </View>
    <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}</Text>
+   {compactActions&&unavailableSelectedCount>0?<Text accessibilityLiveRegion="polite" style={s.saleWarning}>{p('Protected')+' · '+unavailableSelectedCount.toLocaleString(language)}</Text>:null}
    <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
      disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>
@@ -211,8 +218,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   {pages>1?<View style={s.paging}><GameButton compact title={p('Previous')} tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title={p('Next')} tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
   <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?p('Next: {count} slots',{count:upgrade.capacity}):p('Maximum capacity reached')}</Text>{upgrade?<Text style={s.meta}>{p('Level {level} · {gold} Gold',{level:upgrade.level,gold:upgrade.cost.toLocaleString(language)})}</Text>:null}</View>
     <GameButton compact title={p(upgrade?'Upgrade':'Maxed')} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
-  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSale(null)}}/>
+  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="sell" items={disposalItems(pendingRows)} gold={pendingGold} summary={pendingSale?{selected:pendingSale.ids.length+pendingSale.protectedCount,eligible:pendingSale.ids.length,protected:pendingSale.protectedCount}:undefined} note={p('Locked, favorited, loadout and Working Toward gear stays protected. Selling destroys installed gems and upgrades.')}/>
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
@@ -222,8 +229,8 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     </View>
    </View>
   </GameModalSurface>
-  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!busy)setPendingSalvage(null)}}/>
+  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="salvage" items={disposalItems(pendingSalvageRows)} rewards={salvageRewards(pendingSalvageRows)} summary={pendingSalvage?{selected:pendingSalvage.ids.length+pendingSalvage.protectedCount,eligible:pendingSalvage.ids.length,protected:pendingSalvage.protectedCount}:undefined} note={p('Materials go to Inventory. Installed gems and upgrades are destroyed, not recovered. Locked, favorited and loadout gear stays protected.')}/>
     {!salvageConfirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}

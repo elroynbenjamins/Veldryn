@@ -117,6 +117,64 @@ async function main(){
  assert.deepEqual(await resumeRuntime.load('owned-account',started.runId),pending.settlement.projection);
  assert.equal(finalized,1,'Repeated loads must not finalize the same completed room twice');
 
+ // Reproduce the specific Endurance transition that broke in production:
+ // seven ordinary clears must be allowed to queue and settle room eight.
+ // The path to room seven is reconstructed from the frozen, valid graph;
+ // only the room-eight decision is executed by the actual Q-Mode engine.
+ const checkpointPrivate=structuredClone(initialPrivate);
+ const endurance=checkpointPrivate.run;
+ assert.equal(endurance.graph.preBossNodeCount,42,'Endurance fixture must use the 42-room route');
+ let cursor=endurance.graph.nodes.find(node=>node.nodeId===endurance.graph.entryNodeId)!;
+ const sevenRooms:string[]=[];
+ for(let depth=1;depth<=7;depth++){
+  const next=cursor.nextNodeIds.map(id=>endurance.graph.nodes.find(node=>node.nodeId===id)!);
+  const selected=next.find(node=>node.kind!=='boss');
+  assert.ok(selected&&selected.depth===depth,'Seven-room fixture must follow actual graph edges');
+  sevenRooms.push(selected.nodeId);
+  cursor=selected;
+ }
+ const checkpointOptions=cursor.nextNodeIds.map(id=>endurance.graph.nodes.find(node=>node.nodeId===id)!);
+ assert.equal(checkpointOptions.filter(node=>node.kind==='boss').length,1,'Room eight offers a boss checkpoint');
+ const continueRoom=checkpointOptions.find(node=>node.kind!=='boss');
+ assert.ok(continueRoom&&continueRoom.depth===8,'Room eight must also offer a continuation');
+ endurance.currentNodeId=cursor.nodeId;
+ endurance.persistentState.visitedNodeIds=sevenRooms;
+ // Hold the isolated test party healthy so this is a settlement/route
+ // regression test, not a stochastic difficulty calibration.
+ endurance.players=endurance.players.map(player=>({...player,stats:{
+  ...player.stats,maxHp:1_000_000,attackPower:1_000_000,defense:1_000_000,
+ }}));
+ for(const actor of Object.values(endurance.persistentState.actors)){
+  actor.hp=1_000_000;actor.downed=false;
+ }
+ let roomEightArgs:Record<string,unknown>|undefined;
+ const checkpointRuntime=new OnlineQModeRuntime({
+  randomId:()=>{throw new Error('unexpected_random');},
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='load_online_qmode_server_v1')return {
+    stateVersion:15,serverNow:1_000,privateState:structuredClone(checkpointPrivate),
+    clientProjection:write.args.p_client_projection,
+   } as T;
+   if(name==='queue_online_qmode_node_server_v1'){
+    roomEightArgs=args;return args.p_client_projection as T;
+   }
+   throw new Error('unexpected_rpc:'+name);
+  },
+ });
+ await checkpointRuntime.choose('owned-account',started.runId,{
+  requestId:'qmode-endurance-room-08',decisionId:cursor.nodeId,
+  decisionRevision:15,optionId:continueRoom.nodeId,
+ });
+ assert.ok(roomEightArgs,'Room eight must queue a transactional decision');
+ assert.equal(roomEightArgs.p_expected_version,15,'Room-eight decision must use existing saved revision');
+ const eightPending=(roomEightArgs.p_private_state as OnlineQModeState).pending;
+ assert.ok(eightPending?.settlement,'Room-eight offline worker must receive its frozen result');
+ assert.equal(eightPending.run.persistentState.visitedNodeIds.length,8,'Room-eight continuation must advance beyond historical seven-room cap');
+ assert.equal(eightPending.settlement.projection.stateVersion,17,'Room-eight settlement must match next committed revision');
+ assert.ok(eightPending.settlement.projection.visitedNodeIds.includes(continueRoom.nodeId),'Frozen projection must contain completed room eight');
+
+
  await assert.rejects(()=>startRuntime.start('owned-account',{...startBody,requestId:'qmode-future-001',loadoutRevision:18}),/stale_game_version/);
  console.log('PASS QMode tolerates background gameplay revisions without trusting stale gear');
  console.log('PASS QMode concurrent receipt visibility and changed-intent conflict');

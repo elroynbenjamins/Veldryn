@@ -75,9 +75,9 @@ for(const family of families){
  check(ready.abilities.flatMap(a=>a.effects).every(e=>
   e.shieldReflectPct===undefined),
   'no_boss_cast_reflect_recursion_'+family);
- check(ready.phases.every(p=>p.effects.every(e=>e.shieldReflectPct===undefined)),
+ check(ready.phases?.every(p=>p.effects.every(e=>e.shieldReflectPct===undefined)),
   'no_boss_phase_reflection_'+family);
- check(ready.phases.every(p=>p.effects.every(e=>
+ check(ready.phases?.every(p=>p.effects.every(e=>
   e.kind!=='shield'||(e.flat??0)<=Math.round(ready.stats.maxHp*.04))),
   'bounded_single_phase_shields_'+family);
  check(ready.tags?.includes('party-event:boss-traits:v90'),

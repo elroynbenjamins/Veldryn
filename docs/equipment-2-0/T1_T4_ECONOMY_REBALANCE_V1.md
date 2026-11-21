@@ -77,7 +77,7 @@ One T4 tank 10-slot loadout requires approximately **116 common + 13 scarce mate
 
 ## Processing skill and Market design
 
-- Processing grants useful, capped-by-normal-progression skill XP independent of scarce drops. Proposed XP/step is in the JSON; target that a practical progression journey can get about **55–65% of profession XP from processing**, 35–45% through equipment, but do not enforce fixed XP shares as caps.
+- Processing grants useful, capped-by-normal-progression skill XP independent of scarce drops. **Smelting awards Smithing XP; tanning and weaving award Tailoring XP; plank processing awards Woodcutting XP.** The separately proposed Forge skill remains a future decision, not a newly introduced Smelting skill. Proposed XP/step is in the JSON; target that a practical progression journey can get about **55–65% of profession XP from processing**, 35–45% through equipment, but do not enforce fixed XP shares as caps.
 - Forge tier/skill speed perks can reduce job duration (up to proposed 10% maximum) without altering drop chances or reducing resources. Preserve server authority and existing request-id/idempotency behavior.
 - Basic finished-equipment recipes always use combat drops, and perfect-roll crafting is a recurrent trade sink.
 - Salvage should refund some ordinary resources but **no scarce components** (needs exact rules after review).

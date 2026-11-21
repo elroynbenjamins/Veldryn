@@ -30,6 +30,7 @@ const source=(actor:CombatantDefinition,options:{
  source:'server-persisted-equipment-v2',policy:EQUIPMENT_V2_TRAIT_ENGINE_POLICY,
  revision:1,accountId:'ACCOUNT_'+actor.id,characterId:'CHAR_'+actor.id,actorId:actor.id,
  ownedEquippedInstanceIds:['INSTANCE_A_'+actor.id,'INSTANCE_B_'+actor.id],
+ equipmentReceiptDigest:'a'.repeat(64), // mock pinned ledger digest; never an actual DB proof
  basicAttackDamagePct:options.basic??0,abilityDamagePct:options.ability??0,
  reflectDamagePct:options.reflect??0,
  traits:(options.traits??[]).map((id,i)=>({traitId:id,instanceId:'INSTANCE_'+(i===0?'A':'B')+'_'+actor.id})),

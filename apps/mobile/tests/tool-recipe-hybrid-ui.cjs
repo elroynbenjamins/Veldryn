@@ -25,7 +25,8 @@ assert.match(app,/onWithdrawTool=\{id=>inventoryCommand\(\{type:'withdraw',args:
 assert.match(app,/toolRecipeReturnRef\.current=\{skillId:selectedSkill,mode:skillsMode/,'Smithing deep link must preserve the original gathering skill for Back');
 assert.match(screen,/onOpenSmithing=\{\(\)=>onNavigateCraftingSource\?onNavigateCraftingSource\(recipeDestination\):onViewToolRecipes\(\)\}/,'Full crafting is delegated to the exact Smithing recipe');
 
-assert.match(panel,/recipeAvailability\(state,recipeId\)/,'Inline readiness must use the authoritative crafting availability');
+assert.match(panel,/equipmentCraftAvailability\(state,recipeId\)/,'Inline tool readiness must check the real timed Forge queue and reservation gates');
+assert.match(panel,/equipmentCraftDurationSeconds\(state,recipeId\)/,'Inline tool recipe must show the true Forge crafting duration');
 assert.match(panel,/tool\.recipe\.inputs\.map/,'Ingredients must come from the actual recipe definition');
 assert.match(panel,/state\.inventory\.stacks,\.\.\.state\.bank\.stacks/,'Ingredient and blueprint quantities include Inventory and Bank');
 assert.match(panel,/workingTowardItemSourceEntries\(state,input\.itemId\)/,'Missing materials reuse existing source resolution and region context');

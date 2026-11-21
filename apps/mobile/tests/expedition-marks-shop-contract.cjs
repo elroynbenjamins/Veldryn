@@ -53,7 +53,10 @@ assert(panel.includes('snapshot?.shopEnabled'),'purchase controls require server
 // appear together in a compact inline row. Expanded purchase details retain
 // their full-size artwork and are never squeezed into 3-column mini-cards.
 assert(shopView.includes("const COLLECTION_GROUPS=['pet','border','background','icon']"),'collectibles must be grouped by item type');
-assert(shopView.includes("shelf==='Supplies'?items.map(item=>renderOffer(item)):COLLECTION_GROUPS.map(category=>"),'supplies must keep existing full-width rows');
+assert(shopView.includes("shelf==='Supplies'?<>"),'supplies must retain the existing shelf and full-width item cards');
+assert(shopView.includes("items.filter(item=>item.category==='material').map"),'material tiers must remain in their own section');
+assert(shopView.includes("(['companion','supply'] as const).map"),'companion materials and enhancement supplies must have their own sections');
+assert(shopView.includes('dungeonShopSupplyGroupLabel(language,category)'),'supply categories must be localized');
 assert(shopView.includes('matching.map(item=>renderOffer(item,true))'),'collection groups must render compact tiles');
 assert(shopView.includes('{chosen?renderOffer(chosen):null}'),'selected collectible must show its detail below the entire row');
 assert(shopView.includes('expanded&&!compact'),'expanded collectible details must never be cramped inside a tile');

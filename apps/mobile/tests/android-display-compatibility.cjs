@@ -14,7 +14,7 @@ assert.equal(config.orientation,'portrait','Keep intentional phone-first portrai
 assert(config.plugins.includes('./plugins/with-veldryn-game-category'),'EAS prebuild must register game category plugin');
 assert(plugin.includes("'android:appCategory':'game'"),'Game classification must be applied to generated manifest');
 assert(nativeManifest.includes('android:appCategory="game"'),'Checked-in native manifest must match prebuild output');
-const portraitFeatures=[...nativeManifest.matchAll(/<uses-feature\\b[^>]*\\/>/g)].map(match=>match[0])
+const portraitFeatures=[...nativeManifest.matchAll(/<uses-feature[^>]*>/g)].map(match=>match[0])
   .filter(tag=>tag.includes('android.hardware.screen.portrait'));
 assert.equal(portraitFeatures.length,1,'Checked-in Android manifest must declare portrait hardware exactly once');
 assert(portraitFeatures[0].includes('android:required="false"'),'Portrait hardware must be optional for Google Play filtering');

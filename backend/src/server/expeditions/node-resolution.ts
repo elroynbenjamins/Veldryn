@@ -64,13 +64,15 @@ export function purchaseMerchantOffer(input:{runId:string;node:CoopRouteNode;act
  return {success:true,state:{...input.state,actors,resources:input.state.resources-offer.cost,personalEffects:{...input.state.personalEffects,[input.actorId]:{...nextPersonal,boons,artifacts}}},summary:{kind:'merchant_purchase',actorId:input.actorId,offerId:offer.id,offerKind:offer.kind,cost:offer.cost,resourcesDelta:-offer.cost,healedHp:Math.max(0,(actors[input.actorId]?.hp??0)-actor.hp),revivedCount:actor.downed&&!actors[input.actorId]?.downed?1:0,boonCount:boons.length-current.boons.length,artifactCount:artifacts.length-current.artifacts.length}};
 }
 
-function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[]):PersistentRunState{
+function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[],campfireBalanceVersion?:2):PersistentRunState{
+ const healFraction=campfireBalanceVersion===2 ? 0.20 : 0.30;
+ const reviveFraction=campfireBalanceVersion===2 ? 0.15 : 0.25;
  const actors={...state.actors}; let revived=false;
- for(const player of players){const current=actors[player.id];if(!current)continue;if(current.downed&&!revived){actors[player.id]={...current,downed:false,hp:Math.max(1,player.stats.maxHp*.25)};revived=true;}else actors[player.id]={...current,hp:Math.min(player.stats.maxHp,current.hp+player.stats.maxHp*.30)};}
+ for(const player of players){const current=actors[player.id];if(!current)continue;if(current.downed&&!revived){actors[player.id]={...current,downed:false,hp:Math.max(1,player.stats.maxHp*reviveFraction)};revived=true;}else actors[player.id]={...current,hp:Math.min(player.stats.maxHp,current.hp+player.stats.maxHp*healFraction)};}
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;deferArtifactChoice?:boolean;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;tier?:ExpeditionTier;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;enemyDamageProfile?:'qmode-v1';enemyLevel?:number;enduranceLootVersion?:1;deferArtifactChoice?:boolean;campfireBalanceVersion?:2;bossTuning?:EncounterBossTuning;safetyAiPlayerIds?:readonly string[]}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -117,7 +119,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
  let awardedArtifact:string|undefined;
  let awardedBoon:string|undefined;
  switch(input.node.kind){
-  case 'camp': state=healAtCamp(state,input.players); break;
+  case 'camp': state=healAtCamp(state,input.players,input.campfireBalanceVersion); break;
   case 'shrine': case 'forge': case 'echo': {
    if(input.enemyDamageProfile!=='qmode-v1'){
     if(input.enduranceLootVersion===1){

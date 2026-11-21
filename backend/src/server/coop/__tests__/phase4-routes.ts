@@ -18,6 +18,7 @@ for(let seed=0;seed<10_000;seed++){
 // New runs of both modes use the same checkpoint graph, not a pre-entry queue split.
 const endurance=generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance');
 validateCoopRouteGraph(endurance);
+assert.ok(endurance.generatorVersion.endsWith('-endurance-v2'),'New Endurance runs use fixed recovery/boon checkpoint choices');
 assert.equal(endurance.preBossNodeCount,42);
 assert.equal(endurance.nodes.length,128);
 assert.equal(endurance.nodes.filter(node=>node.kind==='boss').length,6,'Five optional checkpoints and one mandatory final boss');
@@ -26,9 +27,16 @@ for(const cleared of [7,14,21,28,35]){
  assert.equal(options.length,3);
  assert.equal(options.filter(node=>node.kind==='boss').length,1);
  assert.equal(options.filter(node=>node.kind!=='boss').length,2);
+ assert.deepEqual(options.map(node=>node.kind),['camp','shrine','boss'],'Checkpoint must offer Campfire / Boon / Boss simultaneously');
+ assert.deepEqual(options.map(node=>node.modifierId),['checkpoint-camp-v2','checkpoint-boon-v2','checkpoint']);
  assert.ok(options.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3),'Continue options lead to another room');
 }
 assert.deepEqual(generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance'),endurance,'Reconnected runs must retain the checkpoint graph');
+const v1SameRun=generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance-v1');
+for(let depth=1;depth<=7;depth++)assert.deepEqual(endurance.nodes.filter(node=>node.depth===depth),v1SameRun.nodes.filter(node=>node.depth===depth),'Existing calibrated rooms must keep v1 RNG despite new checkpoint choices');
+const historicalEndurance=generateCoopRouteGraph(secret,'EXP_001','historical-run','content-v1','balance-v1','endurance-v1');
+validateCoopRouteGraph(historicalEndurance);
+assert.ok(historicalEndurance.generatorVersion.endsWith('-endurance-v1'),'Saved historical Endurance graphs remain supported');
 // Exercise a spread of runs: every optional boss must preserve the same frozen
 // boss variant, and both continuation rooms must feed into the next layer.
 for(let seed=0;seed<40;seed++){
@@ -47,7 +55,10 @@ for(let seed=0;seed<40;seed++){
 
 const tampered=structuredClone(endurance);
 tampered.nodes=tampered.nodes.map(node=>node.nodeId==='d8-c2'?{...node,kind:'battle' as const}:node);
-assert.throws(()=>validateCoopRouteGraph(tampered),/checkpoint|boss|invalid|graph/i,'Checkpoint boss cannot be bypassed by client graph tampering');
+assert.throws(()=>validateCoopRouteGraph(tampered),/checkpoint|boss|invalid|graph|insufficient_route_choices/i,'Checkpoint boss cannot be bypassed by client graph tampering');
+const checkpointTamper=structuredClone(endurance);
+checkpointTamper.nodes=checkpointTamper.nodes.map(node=>node.nodeId==='d8-c1'?{...node,kind:'battle' as const}:node);
+assert.throws(()=>validateCoopRouteGraph(checkpointTamper),/checkpoint_recovery_boon_choices_invalid/,'Cannot replace mandatory boon route at a v2 checkpoint');
 const sameA=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 const sameB=generateCoopRouteGraph(secret,'EXP_001','same-run','content-v1','balance-v1');
 assert.deepEqual(sameA,sameB);

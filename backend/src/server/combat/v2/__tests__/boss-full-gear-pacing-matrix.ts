@@ -252,12 +252,32 @@ const results=profiles.map(profile=>{
 for(let i=0;i<6;i++){
  assert.equal(results[0].bosses[i].bossId,results[1].bosses[i].bossId);
 }
+// Pair the SAME immutable class/spec + boss + server seed. A high-roll build
+// can expose mechanics differently from a weak build; collect the differences
+// as evidence, never hard-code "every spec must clear" as a CI criterion.
+const perBossComparison=results[0].bosses.map((low,i)=>{
+ const high=results[1].bosses[i];
+ return {
+  bossId:low.bossId,
+  lowWins:low.wins,highWins:high.wins,
+  lowTimeouts:low.timeouts,highTimeouts:high.timeouts,
+  lowPhase70:low.phase70Cases,highPhase70:high.phase70Cases,
+  lowPhase35:low.phase35Cases,highPhase35:high.phase35Cases,
+  lowMedianBossHpPercent:low.bossHpP50Percent,
+  highMedianBossHpPercent:high.bossHpP50Percent,
+  lowDurationP50Ms:low.durationP50Ms,highDurationP50Ms:high.durationP50Ms,
+  highWinsBeforeTell:high.winsBeforeFirstTell,
+  highWipesBeforeTell:high.wipesBeforeFirstTell,
+  highHpWallTimeouts:high.timeoutsWithBossHpAbove70,
+ };
+});
+assert.equal(perBossComparison.length,6);
 // This is a diagnostic comparison, NEVER a release win rate or numeric goal.
 console.log(JSON.stringify({
  type:'SYNTHETIC_THREE_SLOT_EQUIPMENT_V2_BOSS_PACING_NOT_RELEASE_TUNING',
  scenarios:report.length,pairs:reconciledPairs,deterministicReplays,
  itemsPerProfile:3,armorSetThreshold:2,
  highProfileAffixCount:2,lowProfileAffixCount:0,
- maxDurationMs:30000,results,
+ maxDurationMs:30000,results,perBossComparison,
 }));
 console.log('PASS: 216 private deterministic six-boss x 18-spec x low/high 3-slot set/affix/skills/gear/seeded-enemy encounters');

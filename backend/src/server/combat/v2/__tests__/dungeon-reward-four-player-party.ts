@@ -23,6 +23,9 @@ const actor=(id:string,cls:string,role:CombatRole,resource:CombatV2Resource,
 });
 const tank=actor('P_TANK','IRONWARDEN','tank','guard',150);
 const healer:CombatantDefinition={...actor('P_HEALER','DAWNKEEPER','support','radiance',120),
+ // Ensure the initial boss sweep damages third-party recipients more than
+ // the healer; otherwise a deterministic self-heal cannot trigger Lantern.
+ stats:{...stats(120),defense:2000},
  abilities:[
   {id:'QA_WARD',name:'Ward',cooldownMs:6000,castTimeMs:0,
    target:'lowest_hp_ally',priority:200,

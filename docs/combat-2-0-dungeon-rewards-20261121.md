@@ -36,8 +36,9 @@ award supplies, and retired Merchant never quietly grants extra boons.
 One room means at most one server-recorded selection.
 
 Three deterministic server-secret offers are computed only from a persisted
-run snapshot and remain identical on retries; choices over stack caps and
-unsupported proc candidates are excluded. **No privileged transaction
+run snapshot and remain identical on retries. Drafts favor different playstyles
+and hide role-irrelevant artifacts; choices over stack caps and unsupported proc
+candidates are excluded. **No privileged transaction
 persists the candidate yet.** No mobile UI wired. This is review-only.
 
 ## Pass 2: Refine and polish
@@ -61,8 +62,8 @@ A caller-provided test verifier is **not** evidence of real DB authority.
 
 ## Pass 3: Next Combat 2.0 pass — seeded encounter compatibility
 
-The dedicated validation suite executes a **6 regional boss identity x 9
-class/role label** matrix with two equivalent seeded previews per case
+The dedicated validation suite executes a **6 regional boss identity x all 9
+canonical class/role IDs** matrix with two equivalent seeded previews per case
 (108 simulated encounters). Also tests deterministic choices, generated
 source/room proof, duplicate and stack rejection, empty/fake authority,
 unsupported procs, role specificity, conditional boss-only bonuses and

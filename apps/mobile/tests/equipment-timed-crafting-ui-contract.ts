@@ -26,7 +26,7 @@ ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character 
 ok(panel.includes('Crafting Queue')&&panel.includes('Forge capacity'),'Skills must expose a compact equipment crafting queue and capacity summary');
 ok(panel.includes('model.slotInfo.max'),'Queue UI must render the authoritative hard cap');
 ok(panel.includes('Supporter')||panel.includes('slotInfo.sources'),'Queue UI must expose unlock-source progression');
-ok(card.includes('Start craft ·'),'Equipment recipe CTA must start a timed craft rather than complete instantly');
+ok(card.includes("gt('Start')+' '+f(quantity)+' '+gt('crafts')")&&card.includes('onCraft(recipe.id,quantity)'),'Equipment recipe CTA must submit the selected count to the timed forge rather than complete instantly');
 ok(card.includes('equipmentCraftQueueModel')&&card.includes('freeWaiting'),'Recipe cards must stay available while backlog space exists and block only when forge + backlog are full');
 ok(skills.includes('EquipmentCraftQueuePanel'),'Crafting mode must display the timed queue');
 ok(commands.includes("case 'craft_claim'")&&commands.includes("case 'craft_claim_all'"),'Online-authoritative gameplay needs claim commands');

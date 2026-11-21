@@ -1,0 +1,21 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const screen=read('src/screens/BestiaryScreen.tsx'),combat=read('src/screens/CombatScreen.tsx');
+const app=read('App.tsx'),journal=read('src/screens/AdventurersJournalScreen.tsx');
+const regions=read('src/core/monster-codex.ts'),more=read('src/screens/MoreScreen.tsx');
+function assert(test,message){if(!test)throw new Error(message)}
+assert(screen.includes("type CodexTab='monsters'|'types'|'rewards'"),'Codex exposes three approved tabs');
+assert(screen.includes('expandedRegion===region.id')&&screen.includes('setExpandedRegion(current=>current===region.id?null:region.id)'),'A single region accordion controls zone visibility');
+assert(screen.includes('region.zones.map(zone=>')&&screen.includes('zone.monsters.map(row=>'),'Zone names appear as inline headings with monster rows');
+assert(screen.includes('MonsterPortraitFrame')&&screen.includes('Unknown Creature'),'Existing portraits and discovery silhouettes remain');
+assert(screen.includes('monsterMasteryGuidance')&&screen.includes('enemyFamilyMasteryGuidance'),'Mastery is computed from canonical data');
+assert(screen.includes('MONSTER_MASTERY_MILESTONES')&&screen.includes('ENEMY_FAMILY_MASTERY_MILESTONES'),'Both reward ladders use canonical milestones');
+assert(screen.includes("selected.entry.drops.length")&&screen.includes('ItemArtwork'),'Existing known-drop item artwork remains');
+assert(screen.includes("completeDrops")&&screen.includes("Rates unlock at mastery Rank 10"),'Exact normal drop rates remain knowledge-gated');
+assert(!combat.includes('<MonsterMasteryPanel')&&!combat.includes('<EnemyFamilyMasteryPanel'),'Combat no longer renders two long mastery lists');
+assert(combat.includes('onOpenCodex')&&app.includes("onOpenCodex={()=>setTab('Bestiary')}"),'Combat shortcut navigates to the stable Codex route');
+assert(journal.includes("Open Monster Codex")&&more.includes("title:a(\"Monster Codex\")"),'Journal and Account both link to the renamed Codex');
+assert(regions.includes("available:id==='ASTERFALL'||world?.availability==='released'"),'Unreleased region data is hidden');
+console.log('PASS: Monster Codex tab, accordion, portrait, mastery, rewards and navigation UI contract');

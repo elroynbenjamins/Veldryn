@@ -21,7 +21,7 @@ const brand:unique symbol=Symbol('dungeon-v2-engine-authority');
 export type DungeonRewardEngineAuthorityV2=Readonly<{readonly [brand]:true}>;
 interface FrozenRewardScope {
  readonly inputDigest:string; readonly seed:string;readonly actorId:string;
- readonly counts:Readonly<Record<ExecutableDungeonRewardIdV2,number>>;
+ readonly counts:Readonly<Partial<Record<ExecutableDungeonRewardIdV2,number>>>;
 }
 const scopes=new WeakMap<object,FrozenRewardScope>();
 const eligible=(abilityId:string)=>abilityId==='BASIC'||(
@@ -78,7 +78,7 @@ export class DungeonRewardRuntimeV2{
  private readonly cooldown=new Map<string,number>();
  private readonly lastStandUsed=new Set<string>();
  constructor(readonly actorId:string,
-  private readonly counts:Readonly<Record<ExecutableDungeonRewardIdV2,number>>){}
+  private readonly counts:Readonly<Partial<Record<ExecutableDungeonRewardIdV2,number>>>){}
  private has(id:ExecutableDungeonRewardIdV2){return (this.counts[id]??0)>0;}
  private ready(id:ExecutableDungeonRewardIdV2,now:number,ms:number,target?:string):boolean{
   const key=id+':'+(target??this.actorId),previous=this.cooldown.get(key)??-Infinity;

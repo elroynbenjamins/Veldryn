@@ -124,7 +124,7 @@ export class OnlineQModeRuntime{
    // A revision conflict is not a failed run: reread the authoritative
    // snapshot, but never resubmit the same reward or suppress other errors.
    const reason=error instanceof Error?error.message:String(error);
-   if(!/\\bSTALE_STATE\\b/i.test(reason))throw error;
+   if(!reason.toUpperCase().includes('STALE_STATE'))throw error;
    const refreshed=await this.services.rpc<Loaded>('load_online_qmode_server_v1',{p_account_id:accountId,p_run_id:runId});
    if(refreshed.stateVersion>loaded.stateVersion&&!refreshed.privateState.pending)return refreshed.clientProjection;
    throw error;

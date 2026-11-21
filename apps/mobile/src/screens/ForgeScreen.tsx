@@ -27,7 +27,7 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
  const model=equipmentCraftQueueModel(state,now);
  const nextMilestone=MILESTONES.find(row=>row.level>level);
  const tabs=[{id:'queue' as const,label:gt('Crafting Queue')},{id:'mastery' as const,label:gt('Mastery')},{id:'recipes' as const,label:gt('Recipes')}];
- return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
+ return <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
    <View style={styles.hero}>
     <View style={styles.heroLine}>
       <ActivityArtwork id="forge" size={42}/>

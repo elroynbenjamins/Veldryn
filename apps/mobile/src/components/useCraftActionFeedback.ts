@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {playCraftStarted} from '../core/crafting-audio';
 
 /** Crafting confirmations live in the existing button, not a toast or modal. */
 export type CraftActionFeedback={
@@ -22,6 +23,7 @@ export function useCraftActionFeedback(){
     setFeedback({recipeId,quantity,phase:'pending'});
     try{
       await action();
+      playCraftStarted(recipeId);
       setFeedback({recipeId,quantity,phase:'success'});
       resetTimer.current=setTimeout(()=>{
         setFeedback(current=>current?.recipeId===recipeId&&current.phase==='success'?null:current);

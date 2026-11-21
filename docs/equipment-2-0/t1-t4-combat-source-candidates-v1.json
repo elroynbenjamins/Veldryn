@@ -87,8 +87,8 @@
       "candidates": [
         {
           "monsterId": "MIRAGE_SHADE",
-          "effectiveUnlockLevel": 36,
-          "reason": "Theme match, but much later than T3 character entry"
+          "effectiveUnlockLevel": 38,
+          "reason": "Mirage Shade has a rebalance override to unlock level 38; far later than T3 entry"
         },
         {
           "monsterId": "SUNSCAR_SCORPION",

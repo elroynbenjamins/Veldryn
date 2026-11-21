@@ -46,15 +46,15 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {height,width,fontScale}=useWindowDimensions();
- const [more,setMore]=useState(false),[actionsOpen,setActionsOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- useEffect(()=>{setMore(false);setActionsOpen(false);setBusy(false);setError('');},[itemId,instanceId,source]);
+ const [more,setMore]=useState(false),[actionsOpen,setActionsOpen]=useState(false),[busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState<'equip'|'gear'|'bank'|null>(null),[error,setError]=useState('');
+ useEffect(()=>{setMore(false);setActionsOpen(false);setBusy(false);setBusyAction(null);setError('');},[itemId,instanceId,source]);
  if(!itemId)return null;
  async function moveToBank(){
   if(!onMoveToBank||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('bank');setError('');
   try{await onMoveToBank()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  let projected:GameState;
  try{projected=previewEquipment(state,itemId,instanceId,source)}catch(cause){
@@ -63,7 +63,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
    <View style={s.errorBox}>
     <Text style={s.note}>{gl(cause instanceof Error?cause.message:'Equipment unavailable')}</Text>
     {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
-    {onMoveToBank?<GameButton title={gearText('Move to Bank')} tone="secondary" loading={busy} disabled={busy} onPress={()=>void moveToBank()}/>:null}
+    {onMoveToBank?<GameButton title={gearText('Move to Bank')} tone="secondary" loading={busy&&busyAction==='bank'} disabled={busy} onPress={()=>void moveToBank()}/>:null}
     <GameButton title={gl('Back to Inventory')} disabled={busy} onPress={onClose}/>
    </View>
   </GameModalSurface>;
@@ -105,17 +105,17 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  ];
  async function submit(){
   if(!onEquip||alreadyEquipped||blocked||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('equip');setError('');
   try{await onEquip()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  async function storeInGear(){
   if(!onStoreInGear||!canStoreInGear||busy)return;
-  setBusy(true);setError('');
+  setBusy(true);setBusyAction('gear');setError('');
   try{await onStoreInGear()}catch(cause){
    setError(cause instanceof Error?cause.message:gl('Action failed. Please try again.'));
-  }finally{setBusy(false)}
+  }finally{setBusyAction(null);setBusy(false)}
  }
  const shortScreen=height<690||fontScale>=1.3;
  const compactBonusRows=width<380||fontScale>=1.2;
@@ -229,10 +229,10 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     {actionsOpen?<View style={s.otherActionsBody}>
      <View style={s.otherActionsGrid}>
       {onStoreInGear?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
-       <GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy} onPress={()=>void storeInGear()}/>
+       <GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy&&busyAction==='gear'} onPress={()=>void storeInGear()}/>
       </View>:null}
       {onMoveToBank?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
-       <GameButton compact title={gearText('Move to Bank')} tone="secondary" disabled={busy} loading={busy} onPress={()=>void moveToBank()}/>
+       <GameButton compact title={gearText('Move to Bank')} tone="secondary" disabled={busy} loading={busy&&busyAction==='bank'} onPress={()=>void moveToBank()}/>
       </View>:null}
       {onSell?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
        <GameButton compact title={gl('Sell copy')} tone="secondary" disabled={busy||!canSell} onPress={()=>onSell?.()}/>
@@ -250,8 +250,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   <View style={s.footer}>
    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
    {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
-   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
-    loading={busy} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
+   {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy&&busyAction==='equip'?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
+    loading={busy&&busyAction==='equip'} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
   </View>
  </GameModalSurface>;
 }

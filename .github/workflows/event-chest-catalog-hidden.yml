@@ -47,6 +47,10 @@ on:
       - 'backend/tsconfig.event-chests.json'
       - 'backend/src/server/party/weekly-party-event-inbox-v80.ts'
       - 'backend/src/server/party/weekly-party-event-real-reward-ports-v86.ts'
+      - 'backend/src/server/party/weekly-party-event-canonical-pg-v87.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-canonical-pg-v87.ts'
+      - 'backend/tests/party-event-canonical-source-v87.mjs'
+      - 'docs/roadmap/party-events/hidden-migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql'
       - 'backend/tests/party-event-real-rewards-v86.mjs'
       - 'docs/roadmap/party-events/hidden-migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql'
       - 'backend/tests/party-event-inbox-v80.mjs'
@@ -161,6 +165,10 @@ jobs:
         run: |
           node tests/chest-reward-ledger-v70.mjs
           node tests/chest-postgres-store-v70.mjs
+      - name: Verify V87 trusted Party SQL source, independent tier/victory and three chest entitlements
+        run: |
+          node .event-chest-tests/server/party/__tests__/weekly-party-event-canonical-pg-v87.js
+          node tests/party-event-canonical-source-v87.mjs
       - name: Exercise V86 real Party Sigils, Gold, Gem Dust and Essence payout in disposable PostgreSQL
         run: node tests/party-event-real-rewards-v86.mjs
       - name: Verify original Party V80 paid-Inbox history and V81 legacy claim guard
@@ -221,6 +229,8 @@ jobs:
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts
           grep -q 'PARTY_EVENT_INBOX_HISTORY_V80_RELEASED=false' src/server/party/weekly-party-event-inbox-v80.ts
           grep -q 'PARTY_EVENT_REAL_REWARDS_V86_RELEASED=false' src/server/party/weekly-party-event-real-reward-ports-v86.ts
+          grep -q 'PARTY_EVENT_CANONICAL_PG_V87_RELEASED=false' src/server/party/weekly-party-event-canonical-pg-v87.ts
+          test ! -f supabase/migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql
           test ! -f supabase/migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql
           test ! -f supabase/migrations/20261119120000_party_event_inbox_history_guard_v81.sql
           grep -q 'CHEST_EARNED_ENTITLEMENT_V80_RELEASED=false' src/server/loot/chest-earned-entitlement-v80.ts

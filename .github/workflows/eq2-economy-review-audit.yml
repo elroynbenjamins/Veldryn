@@ -16,6 +16,8 @@ on:
       - 'tools/lib/eq2-signature-contract-v1.mjs'
       - 'tools/preview-eq2-signature-equipment-v1.mjs'
       - 'tools/tests/eq2-signature-equipment-v1.test.mjs'
+      - 'tools/lib/eq2-signature-combat-preview-v1.mjs'
+      - 'tools/tests/eq2-signature-combat-preview-v1.test.mjs'
       - 'tools/tests/eq2-drop-risk-v2.test.mjs'
       - 'tools/tests/eq2-source-introspection-v1.test.mjs'
       - 'docs/equipment-2-0/**'
@@ -47,8 +49,9 @@ jobs:
           node --check tools/evaluate-eq2-dust-supply-v1.mjs
           node --check tools/lib/eq2-signature-contract-v1.mjs
           node --check tools/preview-eq2-signature-equipment-v1.mjs
+          node --check tools/lib/eq2-signature-combat-preview-v1.mjs
       - name: Deterministic risk and source-provenance regression suites
-        run: node --test tools/tests/eq2-drop-risk-v2.test.mjs tools/tests/eq2-source-introspection-v1.test.mjs tools/tests/eq2-joint-gathering-v1.test.mjs tools/tests/eq2-signature-equipment-v1.test.mjs
+        run: node --test tools/tests/eq2-drop-risk-v2.test.mjs tools/tests/eq2-source-introspection-v1.test.mjs tools/tests/eq2-joint-gathering-v1.test.mjs tools/tests/eq2-signature-equipment-v1.test.mjs tools/tests/eq2-signature-combat-preview-v1.test.mjs
       - name: Verify hidden 169-item and 338-route design-only generator
         run: node tools/preview-eq2-economy-v1.mjs
       - name: Run source and material risk audit without writing game data

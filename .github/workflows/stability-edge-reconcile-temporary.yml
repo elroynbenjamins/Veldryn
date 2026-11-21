@@ -1,0 +1,70 @@
+# Temporary, branch-only generator. Remove before merging the stability PR.
+name: Temporary Pass 1 Edge bundle reconciliation
+on:
+  push:
+    branches: ['quality/pass1-critical-path-regressions-20261121']
+    paths:
+      - '.github/workflows/stability-edge-reconcile-temporary.yml'
+      - 'backend/online/qmode-runtime.ts'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stability-edge-sync-20261121
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: github.repository == 'elroynbenjamins/Veldryn'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: quality/pass1-critical-path-regressions-20261121
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install pinned backend and mobile packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild gameplay and coop bundles from canonical source
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject non-generated changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Refusing unrelated changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit only generated Edge artifacts to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=quality/pass1-critical-path-regressions-20261121
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Generated bundles already match source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): synchronize safe Q-mode reconnect recovery'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Branch advanced; refusing to overwrite newer commits.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"

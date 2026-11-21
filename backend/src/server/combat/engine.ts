@@ -112,8 +112,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(resolved.event){events.push(resolved.event);
       const spent=Math.max(0,(resolved.event.resourceBefore??0)-(resolved.event.resourceAfter??0));
       runCapstone(actor,'spend',now,undefined,{spent});runReactive(actor,'spend',now,undefined,{spent});}
-    if(actor.definition.combatV2?.capstoneId?.endsWith(':ritual_surge')&&ability.name==='Thunder Totem')
-      actor.combatV2?.scheduledTotemAt.push(now+4000);
+    // A physical totem persists for three deterministic 2-second pulses.
+    // A new cast refreshes (never stacks) the one owned totem. Only a verified
+    // Stonecaller V2 ability can schedule it; neither it nor its pulses can
+    // write class resources or trigger secondary skill/capstone proc chains.
+    if(actor.combatV2&&actor.definition.combatV2?.resource==='resonance'&&
+       ability.name==='Thunder Totem'&&ability.id.includes(':v2:')){
+      actor.combatV2.activeTotem={
+        abilityId:ability.id,nextPulseAtMs:now+2000,pulsesRemaining:3,pulseCoeff:.18,
+      };
+      actor.combatV2.scheduledTotemAt=actor.definition.combatV2.capstoneId?.endsWith(':ritual_surge')
+        ?[now+6000]:[];
+    }
     return resolved.ability;
   };
   // Stable priority and phase ordering are immutable within one fight.
@@ -403,6 +413,19 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     v2StrikeOrdinals.clear();
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
+      // Catch up to three pulses on coarser deterministic tick settings.
+      // Totem pulses are periodic nature damage: no direct-hit gem or combo proc.
+      let resolved=0;
+      while(v2.activeTotem&&now>=v2.activeTotem.nextPulseAtMs&&resolved++<3){
+        const totem=v2.activeTotem;
+        const target=living(enemies)[0];
+        if(target)applyDamage(now,actor,target,{
+          kind:'damage',coeff:totem.pulseCoeff,damageType:'nature',
+        },'V2_TOTEM:'+totem.abilityId,'dot_tick');
+        totem.pulsesRemaining--;
+        totem.nextPulseAtMs+=2000;
+        if(totem.pulsesRemaining<=0)v2.activeTotem=undefined;
+      }
       const due=v2.scheduledTotemAt.filter(at=>at<=now);
       v2.scheduledTotemAt=v2.scheduledTotemAt.filter(at=>at>now);
       for(const at of due)runCapstone(actor,'totem_expires',now);

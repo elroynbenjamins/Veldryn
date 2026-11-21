@@ -1,5 +1,6 @@
 /** Crafting audio: one low-volume cue per confirmed action, never per AFK batch. */
 import {RECIPES} from '../content/skills';
+import {itemDef} from '../content/items';
 import {playSound} from '../storage/audio';
 import {SOUND_EFFECT_ASSETS,type SoundEffectId} from '../theme/audio-assets';
 
@@ -24,7 +25,7 @@ export function craftCueForRecipe(recipeId:string):CraftCue{
  if(recipe?.skillId==='cooking')return 'cooking_sizzle';
  if(recipe?.skillId==='tailoring')return 'tailor_stitch';
  if(name.includes('wood')||name.includes('timber')||name.includes('carve'))return 'woodwork_plane';
- if(recipe?.output&&id.includes('FORGE_'))return 'forge_ignite';
+ if(recipe&&(['gear','tool'].includes(itemDef(recipe.output.itemId).type)||id.includes('FORGE_')))return 'forge_ignite';
  hammerAlternate=!hammerAlternate;
  return hammerAlternate?'smith_hammer_1':'smith_hammer_2';
 }

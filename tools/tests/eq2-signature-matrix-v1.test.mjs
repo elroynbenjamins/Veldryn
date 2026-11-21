@@ -46,22 +46,24 @@ test('sampling never predicts >3% signature mitigation or negative damage taken'
   assert.ok(row.glassfinDamagePrevented>=0);
   assert.ok(row.glassfinPercentAllIncoming>=0);
   assert.ok(row.glassfinPercentAllIncoming<=3.00001);
+  if(row.tier!==4)assert.equal(row.glassfinDamagePrevented,0);
   assert.ok(row.heartwoodDamagePrevented>=0);
   assert.ok(row.sourceDirectDamage>=0&&row.potentialBleedDamage>=0);
   assert.ok(row.potentialBleedProcs<=row.qualifyingDirectHits);
  }
 });
 test('Heartwood uptime is not a passive unconditional damage reduction',()=>{
- const normal=report.rows.filter(x=>x.kind==='normal');
- const elite=report.rows.filter(x=>x.kind==='elite');
+ const normal=report.rows.filter(x=>x.tier===2&&x.kind==='normal');
+ const elite=report.rows.filter(x=>x.tier===2&&x.kind==='elite');
  assert.ok(normal.every(x=>x.heartwoodActivations===0));
  assert.ok(elite.every(x=>x.heartwoodActivations>0));
  assert.ok(elite.some(x=>x.heartwoodDamagePrevented>0));
+ assert.ok(report.rows.filter(x=>x.tier!==2).every(x=>x.heartwoodDamagePrevented===0));
 });
 test('Oasistide shield has zero procs outside active real-support preview events',()=>{
  const rows=report.rows;
- assert.ok(rows.filter(x=>x.role!=='support').every(x=>x.oasisPotentialShield===0));
- assert.ok(rows.filter(x=>x.role==='support').every(x=>x.oasisPotentialShield>0));
+ assert.ok(rows.filter(x=>x.role!=='support'||x.tier!==3).every(x=>x.oasisPotentialShield===0));
+ assert.ok(rows.filter(x=>x.role==='support'&&x.tier===3).every(x=>x.oasisPotentialShield>0));
  assert.ok(rows.every(x=>Number.isFinite(x.oasisPotentialShield)));
 });
 test('external Combat 2.0 source hashes and contract cannot pretend to authorize runtime',()=>{

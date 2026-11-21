@@ -419,5 +419,6 @@
   ".core-build/apps/mobile/tests/stored-json.js",
   ".core-build/apps/mobile/tests/world-boss-replay-presentation.js",
   "tests/world-boss-battle-stage-ui.cjs",
-  ".core-build/apps/mobile/tests/game-audio.js"
+  ".core-build/apps/mobile/tests/game-audio.js",
+  "tests/1-0-11-reviewed-ui.cjs"
 ]

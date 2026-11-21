@@ -60,10 +60,10 @@ function verifiedThreeSlotGear(
  const characterId='QA_BOSS_CHAR_'+classId;
  const setId='QA_BOSS_ARMOR_'+b.tier+'_'+role;
  const equipment:Partial<Record<GearSlotV2,string>>={};
- const ownedItemsById:VerifiedSkillBuildV2['ownedItemsById'] extends infer T?Record<string,{
+ const ownedItemsById:Record<string,{
   instanceId:string;slot:GearSlotV2;tier:string;eligibleRoles:typeof role[];
   setFamilyId?:string;requiredLevel:number;
- }>:never={};
+ }>={};
  const instances:Record<string,{
   id:string;itemId:string;tier:string;rarity:string;quality:number;ownerCharacterId:string;
  }>={};

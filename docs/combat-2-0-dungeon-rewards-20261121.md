@@ -81,7 +81,8 @@ persisted-run verifier and unsupported proc rewards fail closed. This remains
 test-only: the callbacks are synthetic, not a live dungeon receipt store,
 and newer independent Skills 2.0 refinements are not yet integrated.
 
-New proc eligibility **must** eventually be driven by original,
+New proc eligibility is now driven by original for the six signed solo
+engine hooks; remaining future proc eligibility **must** also be driven by original,
 server-tagged direct events, never by generated gem/equipment/reward/DoT
 events. In particular:
 - Bleed: one bounded status, ICD, and a per-target limit; no DoT recursion.
@@ -104,6 +105,52 @@ the new 2.0 enemy kits, trait source precedence and cross-system 5s budgets.
 Then implement and test the nine pending proc handlers in the actual engine,
 full 4-character Live authority / voting, seeded matrix with real skills,
 rarities/quality and T1–T4 gear, and UI screenshot/design acceptance.
+
+## Pass 4: Real engine reactive hooks (21 November continuation)
+
+Six of nine proposed reactive effects now have a **hidden, source-authorized,
+real-engine implementation**:
+
+1. **Bloodthirst:** a critical **original** direct player hit may apply one
+   nonstacking three-second Bleed, with a 12-second per-target cooldown,
+   capped at a total 0.09% of regional-boss Max HP per application. The
+   generated ticks are explicit HP-damage events, not rerolled attacks.
+2. **Last Stand:** once per encounter, an actual direct enemy hit that
+   crosses from above 30% HP to 1–30% HP grants six seconds of +10%
+   defense and healing received. Boss phases, telegraphs and fatal hits
+   cannot trigger it.
+3. **Crippling Blows:** original direct hit applies a five-second -4%
+   Defense modifier (-2.5% for bosses), 18-second per-target cooldown.
+4. **Burst Window:** an original direct class skill hit opens a five-second
+   +5% damage window, 25-second cooldown. No buff feedback into its trigger.
+5. **Temporal Echo:** once per 30 seconds, an original direct class
+   ability hit delivers a capped **secondary** amount (4%, or 6% with
+   two artifacts), never an additional skill cast. 0.05% regional-boss
+   Max HP cap per trigger; no secondary proc or lifesteal.
+6. **Glacial Crown:** an original direct hit reduces future enemy haste
+   by 4% for four seconds (2% on bosses), 20-second per-target cooldown.
+   Existing boss casts are neither delayed nor interrupted.
+
+**Still deliberately blocked:** Wardweave (party/secondary shielding),
+Thornbound Aegis (must use the existing EQ2 shared rolling reflection
+budget), and Soul Lantern (requires authenticated other-ally heal target).
+No proc is advertised by the draft room chooser because there is not
+yet an atomic server-owned run grant/persistence implementation.
+
+The engine receives a fourth, independent opaque server-authority token;
+it is issued only after matching a validated, source-owned room receipt
+snapshot to the exact already compiled Equipment+Skill+Enemy encounter.
+None of these effects are obtainable in 1.0.x; no public route issues
+this token. All six effects emit explicit replay events, enforce cooldown
+and boss limits, and keep generated effects out of attack/crit RNG,
+gem triggers, equipment triggers, class resources and additional rewards.
+
+The new tests include source-digest and seed tampering, forged authority,
+denied persisted verifier, forbidden live mode, unsupported proc
+rejection, original-crit Bleed tick and budget, no repeat-cast Temporal
+Echo, defensive Last Stand threshold (direct rule and actual engine),
+repeat-seed replay, and old combat identical without a token. The fake
+QA ledger callback is **not a working database verifier**.
 
 ## Validation
 

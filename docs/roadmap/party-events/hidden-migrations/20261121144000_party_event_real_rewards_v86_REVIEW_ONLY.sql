@@ -7,9 +7,12 @@ BEGIN;
 
 CREATE TABLE private.party_event_chest_resource_grants_v86 (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  source_key text NOT NULL
-    REFERENCES private.chest_reward_receipts_v70(source_key) ON DELETE CASCADE,
+  source_key text NOT NULL,
   account_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  CONSTRAINT party_event_v86_same_account_receipt
+    FOREIGN KEY(source_key,account_id)
+    REFERENCES private.chest_reward_receipts_v70(source_key,account_id)
+    ON DELETE CASCADE,
   credited_character_id uuid NOT NULL,
   ordinal smallint NOT NULL CHECK (ordinal BETWEEN 0 AND 3),
   reward_id text NOT NULL CHECK (reward_id IN

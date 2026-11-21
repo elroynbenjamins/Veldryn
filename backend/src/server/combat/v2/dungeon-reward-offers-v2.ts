@@ -2,7 +2,7 @@
  * This DOES NOT write a room receipt: a future privileged server transaction
  * must validate, atomically persist and project an offered selection. */
 import type {CombatInput} from '../types';
-import {deterministicShuffle} from '../expeditions/rng';
+import {deterministicShuffle} from '../../expeditions/rng';
 import {
  DUNGEON_REWARD_V2_POLICY,DUNGEON_REWARDS_V2,
  compileDraftDungeonRewardCombatV2,

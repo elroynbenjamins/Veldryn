@@ -47,6 +47,45 @@ Audit 320dp, 360dp and 384dp portrait widths; maintain separate compact behavior
 - No change to receipt or reward amounts; no changes to authoritative server calculations.
 - Obtain explicit owner approval of screen appearance and theme(s) **before** coding/merging any UI redesign.
 
+## Concrete preview — Inventory and Equipment Pouch (Pass 2A)
+
+An **interactive, self-contained HTML mockup** has been prepared for owner review in the ChatGPT conversation. It is a design artifact, not an Expo screen or player-facing code; it uses illustrative low-resolution item symbols while expressly retaining the runtime's existing real equipment/resource artwork and rarity borders.
+
+**Preview matrix (18 configurations):** `320dp`, `360dp`, `384dp` × Blackout / Ember / Paper Mint × Inventory / Equipment Pouch; each configuration compares A and B. HTML JS syntax and all 18 generated preview layouts were checked. This does **not** substitute for native screenshot/Android interaction QA.
+
+### Option A — Compact inspector (recommended for user review)
+
+- Tap item → one coherent bottom inspection surface, lock / favorite / close in a shared header.
+- For equipment, show clear stat changes and a **single pinned Compare & equip** primary action; keep **To Bank** next to an optional **More actions** disclosure.
+- For a material, show visible amount stepper and a pinned **Deposit to Bank** action; secondary sale stays distinct.
+- In Equipment Pouch's compact toolbar, show **Select gear** and optional **Select safe** rather than three competing quick-disposal buttons before selection.
+- Selecting multiple copies exposes counts for **selected**, **eligible**, **protected/high-rarity** and gated Sell / Salvage with one explicit destructive confirmation. Exact IDs and eligibility must be revalidated from the authoritative state.
+
+**Reason:** Closest to the current approved equipment-comparison interaction, less relearning, shortest path to moving a gear copy to Bank while still de-emphasizing destructive actions. Estimated *conceptual* interaction count (does not include gameplay server latency): select item + bank = 2 taps; select item + More + Salvage + Confirm = 4 taps.
+
+### Option B — Contextual action sheet
+
+- Tap item → smaller sheet with identity/stat change and one primary action, followed by **Manage item** disclosure.
+- Move/Bank/Sell/Salvage are shown only when expanded; destructive actions use one review stage, not nested modals.
+- Pouch's first compact toolbar shows one **Manage gear** control, with bulk controls revealed through selection.
+- Favored when visual minimalism is more important than frequently used secondary-action speed.
+
+**Trade-off:** Cleaner initial screen than A; moving equipment to Bank takes an extra tap. Potentially harder for players to discover actions. Screen reader disclosure announcements and keyboard behavior require careful review.
+
+### Reference at 384dp
+
+Both preview variants deliberately converge on the **same existing-style layout at 384dp and wider**. Preserve the approved Galaxy S24+ interface. The prototype is **source-informed, not a pixel-exact live device capture**; do not treat it as an approved replacement for the actual current UI.
+
+### Non-negotiable safety and final handoff
+
+- Preserve source `ItemArtwork` / `EquipmentArtwork` asset wiring, set/rarity outlines, exact-copy instance identity, batch selection caps, carried/Bank Gold separation, gem/upgrades destruction warning and the protected-copy rules.
+- Keep current `GameButton` pending/disabled guards and the backend idempotent receipt path. Do not auto-accept or send real commands from the prototype.
+- Preflight and server-side revalidation for selections are essential: the preview's sample data is not a source of truth.
+- Do not change shared theme tokens or 384dp behavior to achieve a compact-layout improvement.
+- Before implementation, request explicit approval of **Option A or B** and chosen themes after inspecting the 320/360/384 previews.
+
+**Preview status:** Draft for visual approval only. No runtime UI patch or deployment included.
+
 ## Proposed approval order
 
 1. Inventory item inspector and Equipment Pouch disposal.

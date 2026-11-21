@@ -4,7 +4,6 @@ import {EQUIPMENT_SETS} from '../content/equipment-sets';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from '../content/equipment-recipes-v33';
 import {isReleasedEquipmentTier} from '../content/equipment-release';
 import {RECIPES} from '../content/skills';
-import {alchemyRecipeDef} from '../content/alchemy';
 import {itemDef} from '../content/items';
 import {equipmentCraftAvailability,equipmentCraftDurationSeconds,equipmentCraftQueueModel} from '../core/equipment-crafting-queue';
 import {formatQueueTimeV31} from '../core/equipment-crafting-v31';
@@ -20,47 +19,38 @@ import {forgeCraftBatchLimit} from '../core/craft-batch-limit';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {CraftingRecipeBrowser} from './CraftingRecipeBrowser';
 import {EquipmentCraftQueuePanel} from './EquipmentCraftQueuePanel';
-import {ForgeOddsGuide} from './ForgeOddsGuide';
-import {WeaponBonusPool} from './WeaponBonusSection';
 import {ActivityArtwork} from './ActivityArtwork';
 import {progressWithinLevel} from '../core/progression';
 import {nextEquipmentTierGoal} from '../core/equipment-tier-progression';
 import {craftingDetailText} from '../i18n/crafting-details';
 import {ownedEquipmentDefinitionIds} from '../core/equipment-collection-ownership';
-import {workingTowardItemSourceEntries} from '../core/working-toward';
 import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-tier-memory';
 import {OptionPager,type PagerOption} from './OptionPager';
-
 type EquipmentCraftingSkill='smithing'|'tailoring';
 type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill};
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'];
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
-
 export function EquipmentCraftingHeader({state,skillId='smithing'}:{state:Props['state'];onBack?:()=>void;skillId?:EquipmentCraftingSkill}){
  const C=useGameTheme(),{gl,language}=useGameplayText(),skill=state.skills.find(row=>row.skillId===skillId),p=progressWithinLevel(skill?.xp??0,skill?.level??1),ratio=(skill?.level??1)>=100?1:Math.max(0,Math.min(1,p.current/Math.max(1,p.need)));
  const nextTier=nextEquipmentTierGoal(skillId,skill?.level??1,skill?.xp??0);
  const nextTierXp=nextTier?craftingDetailText(language,'{xp} XP to {skill} {level}',{xp:nextTier.remainingXp.toLocaleString(language),skill:gl(skillId),level:nextTier.requiredLevel}):'';
  return <View style={{gap:10}}><View style={s.between}><View style={{flexDirection:'row',alignItems:'center',gap:10}}><ActivityArtwork id={skillId} size={36}/><Text accessibilityRole="header" style={{fontSize:26,fontWeight:'700',color:C.text}}>{gl(skillId)}</Text></View><Text style={[s.body,{color:C.text}]}>{gl('Level')} {skill?.level??1}</Text></View><View style={{flexDirection:'row',alignItems:'center',gap:10}}><View style={{flex:1,height:6,backgroundColor:C.line,borderRadius:3,overflow:'hidden'}}><View style={{height:6,width:`${ratio*100}%`,backgroundColor:C.accent}}/></View><Text style={[s.caption,{color:C.muted}]}>{(skill?.level??1)>=100?gl('Mastered'):Math.floor(p.current)+' / '+p.need+' XP'}</Text></View>{nextTier?<View accessible accessibilityLabel={craftingDetailText(language,'Next equipment tier')+' '+nextTier.tier+', '+nextTierXp} style={{borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel,paddingHorizontal:10,paddingVertical:8,gap:3}}><Text style={[s.caption,{color:C.muted}]}>{craftingDetailText(language,'Next equipment tier')}</Text><View style={[s.between,{flexWrap:'wrap'}]}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')} {nextTier.tier.slice(1)} · {gl(skillId)} {gl('Level')} {nextTier.requiredLevel}</Text><Text style={[s.caption,{color:C.muted}]}>{nextTierXp}</Text></View></View>:null}</View>;
 }
-
 /** @deprecated Use EquipmentCraftingHeader so Tailoring and Smithing stay in the same set browser. */
 export const SmithingHeader=EquipmentCraftingHeader;
-
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
  const {state,preferredRecipeId,onCraft,craftFeedback,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
  const [showAllClasses,setShowAllClasses]=useState(false),[requestedCraftCount,setRequestedCraftCount]=useState(1);
- // Keep each item's disclosure choice stable across live forge timer updates.
- const [bonusPoolOpenByItem,setBonusPoolOpenByItem]=useState<Record<string,boolean>>({});
  const ownProfession=!!state.character&&EQUIPMENT_CRAFT_SKILL_BY_CLASS[state.character.classId]===skillId;
  // Forging another class's V33 equipment is allowed; its equip class restriction remains.
  const recipes=useMemo(()=>RECIPES.filter(r=>r.skillId===skillId&&!r.noviceSetId&&(!r.classId||(!r.v33SetId?r.classId===state.character?.classId:showAllClasses||!ownProfession||r.classId===state.character?.classId))&&(!r.v33EquipmentTier||isReleasedEquipmentTier(r.v33EquipmentTier))),[state.character?.classId,skillId,showAllClasses,ownProfession]);
  const preferred=recipes.find(r=>r.id===preferredRecipeId),characterId=state.character?.id;
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
- const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[queueOpen,setQueueOpen]=useState(()=>!preferred&&equipmentCraftQueueModel(state,Date.now()).ready>0),[width,setWidth]=useState(Math.max(260,viewportWidth-32)),[now,setNow]=useState(Date.now());
+ const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[queueOpen,setQueueOpen]=useState(()=>!preferred&&equipmentCraftQueueModel(state,Date.now()).ready>0),[width,setWidth]=useState(Math.max(260,viewportWidth-32)),[now,setNow]=useState(Date.now());
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
- useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setDetailsOpen(false);setQueueOpen(false)},[preferredRecipeId]);
+ useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setQueueOpen(false)},[preferredRecipeId]);
  const set=sets.find(row=>row.id===setId)??sets[0],tierSets=sets.filter(row=>row.tier===set?.tier),setIndex=tierSets.findIndex(row=>row.id===set?.id);
  const tiers=[...new Set(sets.map(row=>row.tier))].sort((a,b)=>Number(a.slice(1))-Number(b.slice(1)));
  const pieces=set?[...set.itemIds].sort((a,b)=>slots.indexOf(itemDef(a).slot??'')-slots.indexOf(itemDef(b).slot??'')):[];
@@ -76,7 +66,7 @@ export function SmithingCollection(props:Props){
  const tileColumns=width<295||fontScale>=1.6?3:width<345||fontScale>=1.3?4:5;
  const tileWidth=(width-8*(tileColumns-1))/tileColumns,artSize=Math.max(32,Math.min(78,tileWidth-12));
  const chooseSet=(id:string)=>{
-  setSetId(id);setItemId(undefined);setDetailsOpen(false);setBonusesOpen(false);
+  setSetId(id);setItemId(undefined);setBonusesOpen(false);
   const tier=sets.find(row=>row.id===id)?.tier;
   if(tier)void rememberEquipmentTier(characterId,skillId,tier);
  };
@@ -111,7 +101,7 @@ export function SmithingCollection(props:Props){
   </Pressable>
   {queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>{setTab(value);}} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
-  {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);setDetailsOpen(false);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
+  {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
   {tab==='equipment'&&set&&item&&recipe&&status?<>
    <View style={s.between}><Text style={[s.body,{color:C.text,fontWeight:'700'}]}>{gl('Tier')}</Text><Text style={[s.body,muted]}>{set.classId.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}</Text></View>
    <OptionPager options={tierOptions} value={set.tier} onChange={tier=>{const first=sets.find(row=>row.tier===tier);if(first)chooseSet(first.id)}}
@@ -127,22 +117,15 @@ export function SmithingCollection(props:Props){
     </View>
     {button('›',()=>chooseSet(tierSets[(setIndex+1)%tierSets.length].id),undefined,gt('Next set'))}
    </View>
-   <View style={s.grid}>{pieces.map(id=>{const def=itemDef(id),chosen=id===selected;return <Pressable key={id} accessibilityRole="button" accessibilityLabel={localizedItemName(language,def.id)+(owned.has(id)?', '+gl('Owned'):'')} accessibilityState={{selected:chosen}} onPress={()=>{setItemId(id);setDetailsOpen(false);}} style={({pressed})=>[s.tile,panel,{width:tileWidth,borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panel},pressed&&s.pressed]}><ItemArtwork itemId={id} size={artSize}/><Text numberOfLines={1} adjustsFontSizeToFit style={[s.slot,chosen?text:muted]}>{gl(slotLabels[def.slot??'']??'Equipment')}</Text>{owned.has(id)?<View style={[s.check,{backgroundColor:C.good}]}><Text style={{color:C.bg,fontSize:10,fontWeight:'800'}}>✓</Text></View>:null}</Pressable>})}</View>
+   <View style={s.grid}>{pieces.map(id=>{const def=itemDef(id),chosen=id===selected;return <Pressable key={id} accessibilityRole="button" accessibilityLabel={localizedItemName(language,def.id)+(owned.has(id)?', '+gl('Owned'):'')} accessibilityState={{selected:chosen}} onPress={()=>{setItemId(id);}} style={({pressed})=>[s.tile,panel,{width:tileWidth,borderColor:chosen?C.selectionLine:C.line,backgroundColor:chosen?C.selection:C.panel},pressed&&s.pressed]}><ItemArtwork itemId={id} size={artSize}/><Text numberOfLines={1} adjustsFontSizeToFit style={[s.slot,chosen?text:muted]}>{gl(slotLabels[def.slot??'']??'Equipment')}</Text>{owned.has(id)?<View style={[s.check,{backgroundColor:C.good}]}><Text style={{color:C.bg,fontSize:10,fontWeight:'800'}}>✓</Text></View>:null}</Pressable>})}</View>
    <Pressable accessibilityRole="button" accessibilityState={{expanded:bonusesOpen}} onPress={()=>setBonusesOpen(!bonusesOpen)} style={[s.disclosure,panel]}><Text style={[s.body,text]}>{gl('Set bonuses')}</Text><Text style={muted}>{bonusesOpen?'⌃':'⌄'}</Text></Pressable>
    {bonusesOpen?<View style={[s.detail,panel]}>{[set.twoPiece,set.fourPiece,set.sixPiece,set.eightPiece,set.tenPiece].map((bonus,i)=><Text key={i} style={[s.caption,muted]}>{(i+1)*2} · {gl(bonus)}</Text>)}</View>:null}
    <View style={[s.detail,panel]}>
     <View style={s.between}><Text style={[s.title,text]}>{localizedItemName(language,item.id)}</Text><Text style={[s.badge,muted,{borderColor:C.line}]}>{set.tier}</Text></View>
     <View style={s.itemHero}><ItemArtwork itemId={item.id} size={Math.min(100,width*.25)}/><View style={s.stats}>{[['Attack',item.attack],['Defense',item.defense],['Health',item.hp]].filter(([,value])=>Number(value)>0).map(([label,value])=><View key={label} style={[s.stat,{borderBottomColor:C.line}]}><Text style={[s.body,muted]}>{gl(String(label))}</Text><Text style={[s.body,text]}>+{displayStat(Number(value))}</Text></View>)}<Text accessibilityLiveRegion="polite" style={[s.caption,{color:currentCraftFeedback?.phase==='error'?C.bad:craftConfirmed||ready?C.good:C.warning}]}>{currentCraftFeedback?.phase==='error'?currentCraftFeedback.error:craftConfirmed?gt('Added to queue'):ready?gl('Ready to craft'):full?gl('Forge + backlog full'):gl(status.reason)}</Text></View></View>
     {craftMax>0?<CraftQuantitySelector key={recipe.id} value={craftCount} max={craftMax} onChange={setRequestedCraftCount} unit={gt('crafts')} limitLabel={gt('Forge capacity')+': '+craftMax}/>:null}
-    <WeaponBonusPool key={item.id} itemId={item.id} expanded={bonusPoolOpenByItem[item.id]??true}
-      onExpandedChange={open=>setBonusPoolOpenByItem(current=>({...current,[item.id]:open}))}/>
     <Pressable accessibilityRole="button" accessibilityLabel={craftConfirmed?gt('Added to queue'):craftMax<1?unavailableCraftLabel:gt('Add to forge')} accessibilityState={{disabled:!ready||craftMax<1||craftPending,busy:craftPending}} disabled={!ready||craftMax<1||craftPending} onPress={()=>{if(ready&&craftMax>0)void onCraft(recipe.id,craftCount)}} style={({pressed})=>[s.craft,{backgroundColor:craftConfirmed?C.good:C.primaryButton,borderColor:craftConfirmed?C.good:C.primaryButtonBorder,opacity:craftConfirmed||ready&&craftMax>0?1:.5},pressed&&s.pressed]}><ActivityArtwork id={skillId} size={24}/><View style={s.flex}><Text accessibilityLiveRegion="polite" style={[s.body,{color:craftConfirmed?C.bg:C.primaryButtonText,fontWeight:'700',textAlign:'center'}]}>{craftConfirmed?'✓ '+currentCraftFeedback!.quantity+' × '+gt('Added to queue'):craftMax<1?unavailableCraftLabel:craftCount+' × '+gl(queue.freeSlots<=0?'Queue craft':'Add to forge')}</Text><Text style={[s.caption,{color:craftConfirmed?C.bg:C.primaryButtonText,textAlign:'center'}]}>{craftConfirmed?gt('Crafting Queue')+' · '+queue.active+'/'+queue.slotInfo.capacity+' '+gl('active'):formatQueueTimeV31(equipmentCraftDurationSeconds(state,recipe.id))+' '+gt('per craft')+' · '+recipe.gold*craftCount+' '+gl('Gold')}</Text></View></Pressable>
-    <View style={[s.materials,{borderTopColor:C.line}]}><View style={s.between}><Text style={[s.body,text]}>{gl('Materials')}</Text><Text style={[s.caption,muted]}>{gl('Owned / required')}</Text></View><View style={s.ingredients}>{status.inputs.map(input=>{const infusion=alchemyRecipeDef('BREW_'+input.itemId);return <Pressable key={input.itemId} accessibilityRole="button" accessibilityLabel={localizedItemName(language,input.itemId)+', '+(input.inventory+input.bank)+' / '+(input.quantity*craftCount)} onPress={()=>{const missing=input.inventory+input.bank<input.quantity;const source=missing&&props.onNavigate?workingTowardItemSourceEntries(state,input.itemId).find(row=>row.availability.canNavigate):undefined;if(source&&props.onNavigate)props.onNavigate(source.destination);else setDetailsOpen(true)}} style={[s.ingredient,{backgroundColor:C.panel2,borderColor:C.line}]}><ItemArtwork itemId={input.itemId} size={32}/><View style={s.flex}><Text numberOfLines={2} style={[s.caption,text]}>{localizedItemName(language,input.itemId)}</Text><Text style={[s.body,{color:input.inventory+input.bank>=input.quantity*craftCount?C.good:C.warning}]}>{input.inventory+input.bank} / {input.quantity*craftCount}</Text>{infusion?<Text style={[s.caption,muted]}>{gl('Alchemy')} · {gl('Level')} {infusion.level}</Text>:null}{input.inventory+input.bank<input.quantity&&props.onNavigate?<Text style={[s.caption,{color:C.info}]}>{gt('Find source')} ›</Text>:null}</View></Pressable>})}</View></View>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(!detailsOpen)} style={[s.disclosure,panel]}><Text style={[s.body,muted]}>{gl('Details & sources')}</Text><Text style={muted}>{detailsOpen?'⌃':'⌄'}</Text></Pressable>
-    {detailsOpen?<RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={props.onNavigate} onCraftPrerequisites={props.onCraftPrerequisites} onTrackPreparation={props.onTrackPreparation} detailsOnly/>:null}
-    <ForgeOddsGuide key={recipe.output.itemId} itemId={recipe.output.itemId}/>
-    
-
+    <RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={props.onNavigate} onCraftPrerequisites={props.onCraftPrerequisites} onTrackPreparation={props.onTrackPreparation} detailsOnly externalQuantity={craftCount}/>
    </View>
   </>:tab==='equipment'?<Text style={[s.body,muted]}>{gl('No recipes available.')}</Text>:<CraftingRecipeBrowser key={tab} {...props} skillId={skillId} category={tab} initialQuery={preferred&&!preferred.v33SetId?props.initialQuery:''}/>}
   </>}

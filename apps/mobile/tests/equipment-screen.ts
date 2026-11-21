@@ -95,7 +95,7 @@ const canonicalGemsState={...equippedLow,account:{...equippedLow.account,
  craftedGearInstances:(equippedLow.account.craftedGearInstances??[]).map(copy=>copy.id==='COPY_LOW'
    ?{...copy,enhancement:{...copy.enhancement,statGemId:'gem:stat_precision:g4',effectGemId:'gem:effect_mercy:g4',gemIds:['gem:stat_precision:g4','gem:effect_mercy:g4']}}:copy)}};
 const canonicalInspect=itemInspectModel(canonicalGemsState,forgeWeapon.id);
-if(!canonicalInspect.gearDecision?.gems.some(gem=>gem.id==='gem:stat_precision:g4'&&gem.detail.includes('0.65 pp'))
+if(!canonicalInspect.gearDecision?.gems.some(gem=>gem.id==='gem:stat_precision:g4'&&gem.detail.includes('0.9 pp'))
  ||!canonicalInspect.gearDecision?.gems.some(gem=>gem.id==='gem:effect_mercy:g4'&&gem.detail.includes('7%')))
  throw new Error('Quick Inspect must show actual canonical Stat and Effect Gem strength, not 0% placeholders');
 const unselectedInspect=itemInspectModel(forged,forgeWeapon.id);

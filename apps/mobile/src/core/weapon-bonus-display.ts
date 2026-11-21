@@ -9,7 +9,7 @@ export interface WeaponBonusChange{
   deltaBps:number;
 }
 
-const DISPLAY_ORDER:readonly WeaponBonusStat[]=[...WEAPON_BONUS_CURRENT_POOL,'ward','penetration'];
+const DISPLAY_ORDER:readonly WeaponBonusStat[]=[...WEAPON_BONUS_CURRENT_POOL,'ward','penetration','tenacity','potency','abilityDamage','healingPower'];
 
 export function weaponBonusComparisonRows(
   current?:readonly WeaponBonusRoll[],candidate?:readonly WeaponBonusRoll[],

@@ -337,7 +337,7 @@ ok(milestoneFeed.includes("row.display_name")&&milestoneFeed.includes("row.occur
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 // Supply Journey 2.0 shows the 28 days as four seven-day chapters.
 ok(dailySupplies.includes('Array.from({length:7}')&&dailySupplies.includes("days:{flexDirection:'row',gap:4}")&&dailySupplies.includes('day:{flex:1,minWidth:0,height:51'),"Daily Supplies track must fit seven compact columns on narrow phones");
-ok(dailySupplies.includes('choice:{minHeight:44'),'Daily Supplies Blessing rows must remain compact');
+ok(/choice:\{[^\n]*minHeight:44/.test(dailySupplies),'Daily Supplies Blessing rows must remain compact');
 ok(dailySupplies.includes('accessibilityState={{expanded:showRules}}')&&dailySupplies.includes('HOW SUPPLY BUFFS WORK'),'Daily Supplies reference rules must stay collapsed until requested instead of lengthening the main claim/boost workflow');
 
 const accountBonuses=read('src/screens/AccountBonusesScreen.tsx');

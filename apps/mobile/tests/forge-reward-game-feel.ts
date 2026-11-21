@@ -43,7 +43,7 @@ ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackActions=wid
 ok(feedback.includes('actionsStack')&&feedback.includes("actionStack:{flex:0,width:'100%'}"),'Exceptional Forge result actions must stack full-width instead of squeezing');
 
 ok(queue.includes('ForgeClaimBanner'),'normal Forge claims must surface inside the Forge queue');
-ok(skills.includes('forgeResults={forgeResults}'),'Smithing must pass Forge results to its queue feedback');
+ok(skills.includes('<ForgeScreen state={state}')&&skills.includes('forgeResults,onDismissForgeResults')&&read('src/screens/ForgeScreen.tsx').includes('<EquipmentCraftQueuePanel {...queueProps}/>'),'Dedicated Forge must receive the original claim results and render queue feedback');
 
 ok(odds.includes('<View accessible accessibilityRole="adjustable"'),'Forge quality slider must own a dedicated adjustable touch surface');
 ok(odds.includes('onStartShouldSetResponder={()=>true}')&&odds.includes('onMoveShouldSetResponder={()=>true}'),'slider must capture gesture from touch down, before screen navigation can claim it');

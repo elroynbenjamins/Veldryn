@@ -20,7 +20,7 @@ assert.match(skills,/recipeId:'CRAFT_'\+tool\.id/,'Every tool Recipe button shou
 assert.match(skills,/onOpenSmithing=\{\(\)=>onNavigateCraftingSource\?onNavigateCraftingSource\(recipeDestination\):onViewToolRecipes\(\)\}/,'Inline recipe preview retains exact Smithing deep-link navigation');
 assert.match(app,/onNavigateCraftingSource=\{openWorkingTowardDestination\}/,'The tool source navigation callback reaches the app router');
 assert.match(recipes,/import \{TOOL_RECIPES\} from '\.\/gathering-tools'/,'Smithing recipes must include the tool recipe catalog');
-assert.match(forge,/\[queueOpen,setQueueOpen\]=useState\(\(\)=>!preferred&&equipmentCraftQueueModel\(state,Date\.now\(\)\)\.ready>0\)/,'A focused tool recipe must take priority over the open forge queue');
+assert.match(forge,/\[queueOpen,setQueueOpen\]=useState\(\(\)=>!onOpenForge&&!preferred&&equipmentCraftQueueModel\(state,Date\.now\(\)\)\.ready>0\)/,'A focused tool recipe must take priority over the open forge queue');
 assert.match(forge,/setItemId\(preferred\.output\.itemId\);setQueueOpen\(false\)/,'Switching to a focused recipe closes the queue panel without an obsolete duplicate details accordion');
 assert.match(forge,/itemDef\(preferred\.output\.itemId\)\.type==='tool'\?'tools':'materials'/,'A tool recipe should open the Tools category');
 assert.match(browser,/const initialExpandedKey=variantGroups\.find\(group=>group\.recipes\.some\(recipe=>recipe\.id===preferredRecipeId\)\)\?\.key\?\?null/,'Deep links must identify the exact grouped recipe first');

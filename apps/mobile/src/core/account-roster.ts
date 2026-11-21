@@ -13,7 +13,7 @@ export const CHARACTER_SLOT_THRESHOLDS=[0,250,800] as const;
 export type AccountCharacterRole=(typeof CLASSES)[number]['role'];
 export const REGION_AFK_MILESTONES=['SUNSCAR','FROSTMARCH','ASHLANDS'] as const;
 export type RegionAfkMilestone=(typeof REGION_AFK_MILESTONES)[number];
-const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith']);
+const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith','forge']);
 const safeLevel=(row:any)=>Number.isFinite(row?.xp)&&row.xp>=0?levelFromXp(row.xp):1;
 export function characterSkillTotal(skills:SkillState[],character?:CharacterState|null){
  const ordinary=new Set<string>();let total=0;

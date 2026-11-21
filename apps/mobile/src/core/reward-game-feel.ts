@@ -32,7 +32,7 @@ export interface RewardLootHighlight{
 const SKILL_LABELS:Record<SkillId,string>={
  mining:'Mining',woodcutting:'Woodcutting',fishing:'Fishing',herbalism:'Herbalism',
  smithing:'Smithing',cooking:'Cooking',alchemy:'Alchemy',
- exploration:'Exploration',tailoring:'Tailoring',enchanting:'Enchanting',faith:'Faith',
+ exploration:'Exploration',tailoring:'Tailoring',enchanting:'Enchanting',faith:'Faith',forge:'Forge',
 };
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
 export function masteryRankProgressionMoments(before:GameState|null|undefined,after:GameState|null|undefined):RewardProgressionMoment[]{

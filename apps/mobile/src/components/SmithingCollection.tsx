@@ -27,7 +27,7 @@ import {ownedEquipmentDefinitionIds} from '../core/equipment-collection-ownershi
 import {rememberedEquipmentTier,rememberEquipmentTier} from '../core/equipment-tier-memory';
 import {OptionPager,type PagerOption} from './OptionPager';
 type EquipmentCraftingSkill='smithing'|'tailoring';
-type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill};
+type Props=Omit<ComponentProps<typeof CraftingRecipeBrowser>,'skillId'|'category'> & {queueProps:ComponentProps<typeof EquipmentCraftQueuePanel>;skillId?:EquipmentCraftingSkill;onOpenForge?:()=>void};
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'];
 const slotLabels:Record<string,string>={helmet:'Helmet',chest:'Chest',gloves:'Gloves',legs:'Legs',boots:'Boots',weapon:'Weapon',offhand:'Off-hand',cape:'Cape',amulet:'Necklace',ring:'Ring'};
 export function EquipmentCraftingHeader({state,skillId='smithing'}:{state:Props['state'];onBack?:()=>void;skillId?:EquipmentCraftingSkill}){
@@ -40,7 +40,7 @@ export function EquipmentCraftingHeader({state,skillId='smithing'}:{state:Props[
 export const SmithingHeader=EquipmentCraftingHeader;
 /** Collection browsing is presentation only; existing forge commands own all costs and gates. */
 export function SmithingCollection(props:Props){
- const {state,preferredRecipeId,onCraft,craftFeedback,queueProps,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
+ const {state,preferredRecipeId,onCraft,craftFeedback,queueProps,onOpenForge,skillId='smithing'}=props,C=useGameTheme(),{gl,gt,language}=useGameplayText(),{width:viewportWidth,fontScale}=useWindowDimensions();
  const [showAllClasses,setShowAllClasses]=useState(false),[requestedCraftCount,setRequestedCraftCount]=useState(1);
  const ownProfession=!!state.character&&EQUIPMENT_CRAFT_SKILL_BY_CLASS[state.character.classId]===skillId;
  // Forging another class's V33 equipment is allowed; its equip class restriction remains.
@@ -48,7 +48,7 @@ export function SmithingCollection(props:Props){
  const preferred=recipes.find(r=>r.id===preferredRecipeId),characterId=state.character?.id;
  const [tab,setTab]=useState<'equipment'|'materials'|'tools'>(preferred&&!preferred.v33SetId?(itemDef(preferred.output.itemId).type==='tool'?'tools':'materials'):'equipment');
  const sets=useMemo(()=>EQUIPMENT_SETS.filter(set=>recipes.some(r=>r.v33SetId===set.id)&&set.itemIds.every(id=>hasEquipmentArtwork(itemDef(id)))),[recipes]);
- const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[queueOpen,setQueueOpen]=useState(()=>!preferred&&equipmentCraftQueueModel(state,Date.now()).ready>0),[width,setWidth]=useState(Math.max(260,viewportWidth-32)),[now,setNow]=useState(Date.now());
+ const [setId,setSetId]=useState<string|undefined>(preferred?.v33SetId??sets[0]?.id),[itemId,setItemId]=useState(preferred?.output.itemId),[bonusesOpen,setBonusesOpen]=useState(false),[queueOpen,setQueueOpen]=useState(()=>!onOpenForge&&!preferred&&equipmentCraftQueueModel(state,Date.now()).ready>0),[width,setWidth]=useState(Math.max(260,viewportWidth-32)),[now,setNow]=useState(Date.now());
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
  useEffect(()=>{if(!preferred)return;setTab(preferred.v33SetId?'equipment':itemDef(preferred.output.itemId).type==='tool'?'tools':'materials');setSetId(preferred.v33SetId);setItemId(preferred.output.itemId);setQueueOpen(false)},[preferredRecipeId]);
  const set=sets.find(row=>row.id===setId)??sets[0],tierSets=sets.filter(row=>row.tier===set?.tier),setIndex=tierSets.findIndex(row=>row.id===set?.id);
@@ -93,13 +93,13 @@ export function SmithingCollection(props:Props){
  const button=(title:string,onPress:()=>void,extra?:object,accessibleLabel=title)=><Pressable accessibilityRole="button" accessibilityLabel={accessibleLabel} onPress={onPress} style={({pressed})=>[s.control,panel,extra,pressed&&s.pressed]}><Text style={[s.body,text]}>{title}</Text></Pressable>;
  const active=queue.jobs.find(job=>job.status==='active'),progress=active?Math.max(0,Math.min(1,1-active.remainingSeconds/Math.max(1,active.durationSeconds))):0;
  return <View style={s.root} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
-  <Pressable accessibilityRole="button" accessibilityLabel={gt("Forge")+" · "+queue.ready+" "+gt("Ready")} accessibilityState={{expanded:queueOpen}} onPress={()=>setQueueOpen(value=>!value)} style={({pressed})=>[s.queue,panel,queue.ready>0&&{borderColor:C.good,backgroundColor:C.goodSurface},pressed&&s.pressed]}>
+  <Pressable accessibilityRole="button" accessibilityLabel={gt("Forge")+" · "+queue.ready+" "+gt("Ready")} accessibilityState={{expanded:!onOpenForge&&queueOpen}} onPress={onOpenForge??(()=>setQueueOpen(value=>!value))} style={({pressed})=>[s.queue,panel,queue.ready>0&&{borderColor:C.good,backgroundColor:C.goodSurface},pressed&&s.pressed]}>
     <ActivityArtwork id={skillId} size={28}/>
-    <View style={s.flex}><Text style={[s.body,text,{fontWeight:'700'}]}>{gt("Forge")} · {queue.ready>0?queue.ready+" "+gt("Ready"):queue.active+" "+gl("active")}</Text><Text style={[s.caption,muted]}>{queue.active}/{queue.slotInfo.capacity} {gl("active")} · {queue.waiting} {gl("Waiting")}{queue.ready>0?" · "+gt("Collect finished equipment"):''}</Text>{active&&!queueOpen?<View style={[s.track,{backgroundColor:C.line}]}><View style={{width:`${progress*100}%`,height:4,backgroundColor:C.accent}}/></View>:null}</View>
-    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[s.caption,{color:queue.ready>0?C.good:C.muted,fontWeight:'700',maxWidth:92,textAlign:'right'}]}>{queueOpen?gt("Back to crafting"):gt("Manage & collect")}</Text>
-    <Text style={muted}>{queueOpen?'⌃':'›'}</Text>
+    <View style={s.flex}><Text style={[s.body,text,{fontWeight:'700'}]}>{gt("Forge")} · {queue.ready>0?queue.ready+" "+gt("Ready"):queue.active+" "+gl("active")}</Text><Text style={[s.caption,muted]}>{queue.active}/{queue.slotInfo.capacity} {gl("active")} · {queue.waiting} {gl("Waiting")}{queue.ready>0?" · "+gt("Collect finished equipment"):''}</Text>{active&&(!queueOpen||!!onOpenForge)?<View style={[s.track,{backgroundColor:C.line}]}><View style={{width:`${progress*100}%`,height:4,backgroundColor:C.accent}}/></View>:null}</View>
+    <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[s.caption,{color:queue.ready>0?C.good:C.muted,fontWeight:'700',maxWidth:92,textAlign:'right'}]}>{!onOpenForge&&queueOpen?gt("Back to crafting"):gt("Manage & collect")}</Text>
+    <Text style={muted}>{!onOpenForge&&queueOpen?'⌃':'›'}</Text>
   </Pressable>
-  {queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>
+  {queueOpen&&!onOpenForge?<EquipmentCraftQueuePanel {...queueProps}/>:<>
   <View accessibilityRole="tablist" style={[s.tabs,{borderBottomColor:C.line}]}>{(['equipment','materials','tools'] as const).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>{setTab(value);}} style={[s.tab,{borderBottomColor:tab===value?C.selectionLine:'transparent'}]}><Text style={[s.body,{color:tab===value?C.text:C.muted,fontWeight:tab===value?'700':'400'}]}>{gl(value[0].toUpperCase()+value.slice(1))}</Text></Pressable>)}</View>
   {tab==='equipment'&&ownProfession?<Pressable accessibilityRole="button" accessibilityState={{selected:showAllClasses}} onPress={()=>{setShowAllClasses(value=>!value);setItemId(undefined);}} style={[s.control,panel,{flexDirection:'row',justifyContent:'space-between'}]}><Text style={[s.body,text]}>{gt('Equipment for all classes')}</Text><Text style={[s.caption,{color:showAllClasses?C.good:C.muted}]}>{showAllClasses?gt('All classes'):gt('My class')}</Text></Pressable>:null}
   {tab==='equipment'&&set&&item&&recipe&&status?<>

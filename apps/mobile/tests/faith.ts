@@ -26,7 +26,7 @@ function faithAt(s:GameState,level:number):GameState{const xp=totalXpAtLevel(lev
 function water(s:GameState,n:number){return {...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks.filter(x=>x.itemId!==HOLY_WATER_ID),{itemId:HOLY_WATER_ID,quantity:n}]}};}
 function qty(s:GameState,id:string){return [...s.inventory.stacks,...s.bank.stacks,...s.overflow.stacks].filter(x=>x.itemId===id).reduce((a,b)=>a+b.quantity,0);}
 
-test('Faith is a genuine level-one account skill for every new character',()=>{const s=fresh();equal(s.skills.length,11,'eleven professions/skills');equal(faithLevel(s.skills),1,'level');equal(accountSkillLevel(s),13,'11 ordinary + 2 class');});
+test('Faith is a genuine level-one account skill for every new character',()=>{const s=fresh();equal(s.skills.length,12,'twelve professions/skills including Forge');equal(faithLevel(s.skills),1,'level');equal(accountSkillLevel(s),14,'12 ordinary + 2 class');});
 test('Activity names use authored catalog names instead of raw IDs across all skills',()=>{
  for(const tier of FAITH_TIERS){
   equal(activityTargetLabel({kind:'faith',targetId:tier.id}),tier.name,'Faith tier '+tier.id);

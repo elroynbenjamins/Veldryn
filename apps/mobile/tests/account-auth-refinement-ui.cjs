@@ -29,6 +29,13 @@ assert.ok(auth.includes('passwordRequirements(password)')&&auth.includes('curren
 assert.ok(auth.includes("linkStep==='linked'")&&auth.includes('signInPlayGames()'),'Linked accounts keep separate Google Play Games connection');
 assert.ok(auth.includes('Connected services')&&auth.includes('Account security')&&auth.includes('s.accountIdentity'),'Linked account status, services and security are clearly grouped');
 assert.ok(auth.includes('redundantLinkSuccess')&&auth.includes('!redundantLinkSuccess'),'Reflected link success does not create duplicate green confirmation cards');
+// Production has not deployed Social Names RPCs. Never mount their editor until the release gate allows it.
+const socialGate=read('src/online/social-identity-client-gate.ts');
+const releaseFlags=read('src/core/release-flags.ts');
+assert.ok(auth.includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../online/social-identity-client-gate'"),'Account panel imports the staging-aware Social Names release gate');
+assert.ok(auth.includes('{auth.session&&ACCOUNT_SOCIAL_IDENTITY_RELEASED?<SocialNameEditor/>:null}'),'Social Name editor mounts only for signed-in users when the feature is released');
+assert.ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false'),'Production social identity remains unavailable until production RPC migration and QA');
+assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'"),'Explicit staging Social Names preview remains available');
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');
 assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');

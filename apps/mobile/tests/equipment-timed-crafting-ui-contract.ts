@@ -35,7 +35,7 @@ ok(app.includes("type:'craft_claim'")&&app.includes("type:'craft_claim_all'"),'M
 ok(app.includes('forgeClaimAllInFlight.current')&&app.includes('for(const job of finished)'),'Claim All must prevent double-taps and retry rejected bulk calls as independent authoritative claims');
 ok(app.includes("perform({type:'craft_claim_all'},true,false,true)")&&app.includes("perform({type:'craft_claim',args:{id:job.id}},false,false,true)"),'Rejected bulk claims must fall back to signed, server-persisted single claims without spamming error alerts');
 ok(queue.includes('blocked.push({jobId:job.id,reason})')&&commands.includes('result.blocked.length'),'Bulk claims must retain unclaimable jobs and report the blocked count');
-ok(app.includes('startEquipmentCraft(state,id,Date.now())'),'Offline/local equipment crafting must use the same timed domain path');
+ok(app.includes('startEquipmentCraft(next,id,craftNow).state')&&app.includes('for(let batch=0;batch<count;batch++)'),'Offline/local multi-crafting must reserve each selected job through the same authoritative timed domain path');
 ok(save.includes('normalizeEquipmentCraftingQueue'),'Timed queue must persist safely through save normalization');
 ok(save.includes('entitlements:booleanRecord'),'Supporter/VIP+ flags must survive save normalization');
 

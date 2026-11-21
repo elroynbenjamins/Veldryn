@@ -192,23 +192,30 @@ export interface VerifiedSkillBuildV2 {
 const finite=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
 const round=(v:number)=>Math.round(v*1e6)/1e6;
 function applyRecipe(base:AbilityDefinition,recipe:VariantRecipe,mods:MutableMods):AbilityDefinition {
-  const fx=(recipe.replaces??base.effects).map(e=>({...e}));
-  const effects=fx.map(e=>{
+  // All effects share the same authenticated specialization/talent modifiers.
+  // Variant multipliers modify primary/replacement effects only; a secondary
+  // shield or HoT has its own authored coefficient and must not inherit the
+  // primary heal/shield variant multiplier (or be silently left unscaled).
+  const adjust=(e:AbilityEffect,primary:boolean):AbilityEffect=>{
     const n={...e};
-    const scale=e.kind==='damage'? (recipe.damage??1)*(1+mods.direct)
-      :e.kind==='dot'?(recipe.dot??1)*(1+mods.dot)
-      :e.kind==='heal'?(recipe.heal??1)*(1+mods.heal)
-      :e.kind==='hot'?(recipe.hot??1)*(1+mods.hot)
-      :e.kind==='shield'?(recipe.shield??1)*(1+mods.shield):1;
-    if(typeof e.coeff==='number')n.coeff=round(e.coeff*finite(scale,0,2.0));
-    if(e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
+    const variant=primary?(
+      e.kind==='damage'?recipe.damage??1:e.kind==='dot'?recipe.dot??1:
+      e.kind==='heal'?recipe.heal??1:e.kind==='hot'?recipe.hot??1:
+      e.kind==='shield'?recipe.shield??1:1
+    ):1;
+    const bonus=e.kind==='damage'?1+mods.direct:e.kind==='dot'?1+mods.dot:
+      e.kind==='heal'?1+mods.heal:e.kind==='hot'?1+mods.hot:
+      e.kind==='shield'?1+mods.shield:1;
+    if(typeof e.coeff==='number')n.coeff=round(e.coeff*finite(variant*bonus,0,2.0));
+    if(primary&&e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
       n.healBelowHpPct=finite(recipe.healBelowHpPct,0,.75);
       n.healBonus=finite(recipe.healBonus??0,0,.4);
     }
     if(e.kind==='taunt')n.value=round((e.value??100)*(1+finite(mods.threat,0,.7)));
     return n;
-  });
-  for(const e of recipe.adds??[])effects.push({...e});
+  };
+  const effects=(recipe.replaces??base.effects).map(e=>adjust(e,true));
+  for(const e of recipe.adds??[])effects.push(adjust(e,false));
   return {...base,
     cooldownMs:Math.max(1200,Math.round((base.cooldownMs+(recipe.cooldownDelta??0))*
       finite((recipe.cooldownMult??1)*(1+mods.cooldown),.75,1.35))),

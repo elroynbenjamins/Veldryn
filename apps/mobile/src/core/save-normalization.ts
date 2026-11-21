@@ -187,7 +187,7 @@ export function normalizeSave(input:any):GameState{
       ?[...WORLD_ZONES].reverse().find(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel<savedZone.minLevel&&combatLevel>=zone.minLevel)?.id??'GREENFIELDS'
       :'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
-  const skillIds=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'];
+  const skillIds=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith','forge'];
   const skills=skillIds.map(skillId=>{const raw=(input.skills??[]).find((entry:any)=>entry?.skillId===skillId);const xp=Number.isFinite(Number(raw?.xp))?Math.max(0,Math.floor(Number(raw.xp))):0;return {skillId,xp,level:Math.max(1,Math.min(100,Number.isFinite(Number(raw?.level))?Math.floor(Number(raw.level)):1))};});
   const liveEvent=rawLiveEvent&&typeof rawLiveEvent.eventId==='string'&&typeof rawLiveEvent.enabled==='boolean'&&Number.isFinite(rawLiveEvent.startsAtMs)&&Number.isFinite(rawLiveEvent.endsAtMs)&&rawLiveEvent.endsAtMs>rawLiveEvent.startsAtMs?{eventId:rawLiveEvent.eventId,enabled:rawLiveEvent.enabled,startsAtMs:Number(rawLiveEvent.startsAtMs),endsAtMs:Number(rawLiveEvent.endsAtMs),...(Number.isFinite(rawLiveEvent.graceEndsAtMs)&&Number(rawLiveEvent.graceEndsAtMs)>=Number(rawLiveEvent.endsAtMs)?{graceEndsAtMs:Number(rawLiveEvent.graceEndsAtMs)}:{}),...(Number.isFinite(rawLiveEvent.priority)?{priority:Math.floor(Number(rawLiveEvent.priority))}:{}),...(Array.isArray(rawLiveEvent.modules)?{modules:[...new Set(rawLiveEvent.modules.filter((value:unknown)=>typeof value==='string'))].slice(0,12) as string[]}:{})}:undefined;
   const stringList=(value:unknown,limit=160)=>Array.isArray(value)?[...new Set(value.filter((id:unknown)=>typeof id==='string'))].slice(-limit):[];
@@ -268,7 +268,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,skills:Array.isArray(entry.skills)?(entry.skills.some((row:any)=>row?.skillId==='forge')?entry.skills:[...entry.skills,{skillId:'forge',xp:0,level:1}]):[{skillId:'forge',xp:0,level:1}],character:{...entry.character,
  familyMasteryPoints:entry.character.familyMasteryPoints===undefined
   ?backfillEnemyFamilyMastery(entry.character.monsterMasteryPoints)
   :normalizeEnemyFamilyMastery(entry.character.familyMasteryPoints),

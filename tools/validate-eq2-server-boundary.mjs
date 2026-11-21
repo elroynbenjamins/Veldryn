@@ -3,8 +3,8 @@ import {dirname,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 /** Hidden 2.0 backend authority modules must not import mobile runtime.
- * TypeScript's rootDir check handles deeper transitive dependencies; this
- * narrow direct-import gate also makes future accidental coupling obvious.
+ * Walk the server-owned dependency graph so an indirect import cannot pull
+ * the mobile runtime into the strict backend build.
  * GameState rehearsal adapters are intentionally not on this pure list yet.
  */
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
@@ -26,7 +26,7 @@ function visit(file,chain){
  let source;
  try{source=readFileSync(file,'utf8');}
  catch{errors.push(chain.join(' -> ')+': missing server module');return;}
- const imports=[...source.matchAll(/\\bfrom\\s*['"]([^'"]+)['"]|\\bimport\\s*(?:\\(\\s*)?['"]([^'"]+)['"]/g)];
+ const imports=[...source.matchAll(/\bfrom\s*['"]([^'"]+)['"]|\bimport\s*(?:\(\s*)?['"]([^'"]+)['"]/g)];
  for(const match of imports){
   const target=match[1]??match[2];
   if(target.includes('apps/mobile')||target.includes('react-native')||target.includes('/screens/')){
@@ -36,7 +36,7 @@ function visit(file,chain){
   if(!target.startsWith('.'))continue;
   const location=resolve(dirname(file),target);
   const candidates=[location,location+'.ts',location+'.tsx',resolve(location,'index.ts')];
-  const linked=candidates.find(path=>existsSync(path)&&/\\.(ts|tsx)$/.test(path));
+  const linked=candidates.find(path=>existsSync(path)&&/\.(ts|tsx)$/.test(path));
   if(linked)visit(linked,[...chain,target]);
  }
 }

@@ -27,7 +27,7 @@ test('Option A shows selection-first Gear controls only on narrow screens',()=>{
  assert.ok(pouch.includes("title={p('Quick salvage')}"),'wide layout retains Quick salvage');
  assert.ok(pouch.includes("p(compactActions?'Select safe to sell':'Select safe')"),'compact selection uses unambiguous, translated action');
  assert.ok(pouch.includes('equipmentPouchQuickSellIds(saleCandidates).slice(0,100)'),'safe selection retains eligible-only cap');
- assert.ok(pouch.includes('equipmentPouchQuickSalvageIds(state,salvageCandidates)'),'salvage respects existing eligible-only selection');
+ assert.ok(pouch.includes('equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100)'),'salvage selection respects eligible-only safety and batch cap');
  assert.ok(pouch.includes('selectedIds.filter(id=>!eligibleSales.some'),'protected counts use exact chosen IDs');
  assert.ok(pouch.includes("p('Protected')"),'compact selection identifies protected copies');
 });
@@ -49,6 +49,8 @@ test('compact Inventory controls remain reachable without changing full-size siz
  assert.ok(inventory.includes('stackInspectorActions&&s.inspectQuickButtonsStacked'));
  assert.ok(inventory.includes('inspectAmount>=inspectStock&&s.inspectStepDisabled'));
  assert.ok(inventory.includes('disabled={inspectAmount===inspectStock}'),'All cannot issue redundant changes');
+ assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmount<=1}}'),'decrement announces disabled state');
+ assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmount>=inspectStock}}'),'increment announces disabled state');
 });
 
 test('sale and salvage confirmation are exact-copy safe and retryable',()=>{
@@ -76,6 +78,7 @@ test('sale and salvage confirmation are exact-copy safe and retryable',()=>{
 test('new user-facing guidance is available in all seven translated locales',()=>{
  for(const key of [
   'Tap a piece to inspect, equip or move it to Bank.',
+  'Safe selection excludes Epic, Legendary and Mythic.',
   'The action was not confirmed. Try again.',
   'High-rarity gear selected. Check each copy before confirming.',
  ]){

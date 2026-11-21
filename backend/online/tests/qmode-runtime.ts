@@ -77,7 +77,7 @@ async function main(){
  const queuedClient=await decisionRuntime.choose('owned-account',started.runId,{
   requestId:'qmode-persist-settlement-001',decisionId:initialPrivate.run.currentNodeId,
   decisionRevision:1,optionId,
- }) as {phase:string};
+ }) as {phase:string;settlement?:{status:string}};
  assert.equal(queuedClient.phase,'resolving_node','Client sees only the preparing phase');
  const queuedArgs=decisionWrites.find(row=>row.name==='queue_online_qmode_node_server_v1')?.args;
  assert.ok(queuedArgs,'Choice must be committed through the transactional queue RPC');
@@ -87,7 +87,9 @@ async function main(){
  assert.ok(pending.settlement,'Offline worker needs a frozen settlement even after the client disconnects');
  assert.equal(pending.run.lastResolution?.nodeId,optionId,'Private result is for the selected node');
  assert.equal(pending.settlement.projection.stateVersion,3,'Final projection matches the queued version transition');
- assert.ok(!('settlement' in queuedClient),'Pending settlement must not be exposed to clients');
+ assert.deepEqual(queuedClient.settlement,{status:'not_ready'},'Public settlement shows readiness only, not the private combat result');
+ assert.ok(!('pending' in queuedClient),'Private pending Q-Mode result is never exposed');
+ assert.ok(!('enhancedMarks' in queuedClient),'Final reward settlement stays private until committed');
 
  // If the client returns after the timer, finalize once and then read the
  // already-settled snapshot. A second load must not grant a duplicate result.

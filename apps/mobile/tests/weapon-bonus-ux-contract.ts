@@ -6,14 +6,16 @@ const forge=read('src/components/SmithingCollection.tsx');
 const pool=read('src/components/WeaponBonusSection.tsx');
 const preview=read('src/components/EquipmentPreview.tsx');
 const inspect=read('src/components/ItemQuickInspect.tsx');
-check(forge.includes('<WeaponBonusPool key={item.id} itemId={item.id} initialExpanded/>'),
-  'Forge must show selected-item weapon and nonweapon bonus possibilities and reset disclosure on selection');
+check(forge.includes('bonusPoolOpenByItem[item.id]??true')&&forge.includes('onExpandedChange={open=>setBonusPoolOpenByItem(current=>({...current,[item.id]:open}))}'),
+  'Forge must preserve each selected equipment item disclosure preference while live queue updates rerender');
+check(forge.includes('<WeaponBonusPool key={item.id} itemId={item.id} expanded='),
+  'Forge must show actual selected weapon and nonweapon bonus possibilities with controlled disclosure');
 check(pool.includes("weaponBonusConfig(itemId,'common')")&&pool.includes("equipmentBonusConfig(itemId,'common')")&&pool.includes('weaponBonusRange(base.tier,stat)')&&pool.includes('equipmentBonusRange(base.tier,stat,armor!.slot)'),
   'Possible rolls must use authoritative exact-tier and slot-aware ranges, not guessed UI values');
 check(pool.includes('base.pool.map(stat=>'),
   'Live T1–T9 equipment previews must iterate the actual current seven-stat weapon or armor pool');
-check(pool.includes('accessibilityState={{expanded}}')&&pool.includes('onPress={()=>setExpanded('),
-  'Possible bonuses must be an accessible collapsible disclosure');
+check(pool.includes('accessibilityState={{expanded}}')&&pool.includes('onPress={toggleExpanded}')&&pool.includes('controlledExpanded??localExpanded')&&pool.includes('onExpandedChange?.(!controlledExpanded)'),
+  'Possible bonuses must be an accessible controlled disclosure and remain collapsible after updates');
 check(preview.includes('weaponBonusComparisonRows(oldRecord?.weaponBonuses,instance?.weaponBonuses)'),
   'Compare & Swap must compare the selected exact weapon receipts');
 check(preview.includes('weaponBonusDisplayDelta(change.deltaBps)')&&preview.includes('statColor(C,change.deltaBps)'),

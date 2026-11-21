@@ -15,9 +15,16 @@ const formatBonus=(basisPoints:number)=>'+'+(basisPoints/100).toFixed(1)+'%';
 const formatRange=(range:readonly [number,number])=>formatBonus(range[0])+'–'+formatBonus(range[1]);
 
 /** Displays actual recipe-specific possibilities. No guessed odds or class-based filtering. */
-export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;initialExpanded?:boolean}){
+export function WeaponBonusPool({itemId,initialExpanded=false,expanded:controlledExpanded,onExpandedChange}:{
+  itemId:string;initialExpanded?:boolean;expanded?:boolean;onExpandedChange?:(expanded:boolean)=>void;
+}){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt,gl,language}=useGameplayText();
-  const [expanded,setExpanded]=useState(initialExpanded);
+  const [localExpanded,setLocalExpanded]=useState(initialExpanded);
+  const expanded=controlledExpanded??localExpanded;
+  const toggleExpanded=()=>{
+    if(controlledExpanded!==undefined)onExpandedChange?.(!controlledExpanded);
+    else setLocalExpanded(value=>!value);
+  };
   const weapon=weaponBonusConfig(itemId,'common');
   const armor=weapon?undefined:equipmentBonusConfig(itemId,'common');
   const base=weapon??armor;
@@ -26,7 +33,7 @@ export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;in
   return <View style={s.panel}>
     <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityHint={expanded?gt("Hide possible rolls"):gt("View possible rolls")}
       accessibilityLabel={expanded?gt('Hide possible rolls'):gt('View possible rolls')}
-      onPress={()=>setExpanded(value=>!value)} style={s.heading}>
+      onPress={toggleExpanded} style={s.heading}>
       <View style={s.flex}>
         <Text style={s.title}>{gt('Possible bonus stats')}</Text>
         <Text style={s.subtitle}>{base.pool.length} {gt('possible stats')} · {twoAtAllRarities?gl('2 bonuses per item'):gt('1 bonus · Epic+ gets 2')}</Text>

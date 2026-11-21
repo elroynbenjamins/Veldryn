@@ -164,7 +164,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
  const renderPotionRow=(recipe:Recipe)=>{
   const available=count(recipe),isActive=activeId===recipe.id,locked=recipe.level>skillLevel,isExpanded=detailId===detailKey(recipe),reason=missingReason(recipe);
   return <View key={recipe.output.itemId} style={[s.potionRow,{borderColor:isActive?C.good:C.line,backgroundColor:C.panel}]}>
-    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Choose quantity'):reason)} accessibilityState={{disabled:busy||isActive||(available<1&&!activity)}} disabled={busy||isActive} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={itemName(recipe.output.itemId)+'. '+benefit(recipe)+'. '+(isActive?gt('Active'):available>0?gt('Choose quantity'):reason)} accessibilityState={{disabled:busy||isActive}} disabled={busy||isActive} onPress={()=>setDetailId(current=>current===detailKey(recipe)?null:detailKey(recipe))} style={({pressed})=>[s.potionRowMain,pressed&&{opacity:.72}]}>
       <ItemArtwork itemId={recipe.output.itemId} size={44}/>
       <View style={s.potionRowCopy}>
         <Text style={[s.name,{color:C.text}]} numberOfLines={1}>{itemName(recipe.output.itemId)}{regionVariant(recipe)?' · '+regionVariant(recipe):''}</Text>

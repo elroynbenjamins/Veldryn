@@ -6,6 +6,10 @@ on:
   push:
     branches:
       - release/1.0.11-qa-gates-20261121
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/v1-0-11-final-mainline-validation.yml'
   workflow_dispatch:
 
 permissions:

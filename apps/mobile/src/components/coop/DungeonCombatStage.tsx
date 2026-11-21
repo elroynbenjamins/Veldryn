@@ -14,7 +14,7 @@ import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatClassFx,dungeonCombatCueFx,type DungeonCombatCueFx} from '../../core/dungeon-combat-fx';
 import {dungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../../core/dungeon-enemy-display';
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueTone,playbackSimulatedElapsedMs,playbackSkillActivation,playbackVisualDurationMs} from '../../core/dungeon-combat-playback';
 import {type CoopColors} from '../../theme/coop-ui-theme';
 import {StateChip} from './CoopVisualKit';
 import {radii,spacing,touchTargetMin,typography} from '../../theme/theme';
@@ -198,7 +198,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false,seasonal=false,eve
  const complete=Boolean(replay&&!pending&&(!cues.length||cueIndex>=cues.length-1));
  // The server simulation may span three minutes while its 48-cue replay is
  // deliberately condensed. Never label playback wall time as combat elapsed.
- const confirmedCombatElapsedMs=replay&&!pending&&!anticipation?Math.max(0,Math.min(replay.durationMs,complete?replay.durationMs:(currentCue?.atMs??0))):undefined;
+ const confirmedCombatElapsedMs=replay&&!pending&&!anticipation?playbackSimulatedElapsedMs(replay,cueIndex,complete):undefined;
  // Elapsed wall time only, never expose the scheduled server resolution duration.
  const battleClockKey=`${run.runId}:${entryNodeId??run.selectedNodeId??replay?.nodeId??'waiting'}`;
  const completionHandler=useRef(onPresentationComplete);completionHandler.current=onPresentationComplete;

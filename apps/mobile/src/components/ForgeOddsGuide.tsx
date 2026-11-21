@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {craftedGearRarityOutcomes} from '../core/crafted-gear-rarity';
+import {forgeRarityBonusPercent} from '../core/forge-mastery';
 import {CRAFTED_GEAR_QUALITY_MIN,CRAFTED_GEAR_QUALITY_MAX,LEGACY_CRAFTED_GEAR_QUALITY,craftedGearQualityMultiplier,craftedGearQualityChanceAtLeast} from '../core/crafted-gear-instances';
 import {rarityMeta,type ItemRarity} from '../core/item-rarity';
 import {useGameplayText} from '../i18n/gameplay';
@@ -19,7 +20,7 @@ function statEffect(multiplier:number){
 }
 
 /** Shared by Smithing and Tailoring. The only odds source is the selected recipe output. */
-export function ForgeOddsGuide({itemId}:{itemId:string}){
+export function ForgeOddsGuide({itemId,forgeLevel=1}:{itemId:string;forgeLevel?:number}){
  const C=useGameTheme(),{gt}=useGameplayText(),{width,fontScale}=useWindowDimensions();
  const [open,setOpen]=useState(false);
  const [selectedRarity,setSelectedRarity]=useState<ItemRarity>('rare');
@@ -30,7 +31,7 @@ export function ForgeOddsGuide({itemId}:{itemId:string}){
  const item=itemDef(itemId);
  if(item.type!=='gear')return null;
  // Forge rarity rolls have the same six outcomes regardless of the recipe's tier.
- const outcomes=craftedGearRarityOutcomes(item.id);
+ const outcomes=craftedGearRarityOutcomes(item.id,forgeRarityBonusPercent(forgeLevel));
  const chosen=outcomes.find(row=>row.rarity===selectedRarity)??outcomes[0];
  const chosenMeta=rarityMeta(chosen.rarity);
  const totalMultiplier=chosen.statMultiplier*craftedGearQualityMultiplier(quality);

@@ -35,7 +35,7 @@ assert.match(equipment,/CraftQuantitySelector key=\{recipe\.id\} value=\{craftCo
 assert.match(equipment,/void onCraft\(recipe\.id,craftCount\)/);
 assert.doesNotMatch(equipment,/Details & sources/);
 assert.doesNotMatch(equipment,/s\.ingredients\>\{status\.inputs\.map/);
-assert.match(recipe,/ForgeOddsGuide itemId=\{output\.id\}/);
+assert.match(recipe,/ForgeOddsGuide itemId=\{output\.id\} forgeLevel=\{state\.skills\.find/);
 assert.match(recipe,/WeaponBonusPool key=\{output\.id\}/);
 
 // Normal recipe lists still open at most one recipe, with the same craft action.

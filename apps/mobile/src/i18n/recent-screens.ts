@@ -6,6 +6,7 @@ import {accountText} from './account';
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
+  "Queue, mastery & rewards": ["Warteschlange, Meisterschaft & Belohnungen","Cola, maestría y recompensas","Wachtrij, meesterschap en beloningen","Coda, maestria e ricompense","File d’attente, maîtrise et récompenses","Очередь, мастерство и награды","Kuyruk, ustalık ve ödüller"],
   // One-page audio customization (DE, ES, NL, IT, FR, RU, TR).
   "Preview theme": ["Thema anhören","Escuchar tema","Muziek beluisteren","Ascolta il tema","Écouter le thème","Прослушать тему","Temayı Dinle"],
   "Music & Audio": ["Musik & Audio","Música y audio","Muziek & audio","Musica e audio","Musique et audio","Музыка и звук","Müzik ve Ses"],

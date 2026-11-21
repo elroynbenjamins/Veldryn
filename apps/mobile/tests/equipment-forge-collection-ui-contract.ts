@@ -16,7 +16,7 @@ check(panel.includes('readyJobs.length>1?<GameButton compact title={gt("Claim Al
 check(panel.includes('readyJobs.map(job=>')&&panel.includes('onClaim(job.id)'),'Individual claim must remain available');
 check(panel.includes('showAutoSell?<View')&&panel.includes('state.account.craftedGearAutoSellMode'),'Auto-sell must be collapsed by default but retain existing protection toggle');
 check(panel.includes("onMoveWaiting(job.id,'up')")&&panel.includes("onMoveWaiting(job.id,'down')"),'Existing backlog controls must remain intact');
-check(collection.includes('queueOpen?<EquipmentCraftQueuePanel {...queueProps}/>:<>'),'Forge management must be separate from Smithing/Tailoring recipe selection');
+check(collection.includes('onPress={onOpenForge??(()=>setQueueOpen(value=>!value))}')&&screen.includes('<ForgeScreen state={state}')&&read('src/screens/ForgeScreen.tsx').includes('<EquipmentCraftQueuePanel {...queueProps}/>'),'Dedicated Forge must own queue management while keeping Smithing/Tailoring crafting available');
 check(collection.includes('equipmentCraftQueueModel(state,Date.now()).ready>0'),'Finished crafts must open directly into the collection flow');
 check(collection.includes('ownedEquipmentDefinitionIds(state)'),'Ownership badges must recognize Equipment Pouch contents');
 check(collection.includes('+{displayStat(Number(value))}'),'Forge equipment stats must display whole numbers rather than raw decimals');

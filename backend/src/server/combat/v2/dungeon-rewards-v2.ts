@@ -148,7 +148,8 @@ function assertSnapshot(input:CombatInput,snapshot:VerifiedDungeonRewardSnapshot
  let previousDepth=0;
  for(const receipt of snapshot.receipts){
   const def=catalog.get(receipt?.id);
-  if(!def||!idOk(receipt.nodeId)||
+  if(!def)fail('unknown_reward_id');
+  if(!receipt||!idOk(receipt.nodeId)||
    !Number.isSafeInteger(receipt.depth)||receipt.depth<1||receipt.depth>35||
    receipt.depth<=previousDepth||rooms.has(receipt.nodeId)||
    !['shrine','forge','echo','treasure','secret'].includes(receipt.room)||

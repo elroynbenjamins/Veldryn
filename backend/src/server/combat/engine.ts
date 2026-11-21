@@ -306,6 +306,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       source.definition.team==='enemies'&&target.definition.team==='players'&&
       source.alive&&target.alive&&target.hp>0&&dealt>0&&
       !(source.definition.phases??[]).some(phase=>phase.id===abilityId)&&
+      // Until every boss cast carries a signed avoidable-hit tag, only boss
+      // basic attacks may generate equipment reflection. Never cheese telegraphs.
+      (!source.definition.boss||abilityId==='BASIC')&&
       !abilityId.startsWith('V2_')&&!abilityId.startsWith('COMPANION_REFLECT')){
       const outcome=equipmentTraitRuntime.retaliation(now,target.definition.id,
         source.definition.id,dealt,target.definition.stats.maxHp,

@@ -1,5 +1,5 @@
 import {useRef,useState} from 'react';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useGameTheme} from '../../theme/ThemeContext';
 import {type ThemeColors,radii,spacing,typography} from '../../theme/theme';
 import {ExpeditionMarkIcon} from '../ExpeditionMarkIcon';
@@ -54,6 +54,8 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
  busy?:boolean;
 }){
  const C=useGameTheme(),s=makeStyles(C);
+ const {width:viewportWidth}=useWindowDimensions();
+ const narrowCollections=viewportWidth<360;
  const language=useGameLanguage();
  const t=(source:string,params:Record<string,string|number>={})=>dungeonShopText(language,source,params);
  const [shelf,setShelf]=useState<Shelf>('Supplies');
@@ -104,7 +106,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    // Shop rows use 256px art; expanded pet details always prefer the 512px portrait.
    const previewArt=dungeonShopPetOfferPortraitArt(item.id)??dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
-   return <View key={item.id} style={[s.card,compact&&s.collectionCard,expanded&&s.cardSelected]}>
+   return <View key={item.id} style={[s.card,compact&&s.collectionCard,compact&&narrowCollections&&s.collectionCardNarrow,expanded&&s.cardSelected]}>
     <Pressable accessibilityRole="button" accessibilityLabel={t('{name}, {marks} Expedition Marks, {status}',{name:localizedName,marks:localizedMarks,status:offerStatus})} accessibilityState={{expanded,disabled:busy||!!pending||refreshing}}
      disabled={busy||!!pending||refreshing} onPress={()=>setSelected(expanded?null:item.id)} style={[s.itemHead,compact&&s.collectionHead]}>
      <View style={s.art} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><DungeonShopOfferIcon item={item}/></View>
@@ -177,7 +179,9 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const chosen=matching.find(item=>item.id===selected);
    return <View key={category} style={s.collectionGroup}>
     <Text accessibilityRole="header" style={s.groupTitle}>{dungeonShopCollectionLabel(language,category)}</Text>
-    <View style={s.collectionRow}>{matching.map(item=>renderOffer(item,true))}</View>
+    {narrowCollections?<ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={s.collectionStrip}>
+     {matching.map(item=>renderOffer(item,true))}
+    </ScrollView>:<View style={s.collectionRow}>{matching.map(item=>renderOffer(item,true))}</View>}
     {chosen?renderOffer(chosen):null}
    </View>;
   })}
@@ -196,6 +200,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  groupTitle:{...typography.bodyStrong,color:C.text,fontSize:14},
  collectionRow:{flexDirection:'row',flexWrap:'wrap',gap:6,alignItems:'stretch'},
  collectionCard:{width:'31.5%',minHeight:152},
+ collectionCardNarrow:{width:132},
+ collectionStrip:{flexDirection:'row',gap:8,paddingRight:8},
  collectionHead:{minHeight:152,flexDirection:'column',alignItems:'center',justifyContent:'flex-start',padding:6,gap:5},
  collectionText:{width:'100%',alignItems:'center',justifyContent:'space-between',gap:4},
  collectionName:{fontSize:12,lineHeight:16,textAlign:'center',minHeight:32},

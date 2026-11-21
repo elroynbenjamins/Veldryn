@@ -21,6 +21,20 @@ assert.equal(summary.gearProgression.length,3);
 assert.ok(summary.findings.some(f=>f.type==='dps_inversion'&&f.group.includes('boss')));
 assert.ok(summary.findings.some(f=>f.type==='no_wins_in_group'));
 assert.ok(summary.findings.some(f=>f.type==='t1_unverified'));
+const authoredT1=samples.map(s=>s.tier==='T1'?{
+ ...s,enemyKit:'t1-authored' as const,
+}:s);
+const authoredSummary=analyzeSyntheticBalanceV2(authoredT1);
+assert.equal(authoredSummary.count,6);
+assert.ok(!authoredSummary.findings.some(f=>f.type==='t1_unverified'),
+ 'Server-verified authored Tier 1 introductions are not generic coverage gaps');
+assert.throws(()=>analyzeSyntheticBalanceV2([
+ {...initial,enemyKit:'t1-authored'},samples[1],
+]),/invalid_sample/,'Tier 2 must not masquerade as authored Tier 1');
+assert.throws(()=>analyzeSyntheticBalanceV2([
+ {...samples[4],enemyKit:'authored-v2'},samples[5],
+]),/invalid_sample/,'Tier 1 must not skip its approved teaching kit');
+
 assert.ok(summary.bands.some(b=>b.group==='tank|T2|normal|low'&&b.medianDps===40));
 assert.deepEqual(analyzeSyntheticBalanceV2([...samples].reverse()),summary,
  'Diagnostics must not depend on fixture row order');

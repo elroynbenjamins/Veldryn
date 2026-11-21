@@ -4,6 +4,8 @@ import {simulateCombat} from '../../engine';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
 import {projectPersistedBossCounterplayV2} from '../boss-counterplay-contract';
 import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
+import {prepareAsterfallBossV2} from '../../boss-v2-asterfall-prototype';
+import {prepareRegionalBossV2} from '../../boss-v2-regional-prototype';
 
 const stats={maxHp:4000,attackPower:100,healingPower:0,defense:100,
  accuracy:1000,evasion:100,critChance:0,critMultiplier:1.5,haste:0};
@@ -36,6 +38,12 @@ let interrupted=0,legacyChecks=0,traitChecks=0;
 for(const [id,name,region,tier,castCount] of six){
  const raw=boss(id,name);
  const original=JSON.stringify(raw);
+ const olderFrozen={...raw,tags:['enemy-v2:boss-profile:legacy-1']};
+ const direct=region==='asterfall'
+  ?prepareAsterfallBossV2(olderFrozen,'enemy-v2-prototype-1')
+  :prepareRegionalBossV2(olderFrozen,'enemy-v2-prototype-1');
+ assert.strictEqual(direct,olderFrozen,
+  'Never double-compile a legacy or previously frozen V2 boss profile');
  const legacyInput={seed:'old-inflight-boss',players:[hero],enemies:[raw],
   maxDurationMs:4500};
  const before=simulateCombat(legacyInput);

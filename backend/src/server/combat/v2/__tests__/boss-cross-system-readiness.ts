@@ -15,6 +15,8 @@ import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2,
  type PersistedEnemyKitV2} from '../enemy-kit-composer';
 import {issueEnemyV2EngineAuthority,enemyV2SnapshotDigest} from '../enemy-engine-authority';
 import {projectPersistedBossCounterplayV2} from '../boss-counterplay-contract';
+import {observeBossPacingV2,aggregateBossPacingV2,
+ type BossPacingObservationV2} from '../boss-pacing-diagnostics';
 
 const bosses=[
  {id:'BOSS_EXP_ROOT',name:'Rootbound Heart',region:'asterfall',tier:2,level:25},
@@ -36,6 +38,7 @@ function baselineBoss(config:typeof bosses[number]):CombatantDefinition{
  };
 }
 let attempts=0,staleDenied=0;
+const pacingRows:BossPacingObservationV2[]=[];
 const summaries:{bossId:string;scenarios:number;castEvents:number;
  completed:number;interrupts:number;phaseEvents:number;
  victories:number;timeouts:number;warnings:string[]}[]=[];
@@ -102,6 +105,16 @@ for(const config of bosses){
     e.targetId===base.id).length;
    phaseEvents+=a.events.filter(e=>e.type==='phase'&&
     e.actorId===base.id).length;
+   pacingRows.push(observeBossPacingV2({
+    bossId:base.id,classId,specId:spec.id,
+    casts:tells[0].casts.map(cast=>({
+     abilityId:cast.abilityId,castMs:cast.castMs,
+     interruptible:cast.interruptible,
+    })),
+    phases:tells[0].phases.map(phase=>({
+     phaseId:phase.phaseId,hpPercent:phase.hpPercent,
+    })),
+   },a));
    if(a.victory)victories++;
    if(a.reason==='timeout')timeouts++;
    // Scope hash must reject attacker modifications, including phase timing.
@@ -129,6 +142,17 @@ assert.equal(attempts,108);
 assert.equal(staleDenied,6);
 assert.equal(summaries.length,6);
 assert.ok(summaries.every(row=>row.scenarios===18));
+assert.equal(pacingRows.length,108);
+const pacing=aggregateBossPacingV2(pacingRows);
+assert.equal(pacing.length,6);
+assert.ok(pacing.every(row=>row.cases===18&&row.classSpecCount===18));
+assert.deepEqual(aggregateBossPacingV2([...pacingRows].reverse()),pacing,
+ 'Six-boss pacing summary cannot depend on simulation iteration order');
+console.log(JSON.stringify({
+ type:'SYNTHETIC_BOSS_PACING_DIAGNOSTIC_NOT_FINAL_BALANCE',
+ cases:pacingRows.length,bosses:pacing,
+}));
+
 console.log(JSON.stringify({type:'SYNTHETIC_BASELINES_ONLY_NOT_RELEASE_BALANCE',
  attempts,staleDenied,summaries}));
 console.log('PASS: 108 deterministic class/spec x six boss encounters; authority replay, boss tells, phase diagnostics, anti-tamper and resource caps');

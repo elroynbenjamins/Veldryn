@@ -6,6 +6,7 @@ import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} fr
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
 import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
  type DungeonRewardProcActionV2} from './v2/dungeon-reward-engine-v2';
+import {ReactiveReflectionBudgetV2} from './v2/reactive-reflection-budget';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
 import {
@@ -100,9 +101,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   // No token -> no equipment trait runtime actions, preserving every legacy
   // and previously compiled V2 run. Exact-token validation is server-owned.
   const equipmentSources=authorizeEquipmentV2TraitEngine(input,equipmentTraitAuthority);
+  const reflectionBudget=new ReactiveReflectionBudgetV2();
   const equipmentTraitRuntime=equipmentTraitAuthority
-    ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
-  const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority);
+    ?new EquipmentTraitRuntimeV2(equipmentSources,reflectionBudget):undefined;
+  const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority,
+    reflectionBudget);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -153,17 +156,44 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   // equipment pipelines; they cannot generate another reward trigger.
   const applyDungeonRewardAction=(now:number,source:CombatantState,
     enemy:CombatantState,action:DungeonRewardProcActionV2)=>{
-    const target=action.target==='self'?source:enemy;
-    if(!target.alive)return;
+    const target=action.target==='self'?source:
+      action.target==='ally'?players.find(p=>p.definition.id===action.recipientId):enemy;
+    if(!target?.alive)return;
     const id='V2_DUNGEON_REWARD:'+action.rewardId;
-    if(action.kind==='secondary_damage'){
+    if(action.kind==='secondary_damage'||action.kind==='retaliation_damage'){
       if(target.definition.team!=='enemies'||source.definition.team!=='players')return;
       const bonus=Math.min(target.hp,Math.max(0,action.amount));
       if(bonus<=0)return;
       target.hp-=bonus;target.damageTaken+=bonus;source.damageDone+=bonus;
       events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
         targetId:target.definition.id,abilityId:id,amount:Number(bonus.toFixed(2)),
-        detail:'secondary_damage_no_recursive_trigger'});
+        detail:action.kind==='retaliation_damage'?
+         'shared_reflect_budget_no_recursive_trigger':'secondary_damage_no_recursive_trigger'});
+      return;
+    }
+    if(action.kind==='secondary_heal'){
+      if(target.definition.team!=='players'||source.definition.team!=='players'||
+         !dungeonRewards?.hasMember(target.definition.id)||
+         target===source)return;
+      const actual=Math.min(Math.max(0,action.amount),target.definition.stats.maxHp-target.hp);
+      if(actual<=0)return;
+      target.hp+=actual;source.healingDone+=actual;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(actual.toFixed(2)),
+        detail:'third_party_secondary_heal_no_recursive_trigger'});
+      return;
+    }
+    if(action.kind==='secondary_shield'){
+      if(target.definition.team!=='players'||source.definition.team!=='players'||
+         !dungeonRewards?.hasMember(target.definition.id)||
+         target===source)return;
+      const actual=Math.min(Math.max(0,action.amount),
+        Math.max(0,target.definition.stats.maxHp*.10-target.shield));
+      if(actual<=0)return;
+      target.shield+=actual;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(actual.toFixed(2)),
+        detail:'third_party_secondary_barrier_no_recursive_trigger'});
       return;
     }
     if(action.kind==='bleed'){
@@ -343,7 +373,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       for(const action of dungeonRewards.afterOriginalEnemyHit({now,
         sourceId:source.definition.id,targetId:target.definition.id,abilityId,
         hpBeforePct:hpBeforeReactive,hpAfterPct:hpPct(target),actualHpDamage:dealt,
-        boss:Boolean(source.definition.boss)}))
+        boss:Boolean(source.definition.boss),attackerMaxHp:source.definition.stats.maxHp,
+        defenderMaxHp:target.definition.stats.maxHp}))
         applyDungeonRewardAction(now,target,source,action);
     }
     if(dealt>0){
@@ -574,7 +605,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           const src=all.find(x=>x.definition.id===p.sourceId);
           if(src?.alive){
             if(dungeonRewards&&p.effectId.startsWith('V2_DUNGEON_REWARD:')&&
-               p.sourceId===dungeonRewards.actorId&&p.kind==='dot'){
+               dungeonRewards.hasMember(p.sourceId)&&p.kind==='dot'){
               // Authorized Bleed is an HP tick, not a second direct hit.
               // No new accuracy/crit RNG, ward, gem, class resource or trait proc.
               const actual=Math.min(state.hp,Math.max(0,p.flat));

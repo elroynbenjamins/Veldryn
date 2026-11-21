@@ -6,7 +6,7 @@ import {ENEMY_V2_RULESET} from './enemy-v2-prototype';
  * Preserve the published encounter ID, name, level, stats and legacy skills.
  * The authoritative server must select a ruleset for a NEW, frozen encounter.
  */
-const MARK='enemy-v2:boss-profile:regional-1';
+const MARK='enemy-v2:boss-profile:regional-2';
 type AuthoredBoss = { id:string; name:string; abilities:AbilityDefinition[]; phases:BossPhaseDefinition[] };
 
 const cast=(id:string,name:string,cooldownMs:number,castTimeMs:number,priority:number,

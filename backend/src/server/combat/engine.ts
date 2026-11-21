@@ -333,7 +333,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
         coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
-        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000};
+        nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000,
+        ...(source.combatV2&&abilityId.includes(':v2:')?{v2AppliedAtMs:now}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')
         target.periodic=applyEnemyV2Periodic(target.periodic,periodic).entries;
       else {
@@ -344,7 +345,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           target.periodic=target.periodic.filter(p=>
             p.sourceId!==source.definition.id||p.effectId!==abilityId||
             p.kind!==periodic.kind||p.tag!==periodic.tag||
-            p.nextTickAt-p.tickMs===now);
+            p.v2AppliedAtMs===now);
         }
         target.periodic.push(periodic);
       }

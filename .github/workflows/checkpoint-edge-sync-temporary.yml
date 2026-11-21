@@ -1,5 +1,5 @@
 name: Checkpoint co-op bundle build (temporary)
-# Retry after strict checkpoint tampering assertion was expanded.
+# Retry after strict checkpoint tampering assertion and legacy fixture guard fixes.
 on:
   push:
     branches:

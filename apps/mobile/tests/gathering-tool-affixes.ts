@@ -130,6 +130,10 @@ assert(firstQueue.seconds>0&&firstQueue.job.completesAtMs>10000,'Tool job has a 
 assert(!firstQueue.state.inventory.stacks.some(row=>row.itemId==='GREENWOOD_HATCHET'),'Tool does not appear when work begins');
 const secondQueue=startEquipmentCraft(firstQueue.state,'CRAFT_GREENWOOD_HATCHET',10000);
 assert(firstQueue.job.id!==secondQueue.job.id,'Same-time tool reservations receive unique job IDs');
+// A timer is enforceable, not a cosmetic delay.
+let earlyClaimBlocked=false;
+try{claimForgeJob(secondQueue.state,firstQueue.job.id,10001,0.5);}catch(error){earlyClaimBlocked=error instanceof Error&&error.message.includes('still in progress');}
+assert(earlyClaimBlocked,'Tool cannot be claimed until its real Forge timer completes');
 const firstClaim=claimForgeJob(secondQueue.state,firstQueue.job.id,firstQueue.job.completesAtMs+1000,0.5);
 assert(firstClaim.kind==='tool','Finished tool job is returned as a tool, never gear or gem');
 if(firstClaim.kind==='tool'){
@@ -137,7 +141,30 @@ if(firstClaim.kind==='tool'){
   assert(firstClaim.state.inventory.stacks.some(row=>row.instanceId===firstClaim.tool.id),'Claim retains exact rolled physical item');
   const view=itemInspectModel(firstClaim.state,'GREENWOOD_HATCHET',firstClaim.tool.id);
   assert(view.selectedQuality===firstClaim.tool.quality,'Newly queued tool can be inspected without crashing');
+  const moved=moveGatheringToolCopy(firstClaim.state,firstClaim.tool.id,'bank');
+  const bankView=itemInspectModel(moved,'GREENWOOD_HATCHET',firstClaim.tool.id,'bank');
+  assert(bankView.selectedQuality===firstClaim.tool.quality,'Exact claimed tool remains inspectable after transfer into shared Bank');
+  assert(bankView.bankQuantity===1,'Tool copy counts include Bank custody');
+  const transferredBack=moveGatheringToolCopy(moved,firstClaim.tool.id,'inventory');
+  assert(transferredBack.inventory.stacks.some(row=>row.instanceId===firstClaim.tool.id),'Moving claimed tool back preserves receipt identity');
 }
+}
+
+
+// Cancellation returns reserved crafting ingredients but does not silently
+// create a tool, grant XP or refund the charged Gold (existing Forge policy).
+const cancelState=createCharacter(newGame(0),'IRONWARDEN','Cancel Timed Tool');
+const cancelReady={...cancelState,character:{...cancelState.character!,level:20,gold:100000},
+ skills:cancelState.skills.map(sk=>sk.skillId==='woodcutting'?{...sk,level:20,xp:totalXpAtLevel(20)}:sk),
+ inventory:{...cancelState.inventory,stacks:timedTool.recipe.inputs.map(input=>({itemId:input.itemId,quantity:input.quantity*2}))}};
+const pending=startEquipmentCraft(cancelReady,'CRAFT_GREENWOOD_HATCHET',12000);
+const {cancelEquipmentCraft}=require('../src/core/equipment-crafting-queue') as typeof import('../src/core/equipment-crafting-queue');
+const cancelled=cancelEquipmentCraft(pending.state,pending.job.id,12001);
+assert(cancelled.state.account.equipmentCraftingQueue?.length===0,'Cancelled tool job leaves the Forge queue');
+assert(cancelled.state.character!.gold===pending.state.character!.gold,'Forge cancellation does not refund gold');
+assert(!cancelled.state.inventory.stacks.some(row=>row.itemId==='GREENWOOD_HATCHET'),'Cancelled tool job creates no physical copy');
+for(const input of timedTool.recipe.inputs)
+  assert(cancelled.state.inventory.stacks.some(row=>row.itemId===input.itemId&&row.quantity===input.quantity*2),'Cancelling tool forging restores reserved ingredient '+input.itemId);
 
 
 console.log('Gathering tool affixes: deterministic rolls, 80% cap, rarity, custody and legacy tests passed.');

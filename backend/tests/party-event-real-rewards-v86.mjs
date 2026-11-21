@@ -1,7 +1,8 @@
 /**
  * V86 disposable PGlite smoke test: genuine V69/V70 Party chest -> review
  * V61/V65 receipt/currency + existing character wallet/game state + V80 Inbox.
- * Does NOT exercise two independent PG17.6 sessions or live V61 proof loader.
+ * V88 tests the V87 SQL proof AND V86 physical grants on the same V70 connection.
+ * Independent PG17.6 concurrency and certificate producers remain unverified.
  */
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -16,12 +17,18 @@ const {createChestRewardSettlementV69,deriveChestSettlementRollsV69}=require(
  '../.event-chest-tests/server/loot/chest-reward-settlement-v69.js');
 const {resolveTrustedPartyChestSourceV77}=require(
  '../.event-chest-tests/server/party/weekly-party-event-chest-source-v77.js');
+const {createPartyEventAtomicPortsV88}=require(
+ '../.event-chest-tests/server/party/weekly-party-event-atomic-ports-v88.js');
 const account='11111111-1111-4111-8111-111111111111';
 const foreign='22222222-2222-4222-8222-222222222222';
 const character='33333333-3333-4333-8333-333333333333';
 const party='44444444-4444-4444-8444-444444444444';
 const proofId='55555555-5555-4555-8555-555555555555';
-const week=Date.UTC(2026,10,16);
+const week=Date.UTC(2026,10,2);
+const otherHero='77777777-7777-4777-8777-777777777777';
+const orderId='66666666-6666-4666-8666-666666666666';
+const digest='a'.repeat(64),snapshot='b'.repeat(64);
+const weekEnds=week+604800000,attested=weekEnds+3600000,issued=weekEnds+7200000;
 const kindKey=kind=>'party-event:'+week+':'+account+':'+kind;
 function extract(path){
  const sql=readFileSync(new URL(path,import.meta.url),'utf8');
@@ -35,13 +42,14 @@ const v70=extract('../../docs/roadmap/party-events/hidden-migrations/20261119104
 const v61=extract('../../docs/roadmap/party-events/hidden-migrations/20261119070000_party_event_reward_ledger_v61.sql');
 const v65=extract('../../docs/roadmap/party-events/hidden-migrations/20261119094500_party_sigils_account_ledger_v65.sql');
 const v86=extract('../../docs/roadmap/party-events/hidden-migrations/20261121144000_party_event_real_rewards_v86_REVIEW_ONLY.sql');
+const v87=extract('../../docs/roadmap/party-events/hidden-migrations/20261121161500_party_event_authoritative_settlement_v87_REVIEW_ONLY.sql');
 const identity={partyId:party,accountId:account,eventStartsAtUtcMs:week};
 const proof={
  source:'private_party_event_settlement_join_v61',
  week:{partyId:party,eventStartsAtUtcMs:week,eventEndsAtUtcMs:week+604800000,
   settledAtUtcMs:week+608400000,status:'settled',
   family:'broken_caravan',difficulty:'standard'},
- roster:{...identity,rosterSize:4,frozenCharacterId:character},
+ roster:{...identity,rosterSize:2,frozenCharacterId:character},
  activity:{...identity,activityPoints:25,
   sourceVersion:'party_event_member_progress_v14'},
  preparation:{...identity,committedDonationId:proofId,
@@ -91,6 +99,88 @@ try{
   [party,week]);
  await db.query('INSERT INTO private.party_event_roster_v11 VALUES'+
   '($1,to_timestamp($2::double precision/1000),$3)',[party,week,account]);
+ // Disposable V87 canonical source fixture, BEFORE any award ledger writes.
+ // V23 replay attestation is not a payout certificate: V87 is independently
+ // required. These SQL rows are only present in the PGlite throwaway DB.
+ await db.exec(
+  'ALTER TABLE public.characters ADD CONSTRAINT party_v88_char_pair UNIQUE(id,account_id);'+
+  'ALTER TABLE private.party_event_weeks_v11 ADD COLUMN event_ends_at timestamptz;'+
+  'ALTER TABLE private.party_event_weeks_v11 ADD COLUMN active_stage smallint DEFAULT 3;'+
+  'ALTER TABLE private.party_event_roster_v11 ADD COLUMN character_id uuid;'+
+  'CREATE TABLE private.party_event_member_progress_v14('+
+  'party_id uuid,event_starts_at timestamptz,account_id uuid,activity_points integer);'+
+  'CREATE TABLE private.party_event_supply_orders_v16('+
+  'id uuid PRIMARY KEY,party_id uuid,event_starts_at timestamptz,'+
+  'stage smallint,kind text,target_quantity integer,donated_quantity integer);'+
+  'CREATE TABLE private.party_event_supply_donations_v16('+
+  'id uuid PRIMARY KEY,order_id uuid,party_id uuid,event_starts_at timestamptz,'+
+  'account_id uuid,created_at timestamptz);'+
+  'CREATE TABLE private.party_event_stage_seals_v17('+
+  'party_id uuid,event_starts_at timestamptz,stage smallint,sealed_at timestamptz);'+
+  'CREATE TABLE private.party_event_boss_loadouts_v18('+
+  'party_id uuid,event_starts_at timestamptz,account_id uuid,'+
+  'character_id uuid,character_level integer,snapshot_hash text,saved_at timestamptz);'+
+  'CREATE TABLE private.party_event_boss_replay_attestations_v23('+
+  'reservation_id uuid PRIMARY KEY,party_id uuid,event_starts_at timestamptz,'+
+  'source_digest text,tiers_cleared smallint,worker_attested_at timestamptz,'+
+  'rewards_granted boolean DEFAULT false,'+
+  'reward_entitlement_created boolean DEFAULT false);'
+ );
+ await db.query('INSERT INTO public.characters VALUES($1,$2)',[otherHero,foreign]);
+ await db.query(
+  'UPDATE private.party_event_weeks_v11 SET event_ends_at='+
+  'to_timestamp($2::double precision/1000),active_stage=3 WHERE party_id=$1',
+  [party,weekEnds]);
+ await db.query(
+  'UPDATE private.party_event_roster_v11 SET character_id=$2 WHERE account_id=$1',
+  [account,character]);
+ await db.query(
+  'INSERT INTO private.party_event_roster_v11 VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,$4)',
+  [party,week,foreign,otherHero]);
+ await db.query(
+  'INSERT INTO private.party_event_member_progress_v14 VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,25)',
+  [party,week,account]);
+ await db.query(
+  'INSERT INTO private.party_event_supply_orders_v16 VALUES('+
+  "$1,$2,to_timestamp($3::double precision/1000),3,'optional',10,10)",
+  [orderId,party,week]);
+ await db.query(
+  'INSERT INTO private.party_event_supply_donations_v16 VALUES('+
+  '$1,$2,$3,to_timestamp($4::double precision/1000),$5,'+
+  'to_timestamp($6::double precision/1000))',
+  [proofId,orderId,party,week,account,week+3600000]);
+ await db.query(
+  'INSERT INTO private.party_event_stage_seals_v17 VALUES('+
+  '$1,to_timestamp($2::double precision/1000),3,'+
+  'to_timestamp($3::double precision/1000))',
+  [party,week,week+172800000]);
+ await db.query(
+  'INSERT INTO private.party_event_boss_loadouts_v18 VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,$4,25,$5,'+
+  'to_timestamp($6::double precision/1000))',
+  [party,week,account,character,snapshot,week+86400000]);
+ await db.query(
+  'INSERT INTO private.party_event_boss_replay_attestations_v23 VALUES('+
+  '$1,$2,to_timestamp($3::double precision/1000),$4,2,'+
+  'to_timestamp($5::double precision/1000),false,false)',
+  [proofId,party,week,digest,attested]);
+ await db.exec(v87);
+ await db.query(
+  'INSERT INTO private.party_event_settlement_certificates_v87('+
+  'party_id,event_starts_at,reservation_id,source_digest,verified_tiers_cleared,'+
+  'independently_verified_victory,settled_at,issued_at) VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,$4,2,true,'+
+  'to_timestamp($5::double precision/1000),'+
+  'to_timestamp($6::double precision/1000))',
+  [party,week,proofId,digest,attested,issued]);
+ await db.query(
+  'INSERT INTO private.party_event_member_tier_certificates_v87('+
+  'party_id,event_starts_at,account_id,frozen_character_id,'+
+  'frozen_level,frozen_loadout_hash,eligible_gear_tier) VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,$4,25,$5,2)',
+  [party,week,account,character,snapshot]);
  const initial={
   character:{id:character,gold:100},account:{companionEssence:5},
   inventory:{capacity:2,stacks:[{itemId:'GEM_DUST',quantity:3}]},
@@ -112,12 +202,7 @@ try{
  assert.equal(privileges.service_write,false);
  const real=createPartyEventRealRewardPortsV86(true);
  const ports={
-  readCanonicalSource:async(_tx,owner,key)=>{
-   assert.equal(owner,account);
-   return resolveTrustedPartyChestSourceV77({
-    authenticatedAccountId:owner,sourceKey:key,proof,
-   });
-  },
+  ...createPartyEventAtomicPortsV88(true),
   readAccountOwnedDrops:async()=>[],
   isOwnedCharacter:async(tx,owner,id)=>{
    const rows=(await tx.query('SELECT id FROM public.characters '+
@@ -147,6 +232,22 @@ try{
    authenticatedAccountId:account,sourceKey:kindKey(kind),
   });
  };
+ // If the independent V87 certificate disappears, NO V70 payout can start.
+ // This simulation is deliberately isolated before the first settlement.
+ await db.query('DELETE FROM private.party_event_settlement_certificates_v87 '+
+  'WHERE party_id=$1',[party]);
+ await assert.rejects(()=>open('participation'),
+  /settlement_certificate_missing_or_ambiguous/);
+ assert.equal((await db.query('SELECT COUNT(*)::int AS n FROM '+
+  'private.chest_reward_receipts_v70')).rows[0].n,0);
+ await db.query(
+  'INSERT INTO private.party_event_settlement_certificates_v87('+
+  'party_id,event_starts_at,reservation_id,source_digest,verified_tiers_cleared,'+
+  'independently_verified_victory,settled_at,issued_at) VALUES('+
+  '$1,to_timestamp($2::double precision/1000),$3,$4,2,true,'+
+  'to_timestamp($5::double precision/1000),'+
+  'to_timestamp($6::double precision/1000))',
+  [party,week,proofId,digest,attested,issued]);
  const first=await open('participation');
  assert.equal(first.replayed,false);
  assert.equal(first.receipt.drops.length,0);

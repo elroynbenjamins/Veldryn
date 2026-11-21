@@ -31,6 +31,7 @@
     "src/server/combat/world-boss-chests-v58.ts",
     "src/server/combat/__tests__/world-boss-chests-v58.ts",
     "src/server/loot/chest-postgres-store-v70.ts",
+    "src/server/loot/__tests__/chest-postgres-replay-guard-v85.ts",
     "src/server/loot/chest-equipment-bridge-v71.ts",
     "src/server/loot/__tests__/chest-equipment-bridge-v71.ts",
     "src/server/loot/world-boss-eq2-unclaimed-v84.ts",

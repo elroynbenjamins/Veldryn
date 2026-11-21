@@ -32,7 +32,7 @@ export const LEGACY_ATTACK_EXCHANGE_V2:Readonly<Record<LegacyAttackGemIdV2,Legac
   EMBERHEART_GEM:{
     legacyId:'EMBERHEART_GEM',legacyAttackPercent:.05,
     convertedId:'gem:stat_might:g3',convertedCopies:4,
-    restoredId:'EMBERHEART_GEM',restoredCopies:1,
+    restoredId:'LEGACY_EMBERHEART_GEM_V2',restoredCopies:1,
   },
 };
 export type LegacyRestorationStatusV2='not_eligible'|'already_restored'|'ready'|'manual_review';

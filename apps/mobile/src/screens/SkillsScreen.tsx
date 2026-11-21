@@ -35,6 +35,7 @@ import {companionSanctuaryUpgradeCost} from '../core/combat-companions';
 import {assertCompanionIdle} from '../core/companion-runtime';
 import {companionMasteryBonuses,companionMasteryProgress} from '../core/companion-mastery';
 import {EquipmentCraftQueuePanel} from '../components/EquipmentCraftQueuePanel';
+import {ForgeScreen} from './ForgeScreen';
 import {useCraftActionFeedback} from '../components/useCraftActionFeedback';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {progressWithinLevel,classCombatSkillProgressWithinLevel} from '../core/progression';
@@ -110,9 +111,10 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
       {!gatheringSkillIds.length?<Text style={s.unavailable}>{gl("No gathering activities are available in this region yet.")}</Text>:null}
     </ScrollView>;
   }
+  if(mode==='crafting'&&initialSkill==='forge')return <ForgeScreen state={state} now={now} onOpenProfession={id=>onSelectSkill?.(id)} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>;
   if(mode==='crafting'&&(initialSkill==='smithing'||initialSkill==='tailoring'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <EquipmentCraftingHeader state={state} skillId={initialSkill}/>
-    <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraftWithFeedback} craftFeedback={craftFeedback} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>
+    <SmithingCollection state={state} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraftWithFeedback} craftFeedback={craftFeedback} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} onOpenForge={()=>onSelectSkill?.('forge')} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults,onSetAutoSell:enabled=>onCommand({type:'gear_autosell',args:{enabled}})}}/>
   </ScrollView>;
   if(mode==='crafting'&&(initialSkill==='cooking'||initialSkill==='alchemy'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <SkillHero state={state} skillId={initialSkill} kind={gt('Crafting skill')}/>
@@ -293,7 +295,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  ];
  const professionRows:SkillNavigatorEntry[]=state.skills.map(row=>{
   const category=skillNavigatorCategoryFor(row.skillId);
-  return {id:row.skillId,name:gl(row.skillId),level:row.level,xp:row.xp,
+  return {id:row.skillId,name:row.skillId==='forge'?gt('Forge'):gl(row.skillId),level:row.level,xp:row.xp,
    subtitle:category==='other'?n('Other'):gl(row.skillId==='faith'?'devotion':row.skillId==='exploration'?'adventure skill':category==='crafting'?'crafting':'gathering'),
    category,route:skillNavigatorRouteFor(row.skillId)};
  });

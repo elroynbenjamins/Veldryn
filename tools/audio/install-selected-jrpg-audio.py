@@ -67,11 +67,20 @@ def main():
             meta=sounds[name]
             manifest_src['sfx'][name]={'seconds':meta['seconds'],'volume':meta['volume'],
                 'source':meta['source']}
-        inject=''.join(
-            f"  {name}:{{source:require('../../assets/audio/sfx/{name}.mp3') as AudioSource,volume:{sounds[name]['volume']}}},\n"
-            for name in sorted(SFX))
-        asset_map=replace_once(asset_map,'} as const;\nexport const MUSIC_TRACK_ASSETS={',
-                               inject+'} as const;\nexport const MUSIC_TRACK_ASSETS={',asset_file)
+        # Existing procedural cue entries can be replaced by the reviewed ZIP.
+        # Never insert duplicate Metro asset keys after the synthesis workflow ran.
+        missing=[]
+        for name in sorted(SFX):
+            line=f"  {name}:{{source:require('../../assets/audio/sfx/{name}.mp3') as AudioSource,volume:{sounds[name]['volume']}}},"
+            original=next((row for row in asset_map.splitlines()
+                if row.lstrip().startswith(name+':{source:')),None)
+            if original:
+                asset_map=replace_once(asset_map,original,line,asset_file)
+            else:
+                missing.append(line+'\n')
+        if missing:
+            asset_map=replace_once(asset_map,'} as const;\nexport const MUSIC_TRACK_ASSETS={',
+                ''.join(missing)+'} as const;\nexport const MUSIC_TRACK_ASSETS={',asset_file)
         # Test contracts distinguish four OGG tracks; leave unrelated MP3 checks intact.
         tests=replace_once(tests,
            "const file='assets/audio/'+kind+'/'+name+'.mp3';",

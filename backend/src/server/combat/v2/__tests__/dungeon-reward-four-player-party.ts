@@ -80,6 +80,14 @@ assert.throws(()=>issueDungeonRewardPartyEngineAuthorityV2(input,
  /roster_mismatch/);
 assert.throws(()=>issueDungeonRewardPartyEngineAuthorityV2(input,
  {...snapshot,grants:snapshot.grants.slice(0,3)},verified),/invalid_source_or_party_roster/);
+assert.throws(()=>issueDungeonRewardPartyEngineAuthorityV2({...input,
+ players:[tank,healer,damage,{...scout,classId:'RAVAGER'}]},snapshot,verified),
+ /dungeon_party_composition_mismatch/,
+ 'Two same-DPS classes must not satisfy real dungeon composition');
+assert.throws(()=>issueDungeonRewardPartyEngineAuthorityV2(input,
+ {...snapshot,grants:snapshot.grants.map((g,i)=>i===3?{...g,
+  accountId:snapshot.grants[0].accountId}:g)},verified),/duplicate_party_owner/,
+ 'The same account must never fill two four-player dungeon slots');
 assert.throws(()=>issueDungeonRewardPartyEngineAuthorityV2(input,
  {...snapshot,grants:snapshot.grants.map((g,i)=>i===1?{...g,
   receipts:[...g.receipts,ward]}:g)},verified),

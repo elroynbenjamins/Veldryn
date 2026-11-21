@@ -59,14 +59,17 @@ function coopKind(secret:string, expeditionId:string, runId:string, contentVersi
 }
 
 /** One matchmaking queue and one path. At every seven cleared rooms players
- * can finish at the boss or vote to continue down two ordinary routes. */
+ * can finish at the boss, or choose recovery / a boon to continue. */
 export const DUNGEON_ENDURANCE=Object.freeze({checkpointInterval:7,maxNormalRooms:42,version:1});
 
-export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:string,contentVersion:string,balanceVersion:string,routeMode:'legacy'|'endurance'='legacy'):CoopRouteGraph {
+export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:string,contentVersion:string,balanceVersion:string,routeMode:'legacy'|'endurance'|'endurance-v1'='legacy'):CoopRouteGraph {
  const def=EXPEDITIONS[expeditionId];if(!def)throw new Error('unknown_expedition');
  if(!def.coopImplemented)throw new Error('expedition_not_implemented');
- const generatorVersion=routeMode==='endurance'?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+'-endurance-v1':COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
- const preBossNodeCount=routeMode==='endurance'?DUNGEON_ENDURANCE.maxNormalRooms:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
+ const isEndurance=routeMode!=='legacy';
+ // Preserve saved v1 graphs; all newly generated Endurance runs use the checkpoint-choice v2 layout.
+ const checkpointChoiceV2=routeMode==='endurance';
+ const generatorVersion=isEndurance?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+(checkpointChoiceV2?'-endurance-v2':'-endurance-v1'):COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+ const preBossNodeCount=isEndurance?DUNGEON_ENDURANCE.maxNormalRooms:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
  const finalBosses=dungeonBossVariantsFor(expeditionId);
  // One frozen 50/50 boss roll per run: players cannot reroll a boss by
  // choosing to continue or reconnecting.
@@ -76,11 +79,19 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
  nodes.push({nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)});
  for(let depth=1;depth<=preBossNodeCount;depth++){
    const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
-   const checkpoint=routeMode==='endurance'&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0;
+   const checkpoint=isEndurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0;
    const usedContentIds=new Set<string>();
    for(let choice=0;choice<COOP_ROGUELITE_CONFIG.choicesPerDepth;choice++){
      if(checkpoint&&choice===2){
        nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind:'boss',contentId:bossId,modifierId:'checkpoint',risk:1.25,rewardTag:'boss',nextNodeIds:[]});
+       continue;
+     }
+     if(checkpoint&&checkpointChoiceV2){
+       // Recovery and a boon are alternatives to the boss, never mandatory pre-boss stops.
+       const kind=choice===0?'camp':'shrine';
+       const pool=coopContentPool(expeditionId,kind);
+       const index=deterministicInt(secret,0,pool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'checkpoint-choice',depth,kind);
+       nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId:pool[index],modifierId:kind==='camp'?'checkpoint-camp-v2':'checkpoint-boon-v2',risk:1,rewardTag:kind==='camp'?'camp':'boon',nextNodeIds:idsAt(depth+1)});
        continue;
      }
      const kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
@@ -101,7 +112,8 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
 }
 
 export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNodeMin:number;preBossNodeMax:number}):void {
- const endurance=graph.generatorVersion.endsWith('-endurance-v1');
+ const enduranceV2=graph.generatorVersion.endsWith('-endurance-v2');
+ const endurance=enduranceV2||graph.generatorVersion.endsWith('-endurance-v1');
  if(limits){
    if(!Number.isInteger(graph.preBossNodeCount)||graph.preBossNodeCount<limits.preBossNodeMin||graph.preBossNodeCount>limits.preBossNodeMax)throw new Error('invalid_coop_route_length');
  }else if(endurance){
@@ -147,6 +159,7 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
    if(depth>2&&!layer.some(node=>node.kind==='battle'))throw new Error('combat_option_missing');
    if(endurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0){
      if(layer.filter(node=>node.kind==='boss').length!==1||layer.filter(node=>node.kind!=='boss').length!==2)throw new Error('checkpoint_choices_invalid');
+     if(enduranceV2&&(layer[0].kind!=='camp'||layer[0].modifierId!=='checkpoint-camp-v2'||layer[1].kind!=='shrine'||layer[1].modifierId!=='checkpoint-boon-v2'||layer[2].kind!=='boss'))throw new Error('checkpoint_recovery_boon_choices_invalid');
    }else if(layer.some(node=>node.kind==='boss'))throw new Error('unexpected_checkpoint');
  }
  if(!graph.nodes.some(node=>node.kind==='camp'||node.kind==='shrine'))throw new Error('recovery_option_missing');

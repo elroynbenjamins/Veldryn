@@ -7,6 +7,7 @@ import {
   type WeaponBonusRoll,type WeaponBonusRollVersion,
 } from '../core/weapon-bonus-rolls';
 import {useGameplayText} from '../i18n/gameplay';
+import {weaponBonusStatText} from '../i18n/weapon-bonus-ux';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -15,7 +16,7 @@ const formatRange=(range:readonly [number,number])=>formatBonus(range[0])+'–'+
 
 /** Displays actual recipe-specific possibilities. No guessed odds or class-based filtering. */
 export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;initialExpanded?:boolean}){
-  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt,gl}=useGameplayText();
+  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),{gt,gl,language}=useGameplayText();
   const [expanded,setExpanded]=useState(initialExpanded);
   const weapon=weaponBonusConfig(itemId,'common');
   const armor=weapon?undefined:equipmentBonusConfig(itemId,'common');
@@ -23,7 +24,7 @@ export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;in
   if(!base)return null;
   const twoAtAllRarities=base.count===2;
   return <View style={s.panel}>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded}}
+    <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityHint={expanded?gt("Hide possible rolls"):gt("View possible rolls")}
       accessibilityLabel={expanded?gt('Hide possible rolls'):gt('View possible rolls')}
       onPress={()=>setExpanded(value=>!value)} style={s.heading}>
       <View style={s.flex}>
@@ -37,8 +38,8 @@ export function WeaponBonusPool({itemId,initialExpanded=false}:{itemId:string;in
       {base.pool.map(stat=>{
         const range=weapon?weaponBonusRange(base.tier,stat):equipmentBonusRange(base.tier,stat,armor!.slot);
         if(!range)return null;
-        return <View key={stat} style={s.poolRow}>
-          <Text style={s.statName}>{gl(WEAPON_BONUS_LABELS[stat])}</Text>
+        return <View key={stat} style={s.poolRow} accessible accessibilityLabel={weaponBonusStatText(language,stat)+": "+formatRange(range)}>
+          <Text style={s.statName}>{weaponBonusStatText(language,stat)}</Text>
           <Text style={s.range}>{formatRange(range)}</Text>
         </View>;
       })}

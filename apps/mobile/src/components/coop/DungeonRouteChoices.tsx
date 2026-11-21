@@ -56,8 +56,8 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    const checkpointCamp=option.kind==='camp'&&option.modifierId==='checkpoint-camp-v2';
    const checkpointBoon=option.kind==='shrine'&&option.modifierId==='checkpoint-boon-v2';
    const title=checkpointCamp?dungeonUxText(language,'checkpointCamp'):checkpointBoon?dungeonUxText(language,'checkpointBoon'):room&&(option.title.trim().toLowerCase()===option.kind.trim().toLowerCase()||(option.kind==='boss'&&option.title.trim().toLowerCase()==='final boss'))?st(room.name):seasonalDungeonRoomTitle(language,option.title);
-   const encounterPreview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
-   const preview=checkpointCamp?dungeonUxText(language,'checkpointCampHint'):checkpointBoon?dungeonUxText(language,'checkpointBoonHint'):encounterPreview;
+   const preview=option.encounterPreview?localizedDungeonEncounterPreview(language,option.encounterPreview).summary:(room?st(room.description):undefined);
+   const displayPreview=checkpointCamp?dungeonUxText(language,'checkpointCampHint'):checkpointBoon?dungeonUxText(language,'checkpointBoonHint'):preview;
    const modifier=option.kind==='elite'?localizedDungeonRoomModifier(language,option.modifierId):undefined;
    const riskBaseline=/^risk\s+1(?:\.0+)?$/i.test(option.risk.trim());
    const redundantReward=option.reward.trim().toLowerCase().replace(/[\s_-]+/g,'')===option.kind.trim().toLowerCase().replace(/[\s_-]+/g,'');
@@ -68,7 +68,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
    return <Animated.View key={option.nodeId} style={enterStyle}><Pressable
     accessibilityRole="button"
     accessibilityLabel={ui('Route {title}: {risk}; {reward}. {extra}{action}',{title,risk:translatedRisk,reward:translatedReward,extra:(modifier?modifier.label+'. ':'')+(live?ui('{votes} of {total} votes. ',{votes:option.votes??0,total:totalVotes})+(votedHere?ui('Your vote. '):''):'') ,action:canPress?(votedHere?ui('Your vote'):routeAction):ui('Unavailable')})}
-    accessibilityHint={bossExit?`${preview??''} ${dungeonUxText(language,'bossHint')}`:preview}
+    accessibilityHint={bossExit?`${displayPreview??''} ${dungeonUxText(language,'bossHint')}`:displayPreview}
     accessibilityState={{disabled:!canPress,selected:votedHere}}
     disabled={!canPress}
     onPress={()=>onChoose?.(option.nodeId)}
@@ -84,7 +84,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
       </View>:null}
       <Text style={[s.actionCue,bossExit&&s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>
      </View>
-     {preview?<Text numberOfLines={2} style={s.preview}>{preview}</Text>:null}
+     {preview?<Text numberOfLines={2} style={s.preview}>{displayPreview}</Text>:null}
      {bossExit?<Text numberOfLines={2} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier||roomMarks>0)?<View style={s.tags}>
       {modifier?<View style={s.modifierTag}><Text style={s.modifierText} numberOfLines={1}>{modifier.label}</Text></View>:null}

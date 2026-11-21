@@ -50741,6 +50741,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   const isEndurance = routeMode !== "legacy";
   const checkpointChoiceV2 = routeMode === "endurance";
   const generatorVersion = isEndurance ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + (checkpointChoiceV2 ? "-endurance-v2" : "-endurance-v1") : COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+  const regularRoomSeedVersion = checkpointChoiceV2 ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + "-endurance-v1" : generatorVersion;
   const preBossNodeCount = isEndurance ? DUNGEON_ENDURANCE.maxNormalRooms : deterministicInt(secret, COOP_ROGUELITE_CONFIG.preBossNodeMin, COOP_ROGUELITE_CONFIG.preBossNodeMax, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "length");
   const finalBosses = dungeonBossVariantsFor(expeditionId);
   const bossId = finalBosses.length ? finalBosses[deterministicInt(secret, 0, finalBosses.length - 1, "regional-boss-v1", runId, expeditionId, contentVersion, balanceVersion)].bossId : def.bossId;
@@ -50748,7 +50749,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   const idsAt = (depth) => Array.from({ length: COOP_ROGUELITE_CONFIG.choicesPerDepth }, (_, choice) => `d${depth}-c${choice}`);
   nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) });
   for (let depth = 1; depth <= preBossNodeCount; depth++) {
-    const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
+    const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
     const checkpoint = isEndurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
     const usedContentIds = /* @__PURE__ */ new Set();
     for (let choice = 0; choice < COOP_ROGUELITE_CONFIG.choicesPerDepth; choice++) {
@@ -50765,7 +50766,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
       }
       const kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
       const contentPool = coopContentPool(expeditionId, kind);
-      let contentIndex = deterministicInt(secret, 0, contentPool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "content", depth, choice);
+      let contentIndex = deterministicInt(secret, 0, contentPool.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "content", depth, choice);
       while (usedContentIds.has(contentPool[contentIndex])) contentIndex = (contentIndex + 1) % contentPool.length;
       const contentId = contentPool[contentIndex];
       usedContentIds.add(contentId);

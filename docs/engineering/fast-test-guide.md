@@ -57,3 +57,56 @@ compile duration and the five slowest selected checks.
 
 **Release rule:** do not treat a targeted green check as equivalent to the
 full release gate. This optimization neither deploys nor changes gameplay.
+
+## Pass 2: shared backend compiler and workflow audit
+
+From the repository root, preview a CI batch without compiling:
+
+```sh
+node tools/run-backend-test-batch.mjs --list test:release-gate test:coop-composition test:qmode-merchant
+```
+
+The batch runner accepts only existing `test:*` scripts containing an
+explicit `tsc [-p config]` followed by `node path.js` assertions. It rejects
+unrecognized commands instead of replacing them with a silent pass. A requested
+script runs its tests in the same order as its package definition and stops on
+failure; independent `pnpm test:*` commands remain unchanged. The compilation
+for each TypeScript configuration runs **once per batch**, before the first
+test that needs it. Every test retains its own log group and elapsed time.
+
+- Canonical mobile-core CI: 10 backend test scripts, 31 distinct node assertions,
+  4 TypeScript targets (online, co-op composition, co-op rewards and gems), down
+  from 10 compile invocations for these scripts. Other safety checks remain.
+- Gem/dungeon validation backend job: 5 scripts use 4 distinct compiler targets;
+  no assertions are removed.
+- Dungeon-mechanics workflow: the *identical* regional clear-rate / minimum
+  combat-power node test was invoked in two consecutive steps; now one execution
+  covers both conditions.
+- Release-economy and unsigned 1.0.11 candidate jobs: duplicate no-emit
+  typechecks removed only where the very next compile of the same project
+  already performs TypeScript validation. The release AAB job, staging
+  protections and hidden-feature fences are untouched.
+
+### Older workflow disposition
+
+Do **not** delete a workflow merely because its file name contains a previous
+version. The `release/1.0.10-aab-prep-20261115` and
+`release/1.0.11-clean-consolidation-20261120` branches both still exist, so
+their historically scoped diagnostic/reconciliation and unsigned staging jobs
+are retained. The 1.0.9 badge workflow remains focused and preserves its
+PGlite fixture. Retirement requires verification of no active branch consumers
+and a replacement check owner.
+
+### Known failures are not obsolete tests
+
+Recent CI logs showed an Expo compatibility failure on a separate PR revision:
+installed Expo 58.0.25 versus expected 58.0.26. The inspected `main` mobile
+manifest **and lockfile** already reference Expo 58.0.26; do not bypass the Expo
+dependency gate to make unrelated CI pass. Another 2.0 branch had a real
+TypeScript missing-import error for
+`equipment-crafting-v2-economy`; that is a source integration failure, not
+a reason to delete core tests.
+
+Measure actual run time using **completed successful jobs**, excluding queue
+delay and early unrelated failures. Structural compile savings are not a claim
+that the whole release suite is passing or faster by a verified percentage.

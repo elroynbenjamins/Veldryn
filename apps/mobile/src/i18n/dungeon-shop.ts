@@ -33,6 +33,7 @@ export const germanDungeonShopCopy:Readonly<Record<string,string>>={
  'Region locked':'Region gesperrt',
  'Weekly limit reached':'Wochenlimit erreicht',
  'Coming soon':'Demnächst verfügbar',
+ 'Crafting tier locked':'Herstellungsstufe gesperrt',
  'Owned permanently':'Dauerhaft im Besitz',
  '{count} purchases left this UTC week':'Diese UTC-Woche noch {count} Käufe möglich',
  'Processing…':'Wird verarbeitet …',
@@ -89,6 +90,21 @@ export function dungeonShopText(language:Language,source:string,params:Record<st
  if(language==='de'&&Object.prototype.hasOwnProperty.call(germanDungeonShopCopy,source))
   return interpolateTranslation(germanDungeonShopCopy[source],params);
  return accountText(language,source,params);
+}
+
+/** Compact collectible headings, translated without touching server-owned SKU names. */
+export function dungeonShopCollectionLabel(language:Language,category:'pet'|'border'|'background'|'icon'):string {
+ const labels:Readonly<Record<Language,Readonly<Record<typeof category,string>>>>={
+  en:{pet:'Pets',border:'Profile Frames',background:'Backgrounds',icon:'Avatars'},
+  de:{pet:'Haustiere',border:'Profilrahmen',background:'Hintergründe',icon:'Avatare'},
+  es:{pet:'Mascotas',border:'Marcos de perfil',background:'Fondos',icon:'Avatares'},
+  nl:{pet:'Huisdieren',border:'Profiellijsten',background:'Achtergronden',icon:'Avatars'},
+  it:{pet:'Animali',border:'Cornici profilo',background:'Sfondi',icon:'Avatar'},
+  fr:{pet:'Familiers',border:'Cadres de profil',background:'Arrière-plans',icon:'Avatars'},
+  ru:{pet:'Питомцы',border:'Рамки профиля',background:'Фоны',icon:'Аватары'},
+  tr:{pet:'Evcil hayvanlar',border:'Profil çerçeveleri',background:'Arka planlar',icon:'Avatarlar'},
+ };
+ return labels[language][category];
 }
 
 /** Legacy server text for three SKUs whose artwork has become character portraits.

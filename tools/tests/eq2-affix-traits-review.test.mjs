@@ -9,10 +9,10 @@ const expectFailure=(mutate,reason)=>{
  const errors=validateEq2AffixTraits(data);
  assert.ok(errors.some(error=>error.includes(reason)),JSON.stringify(errors));
 };
-test('review taxonomy: 15 distinct affixes, 13 Combat 2.0 channels + 2 additions',()=>{
+test('review taxonomy: 17 distinct affixes, 13 Combat 2.0 channels + 4 additions',()=>{
  assert.deepEqual(validateEq2AffixTraits(fresh()),[]);
- assert.equal(fresh().affixes.length,15);
- assert.equal(fresh().traits.length,10);
+ assert.equal(fresh().affixes.length,17);
+ assert.equal(fresh().traits.length,28);
 });
 test('reference T1–T4 rarity counts stay pinned and edition remains disabled',()=>{
  expectFailure(d=>{d.releaseActivation=true;},'activation_fence');
@@ -36,8 +36,35 @@ test('two active signature traits, extra worn dormant, and no proc feedback loop
  expectFailure(d=>{d.traitPolicy.combatTraitsActivePerBuild=5;},'trait_runtime_guardrails');
  expectFailure(d=>{d.traitPolicy.procCanTriggerProc=true;},'trait_runtime_guardrails');
  expectFailure(d=>{d.traits[0].cooldownSeconds=0;},'unbounded_combat_proc');
- expectFailure(d=>{d.traits[9].source=['dungeon_boss_chest'];},'utility_trait_combat_leak');
+ expectFailure(d=>{d.traits.find(t=>t.role==='utility').source=['dungeon_boss_chest'];},'utility_trait_combat_leak');
  expectFailure(d=>{d.traits[2].source=['NPC_SHOP'];},'invalid_trait_source');
+});
+test('basic attacks are not a second general Attack Power or skill multiplier',()=>{
+ const c=fresh();
+ const basic=c.affixes.find(x=>x.id==='basic_attack_damage_pct');
+ assert.deepEqual(basic.eligibleSlots,['weapon','gloves','amulet','ring']);
+ assert.ok(basic.maxEquipmentOnlyContribution>=basic.tiers.T4[1]*basic.eligibleSlots.length);
+ expectFailure(d=>{d.combatChannelPolicy.basicAttack.ultimateAttackPowerMultiplier=true;},'basic_attack_source_isolation');
+ expectFailure(d=>{d.combatChannelPolicy.basicAttack.excludes=[];},'basic_attack_source_isolation');
+});
+test('reflect is post-shield actual HP damage, with shared anti-boss-cheese cap and no recursion',()=>{
+ const c=fresh();
+ const reflected=c.affixes.find(x=>x.id==='reflect_damage_pct');
+ assert.deepEqual(reflected.eligibleSlots,['chest','legs','offhand','ring']);
+ assert.ok(reflected.maxEquipmentOnlyContribution>=reflected.tiers.T4[1]*reflected.eligibleSlots.length);
+ expectFailure(d=>{d.combatChannelPolicy.reflection.damageBase='pre_mitigation_damage';},'unsafe_reflection_source_or_recursion');
+ expectFailure(d=>{d.combatChannelPolicy.reflection.cannotReflectReflection=false;},'unsafe_reflection_source_or_recursion');
+ expectFailure(d=>{d.combatChannelPolicy.reflection.excludes=[];},'unsafe_reflection_source_or_recursion');
+ expectFailure(d=>{d.combatChannelPolicy.reflection.maxRegionalBossHpPercentPerFiveSeconds=2;},'unbounded_retaliation_damage');
+ expectFailure(d=>{d.traits.find(t=>t.id==='thornbound_riposte').params.reflectOwnMaxHpCapPercent=9;},'riposte_shared_budget');
+});
+test('new roles and new trait sources remain safe and deterministic',()=>{
+ const c=fresh();
+ assert.deepEqual(['tank','damage','support','utility'].map(role=>c.traits.filter(t=>t.role===role).length),[9,9,9,1]);
+ expectFailure(d=>{d.traitPolicy.perItemTraitsMax=2;},'trait_runtime_guardrails');
+ expectFailure(d=>{d.traits.find(t=>t.role==='damage').source=['world_boss_chest'];},'combat_trait_from_utility_only_source');
+ expectFailure(d=>{d.traits[0].cooldownSeconds=0;d.traits[0].oncePerEncounter=false;},'unbounded_combat_proc');
+ expectFailure(d=>{d.traits[1].id=d.traits[0].id;},'duplicate_trait_id');
 });
 test('existing dungeons and old items remain untouched by reviewed 2.0 rules',()=>{
  expectFailure(d=>{d.inheritance.legacyDungeonAnd1_0_x='UPGRADE';},'legacy_or_migration_release_fence');

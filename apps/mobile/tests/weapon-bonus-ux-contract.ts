@@ -6,10 +6,11 @@ const forge=read('src/components/SmithingCollection.tsx');
 const pool=read('src/components/WeaponBonusSection.tsx');
 const preview=read('src/components/EquipmentPreview.tsx');
 const inspect=read('src/components/ItemQuickInspect.tsx');
-check(forge.includes('bonusPoolOpenByItem[item.id]??true')&&forge.includes('onExpandedChange={open=>setBonusPoolOpenByItem(current=>({...current,[item.id]:open}))}'),
-  'Forge must preserve each selected equipment item disclosure preference while live queue updates rerender');
-check(forge.includes('<WeaponBonusPool key={item.id} itemId={item.id} expanded='),
-  'Forge must show actual selected weapon and nonweapon bonus possibilities with controlled disclosure');
+const recipeCard=read('src/components/RecipeCard.tsx');
+check(forge.includes('<RecipeCard key={recipe.id}')&&recipeCard.includes("detailTab==='stats'?<>"),
+  'Selected equipment must retain its own keyed Stats tab rather than sharing stale roll previews');
+check(recipeCard.includes('<WeaponBonusPool key={output.id} itemId={output.id}/>'),
+  'The compact Stats tab must expose actual selected weapon and nonweapon bonus possibilities');
 check(pool.includes("weaponBonusConfig(itemId,'common')")&&pool.includes("equipmentBonusConfig(itemId,'common')")&&pool.includes('weaponBonusRange(base.tier,stat)')&&pool.includes('equipmentBonusRange(base.tier,stat,armor!.slot)'),
   'Possible rolls must use authoritative exact-tier and slot-aware ranges, not guessed UI values');
 check(pool.includes('base.pool.map(stat=>'),

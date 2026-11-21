@@ -422,5 +422,6 @@
   ".core-build/apps/mobile/tests/game-audio.js",
   "tests/1-0-11-reviewed-ui.cjs",
   "tests/crafting-one-cost-preview-ui.cjs",
-  "tests/offline-report-compact-ui.cjs"
+  "tests/offline-report-compact-ui.cjs",
+  "tests/crafting-compact-tabbed-details-ui.cjs"
 ]

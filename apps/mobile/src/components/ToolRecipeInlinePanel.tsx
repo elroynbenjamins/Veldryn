@@ -5,7 +5,7 @@ import type {GatheringToolDef} from '../content/gathering-tools';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {workingTowardItemSourceEntries} from '../core/working-toward';
 import {MONSTERS} from '../content/monsters';
-import {recipeAvailability} from '../core/playability';
+import {equipmentCraftAvailability,equipmentCraftDurationSeconds} from '../core/equipment-crafting-queue';
 import {formatGameNumber} from '../core/number-format';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {useGameplayText} from '../i18n/gameplay';
@@ -25,7 +25,8 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
   const [otherSourcesOpen,setOtherSourcesOpen]=useState<Record<string,boolean>>({});
   const f=(amount:number)=>formatGameNumber(amount,state.settings.numberMode,language);
   const count=(id:string)=>[...state.inventory.stacks,...state.bank.stacks].reduce((total,stack)=>total+(stack.itemId===id?stack.quantity:0),0);
-  const recipeId='CRAFT_'+tool.id,availability=recipeAvailability(state,recipeId);
+  const recipeId='CRAFT_'+tool.id,availability=equipmentCraftAvailability(state,recipeId),craftingSeconds=equipmentCraftDurationSeconds(state,recipeId);
+  const craftingTime=craftingSeconds<60?Math.ceil(craftingSeconds)+'s':Math.ceil(craftingSeconds/60)+'m';
   const learned=!tool.blueprint||(state.account.unlockedKnowledgeIds??[]).includes(tool.blueprint.knowledgeId);
   const blueprintHeld=tool.blueprint?count(tool.blueprint.itemId)>0:false;
   const monster=tool.blueprint?MONSTERS.find(row=>row.id===tool.blueprint!.sourceMonsterId):undefined;
@@ -53,6 +54,7 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
       <View style={s.stat}><Text style={s.statLabel}>{gt('Character level')}</Text><Text style={[s.statValue,{color:characterReady?C.good:C.warning}]}>{tool.requiredCharacterLevel}{characterReady?' ✓':''}</Text></View>
       <View style={s.stat}><Text style={s.statLabel}>{gt('Action time')}</Text><Text style={[s.statValue,{color:C.info}]}>{Math.round((1-tool.actionTimeMultiplier)*100)}% {gt('shorter')}</Text></View>
     </View>
+    <Text style={s.cost}>{gt('Crafting time')} · {craftingTime} · {gt('Forge')}</Text>
     <Text style={[s.blueprintText,{color:learned?C.good:blueprintHeld?C.info:C.warning}]}>{blueprintStatus}</Text>
     {!learned&&tool.blueprint&&!blueprintHeld?<View style={s.sourcePanel}>
       <Text style={s.sourceHeadline}>{monster?monster.name+' · '+monster.zone:gt('Blueprint source unavailable')}</Text>
@@ -89,7 +91,7 @@ export function ToolRecipeInlinePanel({state,tool,blueprintDestination,onNavigat
       <Text style={s.cost}>{gt('Gold')} {f(state.character?.gold??0)} / {f(tool.recipe.gold)} · +{f(tool.recipe.xp)} {gt('base XP')}</Text>
       <Text style={[s.cost,{color:goldReady?C.good:C.warning}]}>{goldReady?gt('Gold ready'):gt('Not enough gold')}</Text>
     </View>
-    <Text accessibilityLiveRegion="polite" style={[s.status,{color:availability.ready?C.good:C.warning}]}>{availability.ready?gt('Ready to craft'):availability.reason}</Text>
+    <Text accessibilityLiveRegion="polite" style={[s.status,{color:availability.ready?C.good:C.warning}]}>{availability.ready?gt('Ready to queue'):availability.reason}</Text>
     {missing.length===0&&learned&&goldReady&&!availability.ready?<Text style={s.small}>{gt('Crafting availability is checked in Smithing.')}</Text>:null}
     <View style={[s.actions,compact&&s.actionsCompact]}>
       <GameButton title={gt('Open in Smithing')} onPress={onOpenSmithing} tone="primary" style={s.openButton}/>

@@ -319,7 +319,7 @@ export function verifyPersistedEnemyKitsV2(
      p.profile===(expectedPreview?.archetype??'unrolled'),
      'stored_seeded_enemy_preview_mismatch');
   }else{
-   assert(p.profile===snapshot.region+'-boss-v1'&&
+   assert(p.profile===snapshot.region+'-boss-v2'&&
     p.traitIds.length===0&&
     (next.tags??[]).filter((t:string)=>t.startsWith('enemy-v2:boss-profile:')).length===1,
     'stored_boss_profile_mismatch');

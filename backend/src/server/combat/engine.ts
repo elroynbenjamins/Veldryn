@@ -2,6 +2,8 @@ import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjuste
 import { CombatRng } from './deterministic-rng';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
+import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
+import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
 import {
@@ -90,9 +92,14 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
+  // No token -> no equipment trait runtime actions, preserving every legacy
+  // and previously compiled V2 run. Exact-token validation is server-owned.
+  const equipmentSources=authorizeEquipmentV2TraitEngine(input,equipmentTraitAuthority);
+  const equipmentTraitRuntime=equipmentTraitAuthority
+    ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -148,7 +155,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hc=clamp(hitChance(source.definition.stats.accuracy,
       target.definition.stats.evasion+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
-    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players')equipmentTraitRuntime?.miss(source.definition.id,abilityId);events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
@@ -217,6 +224,19 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
        effect.damageType!=='physical'&&effect.damageType!=='true'){
       raw*=1-clamp(targetGear.wardPp,0,1);
     }
+    // Server-verified Equipment 2.0 action bonuses apply only to original
+    // direct player hits. No periodic, gem, capstone, companion or trait
+    // secondary damage can enter these hooks.
+    if(eventType==='damage'&&source.definition.team==='players'&&
+       source.combatV2&&equipmentTraitRuntime){
+      const adjusted=equipmentTraitRuntime.directHit(now,source.definition.id,
+        target.definition.id,abilityId,raw);
+      raw=adjusted.damage;
+      if(adjusted.trigger)events.push({atMs:now,type:'equipment_trait_trigger',
+        actorId:source.definition.id,targetId:target.definition.id,
+        abilityId:'V2_EQUIPMENT_TRAIT:'+adjusted.trigger.traitId,
+        amount:Math.round(adjusted.trigger.amount*100)/100,detail:'original_direct_hit_only'});
+    }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
@@ -224,6 +244,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const dealt=Math.max(0,source.combatV2&&eventType==='damage'
       ?Math.min(target.hp,raw-absorbed):raw-absorbed);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    // Echoing Strike is the only extra direct-skill damage hook in this pass.
+    // It is applied ONCE as tagged secondary HP loss, not via applyDamage,
+    // so no crit, lifesteal, Ward or gem/trait reentry is possible.
+    if(equipmentTraitRuntime&&eventType==='damage'&&source.definition.team==='players'&&
+      target.definition.team==='enemies'&&dealt>0&&target.alive&&target.hp>0){
+      const echo=equipmentTraitRuntime.afterDirectSkillHit(now,source.definition.id,
+        target.definition.id,abilityId,dealt,source.definition.stats.attackPower);
+      if(echo){
+        const bonus=Math.min(target.hp,echo.amount);
+        if(bonus>0){target.hp-=bonus;source.damageDone+=bonus;target.damageTaken+=bonus;
+          events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,
+            targetId:target.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:echoing_strike',
+            amount:Math.round(bonus*100)/100,detail:'secondary_damage_no_recursive_trigger'});
+        }
+      }
+    }
     // Lifesteal is based on real HP damage only: shielding, overkill and
     // reflected/self-generated procs can never inflate the heal.
     if(eventType==='damage'&&source.combatV2&&!abilityId.startsWith('V2_')&&
@@ -263,6 +299,29 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       }
     }
     if(absorbed>0&&target.definition.team==='players')resource(target,'shield_absorb',now,abilityId);
+    // Equipment 2.0 Reflect Damage is separate from legacy reflective shields:
+    // one original enemy direct hit, HP actually lost, surviving defender,
+    // no unavoidable boss phase/telegraph, no proc chain or reflected hit.
+    if(equipmentTraitRuntime&&eventType==='damage'&&
+      source.definition.team==='enemies'&&target.definition.team==='players'&&
+      source.alive&&target.alive&&target.hp>0&&dealt>0&&
+      !(source.definition.phases??[]).some(phase=>phase.id===abilityId)&&
+      !abilityId.startsWith('V2_')&&!abilityId.startsWith('COMPANION_REFLECT')){
+      const outcome=equipmentTraitRuntime.retaliation(now,target.definition.id,
+        source.definition.id,dealt,target.definition.stats.maxHp,
+        source.definition.stats.maxHp,Boolean(source.definition.boss));
+      if(outcome){
+        const bonus=Math.min(source.hp,outcome.amount);
+        if(bonus>0){source.hp-=bonus;source.damageTaken+=bonus;target.damageDone+=bonus;
+          events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,
+            targetId:source.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:'+outcome.traitId,
+            amount:Math.round(bonus*100)/100,detail:'retaliation_no_recursive_trigger'});
+          if(source.hp<=0&&source.alive){source.alive=false;
+            events.push({atMs:now,type:'death',targetId:source.definition.id,
+              actorId:target.definition.id,abilityId:'V2_EQUIPMENT_REFLECT'});}
+        }
+      }
+    }
     // Reflect only damage absorbed by the shield that granted this effect. Direct
     // reflection cannot trigger another shield reflection or recurse indefinitely.
     let reflectable=absorbed;
@@ -288,6 +347,40 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(!abilityId.startsWith('V2_'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});
     }
     events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(actual.toFixed(2))});
+    // Only original effective direct ally class-heals can trigger these
+    // secondary effects. Apply them outside applyHeal to avoid recursive
+    // gem, class passive, resource, or other equipment trait hooks.
+    if(equipmentTraitRuntime&&direct&&actual>0&&source!==target&&
+      source.definition.team==='players'&&target.definition.team==='players'&&
+      !abilityId.startsWith('V2_')&&!abilityId.startsWith('GEM_')){
+      const other=players.filter(x=>x.alive&&x!==source&&x!==target&&
+        x.definition.stats.maxHp>x.hp)
+        .sort((a,b)=>a.hp/a.definition.stats.maxHp-b.hp/b.definition.stats.maxHp||
+          a.definition.id.localeCompare(b.definition.id))[0];
+      if(other){
+        const actions=equipmentTraitRuntime.afterDirectAllyHeal(now,source.definition.id,
+          target.definition.id,other.definition.id,actual,other.definition.stats.maxHp-other.hp);
+        for(const action of actions){
+          if(action.effect==='secondary_heal'){
+            const healed=Math.min(action.amount,other.definition.stats.maxHp-other.hp);
+            if(healed>0){other.hp+=healed;source.healingDone+=healed;
+              events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,
+                targetId:other.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:mending_echo',
+                amount:Number(healed.toFixed(2)),detail:'secondary_heal_no_recursive_trigger'});}
+          }else if(action.effect==='secondary_hot'){
+            const total=action.amount;
+            other.periodic=other.periodic.filter(e=>!(e.kind==='hot'&&
+              e.sourceId===source.definition.id&&e.effectId==='V2_EQUIPMENT_TRAIT:restorative_bloom'));
+            other.periodic.push({sourceId:source.definition.id,
+              effectId:'V2_EQUIPMENT_TRAIT:restorative_bloom',kind:'hot',
+              coeff:0,flat:total/4,nextTickAt:now+1000,expiresAt:now+4000,tickMs:1000});
+            events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,
+              targetId:other.definition.id,abilityId:'V2_EQUIPMENT_TRAIT:restorative_bloom',
+              amount:Number(total.toFixed(2)),detail:'nonstacking_hot_no_recursive_trigger'});
+          }
+        }
+      }
+    }
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{

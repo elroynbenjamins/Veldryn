@@ -57,11 +57,12 @@ export function BestiaryScreen({state}:{state:GameState}){
  const bonuses=selected&&species?monsterMasteryCombatBonuses(state,selected.monster.id):undefined;
  const familyName=bonuses?.familyId?enemyFamilyById(bonuses.familyId)?.name:undefined;
  const completeDrops=!!species?.dropKnowledge||!!bonuses?.family?.dropKnowledge;
- const seenIds=new Set([...state.unlockedMonsterIds,...Object.keys(state.character?.monsterMasteryPoints??{})]);
- const families=ENEMY_FAMILIES.filter(family=>family.monsterIds.length>0).map(family=>{
-  const known=family.monsterIds.some(id=>seenIds.has(id))||(state.character?.familyMasteryPoints?.[family.id]??0)>0;
-  const progress=enemyFamilyMasteryGuidance(state,family.id);
+ const releasedMonsterIds=new Set(allRows.map(row=>row.monster.id));
+ const seenIds=new Set([...state.unlockedMonsterIds,...Object.keys(state.character?.monsterMasteryPoints??{})].filter(id=>releasedMonsterIds.has(id)));
+ const families=ENEMY_FAMILIES.filter(family=>family.monsterIds.some(id=>releasedMonsterIds.has(id))).map(family=>{
   const members=family.monsterIds.filter(id=>seenIds.has(id));
+  const known=members.length>0||(state.character?.familyMasteryPoints?.[family.id]??0)>0;
+  const progress=enemyFamilyMasteryGuidance(state,family.id);
   return {...family,known,progress,members};
  }).sort((a,b)=>Number(b.known)-Number(a.known)||b.progress.rank-a.progress.rank||a.name.localeCompare(b.name));
  const tabChoices:readonly {id:CodexTab;label:string}[]=[{id:'monsters',label:'Monsters'},{id:'types',label:'Types'},{id:'rewards',label:'Rewards'}];
@@ -132,7 +133,7 @@ export function BestiaryScreen({state}:{state:GameState}){
        <Text style={s.detailTitle}>{t('DISCOVERED MEMBERS')}</Text>
        {family.members.length?family.members.map(id=>{
         const monster=allRows.find(row=>row.monster.id===id)?.monster;
-        return monster?<View key={id} style={s.memberRow}><Text style={s.memberName}>{translated(monster.name)}</Text><Text style={s.meta}>+{enemyFamilyMasteryPointsPerKill(id)} {t('pts/kill')}</Text></View>:null;
+        return monster?<Pressable key={id} accessibilityRole="button" accessibilityLabel={translated(monster.name)} accessibilityHint={t('Open creature details')} onPress={()=>setDetailId(id)} style={({pressed})=>[s.memberRow,pressed&&s.pressed]}><View style={s.flex}><Text numberOfLines={1} style={s.memberName}>{translated(monster.name)}</Text><Text style={s.meta}>+{enemyFamilyMasteryPointsPerKill(id)} {t('pts/kill')}</Text></View><Text style={s.chevron}>›</Text></Pressable>:null;
        }):<Text style={s.meta}>{t('No members discovered yet')}</Text>}
        <Text style={s.detailTitle}>{t('NEXT MILESTONE')}</Text>
        <Text style={s.detailText}>{family.progress.next?translated(family.progress.next.label)+' · '+number(family.progress.pointsToNextMilestone)+' '+t('points remaining'):t('All family milestones unlocked.')}</Text>
@@ -163,9 +164,10 @@ export function BestiaryScreen({state}:{state:GameState}){
      <StatBar reduceMotion={state.settings.reduceMotion} current={species.currentRankProgress} max={species.currentRankTarget} label={species.rank>=30?t('Mastery complete'):t('{value0} kills to next rank',{value0:species.killsToNextRank})}/>
      <View style={s.bonusRow}><Text style={s.bonus}>+{percent(species.damageBonus)}% {t('damage')}</Text><Text style={s.bonus}>+{percent(species.materialBonus)}% {t('normal materials')}</Text></View>
      {species.next?<Text style={s.next}>{t('Next')}{': R'}{species.next.rank} · {translated(species.next.label)} · {number(species.killsToNextMilestone)} {t('kills remaining')}</Text>:<Text style={s.complete}>{t('All species mastery milestones unlocked.')}</Text>}
-     {bonuses?.family&&<Text style={s.detailText}>{t('Enemy type')}: {translated(familyName??'')}{' · R'}{bonuses.family.rank}/30 · +{percent(bonuses.family.damageBonus)}% {t('type damage')}</Text>}
+     {bonuses?.family&&<View style={s.typeLinkGroup}><Text style={s.detailText}>{t('Enemy type')}: {translated(familyName??'')}{' · R'}{bonuses.family.rank}/30 · +{percent(bonuses.family.damageBonus)}% {t('type damage')}</Text><Pressable accessibilityRole="button" onPress={()=>{setDetailId(null);setExpandedFamilyId(bonuses.familyId??null);setTab('types')}} style={s.typeLink}><Text style={s.typeLinkText}>{t('View type mastery')}{' ›'}</Text></Pressable></View>}
     </View>:<Text style={s.detailText}>{t('Boss entry · ordinary species and type mastery do not apply.')}</Text>}
     <View style={s.detailSection}><Text style={s.detailTitle}>{t('KNOWN DROPS')}</Text>
+     <Text style={s.mutedNote}>{completeDrops||selected.monster.boss?t('Base drop rates shown. Bonuses may improve your actual rewards.'):t('Drop rate details unlock at species or type Rank 10.')}</Text>
      {selected.entry.drops.length?selected.entry.drops.map(drop=>{
       const item=itemDef(drop.itemId),material=v33EquipmentMaterialLabel(drop.itemId);
       return <View key={drop.itemId} style={s.dropRow}>
@@ -204,11 +206,11 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  familyHeader:{flexDirection:'row',alignItems:'center',gap:10,padding:12,minHeight:62},typeIcon:{width:40,height:40,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,backgroundColor:C.panel2},typeMark:{fontSize:20,color:C.accent,fontWeight:'900'},
  familyProgress:{gap:8,paddingHorizontal:12,paddingBottom:12},progressLabel:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  familyDetails:{gap:10,paddingTop:10,borderTopWidth:1,borderTopColor:C.line},detailText:{...typography.body,color:C.muted,lineHeight:20},detailTitle:{fontSize:11,color:C.accent,fontWeight:'900',letterSpacing:.6},bonusRow:{flexDirection:'row',flexWrap:'wrap',gap:6},bonus:{fontSize:10,color:C.info,fontWeight:'800',paddingVertical:5,paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:6,backgroundColor:C.panel2},
- memberRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,paddingVertical:6,borderBottomWidth:1,borderBottomColor:C.line},memberName:{fontSize:12,color:C.text,fontWeight:'700'},
+ memberRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,minHeight:44,paddingVertical:7,borderBottomWidth:1,borderBottomColor:C.line},memberName:{fontSize:12,color:C.text,fontWeight:'700'},
  mutedNote:{...typography.caption,color:C.muted,lineHeight:18},
  rewardSummary:{gap:4,paddingTop:7},rewardRow:{flexDirection:'row',alignItems:'flex-start',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
  milestoneRank:{minWidth:46,paddingHorizontal:8,paddingVertical:7,borderWidth:1,borderColor:C.accent,borderRadius:radii.sm,alignItems:'center'},milestoneNumber:{fontSize:12,fontWeight:'900',color:C.accent},rewardTitle:{fontSize:13,color:C.text,fontWeight:'800'},
  sheet:{maxHeight:'92%',padding:spacing.md,gap:9},detailScroll:{maxHeight:520,flexShrink:1},detailContent:{gap:12,paddingBottom:14},
  detailHero:{flexDirection:'row',alignItems:'center',gap:12,padding:9,borderRadius:radii.lg,backgroundColor:C.panel2},detailPortrait:{width:96,height:96,alignItems:'center',justifyContent:'center'},unknownLarge:{fontSize:46,fontWeight:'900',color:C.muted},detailName:{...typography.title,color:C.text},status:{fontSize:10,color:C.good,fontWeight:'900'},
- detailSection:{gap:9},next:{...typography.caption,color:C.info,lineHeight:19},dropRow:{flexDirection:'row',gap:10,alignItems:'center',padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},dropName:{...typography.bodyStrong,color:C.text}
+ detailSection:{gap:9},typeLinkGroup:{gap:5},typeLink:{alignSelf:'flex-start',minHeight:44,justifyContent:'center',paddingHorizontal:12,borderWidth:1,borderRadius:radii.sm,borderColor:C.accent,backgroundColor:C.selection},typeLinkText:{fontSize:12,fontWeight:'800',color:C.accent},next:{...typography.caption,color:C.info,lineHeight:19},dropRow:{flexDirection:'row',gap:10,alignItems:'center',padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},dropName:{...typography.bodyStrong,color:C.text}
 });}

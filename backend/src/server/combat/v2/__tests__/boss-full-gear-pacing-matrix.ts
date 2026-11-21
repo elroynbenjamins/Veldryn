@@ -30,6 +30,15 @@ const bosses=[
 type Boss=(typeof bosses)[number];
 type QualityProfile='low'|'high';
 const profiles:readonly QualityProfile[]=['low','high'];
+/** Only effects introduced by the six new boss-exclusive trait kits. */
+const traitStatusTags:Readonly<Record<Boss['id'],readonly string[]>>={
+ BOSS_EXP_ROOT:[],
+ BOSS_EXP_BELL:['healing_received','echo'],
+ BOSS_EXP_SOLAR:['burn','damage_taken'],
+ BOSS_EXP_SPHINX:[],
+ BOSS_EXP_BELLBEAST:['bleed','defense_pct'],
+ BOSS_EXP_CANTOR:['haste','dissonance'],
+};
 const slots=['helmet','chest','weapon'] as const satisfies readonly GearSlotV2[];
 const statKeys:readonly (keyof CombatStats)[]=[
  'maxHp','attackPower','healingPower','defense','accuracy','evasion',
@@ -147,6 +156,7 @@ type Measurement={
  bossId:string;classId:string;specId:string;profile:QualityProfile;
  finalAttack:number;finalHp:number;finalDefense:number;
  playerDamage:number;playerHealing:number;playerTaken:number;
+ traitObserved:boolean;traitEventCount:number;reflectEventCount:number;
  pacing:BossPacingObservationV2;
 };
 const report:Measurement[]=[];
@@ -218,6 +228,13 @@ for(const b of bosses){
       phaseId:p.phaseId,hpPercent:p.hpPercent,
      })),
     },first.combat);
+    const reflects=first.combat.events.filter(e=>e.type==='damage'&&
+     e.abilityId==='COMPANION_REFLECT'&&e.actorId===b.id&&
+     e.targetId===actor.id&&(e.amount??0)>0);
+    const traitStatuses=first.combat.events.filter(e=>
+     e.type==='status_apply'&&e.actorId===b.id&&
+     traitStatusTags[b.id].includes(e.statusTag??''));
+    const traitEventCount=reflects.length+traitStatuses.length;
     const measurement:Measurement={
      bossId:b.id,classId,specId:spec.id,profile,
      finalAttack:evidence.statStages.afterAffixes.attackPower,
@@ -225,6 +242,8 @@ for(const b of bosses){
      finalDefense:evidence.statStages.afterAffixes.defense,
      playerDamage:player.damageDone,playerHealing:player.healingDone,
      playerTaken:player.damageTaken,pacing,
+     traitObserved:traitEventCount>0,
+     traitEventCount,reflectEventCount:reflects.length,
     };
     results.push(measurement);report.push(measurement);
    }
@@ -258,6 +277,10 @@ for(let i=0;i<6;i++){
 // as evidence, never hard-code "every spec must clear" as a CI criterion.
 const perBossComparison=results[0].bosses.map((low,i)=>{
  const high=results[1].bosses[i];
+ const matchingLow=report.filter(r=>r.bossId===low.bossId&&r.profile==='low');
+ const matchingHigh=report.filter(r=>r.bossId===high.bossId&&r.profile==='high');
+ assert.equal(matchingLow.length,18);
+ assert.equal(matchingHigh.length,18);
  return {
   bossId:low.bossId,
   lowWins:low.wins,highWins:high.wins,
@@ -270,6 +293,12 @@ const perBossComparison=results[0].bosses.map((low,i)=>{
   highWinsBeforeTell:high.winsBeforeFirstTell,
   highWipesBeforeTell:high.wipesBeforeFirstTell,
   highHpWallTimeouts:high.timeoutsWithBossHpAbove70,
+  lowTraitExposureCases:matchingLow.filter(x=>x.traitObserved).length,
+  highTraitExposureCases:matchingHigh.filter(x=>x.traitObserved).length,
+  lowTraitEffectEvents:matchingLow.reduce((n,x)=>n+x.traitEventCount,0),
+  highTraitEffectEvents:matchingHigh.reduce((n,x)=>n+x.traitEventCount,0),
+  lowReflectEvents:matchingLow.reduce((n,x)=>n+x.reflectEventCount,0),
+  highReflectEvents:matchingHigh.reduce((n,x)=>n+x.reflectEventCount,0),
  };
 });
 assert.equal(perBossComparison.length,6);

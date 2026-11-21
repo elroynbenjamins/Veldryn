@@ -19,7 +19,7 @@ interface RunnerState {
  history:Array<{atMs:number;attackerId:string;amount:number}>;
 }
 export interface EquipmentTraitTriggerV2{
- readonly traitId:ExecutedTraitId;
+ readonly traitId:ExecutedTraitId|'reflect_damage_affix';
  readonly actorId:string;
  readonly targetId:string;
  readonly atMs:number;
@@ -94,7 +94,7 @@ export class EquipmentTraitRuntimeV2{
   const thornReady=snapshotTrait(source,'thornbound_riposte')&&atMs-state.thornProcAt>=15000;
   const reflect=actualHpLost*source.reflectDamagePct/100;
   const thorn=thornReady?Math.min(actualHpLost*.08,defenderMaxHp*.015):0;
-  const budget=attackerMaxHp*(isRegionalBoss?.001:.002);
+  const budget=attackerMaxHp*(isRegionalBoss?0.001:0.002);
   const spent=state.history.filter(entry=>entry.attackerId===attackerId)
    .reduce((n,entry)=>n+entry.amount,0);
   const amount=Math.max(0,Math.min(reflect+thorn,defenderMaxHp*.015,budget-spent));
@@ -103,7 +103,7 @@ export class EquipmentTraitRuntimeV2{
   const thornPart=amount-reflectPart;
   if(thornPart>0)state.thornProcAt=atMs;
   state.history.push({atMs,attackerId,amount});
-  return {traitId:thornPart>0?'thornbound_riposte':'thornbound_riposte',
+  return {traitId:thornPart>0?'thornbound_riposte':'reflect_damage_affix',
    actorId:defenderId,targetId:attackerId,atMs,effect:'retaliation_damage',amount:round(amount)};
  }
  /** Direct effective ally heal only. Return two separate secondary actions,

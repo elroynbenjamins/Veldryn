@@ -43,5 +43,5 @@ assert.match(browser,/controlledExpanded=\{openRecipeKey===recipeGroup\.key\}/);
 assert.match(recipe,/onExpandedChange\?\.\(open\)/);
 assert.match(recipe,/\[wantedQuantity,setWantedQuantity\]=useState\(1\)/);
 assert.match(recipe,/!detailsOnly\?<GameButton title=\{craftConfirmed/);
-for(const label of ["'Stats'","'Progress'","'Materials & sources'"])assert.ok(language.includes(label),'Missing translation for '+label);
+for(const label of ['Stats','Progress','Materials & sources'])assert.ok(language.includes("'"+label+"'")||language.includes('"'+label+'"'),'Missing translation for '+label);
 console.log('PASS: compact tabbed crafting details preserve icons, quantities, sources and forge actions');

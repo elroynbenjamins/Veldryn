@@ -6,6 +6,7 @@
  * roster identity and grants against the server's ordered room ledger.
  */
 import type {CombatInput} from '../types';
+import {CLASS_ROLES_V2} from './build-contract';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {DUNGEON_REWARD_V2_POLICY,DUNGEON_REWARDS_V2,
  type DungeonRewardReceiptV2,type DungeonRoomKindV2} from './dungeon-rewards-v2';
@@ -62,6 +63,15 @@ export function assertVerifiedDungeonPartyRewardSnapshotV2(
    input.players.some((p,i)=>p.team!=='players'||p.combatV2?.version!==2||
     !idOk(p.id)||snapshot.actorIds[i]!==p.id))
    fail('roster_mismatch');
+ // Endurance's dungeon composition is 1 tank, 2 distinct damage classes,
+ // 1 support. Party Event composition is a DIFFERENT, flexible ruleset.
+ if(input.players.filter(p=>p.role==='tank').length!==1||
+    input.players.filter(p=>p.role==='damage').length!==2||
+    input.players.filter(p=>p.role==='support').length!==1||
+    input.players.some(p=>!p.classId||
+      CLASS_ROLES_V2[p.classId as keyof typeof CLASS_ROLES_V2]!==p.role)||
+    new Set(input.players.map(p=>p.classId)).size!==4)
+   fail('dungeon_party_composition_mismatch');
  const nodes=new Map<string,DungeonPartyNodeV2>();
  let prevDepth=0;
  for(const node of snapshot.nodes){
@@ -71,14 +81,18 @@ export function assertVerifiedDungeonPartyRewardSnapshotV2(
    nodes.has(node.nodeId))fail('forged_node_ledger');
   prevDepth=node.depth;nodes.set(node.nodeId,node);
  }
- const seenActors=new Set<string>();
+ const seenActors=new Set<string>(),seenAccounts=new Set<string>(),
+  seenCharacters=new Set<string>();
  for(let i=0;i<snapshot.grants.length;i++){
   const grant=snapshot.grants[i];
   if(!grant||grant.actorId!==ids[i]||seenActors.has(grant.actorId)||
    !idOk(grant.accountId)||!idOk(grant.characterId)||
    !Array.isArray(grant.receipts)||grant.receipts.length>nodes.size)
    fail('forged_member_grants');
-  seenActors.add(grant.actorId);
+  if(seenAccounts.has(grant.accountId)||seenCharacters.has(grant.characterId))
+   fail('duplicate_party_owner');
+  seenActors.add(grant.actorId);seenAccounts.add(grant.accountId);
+  seenCharacters.add(grant.characterId);
   const counted=new Map<string,number>(),seenNodes=new Set<string>();
   let previous=0;
   for(const receipt of grant.receipts){

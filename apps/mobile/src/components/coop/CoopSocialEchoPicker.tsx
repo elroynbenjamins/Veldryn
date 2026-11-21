@@ -46,7 +46,7 @@ export function CoopSocialEchoPicker({
 }){
  const {styles:s,colors:C}=useCoopStyles(makeStyles);
  const t=(key:Parameters<typeof dungeonEchoPickerText>[1],count?:number)=>dungeonEchoPickerText(language,key,count);
- const [expanded,setExpanded]=useState(false);
+ const [expanded,setExpanded]=useState(true);
  const [filter,setFilter]=useState<Filter>('all');
  const [search,setSearch]=useState('');
  const [selectionError,setSelectionError]=useState('');
@@ -78,7 +78,7 @@ export function CoopSocialEchoPicker({
      ?t('chosen',selectedIds.length)
      :t('subtitle')}</Text>
    </View>
-   <View style={s.counter}><Text style={s.counterText}>{selectedIds.length}/3</Text></View>
+   <View style={s.counter} accessible accessibilityLabel={t("chosen",selectedIds.length)}><Text style={s.counterText}>{selectedIds.length}/3</Text></View>
    <Text style={s.chevron}>{expanded?'⌄':'›'}</Text>
   </Pressable>
 

@@ -1,0 +1,150 @@
+{
+  "schema": "eq2-source-candidates-review-v1",
+  "status": "REVIEW_ONLY_DO_NOT_IMPORT_TO_RUNTIME",
+  "disclaimer": "Candidates are authoring suggestions only. No EQ2 item is registered, no mob awards these drops, and no drop chance or elite entitlement has been approved.",
+  "source": "Inspected apps/mobile/src/content/monsters.ts and progression.ts, plus tier entry gates in t1-t4-economy-review-v1.json",
+  "sources": [
+    {
+      "tier": 1,
+      "role": "common",
+      "itemId": "EQ2_BOAR_TUSK",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "ROADSIDE_BOAR",
+          "effectiveUnlockLevel": 3,
+          "reason": "Thematic Boar source, but one level later than tier entry"
+        }
+      ],
+      "tierEntryReachable": false,
+      "decision": "Provide a level-2 eligible boar encounter/source or move first combat-gated T1 item to level 3; do not assign tusks to unrelated monsters."
+    },
+    {
+      "tier": 1,
+      "role": "rare",
+      "itemId": "EQ2_VERDANT_ESSENCE",
+      "requiredForOrdinary": false,
+      "candidates": [
+        {
+          "monsterId": "FIELD_WISP",
+          "effectiveUnlockLevel": 2,
+          "reason": "Early magical source proposal; separate from existing Asterfall Botanical Essence"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Optional rare material source and its purpose need definition; normal T1 gear must not require it."
+    },
+    {
+      "tier": 2,
+      "role": "common",
+      "itemId": "WOLF_FANG",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "IRONWOOD_WOLF",
+          "effectiveUnlockLevel": 6,
+          "reason": "Existing wolf, but already drops IRONWOOD_FANG, not WOLF_FANG"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Choose exact registered Ironwood Fang reuse or new Wolf Fang definition explicitly, without silent aliasing."
+    },
+    {
+      "tier": 2,
+      "role": "rare",
+      "itemId": "EQ2_TROLL_SINEW",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "FOREST_TROLL",
+          "effectiveUnlockLevel": 11,
+          "reason": "Troll source before T2 character entry 12"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Make scarce roll server-owned; elite roll must use an independently defined elite encounter."
+    },
+    {
+      "tier": 3,
+      "role": "common",
+      "itemId": "EQ2_SUNSCAR_SCALE",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "SUNSCAR_SCORPION",
+          "effectiveUnlockLevel": 26,
+          "reason": "First Sunscar enemy at T3 character entry"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Keep this animal material separate from botanical SUNSCALE and define a leather source."
+    },
+    {
+      "tier": 3,
+      "role": "rare",
+      "itemId": "EQ2_MIRAGEFANG_CORE",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "MIRAGE_SHADE",
+          "effectiveUnlockLevel": 38,
+          "reason": "Mirage Shade has a rebalance override to unlock level 38; far later than T3 entry"
+        },
+        {
+          "monsterId": "SUNSCAR_SCORPION",
+          "effectiveUnlockLevel": 26,
+          "reason": "Proposed very rare early bridge source for initial T3 gear"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "If only Mirage Shade is authorized then T3 entry is blocked until level 36; early Scorpion source needs separate approval."
+    },
+    {
+      "tier": 4,
+      "role": "common",
+      "itemId": "EQ2_GLASSBOUND_PLATE",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "SANDPLATE_JUGGERNAUT",
+          "effectiveUnlockLevel": 38,
+          "reason": "Existing plated enemy, early enough for T4"
+        },
+        {
+          "monsterId": "GLASSBOUND_SENTINEL",
+          "effectiveUnlockLevel": 41,
+          "reason": "Late Sunscar source with related Glassbound identity"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Design source overlap and material supply, then prove eligible-player awards on server."
+    },
+    {
+      "tier": 4,
+      "role": "rare",
+      "itemId": "EQ2_GLASSHEART_FRAGMENT",
+      "requiredForOrdinary": true,
+      "candidates": [
+        {
+          "monsterId": "GLASSBOUND_SENTINEL",
+          "effectiveUnlockLevel": 41,
+          "reason": "Thematic source but one level after T4 character entry"
+        },
+        {
+          "monsterId": "SANDPLATE_JUGGERNAUT",
+          "effectiveUnlockLevel": 38,
+          "reason": "Proposed rare early bridge to keep initial T4 craft possible"
+        }
+      ],
+      "tierEntryReachable": true,
+      "decision": "Very low normal and controlled elite rates require server policy; source at or below level 40 must be explicitly approved."
+    }
+  ],
+  "guardrails": [
+    "Do not import or deploy this JSON into game, Edge, SQL, or loot tables.",
+    "Never claim candidate drops are currently obtainable or that effective unlock levels are permanent.",
+    "First mandatory combat material sources should be reachable at the tier's intended character gate.",
+    "Different source pools invalidate the shared-enemy drop-tail assumption unless both materials actually roll on the same kill.",
+    "Rare T1 Verdant Essence is not required by ordinary gear."
+  ]
+}

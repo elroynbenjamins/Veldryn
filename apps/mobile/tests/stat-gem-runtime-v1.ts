@@ -5,7 +5,6 @@ import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from '../src/core
 import {combatPowerRating} from '../src/core/combat-power';
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
-import {marketCatalogCandidate} from '../src/core/player-market-readiness';
 import type {CraftedGearInstance,GearSlot} from '../src/core/types';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {formatGemValueV1} from '../src/core/gem-progression-v1';
@@ -84,22 +83,16 @@ const oldGem={...base,character:{...base.character!,gearEnhancements:{
  basic_sword:{rank:0,failures:0,gemIds:['WARD_SHARD'],statGemId:'WARD_SHARD'},
 }}};
 ok(effectiveStats(oldGem).defense>without.defense,'Older Defense Gems retain their existing effect');
-const restoredEmberheart={...base,character:{...base.character!,gearEnhancements:{
-  basic_sword:{rank:0,failures:0,gemIds:['LEGACY_EMBERHEART_GEM_V2'],
-    statGemId:'LEGACY_EMBERHEART_GEM_V2'},
+const oldEmber={...base,character:{...base.character!,gearEnhancements:{
+  basic_sword:{rank:0,failures:0,gemIds:['EMBER_SHARD'],statGemId:'EMBER_SHARD'},
 }}};
-close(effectiveStats(restoredEmberheart).attack,without.attack*1.05,
-  'Restored Emberheart must retain its original +5% Attack effect');
-ok(itemDef('LEGACY_EMBERHEART_GEM_V2').type==='gem'&&
-  itemDef('LEGACY_EMBERHEART_GEM_V2').gemStat==='attack'&&
-  itemDef('LEGACY_EMBERHEART_GEM_V2').value===0,
-  'Protected restoration item must be a compatible socketable Attack gem');
-ok(!marketCatalogCandidate('LEGACY_EMBERHEART_GEM_V2'),
-  'Restored historical Emberheart must remain outside the Player Market');
-ok(marketCatalogCandidate('gem:stat_might:g3'),
-  'Ordinary G3 Might Gems remain regular market candidates');
-close(equippedCanonicalStatGemBonusesV1(restoredEmberheart).statPercent.attack??0,0,
-  'Restored Emberheart cannot also apply canonical Might on top of its legacy Attack effect');
+const oldEmberheart={...base,character:{...base.character!,gearEnhancements:{
+  basic_sword:{rank:0,failures:0,gemIds:['EMBERHEART_GEM'],statGemId:'EMBERHEART_GEM'},
+}}};
+close(effectiveStats(oldEmber).attack,without.attack*1.02,
+ 'Original socketed Ember Shard keeps +2% Attack');
+close(effectiveStats(oldEmberheart).attack,without.attack*1.05,
+ 'Original socketed Emberheart keeps +5% Attack');
 ok(Object.keys(equippedCanonicalStatGemBonusesV1(oldGem).statPercent).length===0,
  'Older gems must not enter canonical totals');
 close(equippedGemBonuses(withGem('stat_iron')).defense,0,'Canonical Iron must not be counted twice as legacy Defense');

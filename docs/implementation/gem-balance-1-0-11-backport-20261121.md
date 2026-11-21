@@ -6,7 +6,7 @@
 - Other gem family values match `MOBILE_GEM_FAMILIES_V1` and `STAT_GEMS_V1` (12 families, 60 grade values).
 - Existing IDs, grade numbers, roll percentages and socket records are **not rewritten**, therefore existing equipped canonical gems use new values.
 - The old 1.0.x `EMBER_SHARD` and `EMBERHEART_GEM` Attack identities retain their original +2%/+5% bonus when already socketed. The legacy on-save conversion is unchanged.
-- One inert item definition `LEGACY_EMBERHEART_GEM_V2` is included to keep the generated backend bundles in sync; it has zero vendor value, is never awarded by 1.0.11, and has **no restoration API, SQL migration or claim UI** in this release.
+- No new gem item IDs, inventory definitions or 2.0 restoration-only assets are included in this backport.
 - Source changes and the two precompiled shared Edge bundles must remain in sync, verified by `node tools/verify-gameplay-edge.mjs`.
 
 ## QA and rollout

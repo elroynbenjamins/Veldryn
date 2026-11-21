@@ -121,7 +121,7 @@ export const PARTY_EVENT_CANONICAL_SOURCE_SQL_V87=[
  ' AND att.rewards_granted=false AND att.reward_entitlement_created=false',
  ' AND (NOT cert.independently_verified_victory OR',
  ' cert.verified_tiers_cleared>0)',
- 'FOR SHARE OF r,w,cert,att,tier,loadout,activity,seal',
+ 'FOR SHARE OF r,w,cert,att,tier,loadout',
 ].join(' ');
 
 function authorizedSource(accountId:string,sourceKey:string):number{

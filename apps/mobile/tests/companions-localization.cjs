@@ -165,6 +165,7 @@ const baseline={
     "setViewFilter(option)"
   ],
   "apps/mobile/src/screens/BestiaryScreen.tsx": [
+    "setTab('types')",
     "setTab(choice.id)"
   ],
   "apps/mobile/src/components/CombatCompanionPanel.tsx": [

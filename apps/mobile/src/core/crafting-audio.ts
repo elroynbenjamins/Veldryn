@@ -12,7 +12,7 @@ let hammerAlternate=false,smeltAlternate=false;
 /** Kept independent of optional new assets so older binary builds stay silent safely. */
 export function playCraftCue(cue:CraftCue):void{
  const now=Date.now();
- if(cue===lastCue&&now-lastAt<900)return;
+ if(now-lastAt<800)return;
  lastCue=cue;lastAt=now;
  if(Object.prototype.hasOwnProperty.call(SOUND_EFFECT_ASSETS,cue))playSound(cue as SoundEffectId,0.7);
 }

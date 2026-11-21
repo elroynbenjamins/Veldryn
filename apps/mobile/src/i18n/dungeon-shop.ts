@@ -107,6 +107,21 @@ export function dungeonShopCollectionLabel(language:Language,category:'pet'|'bor
  return labels[language][category];
 }
 
+/** Keep recurring store supplies visually separate from collectibles. */
+export function dungeonShopSupplyGroupLabel(language:Language,category:'companion'|'supply'):string{
+ const labels:Readonly<Record<Language,Readonly<Record<'companion'|'supply',string>>>>={
+  en:{companion:'Companion Resources',supply:'Enhancement Supplies'},
+  de:{companion:'Begleiterressourcen',supply:'Verbesserungsvorräte'},
+  es:{companion:'Recursos de compañeros',supply:'Suministros de mejora'},
+  nl:{companion:'Metgezellenmaterialen',supply:'Verbeteringsmaterialen'},
+  it:{companion:'Risorse compagni',supply:'Materiali di potenziamento'},
+  fr:{companion:'Ressources de compagnons',supply:"Matériaux d'amélioration"},
+  ru:{companion:'Ресурсы спутников',supply:'Материалы улучшения'},
+  tr:{companion:'Yoldaş kaynakları',supply:'Geliştirme malzemeleri'},
+ };
+ return labels[language][category];
+}
+
 /** Legacy server text for three SKUs whose artwork has become character portraits.
  * Guard every other catalogue row and pass through unknown future server names. */
 const LEGACY_DUNGEON_PROFILE_ICON_NAMES:Readonly<Record<string,string>>={

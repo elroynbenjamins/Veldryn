@@ -64,7 +64,7 @@ assert.throws(()=>issueDungeonRewardEngineAuthorityV2(draft.input,
  {...snap,mode:'live'},verify),/invalid_snapshot_or_unverified_live/);
 assert.throws(()=>issueDungeonRewardEngineAuthorityV2(draft.input,
  {...snap,receipts:[...receipts,{id:'ROOM_BOON_WARDWEAVE',nodeId:'FORGE_7',depth:7,room:'forge'}]},verify),
- /unimplemented_proc_ROOM_BOON_WARDWEAVE/);
+ /requires_authenticated_party_ROOM_BOON_WARDWEAVE/);
 
 const baseline=simulateCombat(input);
 const again=simulateCombat(input,undefined,undefined,undefined);

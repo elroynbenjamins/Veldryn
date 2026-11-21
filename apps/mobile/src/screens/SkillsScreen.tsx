@@ -53,7 +53,9 @@ import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,skillNavigatorRout
 import {sharedText} from '../i18n/shared';
 import {skillNavigatorText} from '../i18n/skill-navigator';
 import {gatheringToolsFor} from '../content/gathering-tools';
-import {equippedGatheringTool} from '../core/gathering-tools';
+import {equippedGatheringTools,equippedGatheringToolRoll,gatheringToolEffects} from '../core/gathering-tools';
+import {gatheringToolContribution,gatheringToolPercent,gatheringToolTotalBreakdown} from '../core/gathering-tool-presentation';
+import {gatheringToolBonusLabel,validateGatheringToolRoll} from '../core/gathering-tool-rolls';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {DisclosureMark} from '../components/DisclosureControl';
 import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
@@ -130,10 +132,19 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&<>{(initialSkill==='smithing'||initialSkill==='tailoring'||initialSkill==='enchanting')?<><EquipmentCraftQueuePanel state={state} onClaim={onClaimCraft} onClaimAll={onClaimAllCrafts} onCancel={onCancelCraft} onMoveWaiting={onMoveCraftWaiting} forgeResults={forgeResults} onDismissForgeResults={onDismissForgeResults} onSetAutoSell={enabled=>onCommand({type:'gear_autosell',args:{enabled}})}/><Text style={s.sub}>{gt("Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.")}</Text></>:<Text style={s.sub}>{gt("Materials are taken from Inventory first, then Bank.")}</Text>}</>}
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
-      const gatheringSkill=sk.skillId as GatheringSkillId,equippedTool=mode==='gathering'?equippedGatheringTool(state,gatheringSkill):undefined;
+      const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
+      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToolTotalBreakdown(effects),totalToolPercent=gatheringToolPercent(totals.effectivePercent);
       return <View key={sk.skillId} style={s.group}>
-        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTool?.name??gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTool?gt('Tier {tier} · {percent}% shorter action time',{tier:equippedTool.tier,percent:Math.round((1-equippedTool.actionTimeMultiplier)*100)}):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
-          const equipped=equippedTool?.id===tool.id;
+        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4'+(effects.rarityChanceMultiplier>1?' · +'+Math.round((effects.rarityChanceMultiplier-1)*100)+'% rare finds':''):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{equippedTools.length>0?<View style={s.toolTotalBreakdown}>
+            <Text style={s.toolTotalStrong}>{gt('Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%',{base:gatheringToolPercent(totals.rawTierPercent),roll:gatheringToolPercent(totals.speedRollGainPoints),total:totalToolPercent})}</Text>
+            <Text style={s.toolRequirement}>{gt('Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.')}{totals.capped?' · '+gt('Speed cap reached'):''}</Text>
+            {totals.rarityChanceRelativePercent>0?<Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
+          </View>:null}{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
+          const equipped=equippedTools.some(entry=>entry.id===tool.id);
+          const equippedCopy=equippedGatheringToolRoll(state,gatheringSkill,tool.tier);
+          const contribution=gatheringToolContribution(tool,equippedCopy);
+          const availableCopies=state.inventory.stacks.filter(stack=>stack.itemId===tool.id&&stack.quantity>0);
+          const ownedCopies=availableCopies.map(stack=>({stack,copy:stack.instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===stack.instanceId),tool.id):undefined}));
           const carried=state.inventory.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
           const banked=state.bank.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
           const skillReady=sk.level>=tool.unlockLevel,characterReady=(state.character?.level??0)>=tool.requiredCharacterLevel;
@@ -145,11 +156,11 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const blueprintChanceText=actualBlueprintChance===undefined?'':(actualBlueprintChance*100).toFixed(actualBlueprintChance<.01?2:1)+'%';
           const recipeDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'CRAFT_'+tool.id,button:gt('Craft {name}',{name:tool.name}),detail:gt('Open the Smithing recipe for {name}.',{name:tool.name})};
           const blueprintDestination=sourceMonster&&sourceRegionId?{kind:'combat' as const,monsterId:sourceMonster.id,zoneName:sourceMonster.zone,regionId:sourceRegionId,button:gt('Hunt {name}',{name:sourceMonster.name}),detail:gt('{name} can drop the {tool} Blueprint.',{name:sourceMonster.name,tool:tool.name})+' '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:'')}:undefined;
-          const title=equipped?gt("Equipped"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
-          const disabled=equipped||(carried&&(!skillReady||!characterReady));
+          const title=equipped?gt("Unequip"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
+          const disabled=!equipped&&carried&&(!skillReady||!characterReady);
           const expanded=expandedToolId===tool.id;
           const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
-          const action=carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
+          const action=equipped?()=>onCommand({type:'unequip_tool',args:{id:tool.id}}):carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
           const actionTitle=expanded&&!carried&&!banked&&!equipped?gt('Hide Recipe'):title;
           const showDetailsToggle=equipped||carried||banked;
           const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
@@ -157,7 +168,11 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
            <View style={[s.toolRow,compactTools&&s.toolRowCompact]}>
            <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
             <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
-            <Text style={s.toolEffect}>{gt('{percent}% faster · {skill} {level} · Level {character}',{percent:Math.round((1-tool.actionTimeMultiplier)*100),skill:gl(tool.skillId),level:tool.unlockLevel,character:tool.requiredCharacterLevel})}</Text>
+            <Text style={s.toolEffect}>{gt('Tier {tier} · {percent}% shorter action time',{tier:tool.tier,percent:Math.round((1-tool.actionTimeMultiplier)*100)})+' · '+gl(tool.skillId)+' '+tool.unlockLevel+' · '+gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
+            {equipped?<><Text style={s.toolRoll}>{equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality+' · '+gatheringToolBonusLabel(equippedCopy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text>
+             <Text style={s.toolEffect}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
+             {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
+             </>:null}
             <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
            </View></View>
            <View style={[s.toolActions,compactTools&&s.toolActionsCompact]}>
@@ -166,6 +181,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
            </View>
           </View>
           {expanded?<ToolRecipeInlinePanel state={state} tool={tool} blueprintDestination={blueprintDestination} onNavigate={onNavigateCraftingSource} onOpenSmithing={()=>onNavigateCraftingSource?onNavigateCraftingSource(recipeDestination):onViewToolRecipes()}/>:null}
+          {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}><Text style={s.toolRequirement}>Owned copies · select one to equip (speed +2–8% / rare finds +2–5%)</Text>{ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={s.toolCopyOption}><Text style={[s.toolRequirement,{flex:1}]} numberOfLines={2}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':('Legacy · Uncommon · Q50 · Base bonus only · '+gatheringToolPercent(gatheringToolContribution(tool).adjustedBasePercent)+'% tier')}</Text><View style={{minWidth:104}}><GameButton title={equipped?'Replace':'Equip copy'} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View></View>)}</View>:null}
           </View>;
         })}</Panel>}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}
@@ -180,8 +196,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
     areaChip:{minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:10},
     areaChipSelected:{borderColor:C.accent,backgroundColor:C.selection},
     areaChipLocked:{opacity:.72},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
- toolRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
+ toolRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  toolRowCompact:{flexDirection:'column',alignItems:'stretch',gap:8},
+ toolRoll:{...typography.caption,color:C.good,fontWeight:'800'},
+ toolTotalBreakdown:{gap:4,padding:10,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:9,marginBottom:4},
+ toolTotalStrong:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1},
+ toolCopies:{width:'100%',gap:6,paddingLeft:8,paddingBottom:8},
+ toolCopyOption:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:2},
  toolInfo:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm},
  toolCopy:{flex:1,minWidth:0,gap:3},
  toolName:{...typography.bodyStrong,color:C.text,flexShrink:1},

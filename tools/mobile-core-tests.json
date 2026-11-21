@@ -5,6 +5,7 @@
   "tests/profile-pet-art-assets.cjs",
   "tests/guild-pet-portrait-assets.cjs",
   "tests/app-version-gate.cjs",
+  ".core-build/apps/mobile/tests/equipment-bonus-rolls.js",
   ".core-build/apps/mobile/tests/resource-codex.js",
   ".core-build/apps/mobile/tests/recipe-codex.js",
   ".core-build/apps/mobile/tests/unlock-inbox.js",
@@ -263,6 +264,7 @@
   ".core-build/apps/mobile/tests/mining-essence-enchanting.js",
   ".core-build/apps/mobile/tests/gathering-drop-ui-contract.js",
   ".core-build/apps/mobile/tests/gathering-tools.js",
+  ".core-build/apps/mobile/tests/gathering-tool-affixes.js",
   ".core-build/apps/mobile/tests/startup-summary.js",
   ".core-build/apps/mobile/tests/dashboard-guidance.js",
   ".core-build/apps/mobile/tests/balance-projection.js",
@@ -417,5 +419,6 @@
   ".core-build/apps/mobile/tests/stored-json.js",
   ".core-build/apps/mobile/tests/world-boss-replay-presentation.js",
   "tests/world-boss-battle-stage-ui.cjs",
-  ".core-build/apps/mobile/tests/game-audio.js"
+  ".core-build/apps/mobile/tests/game-audio.js",
+  "tests/1-0-11-reviewed-ui.cjs"
 ]

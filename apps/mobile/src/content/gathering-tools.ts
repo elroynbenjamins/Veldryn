@@ -10,6 +10,7 @@ export interface GatheringToolBlueprintDef{
 }
 export interface GatheringToolDef{
   id:string;name:string;skillId:GatheringSkillId;tier:1|2|3|4;
+  /** Standalone action-time reduction. Equipped tiers contribute additively, capped at 60% total. */
   actionTimeMultiplier:number;
   /** Required level in the tool's own gathering skill to equip and craft it. */
   unlockLevel:number;
@@ -21,13 +22,14 @@ export interface GatheringToolDef{
   rarity:'common'|'uncommon'|'rare'|'epic';value:number;
 }
 
-/** Tool blueprints are 25% rarer than their previously authored odds.
- * The normal 5% combat-drop reduction is applied separately by MONSTERS. */
-export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75;
-/** Drop chances are stored as fractional probabilities, so 0.001 = 0.10%.
- * Round the FINAL monster drop probability down, after the existing general
- * 5% reduction, rather than rounding the authored baseline too early. */
-export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.001;
+/** Existing -25% blueprint adjustment plus a further -50% for faster combat.
+ * The normal -5% combat drop adjustment is still applied separately by MONSTERS.
+ * Only tool blueprints use this multiplier; other monster loot is unchanged. */
+export const TOOL_BLUEPRINT_DROP_MULTIPLIER=0.75*0.5;
+/** Fractional probabilities: 0.0005 = 0.05 percentage points.
+ * Round FINAL per-kill probabilities down, after all modifiers, preserving
+ * precise half-rates such as 0.55%, 0.45%, 0.35%, and 0.25%. */
+export const TOOL_BLUEPRINT_DROP_ROUNDING_STEP=0.0005;
 export function roundDownToolBlueprintDropChance(chance:number):number{
  if(!Number.isFinite(chance)||chance<0||chance>1)throw new Error('invalid_tool_blueprint_chance');
  const ticksPerUnit=Math.round(1/TOOL_BLUEPRINT_DROP_ROUNDING_STEP);
@@ -63,25 +65,26 @@ const blueprint=(itemId:string,knowledgeId:string,sourceMonsterId:string,dropCha
 });
 
 export const GATHERING_TOOLS:GatheringToolDef[]=[
+  // Each tier is a permanent additive upgrade: 10% + 15% + 15% + 20% = 60% maximum reduction.
   // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
-  tool({id:'COPPER_PICKAXE',name:'Copper Pickaxe',skillId:'mining',tier:1,actionTimeMultiplier:1,unlockLevel:3,requiredCharacterLevel:16,icon:'⛏',rarity:'common',value:120,recipe:{xp:110,gold:120,seconds:120,inputs:[{itemId:'COPPER_INGOT',quantity:8},{itemId:'GREENWOOD_LOG',quantity:14}]}}),
-  tool({id:'GREENWOOD_HATCHET',name:'Greenwood Hatchet',skillId:'woodcutting',tier:1,actionTimeMultiplier:1,unlockLevel:3,requiredCharacterLevel:3,icon:'🪓',rarity:'common',value:110,recipe:{xp:105,gold:110,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:24},{itemId:'MOSS_FIBER',quantity:12}]}}),
-  tool({id:'REEDLINE_ROD',name:'Reedline Fishing Rod',skillId:'fishing',tier:1,actionTimeMultiplier:1,unlockLevel:3,requiredCharacterLevel:3,icon:'🎣',rarity:'common',value:100,recipe:{xp:100,gold:100,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:20},{itemId:'MOSS_FIBER',quantity:10}]}}),
+  tool({id:'COPPER_PICKAXE',name:'Copper Pickaxe',skillId:'mining',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:16,icon:'⛏',rarity:'common',value:120,recipe:{xp:110,gold:120,seconds:120,inputs:[{itemId:'COPPER_INGOT',quantity:8},{itemId:'GREENWOOD_LOG',quantity:14}]}}),
+  tool({id:'GREENWOOD_HATCHET',name:'Greenwood Hatchet',skillId:'woodcutting',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:3,icon:'🪓',rarity:'common',value:110,recipe:{xp:105,gold:110,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:24},{itemId:'MOSS_FIBER',quantity:12}]}}),
+  tool({id:'REEDLINE_ROD',name:'Reedline Fishing Rod',skillId:'fishing',tier:1,actionTimeMultiplier:.9,unlockLevel:3,requiredCharacterLevel:3,icon:'🎣',rarity:'common',value:100,recipe:{xp:100,gold:100,seconds:114,inputs:[{itemId:'GREENWOOD_LOG',quantity:20},{itemId:'MOSS_FIBER',quantity:10}]}}),
 
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
-  tool({id:'ASTER_IRON_PICKAXE',name:'Aster-Iron Pickaxe',skillId:'mining',tier:2,actionTimeMultiplier:.75,unlockLevel:10,requiredCharacterLevel:16,icon:'⛏',rarity:'uncommon',value:440,blueprint:blueprint('BP_ASTER_IRON_PICKAXE','tool_recipe:ASTER_IRON_PICKAXE','CAVE_SKITTER',.017),recipe:{xp:340,gold:650,seconds:240,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:16},{itemId:'IRONWOOD_LOG',quantity:26},{itemId:'REINFORCED_FITTING',quantity:3}]}}),
-  tool({id:'ASTER_IRON_HATCHET',name:'Aster-Iron Hatchet',skillId:'woodcutting',tier:2,actionTimeMultiplier:.75,unlockLevel:10,requiredCharacterLevel:16,icon:'🪓',rarity:'uncommon',value:430,blueprint:blueprint('BP_ASTER_IRON_HATCHET','tool_recipe:ASTER_IRON_HATCHET','THORNLING',.016),recipe:{xp:330,gold:620,seconds:228,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}}),
-  tool({id:'IRONWOOD_ROD',name:'Ironwood Fishing Rod',skillId:'fishing',tier:2,actionTimeMultiplier:.75,unlockLevel:10,requiredCharacterLevel:16,icon:'🎣',rarity:'uncommon',value:420,blueprint:blueprint('BP_IRONWOOD_ROD','tool_recipe:IRONWOOD_ROD','MIRE_HERON',.015),recipe:{xp:320,gold:600,seconds:222,inputs:[{itemId:'IRONWOOD_LOG',quantity:36},{itemId:'ASTER_IRON_INGOT',quantity:9},{itemId:'WISP_DUST',quantity:10}]}}),
+  tool({id:'ASTER_IRON_PICKAXE',name:'Aster-Iron Pickaxe',skillId:'mining',tier:2,actionTimeMultiplier:.85,unlockLevel:10,requiredCharacterLevel:16,icon:'⛏',rarity:'uncommon',value:440,blueprint:blueprint('BP_ASTER_IRON_PICKAXE','tool_recipe:ASTER_IRON_PICKAXE','CAVE_SKITTER',.017),recipe:{xp:340,gold:650,seconds:240,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:16},{itemId:'IRONWOOD_LOG',quantity:26},{itemId:'REINFORCED_FITTING',quantity:3}]}}),
+  tool({id:'ASTER_IRON_HATCHET',name:'Aster-Iron Hatchet',skillId:'woodcutting',tier:2,actionTimeMultiplier:.85,unlockLevel:10,requiredCharacterLevel:16,icon:'🪓',rarity:'uncommon',value:430,blueprint:blueprint('BP_ASTER_IRON_HATCHET','tool_recipe:ASTER_IRON_HATCHET','THORNLING',.016),recipe:{xp:330,gold:620,seconds:228,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}}),
+  tool({id:'IRONWOOD_ROD',name:'Ironwood Fishing Rod',skillId:'fishing',tier:2,actionTimeMultiplier:.85,unlockLevel:10,requiredCharacterLevel:16,icon:'🎣',rarity:'uncommon',value:420,blueprint:blueprint('BP_IRONWOOD_ROD','tool_recipe:IRONWOOD_ROD','MIRE_HERON',.015),recipe:{xp:320,gold:600,seconds:222,inputs:[{itemId:'IRONWOOD_LOG',quantity:36},{itemId:'ASTER_IRON_INGOT',quantity:9},{itemId:'WISP_DUST',quantity:10}]}}),
 
-  // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
-  tool({id:'OATHSTONE_PICKAXE',name:'Oathstone Pickaxe',skillId:'mining',tier:3,actionTimeMultiplier:.5,unlockLevel:20,requiredCharacterLevel:20,icon:'⛏',rarity:'rare',value:1180,blueprint:blueprint('BP_OATHSTONE_PICKAXE','tool_recipe:OATHSTONE_PICKAXE','RUNEBOUND_MINER',.013),recipe:{xp:900,gold:2400,seconds:480,inputs:[{itemId:'OATHSTONE_INGOT',quantity:22},{itemId:'CROWNWOOD_LOG',quantity:40},{itemId:'OATHGLASS_SHARD',quantity:8}]}}),
-  tool({id:'OATHSTONE_HATCHET',name:'Oathstone Hatchet',skillId:'woodcutting',tier:3,actionTimeMultiplier:.5,unlockLevel:20,requiredCharacterLevel:20,icon:'🪓',rarity:'rare',value:1160,blueprint:blueprint('BP_OATHSTONE_HATCHET','tool_recipe:OATHSTONE_HATCHET','ANCIENT_TREANT',.012),recipe:{xp:880,gold:2300,seconds:468,inputs:[{itemId:'OATHSTONE_INGOT',quantity:20},{itemId:'CROWNWOOD_LOG',quantity:46},{itemId:'OATHGLASS_SHARD',quantity:7}]}}),
-  tool({id:'OATHSCALE_ROD',name:'Oathscale Fishing Rod',skillId:'fishing',tier:3,actionTimeMultiplier:.5,unlockLevel:20,requiredCharacterLevel:20,icon:'🎣',rarity:'rare',value:1140,blueprint:blueprint('BP_OATHSCALE_ROD','tool_recipe:OATHSCALE_ROD','DROWNED_PILGRIM',.010),recipe:{xp:860,gold:2200,seconds:456,inputs:[{itemId:'CROWNWOOD_LOG',quantity:44},{itemId:'OATHSTONE_INGOT',quantity:14},{itemId:'OATHSCALE_PIKE',quantity:10}]}}),
+  // Tier 3 is a late-Asterfall blueprint chase (levels 22-25), distinct from Tier 2's early-Asterfall hunts.
+  tool({id:'OATHSTONE_PICKAXE',name:'Oathstone Pickaxe',skillId:'mining',tier:3,actionTimeMultiplier:.85,unlockLevel:20,requiredCharacterLevel:20,icon:'⛏',rarity:'rare',value:1180,blueprint:blueprint('BP_OATHSTONE_PICKAXE','tool_recipe:OATHSTONE_PICKAXE','FALLEN_SENTINEL',.013),recipe:{xp:900,gold:2400,seconds:480,inputs:[{itemId:'OATHSTONE_INGOT',quantity:22},{itemId:'CROWNWOOD_LOG',quantity:40},{itemId:'OATHGLASS_SHARD',quantity:8}]}}),
+  tool({id:'OATHSTONE_HATCHET',name:'Oathstone Hatchet',skillId:'woodcutting',tier:3,actionTimeMultiplier:.85,unlockLevel:20,requiredCharacterLevel:20,icon:'🪓',rarity:'rare',value:1160,blueprint:blueprint('BP_OATHSTONE_HATCHET','tool_recipe:OATHSTONE_HATCHET','OATHGLASS_REVENANT',.012),recipe:{xp:880,gold:2300,seconds:468,inputs:[{itemId:'OATHSTONE_INGOT',quantity:20},{itemId:'CROWNWOOD_LOG',quantity:46},{itemId:'OATHGLASS_SHARD',quantity:7}]}}),
+  tool({id:'OATHSCALE_ROD',name:'Oathscale Fishing Rod',skillId:'fishing',tier:3,actionTimeMultiplier:.85,unlockLevel:20,requiredCharacterLevel:20,icon:'🎣',rarity:'rare',value:1140,blueprint:blueprint('BP_OATHSCALE_ROD','tool_recipe:OATHSCALE_ROD','DROWNED_PILGRIM',.010),recipe:{xp:860,gold:2200,seconds:456,inputs:[{itemId:'CROWNWOOD_LOG',quantity:44},{itemId:'OATHSTONE_INGOT',quantity:14},{itemId:'OATHSCALE_PIKE',quantity:10}]}}),
 
   // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
-  tool({id:'FROSTIRON_PICKAXE',name:'Frostiron Pickaxe',skillId:'mining',tier:4,actionTimeMultiplier:.4,unlockLevel:46,requiredCharacterLevel:46,icon:'⛏',rarity:'epic',value:3600,blueprint:blueprint('BP_FROSTIRON_PICKAXE','tool_recipe:FROSTIRON_PICKAXE','BELLWRAITH',.009),recipe:{xp:2400,gold:8500,seconds:960,inputs:[{itemId:'FROSTIRON',quantity:32},{itemId:'RIMEGLASS',quantity:12},{itemId:'REINFORCED_FITTING',quantity:10}]}}),
-  tool({id:'FROSTIRON_HATCHET',name:'Frostiron Hatchet',skillId:'woodcutting',tier:4,actionTimeMultiplier:.4,unlockLevel:46,requiredCharacterLevel:46,icon:'🪓',rarity:'epic',value:3550,blueprint:blueprint('BP_FROSTIRON_HATCHET','tool_recipe:FROSTIRON_HATCHET','FROSTWOLF',.008),recipe:{xp:2350,gold:8300,seconds:948,inputs:[{itemId:'FROSTIRON',quantity:30},{itemId:'RIMEGLASS',quantity:10},{itemId:'CHOIR_BLOOM',quantity:4}]}}),
-  tool({id:'RIMEGLASS_ROD',name:'Rimeglass Fishing Rod',skillId:'fishing',tier:4,actionTimeMultiplier:.4,unlockLevel:46,requiredCharacterLevel:46,icon:'🎣',rarity:'epic',value:3500,blueprint:blueprint('BP_RIMEGLASS_ROD','tool_recipe:RIMEGLASS_ROD','CHOIR_HUNTER',.008),recipe:{xp:2300,gold:8100,seconds:936,inputs:[{itemId:'FROSTIRON',quantity:22},{itemId:'RIMEGLASS',quantity:14},{itemId:'CHOIR_BLOOM',quantity:4}]}}),
+  tool({id:'FROSTIRON_PICKAXE',name:'Frostiron Pickaxe',skillId:'mining',tier:4,actionTimeMultiplier:.8,unlockLevel:46,requiredCharacterLevel:46,icon:'⛏',rarity:'epic',value:3600,blueprint:blueprint('BP_FROSTIRON_PICKAXE','tool_recipe:FROSTIRON_PICKAXE','BELLWRAITH',.009),recipe:{xp:2400,gold:8500,seconds:960,inputs:[{itemId:'FROSTIRON',quantity:32},{itemId:'RIMEGLASS',quantity:12},{itemId:'REINFORCED_FITTING',quantity:10}]}}),
+  tool({id:'FROSTIRON_HATCHET',name:'Frostiron Hatchet',skillId:'woodcutting',tier:4,actionTimeMultiplier:.8,unlockLevel:46,requiredCharacterLevel:46,icon:'🪓',rarity:'epic',value:3550,blueprint:blueprint('BP_FROSTIRON_HATCHET','tool_recipe:FROSTIRON_HATCHET','FROSTWOLF',.008),recipe:{xp:2350,gold:8300,seconds:948,inputs:[{itemId:'FROSTIRON',quantity:30},{itemId:'RIMEGLASS',quantity:10},{itemId:'CHOIR_BLOOM',quantity:4}]}}),
+  tool({id:'RIMEGLASS_ROD',name:'Rimeglass Fishing Rod',skillId:'fishing',tier:4,actionTimeMultiplier:.8,unlockLevel:46,requiredCharacterLevel:46,icon:'🎣',rarity:'epic',value:3500,blueprint:blueprint('BP_RIMEGLASS_ROD','tool_recipe:RIMEGLASS_ROD','LAKEBOUND_SPECTER',.008),recipe:{xp:2300,gold:8100,seconds:936,inputs:[{itemId:'FROSTIRON',quantity:22},{itemId:'RIMEGLASS',quantity:14},{itemId:'CHOIR_BLOOM',quantity:4}]}}),
 ];
 
 export const TOOL_ITEMS=GATHERING_TOOLS.map(entry=>({id:entry.id,name:entry.name,type:'tool' as const,value:entry.value,rarity:entry.rarity,toolSkillId:entry.skillId,toolTier:entry.tier,actionTimeMultiplier:entry.actionTimeMultiplier}));

@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '../src/server/coop/dungeon-entry-policy';
+import {regularDungeonTierRequiredLevel} from '../src/server/coop/dungeon-entry-policy';
 import {regularDungeonEntryError} from '../src/server/coop/dungeon-entry-policy';
 import {isPublishedCoopTier} from '../src/server/coop/config';
 import {MemoryQModeRunRepository,QModeService,type QModeRun} from '../src/server/coop/qmode';
@@ -16,6 +16,8 @@ import {dungeonRewardState} from '../src/server/coop/dungeon-reward-balance';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../src/server/coop/regional-power-balance';
 import {GameplayError,type GameplayServices} from './gameplay';
+import {validateSelectedSocialEchoCharacterIds} from '../../apps/mobile/src/core/coop-social-echoes';
+import {prepareSocialEchoCandidates} from './coop-social-echoes';
 
 interface Game {state:GameState|null;version:number;serverNow:number;}
 interface Echo {profileId:string;sourceAccountId:string;publishedAtMs:number;record:AuthoritativeLoadoutRecord;}
@@ -50,27 +52,57 @@ export class OnlineQModeRuntime{
   const game=await this.services.rpc<Game>('load_online_game_server_v1',{p_account_id:accountId});
   if(!game.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
-  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier);
+  const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier,'qmode');
   if(entryError)throw new GameplayError(entryError);
-  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),minimumPower=regularDungeonTierRequiredPower(definition,request.tier),sync=definition.recommendedLevel;
-  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,minCombatPower:minimumPower,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
+  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),sync=definition.recommendedLevel;
+  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');
   // The loadout revision is a UI observation, not a lock on unrelated gathering/combat progress.
   // The actual dungeon snapshot is rebuilt from current authoritative state and checked again
   // by start_online_qmode_server_v1. Do not reject a valid player just for background activity.
   if(request.loadoutRevision>record.revision){const replay=await this.receipt(accountId,'qmode_start_v1',accountId,request.requestId,hash);if(replay)return replay.response;throw new GameplayError('stale_game_version',409);}
   const controller=freeze(record);
+  // The client chooses friend/guild CHARACTERS, not published Echo profiles.
+  // Each selected donor is freshly derived from its server-owned saved game.
+  // This removes the sharing switch and its seven-day opt-in prerequisite.
+  const requestedCharacters=request.preferredEchoCharacterIds??[];
+  const publishedSelections:string[]=[];
+  if(requestedCharacters.length){
+   const sources=await prepareSocialEchoCandidates(this.services,accountId,minimum);
+   validateSelectedSocialEchoCharacterIds(requestedCharacters,sources.map(source=>source.candidate),record.classId,controller.readiness.role);
+   for(const characterId of requestedCharacters){
+    const source=sources.find(item=>item.candidate.characterId===characterId);
+    if(!source)throw new GameplayError('social_echo_unavailable',409);
+    // Recheck role-readiness at this dungeon's actual sync level.
+    try{freeze(source.record);}
+    catch{throw new GameplayError('social_echo_unavailable',409);}
+    let published:{echoProfileId?:string|null};
+    try{
+     published=await this.services.rpc<{echoProfileId?:string|null}>('publish_online_coop_loadout_server_v1',{
+      p_account_id:source.record.accountId,p_game_version:source.record.revision,
+      p_record:source.record,p_snapshot_hash:onlineCoopLoadoutHash(source.record),
+      p_readiness:source.readiness,p_share_echo:true,
+      p_request_id:'auto-'+digest([accountId,request.requestId,characterId,source.record.revision]).slice(0,58),
+     });
+    }catch{throw new GameplayError('social_echo_unavailable',409);}
+    if(!published?.echoProfileId)throw new GameplayError('social_echo_unavailable',409);
+    publishedSelections.push(published.echoProfileId);
+   }
+  }
+  // Random fallback is restricted by SQL to current friends/guild members;
+  // missing seats use NPCs. Strangers are never published to the controller.
   const raw=await this.services.rpc<Echo[]>('eligible_online_coop_echoes_server_v1',{p_actor_account_id:accountId,p_min_level:minimum});
   const profiles:PublishedEcho[]=[];
   for(const echo of raw){
-   // Old or ineligible profiles cannot turn an entire valid donor pool into a failure.
    if(echo.record.accountId!==echo.sourceAccountId)continue;
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:content,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
-  const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,minimumCombatPower:minimumPower,syncLevel:sync,controllerLevel:record.characterLevel});
+  const preferredProfileIds=publishedSelections;
+  if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
+  const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
-  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots});
+  const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots,preferredProfileIds});
   const members=[{memberKind:'human',snapshot:controller,sourceHash:onlineCoopLoadoutHash(record),profileId:null},...run.players.slice(1).map(player=>{
    const selected=profiles.find(row=>row.snapshot.characterId===player.id&&run.echoSourceAccountIds.includes(row.sourceAccountId));
    if(selected){const source=raw.find(row=>row.profileId===selected.profileId)!;return {memberKind:'echo',snapshot:selected.snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:selected.profileId};}
@@ -116,7 +148,7 @@ export class OnlineQModeRuntime{
   const chosen=run.graph.nodes.find(node=>node.nodeId===request.optionId);
   const duration=chosen?.kind==='boss'?1_800:chosen?.kind==='elite'?1_400:chosen?.kind==='battle'?900:0;
   const resolvesAtMs=loaded.serverNow+duration;
-  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined};
+  const client={...projection(before,loaded.stateVersion+1,seed),phase:'resolving_node',options:[],selectedNodeId:request.optionId,resolvesAtMs,boonOffers:undefined,artifactOffers:undefined};
   return this.services.rpc('queue_online_qmode_node_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run:before,seed,pending:{run,resolvesAtMs,startStateHash:digest(before.persistentState)}},p_client_projection:client});
  }
 }

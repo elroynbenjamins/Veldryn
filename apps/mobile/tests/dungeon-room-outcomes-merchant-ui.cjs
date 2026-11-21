@@ -38,5 +38,9 @@ assert(route.includes("const title=room&&(")&&route.includes("st(room.name):seas
 assert(mode.includes('lastRoomOutcome:projection.lastRoomOutcome')&&seasonal.includes('lastRoomOutcome:projection.lastRoomOutcome'),'Normal and seasonal projections carry room feedback');
 assert(sql.includes('for update')&&sql.includes('idempotency_key_conflict')&&sql.includes('insufficient_run_resources'),'Purchase RPC serializes conflicting commands and checks resources');
 assert(sql.includes('grant execute on function public.purchase_online_qmode_merchant_server_v1')&&sql.includes('to service_role'),'Purchase procedure remains server-only');
-assert(route.includes("const combatMarks=option.kind==='battle'?3:option.kind==='elite'?5:0;")&&route.includes("+{combatMarks} {st('Marks')}"),'Normal and elite route choices display 3/5 Expedition Marks without changing server rewards');
+assert(route.includes("const roomMarks=option.kind==='battle'?3:option.kind==='elite'?5:0;")
+ &&route.includes("const combatMarks=Math.min(roomMarks,Math.max(0,combatMarksRemaining));")
+ &&route.includes("`+${combatMarks} ${st('Marks')}`")
+ &&route.includes("st('Combat Marks capped')"),
+ 'Room choices preview the authoritative 3/5 Mark budget, truncate the final room award at the 25-Mark cap and show capped receipts');
 console.log('PASS dungeon room outcomes: no new Merchant shop UI, historic receipt security retained');

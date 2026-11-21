@@ -144,6 +144,7 @@ assert.equal(typedTranslator('ru','a',{count:1}),'Надето: 1/10');
 for(const key of keys)assert.ok(!Object.hasOwn(EARLY_LOCALE_ROWS,key),'Duplicate RU entry in starter catalog: '+key);
 const russianOwned=new Set([...keys,...Object.keys(EARLY_LOCALE_ROWS)].filter(key=>owned.has(key)));
 const coverage=(100*russianOwned.size/owned.size).toFixed(1);
+if(Number(coverage)<99.0)console.log('MISSING_RUSSIAN_RELEASE_KEYS='+JSON.stringify([...owned].filter(key=>!russianOwned.has(key)).sort()));
 assert.ok(Number(coverage)>=99.0,'Russian authored UI coverage dropped below 99% ('+coverage+'%; '+(owned.size-russianOwned.size)+' missing)');
 for(const [key,expected] of Object.entries({'Bond milestones':'Этапы связи','No automatic tonic':'Без автоматического тоника','FORGE · CLAIM ALL':'КУЗНИЦА · ЗАБРАТЬ ВСЁ','Show doable resources only':'Показать только доступные ресурсы'}))
   assert.equal(earlyLocaleText('ru',key),expected,'Release Russian UI copy must resolve: '+key);

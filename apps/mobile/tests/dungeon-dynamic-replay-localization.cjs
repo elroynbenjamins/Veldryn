@@ -80,7 +80,7 @@ for(const marker of [
  'localizedDungeonCueType(language,currentCue?.type??(pending?undefined:replay.reason))',
  "dungeonDynamicUiText(language,'{count} combat events'",
  "dungeonDynamicUiText(language,'{count} recent'",
- 'playbackAdvanceDelayMs(current,next,1)','playbackCombatantState(replay,cueIndex',
+ 'playbackAdvanceDelayMs(current,next,effectivePlaybackSpeed)','playbackCombatantState(replay,cueIndex',
   'contributionSummary(language,slot.role,value)','roleShort(language,slot.role)',
   "dungeonDynamicUiText(language,'Boss ability')",
 ])assert.ok(combat.includes(marker),'Dungeon combat stage lost safety or translation: '+marker);

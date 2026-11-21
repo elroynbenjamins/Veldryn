@@ -8,7 +8,7 @@ import {weaponBonusStatText,weaponBonusUiText} from '../src/i18n/weapon-bonus-ux
 const check=(value:unknown,message:string)=>{if(!value)throw new Error(message)};
 const one=weaponBonusComparisonRows([{stat:'haste',basisPoints:120},{stat:'accuracy',basisPoints:80}],
   [{stat:'haste',basisPoints:170},{stat:'accuracy',basisPoints:130}]);
-check(one.length===2&&one[0].stat==='haste'&&one[0].deltaBps===50&&one[1].deltaBps===50,
+check(one.length===2&&one.some(row=>row.stat==='haste'&&row.deltaBps===50)&&one.some(row=>row.stat==='accuracy'&&row.deltaBps===50),
   'Equal stat pools must compare exact before/after bonus values, not total character power');
 check(weaponBonusDisplayPercent(0)==='—'&&weaponBonusDisplayPercent(80)==='+0.8%',
   'Missing and present bonus values need a readable distinction');
@@ -35,7 +35,7 @@ check(nonWeapon&&!weaponBonusConfig(nonWeapon.output.itemId,'common'),
 for(const language of SUPPORTED_LANGUAGES){
   for(const key of ['possible','possibleCount','oneOrTwo','twoCount','single','double','shared','claim','current','candidate','points'] as const)
     check(!!weaponBonusUiText(language,key).trim(),language+' missing bonus UX label '+key);
-  for(const stat of ['maxHp','armor','tenacity','critRate','haste','accuracy','potency','ward','penetration'] as const)
+  for(const stat of ['maxHp','armor','tenacity','critRate','haste','accuracy','potency','ward','penetration','evasion','critDamage','abilityDamage','healingPower'] as const)
     check(!!weaponBonusStatText(language,stat).trim(),language+' missing stat name '+stat);
 }
 

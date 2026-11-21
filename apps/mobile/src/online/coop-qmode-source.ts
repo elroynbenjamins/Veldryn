@@ -27,6 +27,6 @@ function fromPublicProjection(projection:CoopQModeServerProjection,requestId:str
   return{run:presentQModeRun(projection),team};
 }
 export const realCoopQModeSource:CoopQModeSource={
-  start:async(intent,requestId)=>{if(intent.mode!=='qmode')throw new Error('not_qmode_intent');const result=await coopClient.start('qmode',{requestId,dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision});if(isPublicProjection(result))return fromPublicProjection(result,requestId);if(!('runId' in result))throw new Error('qmode_run_projection_missing');return {run:result,team:teamFromRun(result,requestId)}},
+  start:async(intent,requestId)=>{if(intent.mode!=='qmode')throw new Error('not_qmode_intent');const result=await coopClient.start('qmode',{requestId,dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision,...(intent.preferredEchoCharacterIds?.length?{preferredEchoCharacterIds:intent.preferredEchoCharacterIds}:{})});if(isPublicProjection(result))return fromPublicProjection(result,requestId);if(!('runId' in result))throw new Error('qmode_run_projection_missing');return {run:result,team:teamFromRun(result,requestId)}},
   resume:async(runId,requestId)=>{const result=await coopClient.run(runId);if(!isPublicProjection(result))throw new Error('qmode_run_projection_missing');return fromPublicProjection(result,requestId)}
 };

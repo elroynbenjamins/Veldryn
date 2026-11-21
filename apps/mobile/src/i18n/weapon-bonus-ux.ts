@@ -23,6 +23,10 @@ const ROWS={
   haste:['Haste','Tempo','Celeridad','Snelheid','Rapidità','Célérité','Скорость','Hız'],
   accuracy:['Accuracy','Trefferchance','Precisión','Nauwkeurigheid','Precisione','Précision','Точность','İsabet'],
   potency:['Potency','Wirksamkeit','Potencia','Potentie','Potenza','Puissance','Мощность','Etki gücü'],
+  evasion:['Evasion','Ausweichen','Evasión','Ontwijking','Schivata','Esquive','Уклонение','Kaçınma'],
+  critDamage:['Crit Damage','Krit. Schaden','Daño crítico','Kritieke schade','Danno critico','Dégâts critiques','Крит. урон','Kritik hasarı'],
+  abilityDamage:['Ability Damage','Fähigkeitsschaden','Daño de habilidad','Vaardigheidsschade','Danno abilità','Dégâts des capacités','Урон умений','Yetenek hasarı'],
+  healingPower:['Healing Power','Heilkraft','Potencia curativa','Genezingskracht','Potere curativo','Puissance de soins','Сила исцеления','İyileştirme gücü'],
   ward:['Ward','Schutz','Protección','Bescherming','Protezione','Protection','Защита','Koruma'],
   penetration:['Penetration','Durchdringung','Penetración','Penetratie','Penetrazione','Pénétration','Пробивание','Delme'],
 } as const satisfies Record<string,readonly [string,string,string,string,string,string,string,string]>;

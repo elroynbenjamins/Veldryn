@@ -14,7 +14,7 @@ assert.match(screen,/const expanded=expandedToolId===tool\.id/,'Expanded recipe 
 assert.match(screen,/current===tool\.id\?null:tool\.id/,'Tapping an open recipe must collapse it');
 assert.match(screen,/setExpandedToolId\(null\)/,'Collapsing tool tiers clears any expanded recipe');
 assert.match(screen,/\{expanded\?<ToolRecipeInlinePanel state=\{state\} tool=\{tool\}/,'Inline preview must render below the matching tier, without navigating away');
-assert.match(screen,/const action=carried\?\(\)=>onEquipTool\(tool\.id\):banked\?\(onWithdrawTool\?\(\)=>onWithdrawTool\(tool\.id\):onInventory\):toggleRecipe/,'Tool actions must distinguish owned, banked and missing tools');
+assert.match(screen,/const action=equipped\?\(\)=>onCommand\(\{type:'unequip_tool',args:\{id:tool\.id\}\}\):carried\?\(\)=>onEquipTool\(tool\.id\):banked\?\(onWithdrawTool\?\(\)=>onWithdrawTool\(tool\.id\):onInventory\):toggleRecipe/,'Tool actions must distinguish equipped unequip, carried equip, bank withdraw and unowned recipe preview');
 assert.match(screen,/const showDetailsToggle=equipped\|\|carried\|\|banked/,'Equipped or owned tools must still allow inspecting recipe details');
 assert.match(screen,/accessibilityState=\{\{expanded\}\}/,'Disclosure state is available to screen readers');
 assert.match(screen,/accessibilityLabel=\{localizedItemName\(language,tool\.id\)\+': '\+actionTitle\}/,'Primary tool action must identify the tool for assistive technology');

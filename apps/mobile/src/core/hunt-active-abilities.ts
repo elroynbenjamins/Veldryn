@@ -45,9 +45,10 @@ export interface HuntActiveAbility {
  * finishing hit; no damage is created. Damage-companion assists attribute
  * existing damage at the first eligible hit following their cooldown pulse.
  * The caller resolves these same events in online, offline and live replay.
+ * Equipped Ability Damage increases only the shifted class-technique portion.
  */
 export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
- classId:ClassId;classSkillLevel:number;
+ classId:ClassId;classSkillLevel:number;abilityDamageBonus?:number;
  combatStartedAtMs:number;encounterStartedAtMs:number;cycleSeconds:number;
  companion?:{id:string;name:string;abilityId:string;abilityName:string;role:'damage'|'tank'|'support';contributionPct:number;cooldownSeconds:number};
 }):HuntHit[]{
@@ -71,17 +72,17 @@ export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
    source.damage-=amount;target.damage+=amount;
    return amount;
   };
-  let activation:HuntHit|undefined;
+  let activation:HuntHit|undefined,shiftedDamage=0;
   switch(input.classId){
    case 'WAYFINDER': {
     // Windshot front-loads a real later strike into the earliest ready shot.
     const target=eligible.find(hit=>hit!==last);
-    if(target&&shift(last,target,.08+.07*scale)>0)activation=target;
+    if(target){const moved=shift(last,target,.08+.07*scale);if(moved>0){activation=target;shiftedDamage+=moved;}}
     break;
    }
    case 'RAVAGER': {
     // Titan Swing concentrates a larger strike into the final blow.
-    if(eligible.includes(last)&&shift(first,last,.18+.14*scale)>0)activation=last;
+    if(eligible.includes(last)){const moved=shift(first,last,.18+.14*scale);if(moved>0){activation=last;shiftedDamage+=moved;}}
     break;
    }
    case 'HEXWEAVER': {
@@ -89,18 +90,25 @@ export function huntActiveDamageEvents(events:readonly HuntHit[],input:{
     if(eligible.includes(last)){
      const middle=penultimate!==first&&eligible.includes(penultimate)?penultimate:undefined;
      const moved=middle?shift(first,middle,.055+.035*scale):0;
-     if(shift(first,last,.11+.07*scale)>0||moved>0)activation=last;
+     const final=shift(first,last,.11+.07*scale);
+      if(final>0||moved>0){activation=last;shiftedDamage+=moved+final;}
     }
     break;
    }
    case 'KNIFE_DANCER': {
     // Scarlet Loop brings the finishing strike forward as a fast repeat.
     const target=eligible.includes(penultimate)?penultimate:eligible.find(hit=>hit!==last);
-    if(target&&shift(last,target,.10+.10*scale)>0)activation=target;
+    if(target){const moved=shift(last,target,.10+.10*scale);if(moved>0){activation=target;shiftedDamage+=moved;}}
     break;
    }
   }
-  if(activation)activation.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:activation.damage};
+  if(activation){
+    // Only the true cooldown-shifted portion of the class ability gains
+    // extra damage. Basic strikes and companion assists are not multiplied.
+    const multiplier=Math.max(0,Math.min(.50,Number(input.abilityDamageBonus)||0));
+    if(multiplier>0)activation.damage+=Number((shiftedDamage*multiplier).toFixed(5));
+    activation.activeAbility={source:'class',id:ability.id,name:ability.name,kind:'damage',amount:activation.damage};
+  }
  }
  const companion=input.companion;
  if(landed.length>=2&&companion?.role==='damage'&&companion.contributionPct>0){

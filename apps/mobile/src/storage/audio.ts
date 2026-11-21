@@ -12,12 +12,13 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,type AudioPreferences} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences,type AudioChannel} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
 export type {AudioLevel,AudioPreferences} from '../core/audio-preferences';
 const KEY='veldryn.device.audio.v1';
+const REMEMBERED_KEY='veldryn.device.audio.last-audible.v1';
 /** The same effect retriggered faster than this is dropped (e.g. a burst of hits). */
 const MIN_GAP_MS=70;
 const MUSIC_BASE=.55,FADE_MS=450;
@@ -36,28 +37,40 @@ function ensureMode(m:AudioModule){
 }
 
 let prefs:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}},loaded=false;
+let remembered:AudioPreferences={...DEFAULT_AUDIO_PREFERENCES,musicContexts:{}};
 let saveQueue:Promise<void>=Promise.resolve();
 const listeners=new Set<(value:AudioPreferences)=>void>();
 export async function loadAudioPreferences():Promise<AudioPreferences>{
  if(loaded)return prefs;
  try{
-  const stored=await AsyncStorage.getItem(KEY);
+  const [stored,lastAudible]=await Promise.all([AsyncStorage.getItem(KEY),AsyncStorage.getItem(REMEMBERED_KEY)]);
   // A user choice made while the initial read was pending must win.
-  if(!loaded)prefs=parseAudioPreferences(stored);
+  if(!loaded){
+   prefs=parseAudioPreferences(stored);
+   remembered=rememberAudibleAudioLevels(parseAudioPreferences(lastAudible),prefs);
+  }
  }catch{/* defaults */}
  if(!loaded){loaded=true;notify();}
  return prefs;
 }
 export async function setAudioPreferences(next:AudioPreferences):Promise<void>{
- prefs=parseAudioPreferences(JSON.stringify(next));loaded=true;notify();
+ prefs=parseAudioPreferences(JSON.stringify(next));
+ remembered=rememberAudibleAudioLevels(remembered,prefs);
+ loaded=true;notify();
  // Resolve current *context* again; the user may have muted or remapped it.
  resolveTrack();
  applyMusicVolume();
  if(prefs.music===0){stopMusicPreview();stopMusicPlayer();}
- const serialized=JSON.stringify(prefs);
- // Preserve the most recent choice even when the player taps several controls quickly.
- saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.setItem(KEY,serialized)).then(()=>{},()=>{});
+ const serialized=JSON.stringify(prefs),savedAudible=JSON.stringify(remembered);
+ // Serialize rapid changes; never restore an older context/volume over the last tap.
+ saveQueue=saveQueue.catch(()=>{}).then(()=>AsyncStorage.multiSet([[KEY,serialized],[REMEMBERED_KEY,savedAudible]])).then(()=>{},()=>{});
  await saveQueue;
+}
+/** One-tap mute remembers the previous audible level; area remapping stays intact. */
+export function toggleAudioMute(channel:AudioChannel):AudioPreferences[AudioChannel]{
+ const next=audioAfterMuteToggle(prefs,remembered,channel);
+ void setAudioPreferences(next);
+ return next[channel];
 }
 function notify(){for(const l of listeners)l(prefs);}
 // Load saved levels as early as possible so the first sounds already respect them.

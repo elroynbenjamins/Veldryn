@@ -29,7 +29,7 @@ const common={
  "Process":["Process","Verarbeiten","Procesar","Verwerken","Lavora","Traiter"],
  "Queue":["Queue","Einreihen","En cola","In wachtrij","In coda","Mettre en file"],
  "Start":["Start","Starten","Iniciar","Starten","Avvia","Démarrer"],
- // Inline gathering-tool recipes and the equipment bonus inspect summary.
+ // Retain released inline gathering tool recipe translations from main.
   "Recipe known":["Recipe known","Rezept bekannt","Receta conocida","Recept bekend","Ricetta conosciuta","Recette connue"],
   "Recipe details":["Recipe details","Rezeptdetails","Detalles de la receta","Receptdetails","Dettagli della ricetta","Détails de la recette"],
   "CRAFTING RECIPE":["CRAFTING RECIPE","HERSTELLUNGSREZEPT","RECETA DE FABRICACIÓN","MAAKRECEPT","RICETTA DI CREAZIONE","RECETTE DE FABRICATION"],
@@ -54,8 +54,54 @@ const common={
   "{name} can drop the {tool} Blueprint.":["{name} can drop the {tool} Blueprint.","{name} kann den Bauplan für {tool} fallen lassen.","{name} puede soltar el plano de {tool}.","{name} kan de blauwdruk voor {tool} laten vallen.","{name} può lasciare il progetto di {tool}.","{name} peut laisser tomber le plan de {tool}."],
   "Hide Recipe":["Hide Recipe","Rezept ausblenden","Ocultar receta","Recept verbergen","Nascondi ricetta","Masquer la recette"],
   "Blueprint: {name}":["Blueprint: {name}","Bauplan: {name}","Plano: {name}","Blauwdruk: {name}","Progetto: {name}","Plan : {name}"],
-  "BONUS STATS":["BONUS STATS","BONUSWERTE","ATRIBUTOS ADICIONALES","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATISTIQUES BONUS"],
-  "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni auf diesem Ausrüstungsexemplar.","Bonificaciones aleatorias de esta copia del equipo.","Willekeurige bonussen op dit uitrustingsexemplaar.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],
+ // Forge v7 shared stats and compact, non-percentile player-facing bonus information.
+ "Bonus stat changes":["Bonus stat changes","Änderungen der Bonuswerte","Cambios en los bonus","Verschillen in bonusstats","Variazioni delle statistiche bonus","Variations des bonus"],
+ "Random bonus stats":["Random bonus stats","Zufällige Bonuswerte","Estadísticas adicionales aleatorias","Willekeurige bonusstats","Statistiche bonus casuali","Statistiques bonus aléatoires"],
+ "Possible bonus stats":["Possible bonus stats","Mögliche Bonuswerte","Posibles estadísticas adicionales","Mogelijke bonusstats","Statistiche bonus possibili","Bonus possibles"],
+ "View possible rolls":["View possible rolls","Mögliche Würfe anzeigen","Ver posibles resultados","Bekijk mogelijke bonussen","Mostra i bonus possibili","Voir les bonus possibles"],
+ "Hide possible rolls":["Hide possible rolls","Mögliche Würfe ausblenden","Ocultar posibles resultados","Verberg mogelijke bonussen","Nascondi i bonus possibili","Masquer les bonus possibles"],
+ "possible stats":["possible stats","mögliche Werte","estadísticas posibles","mogelijke stats","statistiche possibili","statistiques possibles"],
+ "2 bonuses per weapon":["2 bonuses per weapon","2 Boni pro Waffe","2 bonificaciones por arma","2 bonussen per wapen","2 bonus per arma","2 bonus par arme"],
+ "1 bonus · Epic+ gets 2":["1 bonus · Epic+ gets 2","1 Bonus · Episch+ erhält 2","1 bonus · Épico+ obtiene 2","1 bonus · Episch+ krijgt 2","1 bonus · Epico+ ne ottiene 2","1 bonus · Épique+ en donne 2"],
+ "All eligible weapons share the same bonus pool.":["All eligible weapons share the same bonus pool.","Alle geeigneten Waffen haben dieselben möglichen Boni.","Todas las armas aptas comparten los mismos bonus posibles.","Alle geschikte wapens hebben dezelfde mogelijke bonusstats.","Tutte le armi idonee condividono gli stessi bonus possibili.","Toutes les armes éligibles partagent les mêmes bonus possibles."],
+ "Each bonus type can appear only once on a weapon.":["Each bonus type can appear only once on a weapon.","Jede Bonusart kann pro Waffe nur einmal auftreten.","Cada tipo de bonus solo puede aparecer una vez por arma.","Elke bonusstat kan maar één keer per wapen voorkomen.","Ogni tipo di bonus può apparire una sola volta per arma.","Chaque type de bonus ne peut apparaître qu'une fois par arme."],
+ "Two different bonuses on every rarity.":["Two different bonuses on every rarity.","Zwei verschiedene Boni bei jeder Seltenheit.","Dos bonus distintos en todas las rarezas.","Twee verschillende bonussen bij elke zeldzaamheid.","Due bonus diversi per ogni rarità.","Deux bonus distincts à chaque rareté."],
+ "Common–Rare: 1 bonus. Epic+: 2 bonuses.":["Common–Rare: 1 bonus. Epic+: 2 bonuses.","Gewöhnlich–Selten: 1 Bonus. Episch+: 2 Boni.","Común–Raro: 1 bonus. Épico+: 2 bonus.","Gewoon–Zeldzaam: 1 bonus. Episch+: 2 bonussen.","Comune–Raro: 1 bonus. Epico+: 2 bonus.","Commun–Rare : 1 bonus. Épique+ : 2 bonus."],
+ "Bonus stats, rarity and quality roll separately on claim.":["Bonus stats, rarity and quality roll separately on claim.","Bonuswerte, Seltenheit und Qualität werden beim Abholen getrennt gewürfelt.","Los bonus, la rareza y la calidad se generan por separado al recoger.","Bonusstats, zeldzaamheid en kwaliteit worden apart bepaald bij het ophalen.","Bonus, rarità e qualità vengono generati separatamente al ritiro.","Les bonus, la rareté et la qualité sont tirés séparément à la récupération."],
+ "Bonus range":["Bonus range","Bonusspanne","Rango del bonus","Bonusbereik","Intervallo bonus","Plage du bonus"],
+ "Older copy — no recorded bonus":["Older copy — no recorded bonus","Älteres Exemplar – kein Bonus gespeichert","Copia antigua: sin bonus registrado","Oud exemplaar — geen bonus geregistreerd","Copia precedente: nessun bonus registrato","Ancien exemplaire : aucun bonus enregistré"],
+ "Max HP":["Max HP","Max. LP","PV máx.","Max. HP","PS max","PV max"],
+ "Armor":["Armor","Rüstung","Armadura","Pantser","Armatura","Armure"],
+ "Crit Rate":["Crit Rate","Krit.-Chance","Prob. crítico","Critkans","Prob. critico","Taux critique"],
+  // Exact-copy bonus stats: maintained across the mainline gear quick-inspect redesign.
+  "BONUS STATS":["BONUS STATS","BONUSWERTE","ESTADÍSTICAS EXTRA","BONUSSTATISTIEKEN","STATISTICHE BONUS","STATS BONUS"],
+  "Random bonuses on this equipment copy.":["Random bonuses on this equipment copy.","Zufällige Boni für dieses Ausrüstungsexemplar.","Bonificaciones aleatorias de esta pieza de equipo.","Willekeurige bonussen op dit uitrustingsstuk.","Bonus casuali su questa copia dell'equipaggiamento.","Bonus aléatoires sur cet exemplaire d'équipement."],
+ // Clear tier and rolled bonus math for gathering tools (six base locales).
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%","Stufenboni {base}% · Tempo-Würfe +{roll} Prozentpunkte · Effektiv {total}%","Bonos por niveles {base}% · Tiradas de velocidad +{roll} puntos · Efectivo {total}%","Tierbonussen {base}% · Snelheidsrollen +{roll} procentpunten · Effectief {total}%","Bonus dei livelli {base}% · Tiri velocità +{roll} punti · Effettivo {total}%","Bonus des paliers {base}% · Tirages vitesse +{roll} points · Effectif {total}%"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.","Tempo-Boni verkürzen die verbleibende Aktionszeit. Die Gesamtreduktion ist auf 80% begrenzt.","Los bonos de velocidad reducen el tiempo restante. La reducción total no puede superar el 80%.","Snelheidsbonussen verkorten de resterende actietijd. De totale vermindering is maximaal 80%.","I bonus velocità riducono il tempo rimanente. La riduzione totale non supera l'80%.","Les bonus de vitesse réduisent le temps restant. La réduction totale ne dépasse pas 80%."],
+ "Speed cap reached":["Speed cap reached","Tempolimit erreicht","Límite de velocidad alcanzado","Snelheidslimiet bereikt","Limite di velocità raggiunto","Limite de vitesse atteinte"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Rare finds: +{percent}% relative chance (eligible gathering drops only)","Seltene Funde: +{percent}% relative Chance (nur geeignete Sammelbeute)","Hallazgos raros: +{percent}% de probabilidad relativa (solo recompensas de recolección válidas)","Zeldzame vondsten: +{percent}% relatieve kans (alleen geschikte verzamelvondsten)","Ritrovamenti rari: +{percent}% probabilità relativa (solo ricompense di raccolta idonee)","Trouvailles rares : +{percent}% de chance relative (récoltes éligibles uniquement)"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Tier contribution: {base}% base → {adjusted}% with rarity and quality","Stufenbeitrag: {base}% Basis → {adjusted}% mit Seltenheit und Qualität","Aporte del nivel: {base}% base → {adjusted}% con rareza y calidad","Tierbijdrage: {base}% basis → {adjusted}% met zeldzaamheid en kwaliteit","Contributo livello: {base}% base → {adjusted}% con rarità e qualità","Contribution du palier : {base}% de base → {adjusted}% avec rareté et qualité"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Rarity {rarity}% · Quality {quality}% (relative to tier base)","Seltenheit {rarity}% · Qualität {quality}% (relativ zum Stufenbonus)","Rareza {rarity}% · Calidad {quality}% (respecto a la base del nivel)","Zeldzaamheid {rarity}% · Kwaliteit {quality}% (t.o.v. de tierbasis)","Rarità {rarity}% · Qualità {quality}% (rispetto alla base del livello)","Rareté {rarity}% · Qualité {quality}% (par rapport à la base du palier)"],
+
+ // Gathering tool forging: typed labels, safe placeholders and all six base locales.
+ "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.",
+  "Jedes neue Werkzeug erhält genau einen Bonuswert: Sammeltempo +{min}–{max}% ODER Chance auf seltene Funde +{rareMin}–{rareMax}%. Die Bereiche gelten für alle Stufen und Seltenheiten.",
+  "Cada herramienta nueva obtiene exactamente una bonificación: velocidad de recolección +{min}–{max}% O probabilidad de hallazgos raros +{rareMin}–{rareMax}%. Los rangos son iguales para todos los niveles y rarezas.",
+  "Elk nieuw gereedschap krijgt precies één bonus: verzamelsnelheid +{min}–{max}% OF kans op zeldzame vondsten +{rareMin}–{rareMax}%. De bereiken zijn gelijk voor alle tiers en zeldzaamheden.",
+  "Ogni nuovo attrezzo ottiene esattamente un bonus: velocità di raccolta +{min}–{max}% O probabilità di ritrovamenti rari +{rareMin}–{rareMax}%. Gli intervalli sono uguali per tutti i livelli e le rarità.",
+  "Chaque nouvel outil reçoit exactement un bonus : vitesse de récolte +{min}–{max}% OU chance de trouvailles rares +{rareMin}–{rareMax}%. Les plages sont identiques pour tous les paliers et toutes les raretés."
+ ],
+ "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.",
+  "Der angezeigte Grundwert gilt für Ungewöhnlich mit Qualität 50. Seltenheit und Qualität 0–100 ändern den Grundbonus, nicht den möglichen Bonusbereich.",
+  "La velocidad base mostrada corresponde a Poco común y calidad 50. La rareza y la calidad 0–100 modifican la bonificación base, no el rango de tirada.",
+  "De getoonde basissnelheid geldt voor Ongewoon met kwaliteit 50. Zeldzaamheid en kwaliteit 0–100 veranderen de tierbonus, niet het bereik van de roll.",
+  "La velocità base mostrata corrisponde a Non comune, Qualità 50. Rarità e Qualità 0–100 modificano il bonus base, non l'intervallo dei tiri.",
+  "La vitesse de base affichée correspond à Peu commun, Qualité 50. La rareté et la Qualité 0–100 modifient le bonus de base, pas la plage du tirage."
+ ],
+
  // Permanent socket rules and irreversible manual equipment disposal.
  "Gem extraction is no longer available.":["Gem extraction is no longer available.","Das Entfernen von Edelsteinen ist nicht mehr möglich.","Ya no se pueden extraer gemas.","Edelstenen kunnen niet meer worden verwijderd.","Non è più possibile estrarre le gemme.","L'extraction des gemmes n'est plus possible."],
  "The old gem is permanently destroyed when replaced.":["The old gem is permanently destroyed when replaced.","Der bisherige Edelstein wird beim Ersetzen endgültig zerstört.","La gema anterior se destruye definitivamente al sustituirla.","De oude edelsteen wordt bij vervanging definitief vernietigd.","La gemma precedente viene distrutta definitivamente quando viene sostituita.","L'ancienne gemme est définitivement détruite lors du remplacement."],
@@ -727,6 +773,9 @@ const skills={
 "Only gathering nodes in this region are shown.":["Only gathering nodes in this region are shown.","Es werden nur Sammelstellen dieser Region angezeigt.","Solo se muestran recursos de esta región.","Alleen verzamelpunten in deze regio worden getoond.","Sono mostrati solo i punti di raccolta di questa regione.","Seuls les points de récolte de cette région sont affichés."],
 "Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.":["Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.","Schmiedearbeit reserviert beim Start Materialien und Gold. Ausrüstung, Edelsteinveredelung und Kombination teilen sich Herstellungsplätze; wiederholbare Verarbeitung nutzt den Aktivitätstimer.","La forja reserva materiales y oro al empezar. El equipo, el refinado y la combinación de gemas comparten espacios; el procesamiento repetible usa el temporizador de actividad.","Smeedwerk reserveert materialen en goud bij de start. Uitrusting, edelsteenverfijning en combineren delen werkplekken; herhaalde verwerking gebruikt de activiteitstimer.","La forgia riserva materiali e oro all’avvio. Equipaggiamento, raffinazione e combinazione di gemme condividono gli spazi; la lavorazione ripetibile usa il timer attività.","La forge réserve matériaux et or au démarrage. Équipement, raffinage et combinaison de gemmes partagent les emplacements ; la transformation répétable utilise le minuteur d’activité."],
 "Materials are taken from Inventory first, then Bank.":["Materials are taken from Inventory first, then Bank.","Materialien werden zuerst dem Inventar, dann der Bank entnommen.","Los materiales se toman primero del inventario y luego del banco.","Materialen komen eerst uit de inventaris en daarna uit de bank.","I materiali vengono presi prima dall’inventario, poi dalla banca.","Les matériaux sont pris dans l’inventaire, puis dans la banque."],
+"{count} tools equipped":["{count} tools equipped","{count} Werkzeuge ausgerüstet","{count} herramientas equipadas","{count} stuks gereedschap uitgerust","{count} attrezzi equipaggiati","{count} outils équipés"],
+"{percent}% shorter action time":["{percent}% shorter action time","{percent} % kürzere Aktionszeit","Tiempo de acción un {percent}% más corto","{percent}% kortere actietijd","Tempo azione ridotto del {percent}%","Durée d’action réduite de {percent} %"],
+"Unequip":["Unequip","Ablegen","Desequipar","Afdoen","Rimuovi","Déséquiper"],
 "No tool equipped":["No tool equipped","Kein Werkzeug ausgerüstet","Sin herramienta equipada","Geen gereedschap uitgerust","Nessun attrezzo equipaggiato","Aucun outil équipé"],
 "No tool · 15% slower gathering":["No tool · 15% slower gathering","Kein Werkzeug · 15 % langsameres Sammeln","Sin herramienta · recolección un 15 % más lenta","Geen gereedschap · 15% langzamer verzamelen","Nessun attrezzo · raccolta più lenta del 15%","Aucun outil · récolte 15 % plus lente"],
 "Tier {tier} · {percent}% shorter action time":["Tier {tier} · {percent}% shorter action time","Stufe {tier} · {percent} % kürzere Aktionszeit","Grado {tier} · acciones un {percent}% más cortas","Rang {tier} · {percent}% kortere actietijd","Grado {tier} · tempo azione ridotto del {percent}%","Palier {tier} · durée d’action réduite de {percent} %"],
@@ -1547,35 +1596,40 @@ for(const [english,pair] of Object.entries(gemMergeEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
-const toolRecipeEarlyLocales={
- "Recipe known":["Рецепт изучен","Tarif biliniyor"],
- "Recipe details":["Сведения о рецепте","Tarif ayrıntıları"],
- "CRAFTING RECIPE":["РЕЦЕПТ ИЗГОТОВЛЕНИЯ","ÜRETİM TARİFİ"],
- "KNOWN":["ИЗУЧЕНО","BİLİNİYOR"],
- "BLUEPRINT":["ЧЕРТЁЖ","PLAN"],
- "Character level":["Уровень персонажа","Karakter seviyesi"],
- "Action time":["Время действия","Eylem süresi"],
- "shorter":["короче","daha kısa"],
- "Blueprint source unavailable":["Источник чертежа недоступен","Plan kaynağı kullanılamıyor"],
- "Monster drop":["Добыча с монстра","Canavar ganimeti"],
- "Hunt source":["Охотиться за чертежом","Kaynağı avla"],
- "missing":["не хватает","eksik"],
- "All materials ready":["Все материалы готовы","Tüm malzemeler hazır"],
- "Inventory + Bank":["Инвентарь + Банк","Envanter + Banka"],
- "Source information unavailable":["Информация об источнике недоступна","Kaynak bilgisi kullanılamıyor"],
- "Other sources":["Другие источники","Diğer kaynaklar"],
- "base XP":["базового опыта","temel XP"],
- "Gold ready":["Золота хватает","Yeterli Altın"],
- "Not enough gold":["Недостаточно золота","Yetersiz Altın"],
- "Crafting availability is checked in Smithing.":["Возможность изготовления проверяется в Кузнечном деле.","Üretim uygunluğu Demircilikte kontrol edilir."],
- "Open in Smithing":["Открыть в Кузнечном деле","Demircilikte aç"],
- "{name} can drop the {tool} Blueprint.":["С {name} может выпасть чертёж для {tool}.","{name}, {tool} planını düşürebilir."],
- "Hide Recipe":["Скрыть рецепт","Tarifi gizle"],
- "Blueprint: {name}":["Чертёж: {name}","Plan: {name}"],
- "BONUS STATS":["БОНУСНЫЕ ХАРАКТЕРИСТИКИ","BONUS ÖZELLİKLER"],
- "Random bonuses on this equipment copy.":["Случайные бонусы на этом экземпляре снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
+// Russian/Turkish bonus labels for mainline Gear Storage.
+const bonusGearCopyEarlyLocales={
+ "BONUS STATS":["БОНУСНЫЕ ХАРАКТЕРИСТИКИ","EK ÖZELLİKLER"],
+ "Random bonuses on this equipment copy.":["Случайные бонусы этого экземпляра снаряжения.","Bu ekipman kopyasındaki rastgele bonuslar."],
 } as const;
-for(const [english,pair] of Object.entries(toolRecipeEarlyLocales)){
+for(const [english,pair] of Object.entries(bonusGearCopyEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
+const gatheringToolAffixEarlyLocales={
+  "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
+    "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
+    "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."
+  ],
+  "Displayed base speed is the Uncommon, Quality 50 baseline. Craft rarity and Quality 0–100 adjust the base tier bonus, not the roll range.":[
+    "Показанная базовая скорость соответствует необычному инструменту качества 50. Редкость и качество 0–100 изменяют базовый бонус ранга, но не диапазон бонуса.",
+    "Gösterilen temel hız, Yaygın Olmayan ve Kalite 50 içindir. Nadirlik ve Kalite 0–100, temel kademe bonusunu etkiler; bonus aralığını değiştirmez."
+  ],
+} as const;
+for(const [english,pair] of Object.entries(gatheringToolAffixEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Compact tool-speed breakdown, including the extra RU/TR locales.
+const gatheringSpeedBreakdownEarlyLocales={
+ "Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%":["Бонусы уровней {base}% · Бонус скорости +{roll} п.п. · Итог {total}%","Kademe bonusları %{base} · Hız bonusu +{roll} puan · Etkili %{total}"],
+ "Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.":["Бонусы скорости сокращают оставшееся время действия. Общий предел сокращения — 80%.","Hız bonusları kalan eylem süresini azaltır. Toplam azalma %80'i aşamaz."],
+ "Speed cap reached":["Достигнут предел скорости","Hız sınırına ulaşıldı"],
+ "Rare finds: +{percent}% relative chance (eligible gathering drops only)":["Редкие находки: +{percent}% к относительному шансу (только подходящие ресурсы сбора)","Nadir buluntular: uygun toplama ganimetlerinde göreli şans +%{percent}"],
+ "Tier contribution: {base}% base → {adjusted}% with rarity and quality":["Вклад ранга: база {base}% → {adjusted}% с учётом редкости и качества","Kademe katkısı: %{base} taban → nadirlik ve kalite ile %{adjusted}"],
+ "Rarity {rarity}% · Quality {quality}% (relative to tier base)":["Редкость {rarity}% · Качество {quality}% (относительно базового бонуса)","Nadirlik %{rarity} · Kalite %{quality} (temel kademe bonusuna göre)"],
+} as const;
+for(const [english,pair] of Object.entries(gatheringSpeedBreakdownEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

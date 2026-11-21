@@ -5,6 +5,7 @@ import {activeEquipmentBuildStats,equipmentSetCombatModifiers} from '../src/core
 import {combatPowerRating} from '../src/core/combat-power';
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
+import {marketCatalogCandidate} from '../src/core/player-market-readiness';
 import type {CraftedGearInstance,GearSlot} from '../src/core/types';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
 import {formatGemValueV1} from '../src/core/gem-progression-v1';
@@ -93,6 +94,10 @@ ok(itemDef('LEGACY_EMBERHEART_GEM_V2').type==='gem'&&
   itemDef('LEGACY_EMBERHEART_GEM_V2').gemStat==='attack'&&
   itemDef('LEGACY_EMBERHEART_GEM_V2').value===0,
   'Protected restoration item must be a compatible socketable Attack gem');
+ok(!marketCatalogCandidate('LEGACY_EMBERHEART_GEM_V2'),
+  'Restored historical Emberheart must remain outside the Player Market');
+ok(marketCatalogCandidate('gem:stat_might:g3'),
+  'Ordinary G3 Might Gems remain regular market candidates');
 close(equippedCanonicalStatGemBonusesV1(restoredEmberheart).statPercent.attack??0,0,
   'Restored Emberheart cannot also apply canonical Might on top of its legacy Attack effect');
 ok(Object.keys(equippedCanonicalStatGemBonusesV1(oldGem).statPercent).length===0,

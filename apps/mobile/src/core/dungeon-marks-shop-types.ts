@@ -1,6 +1,6 @@
 /** Shared read-only Dungeon Marks Shop DTOs. Kept in .ts for non-JSX engine tests. */
 export type DungeonMarksShopItemStatus=
- 'eligible'|'region_locked'|'already_owned'|'weekly_limit'|'insufficient_marks'|'unreleased';
+ 'eligible'|'region_locked'|'crafting_tier_locked'|'already_owned'|'weekly_limit'|'insufficient_marks'|'unreleased';
 export interface DungeonMarksShopCard{
  id:string;name:string;category:'supply'|'material'|'companion'|'icon'|'border'|'background'|'pet';
  marks:number;summary:string;status:DungeonMarksShopItemStatus;

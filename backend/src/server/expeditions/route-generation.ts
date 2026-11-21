@@ -69,6 +69,8 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
  // Preserve saved v1 graphs; all newly generated Endurance runs use the checkpoint-choice v2 layout.
  const checkpointChoiceV2=routeMode==='endurance';
  const generatorVersion=isEndurance?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+(checkpointChoiceV2?'-endurance-v2':'-endurance-v1'):COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+ // Keep the calibrated first seven rooms identical to Endurance v1. Only checkpoint choices get a new seed.
+ const regularRoomSeedVersion=checkpointChoiceV2?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+'-endurance-v1':generatorVersion;
  const preBossNodeCount=isEndurance?DUNGEON_ENDURANCE.maxNormalRooms:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
  const finalBosses=dungeonBossVariantsFor(expeditionId);
  // One frozen 50/50 boss roll per run: players cannot reroll a boss by
@@ -78,7 +80,7 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
  const idsAt=(depth:number)=>Array.from({length:COOP_ROGUELITE_CONFIG.choicesPerDepth},(_,choice)=>`d${depth}-c${choice}`);
  nodes.push({nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)});
  for(let depth=1;depth<=preBossNodeCount;depth++){
-   const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
+   const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,regularRoomSeedVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
    const checkpoint=isEndurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0;
    const usedContentIds=new Set<string>();
    for(let choice=0;choice<COOP_ROGUELITE_CONFIG.choicesPerDepth;choice++){
@@ -96,7 +98,7 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
      }
      const kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
      const contentPool=coopContentPool(expeditionId,kind);
-     let contentIndex=deterministicInt(secret,0,contentPool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
+     let contentIndex=deterministicInt(secret,0,contentPool.length-1,regularRoomSeedVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
      while(usedContentIds.has(contentPool[contentIndex]))contentIndex=(contentIndex+1)%contentPool.length;
      const contentId=contentPool[contentIndex];usedContentIds.add(contentId);
      const modifierIndex=(layerModifierOffset+choice)%MODIFIERS.length;

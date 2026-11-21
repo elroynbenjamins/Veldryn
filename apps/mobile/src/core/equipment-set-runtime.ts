@@ -5,12 +5,12 @@ import {normalizeCraftedGearInstances} from './crafted-gear-instances';
 import type {GameState,GearSlot} from './types';
 
 export type EquipmentSetStatKey=
-  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion'|'abilityDamage'|'healingPower';
+  'maxHp'|'armor'|'ward'|'tenacity'|'haste'|'power'|'attack'|'accuracy'|'penetration'|'potency'|'critRate'|'critDamage'|'evasion'|'abilityDamage'|'healingPower';
 
 export type EquipmentSetStats=Record<EquipmentSetStatKey,number>;
 
 const EMPTY_STATS:EquipmentSetStats={
-  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,abilityDamage:0,healingPower:0,
+  maxHp:0,armor:0,ward:0,tenacity:0,haste:0,power:0,attack:0,accuracy:0,penetration:0,potency:0,critRate:0,critDamage:0,evasion:0,abilityDamage:0,healingPower:0,
 };
 const STAT_KEY_BY_LABEL:Record<string,EquipmentSetStatKey>={
   'max hp':'maxHp',armor:'armor',ward:'ward',tenacity:'tenacity',haste:'haste',power:'power',accuracy:'accuracy',
@@ -163,6 +163,7 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
     tenacity:multiplied(sets.tenacity,p.tenacity)+rolled('tenacity'),
     haste:multiplied(sets.haste,p.haste)+rolled('haste'),
     power:multiplied(sets.power,p.power)+rolled('power'),
+    attack:multiplied(sets.attack,p.attack)+rolled('attack'),
     accuracy:sets.accuracy+(pp.accuracy??0)+rolled('accuracy'),
     penetration:sets.penetration+(pp.penetration??0)+rolled('penetration'),
     potency:multiplied(sets.potency,p.potency)+rolled('potency'),
@@ -193,6 +194,7 @@ export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,b
     incomingDamageMultiplier:Math.max(.5,(1-stats.ward)*(1-stats.evasion)),
     speedMultiplier:1+stats.haste,
     powerMultiplier:1+stats.power,
+    attackMultiplier:1+stats.attack,
     accuracyMultiplier,
     critExpectedMultiplier:setCritExpected/baseCritExpected,
     penetrationMultiplier:1+stats.penetration,

@@ -51,7 +51,7 @@ ok(browserSource.includes('setSelectedVariants(current=>({...current,[recipeGrou
 ok(recipeCardSource.includes('variantRecipes?.length===2'),'Switcher must appear only for genuine two-route craftables');
 ok(recipeCardSource.includes('onSelectVariant(candidate.id)'),'Recipe selection must update the active recipe ID');
 ok(recipeCardSource.includes('accessibilityState={{selected,disabled:starting}}'),'Selected crafting route must be announced accessibly');
-ok(recipeCardSource.includes('onProcessingStart(recipe.id)'),'Selected recipe ID must reach authoritative processing');
+ok(recipeCardSource.includes('onProcessingStart(recipe.id,quantity)'),'Selected recipe ID must reach authoritative processing');
 ok(!recipeCardSource.includes('componentRoute?<Text'),'Do not show redundant per-card labels above the new switcher');
 
 for(const item of CROSS_PROFESSION_COMPONENT_ITEMS){

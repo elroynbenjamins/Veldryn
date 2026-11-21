@@ -62,14 +62,24 @@ A caller-provided test verifier is **not** evidence of real DB authority.
 
 ## Pass 3: Next Combat 2.0 pass — seeded encounter compatibility
 
-The dedicated validation suite executes a **6 regional boss identity x all 9
+The first validation suite executes a **6 regional boss identity x all 9
 canonical class/role IDs** matrix with two equivalent seeded previews per case
-(108 simulated encounters). Also tests deterministic choices, generated
+(108 synthetic encounters). It tests deterministic choices, generated
 source/room proof, duplicate and stack rejection, empty/fake authority,
-unsupported procs, role specificity, conditional boss-only bonuses and
-unchanged legacy combat. This is not an approval of the real six boss kits,
-their tuning, or current account combat balance: tests use synthetic enemy
-stats and no fully authored skill rotations.
+unsupported procs, role specificity, boss-only bonuses and legacy combat.
+This is not approval of the real boss kits or balance: these have synthetic
+enemy stats and no fully authored skill rotations.
+
+A second, deeper integration now connects the stat reward overlay to the
+hidden **unified Equipment + Skills + Enemy/Boss Combat 2.0** path. On 108
+existing genuine nine-class / two-specialization / six-boss fixtures,
+the actor is first compiled from server-owned Class, Skills, Equipment set
+and affix state; reward stats are then attached, and enemy + selected
+equipment-trait authority is newly bound to the final combined encounter.
+Every outcome is replayed twice to guard against drift; denial of the
+persisted-run verifier and unsupported proc rewards fail closed. This remains
+test-only: the callbacks are synthetic, not a live dungeon receipt store,
+and newer independent Skills 2.0 refinements are not yet integrated.
 
 New proc eligibility **must** eventually be driven by original,
 server-tagged direct events, never by generated gem/equipment/reward/DoT
@@ -100,6 +110,7 @@ rarities/quality and T1–T4 gear, and UI screenshot/design acceptance.
 PR CI:
 - strict backend TypeScript build;
 - hidden catalog, three-choice draft and 108 seeded synthetic encounters;
+- 108 genuine hidden full-equipment/skills/six-boss reward integration cases;
 - existing exact-copy equipment trait and six-boss scenario tests;
 - legacy engine smoke;
 - grep hard-fence preventing imports from online/mobile/Edge.

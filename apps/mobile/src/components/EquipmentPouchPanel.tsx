@@ -74,6 +74,10 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
   return {itemId:row.itemId,quantity:1,rarity:copy?.rarity??itemRarity(itemDef(row.itemId)),quality:copy?craftedGearDisplayQuality(copy):undefined};
  });
+ const needsHighRarityReview=(rows:readonly {itemId:string;index:number}[])=>rows.some(row=>{
+  const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
+  return ['epic','legendary','mythic'].includes(copy?.rarity??itemRarity(itemDef(row.itemId)));
+ });
  const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
  const previewSale=previewStack?.instanceId?saleCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const previewSalvage=previewStack?.instanceId?salvageCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
@@ -218,25 +222,29 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   {pages>1?<View style={s.paging}><GameButton compact title={p('Previous')} tone="secondary" disabled={shownPage===0} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.max(0,value-1))}}/><Text style={s.meta}>{shownPage+1}/{pages}</Text><GameButton compact title={p('Next')} tone="secondary" disabled={shownPage>=pages-1} onPress={()=>{setSelectedIndex(null);setPage(value=>Math.min(pages-1,value+1))}}/></View>:null}
   <View style={s.upgrade}><View style={s.flex}><Text style={s.itemName}>{upgrade?p('Next: {count} slots',{count:upgrade.capacity}):p('Maximum capacity reached')}</Text>{upgrade?<Text style={s.meta}>{p('Level {level} · {gold} Gold',{level:upgrade.level,gold:upgrade.cost.toLocaleString(language)})}</Text>:null}</View>
     <GameButton compact title={p(upgrade?'Upgrade':'Maxed')} tone="secondary" disabled={!canUpgrade||!onAction} onPress={()=>onAction?.({type:'equipment_pouch_upgrade'})}/></View>
-  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}}/>
+  <GameModalSurface visible={pendingSale!==null} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={!busy&&!disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALE')} title={p('Sell selected equipment?')} closeDisabled={busy||disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSale(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="sell" items={disposalItems(pendingRows)} gold={pendingGold} summary={pendingSale?{selected:pendingSale.ids.length+pendingSale.protectedCount,eligible:pendingSale.ids.length,protected:pendingSale.protectedCount}:undefined} note={p('Locked, favorited, loadout and Working Toward gear stays protected. Selling destroys installed gems and upgrades.')}/>
+    {needsHighRarityReview(pendingRows)?<Text style={s.saleWarning}>{p('High-rarity gear selected. Check each copy before confirming.')}</Text>:null}
+    {disposalError?<Text accessibilityRole="alert" style={s.saleWarning}>{disposalError}</Text>:null}
     {!confirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
-     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSale(null)}/>
-     <GameButton compact tone="danger" title={p('Confirm sale')} disabled={!onAction||busy||!confirmationValid} onPress={confirmSale}/>
+     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy||disposalBusy} onPress={()=>setPendingSale(null)}/>
+     <GameButton compact tone="danger" title={p('Confirm sale')} loading={disposalBusy} disabled={!onAction||busy||disposalBusy||!confirmationValid} onPress={confirmSale}/>
     </View>
    </View>
   </GameModalSurface>
-  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
-   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}}/>
+  <GameModalSurface visible={pendingSalvage!==null} reduceMotion={state.settings.reduceMotion} dismissOnBackdrop={!busy&&!disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}} surfaceStyle={s.modal}>
+   <GameModalHeader eyebrow={p('EQUIPMENT POUCH · SALVAGE')} title={p('Salvage selected equipment?')} closeDisabled={busy||disposalBusy} onClose={()=>{if(!saleInFlight.current&&!disposalBusy&&!busy)setPendingSalvage(null)}}/>
    <View style={s.details}>
     <DisposalPreview mode="salvage" items={disposalItems(pendingSalvageRows)} rewards={salvageRewards(pendingSalvageRows)} summary={pendingSalvage?{selected:pendingSalvage.ids.length+pendingSalvage.protectedCount,eligible:pendingSalvage.ids.length,protected:pendingSalvage.protectedCount}:undefined} note={p('Materials go to Inventory. Installed gems and upgrades are destroyed, not recovered. Locked, favorited and loadout gear stays protected.')}/>
+    {needsHighRarityReview(pendingSalvageRows)?<Text style={s.saleWarning}>{p('High-rarity gear selected. Check each copy before confirming.')}</Text>:null}
+    {disposalError?<Text accessibilityRole="alert" style={s.saleWarning}>{disposalError}</Text>:null}
     {!salvageConfirmationValid?<Text style={s.saleWarning}>{p('Selection has changed. Close and review the equipment.')}</Text>:null}
     <View style={s.actions}>
-     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy} onPress={()=>setPendingSalvage(null)}/>
-     <GameButton compact tone="danger" title={p('Confirm salvage')} disabled={!onAction||busy||!salvageConfirmationValid} onPress={confirmSalvage}/>
+     <GameButton compact tone="secondary" title={p('Cancel')} disabled={busy||disposalBusy} onPress={()=>setPendingSalvage(null)}/>
+     <GameButton compact tone="danger" title={p('Confirm salvage')} loading={disposalBusy} disabled={!onAction||busy||disposalBusy||!salvageConfirmationValid} onPress={confirmSalvage}/>
     </View>
    </View>
   </GameModalSurface>

@@ -488,6 +488,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         }
       }
     }
+    if(dungeonRewards&&direct&&actual>0&&source!==target&&
+      source.definition.team==='players'&&target.definition.team==='players'&&
+      source.definition.abilities.some(a=>a.id===abilityId)&&!abilityId.startsWith('V2_')){
+      const recipient=players.filter(x=>x.alive&&x!==source&&x!==target&&
+       x.hp<x.definition.stats.maxHp)
+       .sort((a,b)=>a.hp/a.definition.stats.maxHp-b.hp/b.definition.stats.maxHp||
+        a.definition.id.localeCompare(b.definition.id))[0];
+      if(recipient){
+        for(const action of dungeonRewards.afterOriginalAllyHeal({now,
+         sourceId:source.definition.id,healedId:target.definition.id,
+         recipientId:recipient.definition.id,abilityId,actualHeal:actual,
+         recipientMissingHp:recipient.definition.stats.maxHp-recipient.hp,
+         recipientMaxHp:recipient.definition.stats.maxHp}))
+          applyDungeonRewardAction(now,source,target,action);
+      }
+    }
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
@@ -505,7 +521,28 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         const isPartyShield=effect.target==='all_allies'||ability?.target==='all_allies';
         runCapstone(source,'shield',now,target,{amount:amt,isPartyShield});
       }
-    }return;}
+    }
+    if(dungeonRewards&&amt>0&&source.definition.team==='players'&&
+       target.definition.team==='players'&&
+       source.definition.abilities.some(a=>a.id===abilityId)&&
+       !abilityId.startsWith('V2_')){
+      // Never copy a generated shield. Pick the most vulnerable other
+      // participant, not the direct recipient or shield caster.
+      const recipient=players.filter(x=>x.alive&&x!==source&&x!==target&&
+       x.shield<x.definition.stats.maxHp*.10)
+       .sort((a,b)=>(a.hp+a.shield)/a.definition.stats.maxHp-
+         (b.hp+b.shield)/b.definition.stats.maxHp||
+         a.definition.id.localeCompare(b.definition.id))[0];
+      if(recipient){
+        for(const action of dungeonRewards.afterOriginalShield({now,
+         sourceId:source.definition.id,originalTargetId:target.definition.id,
+         recipientId:recipient.definition.id,abilityId,actualShield:amt,
+         recipientMaxHp:recipient.definition.stats.maxHp,
+         recipientShield:recipient.shield}))
+          applyDungeonRewardAction(now,source,target,action);
+      }
+    }
+    return;}
     if(effect.kind==='dot'||effect.kind==='hot'){
       const isHex=effect.kind==='dot'&&
         (effect.damageType==='shadow'||effect.damageType==='arcane'||effect.damageType==='nature');

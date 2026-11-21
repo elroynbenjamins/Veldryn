@@ -32,6 +32,8 @@ for(const cleared of [7,14,21,28,35]){
  assert.ok(options.filter(node=>node.kind!=='boss').every(node=>node.nextNodeIds.length===3),'Continue options lead to another room');
 }
 assert.deepEqual(generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance'),endurance,'Reconnected runs must retain the checkpoint graph');
+const v1SameRun=generateCoopRouteGraph(secret,'EXP_001','endurance-run','content-v1','balance-v1','endurance-v1');
+for(let depth=1;depth<=7;depth++)assert.deepEqual(endurance.nodes.filter(node=>node.depth===depth),v1SameRun.nodes.filter(node=>node.depth===depth),'Existing calibrated rooms must keep v1 RNG despite new checkpoint choices');
 const historicalEndurance=generateCoopRouteGraph(secret,'EXP_001','historical-run','content-v1','balance-v1','endurance-v1');
 validateCoopRouteGraph(historicalEndurance);
 assert.ok(historicalEndurance.generatorVersion.endsWith('-endurance-v1'),'Saved historical Endurance graphs remain supported');

@@ -86,7 +86,7 @@ test('new user-facing guidance is available in all seven translated locales',()=
   assert.ok(start>=0,'missing translation row '+key);
   const end=labels.indexOf('\n  ],',start);
   assert.ok(end>start,'missing translation row end '+key);
-  const values=labels.slice(start,end).split('\n').filter(line=>line.trim().startsWith('"'));
+  const values=labels.slice(labels.indexOf('\n',start)+1,end).split('\n').filter(line=>line.trim().startsWith('"'));
   assert.equal(values.length,7,'must have DE ES NL IT FR RU TR for '+key);
  }
 });

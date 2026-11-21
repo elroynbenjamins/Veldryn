@@ -102,7 +102,7 @@ export function geometricSuccessQuantiles(chance,quantity=1){
   requireTrue(Number.isFinite(chance)&&chance>0&&chance<=1,'probability');
   whole(quantity,'quantity');
   if(quantity!==1)fail('multi_drop_requires_seeded_simulation');
-  const quantile=p=>Math.ceil(Math.log1p(-p)/Math.log1p(-chance));
+  const quantile=p=>chance===1?1:Math.ceil(Math.log1p(-p)/Math.log1p(-chance));
   return {p50:quantile(.5),p90:quantile(.9),p95:quantile(.95),
     expected:Math.round((1/chance)*100)/100};
 }

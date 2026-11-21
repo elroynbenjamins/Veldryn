@@ -1,6 +1,8 @@
 import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../src/core/dungeon-enemy-display';
+import {dungeonDynamicUiText} from '../src/i18n/dungeon-dynamic-ui';
+import {seasonalBossDisplaySummary} from '../src/i18n/seasonal-boss-copy';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message='values differ'){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);}
@@ -107,4 +109,12 @@ try{validateCoopRunView({runId:'bad',mode:'qmode',phase:'completed',syncedLevel:
  {memberId:'p3',role:'support',name:'Dawnkeeper',echo:true,classId:'DAWNKEEPER'},
 ],options:[],lastCombat:{...replay,cues:[replay.cues[1],replay.cues[0]]}});}catch(error){invalid=error instanceof Error?error.message:String(error);}
 equal(invalid,'invalid_combat_replay');
+// A condensed 48-cue replay must still explain a full authoritative boss timeout.
+const bossLimitCopy='3:00 combat limit. Defeat the boss before time expires; surviving alone is not enough.';
+equal(seasonalBossDisplaySummary('en',bossLimitCopy),bossLimitCopy);
+for(const language of ['de','es','nl','it','fr','ru','tr'] as const){
+ assert(seasonalBossDisplaySummary(language,bossLimitCopy).includes('3:00'),'Boss time limit must be localized without losing the duration');
+ assert(dungeonDynamicUiText(language,'Combat limit reached at {time}',{time:'03:00'}).includes('03:00'),'Localized timeout must state the full simulated duration');
+}
+equal(dungeonDynamicUiText('en','Combat limit reached at {time}',{time:'03:00'}),'Combat limit reached at 03:00');
 console.log('dungeon combat playback OK');

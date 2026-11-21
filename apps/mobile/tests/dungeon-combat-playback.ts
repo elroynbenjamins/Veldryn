@@ -1,4 +1,4 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackSkillActivation,playbackProgress,playbackRecentCues,playbackSimulatedElapsedMs,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 import {dungeonEnemyAbilityDisplayName,dungeonEnemyDisplayName} from '../src/core/dungeon-enemy-display';
 import {dungeonDynamicUiText} from '../src/i18n/dungeon-dynamic-ui';
@@ -71,6 +71,15 @@ assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])>=260,'cue delay below f
 assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])<=950,'cue delay above ceiling');
 equal(playbackProgress(replay,5),1);
 equal(playbackRecentCues(replay,4).length,3);
+const condensedTimeout:CoopCombatReplayView={...replay,reason:'timeout',durationMs:180_000,cues:[
+ {atMs:0,type:'cast'},
+ {atMs:45_000,type:'action'},
+ {atMs:180_000,type:'timeout'}
+]};
+equal(playbackSimulatedElapsedMs(condensedTimeout,1),45_000,'Compressed playback must display 45s of simulated time, not device wall time');
+equal(playbackSimulatedElapsedMs(condensedTimeout,2),180_000,'The terminal cue must show the full 3-minute combat duration');
+equal(playbackSimulatedElapsedMs(condensedTimeout,1,true),180_000,'A completed replay must display its authoritative final duration');
+equal(playbackSimulatedElapsedMs({...condensedTimeout,cues:[]},0),0,'Unstarted replay must not pretend a combat duration');
 equal(playbackBossCombatant(replay)?.id,'boss');
 const multiEnemyReplay:CoopCombatReplayView={...replay,combatants:[...(replay.combatants??[]).filter(item=>item.team==='players'),{id:'e1',name:'Briar Husk',team:'enemies',maxHp:1200,startHp:1200,startShield:0,boss:false},{id:'e2',name:'Briar Husk',team:'enemies',maxHp:1300,startHp:1300,startShield:0,boss:false}]};
 equal(playbackEnemyCombatants(multiEnemyReplay).map(item=>item.id),['e1','e2'],'duplicate-name enemies must remain distinct by replay id');

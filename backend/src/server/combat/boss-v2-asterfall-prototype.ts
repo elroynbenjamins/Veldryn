@@ -6,7 +6,7 @@ import {ENEMY_V2_RULESET} from './enemy-v2-prototype';
  * Never change a live/legacy encounter snapshot. Call only when the server has
  * selected and persisted the versioned Enemy 2.0 ruleset for a NEW run.
  */
-const V2_TAG='enemy-v2:boss-profile:asterfall-1';
+const V2_TAG='enemy-v2:boss-profile:asterfall-2';
 export function prepareAsterfallBossV2(
   boss:CombatantDefinition,
   ruleset?:typeof ENEMY_V2_RULESET,

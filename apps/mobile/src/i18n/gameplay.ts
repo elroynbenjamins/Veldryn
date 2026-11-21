@@ -10,7 +10,6 @@ import {useMemo} from 'react';
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
  // Compact crafting details tabs and optional material acquisition help.
- 'Stats':['Stats','Werte','Estadísticas','Statistieken','Statistiche','Statistiques'],
  'Progress':['Progress','Fortschritt','Progreso','Voortgang','Progressi','Progression'],
  'Materials & sources':['Materials & sources','Materialien & Fundorte','Materiales y fuentes','Materialen en vindplaatsen','Materiali e fonti','Matériaux et sources'],
  // Timed gathering tools use the shared Forge and its six-locale labels.

@@ -48,7 +48,7 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
   const gatheringToolById=new Map<string,NonNullable<GameState['account']['craftedGatheringToolInstances']>[number]>();
   for(const raw of state.account.craftedGatheringToolInstances??[]){
     const record=validateGatheringToolRoll(raw,raw.itemId);
-    if(!record)continue;
+    if(!record||!record.id.startsWith('gtool:'))continue;
     if(gatheringToolById.has(record.id))audit.problems.push(`Duplicate gathering tool record: ${record.id}`);
     else gatheringToolById.set(record.id,record);
   }
@@ -75,7 +75,7 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
       }
       // Respect independent tool custody without weakening the gear ID check.
       // Invalid, unknown and duplicated tool IDs still fail closed.
-      const tool=!byId.has(stack.instanceId)?gatheringToolById.get(stack.instanceId):undefined;
+      const tool=place!=='equipment_pouch'&&!byId.has(stack.instanceId)?gatheringToolById.get(stack.instanceId):undefined;
       if(tool){
         if(tool.itemId!==stack.itemId)audit.problems.push(`Gathering tool item mismatch: ${stack.instanceId}`);
         else if(observedGatheringTools.has(stack.instanceId))audit.problems.push(`Duplicate gathering tool copy marker: ${stack.instanceId}`);

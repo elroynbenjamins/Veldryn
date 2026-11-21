@@ -27,7 +27,12 @@ const six=[
  ['BOSS_EXP_CANTOR','The Frozen Cantor','frostmarch',5,1],
 ] as const;
 const seen=new Set<string>();
-let interrupted=0,legacyChecks=0;
+const traitIds:Readonly<Record<string,string>>={
+ BOSS_EXP_ROOT:'reflective_bark',BOSS_EXP_BELL:'weakening_hex',
+ BOSS_EXP_SOLAR:'searing_exposure',BOSS_EXP_SPHINX:'mirage_reflection',
+ BOSS_EXP_BELLBEAST:'rending_frost',BOSS_EXP_CANTOR:'chilling_dissonance',
+};
+let interrupted=0,legacyChecks=0,traitChecks=0;
 for(const [id,name,region,tier,castCount] of six){
  const raw=boss(id,name);
  const original=JSON.stringify(raw);
@@ -45,6 +50,49 @@ for(const [id,name,region,tier,castCount] of six){
  assert.equal(preview[0].bossId,id);
  assert.equal(preview[0].casts.length,castCount);
  assert.deepEqual(preview[0].phases.map(p=>p.hpPercent),[70,35]);
+ const trait=preview[0].traits;
+ assert.equal(trait.length,1,'Each boss has one unique visible trait identity');
+ assert.equal(trait[0].id,traitIds[id]);
+ assert.ok(trait[0].name&&trait[0].mechanic&&trait[0].counter,
+  'Trait preview must explain mechanic and give a universal counter');
+ assert.ok(candidate.preparedEnemies[0].tags?.includes(
+  'enemy-v2:boss-trait:'+trait[0].id));
+ const prepared=candidate.preparedEnemies[0];
+ const effects=[
+  ...prepared.abilities.flatMap(a=>a.effects),
+  ...(prepared.phases??[]).flatMap(p=>p.effects),
+ ];
+ const has=(predicate:(effect:typeof effects[number])=>boolean)=>
+  effects.some(predicate);
+ switch(id){
+  case 'BOSS_EXP_ROOT':
+  case 'BOSS_EXP_SPHINX':
+   assert.ok(has(e=>e.kind==='shield'&&
+    (e.shieldReflectPct??0)>.0&&(e.shieldReflectPct??0)<=.10),
+    'Reflective boss trait requires a capped, real shield-reflection effect');
+   break;
+  case 'BOSS_EXP_BELL':
+   assert.ok(has(e=>e.kind==='debuff'&&e.tag==='healing_received'&&
+    e.value===-.10&&e.durationMs===4000));
+   assert.ok(has(e=>e.kind==='dot'&&e.tag==='echo'&&e.durationMs===4000));
+   break;
+  case 'BOSS_EXP_SOLAR':
+   assert.ok(has(e=>e.kind==='dot'&&e.tag==='burn'&&e.durationMs===4000));
+   assert.ok(has(e=>e.kind==='debuff'&&e.tag==='damage_taken'&&
+    e.value===.04&&e.durationMs===4000));
+   break;
+  case 'BOSS_EXP_BELLBEAST':
+   assert.ok(has(e=>e.kind==='dot'&&e.tag==='bleed'&&e.durationMs===4000));
+   assert.ok(has(e=>e.kind==='buff'&&e.tag==='defense_pct'&&
+    e.value===.06&&e.durationMs===6000));
+   break;
+  case 'BOSS_EXP_CANTOR':
+   assert.ok(has(e=>e.kind==='debuff'&&e.tag==='haste'&&
+    e.value===-.05&&e.durationMs===5000));
+   assert.ok(has(e=>e.kind==='dot'&&e.tag==='dissonance'));
+   break;
+ }
+ traitChecks++;
  assert.equal(candidate.preparedEnemies[0].phases?.length,3,
   'Legacy phase must be preserved alongside the two V2 phases');
  assert.equal(JSON.stringify(raw),original);
@@ -96,4 +144,5 @@ for(const [id,name,region,tier,castCount] of six){
 assert.equal(legacyChecks,6);
 assert.equal(seen.size,7);
 assert.equal(interrupted,3);
-console.log('PASS: 6 boss profiles, 7 readable cast tells, 12 authored phases, 3 interruptible mechanics with class-neutral fallbacks and preserved legacy replays');
+assert.equal(traitChecks,6);
+console.log('PASS: 6 boss profiles, 6 implemented trait identities, 7 readable casts, 12 phases, 3 interrupts, class-neutral responses, bounded effect proofs and unchanged legacy replays');

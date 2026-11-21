@@ -14,6 +14,9 @@ export interface MarketAuthServices {
   authenticate(token: string): Promise<string | null>;
 }
 export type MarketOperation =
+  | {kind:'browse';assetKind:'all'|'resource'|'equipment';itemId:string|null;search:string|null;
+     sort:'price_asc'|'price_desc'|'newest';minTotalGold:number|null;maxTotalGold:number|null;
+     limit:number;offset:number}
   | {kind:'inbox';history:boolean;offset:number}
   | {kind:'my_offers';history:boolean;offset:number}
   | {kind:'publish';holdId:string;unitPrice:number;quantity:number;requestKey:string}
@@ -45,6 +48,34 @@ const bad=():never=>{throw new MarketRequestError('market_invalid_request',400);
 function validate(operation:string,method:string,query:URLSearchParams,body:unknown):MarketOperation{
   const params:string[]=[];
   query.forEach((_value,key)=>params.push(key));
+  if(operation==='browse'){
+    if(method!=='GET'||body!==null)bad();
+    const keys=['view','action','kind','itemId','search','sort','minGold','maxGold','limit','offset'];
+    if(params.some(k=>!keys.includes(k)) || keys.some(k=>query.getAll(k).length>1))bad();
+    const kind=query.get('kind')??'all';
+    const itemId=query.get('itemId'),search=query.get('search');
+    const sort=query.get('sort')??'price_asc';
+    const limitText=query.get('limit'),offsetText=query.get('offset');
+    const minText=query.get('minGold'),maxText=query.get('maxGold');
+    const parse=(value:string|null,defaultValue:number,min:number,max:number):number=>{
+      if(value===null)return defaultValue;
+      if(!/^(0|[1-9][0-9]{0,15})$/.test(value))return bad();
+      const parsed=Number(value);
+      if(!int(parsed,min,max))return bad();
+      return parsed;
+    };
+    if(!['all','resource','equipment'].includes(kind)
+      ||!['price_asc','price_desc','newest'].includes(sort)
+      ||(itemId!==null&&(itemId.length>180||!/^[A-Za-z0-9_:-]+$/.test(itemId)))
+      ||(search!==null&&(search.length>60||!/^[A-Za-z0-9_ :-]+$/.test(search))))bad();
+    const minTotalGold=minText===null?null:parse(minText,1,1,1000000000000000);
+    const maxTotalGold=maxText===null?null:parse(maxText,1,1,1000000000000000);
+    if(minTotalGold!==null&&maxTotalGold!==null&&minTotalGold>maxTotalGold)bad();
+    return {kind:'browse',assetKind:kind as 'all'|'resource'|'equipment',
+      itemId,search,sort:sort as 'price_asc'|'price_desc'|'newest',
+      minTotalGold,maxTotalGold,limit:parse(limitText,25,1,50),
+      offset:parse(offsetText,0,0,1000)};
+  }
   if(params.some(k=>!['view','action','history','offset'].includes(k)))bad();
   if(operation==='inbox'||operation==='my_offers'){
     if(method!=='GET'||body!==null)bad();
@@ -115,7 +146,7 @@ export async function bindAuthenticatedMarketRequest(
     ||url.searchParams.get('view')!=='market'
     ||url.searchParams.getAll('action').length!==1)bad();
   const action=url.searchParams.get('action')??'';
-  if(!['inbox','my_offers','publish','cancel','buy','claim'].includes(action))bad();
+  if(!['browse','inbox','my_offers','publish','cancel','buy','claim'].includes(action))bad();
   let body:unknown=null;
   if(request.method==='POST'){
     const length=request.headers.get('content-length');

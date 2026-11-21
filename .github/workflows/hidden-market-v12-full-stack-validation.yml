@@ -1,10 +1,11 @@
-name: Hidden Market V12 full-stack PostgreSQL validation
+name: Hidden Market V17 full-stack PostgreSQL validation
 
 on:
   pull_request:
     paths:
       - 'backend/supabase/migrations/*market*'
       - 'backend/supabase/tests/player_market_v12_*.sql'
+      - 'backend/supabase/tests/player_market_v17_*.sql'
       - 'backend/supabase/tests/run_market_v12_full_stack_ci.sh'
       - '.github/workflows/hidden-market-v12-full-stack-validation.yml'
   workflow_dispatch:

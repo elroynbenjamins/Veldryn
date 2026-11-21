@@ -86,3 +86,30 @@ Before implementing any of the design above:
 `backend/src/server/combat/v2/equipment-set-catalogue-reconciliation-review.ts` imports the existing Combat 2.0 structural catalogue and compares it to a **source-pinned read-only Forge snapshot** of its 15 named sets and 42 member slots. It establishes the 12/60/48/15 count discrepancy and refuses to claim any exact matching Forge/Combat set IDs. The test asserts 204 required conceptual T1–T4 slots, 15 structural six-piece tiered definitions, zero Forge six-piece sets, and no implied gameplay authority.
 
 **No code in this pass issues a set, migrates an item, unlocks a threshold, modifies a player build, or changes live 1.0.x.**
+
+
+## 7. Initial role-and-slot mapping review — NOT an automatic migration
+
+A read-only comparison of all 15 Forge set IDs to the 12 Combat families shows possible thematic homes, but **a matching slot is never proof of matching item identity, semantics, power or loot source**. Recommendations below require owner review and separate authored member IDs. Do not silently rename Forge set IDs.
+
+| Forge T1–T4 set | Best structural direction(s) from same-role slot overlap | Notes |
+| --- | --- | --- |
+| Fieldborn Guard (2p) | Oathplate / Citadel | Both currently share helmet+chest; candidate only |
+| Fieldborn Trail (2p) | Quickstep | Gloves+boots; Quickstep still needs cape |
+| Fieldborn Acolyte (2p) | Brightweave | Cape+amulet; still needs chest+gloves |
+| Ironwood Sentinel (3p) | Citadel | Chest+legs+boots; 3 of its 6 structural slots |
+| Ironwood Stalker (3p) | Quickstep / Horizon | Each shares 2 slots; no objective unique fit |
+| Ironwood Mender (3p) | Stormthread / Brightweave | Each shares 2 slots; different support identities |
+| Sunscar Thornhide (3p) | Oathplate / Citadel | Each shares 2 slots |
+| Sunscar Breaksteel (3p) | Blackscript / Breakerforge | Each shares 2 slots; playstyle differs sharply |
+| Sunscar Wildroot (3p) | Rootshield | Helmet+boots+cape, 3 of 6 |
+| Glassbound Bulwark (4p) | Citadel | Helmet+chest+legs+boots; 4 of 6 |
+| Glassbound Retaliator (2p) | Undecided | Four structural tank families share only 1 slot |
+| Glassbound Shadowstep (4p) | Breakerforge | Helmet+chest+gloves+boots overlaps 3 slots |
+| Glassbound Spellweave (2p) | Undecided | Four structural damage families share only 1 slot |
+| Glassbound Lifewoven (4p) | Rootshield | Helmet+chest+legs+boots overlaps 4 of 6 |
+| Glassbound Dawnshield (2p) | Brightweave | Gloves+cape; two other slots not authored |
+
+**Recommendation for this first reconciliation:** keep all existing 15 Forge names/recipes/items unchanged; use the mapping purely to identify **future distinct item concepts** and real costs. Do not collapse multiple tier sets into a single family or unlock bonuses by equivalent slot count. A single signed server member catalogue must explicitly link each piece to precisely one valid tiered set ID before the expanded 12-family system becomes executable.
+
+The source's first-pass exact role/slot comparison yields no equivalence authorization. Where two families fit equally well, differentiate them by gameplay mechanic, scarcity, art and material source during an owner's gameplay and visual review rather than guessing from a similar name.

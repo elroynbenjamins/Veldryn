@@ -11,7 +11,7 @@ export interface V2PhysicalGameState extends V2LegacyAccountCustodyView{
 import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations} from './equipment-crafting-v2-storage-reservations';
-import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-sidecar';
+import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {readEquipmentV2VirtualCustody} from './equipment-crafting-v2-virtual-history';
 import type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';

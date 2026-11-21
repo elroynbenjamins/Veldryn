@@ -219,6 +219,12 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     setEventRun(current=>current?.runId===runId&&current.stateVersion<=next.stateVersion?next:current);
   },[]);
   const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(coopErrorMessage(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
+  // Dungeon progression must unlock after the authoritative consumable response.
+  // Refresh the account inventory independently; a slow account sync must not
+  // keep the room-choice buttons disabled or require another potion to proceed.
+  const refreshConsumableInventory=()=>{
+    void Promise.resolve().then(()=>onRewardsChanged?.()).catch(()=>{});
+  };
   // Auto-preparation happens only when the server opens the first-room window.
   // A failed request is not retried blindly: the player keeps manual controls.
   useEffect(()=>{
@@ -232,7 +238,7 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
     const updated=await coopClient.prepareTonic(run.runId,potionId);
     if(activeRunId.current!==run.runId)return;
     acceptRun(updated);
-    await onRewardsChanged?.();
+    refreshConsumableInventory();
     setNotice(st('Selected tonic prepared automatically for this dungeon.'));
    });
   },[run,state,tonicPreference,characterId,foreground,busy,pending,eventRun,entrySource.kind]);
@@ -529,10 +535,10 @@ export function CoopExpeditionScreen({onClose,onOpenChat,language,state,entrySou
   }
   if(run)return <View style={{flex:1}}>{retry}<CoopRunOverview key={run.runId} language={language} run={runWithIcons!} vipPlus={vipPlus} playbackSpeed={dungeonPlaybackSpeed} onPlaybackSpeedChange={updateDungeonPlaybackSpeed} myVotedNodeId={myLiveVote?.runId===run.runId&&myLiveVote.decisionId===run.decisionId?myLiveVote.optionId:undefined} selfVoter={state.character?{name:state.character.name,profileIconId:state.character.profileIconId,className:state.character.classId}:undefined} notice={notice} syncError={syncError} busy={busy} rewards={rewards} combatMarks={combatMarkReceipt?.runId===run.runId?combatMarkReceipt.marks:undefined} recipeUnlocks={recipeUnlocks} rewardBudget={entry?.rewardBudget} liveFellowshipRemaining={entry?.liveFellowshipRemaining} chatMessages={chatMessages} onChatSend={run.mode==='live'?async text=>{const response=await coopClient.chat(run.runId,text);setChatMessages(response.messages);}:undefined} reduceMotion={state.settings.reduceMotion} onBack={()=>{setRun(undefined);setChatMessages([]);setRewards([]);void load();void refreshDungeonWeeklyQuest();}} onRefresh={()=>action(async()=>{await refreshRun(run.runId);if(run.mode==='live'){const chat=await coopClient.partyChat(run.runId);if(activeRunId.current===run.runId)setChatMessages(chat.messages);}if(['completed','failed'].includes(run.phase)){const items=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(items);void coopClient.combatMarks(run.runId).then(marks=>{if(activeRunId.current===run.runId)setCombatMarkReceipt({runId:run.runId,marks});}).catch(()=>{});}setSyncError('')})} onChoose={(nodeId,boonId)=>void action(async()=>{if(!run.decisionId||run.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));const body={requestId:coopRequestId(),decisionId:run.decisionId,decisionRevision:run.decisionRevision,optionId:nodeId,...(boonId?{boonId}:{})};const voting=run.mode==='live'&&run.options.length>1;const result=voting?await coopClient.vote(run.runId,body):await coopClient.choose(run.runId,body);if(voting)setMyLiveVote({runId:run.runId,decisionId:run.decisionId,optionId:nodeId});acceptRun(result);})} dungeonTonic={entrySource.kind==='real'?dungeonTonicView(run,state):undefined} onPrepareTonic={entrySource.kind==='real'?potionId=>void action(async()=>{
      acceptRun(await coopClient.prepareTonic(run.runId,potionId));
-     await onRewardsChanged?.();
+     refreshConsumableInventory();
     }):undefined} healingPotion={entrySource.kind==='real'?dungeonHealingPotionView(run,state):undefined} onUseHealingPotion={entrySource.kind==='real'?()=>void action(async()=>{
      acceptRun(await coopClient.useHealingPotion(run.runId));
-     await onRewardsChanged?.();
+     refreshConsumableInventory();
     }):undefined} onQueueAgain={queueAgainAction} onPartyRematch={run.mode==='live'&&coopLiveReadyEnabled?()=>{setRematchState(undefined);setRematchError('');rematchEntered.current=undefined;setRematchOpen(true);}:undefined} onClaim={id=>action(async()=>{const reward=await coopClient.claim(id);pendingRecipeClaim.current={runId:run.runId,baselineState:state,knownIds:[...(state.account.unlockedKnowledgeIds??[])]};setNotice(reward.live_fellowship_bonus?st('{marks} Expedition Marks collected. Includes +{bonus} Live Fellowship bonus.',{marks:reward.marks,bonus:reward.live_fellowship_bonus}):st('{marks} Expedition Marks collected.',{marks:reward.marks}));await onRewardsChanged?.();await refreshRun(run.runId);const latestRewards=await coopClient.rewards(run.runId);if(activeRunId.current===run.runId)setRewards(latestRewards);await load();})}/><CoopLiveRematchPanel visible={rematchOpen} run={runWithIcons!} status={rematchState} busy={rematchBusy} error={rematchError}
     onReady={()=>respondRematch(true)} onDecline={()=>respondRematch(false)} onClose={()=>setRematchOpen(false)}
     onEnter={()=>{if(rematchState?.runId)void enterRematch(rematchState.runId).catch(error=>setRematchError(error instanceof Error?error.message:String(error)));}}

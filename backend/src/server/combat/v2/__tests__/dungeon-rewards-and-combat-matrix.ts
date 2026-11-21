@@ -1,6 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../../engine';
 import type {CombatInput,CombatantDefinition,CombatRole,CombatV2Resource} from '../../types';
+import {CLASS_ROLES_V2} from '../build-contract';
 import {ROOM_BOON_CHOICES} from '../../../coop/room-boon-choices';
 import {DUNGEON_ARTIFACTS} from '../../../coop/dungeon-artifacts';
 import {
@@ -26,12 +27,14 @@ const stats=(hp=3500,attack=180)=>({
  accuracy:100000,evasion:0,critChance:.05,critMultiplier:1.5,haste:0,
 });
 const players=[
- ['IRONWARDEN','tank','guard'],['DAWNKEEPER','support','radiance'],
- ['STONECALLER','tank','barrier'],['WAYFINDER','damage','focus'],
- ['HEXWEAVER','damage','dread'],['KNIFEDANCER','damage','rhythm'],
- ['PYROMANCER','damage','fury'],['FROSTBINDER','support','resonance'],
- ['WARSONG','support','threads'],
+ ['IRONWARDEN','tank','guard'],['BASTION','tank','barrier'],
+ ['DREADGUARD','tank','dread'],['WAYFINDER','damage','focus'],
+ ['RAVAGER','damage','fury'],['HEXWEAVER','damage','threads'],
+ ['KNIFE_DANCER','damage','rhythm'],['DAWNKEEPER','support','radiance'],
+ ['STONECALLER','support','resonance'],
 ] as const satisfies readonly (readonly [string,CombatRole,CombatV2Resource])[];
+assert.deepEqual(new Set(players.map(x=>x[0])),new Set(Object.keys(CLASS_ROLES_V2)));
+for(const [id,role] of players)assert.equal(CLASS_ROLES_V2[id],role);
 const regionalBosses=[
  'BOSS_EXP_ROOT','BOSS_EXP_BELL','BOSS_EXP_SOLAR',
  'BOSS_EXP_SPHINX','BOSS_EXP_BELLBEAST','BOSS_EXP_CANTOR',

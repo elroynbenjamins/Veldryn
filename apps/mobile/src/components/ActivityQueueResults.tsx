@@ -11,6 +11,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {activityQueueLabel} from '../core/activity-queue';
+import {activityIconId} from '../core/activity-icon';
 
 function elapsed(seconds:number){const minutes=Math.floor(seconds/60);return minutes>=60?`${Math.floor(minutes/60)}h ${minutes%60}m`:minutes?`${minutes}m`:`${Math.floor(seconds)}s`;}
 export function ActivityQueueResults({reward,numberMode}:{reward:RewardBundle;numberMode:'abbreviated'|'exact'}){
@@ -24,7 +25,7 @@ export function ActivityQueueResults({reward,numberMode}:{reward:RewardBundle;nu
    const status=row.goalReached?gt("Goal reached"):(row.reward.stoppedReason?gl(row.reward.stoppedReason):undefined)??(last&&current?gt("Still active"):gt("Completed"));
    return <View key={index} style={{borderBottomWidth:1,borderBottomColor:C.line,paddingBottom:12,gap:8}}>
     <Pressable accessibilityRole="button" accessibilityLabel={`${source?.name??row.activity.targetId}, ${status}`} accessibilityState={{expanded:!!expanded[index]}} onPress={()=>setExpanded(value=>({...value,[index]:!value[index]}))} style={{minHeight:48,flexDirection:'row',alignItems:'center',gap:10}}>
-     {monster?<MonsterPortraitFrame monster={monster} size={40} framed={false}/>:<ActivityArtwork id={row.activity.kind==='processing'?'cooking':row.activity.kind}/>}<View style={{flex:1,minWidth:0,gap:3}}><Text style={{fontSize:14,lineHeight:20,fontWeight:'700',color:C.text}}>{source?.name??row.activity.targetId.replace(/_/g,' ')}</Text><Text style={{fontSize:12,lineHeight:18,color:row.goalReached?C.good:C.muted}}>{status} · {elapsed(row.reward.elapsedSeconds)}</Text></View><Text style={{fontSize:22,color:C.muted}}>{expanded[index]?'-':'+'}</Text>
+     {monster?<MonsterPortraitFrame monster={monster} size={40} framed={false}/>:<ActivityArtwork id={activityIconId(row.activity)}/>}<View style={{flex:1,minWidth:0,gap:3}}><Text style={{fontSize:14,lineHeight:20,fontWeight:'700',color:C.text}}>{source?.name??row.activity.targetId.replace(/_/g,' ')}</Text><Text style={{fontSize:12,lineHeight:18,color:row.goalReached?C.good:C.muted}}>{status} · {elapsed(row.reward.elapsedSeconds)}</Text></View><Text style={{fontSize:22,color:C.muted}}>{expanded[index]?'-':'+'}</Text>
     </Pressable>
     <Text style={{fontSize:13,lineHeight:19,color:C.good}}>+{formatGameNumber(row.reward.xp,numberMode,language)} XP{combat?' · '+gt('+{gold} gold · {food} food used',{gold:formatGameNumber(row.reward.gold,numberMode,language),food:row.reward.foodConsumed??0}):''}</Text>
     {expanded[index]?<View style={{gap:5}}>{row.reward.items.map(item=><Text key={item.itemId} style={{fontSize:13,lineHeight:19,color:C.text}}>{itemDef(item.itemId).name} ×{formatGameNumber(item.quantity,numberMode,language)}</Text>)}{!row.reward.items.length?<Text style={{fontSize:13,color:C.muted}}>{gt("No item drops")}</Text>:null}</View>:null}

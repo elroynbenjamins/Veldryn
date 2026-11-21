@@ -4,6 +4,8 @@ import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} fr
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
+import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
+ type DungeonRewardProcActionV2} from './v2/dungeon-reward-engine-v2';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
 import {
@@ -92,7 +94,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -100,6 +102,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const equipmentSources=authorizeEquipmentV2TraitEngine(input,equipmentTraitAuthority);
   const equipmentTraitRuntime=equipmentTraitAuthority
     ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
+  const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -146,6 +149,48 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   };
 
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
+  // Hidden reward actions never re-enter direct damage, gem, passive or
+  // equipment pipelines; they cannot generate another reward trigger.
+  const applyDungeonRewardAction=(now:number,source:CombatantState,
+    enemy:CombatantState,action:DungeonRewardProcActionV2)=>{
+    const target=action.target==='self'?source:enemy;
+    if(!target.alive)return;
+    const id='V2_DUNGEON_REWARD:'+action.rewardId;
+    if(action.kind==='secondary_damage'){
+      if(target.definition.team!=='enemies'||source.definition.team!=='players')return;
+      const bonus=Math.min(target.hp,Math.max(0,action.amount));
+      if(bonus<=0)return;
+      target.hp-=bonus;target.damageTaken+=bonus;source.damageDone+=bonus;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(bonus.toFixed(2)),
+        detail:'secondary_damage_no_recursive_trigger'});
+      return;
+    }
+    if(action.kind==='bleed'){
+      if(target.definition.team!=='enemies'||source.definition.team!=='players'||action.amount<=0)return;
+      target.periodic=target.periodic.filter(p=>!(
+        p.effectId===id&&p.sourceId===source.definition.id));
+      target.periodic.push({sourceId:source.definition.id,effectId:id,kind:'dot',
+        coeff:0,flat:action.amount,damageType:'physical',tag:'bleed',
+        nextTickAt:now+(action.tickMs??1000),expiresAt:now+(action.durationMs??3000),
+        tickMs:action.tickMs??1000});
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,statusKind:'dot',statusTag:'bleed',
+        expiresAtMs:now+(action.durationMs??3000)});
+    }else{
+      if(!action.tag||!action.durationMs)return;
+      target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==id||m.tag!==action.tag);
+      target.modifiers.push({sourceId:source.definition.id,tag:action.tag,
+        value:action.amount,kind:action.kind==='buff'?'buff':'debuff',
+        createdAt:now,expiresAt:now+action.durationMs,v2CapstoneId:id});
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,
+        statusKind:action.kind==='buff'?'buff':'debuff',statusTag:action.tag,
+        expiresAtMs:now+action.durationMs});
+    }
+    events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+      targetId:target.definition.id,abilityId:id,detail:'original_event_only'});
+  };
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.

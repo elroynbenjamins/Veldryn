@@ -21,5 +21,5 @@ jobs:
           node-version: '22'
       - name: Reject unsafe affix aliases, oversubscribed legal gear caps and reactive trait loops
         run: node tools/validate-eq2-affix-traits-review.mjs
-      - name: Test 15 stat IDs, 10 signatures and fail-closed design boundaries
+      - name: Test 17 stat IDs, 28 signatures and fail-closed design boundaries
         run: node --test tools/tests/eq2-affix-traits-review.test.mjs

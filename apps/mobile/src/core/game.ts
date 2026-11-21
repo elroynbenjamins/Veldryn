@@ -493,7 +493,11 @@ function takeOrdinaryStacks(stacks:ItemStack[],itemId:string,quantity:number){
     moved.push({...row,quantity:taken});
     return row.quantity>taken?[{...row,quantity:row.quantity-taken}]:[];
   });
-  if(remaining>0)throw new Error('Not enough items');
+  if(remaining>0){
+    if(stacks.some(row=>row.itemId===itemId&&row.instanceId!==undefined))
+      throw new Error('Choose an individual equipment copy; unique equipment cannot be moved by item type');
+    throw new Error('Not enough items');
+  }
   return {kept,moved};
 }
 /** Preserve physical copy IDs through Inventory/Bank moves. Generic consume()

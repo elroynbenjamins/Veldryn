@@ -120,7 +120,10 @@ function authoredKit(family:WeeklyPartyFamily,tier:number,hp:number):{
     }],78),
   ],
   phases:[
-   phaseName('PE_V90_NIGHTFALL_SHROUD',.70,'self',[shield(hp,.025)]),
+   phaseName('PE_V90_NIGHTFALL_SHROUD',.70,'all_enemies',[
+    {kind:'dot',coeff:.025,damageType:'physical',tag:'bleed',durationMs:4000,
+     tickMs:2000,removable:true},
+   ]),
    phaseName('PE_V90_NIGHTFALL_LAST_HUNT',.35,'self',[
     {kind:'buff',tag:'damage_done',value:enrage,durationMs:15000},
    ]),
@@ -153,6 +156,7 @@ function authoredKit(family:WeeklyPartyFamily,tier:number,hp:number):{
   phases:[
    phaseName('PE_V90_RELIQUARY_REFLECTION',.70,'self',[shield(hp,.035)]),
    phaseName('PE_V90_RELIQUARY_FRACTURED_MIRROR',.35,'self',[
+    {kind:'buff',tag:'damage_done',value:.05,durationMs:11000},
     {kind:'debuff',tag:'damage_taken',value:.08,durationMs:6500},
    ]),
   ],
@@ -186,7 +190,7 @@ export function preparePartyEventBossTraitKitV90(
   boss.abilities.length!==2||boss.phases?.length!==1||
   boss.abilities[0]?.id!=='PE_BOSS_SLAM'||
   boss.abilities[1]?.id!=='PE_BOSS_PULSE'||
-  boss.phases[0]?.id!=='ENRAGE')
+  boss.phases?.[0]?.id!=='ENRAGE')
   throw Error('party_event_v90_untrusted_or_already_compiled_boss');
  const kit=authoredKit(family,tier,boss.stats.maxHp);
  const abilityIds=new Set(kit.abilities.map(a=>a.id));

@@ -204,7 +204,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
-    const v2Defense=v2Encounter?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
+    // Authored Enemy/Boss 2.0 kits need not advertise the player-only
+    // combat-v2 tag. A signed dungeon reward may still weaken their defense.
+    const v2Defense=v2Encounter&&(
+      target.definition.tags?.includes('combat-v2')||
+      (Boolean(dungeonRewards)&&target.definition.team==='enemies'))
+      ?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
     const authoredPenetration=v2Encounter&&source.definition.combatV2?
       clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);

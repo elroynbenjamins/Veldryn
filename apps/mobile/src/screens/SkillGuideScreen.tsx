@@ -29,7 +29,7 @@ const MILESTONE_LABEL:Record<SkillMilestoneKind,SkillGuideUiKey>={
  gathering_node:'Gathering spot',tool:'Tool',recipe:'Recipe',method:'Method',
  service:'Service',faith_practice:'Practice',faith_blessing:'Blessing',cross_skill:'Cross-skill',
 };
-const isProfession=(id:SkillGuideId):id is SkillId=>id!=='combat'&&id!=='companion-mastery'&&id!=='companion';
+const isProfession=(id:SkillGuideId):id is Extract<SkillGuideId,SkillId>=>id!=='combat'&&id!=='companion-mastery'&&id!=='companion';
 const clamp=(ratio:number)=>Math.max(0,Math.min(1,Number.isFinite(ratio)?ratio:0));
 
 /** Compact account reference: live progression and unlocks, no gameplay state mutations. */

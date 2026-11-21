@@ -60,7 +60,7 @@ rewrite the player's inventory:
 | Source in verified pre-conversion backup | Consume existing converted gems | Restore as |
 |---|---|---|
 | 1 old Ember Shard | 3 × G1 Might | 1 × G3 Might (+2% ATK base) |
-| 1 old Emberheart | 4 × G3 Might | 1 × legacy Emberheart (+5% ATK base) |
+| 1 old Emberheart | 4 × G3 Might | 1 × protected Restored Emberheart `LEGACY_EMBERHEART_GEM_V2` (+5% ATK base) |
 
 - Eligibility is determined ONLY by the original trusted
   `private.legacy_gem_conversion_backup_v1` snapshot, not by a client claim.

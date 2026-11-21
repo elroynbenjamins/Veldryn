@@ -72,9 +72,6 @@ def main():
             for name in sorted(SFX))
         asset_map=replace_once(asset_map,'} as const;\nexport const MUSIC_TRACK_ASSETS={',
                                inject+'} as const;\nexport const MUSIC_TRACK_ASSETS={',asset_file)
-        tests=replace_once(tests,"const file='assets/audio/'+kind+'/'+name+'.mp3';",
-          "const file='assets/audio/'+kind+'/'+name+'.'+(rows[name] as {file_ext?:string}).file_ext?.toString().replace(/^$/,'mp3')!;",
-          test_file) if False else tests
         # Test contracts distinguish four OGG tracks; leave unrelated MP3 checks intact.
         tests=replace_once(tests,
            "const file='assets/audio/'+kind+'/'+name+'.mp3';",
@@ -98,7 +95,7 @@ def main():
         tests += """
 // New selected music is pending final rights clearance; never flag the sources as CC0.
 for(const id of ['asterfall','sunscar','frostmarch','dungeon']){
- assert.ok((manifest.music[id] as {rights_status?:string}).rights_status==='review_only_license_pending',
+ assert.ok((manifest.music[id] as {rights_status?:string}).rights_status==='REVIEW_ONLY_PENDING_TIMGM6MB_GPL_REVIEW',
   'Selected music license marker unexpectedly changed: '+id);
 }
 """

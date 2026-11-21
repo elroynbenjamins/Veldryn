@@ -1708,6 +1708,21 @@ for(const [english,pair] of Object.entries(craftingQuantityEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }
+// Focused crafting interaction labels in Russian and Turkish (other shared locales are in common).
+const craftingFocusedEarlyLocales={
+ "Professions":["Профессии","Meslekler"],
+ "Components":["Компоненты","Bileşenler"],
+ "Requirements":["Требования","Gereksinimler"],
+ "No Gold refunded":["Золото не возвращается","Altın iade edilmez"],
+ "Crafting summary":["Сводка изготовления","Üretim özeti"],
+ "Total cost":["Общая стоимость","Toplam maliyet"],
+ "types":["видов","tür"],
+ "Missing a material?":["Не хватает материала?","Eksik malzeme mi var?"],
+} as const;
+for(const [english,pair] of Object.entries(craftingFocusedEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{

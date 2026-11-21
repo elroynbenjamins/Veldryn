@@ -5,6 +5,8 @@ on:
       - 'backend/src/server/party/weekly-party-event-gear-v51.ts'
       - 'backend/src/server/party/weekly-party-event-chests-v51.ts'
       - 'backend/src/server/party/weekly-party-event-combat-v59.ts'
+      - 'backend/src/server/party/weekly-party-boss-traits-v90.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-boss-traits-v90.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-combat-v59.ts'
       - 'backend/src/server/party/weekly-party-event-claim-v60.ts'
       - 'backend/src/server/party/weekly-party-event-proof-v61.ts'
@@ -120,6 +122,8 @@ jobs:
         run: pnpm exec tsc -p tsconfig.event-chests.json
       - name: Verify equal Party Event gear and three chest sources
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-chests-v51.js
+      - name: Verify V90 four Party Event boss trait kits, phase safety and deterministic engine QA
+        run: node .event-chest-tests/server/party/__tests__/weekly-party-boss-traits-v90.js
       - name: Verify Equipment 2.0 Party Event equipped bonuses and conditional procs
         run: node .event-chest-tests/server/party/__tests__/weekly-party-event-combat-v59.js
       - name: Verify transactional Party Event chest and exchange replay
@@ -233,6 +237,7 @@ jobs:
           test ! -f supabase/migrations/20261119201000_world_boss_eq2_quarantine_v84_review_only.sql
           test ! -f supabase/migrations/20261119200000_world_boss_real_wallet_v83_review_only.sql
           grep -q 'WORLD_BOSS_SHARED_CHEST_SOURCE_V72_RELEASED=false' src/server/loot/world-boss-chest-source-v72.ts
+          grep -q 'PARTY_EVENT_BOSS_TRAITS_V90_RELEASED=false' src/server/party/weekly-party-boss-traits-v90.ts
           grep -q 'PARTY_EVENT_CHEST_SOURCE_V77_RELEASED=false' src/server/party/weekly-party-event-chest-source-v77.ts
           grep -q 'CHEST_REWARD_SETTLEMENT_V69_RELEASED=false' src/server/loot/chest-reward-settlement-v69.ts
           grep -q 'CHEST_POSTGRES_STORE_V70_RELEASED=false' src/server/loot/chest-postgres-store-v70.ts

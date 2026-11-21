@@ -274,3 +274,5 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
       - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
         run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
+      - name: Compare six regional bosses against 216 verified low/high synthetic set and affix loadouts
+        run: node backend/dist/server/combat/v2/__tests__/boss-full-gear-pacing-matrix.js

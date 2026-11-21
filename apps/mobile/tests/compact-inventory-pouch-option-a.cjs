@@ -23,7 +23,7 @@ test('modified compact surfaces and translations are parseable',()=>{
 
 test('Option A shows selection-first Gear controls only on narrow screens',()=>{
  assert.ok(pouch.includes('compactActions=width<380||fontScale>=1.25'),'compact mode is breakpoint-gated');
- assert.ok(pouch.includes("{!compactActions?<GameButton compact title={p('Quick sell')}"),'wide layout retains Quick sell');
+ assert.ok(pouch.includes("{!compactActions?<><GameButton compact title={p('Quick sell')}"),'wide layout retains Quick sell');
  assert.ok(pouch.includes("title={p('Quick salvage')}"),'wide layout retains Quick salvage');
  assert.ok(pouch.includes("p(compactActions?'Select safe to sell':'Select safe')"),'compact selection uses unambiguous, translated action');
  assert.ok(pouch.includes('equipmentPouchQuickSellIds(saleCandidates).slice(0,100)'),'safe selection retains eligible-only cap');

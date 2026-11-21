@@ -125,6 +125,9 @@ rewrite the player's inventory:
   exact original receipt. Do not mint a new UUID until the previous result is known.
 - Manual-review remains required if original converted gems were consumed, sold,
   fused, transferred, socketed, or locked: no bonus gems are auto-created.
+- Protected Restored Emberheart is a zero-vendor-value legacy item and
+  excluded from mobile and server market-custody candidate screening. It
+  remains socketable and retains its original +5% base ATK effect.
 - There is intentionally no live 1.0.x screen or claim button. Player-facing
   appearance still requires review under the 2.0 UI design gate.
 - Staging-only validation completed: feature gate OFF after script rollback,

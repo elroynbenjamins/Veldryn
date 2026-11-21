@@ -30,7 +30,7 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
  return <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
    <View style={styles.hero}>
     <View style={styles.heroLine}>
-      <ActivityArtwork id="smithing" size={42}/>
+      <ActivityArtwork id="forge" size={42}/>
       <View style={styles.grow}>
        <Text accessibilityRole="header" style={styles.title}>{gt('Forge')}</Text>
        <Text style={styles.sub}>{gl('Level')} {level} / 100 · {gt('Crafting skill')}</Text>
@@ -42,7 +42,7 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
      <View style={[styles.fill,{width:`${ratio*100}%`}]}/>
     </View>
     <View style={styles.line}>
-     <Text style={styles.sub}>{gt('Rare')}+ · +{luck}% {gt('relative chance')}</Text>
+     <Text style={styles.sub}>{gt('Rare')}+ · {(forgeRarePlusChance(level)*100).toFixed(2)}% {gt('Chance')}</Text>
      <Text style={styles.sub}>{nextMilestone?gt('Next')+' · '+nextMilestone.level:level<100?gt('Next')+' · 100':gt('Mastered')}</Text>
     </View>
    </View>

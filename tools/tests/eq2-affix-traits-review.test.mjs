@@ -55,6 +55,8 @@ test('reflect is post-shield actual HP damage, with shared anti-boss-cheese cap 
  expectFailure(d=>{d.combatChannelPolicy.reflection.damageBase='pre_mitigation_damage';},'unsafe_reflection_source_or_recursion');
  expectFailure(d=>{d.combatChannelPolicy.reflection.cannotReflectReflection=false;},'unsafe_reflection_source_or_recursion');
  expectFailure(d=>{d.combatChannelPolicy.reflection.excludes=[];},'unsafe_reflection_source_or_recursion');
+ expectFailure(d=>{delete d.combatChannelPolicy.reflection;},'unsafe_reflection_source_or_recursion');
+ expectFailure(d=>{d.affixes.find(x=>x.id==='reflect_damage_pct').eligibleSlots=['weapon','gloves','amulet','ring'];},'new_affix_slot_policy');
  expectFailure(d=>{d.combatChannelPolicy.reflection.maxRegionalBossHpPercentPerFiveSeconds=2;},'unbounded_retaliation_damage');
  expectFailure(d=>{d.traits.find(t=>t.id==='thornbound_riposte').params.reflectOwnMaxHpCapPercent=9;},'riposte_shared_budget');
 });
@@ -62,6 +64,7 @@ test('new roles and new trait sources remain safe and deterministic',()=>{
  const c=fresh();
  assert.deepEqual(['tank','damage','support','utility'].map(role=>c.traits.filter(t=>t.role===role).length),[9,9,9,1]);
  expectFailure(d=>{d.traitPolicy.perItemTraitsMax=2;},'trait_runtime_guardrails');
+ expectFailure(d=>{d.traitPolicy.sourceEligibility=['rare_blueprint_craft','rare_blueprint_craft','dungeon_boss_chest','party_event_chest'];},'trait_source_policy');
  expectFailure(d=>{d.traits.find(t=>t.role==='damage').source=['world_boss_chest'];},'combat_trait_from_utility_only_source');
  expectFailure(d=>{d.traits[0].cooldownSeconds=0;d.traits[0].oncePerEncounter=false;},'unbounded_combat_proc');
  expectFailure(d=>{d.traits[1].id=d.traits[0].id;},'duplicate_trait_id');

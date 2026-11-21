@@ -163,7 +163,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>{p('Equipment Pouch')}</Text>
     <Text style={s.meta}>{p('{used}/{capacity} slots · {character} only',{used:pouch.stacks.length,capacity:pouch.capacity,character:state.character?.name??p('Character')})}</Text></View>
   </View>
-  <Text style={s.hint}>{p('Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
+  <Text style={s.hint}>{p(compactActions?'Tap a piece to inspect, equip or move it to Bank.':'Crafted gear arrives here first. To share it with another character, select a piece and tap To Bank.')}</Text>
   <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
    {selectMode?<>
     <GameButton compact tone="secondary" title={p(compactActions?'Select safe to sell':'Select safe')} disabled={busy||!onAction} onPress={selectSafe}/>
@@ -176,7 +176,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     <GameButton compact tone="secondary" title={p('Quick salvage')} disabled={busy||!onAction||!equipmentPouchQuickSalvageIds(state,salvageCandidates).length} onPress={()=>startSalvage(equipmentPouchQuickSalvageIds(state,salvageCandidates),salvageCandidates.filter(row=>!row.eligible).length)}/>:null}
    </>}
   </View>
-  {selectMode?<View style={s.sellSummary}>
+  {selectMode?<View style={[s.sellSummary,compactActions&&s.sellSummaryCompact]}>
    <View style={s.selectionStats}>
     {([{label:'Selected',value:selectedIds.length},{label:'Sellable',value:saleCount},{label:'Salvageable',value:salvageCount}] as const).map(stat=><View key={stat.label} style={s.selectionStat}>
       <Text style={s.selectionStatNumber}>{stat.value.toLocaleString(language)}</Text>
@@ -184,7 +184,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
     </View>)}
    </View>
    <Text style={s.meta}>{p('Estimated sale · {gold} Gold',{gold:saleGold.toLocaleString(language)})}</Text>
-   <View style={s.sellToolbar}>
+   <View style={[s.sellToolbar,compactActions&&s.sellToolbarCompact]}>
     <GameButton compact title={saleCount?p('Sell eligible · {gold}g',{gold:saleGold.toLocaleString(language)}):p('Nothing sellable')} tone="danger"
      disabled={!onAction||busy||!selectionValid} onPress={()=>startSale(eligibleSales.map(row=>row.id),selectedSales.length-saleCount)}/>
     <GameButton compact title={salvageCount?p('Salvage eligible · {count}',{count:salvageCount}):p('Nothing salvageable')} tone="danger"
@@ -293,6 +293,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  sellToolbar:{flexDirection:'row',flexWrap:'wrap',gap:8,alignItems:'center'},
  sellToolbarCompact:{gap:6,rowGap:6},
  sellSummary:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+ sellSummaryCompact:{gap:6,paddingHorizontal:6,paddingVertical:8},
  selectionStats:{flexDirection:'row',gap:6},selectionStat:{flex:1,alignItems:'center',gap:2,paddingVertical:8,paddingHorizontal:4,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  selectionStatNumber:{...typography.title,color:C.text,fontWeight:'900',fontVariant:['tabular-nums']},selectionStatLabel:{...typography.caption,color:C.muted,fontSize:11,fontWeight:'800'},
  saleWarning:{...typography.caption,color:C.warning},

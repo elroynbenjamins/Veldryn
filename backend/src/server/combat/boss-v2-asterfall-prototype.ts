@@ -12,7 +12,7 @@ export function prepareAsterfallBossV2(
   ruleset?:typeof ENEMY_V2_RULESET,
 ):CombatantDefinition {
   if(ruleset!==ENEMY_V2_RULESET||boss.team!=='enemies'||!boss.boss||
-     (boss.tags??[]).includes(V2_TAG))return boss;
+     (boss.tags??[]).some(tag=>tag.startsWith('enemy-v2:boss-profile:')))return boss;
 
   let abilities:AbilityDefinition[];
   let phases:BossPhaseDefinition[];

@@ -31,11 +31,10 @@ jobs:
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Require canonical gameplay/co-op Edge parity
         run: node tools/verify-gameplay-edge.mjs
-      - name: Typecheck mobile and server (including seven-stat and dungeon contracts)
-        run: |
-          pnpm --dir apps/mobile typecheck
-          pnpm --dir apps/mobile typecheck:core
-          pnpm --dir backend typecheck:online
+      # Full core and backend online tests immediately below compile+typecheck
+      # their respective TS configs. Keep app-only typechecking here.
+      - name: Typecheck mobile app UI and routes
+        run: pnpm --dir apps/mobile typecheck
       - name: Full mobile core regressions (equipment rolls, tools, old saves)
         run: pnpm --dir apps/mobile test:core
       - name: Dungeon weekly/social UI and route contracts

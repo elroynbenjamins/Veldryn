@@ -35,7 +35,7 @@ export function previewDungeonRewardOffersV2(
  for(const row of snapshot.receipts)counts.set(row.id,(counts.get(row.id)??0)+1);
  const role=input.players[0].role;
  const ready=DUNGEON_REWARDS_V2.filter(row=>row.type===kind&&
-  row.stage!=='needs_engine_hook'&&(counts.get(row.id)??0)<row.maxStacks&&
+  (row.stage==='stat'||row.stage==='room_only')&&(counts.get(row.id)??0)<row.maxStacks&&
   (!row.stat?.role||row.stat.role===role||
    row.stat.role==='tank_or_support'&&(role==='tank'||role==='support')));
  if(ready.length<3)fail('not_enough_available_options');

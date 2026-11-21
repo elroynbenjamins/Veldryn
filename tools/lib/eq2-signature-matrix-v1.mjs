@@ -99,19 +99,21 @@ export function evaluateSignatureSyntheticMatrix({contract,signature,seed=202611
       const regularTotal=incoming.reduce((a,e)=>a+e.creditedHpDamage,0);
       const eligibleIncoming=incoming.filter(e=>e.sourceKind==='enemy_direct'&&e.damageKind!=='true')
         .reduce((a,e)=>a+e.creditedHpDamage,0);
-      const glassfinSaved=incoming.reduce((a,e)=>a+
+      const glassfinSaved=tier===4?incoming.reduce((a,e)=>a+
         (e.creditedHpDamage-previewDirectDamage({amount:e.creditedHpDamage,
-          sourceKind:e.sourceKind,damageKind:e.damageKind,hasGlassfinGuard:true}).after),0);
-      const heartwood=previewHeartwoodRetort({events:incoming,
-        trait:traitById.get('heartwood_retort'),maxHp:1000});
+          sourceKind:e.sourceKind,damageKind:e.damageKind,hasGlassfinGuard:true}).after),0):0;
+      const heartwood=tier===2?previewHeartwoodRetort({events:incoming,
+        trait:traitById.get('heartwood_retort'),maxHp:1000}):{
+        totalDamagePrevented:0,activationCount:0};
       const supportEvents=[];
-      if(actor.role==='support'){
+      if(tier===3&&actor.role==='support'){
         for(let now=0,n=0;now<duration;now+=22,n++)
          supportEvents.push({atSeconds:now,sourceId:'QA_'+actor.classId,
           targetId:'QA_ALLY_TANK',targetMaxHp:5000,creditedEffectiveAmount:200,
           abilityUseId:'support-'+n,isDirect:true,isAlly:true,kind:n%3===0?'shield':'heal'});
       }
-      const oasis=previewOasisAfterglow({events:supportEvents,trait:traitById.get('oasis_afterglow')});
+      const oasis=tier===3?previewOasisAfterglow({events:supportEvents,trait:traitById.get('oasis_afterglow')}):{
+        totalPotentialShield:0,procs:0};
       result.push({classId:actor.classId,specialization:spec,role:actor.role,tier,kind,profile,
         durationSeconds:duration,qualifyingDirectHits:eligibleDirect.length,
         sourceDirectDamage:Number(eligibleDamage.toFixed(3)),

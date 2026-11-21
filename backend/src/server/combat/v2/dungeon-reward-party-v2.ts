@@ -98,7 +98,8 @@ export function assertVerifiedDungeonPartyRewardSnapshotV2(
   for(const receipt of grant.receipts){
    const node=nodes.get(receipt?.nodeId);
    const reward=byId.get(receipt?.id);
-   if(!node||!reward||node.depth!==receipt.depth||
+   if(!node||!reward)throw Error('dungeon_v2_party_forged_or_unimplemented_reward');
+   if(node.depth!==receipt.depth||
     node.room!==receipt.room||receipt.depth<=previous||
     seenNodes.has(receipt.nodeId)||reward.type!==typeForRoom(receipt.room)||
     reward.stage==='needs_engine_hook')fail('forged_or_unimplemented_reward');

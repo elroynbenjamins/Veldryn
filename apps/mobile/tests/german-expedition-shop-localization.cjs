@@ -77,7 +77,7 @@ const expectedCopy=[
  'The server has not supplied a verified Dungeon Shop catalogue.',
  'Dungeon Shop is being prepared. Purchases are unavailable.',
  'Processing purchase','Not available yet','Available','Preview only','Need more Marks',
- 'Region locked','Weekly limit reached','Coming soon','Owned permanently',
+ 'Region locked','Weekly limit reached','Coming soon','Crafting tier locked','Owned permanently',
  '{count} purchases left this UTC week','Processing…','Confirm purchase · {marks} Marks',
  'Not enough Expedition Marks.','No offers in this category yet.',
  '{name}, {marks} Expedition Marks, {status}',

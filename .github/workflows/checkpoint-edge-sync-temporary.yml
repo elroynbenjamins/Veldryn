@@ -1,5 +1,5 @@
 name: Checkpoint co-op bundle build (temporary)
-# Retry after strict checkpoint tampering assertion and legacy fixture guard fixes.
+# Final rerun on latest head after mobile compatibility assertions; source now frozen.
 on:
   push:
     branches:

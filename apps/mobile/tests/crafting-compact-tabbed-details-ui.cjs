@@ -20,6 +20,18 @@ assert.match(recipe,/detailTab==='materials'\?<><Text/);
 assert.match(recipe,/sourceHelpOpen\?<>{preparationRoute/);
 assert.match(recipe,/accessibilityState=\{\{expanded:sourceHelpOpen\}\}/);
 
+// Refinement pass 4: clearer labels and stable action summary with real quantity and work time.
+assert.match(recipe,/detail==='materials'\?'Requirements'/);
+assert.match(equipment,/gt\('Components'\)/);
+assert.match(recipe,/gt\('Crafting summary'\)/);
+assert.match(recipe,/totalMaterialUnits=quantityInputs\.reduce/);
+assert.match(recipe,/workTime=timed\?duration/);
+assert.match(recipe,/firstAvailableSource&&onNavigate/);
+assert.match(recipe,/canQuickTrack&&preparationRoute&&onTrackPreparation/);
+assert.match(recipe,/canQuickPrereq&&onCraftPrerequisites/);
+assert.match(equipment,/materialUnits=\(status\?\.inputs\?\?\[\]\)\.reduce/);
+for(const key of ['Professions','Components','Requirements','Crafting summary','Total cost','Missing a material?','No Gold refunded'])assert.ok(language.includes("'"+key+"':"),'Missing shared localization for '+key);
+
 // Never remove item artwork to achieve a compact design. Show shortages first.
 assert.match(ingredient,/ItemArtwork itemId=\{input\.itemId\} size=\{compact\?28:32\}/);
 assert.match(ingredient,/const rows=compact\?\[\.\.\.inputs\]\.sort/);

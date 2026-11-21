@@ -28,6 +28,15 @@ check(collection.includes('detailsOnly externalQuantity={craftCount}')&&card.inc
 check(collection.indexOf('void onCraft(recipe.id,craftCount)')>0&&collection.indexOf('void onCraft(recipe.id,craftCount)')<collection.indexOf('<RecipeCard key={recipe.id}'),'Craft CTA must remain above compact material details');
 check(screen.includes('<SmithingCollection state={state} skillId={initialSkill}'),'Smithing and Tailoring must continue sharing the same refined component');
 
+// Focused Forge layout is queue-first while the mastery overview remains accessible.
+const forgeScreen=read('src/screens/ForgeScreen.tsx');
+check(forgeScreen.includes("label:gt('Professions')"),'Forge should describe its profession handoffs accurately');
+check(forgeScreen.includes('showQueueMastery?masteryOverview:null'),'Queue mastery must be optional, without hiding it permanently');
+check(forgeScreen.includes("section==='mastery'?masteryOverview"),'Mastery tab must still show full milestones');
+check(forgeScreen.indexOf('<EquipmentCraftQueuePanel {...queueProps}/>')<forgeScreen.indexOf('showQueueMastery?masteryOverview:null'),'Queue should precede optional mastery details');
+check(panel.includes('narrow=width<380')&&panel.includes('narrow?34:44'),'Small-screen queue refinement must not alter larger layouts');
+check(panel.includes("gt('No Gold refunded')"),'Active cancellation must disclose Gold loss next to its action');
+
 // Nine tiers used to wrap into three rows of buttons above the set browser.
 const tierMemory=read('src/core/equipment-tier-memory.ts');
 check(collection.includes('<OptionPager options={tierOptions}')&&!collection.includes('s.tierOption'),'Equipment tiers must be one stepped row, not a wrapping grid of nine buttons');

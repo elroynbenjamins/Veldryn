@@ -19,6 +19,7 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
  const C=useGameTheme(),{gt,gl}=useGameplayText(),styles=useMemo(()=>createStyles(C),[C]);
  const {width,fontScale}=useWindowDimensions();
  const [section,setSection]=useState<Section>('queue');
+ const [showQueueMastery,setShowQueueMastery]=useState(false);
  const level=forgeLevel(state),skill=state.skills.find(row=>row.skillId==='forge');
  const xp=progressWithinLevel(skill?.xp??0,level);
  const ratio=level===100?1:Math.max(0,Math.min(1,xp.current/Math.max(1,xp.need)));
@@ -26,8 +27,8 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
  const luck=forgeRarityBonusPercent(level);
  const model=equipmentCraftQueueModel(state,now);
  const nextMilestone=MILESTONES.find(row=>row.level>level);
- const tabs=[{id:'queue' as const,label:gt('Crafting Queue')},{id:'mastery' as const,label:gt('Mastery')},{id:'recipes' as const,label:gt('Recipes')}];
- return <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
+ const tabs=[{id:'queue' as const,label:gt('Crafting Queue')},{id:'mastery' as const,label:gt('Mastery')},{id:'recipes' as const,label:gt('Professions')}];
+ const masteryOverview=<>
    <View style={styles.hero}>
     <View style={styles.heroLine}>
       <ActivityArtwork id="forge" size={42}/>
@@ -52,6 +53,13 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
      <Text style={styles.tiny}>+{row.luck}% {gt('Rare')}+</Text>
     </View>)}
    </View>
+ </>;
+ return <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.root}>
+   {section==='mastery'?masteryOverview:<View style={styles.compactHeader}>
+     <ActivityArtwork id="forge" size={34}/>
+     <View style={styles.grow}><Text accessibilityRole="header" style={styles.compactTitle}>{gt('Forge')}</Text><Text style={styles.sub}>{gl('Level')} {level} / 100 · {gt('Crafting speed')} +{speed}%</Text></View>
+     <Text style={styles.compactReady}>{model.ready>0?model.ready+' '+gt('Ready'):nextMilestone?gt('Next')+' '+nextMilestone.level:gt('Mastered')}</Text>
+   </View>}
    <View accessibilityRole="tablist" style={[styles.tabs,width<360||fontScale>=1.3?styles.tightTabs:null]}>
     {tabs.map(tab=><Pressable key={tab.id} accessibilityRole="tab" accessibilityState={{selected:section===tab.id}} onPress={()=>setSection(tab.id)}
      style={[styles.tab,section===tab.id&&styles.selectedTab]}>
@@ -61,6 +69,10 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
    </View>
    {section==='queue'?<>
     <EquipmentCraftQueuePanel {...queueProps}/>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:showQueueMastery}} onPress={()=>setShowQueueMastery(value=>!value)} style={styles.queueMasteryToggle}>
+      <Text style={styles.queueMasteryLabel}>{gt('Forge')} · {gt('Mastery')} · {gl('Level')} {level}</Text><Text style={styles.queueMasteryLabel}>{showQueueMastery?'−':'+'}</Text>
+    </Pressable>
+    {showQueueMastery?masteryOverview:null}
     <Text style={styles.note}>{gt('Equipment and gem crafting share Forge slots. Materials and Gold are reserved when you start a job.')}</Text>
    </>:null}
    {section==='mastery'?<View style={styles.panel}>
@@ -86,6 +98,10 @@ export function ForgeScreen({state,now,onOpenProfession,queueProps}:Props){
 }
 function createStyles(C:ReturnType<typeof useGameTheme>){return StyleSheet.create({
  root:{padding:14,paddingBottom:40,gap:12,maxWidth:660,width:'100%',alignSelf:'center'},
+ compactHeader:{minHeight:60,flexDirection:'row',alignItems:'center',gap:10,padding:10,borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
+ compactTitle:{fontSize:19,fontWeight:'900',color:C.text},compactReady:{fontSize:11,fontWeight:'800',color:C.good,textAlign:'right',maxWidth:102},
+ queueMasteryToggle:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+ queueMasteryLabel:{fontSize:12,fontWeight:'700',color:C.text},
  hero:{padding:13,borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panel,gap:11},
  heroLine:{flexDirection:'row',alignItems:'center',gap:10},
  grow:{flex:1,minWidth:0},title:{fontSize:23,fontWeight:'900',color:C.text},

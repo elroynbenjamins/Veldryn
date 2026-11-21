@@ -1,0 +1,338 @@
+{
+  "schema": "eq2-signature-generated-review-v1",
+  "status": "REVIEW_ONLY_DO_NOT_IMPORT_TO_RUNTIME",
+  "warning": "Six proposal-only crafts, NOT registered in any item or Forge runtime. Ingredient costs assume the parent 338 ordinary route plan remains unresolved.",
+  "ordinaryItemsUnaffected": 169,
+  "ordinaryRecipesUnaffected": 338,
+  "signatureRecipes": [
+    {
+      "id": "EQ2_SIG_T2_RIVERTHORN_GRIPS_SIGNATURE",
+      "pieceId": "EQ2_SIG_T2_RIVERTHORN_GRIPS",
+      "basePieceId": "EQ2_IRONWOOD_STALKER_GLOVES",
+      "baseRecipeId": "EQ2_IRONWOOD_STALKER_GLOVES_FOUNDATION",
+      "name": "Ironwood Riverthorn Grips",
+      "traitId": "riverthorn_cut",
+      "materialOrigin": "fishing_secondary_catch",
+      "tier": 2,
+      "slot": "gloves",
+      "role": "damage",
+      "profession": "tailoring",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "EQ2_WOLF_LEATHER",
+          "quantity": 25
+        },
+        {
+          "itemId": "EQ2_THORN_CLOTH",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_IRONWOOD_PLANK",
+          "quantity": 5
+        },
+        {
+          "itemId": "WOLF_FANG",
+          "quantity": 5
+        },
+        {
+          "itemId": "IRONWOOD_BINDING_RESIN",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_IRONWOOD_RIVERPEARL",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 12,
+      "professionLevel": 8,
+      "gold": 1400,
+      "xp": 320,
+      "seconds": 210,
+      "sourceReference": {
+        "gold": 900,
+        "xp": 320,
+        "seconds": 168
+      },
+      "ownership": "tradeable_only_after_market_approval",
+      "previewOnly": true,
+      "usableInRealForge": false
+    },
+    {
+      "id": "EQ2_SIG_T2_HEARTWOOD_MANTLE_SIGNATURE",
+      "pieceId": "EQ2_SIG_T2_HEARTWOOD_MANTLE",
+      "basePieceId": "EQ2_SOLO_IRONWOOD_BASTION_CAPE",
+      "baseRecipeId": "EQ2_SOLO_IRONWOOD_BASTION_CAPE_FOUNDATION",
+      "name": "Ironwood Heartwood Mantle",
+      "traitId": "heartwood_retort",
+      "materialOrigin": "dungeon_completion_material",
+      "tier": 2,
+      "slot": "cape",
+      "role": "tank",
+      "profession": "smithing",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "EQ2_IRON_BAR",
+          "quantity": 18
+        },
+        {
+          "itemId": "EQ2_WOLF_LEATHER",
+          "quantity": 18
+        },
+        {
+          "itemId": "EQ2_IRONWOOD_PLANK",
+          "quantity": 5
+        },
+        {
+          "itemId": "WOLF_FANG",
+          "quantity": 6
+        },
+        {
+          "itemId": "IRONWOOD_BINDING_RESIN",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_IRONWOOD_HEARTSHARD",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 12,
+      "professionLevel": 8,
+      "gold": 1700,
+      "xp": 370,
+      "seconds": 255,
+      "sourceReference": {
+        "gold": 1100,
+        "xp": 370,
+        "seconds": 204
+      },
+      "ownership": "account_bound",
+      "previewOnly": true,
+      "usableInRealForge": false
+    },
+    {
+      "id": "EQ2_SIG_T3_OASISTIDE_SIGNET_SIGNATURE",
+      "pieceId": "EQ2_SIG_T3_OASISTIDE_SIGNET",
+      "basePieceId": "EQ2_EXP_T3_SUPPORT_RING",
+      "baseRecipeId": "EQ2_EXP_T3_SUPPORT_RING_FOUNDATION",
+      "name": "Sunscar Oasistide Signet",
+      "traitId": "oasis_afterglow",
+      "materialOrigin": "fishing_secondary_catch",
+      "tier": 3,
+      "slot": "ring",
+      "role": "support",
+      "profession": "smithing",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "SUNSTONE_INGOT",
+          "quantity": 7
+        },
+        {
+          "itemId": "AMBERGLASS",
+          "quantity": 4
+        },
+        {
+          "itemId": "EQ2_DUNE_CLOTH",
+          "quantity": 5
+        },
+        {
+          "itemId": "EQ2_SUNSCAR_SCALE",
+          "quantity": 5
+        },
+        {
+          "itemId": "SUNSCAR_DUNE_BINDER",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_SUNSCAR_OASISPEARL",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 26,
+      "professionLevel": 20,
+      "gold": 4200,
+      "xp": 385,
+      "seconds": 289,
+      "sourceReference": {
+        "gold": 2800,
+        "xp": 385,
+        "seconds": 231
+      },
+      "ownership": "tradeable_only_after_market_approval",
+      "previewOnly": true,
+      "usableInRealForge": false
+    },
+    {
+      "id": "EQ2_SIG_T3_SCORPIONSTRIKE_GRIPS_SIGNATURE",
+      "pieceId": "EQ2_SIG_T3_SCORPIONSTRIKE_GRIPS",
+      "basePieceId": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES",
+      "baseRecipeId": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES_FOUNDATION",
+      "name": "Sunscar Scorpionstrike Grips",
+      "traitId": "scorpionstrike_bleed",
+      "materialOrigin": "dungeon_completion_material",
+      "tier": 3,
+      "slot": "gloves",
+      "role": "damage",
+      "profession": "smithing",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "SUNSTONE_INGOT",
+          "quantity": 27
+        },
+        {
+          "itemId": "EQ2_TREATED_DUNEWOOD",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_SUNSCALE_LEATHER",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_SUNSCAR_SCALE",
+          "quantity": 7
+        },
+        {
+          "itemId": "SUNSCAR_DUNE_BINDER",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_SUNSCAR_DUNE_SIGIL",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 26,
+      "professionLevel": 20,
+      "gold": 5300,
+      "xp": 515,
+      "seconds": 368,
+      "sourceReference": {
+        "gold": 3500,
+        "xp": 515,
+        "seconds": 294
+      },
+      "ownership": "account_bound",
+      "previewOnly": true,
+      "usableInRealForge": false
+    },
+    {
+      "id": "EQ2_SIG_T4_GLASSFIN_MANTLE_SIGNATURE",
+      "pieceId": "EQ2_SIG_T4_GLASSFIN_MANTLE",
+      "basePieceId": "EQ2_GLASSBOUND_RETALIATOR_CAPE",
+      "baseRecipeId": "EQ2_GLASSBOUND_RETALIATOR_CAPE_FOUNDATION",
+      "name": "Glassbound Glassfin Mantle",
+      "traitId": "glassfin_guard",
+      "materialOrigin": "fishing_secondary_catch",
+      "tier": 4,
+      "slot": "cape",
+      "role": "tank",
+      "profession": "smithing",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 29
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCALE",
+          "quantity": 29
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 11
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_GLASSBOUND_MIRRORSCALE",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 40,
+      "professionLevel": 34,
+      "gold": 12800,
+      "xp": 959,
+      "seconds": 702,
+      "sourceReference": {
+        "gold": 8500,
+        "xp": 959,
+        "seconds": 561
+      },
+      "ownership": "tradeable_only_after_market_approval",
+      "previewOnly": true,
+      "usableInRealForge": false
+    },
+    {
+      "id": "EQ2_SIG_T4_RIFTFANG_PENDANT_SIGNATURE",
+      "pieceId": "EQ2_SIG_T4_RIFTFANG_PENDANT",
+      "basePieceId": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET",
+      "baseRecipeId": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET_FOUNDATION",
+      "name": "Glassbound Riftfang Pendant",
+      "traitId": "riftfang_bleed",
+      "materialOrigin": "dungeon_completion_material",
+      "tier": 4,
+      "slot": "amulet",
+      "role": "damage",
+      "profession": "tailoring",
+      "route": "signature",
+      "inputs": [
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 35
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCALE",
+          "quantity": 14
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        },
+        {
+          "itemId": "EQ2_SIG_GLASSBOUND_RIFTFANG",
+          "quantity": 1
+        }
+      ],
+      "characterLevel": 40,
+      "professionLevel": 34,
+      "gold": 9800,
+      "xp": 734,
+      "seconds": 537,
+      "sourceReference": {
+        "gold": 6500,
+        "xp": 734,
+        "seconds": 429
+      },
+      "ownership": "account_bound",
+      "previewOnly": true,
+      "usableInRealForge": false
+    }
+  ],
+  "noActualSourceGrant": true,
+  "noRealItemMint": true,
+  "approvedForGameplay": false
+}

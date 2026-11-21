@@ -208,8 +208,8 @@ assert.ok(finisher.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
 // multiplied again by the primary variant's coefficient. This matters for
 // low-HP healer variants, reflective shields and bonus taunts.
 const reflectiveOath=abilityFor('IRONWARDEN','Oathwall',2);
-assert.equal(reflectiveOath.effects.find(e=>e.kind==='shield'&&e.shieldReflectPct===.15)?.coeff,1.325,
- 'Sentinel shield bonus applies to the secondary reflective shield');
+assert.equal(reflectiveOath.effects.find(e=>e.kind==='shield'&&e.shieldReflectPct===.15)?.coeff,1.4045,
+ 'Sentinel overall and Oathwall-specific shield bonuses both apply');
 assert.ok(reflectiveOath.effects.some(e=>e.kind==='shield'&&e.coeff===0),
  'the primary Oathwall shield stays disabled by the Reflective Oath variant');
 

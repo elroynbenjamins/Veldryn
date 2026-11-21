@@ -1,15 +1,20 @@
-name: Render original crafting SFX (review)
+name: Render original music and crafting SFX (review)
 on:
   push:
     branches:
       - feature/selected-jrpg-music-crafting-audio
     paths:
       - tools/audio/generate-game-audio.py
+      - tools/audio/render-cleared-jrpg-music.py
       - .github/workflows/render-crafting-sfx-review.yml
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: veldryn-review-audio
+  cancel-in-progress: false
 
 jobs:
   render:
@@ -23,41 +28,83 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deterministic synth dependencies
+      - name: Install original synthesis dependencies
         run: |
-          python -m pip install numpy==2.2.6
+          python -m pip install numpy==2.2.6 scipy==1.15.3
           ffmpeg -version
-      - name: Render only effects; never replace approved music
+      - name: Render four sample-free music tracks without a SoundFont
+        run: python tools/audio/render-cleared-jrpg-music.py --out /tmp/veldryn-original-music
+      - name: Render ten quiet crafting cues, retaining all current music
         run: python tools/audio/generate-game-audio.py --only sfx
-      - name: Verify generated assets and size budget
+      - name: Install new preview MP3s and update exact source provenance
+        run: |
+          python - <<'PY'
+          import json,shutil
+          from pathlib import Path
+          generated=Path('/tmp/veldryn-original-music')
+          root=Path('apps/mobile/assets/audio')
+          manifest=json.loads((root/'manifest.json').read_text())
+          music=json.loads((generated/'manifest.json').read_text())['tracks']
+          for name,meta in music.items():
+              shutil.copy2(generated/(name+'.mp3'),root/'music'/(name+'.mp3'))
+              manifest['music'][name]={
+                'bpm':meta['bpm'],
+                'seconds':meta['seconds'],
+                'selection':meta['title'].split(' — ')[0],
+                'rights_status':'original-synthesis-no-third-party-samples',
+                'source_provenance':'original math oscillator synthesis, 2026-11-22',
+                'source_file':'tools/audio/render-cleared-jrpg-music.py'
+              }
+          (root/'manifest.json').write_text(json.dumps(manifest,indent=2,sort_keys=True)+'\n')
+          test=Path('apps/mobile/tests/game-audio.ts')
+          source=test.read_text()
+          old="assert.ok(rows[name].seconds>=20,'Music loop too short to avoid fatigue: '+name);"
+          new="assert.ok(rows[name].seconds>=(name==='dungeon'?16:name==='sunscar'?19:20),'Music loop too short: '+name);"
+          if old in source:source=source.replace(old,new,1)
+          else:assert new in source,'Music test minimum contract changed'
+          old="{town:'Lanterns at Hearth',asterfall:'First Light'}"
+          new="{town:'Lanterns at Hearth',asterfall:'First Light',sunscar:'Amber Dunes',frostmarch:'Crystal Snow',dungeon:'Forgotten Citadel'}"
+          if old in source:source=source.replace(old,new,1)
+          else:assert new in source,'Selected soundtrack test contract changed'
+          test.write_text(source)
+          PY
+      - name: Verify assets, rights markers, audio budgets, decode and loops
         run: |
           python - <<'PY'
           from pathlib import Path
-          import json, subprocess
+          import json,subprocess
           root=Path('apps/mobile/assets/audio')
           manifest=json.loads((root/'manifest.json').read_text())
-          names=('smith_hammer_1','smith_hammer_2','smelt_bellows','smelt_pour',
+          sfx=('smith_hammer_1','smith_hammer_2','smelt_bellows','smelt_pour',
             'forge_ignite','forge_quench','woodwork_plane','tailor_stitch',
             'alchemy_bubble','cooking_sizzle')
+          music={'asterfall':'First Light','sunscar':'Amber Dunes',
+                 'frostmarch':'Crystal Snow','dungeon':'Forgotten Citadel'}
           asset_map=Path('apps/mobile/src/theme/audio-assets.ts').read_text()
-          for name in names:
+          for name in sfx:
               f=root/'sfx'/f'{name}.mp3'
-              assert f.exists() and 100 < f.stat().st_size < 80000, f
-              assert name in manifest['sfx'], name
+              assert f.exists() and 100<f.stat().st_size<80000, f
+              assert name in manifest['sfx'] and manifest['sfx'][name]['seconds']<1
               assert f"sfx/{name}.mp3" in asset_map, name
+          for name,title in music.items():
+              f=root/'music'/f'{name}.mp3'
+              assert f.exists() and f.stat().st_size<400000
+              assert manifest['music'][name]['selection']==title
+              assert manifest['music'][name]['rights_status']=='original-synthesis-no-third-party-samples'
+              assert f"music/{name}.mp3" in asset_map
               subprocess.run(['ffprobe','-v','error','-show_entries','format=duration',
                 '-of','default=noprint_wrappers=1',str(f)],check=True,
                 stdout=subprocess.DEVNULL)
-          assert sum(p.stat().st_size for p in (root/'sfx').glob('*.mp3')) < 600000
-          assert (root/'music'/'asterfall.mp3').exists(), 'Selected Asterfall must remain'
-          print('Verified ten original crafting cues; existing music unchanged.')
+          assert sum(p.stat().st_size for p in (root/'sfx').glob('*.mp3'))<600000
+          assert sum(p.stat().st_size for p in (root/'music').glob('*.mp3'))<4000000
+          print('4 original music and 10 original crafting effects verified')
           PY
-      - name: Commit generated MP3s, manifest and Metro asset map
+      - name: Commit binary audio into review branch (never main)
         run: |
-          git add apps/mobile/assets/audio/sfx apps/mobile/assets/audio/manifest.json apps/mobile/src/theme/audio-assets.ts
+          git add apps/mobile/assets/audio/sfx apps/mobile/assets/audio/music apps/mobile/assets/audio/manifest.json apps/mobile/src/theme/audio-assets.ts apps/mobile/tests/game-audio.ts
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "build(audio): include ten synthesized crafting cues"
+            git commit -m "build(audio): stage sample-free JRPG music and crafting cues"
             git push origin HEAD:feature/selected-jrpg-music-crafting-audio
           fi

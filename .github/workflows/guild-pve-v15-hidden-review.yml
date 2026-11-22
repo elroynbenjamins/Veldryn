@@ -1,0 +1,45 @@
+name: Hidden Guild PvE V15 campaign progress QA
+
+# Test-only, offline synthetic ledgers. Never ships a live Guild PvE route.
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-progress-v15.ts'
+      - 'apps/mobile/tests/guild-pve-v15-progress.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v15.json'
+      - 'docs/roadmap/guild-pve-v15-consolidation-and-gates-20261122.md'
+      - '.github/workflows/guild-pve-v15-hidden-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  v15-read-only-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck V15 + inherited V9/V14 contracts
+        run: pnpm exec tsc -p tsconfig.guild-pve-v15.json --noEmit
+      - name: Compile test-only projection
+        run: pnpm exec tsc -p tsconfig.guild-pve-v15.json --outDir .core-build
+      - name: Run campaign progress and payout-off regressions
+        run: node .core-build/apps/mobile/tests/guild-pve-v15-progress.js

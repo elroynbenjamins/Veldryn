@@ -3,6 +3,16 @@
 **Candidate:** merged release integration PR #1453 (draft design provenance #1384) · **Status:** integrated in main; production OFF; internal staging QA opt-in ON · **Target:** Android 1.0.11 or later.
 **Do not enable production Social Names**, deploy production migrations, or move Android minimum-version policy until all release gates pass.
 
+## 22 November 2026 — production compatibility repair (pre-release)
+
+- Reproduced root cause against live schema: staging exposes `account_social_name_self_v1()` and `set_account_social_name_v1(text)`, while production exposes neither. The production Social Name editor must remain OFF until backend and signed Android QA are complete.
+- Discovered production's `party_social_state_v16()` is now a weekly-tier wrapper around `party_social_state_before_weekly_tiers_v1()`. The original Social Name migration attempted to rewrite the wrapper and would reject the source as contract drift. The unreleased migration now patches the actual roster-producing function while preserving the wrapper and the newer `party_social_state_v18/v19` chain.
+- Full existing rollback-only SQL regression rerun on staging: **PASS** (Social Name, uniqueness/cooldown, three heroes, owner isolation, public/private visibility).
+- Both staging idempotence and production party-roster migration simulated with `BEGIN...ROLLBACK`: **PASS**.
+- All seven dated Social Name/showcase migrations simulated in order against today's production schema in one transaction with `lock_timeout=750ms`, `statement_timeout=20s`, then **ROLLBACK**: **PASS**, expected read/write RPCs and gallery table present *inside the test transaction only*. No production schema or player data was changed.
+- Added explicit production mobile-only `EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED` gate that requires `EXPO_PUBLIC_RELEASE_CHANNEL=production` and the exact production Supabase URL. It stays **false** in `eas.json`; the staging APK preview still uses its separate opt-in. The shared Edge/gameplay release flag stays false.
+- **Remaining release holds:** real signed staging Android APK manual QA across the account/character/privacy/localization matrix; security/advisor review and final CI on exact head; approved production migration history/versioning; then build signing/Play internal-track verification and a separate opt-in flip. Do not call this production deployed or player-available until those checks complete.
+
 ## Internal staging QA build profile
 
 - `eas build --platform android --profile staging` builds an **internal staging APK** with Social Names and three-hero showcases enabled against the staging Supabase backend only. Creating this APK still requires EAS access/signing; a GitHub CI AAB/emulator smoke is not an EAS staging build.

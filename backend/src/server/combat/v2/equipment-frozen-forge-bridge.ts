@@ -256,6 +256,7 @@ export function simulateRealFrozenForgeCombatV2(
    reject('party_actor_source_mismatch');
   const source=sourceMatches[0];
   for(const id of Object.values(matches[0].selected.equipment)){
+   if(!isId(id))reject('invalid_party_worn_copy_identity');
    if(seenIds.has(id))reject('cross_character_worn_copy');
    seenIds.add(id);
   }

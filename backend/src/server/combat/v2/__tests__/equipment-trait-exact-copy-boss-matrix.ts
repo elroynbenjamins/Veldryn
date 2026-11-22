@@ -203,6 +203,33 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
      tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
     }),/actor_or_boss_changed/,'mismatched boss identity must be rejected');
+    // A pure event-label rename must not be misrepresented as a numerical
+    // tactical advantage. This is the exact regression the outcome report
+    // protects against; no production CP formula is being fabricated.
+    const cosmeticOnly={...first,combat:{...first.combat,
+     events:first.combat.events.map(e=>e.type==='cast_start'||
+      e.type==='cast_complete'?{...e,abilityId:'QA_RENAMED_ONLY'}:e)}};
+    const labelReport=reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:cosmeticOnly,seed:input.seed,bossId:boss.id,
+     actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    });
+    assert.equal(labelReport.changedActualOutcomes,false,
+     'combat label changes alone must never count as an outcome improvement');
+    const altered={...alternateResult,combat:{...alternateResult.combat,
+     players:alternateResult.combat.players.map(p=>({
+      ...p,definition:{...p.definition,stats:{
+       ...p.definition.stats,maxHp:p.definition.stats.maxHp+1,
+      }},
+     }))}};
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:altered,seed:input.seed,bossId:boss.id,
+     actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    }),/effective_stats_changed/,
+    'mismatched character base stat budgets must be rejected');
    }
    assert.ok(alternateResult.combat.events.length<5000);
    const changed=JSON.stringify(first.combat.events)!==JSON.stringify(alternateResult.combat.events);

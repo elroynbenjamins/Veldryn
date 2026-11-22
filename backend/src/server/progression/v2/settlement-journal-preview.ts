@@ -56,6 +56,10 @@ export function projectServerSettlementV2(proof:ServerSettlementProofV2):Journal
     throw new Error('journal_v2_unverified_source');
   if(!['combat_reward','gathering_claim','craft_claim','processing_claim'].includes(proof.source))
     throw new Error('journal_v2_invalid_source');
+  // Staging public.claim_idle_progress_atomic currently caps one claim at 86,400s.
+  // A 30-hour reserve must be split into distinct server-verified claims.
+  if(proof.source==='gathering_claim' && proof.baseEffortSeconds>86400)
+    throw new Error('journal_v2_gathering_claim_exceeds_db_cap');
   const combat=proof.source==='combat_reward';
   const gathering=proof.source==='gathering_claim';
   if(combat ? proof.professionId!==undefined :

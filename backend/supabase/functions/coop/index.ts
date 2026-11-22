@@ -44444,6 +44444,19 @@ function authorizeEnemyV2EngineExecution(input, authority) {
   return false;
 }
 
+// live-edge-v2-disabled:./v2/equipment-trait-engine-authority
+function authorizeEquipmentV2TraitEngine(_input, authority) {
+  if (authority !== void 0) throw Error("combat_v2_not_available_in_live_edge_bundle");
+  return /* @__PURE__ */ new Map();
+}
+
+// live-edge-v2-disabled:./v2/equipment-trait-engine-runtime
+var EquipmentTraitRuntimeV2 = class {
+  constructor() {
+    throw Error("combat_v2_not_available_in_live_edge_bundle");
+  }
+};
+
 // live-edge-v2-disabled:./v2/resource-runtime
 var blocked = () => {
   throw Error("combat_v2_not_available_in_live_edge_bundle");
@@ -44888,9 +44901,11 @@ function conditionOk(a, actor, allies, enemies) {
       return true;
   }
 }
-function simulateCombat(input, enemyV2Authority) {
+function simulateCombat(input, enemyV2Authority, equipmentTraitAuthority) {
   if (!input.players.length || !input.enemies.length) throw new Error("combat_requires_both_teams");
   const enemyV2Effects = authorizeEnemyV2EngineExecution(input, enemyV2Authority);
+  const equipmentSources = authorizeEquipmentV2TraitEngine(input, equipmentTraitAuthority);
+  const equipmentTraitRuntime = equipmentTraitAuthority ? new EquipmentTraitRuntimeV2(equipmentSources) : void 0;
   const maxMs = input.maxDurationMs ?? 18e4;
   const tick = input.tickMs ?? 100;
   const mitigationConstant = input.mitigationConstant ?? 1200;
@@ -44970,6 +44985,7 @@ function simulateCombat(input, enemyV2Authority) {
     ) + (sourceGear?.accuracyPp ?? 0) - (targetGear?.evasionPp ?? 0), 0, 1);
     if (rng.next(`${now}:${source.definition.id}:${abilityId}:hit`) > hc) {
       if (eventType === "damage") {
+        if (source.definition.team === "players") equipmentTraitRuntime?.miss(source.definition.id, abilityId);
         events.push({ atMs: now, type: "miss", actorId: source.definition.id, targetId: target2.definition.id, abilityId });
         if (source.definition.team === "enemies") {
           resource(target2, "evade", now, abilityId);
@@ -45041,6 +45057,25 @@ function simulateCombat(input, enemyV2Authority) {
     if (v2Encounter && targetGear && effect2.damageType && effect2.damageType !== "physical" && effect2.damageType !== "true") {
       raw2 *= 1 - clamp2(targetGear.wardPp, 0, 1);
     }
+    if (eventType === "damage" && source.definition.team === "players" && source.combatV2 && equipmentTraitRuntime) {
+      const adjusted = equipmentTraitRuntime.directHit(
+        now,
+        source.definition.id,
+        target2.definition.id,
+        abilityId,
+        raw2
+      );
+      raw2 = adjusted.damage;
+      if (adjusted.trigger) events.push({
+        atMs: now,
+        type: "equipment_trait_trigger",
+        actorId: source.definition.id,
+        targetId: target2.definition.id,
+        abilityId: "V2_EQUIPMENT_TRAIT:" + adjusted.trigger.traitId,
+        amount: Math.round(adjusted.trigger.amount * 100) / 100,
+        detail: "original_direct_hit_only"
+      });
+    }
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -45048,6 +45083,33 @@ function simulateCombat(input, enemyV2Authority) {
     target2.hp = Math.max(0, target2.hp - dealt);
     source.damageDone += dealt;
     target2.damageTaken += dealt;
+    if (equipmentTraitRuntime && eventType === "damage" && source.definition.team === "players" && target2.definition.team === "enemies" && dealt > 0 && target2.alive && target2.hp > 0) {
+      const echo = equipmentTraitRuntime.afterDirectSkillHit(
+        now,
+        source.definition.id,
+        target2.definition.id,
+        abilityId,
+        dealt,
+        source.definition.stats.attackPower
+      );
+      if (echo) {
+        const bonus = Math.min(target2.hp, echo.amount);
+        if (bonus > 0) {
+          target2.hp -= bonus;
+          source.damageDone += bonus;
+          target2.damageTaken += bonus;
+          events.push({
+            atMs: now,
+            type: "equipment_trait_trigger",
+            actorId: source.definition.id,
+            targetId: target2.definition.id,
+            abilityId: "V2_EQUIPMENT_TRAIT:echoing_strike",
+            amount: Math.round(bonus * 100) / 100,
+            detail: "secondary_damage_no_recursive_trigger"
+          });
+        }
+      }
+    }
     if (eventType === "damage" && source.combatV2 && !abilityId.startsWith("V2_") && (effect2.lifestealPct ?? 0) > 0 && dealt > 0 && source.alive) {
       const healed = Math.min(
         source.definition.stats.maxHp - source.hp,
@@ -45116,6 +45178,46 @@ function simulateCombat(input, enemyV2Authority) {
       }
     }
     if (absorbed > 0 && target2.definition.team === "players") resource(target2, "shield_absorb", now, abilityId);
+    if (equipmentTraitRuntime && eventType === "damage" && source.definition.team === "enemies" && target2.definition.team === "players" && source.alive && target2.alive && target2.hp > 0 && dealt > 0 && !(source.definition.phases ?? []).some((phase2) => phase2.id === abilityId) && // Until every boss cast carries a signed avoidable-hit tag, only boss
+    // basic attacks may generate equipment reflection. Never cheese telegraphs.
+    (!source.definition.boss || abilityId === "BASIC") && !abilityId.startsWith("V2_") && !abilityId.startsWith("COMPANION_REFLECT")) {
+      const outcome = equipmentTraitRuntime.retaliation(
+        now,
+        target2.definition.id,
+        source.definition.id,
+        dealt,
+        target2.definition.stats.maxHp,
+        source.definition.stats.maxHp,
+        Boolean(source.definition.boss)
+      );
+      if (outcome) {
+        const bonus = Math.min(source.hp, outcome.amount);
+        if (bonus > 0) {
+          source.hp -= bonus;
+          source.damageTaken += bonus;
+          target2.damageDone += bonus;
+          events.push({
+            atMs: now,
+            type: "equipment_trait_trigger",
+            actorId: target2.definition.id,
+            targetId: source.definition.id,
+            abilityId: "V2_EQUIPMENT_TRAIT:" + outcome.traitId,
+            amount: Math.round(bonus * 100) / 100,
+            detail: "retaliation_no_recursive_trigger"
+          });
+          if (source.hp <= 0 && source.alive) {
+            source.alive = false;
+            events.push({
+              atMs: now,
+              type: "death",
+              targetId: source.definition.id,
+              actorId: target2.definition.id,
+              abilityId: "V2_EQUIPMENT_REFLECT"
+            });
+          }
+        }
+      }
+    }
     let reflectable = absorbed;
     for (const shield of target2.reflectiveShields ?? []) {
       const used = Math.min(reflectable, shield.remaining);
@@ -45172,6 +45274,59 @@ function simulateCombat(input, enemyV2Authority) {
       if (!abilityId.startsWith("V2_")) runCapstone(source, "heal", now, target2, { amount: actual, healedAlly: source !== target2 });
     }
     events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(actual.toFixed(2)) });
+    if (equipmentTraitRuntime && direct && actual > 0 && source !== target2 && source.definition.team === "players" && target2.definition.team === "players" && !abilityId.startsWith("V2_") && !abilityId.startsWith("GEM_")) {
+      const other = players.filter((x) => x.alive && x !== source && x !== target2 && x.definition.stats.maxHp > x.hp).sort((a, b) => a.hp / a.definition.stats.maxHp - b.hp / b.definition.stats.maxHp || a.definition.id.localeCompare(b.definition.id))[0];
+      if (other) {
+        const actions = equipmentTraitRuntime.afterDirectAllyHeal(
+          now,
+          source.definition.id,
+          target2.definition.id,
+          other.definition.id,
+          actual,
+          other.definition.stats.maxHp - other.hp
+        );
+        for (const action of actions) {
+          if (action.effect === "secondary_heal") {
+            const healed = Math.min(action.amount, other.definition.stats.maxHp - other.hp);
+            if (healed > 0) {
+              other.hp += healed;
+              source.healingDone += healed;
+              events.push({
+                atMs: now,
+                type: "equipment_trait_trigger",
+                actorId: source.definition.id,
+                targetId: other.definition.id,
+                abilityId: "V2_EQUIPMENT_TRAIT:mending_echo",
+                amount: Number(healed.toFixed(2)),
+                detail: "secondary_heal_no_recursive_trigger"
+              });
+            }
+          } else if (action.effect === "secondary_hot") {
+            const total = action.amount;
+            other.periodic = other.periodic.filter((e) => !(e.kind === "hot" && e.sourceId === source.definition.id && e.effectId === "V2_EQUIPMENT_TRAIT:restorative_bloom"));
+            other.periodic.push({
+              sourceId: source.definition.id,
+              effectId: "V2_EQUIPMENT_TRAIT:restorative_bloom",
+              kind: "hot",
+              coeff: 0,
+              flat: total / 4,
+              nextTickAt: now + 1e3,
+              expiresAt: now + 4e3,
+              tickMs: 1e3
+            });
+            events.push({
+              atMs: now,
+              type: "equipment_trait_trigger",
+              actorId: source.definition.id,
+              targetId: other.definition.id,
+              abilityId: "V2_EQUIPMENT_TRAIT:restorative_bloom",
+              amount: Number(total.toFixed(2)),
+              detail: "nonstacking_hot_no_recursive_trigger"
+            });
+          }
+        }
+      }
+    }
     if (direct) {
       const post = gemOnDirectHealV1(now, source, target2, amount, actual);
       if (post.mercyBarrier > 0) {

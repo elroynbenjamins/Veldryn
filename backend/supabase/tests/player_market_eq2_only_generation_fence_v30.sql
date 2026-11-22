@@ -40,8 +40,25 @@ begin
       where asset_kind='equipment' and tradable)
  then raise exception 'market_eq2_no_release_invariant_broken'; end if;
 
- -- The previous Forge copy has an ordinary-looking tier and receipt. Even
- -- perfect-looking names or client-injected EQ2 tags cannot make it eligible.
+ -- A recognizable OLD Forge copy must never be insertable, even if it
+ -- comes from an otherwise valid existing character with matching tier.
+ v_blocked:=false;
+ begin
+   insert into private.market_custody_assets_v1(
+      owner_account_id,source_revision,source_location,source_character_id,
+      source_locator,item_id,asset_kind,exact_instance_id,quantity
+   ) values (
+      '40000000-0000-4000-8000-000000000010'::uuid,1,'inventory','forged-char',
+      'legacy-stack','OLD_V33_HELMET','equipment','legacy-v33-instance',1
+   );
+ exception when raise_exception then
+   if sqlerrm='market_legacy_equipment_denied' then v_blocked:=true;
+   else raise;end if;
+ end;
+ if not v_blocked then raise exception 'market_eq2_legacy_asset_accepted'; end if;
+
+ -- Even an EQ2-looking item name and client-provided generation tag cannot
+ -- act as original mint provenance through the old Forge transaction tables.
  v_blocked:=false;
  begin
    insert into private.market_custody_assets_v1(

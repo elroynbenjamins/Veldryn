@@ -43,6 +43,33 @@ assert.equal(androidBuild.build.staging.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PRE
 assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'")&&socialGate.includes("process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'"),'Only explicitly approved production builds with the exact backend may mount the editor');
 const socialRosterMigration=read('../../backend/supabase/migrations/20261118142000_social_roster_account_name_projections_v1.sql');
 assert.ok(socialRosterMigration.includes('party_social_state_before_weekly_tiers_v1()')&&socialRosterMigration.includes('v_party_target')&&socialRosterMigration.includes('online_player_roster_v1()'),'Social Name migration patches production weekly-party source without dropping wrappers');
+
+// Exercise the actual transpiled build gate, not merely the presence of flag strings.
+const vm=require('node:vm');
+const compiledSocialGate=ts.transpileModule(socialGate,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+function socialNameVisibleWithEnv(env){
+ const mod={exports:{}};
+ vm.runInNewContext(compiledSocialGate,{module:mod,exports:mod.exports,process:{env}});
+ return mod.exports.ACCOUNT_SOCIAL_IDENTITY_RELEASED;
+}
+const stagingSocialEnv={
+ EXPO_PUBLIC_RELEASE_CHANNEL:'staging',
+ EXPO_PUBLIC_SUPABASE_URL:'https://iqfmmpvwanvvmxcftfxw.supabase.co',
+ EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW:'true',
+};
+const prodSocialEnv={
+ EXPO_PUBLIC_RELEASE_CHANNEL:'production',
+ EXPO_PUBLIC_SUPABASE_URL:'https://nyjwigipamnvpdvpauuv.supabase.co',
+ EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED:'true',
+};
+assert.equal(socialNameVisibleWithEnv({}),false,'No build flag keeps Social Name hidden');
+assert.equal(socialNameVisibleWithEnv(stagingSocialEnv),true,'Matching staging APK previews Social Name');
+assert.equal(socialNameVisibleWithEnv({...stagingSocialEnv,EXPO_PUBLIC_SUPABASE_URL:prodSocialEnv.EXPO_PUBLIC_SUPABASE_URL}),false,'Staging preview cannot reach production');
+assert.equal(socialNameVisibleWithEnv(prodSocialEnv),true,'Explicit production launch enables Social Name');
+assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED:'false'}),false,'Production launch opt-out wins');
+assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_RELEASE_CHANNEL:'preview'}),false,'Preview builds cannot spoof production launch');
+assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_SUPABASE_URL:stagingSocialEnv.EXPO_PUBLIC_SUPABASE_URL}),false,'Production launch requires exact production backend');
+
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');
 assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');

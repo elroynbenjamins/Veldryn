@@ -12,7 +12,7 @@ const eventId='event_87',accountId='account_87',rosterDigest='a'.repeat(64);
 const actors=['tank','dance','echo','medic','bloom'].map((id,i)=>({
  id,characterId:'character_'+i,snapshotId:'snapshot_'+i,
  sourceRevision:i+1,sourceHash:String(i+1).repeat(64),
- combatantDigest:String(i+6).repeat(64),
+ combatantDigest:(i+6).toString(16).repeat(64),
 }));
 const sources=actors.map((actor,i)=>({
  source:'server-persisted-equipment-v2' as const,

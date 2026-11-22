@@ -101,6 +101,7 @@ for(const key of ['This name is already used by another player.','You can change
 }
 const socialEditor=read('src/components/SocialNameEditor.tsx');
 assert.ok(socialEditor.includes('socialIdentityT(language,socialNameError(e))'),'Editor localizes the parsed PostgREST error rather than showing raw SQL');
+assert.ok(socialEditor.includes('proposed.toLowerCase()!==data.socialName.toLowerCase()'),'Case-only re-entry does not offer a pointless 30-day rename action');
 
 
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');

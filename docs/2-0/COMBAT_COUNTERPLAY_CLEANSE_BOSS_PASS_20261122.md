@@ -36,3 +36,14 @@ The changes provide an **opportunity** to interrupt, not a mandatory interrupt m
 **Not established by this pass:** optimized equal-CP counter-build win-rate advantage, mobile telegraph visibility/latency, a live persisted battle source, final damage coefficients, cross-party cure/interrupt races or player-controlled interrupt timing. These require later signed-equipment/Skills 2.0 cross-system fight samples, Android interaction tests and owner numerical/visual approval.
 
 **Do not merge into main or activate 2.0.**
+
+
+## Follow-on — equal-stat and four-player engine evidence
+
+- Measured A/B fixtures: 3 deterministic seeds × 2 opponent mechanics = **6 pairs** (offense-vs-cleanse and offense-vs-interrupt). The paired QA players have equal authored stats/attack cadence; their tactical skill differs. This is **not** verified equal Combat Power because final signed equipment/CP custody is not supplied.
+- Isolated four-player fixture: tank + two damage + support. A support cleanse is required to produce **four DoT and four hostile debuff removal events** for the four recipients, without repeated proc farming. A shield tactic executes as an alternative in a separate matchup. No signed party roster/persistence, trait shared budget, or real co-op route is authorized here.
+- Generated gameplay and co-op Edge bundles were rebuilt and checked using the existing `liveEdgeCombatV2IsolationPlugin`, committed strictly to the private branch by the tightly scoped hidden counterplay sync workflow. These bytes are **not deployed**. New exact-head CI still must establish full validation.
+
+Remaining release blockers: owner-reviewed visual themes, the pre-existing Skills preview scroll-indicator check, persisted 4-player group/trait authoritative source, signed CP-equivalent matchups across 9 classes/18 specs and six bosses, final numeric thresholds and accessible Android telegraphs.
+
+**Do not treat any synthetic test as a final win-rate or live balance proof.**

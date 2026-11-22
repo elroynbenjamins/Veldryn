@@ -3,6 +3,7 @@ import { launchPlayer } from '../../combat/content/launch-combat';
 import {buildExpeditionEncounter,expeditionEncounterPreview} from '../../combat/expedition-combat-service';
 import { EVENT_EXPEDITIONS,eventTierMinLevel,eventTierRewardMarks } from '../content/event-expeditions';
 import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
+import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_DEPTH_REWARDS,frostfallRewardMultiplierForBoss} from '../frostfall-endurance';
 
 const players=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
 const members=[['a','c1','tank'],['b','c2','damage'],['c','c3','damage'],['d','c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
@@ -13,11 +14,12 @@ assert.throws(()=>gated.start({requestId:'event-off-req',runId:'event-off-run',a
 assert.throws(()=>gated.start({requestId:'event-wrong-req',runId:'event-wrong-run',accountId:'a',eventId:'EVENT_SUNCREST_SHATTERED_ISLES',activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now}),/event_not_live/);
 
 const effects=new Set<string>();
+const frostfallId='EVENT_FROSTFALL_AURORA_HOLLOW';
 for(const definition of EVENT_EXPEDITIONS){
  const service=new EventExpeditionService(new MemoryEventRunRepository(),`route-secret-${definition.id}`);
  const run=service.start({requestId:`request-${definition.liveEventSeriesId}`,runId:`run-${definition.liveEventSeriesId}`,accountId:'a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members,players,nowMs:now});
- assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`${definition.eventName} route length drifted`);
- assert.equal(run.graph.generatorVersion,'event-route-v5');
+ assert.equal(run.graph.preBossNodeCount,definition.id===frostfallId?42:definition.routeNodeCount,`${definition.eventName} route length drifted`);
+ assert.equal(run.graph.generatorVersion,definition.id===frostfallId?FROSTFALL_ENDURANCE_GENERATOR:'event-route-v5');
  assert.equal(run.mechanic?.id,definition.mechanic.id);
  assert.equal(run.mechanic?.value,definition.mechanic.startValue);
  assert.equal(run.objective?.id,definition.objective.id);
@@ -60,9 +62,39 @@ for(let tier=1;tier<=5;tier++){
  const run=service.start({requestId:'frost-tier-request-'+tier,runId:'frost-tier-run-'+tier,accountId:'a',eventId:frostfall.id,tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
  assert.equal(run.tier,tier);
  assert.equal(run.syncLevel,eventTierMinLevel(frostfall,tier));
- assert.equal(run.graph.preBossNodeCount,6);
+ assert.equal(run.graph.preBossNodeCount,42);
+ assert.equal(run.graph.generatorVersion,FROSTFALL_ENDURANCE_GENERATOR);
 }
 assert.throws(()=>new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-gate').start({requestId:'frost-req-level',runId:'frost-run-level',accountId:'a',eventId:frostfall.id,tier:2,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players:players.map((player,index)=>index===0?{...player,level:14}:player),nowMs:now}),/event_level_requirement/);
+const frostEnduranceService=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-endurance-checkpoints');
+const frostStart=frostEnduranceService.start({requestId:'frost-endurance-req',runId:'frost-endurance-run',accountId:'a',eventId:frostfall.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
+assert.equal(frostStart.graph.nodes.filter(node=>node.kind==='boss').length,6,'five optional exits and one mandatory final boss');
+assert.equal(frostStart.graph.nodes.find(node=>node.nodeId==='boss')?.depth,43);
+for(let stage=1;stage<=5;stage++){
+ const d=7*stage+1;
+ const choices=frostStart.graph.nodes.filter(node=>node.depth===d).sort((a,b)=>a.nodeId.localeCompare(b.nodeId));
+ assert.deepEqual(choices.map(node=>node.kind),['camp','shrine','boss'],'Campfire, Boon, Boss checkpoint alternatives');
+ assert.deepEqual(choices.map(node=>node.modifierId),['checkpoint-camp-v2','checkpoint-boon-v2','checkpoint']);
+ assert.equal(choices[2].contentId,frostfall.bossEncounterId,'frozen seasonal boss at every exit');
+ assert.equal(frostfallRewardMultiplierForBoss(frostStart.graph,choices[2]),FROSTFALL_ENDURANCE_DEPTH_REWARDS[stage-1]);
+}
+assert.equal(frostfallRewardMultiplierForBoss(frostStart.graph,frostStart.graph.nodes.find(node=>node.nodeId==='boss')!),FROSTFALL_ENDURANCE_DEPTH_REWARDS[5]);
+assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,frostStart.graph.nodes.find(node=>node.nodeId==='d7-c0')!),/invalid_frostfall_boss_exit/);
+let frostRun=frostStart;
+for(let d=1;d<=7;d++){
+ const options=frostRun.graph.nodes.find(node=>node.nodeId===frostRun.currentNodeId)!.nextNodeIds;
+ const chosen=options.map(id=>frostRun.graph.nodes.find(node=>node.nodeId===id)!).find(node=>node.kind==='battle')!;
+ frostRun=frostEnduranceService.choose({runId:frostRun.id,accountId:'a',optionNodeId:chosen.nodeId,requestId:'frost-endurance-choice-'+d});
+ assert.equal(frostRun.phase,'awaiting_choice','first seven seasonal rooms should remain playable');
+}
+const frostExit=frostRun.graph.nodes.find(node=>node.nodeId==='d8-c2')!;
+assert.equal(frostExit.kind,'boss');
+const frostBefore=eventMechanicProjection(frostRun),frostObjective=eventObjectiveProjection(frostRun);
+const frostCompleted=frostEnduranceService.choose({runId:frostRun.id,accountId:'a',optionNodeId:frostExit.nodeId,requestId:'frost-endurance-early-exit'});
+assert.equal(frostCompleted.phase,'completed');
+assert.equal(frostCompleted.rewardMarks,eventTierRewardMarks(frostfall,1)+frostBefore.rewardBonus+frostObjective.rewardBonus);
+assert.equal(frostEnduranceService.claimReward({runId:frostCompleted.id,accountId:'a',requestId:'frost-endurance-claim',nowMs:now}).marks,frostCompleted.rewardMarks);
+
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
 assert.equal(veil.minLevel,15);

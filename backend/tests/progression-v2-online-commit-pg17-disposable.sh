@@ -106,7 +106,7 @@ begin
  or (select count(*) from private.character_career_awards_v2
      where source_id=repeat('9',64))<>1
  or (select overall_character_xp from private.character_career_progress_v2
-    where character_id='11111111-1111-4111-8111-111111111111')<>360
+    where character_id='11111111-1111-4111-8111-111111111111')<>240
  then raise exception 'online_game_commit_not_atomic';end if;
 end $check$;
 SQL
@@ -131,7 +131,7 @@ pg <<'SQL'
 create function private.disposable_fail_career_bank()
 returns trigger language plpgsql as $body$
 begin
- if new.overall_character_xp>600 then raise exception 'bank_write_failed';end if;
+ if new.overall_character_xp>500 then raise exception 'bank_write_failed';end if;
  return new;
 end $body$;
 create trigger disposable_fail_career_bank before update
@@ -153,7 +153,7 @@ begin
  or exists(select 1 from private.character_career_awards_v2
    where source_id=repeat('8',64))
  or (select overall_character_xp from private.character_career_progress_v2
-   where character_id='11111111-1111-4111-8111-111111111111')<>360
+   where character_id='11111111-1111-4111-8111-111111111111')<>240
  then raise exception 'ghost_state_or_xp_after_failure';end if;
 end $check$;
 SQL

@@ -15,6 +15,8 @@ import {freezeWorldBossAccountRosterV22,
 import {simulateWorldBossRounds,WORLD_BOSS_ROUND_SCRIPTS,
  validateWorldBossScripts} from
  '../../../backend/src/server/combat/world-boss-round-prototype';
+import {worldBossCombatantDigestV88,WORLD_BOSS_V88_COMPILED_POLICY} from
+ '../../../backend/src/server/combat/world-boss-equipment-effects-v87';
 import {simulateWorldBossAuthoredAccountEncounterV25,
  WORLD_BOSS_V25_AUTHORED_ENCOUNTERS_LIVE,
  WORLD_BOSS_V25_ENGINE_VERSION} from
@@ -289,6 +291,7 @@ async function main(){
   policy:'eq2-traits-hidden-engine-pass1' as const,
   revision:1,accountId:ACCOUNT,characterId:row.characterId,
   actorId:row.combatant.id,equipmentReceiptDigest:String(i+1).repeat(64),
+  compiledCombatantDigest:worldBossCombatantDigestV88(row.combatant),
   ownedEquippedInstanceIds:['wb87-copy-'+i],
   basicAttackDamagePct:19,abilityDamagePct:22,reflectDamagePct:8,
   traits:[{instanceId:'wb87-copy-'+i,traitId:eqTraitIds[i]}],
@@ -296,6 +299,7 @@ async function main(){
  const equipmentV87={
   eventId:EVENT,accountId:ACCOUNT,bossId:eqBoss,
   rosterDigest:full.rosterDigest,serverBossMaxHp:1000000,
+  compiledPolicy:WORLD_BOSS_V88_COMPILED_POLICY,
   sources:eqSources,
   verifyPersisted:(context:{
    eventId:string;accountId:string;rosterDigest:string;
@@ -306,6 +310,17 @@ async function main(){
    context.serverBossMaxHp===1000000&&
    context.actorIds.length===full.characters.length&&
    sources.every(s=>context.actorIds.includes(s.actorId)),
+  verifyCompiledBuild:(context:{
+   actorSnapshots:readonly {
+    actorId:string;sourceHash:string;sourceRevision:number;
+    combatantDigest:string;
+   }[];
+  },sources:readonly {actorId:string;compiledCombatantDigest:string}[])=>
+   context.actorSnapshots.length===sources.length&&
+   context.actorSnapshots.every(row=>row.sourceRevision>=1&&
+    /^[a-f0-9]{64}$/.test(row.sourceHash)&&
+    sources.some(src=>src.actorId===row.actorId&&
+     src.compiledCombatantDigest===row.combatantDigest)),
  };
  const eqFight=simulateWorldBossAuthoredAccountEncounterV25({
   ...eqArgs,equipmentV87,
@@ -329,6 +344,14 @@ async function main(){
  reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
   ...eqArgs,equipmentV87:{...equipmentV87,verifyPersisted:()=>false},
  }), 'persisted_receipt_not_verified');
+ reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87:{...equipmentV87,verifyCompiledBuild:()=>false},
+ }), 'v2_compiled_build_not_verified');
+ reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87:{...equipmentV87,sources:eqSources.map((src,i)=>
+   i===1?{...src,ownedEquippedInstanceIds:eqSources[0].ownedEquippedInstanceIds,
+    traits:[{...src.traits[0],instanceId:eqSources[0].ownedEquippedInstanceIds[0]}]}:src)},
+ }), 'item_copy_shared_across_characters');
  reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
   ...eqArgs,equipmentV87:{...equipmentV87,rosterDigest:'f'.repeat(64)},
  }), 'untrusted_scope');

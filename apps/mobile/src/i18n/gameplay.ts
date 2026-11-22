@@ -9,6 +9,26 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Compact gathering tool UI: keep progressive disclosures localized across all six languages.
+ "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
+ "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
+ "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
+ "Slower without tools":["Slower without tools","Langsamer ohne Werkzeuge","Más lento sin herramientas","Langzamer zonder gereedschap","Più lento senza attrezzi","Plus lent sans outils"],
+ "How tool bonuses work":["How tool bonuses work","So wirken Werkzeugboni","Cómo funcionan los bonos","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comment fonctionnent les bonus"],
+ "TOOL TIERS":["TOOL TIERS","WERKZEUGSTUFEN","NIVELES DE HERRAMIENTA","GEREEDSCHAPSRANGEN","LIVELLI DEGLI ATTREZZI","PALIERS DES OUTILS"],
+ "Tap to inspect tool":["Tap to inspect tool","Tippen für Werkzeugdetails","Toca para ver detalles","Tik voor gereedschapsdetails","Tocca per i dettagli","Touchez pour les détails"],
+ "Not equipped":["Not equipped","Nicht ausgerüstet","Sin equipar","Niet uitgerust","Non equipaggiato","Non équipé"],
+ "Not owned":["Not owned","Nicht im Besitz","No disponible","Niet in bezit","Non posseduto","Non possédé"],
+ "tier time":["tier time","Stufenzeit","tiempo de nivel","rangtijd","tempo del livello","temps du palier"],
+ "rare finds":["rare finds","seltene Funde","hallazgos raros","zeldzame vondsten","ritrovamenti rari","trouvailles rares"],
+ "speed roll":["speed roll","Tempo-Bonuswurf","bono de velocidad","snelheidsbonus","bonus velocità","bonus de vitesse"],
+ "Tier speed bonus":["Tier speed bonus","Tempo-Bonus der Stufe","Bono de velocidad del nivel","Snelheidsbonus per rang","Bonus velocità del livello","Bonus de vitesse du palier"],
+ "Tool roll":["Tool roll","Werkzeugwurf","Atributo del equipo","Gereedschapsrol","Bonus attrezzo","Attribut de l’outil"],
+ "Owned copies":["Owned copies","Eigene Exemplare","Copias disponibles","Exemplaren in bezit","Copie possedute","Exemplaires possédés"],
+ "Select a tool roll to equip":["Select a tool roll to equip","Werkzeugvariante zum Ausrüsten wählen","Elige una variante para equipar","Kies een gereedschapsrol om uit te rusten","Scegli un attrezzo da equipaggiare","Choisissez un outil à équiper"],
+ "Legacy · Q50":["Legacy · Q50","Alt · Q50","Antiguo · Q50","Oud · Q50","Precedente · Q50","Ancien · Q50"],
+ "Legacy · Uncommon · Q50 · Base bonus only":["Legacy · Uncommon · Q50 · Base bonus only","Alt · Ungewöhnlich · Q50 · Nur Basisbonus","Antiguo · Poco común · Q50 · Solo bono base","Oud · Ongewoon · Q50 · Alleen basisbonus","Precedente · Non comune · Q50 · Solo bonus base","Ancien · Peu commun · Q50 · Bonus de base"],
+
  // Gathering-tool inspection labels: typed and translated alongside the released compact UI.
  "BASE STATS":["BASE STATS","GRUNDWERTE","ESTADÍSTICAS BASE","BASISSTATISTIEKEN","STATISTICHE BASE","STATS DE BASE"],
  "Equipment base stats":["Equipment base stats","Grundwerte der Ausrüstung","Estadísticas base del equipo","Basisstatistieken uitrusting","Statistiche base equipaggiamento","Stats de base de l'équipement"],

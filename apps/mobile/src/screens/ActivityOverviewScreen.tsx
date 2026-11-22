@@ -92,7 +92,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
      return <View key={character.id} style={[s.characterCard,active&&s.characterActive]}>
       <View style={[s.characterRow,stackRows&&s.characterRowStack]}>
        <View style={s.identityRow}>
-        <View style={s.smallPortrait}><ProfileIcon id={character.profileIconId} classId={character.classId} size={44}/></View>
+        <View style={s.smallPortrait}><ProfileIcon id={character.profileIconId} classId={character.classId} size={40}/></View>
         <View style={s.flex}>
          <Text numberOfLines={1} style={s.name}>{character.name}</Text>
          <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:classDef?.name??character.classId,level:character.level})}{classDef?' · '+r(classDef.role):''}</Text>
@@ -176,7 +176,6 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  identityRow:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:8},
  smallPortrait:{width:42,height:42,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2},
  name:{...typography.bodyStrong,color:C.text,flexShrink:1},
- roleMeta:{...typography.caption,color:C.info,fontWeight:'700'},
  actions:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:5,flexShrink:0},
  actionsStack:{alignSelf:'flex-end'},
  switchButton:{minWidth:69,paddingHorizontal:8},

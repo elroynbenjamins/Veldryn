@@ -71,3 +71,17 @@ The hidden `backend/src/server/progression/v2/online-career-batch-review.ts` bui
 6. Do not implement this in public Edge or activate until verified against the actual production schema in a disposable PG/staging-safe review and approved economy. No staging/production SQL in this pass.
 
 **Remain hidden and unmerged.** The earlier three polish passes and this continuation must be validated against the exact Git commit before any claims of passing tests. Neither the source receipt adapter nor real transactional crafting/market payouts is active.
+
+## Further continuation — existing tool/blueprint entitlement safety
+
+The new HIDDEN `backend/src/server/progression/v2/tool-entitlement-cutover-review.ts` reconciles the **twelve actually authored T1–T4 gathering tool identities** (from hidden #1615) against the newer independent career level floor proposal. It is read-only: it proposes **exactly what needs migration review**, never a global tier unlock, item mint, equip action or crafting authorization.
+
+- In the old hidden tool policy, T2/T3/T4 used levels **10/22/35**; the newer independent-careers proposal uses **12/24/36**. T1 has no conflict. T5–T9 have no verified tool catalogue and therefore receive no grandfather proposal.
+- **Existing physical copy:** only if the current gathering skill falls in the gap between the old and proposed floor *and* the specific physical item instance has a committed, account-/character-bound, pre-cutover source receipt matching the exact item ID and copy ID. No copy cloning or blanket tier upgrade; a Bank or market-escrow copy retains its actual custody.
+- **Existing learned blueprint:** only if the character's current Smithing level falls in the same gap *and* its exact learned knowledge ID has a matching pre-cutover committed grant receipt. The test does not infer knowledge just because the player has materials or a tool.
+- **Evidence gap:** missing source proof yields a reported migration-review gap, **not an issued entitlement**. A wrong account/alt, duplicate receipt/copy/knowledge ID, swapped tool identity, future state revision or post-cutover source is a hard error. Access previously earned in 1.x must be checked against actual live provenance, not guessed from the *older hidden 2.0 draft*.
+- The 12-item catalogue is a review snapshot copied from hidden #1615 to avoid importing unfinished Combat 2.0 code. **Cross-branch catalogue parity is still a required gate** before a shared immutable authority is selected.
+- The output explicitly keeps `canAuthorizeEquipOrCraft:false`, `canWriteEntitlements:false`, `releaseEnabled:false`, and `requiresOwnerApproval:true`. It is not an auth boundary, Supabase migration, runtime API, market feature or automatic grandfathering decision.
+- Tests exercise T2/T3/T4 edge skill levels, legitimate vs missing receipts, exact item/copy/blueprint matching, zero-combat specialists, Bank/market escrow, cross-character/account copies, replay, cutover and revision violations, invalid T9 entries and release-off flags.
+
+**Decision needed for 2.0 release:** select final profession tier thresholds and define whether *verified* old T1–T4 tool copies are exempt from new equip minimums and whether previously *learned* Smithing blueprints receive narrowly scoped recipe-level continuity. Do not grant full T2–T9 licenses just because an older draft once used lower level floors. No in-game UI, progression, items, permissions, SQL or rewards have been changed by this audit.

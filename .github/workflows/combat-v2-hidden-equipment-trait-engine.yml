@@ -11,6 +11,8 @@ on:
       - 'backend/src/server/party/weekly-party-boss-traits-v90.ts'
       - 'backend/src/server/party/weekly-party-event-eq2-traits-v92.ts'
       - 'backend/src/server/party/weekly-party-event-result-audit-v95.ts'
+      - 'backend/src/server/party/weekly-party-event-replay-v96.ts'
+      - 'backend/src/server/party/weekly-party-event-review-ledger-v97.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-traits-v92.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-full-build-v92.ts'
       - 'backend/src/server/party/__tests__/weekly-party-event-eq2-class-spec-matrix-v93.ts'
@@ -55,6 +57,12 @@ jobs:
           grep -q 'PARTY_EVENT_RESULT_AUDIT_V95_RELEASED=false' backend/src/server/party/weekly-party-event-result-audit-v95.ts
           grep -q 'rewardGranted:false' backend/src/server/party/weekly-party-event-result-audit-v95.ts
           test ! -f supabase/migrations/20261122_party_event_result_audit_v95.sql
+      - name: V96 and V97 must remain private nonpaying tests
+        run: |
+          grep -q 'PARTY_EVENT_REPLAY_V96_RELEASED=false' backend/src/server/party/weekly-party-event-replay-v96.ts
+          grep -q 'PARTY_EVENT_REVIEW_LEDGER_V97_RELEASED=false' backend/src/server/party/weekly-party-event-review-ledger-v97.ts
+          grep -q 'PARTY_EVENT_V96_V97_NONPAYING_REPLAY_LEDGER_PASS' backend/src/server/party/__tests__/weekly-party-event-eq2-traits-v92.ts
+          test ! -f supabase/migrations/20261122_party_event_review_ledger_v97.sql
       - name: Assert V92 is private, unreleased and never a deployable migration
         run: |
           grep -q 'PARTY_EVENT_EQ2_TRAIT_V92_RELEASED=false' backend/src/server/party/weekly-party-event-eq2-traits-v92.ts

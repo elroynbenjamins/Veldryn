@@ -33692,15 +33692,10 @@
             "sourceProof": false
           }
         ],
-        "proposedHideEnemies": [
-          {
-            "id": "SUNSCAR_SCORPION",
-            "inspectedUnlockLevel": 26,
-            "sourceProof": false
-          }
-        ],
+        "proposedHideEnemies": [],
         "firstEntryAccessibleByKills": "CANDIDATE_BRIDGE_ONLY",
-        "firstEntryAccessibleViaTrade": "ONLY_WHEN_PLAYER_MARKET_EXISTS"
+        "firstEntryAccessibleViaTrade": "ONLY_WHEN_PLAYER_MARKET_EXISTS",
+        "hideSourceDecision": "UNRESOLVED_SPECIES: add level-26 accessible hide-bearing Sunscar wildlife source or approved tradeable region-appropriate leather input; no scorpion hide drop invented"
       },
       {
         "tier": 4,
@@ -33739,7 +33734,8 @@
           }
         ],
         "firstEntryAccessibleByKills": "CANDIDATE_BRIDGE_ONLY",
-        "firstEntryAccessibleViaTrade": "ONLY_WHEN_PLAYER_MARKET_EXISTS"
+        "firstEntryAccessibleViaTrade": "ONLY_WHEN_PLAYER_MARKET_EXISTS",
+        "proposedDustGatheringRoute": "UNIMPLEMENTED: noncombat profession-eligible Glassbound material node or refinable dust supply; not gated by combat tier, with authorized market/commissions"
       }
     ],
     "sourceIds": {
@@ -33887,11 +33883,9 @@
         "sourceGrantVerified": false
       },
       "EQ2_SUNSCAR_HIDE": {
-        "origin": "PROPOSED_MONSTER_DROP_UNREGISTERED",
-        "candidates": [
-          "SUNSCAR_SCORPION"
-        ],
-        "notes": "Animal hide for T3/T4; does not consume botanical SUNSCALE",
+        "origin": "PROPOSED_HIDE_BEARING_SUNSCAR_WILDLIFE_UNREGISTERED",
+        "candidates": [],
+        "notes": "Actual Sunscar hide-bearing creature has not yet been identified. DO NOT claim a Sunscar Scorpion's chitin is tan-ready animal hide. Author a suitable wildlife drop or choose a verified equivalent after owner review.",
         "authorizedToMint": false,
         "sourceGrantVerified": false
       },
@@ -33912,11 +33906,11 @@
         "sourceGrantVerified": false
       },
       "EQ2_GLASSBOUND_DUST": {
-        "origin": "PROPOSED_MONSTER_OR_SALVAGE_DROP_UNREGISTERED",
+        "origin": "PROPOSED_GATHERING_OR_MONSTER_SOURCE_UNREGISTERED",
         "candidates": [
           "SANDPLATE_JUGGERNAUT"
         ],
-        "notes": "No source entitlement; essential T4 processing bottleneck",
+        "notes": "Prefer T4 profession-accessible gathering route or trade supply; optional Sandplate Juggernaut battle drop. No real node, drop, or grant. Preview consumes 14-117 Dust per new T4 item and 135-422 per full member set.",
         "authorizedToMint": false,
         "sourceGrantVerified": false
       },

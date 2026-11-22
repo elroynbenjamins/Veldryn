@@ -137,3 +137,27 @@ The hidden source-receipt-shapes.ts parses the ACTUAL staging receipt columns re
 Single-skill character progression also needs an alternate way to unlock account character slots. The isolated account-career-slots.ts proposes a max-of-two-paths policy: retain the old already-earned account skill-total unlocks OR use the account's highest verified Overall Character Level, at levels 25/50/75/100 for slots 2/3/4/5. Neither path can revoke a previously earned character slot; a pure Smithing career can eventually reach five slots without training all professions. This is provisional policy only, not live entitlement code.
 
 All new tests are included in the scoped progression-v2 CI script. Nothing modifies user profiles, account unlocks, database state or app screens. Current explicit blockers remain level-curve and milestone balance approval, authoritative receipt adapter integration, PG17 concurrency QA and 2.0 Combat/equipment branch reconciliation.
+## Pass 3 continuation — actual live snapshot provenance and disposable PostgreSQL 17
+
+### Verified database facts (read-only aggregate queries; 2026-11-22)
+
+- Both production and staging public.character_skills are currently EMPTY. They cannot be the only historical migration source. Production public.online_game_states is a populated per-account JSON snapshot store (`account_id`, `character_id`, `state` JSONB, `revision`, `updated_at`).
+- Production has 526 snapshot rows, of which 345 contain `state.skills`, 329 contain an active `state.character`, and four parked characters appear in `state.otherCharacters`. All 329 populated active character IDs match online_game_states.character_id.
+- From 3,795 active profession skill snapshots, 3,795 saved skill levels exactly match the V1 1.42-exponent XP curve; zero mismatches. This is a strong calibration anchor, not permission to overwrite original XP.
+- From 329 active combat snapshots, 304 cached levels match the XP-derived 1.65-exponent combat level; 25 differ (24 cached higher, one XP-derived higher; maximum absolute difference six). A migration which recomputes levels solely from XP could cause a visible regression. Preserve original combat level/XP and use the greater trusted milestone ONLY for the new Overall Character Level backfill.
+- These are aggregated diagnostic counts only: NO account names, IDs, or private individual records were exported. Neither database was written to.
+
+### Implemented responses
+
+- New `online-state-migration-preview.ts` accepts a verified online_game_states row and projects active and parked characters separately using each character's own skill XP/level array. Requires active JSON ID = character_id, rejects malformed skills, duplicate characters and unknown IDs, and freezes the source revision for future compare-and-swap migration.
+- `legacy-migration-preview.ts` now takes optional **server-saved skill levels and combat XP**. It never demotes a profession if its cached level exceeds the XP-derived level; it never rewrites the original combat level or XP. The Overall Character Level baseline uses the greater verified career milestone.
+- Source receipts require persisted completion timestamps strictly AFTER character career XP activation. This prevents a migrated character from earning new XP again for the old activities already represented by backfill.
+- New draft `activated_at` column and timestamped source parsers are covered by isolated regression tests; no migration applied.
+- Disposable GitHub Actions PostgreSQL 17 service runs `backend/tests/progression-v2-pg17-disposable.sh` against the review-only schema using 16 concurrent claims, receipt identity collision, role/RLS checks, transactional rollback, and cross-character XP isolation. The dedicated isolated CI job on commit `dbdd1e2` succeeded. No connected Supabase database is modified by this test.
+
+### Remaining integration blockers
+
+1. Trace authoritative online_game_states write/claim paths. Current standalone `public.character_skills` and `public.craft_receipts` might not be populated for modern gameplay, and cannot independently prove a real recent reward. Do not enable live Character XP awards based solely on these receipt schemas.
+2. Develop authoritative post-claim source adapters for the actual live JSON state/store and backfill all active and parked characters with consistent revision/ownership locks. Validate under staging before any launch.
+3. Reconcile Combat 2.0 branch's `Character Level == Combat Level` nomenclature and 2.0 tier gates. Ensure combat equip, CP, dungeons and class talents consume combat level only.
+4. Profile XP rates with real action totals, prepare safe profession access paths and commission marketplace material verification. User approves actual 2.0 UI/theme before attaching new screens to the build.

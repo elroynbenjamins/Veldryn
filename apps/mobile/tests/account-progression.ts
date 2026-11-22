@@ -47,6 +47,20 @@ test('legacy third slot earned under the previous 550 requirement stays unlocked
 test('existing roster keeps its occupied slots if old progression is missing',()=>{let state=second();state.account.unlockedCharacterSlots=1;state=skillLevels(state,[1,1,1,1,1]);state.otherCharacters=state.otherCharacters!.map(entry=>({...entry,skills:entry.skills.map(skill=>({...skill,xp:0,level:1}))}));equal(unlockedCharacterSlots(state),2,'existing roster never relocks');});
 test('account bank, purchases, profile ownership and Gems are shared, not cloned',()=>{const prior=eligible();prior.bank.stacks=[{itemId:'COPPER_ORE',quantity:7}];prior.account.premiumCurrencyBalance=321;prior.account.ownedBoostIds=['boost:combat_focus'];prior.account.unlockedCosmeticPetIds=['pet_harvest_fox'];let state=createAccountCharacter(prior,'DAWNKEEPER','Alia','female',1000);equal(state.bank.stacks,prior.bank.stacks,'bank');equal(state.account.premiumCurrencyBalance,321,'Gems');ok(!('bank' in state.otherCharacters![0]),'no private bank copy');state={...state,bank:{...state.bank,stacks:[]}};equal(switchAccountCharacter(state,'LOCAL_CHAR_1',1000).bank.stacks,[],'bank changed for all');});
 test('switching restores character state and identity',()=>{let state=second();state.character!.gold=42;state.inventory.stacks=[{itemId:'COPPER_ORE',quantity:3}];state=switchAccountCharacter(state,'LOCAL_CHAR_1',1000);equal(state.character!.name,'Mira','first name');equal(state.character!.gold,100,'first wallet');state=switchAccountCharacter(state,'LOCAL_CHAR_2',1000);equal(state.character!.gold,42,'second wallet');equal(state.inventory.stacks,[{itemId:'COPPER_ORE',quantity:3}],'second inventory');});
+test('character cards retain creation order across switches and saves',()=>{
+ let state=createAccountCharacter(atAccountLevel(second(),800,thirdSlotLevels),'HEXWEAVER','Third','male',1000);
+ const order=()=>accountCharacters(state).map(entry=>entry.character.id);
+ const expected=['LOCAL_CHAR_1','LOCAL_CHAR_2','LOCAL_CHAR_3'];
+ equal(order(),expected,'creation sequence while third is playing');
+ state=switchAccountCharacter(state,'LOCAL_CHAR_1',1000);
+ equal(order(),expected,'creation sequence while first is playing');
+ state=switchAccountCharacter(state,'LOCAL_CHAR_2',1000);
+ equal(order(),expected,'creation sequence while second is playing');
+ state=projectCharacter(state,'LOCAL_CHAR_3');
+ equal(order(),expected,'projection keeps the same roster order');
+ state=migrateSave(JSON.parse(JSON.stringify(state)));
+ equal(order(),expected,'save migration keeps the same roster order');
+});
 test('unknown character switch is rejected without mutation',()=>{const state=second(),before=JSON.stringify(state);throws(()=>switchAccountCharacter(state,'NOT_OWNED',1000),'ownership');equal(JSON.stringify(state),before,'atomic failure');});
 test('v11 round trip preserves all characters and shared scopes',()=>{const state=second(),round=migrateSave(JSON.parse(JSON.stringify(state)));equal(round.version,11,'version');equal(accountCharacters(round).length,2,'roster');equal(accountSkillLevel(round),accountSkillLevel(state),'total');equal(round.character!.id,state.character!.id,'active selection');equal(round.otherCharacters![0].character.id,'LOCAL_CHAR_1','inactive');});
 test('duplicate, oversized and future saves fail safely',()=>{const raw=JSON.parse(JSON.stringify(second()));raw.otherCharacters[0].character.id=raw.character.id;throws(()=>migrateSave(raw),'duplicate');const oversized=JSON.parse(JSON.stringify(second()));oversized.otherCharacters=Array(5).fill(oversized.otherCharacters[0]);throws(()=>migrateSave(oversized),'oversized');throws(()=>migrateSave({...first(),version:12}),'future version');});

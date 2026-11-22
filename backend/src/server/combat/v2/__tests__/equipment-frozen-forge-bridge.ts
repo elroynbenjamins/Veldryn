@@ -92,15 +92,26 @@ function eligible(pieceId:string){
   return Boolean(id&&EQUIPMENT_AFFIXES_V2[id].slots.includes(piece.slot));
  });
 }
-const names:Readonly<Record<'tank'|'damage'|'support',string>>={
- tank:'EQ2_SOLO_FIELDBORN_STEEL_GREAVES',
- damage:'EQ2_EXP_T1_DAMAGE_RING',
- support:'EQ2_SOLO_FIELDBORN_PRAYER_HOOD',
+const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support',string>>>>={
+ 1:{tank:'EQ2_SOLO_FIELDBORN_STEEL_GREAVES',
+   damage:'EQ2_EXP_T1_DAMAGE_RING',support:'EQ2_SOLO_FIELDBORN_PRAYER_HOOD'},
+ 2:{tank:'EQ2_SOLO_IRONWOOD_IRONCAP',
+   damage:'EQ2_EXP_T2_DAMAGE_AMULET',support:'EQ2_EXP_T2_SUPPORT_CAPE'},
+ 3:{tank:'EQ2_SOLO_SUNSCAR_GATEHELM',
+   damage:'EQ2_EXP_T3_DAMAGE_RING',support:'EQ2_EXP_T3_SUPPORT_RING'},
+ // T4 Tank solo items currently roll only Forge channels that conflict
+ // with Combat V2 legal slots or unimplemented Tenacity. The mismatch is
+ // an explicit blocker, not a reason to invent a usable T4 tank affix.
+ 4:{tank:'EQ2_SOLO_GLASSBOUND_WARD_GLOVES',
+   damage:'EQ2_SOLO_GLASSBOUND_EMBER_RING',
+   support:'EQ2_SOLO_GLASSBOUND_DEVOTION_CAPE'},
 };
-function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'offslot'|'set'='supported'){
+const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
+function make(classId:ClassIdV2,specIndex:0|1,
+ kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=kind==='set'?'EQ2_FIELDBORN_GUARD_HELMET':
-  role==='tank'?names.tank:role==='damage'?names.damage:names.support;
+  tierItems[tier][role];
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
@@ -108,14 +119,15 @@ function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'of
    !EQUIPMENT_AFFIXES_V2[EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]!]
     .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true);
  const {roll,exact,profession}=selection;
- const actor={...launchPlayer(CLASS_NAMES_V2[classId],35),
-  id:'QA_EQ2_'+classId+'_'+specIndex};
- const copyId='QA_EQ2_COPY_'+classId+'_'+specIndex,
-  accountId='QA_ACCOUNT_'+classId+'_'+specIndex,
-  characterId='QA_CHARACTER_'+classId+'_'+specIndex;
- const claimRequestId='QA_CLAIM_'+classId+'_'+specIndex;
+ const level=tier===4?55:tier===3?45:35;
+ const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),
+  id:'QA_EQ2_'+classId+'_'+specIndex+'_T'+tier};
+ const copyId='QA_EQ2_COPY_'+classId+'_'+specIndex+'_T'+tier,
+  accountId='QA_ACCOUNT_'+classId+'_'+specIndex+'_T'+tier,
+  characterId='QA_CHARACTER_'+classId+'_'+specIndex+'_T'+tier;
+ const claimRequestId='QA_CLAIM_'+classId+'_'+specIndex+'_T'+tier;
  const mint:V2DraftItem={id:copyId,accountId,ownerCharacterId:characterId,
-  createdAtMs:3000,jobId:'QA_CRAFT_'+classId+'_'+specIndex,
+  createdAtMs:3000,jobId:'QA_CRAFT_'+classId+'_'+specIndex+'_T'+tier,
   outcome:roll,exactItem:exact};
  const claim:V2DraftReceipt={requestId:claimRequestId,
   commandFingerprint:'QA_REVIEW_FIXTURE_NEVER_ACCEPTED_FOR_PAYMENT',
@@ -127,19 +139,19 @@ function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'of
  const skill=SKILL_IDENTITIES_V2.filter(s=>s.classId===classId).slice(0,2);
  const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
  const build:VerifiedSkillBuildV2={
-  actor,verified:{classId,level:35,ownedInstanceIds:new Set([copyId])},
+  actor,verified:{classId,level,ownedInstanceIds:new Set([copyId])},
   selected:{specializationId:spec.id,equipment:{[exact.slot]:copyId},
    activeSkills:skill.map(s=>({skillId:s.id,variantId:s.variants[0].id})),
    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
   ownedItemsById:{[copyId]:{instanceId:copyId,slot:exact.slot,
-   tier:'T'+exact.tier,requiredLevel:2,eligibleRoles:[role]}},
+   tier:'T'+exact.tier,requiredLevel:minByTier[tier],eligibleRoles:[role]}},
   setsById:{},
  };
  const classStats={...actor.stats};
  const source:TrustedFrozenForgeCombatSourceV2={
   actorId:actor.id,accountId,characterId,
   items:[mint],claims:[claim],
-  custody:{accountId,characters:[{id:characterId,classId,level:35}],copies:[custody]},
+  custody:{accountId,characters:[{id:characterId,classId,level}],copies:[custody]},
   classBaselinePolicy:{version:'QA_LEVEL_ONLY_REAL_EQ2_ITEMS',profiles:{
    [classId]:{classId,minLevel:1,maxLevel:75,statsAtLevel:()=>({...classStats}),
     abilities:actor.abilities,basicAttackMs:actor.basicAttackMs,
@@ -177,6 +189,26 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  }
 }
 assert.equal(checked,18);
+// Cross-tier stage coverage uses genuine Forge T2-T4 exact-copy outcomes.
+// T4 Tank is intentionally HELD until there is a matching legal affix slot.
+let extendedTiers=0;
+for(const tier of [2,3,4] as const){
+ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+  if(tier===4&&CLASS_ROLES_V2[classId]==='tank')continue;
+  for(const index of [0,1] as const){
+   const qa=make(classId,index,'supported',tier);
+   const result=compileRealFrozenForgeActorV2(qa.actor,qa.build,qa.source);
+   assert.equal(result.evidence.items[0].tier,tier);
+   assert.equal(result.evidence.items[0].pieceId,qa.exact.pieceId);
+   assert.equal(result.evidence.stages.afterFrozenBase.attackPower,
+    Math.round((result.evidence.stages.afterSkills.attackPower+
+     qa.exact.baseStats.attack)*1e6)/1e6);
+   assert.ok(result.evidence.affixSources.length>=1);
+   extendedTiers++;
+  }
+ }
+}
+assert.equal(extendedTiers,48,'T2:18 + T3:18 + T4: six non-tank classes x 2');
 const teamClasses:readonly ClassIdV2[]=[
  'IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER',
 ];
@@ -248,11 +280,11 @@ assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
  /forge_affix_effect_unimplemented/,'no generic Potency, Tenacity or Ability Damage reinterpretation');
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
- frozenExactCopySpecs:checked,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
+ frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,
  recipeRoutes:V2_SERVER_RECIPES.length,
- confirmedFrozenBaseCopies:actualFrozenPositive,mappedRealForgeAffixes:mappedAffixes,
+ confirmedFrozenBaseCopies:actualFrozenPositive+extendedTiers,mappedRealForgeAffixes:mappedAffixes,
  partyMembers:part.combat.players.length,partyReplayEvents:part.combat.events.length,
  inventoryLedger:'QA_VERIFIER_ONLY',liveReleased:false,
  unresolved:['unmapped_affixes','set_bonus_reconciliation','approved_caps',
-  'privileged_DB_custody','persistent_party_state','final_CP_weights']}));
+  'privileged_DB_custody','persistent_party_state','final_CP_weights','T4_tank_roll_slot_compatibility']}));

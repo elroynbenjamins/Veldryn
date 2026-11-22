@@ -19,7 +19,8 @@ import {deriveWorldBossWarCampEffectsV11,
 import {verifyWorldBossEncounterProfileV13,
  type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
 import {DUNGEON_ROLE_TONIC_MODIFIERS} from '../coop/potion-modifiers';
-import {WorldBossEquipmentRuntimeV87,type WorldBossEquipmentProofV87} from './world-boss-equipment-effects-v87';
+import {WorldBossEquipmentRuntimeV87,worldBossCombatantDigestV88,
+ type WorldBossEquipmentProofV87} from './world-boss-equipment-effects-v87';
 
 export const WORLD_BOSS_V25_AUTHORED_ENCOUNTERS_LIVE=false as const;
 export const WORLD_BOSS_V25_ENGINE_VERSION='world-boss-account-rounds-v25-prototype' as const;
@@ -118,7 +119,12 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   input.equipmentV87,{
    eventId:input.eventId,accountId:roster.accountId,bossId:input.boss,
    rosterDigest:roster.rosterDigest,
-   actors:characters.map(c=>({id:c.combatant.id,characterId:c.characterId})),
+   actors:characters.map(c=>({
+    id:c.combatant.id,characterId:c.characterId,
+    snapshotId:c.snapshotId,sourceRevision:c.sourceRevision,
+    sourceHash:c.sourceHash,
+    combatantDigest:worldBossCombatantDigestV88(c.combatant),
+   })),
   }):undefined;
  const result=simulateWorldBossAccountRoundsV25({
   seed:[WORLD_BOSS_V25_ENGINE_VERSION,input.eventId,roster.accountId,

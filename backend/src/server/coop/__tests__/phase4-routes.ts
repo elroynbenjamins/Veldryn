@@ -7,12 +7,13 @@ for(let seed=0;seed<10_000;seed++){
   validateCoopRouteGraph(graph);
   assert.equal(graph.preBossNodeCount,5);
   assert.equal(graph.nodes.filter(node=>node.kind==='boss').length,1);
+  assert.ok(graph.nodes.every(node=>node.kind!=='event'),'New dungeon routes must not offer resource-only Event Rooms');
   for(let depth=1;depth<=graph.preBossNodeCount;depth++)assert.equal(graph.nodes.filter(node=>node.depth===depth).length,3);
   const entryRooms=graph.nodes.filter(node=>node.depth===1);
   const secondRooms=graph.nodes.filter(node=>node.depth===2);
   assert.ok(entryRooms.every(node=>node.kind==='battle'),'Opening room must remain combat');
   assert.equal(secondRooms.filter(node=>node.kind==='battle').length,2,'Second stage retains two meaningful combat choices');
-  assert.ok(['event','treasure','camp','shrine'].includes(String(secondRooms[2].kind)),'Second stage offers a useful alternative');
+  assert.ok(['treasure','camp','shrine'].includes(String(secondRooms[2].kind)),'Second stage offers a useful alternative');
   assert.equal(new Set(secondRooms.map(node=>node.contentId)).size,3,'Early alternatives must use unique content');
 }
 // New runs of both modes use the same checkpoint graph, not a pre-entry queue split.
@@ -22,6 +23,7 @@ assert.ok(endurance.generatorVersion.endsWith('-endurance-v2'),'New Endurance ru
 assert.equal(endurance.preBossNodeCount,42);
 assert.equal(endurance.nodes.length,128);
 assert.equal(endurance.nodes.filter(node=>node.kind==='boss').length,6,'Five optional checkpoints and one mandatory final boss');
+assert.ok(endurance.nodes.every(node=>node.kind!=='event'),'New Endurance runs must exclude Event Rooms');
 for(const cleared of [7,14,21,28,35]){
  const options=endurance.nodes.filter(node=>node.depth===cleared+1);
  assert.equal(options.length,3);
@@ -73,5 +75,8 @@ const replacement=['ROOT_SCOUTS','ROOT_GUARDIANS','ROOT_VINES','ROOT_STALKERS','
 if(!replacement)throw new Error('Test fixture should have an unused battle formation');
 legacy.nodes=legacy.nodes.map(node=>node.nodeId==='d2-c2'?{...node,kind:'battle' as const,contentId:replacement}:node);
 validateCoopRouteGraph(legacy); // Historical three-combat openings must remain resumable.
+const savedEventGraph=structuredClone(sameA);
+savedEventGraph.nodes=savedEventGraph.nodes.map(node=>node.nodeId==='d2-c2'?{...node,kind:'event' as const,contentId:'ROOT_EVENT_WHISPER',rewardTag:'event'}:node);
+validateCoopRouteGraph(savedEventGraph); // Do not invalidate previously saved Event Room choices.
 
 console.log('coop phase4 routes OK',JSON.stringify({seeds:10_000,distinctFirstLayers:prefixes.size}));

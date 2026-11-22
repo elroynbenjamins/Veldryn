@@ -70,6 +70,33 @@ async function test(){
   };
   await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:overlap}),
     /inconsistent_segments/,'mixed queues must use one authoritative activity segment stream');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      {...segments[0],reward:{...segments[0].reward,xp:11}},
+      segments[1],
+    ],
+  }}),/inconsistent_segments/,'same ordinal cannot carry changed earned XP');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      segments[0],
+      {...segments[1],activity:{...segments[1].activity,targetId:'OTHER_WOLF'}},
+    ],
+  }}),/inconsistent_segments/,'combat target must match canonical queue');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      {...segments[0],activity:{...segments[0].activity,lastClaimAtMs:2000}},
+      segments[1],
+    ],
+  }}),/inconsistent_segments/,'claim timestamp cannot diverge');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering:{
+    ...gathering,segments:[segments[0]],
+  },combat}),/inconsistent_segments/,'gathering cannot omit combat queue segment');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering:{
+    ...gathering,segments:null as unknown as typeof gathering.segments,
+  },combat}),/inconsistent_segments/,'malformed gathering queue cannot enter proof projector');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[null,segments[1]] as unknown as typeof combat.segments,
+  }}),/inconsistent_segments/,'missing combat queue activity must fail closed');
 
   const craftBase={
     ...common,commandType:'craft',requestId:'command00002',
@@ -93,6 +120,6 @@ async function test(){
   await reject(()=>projectCombinedGameCareerProofsV2({...craftBase,
     instantCraft:{...craftBase.instantCraft,commandType:'craft_cancel'}}),
     /nested_source_mismatch/,'nested command tampering cannot award');
-  console.log('PASS: combined career proof audit prevents cross-character, cross-revision and mixed-queue double credit');
+  console.log('PASS: combined career proof audit prevents cross-character, cross-revision, malformed-source denial and mixed-queue double credit');
 }
 void test().catch(e=>{throw e;});

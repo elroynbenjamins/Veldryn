@@ -7,6 +7,7 @@ on:
       - 'backend/src/server/combat/guild-pve-effects-v17.ts'
       - 'apps/mobile/tests/guild-pve-v16-authority.ts'
       - 'apps/mobile/tests/guild-pve-v17-effects.ts'
+      - 'apps/mobile/tests/guild-pve-v17-balance-matrix.ts'
       - 'apps/mobile/tsconfig.guild-pve-v16-v17.json'
       - 'docs/roadmap/guild-pve-v16-v17-20261122.md'
       - '.github/workflows/guild-pve-v16-v17-hidden-validation.yml'
@@ -46,3 +47,5 @@ jobs:
         run: node .core-build/apps/mobile/tests/guild-pve-v16-authority.js
       - name: Validate V17 combat evidence and phase counterplay
         run: node .core-build/apps/mobile/tests/guild-pve-v17-effects.js
+      - name: Survey nine-class 729-scenario deterministic matrix (synthetic only)
+        run: node .core-build/apps/mobile/tests/guild-pve-v17-balance-matrix.js

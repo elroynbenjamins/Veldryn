@@ -94,7 +94,7 @@ function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'se
  const pieceId=kind==='set'?'EQ2_FIELDBORN_GUARD_HELMET':
   role==='tank'?names.tank:role==='damage'?names.damage:names.support;
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
-  kind==='unsupported'?roll=>roll.affixes.some(a=>!affixMap[a.stat]):()=>true);
+  kind==='unsupported'?roll=>roll.affixes.length>0&&!affixMap[roll.affixes[0].stat]:()=>true);
  const {roll,exact,profession}=selection;
  const actor={...launchPlayer(CLASS_NAMES_V2[classId],35),
   id:'QA_EQ2_'+classId+'_'+specIndex};

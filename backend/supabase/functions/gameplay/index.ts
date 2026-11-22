@@ -58210,6 +58210,44 @@ function bulkSalvageSelected(state, itemIds2, location = "inventory") {
   return next;
 }
 
+// ../apps/mobile/src/core/inventory-protection-bulk.ts
+function applyBulkInventoryProtection(state, selectedIds, kind, enabled) {
+  if (kind !== "lock" && kind !== "favorite") throw new Error("Invalid inventory protection action");
+  if (typeof enabled !== "boolean") throw new Error("Invalid inventory protection state");
+  if (!Array.isArray(selectedIds) || selectedIds.length < 1 || selectedIds.length > 100 || selectedIds.some((id) => typeof id !== "string" || !id.trim() || id.length > 190))
+    throw new Error("Select between 1 and 100 item stacks");
+  const ids2 = [...new Set(selectedIds)];
+  const available = /* @__PURE__ */ new Map();
+  for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) {
+    if (stack.quantity > 0) available.set(inventoryBulkSelectionId(stack), stack);
+  }
+  const records = new Map(craftedGearInstances(state).map((record) => [record.id, record]));
+  const itemIds2 = /* @__PURE__ */ new Set(), copyIds = /* @__PURE__ */ new Set();
+  for (const id of ids2) {
+    const stack = available.get(id);
+    if (!stack) throw new Error("Selected items changed. Review the selection and retry.");
+    const item = itemDef(stack.itemId);
+    if (kind === "favorite") {
+      itemIds2.add(item.id);
+      continue;
+    }
+    if (stack.instanceId && item.type === "gear") {
+      if (!records.has(stack.instanceId) || records.get(stack.instanceId)?.itemId !== item.id)
+        throw new Error("An equipment copy cannot be verified. Review its identity first.");
+      copyIds.add(stack.instanceId);
+      if (!enabled && state.settings.lockedItemIds?.includes(item.id)) itemIds2.add(item.id);
+    } else itemIds2.add(item.id);
+  }
+  const key = kind === "lock" ? "lockedItemIds" : "favoriteItemIds";
+  const nextIds = new Set(state.settings[key] ?? []);
+  for (const id of itemIds2) if (enabled) nextIds.add(id);
+  else nextIds.delete(id);
+  if (nextIds.size > 100) throw new Error("Inventory protection limit reached (100 item types)");
+  let next = { ...state, settings: { ...state.settings, [key]: [...nextIds] } };
+  for (const instanceId of copyIds) next = setCraftedGearInstanceLock(next, instanceId, enabled);
+  return next;
+}
+
 // ../apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
   {
@@ -59535,6 +59573,7 @@ var fields = {
   monthly_quest_milestone: ["month", "threshold", "characterId", "skillId"],
   settings: ["settings"],
   inventory_preference: ["id", "kind", "enabled"],
+  inventory_preference_bulk: ["ids", "kind", "enabled"],
   inventory_seen_all: [],
   profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
   event_daily: [],
@@ -59592,6 +59631,12 @@ function validateGameCommand(value) {
     const bulk = args;
     oneOf(bulk.location, ["inventory", "bank"]);
     stringArray(bulk, "ids");
+  }
+  if (row.type === "inventory_preference_bulk") {
+    const bulk = args;
+    stringArray(bulk, "ids", 100, 190);
+    oneOf(bulk.kind, ["lock", "favorite"]);
+    if (typeof bulk.enabled !== "boolean") throw new Error("invalid_inventory_preference");
   }
   if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
   if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
@@ -60272,6 +60317,13 @@ function executeGameCommand(previous, value, now, options = {}) {
       else selected2.delete(id);
       if (selected2.size > max) throw new Error("inventory_preference_limit");
       state = { ...state, settings: { ...state.settings, [key]: [...selected2] } };
+      break;
+    }
+    case "inventory_preference_bulk": {
+      const ids2 = stringArray(a, "ids", 100, 190), kind = oneOf(a.kind, ["lock", "favorite"]);
+      if (typeof a.enabled !== "boolean") throw new Error("invalid_inventory_preference");
+      state = applyBulkInventoryProtection(state, ids2, kind, a.enabled);
+      message = `${ids2.length} item stacks ${a.enabled ? "protected" : "unprotected"}`;
       break;
     }
     case "inventory_seen_all": {

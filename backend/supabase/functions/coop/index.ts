@@ -50746,8 +50746,8 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   const finalBosses = dungeonBossVariantsFor(expeditionId);
   const bossId = finalBosses.length ? finalBosses[deterministicInt(secret, 0, finalBosses.length - 1, "regional-boss-v1", runId, expeditionId, contentVersion, balanceVersion)].bossId : def.bossId;
   const nodes = [];
-  const idsAt = (depth) => Array.from({ length: COOP_ROGUELITE_CONFIG.choicesPerDepth }, (_, choice) => `d${depth}-c${choice}`);
-  nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) });
+  const idsAt2 = (depth) => Array.from({ length: COOP_ROGUELITE_CONFIG.choicesPerDepth }, (_, choice) => `d${depth}-c${choice}`);
+  nodes.push({ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt2(1) });
   for (let depth = 1; depth <= preBossNodeCount; depth++) {
     const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
     const checkpoint = isEndurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
@@ -50761,7 +50761,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
         const kind2 = choice === 0 ? "camp" : "shrine";
         const pool = coopContentPool(expeditionId, kind2);
         const index = deterministicInt(secret, 0, pool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "checkpoint-choice", depth, kind2);
-        nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt(depth + 1) });
+        nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt2(depth + 1) });
         continue;
       }
       const kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
@@ -50771,7 +50771,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
       const contentId = contentPool[contentIndex];
       usedContentIds.add(contentId);
       const modifierIndex = (layerModifierOffset + choice) % MODIFIERS.length;
-      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId, modifierId: kind === "elite" ? MODIFIERS[modifierIndex] : "steady", risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt(depth + 1) });
+      nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind, contentId, modifierId: kind === "elite" ? MODIFIERS[modifierIndex] : "steady", risk: kind === "risk" ? 1.15 : kind === "elite" ? 1.08 : 1, rewardTag: kind, nextNodeIds: depth === preBossNodeCount ? ["boss"] : idsAt2(depth + 1) });
     }
   }
   nodes.push({ nodeId: "boss", depth: preBossNodeCount + 1, kind: "boss", contentId: bossId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [] });
@@ -52357,6 +52357,53 @@ function eventBossMechanicProfile(input) {
   }
 }
 
+// src/server/expeditions/frostfall-endurance.ts
+var FROSTFALL_ENDURANCE_GENERATOR = "event-route-v5-endurance-v2";
+var FROSTFALL_ENDURANCE_DEPTH_REWARDS = [1, 1.15, 1.28, 1.38, 1.46, 1.52];
+var idsAt = (depth) => [0, 1, 2].map((choice) => "d" + depth + "-c" + choice);
+function frostfallRewardMultiplierForBoss(graph2, bossNode) {
+  if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR) return 1;
+  if (bossNode.kind !== "boss" || bossNode.contentId !== graph2.nodes.find((node) => node.nodeId === graph2.bossNodeId)?.contentId) throw new Error("invalid_frostfall_boss_exit");
+  const cleared = bossNode.depth - 1;
+  if (cleared < 7 || cleared > DUNGEON_ENDURANCE.maxNormalRooms || cleared % DUNGEON_ENDURANCE.checkpointInterval !== 0) throw new Error("invalid_frostfall_boss_depth");
+  return FROSTFALL_ENDURANCE_DEPTH_REWARDS[cleared / DUNGEON_ENDURANCE.checkpointInterval - 1];
+}
+function generateFrostfallEnduranceGraph(def, runId, secret) {
+  if (def.id !== "EVENT_FROSTFALL_AURORA_HOLLOW") throw new Error("invalid_frostfall_definition");
+  const count = DUNGEON_ENDURANCE.maxNormalRooms;
+  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) }];
+  for (let depth = 1; depth <= count; depth++) {
+    const checkpoint = depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
+    const next = depth === count ? ["boss"] : idsAt(depth + 1);
+    const localDepth = (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval + 1;
+    const base = deterministicInt(secret, 1, 3, "frostfall-endurance-v2", def.id, runId, depth);
+    for (const choice of [0, 1, 2]) {
+      const nodeId = "d" + depth + "-c" + choice;
+      if (checkpoint) {
+        if (choice === 2) {
+          nodes.push({ nodeId, depth, kind: "boss", contentId: def.bossEncounterId, modifierId: "checkpoint", risk: 1.25, rewardTag: "boss", nextNodeIds: [], title: def.finalBoss });
+          continue;
+        }
+        const isCamp = choice === 0;
+        nodes.push({ nodeId, depth, kind: isCamp ? "camp" : "shrine", contentId: isCamp ? "EVENT_FROSTFALL_FESTIVAL_HEARTH" : "EVENT_FROSTFALL_AURORA_BRAZIER", modifierId: isCamp ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: isCamp ? "camp" : "boon", nextNodeIds: next, title: isCamp ? "Festival Campfire \xB7 Continue" : "Aurora Boon \xB7 Continue", mechanicDelta: isCamp ? 18 : 12, objectiveDelta: isCamp ? 1 : 0 });
+        continue;
+      }
+      const special2 = def.specialNodes.find((item) => item.depth === localDepth && item.choice === choice);
+      if (special2) {
+        nodes.push({ nodeId, depth, kind: special2.kind, contentId: special2.contentId, modifierId: "frostfall-" + choice, risk: special2.risk ?? (special2.kind === "risk" ? 1.18 : special2.kind === "elite" ? 1.1 : 1), rewardTag: special2.rewardTag, nextNodeIds: next, title: special2.title, mechanicDelta: special2.mechanicDelta, objectiveDelta: special2.objectiveDelta ?? 0 });
+        continue;
+      }
+      const contentIndex = (base + choice - 1) % 3 + 1;
+      const highlight = def.routeHighlights[(depth - 1) % def.routeHighlights.length];
+      nodes.push({ nodeId, depth, kind: "battle", contentId: def.encounterPrefix + "_BATTLE_0" + contentIndex, modifierId: "frostfall-" + choice, risk: 1, rewardTag: "battle", nextNodeIds: next, title: "Battle through " + highlight, mechanicDelta: -4, objectiveDelta: 0 });
+    }
+  }
+  nodes.push({ nodeId: "boss", depth: count + 1, kind: "boss", contentId: def.bossEncounterId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [], title: def.finalBoss });
+  const graph2 = { schemaVersion: 1, generatorVersion: FROSTFALL_ENDURANCE_GENERATOR, runId, expeditionId: def.id, contentVersion: "event-frostfall-endurance-v2", balanceVersion: "event-frostfall-endurance-v2", preBossNodeCount: count, entryNodeId: "entry", bossNodeId: "boss", nodes };
+  validateCoopRouteGraph(graph2);
+  return graph2;
+}
+
 // src/server/expeditions/event-service.ts
 var MemoryEventRunRepository = class {
   runs = /* @__PURE__ */ new Map();
@@ -52439,7 +52486,7 @@ function eventBossMechanicProjection(run) {
 }
 function effectiveEventNode(run, node) {
   const next = { ...node };
-  if (!["event-route-v4", "event-route-v5"].includes(run.graph.generatorVersion) || node.kind === "entry" || node.kind === "boss") return next;
+  if (!["event-route-v4", "event-route-v5", FROSTFALL_ENDURANCE_GENERATOR].includes(run.graph.generatorVersion) || node.kind === "entry" || node.kind === "boss") return next;
   const mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run), battleLike = node.kind === "battle" || node.kind === "elite";
   const title2 = () => next.title ?? next.kind.charAt(0).toUpperCase() + next.kind.slice(1);
   const prefix = (label) => {
@@ -52569,10 +52616,11 @@ function healBeforeBoss(state, players, pct) {
 }
 function graph(eventId, runId, serverSecret) {
   const definition = definitionFor(eventId), prefix = definition.encounterPrefix, boss4 = definition.bossEncounterId, count = definition.routeNodeCount;
-  const idsAt = (depth) => [0, 1, 2].map((choice) => `d${depth}-c${choice}`);
-  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt(1) }];
+  if (isFrostfallEventExpedition(eventId)) return generateFrostfallEnduranceGraph(definition, runId, serverSecret);
+  const idsAt2 = (depth) => [0, 1, 2].map((choice) => `d${depth}-c${choice}`);
+  const nodes = [{ nodeId: "entry", depth: 0, kind: "entry", contentId: "COOP_ENTRY", modifierId: "none", risk: 1, rewardTag: "none", nextNodeIds: idsAt2(1) }];
   for (let depth = 1; depth <= count; depth++) {
-    const next = depth === count ? ["boss"] : idsAt(depth + 1);
+    const next = depth === count ? ["boss"] : idsAt2(depth + 1);
     const base = deterministicInt(serverSecret, 1, 3, "event-route-v5", eventId, runId, depth);
     for (const choice of [0, 1, 2]) {
       const special2 = definition.specialNodes.find((item) => item.depth === depth && item.choice === choice);
@@ -52590,6 +52638,7 @@ function graph(eventId, runId, serverSecret) {
   validateCoopRouteGraph(result, { preBossNodeMin: 5, preBossNodeMax: 7 });
   return result;
 }
+var EVENT_EXPEDITION_DAILY_REWARDED_CLEARS = 2;
 var EventExpeditionService = class {
   constructor(repository, serverSecret) {
     this.repository = repository;
@@ -52630,9 +52679,12 @@ var EventExpeditionService = class {
     if (!baseSelected) throw new Error("invalid_event_option");
     const selected2 = effectiveEventNode(run, baseSelected);
     const beforeMechanic = eventMechanicProjection(run), beforeObjective = eventObjectiveProjection(run), bossMechanic = selected2.kind === "boss" ? eventBossMechanicProjection(run) : void 0;
+    const isFrostfallEndurance = run.graph.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR;
+    const depthBeyondOpening = isFrostfallEndurance && ["battle", "elite", "boss"].includes(selected2.kind) ? Math.max(0, selected2.depth - 8) : 0;
+    const depthAttack = Math.pow(1.022, depthBeyondOpening), depthHp = Math.pow(1.035, depthBeyondOpening), depthDefense = Math.pow(1.012, depthBeyondOpening);
     let startingState = run.persistentState;
     if (selected2.kind === "boss" && beforeObjective.preBossHealPct > 0) startingState = healBeforeBoss(startingState, run.players, beforeObjective.preBossHealPct);
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1, enemyHpMultiplier: selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1, enemyDefenseMultiplier: selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1, bossTuning: bossMechanic?.tuning });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -52651,7 +52703,8 @@ var EventExpeditionService = class {
     if (selected2.kind === "boss" && result.success) {
       run.phase = "completed";
       const definition = definitionFor(run.eventId), mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run);
-      run.rewardMarks = eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus;
+      const tierBase = eventTierRewardMarks(definition, run.tier ?? 1), depthMultiplier = isFrostfallEndurance ? frostfallRewardMultiplierForBoss(run.graph, baseSelected) : 1;
+      run.rewardMarks = Math.round(tierBase * depthMultiplier) + mechanic.rewardBonus + objective.rewardBonus;
     }
     this.repository.save(run);
     this.commandReceipts.set(receiptKey, { hash, run: structuredClone(run) });
@@ -52666,7 +52719,7 @@ var EventExpeditionService = class {
     if (run.phase !== "completed" || !run.rewardMarks) throw new Error("event_reward_not_ready");
     if (run.settlement === "claimed") return { marks: run.rewardMarks, idempotentReplay: true };
     const day = new Date(input.nowMs ?? Date.now()).toISOString().slice(0, 10), dailyKey = `${input.accountId}:${run.eventId}:${day}`, used = this.dailyClears.get(dailyKey) ?? 0;
-    if (used >= 2) throw new Error("event_daily_clear_limit");
+    if (used >= EVENT_EXPEDITION_DAILY_REWARDED_CLEARS) throw new Error("event_daily_clear_limit");
     this.dailyClears.set(dailyKey, used + 1);
     run.settlement = "claimed";
     this.repository.save(run);

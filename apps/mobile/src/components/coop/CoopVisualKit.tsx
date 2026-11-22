@@ -6,10 +6,10 @@ import {coopUiAssets} from '../../theme/coop-ui-assets';
 import {type CoopColors,coopRadii,coopSizing,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 
 export type FantasyPanelVariant='default'|'selected'|'success'|'danger'|'disabled';
-export function FantasyPanel({children,variant='default',style}:PropsWithChildren<{variant?:FantasyPanelVariant;style?:StyleProp<ViewStyle>}>){
+export function FantasyPanel({children,variant='default',style,contentStyle}:PropsWithChildren<{variant?:FantasyPanelVariant;style?:StyleProp<ViewStyle>;contentStyle?:StyleProp<ViewStyle>}>){
  const {styles:s}=useCoopStyles(makeStyles);
   return <View accessibilityState={{disabled:variant==='disabled',selected:variant==='selected'}} style={[s.panel,s[`panel_${variant}`],style]}>
-    <View style={s.panelInner}>{children}</View>
+    <View style={[s.panelInner,contentStyle]}>{children}</View>
   </View>;
 }
 
@@ -28,9 +28,9 @@ export function RoleBadge({role,label}: {role:CoopRole;label:string}){
   return <View accessibilityLabel={label} style={s.roleBadge}><Image source={coopUiAssets[roleAsset[role]]} resizeMode="contain" style={s.roleImage}/><Text style={s.roleText}>{label}</Text></View>;
 }
 
-export function StateChip({label,tone='neutral'}:{label:string;tone?:'neutral'|'selected'|'success'|'warning'|'danger'}){
+export function StateChip({label,tone='neutral',style,oneLine=false}:{label:string;tone?:'neutral'|'selected'|'success'|'warning'|'danger';style?:StyleProp<ViewStyle>;oneLine?:boolean}){
  const {styles:s}=useCoopStyles(makeStyles);
-  return <View style={[s.chip,s[`chip_${tone}`]]}><Text style={[s.chipText,s[`chipText_${tone}`]]}>{label}</Text></View>;
+  return <View style={[s.chip,s[`chip_${tone}`],style]}><Text numberOfLines={oneLine?1:undefined} style={[s.chipText,s[`chipText_${tone}`]]}>{label}</Text></View>;
 }
 
 type ImageSlotSize='hero'|'room'|'thumbnail'|'node'|'boon'|'skill';

@@ -103,3 +103,21 @@ test('solo dungeon difficulty shows server CP advice without imposing a CP entry
  assert.match(source,/style=\{s\.tierSuggestedPower\}/);
  assert.match(source,/dungeonUxText\(language,'soloPowerHint'\)/);
 });
+
+test('dungeon party cards align names, status chips, and companions across all four roles',()=>{
+ const run=read('src/components/coop/CoopRunOverview.tsx');
+ const kit=read('src/components/coop/CoopVisualKit.tsx');
+ assert.match(run,/style=\{s\.member\} contentStyle=\{s\.memberContent\}/);
+ assert.match(run,/member:\{width:'48%',flexGrow:1,minHeight:252\}/);
+ assert.match(run,/memberContent:\{flex:1,gap:coopSpacing\.sm\}/);
+ assert.match(run,/memberIdentity:\{flexDirection:'row',alignItems:'center',gap:coopSpacing\.sm,minHeight:74\}/);
+ assert.match(run,/numberOfLines=\{2\} ellipsizeMode="tail" style=\{s\.name\}/);
+ assert.match(run,/memberMeta:\{flexDirection:'row',alignItems:'stretch',gap:coopSpacing\.xs,minHeight:34\}/);
+ assert.equal((run.match(/style=\{s\.memberChip\} oneLine/g)||[]).length,2);
+ assert.match(run,/memberCompanion:\{marginTop:'auto',minHeight:46/);
+ assert.match(run,/memberCompanionEmpty/);
+ assert.match(run,/CoopPartyCompanionChip companionId=\{slot\.companionId\}/);
+ assert.match(kit,/contentStyle\?:StyleProp<ViewStyle>/);
+ assert.match(kit,/oneLine\?:boolean/);
+ assert.match(kit,/numberOfLines=\{oneLine\?1:undefined\}/);
+});

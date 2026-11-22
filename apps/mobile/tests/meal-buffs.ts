@@ -1,9 +1,10 @@
 import {createCharacter,newGame,claimActivity,offlineCapSeconds} from '../src/core/game';
 import {transitionActivity} from '../src/core/playability';
 import {executeGameCommand} from '../src/core/game-commands';
-import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
+import {mealBonusDef,MEAL_BONUSES,MAX_MEAL_BUFF_SECONDS,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
-import {processingRecipeDef,processingRunCapacity} from '../src/core/processing';
+import {processingRecipeDef,processingRunCapacity,normalizeProcessingBatch} from '../src/core/processing';
+import {RECIPES} from '../src/content/skills';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
 
@@ -42,6 +43,58 @@ for(const [id,percent,hours,kind] of expected){
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
+// Every Cooking dish consumes 5x its old ingredients and awards 3x base XP.
+// No change to the per-batch output, duration, gold cost or other professions.
+const baselineCooking:[string,number,number[]][]=[
+ ['COOK_MEADOW_PERCH',80,[5,1]],['COOK_SILVERFIN',100,[5,1]],
+ ['COOK_ROOTSTREAM_TROUT',145,[4,1]],['COOK_RIVER_EEL',180,[4,1]],
+ ['COOK_OATHSCALE',260,[3,1]],['COOK_CAVE_LOACH',245,[3,1]],
+ ['COOK_CROWN_CARP',330,[3,1]],['COOK_IRONWOOD_STEW',105,[2,1,1]],
+ ['COOK_ASHLANDS_EMBER_STEW',760,[2,1,1]],['COOK_OASIS_CARP',420,[4,1]],
+ ['COOK_GLASSFIN_FEAST',720,[3,1,1]],['COOK_ICEFISH',1100,[3,1,1]],
+ ['COOK_EMBERFIN',1650,[3,1,1]],
+];
+const cookingRecipes=RECIPES.filter(recipe=>recipe.skillId==='cooking');
+ok(cookingRecipes.length===baselineCooking.length,'all Cooking recipes are covered by the balance snapshot');
+for(const [id,baseXp,ingredients] of baselineCooking){
+ const recipe=processingRecipeDef(id);
+ ok(!!recipe,id+' remains a working Cooking recipe');
+ ok(recipe!.xp===baseXp*3,id+' awards 3x base Cooking XP');
+ ok(recipe!.inputs.length===ingredients.length,id+' retains every ingredient');
+ recipe!.inputs.forEach((input,i)=>ok(input.quantity===ingredients[i]*5,id+' requires 5x '+input.itemId));
+}
+ok(processingRecipeDef('COOK_IRONWOOD_STEW')!.output.quantity===1,'special stew output remains one meal');
+// Previous runs keep their exact paid input and XP snapshots despite rebalance.
+const reservedNew=executeGameCommand(fresh(),{type:'processing_start',args:{id:'COOK_IRONWOOD_STEW'}},now).state.activity!.processing!;
+const reservedLegacy=normalizeProcessingBatch({...reservedNew,
+ inputsPerBatch:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1},{itemId:'IRONWOOD_LOG',quantity:1}],
+ xpPerBatch:108},'COOK_IRONWOOD_STEW');
+ok(reservedLegacy.inputsPerBatch[0].quantity===2&&reservedLegacy.xpPerBatch===108,
+ 'already paid pre-rebalance batches must keep their original snapshot');
+
+// Repeated manual activation of the SAME meal stacks duration, never power.
+let stacked=fresh();
+stacked={...stacked,inventory:{...stacked.inventory,stacks:stacked.inventory.stacks.map(row=>
+ row.itemId==='GLASSFIN_FEAST'?{...row,quantity:7}:row)}} as GameState;
+stacked=executeGameCommand(stacked,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
+const firstMealPower=characterPermanentMultipliers(stacked).gatheringSpeedMultiplier;
+for(let n=1;n<6;n++)stacked=executeGameCommand(stacked,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
+ok(stacked.character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,'six 4h meals cap at 24 hours');
+ok(characterPermanentMultipliers(stacked).gatheringSpeedMultiplier===firstMealPower,'stacking meal time never stacks its percentage');
+ok(stacked.inventory.stacks.find(row=>row.itemId==='GLASSFIN_FEAST')?.quantity===1,'six manual activations consume exactly six meals');
+ok(normalizeSave(structuredClone(stacked)).character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,
+ '24h duration survives secure save normalization');
+throws(()=>executeGameCommand(stacked,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now),'at 24h cap a seventh meal cannot be consumed');
+throws(()=>normalizeMealBuff({itemId:'GLASSFIN_FEAST',remainingSeconds:MAX_MEAL_BUFF_SECONDS+1}),
+ 'duration above 24h must fail normalization');
+const nearCap={...stacked,character:{...stacked.character!,activeMealBuff:{itemId:'GLASSFIN_FEAST',remainingSeconds:23*3600}}};
+const capped=executeGameCommand(nearCap,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
+ok(capped.character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,
+ 'duration is clamped and never overflows 24 hours');
+const changed=executeGameCommand(stacked,{type:'meal_bonus',args:{id:'FROSTED_ICEFIN'}},now).state;
+ok(changed.character?.activeMealBuff?.itemId==='FROSTED_ICEFIN'&&changed.character.activeMealBuff.remainingSeconds===4*3600,
+ 'a different meal replaces the effect and starts its own normal duration');
+
 let state=fresh();
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'FROSTED_ICEFIN'}},now).state;
@@ -104,4 +157,4 @@ ok(!drillOne.state.character?.activeMealBuff,'class drill sessions consume meal 
 ok(JSON.stringify(drillOne.state.character?.classSkills)===JSON.stringify(drillTwo.state.character?.classSkills),'class drill rewards match across offline split and sequential claims');
 ok((drillOne.reward.trainingActions??0)===(drillPart.reward.trainingActions??0)+(drillTwo.reward.trainingActions??0),'class drill action summary includes both sides of meal expiry');
 
-console.log('PASS special meals: doubled rates, activation, nonstacking, save security, AFK expiry and repeatable stew');
+console.log('PASS Cooking materials x5 / XP x3 and special meal 24h duration-only stacking, save security, AFK expiry and repeatable stew');

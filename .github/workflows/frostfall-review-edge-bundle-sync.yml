@@ -1,0 +1,51 @@
+name: Frostfall review branch Edge bundle sync
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '.github/workflows/frostfall-review-edge-bundle-sync.yml'
+      - 'apps/mobile/src/content/event-companions-v2.ts'
+      - 'backend/src/server/companions/content.ts'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: frostfall-review-edge-bundle-sync
+  cancel-in-progress: false
+
+jobs:
+  rebuild-review-only:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/frostfall-companion-rework-2026-review'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/frostfall-companion-rework-2026-review
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Rebuild the committed gameplay and co-op runtime bundles on the review branch
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated files to the review branch only
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Canonical gameplay and co-op bundles are already synchronized.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync Frostfall review-only bundles'
+          git push origin HEAD:feat/frostfall-companion-rework-2026-review

@@ -27,6 +27,16 @@ const offered=roomBoonOffers(run,secret);
 assert.equal(offered.length,3);
 assert.deepEqual(offered,roomBoonOffers(run,secret),'offers remain stable for retries and reconnects');
 assert.equal(new Set(offered.map(row=>row.id)).size,3,'no duplicate boons');
+const retiredBoonIds=['ROOM_BOON_RESERVE','ROOM_BOON_SUPPLY'] as const;
+// Endurance routes have the extended boon pool where Supplies Cache used to slip through.
+for(let index=0;index<25;index++){
+ const candidate=roomBoonOffers({...run,id:`endurance-${index}`,enduranceRouteVersion:1},secret);
+ assert.equal(candidate.length,3,'endurance rooms retain three useful boon choices');
+ assert.ok(candidate.every(boon=>!retiredBoonIds.some(id=>id===boon.id)),'retired supply boons must never be offered');
+}
+for(const retired of retiredBoonIds){
+ assert.throws(()=>applyRoomBoon(structuredClone(run),retired),/invalid_boon_choice/,'retired boons must not be applicable even by internal callers');
+}
 const roomNode=(kind:CoopRouteNode['kind']):CoopRouteNode=>({nodeId:`utility-${kind}`,depth:5,kind,contentId:`TEST_${kind.toUpperCase()}`,modifierId:'steady',risk:1,rewardTag:kind,nextNodeIds:[]});
 for(const kind of ['camp','treasure','secret','event','risk','merchant'] as const){
  const copy=structuredClone(run),node=roomNode(kind);
@@ -49,18 +59,22 @@ for(const kind of ['camp','treasure','event'] as const){
 }
 assert.deepEqual(roomBoonOffers({...run,qmodePressureVersion:undefined},secret),[],'Live cannot be controlled by Q-Mode boon selection');
 assert.deepEqual(roomBoonOffers({...run,phase:'completed'},secret),[],'terminal runs cannot offer boons');
-for(const offer of ROOM_BOON_CHOICES){
+for(const offer of ROOM_BOON_CHOICES.filter(offer=>!retiredBoonIds.some(id=>id===offer.id))){
  const copy=structuredClone(run);
  applyRoomBoon(copy,offer.id);
  assert.equal(copy.chosenRoomBoons?.shrine,offer.id);
  assert.deepEqual(roomBoonOffers(copy,secret),[],'a selected room cannot offer a second boon');
  if(offer.id==='ROOM_BOON_STRIKE'||offer.id==='ROOM_BOON_WARD')assert.ok(copy.persistentState.boons.includes(offer.id),'combat boon persists');
- if(offer.id==='ROOM_BOON_SUPPLY')assert.equal(copy.persistentState.resources,2,'supply boon grants spendable supplies');
  if(offer.id==='ROOM_BOON_RECOVERY')assert.equal(copy.persistentState.actors[actor.id].hp,50,'recovery restores actual health');
 }
 const repository=new MemoryQModeRunRepository();repository.save(run);
 const service=new QModeService(repository,secret);
 assert.throws(()=>service.choose({runId:run.id,controllerAccountId:'account',optionNodeId:'camp',boonId:'BOON_FAKE'}),/invalid_boon_choice/,'unoffered choices must be rejected');
+const enduranceRepository=new MemoryQModeRunRepository();enduranceRepository.save({...run,enduranceRouteVersion:1});
+const enduranceService=new QModeService(enduranceRepository,secret);
+for(const retired of retiredBoonIds){
+ assert.throws(()=>enduranceService.choose({runId:run.id,controllerAccountId:'account',optionNodeId:'camp',boonId:retired}),/invalid_boon_choice/,'retired supply boons cannot be submitted by old clients');
+}
 const selected=service.choose({runId:run.id,controllerAccountId:'account',optionNodeId:'camp',boonId:offered[0].id});
 assert.equal(selected.currentNodeId,'camp');
 assert.equal(selected.chosenRoomBoons?.shrine,offered[0].id,'selected boon must be committed with the next node');

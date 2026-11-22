@@ -79,7 +79,7 @@ export interface FrozenForgeCombatResultV2{
  readonly equipmentEvidence:readonly FrozenForgeEvidenceV2[];
  readonly enemyMechanicLabels:readonly string[];
 }
-const reject=(why:string):never=>{throw Error('combat_v2_frozen_forge_'+why);};
+function reject(why:string):never{throw Error('combat_v2_frozen_forge_'+why);}
 const same=(a:unknown,b:unknown)=>enemyV2SnapshotDigest(a)===enemyV2SnapshotDigest(b);
 const round=(n:number)=>Math.round(n*1000000)/1000000;
 const isId=(x:unknown):x is string=>typeof x==='string'&&

@@ -45,9 +45,10 @@ jobs:
           if (app.expo.version !== '1.0.11' || pkg.version !== '1.0.11') throw Error('expected_1_0_11');
           if (!/versionName\s+"1\.0\.11"/.test(gradle)) throw Error('android_version_name_mismatch');
           if (eas.cli.appVersionSource !== 'remote' || eas.build.production.autoIncrement !== true) throw Error('remote_version_code_gate');
-          if (eas.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW !== 'false') throw Error('unreleased_social_names_enabled');
+          if (eas.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW !== 'false') throw Error('staging_social_preview_on_production');
+          if (eas.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED !== 'true') throw Error('social_name_production_optin_missing');
           if (eas.build.staging.env.EXPO_PUBLIC_RELEASE_CHANNEL !== 'staging') throw Error('missing_staging_profile');
-          console.log('PASS: 1.0.11 metadata and held flags; remote Play versionCode still requires manual verification.');
+          console.log('PASS: 1.0.11 metadata, approved Social Name opt-in and other held flags; remote Play versionCode still requires manual verification.');
           NODE
       - name: Install verified lockfiles
         run: |

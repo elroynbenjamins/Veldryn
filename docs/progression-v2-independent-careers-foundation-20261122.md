@@ -161,3 +161,22 @@ All new tests are included in the scoped progression-v2 CI script. Nothing modif
 2. Develop authoritative post-claim source adapters for the actual live JSON state/store and backfill all active and parked characters with consistent revision/ownership locks. Validate under staging before any launch.
 3. Reconcile Combat 2.0 branch's `Character Level == Combat Level` nomenclature and 2.0 tier gates. Ensure combat equip, CP, dungeons and class talents consume combat level only.
 4. Profile XP rates with real action totals, prepare safe profession access paths and commission marketplace material verification. User approves actual 2.0 UI/theme before attaching new screens to the build.
+
+## Receipt source authority — production-only aggregate audit
+
+Production source receipt population (read-only counts, no account details):
+
+| Source table/action | Count | Trust conclusion |
+|---|---:|---|
+| public.craft_receipts | 0 | Cannot be the sole modern crafting completion source |
+| public.idle_claim_receipts | 0 | Cannot be the sole modern gathering completion source |
+| public.server_action_receipts | 7,391 | Actual populated server action/retry ledger |
+| server_action_receipts.action = online_game_v1 | 6,923 | Main online game source |
+| online_game_v1 with reward result | 6,032 | Some contain reward XP and elapsed seconds |
+| online_game_v1 with reward, activity kind, saved character and matching account | 4,643 | Structurally plausible; NOT automatically safe to award XP |
+
+Modern online_game_v1 response JSON includes requestHash and result; result can contain activity, reward (xp, elapsedSeconds, combat/processing metadata) and saved state. Activity kind is sometimes null or may describe the NEW/current activity rather than the reward's exact previous source, including queued transitions. Therefore NEVER blindly treat (result.activity.kind + reward.elapsedSeconds) as a verified completion for Character XP. A new server-authored, source-character-bound immutable V2 reward receipt should be settled along with the online_game_state revision and the underlying item/skill source transaction. Retrying a persisted online_game_v1 response is not itself an entitlement to an additional career award. The V1 receipt can aid migration diagnostics but cannot substitute for new evidence.
+
+### CI note
+
+Dedicated Progression 2.0 contracts, including the disposable PG17 ledger job, passed at the exact-head checked after activation-cutoff changes. Broader Mobile Core / Guild Shop CI has independent mobile TypeScript failures in new gathering-tool copy/imports on the PR merge checkout (e.g. ItemQuickInspect and InventoryScreen). These are unrelated mobile files not modified by this progression PR and must be reconciled on main or via their owning UI branch before claiming full repository green.

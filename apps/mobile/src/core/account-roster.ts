@@ -22,7 +22,24 @@ export function characterSkillTotal(skills:SkillState[],character?:CharacterStat
  return total;
 }
 export function accountSkillLevel(state:GameState){if(!state.character)return 0;let total=characterSkillTotal(state.skills,state.character);for(const entry of state.otherCharacters??[])total+=characterSkillTotal(entry.skills,entry.character);return total;}
-export function accountCharacters(state:GameState){return [{character:state.character!},...(state.otherCharacters??[])].filter(entry=>entry.character);}
+/** Local character IDs contain their creation sequence. Keep roster order independent of which character is active. */
+function characterCreationSequence(id:string){
+ const match=/^LOCAL_CHAR_(\d+)$/.exec(id);
+ if(!match)return undefined;
+ const sequence=Number(match[1]);
+ return Number.isSafeInteger(sequence)?sequence:undefined;
+}
+export function accountCharacters(state:GameState){
+ const entries=[{character:state.character!},...(state.otherCharacters??[])].filter(entry=>entry.character);
+ return entries.sort((left,right)=>{
+  const a=characterCreationSequence(left.character.id),b=characterCreationSequence(right.character.id);
+  if(a!==undefined&&b!==undefined)return a-b;
+  if(a!==undefined)return -1;
+  if(b!==undefined)return 1;
+  // Legacy non-sequential IDs lack a creation ordinal; use a deterministic, switch-stable fallback.
+  return left.character.id.localeCompare(right.character.id);
+ });
+}
 export function occupiedCharacterRoles(state:GameState):AccountCharacterRole[]{
  const occupied=new Set(accountCharacters(state).map(entry=>CLASSES.find(def=>def.id===entry.character.classId)?.role).filter((role):role is AccountCharacterRole=>!!role));
  return (['Tank','Damage','Support'] as const).filter(role=>occupied.has(role));

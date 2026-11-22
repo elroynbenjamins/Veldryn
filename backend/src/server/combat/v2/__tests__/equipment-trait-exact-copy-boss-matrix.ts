@@ -277,5 +277,56 @@ console.log(JSON.stringify({kind:'SIGNED_GEAR_SOLO_INTERRUPT_MECHANICS_NOT_EQUAL
  byBoss:Object.fromEntries([...interruptionByBoss.entries()].sort(([a],[b])=>a.localeCompare(b))
   .map(([id,row])=>[id,{attempts:row.attempts,successful:row.successful,
    classes:[...row.classes].sort()}]))}));
+// Real, authored status bosses: weakening from Bell Soul Curse and Cantor
+// Deep Dissonance is countered by VERIFIED V2 support abilities with the SAME
+// item/rarity/quality/spec and boss snapshot. This supplements the low-level
+// synthetic debuff-only regression with actual class and enemy compilers.
+const cureScenarios:readonly {
+ classId:ClassIdV2;bossId:string;technique:string;variant:0|1
+}[]=[
+ {classId:'STONECALLER',bossId:'BOSS_EXP_BELL',technique:'River Stone',variant:1},
+ {classId:'STONECALLER',bossId:'BOSS_EXP_CANTOR',technique:'River Stone',variant:1},
+ {classId:'DAWNKEEPER',bossId:'BOSS_EXP_CANTOR',technique:'Purifying Light',variant:0},
+];
+let authoredCurePairs=0;
+for(const scenario of cureScenarios){
+ const boss=bosses.find(b=>b.id===scenario.bossId);
+ const technique=SKILL_IDENTITIES_V2.find(s=>s.classId===scenario.classId&&
+  s.name===scenario.technique);
+ assert.ok(boss&&technique,'review boss or approved class skill missing');
+ for(const which of [0,1] as const){
+  const {build,runtime,port,input,storedKit,expected}=fixture(scenario.classId,which,boss);
+  const genericSlot=scenario.classId==='STONECALLER'
+   ?{skillId:technique.id,variantId:technique.variants[0].id}
+   :build.selected.activeSkills[0];
+  const baseline:VerifiedSkillBuildV2={...build,selected:{...build.selected,
+   activeSkills:[genericSlot]}};
+  const tactical:VerifiedSkillBuildV2={...build,selected:{...build.selected,
+   activeSkills:[{skillId:technique.id,variantId:technique.variants[scenario.variant].id}]}};
+  const generic=simulateUnifiedEquipmentCombatV2(
+   input,[baseline],[runtime],true,storedKit,port);
+  const cured=simulateUnifiedEquipmentCombatV2(
+   input,[tactical],[runtime],true,storedKit,port);
+  assert.deepEqual(generic.equipmentEvidence,cured.equipmentEvidence,
+   'Support cure may not alter compiled item stats or copy ownership');
+  assert.deepEqual(generic.enemyMechanicLabels,cured.enemyMechanicLabels);
+  assert.equal(compileExactEquipmentTraitSourceV2(tactical,runtime,port).equipmentReceiptDigest,
+   expected.equipmentReceiptDigest);
+  const bossDebuffs=generic.combat.events.filter(e=>e.type==='status_apply'&&
+   e.actorId===boss.id&&e.statusKind==='debuff'&&e.targetId===input.players[0].id);
+  assert.ok(bossDebuffs.length>=1,'original authored boss must apply a real debuff');
+  assert.equal(generic.combat.events.filter(e=>e.type==='status_remove'&&
+   e.statusKind==='debuff'&&e.actorId===input.players[0].id).length,0,
+   'generic build unexpectedly cleansed a hostile debuff');
+  assert.ok(cured.combat.events.some(e=>e.type==='status_remove'&&
+   e.statusKind==='debuff'&&e.actorId===input.players[0].id&&
+   e.targetId===input.players[0].id),
+   'compiled Support counter must remove boss weakening '+scenario.classId+' '+boss.id);
+  authoredCurePairs++;
+ }
+}
+assert.equal(authoredCurePairs,6);
+console.log('PASS: '+authoredCurePairs+
+ ' equipped/verified authored boss debuff-cure pairs from Stonecaller and Dawnkeeper (test-only receipt verifier)');
 console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+
  ' gated trait events, '+sourceTests+' fail-closed exact-copy checks (test-only ledgers)');

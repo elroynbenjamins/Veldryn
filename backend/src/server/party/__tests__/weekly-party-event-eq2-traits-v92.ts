@@ -118,7 +118,10 @@ function fixture(
  return {witness,combat,sources,ports};
 }
 function denied(fn:()=>unknown,needle:string){
- assert.throws(fn,e=>String(e).includes(needle));
+ let error:unknown;
+ try{fn();}catch(caught:unknown){error=caught;}
+ assert.ok(error!==undefined&&String(error).includes(needle),
+  'expected '+needle+', got '+String(error));
 }
 assert.equal(PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,false);
 let scenarios=0,traitEvents=0,baselineEvents=0;

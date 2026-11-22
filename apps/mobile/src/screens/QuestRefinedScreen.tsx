@@ -79,7 +79,7 @@ function statusText(status:Status,language:Language){
 function CompactQuestRow({title,subtitle,eyebrow,status,current,max,art,reward,rarity,readyLabel,onPress,C,language}:{
  title:string;subtitle:string;eyebrow:string;status:Status;current:number;max:number;art:ReactNode;reward?:string;rarity?:string;readyLabel?:string;onPress:()=>void;C:ThemeColors;language:Language;
 }){
- return <Pressable accessibilityRole="button" accessibilityLabel={questJournalText(language,'{title}, {status}, {current} of {max}',{title,status:statusText(status,language),current,max})}
+ return <Pressable accessibilityRole="button" accessibilityLabel={questJournalText(language,'{title}, {status}, {current} of {max}',{title,status:statusText(status,language),current,max})+(status==='ready'?' · '+(readyLabel??questJournalText(language,'Claim')):'')}
   onPress={onPress} style={({pressed})=>[styles.questRow,{backgroundColor:C.panelRaised,borderColor:status==='ready'?C.good:C.lineStrong},pressed&&styles.pressed,status==='locked'&&styles.locked]}>
   <View style={[styles.iconBox,{backgroundColor:C.panel2,borderColor:C.line}]}>{art}</View>
   <View style={styles.rowBody}>
@@ -263,7 +263,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
       <Text style={[styles.subtitle,{color:C.muted}]}>{localizedQuestStoryText(language,nextChapter,'description')}</Text>
       <ProgressLine current={Math.min(nextChapter.required,chapterProgress?.progress??0)} max={nextChapter.required} C={C}/>
       <Text style={[styles.rewardHint,{color:C.accent}]}>{nextChapter.rewardGold} {t('Gold')}{nextChapter.rewardItemId?' · '+(nextChapter.rewardItemQty??1)+'× '+nextChapter.rewardItemId.replace(/_/g,' '):''}{nextChapter.rewardTitleId?' · '+(storyRewardTitle(nextChapter)??''):''}</Text>
-      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
+      <GameButton title={chapterProgress?.status==='complete'?p('Claim rewards'):p('View objective')} loading={claimingKey==='story:'+nextChapter.id} disabled={claimingKey!==null} onPress={()=>chapterProgress?.status==='complete'?submitClaimFor('story',nextChapter.id):open('story',nextChapter.id)}/>
      </View>:null}
     <View style={[styles.chronicleCard,{backgroundColor:C.panel,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('THE CHRONICLE')}</Text><Text style={[styles.mini,{color:C.muted}]}>{p('Recovered clues')} · {recoveredPages.length}/{STORY_DISCOVERIES.length}</Text></View>
@@ -337,7 +337,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.good}]}>{p('REWARD READY')}</Text><StatusPill label={seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].label).toLocaleUpperCase(language)} tone="special"/></View>
      <Text style={[styles.featuredTitle,{color:C.text}]}>{seasonalChallengeName(language,nextReward)}</Text>
      <Text style={[styles.subtitle,{color:C.muted}]}>{nextReward.period.toUpperCase()} · {seasonalChallengeText(language,QUEST_RARITIES[nextReward.rarity].cache)}</Text>
-     <GameButton title={nextReward.rewardOptions.length>1?p('Choose reward'):p('Claim rewards')} onPress={()=>nextReward.rewardOptions.length>1?open('challenge',nextReward.id):submitClaimFor('challenge',nextReward.id)}/>
+     <GameButton title={nextReward.rewardOptions.length>1?p('Choose reward'):p('Claim rewards')} loading={claimingKey==='challenge:'+nextReward.id} disabled={claimingKey!==null} onPress={()=>nextReward.rewardOptions.length>1?open('challenge',nextReward.id):submitClaimFor('challenge',nextReward.id)}/>
     </View>:null}
     <View style={styles.sectionHead}><Text style={[styles.sectionTitle,{color:C.accent}]}>{p('CHALLENGE LIST')}</Text><Text style={[styles.mini,{color:C.muted}]}>{daily.length} {p('daily')} · {weekly.length} {p('weekly')} · {monthly.length} {p('monthly')}</Text></View>
     <Rail C={C} selected={challengePeriod} onChange={setChallengePeriod} items={[{id:'all',label:p('All')},{id:'daily',label:p('Daily')},{id:'weekly',label:p('Weekly')},{id:'monthly',label:p('Monthly')}]}/>
@@ -400,7 +400,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </>}
    </ScrollView>
    <View style={[styles.sheetFooter,{borderColor:C.line}]}>
-    {hasClaim?<GameButton title={p('Claim rewards')} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenChallenge&&selectedStatus==='active'&&challengeDestination?<GameButton title={p(challengeDestination.label)} onPress={()=>{closeSheet();onNavigate(challengeDestination)}}/>:chosenOrder&&selectedStatus==='active'?<>
+    {hasClaim?<GameButton title={p('Claim rewards')} disabled={claimingKey!==null} onPress={submitClaim}/>:chosenStory&&selectedStatus==='active'?<GameButton title={localizedQuestDestinationText(language,chosenStory,'label')} onPress={()=>{const target=questDestination(chosenStory);closeSheet();onNavigate(target)}}/>:chosenChallenge&&selectedStatus==='active'&&challengeDestination?<GameButton title={p(challengeDestination.label)} onPress={()=>{closeSheet();onNavigate(challengeDestination)}}/>:chosenOrder&&selectedStatus==='active'?<>
      <GameButton title={weeklyOrderDestinationLabel(language,chosenOrder,'button')} onPress={()=>{closeSheet();onOpenWeeklyOrder(chosenOrder)}}/>
      {chosenQueueable?<View style={styles.actionPair}>
       <View style={styles.flex}><GameButton compact tone="secondary" title={queueFull?p('Queue full'):p('Queue')} disabled={queueFull} onPress={()=>{onQueueWeeklyOrder(chosenOrder);closeSheet()}}/></View>

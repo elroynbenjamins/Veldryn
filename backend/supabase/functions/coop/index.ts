@@ -50754,13 +50754,13 @@ function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, d
   if (depth === 1) return "battle";
   if (depth === 2) {
     if (choice < 2) return "battle";
-    const utility = ["event", "treasure", "camp", "shrine"];
+    const utility = ["treasure", "camp", "shrine"];
     return utility[deterministicInt(secret, 0, utility.length - 1, "coop-route-opening-v2", runId, expeditionId, contentVersion, balanceVersion)];
   }
   if (choice === 0) return "battle";
   if (depth === 3 && choice === 1) return "camp";
   const def = EXPEDITIONS[expeditionId];
-  const entries = Object.entries(def.nodeWeights).filter(([kind]) => kind !== "boss" && kind !== "merchant");
+  const entries = Object.entries(def.nodeWeights).filter(([kind]) => kind !== "boss" && kind !== "merchant" && kind !== "event");
   const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
   let roll = deterministicUnit(secret, "coop-route-v1", runId, expeditionId, contentVersion, balanceVersion, "kind", depth, choice) * total;
   for (const [kind, weight] of entries) {

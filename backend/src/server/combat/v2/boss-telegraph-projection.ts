@@ -9,7 +9,7 @@
  * An authored ability name, its interruptible flag and its cast deadline come
  * from the resolved boss definition, not from event text or player-supplied UI.
  */
-import type {CombatResult,CombatantDefinition,CombatEvent} from '../types';
+import type {CombatResult,CombatantDefinition} from '../types';
 
 export interface VerifiedBossCastSignalV2{
  readonly bossId:string;

@@ -107,14 +107,15 @@ assert.equal(ordinaryFight.events.filter(e=>e.type==='status_remove'&&
 assert.deepEqual(cleansingFight.events.filter(e=>e.type==='status_remove'&&
  e.abilityId==='SC_HEAL:v2:1').map(e=>[e.targetId,e.statusKind]),
  [['QA_TANK','debuff']], 'real compiled Cleansing Stream removes active debuff');
-// Independent Dawnkeeper option: another real class has a fully authored
-// alternative cleanse rather than a mandatory Stonecaller-only solution.
-const dawnkeeper=launchPlayer('Dawnkeeper',25);
+// Independent Dawnkeeper option (Lv35: Purifying Light unlocks at Lv30).
+// This is not an equal-CP cross-class comparison: it only proves another
+// real class can execute the same debuff-only counter.
+const dawnkeeper=launchPlayer('Dawnkeeper',35);
 const purifying=SKILL_IDENTITIES_V2.find(s=>s.classId==='DAWNKEEPER'&&s.name==='Purifying Light');
 const dawnSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='DAWNKEEPER');
 assert.ok(purifying&&dawnSpec);
 const dawnBuild:VerifiedSkillBuildV2={
- actor:dawnkeeper,verified:{classId:'DAWNKEEPER',level:25,ownedInstanceIds:new Set()},
+ actor:dawnkeeper,verified:{classId:'DAWNKEEPER',level:35,ownedInstanceIds:new Set()},
  selected:{specializationId:dawnSpec.id,equipment:{},
   activeSkills:[{skillId:purifying.id,variantId:purifying.variants[0].id}],
   talentRanks:{},signaturePassiveIds:[],capstoneId:null},

@@ -47,6 +47,12 @@ rejects(()=>recoverCommittedCareerProofV2({...proof,claimed_elapsed_seconds:1080
  /invalid_source/,'overlong elapsed claim');
 rejects(()=>recoverCommittedCareerProofV2({...proof,completed_at:'2026-11-22T13:52:00'},link),
  /invalid_db_time/,'unoffset client clock not proof');
+rejects(()=>recoverCommittedCareerProofV2(proof,{...link,accountId:undefined as any}),
+ /invalid_commit_link/,'missing authenticated account');
+rejects(()=>recoverCommittedCareerProofV2(proof,{...link,committedCharacterId:'not-uuid'}),
+ /invalid_commit_link/,'malformed committed character');
+rejects(()=>recoverCommittedCareerProofV2(proof,{...link,committedRevision:-1}),
+ /invalid_commit_link/,'missing valid committed revision');
 rejects(()=>recoverCommittedCareerProofV2(proof,{...link,accountId:actor}),
  /unlinked_game_commit/,'cross-account receipt');
 rejects(()=>recoverCommittedCareerProofV2(proof,{...link,requestHash:'c'.repeat(64)}),

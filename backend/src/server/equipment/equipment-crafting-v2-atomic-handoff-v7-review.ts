@@ -138,7 +138,9 @@ export function auditEq2V7ReviewLots(
    sourceId:lot.sourceId,quantity:lot.quantity,
    originReceiptId:lot.originReceiptId,
   });
-  if(!origin.proposalKnown||origin.reason==='invalid_proof')
+  if(!origin.proposalKnown||
+   !['unregistered_processing','candidate_source_unverified',
+     'missing_registered_source'].includes(origin.reason))
    fail('unrecognised_or_invalid_source_proposal');
   const locationKey=key(lot.location,owner,lot.materialId);
   const updated=(observed.get(locationKey)??0)+lot.quantity;

@@ -125,7 +125,6 @@ export function compileRealFrozenForgeActorV2(
     source.custody.copies.some(x=>x.accountId!==source.accountId))
   reject('cross_account_copy');
  const resolved:{copy:V2CustodyCopy;mint:V2DraftItem}[]=[];
- const seenSetIds=new Set<string>();
  for(const [slot,id] of selected){
   const copies=source.custody.copies.filter(x=>x.instanceId===id);
   const minted=source.items.filter(x=>x.id===id);
@@ -160,8 +159,7 @@ export function compileRealFrozenForgeActorV2(
     reject('source_build_catalog_mismatch');
   // Forge's 15 real set IDs and the draft 48 Combat sets are NOT yet one
   // authoritative effect catalogue. Never issue an imaginary bonus.
-  if(item.setId||seenSetIds.has(item.setId??''))reject('set_source_bonus_unreconciled');
-  seenSetIds.add(item.setId??'');
+  if(item.setId)reject('set_source_bonus_unreconciled');
   if(item.gemSlots.length||item.enhancementRank!==0)
     reject('socket_or_enhancement_not_ready');
   resolved.push({copy,mint});

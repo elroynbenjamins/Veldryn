@@ -123,6 +123,10 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {points:1000,reward:{kind:'emote',id:'emote_snowbell_ring',name:'Snowbell Ring',rarity:'rare'}},
     {points:4000,reward:{kind:'pet',id:'EVT_PET_015',name:'Snowbell Pup',rarity:'common'}},
     {points:6500,reward:{kind:'title',id:'title_winter_light',name:'Winter Light',rarity:'epic'}},
+    // Three distinct Elite roles. Account-wide and permanent after the event.
+    // Keep the existing final 10k Frostbell milestone ID stable.
+    {points:6000,reward:{kind:'companion',id:'EVT_UNIT_012',name:'Rimeshard Lynx',rarity:'epic'}},
+    {points:8500,reward:{kind:'companion',id:'EVT_UNIT_013',name:'Hearthguard Ram',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_009',name:'Frostbell Herald',rarity:'epic'}},
   ],
   objectives:[

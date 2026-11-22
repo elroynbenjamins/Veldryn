@@ -116,9 +116,10 @@ export class WorldBossEquipmentRuntimeV87{
    }
    seen.add(source.actorId);
   }
-  const scope={eventId:context.eventId,accountId:context.accountId,
+  const scope=Object.freeze({eventId:context.eventId,accountId:context.accountId,
    bossId:context.bossId,rosterDigest:context.rosterDigest,
-   actorIds:context.actors.map(x=>x.id),serverBossMaxHp:proof.serverBossMaxHp};
+   actorIds:Object.freeze(context.actors.map(x=>x.id)),
+   serverBossMaxHp:proof.serverBossMaxHp});
   // Freeze exactly what the privileged verifier sees and what the encounter
   // later executes. A callback cannot mutate the accepted receipt between
   // persistence verification and the first authored round.
@@ -130,7 +131,7 @@ export class WorldBossEquipmentRuntimeV87{
   let verified=false;
   try{verified=proof.verifyPersisted(scope,frozenSources)===true;}catch{verified=false;}
   if(!verified)fail('persisted_receipt_not_verified');
-  const runtime=new WorldBossEquipmentRuntimeV87(proof.serverBossMaxHp);
+  const runtime=new WorldBossEquipmentRuntimeV87(scope.serverBossMaxHp);
   for(const source of frozenSources){
    runtime.sources.set(source.actorId,source);
    runtime.state.set(source.actorId,start());
@@ -166,6 +167,7 @@ export class WorldBossEquipmentRuntimeV87{
    return {damage:r6(value)};
   }
   if(abilityId.startsWith('V2_')||abilityId.startsWith('GEM_')||
+   abilityId.startsWith('COMPANION_')||abilityId.startsWith('PASSIVE_')||
    abilityId.startsWith('WB87_'))return {damage};
   return {damage:r6(damage*(1+source.abilityDamagePct/100))};
  }
@@ -174,6 +176,7 @@ export class WorldBossEquipmentRuntimeV87{
   const s=this.state.get(actorId),atMs=round*5000;
   if(!s||abilityId==='BASIC'||abilityId.startsWith('GEM_')||
    abilityId.startsWith('WB87_')||abilityId.startsWith('V2_')||
+   abilityId.startsWith('COMPANION_')||abilityId.startsWith('PASSIVE_')||
    !this.has(actorId,'echoing_strike')||!finite(hpDamage)||hpDamage===0||
    !finite(attackPower)||atMs-s.echoAt<30000||atMs-s.globalAt<1000)return;
   const amount=r6(Math.min(hpDamage*.08,attackPower*.20));

@@ -27,6 +27,7 @@ for(const dungeon of available){
  for(let n=0;n<3;n++){
   const graph=generateCoopRouteGraph('variety-secret',dungeon.id,`variety-${dungeon.id}-${n}`,'content-v1','balance-v1');
   assert.equal(graph.preBossNodeCount,5);
+  assert(graph.nodes.every(node=>node.kind!=='event'),'Fresh dungeon routes must never offer resource-only Event Rooms');
   for(let depth=1;depth<=5;depth++){
    const options=graph.nodes.filter(node=>node.depth===depth);
    assert.equal(options.length,3,'Each tier has three real route choices');
@@ -35,7 +36,7 @@ for(const dungeon of available){
    if(depth===1)assert(options.every(item=>item.kind==='battle'),'First room remains a recognizable combat opener');
    if(depth===2){
     assert.equal(options.filter(item=>item.kind==='battle').length,2,'Second room retains two combat paths');
-    assert(['event','treasure','camp','shrine'].includes(String(options[2].kind)),'Third path is a real low-pressure utility encounter');
+    assert(['treasure','camp','shrine'].includes(String(options[2].kind)),'Third path is a real low-pressure utility encounter');
    }
    assert(options.filter(item=>item.kind!=='elite').every(item=>item.modifierId==='steady'),'Non-elite options cannot silently increase dungeon pressure');
   }

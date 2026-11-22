@@ -8,8 +8,8 @@
  *
  * This boundary models those guarantees; it does NOT implement DB authentication.
  */
-import type {GameState} from '../../../apps/mobile/src/core/types';
-import {GuildPveV12VerifiedActorLoader} from '../../online/guild-pve-verified-loader-v12';
+import type {GameState} from '../../../../apps/mobile/src/core/types';
+import {GuildPveV12VerifiedActorLoader} from '../../../online/guild-pve-verified-loader-v12';
 import {projectGuildPveV15Campaign,type GuildPveV15Snapshot} from './guild-pve-progress-v15';
 import type {GuildPveV9StoreState} from './guild-pve-transaction-v9';
 
@@ -18,7 +18,7 @@ const safeId=(v:unknown):v is string=>
  typeof v==='string'&&/^[A-Za-z0-9][A-Za-z0-9:_-]{1,99}$/.test(v);
 const positive=(v:unknown):v is number=>
  typeof v==='number'&&Number.isSafeInteger(v)&&v>0;
-const fail=(reason:string):never=>{throw Error('guild_pve_v16_'+reason)};
+function fail(reason:string):never{throw Error('guild_pve_v16_'+reason);}
 
 export interface GuildPveV16Membership {
  guildId:string;accountId:string;joinedAtUtcMs:number;

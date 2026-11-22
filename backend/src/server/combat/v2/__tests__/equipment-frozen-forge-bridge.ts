@@ -28,9 +28,22 @@ import {
 import type {V2DraftItem,V2DraftReceipt} from '../../../equipment/equipment-crafting-v2-transaction';
 import type {V2CustodyCopy} from '../../../equipment/equipment-crafting-v2-custody';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
+import {
+ PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
+} from '../equipment-expanded-launch-registry';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
+const existingSetCopies=V2_SERVER_PIECES.filter(x=>Boolean(x.setId));
+assert.equal(existingSetCopies.length,42,'Forge has exactly 42 pinned set pieces');
+assert.equal(new Set(existingSetCopies.map(x=>x.setId)).size,15,
+ '15 original Forge set identities still need reconciled executable effects');
+assert.equal(PLANNED_T1_T4_SETS_V2.length,48);
+assert.equal(PLANNED_T1_T4_MEMBERS_V2.length,204);
+assert.ok(PLANNED_T1_T4_SETS_V2.every(s=>!s.combatReady));
+assert.ok(PLANNED_T1_T4_MEMBERS_V2.every(s=>
+ !s.combatReady&&!s.equippable&&!s.craftable),
+ 'unissued expanded set concepts may NEVER enter 2.0 combat');
 
 const statKeys:readonly (keyof CombatStats)[]=[
  'maxHp','attackPower','healingPower','defense','accuracy',
@@ -84,12 +97,16 @@ const names:Readonly<Record<'tank'|'damage'|'support',string>>={
  damage:'EQ2_EXP_T1_DAMAGE_RING',
  support:'EQ2_SOLO_FIELDBORN_PRAYER_HOOD',
 };
-function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'set'='supported'){
+function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'offslot'|'set'='supported'){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=kind==='set'?'EQ2_FIELDBORN_GUARD_HELMET':
   role==='tank'?names.tank:role==='damage'?names.damage:names.support;
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
-  kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:()=>true);
+  kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
+  kind==='offslot'?roll=>roll.affixes.length>0&&
+   Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
+   !EQUIPMENT_AFFIXES_V2[EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]!]
+    .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true);
  const {roll,exact,profession}=selection;
  const actor={...launchPlayer(CLASS_NAMES_V2[classId],35),
   id:'QA_EQ2_'+classId+'_'+specIndex};
@@ -221,12 +238,18 @@ const setItem=make('IRONWARDEN',0,'set');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  setItem.actor,setItem.build,setItem.source),/set_source_bonus_unreconciled/,
  'never invent 48-set or preapproved Forge set bonuses');
+const offslot=make('HEXWEAVER',1,'offslot');
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ offslot.actor,offslot.build,offslot.source),
+ /forge_combat_affix_slot_policy_conflict/,
+ 'Forge 30% off-slot roll must not violate Combat 2.0 slot eligibility');
 const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
  /forge_affix_effect_unimplemented/,'no generic Potency, Tenacity or Ability Damage reinterpretation');
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
- frozenExactCopySpecs:checked,sourceItems:V2_SERVER_PIECES.length,
+ frozenExactCopySpecs:checked,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
+ proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,
  recipeRoutes:V2_SERVER_RECIPES.length,
  confirmedFrozenBaseCopies:actualFrozenPositive,mappedRealForgeAffixes:mappedAffixes,
  partyMembers:part.combat.players.length,partyReplayEvents:part.combat.events.length,

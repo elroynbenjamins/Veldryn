@@ -6,7 +6,7 @@ import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 
-export function CoopPartyCompanionChip({companionId,echo=false,expanded,onPress}:{companionId:string;echo?:boolean;expanded:boolean;onPress:()=>void}){
+export function CoopPartyCompanionChip({companionId,echo=false,expanded,compact=false,onPress}:{companionId:string;echo?:boolean;expanded:boolean;compact?:boolean;onPress:()=>void}){
  const {styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const companion=combatCompanionDef(companionId),art=companionArtSource(companionId);
  if(!companion)return null;
@@ -14,11 +14,11 @@ export function CoopPartyCompanionChip({companionId,echo=false,expanded,onPress}
   accessibilityLabel={(echo?st('Frozen Echo companion'):st('Tap to view companion'))+': '+companion.name}
   accessibilityState={{expanded}}
   onPress={onPress}
-  style={({pressed})=>[s.chip,expanded&&s.expanded,pressed&&s.pressed]}>
+  style={({pressed})=>[s.chip,compact&&s.chipCompact,expanded&&s.expanded,pressed&&s.pressed]}>
   <View style={s.icon}>{art?<Image source={art} resizeMode="contain" style={s.image}/>:<UiIcon name="companions" size={24}/>}</View>
   <View style={s.textArea}>
-   <Text numberOfLines={1} style={s.name}>{companion.name}</Text>
-   <Text numberOfLines={1} style={s.subtitle}>{st(echo?'Frozen Echo companion':'Companion assist')}</Text>
+   <Text numberOfLines={1} style={[s.name,compact&&s.nameCompact]}>{companion.name}</Text>
+   {!compact?<Text numberOfLines={1} style={s.subtitle}>{st(echo?'Frozen Echo companion':'Companion assist')}</Text>:null}
   </View>
   <Text style={s.chevron}>{expanded?'−':'›'}</Text>
  </Pressable>;
@@ -26,12 +26,14 @@ export function CoopPartyCompanionChip({companionId,echo=false,expanded,onPress}
 const makeStyles=(C:CoopColors)=>StyleSheet.create({
  chip:{minHeight:46,flexDirection:'row',gap:6,alignItems:'center',paddingHorizontal:7,paddingVertical:5,
   borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.surfaceRaised},
+ chipCompact:{minHeight:46,paddingHorizontal:6,paddingVertical:4,gap:5},
  expanded:{borderColor:C.cyan},
  pressed:{opacity:.70},
  icon:{width:30,height:30,alignItems:'center',justifyContent:'center'},
  image:{width:30,height:30},
  textArea:{flex:1,minWidth:0},
  name:{fontSize:11,lineHeight:15,color:C.text,fontWeight:'700'},
+ nameCompact:{fontSize:12,lineHeight:16,fontWeight:'800'},
  subtitle:{fontSize:10,lineHeight:14,color:C.textMuted},
  chevron:{fontSize:18,color:C.textMuted,lineHeight:22}
 });

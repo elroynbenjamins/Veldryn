@@ -1,0 +1,53 @@
+name: Temporary Frostfall 2026 review smoke and co-op Edge sync
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  frostfall:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.head_ref == 'feat/frostfall-endurance-review-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/frostfall-endurance-review-20261122
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend
+        run: pnpm install --frozen-lockfile
+        working-directory: backend
+      - name: Install mobile shared types
+        run: pnpm install --frozen-lockfile
+        working-directory: apps/mobile
+      - name: Compile backend seasonal engine
+        run: pnpm run build
+        working-directory: backend
+      - name: Run seasonal route and reward-domain suites
+        run: pnpm run event-expeditions
+        working-directory: backend
+      - name: Run authenticated seasonal event online regression
+        run: pnpm run test:event-expedition-online
+        working-directory: backend
+      - name: Regenerate canonical Edge bundles from reviewed source
+        run: node tools/build-online.mjs && node tools/verify-gameplay-edge.mjs
+      - name: Commit exact Edge bundles to draft branch only
+        shell: bash
+        run: |
+          git add backend/supabase/functions/coop/index.ts backend/supabase/functions/gameplay/index.ts
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "build(frostfall): sync exact-source co-op Edge bundle"
+            git fetch origin feat/frostfall-endurance-review-20261122
+            git rebase origin/feat/frostfall-endurance-review-20261122
+            git push origin HEAD:refs/heads/feat/frostfall-endurance-review-20261122
+          fi

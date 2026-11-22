@@ -9,6 +9,15 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Skill → World intent: accessible, compact guide across all supported UI themes.
+ "YOUR DESTINATION":["YOUR DESTINATION","DEIN ZIEL","TU DESTINO","JOUW BESTEMMING","LA TUA DESTINAZIONE","VOTRE DESTINATION"],
+ "Cancel destination":["Cancel destination","Ziel aufheben","Cancelar destino","Bestemming annuleren","Annulla destinazione","Annuler la destination"],
+ "Ready to travel":["Ready to travel","Reisebereit","Listo para viajar","Klaar om te reizen","Pronto a viaggiare","Prêt à voyager"],
+ "Region locked":["Region locked","Region gesperrt","Región bloqueada","Regio vergrendeld","Regione bloccata","Région verrouillée"],
+ "Travel & Start":["Travel & Start","Reisen & Starten","Viajar e iniciar","Reis en start","Viaggia e avvia","Voyager et démarrer"],
+ "Travel to {region} and start {activity}":["Travel to {region} and start {activity}","Nach {region} reisen und {activity} starten","Viajar a {region} e iniciar {activity}","Reis naar {region} en start {activity}","Viaggia a {region} e avvia {activity}","Voyager à {region} et démarrer {activity}"],
+ "Travel only":["Travel only","Nur reisen","Solo viajar","Alleen reizen","Solo viaggiare","Voyager seulement"],
+ "Travel to {region} without starting":["Travel to {region} without starting","Nach {region} reisen, ohne zu starten","Viajar a {region} sin iniciar actividad","Reis naar {region} zonder te starten","Viaggia a {region} senza avviare","Voyager à {region} sans démarrer"],
  // Gathering-tool inspection labels: typed and translated alongside the released compact UI.
  "BASE STATS":["BASE STATS","GRUNDWERTE","ESTADÍSTICAS BASE","BASISSTATISTIEKEN","STATISTICHE BASE","STATS DE BASE"],
  "Equipment base stats":["Equipment base stats","Grundwerte der Ausrüstung","Estadísticas base del equipo","Basisstatistieken uitrusting","Statistiche base equipaggiamento","Stats de base de l'équipement"],
@@ -1766,6 +1775,46 @@ const craftingFocusedEarlyLocales={
  "Missing a material?":["Не хватает материала?","Eksik malzeme mi var?"],
 } as const;
 for(const [english,pair] of Object.entries(craftingFocusedEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+
+// Skill-to-World destination guide also covers Russian and Turkish.
+const destinationGuideEarlyLocales={
+ "YOUR DESTINATION": [
+  "ВАШ ПУНКТ НАЗНАЧЕНИЯ",
+  "HEDEFİN"
+ ],
+ "Cancel destination": [
+  "Отменить маршрут",
+  "Hedefi iptal et"
+ ],
+ "Ready to travel": [
+  "Можно отправляться",
+  "Yolculuğa hazır"
+ ],
+ "Region locked": [
+  "Регион закрыт",
+  "Bölge kilitli"
+ ],
+ "Travel & Start": [
+  "Перейти и начать",
+  "Git ve başlat"
+ ],
+ "Travel to {region} and start {activity}": [
+  "Перейти в {region} и начать {activity}",
+  "{region} bölgesine git ve {activity} başlat"
+ ],
+ "Travel only": [
+  "Только перейти",
+  "Yalnızca git"
+ ],
+ "Travel to {region} without starting": [
+  "Перейти в {region} без запуска",
+  "{region} bölgesine git, başlatma"
+ ]
+} as const;
+for(const [english,pair] of Object.entries(destinationGuideEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

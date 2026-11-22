@@ -13,6 +13,7 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SHA=/^[0-9a-f]{64}$/;
 const REQUEST=/^[A-Za-z0-9_-]{8,128}$/;
 const GATHER:ReadonlySet<string>=new Set(['mining','woodcutting','fishing','herbalism']);
+const CRAFT:ReadonlySet<string>=new Set(['smithing','tailoring','cooking','alchemy','enchanting']);
 function isIntBetween(v:unknown,lo:number,hi:number):v is number {
   return typeof v==='number'&&Number.isSafeInteger(v)&&v>=lo&&v<=hi;
 }
@@ -53,7 +54,7 @@ export function recoverCommittedCareerProofV2(
   linked:PersistedOnlineGameReceiptLinkV2,
 ):ServerSettlementProofV2 {
   if(!proof||!linked||
-     proof.source_kind!=='gathering_claim'||
+     !['gathering_claim','combat_reward','craft_claim'].includes(proof.source_kind as string)||
      typeof proof.source_id!=='string'||!SHA.test(proof.source_id)||
      typeof proof.account_id!=='string'||!UUID.test(proof.account_id)||
      typeof proof.character_id!=='string'||!UUID.test(proof.character_id)||
@@ -61,9 +62,22 @@ export function recoverCommittedCareerProofV2(
      typeof proof.request_hash!=='string'||!SHA.test(proof.request_hash)||
      !isIntBetween(proof.segment_index,0,63)||
      !isIntBetween(proof.expected_game_revision,1,Number.MAX_SAFE_INTEGER)||
-     !GATHER.has(proof.profession_id as string)||
-     !isIntBetween(proof.claimed_elapsed_seconds,1,86400)||
-     !isIntBetween(proof.base_effort_seconds,1,86400)||
+     !isIntBetween(proof.claimed_elapsed_seconds,0,86400)||
+     !isIntBetween(proof.base_effort_seconds,1,108000)||
+     !(
+       (proof.source_kind==='gathering_claim' &&
+         GATHER.has(proof.profession_id as string) &&
+         (proof.claimed_elapsed_seconds as number)>0 &&
+         (proof.base_effort_seconds as number)<=86400)
+       || (proof.source_kind==='combat_reward' &&
+         proof.profession_id===null &&
+         proof.claimed_elapsed_seconds===0 &&
+         (proof.base_effort_seconds as number)<=86400)
+       || (proof.source_kind==='craft_claim' &&
+         CRAFT.has(proof.profession_id as string) &&
+         proof.claimed_elapsed_seconds===0 &&
+         (proof.base_effort_seconds as number)<=10800)
+     )||
      ![2500,5000,10000].includes(proof.difficulty_basis_points as number))
     throw Error('committed_proof_v2_invalid_source');
   if(typeof linked.accountId!=='string'||!UUID.test(linked.accountId)||
@@ -81,13 +95,17 @@ export function recoverCommittedCareerProofV2(
     throw Error('committed_proof_v2_unlinked_game_commit');
 
   return {
-    source:'gathering_claim',
+    source:proof.source_kind as 'gathering_claim'|'combat_reward'|'craft_claim',
     sourceId:proof.source_id,
     ownerCharacterId:proof.character_id.toLowerCase(),
     receivingCharacterId:proof.character_id.toLowerCase(),
     completed:true,
-    professionId:proof.profession_id as 'mining'|'woodcutting'|'fishing'|'herbalism',
-    claimedElapsedSeconds:proof.claimed_elapsed_seconds as number,
+    ...(proof.source_kind==='combat_reward'?{}:{
+      professionId:proof.profession_id as 'mining'|'woodcutting'|'fishing'|'herbalism'|
+        'smithing'|'tailoring'|'cooking'|'alchemy'|'enchanting',
+    }),
+    ...(proof.source_kind==='gathering_claim'
+      ?{claimedElapsedSeconds:proof.claimed_elapsed_seconds as number}:{}),
     baseEffortSeconds:proof.base_effort_seconds as number,
     difficultyBasisPoints:proof.difficulty_basis_points as 2500|5000|10000,
     completedAtMs:timeFromDb(proof.completed_at),

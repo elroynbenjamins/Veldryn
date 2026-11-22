@@ -11,10 +11,9 @@ import {APP_BUILD_INFO} from '../app-build';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Linking,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type ScrollViewInstance} from 'react-native';
 import {GameButton} from '../components/GameButton';
-import {gameAlert} from '../core/game-alerts';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {SettingToggle} from '../components/SettingToggle';
-import {dungeonReminderEnabled,registerDungeonReminderTimeZone,setDungeonReminderEnabled} from '../online/dungeon-weekly-reminder';
+import {NotificationSettingsPanel} from '../components/NotificationSettingsPanel';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
@@ -55,7 +54,7 @@ type Props={
   onOpenCoopUiGallery?:()=>void;
 };
 // Legacy section IDs remain accepted for existing navigation context; Store is now a separate Account destination.
-export type SettingsSection='gameplay'|'chat'|'display'|'appearance'|'accessibility'|'sound'|'account'|'store'|'data'|'guide'|'developer';
+export type SettingsSection='gameplay'|'notifications'|'chat'|'display'|'appearance'|'accessibility'|'sound'|'account'|'store'|'data'|'guide'|'developer';
 const normalizeSettingsSection=(value?:SettingsSection):SettingsSection=>value==='appearance'||value==='accessibility'?'display':value==='store'?'account':value??'account';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const guideReadPreferences=createGameGuideReadPreferenceStore(AsyncStorage);
@@ -67,18 +66,6 @@ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,onOpenUpdates,initialSection,focusChatEmotes=false,onChatEmotesFocusHandled,onSectionChange,onNavigateGuide,onStartMainScreenTour,onUiThemeChange,uiThemeId,online=false}:Props){
  const language=state.settings.language;
  const [hapticsOn,setHapticsOn]=useHapticsPreference();
- const [dungeonRemindersOn,setDungeonRemindersOn]=useState(true);
- const [dungeonReminderBusy,setDungeonReminderBusy]=useState(false);
- useEffect(()=>{
-   if(!online)return;
-   let active=true;
-   void (async()=>{try{
-     await registerDungeonReminderTimeZone();
-     const enabled=await dungeonReminderEnabled();
-     if(active)setDungeonRemindersOn(enabled);
-   }catch{/* Older server builds can continue using the existing Settings UI. */}})();
-   return()=>{active=false;};
- },[online]);
 
  const a=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
 
@@ -114,9 +101,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   const {width}=useWindowDimensions(),phone=width<768;
   const section=selectedSection;
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['account','gameplay','chat','display','sound','data'];
+  const sections:SettingsSection[]=['account','gameplay','notifications','chat','display','sound','data'];
   const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='data'?a('Data & Privacy'):value==='display'?a('Display'):value==='sound'?a('Sound'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='sound'?a('Choose a theme or mute individual areas.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
+  const sectionDescription=(value:SettingsSection)=>value==='notifications'?a('Reminders, local schedule and quiet hours.'):value==='gameplay'?a('Combat and activity queue.'):value==='chat'?a('Chat dock, channels and emotes.'):value==='display'?a('Themes, numbers, motion and language.'):value==='sound'?a('Choose a theme or mute individual areas.'):value==='account'?a('Account and sign-in.'):value==='data'?a('Backups and privacy.'):value==='guide'?a('Interactive game guides and tutorials.'):a('Development tools.');
   const scrollRef=useRef<ScrollViewInstance>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined),emotesOffset=useRef<number|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const scrollToEmotes=()=>{if(!focusChatEmotes||emotesOffset.current===undefined)return;
@@ -157,15 +144,11 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <SettingToggle language={language} label={a("Stop combat when out of food")} value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
       <SettingToggle language={language} label={a("Auto-travel between queued activities")} description={premiumRegionQueue?a("Switch to already-unlocked regions after a safe queue handoff."):a("Requires VIP, VIP+ or Supporter.")}
         value={premiumRegionQueue&&state.settings.autoTravelQueuedActivities===true} disabled={!premiumRegionQueue} onValueChange={value=>update({autoTravelQueuedActivities:value})}/>
-      <SettingToggle language={language} label={a("Saturday dungeon reminder")} description={a("Remind me at 10:00 AM local time on Saturday when dungeon charges and enhanced rewards remain.")} value={online&&dungeonRemindersOn} disabled={!online||dungeonReminderBusy} onValueChange={value=>{
-        setDungeonReminderBusy(true);
-        void setDungeonReminderEnabled(value).then(()=>setDungeonRemindersOn(value)).catch(()=>{
-          gameAlert.alert('Reminder setting not saved','Please try again.');
-        }).finally(()=>setDungeonReminderBusy(false));
-      }}/>
+      <GameButton compact title={a("Notification settings")} tone="secondary" onPress={()=>setSection("notifications")}/>
       <GameButton compact title={a("Restore gameplay defaults")} tone="secondary" onPress={()=>setConfirmDefaults(true)}/>
     </Panel>
     </>}
+    {section==='notifications'&&<NotificationSettingsPanel online={online} language={language}/>}
     {section==='chat'&&<><Panel>
       <SettingToggle language={language} label={a("Show chat")} description={a("Show the chat dock while playing.")} value={state.settings.autoJoinWorldChat!==false} onValueChange={autoJoinWorldChat=>update({autoJoinWorldChat})}/>
       {state.settings.autoJoinWorldChat!==false?<View style={s.chatSettings}>

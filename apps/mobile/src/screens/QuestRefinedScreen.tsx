@@ -126,7 +126,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
  const [challengePeriod,setChallengePeriod]=useState<'all'|'daily'|'weekly'|'monthly'>('all');
  const [selected,setSelected]=useState<Selection|null>(null),[claimingKey,setClaimingKey]=useState<string|null>(null);
  const [storyExpanded,setStoryExpanded]=useState(false),[chronicleExpanded,setChronicleExpanded]=useState(false),[notice,setNotice]=useState('');
- const [moment,setMoment]=useState<RewardMoment|null>(null);
+ const [moment,setMoment]=useState<RewardMoment|null>(null),[milestoneReceipt,setMilestoneReceipt]=useState<string|null>(null);
  const [rewardChoiceByQuest,setRewardChoiceByQuest]=useState<Record<string,string>>({});
  const pendingClaim=useRef<{kind:'story'|'challenge';id:string}|null>(null);
  // A short, non-blocking notification replaces the second claim screen.
@@ -135,8 +135,13 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
    const timeout=setTimeout(()=>setMoment(null),4500);
    return ()=>clearTimeout(timeout);
   },[moment]);
+  useEffect(()=>{
+   if(!milestoneReceipt)return;
+   const timeout=setTimeout(()=>setMilestoneReceipt(null),4500);
+   return ()=>clearTimeout(timeout);
+  },[milestoneReceipt]);
   // The active quest tab can also change from navigation outside this screen.
- useEffect(()=>{setMoment(null);},[mode]);
+ useEffect(()=>{setMoment(null);setMilestoneReceipt(null);},[mode]);
  const previous=useRef({characterId:state.character?.id,story:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),challenges:state.character?.personalSeasonal?.claimIds??state.account.seasonalContractClaimIds??[]});
  const daily=seasonalQuestBoard(state,'daily'),weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly');
  const allChallenges=[...daily,...weekly,...monthly];
@@ -166,7 +171,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
  const selectedStatus:Status=chosenStory?(selectedProgress?.status==='complete'?'ready':selectedProgress?.status==='claimed'?'claimed':selectedProgress?.status==='active'?'active':'locked'):chosenOrder?(selectedLocked?'locked':chosenOrder.claimed?'claimed':chosenOrder.progress>=chosenOrder.target?'processing':'active'):chosenChallenge?(challengeClaimed.has(chosenChallenge.id)?'claimed':chosenChallenge.progress>=chosenChallenge.required?'ready':'active'):'locked';
  const closeSheet=useCallback(()=>{setSelected(null);setStoryExpanded(false);},[]);
   function open(kind:Selection['kind'],id:string){setSelected({kind,id});setStoryExpanded(false);setMoment(null);setNotice('');}
-  function changeMode(next:QuestMode){closeSheet();setMoment(null);setNotice('');onModeChange(next);}
+  function changeMode(next:QuestMode){closeSheet();setMoment(null);setMilestoneReceipt(null);setNotice('');onModeChange(next);}
   useEffect(()=>{
    if(focusedWeeklyOrderId&&mode==='contracts'&&board.orders.some(q=>q.id===focusedWeeklyOrderId)){setSelected({kind:'contract',id:focusedWeeklyOrderId});}
   },[focusedWeeklyOrderId,mode]);
@@ -200,7 +205,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
    if(!isReady)return;
    pendingClaim.current={kind,id};
    setClaimingKey(kind+':'+id);
-   setSelected(null);setStoryExpanded(false);setMoment(null);setNotice('');
+   setSelected(null);setStoryExpanded(false);setMoment(null);setMilestoneReceipt(null);setNotice('');
    try{
     const confirmed=chosenStory?await onClaim(chosenStory.id):chosenChallenge?await onClaimContract(chosenChallenge.period,chosenChallenge.id,rewardChoiceByQuest[id]??chosenChallenge.rewardOptions[0].id):false;
     if(confirmed===false)throw new Error(p('Could not claim reward. Please try again.'));
@@ -320,7 +325,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </View>:null}
    </>:null}
    {mode==='challenges'?<>
-    <MonthlyQuestMilestonesPanel state={state} nowMs={nowMs} onClaim={onClaimMilestone}/>
+    <MonthlyQuestMilestonesPanel state={state} nowMs={nowMs} onClaim={onClaimMilestone} onClaimed={({characterName,skillId,xp})=>{setMoment(null);setMilestoneReceipt(p('Rewards secured')+' · +'+xp.toLocaleString(language)+' '+p('Skill XP')+' · '+characterName+' · '+skillId.slice(0,1).toUpperCase()+skillId.slice(1));}}/>
     <View style={[styles.hero,{backgroundColor:C.panelRaised,borderColor:C.lineStrong}]}>
      <View style={styles.rowMeta}><Text style={[styles.eyebrow,{color:C.accent}]}>{p('CLASS OBJECTIVES')}</Text><StatusPill label={p('CLASS')} tone="special"/></View>
      <View style={styles.statRow}>
@@ -404,7 +409,7 @@ export function QuestRefinedScreen({state,nowMs,mode,onModeChange,focusedWeeklyO
     </>:<GameButton title={p('Close')} tone="secondary" onPress={closeSheet}/>}
    </View>
   </GameModalSurface>
-  {moment?.source===mode?<View pointerEvents="box-none" style={styles.toastLayer}><ActionFeedback compact tone="success" reduceMotion={state.settings.reduceMotion} message={p('Rewards secured')+' · '+moment.title+'\n'+questRewardReceipt(moment,language)}/></View>:notice?<View style={styles.toastLayer}><ActionFeedback compact tone="error" reduceMotion={state.settings.reduceMotion} message={notice} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/></View>:null}
+  {moment?.source===mode?<View pointerEvents="box-none" style={styles.toastLayer}><ActionFeedback compact tone="success" reduceMotion={state.settings.reduceMotion} message={p('Rewards secured')+' · '+moment.title+'\n'+questRewardReceipt(moment,language)}/></View>:milestoneReceipt?<View pointerEvents="box-none" style={styles.toastLayer}><ActionFeedback compact tone="success" reduceMotion={state.settings.reduceMotion} message={milestoneReceipt}/></View>:notice?<View style={styles.toastLayer}><ActionFeedback compact tone="error" reduceMotion={state.settings.reduceMotion} message={notice} actionLabel={p('Dismiss')} onAction={()=>setNotice('')}/></View>:null}
  </View>;
 }
 const styles=StyleSheet.create({

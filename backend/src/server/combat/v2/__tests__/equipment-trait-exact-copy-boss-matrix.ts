@@ -212,5 +212,70 @@ console.log(JSON.stringify({kind:'EQUIPMENT_BACKED_VARIANT_SENSITIVITY_NOT_EQUAL
  byBoss:Object.fromEntries([...variantByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
 assert.equal(sourceTests,30);
+
+// Four distinct authored V2 class interrupts vs the same six persisted boss
+// identities. This is a tactical MECHANIC demonstration with identical
+// equipped item copies and class stat budgets, never a CP/win-rate claim.
+// The sidecar verifier is still synthetic and this path is SOLO only.
+const interruptClasses:readonly [ClassIdV2,string][]=[
+ ['IRONWARDEN','Rune Bash'],['BASTION','Fortress Rebuff'],
+ ['DREADGUARD','Binding Chain'],['HEXWEAVER','Null Script'],
+];
+let interruptionPairs=0,successfulInterruptionPairs=0;
+const interruptionByBoss=new Map<string,{attempts:number;successful:number;classes:Set<string>}>();
+for(const [classId,skillName] of interruptClasses){
+ const identity=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName);
+ assert.ok(identity,'authored interrupt skill missing for '+classId);
+ for(const which of [0,1] as const){
+  for(const boss of bosses){
+   const {build,runtime,port,input,storedKit,expected}=fixture(classId,which,boss);
+   // Single-slot loadouts avoid confounding higher-priority damage skills;
+   // all comparison metadata, class/spec, same seed and exact gear are fixed.
+   const generic:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,
+     activeSkills:[build.selected.activeSkills[0]],
+    },
+   };
+   const counter:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,activeSkills:[
+     {skillId:identity.id,variantId:identity.variants[0].id},
+    ]},
+   };
+   const before=JSON.stringify(input);
+   const noCounter=simulateUnifiedEquipmentCombatV2(
+    input,[generic],[runtime],true,storedKit,port);
+   const withCounter=simulateUnifiedEquipmentCombatV2(
+    input,[counter],[runtime],true,storedKit,port);
+   assert.equal(JSON.stringify(input),before,'tactical source input mutated');
+   assert.deepEqual(noCounter.equipmentEvidence,withCounter.equipmentEvidence,
+    'Tactical interruption must not add, substitute or reroll gear stats');
+   assert.deepEqual(noCounter.enemyMechanicLabels,withCounter.enemyMechanicLabels);
+   assert.equal(compileExactEquipmentTraitSourceV2(counter,runtime,port).equipmentReceiptDigest,
+    expected.equipmentReceiptDigest,'new counter build must use same persisted copy');
+   assert.equal(noCounter.combat.events.filter(e=>e.type==='interrupt').length,0,
+    'generic no-interrupt choice unexpectedly interrupted enemy');
+   const tactical=withCounter.combat.events.filter(e=>
+    e.type==='interrupt'&&e.actorId===input.players[0].id&&e.targetId===boss.id);
+   const row=interruptionByBoss.get(boss.id)??{
+    attempts:0,successful:0,classes:new Set<string>(),
+   };
+   row.attempts++;
+   if(tactical.length){row.successful++;row.classes.add(classId);}
+   interruptionByBoss.set(boss.id,row);
+   interruptionPairs++;
+   successfulInterruptionPairs+=Number(tactical.length>0);
+  }
+ }
+}
+assert.equal(interruptionPairs,4*2*6);
+assert.equal(interruptionByBoss.size,6);
+assert.ok([...interruptionByBoss.values()].every(row=>
+ row.attempts===8&&row.classes.size>=2),
+ 'every authored boss requires interrupt coverage from multiple distinct classes');
+console.log(JSON.stringify({kind:'SIGNED_GEAR_SOLO_INTERRUPT_MECHANICS_NOT_EQUAL_CP',
+ pairs:interruptionPairs,successful:successfulInterruptionPairs,
+ byBoss:Object.fromEntries([...interruptionByBoss.entries()].sort(([a],[b])=>a.localeCompare(b))
+  .map(([id,row])=>[id,{attempts:row.attempts,successful:row.successful,
+   classes:[...row.classes].sort()}]))}));
 console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+
  ' gated trait events, '+sourceTests+' fail-closed exact-copy checks (test-only ledgers)');

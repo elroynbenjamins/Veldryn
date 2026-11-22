@@ -31,9 +31,11 @@ const eventRows=[...event.slice(event.indexOf('const EVENT_IDENTITY_COPY:'),even
  .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
 const guildRows=[...guild.matchAll(/id:'(GUILD_UNIT_\d+)'[\s\S]*?activeName:(?:"([^"]+)"|'([^']+)')[\s\S]*?bondName:(?:"([^"]+)"|'([^']+)')/g)]
  .map(m=>({id:m[1],active:m[2]||m[3],bond:m[4]||m[5]}));
-assert.deepEqual([asterRows.length,regionalRows.length,eventRows.length,guildRows.length],[12,12,11,3]);
+assert.deepEqual([asterRows.length,regionalRows.length,eventRows.length,guildRows.length],[12,12,13,3]);
 const rows=[...asterRows,...regionalRows,...eventRows,...guildRows];
-assert.equal(rows.length,38,'Expected 38 authored companions');
+assert.equal(rows.length,40,'Expected 40 authored companions including two Frostfall recruits');
+assert.ok(eventRows.some(row=>row.id==='EVT_UNIT_012')&&eventRows.some(row=>row.id==='EVT_UNIT_013'),
+ 'Frostfall Lynx and Hearthguard combat identities must be covered by the German catalogue');
 assert.deepEqual(Object.keys(germanCompanionCombatNames).sort(),rows.map(row=>row.id).sort(),'German combat-name ID coverage drifted');
 for(const {id,active,bond} of rows){
  const copy=germanCompanionCombatNames[id];

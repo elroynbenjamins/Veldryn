@@ -22,7 +22,25 @@ const {
 }=require('../src/i18n/companion-combat-names-de.ts');
 const {companionContent}=require('../src/i18n/companions.ts');
 
-assert.equal(Object.keys(russianCompanionCombatNames).length,38);
+assert.equal(Object.keys(russianCompanionCombatNames).length,40,'Both new Frostfall companion abilities and bond traits require Russian names');
+// New Frostfall combat descriptions have real player-facing copy in each
+// supported language rather than silently showing the English fallback.
+const frostfallDescriptions=[
+ 'A focused claw strike briefly exposes its target to allied attacks.',
+ 'Aurora Pursuit: a small increase to combat tempo.',
+ 'Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff.',
+ 'Shields the owner and reflects a measured share of absorbed hits.',
+ 'Woolen Bulwark: improves damage resistance.',
+ 'Bond 10 improves Hearthguard Aegis shield strength.',
+];
+for(const key of frostfallDescriptions){
+ assert.equal(companionContent('en',key),key,'English source copy must remain canonical');
+ for(const lang of ['de','es','nl','it','fr','ru','tr']){
+  const translated=companionContent(lang,key);
+  assert.ok(translated&&translated!==key,'Missing '+lang+' translation for '+key);
+ }
+}
+
 assert.deepEqual(Object.keys(russianCompanionCombatNames).sort(),Object.keys(germanCompanionCombatNames).sort(),
  'Russian ability/trait names must match the source-verified German companion IDs');
 for(const [id,entry] of Object.entries(russianCompanionCombatNames)){
@@ -92,4 +110,4 @@ const panels=[
 for(const marker of ['companionCombatAbilityName(language','companionCombatBondName(language',
  'companionTechniqueName(language','companionTrialAbilityName(language'])
  assert.ok(panels.includes(marker),'Companion display wiring missing '+marker);
-console.log('PASS: 38 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');
+console.log('PASS: 40 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');

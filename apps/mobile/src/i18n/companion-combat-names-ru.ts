@@ -382,6 +382,26 @@ export const russianCompanionCombatNames:Readonly<Record<string,{
       "Long Road",
       "Долгая дорога"
     ]
+  },
+  "EVT_UNIT_012": {
+    "active": [
+      "Rimeshard Mark",
+      "Метка ледяного осколка"
+    ],
+    "bond": [
+      "Shattering Trail",
+      "След осколков"
+    ]
+  },
+  "EVT_UNIT_013": {
+    "active": [
+      "Hearthguard Aegis",
+      "Эгида хранителя очага"
+    ],
+    "bond": [
+      "Hearthbound Vow",
+      "Клятва домашнего очага"
+    ]
   }
 };
 

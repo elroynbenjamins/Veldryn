@@ -4,6 +4,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {createAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
 import {accountCharacters,occupiedCharacterRoles,MAX_NEW_ACCOUNT_CHARACTERS,accountSkillLevel,characterCreationError,characterSkillTotal,projectCharacter,recordAccountProgress,unlockedCharacterSlots,CHARACTER_SLOT_THRESHOLDS} from '../src/core/account-roster';
 import {migrateSave} from '../src/core/save-migrations';
+import {orderedCharacterRoster} from '../src/screens/character-roster-order';
 import type {GameState} from '../src/core/types';
 import {equal,ok,skillLevels,test,throws} from './account-test-helpers';
 const first=()=>createCharacter(newGame(1000),'IRONWARDEN','Mira');
@@ -49,7 +50,7 @@ test('account bank, purchases, profile ownership and Gems are shared, not cloned
 test('switching restores character state and identity',()=>{let state=second();state.character!.gold=42;state.inventory.stacks=[{itemId:'COPPER_ORE',quantity:3}];state=switchAccountCharacter(state,'LOCAL_CHAR_1',1000);equal(state.character!.name,'Mira','first name');equal(state.character!.gold,100,'first wallet');state=switchAccountCharacter(state,'LOCAL_CHAR_2',1000);equal(state.character!.gold,42,'second wallet');equal(state.inventory.stacks,[{itemId:'COPPER_ORE',quantity:3}],'second inventory');});
 test('character cards retain creation order across switches and saves',()=>{
  let state=createAccountCharacter(atAccountLevel(second(),800,thirdSlotLevels),'HEXWEAVER','Third','male',1000);
- const order=()=>accountCharacters(state).map(entry=>entry.character.id);
+ const order=()=>orderedCharacterRoster(state).map(entry=>entry.character.id);
  const expected=['LOCAL_CHAR_1','LOCAL_CHAR_2','LOCAL_CHAR_3'];
  equal(order(),expected,'creation sequence while third is playing');
  state=switchAccountCharacter(state,'LOCAL_CHAR_1',1000);
@@ -60,6 +61,13 @@ test('character cards retain creation order across switches and saves',()=>{
  equal(order(),expected,'projection keeps the same roster order');
  state=migrateSave(JSON.parse(JSON.stringify(state)));
  equal(order(),expected,'save migration keeps the same roster order');
+});
+test('online creation timestamps control roster order for opaque character IDs',()=>{
+ const state=second();
+ state.character!.id='00000000-0000-4000-a000-000000000001';
+ state.otherCharacters![0].character.id='ffffffff-ffff-4fff-afff-ffffffffffff';
+ const serverCreationIds=[state.otherCharacters![0].character.id,state.character!.id];
+ equal(orderedCharacterRoster(state,serverCreationIds).map(row=>row.character.id),serverCreationIds,'database creation order overrides UUID lexical order and active selection');
 });
 test('unknown character switch is rejected without mutation',()=>{const state=second(),before=JSON.stringify(state);throws(()=>switchAccountCharacter(state,'NOT_OWNED',1000),'ownership');equal(JSON.stringify(state),before,'atomic failure');});
 test('v11 round trip preserves all characters and shared scopes',()=>{const state=second(),round=migrateSave(JSON.parse(JSON.stringify(state)));equal(round.version,11,'version');equal(accountCharacters(round).length,2,'roster');equal(accountSkillLevel(round),accountSkillLevel(state),'total');equal(round.character!.id,state.character!.id,'active selection');equal(round.otherCharacters![0].character.id,'LOCAL_CHAR_1','inactive');});

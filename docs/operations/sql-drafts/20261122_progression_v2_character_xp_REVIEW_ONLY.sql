@@ -51,7 +51,8 @@ alter table private.character_career_awards_v2 enable row level security;
 -- The source_kind/source_id key is global and must match award ledger.
 -- The request_id is merely a duplicate-detection dimension, NOT evidence.
 create table private.online_career_reward_sources_v2 (
-  source_kind text not null check (source_kind = 'gathering_claim'),
+  source_kind text not null
+    check (source_kind in ('gathering_claim','combat_reward','craft_claim')),
   source_id text not null check (source_id ~ '^[0-9a-f]{64}$'),
   account_id uuid not null,
   request_id text not null check (request_id ~ '^[a-zA-Z0-9_-]{8,128}$'),
@@ -59,12 +60,22 @@ create table private.online_career_reward_sources_v2 (
   segment_index integer not null check (segment_index between 0 and 63),
   expected_game_revision bigint not null check (expected_game_revision >= 1),
   character_id uuid not null references public.characters(id) on delete cascade,
-  profession_id text not null
-    check (profession_id in ('mining','woodcutting','fishing','herbalism')),
-  claimed_elapsed_seconds integer not null
-    check (claimed_elapsed_seconds between 1 and 86400),
+  profession_id text,
+  -- Non-gathering sources have no idle-claim elapsed time.
+  claimed_elapsed_seconds integer not null default 0
+    check (claimed_elapsed_seconds between 0 and 86400),
   base_effort_seconds integer not null
-    check (base_effort_seconds between 1 and 86400),
+    check (base_effort_seconds between 1 and 108000),
+  check (
+    (source_kind='gathering_claim' and
+      profession_id in ('mining','woodcutting','fishing','herbalism') and
+      claimed_elapsed_seconds>=1 and base_effort_seconds<=86400)
+    or (source_kind='combat_reward' and profession_id is null and
+      claimed_elapsed_seconds=0 and base_effort_seconds<=86400)
+    or (source_kind='craft_claim' and
+      profession_id in ('smithing','tailoring','cooking','alchemy','enchanting') and
+      claimed_elapsed_seconds=0 and base_effort_seconds<=10800)
+  ),
   difficulty_basis_points integer not null
     check (difficulty_basis_points in (2500,5000,10000)),
   completed_at timestamptz not null default clock_timestamp(),

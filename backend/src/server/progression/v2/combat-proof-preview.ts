@@ -81,6 +81,9 @@ export async function projectPendingCombatCareerProofsV2(
     catalogue.set(monster.id,monster);
   }
   const proof:PendingCombatCareerProofV2[]=[];
+  // One claim's ordinary fight windows must be non-overlapping and bounded
+  // by their server-authored elapsed window, not just have the right length.
+  let priorCreditedCombatEndMs:number|null=null;
   for(let index=0;index<source.segments.length;index++){
     const segment=source.segments[index];
     if(!segment?.activity||!segment.reward)throw Error('combat_proof_v2_invalid_segment');
@@ -102,9 +105,17 @@ export async function projectPendingCombatCareerProofsV2(
       interval.startsAtMs<activity.lastClaimAtMs)
       throw Error('combat_proof_v2_unverified_combat_effort');
     const ms=interval.endsAtMs-interval.startsAtMs;
+    const claimWindowEndMs=activity.lastClaimAtMs+reward.elapsedSeconds*1000;
     if(!Number.isSafeInteger(ms)||ms>86400000||
-      ms>reward.elapsedSeconds*1000)
+      ms>reward.elapsedSeconds*1000||
+      !Number.isSafeInteger(claimWindowEndMs)||
+      interval.endsAtMs>claimWindowEndMs)
       throw Error('combat_proof_v2_invalid_combat_duration');
+    // The same seconds of simulated combat cannot earn XP in two segments.
+    if(priorCreditedCombatEndMs!==null&&
+       interval.startsAtMs<priorCreditedCombatEndMs)
+      throw Error('combat_proof_v2_overlapping_effort');
+    priorCreditedCombatEndMs=interval.endsAtMs;
     const seconds=Math.floor(ms/1000);
     if(seconds<1)continue; // no subsecond farming credit
     const overlevel=source.combatLevel-monster.level;

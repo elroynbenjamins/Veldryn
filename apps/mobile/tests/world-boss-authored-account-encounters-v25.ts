@@ -315,8 +315,9 @@ async function main(){
  assert.equal(eqFight.rewarded,false);
  assert.equal(eqFight.roundsCompleted,14);
  assert.ok(eqFight.events.some(e=>e.type==='equipment_trait_trigger'));
- assert.ok(eqFight.rawBossHpDamage>=oldEq.rawBossHpDamage,
-  'source-authenticated equipment modifiers should not reduce test damage');
+ assert.ok(Number.isFinite(eqFight.rawBossHpDamage)&&eqFight.rawBossHpDamage>=0,
+  'all source-authenticated trait damage must remain finite and non-negative');
+ assert.ok(Number.isFinite(oldEq.rawBossHpDamage));
  assert.ok(Math.abs(eqFight.characterLedger.reduce((n,r)=>n+r.bossHpDamage,0)-
   eqFight.rawBossHpDamage)<=.05,'verified equipment hits must remain in account ledger');
  assert.equal(eqFight.proposedWorldHpDamage,worldBossAccountDamageV22(

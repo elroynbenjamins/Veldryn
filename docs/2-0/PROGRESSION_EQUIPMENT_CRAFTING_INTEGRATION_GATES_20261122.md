@@ -30,5 +30,22 @@
 | T5–T9 tool/set ID without approved authored catalogue | Not issuable, craftable, equippable or market-listable |
 | User only accepts the data model, not the screen | Backend previews stay unmounted; no mobile UI change |
 
-## Status
-These are integration checks and review requirements, **not evidence of production readiness**. The separate hidden #1615 Skills suite passed all six exact-head jobs at run 45030446177, while broad inherited mobile tests still have unrelated failures. The #1619 mixed-proof guard is a code change in a child draft of independent-careers #1603; it requires its own exact-head CI check. **No merge to main, SQL execution, feature flag activation, market release or live XP write.**
+## Three progressive polish passes (22 November 2026)
+
+**Pass 1 — combat time integrity.** Hidden ordinary-combat Career XP previews now require non-overlapping active-fight intervals, each wholly inside its own authenticated server claim window. Prevent crediting the same active seconds twice. Includes adversarial overlap, future-fight, timestamp overflow and adjacent-valid-fight tests. This does not infer boss/dungeon XP from legacy combat events.
+
+**Pass 2 — craft source integrity.** The instant-craft Career XP projector now requires every crafting contribution within a one-recipe `craft` command to belong to that exact recipe. Mixed-recipe completions and malformed contribution rows are hard denials; unrelated non-crafting quest metadata is not credited and does not block a valid craft. The provisional three-hour per-command work cap and trade/commission no-XP restrictions remain.
+
+**Pass 3 — versioned integration review + multi-proof database QA.**
+- `backend/src/server/progression/v2/profession-tier-reconciliation-review.ts` audits every tier against the independent-careers proposal and old hidden tool/Skills policy. T1 agrees; **T2–T9 conflict**, with a maximum +9-level increase. The audit identifies characters in potential access-loss windows but returns **no craft/equip authorization**. This is not a migration decision; previously earned live and hidden tool access must be checked against verified entitlements and accepted tiers before launch.
+- Dedicated test validates T1–T9 at old/new exact boundary levels, missing levels, invalid input, and the explicit non-authorizing/release-off invariant.
+- Disposable PG17 fixture now verifies a mixed gathering+combat action receipt, two ordinal source proofs, two Character XP awards and one atomic state revision. A duplicate *second* proof must roll back the first proof, action receipt and revision; **this remains a simulated SQL fixture, NOT a production reward adapter**.
+
+## Release decision remains blocked
+- New **Overall Character Level** is independent from Combat Level; the older Skills tool policy still uses old thresholds and older Character=Combat semantics. Establish one reviewed, versioned authority before any cross-system merge.
+- 14 proposed EQ2 materials are not registered in the authoritative live source pipeline; real Player Market/commission custody and reliable T4 profession-accessible materials are unfinished.
+- The true authenticated online-game SQL adapter and source-verified payout remain unimplemented; tests model contracts and throwaway PG transactions only.
+- Dedicated exact-head CI must be read back before claiming these three passes validated. The earlier #1615 hidden Skills six-job run 45030446177 passed; unrelated broader checks can differ per commit.
+- #1619 was closed **without merging**, superseded by draft #1621. No change here implies owner acceptance of UX/themes, profession XP curves, tiers, item art or final balancing.
+
+**No merge to main, SQL execution against staging/production, feature flag activation, market release or live XP write.**

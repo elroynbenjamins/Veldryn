@@ -1,0 +1,68 @@
+-- REVIEW ONLY — do NOT apply to staging or production.
+-- Proposed isolated database contract for Veldryn 2.0 three-track progression.
+-- Grounded against read-only staging schema inspection, 2026-11-22.
+-- Does not replace public.characters(xp,level), public.character_skills(xp,level)
+-- or private.v45_progression_receipts (account-scoped old receipt history).
+-- Requires full staging concurrency tests and owner approval before migration.
+
+-- public.characters.id is uuid PK; character_skills is keyed by
+-- (character_id,skill_id); the new bank is character-specific, not account-wide.
+create table private.character_career_progress_v2 (
+  character_id uuid primary key references public.characters(id) on delete cascade,
+  overall_character_xp bigint not null default 0 check (overall_character_xp >= 0),
+  progression_version smallint not null default 1 check (progression_version = 1),
+  migrated_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+alter table private.character_career_progress_v2 enable row level security;
+
+-- Unique across all characters: no transferring a completed job to another alt.
+-- Only an authenticated internal server settlement should ever write these.
+create table private.character_career_awards_v2 (
+  source_kind text not null
+    check (source_kind in ('combat_reward','gathering_claim','craft_claim','processing_claim','migration_backfill')),
+  source_id text not null check (length(source_id) between 8 and 128),
+  character_id uuid not null references public.characters(id) on delete cascade,
+  progression_version smallint not null default 1 check (progression_version = 1),
+  overall_character_xp_delta bigint not null
+    check (overall_character_xp_delta >= 0 and overall_character_xp_delta <= 1000000),
+  profession_id text,
+  profession_xp_delta bigint not null default 0
+    check (profession_xp_delta >= 0 and profession_xp_delta <= 1000000),
+  fingerprint text not null check (length(fingerprint) between 8 and 4096),
+  created_at timestamptz not null default now(),
+  primary key (source_kind,source_id),
+  check (
+    (source_kind = 'combat_reward' and profession_id is null and profession_xp_delta = 0)
+    or (source_kind = 'migration_backfill' and profession_id is null and profession_xp_delta = 0)
+    or (source_kind in ('gathering_claim','craft_claim','processing_claim')
+        and profession_id is not null)
+  )
+);
+create index character_career_awards_v2_character_created_idx
+  on private.character_career_awards_v2(character_id,created_at desc);
+alter table private.character_career_awards_v2 enable row level security;
+
+-- Intentionally NO grants, RLS policies, public RPC, triggers or
+-- SECURITY DEFINER functions. Integration must read server-verified source
+-- receipts and commit source completion, insert-on-conflict-do-nothing
+-- award ledger and exactly-once increment of new overall XP in ONE
+-- transaction. NEVER update from a client-supplied XP amount or elapsed timer.
+--
+-- On replay, return the existing award without incrementing XP. If a source
+-- key collides but its owner/fingerprint/XP differs, reject as tampering;
+-- do not silently treat it as a successful replay.
+--
+-- Do not mirror profession XP into a second spendable source of truth.
+-- When production source settlement already updates character_skills,
+-- the same transaction must synchronize the new Character XP ledger.
+--
+-- Backfill: dry-run deterministic MAX(combat-level, highest validated skill
+-- level) as the new Overall Character Level floor, with new profession XP
+-- banks separately converted at their current level + proportional progress.
+-- Preserve ALL legacy character, combat and profession XP/levels unchanged.
+--
+-- Staging QA needed: two concurrent claims for one job; claim after cancel;
+-- retry with altered payload; same receipt claimed on an alternate character;
+-- actual T1-T9 crafting actions; offline queue flush; 30-hour AFK cap;
+-- rollback; role privileges and RLS in pg17; server restart/retry.

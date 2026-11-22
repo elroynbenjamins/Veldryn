@@ -167,6 +167,7 @@ async function main(){
   bossRun.nodes[id].cleared=true;
   if(bossRun.nodes[id].maxHp>0)bossRun.nodes[id].hp=0;
  }
+ bossRun.nodes['C3-06'].hp=Math.floor(bossRun.nodes['C3-06'].maxHp*.2);
  bossRun.nodes['C3-06'].phase='exposed_core';
  const boons=bossState.charges[JSON.stringify([CYCLE,GUILD])];
  boons.shrineChoice='warding';boons.protection=1;

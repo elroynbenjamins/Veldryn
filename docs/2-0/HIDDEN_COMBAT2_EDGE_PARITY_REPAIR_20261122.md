@@ -17,3 +17,13 @@ Before this patch, the authoritative \`tools/build-online.mjs\` regenerated **bo
 2. The separate source-owned Equipment trait #1608 branch still needs its legacy Edge shim integration and all 108 class/spec/boss replay checks; adding new engine imports can require a **new** generated bundle revision.
 3. Preserve **zero** real V2 API mounts/flags; reconcile imported partner modules and review original-crafter receipts, gem/proc and boss counterplay.
 4. Mainline rebase/current 1.0.x feature coexistence, Android, staging transactions, migrations and user-approved UI/theme review before 2.0 launch.
+
+
+## Final combined Classes + Equipment traits replay source
+
+The separate **#1608** integration (five source-owned traits, 3 approved new affix channels, 108 class/spec/boss fixtures, updated fail-closed Edge shims) is now part of hidden canonical #1377. The first generated bundles from #1606 must not be reused unchanged after the real combat engine's imports change.
+
+- New isolated final sync **#1609** uses the same guarded generator/verifier against the **post-#1608** source. Workflow run **45016334184**, job **137189336769**, completed **SUCCESS**. It verified gameplay output **2,901,897 bytes** and co-op output **2,310,245 bytes** and the exact-source byte parity check printed **PASS** for both.
+- Exactly two generated files changed in the bot commit (312 lines added, 2 deleted), with **no source, UI or production deployment** changes.
+- This review-authored document revision requests independent PR CI checks on the generated-commit head. The original hidden 2.0 body still has four inherited mobile-core failures (Gold, blueprint probabilities, balance projection and scroll indicator), untouched by this pass and **not waived for release**.
+- Subsequent modifications of class, equipment, gameplay, or Edge isolation source **must regenerate both bundles again** before any private source consolidation can be considered parity-clean. Production remains strictly off.

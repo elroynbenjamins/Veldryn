@@ -10,13 +10,13 @@ Status: **design + staged tool implementation; not released**. The existing mobi
 
 | Tier | Skill XP bonus |
 | --- | --- |
-| T1 | +3–6% |
-| T2 | +5–9% |
-| T3 | +7–12% |
-| T4 | +9–15% |
+| T1 | +2–4% |
+| T2 | +3–5% |
+| T3 | +4–6% |
+| T4 | +5–8% |
 
 - Rarity and quality modestly bias the *new* Skill XP affix toward the upper part of its tier range. Existing speed and rare-find ranges do not change.
-- The current loadout permits four simultaneously equipped tool tiers for the same skill. **Only the highest XP bonus applies**; these four rolls do not sum. Speed and rare-find continue to use their established stacking rules.
+- The current loadout permits four simultaneously equipped tool tiers for the same skill. **XP rolls stack additively across distinct equipped tiers** (for that same skill only) up to a +60% total cap. At T1–T4, the highest possible stacked XP gain is +23%. Speed and rare-find continue to use their established stacking rules.
 - Legacy physical tools remain untouched and without invented affixes. Valid legacy `speed` and `rarity` receipts still validate.
 - Server authoritative settlement, persistent account-copy ownership and offline reward replay must continue to prevent fabricated roll payloads. The client-only feature branch must be reviewed for any server-side runtime equivalents before production deployment.
 
@@ -24,11 +24,11 @@ Status: **design + staged tool implementation; not released**. The existing mobi
 
 | Tier | Skill XP bonus |
 | --- | --- |
-| T5 | +11–18% |
-| T6 | +13–21% |
-| T7 | +15–24% |
-| T8 | +18–27% |
-| T9 | +20–30% |
+| T5 | +6–9% |
+| T6 | +7–10% |
+| T7 | +8–11% |
+| T8 | +9–12% |
+| T9 | +10–14% |
 
 When crafting implements/production tools are added, their XP bonus must target their corresponding crafting or refining skill **only**, using the same validated skill mapping. Do not grant Smithing XP from pickaxes merely because a Smithing recipe created the pickaxe.
 

@@ -246,6 +246,8 @@ function VeldrynApp(){
   const [goalRegionId,setGoalRegionId]=useState<string|undefined>();
   const [goalDungeonId,setGoalDungeonId]=useState<string|undefined>();
   const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
+  const pendingGoalDestinationRef=useRef<WorkingTowardDestination|undefined>();
+  pendingGoalDestinationRef.current=pendingGoalDestination;
   const [worldTravelBusy,setWorldTravelBusy]=useState(false);
   const worldTravelInFlight=useRef(false);
   const inventoryViews=useRef<Record<string,InventoryScreenState>>({});
@@ -904,8 +906,9 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     if(notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'){setTab('Skills');return;}
     openWorkingTowardDestination(notice.destination);
   }
-  async function continueGoalAfterTravel(regionId:string,autoStart=false){
-    const destination=pendingGoalDestination,arrived=stateRef.current;
+  async function continueGoalAfterTravel(regionId:string,autoStart=false,expectedGoal?:WorkingTowardDestination){
+    const destination=expectedGoal??pendingGoalDestination,arrived=stateRef.current;
+    if(expectedGoal&&pendingGoalDestinationRef.current!==expectedGoal)return;
     // Detours, failed travel and unconfirmed server snapshots must preserve the selected objective.
     if(!reachedWorldDestination(destination,regionId)||!arrived||arrived.currentRegionId!==regionId||!destination)return;
     if(autoStart&&destination.kind==='skills'&&destination.mode==='gathering'&&destination.actionId){
@@ -933,10 +936,13 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   async function travelToWorldRegion(regionId:string,autoStart=false){
     if(worldTravelInFlight.current||!stateRef.current)return;
     // Quick start is permitted only for the currently selected exact gathering destination.
-    const quickStart=Boolean(autoStart&&reachedWorldDestination(pendingGoalDestination,regionId)
+    const goalAtPress=pendingGoalDestination;
+    const quickStart=Boolean(autoStart&&reachedWorldDestination(goalAtPress,regionId)
       &&pendingGoalDestination?.kind==='skills'&&pendingGoalDestination.mode==='gathering'&&pendingGoalDestination.actionId);
     const travel=async()=>{
       if(worldTravelInFlight.current)return;
+      // A cancelled or replaced goal must not be restarted by an old confirmation dialog.
+      if(quickStart&&pendingGoalDestinationRef.current!==goalAtPress)return;
       worldTravelInFlight.current=true;setWorldTravelBusy(true);
       try{
         if(serverGameplayEnabled){
@@ -946,7 +952,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
           const result=travelToRegion(current,regionId,Date.now());
           await commit(result.state);
         }
-        await continueGoalAfterTravel(regionId,quickStart);
+        await continueGoalAfterTravel(regionId,quickStart,goalAtPress);
       }catch(error){
         showAlert('Cannot travel',error instanceof Error?error.message:'Please try again.');
       }finally{worldTravelInFlight.current=false;setWorldTravelBusy(false);}

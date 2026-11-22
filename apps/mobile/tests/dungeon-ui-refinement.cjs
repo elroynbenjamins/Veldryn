@@ -31,7 +31,7 @@ test('weekly quest snapshot validates actual objective targets, not a hard-coded
 });
 test('all new compact prompts exist in eight languages',()=>{
  const m=loadTypeScript('src/i18n/dungeon-ux-copy.ts');
- const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','continueDeeper','continueVote','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
+ const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','continueDeeper','continueVote','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt','soloPowerHint'];
  for(const lang of ['en','de','es','nl','it','fr','ru','tr'])
   for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>=2,lang+' '+key); // Short UI labels such as Room/Oda must remain valid.
  assert.notEqual(m.dungeonUxText('en','bossChoice'),m.dungeonUxText('de','bossChoice'));
@@ -93,4 +93,13 @@ test('Endurance boss exits are distinct without changing server-owned route subm
  assert.match(strip,/Array\.from\(\{length:7\}/);
  assert.match(strip,/const checkpoints=Math\.max\(1,Math\.ceil\(\(path\.totalDepth-1\)\/7\)\)/);
  assert.match(strip,/reduceMotion\|\|path\.totalDepth>16/);
+});
+
+
+test('solo dungeon difficulty shows server CP advice without imposing a CP entry gate',()=>{
+ const source=read('src/components/coop/CoopDungeonBrowser.tsx');
+ assert.match(source,/requiredPower=\{0\} recommendedPower=\{dungeon\.tierMinPower\[value\]\} currentLevel=\{currentLevel\} currentPower=\{Number\.POSITIVE_INFINITY\}/);
+ assert.match(source,/const suggestedPower=Number\.isFinite\(recommendedPower\)&&recommendedPower>0/);
+ assert.match(source,/style=\{s\.tierSuggestedPower\}/);
+ assert.match(source,/dungeonUxText\(language,'soloPowerHint'\)/);
 });

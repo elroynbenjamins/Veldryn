@@ -2,6 +2,15 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Compact victory receipt labels (Russian and Turkish).
+  "To claim": ["К получению","Alınacak"],
+  "Already earned": ["Уже начислено","Zaten kazanıldı"],
+  "Total from this run": ["Всего за этот поход","Bu seferden toplam"],
+  "Estimated until claimed.": ["Предварительно до получения награды.","Ödül alınana kadar tahminidir."],
+  "Reward details": ["Сведения о награде","Ödül ayrıntıları"],
+  "{count} claims remaining": ["Осталось наград: {count}","Alınacak {count} ödül kaldı"],
+  "Claimed": ["Получено","Alındı"],
+  "Reward pending": ["Награда ожидается","Ödül bekleniyor"],
   "Combat Marks capped": ["Лимит боевых знаков достигнут","Savaş Nişanı sınırına ulaşıldı"],
   // Dungeon Endurance screen translations (Russian/Turkish).
   "Boon gained": ["Получено благословение","Lütuf kazanıldı"],

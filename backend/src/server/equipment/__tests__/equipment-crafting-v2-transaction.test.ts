@@ -179,6 +179,15 @@ const noMaterial=create();noMaterial.bank[recipe.inputs[0].itemId]=0;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noMaterial,startRequest,makeContext(1_000_000)),/insufficient_materials/);
 const noLevel=create();noLevel.characters['character-test'].professionLevels.smithing=0;
 assert.throws(()=>resolveEquipmentV2DraftCommand(noLevel,startRequest,makeContext(1_000_000)),/craft_requirement_locked/);
+// A profession-only crafter can make T1+ items without reaching the old
+// combat characterLevel craft gate. Wearing them remains a separate check.
+const professional=create();professional.characters['character-test'].level=1;
+assert.ok(professional.characters['character-test'].level<recipe.characterLevel);
+const professionalStart=resolveEquipmentV2DraftCommand(professional,startRequest,makeContext(1_000_000));
+assert.equal(professionalStart.response.kind,'started');
+assert.equal(professionalStart.next.characters['character-test'].level,1);
+assert.equal(professionalStart.next.equipment.length,0);
+
 const wrongOwner=create();
 assert.throws(()=>resolveEquipmentV2DraftCommand(wrongOwner,startRequest,
  {...makeContext(1_000_000),accountId:'attacker'}),/invalid_owner/);

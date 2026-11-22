@@ -63,7 +63,7 @@ function check(read,migrations){
        builds?.production?.env?.EXPO_PUBLIC_RELEASE_CHANNEL!=='production'||
        builds?.production?.env?.EXPO_PUBLIC_SUPABASE_URL!=='https://nyjwigipamnvpdvpauuv.supabase.co'||
        builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='false'||
-       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED!=='false')
+       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED!=='true')
       failures.push('Social Names staging/production EAS build-profile isolation drift');
   }catch{failures.push('EAS release profiles are missing or invalid');}
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
@@ -113,7 +113,7 @@ function selfTest(){
     ['social-name-prod-channel-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'","true"],
     ['social-name-prod-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'","true"],
     ['social-name-prod-optin-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'","true"],
-    ['social-name-eas-activation-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true"'],
+    ['social-name-eas-activation-disabled',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true"','"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "false"'],
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
@@ -133,13 +133,13 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects production-off Social Names and unsafe release regressions');
+  console.log('PASS: hidden feature fence enforces approved production Social Names opt-in and catches unsafe release regressions');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){
   for(const problem of failures)console.error('HIDDEN RELEASE FENCE: '+problem);
   process.exitCode=1;
 }else{
-  console.log('PASS: production Social Names, World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
+  console.log('PASS: production Social Names requires exact build opt-in; World Boss, Party Events, Guild PvE, Rankings and Market remain release-disabled');
   if(process.argv.includes('--self-test'))selfTest();
 }

@@ -17,6 +17,9 @@ export const ROOM_BOON_CHOICES=[
 ] as const;
 export type RoomBoonId=(typeof ROOM_BOON_CHOICES)[number]['id'];
 export type RoomBoonOffer=(typeof ROOM_BOON_CHOICES)[number];
+// Keep retired IDs in the catalog so persisted runs remain readable, but never
+// issue them again or allow them to be newly applied.
+const RETIRED_SUPPLY_BOONS:ReadonlySet<RoomBoonId>=new Set(['ROOM_BOON_RESERVE','ROOM_BOON_SUPPLY']);
 // Only purpose-built boon rooms prompt a second-stage choice. Treasure, camp,
 // secret and event rooms retain their own rewards without bonus buffs.
 const CHOICE_ROOM_KINDS=new Set(['shrine','forge','echo']);
@@ -29,7 +32,7 @@ export function roomBoonOffers(run:QModeRun,secret:string):RoomBoonOffer[]{
  if(run.chosenRoomBoons?.[last.nodeId])return [];
  const current=run.graph.nodes.find(node=>node.nodeId===last.nodeId);
  if(!current||current.kind!==last.result.summary.kind)return [];
- const active=ROOM_BOON_CHOICES.filter(choice=>choice.id!=='ROOM_BOON_SUPPLY'&&(run.enduranceRouteVersion===1||['ROOM_BOON_STRIKE','ROOM_BOON_WARD','ROOM_BOON_RECOVERY'].includes(choice.id)));
+ const active=ROOM_BOON_CHOICES.filter(choice=>!RETIRED_SUPPLY_BOONS.has(choice.id)&&(run.enduranceRouteVersion===1||['ROOM_BOON_STRIKE','ROOM_BOON_WARD','ROOM_BOON_RECOVERY'].includes(choice.id)));
  const alreadyChosen=Object.values(run.chosenRoomBoons??{});
  const fresh=active.filter(choice=>!alreadyChosen.includes(choice.id));
  const pool=fresh.length>=3?fresh:active;
@@ -37,6 +40,7 @@ export function roomBoonOffers(run:QModeRun,secret:string):RoomBoonOffer[]{
  return ids.map(id=>ROOM_BOON_CHOICES.find(choice=>choice.id===id)!).filter(Boolean);
 }
 export function applyRoomBoon(run:QModeRun,boonId:RoomBoonId):void{
+ if(RETIRED_SUPPLY_BOONS.has(boonId))throw new Error('invalid_boon_choice');
  if(run.chosenRoomBoons?.[run.currentNodeId])throw new Error('boon_already_chosen');
  const state=run.persistentState;
  if(boonId==='ROOM_BOON_RECOVERY'){
@@ -45,8 +49,6 @@ export function applyRoomBoon(run:QModeRun,boonId:RoomBoonId):void{
    actors[player.id]={...actor,hp:Math.min(player.stats.maxHp,actor.hp+player.stats.maxHp*.20),downed:false};
   }
   run.persistentState={...state,actors};
- }else if(boonId==='ROOM_BOON_SUPPLY'||boonId==='ROOM_BOON_RESERVE'){
-  run.persistentState={...state,resources:state.resources+2};
  }else{
   run.persistentState={...state,boons:[...state.boons,boonId]};
  }

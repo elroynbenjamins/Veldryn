@@ -40,7 +40,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: backend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
+      # test:release-economy compiles and typechecks the same TS project.
       - run: pnpm test:release-economy
       - run: pnpm backend-pass-smoke
       - run: pnpm production-smoke

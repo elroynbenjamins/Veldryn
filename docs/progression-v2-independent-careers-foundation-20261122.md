@@ -95,3 +95,38 @@ Refinement adds:
 - Staging public.claim_idle_progress_atomic uses an 86,400-second **elapsed-time** per-claim cap and service_role-only execute access. A 30h reserve must split into separately verified at-most-24h elapsed claims. Server-authorized standard-effort XP may exceed the elapsed seconds due to capped speed bonuses: verify the two numbers independently. Do not trust client timers or replayed idempotency keys. This was checked read-only; no function was changed.
 - Added focused benefits and review-only SQL safety tests to backend test:progression-v2; no actual rewards are minted.
 - Do not treat TS proof.completed=true as authorization. The production source completion must be verified by the private service handler against actual persisted receipts and settled in the same DB transaction as the new XP bank.
+
+## Pass 3 — Transaction adapter and independence validation
+
+The hidden settlement-service-contract.ts accepts only a server-verified principal, owned character and canonical completed receipt locator. XP amount, profession, difficulty, duration and completion status are NOT request parameters. Its injected repository must check persisted owner/source/completion, insert globally unique receipt and increment the independent Overall XP bank inside a single transaction. Current tests model concurrency and rollback; this is NOT connected to a live DB route.
+
+### Existing staging source provenance
+
+- public.idle_claim_receipts.claim_id (UUID), character_id, activity_id, elapsed_sec and xp_amount record prior completed idle claims. Before awarding career XP, resolve the activity from server-owned content and reject non-gathering/invalid sources.
+- public.craft_receipts.receipt_id (UUID), character_id, recipe_id and quantity record prior crafting actions. Resolve recipe skill and effort from the canonical server catalogue, never a client amount.
+- Combat reward receipts need their own provenance audit before combat_reward is enabled.
+- Staging public.claim_idle_progress_atomic currently inserts item resources and a claim receipt, but does NOT update combat or profession XP in its inspected SQL body. Find the actual live XP authority before integration. For already-committed old receipts, a separately idempotent post-claim projection can eventually credit the new XP bank without replaying the original item grant.
+
+### Independent profession routes
+
+The isolated profession-resource-access.ts requires the exact relevant profession skill and a separately server-authored noncombat route for a resource. A Combat Lv1 Mining Lv96 can theoretically qualify for T9 Ashlands nodes if a safe profession route is authored, but this does NOT unlock the dangerous world region, enemies, dungeons or combat travel. No actual route has been created.
+
+### Read-only gathering pacing using existing live content
+
+backend/tests/progression-v2-gathering-pacing.cjs reads the current apps/mobile/src/content/skills.ts gathering nodes, their seconds and XP, then models the new proposed profession XP curve. Assuming the best unlocked node 24/7, no interruptions, no travel/zone restrictions, and no buffs:
+
+| Skill target | Mining | Woodcutting | Fishing |
+|---|---:|---:|---:|
+| Level 12 | 6.1h | 6.0h | 6.7h |
+| Level 48 | 79.2h | 86.0h | 84.8h |
+| Level 84 | 229.6h | 241.5h | 241.2h |
+| Level 96 (T9) | 298.6h | 310.7h | 308.5h |
+| Level 100 | 325.0h | 337.1h | 334.2h |
+
+These are optimistic CONTENT-DERIVED diagnostic hours, not guaranteed player completion times. Current higher nodes are combat-zone gated; they are inaccessible to a Combat Lv1 gatherer until new safe routes are designed and approved. Do not approve the proposed curve before comparing with live action rate distributions and market supply/demand.
+
+### Outstanding
+
+- Build/auth-test a real source receipt adapter using canonical DB receipt UUIDs; audit combat settlement evidence; stage disposable PG17 concurrent transactions.
+- Reconcile skill level threshold T3=24 proposed versus 1.x T3=22 and the old Combat 2.0 branch Character Level definition.
+- Continue user UI/theme review gate, preserve existing character/combat/profession XP, and keep all flags OFF.

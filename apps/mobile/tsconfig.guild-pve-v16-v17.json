@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.guild-pve-v15.json",
+  "include": [
+    "tests/guild-pve-v16-authority.ts",
+    "tests/guild-pve-v17-effects.ts"
+  ],
+  "exclude": []
+}

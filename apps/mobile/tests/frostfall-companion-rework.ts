@@ -10,6 +10,7 @@ import {companionServerDefinition,companionTechniques} from '../../../backend/sr
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {applyCharacterCompanionAssist} from '../../../backend/src/server/companions/character-assist';
 import type {OwnedCompanionSnapshot} from '../../../backend/src/server/companions/domain';
+import type {GameState} from '../src/core/types';
 
 const check=(value:unknown,message:string)=>{if(!value)throw new Error(message)};
 const ids=['EVT_UNIT_012','EVT_UNIT_013','EVT_UNIT_009'];
@@ -31,7 +32,7 @@ for(let i=0;i<ids.length;i++){
  check(companionTechniques(id).length===2,`Two selectable techniques are available for ${id}`);
  const progress:OwnedCompanionSnapshot={companionId:id,level:20,xp:0,ascensionTier:1,bondLevel:1,bondXp:0,bondTraitUnlocked:false};
  const solo=buildOwnedCompanionCombatant(progress,{mode:'companion_trial'});
- const owner={id:'frostfall_test_owner',classId:'WAYFINDER',stats:{maxHp:1000,haste:.1,defense:100},abilities:[],tags:[],basicAttackMs:1800,basicAttackCoeff:1} as Parameters<typeof applyCharacterCompanionAssist>[0];
+ const owner={id:'frostfall_test_owner',classId:'WAYFINDER',stats:{maxHp:1000,haste:.1,defense:100},abilities:[],tags:[],basicAttackMs:1800,basicAttackCoeff:1} as unknown as Parameters<typeof applyCharacterCompanionAssist>[0];
  const assisted=applyCharacterCompanionAssist(owner,progress);
  const soloEffects=solo.abilities[0].effects,assistEffects=assisted.abilities[0].effects;
  check(assisted.abilities.length===1,`Exactly one assist, not an extra party member: ${id}`);
@@ -48,7 +49,7 @@ for(let i=0;i<ids.length;i++){
 }
 // Simulate a server-authorized milestone snapshot without changing production flags.
 const now=Date.UTC(2026,11,10,12),initial=createCharacter(newGame(now),'IRONWARDEN','Frostfall QA');
-let state={...initial,account:{...initial.account,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
+let state:GameState={...initial,account:{...initial.account,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
 for(const id of ids){
  const reward=rewards.find(row=>row.reward.id===id)?.reward;
  check(!!reward,`Authoritative reward exists for ${id}`);

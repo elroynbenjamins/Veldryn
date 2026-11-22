@@ -240,8 +240,8 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
               {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}>
                 <Text style={s.toolRequirement}>{gt('Owned copies')} · {gt('Select a tool roll to equip')}</Text>
                 {ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={[s.toolCopyOption,compactTools&&s.toolCopyOptionCompact]}>
-                  <Text style={[s.toolRequirement,{flex:1}]} numberOfLines={3}>{copy?copy.rarity+' · Q'+copy.quality+' · +'+gatheringToolPercent(copy.bonus.basisPoints/100)+'% '+gt(copy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance')+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>
-                  <View style={s.toolCopyAction}><GameButton compact title={equipped?gt('Replace'):gt('Equip copy')} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View>
+                  <Text style={[s.toolRequirement,{flex:1}]} numberOfLines={3}>{copy?copy.rarity+' · Q'+copy.quality+' · +'+gatheringToolPercent(copy.bonus.basisPoints/100)+'% '+gt(copy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance')+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':gt('Legacy · Uncommon · Q50 · Base bonus only')+' · '+gatheringToolPercent(gatheringToolContribution(tool).adjustedBasePercent)+'% tier'}</Text>
+                  <View style={s.toolCopyAction}><GameButton compact title={equipped?gt('Replace'):gt('Equip copy')} accessibilityLabel={localizedItemName(language,tool.id)+': '+(equipped?gt('Replace'):gt('Equip copy'))+' · '+(copy?copy.rarity+' Q'+copy.quality:gt('Legacy tool'))} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View>
                 </View>)}
               </View>:null}
             </View>:null}

@@ -84,7 +84,9 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
   if(!isLive||!motion.enabled||!recentHit)return;
   const lunge=recentHit.actor==='player'?playerLunge:enemyLunge;
   const impact=recentHit.actor==='player'?enemyImpact:playerImpact;
-  lunge.stopAnimation();impact.stopAnimation();lunge.setValue(0);impact.setValue(0);
+  // A new actor can interrupt the previous strike mid-fade. Reset both
+  // combatants, not only the new attacker, to avoid frozen flashes/recoils.
+  for(const value of [playerLunge,enemyLunge,enemyImpact,playerImpact]){value.stopAnimation();value.setValue(0);}
   const attack=Animated.parallel([
    Animated.sequence([
     Animated.timing(lunge,{toValue:1,duration:motion.lungeMs,easing:Easing.out(Easing.quad),useNativeDriver:true}),

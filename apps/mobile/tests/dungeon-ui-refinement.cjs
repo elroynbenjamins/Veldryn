@@ -104,20 +104,30 @@ test('solo dungeon difficulty shows server CP advice without imposing a CP entry
  assert.match(source,/dungeonUxText\(language,'soloPowerHint'\)/);
 });
 
-test('dungeon party cards align names, status chips, and companions across all four roles',()=>{
+test('dungeon party cards share compact, stable dimensions and readable long-name slots',()=>{
  const run=read('src/components/coop/CoopRunOverview.tsx');
  const kit=read('src/components/coop/CoopVisualKit.tsx');
+ const companion=read('src/components/coop/CoopPartyCompanionChip.tsx');
+ // Compact styling is used only in the dungeon cards, not globally.
  assert.match(run,/style=\{s\.member\} contentStyle=\{s\.memberContent\}/);
- assert.match(run,/member:\{width:'48%',flexGrow:1,minHeight:252\}/);
- assert.match(run,/memberContent:\{flex:1,gap:coopSpacing\.sm\}/);
- assert.match(run,/memberIdentity:\{flexDirection:'row',alignItems:'center',gap:coopSpacing\.sm,minHeight:74\}/);
- assert.match(run,/numberOfLines=\{2\} ellipsizeMode="tail" style=\{s\.name\}/);
- assert.match(run,/memberMeta:\{flexDirection:'row',alignItems:'stretch',gap:coopSpacing\.xs,minHeight:34\}/);
- assert.equal((run.match(/style=\{s\.memberChip\} oneLine/g)||[]).length,2);
+ assert.match(run,/member:\{width:'48%',flexGrow:1,minWidth:0,minHeight:232\}/);
+ assert.match(run,/memberContent:\{flex:1,gap:6,padding:10\}/);
+ assert.match(run,/memberIdentity:\{flexDirection:'row',alignItems:'center',gap:6,height:70\}/);
+ assert.match(run,/memberNameBox:\{height:38,justifyContent:'center'\}/);
+ assert.match(run,/numberOfLines=\{2\} ellipsizeMode="tail" style=\{s\.memberName\}/);
+ assert.match(run,/numberOfLines=\{1\} ellipsizeMode="tail" style=\{s\.className\}/);
+ assert.match(run,/RoleBadge role=\{slot\.role\} label=\{t\(language,`coopUi\.\$\{slot\.role\}`\)\} compact/);
+ assert.match(run,/memberMeta:\{flexDirection:'row',alignItems:'stretch',gap:coopSpacing\.xs,height:34\}/);
+ assert.equal((run.match(/style=\{s\.memberChip\} compact/g)||[]).length,2);
  assert.match(run,/memberCompanion:\{marginTop:'auto',minHeight:46/);
+ assert.match(run,/CoopPartyCompanionChip companionId=\{slot\.companionId\} echo=\{slot\.echo\} compact/);
  assert.match(run,/memberCompanionEmpty/);
- assert.match(run,/CoopPartyCompanionChip companionId=\{slot\.companionId\}/);
- assert.match(kit,/contentStyle\?:StyleProp<ViewStyle>/);
- assert.match(kit,/oneLine\?:boolean/);
- assert.match(kit,/numberOfLines=\{oneLine\?1:undefined\}/);
+ assert.doesNotMatch(run,/<Text style=\{s\.section\}>\{ct\(language,'details\.party'\)\}<\/Text>/,'No repeated Party heading above the grid');
+ assert.match(kit,/roleBadgeCompact:\{minHeight:40/);
+ assert.match(kit,/roleImageCompact:\{width:26,height:26\}/);
+ assert.match(kit,/chipCompact:\{minHeight:34/);
+ assert.match(kit,/adjustsFontSizeToFit=\{compact\}/);
+ assert.match(companion,/compact\?:boolean/);
+ assert.match(companion,/\{!compact\?<Text numberOfLines=\{1\} style=\{s\.subtitle\}/);
+ assert.match(companion,/accessibilityLabel=\{\(echo\?st\('Frozen Echo companion'\)/);
 });

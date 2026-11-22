@@ -130,3 +130,10 @@ These are optimistic CONTENT-DERIVED diagnostic hours, not guaranteed player com
 - Build/auth-test a real source receipt adapter using canonical DB receipt UUIDs; audit combat settlement evidence; stage disposable PG17 concurrent transactions.
 - Reconcile skill level threshold T3=24 proposed versus 1.x T3=22 and the old Combat 2.0 branch Character Level definition.
 - Continue user UI/theme review gate, preserve existing character/combat/profession XP, and keep all flags OFF.
+## Follow-up — Canonical receipt parsing and account progression alternative
+
+The hidden source-receipt-shapes.ts parses the ACTUAL staging receipt columns read-only: public.idle_claim_receipts.claim_id and public.craft_receipts.receipt_id are immutable UUID sources. An idempotency_key is a retry alias and MUST NEVER substitute for the canonical receipt ID in the new global award ledger. Both parsers deliberately return actionClassification=unclassified: the server still must resolve the original activity/recipe and verify ownership and completion before awarding any XP.
+
+Single-skill character progression also needs an alternate way to unlock account character slots. The isolated account-career-slots.ts proposes a max-of-two-paths policy: retain the old already-earned account skill-total unlocks OR use the account's highest verified Overall Character Level, at levels 25/50/75/100 for slots 2/3/4/5. Neither path can revoke a previously earned character slot; a pure Smithing career can eventually reach five slots without training all professions. This is provisional policy only, not live entitlement code.
+
+All new tests are included in the scoped progression-v2 CI script. Nothing modifies user profiles, account unlocks, database state or app screens. Current explicit blockers remain level-curve and milestone balance approval, authoritative receipt adapter integration, PG17 concurrency QA and 2.0 Combat/equipment branch reconciliation.

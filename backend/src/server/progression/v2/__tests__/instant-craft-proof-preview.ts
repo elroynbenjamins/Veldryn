@@ -75,6 +75,18 @@ async function test(){
   contributions:[{kind:'crafting',contentId:'SMELT_COPPER_INGOT',units:3},
    {kind:'crafting',contentId:'SMELT_COPPER_INGOT',units:3}]}),
   /incomplete_work/,'duplicate craft proof');
- console.log('PASS: instant craft proof requires completed recipes, skill XP, correct character and capped bulk work');
+ await reject(()=>projectPendingInstantCraftCareerProofV2({...data,
+  contributions:[{kind:'crafting',contentId:'SMELT_COPPER_INGOT',units:3},
+   {kind:'crafting',contentId:'OTHER_RECIPE',units:1}]}),
+  /mixed_crafting_sources/,'no character XP when two recipes appear in a one-recipe command');
+ await reject(()=>projectPendingInstantCraftCareerProofV2({...data,
+  contributions:[null] as unknown as typeof data.contributions}),
+  /invalid_contributions/,'null or malformed contribution does not crash or mint');
+ const withUnrelatedMetadata=await projectPendingInstantCraftCareerProofV2({...data,
+  contributions:[{kind:'crafting',contentId:'SMELT_COPPER_INGOT',units:3},
+    {kind:'quest',contentId:'QUEST_TUTORIAL',units:1}]});
+ eq(withUnrelatedMetadata?.baseEffortSeconds,108,
+   'noncraft metadata may coexist without changing earned craft effort');
+ console.log('PASS: instant craft proof requires completed recipes, skill XP, correct character, single-recipe provenance and capped bulk work');
 }
 void test().catch(e=>{throw e;});

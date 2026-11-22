@@ -199,4 +199,65 @@ begin
 end
 $check$;
 SQL
-echo "PASS: disposable PG17 unique receipts, source proof exclusivity, role isolation, 16-way concurrency, collision rejection and rollback"
+# A second 16-way race exercises source + award + bank in ONE DB
+# transaction, not merely reward uniqueness by itself.
+psql_test <<'SQL'
+create function private.disposable_atomic_gather_claim()
+returns text language plpgsql security invoker
+set search_path=pg_catalog,private as $fn$
+declare inserted integer; stored record;
+begin
+ insert into private.online_career_reward_sources_v2(
+  source_kind,source_id,account_id,request_id,request_hash,
+  segment_index,expected_game_revision,character_id,
+  profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+ values (
+  'gathering_claim',repeat('e',64),
+  '22222222-2222-4222-8222-222222222222','claim000002',repeat('f',64),
+  0,13,'22222222-2222-4222-8222-222222222222',
+  'fishing',240,240,10000)
+ on conflict do nothing;
+ get diagnostics inserted=row_count;
+ if inserted=0 then
+   select character_id,source_id,request_hash,profession_id into stored
+   from private.online_career_reward_sources_v2
+   where account_id='22222222-2222-4222-8222-222222222222'
+     and request_id='claim000002' and segment_index=0;
+   if not found or stored.character_id is distinct from
+       '22222222-2222-4222-8222-222222222222'::uuid
+     or stored.source_id <> repeat('e',64)
+     or stored.request_hash <> repeat('f',64)
+     or stored.profession_id <> 'fishing'
+   then raise exception 'proof_collision'; end if;
+ end if;
+ return private.disposable_award(
+   '22222222-2222-4222-8222-222222222222',
+   'gathering_claim',repeat('e',64),'fingerprint-atomic',120,'fishing');
+end
+$fn$;
+SQL
+: >"$OUT"
+PIDS=""
+for ((i=0;i<16;i++)); do
+ (psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+   "select private.disposable_atomic_gather_claim();" >>"$OUT") &
+ PIDS="$PIDS $!"
+done
+for pid in $PIDS; do wait "$pid"; done
+applied="$(grep -cx 'applied' "$OUT" || true)"
+replayed="$(grep -cx 'replayed' "$OUT" || true)"
+[[ "$applied" == 1 && "$replayed" == 15 ]] || {
+ echo "Source+award atomic race failed applied=$applied replayed=$replayed" >&2; cat "$OUT"; exit 9
+}
+psql_test <<'SQL'
+do $check$
+begin
+ if (select overall_character_xp from private.character_career_progress_v2
+   where character_id='22222222-2222-4222-8222-222222222222')<>420
+ or (select count(*) from private.online_career_reward_sources_v2)<>2
+ or (select count(*) from private.character_career_awards_v2)<>3
+ then raise exception 'source proof and XP transaction not exactly once'; end if;
+end
+$check$;
+SQL
+echo "PASS: disposable PG17: two 16-way races, global source proofs, exact-once bank award, role isolation and transaction rollback"

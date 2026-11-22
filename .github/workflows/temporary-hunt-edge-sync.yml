@@ -1,0 +1,40 @@
+name: Temporary hunt gameplay Edge parity build
+on:
+  push:
+    branches: [fix/hunt-real-miss-feedback]
+    paths: [.github/workflows/temporary-hunt-edge-sync.yml]
+permissions:
+  contents: write
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/hunt-real-miss-feedback
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Generate canonical Edge bundles
+        run: node tools/build-online.mjs
+      - name: Verify exact parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Commit built artifacts to this feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Generated gameplay and co-op bundles already match."
+          else
+            git commit -m "build(hunt): sync authoritative gameplay Edge bundle"
+            git push origin HEAD:fix/hunt-real-miss-feedback
+          fi

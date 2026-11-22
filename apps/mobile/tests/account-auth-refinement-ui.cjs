@@ -29,7 +29,7 @@ assert.ok(auth.includes('passwordRequirements(password)')&&auth.includes('curren
 assert.ok(auth.includes("linkStep==='linked'")&&auth.includes('signInPlayGames()'),'Linked accounts keep separate Google Play Games connection');
 assert.ok(auth.includes('Connected services')&&auth.includes('Account security')&&auth.includes('s.accountIdentity'),'Linked account status, services and security are clearly grouped');
 assert.ok(auth.includes('redundantLinkSuccess')&&auth.includes('!redundantLinkSuccess'),'Reflected link success does not create duplicate green confirmation cards');
-// Production has not deployed Social Names RPCs. Never mount their editor until the release gate allows it.
+// Social Names production backend is migrated and owner-approved for 1.0.11. Only the exact production build triple gate can mount the editor.
 const socialGate=read('src/online/social-identity-client-gate.ts');
 const releaseFlags=read('src/core/release-flags.ts');
 assert.ok(auth.includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../online/social-identity-client-gate'"),'Account panel imports the staging-aware Social Names release gate');
@@ -37,7 +37,7 @@ assert.ok(auth.includes('{auth.session&&ACCOUNT_SOCIAL_IDENTITY_RELEASED?<Social
 assert.ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false'),'Production social identity remains unavailable until production RPC migration and QA');
 assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'"),'Explicit staging Social Names preview remains available');
 const androidBuild=JSON.parse(read('eas.json'));
-assert.equal(androidBuild.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED,'false','Production build keeps Social Names disabled until backend and Android QA signoff');
+assert.equal(androidBuild.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED,'true','Approved 1.0.11 production build opts into Social Names only behind exact channel and backend checks');
 assert.equal(androidBuild.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW,'false','Production never inherits staging preview');
 assert.equal(androidBuild.build.staging.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW,'true','Staging QA retains explicit preview');
 assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'")&&socialGate.includes("process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'"),'Only explicitly approved production builds with the exact backend may mount the editor');

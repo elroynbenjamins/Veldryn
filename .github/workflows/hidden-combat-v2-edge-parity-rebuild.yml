@@ -7,6 +7,8 @@ on:
     branches: ['integration/combat-v2-edge-parity-rebuild-20261122']
     paths:
       - '.github/workflows/hidden-combat-v2-edge-parity-rebuild.yml'
+      - 'tools/verify-gameplay-edge.mjs'
+      - 'tools/build-online.mjs'
   workflow_dispatch:
 
 permissions:

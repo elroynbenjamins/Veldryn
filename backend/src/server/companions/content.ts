@@ -22,7 +22,9 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_007','Veil Hound','damage','elite','EVENT_VEILBREAK',205,25,15,2.2,'damage',1.08],
  ['EVT_UNIT_008','Hollow Knightling','tank','elite','EVENT_VEILBREAK',205,18,24,2.2,'mitigation',.07],
  ['EVT_UNIT_011','Lantern Keeper','support','elite','EVENT_VEILBREAK',205,18,15,2.2,'utility',.05],
- ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'utility',.05],
+ ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'heal',.05],
+ ['EVT_UNIT_012','Rimeshard Wolverine','damage','elite','EVENT_FROSTFALL_FESTIVAL',205,25,15,2.0,'damage',1.06],
+ ['EVT_UNIT_013','Hearthguard Ram','tank','elite','EVENT_FROSTFALL_FESTIVAL',215,18,24,2.4,'shield',.052],
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
 const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
@@ -65,7 +67,9 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  EVT_UNIT_007:{activeName:'Veil Rend',activeDamageMultiplier:1.06,activeExecuteBonus:.07,hasteBonus:.01,bond:{activeExecuteBonus:.03}},
  EVT_UNIT_008:{activeName:'Gravebell Ward',mitigationMultiplier:1.12,defenseMultiplier:1.04,activeCooldownMultiplier:.96,bond:{mitigationMultiplier:1.05,defenseMultiplier:1.02}},
  EVT_UNIT_011:{activeName:'Lantern Grace',utilityMultiplier:1.06,activeHealMultiplier:1.08,activeCooldownMultiplier:.94,hasteBonus:.025,bond:{activeHealMultiplier:1.05,hasteBonus:.01}},
- EVT_UNIT_009:{activeName:'Frostbell Cycle',utilityMultiplier:1.08,activeHealMultiplier:1.08,activeCooldownMultiplier:.90,hasteBonus:.01,bond:{activeHealMultiplier:1.05}},
+ EVT_UNIT_009:{activeName:'Frostbell Cycle',activeHealMultiplier:1.05,activeCooldownMultiplier:.88,hasteBonus:.01,bond:{activeHealMultiplier:1.04}},
+ EVT_UNIT_012:{activeName:'Rimeshard Mark',activeDamageMultiplier:1.03,hasteBonus:.01,bond:{activeDamageMultiplier:1.03}},
+ EVT_UNIT_013:{activeName:'Hearthguard Aegis',activeShieldMultiplier:.98,activeReflectPct:.10,defenseMultiplier:1.01,bond:{activeReflectPct:.05,activeShieldMultiplier:1.04}},
  EVT_UNIT_010:{activeName:'Caravan Formation',utilityMultiplier:1.05,activeHealMultiplier:1.05,defenseMultiplier:1.02,hasteBonus:.02,bond:{activeCooldownMultiplier:.96}},
 };
 const cooldown=(rarity:CompanionRarity,role:CompanionRole)=>1000*(role==='damage'?(rarity==='prestige'?18:20):rarity==='prestige'?22:24);
@@ -230,8 +234,16 @@ const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
     {suffix:'LAST_LANTERN',name:'Last Lantern',description:'Cycle support more quickly while retaining a smaller recovery boost.',effects:[{kind:'heal_strength',value:.05},{kind:'cooldown',value:-.10}]},
   ],
   EVT_UNIT_009:[
-    {suffix:'GRAND_BELL',name:'Grand Bell',description:'Favor stronger restorative bell auras.',effects:[{kind:'heal_strength',value:.12}]},
-    {suffix:'QUICK_BELL',name:'Quick Bell',description:'Rotate support bells more frequently.',effects:[{kind:'cooldown',value:-.14},{kind:'haste',value:.04}]},
+    {suffix:'GRAND_BELL',name:'Grand Bell',description:'Strengthen Frostbell Cycle healing while keeping its brief protection.',effects:[{kind:'heal_strength',value:.12}]},
+    {suffix:'QUICK_BELL',name:'Quick Bell',description:'Rotate healing bells more frequently.',effects:[{kind:'cooldown',value:-.14},{kind:'haste',value:.04}]},
+  ],
+  EVT_UNIT_012:[
+    {suffix:'RIMESHARD_FOCUS',name:'Rimeshard Focus',description:'Sharper marked-target strikes.',effects:[{kind:'damage',value:.06}]},
+    {suffix:'AURORA_PURSUIT',name:'Aurora Pursuit',description:'Quicker marks with less peak damage.',effects:[{kind:'cooldown',value:-.10},{kind:'haste',value:.06}]},
+  ],
+  EVT_UNIT_013:[
+    {suffix:'HEARTH_WARD',name:'Hearth Ward',description:'Thicken the reflecting ward.',effects:[{kind:'shield_strength',value:.14}]},
+    {suffix:'WINTER_MIRROR',name:'Winter Mirror',description:'Give up some shield power for more reflection.',effects:[{kind:'shield_strength',value:-.04},{kind:'reflect',value:.10}]},
   ],
   EVT_UNIT_010:[
     {suffix:'CARAVAN_WARD',name:'Caravan Ward',description:'Favor protection for long expeditions and boss fights.',effects:[{kind:'defense',value:.08},{kind:'heal_strength',value:.06}]},

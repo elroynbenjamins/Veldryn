@@ -34,3 +34,7 @@ jobs:
         run: pnpm --dir backend typecheck:companions
       - name: Execute all companion contracts and battle tests
         run: pnpm --dir backend test:companions
+      - name: Verify mobile Frostfall companion combat, progression and account rewards
+        run: node tools/run-mobile-tests.mjs frostfall-companion-rework
+      - name: Validate final 96px Frostfall sprites and runtime registrations
+        run: node apps/mobile/tests/frostfall-companion-art.cjs

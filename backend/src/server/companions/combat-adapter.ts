@@ -58,10 +58,10 @@ function balancedActiveCoeff(def:CompanionServerDefinition,progress:OwnedCompani
  // so abilities keep identity while the new rarity budget remains the main tier edge.
  return def.active.effectKind==='damage'?1+(raw-1)*.25:raw;
 }
-/** Status effects shared with the authored Asterfall ability names. They use
+/** Short status effects shared across authored companion signatures. They use
  * normal engine statuses and short durations, so they cannot become permanent
  * boss debuffs or unbounded passive stat multipliers. */
-function asterfallSignatureEffects(id:string):EngineAbilityEffect[]{
+function companionSignatureEffects(id:string):EngineAbilityEffect[]{
  switch(id){
   case 'UNIT_001':return [{kind:'debuff',value:-.035,durationMs:5000,tag:'damage_done'}];
   case 'UNIT_002':return [{kind:'buff',value:-.02,durationMs:4000,tag:'damage_taken'}];
@@ -72,12 +72,14 @@ function asterfallSignatureEffects(id:string):EngineAbilityEffect[]{
   case 'UNIT_009':return [{kind:'debuff',value:.03,durationMs:5000,tag:'damage_taken'}];
   case 'UNIT_010':return [{kind:'debuff',value:.035,durationMs:7000,tag:'damage_taken'}];
   case 'UNIT_011':return [{kind:'debuff',value:.03,durationMs:6000,tag:'crit_taken'}];
+  case 'EVT_UNIT_009':return [{kind:'buff',value:-.025,durationMs:4000,tag:'damage_taken'}];
+  case 'EVT_UNIT_012':return [{kind:'debuff',value:.025,durationMs:5000,tag:'damage_taken'}];
   default:return [];
  }
 }
 function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):EngineAbilityEffect[]{
  const identity=identityModifiers(def,progress),levelCoeff=balancedActiveCoeff(def,progress),tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
- const signature=asterfallSignatureEffects(def.id);
+ const signature=companionSignatureEffects(def.id);
  switch(def.active.effectKind){
   case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)*identity.activeDamageMultiplier),executeBelowHpPct:.30,executeBonus:Math.min(.30,effectValue(progress,'execute')+identity.activeExecuteBonus),...(def.id==='UNIT_009'?{bonusVsDebuffed:.12}:{}),tag:'companion_active'},...signature];
   case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)*identity.activeShieldMultiplier),shieldReflectPct:Math.min(.30,effectValue(progress,'reflect')+identity.activeReflectPct),tag:'companion_active'},...signature];

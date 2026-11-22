@@ -28,7 +28,7 @@ assert(quick.includes("gl('Compare & Equip')")&&quick.includes("gl('To Bank')")&
 assert(quick.includes("type:'gear_move'")&&quick.includes('selectedCopy?.id??null'),'Quick actions must use the selected exact-copy identity when available');
 const secondary=inventory.slice(inventory.indexOf('const inspectActions'),inventory.indexOf('if(equipmentPouchOpen)'));
 assert(!secondary.includes('Compare stats')&&!secondary.includes('favoriteSet.has(inspected.id)?gt("Remove favorite")'),'Do not duplicate primary compare or header favorite controls');
-assert(secondary.includes('equipmentCopyDisposalDecision')===false && secondary.includes('inspectedCopySalvage?.allowed'),'Do not bypass existing copy-level disposal permissions');
+assert(secondary.includes('equipmentCopyDisposalDecision')===false && inventory.includes('inspectedCopySalvage?.allowed')&&inventory.includes('disposalActions={inspectDisposalActions}'),'Do not bypass existing copy-level disposal permissions');
 assert(inventory.includes('setCopyPending({instanceId:selectedCopy.id,method:\'salvage\''),'Salvage must still confirm the selected instance');
 assert(pouch.includes("p('Compare & Equip')")&&pouch.includes("p('To Bank')")&&pouch.includes("p('To Inventory')")&&pouch.includes('disposalActions={selected?'),'Gear Pouch must show transfers together and disposal buttons below them');
 assert(pouch.includes('salvageCandidate?.eligible')&&pouch.includes('startSalvage([salvageCandidate.id])'),'Gear pouch disposal must validate the exact selected copy');

@@ -77,7 +77,8 @@ export interface Eq2OriginWitnessReview {
 }
 export type Eq2V6OriginDenial=
  'invalid_proof'|'unknown_material'|'missing_registered_source'|
- 'wrong_source_kind'|'unregistered_source_candidate'|'unregistered_processing';
+ 'wrong_source_kind'|'unregistered_source_candidate'|'candidate_source_unverified'|
+ 'unregistered_processing';
 export interface Eq2V6OriginReview {
  readonly canGrant:false;readonly canProcess:false;readonly mayRegister:false;
  readonly sourceVerified:false;readonly reason:Eq2V6OriginDenial;
@@ -117,11 +118,13 @@ export function reviewEq2V6MaterialOrigin(
    return deny('unregistered_source_candidate',true);
  }else if(claim.sourceKind==='gathering'){
   if(source.kind==='monster')return deny('wrong_source_kind',true);
+  if(!claim.sourceId.startsWith('NODE:'))
+   return deny('unregistered_source_candidate',true);
   // No canonical resource node exists in the V3 proposal yet.
   return deny('missing_registered_source',true);
  }else return deny('wrong_source_kind',true);
  return deny(source.decision==='missing_source'?
-  'missing_registered_source':'unregistered_source_candidate',true);
+  'missing_registered_source':'candidate_source_unverified',true);
 }
 /** Concrete release blockers: never mark empty candidate lists as sourced. */
 export function auditEq2V6SourceCoverage(){

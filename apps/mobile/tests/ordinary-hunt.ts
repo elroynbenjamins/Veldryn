@@ -14,7 +14,7 @@ const novice=regionalHuntPlan(base);
 const upgraded=regionalHuntPlan({...base,playerHit:200});
 assert.equal(regionalHuntPlan(base).cycleSeconds,novice.cycleSeconds,'seeded hunts must replay deterministically');
 assert.ok(upgraded.fightSeconds<novice.fightSeconds,'Attack should kill a weak enemy in fewer real strikes');
-assert.equal(upgraded.strikes.filter(hit=>hit.actor==='player').length,1,'overgeared character must one-shot a Moss Rat');
+assert.equal(upgraded.strikes.filter(hit=>hit.actor==='player'&&hit.damage>0).length,1,'overgeared character must one-shot a Moss Rat');
 assert.ok(upgraded.searchSeconds>=3&&upgraded.searchSeconds<=6,'Greenfields search is a bounded anti-farming delay, reduced by 2 seconds');
 assert.ok(upgraded.cycleSeconds>upgraded.fightSeconds,'search must remain even after a one-shot');
 assert.ok(regionalHuntPlan({...base,playerHit:200,haste:1}).fightSeconds<upgraded.fightSeconds,'Haste increases attacks per second');

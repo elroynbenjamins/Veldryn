@@ -108,10 +108,13 @@ function test(){
   ...snapshot,copies:[{...copyMining,custody:'bank'}],
  });
  eq(bank.proposals[0].currentCustody,'bank','bank-held copy stays bank-held');
- const unknown=previewLegacyToolEntitlementCutoverV2({
+ reject(()=>previewLegacyToolEntitlementCutoverV2({
   ...snapshot,copies:[{...copyMining,itemId:'UNAUTHORED_T9_TOOL'},copyWood],
- });
- eq(unknown.proposals.length,2,'unissued T9 item cannot become a tier entitlement');
+ }),/copy_proof_mismatch/,'unissued T9 tool cannot masquerade as an already-owned T2 physical copy');
+ reject(()=>previewLegacyToolEntitlementCutoverV2({
+  ...snapshot,copies:[{...copyMining,itemId:'UNAUTHORED_T9_TOOL',
+    grantReceiptId:'UNKNOWN_SOURCE_001'},copyWood],
+ }),/unsupported_tool_snapshot/,'unissued T9 tool without matching evidence fails closed');
 
  reject(()=>previewLegacyToolEntitlementCutoverV2({
   ...snapshot,copies:[{...copyMining,ownerCharacterId:alt},copyWood],

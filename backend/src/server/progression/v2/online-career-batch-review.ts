@@ -27,6 +27,36 @@ const CRAFT:ReadonlySet<string>=new Set(['smithing','tailoring','cooking','alche
 const safe=(v:unknown,min:number,max:number):v is number=>
   typeof v==='number'&&Number.isSafeInteger(v)&&v>=min&&v<=max;
 
+/**
+ * Service-owned original command result. It must be taken from the exact
+ * executeGameCommand result BEFORE reward-specific projection; never accept
+ * a client payload or independently synthesized duplicate of a nested view.
+ */
+export interface TrustedCareerBatchClaimSegmentV2 {
+ readonly activity:{
+  readonly kind:string;readonly targetId:string;readonly lastClaimAtMs:number;
+ };
+ readonly reward:{
+  readonly xp:number;readonly elapsedSeconds:number;
+  readonly kills?:number;
+  readonly combatEffort?:{
+   readonly startsAtMs:number;readonly endsAtMs:number;
+  };
+ };
+}
+export interface TrustedCareerBatchCraftCompletionV2 {
+ readonly requestedRecipeId:string;
+ readonly requestedQuantity:number;
+ readonly owningSkillXpBefore:number;
+ readonly owningSkillXpAfter:number;
+ readonly contributions:readonly {
+  readonly kind:string;readonly contentId:string;readonly units:number;
+ }[];
+}
+export interface TrustedCareerBatchOriginalResultV2 {
+ readonly originalClaimSegments:readonly TrustedCareerBatchClaimSegmentV2[]|null;
+ readonly completedInstantCraft:TrustedCareerBatchCraftCompletionV2|null;
+}
 export interface OnlineCareerBatchAwardPreviewV2 {
   readonly sourceKind:'gathering_claim'|'combat_reward'|'craft_claim';
   readonly sourceId:string;
@@ -85,8 +115,101 @@ function verifyProofShape(command:TrustedCombinedGameCommandV2,p:PendingGameCare
         p.baseEffortSeconds>10800)))
     error('invalid_source_class');
 }
+function assertOriginalCommandResultV2(
+ command:TrustedCombinedGameCommandV2,
+ original:TrustedCareerBatchOriginalResultV2,
+):void{
+ if(!original||typeof original!=='object'||
+   !Object.hasOwn(original,'originalClaimSegments')||
+   !Object.hasOwn(original,'completedInstantCraft'))
+   error('missing_original_result');
+ const claim=original.originalClaimSegments;
+ const craft=original.completedInstantCraft;
+ if(command.commandType==='claim'){
+   if(!Array.isArray(claim)||claim.length>64||craft!==null)
+     error('invalid_original_claim');
+   for(const segment of claim){
+     if(!segment?.activity||!segment.reward||
+       typeof segment.activity.kind!=='string'||
+       typeof segment.activity.targetId!=='string'||
+       !safe(segment.activity.lastClaimAtMs,0,Number.MAX_SAFE_INTEGER)||
+       !safe(segment.reward.xp,0,Number.MAX_SAFE_INTEGER)||
+       !safe(segment.reward.elapsedSeconds,0,86400)||
+       (segment.reward.kills!==undefined&&
+         !safe(segment.reward.kills,0,1000000)))
+       error('invalid_original_segment');
+     const interval=segment.reward.combatEffort;
+     if(interval!==undefined&&(!interval||
+        !safe(interval.startsAtMs,0,Number.MAX_SAFE_INTEGER)||
+        !safe(interval.endsAtMs,0,Number.MAX_SAFE_INTEGER)||
+        interval.endsAtMs<=interval.startsAtMs))
+       error('invalid_original_segment');
+   }
+   // Compare each independent projector against the exact original result,
+   // including the full combat effort and kill count where present.
+   for(const nested of [command.gathering,command.combat]){
+     if(!nested)continue;
+     if(!Array.isArray(nested.segments)||
+       nested.segments.length!==claim.length)
+       error('original_queue_mismatch');
+     for(let i=0;i<claim.length;i++){
+       const a=claim[i],b=nested.segments[i];
+       if(!b?.activity||!b.reward||
+         a.activity.kind!==b.activity.kind||
+         a.activity.targetId!==b.activity.targetId||
+         a.activity.lastClaimAtMs!==b.activity.lastClaimAtMs||
+         a.reward.xp!==b.reward.xp||
+         a.reward.elapsedSeconds!==b.reward.elapsedSeconds)
+         error('original_queue_mismatch');
+       if(nested===command.combat){
+         const fromCombat=b as TrustedCareerBatchClaimSegmentV2;
+         const aEffort=a.reward.combatEffort;
+         const bEffort=fromCombat.reward.combatEffort;
+         if(a.reward.kills!==fromCombat.reward.kills||
+            (aEffort===undefined)!==(bEffort===undefined)||
+            (aEffort!==undefined&&bEffort!==undefined&&
+             (aEffort.startsAtMs!==bEffort.startsAtMs||
+              aEffort.endsAtMs!==bEffort.endsAtMs)))
+           error('original_combat_mismatch');
+       }
+     }
+   }
+   const needsGathering=claim.some(s=>
+     GATHER.has(s.activity.kind)&&s.reward.xp>0);
+   const needsCombat=claim.some(s=>s.activity.kind==='combat'&&
+     s.reward.xp>0);
+   if((needsGathering&&!command.gathering)||(needsCombat&&!command.combat))
+     error('missing_source_projector');
+   if(command.instantCraft)error('craft_source_in_claim');
+ }else if(command.commandType==='craft'){
+   if(claim!==null||(!command.instantCraft&&craft!==null)||
+     (command.instantCraft&&craft===null))
+     error('invalid_original_craft');
+   if(command.instantCraft&&craft){
+     const current=command.instantCraft;
+     if(craft.requestedRecipeId!==current.requestedRecipeId||
+       craft.requestedQuantity!==current.requestedQuantity||
+       craft.owningSkillXpBefore!==current.owningSkillXpBefore||
+       craft.owningSkillXpAfter!==current.owningSkillXpAfter||
+       !Array.isArray(craft.contributions)||
+       !Array.isArray(current.contributions)||
+       craft.contributions.length!==current.contributions.length||
+       craft.contributions.some((c,i)=>{
+         const expected=current.contributions[i];
+         return !c||!expected||c.kind!==expected.kind||
+           c.contentId!==expected.contentId||c.units!==expected.units;
+       }))
+       error('original_craft_mismatch');
+   }
+   if(command.gathering||command.combat)error('claim_source_in_craft');
+ }else if(claim!==null||craft!==null||
+          command.gathering||command.combat||command.instantCraft){
+   error('invalid_nonreward_source');
+ }
+}
 export async function previewOnlineGameCareerBatchV2(
   command:TrustedCombinedGameCommandV2,
+  original:TrustedCareerBatchOriginalResultV2,
 ):Promise<OnlineCareerBatchPreviewV2>{
   if(!command||typeof command.accountId!=='string'||!UUID.test(command.accountId)||
      typeof command.requestId!=='string'||!REQUEST.test(command.requestId)||
@@ -97,6 +220,9 @@ export async function previewOnlineGameCareerBatchV2(
      command.beforeCharacterId.toLowerCase()!==command.afterCharacterId.toLowerCase()||
      typeof command.adminQa!=='boolean'||typeof command.commandType!=='string')
     error('invalid_command');
+  // Authenticity is the caller's responsibility; consistency with the
+  // ORIGINAL simulated command is checked here, not just nested projections.
+  assertOriginalCommandResultV2(command,original);
   const proofs=await projectCombinedGameCareerProofsV2(command);
   // Even if the calling service accidentally includes a QA simulation as a
   // reward candidate, it never becomes a Career XP settlement.

@@ -4,6 +4,7 @@ import type {GameState} from '../core/types';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {worldDestinationGuide} from '../core/world-destination-guide';
 import {useGameplayText} from '../i18n/gameplay';
+import {progressionTravelReason} from '../i18n/progression';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {ResourceArtwork} from './ResourceArtwork';
@@ -20,15 +21,15 @@ type Props={
 
 /** Compact, persistent travel intent. All displayed targets come from validated content IDs. */
 export function WorldDestinationGuide({state,destination,busy=false,onTravel,onCancel}:Props){
- const {gt,gl}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const {gt,gl,language}=useGameplayText(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const goal=worldDestinationGuide(state,destination);
  if(!goal)return null;
  const title=gl(goal.targetName),region=gl(goal.regionName);
  return <View style={s.card}>
   <View style={s.header}>
    <Text style={s.eyebrow}>{gt('YOUR DESTINATION')}</Text>
-   <Pressable onPress={onCancel} accessibilityRole="button" accessibilityLabel={gt('Cancel destination')}
-    style={({pressed})=>[s.cancel,pressed&&s.pressed]}><Text style={s.cancelText}>{gt('Cancel')}</Text></Pressable>
+   <Pressable onPress={onCancel} disabled={busy} accessibilityRole="button" accessibilityLabel={gt('Cancel destination')}
+    accessibilityState={{disabled:busy}} style={({pressed})=>[s.cancel,pressed&&s.pressed,busy&&s.disabled]}><Text style={s.cancelText}>{gt('Cancel')}</Text></Pressable>
   </View>
   <View style={s.body}>
    <View style={s.art}>
@@ -40,7 +41,7 @@ export function WorldDestinationGuide({state,destination,busy=false,onTravel,onC
     <Text style={[s.status,{color:goal.canTravel?C.good:C.warning}]}>{goal.canTravel?gt('Ready to travel'):gt('Region locked')}</Text>
    </View>
   </View>
-  {goal.lockReason?<Text style={s.reason}>{goal.lockReason}</Text>:null}
+  {goal.lockReason?<Text style={s.reason}>{progressionTravelReason(language,goal.lockReason)}</Text>:null}
   <View style={s.actions}>
    <View style={s.flex}><GameButton compact disabled={busy||!goal.canTravel} loading={busy}
     title={goal.canTravelAndStart?gt('Travel & Start'):gt('Travel to {region}',{region})}
@@ -67,5 +68,5 @@ function styles(C:ThemeColors){return StyleSheet.create({
  reason:{...typography.caption,color:C.warning},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:8},
  flex:{flex:1,minWidth:112},
- pressed:{opacity:.65},
+ pressed:{opacity:.65},disabled:{opacity:.45},
 });}

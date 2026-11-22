@@ -207,6 +207,11 @@ export const companionTranslationRows={
  "Add enough food to start the Expedition. Manual food selection is available in Mission Details.":["Füge genügend Nahrung hinzu, um die Expedition zu starten. Die manuelle Auswahl findest du in den Missionsdetails.","Añade suficiente comida para iniciar la expedición. Puedes elegirla manualmente en los detalles de la misión.","Voeg genoeg voedsel toe om de expeditie te starten. Handmatig kiezen kan bij Missiedetails.","Aggiungi abbastanza cibo per avviare la spedizione. La selezione manuale è nei dettagli missione.","Ajoutez assez de nourriture pour commencer l'expédition. Le choix manuel est dans les détails de la mission."],
  "Start timer to begin earning":["Timer starten, um Belohnungen zu sammeln","Inicia el temporizador para obtener recompensas","Start de timer om beloningen te verdienen","Avvia il timer per ottenere ricompense","Lancez le minuteur pour gagner des récompenses"],
  "Collect rewards and upgrade your facilities.":["Sammle Belohnungen und verbessere deine Gebäude.","Recoge recompensas y mejora tus instalaciones.","Verzamel beloningen en verbeter je voorzieningen.","Raccogli le ricompense e potenzia le strutture.","Récupérez des récompenses et améliorez vos installations."],
+ "Daily Companion XP":["Tägliche Gefährten-EP","EXP diaria de compañeros","Dagelijkse metgezel-XP","PE giornalieri dei compagni","EXP quotidienne des compagnons"],
+ "Weekly Companion Essence":["Wöchentliche Gefährten-Essenz","Esencia semanal de compañeros","Wekelijkse metgezelessentie","Essenza settimanale dei compagni","Essence hebdomadaire des compagnons"],
+ "+{value0} XP / eligible companion / day":["+{value0} EP / verfügbarem Gefährten / Tag","+{value0} EXP / compañero disponible / día","+{value0} XP / beschikbare metgezel / dag","+{value0} PE / compagno disponibile / giorno","+{value0} EXP / compagnon disponible / jour"],
+ "+{value0} Essence / week":["+{value0} Essenz / Woche","+{value0} Esencia / semana","+{value0} essentie / week","+{value0} essenza / settimana","+{value0} essence / semaine"],
+ "Until claim":["Bis zur Abholung","Hasta reclamar","Tot claim","Alla riscossione","Avant la récupération"],
  "Daily Training":["Tägliches Training","Entrenamiento diario","Dagelijkse training","Allenamento giornaliero","Entraînement quotidien"],
  "Build Training Grounds first":["Baue zuerst den Trainingsplatz","Construye primero el campo de entrenamiento","Bouw eerst het trainingsveld","Costruisci prima il campo di addestramento","Construisez d'abord le terrain d'entraînement"],
  "Start the first reward timer":["Starte den ersten Belohnungstimer","Inicia el primer temporizador de recompensas","Start de eerste beloningstimer","Avvia il primo timer delle ricompense","Lancez le premier minuteur de récompenses"],
@@ -1241,6 +1246,16 @@ companionCatalogs.ru["Training unavailable."]="Тренировка недост
 companionCatalogs.tr["Training unavailable."]="Eğitim kullanılamıyor.";
 companionCatalogs.ru["Recruit companion"]="Нанять спутника";
 companionCatalogs.tr["Recruit companion"]="Yoldaş edin";
+companionCatalogs.ru["Daily Companion XP"]="Ежедневный опыт спутников";
+companionCatalogs.tr["Daily Companion XP"]="Günlük Yoldaş XP'si";
+companionCatalogs.ru["Weekly Companion Essence"]="Еженедельная эссенция спутников";
+companionCatalogs.tr["Weekly Companion Essence"]="Haftalık Yoldaş Özütü";
+companionCatalogs.ru["+{value0} XP / eligible companion / day"]="+{value0} опыта / доступного спутника / день";
+companionCatalogs.tr["+{value0} XP / eligible companion / day"]="+{value0} XP / uygun yoldaş / gün";
+companionCatalogs.ru["+{value0} Essence / week"]="+{value0} эссенции / неделю";
+companionCatalogs.tr["+{value0} Essence / week"]="+{value0} Özüt / hafta";
+companionCatalogs.ru["Until claim"]="До получения";
+companionCatalogs.tr["Until claim"]="Almaya kalan";
 export const translateCompanion=createTranslator(companionCatalogs);
 export const companionTranslator=(language:Language)=>(key:CompanionMessageKey,params?:Record<string,string|number>)=>translateCompanion(language,key,params);
 

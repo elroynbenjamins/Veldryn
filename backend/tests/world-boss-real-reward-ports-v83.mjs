@@ -210,6 +210,31 @@ try{
  await db.query('UPDATE public.online_game_states SET character_id=$2::uuid,'+
   'state=$3::jsonb WHERE account_id=$1',
   [account,character,JSON.stringify(stored)]);
+ // A corrupted/stale mirrored Gold balance must not be silently
+ // overwritten by a legitimate World Boss payout. The wallet is canonical;
+ // reject before any credit and roll back the V70 frozen receipt and audit.
+ const staleGold=structuredClone(stored);
+ staleGold.character.gold=551; // real locked wallet balance is still 550
+ await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
+  'WHERE account_id=$1',[account,JSON.stringify(staleGold)]);
+ await assert.rejects(()=>open({
+  authenticatedAccountId:account,sourceKey:blockedSource,
+ }),/wallet_state_mismatch/);
+ assert.equal((await db.query(
+  'SELECT gold::text AS gold FROM public.character_wallets '+
+  'WHERE character_id=$1',[character])).rows[0].gold,'550');
+ assert.equal((await db.query(
+  'SELECT COUNT(*)::int n FROM private.chest_reward_receipts_v70 '+
+  'WHERE source_key=$1',[blockedSource])).rows[0].n,0);
+ assert.equal((await db.query(
+  'SELECT COUNT(*)::int n FROM private.world_boss_chest_resource_grants_v83 '+
+  'WHERE source_key=$1',[blockedSource])).rows[0].n,0);
+ assert.equal((await db.query(
+  'SELECT state FROM public.online_game_states WHERE account_id=$1',
+  [account])).rows[0].state.character.gold,551,
+  'a failed grant must not mutate the stale state');
+ await db.query('UPDATE public.online_game_states SET state=$2::jsonb '+
+  'WHERE account_id=$1',[account,JSON.stringify(stored)]);
  // Force inventory+bank to full with no matching stacks and ensure Gold,
  // Essence and all V70 receipts roll back together.
  const original=structuredClone(stored);
@@ -288,5 +313,5 @@ try{
   process.env.NODE_ENV='production';
   await assert.rejects(()=>real.creditGuaranteed(db,result.receipt,0),/unreleased/);
  }finally{process.env.NODE_ENV=prev}
- console.log('WB_REAL_REWARDS_V83_SQL_OK: real character wallet, account essence, inventory/bank dust, inert Inbox, immutable audit, retry/rollback and anti-tamper');
+ console.log('WB_REAL_REWARDS_V83_SQL_OK: real character wallet, account essence, inventory/bank dust, inert Inbox, immutable audit, retry/rollback, wallet parity and anti-tamper');
 }finally{await db.close()}

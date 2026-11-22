@@ -71,7 +71,7 @@ const drawFor=(seed:number)=>{
 function generated(pieceId:string,accept:(roll:V2DraftRollOutcome)=>boolean=()=>true){
  const piece=v2ServerPiece(pieceId);
  const recipe=V2_SERVER_RECIPES.find(x=>x.pieceId===pieceId&&x.route==='foundation');
- assert.ok(piece&&recipe,'exact canonical EQ2 item/recipe missing '+pieceId);
+ if(!piece||!recipe)throw Error('missing canonical EQ2 item or recipe: '+pieceId);
  for(let seed=1;seed<=40000;seed++){
   const roll=draftEquipmentV2Outcome({
    recipeId:recipe.id,pieceId:piece.id,slot:piece.slot,
@@ -86,7 +86,7 @@ function generated(pieceId:string,accept:(roll:V2DraftRollOutcome)=>boolean=()=>
 }
 function eligible(pieceId:string){
  const piece=v2ServerPiece(pieceId);
- assert.ok(piece);
+ if(!piece)throw Error('missing canonical EQ2 eligible item: '+pieceId);
  return (roll:V2DraftRollOutcome)=>roll.affixes.every(a=>{
   const id=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[a.stat];
   return Boolean(id&&EQUIPMENT_AFFIXES_V2[id].slots.includes(piece.slot));

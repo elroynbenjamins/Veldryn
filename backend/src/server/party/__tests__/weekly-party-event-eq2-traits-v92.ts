@@ -74,7 +74,8 @@ function fixture(
   return {...actor,id:'QA_V92_ACTOR_'+i,
    combatV2:{version:2 as const,resource,specializationId:'QA_V92_SPEC_'+classId}};
  });
- const sources:VerifiedV2EquipmentEffectSource[]=heroes.map((actor,i)=>({
+ const sources:VerifiedV2EquipmentEffectSource[]=heroes.map(
+  (actor,i):VerifiedV2EquipmentEffectSource=>({
   source:'server-persisted-equipment-v2',policy:EQUIPMENT_V2_TRAIT_ENGINE_POLICY,
   revision:3,accountId:'QA_ACCOUNT_'+i,characterId:'QA_CHAR_'+i,
   actorId:actor.id,ownedEquippedInstanceIds:['QA_COPY_'+i],

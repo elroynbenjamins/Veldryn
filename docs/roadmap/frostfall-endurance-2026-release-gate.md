@@ -13,7 +13,7 @@ Status: **source candidate only**. Do not merge, deploy, activate Frostfall, rel
 - The database `claim_event_expedition_clear_slot` enforces the production cap at reward claim time. The shared TypeScript service also enforces two claims/day in a long-lived instance; the production database is the authoritative cross-request guard.
 - Unlimited new attempts are possible after a finished or failed run, but only one active co-op run/account at a time.
 - Review branch implementation: after two rewarded clears, the backend creates **practice-only** Frostfall runs that settle with 0 currency, status `claimed` and no unclaimable pending reward. A server-owned account-wide budget is frozen on entry. The compact UI still needs the 2/2 indicator and design sign-off.
-- Staging migration `20261122120000_frostfall_endurance_daily_reward_budget_v1.sql` applied November 22. Read-back verified table/RPC, function guards and RLS; service-role budget query passed; a transaction-rolled-back 2-claim-limit fixture passed. Production remains unchanged and must receive the exact reviewed migration only before activation. Full authenticated end-to-end, reset, concurrency and account-character isolation tests remain blocking.
+- Staging migration `20261122110752_frostfall_endurance_daily_reward_budget_v1.sql` applied November 22. Read-back verified table/RPC, function guards and RLS; service-role budget query passed; a transaction-rolled-back 2-claim-limit fixture passed. Production remains unchanged and must receive the exact reviewed migration only before activation. Full authenticated end-to-end, reset, concurrency and account-character isolation tests remain blocking.
 
 ## Proposed route and economy (review implementation)
 - All five tiers retained, minimum combat levels 10/15/20/25/30.
@@ -43,7 +43,8 @@ Status: **source candidate only**. Do not merge, deploy, activate Frostfall, rel
 7. Assess 2/day reward availability vs longer run time, and run best/worst role simulation for the proposed depth multipliers before locking economy.
 
 ## Deployment audit, November 22 2026
-- Staging DB only: seasonal budget RPC, daily clear cap and practice/claim guards installed; RLS enabled on the counter table.
+- Staging DB only: seasonal budget RPC, daily clear cap and practice/claim guards installed; RLS enabled on the counter table. UTC yesterday/today rollover and claim-cap rollback fixtures passed.
 - Review branch only: the backend returns `rewardedClearsRemaining` for the active Frostfall event; no unapproved UI redesign is merged.
+- Staging co-op Edge runtime v39 deployed from review-branch generated source on November 22; event remains disabled.
 - Production unchanged: event disabled, rewards hidden, expedition module not yet enabled, migrations/Edge bundle not deployed.
 - Direct run/simulation, client preview, locale-theme approval, signed Android build and full CI remain necessary; do not claim launch readiness solely from SQL read-back.

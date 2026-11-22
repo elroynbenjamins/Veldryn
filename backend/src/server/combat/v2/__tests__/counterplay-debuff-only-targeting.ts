@@ -94,17 +94,37 @@ assert.equal(ordinary.abilities[0].target,'lowest_hp_ally');
 assert.equal(cleansing.abilities[0].aiCondition,'ally_below_50_or_dot');
 assert.equal(cleansing.abilities[0].target,'lowest_hp_ally_with_dot');
 assert.deepEqual(ordinary.stats,cleansing.stats,'variant does not change class stat budget');
-function stoneFight(actor:CombatantDefinition){
- const input:CombatInput={seed:'QA_STONECALLER_CLEANSING_STREAM',
+function supportFight(actor:CombatantDefinition){
+ const input:CombatInput={seed:'QA_AUTHORED_SUPPORT_CLEANSE',
   players:[tank,actor],enemies:[curse],maxDurationMs:500};
  const result=simulateCombat(input);
  assert.deepEqual(simulateCombat(input),result);
  return result;
 }
-const ordinaryFight=stoneFight(ordinary),cleansingFight=stoneFight(cleansing);
+const ordinaryFight=supportFight(ordinary),cleansingFight=supportFight(cleansing);
 assert.equal(ordinaryFight.events.filter(e=>e.type==='status_remove'&&
  e.abilityId==='SC_HEAL:v2:0').length,0);
 assert.deepEqual(cleansingFight.events.filter(e=>e.type==='status_remove'&&
  e.abilityId==='SC_HEAL:v2:1').map(e=>[e.targetId,e.statusKind]),
  [['QA_TANK','debuff']], 'real compiled Cleansing Stream removes active debuff');
-console.log('PASS: V2 debuff-only cleanse AI and targeting; lower-HP clean ally ignored; V1 replay parity; authored Stonecaller Cleansing Stream verified');
+// Independent Dawnkeeper option: another real class has a fully authored
+// alternative cleanse rather than a mandatory Stonecaller-only solution.
+const dawnkeeper=launchPlayer('Dawnkeeper',25);
+const purifying=SKILL_IDENTITIES_V2.find(s=>s.classId==='DAWNKEEPER'&&s.name==='Purifying Light');
+const dawnSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='DAWNKEEPER');
+assert.ok(purifying&&dawnSpec);
+const dawnBuild:VerifiedSkillBuildV2={
+ actor:dawnkeeper,verified:{classId:'DAWNKEEPER',level:25,ownedInstanceIds:new Set()},
+ selected:{specializationId:dawnSpec.id,equipment:{},
+  activeSkills:[{skillId:purifying.id,variantId:purifying.variants[0].id}],
+  talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{},
+};
+const dawnCompiled=compileServerSkillBuildV2(true,dawnBuild);
+assert.equal(dawnCompiled.abilities[0].target,'lowest_hp_ally_with_dot');
+assert.equal(dawnCompiled.abilities[0].aiCondition,'ally_below_50_or_dot');
+const dawnFight=supportFight(dawnCompiled);
+assert.deepEqual(dawnFight.events.filter(e=>e.type==='status_remove'&&
+ e.abilityId===dawnCompiled.abilities[0].id).map(e=>[e.targetId,e.statusKind]),
+ [['QA_TANK','debuff']], 'Dawnkeeper alternative must cleanse the same debuff-only boss');
+console.log('PASS: V2 debuff-only cleanse AI and targeting; lower-HP clean ally ignored; V1 replay parity; two independent authored Support cleanses verified');

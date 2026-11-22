@@ -16,7 +16,8 @@ assert.throws(()=>resolve({path:'./v2/unexpected-new-runtime',importer:engine}),
  /unexpected_combat_v2_legacy_shim/,'A new experimental hook must fail closed');
 for(const path of [
  './v2/resource-runtime','./v2/capstone-runtime','./v2/reactive-passive-runtime',
- './v2/enemy-engine-authority','./enemy-v2-status-rules',
+ './v2/enemy-engine-authority','./v2/equipment-trait-engine-authority',
+ './v2/equipment-trait-engine-runtime','./enemy-v2-status-rules',
 ]){
  const redirected=resolve({path,importer:engine});
  assert.equal(redirected?.namespace,'live-edge-v2-disabled');
@@ -39,6 +40,13 @@ for(const path of [
    players:[{combatV2:{version:2}}],
   }),/not_available_in_live/);
  }
+ if(path==='./v2/equipment-trait-engine-authority'){
+  assert.equal(m.authorizeEquipmentV2TraitEngine({players:[{}]}).size,0);
+  assert.throws(()=>m.authorizeEquipmentV2TraitEngine({players:[{}]},{forged:true}),
+   /not_available_in_live/);
+ }
+ if(path==='./v2/equipment-trait-engine-runtime')
+  assert.throws(()=>new m.EquipmentTraitRuntimeV2(new Map()),/not_available_in_live/);
  if(path==='./v2/reactive-passive-runtime')
   assert.throws(()=>m.triggerReactivePassiveV2(),/not_available_in_live/);
  if(path==='./v2/capstone-runtime')
@@ -53,6 +61,8 @@ const fake=(input,body='// only released engine')=>({
 assert.deepEqual(assertLegacyEdgeIsolation(fake('backend/src/server/combat/engine.ts'),'coop').entry,'coop');
 for(const secret of [
  'backend/src/server/combat/v2/resource-runtime.ts',
+ 'backend/src/server/combat/v2/equipment-trait-engine-authority.ts',
+ 'backend/src/server/combat/v2/equipment-trait-engine-runtime.ts',
  'backend/src/server/combat/v2/solo-encounter-persistence.ts',
  'backend/src/server/combat/enemy-v2-status-rules.ts',
 ]){
@@ -60,7 +70,8 @@ for(const secret of [
   /private_runtime_in_bundle/);
 }
 for(const leak of ['issueEnemyV2EngineAuthority','combat_v2_solo_test',
- 'enemy-v2-prototype-1','SoloEncounterPersistenceServiceV2']){
+ 'enemy-v2-prototype-1','SoloEncounterPersistenceServiceV2',
+ 'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2']){
  assert.throws(()=>assertLegacyEdgeIsolation(fake('backend/online/edge.ts',leak),'gameplay'),
  /private_token_in_bundle/);
 }

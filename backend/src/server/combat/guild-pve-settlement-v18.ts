@@ -35,7 +35,7 @@ export interface GuildPveV18Charges {
 }
 export interface GuildPveV18Receipt {
  cycleId:string;guildId:string;accountId:string;characterId:string;
- nodeId:GuildPveNodeIdV8;requestId:string;
+ nodeId:GuildPveNodeIdV8;requestId:string;stance:GuildPveStanceV7;
  status:'committed'|'stale';sealDebit:0|1;
  beforeHp:number;afterHp:number;creditedHp:number;
  beforePressure:number;afterPressure:number;
@@ -161,7 +161,7 @@ export class GuildPveV18SettlementService {
     GuildPveV18Receipt=>({
     cycleId:action.cycleId,guildId:action.guildId,accountId:account,
     characterId:action.characterId,nodeId:action.nodeId,requestId:action.requestId,
-    status,sealDebit:status==='committed'?1:0,
+    stance:action.stance,status,sealDebit:status==='committed'?1:0,
     beforeHp:oldHp,afterHp:node.hp,creditedHp:round(oldHp-node.hp),
     beforePressure:oldPressure,afterPressure:run.pressure,
     phaseTransitions:transitions,beforeCharges:before,afterCharges:structuredClone(charges),

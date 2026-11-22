@@ -22,6 +22,8 @@ export interface ServerSettlementProofV2 {
   readonly ownerCharacterId: string;
   readonly receivingCharacterId: string;
   readonly completed: boolean;
+  /** Immutable source-completion time from persisted DB receipt, not client clock. */
+  readonly completedAtMs?: number;
   readonly professionId?: ProfessionIdV2;
   readonly baseEffortSeconds: number;
   /** Staging idle claim elapsed time; separate from buff-adjusted base effort. */
@@ -85,6 +87,7 @@ export function projectServerSettlementV2(proof:ServerSettlementProofV2):Journal
   const fingerprint=JSON.stringify([
     proof.source,proof.sourceId,proof.ownerCharacterId,proof.professionId??null,
     proof.baseEffortSeconds,proof.claimedElapsedSeconds??null,proof.difficultyBasisPoints,
+    proof.completedAtMs??null,
   ]);
   return {canonicalKey,fingerprint,characterId:proof.receivingCharacterId,award};
 }

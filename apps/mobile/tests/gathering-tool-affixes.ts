@@ -74,6 +74,18 @@ assert(Math.abs(rolledContribution.adjustedBasePercent-10)<1e-9&&rolledContribut
 const rarityQualityContribution=gatheringToolContribution(tools[0],{...speedCopies[0],rarity:'epic',quality:87});
 assert(Math.abs(rarityQualityContribution.adjustedBasePercent-(10*1.04*1.074))<1e-9,'Tier contribution must multiply rarity and quality');
 assert(gatheringToolPercent(rarityQualityContribution.adjustedBasePercent)==='11.2','Rounded adjusted tier contribution should be readable');
+// Screenshot regression: Rare Q14 Aster-Iron hatchet has +14.2% tier speed
+// and a separate +4.5% rare-find roll. The roll must never inflate tier speed.
+const asterHatchet=GATHERING_TOOLS.find(row=>row.id==='ASTER_IRON_HATCHET')!;
+const screenshotCopy:CraftedGatheringTool={
+ ...repeat,id:'gtool:inspect-regression',itemId:asterHatchet.id,
+ rarity:'rare',quality:14,bonus:{stat:'rarity',basisPoints:450},
+};
+const screenshotContribution=gatheringToolContribution(asterHatchet,screenshotCopy);
+assert(gatheringToolPercent(screenshotContribution.adjustedBasePercent)==='14.2','Rare Q14 tier gathering speed is +14.2%');
+assert(screenshotContribution.rarityRollPercent===4.5&&screenshotContribution.speedRollPercent===0,'Rare find roll stays separate from gathering speed');
+assert(gatheringToolBonusLabel(screenshotCopy)==='+4.5% Gathering Rarity Chance','Rolled bonus remains readable independently');
+
 const totals=gatheringToolTotalBreakdown(gatheringToolEffects(speeds,'woodcutting'));
 assert(Math.abs(totals.rawTierPercent-60)<1e-9,'Displayed combined tier bonuses must preserve real additive baseline');
 assert(Math.abs(totals.effectivePercent-(1-expected)*100)<1e-9,'Displayed combined speed must match gameplay multiplier');

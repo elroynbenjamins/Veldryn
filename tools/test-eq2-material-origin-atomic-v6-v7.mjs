@@ -135,6 +135,10 @@ rejects(t=>{t.lots[0].accountId='other_account';},'forged_or_duplicate_lot');
 rejects(t=>{t.lots[0].characterId='char_2';},'incomplete_material_lot_coverage');
 rejects(t=>{t.lots.push({...t.lots[0]});},'forged_or_duplicate_lot');
 rejects(t=>{t.lots[0].materialId='EQ2_FAKE_COPY';},'forged_or_duplicate_lot');
+rejects(t=>{t.lots[0].sourceId='PROCESS:EQ2_FORGED';},
+ 'unrecognised_or_invalid_source_proposal');
+rejects(t=>{t.lots[0].originKind='monster';},
+ 'unrecognised_or_invalid_source_proposal');
 rejects(t=>{t.lots[0].originReceiptId=t.lots[1].originReceiptId;},
  'source_receipt_reused_for_other_material');
 rejects(t=>{t.snapshot.characters.char_2.inventory.EQ2_FAKE_COPY=1;},

@@ -28,7 +28,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const r=(text:string,params?:Record<string,string|number>)=>characterRosterText(language,text,params);
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const {width,fontScale}=useWindowDimensions(),stackRows=width<335||fontScale>=1.3||state.settings.textScale>=1.3;
+ const {width,fontScale}=useWindowDimensions(),stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25;
  const rosterIds=[state.character?.id,...(state.otherCharacters??[]).map(row=>row.character.id)].filter((id):id is string=>!!id).sort().join('|');
  const [creationIds,setCreationIds]=useState<string[]>([]);
  useEffect(()=>{

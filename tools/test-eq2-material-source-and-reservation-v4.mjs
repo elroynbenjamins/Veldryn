@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
-const root='backend/dist-equipment-combat-v2-launch/server/equipment/';
+const root='../backend/dist-equipment-combat-v2-launch/server/equipment/';
 const sources=require(root+'equipment-crafting-v2-material-source-review.js');
 const atomic=require(root+'equipment-crafting-v2-unified-reservation-review.js');
 const v3=JSON.parse(fs.readFileSync('docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json','utf8'));

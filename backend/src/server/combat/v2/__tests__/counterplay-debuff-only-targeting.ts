@@ -8,6 +8,9 @@
  */
 import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../../engine';
+import {launchPlayer} from '../../content/launch-combat';
+import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import type {CombatantDefinition,CombatInput} from '../../types';
 
 const stats={
@@ -68,4 +71,40 @@ assert.equal(legacy.events.filter(e=>e.abilityId==='QA_TARGETED_CLEANSE').length
  'legacy AI cannot wake on a debuff-only condition');
 assert.ok(legacy.players.find(p=>p.definition.id==='QA_TANK')!.modifiers
  .some(m=>m.kind==='debuff'),'legacy status remains untouched');
-console.log('PASS: V2 debuff-only cleanse AI and targeting; lower-HP clean ally ignored; V1 replay parity');
+// Actual server-compiled Stonecaller Cleansing Stream (second River Stone
+// variant) must cure a debuff-only high-HP tank. Normal River Stone cannot;
+// no made-up skill metadata or live build route is involved.
+const stonecaller=launchPlayer('Stonecaller',25);
+const river=SKILL_IDENTITIES_V2.find(s=>s.classId==='STONECALLER'&&s.name==='River Stone');
+const stoneSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='STONECALLER');
+assert.ok(river&&stoneSpec,'V2 source catalogue must contain Stonecaller counter variant');
+function stoneBuild(index:0|1):VerifiedSkillBuildV2{
+ return {
+  actor:stonecaller,verified:{classId:'STONECALLER',level:25,ownedInstanceIds:new Set()},
+  selected:{specializationId:stoneSpec.id,equipment:{},
+   activeSkills:[{skillId:river.id,variantId:river.variants[index].id}],
+   talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{},
+ };
+}
+const ordinary=compileServerSkillBuildV2(true,stoneBuild(0));
+const cleansing=compileServerSkillBuildV2(true,stoneBuild(1));
+assert.equal(ordinary.abilities[0].aiCondition,'ally_below_50');
+assert.equal(ordinary.abilities[0].target,'lowest_hp_ally');
+assert.equal(cleansing.abilities[0].aiCondition,'ally_below_50_or_dot');
+assert.equal(cleansing.abilities[0].target,'lowest_hp_ally_with_dot');
+assert.deepEqual(ordinary.stats,cleansing.stats,'variant does not change class stat budget');
+function stoneFight(actor:CombatantDefinition){
+ const input:CombatInput={seed:'QA_STONECALLER_CLEANSING_STREAM',
+  players:[tank,actor],enemies:[curse],maxDurationMs:500};
+ const result=simulateCombat(input);
+ assert.deepEqual(simulateCombat(input),result);
+ return result;
+}
+const ordinaryFight=stoneFight(ordinary),cleansingFight=stoneFight(cleansing);
+assert.equal(ordinaryFight.events.filter(e=>e.type==='status_remove'&&
+ e.abilityId==='SC_HEAL:v2:0').length,0);
+assert.deepEqual(cleansingFight.events.filter(e=>e.type==='status_remove'&&
+ e.abilityId==='SC_HEAL:v2:1').map(e=>[e.targetId,e.statusKind]),
+ [['QA_TANK','debuff']], 'real compiled Cleansing Stream removes active debuff');
+console.log('PASS: V2 debuff-only cleanse AI and targeting; lower-HP clean ally ignored; V1 replay parity; authored Stonecaller Cleansing Stream verified');

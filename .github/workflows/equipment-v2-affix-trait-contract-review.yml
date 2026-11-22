@@ -1,0 +1,25 @@
+name: Equipment 2.0 affix and trait contract (review only)
+on:
+  pull_request:
+    paths:
+      - 'docs/equipment-2-0/eq2-combat-affix-trait-proposal-v1.json'
+      - 'docs/equipment-2-0/EQUIPMENT_COMBAT_2_AFFIX_TRAIT_REVIEW_V1.md'
+      - 'tools/validate-eq2-affix-traits-review.mjs'
+      - 'tools/tests/eq2-affix-traits-review.test.mjs'
+      - '.github/workflows/equipment-v2-affix-trait-contract-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-proposed-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reject unsafe affix aliases, oversubscribed legal gear caps and reactive trait loops
+        run: node tools/validate-eq2-affix-traits-review.mjs
+      - name: Test 17 stat IDs, 28 signatures and fail-closed design boundaries
+        run: node --test tools/tests/eq2-affix-traits-review.test.mjs

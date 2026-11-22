@@ -70,7 +70,7 @@ export function NotificationSettingsPanel({online,language}:{online:boolean;lang
  const changed=Boolean(data&&JSON.stringify(data.current)!==JSON.stringify(data.original));
  return <Panel>
   <Text style={s.title}>{a('Notifications')}</Text>
-  <Text style={s.caption}>{a('Choose when reminders appear. Notifications currently display in the app when it is open; background phone push requires a future native build.')}</Text>
+  <Text style={s.caption}>{a('Choose when in-app reminders appear. Phone push alerts are not available yet.')}</Text>
   {!online||!accountId?<Text style={s.caption}>{a('Sign in to customize account reminders.')}</Text>:null}
   {loading?<Text style={s.caption}>{a('Loading notification settings...')}</Text>:null}
   {draft?<View style={s.stack}>
@@ -124,7 +124,6 @@ export function NotificationSettingsPanel({online,language}:{online:boolean;lang
    {success?<Text style={s.success}>{a('Notification settings saved.')}</Text>:null}
   </View>:null}
   {error?<Text style={s.error}>{a(error)}</Text>:null}
-  <Text style={s.caption}>{a('Crafting and Companion Expedition notifications are not included.')}</Text>
  </Panel>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

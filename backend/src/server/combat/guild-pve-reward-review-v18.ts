@@ -73,7 +73,8 @@ export function reviewGuildPveV18Reward(input:{
   }
   if(r.status!=='committed'||r.sealDebit!==1||!r.combat||
    !/^[a-f0-9]{64}$/.test(r.actorSourceHash??'')||
-   !Number.isSafeInteger(r.gameRevision)||r.gameRevision!<=0||
+   !Number.isSafeInteger(r.gameRevision)||(r.gameRevision??0)<=0||
+   !Number.isFinite(r.combat.bossHpRemoved)||r.combat.bossHpRemoved<0||
    r.creditedHp>r.combat.bossHpRemoved+.02||
    r.combat.stance!==r.stance||
    !/^[a-f0-9]{64}$/.test(r.combat.deterministicEvidenceHash)||

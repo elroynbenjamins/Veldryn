@@ -13,6 +13,14 @@
 import {simulateCombat} from '../combat/engine';
 import type {CombatInput,CombatResult} from '../combat/types';
 import {enemyV2SnapshotDigest} from '../combat/v2/enemy-engine-authority';
+import {compileEquippedActor,
+ type TrustedEquipmentRuntimeV2,type EquipmentEncounterEvidenceV2,
+} from '../combat/v2/unified-equipment-encounter';
+import {compileExactEquipmentTraitSourceV2,
+ type TrustedEquipmentTraitReceiptPortV2,
+} from '../combat/v2/equipment-trait-exact-copy-adapter';
+import type {VerifiedSkillBuildV2} from '../combat/v2/skill-effects';
+import type {CombatantDefinition} from '../combat/types';
 import {
  issueEquipmentV2TraitAuthority,
  type VerifiedV2EquipmentEffectSource,
@@ -131,6 +139,62 @@ function checkBoss(input:CombatInput,w:FrozenPartyEventV92Witness){
     (e.kind==='shield'&&(e.flat??0)>Math.round(boss.stats.maxHp*.04)))))
   fail('untrusted_or_unbounded_v90_boss');
 }
+/**
+ * The actual full EQ2 compiler path for Party V92. It resolves verified
+ * class baseline, 54 authored skills/variants, equipped item base/quality,
+ * sets and original 13 affixes ONCE, then verifies the three new affix
+ * channels and selected supported signature trait origins from exact
+ * per-copy receipts. Returning sources does NOT issue an authority token.
+ * The V92 frozen-battle issuer still needs an independently trusted
+ * persisted account/roster/gear/victory verifier.
+ */
+export interface TrustedPartyV92BuildInput {
+ readonly actor:CombatantDefinition;
+ readonly build:VerifiedSkillBuildV2;
+ readonly equipment:TrustedEquipmentRuntimeV2;
+ readonly exactTraitReceipts:TrustedEquipmentTraitReceiptPortV2;
+}
+export interface PreparedPartyV92Equipment {
+ readonly players:readonly CombatantDefinition[];
+ readonly sources:readonly VerifiedV2EquipmentEffectSource[];
+ readonly evidence:readonly EquipmentEncounterEvidenceV2[];
+}
+export function prepareFullyEquippedPartyV92(
+ party:readonly TrustedPartyV92BuildInput[],
+ qaEnabled=false,
+):PreparedPartyV92Equipment {
+ if(!qaEnabled||PARTY_EVENT_EQ2_TRAIT_V92_RELEASED||
+   process.env.NODE_ENV==='production')fail('unreleased');
+ if(!Array.isArray(party)||party.length<2||party.length>4)
+  fail('invalid_party_build_count');
+ const players:CombatantDefinition[]=[];
+ const sources:VerifiedV2EquipmentEffectSource[]=[];
+ const evidence:EquipmentEncounterEvidenceV2[]=[];
+ for(const member of party){
+  if(!member||!member.actor||!member.build||!member.equipment||
+    !member.exactTraitReceipts||
+    member.actor.id!==member.build.actor.id||
+    member.actor!==member.build.actor||
+    member.actor.id!==member.equipment.actorId||
+    member.equipment.characterId!==member.exactTraitReceipts.characterId)
+   fail('untrusted_complete_item_build');
+  const compiled=compileEquippedActor(
+   member.actor,member.build,member.equipment);
+  const source=compileExactEquipmentTraitSourceV2(
+   member.build,member.equipment,member.exactTraitReceipts);
+  if(compiled.actor.combatV2?.version!==2||
+    compiled.actor.id!==source.actorId||
+    source.characterId!==member.equipment.characterId)
+   fail('incomplete_v2_actor_source');
+  players.push(compiled.actor);sources.push(source);evidence.push(compiled.evidence);
+ }
+ if(!unique(sources.map(s=>s.accountId))||
+   !unique(sources.map(s=>s.characterId))||
+   !unique(players.map(p=>p.id)))
+  fail('duplicate_equipment_party_owner');
+ return {players,sources,evidence};
+}
+
 /**
  * Experimental execution for a server-frozen NEW 2.0 Party Event only.
  * Real trait hooks run in the existing engine, with the shared boss reflect

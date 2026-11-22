@@ -18,7 +18,7 @@ import {validateGatheringToolRoll} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
 import {formatGameNumber} from '../core/number-format';
-import {displayStat,DISPLAY_STAT_MULTIPLIER} from '../core/stat-display';
+import {displayStat,displayStatPrecise} from '../core/stat-display';
 import {equipmentCraftingPath} from '../core/equipment-crafting-path';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -60,7 +60,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
     .filter(stack=>stack.itemId===item.id&&!!stack.instanceId)
     .flatMap(stack=>{const copy=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(record=>record.id===stack.instanceId),stack.itemId);return copy?[copy]:[]}):[];
   const detailToolCopies=instanceId?storedToolCopies.filter(copy=>copy.id===instanceId):storedToolCopies;
-
+  
   const storedGearCount=source==='equipment_pouch'?equipmentPouch(state).stacks.reduce((count,stack)=>count+(stack.itemId===itemId?stack.quantity:0),0):0;
   // Both 1.0.11 non-weapon rolls and legacy weapon rolls are already resolved
   // against the exact selected receipt by itemInspectModel. Keep the player
@@ -71,8 +71,8 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
     const match=/^([+-]\d+(?:\.\d+)?%)\s+(.+)$/.exec(valueAndStat);
     return {id:index,label:match?.[2]??valueAndStat,value:match?.[1]??''};
   });
-  // Tool roll and quality are already presented by the dedicated tool breakdown.
-  const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&!(item.type==='tool'&&(line.includes(' · Q')||line.startsWith('Tool roll record unavailable'))));
+  const traitLine=item.type==='gear'?item.passive?.trim():undefined;
+  const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&(!traitLine||line!==traitLine)&&!(item.type==='tool'&&(line.includes(' · Q')||line.startsWith('Tool roll record unavailable'))));
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const craftingOpen=!!craftingDisclosure[itemId],useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
@@ -92,18 +92,33 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
         </View>
 
         <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
-          {item.type==='gear'&&bonusRows.length>0?<View style={s.bonusPanel}>
-            {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
-              <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
-              <Text style={s.bonusValue}>{roll.value}</Text>
-            </View>)}
+          {item.type==='gear'&&model.stats&&(model.stats.attack!==0||model.stats.defense!==0||model.stats.hp!==0)?<View style={s.statGroup}>
+            <Text style={s.statHeading}>{gt("BASE STATS")}</Text>
+            <View style={s.basePanel} accessibilityLabel={gt("Equipment base stats")}>
+              {model.stats.attack!==0?<Stat label="ATK" value={model.stats.attack}/>:null}
+              {model.stats.defense!==0?<Stat label="DEF" value={model.stats.defense}/>:null}
+              {model.stats.hp!==0?<Stat label="HP" value={model.stats.hp}/>:null}
+            </View>
+          </View>:null}
+          {item.type==='gear'&&bonusRows.length>0?<View style={s.statGroup}>
+            <Text style={s.statHeading}>{gt("BONUS STATS")}</Text>
+            <View style={s.bonusPanel}>
+              {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
+                <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
+                <Text style={s.bonusValue}>{roll.value}</Text>
+              </View>)}
+            </View>
+          </View>:null}
+          {traitLine?<View style={s.statGroup}>
+            <Text style={s.statHeading}>{gt("TRAIT")}</Text>
+            <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
           </View>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
           <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
           </Pressable>
           {detailsOpen&&<>
-          {(model.stats||otherEffectLines.length>0)&&<Section title={gt("WHAT IT DOES")}><View style={s.statRow}>{model.stats&&<><Stat label="ATK" value={model.stats.attack}/><Stat label="DEF" value={model.stats.defense}/><Stat label="HP" value={model.stats.hp}/></>}</View>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}</Section>}
+          {(otherEffectLines.length>0||(model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped))&&<Section title={gt("WHAT IT DOES")}>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}</Section>}
           {toolDef?<Section title={gt('GATHERING TOOL DETAILS')}>
             {(detailToolCopies.length?detailToolCopies:instanceId?[]:[undefined]).map((copy,index)=>{
               const breakdown=gatheringToolContribution(toolDef,copy);
@@ -168,7 +183,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   </GameModalSurface>;
 }
 function Section({title,children}:{title:string;children:ReactNode}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text>{children}</View>}
-function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scaled=value*DISPLAY_STAT_MULTIPLIER,formatted=Number.isInteger(scaled)?String(Math.round(scaled)):scaled.toFixed(1);return <View style={s.stat}><Text style={s.statLabel}>{itemDetailText(language,label)}</Text><Text style={s.statValue}>{formatted}</Text></View>}
+function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.bonusRow}><Text style={s.bonusLabel}>{itemDetailText(language,label)}</Text><Text style={s.baseValue}>{displayStatPrecise(value)}</Text></View>}
 function DeltaStat({label,value,potential=false}:{label:string;value:number;potential?:boolean}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scaled=displayStat(value),tone=scaled>0?C.good:scaled<0?C.bad:C.muted;return <View style={[s.deltaStat,potential&&s.deltaPotential]}><Text style={s.statLabel}>{itemDetailText(language,label)}</Text><Text style={[s.deltaValue,{color:tone}]}>{scaled===0?'—':(scaled>0?'+':'')+scaled}</Text></View>}
 function SourceRow({source,primary=false,onNavigate}:{source:ReturnType<typeof itemInspectModel>['sources'][number];primary?:boolean;onNavigate?:(destination:WorkingTowardDestination)=>void}){
  const {gt,gl,language}=useGameplayText();
@@ -195,14 +210,18 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
    disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
    disclosureText:{...typography.bodyStrong,color:C.text,flex:1},disclosureMark:{fontSize:18,fontWeight:'900',color:C.accent},
    quickFooter:{padding:spacing.sm,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.panelRaised,flexShrink:0},
+  statGroup:{gap:4},
+  statHeading:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},
+  basePanel:{gap:3,paddingHorizontal:spacing.sm,paddingVertical:6,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
   bonusPanel:{gap:3,paddingHorizontal:spacing.sm,paddingVertical:6,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.good,borderRadius:radii.md,backgroundColor:C.panel2},
-  bonusTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},
   bonusRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:24},
   bonusLabel:{...typography.bodyStrong,color:C.text,flex:1},
   bonusValue:{...typography.bodyStrong,color:C.good,fontWeight:'900'},
-  bonusNote:{...typography.caption,color:C.muted},
+  baseValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  traitPanel:{paddingHorizontal:spacing.sm,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
+  traitText:{...typography.bodyStrong,color:C.text},
   section:{gap:6,paddingBottom:spacing.sm,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},sectionTitle:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
-  statRow:{flexDirection:'row',gap:spacing.sm},stat:{flex:1,minWidth:0,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},statLabel:{...typography.caption,color:C.muted},statValue:{...typography.bodyStrong,color:C.text,fontWeight:'800'},
+  statLabel:{...typography.caption,color:C.muted},
   compareLine:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},deltaRow:{flexDirection:'row',gap:6},deltaStat:{flex:1,minWidth:0,paddingVertical:6,paddingHorizontal:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},deltaPotential:{borderColor:C.info},deltaValue:{...typography.bodyStrong,fontWeight:'900'},totalLine:{...typography.caption,color:C.text,fontWeight:'700'},potentialLabel:{...typography.caption,color:C.info,fontWeight:'900'},warningText:{...typography.body,color:C.warning,fontWeight:'700'},setDecision:{gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},setName:{...typography.bodyStrong,color:C.text},setCount:{...typography.caption,color:C.accent,fontWeight:'900'},setRuntimeRow:{flexDirection:'row',alignItems:'flex-start',gap:6},setRuntimePill:{minWidth:34,textAlign:'center',fontSize:7,lineHeight:10,fontWeight:'900',borderWidth:1,borderRadius:99,paddingHorizontal:4,paddingVertical:2},setRuntimeLive:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},setRuntimePending:{color:C.warning,borderColor:C.warning,backgroundColor:C.warningSurface},setNext:{...typography.caption,color:C.info,fontWeight:'700'},catalogNote:{fontSize:9,lineHeight:12,color:C.muted},
   body:{...typography.body,color:C.text},bodyStrong:{...typography.bodyStrong,color:C.text},note:{...typography.caption,color:C.muted},
   upgradeTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},chance:{...typography.bodyStrong,fontWeight:'900'},craftState:{fontSize:8,lineHeight:11,fontWeight:'900',letterSpacing:.5,paddingHorizontal:6,paddingVertical:4,borderWidth:1,borderRadius:99},craftReady:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},craftBlocked:{color:C.warning,borderColor:C.warning,backgroundColor:C.warningSurface},sectionMini:{fontSize:8,lineHeight:11,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:4},blockerRow:{gap:2,paddingVertical:4},materialReadyRow:{minHeight:38,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:4},materialReady:{...typography.caption,color:C.good,fontWeight:'900'},materialMissing:{...typography.caption,color:C.warning,fontWeight:'900'},

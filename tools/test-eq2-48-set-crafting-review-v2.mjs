@@ -111,8 +111,11 @@ for(const [pieceId,rows] of byPiece){
  assert.equal(rows.length,2,'exactly two routes '+pieceId);
  assert.deepEqual(new Set(rows.map(x=>x.route)),new Set(['foundation','alternate']));
  const [a,b]=rows;
- for(const k of ['gold','xp','seconds','professionLevel','craftCombatLevelRequired','equipCombatLevelCandidate','profession'])
+ for(const k of ['gold','xp','seconds','professionLevel','craftCombatLevelRequired','equipCombatLevelCandidate'])
    assert.equal(a[k],b[k],'route cannot bypass '+k+' on '+pieceId);
+ // Existing pinned drafts intentionally allow different professions by route.
+ // Preserve that useful specialization choice; new 48-set rows keep one profession.
+ if(a.group==='expanded_48_sets')assert.equal(a.profession,b.profession);
  for(const id of [common[a.tier],scarce[a.tier],binder[a.tier]]){
    const qty=r=>r.inputs.find(x=>x.itemId===id)?.quantity||0;
    assert.equal(qty(a),qty(b),'route must not bypass scarce/common/binder '+pieceId);

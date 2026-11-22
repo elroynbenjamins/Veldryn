@@ -16,7 +16,7 @@ ok(GATHERING_TOOLS.length===12,'Expected four tool tiers for three gathering ski
 ok(TOOL_RECIPES.length===12&&TOOL_RECIPES.every(recipe=>recipe.skillId==='smithing'&&recipe.level===1),'All gathering tools must be craftable at Smithing level 1, regardless of tier');
 ok(RECIPES.filter(entry=>entry.output.itemId.endsWith('PICKAXE')||entry.output.itemId.endsWith('HATCHET')||entry.output.itemId.endsWith('ROD')).length===12,'Every gathering tool must be craftable');
 ok(TOOL_BLUEPRINT_ITEMS.length===9,'Tier 2-4 gathering tools should use permanent blueprints while Tier 1 stays directly craftable');
-ok(roundDownToolBlueprintDropChance(.0121125)===.012&&roundDownToolBlueprintDropChance(.0092625)===.009&&roundDownToolBlueprintDropChance(.0057)===.005,'Blueprint drop rates round down in 0.10% steps');
+ok(roundDownToolBlueprintDropChance(.0121125)===.012&&roundDownToolBlueprintDropChance(.0092625)===.009&&roundDownToolBlueprintDropChance(.0057)===.0055&&roundDownToolBlueprintDropChance(.00285)===.0025,'Blueprint drop rates round down in 0.05 percentage-point steps');
 ok(increasedToolCraftXp(105)===190&&increasedToolCraftXp(2300)===4040,'Tool XP calculation rounds up after +3 and +75%');
 
 const balanceCases=[
@@ -49,7 +49,7 @@ for(const [id,previousXp,previousBaseGold,previousInputs,authoredBlueprintChance
  if(authoredBlueprintChance===undefined){
   ok(!tool.blueprint,id+' Tier 1 still has no blueprint');
  }else{
-  ok(!!tool.blueprint&&Math.abs(tool.blueprint.dropChance-authoredBlueprintChance*.75)<1e-12,id+' blueprint should retain its 25% modifier before final monster scaling');
+  ok(!!tool.blueprint&&Math.abs(tool.blueprint.dropChance-authoredBlueprintChance*.75*.5)<1e-12,id+' blueprint should retain its 25% reduction and additional 50% reduction before final monster scaling');
  }
 }
 
@@ -62,9 +62,38 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
   ok(!!tools[i].blueprint,skillId+' Tier '+tools[i].tier+' must have a blueprint');
   const source=MONSTERS.find(monster=>monster.id===tools[i].blueprint!.sourceMonsterId);
   const expectedFinal=roundDownToolBlueprintDropChance(tools[i].blueprint!.dropChance*.95);
-  ok(expectedFinal>=.005&&expectedFinal<=.012,tools[i].name+' final drop rate must stay inside 0.5%-1.2%');
-  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&Math.abs(drop.chance-expectedFinal)<1e-12),tools[i].name+' blueprint final drop rate must be rounded DOWN to the nearest 0.10 percentage point');
+  ok(expectedFinal>=.0025&&expectedFinal<=.006,tools[i].name+' final drop rate must stay inside 0.25%-0.60%');
+  ok(!!source&&source.drops.some(drop=>drop.itemId===tools[i].blueprint!.itemId&&Math.abs(drop.chance-expectedFinal)<1e-12),tools[i].name+' blueprint final drop rate must be rounded DOWN to the nearest 0.05 percentage point');
  }
+}
+
+
+// Pin all nine final blueprint odds and unique, repeatable enemy sources.
+// An accidental extra drop source would inflate supply as combat speeds up.
+const blueprintExpected:Readonly<Record<string,{rate:number;source:string;level:number}>>={
+ BP_ASTER_IRON_PICKAXE:{rate:.006,source:'CAVE_SKITTER',level:16},
+ BP_ASTER_IRON_HATCHET:{rate:.0055,source:'THORNLING',level:10},
+ BP_IRONWOOD_ROD:{rate:.005,source:'MIRE_HERON',level:12},
+ BP_OATHSTONE_PICKAXE:{rate:.0045,source:'FALLEN_SENTINEL',level:24},
+ BP_OATHSTONE_HATCHET:{rate:.004,source:'OATHGLASS_REVENANT',level:25},
+ BP_OATHSCALE_ROD:{rate:.0035,source:'DROWNED_PILGRIM',level:22},
+ BP_FROSTIRON_PICKAXE:{rate:.003,source:'BELLWRAITH',level:61},
+ BP_FROSTIRON_HATCHET:{rate:.0025,source:'FROSTWOLF',level:51},
+ BP_RIMEGLASS_ROD:{rate:.0025,source:'LAKEBOUND_SPECTER',level:68},
+};
+ok(Object.keys(blueprintExpected).length===TOOL_BLUEPRINT_ITEMS.length,
+ 'Blueprint rate/sourcing snapshot must cover exactly nine items');
+for(const tool of GATHERING_TOOLS.filter(tool=>!!tool.blueprint)){
+ const id=tool.blueprint!.itemId,expected=blueprintExpected[id];
+ const monster=MONSTERS.find(row=>row.id===tool.blueprint!.sourceMonsterId);
+ const owners=MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===id));
+ const actual=monster?.drops.find(drop=>drop.itemId===id)?.chance;
+ ok(!!expected&&!!monster&&monster.id===expected.source&&monster.level===expected.level,
+   id+' must stay attached to the intended regional hunt');
+ ok(monster&&!monster.boss&&owners.length===1&&owners[0].id===monster.id,
+   id+' must have exactly one repeatable non-boss encounter');
+ ok(actual!==undefined&&Math.abs(actual-expected.rate)<1e-12,
+   id+' must preserve its final drop rate after both scarcity modifiers');
 }
 
 ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===2,'Level-16 Mining should recommend the highest legally reachable tool tier rather than a locked Tier 3');

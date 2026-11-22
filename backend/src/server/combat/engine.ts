@@ -62,7 +62,10 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
   switch(rule) {
     case 'self': return [actor];
     case 'lowest_hp_ally': { const live=living(allies); return live.length ? [live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)] : []; }
-    case 'lowest_hp_ally_with_dot': { const live=living(allies),poisoned=live.filter(x=>x.periodic.some(p=>p.kind==='dot')),candidates=poisoned.length?poisoned:live;return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
+    case 'lowest_hp_ally_with_dot': { // V2 cleanse recognizes debuff-only allies; V1 still sees only DoTs.
+      const live=living(allies),affected=live.filter(x=>x.periodic.some(p=>p.kind==='dot')||
+        (actor.combatV2&&x.modifiers.some(m=>m.kind==='debuff'))),candidates=affected.length?affected:live;
+      return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
     case 'two_lowest_hp_allies':return [...living(allies)].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id)).slice(0,2);
     case 'all_allies': return living(allies);
     case 'all_enemies': return living(enemies);
@@ -82,7 +85,9 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
   switch(a.aiCondition || 'always') {
     case 'self_below_50': return hpPct(actor)<0.5;
     case 'ally_below_50': return living(allies).some(x=>hpPct(x)<0.5);
-    case 'ally_below_50_or_dot': return living(allies).some(x=>hpPct(x)<0.5||x.periodic.some(p=>p.kind==='dot'));
+    case 'ally_below_50_or_dot': // V2 cures active debuff-only allies above 50% HP; preserve V1 AI.
+      return living(allies).some(x=>hpPct(x)<0.5||x.periodic.some(p=>p.kind==='dot')||
+        (actor.combatV2&&x.modifiers.some(m=>m.kind==='debuff')));
     case 'ally_below_80': return living(allies).some(x=>hpPct(x)<0.8);
     case 'ally_below_80_or_targeted': return Boolean(threatenedAlly(allies,enemies))||living(allies).some(x=>hpPct(x)<0.8);
     case 'target_casting': return living(enemies).some(x=>!!x.casting && (x.definition.abilities.find(z=>z.id===x.casting!.abilityId)?.interruptible ?? false));

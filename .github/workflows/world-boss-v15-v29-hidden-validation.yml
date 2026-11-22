@@ -127,6 +127,7 @@ jobs:
             world-boss-account-service-v23 \
             world-boss-account-balance-v24 \
             world-boss-authored-account-encounters-v25 \
+            world-boss-equipment-v87 \
             world-boss-authored-settlement-v26 \
             world-boss-war-camp-transactions-v27 \
             world-boss-reward-ledger-v28 \

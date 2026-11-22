@@ -28,13 +28,22 @@ export function isValidSocialName(input:string){
  return name.length>=2&&name.length<=20&&VALID_SOCIAL_NAME.test(name);
 }
 
-/** Keep server error codes actionable without showing database internals. */
+/** PostgREST errors are plain objects, not always instances of Error.
+ * Extract only bounded string diagnostics; never expose raw SQL/server detail to players. */
+function socialNameErrorDetails(error:unknown):string{
+ if(typeof error==='string')return error.slice(0,1024);
+ if(!error||typeof error!=='object')return '';
+ const record=error as Record<string,unknown>;
+ return ['message','code','details','hint']
+  .map(key=>typeof record[key]==='string'?(record[key] as string).slice(0,1024):'')
+  .join(' ');
+}
 export function socialNameError(error:unknown){
- const message=error instanceof Error?error.message:String(error??'');
- if(message.includes('SOCIAL_NAME_TAKEN'))return 'This name is already used by another player.';
- if(message.includes('SOCIAL_NAME_COOLDOWN'))return 'You can change your social name once every 30 days.';
- if(message.includes('SOCIAL_NAME_BLOCKED'))return 'Choose a different social name.';
- if(message.includes('INVALID_SOCIAL_NAME'))return 'Use 2–20 letters; spaces, hyphens and apostrophes are allowed.';
- if(message.includes('PROFILE_NOT_FOUND'))return 'Complete account setup before choosing a social name.';
- return 'Could not update your social name. Please try again.';
+ const message=socialNameErrorDetails(error);
+ if(message.includes('SOCIAL_NAME_TAKEN')||message.includes('23505'))return 'This name is already used by another player.' as const;
+ if(message.includes('SOCIAL_NAME_COOLDOWN'))return 'You can change your social name once every 30 days.' as const;
+ if(message.includes('SOCIAL_NAME_BLOCKED'))return 'Choose a different social name.' as const;
+ if(message.includes('INVALID_SOCIAL_NAME'))return 'Use 2–20 letters. Spaces, hyphens and apostrophes are allowed.' as const;
+ if(message.includes('PROFILE_NOT_FOUND'))return 'Complete account setup before choosing a social name.' as const;
+ return 'Could not update your social name. Please try again.' as const;
 }

@@ -164,5 +164,37 @@ assert.deepEqual(lastFight.events.filter(e=>e.type==='status_apply'&&
 assert.deepEqual(lastFight,simulateCombat(lastInput,undefined,undefined,lastToken),
  'Threshold reaction and modifier expiry must replay deterministically');
 
+// A secondary echo can deliver the final sliver of HP AFTER an original
+// class hit. The enemy must immediately die (no immortal zero-HP target).
+const echoFinisherBase:CombatInput={
+ seed:'QA_SECONDARY_ECHO_KILL',maxDurationMs:1200,
+ players:[{...player,basicAttackCoeff:0,stats:{...player.stats,critChance:0}}],
+ enemies:[{...boss,boss:false,tags:[],stats:{...boss.stats,maxHp:100000}}],
+};
+const baselineFinisher=simulateCombat(echoFinisherBase);
+const originalHit=baselineFinisher.events.find(e=>e.type==='damage'&&
+ e.abilityId==='QA_CLASS_DAMAGE'&&e.actorId==='P')?.amount??0;
+assert.ok(originalHit>20,'QA fixture needs an original direct class hit');
+const finisherInput:CombatInput={...echoFinisherBase,enemies:[{
+ ...echoFinisherBase.enemies[0],stats:{...echoFinisherBase.enemies[0].stats,
+  maxHp:originalHit+.20},
+}]};
+const finisherSnapshot:VerifiedDungeonRewardSnapshotV2={
+ ...snap,seed:finisherInput.seed,runId:'QA_SECONDARY_ECHO_KILL',
+ receipts:[{id:'RELIC_TEMPORAL_ECHO',nodeId:'TREASURE_FINISHER_1',
+  depth:1,room:'treasure'}],
+};
+const finisherToken=issueDungeonRewardEngineAuthorityV2(finisherInput,finisherSnapshot,verify);
+const finisher=simulateCombat(finisherInput,undefined,undefined,finisherToken);
+assert.ok(finisher.events.some(e=>e.abilityId===
+ 'V2_DUNGEON_REWARD:RELIC_TEMPORAL_ECHO'&&e.type==='dungeon_reward_trigger'));
+assert.equal(finisher.enemies[0].hp,0);
+assert.equal(finisher.enemies[0].alive,false,
+ 'A reward-generated finishing hit must settle the actual death');
+assert.ok(finisher.events.some(e=>e.type==='death'&&
+ e.abilityId==='V2_DUNGEON_REWARD:RELIC_TEMPORAL_ECHO'));
+assert.deepEqual(finisher,simulateCombat(finisherInput,undefined,undefined,finisherToken),
+ 'Secondary kills have deterministic replay and no duplicate death');
+
 console.log('PASS six signed Dungeon 2.0 reactive hooks, 3 nonrecursive bleed ticks, '+
  'boss phase exclusions, once-only Last Stand, bounded Echo, ICDs and legacy isolation');

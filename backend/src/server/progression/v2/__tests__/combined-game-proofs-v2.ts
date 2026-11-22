@@ -69,7 +69,7 @@ async function test(){
         combatEffort:{startsAtMs:1000,endsAtMs:25000}}}],
   };
   await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:overlap}),
-    /double_segment/,'never claim same source index twice');
+    /inconsistent_segments/,'mixed queues must use one authoritative activity segment stream');
 
   const craftBase={
     ...common,commandType:'craft',requestId:'command00002',
@@ -90,10 +90,9 @@ async function test(){
   eq(finished[0].professionId,'smithing','craft skill');
   eq(finished[0].baseEffortSeconds,72,'two actual crafts work units');
   eq(finished[0].claimedElapsedSeconds,0,'instant craft has no idle time');
-  eq((await projectCombinedGameCareerProofsV2({...craftBase,
-    instantCraft:{...craftBase.instantCraft,commandType:'craft_cancel'}})
-    .catch(error=>{if(/nested_source_mismatch/.test(String(error)))return [];throw error;})).length,
-    0,'nested command tampering cannot award');
+  await reject(()=>projectCombinedGameCareerProofsV2({...craftBase,
+    instantCraft:{...craftBase.instantCraft,commandType:'craft_cancel'}}),
+    /nested_source_mismatch/,'nested command tampering cannot award');
   console.log('PASS: combined career proof audit prevents cross-character, cross-revision and mixed-queue double credit');
 }
 void test().catch(e=>{throw e;});

@@ -1,4 +1,6 @@
 import {strict as assert} from 'node:assert';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
 import {
  GATHERING_TOOL_TEMPLATES_V2,gatheringToolTemplateV2,
  planGatheringToolCraftV2,planGatheringToolEquipV2,
@@ -27,6 +29,29 @@ const equipContext=(itemId:string,levels:Partial<Record<ProfessionIdV2,number>>,
  progression:progression(levels),characterId:'buyer',
  instances:[copy(itemId)],equippedBySkillAndTier:{},...overrides,
 });
+
+// Keep the hidden server item/skill/tier/blueprint allowlist aligned with the
+// actual authored T1–T4 mobile catalogue; neither a stale duplicated list nor
+// arbitrary client item IDs may authorize a non-existent tool.
+const mobileCatalogue=readFileSync(resolve(
+ __dirname,'../../../../../../apps/mobile/src/content/gathering-tools.ts',
+),'utf8');
+const authored=[...mobileCatalogue.matchAll(
+ /tool\(\{id:'([^']+)',name:'[^']+',skillId:'([^']+)',tier:(\d)\b/g,
+)].map(match=>({itemId:match[1],gatheringSkill:match[2],tier:Number(match[3])}));
+assert.equal(authored.length,12,'Exactly twelve reviewed, authored T1–T4 mobile tools');
+assert.deepEqual(
+ GATHERING_TOOL_TEMPLATES_V2.map(({itemId,gatheringSkill,tier})=>({itemId,gatheringSkill,tier}))
+  .sort((a,b)=>a.itemId.localeCompare(b.itemId)),
+ authored.sort((a,b)=>a.itemId.localeCompare(b.itemId)),
+ 'The server must never invent a tool identity, profession or tier');
+for(const t of GATHERING_TOOL_TEMPLATES_V2){
+ assert.equal(t.blueprintKnowledgeId===null,t.tier===1,
+  'Only beginner tools are blueprint-free');
+ if(t.blueprintKnowledgeId)
+  assert.ok(mobileCatalogue.includes("'"+t.blueprintKnowledgeId+"'"),
+   t.itemId+' must use the already-authored physical blueprint knowledge');
+}
 
 assert.equal(GATHERING_TOOL_TEMPLATES_V2.length,12);
 assert.equal(new Set(GATHERING_TOOL_TEMPLATES_V2.map(x=>x.itemId)).size,12);

@@ -5,6 +5,8 @@ const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const overview=read('src/components/coop/CoopRunOverview.tsx');
 const choices=read('src/components/coop/DungeonRouteChoices.tsx');
+const presentation=read('src/components/coop/dungeon-room-presentation.ts');
+assert(!presentation.includes("event:{name:'Event room'"),'Retired resource-only Event Rooms are not advertised in the dungeon UI');
 assert(overview.includes('<DungeonRouteChoices options={run.options} combatMarksRemaining={Math.max(0,(run.combatMarksCap??25)-(run.combatMarksEarned??0))} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
 assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');

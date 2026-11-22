@@ -3,6 +3,8 @@ import type {GameState,CharacterState,RewardBundle} from './types';
 export type MealBonusKind='gathering_speed'|'crafting_speed'|'combat_xp'|'noncombat_speed';
 export interface MealBonusDefinition {itemId:string;kind:MealBonusKind;percent:number;durationHours:number;label:string;}
 export interface ActiveMealBuff {itemId:string;remainingSeconds:number;}
+/** Each additional copy of the active meal extends its duration, not its percentage. */
+export const MAX_MEAL_BUFF_SECONDS=24*60*60;
 /** Improved 2x meal rates; one explicitly activated meal at a time, separate from Supply boosts. */
 export const MEAL_BONUSES:readonly MealBonusDefinition[]=[
  {itemId:'IRONWOOD_STEW',kind:'gathering_speed',percent:4,durationHours:3,label:'+4% Gathering speed'},
@@ -16,7 +18,7 @@ export function normalizeMealBuff(value:unknown):ActiveMealBuff|undefined{
  if(value===undefined||value===null)return undefined;
  if(typeof value!=='object')throw new Error('Invalid active meal bonus; preserve the save backup.');
  const v=value as Partial<ActiveMealBuff>,def=mealBonusDef(v.itemId);
- if(!def||typeof v.remainingSeconds!=='number'||!Number.isFinite(v.remainingSeconds)||v.remainingSeconds<=0||v.remainingSeconds>def.durationHours*3600)
+ if(!def||typeof v.remainingSeconds!=='number'||!Number.isFinite(v.remainingSeconds)||v.remainingSeconds<=0||v.remainingSeconds>MAX_MEAL_BUFF_SECONDS)
    throw new Error('Invalid active meal bonus; preserve the save backup.');
  return {itemId:def.itemId,remainingSeconds:v.remainingSeconds};
 }
@@ -25,6 +27,13 @@ export function eatMealForBonus(state:GameState,itemId:string):GameState{
  if(!state.character)throw new Error('Create a character first.');
  const def=mealBonusDef(itemId);
  if(!def)throw new Error('This food does not grant a meal bonus.');
+ const active=state.character.activeMealBuff;
+ if(active?.itemId===itemId&&active.remainingSeconds>=MAX_MEAL_BUFF_SECONDS)
+  throw new Error('The meal duration is already at the 24-hour limit.');
+ // Different meals still replace one another; only identical meals add time.
+ const remainingSeconds=active?.itemId===itemId
+  ?Math.min(MAX_MEAL_BUFF_SECONDS,active.remainingSeconds+def.durationHours*3600)
+  :def.durationHours*3600;
  let remaining=1;
  const stacks=state.inventory.stacks.map(row=>{
   if(row.itemId!==itemId||remaining===0)return row;
@@ -33,7 +42,7 @@ export function eatMealForBonus(state:GameState,itemId:string):GameState{
  }).filter(row=>row.quantity>0);
  if(remaining)throw new Error('Meal not available in Inventory.');
  return {...state,inventory:{...state.inventory,stacks},character:{
-   ...state.character,activeMealBuff:{itemId,remainingSeconds:def.durationHours*3600},
+   ...state.character,activeMealBuff:{itemId,remainingSeconds},
  }};
 }
 export function activeMealBonus(character:CharacterState|null|undefined):MealBonusDefinition|undefined{

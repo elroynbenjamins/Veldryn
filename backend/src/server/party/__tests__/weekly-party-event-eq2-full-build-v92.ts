@@ -26,6 +26,7 @@ import {
  PARTY_EVENT_EQ2_TRAIT_V92_VERSION,
  prepareFullyEquippedPartyV92,
  simulateFrozenPartyEventEquipmentV92,
+ simulateCompiledPartyEventEquipmentV92,
  type TrustedPartyV92BuildInput,
  type FrozenPartyEventV92Witness,
 } from '../weekly-party-event-eq2-traits-v92';
@@ -166,8 +167,9 @@ const input={witness,combat,sources:compiled.sources,
     witness:w,combatDigest:enemyV2SnapshotDigest(combat),sources,
    })},
 };
-const result=simulateFrozenPartyEventEquipmentV92(input,true);
-const replay=simulateFrozenPartyEventEquipmentV92(input,true);
+const strictInput={prepared:compiled,witness,boss:v90,ports:input.ports};
+const result=simulateCompiledPartyEventEquipmentV92(strictInput,true);
+const replay=simulateCompiledPartyEventEquipmentV92(strictInput,true);
 assert.deepEqual(result,replay);
 assert.ok(result.events.some(e=>e.type==='combat_start'));
 assert.ok(result.players.some(p=>p.damageDone>0));

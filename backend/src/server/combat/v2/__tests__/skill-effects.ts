@@ -175,7 +175,8 @@ assert.ok(focusFight.events.filter(x=>x.type.startsWith('resource_'))
 
 // Polish checks: conditional healing, precise support targeting and proper
 // execute-only damage must be represented in the actual compiled effects.
-function abilityFor(classId:ClassIdV2,skillName:string,variant:number){
+function abilityFor(classId:ClassIdV2,skillName:string,variant:number,
+ talentRanks:Record<string,number>={}){
   const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
   const spec=SPECIALIZATIONS_V2.find(s=>s.classId===classId)!;
   const skill=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName)!;
@@ -183,7 +184,7 @@ function abilityFor(classId:ClassIdV2,skillName:string,variant:number){
     actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
     selected:{specializationId:spec.id,capstoneId:spec.capstoneId,equipment:{},
       activeSkills:[{skillId:skill.id,variantId:skill.variants[variant].id}],
-      talentRanks:{},signaturePassiveIds:[]},
+      talentRanks,signaturePassiveIds:[]},
     ownedItemsById:{},setsById:{},
   };
   const compiled=compileServerSkillBuildV2(true,chosen);
@@ -202,6 +203,122 @@ assert.ok(execution.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
 const finisher=abilityFor('RAVAGER','Overpower',0);
 assert.ok(finisher.effects.some(e=>e.executeBelowHpPct===.35&&e.executeBonus===.30));
 assert.ok(finisher.effects.every(e=>!e.executeBelowHpPct||(e.coeff??0)>1));
+
+// Variant-added effects should receive class/talent bonuses without being
+// multiplied again by the primary variant's coefficient. This matters for
+// low-HP healer variants, reflective shields and bonus taunts.
+const reflectiveOath=abilityFor('IRONWARDEN','Oathwall',2);
+assert.equal(reflectiveOath.effects.find(e=>e.kind==='shield'&&e.shieldReflectPct===.15)?.coeff,1.4045,
+ 'Sentinel overall and Oathwall-specific shield bonuses both apply');
+assert.ok(reflectiveOath.effects.some(e=>e.kind==='shield'&&e.coeff===0),
+ 'the primary Oathwall shield stays disabled by the Reflective Oath variant');
+
+const dawnHoT=abilityFor('DAWNKEEPER','Dawn Mend',1,{
+  [passiveIdV2('DAWNKEEPER','Gentle Hands')]:1,
+  [passiveIdV2('DAWNKEEPER','Healing Flow')]:1,
+});
+assert.equal(dawnHoT.effects.find(e=>e.kind==='hot')?.coeff,.108,
+ 'secondary Dawn Mend HoT receives Lightbringer + Healing Flow, not primary heal multiplier');
+
+const enhancedTaunt=abilityFor('IRONWARDEN','Rune Challenge',1,{
+  [passiveIdV2('IRONWARDEN','Firm Challenge')]:1,
+});
+assert.equal(enhancedTaunt.effects.find(e=>e.kind==='taunt'&&e.value===945)?.value,945,
+ 'secondary Provocation taunt receives the invested threat modifier');
+
+// Thunder Totem is a persistent server-owned actor state, not an instant
+// generic strike with a cosmetically named expiration. Its pulses do not
+// recursively mint resonance, gem direct-hit procs or passive combos.
+const totemActor=launchPlayer('Stonecaller',50);
+const totemSkill=SKILL_IDENTITIES_V2.find(x=>x.classId==='STONECALLER'&&x.name==='Thunder Totem')!;
+const runeshaper=SPECIALIZATIONS_V2.find(x=>x.id===specializationIdV2('STONECALLER','Runeshaper'))!;
+const totemBuild:VerifiedSkillBuildV2={
+  actor:totemActor,verified:{classId:'STONECALLER',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:runeshaper.id,equipment:{},
+    activeSkills:[{skillId:totemSkill.id,variantId:totemSkill.variants[0].id}],
+    talentRanks:{},signaturePassiveIds:[],capstoneId:runeshaper.capstoneId},
+  ownedItemsById:{},setsById:{},
+};
+const totemEncounter={seed:'stonecaller-persistent-totem',players:[totemActor],enemies:[enemy],
+  maxDurationMs:6500,tickMs:100};
+const totemFight=simulateCombatWithSkillsV2(totemEncounter,[totemBuild],true);
+assert.deepEqual(totemFight,simulateCombatWithSkillsV2(totemEncounter,[totemBuild],true),
+ 'totem pulse cadence and capstone replay must be deterministic');
+const pulses=totemFight.events.filter(e=>e.type==='dot_tick'&&e.abilityId?.startsWith('V2_TOTEM:'));
+assert.deepEqual(pulses.map(e=>e.atMs),[2000,4000,6000],
+ 'one Thunder Totem has exactly three bounded pulses at 2s intervals');
+assert.ok(totemFight.events.some(e=>e.type==='capstone_trigger'&&
+  e.abilityId===runeshaper.capstoneId&&e.atMs===6000),
+ 'Ritual Surge triggers on actual totem expiration, not the old 4s shortcut');
+assert.equal(totemFight.events.filter(e=>e.type==='resource_gain'&&
+  e.abilityId?.startsWith('V2_TOTEM:')).length,0,
+ 'persistent totem damage cannot generate free Resonance');
+
+// A refreshed V2 buff replaces only the previous cast from its same skill;
+// independent effects within a single cast remain intact. The legacy engine
+// intentionally retains its original modifier stacking/replay semantics.
+const statusActor={...compileServerSkillBuildV2(true,totemBuild),abilities:[{
+  id:'TEST_REFRESH:v2:0',name:'Synthetic V2 status',cooldownMs:1000,castTimeMs:0,
+  priority:100,target:'self' as const,effects:[
+    {kind:'buff' as const,tag:'haste',value:.015,durationMs:5000},
+    {kind:'buff' as const,tag:'haste',value:.01,durationMs:5000},
+  ],
+}]};
+const statusInput={seed:'v2-status-refresh',players:[statusActor],enemies:[enemy],
+  maxDurationMs:3500,tickMs:100};
+const statusFight=simulateCombat(statusInput);
+assert.equal(statusFight.players[0].modifiers.filter(m=>m.tag==='haste').length,2,
+ 'V2 same-skill recasts refresh both authored status effects instead of growing stacks');
+const legacyStatusActor={...statusActor,combatV2:undefined,tags:[]};
+const legacyStatus=simulateCombat({...statusInput,players:[legacyStatusActor]});
+assert.equal(legacyStatus.players[0].modifiers.filter(m=>m.tag==='haste').length,8,
+ 'existing legacy status stack behavior must not change');
+
+// Repeated V2 DoT casts refresh exactly their original source/tag, but
+// retain both intentional same-cast ticks. Legacy periods remain untouched.
+const dotAbilityId='TEST_DOT_REFRESH:v2:0';
+const dotActor:CombatantDefinition={...statusActor,abilities:[{
+  id:dotAbilityId,name:'Synthetic V2 double DoT',cooldownMs:1000,castTimeMs:0,
+  priority:100,target:'current_target',effects:[
+    {kind:'dot',coeff:.05,damageType:'shadow',durationMs:5000,tickMs:2000},
+    {kind:'dot',coeff:.05,damageType:'shadow',durationMs:5000,tickMs:2000},
+  ],
+}]};
+const dotInput={seed:'v2-periodic-refresh',players:[dotActor],enemies:[enemy],
+  maxDurationMs:3500,tickMs:100};
+const dotRun=simulateCombat(dotInput);
+assert.equal(dotRun.enemies[0].periodic.filter(p=>p.effectId===dotAbilityId).length,2,
+ 'V2 same-ability DoTs refresh without destroying intentional same-cast twin effects');
+const legacyDotActor={...dotActor,combatV2:undefined,tags:[]};
+const legacyDot=simulateCombat({...dotInput,players:[legacyDotActor]});
+assert.equal(legacyDot.enemies[0].periodic.filter(p=>p.effectId===dotAbilityId).length,8,
+ 'legacy DoT stacking remains unchanged');
+
+// An Ironwarden's selected Riposte creates a short retaliatory stance.
+const ironBase=launchPlayer('Ironwarden',50);
+const riposteSkill=SKILL_IDENTITIES_V2.find(x=>x.classId==='IRONWARDEN'&&x.name==='Iron Riposte')!;
+const riposteBuild:VerifiedSkillBuildV2={
+  actor:ironBase,verified:{classId:'IRONWARDEN',level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:specializationIdV2('IRONWARDEN','Sentinel'),equipment:{},
+    activeSkills:[{skillId:riposteSkill.id,variantId:riposteSkill.variants[0].id}],
+    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{},
+};
+const riposteActor=compileServerSkillBuildV2(true,riposteBuild);
+const closeCombatEnemy:CombatantDefinition={...enemy,
+  stats:{...enemy.stats,accuracy:100000,attackPower:5},
+  basicAttackMs:500,basicAttackCoeff:.15};
+const counterInput={seed:'ironwarden-counter-window',players:[riposteActor],
+  enemies:[closeCombatEnemy],maxDurationMs:2500,tickMs:100};
+const riposteFight=simulateCombat(counterInput);
+assert.equal(riposteFight.events.filter(e=>e.abilityId==='V2_COUNTER:IRON_RIPOSTE'&&
+  e.type==='damage').length,1,'Riposte triggers one bounded counter during its ward window');
+assert.equal(riposteFight.events.filter(e=>e.abilityId==='V2_COUNTER:IRON_RIPOSTE'&&
+  e.type==='resource_gain').length,0,'counter cannot mint Guard Marks');
+const legacyRiposteActor={...riposteActor,combatV2:undefined,tags:[]};
+assert.equal(simulateCombat({...counterInput,players:[legacyRiposteActor]}).events.filter(e=>
+  e.abilityId==='V2_COUNTER:IRON_RIPOSTE').length,0,
+ 'the counter only executes with an authenticated V2 stance');
 
 const hexRupture=abilityFor('HEXWEAVER','Black Thread',1);
 assert.ok(hexRupture.effects.some(e=>e.kind==='damage'&&e.consumeOwnedDotFraction===.35),

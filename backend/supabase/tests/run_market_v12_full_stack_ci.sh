@@ -131,3 +131,13 @@ bash "$ROOT/backend/supabase/tests/player_market_resale_buy_race_v24_ci.sh"
 # opens the V24 browse guard exclusively inside the disposable CI database.
 bash -n "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"
 bash "$ROOT/backend/supabase/tests/player_market_read_quota_race_v27_ci.sh"
+
+# Apply the V30 Equipment 2.0-only fence AFTER historical V9/V23 lifecycle and
+# race compatibility fixtures. Those old tests intentionally demonstrate the
+# original V33 model; V30 now intentionally forbids EVERY such old equipment
+# entrypoint. In the final schema the old Market equipment routes stay disabled
+# until a separate source-authenticated EQ2 exact-copy adapter exists.
+# This late-phase test is only in the already-guarded disposable PG17 job.
+psql -X -v ON_ERROR_STOP=1 -q -f "$MIGRATIONS/20261122230000_market_eq2_only_legacy_fence_private_v30.sql"
+psql -X -v ON_ERROR_STOP=1 -q -f "$ROOT/backend/supabase/tests/player_market_eq2_only_generation_fence_v30.sql"
+echo "PASS: Market V30 final schema rejects legacy equipment reservation, sale, delivery and resale; resources unaffected"

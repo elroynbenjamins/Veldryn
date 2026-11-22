@@ -91,12 +91,14 @@ end
 $check$;
 SQL
 
-if ! (psql -X -w -v ON_ERROR_STOP=1 -tAqc \
- "select private.disposable_award('$A'::uuid,'craft_claim','receipt000001','fingerprint-tampered',120,'smithing');" 2>&1 | grep -q 'receipt_collision'); then
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "select private.disposable_award('$A'::uuid,'craft_claim','receipt000001','fingerprint-tampered',120,'smithing');" 2>&1 || true)"
+if ! grep -q 'receipt_collision' <<<"$ERR"; then
  echo 'Expected changed-payload collision' >&2; exit 5
 fi
-if ! (psql -X -w -v ON_ERROR_STOP=1 -tAqc \
- "select private.disposable_award('$B'::uuid,'craft_claim','receipt000001','fingerprint-unchanged',120,'smithing');" 2>&1 | grep -q 'receipt_collision'); then
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "select private.disposable_award('$B'::uuid,'craft_claim','receipt000001','fingerprint-unchanged',120,'smithing');" 2>&1 || true)"
+if ! grep -q 'receipt_collision' <<<"$ERR"; then
  echo 'Expected cross-character collision' >&2; exit 6
 fi
 
@@ -129,8 +131,9 @@ create trigger disposable_reject_high_xp before insert or update
  on private.character_career_progress_v2
  for each row execute function private.disposable_reject_high_xp();
 SQL
-if ! (psql -X -w -v ON_ERROR_STOP=1 -tAqc \
- "select private.disposable_award('$A'::uuid,'craft_claim','receipt000003','fingerprint-new',500,'smithing');" 2>&1 | grep -q 'disposable_balance_failure'); then
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "select private.disposable_award('$A'::uuid,'craft_claim','receipt000003','fingerprint-new',500,'smithing');" 2>&1 || true)"
+if ! grep -q 'disposable_balance_failure' <<<"$ERR"; then
  echo 'Expected injected balance failure' >&2; exit 7
 fi
 psql_test <<'SQL'

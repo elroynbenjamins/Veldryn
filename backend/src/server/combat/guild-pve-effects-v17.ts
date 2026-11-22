@@ -219,7 +219,7 @@ export function previewGuildPveV17EffectfulAttempt(input:{
   effect('elite_exposed_window_proxy',()=>{boss.stats.defense*=.93});
  if(isFinal&&input.tactics.pressure>0)
   effect('pressure_attack_risk',()=>{boss.stats.attackPower*=
-   1+clamp(input.tactics.pressure*.001,0,.15)});
+   1+clamp(input.tactics.pressure*.0015,0,.15)});
  // Real engine damage-taken debuff: at most three 9-second Sunder casts
  // can overlap in a typical 18-second encounter; the live cap needs tests.
  if(input.phase==='gate_collapse')

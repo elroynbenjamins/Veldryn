@@ -242,7 +242,7 @@ export function recruitmentStructuredTags(card: Pick<RecruitmentCardView,'activi
     requiredRoleCounts: roleCounts,
  };
 }
-export function recruitmentVisibleTags(tags: readonly string[]) { return tags.filter(tag => !/^(kind|goal|start|session|at|voice|experience|roles|interest|need:):/.test(tag)); }
+export function recruitmentVisibleTags(tags: readonly string[]) { return tags.filter(tag => !/^(kind|goal|start|session|at|voice|experience|roles|interest|need):/.test(tag)); }
 
 export function recruitmentContextLabels(card:RecruitmentCardView){
  const labels:string[]=[];

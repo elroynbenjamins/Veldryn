@@ -11,6 +11,8 @@ create table private.character_career_progress_v2 (
   character_id uuid primary key references public.characters(id) on delete cascade,
   overall_character_xp bigint not null default 0 check (overall_character_xp >= 0),
   progression_version smallint not null default 1 check (progression_version = 1),
+  -- Claim receipts at/before the cutover are already represented by the backfill.
+  activated_at timestamptz not null default now(),
   migrated_at timestamptz,
   updated_at timestamptz not null default now()
 );
@@ -48,6 +50,14 @@ alter table private.character_career_awards_v2 enable row level security;
 -- receipts and commit source completion, insert-on-conflict-do-nothing
 -- award ledger and exactly-once increment of new overall XP in ONE
 -- transaction. NEVER update from a client-supplied XP amount or elapsed timer.
+--
+-- Historical event cutoff: only canonical source receipts completed strictly
+-- AFTER that character's career_progress.activated_at may award incremental
+-- Overall XP. Backfilled 1.x accomplishments already contributed to the
+-- character's initial balance; reprocessing older receipts would double-credit.
+-- A missing activation row/time or source-completion timestamp fails closed.
+-- The backend must inspect the persisted source receipt created_at; do NOT
+-- accept a device timestamp or a client-chosen idempotency key as provenance.
 --
 -- On replay, return the existing award without incrementing XP. If a source
 -- key collides but its owner/fingerprint/XP differs, reject as tampering;

@@ -93,7 +93,11 @@ export function observedGuildPveV17Cues(input:{
   const id=input.boss+'.'+input.phase+'.';
   if(event.type==='cast_start'){
    // Only an actual engine cast may produce the warning; no fake telegraphs.
-   if(pending.has(key))fail('duplicate_cast_start');
+   // A prior cast may have been interrupted, lost its target, or
+   // expired at encounter end. Keep its warning but never manufacture
+   // a resolve. A later real start is an entirely new cast.
+   if(pending.has(key)&&event.atMs<=pending.get(key)!)
+    fail('duplicate_cast_start');
    pending.set(key,event.atMs);
    cues.push({id:id+pair.warning,abilityId:key,phase:input.phase,
     kind:'warning',atMs:event.atMs});

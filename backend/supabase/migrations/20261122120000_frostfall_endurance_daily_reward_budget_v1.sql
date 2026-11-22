@@ -9,6 +9,7 @@ create table if not exists public.event_expedition_daily_clears(
 );
 alter table public.event_expedition_daily_clears enable row level security;
 revoke all on table public.event_expedition_daily_clears from public, anon, authenticated;
+grant select on table public.event_expedition_daily_clears to service_role;
 CREATE OR REPLACE FUNCTION public.claim_event_expedition_clear_slot(p_account_id uuid, p_event_id text)
  RETURNS void
  LANGUAGE plpgsql
@@ -35,7 +36,7 @@ grant execute on function public.claim_event_expedition_clear_slot(uuid,text) to
 create or replace function public.online_event_expedition_daily_budget_server_v1(p_account_id uuid,p_event_id text)
 returns integer language sql stable security invoker set search_path to 'public' as $$
  select greatest(0,2
-  -coalesce((select c.clear_count from public.event_expedition_daily_clears c where c.account_id=p_account_id and c.event_id=p_event_id and c.clear_day=(clock_timestamp() at time zone 'utc')::date),0)
+  -coalesce((select c.clear_count from public.event_expedition_daily_clears c where c.account_id=p_account_id and c.event_id=p_event_id and c.clear_day=(now() at time zone 'utc')::date),0)
   -(select count(*)::integer from public.expedition_runs x
     join public.coop_run_private_state ps on ps.run_id=x.id
     where x.coop_mode='event' and x.controller_account_id=p_account_id and x.phase='completed'

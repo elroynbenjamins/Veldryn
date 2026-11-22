@@ -107,6 +107,8 @@ jobs:
           node .onboarding-build/apps/mobile/tests/guild-tour-v2.js
           node tests/guild-guide-library-ui.cjs
           node tests/guild-guide-render-layout.cjs
+      - name: Validate approved compact gathering tool layout and preserved actions
+        run: node tests/compact-gathering-tools-redesign-ui.cjs && node tests/tool-recipe-hybrid-ui.cjs && node tests/compact-gathering-tool-inspect-ui.cjs
       - name: Verify compact gathering Drops UI and real drop odds
         run: pnpm test:gathering-drops
       # Full core suite is owned by mobile-core-validation.yml on the same

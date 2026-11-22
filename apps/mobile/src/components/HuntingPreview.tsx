@@ -65,7 +65,9 @@ export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:G
   const impact=byPlayer?enemyImpact:playerImpact,attack=byPlayer?playerStrike:enemyStrike;
   // A shot or spell lands after its flight; a melee blow lands at the end of the lunge.
   const landsAfterMs=byPlayer?strike.travelMs:90;
-  impact.stopAnimation();attack.stopAnimation();impact.setValue(0);attack.setValue(0);
+  // An alternating strike may interrupt the previous fade. Clear BOTH sides
+  // or the interrupted impact flash / recoil can remain frozen on screen.
+  for(const value of [playerImpact,enemyImpact,playerStrike,enemyStrike,shake]){value.stopAnimation();value.setValue(0);}
   const animation=Animated.parallel([
    Animated.timing(attack,{toValue:1,duration:byPlayer?strike.attackMs:300,easing:Easing.linear,useNativeDriver:true}),
    Animated.sequence([

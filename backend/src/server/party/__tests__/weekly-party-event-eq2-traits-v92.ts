@@ -226,6 +226,21 @@ denied(()=>simulateFrozenPartyEventEquipmentV92({
  ...original,combat:{...original.combat,
   enemies:[{...original.combat.enemies[0],name:'FAKE BOSS'}]}},true),
  'untrusted_or_unbounded_v90_boss');
+// V94: off-budget attacks were already denied; these within-budget edits
+// used to pass. Every bit of the authored V90 kit must now be canonical.
+const canonicalBoss=original.combat.enemies[0];
+for(const changed of [
+ {...canonicalBoss,stats:{...canonicalBoss.stats,accuracy:751}},
+ {...canonicalBoss,abilities:[
+  {...canonicalBoss.abilities[0],cooldownMs:14250},
+  ...canonicalBoss.abilities.slice(1)]},
+ {...canonicalBoss,phases:[
+  {...canonicalBoss.phases![0],effects:[{kind:'shield' as const,flat:1}]},
+  ...canonicalBoss.phases!.slice(1)]},
+ {...canonicalBoss,tags:[...(canonicalBoss.tags??[]),'extra:untrusted']},
+])denied(()=>simulateFrozenPartyEventEquipmentV92({
+ ...original,combat:{...original.combat,enemies:[changed]},
+},true),'noncanonical_v90_boss_kit');
 const env=process.env.NODE_ENV;
 try{
  process.env.NODE_ENV='production';

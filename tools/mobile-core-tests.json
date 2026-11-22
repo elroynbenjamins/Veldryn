@@ -130,6 +130,7 @@
   ".core-build/apps/mobile/tests/equipment-pouch.js",
   ".core-build/apps/mobile/tests/equipment-salvage-recovery.js",
   ".core-build/apps/mobile/tests/inventory-bulk-gear-selling.js",
+  ".core-build/apps/mobile/tests/inventory-protection-bulk.js",
   ".core-build/apps/mobile/tests/forge-reward-game-feel.js",
   ".core-build/apps/mobile/tests/loot-levelup-game-feel.js",
   ".core-build/apps/mobile/tests/command-progress-feedback.js",

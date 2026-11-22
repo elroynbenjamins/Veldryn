@@ -26,6 +26,7 @@ import {HUNT_GOAL_IDS} from './hunt-goals';
 import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal,activityQueueGoalIssue,currentActivityHandoffGoalIssue,currentActivityNeedsQueueHandoff} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
+import {applyBulkInventoryProtection} from './inventory-protection-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {advanceForgeSupply,cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {migrateGemPouch,sellPouchGem,upgradeGemPouch} from './gem-pouch';
@@ -65,7 +66,7 @@ const fields:Record<string,readonly string[]>={
  bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
  equip_tool:['id','instanceId'],unequip_tool:['id'],tool_move:['instanceId','to'],tool_sell:['instanceId'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId','choiceType'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_preference_bulk:['ids','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -94,6 +95,7 @@ export function validateGameCommand(value:unknown):GameCommand{
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>,kind=oneOf(start.kind,row.type==='queue_add'?['combat','gathering','faith','exploration','alchemy','processing']:['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');if(row.type==='queue_add'){if(kind==='faith')integer(start,'count',1,1000);if(kind!=='faith'&&start.count!==undefined)throw new Error('invalid_count');const goal=start.goal===undefined?undefined:normalizeActivityQueueGoal(start.goal);if(start.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');if(goal&&(kind==='faith'||kind==='alchemy'||kind==='processing'||kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||kind==='gathering'&&goal.kind==='session_kills'||kind==='exploration'&&goal.kind!=='duration_seconds'))throw new Error('invalid_queue_goal');}}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
+ if(row.type==='inventory_preference_bulk'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,190);oneOf(bulk.kind,['lock','favorite']);if(typeof bulk.enabled!=='boolean')throw new Error('invalid_inventory_preference');}
  if(row.type==='gem_pouch_bulk_sell'||row.type==='gem_pouch_bulk_dismantle')stringArray(args as Record<string,unknown>,'ids',100,120);
   if(row.type==='bulk_sell'||row.type==='bulk_salvage'){const bulk=args as Record<string,unknown>;stringArray(bulk,'ids',100,180);if(bulk.location!==undefined)oneOf(bulk.location,['inventory','bank']);}
  return {type:row.type,args:args as Record<string,unknown>};
@@ -509,7 +511,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
     state={...state,settings:{...state.settings,[key]:[...selected]}};
     break;
   }
-  case 'inventory_seen_all':{
+  case 'inventory_preference_bulk':{
+     const ids=stringArray(a,'ids',100,190),kind=oneOf(a.kind,['lock','favorite']);
+     if(typeof a.enabled!=='boolean')throw new Error('invalid_inventory_preference');
+     state=applyBulkInventoryProtection(state,ids,kind,a.enabled);
+     message=`${ids.length} item stacks ${a.enabled?'protected':'unprotected'}`;
+     break;
+   }
+   case 'inventory_seen_all':{
     const seen=new Set(state.settings.seenItemIds??[]);
     for(const stack of [...state.inventory.stacks,...state.bank.stacks])if(stack.quantity>0)seen.add(stack.itemId);
     state={...state,settings:{...state.settings,seenItemIds:[...seen].slice(-1000)}};

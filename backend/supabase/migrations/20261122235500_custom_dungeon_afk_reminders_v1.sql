@@ -22,6 +22,7 @@ create table if not exists private.afk_reminder_cap_snapshots_v1(
   primary key(account_id, character_id)
 );
 alter table private.afk_reminder_cap_snapshots_v1 enable row level security;
+create index if not exists afk_reminder_caps_character_fk_v1 on private.afk_reminder_cap_snapshots_v1(character_id);
 revoke all on private.afk_reminder_cap_snapshots_v1 from public,anon,authenticated;
 
 create table if not exists private.afk_reminder_inbox_v1(
@@ -39,6 +40,7 @@ create index if not exists afk_reminder_inbox_unread_v1
  on private.afk_reminder_inbox_v1(account_id,created_at desc)
  where acknowledged_at is null;
 alter table private.afk_reminder_inbox_v1 enable row level security;
+create index if not exists afk_reminder_inbox_character_fk_v1 on private.afk_reminder_inbox_v1(character_id);
 revoke all on private.afk_reminder_inbox_v1 from public,anon,authenticated;
 
 create or replace function public.notification_preferences_v1()

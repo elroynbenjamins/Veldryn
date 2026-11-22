@@ -89,6 +89,24 @@ async function main(){
  assert.equal(partial.canClaim,false);
  assert.equal(partial.tokenAmount,null);
  assert.equal(partial.guildXpAmount,null);
+ const proofInput=()=>({state:port.inspect(),cycleId:CYCLE,guildId:GUILD,accountId:ACCOUNT_A});
+ const tamper=(mutate:(state:GuildPveV18StoreState)=>void,reason:string)=>{
+  const s=structuredClone(proofInput().state);
+  mutate(s);
+  let error='';
+  try{reviewGuildPveV18Reward({...proofInput(),state:s})}catch(e){error=String(e)}
+  assert.ok(error.includes(reason),'Expected '+reason+', got '+error);
+ };
+ const receiptKey=JSON.stringify([CYCLE,ACCOUNT_A,'GX_R1']);
+ tamper(s=>{s.receipts[receiptKey].value.creditedHp+=1},'hp_credit_mismatch');
+ tamper(s=>{s.receipts[receiptKey].value.beforeCharges.protection=1},
+  'invalid_charge_settlement');
+ tamper(s=>{s.receipts[receiptKey].value.stance='Guard'},'invalid_receipt');
+ const noBinding=port.inspect();
+ delete noBinding.guild.cycleBindings[JSON.stringify([CYCLE,ACCOUNT_A])];
+ assert.equal(reviewGuildPveV18Reward({
+  state:noBinding,cycleId:CYCLE,guildId:GUILD,accountId:ACCOUNT_A,
+ }).reason,'missing_guild_binding');
  const noAction=reviewGuildPveV18Reward({
   state:port.inspect(),cycleId:CYCLE,guildId:GUILD,accountId:ACCOUNT_B,
  });

@@ -26,6 +26,11 @@ assert(upgrade.includes('<ResourceIcon resourceId={row.resourceId'), 'Cost rows 
 assert(resource.includes("resourceId==='SUPPLIES'"),'Companion Supplies must have a safe icon fallback');
 assert(upgrade.includes("row.owned>=row.required"),'Enough/missing resource state must reflect balances');
 
+// Sanctuary cards explain their actual rewards, with timers instead of disabled buttons.
+assert(panel.includes("t('Daily Companion XP')")&&panel.includes("t('Weekly Companion Essence')"),'Sanctuary rewards have explicit daily XP and weekly Essence labels');
+assert(panel.includes('COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[trainingLevel]')&&panel.includes('COMPANION_SANCTUARY_WEEKLY_ESSENCE[essenceLevel]'),'Sanctuary reward labels must read the same tier configuration used for grants');
+assert(panel.includes("trainingLast===undefined?t('Start timer'):t('Claim XP')")&&panel.includes("essenceLast===undefined?t('Start timer'):t('Claim Essence')"),'First activation is not described as a reward claim');
+assert(!panel.includes("t('Not ready')"),'Unavailable Sanctuary rewards use compact countdowns, not disabled Not ready buttons');
 // Claims should not appear claimable before the underlying reward timer is due.
 assert(panel.includes('now-trainingLast>=86400000'),'Daily rewards must respect the daily timer');
 assert(panel.includes('now-essenceLast>=604800000'),'Weekly rewards must respect the weekly timer');

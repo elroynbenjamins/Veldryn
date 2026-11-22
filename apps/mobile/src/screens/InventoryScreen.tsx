@@ -346,7 +346,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       else await onWithdraw(inspected.id,1);
       closeInspect();
     })}/>}
-    {carried?<GameButton compact title={gl('To Bank')} tone="secondary" disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>void beginInventorySubmission('Moving equipment to Bank…',async()=>{
+    {carried?<GameButton compact title={gl('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>void beginInventorySubmission('Moving equipment to Bank…',async()=>{
       if(selectedCopy){const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'bank'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');}
       else await onDeposit(inspected.id,1);
       closeInspect();

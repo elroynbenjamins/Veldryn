@@ -7,6 +7,9 @@ import {interpolateTranslation,type TranslationParams} from './translator';
  * server-generated sale reasons and canonical IDs/commands. DE/ES/NL/IT/FR/RU/TR. */
 type SevenLanguages=readonly [string,string,string,string,string,string,string];
 export const equipmentPouchUiRows={
+  "Details & sources": ["Details & Quellen","Detalles y fuentes","Details en bronnen","Dettagli e fonti","Détails et sources","Сведения и источники","Ayrıntılar ve kaynaklar"],
+  "More actions": ["Weitere Aktionen","Más acciones","Meer acties","Altre azioni","Autres actions","Другие действия","Diğer işlemler"],
+  "Less actions": ["Weniger Aktionen","Menos acciones","Minder acties","Meno azioni","Moins d’actions","Меньше действий","Daha az işlem"],
   "Store in Gear": ["In Ausrüstung lagern","Guardar en equipo","Opbergen bij uitrusting","Riponi nell'equipaggiamento","Ranger dans l'équipement","Убрать в снаряжение","Ekipmana koy"],
   "Move to Bank": ["Zur Bank verschieben","Mover al banco","Verplaatsen naar bank","Sposta in banca","Déplacer vers la banque","Переместить в банк","Bankaya taşı"],
   "Other item actions": ["Weitere Gegenstandsaktionen","Otras acciones del objeto","Andere voorwerpacties","Altre azioni sull'oggetto","Autres actions sur l'objet","Другие действия с предметом","Diğer eşya işlemleri"],

@@ -14,7 +14,12 @@ export function EquipmentDisposalStatus({sellAllowed,salvageAllowed,sellReason,s
  const blocked=[!sellAllowed?sellReason:undefined,!salvageAllowed?salvageReason:undefined]
    .filter((reason):reason is string=>Boolean(reason));
  const reasons=[...new Set(blocked)];
- return <View style={[s.container,compact&&s.compact]} accessibilityRole="summary">
+ // Compact item sheets already have Sell/Salvage buttons. Avoid repeating
+ // two status boxes and a lengthy generic warning beside those controls.
+ if(compact)return reasons.length?<View style={s.compactContainer} accessibilityRole="summary">
+  {reasons.map(reason=><Text key={reason} style={s.compactReason}>{gl(equipmentDisposalExplanation(reason).title)} · {gl(reason)}</Text>)}
+ </View>:null;
+ return <View style={s.container} accessibilityRole="summary">
   <Text style={s.heading}>{gl('ITEM ACTIONS')}</Text>
   <View style={s.statuses}>
    <View style={s.status}><Text style={s.label}>{gl('SELL')}</Text><Text style={[s.value,{color:sellAllowed?C.good:C.warning}]}>{gl(sellAllowed?'READY':'PROTECTED')}</Text></View>
@@ -32,7 +37,8 @@ export function EquipmentDisposalStatus({sellAllowed,salvageAllowed,sellReason,s
 }
 function styles(C:ThemeColors){return StyleSheet.create({
  container:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.panel2},
- compact:{padding:spacing.sm},
+ compactContainer:{paddingHorizontal:8,paddingVertical:6,borderLeftWidth:2,borderLeftColor:C.warning,backgroundColor:C.warningSurface,borderRadius:6},
+ compactReason:{...typography.caption,color:C.warning,lineHeight:17},
  heading:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.65},
  statuses:{flexDirection:'row',gap:8},
  status:{flex:1,minWidth:0,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:5,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},

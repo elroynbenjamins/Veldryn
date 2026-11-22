@@ -121,9 +121,7 @@ jobs:
       - name: Calibrate all six regional dungeon power tiers and both bosses
         run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
         working-directory: backend
-      - name: Probe new regional dungeon tiers against their minimum Combat Power
-        run: node dist/online/backend/online/tests/regional-dungeon-clear-rates.js
-        working-directory: backend
+      # The same regional clear-rate / power-gate assertions are run above.
       - name: Verify authenticated dungeon browsing, queues, and ready check
         run: |
           node dist/online/backend/online/tests/coop-entry.js

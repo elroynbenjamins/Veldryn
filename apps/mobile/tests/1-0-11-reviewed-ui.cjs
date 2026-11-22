@@ -23,5 +23,11 @@ assert.match(route,/dungeonUxText\(language,live\?'continueVote':'continueDeeper
 assert.match(route,/onPress=\{\(\)=>onChoose\?\.\(option.nodeId\)\}/,'Retain server-authoritative choice callback');
 assert.match(echo,/const \[expanded,setExpanded\]=useState\(true\)/,'Show roles, filter and selectable candidates by default');
 assert.match(echo,/validateSelectedSocialEchoCharacterIds/,'Keep real role/duplicate server safety rules');
-for(const lang of ['en','de','es','nl','it','fr','ru','tr'])assert.match(copy,new RegExp(' '+lang+':\\{bossChoice:.*continueDeeper:.*continueVote:'),'m');
+for(const lang of ['en','de','es','nl','it','fr','ru','tr']){
+ const row=copy.split(String.fromCharCode(10)).find(line=>line.trimStart().startsWith(lang+':{'));
+ assert.ok(row,'Missing dungeon UI translations for '+lang);
+ for(const key of ['bossChoice','continueDeeper','continueVote','checkpointCamp','checkpointBoon','checkpointCampHint','checkpointBoonHint']){
+  assert.match(row,new RegExp('(?:^|[,{])'+key+':'),'Missing '+key+' dungeon UI translation for '+lang);
+ }
+}
 console.log('PASS: approved 1.0.11 Forge, Dungeon Home, Endurance, and Echo UI contracts');

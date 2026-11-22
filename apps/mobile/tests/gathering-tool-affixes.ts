@@ -2,6 +2,8 @@ import {GATHERING_TOOLS} from '../src/content/gathering-tools';
 import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
 import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier} from '../src/core/gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel} from '../src/core/gathering-tool-rolls';
+import {auditCraftedGearOwnership} from '../src/core/crafted-gear-ownership';
+import {equipmentCopyDisposalDecision} from '../src/core/equipment-disposal-guidance';
 import {gatheringToolContribution,gatheringToolTotalBreakdown,gatheringToolPercent} from '../src/core/gathering-tool-presentation';
 import {totalXpAtLevel} from '../src/core/progression';
 import {bulkTransferSelected} from '../src/core/inventory-bulk';
@@ -30,6 +32,29 @@ state={...state,character:{...state.character!,level:46,gold:100000},skills:stat
 for(const tool of GATHERING_TOOLS.filter(t=>t.skillId==='woodcutting'))state=equipGatheringTool(state,tool.id,100);
 assert(Math.abs(gatheringToolTimeMultiplier(state,'woodcutting')-.4)<1e-9,'Legacy four tiers preserve 60% reduction');
 assert(Math.abs(gatheringToolEffects(state,'woodcutting').rarityChanceMultiplier-1)<1e-9,'Legacy tools receive no fabricated affix');
+
+// A validated gtool: marker in Inventory must not block disposal of unrelated,
+// exact-copy forged gear. Unknown or duplicated tool IDs must still fail closed.
+const coexistTool=mintGatheringTool('REEDLINE_ROD',state.character!.id,'TOOL_CUSTODY_REGRESSION',12345);
+const coexistGearId='gear:tool-custody-regression';
+const coexistState={
+ ...state,
+ account:{...state.account,craftedGatheringToolInstances:[coexistTool],
+  craftedGearInstances:[{id:coexistGearId,itemId:'T1P_069',ownerCharacterId:state.character!.id,
+   rarity:'common',quality:50,locked:false,acquireSource:'craft',sourceReceiptKey:'GEAR_CUSTODY_REGRESSION',
+   createdAtMs:12345,enhancement:{rank:0,failures:0,gemIds:[]}}]},
+ inventory:{...state.inventory,stacks:[{itemId:coexistTool.itemId,quantity:1,instanceId:coexistTool.id}]},
+ character:{...state.character!,equipmentPouch:{capacity:20,stacks:[{itemId:'T1P_069',quantity:1,instanceId:coexistGearId}]}}
+} as GameState;
+assert(auditCraftedGearOwnership(coexistState).problems.length===0,'Valid gathering tool copies must not trigger equipment identity conflict');
+assert(auditCraftedGearOwnership(coexistState).linked.some(row=>row.instanceId===coexistGearId),'Exact forged gear must still be located');
+assert(equipmentCopyDisposalDecision(coexistState,coexistGearId,'salvage').allowed,'New unlocked crafted gear should be salvageable with tools in Inventory');
+const toolMismatch={...coexistState,inventory:{...coexistState.inventory,stacks:[{itemId:'IRONWOOD_ROD',quantity:1,instanceId:coexistTool.id}]}} as GameState;
+assert(auditCraftedGearOwnership(toolMismatch).problems.some(problem=>problem.includes('Gathering tool item mismatch')),'Mismatched tool item must remain protected');
+const forgedTool={...coexistState,inventory:{...coexistState.inventory,stacks:[{itemId:coexistTool.itemId,quantity:1,instanceId:'gtool:unknown'}]}} as GameState;
+assert(auditCraftedGearOwnership(forgedTool).problems.some(problem=>problem.includes('Unrecognized crafted instance')),'Unknown tool marker must still fail closed');
+const doubleTool={...coexistState,inventory:{...coexistState.inventory,stacks:[{itemId:coexistTool.itemId,quantity:1,instanceId:coexistTool.id},{itemId:coexistTool.itemId,quantity:1,instanceId:coexistTool.id}]}} as GameState;
+assert(auditCraftedGearOwnership(doubleTool).problems.some(problem=>problem.includes('Duplicate gathering tool copy')),'Duplicated tool markers must still fail closed');
 
 const tools=GATHERING_TOOLS.filter(t=>t.skillId==='woodcutting');
 const speedCopies:CraftedGatheringTool[]=tools.map((tool,index)=>({

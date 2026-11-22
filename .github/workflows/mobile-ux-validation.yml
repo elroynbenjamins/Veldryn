@@ -41,6 +41,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate Inventory storage controls
         run: node tests/inventory-storage-management-ui.cjs
+      - name: Validate approved compact item inspect
+        run: node tests/item-inspect-compact-ui.cjs && node tests/equipment-disposal-ui.cjs
       - name: Validate UX popup and activity Stop reliability
         run: |
           pnpm exec tsc -p tsconfig.ux-popup.json --outDir .ux-popup-build

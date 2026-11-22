@@ -706,7 +706,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
  let foodConsumed=0,hp=Math.min(c.currentHp??prepared.stats.hp,prepared.stats.hp),championKills=0,stoppedReason='',preparationEncounters=0,qualifyingActivitySeconds=elapsed;
  const completed:Array<{atMs:number;candy:boolean}>=[];
  let activeEncounterIndex=0,enemyHp:number|undefined=activity?.combatEnemyHp;
- let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ let lastHit:undefined|{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean;missed?:boolean};
  // Only report a completed, genuinely applied recovery benefit; ordinary
  // class training and companion stat multipliers are not active casts.
  let lastSkillEffect:ActiveHuntSkillEffect|undefined;
@@ -806,7 +806,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number,nowMs=Da
          foodConsumed++;
        }
      }
-     if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical};
+     if(hit.actor!=='fatigue')lastHit={atMs:hitAtMs,actor:hit.actor,damage:hit.damage,critical:hit.critical,...(hit.missed?{missed:true}:{})};
      if(hp<=1){
        hp=1;stoppedReason=foodOrder.length&&state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
        qualifyingActivitySeconds=Math.max(0,(hitAtMs-startsAtMs)/1000);
@@ -833,7 +833,7 @@ export interface ActiveCombatHitCursor{
  projected:GameState;
  atMs:number;
  stoppedReason:string;
- lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+ lastHit?:{atMs:number;actor:'player'|'enemy';damage:number;critical:boolean;missed?:boolean};
  lastSkillEffect?:ActiveHuntSkillEffect;
  lastSkillEffects?:ActiveHuntSkillEffect[];
 }

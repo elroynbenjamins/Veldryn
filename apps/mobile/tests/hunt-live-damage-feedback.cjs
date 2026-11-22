@@ -32,7 +32,15 @@ assert.ok(stage.includes("recentHit?.actor==='player'?"));
 
 // Alternating player/enemy strikes cancel the previous animation. Both sides
 // must reset, otherwise an interrupted impact flash can freeze indefinitely.
-assert.ok(hunt.includes('for(const value of [playerImpact,enemyImpact,playerStrike,enemyStrike,shake])'));
-assert.ok(stage.includes('for(const value of [playerLunge,enemyLunge,enemyImpact,playerImpact])'));
+assert.ok(hunt.includes('for(const value of [playerImpact,enemyImpact,playerStrike,enemyStrike,shake,missFloat])'));
+assert.ok(stage.includes('for(const value of [playerLunge,enemyLunge,enemyImpact,playerImpact,missFloat])'));
+
+// Genuine misses are calculated in combat, not invented by a UI animation.
+assert.ok(hunt.includes("hit.missed?missFloat:enemyImpact"));
+assert.ok(stage.includes("recentHit.missed?missFloat:enemyImpact"));
+assert.ok(hunt.includes("lastHit.missed?tr('MISS')"));
+assert.ok(stage.includes("recentHit.missed?tr('MISS')"));
+assert.ok(hunt.includes("lastHit?.actor==='player'&&!lastHit.missed?"));
+assert.ok(stage.includes("const enemyFeedback=recentHit?.missed?missFloat:enemyImpact"));
 
 console.log('PASS live hunt hit feedback, actor gating, zero damage and interrupted animation reset');

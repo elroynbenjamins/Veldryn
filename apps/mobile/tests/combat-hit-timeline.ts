@@ -108,6 +108,14 @@ assert.equal(new Set(landed.map(row=>row.key)).size,classes.length,'every class 
 assert.ok(landed.every(row=>row.hit&&!row.critical&&row.params?.amount==='42'),'player hit narration must use recorded damage');
 const crit=linesFor('WAYFINDER',T+20500,revenant,{...recent,critical:true});
 assert.ok(crit.hit&&crit.critical&&new Set<string>(HUNT_CLASS_NARRATION.WAYFINDER.strike).has(crit.key),'critical emphasis must depend on recorded hit');
+const missed=liveHuntNarration({classId:'WAYFINDER',monster:revenant,nowMs:T+20500,startedAtMs:T,
+ lastHit:{...recent,damage:0,missed:true},damageText:formatDamage});
+assert.equal(missed.key,'Your attack misses.','a real miss must never produce a landed-hit caption');
+assert.ok(!missed.hit&&!missed.critical&&missed.params===undefined,'miss narration cannot claim damage or critical');
+assert.ok((BATTLE_MESSAGES as Record<string,readonly string[]>)['MISS']?.length===5,
+ 'MISS outcome must have DE/ES/NL/IT/FR translations');
+assert.ok((BATTLE_MESSAGES as Record<string,readonly string[]>)['Your attack misses.']?.length===5,
+ 'miss narration must have DE/ES/NL/IT/FR translations');
 const taken=linesFor('WAYFINDER',T+20500,revenant,{...recent,actor:'enemy',damage:17});
 assert.ok(new Set<string>(HUNT_COMMON_NARRATION.taken).has(taken.key),'enemy hit must use a real damage-labelled response');
 assert.ok(taken.hit&&!taken.critical&&taken.params?.amount==='17','ordinary enemy hit must not imply a critical hit');

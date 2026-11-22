@@ -42988,6 +42988,7 @@ function regionalHuntHits(plan, input) {
     damage: strike.actor === "enemy" ? Math.max(0, input.monsterDamage) / attacks : strike.damage,
     healing: 0,
     critical: strike.critical,
+    ...strike.missed ? { missed: true } : {},
     index
   }));
   const fatigueFraction = Math.max(0, 1 - 1e-5);
@@ -43221,10 +43222,8 @@ function regionalHuntPlan(options) {
     const critical = landed && random01(seed + ":critical", i) < clamp3(options.critChance, 0, 0.65);
     const spread = 0.9 + random01(seed + ":variance", i) * 0.2;
     const damage = landed ? Math.min(enemyHp, Math.max(1, Math.round(options.playerHit * spread * (critical ? clamp3(options.critMultiplier, 1, 3) : 1)))) : 0;
-    if (damage > 0) {
-      strikes.push({ actor: "player", atSeconds, damage, critical });
-      enemyHp -= damage;
-    }
+    strikes.push({ actor: "player", atSeconds, damage, critical, ...landed ? {} : { missed: true } });
+    if (damage > 0) enemyHp -= damage;
     finishSeconds = atSeconds;
     if (enemyHp <= 0) break;
   }
@@ -55026,7 +55025,7 @@ function simulateCombat2(state, monsterId, elapsed, nowMs = Date.now()) {
           foodConsumed++;
         }
       }
-      if (hit.actor !== "fatigue") lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical };
+      if (hit.actor !== "fatigue") lastHit = { atMs: hitAtMs, actor: hit.actor, damage: hit.damage, critical: hit.critical, ...hit.missed ? { missed: true } : {} };
       if (hp <= 1) {
         hp = 1;
         stoppedReason = foodOrder.length && state.settings.stopCombatWhenOutOfFood ? "Out of food / too injured" : "Too injured";

@@ -11,7 +11,7 @@ export interface CombatNarrationFrame {
  hit:boolean;
  critical:boolean;
 }
-type CombatNarrationHit={atMs:number;actor:'player'|'enemy';damage:number;critical:boolean};
+type CombatNarrationHit={atMs:number;actor:'player'|'enemy';damage:number;critical:boolean;missed?:boolean};
 export const HUNT_CLASS_NARRATION={
  "IRONWARDEN": {
   "prepare": [
@@ -257,6 +257,7 @@ export function liveHuntNarration(input:{
  const age=hit?input.nowMs-hit.atMs:Infinity;
  const classLines=HUNT_CLASS_NARRATION[input.classId];
  if(hit&&age<2600){
+  if(hit.actor==='player'&&hit.missed)return {key:'Your attack misses.',tone:'muted',hit:false,critical:false};
   const variants=hit.actor==='player'?classLines.strike:hit.critical?HUNT_COMMON_NARRATION.critTaken:HUNT_COMMON_NARRATION.taken;
   return {key:variants[stableHitIndex(hit,input.classId,input.monster.id)%variants.length],
    params:{amount:input.damageText(hit.damage)},

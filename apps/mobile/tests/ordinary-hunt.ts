@@ -14,10 +14,30 @@ const novice=regionalHuntPlan(base);
 const upgraded=regionalHuntPlan({...base,playerHit:200});
 assert.equal(regionalHuntPlan(base).cycleSeconds,novice.cycleSeconds,'seeded hunts must replay deterministically');
 assert.ok(upgraded.fightSeconds<novice.fightSeconds,'Attack should kill a weak enemy in fewer real strikes');
-assert.equal(upgraded.strikes.filter(hit=>hit.actor==='player').length,1,'overgeared character must one-shot a Moss Rat');
+assert.equal(upgraded.strikes.filter(hit=>hit.actor==='player'&&hit.damage>0).length,1,'overgeared character must one-shot a Moss Rat');
 assert.ok(upgraded.searchSeconds>=3&&upgraded.searchSeconds<=6,'Greenfields search is a bounded anti-farming delay, reduced by 2 seconds');
 assert.ok(upgraded.cycleSeconds>upgraded.fightSeconds,'search must remain even after a one-shot');
 assert.ok(regionalHuntPlan({...base,playerHit:200,haste:1}).fightSeconds<upgraded.fightSeconds,'Haste increases attacks per second');
+// Deterministic missed swings must be observable without adding damage,
+// changing crit rolls, altering search/attack cadence, or triggering skills.
+const missedSeed=Array.from({length:40},(_,i)=>'real-miss-'+i)
+  .map(seed=>regionalHuntPlan({...base,seed,hitChance:.55,playerHit:200}))
+  .find(plan=>plan.strikes.some(strike=>strike.missed));
+assert.ok(missedSeed,'accuracy sampling should produce genuine misses');
+const missedStrikes=missedSeed!.strikes.filter(strike=>strike.missed);
+assert.ok(missedStrikes.length>0&&missedStrikes.every(strike=>strike.actor==='player'&&strike.damage===0&&!strike.critical),
+  'misses must be real zero-damage, noncritical player swings');
+assert.equal(missedSeed!.strikes.filter(strike=>strike.actor==='player').reduce((sum,strike)=>sum+strike.damage,0),30,
+  'observing misses must not reduce or invent damage');
+const reflected=regionalHuntHits(missedSeed!,{monsterDamage:1,fatigueDamage:.2,healingPerEncounter:0});
+assert.equal(reflected.filter(hit=>hit.missed).length,missedStrikes.length,'every resolved miss reaches the shared hit replay');
+assert.ok(reflected.filter(hit=>hit.missed).every(hit=>hit.damage===0&&hit.actor==='player'),
+  'miss feedback must not spend enemy HP');
+assert.equal(huntEnemyHpAt(30,reflected,1),0,'misses must not prevent the final landed blow from killing');
+assert.equal(huntEnemyHpAt(30,reflected,missedStrikes[0].atSeconds/missedSeed!.cycleSeconds),30,
+  'HP stays unchanged on an opening missed swing');
+assert.ok(missedSeed!.cycleSeconds>missedSeed!.searchSeconds,'search and attack timing stay positive');
+
 const incoming=regionalHuntHits(upgraded,{monsterDamage:0,fatigueDamage:1.25,healingPerEncounter:.5});
 assert.equal(incoming.filter(hit=>hit.actor==='enemy').length,0,'one-shot enemy never attacks');
 assert.ok(incoming.some(hit=>hit.actor==='fatigue'&&hit.damage>0),'one-shot fights still consume stamina');

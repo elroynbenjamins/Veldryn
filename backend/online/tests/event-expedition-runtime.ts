@@ -81,6 +81,21 @@ async function main(){
    assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_FROSTFALL_BOSS_NOVA'&&ability.label==='Aurora Shatter'));
   }
  }
+ const seasonal=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_FROSTFALL_AURORA_HOLLOW')!;
+ const checkpointRepository=new MemoryEventRunRepository(),checkpointService=new EventExpeditionService(checkpointRepository,'event-checkpoint-recap-secret');
+ let checkpointRun=checkpointService.start({requestId:'event-checkpoint-start',runId:'event-checkpoint-run',accountId:'domain-a',eventId:seasonal.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,11,10)});
+ for(let depth=1;depth<=7;depth++){
+  const source=checkpointRun.graph.nodes.find(node=>node.nodeId===checkpointRun.currentNodeId)!;
+  const combat=source.nextNodeIds.map(id=>checkpointRun.graph.nodes.find(node=>node.nodeId===id)!).find(node=>node.kind==='battle')!;
+  checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:combat.nodeId,requestId:'checkpoint-combat-'+depth});
+  assert.equal(checkpointRun.phase,'awaiting_choice');
+ }
+ checkpointRun=checkpointService.choose({runId:checkpointRun.id,accountId:'domain-a',optionNodeId:'d8-c2',requestId:'checkpoint-exit'});
+ assert.equal(checkpointRun.phase,'completed');
+ const checkpointProjection=projectOnlineEventRun(checkpointRun,9,'EVT_ANNUAL_012_2026',Date.UTC(2026,11,10)) as any;
+ assert.ok(checkpointProjection.bossRecap,'optional seasonal boss exit must preserve boss recap');
+ assert.ok(checkpointProjection.lastCombat?.cues.length,'optional seasonal boss exit must show the combat replay');
+
  const bossRepo=new MemoryEventRunRepository(),bossService=new EventExpeditionService(bossRepo,'boss-tuning-integration-secret'),suncrest=EVENT_EXPEDITIONS.find(row=>row.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;
  let bossRun=bossService.start({requestId:'boss-profile-request',runId:'boss-profile-run',accountId:'domain-a',eventId:suncrest.id,activeLiveEventId:'EVT_ANNUAL_006_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
  bossRun.currentNodeId=`d${bossRun.graph.preBossNodeCount}-c0`;bossRun.objective={id:suncrest.objective.id,count:suncrest.objective.maxCount};bossRun.mechanic={id:suncrest.mechanic.id,value:suncrest.mechanic.maxValue};bossRepo.save(bossRun);

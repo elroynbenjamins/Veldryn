@@ -27,6 +27,7 @@ import {
 } from '../combat/v2/equipment-trait-engine-authority';
 import {
  PARTY_EVENT_BOSS_TRAITS_V90_VERSION,
+ preparePartyEventBossTraitKitV90,
  type PartyBossTraitV90,
 } from './weekly-party-boss-traits-v90';
 import type {WeeklyPartyFamily,WeeklyPartyDifficulty} from './weekly-party-events-v2';
@@ -157,6 +158,31 @@ function checkBoss(input:CombatInput,w:FrozenPartyEventV92Witness){
     (e.shieldReflectPct??0)!==0||
     (e.kind==='shield'&&(e.flat??0)>Math.round(boss.stats.maxHp*.04)))))
   fail('untrusted_or_unbounded_v90_boss');
+ // V94: limits alone are insufficient. A forged, weaker cast or altered
+ // cleanse/bleed/ward phase within those limits must fail as decisively as
+ // an overpowered one. Rebuild the *entire* exact V4+V90 canonical boss
+ // from trusted Party witness scope, not attacker-supplied boss fields.
+ const canonical=preparePartyEventBossTraitKitV90({
+  id:'PARTY_EVENT_BOSS',name:profile.name,team:'enemies',role:'enemy',
+  boss:true,level:Math.max(1,Math.min(100,median+2*(w.tier-1))),
+  stats:{maxHp:expectedHp,attackPower:expectedAtk,healingPower:0,
+   defense:expectedDef,accuracy:750,evasion:110,critChance:.045,
+   critMultiplier:1.4,haste:.03},
+  basicAttackMs:2700,basicAttackCoeff:.8,
+  abilities:[
+   {id:'PE_BOSS_SLAM',name:'Overwhelming Strike',cooldownMs:6900,
+    castTimeMs:400,target:'current_target',priority:80,
+    effects:[{kind:'damage',coeff:1.15}]},
+   {id:'PE_BOSS_PULSE',name:'Rising Threat',cooldownMs:12000,
+    castTimeMs:900,target:'all_enemies',priority:85,interruptible:true,
+    effects:[{kind:'damage',coeff:.38+Math.min(.3,.03*w.tier)}]},
+  ],
+  phases:[{id:'ENRAGE',hpPct:.35,target:'self',
+   effects:[{kind:'buff',tag:'damage_done',
+    value:Math.min(.35,.07+.015*w.tier),durationMs:90_000}]}],
+ },w.family,w.tier,true);
+ if(enemyV2SnapshotDigest(boss)!==enemyV2SnapshotDigest(canonical))
+  fail('noncanonical_v90_boss_kit');
 }
 /**
  * The actual full EQ2 compiler path for Party V92. It resolves verified

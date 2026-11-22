@@ -1,0 +1,45 @@
+name: Hidden Guild PvE V18 atomic domain and nonpaying reward QA
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-settlement-v18.ts'
+      - 'backend/src/server/combat/guild-pve-reward-review-v18.ts'
+      - 'apps/mobile/tests/guild-pve-v18-settlement.ts'
+      - 'apps/mobile/tsconfig.guild-pve-v18.json'
+      - 'docs/roadmap/guild-pve-v18-domain-and-persistence-gates-20261122.md'
+      - '.github/workflows/guild-pve-v18-atomic-domain.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  isolated-v18-domain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck V18 plus inherited V17 engine
+        run: pnpm exec tsc -p tsconfig.guild-pve-v18.json --noEmit
+      - name: Compile hidden settlement and test harness
+        run: pnpm exec tsc -p tsconfig.guild-pve-v18.json --outDir .core-build
+      - name: Assert shared HP, account quota, rollback, stale, replay, reward-off
+        run: node .core-build/apps/mobile/tests/guild-pve-v18-settlement.js

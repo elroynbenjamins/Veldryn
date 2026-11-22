@@ -83,6 +83,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // Only narrow screens need larger inspector controls; do not change S24+ defaults.
   const compactInspector=width<380||fontScale>=1.25;
   const stackInspectorActions=width<345||fontScale>=1.25;
+  const shortToolbarLabels=width<360||fontScale>=1.3;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
   const gridColumns=gridWidth<235?3:gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(48,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
@@ -526,7 +527,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {equipMoment&&<EquipmentSwapMoment moment={equipMoment} reduceMotion={state.settings.reduceMotion} onDismiss={()=>setEquipMoment(null)}/>}
     <View style={s.resultRow}>
       <Pressable accessibilityRole="button" accessibilityLabel={gt('View and action settings. Current filter: {filter}. Current sort: {sort}',{filter:gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter),sort:gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)})} onPress={()=>setFilterOpen(true)} style={({pressed})=>[s.viewOptionsTrigger,pressed&&s.pressed]}>
-        <Text numberOfLines={1} style={s.toolbarFilterText}>{gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter)} · {gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)}</Text>
+        <Text numberOfLines={1} ellipsizeMode="tail" style={s.toolbarFilterText}>{gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter)} · {shortToolbarLabels?gt(sort==='new'?'New':sort==='favorite'?'Favorites':sort==='quantity'?'Quantity':sort==='value'?'Value':'Name'):gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)}</Text>
         <Text accessible={false} style={s.sortChevron}>⌄</Text>
       </Pressable>
       {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Select items to lock or unlock')} accessibilityState={{selected:selectMode&&protectionMode==='lock',disabled:inventoryBusyLabel!==null}} disabled={inventoryBusyLabel!==null} onPress={()=>chooseProtectionMode('lock')} style={({pressed})=>[s.protectionToolbarButton,selectMode&&protectionMode==='lock'&&s.protectionToolbarActive,pressed&&s.pressed]}><InventoryLockGlyph locked={selectMode&&protectionMode==='lock'} color={selectMode&&protectionMode==='lock'?C.warning:C.text}/></Pressable>}
@@ -675,7 +676,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   quantityCustom:{width:112,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.bg},
   quantityCustomActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   quantityInput:{height:42,paddingHorizontal:9,paddingVertical:0,color:C.text,textAlign:'center',textAlignVertical:'center',fontSize:12,lineHeight:18,fontWeight:'800'},
-  viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+  viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:3,paddingHorizontal:6,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
   toolbarFilterText:{flex:1,minWidth:0,fontSize:11,color:C.text,fontWeight:'800'},
   sortChevron:{fontSize:16,color:C.muted,marginTop:-3},
   amountTrigger:{minWidth:44,minHeight:44,justifyContent:'center',alignItems:'center',paddingHorizontal:4,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
@@ -683,7 +684,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   textAction:{minHeight:44,minWidth:52,alignItems:'center',justifyContent:'center',paddingHorizontal:5,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
   toolbarSelectText:{fontSize:11,color:C.text,fontWeight:'900'},
   toolbarDisabled:{opacity:.45},
-  resultRow:{flexDirection:'row',alignItems:'center',gap:5,width:'100%'},
+  resultRow:{flexDirection:'row',alignItems:'center',gap:4,width:'100%'},
   protectionToolbarButton:{width:44,minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel2},
   protectionToolbarActive:{borderColor:C.warning,backgroundColor:C.warningSurface},
   protectionToolbarStar:{fontSize:16,color:C.warning,fontWeight:'900'},

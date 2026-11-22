@@ -12,6 +12,10 @@ import {
 } from '../weekly-party-boss-traits-v90';
 import type {WeeklyPartyFamily,WeeklyPartyDifficulty} from '../weekly-party-events-v2';
 import {
+ PARTY_EVENT_RESULT_AUDIT_V95_RELEASED,
+ reviewPartyEventCombatResultV95,
+} from '../weekly-party-event-result-audit-v95';
+import {
  PARTY_EVENT_EQ2_TRAIT_V92_RELEASED,
  PARTY_EVENT_EQ2_TRAIT_V92_VERSION,
  PARTY_EVENT_EQ2_TRAIT_V92_MAX_MS,
@@ -241,6 +245,35 @@ for(const changed of [
 ])denied(()=>simulateFrozenPartyEventEquipmentV92({
  ...original,combat:{...original.combat,enemies:[changed]},
 },true),'noncanonical_v90_boss_kit');
+// V95 is strictly a QA evidence envelope — no minted certificates, claims,
+// Sigils, XP, Gold, items or Inbox rows. Replay must be stable.
+assert.equal(PARTY_EVENT_RESULT_AUDIT_V95_RELEASED,false);
+const reviewResult=simulateFrozenPartyEventEquipmentV92(original,true);
+const reviewInput={...original,result:reviewResult};
+const review=reviewPartyEventCombatResultV95(reviewInput,true);
+assert.deepEqual(review,reviewPartyEventCombatResultV95(reviewInput,true));
+assert.equal(review.independentlyCertified,false);
+assert.equal(review.claimable,false);
+assert.equal(review.rewardGranted,false);
+assert.equal(review.contributions.length,4);
+assert.equal(review.reason,reviewResult.reason);
+assert.equal(review.reviewDigest.length,64);
+const tamperedOutcome={...reviewResult,
+ players:[{...reviewResult.players[0],damageDone:
+  reviewResult.players[0].damageDone+1},...reviewResult.players.slice(1)]};
+const changedReview=reviewPartyEventCombatResultV95({
+ ...reviewInput,result:tamperedOutcome,
+},true);
+assert.notEqual(changedReview.reviewDigest,review.reviewDigest);
+denied(()=>reviewPartyEventCombatResultV95({
+ ...reviewInput,sources:[{...original.sources[0],
+  characterId:'FOREIGN_CHARACTER'},...original.sources.slice(1)],
+},true),'source_witness_mismatch');
+denied(()=>reviewPartyEventCombatResultV95({
+ ...reviewInput,result:{...reviewResult,durationMs:90001},
+},true),'invalid_result_or_timeline');
+denied(()=>reviewPartyEventCombatResultV95(reviewInput),
+ 'party_event_v95_unreleased');
 const env=process.env.NODE_ENV;
 try{
  process.env.NODE_ENV='production';

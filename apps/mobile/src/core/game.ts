@@ -874,9 +874,16 @@ export function activeCombatHitProjection(state:GameState,nowMs:number,previous?
  const nextRuntime=combatRuntimeDetails(projected,original.targetId);
  const nextPlan=nextRuntime.huntOptions?regionalHuntPlan(nextRuntime.huntOptions):undefined;
  const searching=!!nextPlan&&current.nextProgressFraction<nextPlan.searchSeconds/nextPlan.cycleSeconds;
- const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects};
+ // A previously defeated monster's final strike is still present in the replay
+ // cursor until another strike lands. Never present it as the new monster's
+ // opening hit, including when the next search lasts less than the HUD fade.
+ const encounterStartedAtMs=nextPlan?atMs-current.nextProgressFraction*nextPlan.cycleSeconds*1000:undefined;
+ const visibleHit=nextPlan
+   ?(!searching&&lastHit&&lastHit.atMs>=(encounterStartedAtMs??atMs)-1?lastHit:undefined)
+   :lastHit;
+ const cursor:ActiveCombatHitCursor={source:state,projected,atMs,stoppedReason:current.stoppedReason,lastHit:visibleHit,lastSkillEffect,lastSkillEffects};
  return {searching,playerHp:current.endHp,playerMaxHp:runtime.stats.hp,enemyHp:current.enemyHp,enemyMaxHp:runtime.m.hp,
-   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit,lastSkillEffect,lastSkillEffects,cursor};
+   progressFraction:current.nextProgressFraction,stoppedReason:current.stoppedReason,lastHit:visibleHit,lastSkillEffect,lastSkillEffects,cursor};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{

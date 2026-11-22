@@ -30,6 +30,7 @@ import {
  type PartyBossTraitV90,
 } from './weekly-party-boss-traits-v90';
 import type {WeeklyPartyFamily,WeeklyPartyDifficulty} from './weekly-party-events-v2';
+import {partyEventRosterMedianLevel,PARTY_EVENT_BOSS_TIER_GROWTH_V4} from './weekly-party-boss-v2';
 
 export const PARTY_EVENT_EQ2_TRAIT_V92_RELEASED=false;
 export const PARTY_EVENT_EQ2_TRAIT_V92_VERSION='party-event-eq2-traits-v92' as const;
@@ -118,8 +119,26 @@ function checkWitness(w:FrozenPartyEventV92Witness){
 }
 function checkBoss(input:CombatInput,w:FrozenPartyEventV92Witness){
  const boss=input.enemies?.[0],profile=bossProfiles[w.family];
+ // This V92 pilot is tied to the existing provisional V4 server boss curve,
+ // not a client-supplied CP scaling value or an accidental future ruleset.
+ // Any approved new 2.0 tune must increment the frozen ruleset version.
+ const median=partyEventRosterMedianLevel(input.players.map(p=>p.level));
+ const scale={standard:1,veteran:1.20,heroic:1.40}[w.difficulty];
+ const levelScale=Math.max(.045,median/25);
+ const expectedHp=Math.round(input.players.length*5400*levelScale*
+  Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.hp,w.tier-1)*scale);
+ const expectedAtk=Math.round(355*levelScale*
+  Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.attack,w.tier-1)*scale);
+ const expectedDef=Math.round(520*levelScale*
+  Math.pow(PARTY_EVENT_BOSS_TIER_GROWTH_V4.defense,w.tier-1)*scale);
  if(!Array.isArray(input.enemies)||input.enemies.length!==1||!boss||
   boss.id!=='PARTY_EVENT_BOSS'||boss.team!=='enemies'||
+  boss.level!==Math.max(1,Math.min(100,median+2*(w.tier-1)))||
+  boss.stats.maxHp!==expectedHp||
+  boss.stats.attackPower!==expectedAtk||
+  boss.stats.defense!==expectedDef||
+  boss.basicAttackMs!==2700||boss.basicAttackCoeff!==.8||
+  boss.alchemyModifiers!==undefined||(boss.effectGems?.length??0)!==0||
   boss.role!=='enemy'||boss.boss!==true||boss.name!==profile.name||
   !Array.isArray(boss.tags)||!boss.tags.includes('party-event:boss-traits:v90')||
   !boss.tags.includes('party-event:boss-family:'+w.family)||

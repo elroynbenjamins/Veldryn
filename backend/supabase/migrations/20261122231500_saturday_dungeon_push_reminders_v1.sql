@@ -190,15 +190,23 @@ $$;
 revoke all on function private.dispatch_saturday_dungeon_push_v1(timestamptz) from public,anon,authenticated;
 grant execute on function private.dispatch_saturday_dungeon_push_v1(timestamptz) to service_role;
 
+create or replace function private.expo_push_accepted_v1(p_status integer,p_body text)
+returns boolean language plpgsql stable set search_path=pg_catalog,pg_temp as $
+begin
+  if p_status not between 200 and 299 then return false; end if;
+  return coalesce((p_body::jsonb #>> '{data,status}')='ok',false);
+exception when others then return false;
+end;
+$;
+revoke all on function private.expo_push_accepted_v1(integer,text) from public,anon,authenticated;
+
 create or replace function private.reconcile_saturday_dungeon_push_v1(p_at timestamptz default now())
 returns integer language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
 declare v_count integer;
 begin
   with response as (
     select o.id,o.attempt_count,r.status_code,r.error_msg,r.content,
-      case when r.status_code between 200 and 299
-        and coalesce((r.content::jsonb #>> '{data,status}'),'error')='ok'
-        then true else false end as accepted
+      private.expo_push_accepted_v1(r.status_code,r.content) as accepted
     from private.dungeon_push_outbox_v1 o
     join net._http_response r on r.id=o.net_request_id
     where o.status='submitted' and o.submitted_at<=p_at
@@ -225,12 +233,24 @@ $$;
 revoke all on function private.reconcile_saturday_dungeon_push_v1(timestamptz) from public,anon,authenticated;
 grant execute on function private.reconcile_saturday_dungeon_push_v1(timestamptz) to service_role;
 
--- Keep a single scheduled worker; no notification is ever generated without
--- an explicitly opted-in, valid registered device and real account charge state.
+-- The cron command is a single statement; work is idempotent and bounded.
+create or replace function private.process_saturday_dungeon_push_v1(p_at timestamptz default now())
+returns jsonb language plpgsql security definer set search_path=pg_catalog,pg_temp as $$
+declare v_reconciled integer;v_queued integer;v_submitted integer;
+begin
+  v_reconciled:=private.reconcile_saturday_dungeon_push_v1(p_at);
+  v_queued:=private.enqueue_saturday_dungeon_push_v1(p_at);
+  v_submitted:=private.dispatch_saturday_dungeon_push_v1(p_at);
+  return jsonb_build_object('reconciled',v_reconciled,'queued',v_queued,'submitted',v_submitted);
+end;
+$$;
+revoke all on function private.process_saturday_dungeon_push_v1(timestamptz) from public,anon,authenticated;
+grant execute on function private.process_saturday_dungeon_push_v1(timestamptz) to service_role;
+
+-- No notifications are generated without a registered opt-in device and
+-- a real positive charge + unused weekly enhanced-reward budget.
 select cron.schedule(
   'veldryn-saturday-dungeon-push-v1',
   '*/15 * * * *',
-  $$ select private.reconcile_saturday_dungeon_push_v1(now());
-     select private.enqueue_saturday_dungeon_push_v1(now());
-     select private.dispatch_saturday_dungeon_push_v1(now()); $$
+  $$select private.process_saturday_dungeon_push_v1(now());$$
 );

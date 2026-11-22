@@ -11,6 +11,7 @@ const rows:Record<string,Partial<Record<Language,string>>>={
  'Character roster':{en:'Character roster',de:'Charakterliste',es:'Lista de personajes',nl:'Personagelijst',it:'Elenco personaggi',fr:'Liste des personnages',ru:'Список персонажей',tr:'Karakter listesi'},
  '{count} characters · {working} working':{en:'{count} characters · {working} working',de:'{count} Charaktere · {working} aktiv',es:'{count} personajes · {working} activos',nl:'{count} personages · {working} bezig',it:'{count} personaggi · {working} attivi',fr:'{count} personnages · {working} actifs',ru:'Персонажей: {count} · заняты: {working}',tr:'{count} karakter · {working} çalışıyor'},
  '{count}/{total} slots':{en:'{count}/{total} slots',de:'{count}/{total} Plätze',es:'{count}/{total} espacios',nl:'{count}/{total} plekken',it:'{count}/{total} slot',fr:'{count}/{total} emplacements',ru:'Мест: {count}/{total}',tr:'{count}/{total} yuva'},
+ 'Next slot at {count}':{en:'Next slot at {count}',de:'Nächster Platz bei {count}',es:'Próximo espacio al llegar a {count}',nl:'Volgende plek bij {count}',it:'Prossimo slot a {count}',fr:'Prochain emplacement à {count}',ru:'Следующее место при {count}',tr:'Sonraki yuva: {count}'},
  'Role slots':{en:'Role slots',de:'Rollenplätze',es:'Espacios por rol',nl:'Rolplekken',it:'Slot dei ruoli',fr:'Emplacements de rôle',ru:'Места по ролям',tr:'Rol yuvaları'},
  'Tank':{en:'Tank',de:'Tank',es:'Tanque',nl:'Tank',it:'Difensore',fr:'Tank',ru:'Танк',tr:'Tank'},
  'Damage':{en:'Damage',de:'Schaden',es:'Daño',nl:'Schade',it:'Danno',fr:'Dégâts',ru:'Урон',tr:'Hasar'},

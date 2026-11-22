@@ -35,6 +35,8 @@ export interface CanonicalSourceLocatorV2 {
 export interface ProgressionV2Transaction {
   /** Returns persisted account_id from public.characters for this character ID. */
   characterAccountId(characterId: string): Promise<string|null>;
+  /** Epoch of 2.0 backfill/activation for this exact character, server-owned. */
+  characterXpActivatedAtMs(characterId: string): Promise<number|null>;
   /** Returns source evidence from persisted, completed, character-bound claim. */
   completedSource(locator: CanonicalSourceLocatorV2): Promise<ServerSettlementProofV2|null>;
   /** Must read by a globally unique source key, not scoped to character/account. */
@@ -82,12 +84,21 @@ export async function settleCharacterCareerXpV2(
     if(persistedAccount!==principal.accountId)
       throw new Error('progression_v2_unauthorized_character');
 
+    // Backfilled players must not receive new XP twice for pre-release actions.
+    const activatedAtMs=await tx.characterXpActivatedAtMs(requestedCharacterId);
+    if(typeof activatedAtMs!=='number'||!Number.isSafeInteger(activatedAtMs)||activatedAtMs<0)
+      throw new Error('progression_v2_character_not_activated');
+
     const verified=await tx.completedSource(locator);
     if(!verified || verified.source!==locator.source || verified.sourceId!==locator.sourceId ||
        verified.ownerCharacterId!==requestedCharacterId ||
        verified.receivingCharacterId!==requestedCharacterId ||
        verified.completed!==true)
       throw new Error('progression_v2_unverified_source');
+    if(typeof verified.completedAtMs!=='number' ||
+       !Number.isSafeInteger(verified.completedAtMs) ||
+       verified.completedAtMs<=activatedAtMs)
+      throw new Error('progression_v2_pre_activation_source');
 
     const proposed=projectServerSettlementV2(verified);
     const existing=await tx.findAward(proposed.canonicalKey);

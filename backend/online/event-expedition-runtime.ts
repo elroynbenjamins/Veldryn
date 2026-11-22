@@ -30,7 +30,8 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
  const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:expeditionEncounterPreview(node.contentId,run.syncLevel)}:{})})):[];
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),bossProfile=eventBossMechanicProjection(run);
  const bossMechanic=bossProfile?{profileId:bossProfile.profileId,label:bossProfile.label,summary:bossProfile.summary,tone:bossProfile.tone,telegraph:bossProfile.telegraph}:undefined;
- const summary=run.lastResolution?.nodeId===run.graph.bossNodeId?run.lastResolution.result.summary:undefined;
+ const wasBossExit=run.graph.nodes.some(node=>node.nodeId===run.lastResolution?.nodeId&&node.kind==='boss');
+ const summary=wasBossExit?run.lastResolution?.result.summary:undefined;
  const list=(value:unknown)=>Array.isArray(value)?value.filter((item):item is string=>typeof item==='string'):[];
  const phaseLabels=new Map(bossProfile?.telegraph.phases.map(item=>[item.id,item.label])??[]);
  const abilityLabels=new Map(bossProfile?.telegraph.castAbilities.map(item=>[item.id,item.label])??[]);

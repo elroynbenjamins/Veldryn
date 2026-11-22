@@ -243,6 +243,13 @@ export function previewProfessionCraftMaterialCustodyV2(
      proof.completed!==true||
      originalProofs.has(proof.provenanceId))
      fail('invalid_source_provenance');
+   // A spare or unrelated proof cannot establish a disguised material type
+   // that the registered lot classifier would reject if it were consumed.
+   const proofRegistration=registrations.get(proof.itemId);
+   if(proof.itemId.startsWith('EQ2_')||!proofRegistration||
+      proofRegistration.kind!=='stackable_material'||
+      !proofRegistration.registered||!proofRegistration.originalSourceRegistered)
+     fail('invalid_source_material_identity');
    const deposit=proof.bankDeposit;
    if(deposit&&(!validToken(deposit.receiptId)||
      typeof deposit.accountId!=='string'||!CANONICAL_UUID.test(deposit.accountId)||
@@ -289,6 +296,13 @@ export function previewProfessionCraftMaterialCustodyV2(
       lots.has(lot.lotId))fail('invalid_or_duplicate_lot');
    if(lot.custody!=='bank'&&lot.characterId?.toLowerCase()!==state.characterId.toLowerCase())
      fail('wrong_character_custody');
+   // Every candidate material lot is typed, not just ingredients that this
+   // one recipe would happen to consume. Reject latent EQ2/gear/gem blobs.
+   const registeredLot=registrations.get(lot.itemId);
+   if(lot.itemId.startsWith('EQ2_')||!registeredLot||
+      registeredLot.kind!=='stackable_material'||
+      !registeredLot.registered||!registeredLot.originalSourceRegistered)
+     fail('invalid_owned_material_identity');
    lots.set(lot.lotId,lot);
    const proof=originalProofs.get(lot.provenanceId);
    if(!proof||proof.itemId!==lot.itemId||

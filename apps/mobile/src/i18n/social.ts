@@ -7,6 +7,13 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  // Compact dungeon victory Marks: claimable versus already credited.
+  "To claim": ["Noch abzuholen","Por reclamar","Nog te claimen","Da riscattare","À récupérer"],
+  "Already earned": ["Bereits erhalten","Ya obtenido","Al verdiend","Già ottenuti","Déjà obtenus"],
+  "Total from this run": ["Gesamt aus diesem Durchlauf","Total de esta expedición","Totaal van deze tocht","Totale della spedizione","Total de cette expédition"],
+  "Estimated until claimed.": ["Bis zur Abholung geschätzt.","Estimado hasta reclamarlo.","Geschat totdat je claimt.","Stima fino al riscatto.","Estimation avant récupération."],
+  "Reward details": ["Belohnungsdetails","Detalles de la recompensa","Beloningsdetails","Dettagli ricompensa","Détails de la récompense"],
+  "{count} claims remaining": ["Noch {count} Belohnungen abzuholen","Quedan {count} recompensas por reclamar","Nog {count} beloningen te claimen","Restano {count} ricompense da riscattare","{count} récompenses à récupérer"],
   "Combat Marks capped": ["Kampfmarken-Limit erreicht","Límite de marcas de combate alcanzado","Limiet gevechtsmarken bereikt","Limite marchi da combattimento raggiunto","Plafond de marques de combat atteint"],
   // Dungeon Endurance: visible effects, boss exits and replay rewards.
   "Boon gained": ["Segen erhalten","Bendición obtenida","Zegen ontvangen","Benedizione ottenuta","Bénédiction obtenue"],

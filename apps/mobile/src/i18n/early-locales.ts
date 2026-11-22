@@ -15,6 +15,23 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // Inventory multi-selection protection: complete Russian and Turkish copy.
+  "Updating item protection…": ["Обновление защиты предметов…","Eşya koruması güncelleniyor…"],
+  "Locked {count} selected stacks.": ["Заблокировано стопок: {count}.","{count} seçili yığın kilitlendi."],
+  "Unlocked {count} selected stacks.": ["Разблокировано стопок: {count}.","{count} seçili yığının kilidi açıldı."],
+  "Favorited {count} selected stacks.": ["Добавлено в избранное стопок: {count}.","{count} seçili yığın favorilere eklendi."],
+  "Removed favorites from {count} selected stacks.": ["Удалено из избранного стопок: {count}.","{count} seçili yığın favorilerden çıkarıldı."],
+  "Select items to lock or unlock": ["Выбрать предметы для блокировки или разблокировки","Kilitlemek veya kilidini açmak için eşyaları seç"],
+  "Lock": ["Заблокировать","Kilitle"],
+  "Select items to favorite or unfavorite": ["Выбрать предметы для добавления или удаления из избранного","Favorilere eklemek veya çıkarmak için eşyaları seç"],
+  "Tap item stacks to lock or unlock.": ["Нажимайте на стопки, чтобы заблокировать или разблокировать их.","Kilitlemek veya kilidini açmak için eşya yığınlarına dokun."],
+  "Tap item stacks to favorite or unfavorite.": ["Нажимайте на стопки, чтобы добавить или удалить их из избранного.","Favorilere eklemek veya çıkarmak için eşya yığınlarına dokun."],
+  "Choose items to lock or unlock · up to 100 stacks": ["Выберите стопки для блокировки или разблокировки · до 100","Kilitlemek veya açmak için seç · en fazla 100 yığın"],
+  "Choose items to favorite or unfavorite · up to 100 stacks": ["Выберите стопки для изменения избранного · до 100","Favorileri değiştirmek için seç · en fazla 100 yığın"],
+  "Lock selected": ["Заблокировать выбранное","Seçilenleri kilitle"],
+  "Favorite selected": ["В избранное","Seçilenleri favorilere ekle"],
+  "Unlock selected": ["Разблокировать выбранное","Seçilenlerin kilidini aç"],
+  "Unfavorite selected": ["Убрать из избранного","Seçilenleri favorilerden çıkar"],
   // Cooking recipe XP, meal utility and activation guidance (Supply-independent).
   '+{xp} Cooking XP per batch':['+{xp} опыта кулинарии за партию','Pişirme partisi başına +{xp} XP'],
   'Cooking mastered · no more XP':['Кулинария освоена · опыт больше не начисляется','Yemek pişirme ustalığı tamamlandı · artık XP yok'],

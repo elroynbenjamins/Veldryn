@@ -8,17 +8,36 @@ assert.equal(STAT_GEMS_V1.length,12);
 assert.equal(EFFECT_GEMS_V1.length,20);
 assert.deepEqual(validateGemCatalogV1(),[]);
 assert.deepEqual(validateGemAcquisitionV1(),[]);
+for (const [sourceId,chance,pityAt] of [
+ ['ZONE_006',.001875,undefined],
+ ['ZONE_007',.00375,240],
+ ['ZONE_008',.00375,240],
+ ['ZONE_009',.00375,240],
+ ['ZONE_010',.0075,100],
+ ['COP_004',.045,32],
+ ['COP_005',.045,32],
+ ['COP_006',.045,32],
+ ['COP_007',.045,32],
+ ['COP_008',.045,32],
+ ['COP_009',.045,32],
+ ['PARTY_CONTRACT_WEEKLY',.0625,16],
+] as const){
+ const source=gemPoolForSourceV1(sourceId);
+ assert.equal(source?.chance,chance,`${sourceId}: gem drop chance must be one quarter`);
+ assert.equal(source?.pityAt,pityAt,`${sourceId}: pity must scale to match reduced drops`);
+}
+assert.equal(gemPoolForSourceV1('LIVE_COOP_RESONANCE_CACHE')?.chance,1,'Earned Live weekly cache stays guaranteed');
 assert.ok(gemPoolForSourceV1('COP_004'));
 assert.ok(buildGemDropsForSourceV1('COP_004').length>0);
-const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:7},unlockedRecipeIds:[]});
+const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:31},unlockedRecipeIds:[]});
 assert.ok(forcedPity.gem,'Dungeon pity must settle one unrefined gem');
 assert.ok(forcedPity.gem?.itemId.startsWith('raw_gem:'),'Gem acquisition must award an unrefined family gem');
 assert.equal(forcedPity.gem?.pityTriggered,true);
 assert.equal(forcedPity.pityBySource.COP_004,0);
-const forcedElite=settleGemSourceV1('ZONE_007','forced-elite',{pityBySource:{ZONE_007:59},unlockedRecipeIds:[]});
+const forcedElite=settleGemSourceV1('ZONE_007','forced-elite',{pityBySource:{ZONE_007:239},unlockedRecipeIds:[]});
 assert.equal(forcedElite.gem?.grade,2,'Elite pity must preserve the configured Grade II raw gem');
 assert.equal(forcedElite.pityBySource.ZONE_007,0);
-const forcedRegionalBoss=settleGemSourceV1('ZONE_010','forced-regional-boss',{pityBySource:{ZONE_010:24},unlockedRecipeIds:[]});
+const forcedRegionalBoss=settleGemSourceV1('ZONE_010','forced-regional-boss',{pityBySource:{ZONE_010:99},unlockedRecipeIds:[]});
 assert.equal(forcedRegionalBoss.gem?.grade,3,'Regional boss pity must preserve the configured Grade III raw gem');
 assert.equal(forcedRegionalBoss.pityBySource.ZONE_010,0);
 

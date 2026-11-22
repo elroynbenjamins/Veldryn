@@ -9,6 +9,23 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Compact inventory batch-protection controls.
+ "Updating item protection…":["Updating item protection…","Objektschutz wird aktualisiert…","Actualizando protección…","Itembeveiliging bijwerken…","Aggiornamento protezione…","Mise à jour de la protection…"],
+ "Locked {count} selected stacks.":["Locked {count} selected stacks.","{count} ausgewählte Stapel gesperrt.","{count} pilas bloqueadas.","{count} geselecteerde stapels vergrendeld.","{count} pile bloccate.","{count} piles verrouillées."],
+ "Unlocked {count} selected stacks.":["Unlocked {count} selected stacks.","{count} ausgewählte Stapel entsperrt.","{count} pilas desbloqueadas.","{count} geselecteerde stapels ontgrendeld.","{count} pile sbloccate.","{count} piles déverrouillées."],
+ "Favorited {count} selected stacks.":["Favorited {count} selected stacks.","{count} ausgewählte Stapel favorisiert.","{count} pilas añadidas a favoritos.","{count} geselecteerde stapels favoriet gemaakt.","{count} pile aggiunte ai preferiti.","{count} piles ajoutées aux favoris."],
+ "Removed favorites from {count} selected stacks.":["Removed favorites from {count} selected stacks.","Favoriten von {count} Stapeln entfernt.","Favoritos eliminados de {count} pilas.","Favorieten verwijderd van {count} stapels.","Preferiti rimossi da {count} pile.","Favoris retirés de {count} piles."],
+ "Select items to lock or unlock":["Select items to lock or unlock","Objekte zum Sperren oder Entsperren wählen","Seleccionar objetos para bloquear o desbloquear","Selecteer items om te vergrendelen of ontgrendelen","Seleziona oggetti da bloccare o sbloccare","Choisir des objets à verrouiller ou déverrouiller"],
+ "Lock":["Lock","Sperren","Bloquear","Vergrendel","Blocca","Verrouiller"],
+ "Select items to favorite or unfavorite":["Select items to favorite or unfavorite","Objekte zu Favoriten hinzufügen oder entfernen","Seleccionar objetos para añadir o quitar de favoritos","Selecteer items om favoriet te maken of te verwijderen","Seleziona oggetti da aggiungere o rimuovere dai preferiti","Choisir des objets à ajouter ou retirer des favoris"],
+ "Tap item stacks to lock or unlock.":["Tap item stacks to lock or unlock.","Tippe auf Stapel, um sie zu sperren oder entsperren.","Toca las pilas para bloquearlas o desbloquearlas.","Tik op stapels om te vergrendelen of ontgrendelen.","Tocca le pile per bloccarle o sbloccarle.","Touchez des piles pour les verrouiller ou les déverrouiller."],
+ "Tap item stacks to favorite or unfavorite.":["Tap item stacks to favorite or unfavorite.","Tippe auf Stapel, um Favoriten zu ändern.","Toca las pilas para cambiar favoritos.","Tik op stapels om favorieten aan te passen.","Tocca le pile per modificare i preferiti.","Touchez des piles pour modifier les favoris."],
+ "Choose items to lock or unlock · up to 100 stacks":["Choose items to lock or unlock · up to 100 stacks","Sperren oder entsperren · bis zu 100 Stapel","Bloquear o desbloquear · hasta 100 pilas","Vergrendelen of ontgrendelen · max. 100 stapels","Blocca o sblocca · fino a 100 pile","Verrouiller ou déverrouiller · 100 piles max."],
+ "Choose items to favorite or unfavorite · up to 100 stacks":["Choose items to favorite or unfavorite · up to 100 stacks","Favoriten ändern · bis zu 100 Stapel","Cambiar favoritos · hasta 100 pilas","Favorieten aanpassen · max. 100 stapels","Modifica preferiti · fino a 100 pile","Modifier les favoris · 100 piles max."],
+ "Lock selected":["Lock selected","Auswahl sperren","Bloquear selección","Vergrendel selectie","Blocca selezione","Verrouiller la sélection"],
+ "Favorite selected":["Favorite selected","Auswahl favorisieren","Añadir selección a favoritos","Maak selectie favoriet","Aggiungi selezione ai preferiti","Ajouter la sélection aux favoris"],
+ "Unlock selected":["Unlock selected","Auswahl entsperren","Desbloquear selección","Ontgrendel selectie","Sblocca selezione","Déverrouiller la sélection"],
+ "Unfavorite selected":["Unfavorite selected","Aus Favoriten entfernen","Quitar selección de favoritos","Verwijder selectie uit favorieten","Rimuovi selezione dai preferiti","Retirer la sélection des favoris"],
  // Focused crafting UX labels, kept in all six shared locale dictionaries.
  'Professions':["Professions","Berufe","Profesiones","Beroepen","Professioni","Métiers"],
  'Components':["Components","Komponenten","Componentes","Componenten","Componenti","Composants"],
@@ -1497,6 +1514,10 @@ const details={
 "TIMED PACE":["TIMED PACE","ZEITTAKT","RITMO TEMPORIZADO","TIJDTEMPO","RITMO TEMPORIZZATO","RYTHME CHRONOMÉTRÉ"],
 "MAX LEVEL":["MAX LEVEL","MAX. STUFE","NIVEL MÁX.","MAX. NIVEAU","LIVELLO MAX","NIVEAU MAX"],
 "RECIPE MASTERY":["RECIPE MASTERY","REZEPTMEISTERSCHAFT","MAESTRÍA DE RECETA","RECEPTMEESTERSCHAP","MAESTRIA RICETTA","MAÎTRISE DE RECETTE"],
+"Next bonus":["Next bonus","Nächster Bonus","Siguiente bonificación","Volgende bonus","Prossimo bonus","Prochain bonus"],
+"How tool stats work":["How tool stats work","So funktionieren Werkzeugwerte","Cómo funcionan las estadísticas","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comprendre les bonus d’outil"],
+"Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%","Tempo +{min}–{max}% oder seltene Funde +{rareMin}–{rareMax}%","Velocidad +{min}–{max}% o hallazgos raros +{rareMin}–{rareMax}%","Snelheid +{min}–{max}% of zeldzame vondsten +{rareMin}–{rareMax}%","Velocità +{min}–{max}% o ritrovamenti rari +{rareMin}–{rareMax}%","Vitesse +{min}–{max}% ou trouvailles rares +{rareMin}–{rareMax}%"],
+"Blueprint owned":["Blueprint owned","Bauplan vorhanden","Plano disponible","Blauwdruk in bezit","Progetto posseduto","Plan possédé"],
 "Maximum skill level reached":["Maximum skill level reached","Maximale Fertigkeitsstufe erreicht","Nivel máximo de habilidad alcanzado","Maximaal vaardigheidsniveau bereikt","Livello massimo abilità raggiunto","Niveau de compétence maximum atteint"],
 "Blueprint learned permanently":["Blueprint learned permanently","Bauplan dauerhaft gelernt","Plano aprendido permanentemente","Blauwdruk permanent geleerd","Progetto appreso permanentemente","Plan appris définitivement"],
 "Blueprint owned · consumed once when recipe is learned":["Blueprint owned · consumed once when recipe is learned","Bauplan vorhanden · wird beim Lernen verbraucht","Plano en posesión · se consume al aprender la receta","Blauwdruk in bezit · verbruikt bij leren van recept","Progetto posseduto · consumato all’apprendimento","Plan possédé · consommé à l’apprentissage"],
@@ -1653,6 +1674,10 @@ for(const [english,pair] of Object.entries(bonusGearCopyEarlyLocales)){
 }
 // New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
 const gatheringToolAffixEarlyLocales={
+  "Next bonus":["Следующий бонус","Sonraki bonus"],
+  "How tool stats work":["Как работают бонусы инструмента","Alet bonusları nasıl çalışır"],
+  "Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Скорость +{min}–{max}% или редкие находки +{rareMin}–{rareMax}%","Hız +{min}–{max}% veya nadir buluntu +{rareMin}–{rareMax}%"],
+  "Blueprint owned":["Чертёж есть","Plan mevcut"],
   "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
     "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
     "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."

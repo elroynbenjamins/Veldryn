@@ -3,10 +3,11 @@ import {useGameplayText} from '../i18n/gameplay';
 import {itemDetailText,itemDetailContent,type itemDetailRows} from '../i18n/item-details';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {localizedRecipeName} from '../i18n/crafting-recipe-names';
+import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 
 import {useEffect,useMemo,useState} from 'react';
 import type {ReactNode} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameModalSurface} from './GameModalSurface';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
@@ -39,12 +40,14 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
+export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,disposalActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;disposalActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
+ const ui=(label:string)=>equipmentPouchText(language,label);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[gearOpen,setGearOpen]=useState(false),[actionsOpen,setActionsOpen]=useState(false);
-  useEffect(()=>{setGearOpen(false);setActionsOpen(false)},[itemId,instanceId]);
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
+  const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false);
+  useEffect(()=>{setDetailsOpen(false)},[itemId,instanceId,source]);
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source]);
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
@@ -68,27 +71,28 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
   return <GameModalSurface visible={true} reduceMotion={state.settings.reduceMotion} onClose={onClose}
     backdropLabel={gt("Close item quick inspect")} surfaceStyle={s.sheet}>
-        <View style={s.hero}>
+        <View style={[s.hero,compactHeader&&s.heroCompact]}>
           <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
-          <View style={s.heroCopy}>
+          <View style={[s.heroCopy,compactHeader&&s.heroCopyCompact]}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text numberOfLines={2} style={s.owned}>{source==='equipment_pouch'?gl('Gear')+' '+formatGameNumber(storedGearCount,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)+(model.pouchQuantity?' · '+formatGameNumber(model.pouchQuantity,state.settings.numberMode,language)+' '+gt('Gems'):'')}</Text>
+            <Text numberOfLines={2} style={s.owned}>{item.type==='gear'?(source==='bank'?gt('Bank'):gl('Gear'))+' '+formatGameNumber(source==='bank'?model.bankQuantity:source==='equipment_pouch'?storedGearCount:model.inventoryQuantity,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}</Text>
           </View>
-          <InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/>
+          <View style={[s.heroControls,compactHeader&&s.heroControlsCompact]}><InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/></View>
         </View>
 
         <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
           {item.type==='gear'&&bonusRows.length>0?<View style={s.bonusPanel}>
-            <Text style={s.bonusTitle}>{gt('BONUS STATS')}</Text>
             {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
               <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
               <Text style={s.bonusValue}>{roll.value}</Text>
             </View>)}
-            <Text style={s.bonusNote}>{gt('Random bonuses on this equipment copy.')}</Text>
           </View>:null}
-          {item.type==='gear'&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Gems, upgrades & set details')} accessibilityState={{expanded:gearOpen}} onPress={()=>setGearOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureText}>{gt('Gems, upgrades & set details')}</Text><Text style={s.disclosureMark}>{gearOpen?'−':'+'}</Text></Pressable>}
-          {(item.type!=='gear'||gearOpen)&&<>
+          <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
+          <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
+            <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
+          </Pressable>
+          {detailsOpen&&<>
           {(model.stats||otherEffectLines.length>0)&&<Section title={gt("WHAT IT DOES")}><View style={s.statRow}>{model.stats&&<><Stat label="ATK" value={model.stats.attack}/><Stat label="DEF" value={model.stats.defense}/><Stat label="HP" value={model.stats.hp}/></>}</View>{model.craftedCopies>1&&item.type==='gear'&&!gearDecision?.alreadyEquipped?<Text style={s.note}>{gt("Choose a specific equipment copy to compare")}</Text>:null}{otherEffectLines.map((line,index)=><Text key={index} style={s.body}>{'• '+contentText(line)}</Text>)}</Section>}
           {gearDecision&&<Section title={gt("GEAR CHECK")}>{!gearDecision.compatible?<Text style={s.warningText}>{gt("This item belongs to another class, so loadout impact cannot be previewed on this character.")}</Text>:!gearDecision.previewAvailable?<Text style={s.warningText}>{gt("Choose a specific equipment copy to compare")}</Text>:<><View style={s.compareLine}><Text style={s.note}>{gt("REPLACES")}</Text><Text style={s.bodyStrong}>{gearDecision.replaces?gearDecision.replaces.name+(gearDecision.replaces.rank?' +'+gearDecision.replaces.rank:''):it('Empty {slot} slot',{slot:gl(item.slot??'equipment')})}</Text></View><Text style={s.note}>{gearDecision.alreadyEquipped?gt("Currently equipped · loadout change is zero."):gt("Whole-loadout change if equipped now.")}</Text><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.loadoutDelta.attack}/><DeltaStat label="DEF" value={gearDecision.loadoutDelta.defense}/><DeltaStat label="HP" value={gearDecision.loadoutDelta.hp}/><DeltaStat label="PWR" value={gearDecision.loadoutDelta.power}/></View><Text style={s.totalLine}>{it('After equip · ATK {attack} · DEF {defense} · HP {hp} · PWR {power}',{attack:displayStat(gearDecision.loadoutAfter.attack),defense:displayStat(gearDecision.loadoutAfter.defense),hp:displayStat(gearDecision.loadoutAfter.hp),power:displayStat(gearDecision.loadoutAfter.power)})}</Text>{upgrade&&!upgrade.maxed&&<><View style={s.compareLine}><Text style={s.note}>{it('TO +{rank} FROM CURRENT RANK',{rank:gearDecision.maxRank})}</Text><Text style={s.potentialLabel}>{gt("POTENTIAL")}</Text></View><View style={s.deltaRow}><DeltaStat label="ATK" value={gearDecision.maxLoadoutGain.attack} potential/><DeltaStat label="DEF" value={gearDecision.maxLoadoutGain.defense} potential/><DeltaStat label="HP" value={gearDecision.maxLoadoutGain.hp} potential/><DeltaStat label="PWR" value={gearDecision.maxLoadoutGain.power} potential/></View><Text style={s.note}>{gt("Potential keeps this copy's current socketed gems and only raises its upgrade rank.")}</Text></>}{gearDecision.set&&<View style={s.setDecision}><View style={s.compareLine}><Text style={s.setName}>{gearDecision.set.name}</Text><Text style={s.setCount}>{gearDecision.set.currentPieces+' → '+gearDecision.set.previewPieces+' / '+gearDecision.set.required}</Text></View>{gearDecision.set.active.map(row=><View key={row.pieces} style={s.setRuntimeRow}><Text style={[s.setRuntimePill,row.runtime==='live'?s.setRuntimeLive:s.setRuntimePending]}>{row.runtime==='live'?gt("LIVE"):it('HOOK')}</Text><Text style={s.note}>{it('{pieces} pieces · {bonus}',{pieces:row.pieces,bonus:gl(row.bonus)})}</Text></View>)}{gearDecision.set.next&&<Text style={s.setNext}>{it('Next · {pieces} pieces · {bonus}',{pieces:gearDecision.set.next.pieces,bonus:gl(gearDecision.set.next.bonus)})}</Text>}{/^T[5-9]$/.test(gearDecision.set.tier)?<Text style={s.catalogNote}>{it('2/4/8/10 always-on V33 bonuses are live in stats/combat. 6pc conditional text is preserved as a trigger hook until its exact skill/ally/barrier event exists.')}</Text>:null}</View>}</>}</Section>}
 
@@ -98,10 +102,9 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
 
           {sockets&&<Section title={gt("SOCKETS")}><Text style={s.body}>{it('{filled}/{capacity} filled · 1 Stat + 1 Effect',{filled:sockets.filled,capacity:sockets.capacity})}</Text>{gearDecision?.gems.length?gearDecision.gems.map(gem=><Text key={gem.id} style={s.body}>{(gem.kind==='stat'?'S ◆ ':'FX ✦ ')+gem.name+' · '+contentText(gem.detail)}</Text>):<><Text style={s.note}>{it('Stat · {gem}',{gem:sockets.statGemName??gt("Empty")})}</Text><Text style={s.note}>{it('Effect · {gem}',{gem:sockets.effectGemName??gt("Empty")})}</Text></>}</Section>}
 
-          </>}
-          <Section title={gt("HOW TO GET")+(sources.length?' · '+sources.length:'')}>{primarySource?<><SourceRow source={primarySource} primary onNavigate={onNavigate}/>{otherSources.length?<><Pressable accessibilityRole="button" accessibilityState={{expanded:otherSourcesOpen}} accessibilityLabel={it(otherSourcesOpen?'Hide other sources for {item}':'Show other sources for {item}',{item:localizedItemName(language,item.id)})} onPress={()=>setSourceDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{it('Other sources · {count}',{count:otherSources.length})}</Text><Text style={s.sourceDisclosureMark}>{otherSourcesOpen?'−':'+'}</Text></Pressable>{otherSourcesOpen?<View style={s.otherSourceList}>{otherSources.map((source,index)=><SourceRow key={source.kind+':'+source.title+':'+index} source={source} onNavigate={onNavigate}/>)}</View>:null}</>:null}</>:<Text style={s.note}>{gt("No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.")}</Text>}</Section>
+          {sources.length>0?<Section title={gt("HOW TO GET")+(sources.length?' · '+sources.length:'')}>{primarySource?<><SourceRow source={primarySource} primary onNavigate={onNavigate}/>{otherSources.length?<><Pressable accessibilityRole="button" accessibilityState={{expanded:otherSourcesOpen}} accessibilityLabel={it(otherSourcesOpen?'Hide other sources for {item}':'Show other sources for {item}',{item:localizedItemName(language,item.id)})} onPress={()=>setSourceDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{it('Other sources · {count}',{count:otherSources.length})}</Text><Text style={s.sourceDisclosureMark}>{otherSourcesOpen?'−':'+'}</Text></Pressable>{otherSourcesOpen?<View style={s.otherSourceList}>{otherSources.map((source,index)=><SourceRow key={source.kind+':'+source.title+':'+index} source={source} onNavigate={onNavigate}/>)}</View>:null}</>:null}</>:<Text style={s.note}>{gt("No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.")}</Text>}</Section>:null}
 
-          <Section title={gt("USED IN CRAFTING")+(model.usedIn.length?' · '+model.usedIn.length:'')}>
+          {uses.length>0?<Section title={gt("USED IN CRAFTING")+(model.usedIn.length?' · '+model.usedIn.length:'')}>
             <Pressable accessibilityRole="button" accessibilityState={{expanded:craftingOpen}} accessibilityLabel={craftingOpen?gt('Hide crafting uses'):gt('Show crafting uses')} onPress={()=>setCraftingDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{model.usedIn.length?(craftingOpen?gt('Hide recipes'):readyUses>0?gt('{count} available recipes',{count:readyUses}):gt('Show recipes · {count}',{count:model.usedIn.length})):gt('Not currently used as a crafting ingredient.')}</Text><Text style={s.sourceDisclosureMark}>{craftingOpen?'−':'+'}</Text></Pressable>
             {craftingOpen&&<>{useRows.length?useRows.map((recipe,index)=>recipe.isRecipeUnlock
               ?<View key={recipe.recipeId} style={[s.recipeRow,s.craftingUseRow]}>
@@ -129,13 +132,14 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
            style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}>
             <Text style={s.sourceDisclosureText}>{useLimit>=uses.length?gt('Show fewer recipes'):gt('Show more recipes · {count}',{count:uses.length-useRows.length})}</Text>
             <Text style={s.sourceDisclosureMark}>{useLimit>=uses.length?'−':'+'}</Text>
-           </Pressable>:null}</>}</Section>
-
-          {actions?(item.type==='food'?<Section title={gt("ACTIONS")}>{actions}</Section>:<><Pressable accessibilityRole="button" accessibilityState={{expanded:actionsOpen}} accessibilityLabel={gt("ACTIONS")} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}><Text style={s.disclosureText}>{gt("ACTIONS")}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text></Pressable>{actionsOpen?<Section title={gt("ACTIONS")}>{actions}</Section>:null}</>):null}
-
-          <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
+           </Pressable>:null}</>}</Section>:null}
+          </>}
+          {actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
-        {quickActions?<View style={s.quickFooter}>{quickActions}</View>:null}
+        {(quickActions||disposalActions)?<View style={s.quickFooter}>
+          {quickActions}
+          {disposalActions?<View style={s.footerDisposal}>{disposalActions}</View>:null}
+        </View>:null}
   </GameModalSurface>;
 }
 function Section({title,children}:{title:string;children:ReactNode}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text>{children}</View>}
@@ -154,14 +158,19 @@ const art=StyleSheet.create({fallback:{width:56,height:56,borderWidth:1,borderRa
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   sheet:{maxHeight:'88%',maxWidth:560,overflow:'hidden',paddingHorizontal:0,paddingTop:8,backgroundColor:C.panelRaised},
   hero:{minHeight:84,flexDirection:'row',alignItems:'center',gap:6,padding:8,borderBottomWidth:1,borderBottomColor:C.line},
-  artBox:{width:65,height:65,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},
-  heroCopy:{flex:1,minWidth:0,gap:3},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
+  heroCompact:{flexWrap:'wrap'},
+  heroControls:{alignItems:'flex-end',justifyContent:'center'},
+  heroControlsCompact:{marginLeft:'auto'},
+  artBox:{width:60,height:60,borderWidth:1,borderRadius:radii.md,alignItems:'center',justifyContent:'center'},
+  heroCopy:{flex:1,minWidth:0,gap:3},heroCopyCompact:{minWidth:160},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
   close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'700'},
-  scroll:{maxHeight:520,flexShrink:1},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
+  scroll:{maxHeight:520,flexShrink:1,minHeight:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
+   foodActions:{gap:spacing.xs},
+   footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.lineStrong,marginTop:spacing.sm,paddingTop:spacing.sm,gap:spacing.xs},
    disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
    disclosureText:{...typography.bodyStrong,color:C.text,flex:1},disclosureMark:{fontSize:18,fontWeight:'900',color:C.accent},
-   quickFooter:{padding:spacing.sm,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.panelRaised},
-  bonusPanel:{gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.good,borderRadius:radii.md,backgroundColor:C.panel2},
+   quickFooter:{padding:spacing.sm,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.panelRaised,flexShrink:0},
+  bonusPanel:{gap:3,paddingHorizontal:spacing.sm,paddingVertical:6,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.good,borderRadius:radii.md,backgroundColor:C.panel2},
   bonusTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},
   bonusRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8,minHeight:24},
   bonusLabel:{...typography.bodyStrong,color:C.text,flex:1},
@@ -173,6 +182,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   body:{...typography.body,color:C.text},bodyStrong:{...typography.bodyStrong,color:C.text},note:{...typography.caption,color:C.muted},
   upgradeTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},chance:{...typography.bodyStrong,fontWeight:'900'},craftState:{fontSize:8,lineHeight:11,fontWeight:'900',letterSpacing:.5,paddingHorizontal:6,paddingVertical:4,borderWidth:1,borderRadius:99},craftReady:{color:C.good,borderColor:C.good,backgroundColor:C.goodSurface},craftBlocked:{color:C.warning,borderColor:C.warning,backgroundColor:C.warningSurface},sectionMini:{fontSize:8,lineHeight:11,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:4},blockerRow:{gap:2,paddingVertical:4},materialReadyRow:{minHeight:38,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:4},materialReady:{...typography.caption,color:C.good,fontWeight:'900'},materialMissing:{...typography.caption,color:C.warning,fontWeight:'900'},
   sourceRow:{flexDirection:'row',alignItems:'flex-start',gap:8},primarySource:{borderColor:C.info},sourceDisabled:{opacity:.55},sourceType:{fontSize:8,lineHeight:11,color:C.info,fontWeight:'900',letterSpacing:.55},chainDetail:{fontSize:9,lineHeight:12,color:C.text,fontWeight:'700'},chainWarning:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'800'},sourceEstimate:{fontSize:9,lineHeight:12,color:C.info,fontWeight:'900'},sourceDot:{width:8,height:8,borderRadius:99,marginTop:6},sourceDisclosure:{minHeight:38,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},sourceDisclosureText:{...typography.caption,color:C.info,fontWeight:'900'},sourceDisclosureMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},otherSourceList:{gap:6,paddingLeft:8,borderLeftWidth:2,borderLeftColor:C.info},recipeRow:{paddingVertical:2},craftingUseRow:{flexDirection:'row',alignItems:'center',gap:8,minHeight:62,borderWidth:1,borderRadius:radii.sm,borderColor:C.line,backgroundColor:C.panel2,padding:8},craftingUseButton:{minHeight:38,justifyContent:'center',paddingHorizontal:9,borderWidth:1,borderColor:C.selectionLine,borderRadius:radii.sm,backgroundColor:C.selection},craftingUseButtonText:{fontSize:11,color:C.text,fontWeight:'900'},actionRow:{minHeight:44,alignItems:'center',paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},actionMeta:{alignItems:'flex-end',justifyContent:'center',gap:4},openMark:{...typography.caption,color:C.info,fontWeight:'900'},availabilityPill:{minHeight:20,justifyContent:'center',paddingHorizontal:6,borderWidth:1,borderRadius:99},availabilityLabel:{fontSize:9,lineHeight:12,fontWeight:'900',letterSpacing:.5},availabilityDetail:{...typography.caption,color:C.warning,fontWeight:'700'},
-  footerRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8},sell:{...typography.caption,color:C.muted},classText:{...typography.caption,color:C.info,fontWeight:'800'},
+  footerRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:2},sell:{...typography.caption,color:C.muted},classText:{...typography.caption,color:C.info,fontWeight:'800'},
   flex:{flex:1,minWidth:0},pressed:{opacity:.72},
 });}

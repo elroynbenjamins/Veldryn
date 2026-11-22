@@ -44,6 +44,6 @@ for(const [relative,markers]of Object.entries(uiFiles)){
 }
 const inventory=fs.readFileSync(path.join(__dirname,'../src/screens/InventoryScreen.tsx'),'utf8');
 assert.ok(inventory.includes('onSell(id,')||inventory.includes('onSell('),'existing canonical ID-based inventory sell callback is retained');
-assert.ok(inventory.includes('onToggleFavorite(item.id)'),'favorite changes continue by canonical ID');
-assert.ok(inventory.includes('onToggleLock(item.id)'),'lock changes continue by canonical ID');
+assert.ok(inventory.includes('inventoryBulkSelectionId(stack)')&&inventory.includes('onBulkPreference(kind,enabled,selectedIds)'),'favorite and lock batch changes continue by canonical item ID or exact-copy ID');
+assert.ok(inventory.includes('onToggleFavorite(inspected.id)')&&inventory.includes('onToggleLock(inspected.id)'),'item inspect retains canonical ID-based protection controls');
 console.log('PASS: original 41 starter translations remain exact, unique-item English fallback, five item-display surfaces, unchanged inventory identity/commands');

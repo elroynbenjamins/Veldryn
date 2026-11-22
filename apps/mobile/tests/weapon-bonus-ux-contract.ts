@@ -5,6 +5,7 @@ const check=(condition:boolean,message:string)=>{if(!condition)throw new Error(m
 const forge=read('src/components/SmithingCollection.tsx');
 const pool=read('src/components/WeaponBonusSection.tsx');
 const preview=read('src/components/EquipmentPreview.tsx');
+const bonusFormat=read('src/core/weapon-bonus-display.ts');
 const inspect=read('src/components/ItemQuickInspect.tsx');
 const recipeCard=read('src/components/RecipeCard.tsx');
 check(forge.includes('<RecipeCard key={recipe.id}')&&recipeCard.includes("detailTab==='stats'?<>"),
@@ -20,15 +21,18 @@ check(pool.includes('accessibilityState={{expanded}}')&&pool.includes('onPress={
 check(preview.includes('weaponBonusComparisonRows(oldRecord?.weaponBonuses,instance?.weaponBonuses)'),
   'Compare & Swap must compare the selected exact weapon receipts');
 check(preview.includes('weaponBonusDisplayDelta(change.deltaBps)')&&preview.includes('statColor(C,change.deltaBps)'),
-  'Comparison must show positive/negative percentage-point differences');
+  'Comparison must show positive/negative bonus percentage differences');
+check(bonusFormat.includes("(Math.abs(bps)/100).toFixed(1)+'%'")&&!bonusFormat.includes("+' pp'"),'Bonus comparison changes must render % rather than pp');
+check(preview.includes('stats.map(row=>')&&!preview.includes('setMore(')&&!preview.includes('actionsOpen'),'All base/loadout stats and bonus comparisons must be visible without an expander');
+check(preview.includes('hasDisposalActions?<View style={s.footerDisposal}')&&preview.includes('hasStorageActions?<View style={s.footerActionRow}'),'Compare sheet must show separate storage and disposal rows');
 check(pool.includes('accessible accessibilityLabel={weaponBonusStatText(language,stat'),
   'Every tier-specific roll range should have a usable screen-reader label');
 check(preview.includes("accessibilityLabel={weaponBonusStatText(language,change.stat)"),
   'A screen reader should announce the whole current/new/difference comparison');
 check(preview.includes('compactBonusRows')&&preview.includes('rollCompareRowStack'),
   'Comparison must fit narrow/high-font screens');
-check(inspect.includes('Random bonuses on this equipment copy.'),
-  'The current compact Item Quick Inspect panel must not be replaced with roll-grade bars');
+check(inspect.includes('bonusRows.map(roll=>')&&inspect.includes('otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line))')&&!inspect.includes('rollTrack'),
+  'Compact Item Quick Inspect must display exact roll values without roll-grade bars or explanatory clutter');
 check(pool.includes('if(!base)return null;')&&pool.includes('twoAtAllRarities'),
   'Only eligible selected weapon and armor recipes should display tier- and rarity-correct possibilities');
 check(!forge.includes('WeaponBonusDetails')&&!preview.includes('WeaponBonusDetails'),

@@ -54,6 +54,7 @@ export interface PendingCareerProofV2{
   readonly sourceId:string;
   readonly accountId:string;
   readonly requestId:string;
+  readonly requestHash:string;
   readonly segmentIndex:number;
   readonly characterId:string;
   readonly professionId:ProfessionIdV2;
@@ -131,7 +132,7 @@ export async function projectPendingOnlineGameCareerProofsV2(
       source.requestId+':'+source.requestHash+':'+i);
     proofs.push({
       sourceKind:'gathering_claim',sourceId,
-      accountId:source.accountId.toLowerCase(),requestId:source.requestId,segmentIndex:i,
+      accountId:source.accountId.toLowerCase(),requestId:source.requestId,requestHash:source.requestHash,segmentIndex:i,
       characterId:source.beforeCharacterId.toLowerCase(),
       professionId:node.skillId,
       claimedElapsedSeconds:reward.elapsedSeconds,

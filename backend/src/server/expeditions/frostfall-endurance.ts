@@ -6,7 +6,6 @@ import {validateCoopRouteGraph,DUNGEON_ENDURANCE} from './route-generation';
 /** Unreleased seasonal variant. Existing event-route-v5 saves retain their six-room graph. */
 export const FROSTFALL_ENDURANCE_GENERATOR='event-route-v5-endurance-v2';
 export const FROSTFALL_ENDURANCE_DEPTH_REWARDS=[1,1.15,1.28,1.38,1.46,1.52] as const;
-export const FROSTFALL_DAILY_REWARDED_CLEARS=2;
 
 const idsAt=(depth:number)=>[0,1,2].map(choice=>'d'+depth+'-c'+choice);
 

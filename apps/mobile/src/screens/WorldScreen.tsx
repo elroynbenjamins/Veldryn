@@ -3,6 +3,8 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {progressionText} from '../i18n/progression';
 import type {GameState} from '../core/types';
+import type {WorkingTowardDestination} from '../core/working-toward';
+import {WorldDestinationGuide} from '../components/WorldDestinationGuide';
 import {currentRegionId} from '../core/combat-region';
 import {WorldChapterNavigator} from '../components/WorldChapterNavigator';
 import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
@@ -15,14 +17,17 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 
 type Props={
   state:GameState;
-  onTravel:(regionId:string)=>void;
+  onTravel:(regionId:string,autoStart?:boolean)=>void|Promise<void>;
+  onCancelGoal?:()=>void;
+  goalDestination?:WorkingTowardDestination;
+  travelBusy?:boolean;
   onOpenCombat:(zoneId?:string)=>void;
   onOpenSkills:(areaId?:string)=>void;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
   goalRegionId?:string;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegionalRewardsChanged,goalRegionId}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegionalRewardsChanged,goalRegionId,goalDestination,onCancelGoal,travelBusy=false}:Props){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const p=(text:string)=>progressionText(language,text);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -46,9 +51,10 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onRegional
   // World is only for regions, combat, gathering, and exploration.
   return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={s.heading}>{p('World')}</Text>
+    {goalDestination&&onCancelGoal?<WorldDestinationGuide state={state} destination={goalDestination} busy={travelBusy} onTravel={onTravel} onCancel={onCancelGoal}/>:null}
     <WorldChapterNavigator
         state={state} currentRegionId={currentId} goalRegionId={goalRegionId}
-        onTravel={onTravel} onOpenCombat={onOpenCombat} onOpenSkills={onOpenSkills}
+        onTravel={regionId=>{if(!travelBusy)return onTravel(regionId);}} onOpenCombat={onOpenCombat} onOpenSkills={onOpenSkills}
       >
       {extraContent?<View style={s.extraWrap}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded:expandedProgress}}

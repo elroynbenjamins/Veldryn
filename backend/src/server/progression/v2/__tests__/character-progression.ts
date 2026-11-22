@@ -68,4 +68,5 @@ assert.equal(cappedCombinedSpeedBasisPointsV2(1800,1000),2000);
 assert.throws(()=>professionBonusesV2({professionId:'smithing',level:24,specialization:'efficiency'}),/locked_specialization/);
 assert.throws(()=>professionBonusesV2({professionId:'mining',level:50,specialization:'precision'}),/invalid_specialization/);
 assert.throws(()=>professionBonusesV2({professionId:'forge',level:50,specialization:'production'}),/unsupported_specialization/);
+assert.throws(()=>professionBonusesV2({professionId:'unknown' as any,level:50,specialization:null}),/invalid_profession/);
 console.log('PASS: isolated V2 three-track progression, profession independence, XP and mastery boundaries');

@@ -66,6 +66,20 @@ const beforeKill=activeCombatHitProjection(strong,T+Math.floor(strongRate.killCy
 assert.ok(beforeKill.searching,'the search phase must be visible before engaging');
 assert.equal(beforeKill.enemyHp,beforeKill.enemyMaxHp,'no damage is taken by an unencountered monster');
 
+// Deep presentation regression: the old monster's final hit must not
+// become a ghost first hit of the next monster after the search phase.
+let firstKillAt:number|undefined;
+for(let at=T+250;at<=T+60000;at+=250){
+  if(previewActivityReward(strong,at).kills>=1){firstKillAt=at;break;}
+}
+assert.ok(firstKillAt!==undefined,'strong hunter should defeat its first enemy');
+const nextSearch=activeCombatHitProjection(strong,firstKillAt!)!;
+assert.ok(nextSearch.searching,'first defeat enters the next search phase');
+assert.equal(nextSearch.lastHit,undefined,'next encounter must not inherit the last enemy hit');
+const resumedSearch=activeCombatHitProjection(strong,firstKillAt!+500,nextSearch.cursor)!;
+assert.ok(resumedSearch.searching,'incremental replay remains in encounter search');
+assert.equal(resumedSearch.lastHit,undefined,'incremental replay must not resurrect a previous encounter hit');
+
 const options={startsAtMs:T,elapsedSeconds:110,progressFraction:0,preparationEncounters:0,cycleSeconds:10,preparedCycleSeconds:10,cycleSecondsForEncounter:(i:number)=>i%2?12:10};
 const all=combatTimeline(options);
 const first=combatTimeline({...options,elapsedSeconds:43});

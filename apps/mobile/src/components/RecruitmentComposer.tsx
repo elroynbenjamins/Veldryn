@@ -3,7 +3,6 @@ import {StyleSheet,Text,View} from 'react-native';
 import {useSocialText} from '../i18n/social';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
-import {Panel} from './Panel';
 import {RecruitmentQuickPostChoices} from './RecruitmentQuickPostChoices';
 import {radii,spacing,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -26,9 +25,9 @@ export function RecruitmentComposer({initial,busy,onPublish,onCancel}:{initial:P
    activityKind:undefined,goal:undefined,startMode:undefined,sessionMinutes:undefined,
    voiceMode:undefined,experience:undefined,scheduledAt:undefined});
  };
- return <Panel>
+ return <View style={s.root}>
   <View style={s.head}>
-   <View style={s.flex}><Text style={s.eyebrow}>{st('NEW RECRUITMENT POST')}</Text><Text style={s.title}>{st('Create advert')}</Text></View>
+   <Text style={s.eyebrow}>{st('NEW RECRUITMENT POST')}</Text>
    <Text style={s.postType}>{presentation.shortLabel}</Text>
   </View>
   <View style={s.section}>
@@ -43,12 +42,11 @@ export function RecruitmentComposer({initial,busy,onPublish,onCancel}:{initial:P
   <Text style={s.expiry}>{st('AUTO-EXPIRES')} · {st('Automatically expires after 3 days')}</Text>
   <GameButton title={busy?st('Publishing…'):st('Publish advert')} disabled={busy||draft.title.trim().length<3} loading={busy} onPress={publish}/>
   <GameButton title={st('Cancel')} compact tone="secondary" disabled={busy} onPress={onCancel}/>
- </Panel>;
+ </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},
+ root:{gap:spacing.md},head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:0.8,color:C.accent},
- title:{fontSize:19,fontWeight:'900',color:C.text,marginTop:3},
  postType:{fontSize:10,color:C.info,fontWeight:'900',borderWidth:1,borderColor:C.lineStrong,borderRadius:99,paddingHorizontal:9,paddingVertical:5},
  section:{gap:7},label:{fontSize:12,fontWeight:'800',color:C.text},
  input:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,paddingHorizontal:spacing.sm,backgroundColor:C.inputBg,color:C.text},

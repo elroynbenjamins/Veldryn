@@ -1,9 +1,9 @@
 /** Mobile-only Social Name gate. Do not change the shared Edge/gameplay release
  * flags for a client-specific rollout. Expo inlines these values at build time.
  *
- * Production builds require three explicit matching values. This opt-in must
- * stay false until all Social Name RPCs are deployed and signed Android QA
- * passes. Preview and development builds cannot accidentally activate it.
+ * Production builds require three explicit matching values. The Social Name
+ * backend is installed for 1.0.11, and only the explicitly enabled production
+ * EAS profile may activate the UI. Preview/dev cannot activate it.
  */
 const STAGING_SOCIAL_IDENTITY_PREVIEW=(
  process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&

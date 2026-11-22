@@ -11,6 +11,7 @@
     "src/server/party/weekly-party-event-combat-v59.ts",
     "src/server/party/weekly-party-boss-traits-v90.ts",
     "src/server/party/__tests__/weekly-party-boss-traits-v90.ts",
+    "src/server/party/__tests__/weekly-party-boss-envelope-v91.ts",
     "src/server/party/__tests__/weekly-party-event-combat-v59.ts",
     "src/server/party/weekly-party-event-claim-v60.ts",
     "src/server/party/weekly-party-event-proof-v61.ts",

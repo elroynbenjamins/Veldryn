@@ -925,6 +925,8 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
         }
       }else showAlert('Gathering unavailable','You reached the destination, but this resource is no longer ready. Review its requirements in Skills.');
     }
+    // Never clear a newer goal selected while the server was processing Start.
+    if(expectedGoal&&pendingGoalDestinationRef.current!==expectedGoal)return;
     setPendingGoalDestination(undefined);setGoalRegionId(undefined);
     if(destination.kind==='combat'){setGoalMonsterId(destination.monsterId);setTab('Combat');return;}
     if(destination.kind==='skills'){

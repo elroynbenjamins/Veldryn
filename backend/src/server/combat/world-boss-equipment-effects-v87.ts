@@ -84,7 +84,7 @@ export class WorldBossEquipmentRuntimeV87{
    fail('untrusted_scope');
   const seen=new Set<string>();
   for(const source of proof.sources){
-   const actor=context.actors.find(a=>a.id===source.actorId);
+   const actor=context.actors.find(a=>a.id===source?.actorId);
    if(!source||source.source!=='server-persisted-equipment-v2'||
     source.policy!=='eq2-traits-hidden-engine-pass1'||
     !actor||actor.characterId!==source.characterId||

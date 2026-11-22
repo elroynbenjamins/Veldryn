@@ -1,6 +1,6 @@
 # Veldryn 2.0 — tool XP affixes and innate percentage stats on rare equipment
 
-Status: **staged tool and selected rare-piece gameplay implementation; not released**. The existing mobile tool catalog has T1–T4 gathering tools. T5–T9 profession tools remain unimplemented; the curated rare-piece innate stats are wired into mobile item definitions, combat modifiers, and existing inspection (no UI redesign). Backend/server parity and full automated CI approval remain release gates.
+Status: **staged tool and selected rare-piece gameplay implementation; not released**. The existing mobile tool catalog has T1–T4 gathering tools. T5–T9 profession tools remain unimplemented; the curated rare-piece innate stats are wired into mobile item definitions, combat modifiers, and existing inspection (no UI redesign). Backend equipment-catalog metadata now mirrors the mobile signature map; actual server-authoritative combat settlement, market/dungeon parity, and full automated CI approval remain release gates.
 
 ## Tool Skill XP affix (implemented on feature branch)
 
@@ -59,7 +59,8 @@ Recommended safeguards:
 - [x] Curate set-piece identities by actual v33 set ID and equipment slot; exact innate values are deterministic and constant across copies.
 - [x] Extend mobile equipment definitions and combat build calculations using only supported combat stat keys.
 - [x] Expose innate stats separately in the existing item inspector; equipment preview uses the same effective combat stat calculation.
-- [ ] Verify backend combat/item API parity, market listings, and dungeon snapshots before release.
+- [x] Mirror the authored attributes in backend V33 catalog/item-detail metadata.
+- [ ] Verify server-authoritative combat, market listings, and dungeon snapshots before release.
 - Enforce cap/rounding rules and test all old/new saves, equip swaps, set thresholds, and PvE simulations.
 - Implement the full T1–T9 profession tool catalog separately, including crafting skill tool mapping.
 

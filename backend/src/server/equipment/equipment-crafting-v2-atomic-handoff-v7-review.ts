@@ -49,7 +49,7 @@ export interface Eq2V7CraftHandoff {
 export class Eq2V7HandoffError extends Error {
  constructor(readonly code:string){super(code);}
 }
-const fail=(code:string):never=>{throw new Eq2V7HandoffError(code);};
+function fail(code:string):never{throw new Eq2V7HandoffError(code);}
 const count=(x:unknown):x is number=>typeof x==='number'&&
  Number.isSafeInteger(x)&&x>=0;
 const validId=(x:unknown):x is string=>typeof x==='string'&&

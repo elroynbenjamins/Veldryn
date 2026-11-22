@@ -70,6 +70,39 @@ assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_SOCIAL_NAMES
 assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_RELEASE_CHANNEL:'preview'}),false,'Preview builds cannot spoof production launch');
 assert.equal(socialNameVisibleWithEnv({...prodSocialEnv,EXPO_PUBLIC_SUPABASE_URL:stagingSocialEnv.EXPO_PUBLIC_SUPABASE_URL}),false,'Production launch requires exact production backend');
 
+// Regression: PostgREST returns plain objects (not always Error instances).
+const socialNameSource=read('src/online/social-name.ts');
+const compiledSocialName=ts.transpileModule(socialNameSource,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const socialModule={exports:{}};
+vm.runInNewContext(compiledSocialName,{
+ module:socialModule,exports:socialModule.exports,
+ require:(name)=>{if(name==='./supabase')return {supabase:null};throw new Error('Unexpected Social Name import: '+name)},
+});
+const socialError=socialModule.exports.socialNameError;
+assert.equal(socialError({message:'SOCIAL_NAME_TAKEN',code:'P0001'}),'This name is already used by another player.','Plain PostgREST error preserves name collision guidance');
+assert.equal(socialError({message:'SOCIAL_NAME_COOLDOWN'}),'You can change your social name once every 30 days.','Cooldown is explained');
+assert.equal(socialError({code:'23505'}),'This name is already used by another player.','Unique constraint error is actionable');
+assert.equal(socialError(new Error('SOCIAL_NAME_BLOCKED')),'Choose a different social name.','Native Error stays supported');
+assert.equal(socialError({message:'Internal database error',details:'private table name'}),'Could not update your social name. Please try again.','Database internals are not shown');
+const socialLocaleSource=read('src/i18n/social-identity.ts');
+const compiledSocialLocale=ts.transpileModule(socialLocaleSource,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const socialLocaleModule={exports:{}};
+vm.runInNewContext(compiledSocialLocale,{
+ module:socialLocaleModule,exports:socialLocaleModule.exports,
+ require:(name)=>{if(name==='./languages')return {SUPPORTED_LANGUAGES:['en','de','es','nl','it','fr','ru','tr']};throw new Error('Unexpected translation import: '+name)},
+});
+const socialT=socialLocaleModule.exports.socialIdentityT;
+for(const key of ['This name is already used by another player.','You can change your social name once every 30 days.','Choose a different social name.','Complete account setup before choosing a social name.','Could not update your social name. Please try again.']){
+ for(const language of ['en','de','es','nl','it','fr','ru','tr']){
+  const translated=socialT(language,key);
+  assert.ok(typeof translated==='string'&&translated.length>8&&!translated.includes('undefined'),'Localized Social Name error '+key+' / '+language);
+  if(language!=='en')assert.notEqual(translated,key,'No English fallback for authored Social Name error / '+language);
+ }
+}
+const socialEditor=read('src/components/SocialNameEditor.tsx');
+assert.ok(socialEditor.includes('socialIdentityT(language,socialNameError(e))'),'Editor localizes the parsed PostgREST error rather than showing raw SQL');
+
+
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');
 assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');

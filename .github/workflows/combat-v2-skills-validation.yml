@@ -130,6 +130,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+      - name: Verify signed Equipment V2 trait hooks coexist with class skills and counterplay
+        run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
+      - name: Rehearse 9 classes × 2 specializations × 6 regional bosses with exact-copy equipped trait custody
+        run: node backend/dist/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.js
 
   mobile_preview:
     name: Hidden Skills 2.0 preview typecheck and UX contract

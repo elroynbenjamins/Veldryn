@@ -28,7 +28,7 @@ export function weaponBonusDisplayPercent(bps:number):string{
   return bps===0?'—':'+'+(bps/100).toFixed(1)+'%';
 }
 
-/** Differences in percentage bonuses are percentage points, not relative change. */
+/** Numeric difference between bonus percentages (shown with % by approved UI convention), not a relative percent increase. */
 export function weaponBonusDisplayDelta(bps:number):string{
-  return bps===0?'—':(bps>0?'+':'−')+(Math.abs(bps)/100).toFixed(1)+' pp';
+  return bps===0?'—':(bps>0?'+':'−')+(Math.abs(bps)/100).toFixed(1)+'%';
 }

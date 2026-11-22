@@ -5,6 +5,7 @@ const check=(condition:boolean,message:string)=>{if(!condition)throw new Error(m
 const forge=read('src/components/SmithingCollection.tsx');
 const pool=read('src/components/WeaponBonusSection.tsx');
 const preview=read('src/components/EquipmentPreview.tsx');
+const bonusFormat=read('src/core/weapon-bonus-display.ts');
 const inspect=read('src/components/ItemQuickInspect.tsx');
 const recipeCard=read('src/components/RecipeCard.tsx');
 check(forge.includes('<RecipeCard key={recipe.id}')&&recipeCard.includes("detailTab==='stats'?<>"),
@@ -20,7 +21,10 @@ check(pool.includes('accessibilityState={{expanded}}')&&pool.includes('onPress={
 check(preview.includes('weaponBonusComparisonRows(oldRecord?.weaponBonuses,instance?.weaponBonuses)'),
   'Compare & Swap must compare the selected exact weapon receipts');
 check(preview.includes('weaponBonusDisplayDelta(change.deltaBps)')&&preview.includes('statColor(C,change.deltaBps)'),
-  'Comparison must show positive/negative percentage-point differences');
+  'Comparison must show positive/negative bonus percentage differences');
+check(bonusFormat.includes("(Math.abs(bps)/100).toFixed(1)+'%'")&&!bonusFormat.includes("+' pp'"),'Bonus comparison changes must render % rather than pp');
+check(preview.includes('stats.map(row=>')&&!preview.includes('setMore(')&&!preview.includes('actionsOpen'),'All base/loadout stats and bonus comparisons must be visible without an expander');
+check(preview.includes('hasDisposalActions?<View style={s.footerDisposal}')&&preview.includes('hasStorageActions?<View style={s.footerActionRow}'),'Compare sheet must show separate storage and disposal rows');
 check(pool.includes('accessible accessibilityLabel={weaponBonusStatText(language,stat'),
   'Every tier-specific roll range should have a usable screen-reader label');
 check(preview.includes("accessibilityLabel={weaponBonusStatText(language,change.stat)"),

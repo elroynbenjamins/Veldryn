@@ -5,7 +5,7 @@ import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/region
 import {makeGuildPveV9Run,type GuildPveV9StoreState} from '../../../backend/src/server/combat/guild-pve-transaction-v9';
 import {makeGuildPveReferenceV7} from '../../../backend/src/server/combat/guild-pve-broken-forge-v7';
 import {GuildPveV16PrivateReadService,type GuildPveV16ConsistentRead,
- type GuildPveV16TrustedReadPort} from '../../../backend/src/server/combat/guild-pve-authority-v16';
+ type GuildPveV16TrustedReadPort} from '../../../backend/online/guild-pve-authority-v16';
 
 const ACCOUNT='GX_V16_ACCOUNT',CHAR='GX_V16_CHARACTER',GUILD='GX_V16_GUILD',CYCLE='GX_V16_CYCLE';
 const START=Date.UTC(2026,10,16),DAY=86400000;

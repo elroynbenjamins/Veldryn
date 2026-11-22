@@ -130,6 +130,18 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+      - name: Measure six equal-stat real-engine curse and interrupt counterplay pairs
+        run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
+      - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
+        run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
+      - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay
+        run: node backend/dist/server/combat/v2/__tests__/boss-telegraph-projection.js
+      - name: Validate four-player isolated cleanse, shielding and no duplicate cure events
+        run: node backend/dist/server/combat/v2/__tests__/counterplay-four-player-cleanse.js
+      - name: Validate debuff-only auto-cleanse targeting without changing legacy AI
+        run: node backend/dist/server/combat/v2/__tests__/counterplay-debuff-only-targeting.js
+      - name: Verify V2 cleanse parity and six authored boss counterplay routes
+        run: node backend/dist/server/combat/v2/__tests__/counterplay-cleanse-boss.js
       - name: Verify signed Equipment V2 trait hooks coexist with class skills and counterplay
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
       - name: Rehearse 9 classes × 2 specializations × 6 regional bosses with exact-copy equipped trait custody

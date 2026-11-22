@@ -15,6 +15,7 @@ import {
  type FrozenEquipmentTraitItemReceiptV2,type TrustedEquipmentTraitReceiptPortV2
 } from '../equipment-trait-exact-copy-adapter';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
+import {reviewEquipmentMatchedCounterplayV2} from '../counterplay-outcome-review';
 
 const bosses=[
  {id:'BOSS_EXP_ROOT',region:'asterfall',name:'Asterfall Root',tier:2,level:25},
@@ -123,6 +124,12 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number]){
  return {build,runtime,port:verifiedPort,input,storedKit,receipt,expected:predicted};
 }
 let runs=0,traitEvents=0,sourceTests=0;
+let pairedVariantRuns=0,observedEventDifferences=0,observedOutcomeDifferences=0;
+const outcomeMetricsByBoss=new Map<string,{
+ samples:number;meaningfulChanges:number;moreDamage:number;lessDamage:number;
+ moreHp:number;lessHp:number;moreInterrupts:number;moreCleanses:number;
+}>();
+const variantByBoss=new Map<string,{samples:number;differentEvents:number;variantSkillCasts:number}>();
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
   for(const boss of bosses){
@@ -141,6 +148,98 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     'Real class should execute original attacks or authored abilities');
    assert.equal(expected.equipmentReceiptDigest.length,64);
    traitEvents+=first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length;
+   // Same exact-copy item ledger, rarity, quality, original class and specialization;
+   // switch only the first verified ability variant, not gear, stats or CP weights.
+   // This measures authored-variant responsiveness on ALL 108 regional boss
+   // matchups, not equal-CP advantages or final counter-build win rates.
+   const chosen=build.selected.activeSkills[0];
+   const identity=SKILL_IDENTITIES_V2.find(s=>s.id===chosen.skillId&&s.classId===classId);
+   assert.ok(identity&&identity.variants.length===3,'authoritative variant identity');
+   const alternate:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,activeSkills:[
+      {skillId:chosen.skillId,variantId:identity.variants[1].id},
+      ...build.selected.activeSkills.slice(1),
+    ]},
+   };
+   const alternateResult=simulateUnifiedEquipmentCombatV2(
+    input,[alternate],[runtime],true,storedKit,port);
+   assert.deepEqual(alternateResult.equipmentEvidence,first.equipmentEvidence,
+    'Ability variant must not alter persisted equipped copies or compiler stat stages');
+   assert.deepEqual(alternateResult.enemyMechanicLabels,first.enemyMechanicLabels,
+    'Both tactical choices must face exactly the same authored boss');
+   const alternateReceipt=compileExactEquipmentTraitSourceV2(alternate,runtime,port);
+   assert.equal(alternateReceipt.equipmentReceiptDigest,
+    expected.equipmentReceiptDigest,'selected gear receipts must remain identical');
+   const outcome=reviewEquipmentMatchedCounterplayV2({
+    baseline:first,tactic:alternateResult,
+    baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+    tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    seed:input.seed,bossId:boss.id,actorId:input.players[0].id,
+   });
+   const out=outcomeMetricsByBoss.get(boss.id)??{
+    samples:0,meaningfulChanges:0,moreDamage:0,lessDamage:0,moreHp:0,
+    lessHp:0,moreInterrupts:0,moreCleanses:0,
+   };
+   out.samples++;
+   out.meaningfulChanges+=Number(outcome.changedActualOutcomes);
+   out.moreDamage+=Number(outcome.deltaDamageDone>0);
+   out.lessDamage+=Number(outcome.deltaDamageDone<0);
+   out.moreHp+=Number(outcome.deltaPlayerHp>0);
+   out.lessHp+=Number(outcome.deltaPlayerHp<0);
+   out.moreInterrupts+=Number(outcome.deltaInterrupts>0);
+   out.moreCleanses+=Number(outcome.deltaDebuffsCleansed+outcome.deltaDotsCleansed>0);
+   outcomeMetricsByBoss.set(boss.id,out);
+   observedOutcomeDifferences+=Number(outcome.changedActualOutcomes);
+   if(which===0&&classId==='IRONWARDEN'&&boss.id==='BOSS_EXP_ROOT'){
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:alternateResult,seed:input.seed,
+     bossId:boss.id,actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:'0'.repeat(64),
+    }),/equipment_copy_digest_mismatch/,'mismatched item receipt must be rejected');
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:alternateResult,seed:input.seed,
+     bossId:'SPOOFED_BOSS',actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    }),/actor_or_boss_changed/,'mismatched boss identity must be rejected');
+    // A pure event-label rename must not be misrepresented as a numerical
+    // tactical advantage. This is the exact regression the outcome report
+    // protects against; no production CP formula is being fabricated.
+    const cosmeticOnly={...first,combat:{...first.combat,
+     events:first.combat.events.map(e=>e.type==='cast_start'||
+      e.type==='cast_complete'?{...e,abilityId:'QA_RENAMED_ONLY'}:e)}};
+    const labelReport=reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:cosmeticOnly,seed:input.seed,bossId:boss.id,
+     actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    });
+    assert.equal(labelReport.changedActualOutcomes,false,
+     'combat label changes alone must never count as an outcome improvement');
+    const altered={...alternateResult,combat:{...alternateResult.combat,
+     players:alternateResult.combat.players.map(p=>({
+      ...p,definition:{...p.definition,stats:{
+       ...p.definition.stats,maxHp:p.definition.stats.maxHp+1,
+      }},
+     }))}};
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:altered,seed:input.seed,bossId:boss.id,
+     actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    }),/effective_stats_changed/,
+    'mismatched character base stat budgets must be rejected');
+   }
+   assert.ok(alternateResult.combat.events.length<5000);
+   const changed=JSON.stringify(first.combat.events)!==JSON.stringify(alternateResult.combat.events);
+   const casts=alternateResult.combat.events.filter(e=>e.actorId===input.players[0].id&&
+    e.abilityId?.endsWith(':v2:1')&&(e.type==='cast_start'||e.type==='cast_complete'||
+     e.type==='damage'||e.type==='shield'||e.type==='heal')).length;
+   const bucket=variantByBoss.get(boss.id)??{samples:0,differentEvents:0,variantSkillCasts:0};
+   bucket.samples++;bucket.differentEvents+=Number(changed);bucket.variantSkillCasts+=casts;
+   variantByBoss.set(boss.id,bucket);
+   observedEventDifferences+=Number(changed);pairedVariantRuns++;
    runs++;if(which!==0||classId!=='IRONWARDEN')continue;
    const tampered={...port,receiptsByInstanceId:{
      ...port.receiptsByInstanceId,
@@ -169,7 +268,151 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  }
 }
 assert.equal(runs,9*2*6);
+assert.equal(pairedVariantRuns,runs,'all class/spec/boss runs need a trusted-gear variant pair');
+assert.equal(variantByBoss.size,6,'one pair coverage group per authored regional boss');
+assert.ok([...variantByBoss.values()].every(x=>x.samples===18),
+ 'every regional boss must face all 18 class specializations');
+assert.ok(observedEventDifferences>0,
+ 'at least one ability variant changes event trace, which alone is not a combat outcome');
+assert.equal(outcomeMetricsByBoss.size,6);
+assert.ok([...outcomeMetricsByBoss.values()].every(row=>row.samples===18));
+console.log(JSON.stringify({kind:'EQUIPMENT_MATCHED_OUTCOME_DIAGNOSTICS_NOT_EQUAL_CP',
+ matchedPairs:pairedVariantRuns,changedEventStreams:observedEventDifferences,
+ changedActualOutcomes:observedOutcomeDifferences,
+ byBoss:Object.fromEntries([...outcomeMetricsByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
+console.log(JSON.stringify({kind:'SKILL_EVENT_IDS_NOT_BALANCE_PROOF',
+ byBoss:Object.fromEntries([...variantByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
 assert.equal(sourceTests,30);
+
+// Four distinct authored V2 class interrupts vs the same six persisted boss
+// identities. This is a tactical MECHANIC demonstration with identical
+// equipped item copies and class stat budgets, never a CP/win-rate claim.
+// The sidecar verifier is still synthetic and this path is SOLO only.
+const interruptClasses:readonly [ClassIdV2,string][]=[
+ ['IRONWARDEN','Rune Bash'],['BASTION','Fortress Rebuff'],
+ ['DREADGUARD','Binding Chain'],['HEXWEAVER','Null Script'],
+];
+let interruptionPairs=0,successfulInterruptionPairs=0;
+const interruptionByBoss=new Map<string,{attempts:number;successful:number;classes:Set<string>}>();
+for(const [classId,skillName] of interruptClasses){
+ const identity=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName);
+ assert.ok(identity,'authored interrupt skill missing for '+classId);
+ for(const which of [0,1] as const){
+  for(const boss of bosses){
+   const {build,runtime,port,input,storedKit,expected}=fixture(classId,which,boss);
+   // Single-slot loadouts avoid confounding higher-priority damage skills;
+   // all comparison metadata, class/spec, same seed and exact gear are fixed.
+   const generic:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,
+     activeSkills:[build.selected.activeSkills[0]],
+    },
+   };
+   const counter:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,activeSkills:[
+     {skillId:identity.id,variantId:identity.variants[0].id},
+    ]},
+   };
+   const before=JSON.stringify(input);
+   const noCounter=simulateUnifiedEquipmentCombatV2(
+    input,[generic],[runtime],true,storedKit,port);
+   const withCounter=simulateUnifiedEquipmentCombatV2(
+    input,[counter],[runtime],true,storedKit,port);
+   assert.equal(JSON.stringify(input),before,'tactical source input mutated');
+   assert.deepEqual(noCounter.equipmentEvidence,withCounter.equipmentEvidence,
+    'Tactical interruption must not add, substitute or reroll gear stats');
+   assert.deepEqual(noCounter.enemyMechanicLabels,withCounter.enemyMechanicLabels);
+   const counterReceipt=compileExactEquipmentTraitSourceV2(counter,runtime,port);
+   const interruptReport=reviewEquipmentMatchedCounterplayV2({
+    baseline:noCounter,tactic:withCounter,seed:input.seed,bossId:boss.id,
+    actorId:input.players[0].id,
+    baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+    tacticalEquipmentReceiptDigest:counterReceipt.equipmentReceiptDigest,
+   });
+   assert.ok(interruptReport.deltaInterrupts>=0,
+    'a counter skill must not report fewer boss interruptions than a skill without interrupts');
+   assert.equal(noCounter.combat.events.filter(e=>e.type==='interrupt').length,0,
+    'generic no-interrupt choice unexpectedly interrupted enemy');
+   const tactical=withCounter.combat.events.filter(e=>
+    e.type==='interrupt'&&e.actorId===input.players[0].id&&e.targetId===boss.id);
+   const row=interruptionByBoss.get(boss.id)??{
+    attempts:0,successful:0,classes:new Set<string>(),
+   };
+   row.attempts++;
+   if(tactical.length){row.successful++;row.classes.add(classId);}
+   interruptionByBoss.set(boss.id,row);
+   interruptionPairs++;
+   successfulInterruptionPairs+=Number(tactical.length>0);
+  }
+ }
+}
+assert.equal(interruptionPairs,4*2*6);
+assert.equal(interruptionByBoss.size,6);
+assert.ok([...interruptionByBoss.values()].every(row=>
+ row.attempts===8&&row.classes.size>=2),
+ 'every authored boss requires interrupt coverage from multiple distinct classes');
+console.log(JSON.stringify({kind:'SIGNED_GEAR_SOLO_INTERRUPT_MECHANICS_NOT_EQUAL_CP',
+ pairs:interruptionPairs,successful:successfulInterruptionPairs,
+ byBoss:Object.fromEntries([...interruptionByBoss.entries()].sort(([a],[b])=>a.localeCompare(b))
+  .map(([id,row])=>[id,{attempts:row.attempts,successful:row.successful,
+   classes:[...row.classes].sort()}]))}));
+// Real, authored status bosses: weakening from Bell Soul Curse and Cantor
+// Deep Dissonance is countered by VERIFIED V2 support abilities with the SAME
+// item/rarity/quality/spec and boss snapshot. This supplements the low-level
+// synthetic debuff-only regression with actual class and enemy compilers.
+const cureScenarios:readonly {
+ classId:ClassIdV2;bossId:string;technique:string;variant:0|1
+}[]=[
+ {classId:'STONECALLER',bossId:'BOSS_EXP_BELL',technique:'River Stone',variant:1},
+ {classId:'STONECALLER',bossId:'BOSS_EXP_CANTOR',technique:'River Stone',variant:1},
+ {classId:'DAWNKEEPER',bossId:'BOSS_EXP_CANTOR',technique:'Purifying Light',variant:0},
+];
+let authoredCurePairs=0;
+for(const scenario of cureScenarios){
+ const boss=bosses.find(b=>b.id===scenario.bossId);
+ const technique=SKILL_IDENTITIES_V2.find(s=>s.classId===scenario.classId&&
+  s.name===scenario.technique);
+ assert.ok(boss&&technique,'review boss or approved class skill missing');
+ for(const which of [0,1] as const){
+  const {build,runtime,port,input,storedKit,expected}=fixture(scenario.classId,which,boss);
+  const genericSlot=scenario.classId==='STONECALLER'
+   ?{skillId:technique.id,variantId:technique.variants[0].id}
+   :build.selected.activeSkills[0];
+  const baseline:VerifiedSkillBuildV2={...build,selected:{...build.selected,
+   activeSkills:[genericSlot]}};
+  const tactical:VerifiedSkillBuildV2={...build,selected:{...build.selected,
+   activeSkills:[{skillId:technique.id,variantId:technique.variants[scenario.variant].id}]}};
+  const generic=simulateUnifiedEquipmentCombatV2(
+   input,[baseline],[runtime],true,storedKit,port);
+  const cured=simulateUnifiedEquipmentCombatV2(
+   input,[tactical],[runtime],true,storedKit,port);
+  assert.deepEqual(generic.equipmentEvidence,cured.equipmentEvidence,
+   'Support cure may not alter compiled item stats or copy ownership');
+  assert.deepEqual(generic.enemyMechanicLabels,cured.enemyMechanicLabels);
+  const cureReceipt=compileExactEquipmentTraitSourceV2(tactical,runtime,port);
+  const cureReport=reviewEquipmentMatchedCounterplayV2({
+   baseline:generic,tactic:cured,seed:input.seed,bossId:boss.id,
+   actorId:input.players[0].id,
+   baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+   tacticalEquipmentReceiptDigest:cureReceipt.equipmentReceiptDigest,
+  });
+  assert.ok(cureReport.deltaDebuffsCleansed>0,
+   'authored cure must remove more hostile debuffs than its generic match');
+  const bossDebuffs=generic.combat.events.filter(e=>e.type==='status_apply'&&
+   e.actorId===boss.id&&e.statusKind==='debuff'&&e.targetId===input.players[0].id);
+  assert.ok(bossDebuffs.length>=1,'original authored boss must apply a real debuff');
+  assert.equal(generic.combat.events.filter(e=>e.type==='status_remove'&&
+   e.statusKind==='debuff'&&e.actorId===input.players[0].id).length,0,
+   'generic build unexpectedly cleansed a hostile debuff');
+  assert.ok(cured.combat.events.some(e=>e.type==='status_remove'&&
+   e.statusKind==='debuff'&&e.actorId===input.players[0].id&&
+   e.targetId===input.players[0].id),
+   'compiled Support counter must remove boss weakening '+scenario.classId+' '+boss.id);
+  authoredCurePairs++;
+ }
+}
+assert.equal(authoredCurePairs,6);
+console.log('PASS: '+authoredCurePairs+
+ ' equipped/verified authored boss debuff-cure pairs from Stonecaller and Dawnkeeper (test-only receipt verifier)');
 console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+
  ' gated trait events, '+sourceTests+' fail-closed exact-copy checks (test-only ledgers)');

@@ -45403,8 +45403,12 @@ function simulateCombat(input, enemyV2Authority, equipmentTraitAuthority) {
     if (effect2.kind === "cleanse") {
       const removed = target2.periodic.filter((p) => p.kind === "dot");
       target2.periodic = target2.periodic.filter((p) => p.kind !== "dot");
+      const removedDebuffs = source.combatV2 ? target2.modifiers.filter((m) => m.kind === "debuff" && m.expiresAt > now) : [];
+      if (source.combatV2)
+        target2.modifiers = target2.modifiers.filter((m) => m.kind !== "debuff");
       for (const p of removed) events.push({ atMs: now, type: "status_remove", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: "dot", statusTag: p.tag ?? "dot" });
-      if (removed.length && source.combatV2 && !abilityId.startsWith("V2_"))
+      for (const m of removedDebuffs) events.push({ atMs: now, type: "status_remove", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: "debuff", statusTag: m.tag, detail: "combat_v2_cleanse" });
+      if ((removed.length || removedDebuffs.length) && source.combatV2 && !abilityId.startsWith("V2_"))
         runReactive(source, "cleanse", now, target2);
       return;
     }

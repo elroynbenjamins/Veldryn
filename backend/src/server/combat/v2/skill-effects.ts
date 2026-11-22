@@ -281,7 +281,14 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
       'Hex Detonation':'all','Final Dance':'all','Solar Hymn':'all',
       'Resonance Burst':'all',
     };
+    // River Stone's Cleansing Stream is a conditional status counter, not
+    // merely an under-50%-HP heal. Only its V2 second variant wakes for a
+    // debuff-only ally; ordinary River Stone and all V1 skills remain intact.
+    const cleansingStream=verified.classId==='STONECALLER'&&
+      record.name==='River Stone'&&index===1;
     return {...upgraded,id:base.id+':v2:'+index,
+      ...(cleansingStream?{target:'lowest_hp_ally_with_dot' as const,
+        aiCondition:'ally_below_50_or_dot' as const}:{}),
       ...(spenders[record.name]?{combatV2:{spend:spenders[record.name],bonusPerStack:.055}}:{})};
   });
   const s=actor.stats;

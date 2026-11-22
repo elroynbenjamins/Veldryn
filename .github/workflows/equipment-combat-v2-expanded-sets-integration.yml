@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'backend/src/server/combat/v2/equipment-expanded-launch-registry.ts'
+      - 'backend/src/server/combat/v2/equipment-expanded-member-source-audit.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-set-synergy-review.ts'
       - 'tools/test-equipment-combat-v2-expanded-synergy.mjs'
       - 'docs/equipment-2-0/eq2-combat-affix-trait-proposal-v1.json'
@@ -37,12 +39,14 @@ jobs:
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-launch-registry.js
+      - name: Enforce exact source-gapped 204 member plan and no legacy set hijacking
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-member-source-audit.js
       - name: Verify every one of 17 proposed affixes and 27 combat traits maps to safe set-family boss scenarios
         run: |
           node tools/test-equipment-combat-v2-expanded-synergy.mjs
           node tools/validate-eq2-affix-traits-review.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
-          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
             echo 'Unissued 2.0 set draft leaked into live routes'; exit 1
           fi

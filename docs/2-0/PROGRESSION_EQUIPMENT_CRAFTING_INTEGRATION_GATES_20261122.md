@@ -49,3 +49,25 @@
 - #1619 was closed **without merging**, superseded by draft #1621. No change here implies owner acceptance of UX/themes, profession XP curves, tiers, item art or final balancing.
 
 **No merge to main, SQL execution against staging/production, feature flag activation, market release or live XP write.**
+
+
+## Continued pass — original-command-bound Career XP batch contract
+
+The hidden `backend/src/server/progression/v2/online-career-batch-review.ts` builds **one deliberately noncommittable** batch of projected Overall Character XP for a single original online game command. The original, server-simulated result is an **independent required argument**; agreement between the gathering and combat projectors is no longer sufficient.
+
+- Binding: exact account UUID, original character UUID, request ID/hash, revision, original source ordinal, SHA-256 per-source ID, source class, profession, elapsed/effort and difficulty. The batch derives deterministic proposed XP with the existing hidden curve and records a source fingerprint.
+- Before accepting any pending proof, both source-specific projector arrays are checked against the ORIGINAL simulation. Combat must match actual kills and interval endpoints; crafting must match original recipe, quantity, contribution rows and before/after profession XP. The caller must load these originals from its trusted service simulation, never a mobile request. A missing positive-work projector is a hard stop rather than partial credit.
+- Pending batch always returns `canCommit:false`, `releaseEnabled:false` and `requiresServiceOwnedAtomicTransaction:true`. It does **not** write new profession XP to a second ledger, or authorize any player XP.
+- Dedicated tests cover mixed gathering/combat, solo claims, instant crafting, no-reward commands, QA, retry identity, cross-character attack, reordered source arrays that agree with each other but not the original simulation, changed combat kill counts and fight intervals, missing source projectors, changed craft quantity, absent/extra original segments.
+- This module is a model of the future server/SQL boundary only; cryptographic hashes here bind bytes but are **not signatures** and do not establish that a client-provided result is genuine. Production must independently authenticate and load original source records under database locks.
+
+### Future service-only transaction handoff (not implemented here)
+
+1. Authenticate the session against the locked account/character. Use the exact authenticated command simulation result, not client-claimed rewards.
+2. Lock public online_game_states with the expected revision, wallet, character/BANK inventories, and original action receipt row. Verify request hash before idempotent replay.
+3. Build the hidden batch from a server-owned simulation result and prove matching original ordinal/source. Create the source records with DB-generated completion time.
+4. Insert EVERY source record and globally unique award receipt in the same PostgreSQL transaction, enforce per-character activation cutoff, aggregate Overall XP once and commit original online game changes atomically. An error in the second proof rolls back the entire claim, Gold, items and XP.
+5. Retries must read back the persisted committed award/source rows and compare owner, source fingerprint, revision, and total rather than recompute a new entitlement from legacy response JSON.
+6. Do not implement this in public Edge or activate until verified against the actual production schema in a disposable PG/staging-safe review and approved economy. No staging/production SQL in this pass.
+
+**Remain hidden and unmerged.** The earlier three polish passes and this continuation must be validated against the exact Git commit before any claims of passing tests. Neither the source receipt adapter nor real transactional crafting/market payouts is active.

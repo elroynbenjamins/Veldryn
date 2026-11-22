@@ -13,11 +13,12 @@ type Selection={month:string;threshold:MonthlyQuestMilestoneThreshold};
 type Props={
  state:GameState;nowMs:number;
  onClaim:(month:string,threshold:number,characterId:string,skillId:SkillId)=>Promise<boolean>;
+ onClaimed?:(reward:{characterName:string;skillId:SkillId;xp:number})=>void;
 };
 const MAX_SKILL_XP=totalXpAtLevel(100);
 const skillName=(id:SkillId)=>id.slice(0,1).toUpperCase()+id.slice(1);
 
-export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
+export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim,onClaimed}:Props){
  const C=useGameTheme(),styles=useMemo(()=>makeStyles(C),[C]);
  const language=state.settings.language;
  const t=(source:Parameters<typeof monthlyQuestText>[1],params?:Record<string,string|number>)=>monthlyQuestText(language,source,params);
@@ -48,6 +49,7 @@ export function MonthlyQuestMilestonesPanel({state,nowMs,onClaim}:Props){
   try{
    const saved=await onClaim(selection.month,selection.threshold,characterId,skillId);
    if(!saved)throw new Error(t('Reward confirmation failed. Please try again.'));
+   onClaimed?.({characterName:selectedCharacter?.name??'',skillId,xp:actualXp});
    setSelection(null);setSkillId(null);
   }catch(err){setError(err instanceof Error?err.message:t('Could not claim reward. Please try again.'));}
   finally{setBusy(false);}

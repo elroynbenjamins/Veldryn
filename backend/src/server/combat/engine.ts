@@ -457,12 +457,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       }
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
-      // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,
-      // shield amounts, buffs or boss phase state. The replay identifies the cure.
+      // Legacy cleanse removes DoTs only. A server-compiled V2 class cleanse
+      // additionally removes active debuffs; beneficial buffs/HoTs, gems,
+      // shields and boss phase state must survive. Never change legacy replay.
       const removed=target.periodic.filter(p=>p.kind==='dot');
       target.periodic=target.periodic.filter(p=>p.kind!=='dot');
+      const removedDebuffs=source.combatV2
+        ?target.modifiers.filter(m=>m.kind==='debuff'&&m.expiresAt>now):[];
+      if(source.combatV2)
+        target.modifiers=target.modifiers.filter(m=>m.kind!=='debuff');
       for(const p of removed)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'dot',statusTag:p.tag??'dot'});
-      if(removed.length&&source.combatV2&&!abilityId.startsWith('V2_'))
+      for(const m of removedDebuffs)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'debuff',statusTag:m.tag,detail:'combat_v2_cleanse'});
+      if((removed.length||removedDebuffs.length)&&source.combatV2&&!abilityId.startsWith('V2_'))
         runReactive(source,'cleanse',now,target);
       return;
     }

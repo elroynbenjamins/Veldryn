@@ -23,7 +23,7 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_008','Hollow Knightling','tank','elite','EVENT_VEILBREAK',205,18,24,2.2,'mitigation',.07],
  ['EVT_UNIT_011','Lantern Keeper','support','elite','EVENT_VEILBREAK',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'heal',.05],
- ['EVT_UNIT_012','Rimeshard Lynx','damage','elite','EVENT_FROSTFALL_FESTIVAL',205,25,15,2.0,'damage',1.06],
+ ['EVT_UNIT_012','Rimeshard Wolverine','damage','elite','EVENT_FROSTFALL_FESTIVAL',205,25,15,2.0,'damage',1.06],
  ['EVT_UNIT_013','Hearthguard Ram','tank','elite','EVENT_FROSTFALL_FESTIVAL',215,18,24,2.4,'shield',.052],
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];

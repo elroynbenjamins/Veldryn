@@ -75,6 +75,14 @@ export interface TrustedMaterialSourceProvenanceV2 {
  readonly originalLotId:string;
  readonly originalGrantedQuantity:number;
  readonly completed:true;
+ /** Explicit custody receipt required before consuming from the shared Bank. */
+ readonly bankDeposit?:{
+  readonly receiptId:string;
+  readonly accountId:string;
+  readonly depositedByCharacterId:string;
+  readonly lotId:string;
+  readonly committed:true;
+ };
  /** If present, this is a finalized Market/commission transfer, not a listing. */
  readonly settledTransfer?:{
   readonly transferReceiptId:string;
@@ -89,6 +97,8 @@ export interface TrustedMaterialSourceProvenanceV2 {
 export interface TrustedCraftReviewStateV2{
  readonly accountId:string;
  readonly characterId:string;
+ /** Authenticated account roster loaded at the same state revision. */
+ readonly ownedCharacterIds:readonly string[];
  readonly revision:number;
  readonly availableGold:number;
  readonly progression:TrustedCharacterProgressionV2;
@@ -155,11 +165,22 @@ export function previewProfessionCraftMaterialCustodyV2(
   typeof request.requestHash!=='string'||!/^[0-9a-f]{64}$/.test(request.requestHash)||
   !int(request.quantity,1,100)||
   !int(state.availableGold,0,Number.MAX_SAFE_INTEGER)||
+  !Array.isArray(state.ownedCharacterIds)||
+  state.ownedCharacterIds.length<1||state.ownedCharacterIds.length>5||
   !Array.isArray(state.ownedLots)||!Array.isArray(state.originalSourceProofs)||
   !Array.isArray(state.registrations)||!Array.isArray(state.priorRequests)||
   state.ownedLots.length>5000||state.originalSourceProofs.length>6000||
   state.registrations.length>10000||state.priorRequests.length>2000)
    fail('invalid_identity_or_snapshot');
+ const ownedCharacterIds=new Set<string>();
+ for(const id of state.ownedCharacterIds){
+   if(typeof id!=='string'||!CANONICAL_UUID.test(id)||
+      ownedCharacterIds.has(id.toLowerCase()))
+     fail('invalid_account_character_roster');
+   ownedCharacterIds.add(id.toLowerCase());
+ }
+ if(!ownedCharacterIds.has(state.characterId.toLowerCase()))
+   fail('active_character_missing_from_roster');
  if(recipe.recipeId!==request.recipeId||!validToken(recipe.recipeId)||
     !MATERIAL.test(recipe.itemId)||
     !['smithing','tailoring'].includes(recipe.profession)||
@@ -222,6 +243,13 @@ export function previewProfessionCraftMaterialCustodyV2(
      proof.completed!==true||
      originalProofs.has(proof.provenanceId))
      fail('invalid_source_provenance');
+   const deposit=proof.bankDeposit;
+   if(deposit&&(!validToken(deposit.receiptId)||
+     typeof deposit.accountId!=='string'||!CANONICAL_UUID.test(deposit.accountId)||
+     typeof deposit.depositedByCharacterId!=='string'||
+     !CANONICAL_UUID.test(deposit.depositedByCharacterId)||
+     !validToken(deposit.lotId)||deposit.committed!==true))
+     fail('invalid_bank_deposit_receipt');
    originalProofs.set(proof.provenanceId,proof);
    // Source receipt cannot be re-used as a second independent lot
    // in this preview without an authenticated split/merge receipt.
@@ -266,13 +294,29 @@ export function previewProfessionCraftMaterialCustodyV2(
    if(!proof||proof.itemId!==lot.itemId||
       proof.originalLotId!==lot.lotId||
       consumedProofIds.has(lot.provenanceId)||
-      proof.originalGrantedQuantity<lot.availableQuantity||
-      (proof.settledTransfer
-        ?(proof.settledTransfer.toAccountId.toLowerCase()!==state.accountId.toLowerCase()||
-          proof.settledTransfer.recipientCharacterId.toLowerCase()!==state.characterId.toLowerCase())
-        :(proof.sourceAccountId.toLowerCase()!==state.accountId.toLowerCase()||
-          proof.sourceCharacterId.toLowerCase()!==state.characterId.toLowerCase())))
+      proof.originalGrantedQuantity<lot.availableQuantity)
      fail('missing_or_mismatched_source_receipt');
+   const transfer=proof.settledTransfer;
+   const currentAccountId=state.accountId.toLowerCase();
+   const creditedCharacterId=transfer?.recipientCharacterId.toLowerCase()??
+     proof.sourceCharacterId.toLowerCase();
+   const originOwnedByAccount=transfer
+     ?transfer.toAccountId.toLowerCase()===currentAccountId
+     :proof.sourceAccountId.toLowerCase()===currentAccountId;
+   if(!originOwnedByAccount)
+     fail('missing_or_mismatched_source_receipt');
+   const deposit=proof.bankDeposit;
+   if(lot.custody==='bank'){
+     if(!deposit||deposit.accountId.toLowerCase()!==currentAccountId||
+        deposit.lotId!==lot.lotId||
+        deposit.depositedByCharacterId.toLowerCase()!==creditedCharacterId||
+        !ownedCharacterIds.has(creditedCharacterId))
+       fail('missing_or_mismatched_bank_deposit');
+   }else if(deposit||creditedCharacterId!==state.characterId.toLowerCase()){
+     // A deposited then withdrawn lot needs an explicit new withdrawal proof.
+     // A Bank-only source receipt must not be recycled as inventory.
+     fail('missing_or_mismatched_source_receipt');
+   }
    consumedProofIds.add(lot.provenanceId);
  }
  if(!state.priorRequests.every(r=>r&&validToken(r.requestId)&&

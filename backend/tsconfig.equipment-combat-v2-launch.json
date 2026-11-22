@@ -11,6 +11,8 @@
     "src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts",
     "src/server/equipment/equipment-crafting-v2-material-source-review.ts",
     "src/server/equipment/equipment-crafting-v2-unified-reservation-review.ts",
-    "src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts"
+    "src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts",
+    "src/server/equipment/equipment-crafting-v2-material-origins-v6-review.ts",
+    "src/server/equipment/equipment-crafting-v2-atomic-handoff-v7-review.ts"
   ]
 }

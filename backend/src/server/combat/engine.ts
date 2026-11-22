@@ -169,6 +169,14 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         targetId:target.definition.id,abilityId:id,amount:Number(bonus.toFixed(2)),
         detail:action.kind==='retaliation_damage'?
          'shared_reflect_budget_no_recursive_trigger':'secondary_damage_no_recursive_trigger'});
+      if(target.hp<=0&&target.alive){
+        // Secondary finishers must settle the enemy's actual death; do not
+        // invoke normal kill/resource/gem hooks from generated damage.
+        target.alive=false;
+        events.push({atMs:now,type:'death',actorId:source.definition.id,
+          targetId:target.definition.id,abilityId:id,
+          detail:'secondary_finisher_no_recursive_kill'});
+      }
       return;
     }
     if(action.kind==='secondary_heal'){

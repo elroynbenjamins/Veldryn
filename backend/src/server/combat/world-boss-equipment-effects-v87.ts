@@ -149,7 +149,7 @@ export class WorldBossEquipmentRuntimeV87{
   abilityId:string,damage:number):{damage:number;proc?:WorldBossTraitEffectV87}{
   const s=this.state.get(actorId),source=this.sources.get(actorId);
   if(!s||!source||!finite(damage)||!Number.isInteger(round)||round<1||round>14)
-   fail('invalid_direct_hit');
+   throw Error('world_boss_v87_invalid_direct_hit');
   if(abilityId==='BASIC'){
    let value=damage*(1+source.basicAttackDamagePct/100);
    if(s.lastTarget!==targetId){s.lastTarget=targetId;s.streak=0;}

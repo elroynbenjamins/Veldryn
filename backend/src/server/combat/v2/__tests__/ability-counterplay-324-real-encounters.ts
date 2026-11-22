@@ -128,6 +128,7 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number],strategy
 // the final approved public Combat Power formula.
 const samples:AbilityCounterplaySampleV2[]=[];
 const equipmentFingerprints=new Map<string,string>();
+const baselineSkillSignatures=new Map<string,string>();
 let runs=0,traitEvents=0,sourceTests=0,divergentLoadouts=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
@@ -197,8 +198,9 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     effectiveHealing:player.healingDone,interrupts,cleanses,mitigationEvents,
     counterMechanicEvents:mechanicEvents,
    });
-   if(strategy!=='generic'&&JSON.stringify(tactical.activeSkills)!==
-      JSON.stringify(build.selected.activeSkills))divergentLoadouts++;
+   const skillSignature=JSON.stringify(tactical.activeSkills);
+   if(strategy==='generic')baselineSkillSignatures.set(group,skillSignature);
+   else if(skillSignature!==baselineSkillSignatures.get(group))divergentLoadouts++;
    runs++;
    if(strategy!=='generic'||which!==0||classId!=='IRONWARDEN')continue;
    const tampered={...port,receiptsByInstanceId:{
@@ -231,6 +233,8 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
 assert.equal(runs,9*2*6*3);
 assert.equal(samples.length,324);
 assert.equal(equipmentFingerprints.size,108);
+assert.equal(baselineSkillSignatures.size,108);
+assert.ok(divergentLoadouts>0,'Three identical skill loadouts would not test counterplay');
 const reviewed=reviewAbilityCounterplayV2(samples);
 assert.equal(reviewed.comparisons.length,108);
 assert.equal(reviewed.releaseApproved,false);

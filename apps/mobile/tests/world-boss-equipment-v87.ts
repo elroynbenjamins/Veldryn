@@ -59,10 +59,14 @@ assert.equal(r.originalDirectHit(1,'echo','HOLLOWROOT','BASIC',100).damage,100);
 assert.equal(r.originalDirectHit(1,'echo','HOLLOWROOT','V2_TRAIT',100).damage,100);
 assert.equal(r.skillEcho(1,'echo','CLASS_SLASH',100,1000)?.amount,8);
 assert.equal(r.skillEcho(2,'echo','CLASS_SLASH',100,1000),undefined);
-assert.equal(r.skillEcho(7,'echo','CLASS_SLASH',1000,1000)?.amount,200);
+assert.equal(r.skillEcho(7,'echo','CLASS_SLASH',3000,1000)?.amount,200);
 const firstReflect=r.retaliation(1,'tank',100,1000,500,true,'BASIC');
 assert.equal(firstReflect?.amount,1);
-assert.equal(firstReflect?.traitId,'thornbound_riposte');
+assert.equal(firstReflect?.traitId,'reflect_damage_affix',
+ 'reflect takes priority when it consumes the full shared boss budget');
+const thornOnly=make({...proof,sources:[{...sources[0],reflectDamagePct:0},...sources.slice(1)]});
+assert.equal(thornOnly.retaliation(1,'tank',100,1000,500,true,'BASIC')?.traitId,
+ 'thornbound_riposte','Thorn still executes when reflect is absent');
 assert.equal(r.retaliation(1,'tank',100,1000,500,true,'BASIC'),undefined,
  'shared boss budget cannot be spent twice in the same five-second window');
 assert.equal(r.retaliation(2,'tank',100,1000,500,true,'SOLAR_COLLAPSE'),undefined,

@@ -1,0 +1,43 @@
+name: Hidden Guild PvE V18 real-engine PGlite persistence QA
+
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/guild-pve-pglite-v18.ts'
+      - 'backend/src/server/combat/guild-pve-settlement-v18.ts'
+      - 'backend/src/server/combat/guild-pve-reward-review-v18.ts'
+      - 'backend/tsconfig.guild-pve-v18.json'
+      - 'tools/guild-pve-v18-pglite-integration.mjs'
+      - 'tools/guild-pve-v18-pglite-schema.sql'
+      - '.github/workflows/guild-pve-v18-pglite-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  v18-embedded-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Typecheck backend-only V18 PGlite port
+        run: pnpm --dir backend exec tsc -p tsconfig.guild-pve-v18.json --noEmit
+      - name: Compile backend V18 deterministic engine
+        run: pnpm --dir backend exec tsc -p tsconfig.guild-pve-v18.json
+      - name: Validate SQL commit, lost ack, retry, rollback and reopening persisted receipts
+        run: node tools/guild-pve-v18-pglite-integration.mjs

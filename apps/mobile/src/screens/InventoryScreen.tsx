@@ -341,7 +341,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>
   </View>:inspected?.type==='gear'?<View style={s.inspectQuickActions}>
     {carried?<GameButton title={gl('Compare & Equip')} disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>{setPreviewInstanceId(selectedCopy?.id??null);setPreviewId(inspected.id);closeInspect()}}/>
-    :<GameButton title={gt('Withdraw')} disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>void beginInventorySubmission('Withdrawing equipment…',async()=>{
+    :<GameButton title={gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null||(!!selectedCopy&&!onCommand)} onPress={()=>void beginInventorySubmission('Withdrawing equipment…',async()=>{
       if(selectedCopy){const result=await onCommand!({type:'gear_move',args:{instanceId:selectedCopy.id,to:'inventory'}});if(result===false)throw new Error('Equipment transfer was not confirmed.');}
       else await onWithdraw(inspected.id,1);
       closeInspect();

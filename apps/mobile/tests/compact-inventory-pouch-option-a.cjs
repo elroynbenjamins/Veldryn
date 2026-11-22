@@ -54,6 +54,13 @@ test('compact Inventory controls remain reachable without changing full-size siz
  assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmount>=inspectStock}}'),'increment announces disabled state');
 });
 
+test('open Gear inspector is anchored to the exact selected receipt after pouch reorder',()=>{
+ assert.ok(pouch.includes('selectedReceipt.itemId===selectedAtIndex.itemId'),'inspector must match exact item identity');
+ assert.ok(pouch.includes('selectedReceipt.instanceId===(selectedAtIndex.instanceId??null)'),'forged receipt must stay identical');
+ assert.ok(pouch.includes('selectedIndex===null||!selected?undefined:byIndex.get(selectedIndex)'),'reordered sale candidate cannot be used');
+ assert.ok(pouch.includes('selectedIndex===null||!selected?undefined:equipmentPouchSalvageCandidates'),'reordered salvage candidate cannot be used');
+});
+
 test('sale and salvage confirmation are exact-copy safe and retryable',()=>{
  for(const marker of [
   'confirmationValid=pendingRows.length>0',

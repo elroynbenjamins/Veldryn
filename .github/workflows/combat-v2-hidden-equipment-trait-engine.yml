@@ -8,6 +8,9 @@ on:
       - 'backend/src/server/combat/v2/equipment-trait-exact-copy-adapter.ts'
       - 'backend/src/server/combat/v2/unified-equipment-encounter.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-trait-*.ts'
+      - 'backend/src/server/party/weekly-party-boss-traits-v90.ts'
+      - 'backend/src/server/party/weekly-party-event-eq2-traits-v92.ts'
+      - 'backend/src/server/party/__tests__/weekly-party-event-eq2-traits-v92.ts'
       - '.github/workflows/combat-v2-hidden-equipment-trait-engine.yml'
   workflow_dispatch:
 permissions:
@@ -33,10 +36,17 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
       - name: Six regional bosses x nine classes x two real specialization paths with exact item receipts
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.js
+      - name: V92 full-duration four-family Party boss with real V2 equipped trait hooks (QA only)
+        run: node backend/dist/server/party/__tests__/weekly-party-event-eq2-traits-v92.js
       - name: Baseline legacy engine parity and Enemy V2 token coexistence
         run: |
           node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
           node backend/dist/server/combat/__tests__/combat-smoke.js
+      - name: Assert V92 is private, unreleased and never a deployable migration
+        run: |
+          grep -q 'PARTY_EVENT_EQ2_TRAIT_V92_RELEASED=false' backend/src/server/party/weekly-party-event-eq2-traits-v92.ts
+          grep -q 'PARTY_EVENT_BOSS_TRAITS_V90_RELEASED=false' backend/src/server/party/weekly-party-boss-traits-v90.ts
+          test ! -f supabase/migrations/20261122_party_event_eq2_v92.sql
       - name: Reject new trait engine authority in live/public mobile or online code
         run: |
           if grep -R -E 'issueEquipmentV2TraitAuthority|authorizeEquipmentV2TraitEngine|EquipmentTraitRuntimeV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then

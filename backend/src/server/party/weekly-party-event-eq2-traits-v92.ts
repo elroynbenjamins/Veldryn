@@ -178,6 +178,8 @@ export interface PreparedPartyV92Equipment {
  readonly sources:readonly VerifiedV2EquipmentEffectSource[];
  readonly evidence:readonly EquipmentEncounterEvidenceV2[];
 }
+/** Private in-process seal, not a database ownership/victory certificate. */
+const compiledPartySeals=new WeakMap<object,string>();
 export function prepareFullyEquippedPartyV92(
  party:readonly TrustedPartyV92BuildInput[],
  qaEnabled=false,
@@ -211,7 +213,37 @@ export function prepareFullyEquippedPartyV92(
    !unique(sources.map(s=>s.characterId))||
    !unique(players.map(p=>p.id)))
   fail('duplicate_equipment_party_owner');
- return {players,sources,evidence};
+ const prepared:PreparedPartyV92Equipment={players,sources,evidence};
+ compiledPartySeals.set(prepared,enemyV2SnapshotDigest(prepared));
+ return prepared;
+}
+
+/**
+ * V93 strict QA entry: refuses an arbitrary hand-built CombatInput actor even
+ * when the caller supplies a synthetic receipt validator. The in-process
+ * seal proves only that *this process* compiled all members with verified
+ * skill/item source policies, not that the DB rows are real. That still
+ * requires the independently privileged persistence callback.
+ */
+export function simulateCompiledPartyEventEquipmentV92(input:{
+ readonly prepared:PreparedPartyV92Equipment;
+ readonly witness:FrozenPartyEventV92Witness;
+ readonly boss:CombatantDefinition;
+ readonly ports:VerifiedPartyEventV92Ports;
+},qaEnabled=false):CombatResult{
+ if(!qaEnabled||PARTY_EVENT_EQ2_TRAIT_V92_RELEASED||
+  process.env.NODE_ENV==='production')fail('unreleased');
+ const {prepared,witness,boss,ports}=input;
+ if(!prepared||!compiledPartySeals.has(prepared))
+  fail('unsealed_equipment_party');
+ if(compiledPartySeals.get(prepared)!==enemyV2SnapshotDigest(prepared))
+  fail('compiled_equipment_party_tampered');
+ return simulateFrozenPartyEventEquipmentV92({
+  witness,
+  combat:{seed:witness.seed,players:[...prepared.players],enemies:[boss],
+   maxDurationMs:PARTY_EVENT_EQ2_TRAIT_V92_MAX_MS},
+  sources:prepared.sources,ports,
+ },true);
 }
 
 /**

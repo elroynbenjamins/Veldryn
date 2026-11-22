@@ -51,9 +51,12 @@ assert(bossPanel.includes('accessibilityState={{expanded:detailsOpen}}')&&bossPa
 assert(bossPanel.includes('priorityCast')&&bossPanel.includes('priorityPhase'),'Only priority interrupt and phase threshold are shown at a glance');
 assert(bossPanel.includes('telegraph.castAbilities.map')&&bossPanel.includes('telegraph.phases.map')&&bossPanel.includes('telegraph.suppressedAbilities.map'),'All authoritative mechanics remain available in the expanded view');
 assert(bossPanel.includes('accessibilityState={{expanded:recapOpen}}')&&bossPanel.includes('recap.abilitiesCast.length'),'The boss recap is optional but complete');
-for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk','event']){
- assert(roomPresentation.includes(kind+':{name:'),'Every dungeon kind, including non-combat and seasonal rooms, has a presentation: '+kind);
+// Event Rooms were deliberately retired; keep supported utility/battle rooms
+// recognizable without resurrecting the old resource-only event option.
+for(const kind of ['battle','elite','boss','camp','shrine','forge','treasure','secret','merchant','echo','risk']){
+ assert(roomPresentation.includes(kind+':{name:'),'Every supported dungeon kind has a presentation: '+kind);
 }
+assert(!roomPresentation.includes("event:{name:'Event room'"),'Retired Event Rooms must not reappear in route previews');
 assert(roomPresentation.includes("Restore your party's health.")&&roomPresentation.includes("Gain resources, but take a curse."),'Room previews describe actual resolver effects without promising drops');
 assert(route.includes('const redundantReward=')&&route.includes('!redundantReward?'),'Backend rewardTag duplicates are hidden rather than rendered as pointless labels');
 assert(route.includes('const riskBaseline=')&&route.includes('!riskBaseline?'),'Default 1.0 risk does not produce unnecessary tags');

@@ -67,6 +67,15 @@ export function projectGuildPveV15Campaign(input:{
   Object.keys(run.nodes).length!==nodeIds.length||
   nodeIds.some(id=>!Object.hasOwn(run.nodes,id)))
   reject('invalid_roster_or_nodes');
+ // Reject guild-bound ledger entries from accounts that were never in the
+ // frozen roster, including zero-cost stale attempts. They must not silently
+ // disappear from the aggregate while remaining in the authoritative ledger.
+ for(const entry of Object.values(state.receipts)){
+  const receipt=entry.value;
+  if(receipt.cycleId===cycleId&&receipt.guildId===guildId&&
+   !Object.hasOwn(run.members,receipt.accountId))
+   reject('unrostered_receipt');
+ }
  let seals=0,orders=0,participating=0;
  for(const accountId of accounts){
   const member=run.members[accountId];

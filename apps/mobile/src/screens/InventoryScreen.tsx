@@ -83,7 +83,6 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   // Only narrow screens need larger inspector controls; do not change S24+ defaults.
   const compactInspector=width<380||fontScale>=1.25;
   const stackInspectorActions=width<345||fontScale>=1.25;
-  const compactProtectionToolbar=width<540||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
   const gridColumns=gridWidth<235?3:gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(48,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
@@ -525,16 +524,16 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}
     {inventoryFeedback&&<ActionFeedback message={gl(inventoryFeedback.message)} tone={inventoryFeedback.tone} reduceMotion={state.settings.reduceMotion} compact/>}
     {equipMoment&&<EquipmentSwapMoment moment={equipMoment} reduceMotion={state.settings.reduceMotion} onDismiss={()=>setEquipMoment(null)}/>}
-    <View style={[s.resultRow,compactProtectionToolbar&&s.resultRowCompact]}>
-       {selectMode?<Text numberOfLines={1} style={[s.sub,s.resultSummary]}>{gt('{count} selected · {stacks} matching stacks',{count:selectedIds.length,stacks:stacks.length})}</Text>
-         :<Pressable accessibilityRole="button" accessibilityLabel={gt('View and action settings. Current filter: {filter}. Current sort: {sort}',{filter:gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter),sort:gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)})} onPress={()=>setFilterOpen(true)} style={s.viewOptionsTrigger}><Text numberOfLines={1} style={s.sub}>{gl('View:')} <Text style={s.sortValue}>{gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter)} · {gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)}</Text></Text><Text accessible={false} style={s.sortChevron}>›</Text></Pressable>}
-       <View style={[s.resultActions,compactProtectionToolbar&&s.resultActionsCompact]}>
-         {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Select items to lock or unlock')} accessibilityState={{selected:selectMode&&protectionMode==='lock',disabled:inventoryBusyLabel!==null}} disabled={inventoryBusyLabel!==null} onPress={()=>chooseProtectionMode('lock')} style={({pressed})=>[s.protectionToolbarButton,selectMode&&protectionMode==='lock'&&s.protectionToolbarActive,pressed&&s.pressed]}><InventoryLockGlyph locked={selectMode&&protectionMode==='lock'} color={selectMode&&protectionMode==='lock'?C.warning:C.text}/><Text style={s.protectionToolbarText}>{gt('Lock')}</Text></Pressable>}
-         {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Select items to favorite or unfavorite')} accessibilityState={{selected:selectMode&&protectionMode==='favorite',disabled:inventoryBusyLabel!==null}} disabled={inventoryBusyLabel!==null} onPress={()=>chooseProtectionMode('favorite')} style={({pressed})=>[s.protectionToolbarButton,selectMode&&protectionMode==='favorite'&&s.protectionToolbarActive,pressed&&s.pressed]}><Text style={s.protectionToolbarStar}>★</Text><Text style={s.protectionToolbarText}>{gt('Favorite')}</Text></Pressable>}
-         {!selectMode&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Set move or sell amount. Current amount: {amount}',{amount:quantity==='all'?gt('All'):formatGameNumber(quantity,state.settings.numberMode,state.settings.language)})} onPress={()=>setFilterOpen(true)} style={s.amountTrigger}><Text style={s.amountText}>{gt('Amount')+' · '+(quantity==='all'?gt('All'):formatGameNumber(quantity,state.settings.numberMode,state.settings.language))}</Text></Pressable>}
-         {(stacks.length>0||selectMode)&&<Pressable accessibilityRole="button" accessibilityLabel={selectMode?gt("Finish selecting items"):gt("Select multiple items")} onPress={selectMode?exitSelection:()=>beginSelection()} style={s.textAction}><Text style={s.sortValue}>{selectMode?gt("Done"):gt("Select")}</Text></Pressable>}
-       </View>
-     </View>
+    <View style={s.resultRow}>
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('View and action settings. Current filter: {filter}. Current sort: {sort}',{filter:gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter),sort:gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)})} onPress={()=>setFilterOpen(true)} style={({pressed})=>[s.viewOptionsTrigger,pressed&&s.pressed]}>
+        <Text numberOfLines={1} style={s.toolbarFilterText}>{gl(FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter)} · {gl(SORT_OPTIONS.find(option=>option.id===sort)?.label)}</Text>
+        <Text accessible={false} style={s.sortChevron}>⌄</Text>
+      </Pressable>
+      {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Select items to lock or unlock')} accessibilityState={{selected:selectMode&&protectionMode==='lock',disabled:inventoryBusyLabel!==null}} disabled={inventoryBusyLabel!==null} onPress={()=>chooseProtectionMode('lock')} style={({pressed})=>[s.protectionToolbarButton,selectMode&&protectionMode==='lock'&&s.protectionToolbarActive,pressed&&s.pressed]}><InventoryLockGlyph locked={selectMode&&protectionMode==='lock'} color={selectMode&&protectionMode==='lock'?C.warning:C.text}/></Pressable>}
+      {stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={gt('Select items to favorite or unfavorite')} accessibilityState={{selected:selectMode&&protectionMode==='favorite',disabled:inventoryBusyLabel!==null}} disabled={inventoryBusyLabel!==null} onPress={()=>chooseProtectionMode('favorite')} style={({pressed})=>[s.protectionToolbarButton,selectMode&&protectionMode==='favorite'&&s.protectionToolbarActive,pressed&&s.pressed]}><Text style={s.protectionToolbarStar}>★</Text></Pressable>}
+      <Pressable accessibilityRole="button" accessibilityLabel={gt('Set move or sell amount. Current amount: {amount}',{amount:quantity==='all'?gt('All'):formatGameNumber(quantity,state.settings.numberMode,state.settings.language)})} accessibilityState={{disabled:selectMode}} disabled={selectMode} onPress={()=>setFilterOpen(true)} style={({pressed})=>[s.amountTrigger,selectMode&&s.toolbarDisabled,pressed&&s.pressed]}><Text numberOfLines={1} style={s.amountText}>×{quantity==='all'?gt('All'):formatGameNumber(quantity,state.settings.numberMode,state.settings.language)}</Text></Pressable>
+      {(stacks.length>0||selectMode)&&<Pressable accessibilityRole="button" accessibilityLabel={selectMode?gt("Finish selecting items"):gt("Select multiple items")} accessibilityState={{selected:selectMode}} onPress={selectMode?exitSelection:()=>beginSelection()} style={({pressed})=>[s.textAction,selectMode&&s.selectModeButtonActive,pressed&&s.pressed]}><Text numberOfLines={1} style={[s.toolbarSelectText,selectMode&&s.selectModeTextActive]}>{selectMode?gt("Done"):gt("Select")}</Text></Pressable>}
+    </View>
      {protectionFeedback&&!selectMode?<Text accessibilityLiveRegion="polite" style={s.protectionSuccess}>{protectionFeedback}</Text>:null}
 
     {!isFiltered&&activeStacks.length===0&&<Text style={s.emptyGridHint}>{gt('No items to show')}</Text>}
@@ -676,18 +675,18 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   quantityCustom:{width:112,minHeight:44,justifyContent:'center',borderWidth:1,borderColor:C.lineStrong,borderRadius:10,backgroundColor:C.bg},
   quantityCustomActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   quantityInput:{height:42,paddingHorizontal:9,paddingVertical:0,color:C.text,textAlign:'center',textAlignVertical:'center',fontSize:12,lineHeight:18,fontWeight:'800'},
-  viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:5},amountTrigger:{minHeight:44,justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},amountText:{fontSize:10,color:C.text,fontWeight:'900'},sortChevron:{...typography.body,color:C.muted,transform:[{translateY:-3}]},sortValue:{...typography.bodyStrong,color:C.text},textAction:{minHeight:44,minWidth:44,alignItems:'center',justifyContent:'center',paddingHorizontal:6},
-  resultRow:{flexDirection:'row',alignItems:'center',gap:8},
-  resultRowCompact:{flexWrap:'wrap',rowGap:4},
-  resultSummary:{flex:1,minWidth:0},
-  markSeen:{minHeight:44,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
-  markSeenText:{fontSize:10,color:C.info,fontWeight:'900'},
-  resultActions:{flexDirection:'row',alignItems:'center',gap:5},
-  resultActionsCompact:{width:'100%',justifyContent:'flex-end'},
-  protectionToolbarButton:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4,paddingHorizontal:8,borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel2},
+  viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44,flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+  toolbarFilterText:{flex:1,minWidth:0,fontSize:11,color:C.text,fontWeight:'800'},
+  sortChevron:{fontSize:16,color:C.muted,marginTop:-3},
+  amountTrigger:{minWidth:44,minHeight:44,justifyContent:'center',alignItems:'center',paddingHorizontal:4,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+  amountText:{fontSize:11,color:C.text,fontWeight:'900'},
+  textAction:{minHeight:44,minWidth:52,alignItems:'center',justifyContent:'center',paddingHorizontal:5,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
+  toolbarSelectText:{fontSize:11,color:C.text,fontWeight:'900'},
+  toolbarDisabled:{opacity:.45},
+  resultRow:{flexDirection:'row',alignItems:'center',gap:5,width:'100%'},
+  protectionToolbarButton:{width:44,minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:9,borderColor:C.line,backgroundColor:C.panel2},
   protectionToolbarActive:{borderColor:C.warning,backgroundColor:C.warningSurface},
-  protectionToolbarText:{fontSize:10,fontWeight:'900',color:C.text},
-  protectionToolbarStar:{fontSize:15,color:C.warning,fontWeight:'900'},
+  protectionToolbarStar:{fontSize:16,color:C.warning,fontWeight:'900'},
   protectionSuccess:{...typography.caption,color:C.good,fontWeight:'700'},
   selectModeButton:{minHeight:44,justifyContent:'center',paddingHorizontal:11,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   selectModeButtonActive:{borderColor:C.selectionLine,backgroundColor:C.selection},

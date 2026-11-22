@@ -158,3 +158,99 @@ begin
 end $check$;
 SQL
 echo "PASS: disposable PG17 state revision, action receipt, source proof, XP atomic; 16-way replay and rollback"
+
+# Third 2.0 review pass: an actual mixed claim carries MORE THAN ONE
+# source-proof segment under ONE game action receipt and revision commit.
+# This is still a disposable PG17 fixture, not a production gateway adapter.
+pg <<'SQL'
+begin;
+update public.online_game_states
+ set revision=revision+1
+ where account_id='11111111-1111-4111-8111-111111111111' and revision=1;
+insert into public.server_action_receipts
+ (account_id,action,idempotency_key,request_hash,game_revision,character_id)
+ values ('11111111-1111-4111-8111-111111111111','online_game_v1',
+ 'online000005',repeat('a',64),2,'11111111-1111-4111-8111-111111111111');
+insert into private.online_career_reward_sources_v2
+ (source_kind,source_id,account_id,request_id,request_hash,segment_index,
+  expected_game_revision,character_id,profession_id,claimed_elapsed_seconds,
+  base_effort_seconds,difficulty_basis_points)
+ values
+ ('gathering_claim',repeat('e',64),'11111111-1111-4111-8111-111111111111',
+ 'online000005',repeat('a',64),0,2,'11111111-1111-4111-8111-111111111111',
+ 'mining',120,120,10000),
+ ('combat_reward',repeat('f',64),'11111111-1111-4111-8111-111111111111',
+ 'online000005',repeat('a',64),1,2,'11111111-1111-4111-8111-111111111111',
+ null,0,120,10000);
+insert into private.character_career_awards_v2
+ (source_kind,source_id,character_id,overall_character_xp_delta,profession_id,fingerprint)
+ values
+ ('gathering_claim',repeat('e',64),'11111111-1111-4111-8111-111111111111',
+ 60,'mining','mixed-gathering-verified-disposable'),
+ ('combat_reward',repeat('f',64),'11111111-1111-4111-8111-111111111111',
+ 60,null,'mixed-combat-verified-disposable');
+update private.character_career_progress_v2
+ set overall_character_xp=overall_character_xp+120
+ where character_id='11111111-1111-4111-8111-111111111111';
+commit;
+do $check$
+begin
+ if (select revision from public.online_game_states
+     where account_id='11111111-1111-4111-8111-111111111111')<>2
+ or (select count(*) from public.server_action_receipts
+     where idempotency_key='online000005' and game_revision=2)<>1
+ or (select count(*) from private.online_career_reward_sources_v2
+     where request_id='online000005')<>2
+ or (select count(*) from private.character_career_awards_v2
+     where source_id in (repeat('e',64),repeat('f',64)))<>2
+ or (select overall_character_xp from private.character_career_progress_v2
+     where character_id='11111111-1111-4111-8111-111111111111')<>360
+ then raise exception 'mixed_claim_not_atomic';end if;
+end $check$;
+SQL
+
+# A failed SECOND proof must roll back the first proof, the account revision
+# and original action receipt. PostgreSQL exception block = subtransaction.
+pg <<'SQL'
+do $check$
+declare collided boolean:=false;
+begin
+ begin
+  update public.online_game_states set revision=3
+   where account_id='11111111-1111-4111-8111-111111111111' and revision=2;
+  insert into public.server_action_receipts
+   (account_id,action,idempotency_key,request_hash,game_revision,character_id)
+   values ('11111111-1111-4111-8111-111111111111','online_game_v1',
+   'online000006',repeat('a',64),3,'11111111-1111-4111-8111-111111111111');
+  insert into private.online_career_reward_sources_v2
+   (source_kind,source_id,account_id,request_id,request_hash,segment_index,
+    expected_game_revision,character_id,profession_id,claimed_elapsed_seconds,
+    base_effort_seconds,difficulty_basis_points)
+   values ('gathering_claim',repeat('b',64),
+     '11111111-1111-4111-8111-111111111111',
+     'online000006',repeat('a',64),0,3,'11111111-1111-4111-8111-111111111111',
+     'mining',30,30,10000);
+  -- Repeat a globally claimed combat source from the earlier action.
+  insert into private.online_career_reward_sources_v2
+   (source_kind,source_id,account_id,request_id,request_hash,segment_index,
+    expected_game_revision,character_id,profession_id,claimed_elapsed_seconds,
+    base_effort_seconds,difficulty_basis_points)
+   values ('combat_reward',repeat('9',64),
+     '11111111-1111-4111-8111-111111111111',
+     'online000006',repeat('a',64),1,3,'11111111-1111-4111-8111-111111111111',
+     null,0,30,10000);
+ exception when unique_violation then collided:=true;
+ end;
+ if not collided
+ or (select revision from public.online_game_states
+    where account_id='11111111-1111-4111-8111-111111111111')<>2
+ or exists(select 1 from public.server_action_receipts
+    where idempotency_key='online000006')
+ or exists(select 1 from private.online_career_reward_sources_v2
+    where request_id='online000006')
+ or (select overall_character_xp from private.character_career_progress_v2
+    where character_id='11111111-1111-4111-8111-111111111111')<>360
+ then raise exception 'mixed_claim_partial_commit';end if;
+end $check$;
+SQL
+echo "PASS: disposable PG17 mixed gathering+combat source proofs settle together; second-proof collision rolls back entire claim"

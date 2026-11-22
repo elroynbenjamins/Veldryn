@@ -58,3 +58,32 @@ The 108 class-specialization-boss variant pairs report **actual** per-boss survi
 **Precise interpretation:** The evidence comes from synthetic yet full-compilation QA equipment receipts, **not** actual authenticated database custody. These are equal-equipment comparisons within a class and specialization, **not** finalized equal-Combat-Power comparisons across classes. Numerical weights for final Combat Power are not approved. The recorded result is an audit and can reveal underperforming counter options, not proof that all counter-builds win.
 
 **Outstanding gates:** GitHub exact-head compile/test success; generated gameplay/co-op Edge byte parity after latest shared-engine/skill edits; imported real authenticated gear custody and independent signed CP computation; persistent 4-player/dungeon authority; visual/theme review and Android telegraph accessibility; existing unapproved Skills V2 scroll-indicator failure. No merge to main or live rollout.
+
+
+## Hidden pass G — four equipment-compiled allies and trustworthy boss signals
+
+### Equipment + role composition (not production party authority)
+
+`backend/src/server/combat/v2/__tests__/four-player-equipment-counterplay.ts` now executes the actual full private equipment-and-skills pipeline for **Ironwarden tank, Wayfinder damage, Hexweaver damage and Stonecaller support**. All four use separately owned test-copy item instances, individual validated class-only stat baselines, catalogued active skill IDs, level-gated variants, quality scaling, and source-owned equipment stats. The same party and gear are compared with:
+
+1. **Generic:** no interrupt/cleanse; the boss completes its 1,400 ms, party-wide damage-over-time + weakening telegraph.
+2. **Tank counter:** Ironwarden Rune Bash interrupts the actual cast before its party-wide effects.
+3. **Support counter:** Stonecaller River Stone — Cleansing Stream allows the cast but removes the DoT and weakening effect from **one** afflicted ally only, not magically from all four.
+
+The test demands deterministic replay, unchanged compiler evidence across tactics, no copied cross-character gear, no proc/event storms, no nonfinite outcomes, and the same enemy mechanic labels. This is **not** real signed party roster custody. The full-pipeline helper must still reject trait effect ports supplied to a 4-player match and reject legacy persistent dungeon HP/cooldown snapshots without the proper versioned adapter. We deliberately do **not** bypass either hard rejection.
+
+### Boss cast/interrupt/cleanse projection (read-only, no UI yet)
+
+`backend/src/server/combat/v2/boss-telegraph-projection.ts` derives an immutable view of authored **Boss 2.0** casts from the result of the real deterministic engine: ability name, actor/target, start time, authored duration/expected completion, completed/interrupted state, interruption actor, and genuine player-generated cleansing event IDs. It does not generate cast/interrupt events or modify fights.
+
+The test proves one Rootbound Heart cast completes when ignored and is interrupted when countered; Bell Soul Curse debuff removal appears only if the actual player cleansed it. Spoofed ability IDs, fake post-completion interruptions, unversioned bosses and non-V2 actors must be rejected. Timing comes from the already compiled boss definition. Any future rendering in Android remains subject to the **owner's explicit actual-screen/theme approval**; nothing is connected to mobile today.
+
+### Release gates preserved
+
+- Authoritative signed 4-player roster membership and exact-copy item receipts, with service-readback and revocation.
+- Immutable per-run versioned boss snapshot, real replay custody and verified team cooldown/HP CAS adapter; current party fixture uses a QA enemy bridge instead.
+- Shared equipment trait budgets/policy for four allies, companions, interactions with status effects and boss phases.
+- Real equivalent **Combat Power** source with user-approved weights and outcome tolerances, not synthetic gear parity.
+- Verified exact-head GitHub TypeScript, deterministic combat tests and generated gameplay/co-op Edge byte parity; mobile scroll-indicator appearance is still unapproved.
+
+**All pass G changes remain hidden and draft; no main merge, migration, production deployment, player effects, or mobile visual changes.**

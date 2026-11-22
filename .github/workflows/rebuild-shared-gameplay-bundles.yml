@@ -29,6 +29,7 @@ on:
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
       - 'backend/src/server/expeditions/content/coop-route-content.ts'
+      - 'backend/src/server/expeditions/route-generation.ts'
       # Keep the deployable co-op Edge bundle synchronized whenever its
       # regional gates, roster snapshots, matchmaking, or combat logic changes.
       - 'backend/src/server/coop/dungeon-entry-policy.ts'

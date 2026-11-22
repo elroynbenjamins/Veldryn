@@ -38,6 +38,30 @@ export function generateRoute(secret: string, expeditionId: string, runId: strin
 
 const MODIFIERS = ['steady','thorned','volatile','warded','swift','attrition'] as const;
 
+// These are reward categories, not strictly node kinds: Forge and Echo also
+// grant boons, while Secret rooms grant artifacts. Different categories may
+// coexist in one three-choice layer; only repeats within a category are banned.
+type SpecialRoomCategory='boon'|'artifact'|'campfire';
+function specialRoomCategory(kind:ExpeditionNodeType|'entry'):SpecialRoomCategory|undefined{
+ if(kind==='shrine'||kind==='forge'||kind==='echo')return 'boon';
+ if(kind==='treasure'||kind==='secret')return 'artifact';
+ if(kind==='camp')return 'campfire';
+ return undefined;
+}
+
+/** Re-roll only a conflicting special room, preserving the original seeded
+ * choices (and combat pacing) wherever there is no category collision. */
+function distinctSpecialRoomKind(secret:string,expeditionId:string,runId:string,contentVersion:string,balanceVersion:string,depth:number,choice:number,excluded:SpecialRoomCategory):Exclude<ExpeditionNodeType,'boss'>{
+ const def=EXPEDITIONS[expeditionId];
+ const entries=(Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType,number]>)
+  .filter(([kind,weight])=>kind!=='boss'&&kind!=='merchant'&&kind!=='event'&&weight>0&&specialRoomCategory(kind)!==excluded);
+ const total=entries.reduce((sum,[,weight])=>sum+weight,0);
+ if(total<=0)return 'battle';
+ let roll=deterministicUnit(secret,'coop-unique-special-v1',runId,expeditionId,contentVersion,balanceVersion,depth,choice,excluded)*total;
+ for(const [kind,weight] of entries){roll-=weight;if(roll<=0)return kind as Exclude<ExpeditionNodeType,'boss'>;}
+ return 'battle';
+}
+
 function coopKind(secret:string, expeditionId:string, runId:string, contentVersion:string, balanceVersion:string, depth:number, choice:number):Exclude<ExpeditionNodeType,'boss'> {
   // The opening remains a full combat encounter, but the second stage now
   // offers a genuine utility route alongside two distinct enemy formations.
@@ -71,10 +95,14 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
  const isEndurance=routeMode!=='legacy';
  // Preserve saved v1 graphs; all newly generated Endurance runs use the checkpoint-choice v2 layout.
  const checkpointChoiceV2=routeMode==='endurance';
- const generatorVersion=isEndurance?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+(checkpointChoiceV2?'-endurance-v2':'-endurance-v1'):COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
- // Keep the calibrated first seven rooms identical to Endurance v1. Only checkpoint choices get a new seed.
- const regularRoomSeedVersion=checkpointChoiceV2?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+'-endurance-v1':generatorVersion;
- const preBossNodeCount=isEndurance?DUNGEON_ENDURANCE.maxNormalRooms:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
+ const baseGeneratorVersion=isEndurance?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+(checkpointChoiceV2?'-endurance-v2':'-endurance-v1'):COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+ // Version the new rule so already-frozen historical route graphs (including
+ // Endurance v1/v2) remain valid. The old RNG seed remains stable except when
+ // a duplicate special category must be replaced.
+ const distinctSpecialChoices=routeMode!=='endurance-v1';
+ const generatorVersion=distinctSpecialChoices?isEndurance?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+'-unique-special-v1-endurance-v2':baseGeneratorVersion+'-unique-special-v1':baseGeneratorVersion;
+ const regularRoomSeedVersion=checkpointChoiceV2?COOP_ROGUELITE_CONFIG.routeGeneratorVersion+'-endurance-v1':baseGeneratorVersion;
+ const preBossNodeCount=isEndurance?DUNGEON_ENDURANCE.maxNormalRooms:deterministicInt(secret,COOP_ROGUELITE_CONFIG.preBossNodeMin,COOP_ROGUELITE_CONFIG.preBossNodeMax,baseGeneratorVersion,runId,expeditionId,contentVersion,balanceVersion,'length');
  const finalBosses=dungeonBossVariantsFor(expeditionId);
  // One frozen 50/50 boss roll per run: players cannot reroll a boss by
  // choosing to continue or reconnecting.
@@ -86,6 +114,7 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
    const layerModifierOffset=deterministicInt(secret,0,MODIFIERS.length-1,regularRoomSeedVersion,runId,expeditionId,contentVersion,balanceVersion,'modifier-layer',depth);
    const checkpoint=isEndurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0;
    const usedContentIds=new Set<string>();
+   const usedSpecialCategories=new Set<SpecialRoomCategory>();
    for(let choice=0;choice<COOP_ROGUELITE_CONFIG.choicesPerDepth;choice++){
      if(checkpoint&&choice===2){
        nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind:'boss',contentId:bossId,modifierId:'checkpoint',risk:1.25,rewardTag:'boss',nextNodeIds:[]});
@@ -95,11 +124,17 @@ export function generateCoopRouteGraph(secret:string,expeditionId:string,runId:s
        // Recovery and a boon are alternatives to the boss, never mandatory pre-boss stops.
        const kind=choice===0?'camp':'shrine';
        const pool=coopContentPool(expeditionId,kind);
-       const index=deterministicInt(secret,0,pool.length-1,generatorVersion,runId,expeditionId,contentVersion,balanceVersion,'checkpoint-choice',depth,kind);
+       const index=deterministicInt(secret,0,pool.length-1,baseGeneratorVersion,runId,expeditionId,contentVersion,balanceVersion,'checkpoint-choice',depth,kind);
        nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind,contentId:pool[index],modifierId:kind==='camp'?'checkpoint-camp-v2':'checkpoint-boon-v2',risk:1,rewardTag:kind==='camp'?'camp':'boon',nextNodeIds:idsAt(depth+1)});
        continue;
      }
-     const kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
+     let kind=coopKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice);
+     const category=specialRoomCategory(kind);
+     if(distinctSpecialChoices&&category&&usedSpecialCategories.has(category)){
+       kind=distinctSpecialRoomKind(secret,expeditionId,runId,contentVersion,balanceVersion,depth,choice,category);
+     }
+     const chosenCategory=specialRoomCategory(kind);
+     if(chosenCategory)usedSpecialCategories.add(chosenCategory);
      const contentPool=coopContentPool(expeditionId,kind);
      let contentIndex=deterministicInt(secret,0,contentPool.length-1,regularRoomSeedVersion,runId,expeditionId,contentVersion,balanceVersion,'content',depth,choice);
      while(usedContentIds.has(contentPool[contentIndex]))contentIndex=(contentIndex+1)%contentPool.length;
@@ -162,6 +197,12 @@ export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNode
    if(depth===1&&layer.some(node=>node.kind!=='battle'))throw new Error('mandatory_combat_missing');
    if(depth===2&&layer.filter(node=>node.kind==='battle').length<2)throw new Error('opening_combat_missing');
    if(depth>2&&!layer.some(node=>node.kind==='battle')&&!(enduranceV2&&layer.some(node=>node.kind==='boss')))throw new Error('combat_option_missing');
+   // Do not invalidate older already-authenticated dungeon graphs: only
+   // graphs stamped with the new generator revision must obey this rule.
+   if(graph.generatorVersion.includes('-unique-special-v1')){
+     const categories=layer.map(node=>specialRoomCategory(node.kind)).filter((category):category is SpecialRoomCategory=>category!==undefined);
+     if(new Set(categories).size!==categories.length)throw new Error('duplicate_special_room_choice');
+   }
    if(endurance&&depth>1&&(depth-1)%DUNGEON_ENDURANCE.checkpointInterval===0){
      if(layer.filter(node=>node.kind==='boss').length!==1||layer.filter(node=>node.kind!=='boss').length!==2)throw new Error('checkpoint_choices_invalid');
      if(enduranceV2&&(layer[0].kind!=='camp'||layer[0].modifierId!=='checkpoint-camp-v2'||layer[1].kind!=='shrine'||layer[1].modifierId!=='checkpoint-boon-v2'||layer[2].kind!=='boss'))throw new Error('checkpoint_recovery_boon_choices_invalid');

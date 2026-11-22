@@ -8,6 +8,9 @@ on:
     paths:
       - '.github/workflows/hidden-combat-v2-counterplay-edge-sync.yml'
       - 'backend/src/server/combat/engine.ts'
+      - 'backend/src/server/combat/v2/skill-effects.ts'
+      - 'backend/src/server/combat/boss-v2-asterfall-prototype.ts'
+      - 'backend/src/server/combat/boss-v2-regional-prototype.ts'
       - 'backend/src/server/combat/v2/__tests__/counterplay-equal-stat-pairs.ts'
 
 permissions:

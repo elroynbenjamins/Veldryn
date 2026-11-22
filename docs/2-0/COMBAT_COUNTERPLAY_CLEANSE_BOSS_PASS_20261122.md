@@ -47,3 +47,14 @@ The changes provide an **opportunity** to interrupt, not a mandatory interrupt m
 Remaining release blockers: owner-reviewed visual themes, the pre-existing Skills preview scroll-indicator check, persisted 4-player group/trait authoritative source, signed CP-equivalent matchups across 9 classes/18 specs and six bosses, final numeric thresholds and accessible Android telegraphs.
 
 **Do not treat any synthetic test as a final win-rate or live balance proof.**
+
+
+## Follow-on: source-matched measured outcome audit (hidden)
+
+The `counterplay-outcome-review.ts` diagnostic now accepts **only isolated, equipment-compiled one-player outcomes** after a 64-character exact-copy receipt digest equality check. Both encounters must have the same character/class/specialization/level/resource, identical effective player and boss stats, identical enemy mechanics, and identical item/set/affix compiler evidence. A mismatched copy digest, boss ID, or even a one-point stat difference fails closed.
+
+The 108 class-specialization-boss variant pairs report **actual** per-boss survival HP, shields, outgoing and incoming damage, heals, interrupts and DoT/debuff removals, alongside separate counts for raw event differences. An event-label-only change is explicitly tested and **does not** register as a meaningful outcome difference. The existing 48 interrupt examples and six authored Support-vs-curse pairs also run through the source-matched report. No actual player balances, rewards, or rankings change.
+
+**Precise interpretation:** The evidence comes from synthetic yet full-compilation QA equipment receipts, **not** actual authenticated database custody. These are equal-equipment comparisons within a class and specialization, **not** finalized equal-Combat-Power comparisons across classes. Numerical weights for final Combat Power are not approved. The recorded result is an audit and can reveal underperforming counter options, not proof that all counter-builds win.
+
+**Outstanding gates:** GitHub exact-head compile/test success; generated gameplay/co-op Edge byte parity after latest shared-engine/skill edits; imported real authenticated gear custody and independent signed CP computation; persistent 4-player/dungeon authority; visual/theme review and Android telegraph accessibility; existing unapproved Skills V2 scroll-indicator failure. No merge to main or live rollout.

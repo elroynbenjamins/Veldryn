@@ -78,7 +78,8 @@ export function projectBossCombatReplaySignalsV2(
   const boss=event.actorId?bosses.get(event.actorId):undefined;
   if(event.type==='cast_start'&&boss){
    const ability=boss.abilities.find(a=>a.id===event.abilityId);
-   if(!ability||!Number.isSafeInteger(ability.castTimeMs)||
+   if(!ability)throw Error('combat_v2_boss_signal_cast_start_unverifiable');
+   if(!Number.isSafeInteger(ability.castTimeMs)||
       ability.castTimeMs<=0||!participantIds.has(event.targetId??'')||
       open.has(boss.id))fail('cast_start_unverifiable');
    const signal:VerifiedBossCastSignalV2={
@@ -93,7 +94,8 @@ export function projectBossCombatReplaySignalsV2(
   }
   if(event.type==='cast_complete'&&boss){
    const active=open.get(boss.id);
-   if(!active||active.signal.abilityId!==event.abilityId||
+   if(!active)throw Error('combat_v2_boss_signal_cast_complete_without_start');
+   if(active.signal.abilityId!==event.abilityId||
       active.signal.targetId!==event.targetId||
       event.atMs<active.signal.expectedCompleteAtMs)
     fail('cast_complete_without_start');
@@ -102,7 +104,8 @@ export function projectBossCombatReplaySignalsV2(
   }
   if(event.type==='interrupt'&&event.targetId&&bosses.has(event.targetId)){
    const active=open.get(event.targetId);
-   if(!active||!active.signal.interruptible||
+   if(!active)throw Error('combat_v2_boss_signal_interruption_without_live_cast');
+   if(!active.signal.interruptible||
       active.signal.abilityId!==event.interruptedAbilityId||
       !playerIds.has(event.actorId??'')||
       event.atMs>active.signal.expectedCompleteAtMs)

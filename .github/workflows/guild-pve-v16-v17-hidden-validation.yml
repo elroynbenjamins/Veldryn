@@ -3,7 +3,7 @@ name: Hidden Guild PvE V16 private reads + V17 real-engine effects
 on:
   pull_request:
     paths:
-      - 'backend/src/server/combat/guild-pve-authority-v16.ts'
+      - 'backend/online/guild-pve-authority-v16.ts'
       - 'backend/src/server/combat/guild-pve-effects-v17.ts'
       - 'apps/mobile/tests/guild-pve-v16-authority.ts'
       - 'apps/mobile/tests/guild-pve-v17-effects.ts'

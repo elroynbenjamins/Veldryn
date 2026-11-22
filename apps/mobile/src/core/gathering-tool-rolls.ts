@@ -15,10 +15,13 @@ export interface CraftedGatheringTool {
 export const GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION=.80;
 export const GATHERING_TOOL_SPEED_RANGE_BPS=[200,800] as const;
 export const GATHERING_TOOL_RARITY_RANGE_BPS=[200,500] as const;
+/** Additive across distinct equipped tool tiers for one skill; future T5–T9
+ * tool catalogs can expand the pool without unbounded XP multiplication. */
+export const GATHERING_TOOL_MAX_XP_BONUS_BPS=6000;
 /** Skill-specific XP affix ranges, in basis points. T5–T9 are reserved for
  * the 2.0 catalog expansion and must not be minted by today's T1–T4 tools. */
 export const GATHERING_TOOL_XP_RANGE_BPS_BY_TIER:Readonly<Record<1|2|3|4,readonly [number,number]>>={
- 1:[300,600],2:[500,900],3:[700,1200],4:[900,1500],
+ 1:[200,400],2:[300,500],3:[400,600],4:[500,800],
 };
 export function gatheringToolBonusRange(itemId:string,stat:GatheringToolBonusStat):readonly [number,number]|undefined{
  if(stat==='speed')return GATHERING_TOOL_SPEED_RANGE_BPS;

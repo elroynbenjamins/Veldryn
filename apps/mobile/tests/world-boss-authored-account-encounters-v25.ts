@@ -264,6 +264,73 @@ async function main(){
    fortifications:0,fieldProvisions:0,siegecraft:0,
   },
  });
+ // V87 isolated FULL 14-round integration, not just pure formula testing.
+ // Synthetic verifyPersisted is a fixture; a real DB adapter does NOT exist.
+ const eqBoss='hollowroot' as const,eqPhase='exposed' as const;
+ const eqProfile=makeWorldBossEncounterProfileV13({
+  eventId:EVENT,boss:eqBoss,phase:eqPhase,gearBand:2,
+  configVersion:'wb87-verified-equipment-synthetic',
+  attack:35,defense:100,guardMax:500,
+ });
+ const eqArgs={
+  eventId:EVENT,requestId:'WB87_FIVE_CLASS_PROOF',
+  roster:full,order:'steady_assault' as const,boss:eqBoss,phase:eqPhase,
+  serverSeed:'WB87_EQUIPPED_SERVER_NONCE_123456789',
+  encounter:eqProfile,warCamp:lowCamp,
+ };
+ const oldEq=simulateWorldBossAuthoredAccountEncounterV25(eqArgs);
+ assert.equal(oldEq.equipmentV87Enabled,false);
+ const eqTraitIds=[
+  'thornbound_riposte','mending_echo','sword_dance',
+  'echoing_strike','restorative_bloom',
+ ] as const;
+ const eqSources=full.characters.map((row,i)=>({
+  source:'server-persisted-equipment-v2' as const,
+  policy:'eq2-traits-hidden-engine-pass1' as const,
+  revision:1,accountId:ACCOUNT,characterId:row.characterId,
+  actorId:row.combatant.id,equipmentReceiptDigest:String(i+1).repeat(64),
+  ownedEquippedInstanceIds:['wb87-copy-'+i],
+  basicAttackDamagePct:19,abilityDamagePct:22,reflectDamagePct:8,
+  traits:[{instanceId:'wb87-copy-'+i,traitId:eqTraitIds[i]}],
+ }));
+ const equipmentV87={
+  eventId:EVENT,accountId:ACCOUNT,bossId:eqBoss,
+  rosterDigest:full.rosterDigest,serverBossMaxHp:1000000,
+  sources:eqSources,
+  verifyPersisted:(context:{
+   eventId:string;accountId:string;rosterDigest:string;
+   actorIds:readonly string[];serverBossMaxHp:number;
+  },sources:readonly {actorId:string}[])=>
+   context.eventId===EVENT&&context.accountId===ACCOUNT&&
+   context.rosterDigest===full.rosterDigest&&
+   context.serverBossMaxHp===1000000&&
+   context.actorIds.length===full.characters.length&&
+   sources.every(s=>context.actorIds.includes(s.actorId)),
+ };
+ const eqFight=simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87,
+ });
+ assert.equal(eqFight.equipmentV87Enabled,true);
+ assert.equal(eqFight.persisted,false);
+ assert.equal(eqFight.rewarded,false);
+ assert.equal(eqFight.roundsCompleted,14);
+ assert.ok(eqFight.events.some(e=>e.type==='equipment_trait_trigger'));
+ assert.ok(eqFight.rawBossHpDamage>=oldEq.rawBossHpDamage,
+  'source-authenticated equipment modifiers should not reduce test damage');
+ assert.equal(eqFight.characterLedger.reduce((n,r)=>n+r.bossHpDamage,0),
+  eqFight.rawBossHpDamage,'verified equipment hits must remain in account ledger');
+ assert.equal(eqFight.proposedWorldHpDamage,worldBossAccountDamageV22(
+  eqFight.characterLedger.map(r=>({characterId:r.characterId,rawDamage:r.bossHpDamage}))),
+  'equipment traits cannot bypass account-wide diminishing returns');
+ assert.deepEqual(eqFight,simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87,
+ }), 'V87 account fight must replay deterministically with the same frozen receipts');
+ reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87:{...equipmentV87,verifyPersisted:()=>false},
+ }), 'persisted_receipt_not_verified');
+ reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
+  ...eqArgs,equipmentV87:{...equipmentV87,rosterDigest:'f'.repeat(64)},
+ }), 'untrusted_scope');
  let authoredStatuses=0,authoredSpikes=0;
  for(const boss of bosses)for(const phase of phases){
   const lowProfile=makeWorldBossEncounterProfileV13({

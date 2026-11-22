@@ -19,10 +19,11 @@ import {
 
 export const CRAFT_CUSTODY_HANDOFF_REVIEW_V2='career-eq2-craft-custody-review-v1' as const;
 export const CRAFT_CUSTODY_HANDOFF_ENABLED_V2=false as const;
-const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-// The above format is intentionally not used for input IDs: canonical UUID below.
 const CANONICAL_UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN=/^[A-Za-z0-9_:-]{8,128}$/;
+const validToken=(v:unknown):v is string=>
+  typeof v==='string'&&TOKEN.test(v)&&
+  !['__proto__','constructor','prototype'].includes(v);
 const MATERIAL=/^[A-Z0-9_]{3,96}$/;
 const int=(v:unknown,a:number,b:number):v is number=>
   typeof v==='number'&&Number.isSafeInteger(v)&&v>=a&&v<=b;
@@ -150,7 +151,7 @@ export function previewProfessionCraftMaterialCustodyV2(
   request.characterId.toLowerCase()!==state.characterId.toLowerCase()||
   !int(request.expectedRevision,0,Number.MAX_SAFE_INTEGER)||
   !int(state.revision,0,Number.MAX_SAFE_INTEGER)||
-  typeof request.requestId!=='string'||!TOKEN.test(request.requestId)||
+  !validToken(request.requestId)||
   typeof request.requestHash!=='string'||!/^[0-9a-f]{64}$/.test(request.requestHash)||
   !int(request.quantity,1,100)||
   !int(state.availableGold,0,Number.MAX_SAFE_INTEGER)||
@@ -159,7 +160,7 @@ export function previewProfessionCraftMaterialCustodyV2(
   state.ownedLots.length>5000||state.originalSourceProofs.length>6000||
   state.registrations.length>10000||state.priorRequests.length>2000)
    fail('invalid_identity_or_snapshot');
- if(recipe.recipeId!==request.recipeId||!TOKEN.test(recipe.recipeId)||
+ if(recipe.recipeId!==request.recipeId||!validToken(recipe.recipeId)||
     !MATERIAL.test(recipe.itemId)||
     !['smithing','tailoring'].includes(recipe.profession)||
     !int(recipe.tier,1,9)||
@@ -210,11 +211,11 @@ export function previewProfessionCraftMaterialCustodyV2(
  const originalProofs=new Map<string,TrustedMaterialSourceProvenanceV2>();
  const receipts=new Set<string>(),transferReceipts=new Set<string>();
  for(const proof of state.originalSourceProofs){
-   if(!proof||typeof proof.provenanceId!=='string'||!TOKEN.test(proof.provenanceId)||
-     typeof proof.sourceReceiptId!=='string'||!TOKEN.test(proof.sourceReceiptId)||
+   if(!proof||!validToken(proof.provenanceId)||
+     !validToken(proof.sourceReceiptId)||
      typeof proof.sourceAccountId!=='string'||!CANONICAL_UUID.test(proof.sourceAccountId)||
      typeof proof.sourceCharacterId!=='string'||!CANONICAL_UUID.test(proof.sourceCharacterId)||
-     typeof proof.originalLotId!=='string'||!TOKEN.test(proof.originalLotId)||
+     !validToken(proof.originalLotId)||
      typeof proof.itemId!=='string'||!MATERIAL.test(proof.itemId)||
      !['combat','gathering','processing'].includes(proof.originalOrigin)||
      !int(proof.originalGrantedQuantity,1,1000000000)||
@@ -222,13 +223,13 @@ export function previewProfessionCraftMaterialCustodyV2(
      originalProofs.has(proof.provenanceId))
      fail('invalid_source_provenance');
    originalProofs.set(proof.provenanceId,proof);
-   // Same immutable source receipt cannot be re-used as a second owned lot
+   // Source receipt cannot be re-used as a second independent lot
    // in this preview without an authenticated split/merge receipt.
    if(receipts.has(proof.sourceReceiptId))fail('duplicate_source_receipt');
    receipts.add(proof.sourceReceiptId);
    const transfer=proof.settledTransfer;
    if(transfer){
-     if(!TOKEN.test(transfer.transferReceiptId)||
+     if(!validToken(transfer.transferReceiptId)||
         !['market','commission'].includes(transfer.kind)||
         transfer.settled!==true||
         transfer.originalSourceReceiptId!==proof.sourceReceiptId||
@@ -239,14 +240,16 @@ export function previewProfessionCraftMaterialCustodyV2(
         typeof transfer.recipientCharacterId!=='string'||
         !CANONICAL_UUID.test(transfer.recipientCharacterId)||
         transfer.fromAccountId.toLowerCase()!==proof.sourceAccountId.toLowerCase()||
+        transfer.fromAccountId.toLowerCase()===transfer.toAccountId.toLowerCase()||
         transferReceipts.has(transfer.transferReceiptId))
        fail('invalid_market_transfer_provenance');
      transferReceipts.add(transfer.transferReceiptId);
    }
  }
  const lots=new Map<string,TrustedCraftMaterialLotV2>();
+ const consumedProofIds=new Set<string>();
  for(const lot of state.ownedLots){
-   if(!lot||typeof lot.lotId!=='string'||!TOKEN.test(lot.lotId)||
+   if(!lot||!validToken(lot.lotId)||
       typeof lot.itemId!=='string'||!MATERIAL.test(lot.itemId)||
       typeof lot.accountId!=='string'||!CANONICAL_UUID.test(lot.accountId)||
       lot.accountId.toLowerCase()!==state.accountId.toLowerCase()||
@@ -254,13 +257,15 @@ export function previewProfessionCraftMaterialCustodyV2(
       (lot.custody==='bank'?lot.characterId!==null:
         (typeof lot.characterId!=='string'||!CANONICAL_UUID.test(lot.characterId)))||
       !int(lot.availableQuantity,1,1000000000)||
-      typeof lot.provenanceId!=='string'||!TOKEN.test(lot.provenanceId)||
+      !validToken(lot.provenanceId)||
       lots.has(lot.lotId))fail('invalid_or_duplicate_lot');
    if(lot.custody!=='bank'&&lot.characterId?.toLowerCase()!==state.characterId.toLowerCase())
      fail('wrong_character_custody');
    lots.set(lot.lotId,lot);
    const proof=originalProofs.get(lot.provenanceId);
    if(!proof||proof.itemId!==lot.itemId||
+      proof.originalLotId!==lot.lotId||
+      consumedProofIds.has(lot.provenanceId)||
       proof.originalGrantedQuantity<lot.availableQuantity||
       (proof.settledTransfer
         ?(proof.settledTransfer.toAccountId.toLowerCase()!==state.accountId.toLowerCase()||
@@ -268,11 +273,12 @@ export function previewProfessionCraftMaterialCustodyV2(
         :(proof.sourceAccountId.toLowerCase()!==state.accountId.toLowerCase()||
           proof.sourceCharacterId.toLowerCase()!==state.characterId.toLowerCase())))
      fail('missing_or_mismatched_source_receipt');
+   consumedProofIds.add(lot.provenanceId);
  }
- if(!state.priorRequests.every(r=>r&&TOKEN.test(r.requestId)&&
+ if(!state.priorRequests.every(r=>r&&validToken(r.requestId)&&
      /^[0-9a-f]{64}$/.test(r.requestHash)&&
      CANONICAL_UUID.test(r.accountId)&&CANONICAL_UUID.test(r.characterId)&&
-     TOKEN.test(r.recipeId)&&int(r.quantity,1,100)&&
+     validToken(r.recipeId)&&int(r.quantity,1,100)&&
      int(r.settledRevision,0,Number.MAX_SAFE_INTEGER)))
    fail('invalid_prior_requests');
  const matches=state.priorRequests.filter(r=>r.requestId===request.requestId);

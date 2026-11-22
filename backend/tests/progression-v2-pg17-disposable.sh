@@ -260,4 +260,47 @@ begin
 end
 $check$;
 SQL
-echo "PASS: disposable PG17: two 16-way races, global source proofs, exact-once bank award, role isolation and transaction rollback"
+# Source-class constraints: combat never credits a crafting profession;
+# instant craft cannot claim gathering duration or exceed bulk cap.
+psql_test <<'SQL'
+insert into private.online_career_reward_sources_v2(
+ source_kind,source_id,account_id,request_id,request_hash,
+ segment_index,expected_game_revision,character_id,
+ profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+values
+ ('combat_reward',repeat('1',64),'11111111-1111-4111-8111-111111111111',
+  'hunt000001',repeat('b',64),0,14,'11111111-1111-4111-8111-111111111111',
+  null,0,180,10000),
+ ('craft_claim',repeat('2',64),'11111111-1111-4111-8111-111111111111',
+  'craft000001',repeat('b',64),0,15,'11111111-1111-4111-8111-111111111111',
+  'smithing',0,300,5000);
+do $check$
+begin
+ if (select count(*) from private.online_career_reward_sources_v2)<>4
+ then raise exception 'combat/craft source proof missing'; end if;
+end
+$check$;
+SQL
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "insert into private.online_career_reward_sources_v2(
+ source_kind,source_id,account_id,request_id,request_hash,
+ segment_index,expected_game_revision,character_id,
+ profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+ values('combat_reward',repeat('3',64),'11111111-1111-4111-8111-111111111111',
+ 'hunt000002',repeat('b',64),0,16,'11111111-1111-4111-8111-111111111111',
+ 'mining',0,300,10000);" 2>&1 || true)"
+if ! grep -q 'violates check constraint' <<<"$ERR"; then
+ echo 'Combat proof improperly accepted profession XP' >&2; exit 10
+fi
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "insert into private.online_career_reward_sources_v2(
+ source_kind,source_id,account_id,request_id,request_hash,
+ segment_index,expected_game_revision,character_id,
+ profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+ values('craft_claim',repeat('4',64),'11111111-1111-4111-8111-111111111111',
+ 'craft000002',repeat('b',64),0,17,'11111111-1111-4111-8111-111111111111',
+ 'smithing',0,10801,10000);" 2>&1 || true)"
+if ! grep -q 'violates check constraint' <<<"$ERR"; then
+ echo 'Instant craft proof improperly accepted unlimited bulk XP' >&2; exit 11
+fi
+echo "PASS: disposable PG17: 16-way races, combat/craft/gather source constraints, exact-once awards, roles, rollback"

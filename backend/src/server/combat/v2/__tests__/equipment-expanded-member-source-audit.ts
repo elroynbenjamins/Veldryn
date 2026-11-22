@@ -52,6 +52,21 @@ for(const gap of review.missing){
 assert.deepEqual(Object.values(result.byTier).map(x=>x.required),[51,51,51,51]);
 assert.equal(Object.values(result.byTier).reduce((n,x)=>n+x.potential,0),74);
 assert.equal(Object.values(result.byTier).reduce((n,x)=>n+x.gap,0),130);
+const t1FamilyGaps={
+ oathplate:4,citadel:4,bloodsteel:0,vigilhide:3,
+ quickstep:3,horizon:4,blackscript:1,breakerforge:3,
+ brightweave:2,stormthread:3,rootshield:6,echohide:0,
+} as const;
+assert.equal(Object.keys(t1FamilyGaps).length,12);
+for(const [family,gap] of Object.entries(t1FamilyGaps)){
+ const setId='eq2_t1_'+family;
+ assert.equal(review.missing.filter(x=>x.targetSetId===setId).length,gap,
+  'T1 gap worksheet drift in '+family);
+}
+assert.equal(result.byTier.T1.gap,33);
+assert.equal(result.byTier.T2.gap,30);
+assert.equal(result.byTier.T3.gap,31);
+assert.equal(result.byTier.T4.gap,36);
 const reversed=reviewExpandedSetSourceCoverageV2(
  [...PLANNED_T1_T4_MEMBERS_V2].reverse(),[...V2_SERVER_PIECES].reverse());
 assert.deepEqual(reversed,review,'Source ordering must not change proposed link IDs');

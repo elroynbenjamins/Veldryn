@@ -77,7 +77,7 @@ assert.ok(legacy.players.find(p=>p.definition.id==='QA_TANK')!.modifiers
 const stonecaller=launchPlayer('Stonecaller',25);
 const river=SKILL_IDENTITIES_V2.find(s=>s.classId==='STONECALLER'&&s.name==='River Stone');
 const stoneSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='STONECALLER');
-assert.ok(river&&stoneSpec,'V2 source catalogue must contain Stonecaller counter variant');
+if(!river||!stoneSpec)throw Error('missing_stonecaller_research_skill_or_specialization');
 function stoneBuild(index:0|1):VerifiedSkillBuildV2{
  return {
   actor:stonecaller,verified:{classId:'STONECALLER',level:25,ownedInstanceIds:new Set()},
@@ -113,7 +113,7 @@ assert.deepEqual(cleansingFight.events.filter(e=>e.type==='status_remove'&&
 const dawnkeeper=launchPlayer('Dawnkeeper',35);
 const purifying=SKILL_IDENTITIES_V2.find(s=>s.classId==='DAWNKEEPER'&&s.name==='Purifying Light');
 const dawnSpec=SPECIALIZATIONS_V2.find(s=>s.classId==='DAWNKEEPER');
-assert.ok(purifying&&dawnSpec);
+if(!purifying||!dawnSpec)throw Error('missing_dawnkeeper_purifying_light_or_specialization');
 const dawnBuild:VerifiedSkillBuildV2={
  actor:dawnkeeper,verified:{classId:'DAWNKEEPER',level:35,ownedInstanceIds:new Set()},
  selected:{specializationId:dawnSpec.id,equipment:{},

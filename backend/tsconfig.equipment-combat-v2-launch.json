@@ -8,6 +8,8 @@
     "src/server/combat/v2/__tests__/equipment-expanded-launch-registry.ts",
     "src/server/equipment/equipment-crafting-v2-weapon-families.ts",
     "src/server/combat/v2/equipment-expanded-set-synergy-review.ts",
-    "src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts"
+    "src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts",
+    "src/server/equipment/equipment-crafting-v2-material-source-review.ts",
+    "src/server/equipment/equipment-crafting-v2-unified-reservation-review.ts"
   ]
 }

@@ -31,7 +31,7 @@ check(preview.includes("accessibilityLabel={weaponBonusStatText(language,change.
   'A screen reader should announce the whole current/new/difference comparison');
 check(preview.includes('compactBonusRows')&&preview.includes('rollCompareRowStack'),
   'Comparison must fit narrow/high-font screens');
-check(inspect.includes('bonusRows.map(roll=>')&&inspect.includes('otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line))')&&!inspect.includes('rollTrack'),
+check(inspect.includes('bonusRows.map(roll=>')&&inspect.includes('otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)')&&inspect.includes('line!==traitLine')&&!inspect.includes('rollTrack'),
   'Compact Item Quick Inspect must display exact roll values without roll-grade bars or explanatory clutter');
 check(pool.includes('if(!base)return null;')&&pool.includes('twoAtAllRarities'),
   'Only eligible selected weapon and armor recipes should display tier- and rarity-correct possibilities');

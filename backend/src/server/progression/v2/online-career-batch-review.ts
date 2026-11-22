@@ -108,6 +108,9 @@ export async function previewOnlineGameCareerBatchV2(
   let total=0;
   for(const proof of proofs){
     verifyProofShape(command,proof);
+    // The combined online-game preview does not issue processing proofs.
+    // Keep this explicit narrow gate even when the broader source union grows.
+    if(proof.sourceKind==='processing_claim')error('unsupported_source_class');
     if(seenIndices.has(proof.segmentIndex)||seenSourceIds.has(proof.sourceId))
       error('duplicate_source');
     seenIndices.add(proof.segmentIndex);

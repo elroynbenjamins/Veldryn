@@ -8,6 +8,7 @@ import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {ALCHEMY_EQUIPMENT_INFUSION_ITEMS,POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
+import type {EquipmentInnatePercent} from './equipment-innate-percent';
 import {GEM_ITEMS_V1,RAW_GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
   id:string; name:string; guildOnly?:boolean; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
@@ -15,7 +16,7 @@ export interface ItemDef {
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string; knowledgeUnlockId?:string;
   value:number; salvage?:{itemId:string;quantity:number};
-  classRestriction?:ClassId; requiredLevel?:number; noviceSetId?:string; equipmentSetId?:string; rawGemFamilyId?:string; rawGemGrade?:MobileGemGradeV1;
+  classRestriction?:ClassId; requiredLevel?:number; noviceSetId?:string; equipmentSetId?:string; innatePercent?:EquipmentInnatePercent; rawGemFamilyId?:string; rawGemGrade?:MobileGemGradeV1;
   gemStat?:GemStat; gemPercent?:number; gemTier?:MobileGemGradeV1; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
   /** Canonical five-grade gem identity. Legacy shards/sigils omit these fields and remain migration-compatible. */
   gemFamilyId?:string; gemGrade?:MobileGemGradeV1;

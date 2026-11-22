@@ -150,8 +150,8 @@ for(const family of families)for(const difficulty of difficulties)
   if(hits.includes(result.enemies[0].definition.phases![1].id))phases35++;
   const triggers=result.events.filter(e=>e.type==='equipment_trait_trigger');
   traitEvents+=triggers.length;
-  const reflect=triggers.filter(e=>e.abilityId==='reflect_damage_affix'||
-   e.abilityId==='thornbound_riposte');
+  const reflect=triggers.filter(e=>e.abilityId==='V2_EQUIPMENT_TRAIT:reflect_damage_affix'||
+   e.abilityId==='V2_EQUIPMENT_TRAIT:thornbound_riposte');
   totalReflect+=reflect.length;
   // Shared 0.1% boss max HP per 5 s across defenders, not per defender.
   for(const event of reflect){
@@ -209,7 +209,7 @@ denied(()=>simulateFrozenPartyEventEquipmentV92({
   traits:[{instanceId:'QA_COPY_0',traitId:'thornbound_riposte'},
    {instanceId:'QA_COPY_0',traitId:'sword_dance'}]},
   ...original.sources.slice(1)]},true),
- 'party_equipment_snapshot_mismatch');
+ 'combat_v2_equipment_trait_trait_not_owned_selected_or_supported');
 denied(()=>simulateFrozenPartyEventEquipmentV92({
  ...original,witness:{...original.witness,mode:'legacy' as 'new-run-only'}},true),
  'invalid_frozen_new_run_witness');

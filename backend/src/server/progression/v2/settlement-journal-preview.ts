@@ -60,9 +60,10 @@ export function projectServerSettlementV2(proof:ServerSettlementProofV2):Journal
     throw new Error('journal_v2_invalid_source');
   // The idle-claim RPC caps *elapsed* at 86,400s; XP's standard effort can
   // legitimately exceed elapsed due to speed bonuses. Never confuse them.
+  const claimedElapsed=proof.claimedElapsedSeconds;
   if(proof.source==='gathering_claim' &&
-    (!Number.isSafeInteger(proof.claimedElapsedSeconds) ||
-     proof.claimedElapsedSeconds!<1 || proof.claimedElapsedSeconds!>86400))
+    (typeof claimedElapsed!=='number' || !Number.isSafeInteger(claimedElapsed) ||
+     claimedElapsed<1 || claimedElapsed>86400))
     throw new Error('journal_v2_gathering_claim_exceeds_db_cap');
   if(proof.source!=='gathering_claim' && proof.claimedElapsedSeconds!==undefined)
     throw new Error('journal_v2_unexpected_elapsed_field');

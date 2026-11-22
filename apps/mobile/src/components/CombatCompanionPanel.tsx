@@ -273,7 +273,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
         {model?.owned?<Text style={s.quartersTier}>{t('Tier {value0}/3',{value0:selectedHousingTier})}</Text>:null}
        </View>
        {ownedIds.length?<ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.quartersChoices}>
-        {ownedIds.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),art=companionArtSource(id),tier=companionHousingTier(id,housingState.account.companionHousingTiers);if(!def)return null;return <Pressable key={id} accessibilityRole="button" accessibilityState={{selected:selection===id}} accessibilityLabel={def.name+' · '+t('Housing Tier {value0}',{value0:tier})} onPress={()=>setSelection(id)} style={({pressed})=>[s.quartersChoice,selection===id&&s.quartersChoiceSelected,pressed&&s.pressed]}>
+        {ownedIds.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),art=companionArtSource(id),tier=companionHousingTier(id,housingState.account.companionHousingTiers);if(!def)return null;return <Pressable key={id} accessibilityRole="button" accessibilityState={{selected:selection===id}} accessibilityLabel={def.name+' · '+t('Housing Tier {value0}',{value0:tier})} onPress={()=>setSelection(id)} style={({pressed})=>[s.quartersChoice,{borderColor:companionRarityBorder(def.rarity,C.dark)},selection===id&&s.quartersChoiceSelected,pressed&&s.pressed]}>
          {art?<Image source={art} resizeMode="contain" style={s.quartersArt}/>:<UiIcon name="companions" size={30}/>}
          <Text numberOfLines={1} style={s.quartersName}>{def.name}</Text>
          <Text style={s.quartersLevel}>{t('Tier {value0}',{value0:tier})}</Text>
@@ -366,7 +366,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  quartersTier:{fontSize:11,fontWeight:'900',color:C.accent},
  quartersChoices:{gap:7,paddingVertical:2},
  quartersChoice:{width:95,minHeight:89,padding:7,gap:3,alignItems:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},
- quartersChoiceSelected:{borderColor:C.accent,backgroundColor:C.selection},
+ quartersChoiceSelected:{borderWidth:2,backgroundColor:C.selection},
  quartersArt:{width:44,height:44},
  quartersName:{width:'100%',fontSize:10,fontWeight:'800',color:C.text,textAlign:'center'},
  quartersLevel:{fontSize:10,fontWeight:'700',color:C.muted},

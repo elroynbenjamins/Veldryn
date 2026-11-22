@@ -56,9 +56,13 @@ function chapterLevelRange(chapter:WorldChapterGroup){
   const rows=zonesForChapter(chapter);
   return {min:Math.min(...rows.map(row=>row.minLevel)),max:Math.max(...rows.map(row=>row.maxLevel))};
 }
-function chapterTravelTarget(chapter:WorldChapterGroup,state:GameState){
+function chapterTravelTarget(chapter:WorldChapterGroup,state:GameState,goalRegionId?:string){
   const regions=chapter.regionIds.map(id=>WORLD_ZONES.find(zone=>zone.id===id)).filter((zone):zone is WorldZoneDef=>!!zone);
-  return regions.find(zone=>regionTravelAvailability(state,zone)==='available')??regions[0];
+  // A selected gathering/hunting destination takes precedence over the first
+  // available chapter region. Never send the player to the wrong sibling.
+  return regions.find(zone=>zone.id===goalRegionId&&regionTravelAvailability(state,zone)==='available')
+    ??regions.find(zone=>regionTravelAvailability(state,zone)==='available')
+    ??regions[0];
 }
 function chapterAvailability(chapter:WorldChapterGroup,state:GameState){
   const regions=chapter.regionIds.map(id=>WORLD_ZONES.find(zone=>zone.id===id)).filter((zone):zone is WorldZoneDef=>!!zone);
@@ -114,6 +118,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
           // must not show every sub-area as HERE (including level-locked ones).
           // Keep its area rows compact with their level gates and action states.
           const here=!!siblingRegion&&siblingRegion.id===current.id;
+           const isGoal=!!siblingRegion&&siblingRegion.id===goalRegionId;
           let access:boolean,subtitle:string;
           if(siblingRegion){
             const availability=regionTravelAvailability(state,siblingRegion);
@@ -143,10 +148,10 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
               </View>
             </View>
           </View>;
-          return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked]}>
+          return <View key={zone.id} style={[s.zone,!access&&s.zoneLocked,isGoal&&s.zoneGoal]}>
             <View style={s.zoneArtwork}><ZoneSceneArtwork regionId={artId} muted={!access}/></View>
             <View style={s.flex}>
-              <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}</Text>
+              <Text numberOfLines={1} style={s.zoneName}>{p(zone.name)}{isGoal?' · '+t('GOAL'):''}</Text>
               <Text style={s.zoneMeta}>{t('Levels {min}–{max}',{min:zone.minLevel,max:zone.maxLevel})}</Text>
               <Text numberOfLines={2} style={[s.zoneSubtitle,!access&&s.zoneSubtitleLocked]}>{subtitle}</Text>
             </View>
@@ -190,7 +195,7 @@ export function WorldChapterNavigator({state,currentRegionId,goalRegionId,onTrav
           const availability=chapterAvailability(chapter,state);
           const development=availability==='inDevelopment';
           const access=availability==='available';
-          const target=chapterTravelTarget(chapter,state);
+          const target=chapterTravelTarget(chapter,state,goalRegionId);
           const range=chapterLevelRange(chapter);
           const zones=zonesForChapter(chapter);
           const goal=chapter.id===goalChapter?.id;
@@ -242,7 +247,8 @@ function styles(C:ThemeColors){
 
     /* Sibling zones stay compact one-row entries. */
     zone:{flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel2},
-    zoneLocked:{opacity:.72},
+    zoneGoal:{borderColor:C.info,backgroundColor:C.infoSurface},
+     zoneLocked:{opacity:.72},
     zoneArtwork:{width:58,height:54,borderRadius:7,overflow:'hidden',backgroundColor:C.panel2},
     zoneName:{fontSize:12.5,fontWeight:'800',color:C.text},
     zoneMeta:{fontSize:10,color:C.muted,marginTop:1},

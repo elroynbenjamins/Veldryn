@@ -49747,6 +49747,14 @@ function coopEntryHandler(services) {
       }
       const liveRecruitment = await services.rpc("browse_online_coop_lfg_server_v1", { p_account_id: accountId });
       const runtime = loaded.liveEvent, activeLiveEventId = runtime?.enabled && loaded.serverNow >= runtime.startsAtMs && loaded.serverNow < runtime.endsAtMs ? runtime.eventId : void 0;
+      let frostfallDailyBudget;
+      if (activeLiveEventId?.startsWith("EVT_ANNUAL_012_")) {
+        try {
+          const budget = await services.rpc("online_event_expedition_daily_budget_server_v1", { p_account_id: accountId, p_event_id: activeLiveEventId });
+          if (Number.isInteger(budget) && budget >= 0 && budget <= 2) frostfallDailyBudget = budget;
+        } catch {
+        }
+      }
       return json({
         ...participation,
         serverNow: loaded.serverNow,
@@ -49757,7 +49765,7 @@ function coopEntryHandler(services) {
         dungeons: Object.values(EXPEDITIONS).filter(listedRegularDungeon).map((def) => ({ id: def.id, name: def.name, region: def.region, baseMarks: def.baseMarks, expectedMarksByTier: Object.fromEntries(tiers.map((tier) => [tier, baseMarks(def.baseMarks, tier)])), minLevel: regularDungeonTierRequiredLevel(def, 1), recommendedLevel: Math.max(regularDungeonTierRequiredLevel(def, 1), rebasedCombatLevelFromLegacyLevel(def.recommendedLevel)), recommendedLiveTier: !regularDungeonEntryError(def, gameState, character.level, combatPower) && prepared?.assessment.readiness.ready ? regularDungeonReadyTier(def, character.level, prepared.assessment.readiness.normalizedScore, combatPower) : void 0, recommendedPower: regularDungeonTierRequiredPower(def, 1), itemDropRates: [], bossVariants: publishedRegularDungeon(def) ? publishedDungeonBossVariants(def.id) : [], companionCounterIds: possibleDungeonCompanionCounters(def.id), syncLevel: def.recommendedLevel, available: !regularDungeonEntryError(def, gameState, character.level, combatPower, 1, "qmode"), lockedReason: regularDungeonLockedReason(def, gameState, character.level, combatPower, "qmode"), difficulties: tiers, tierMinLevels: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredLevel(def, tier)])), tierMinPower: Object.fromEntries(tiers.map((tier) => [tier, regularDungeonTierRequiredPower(def, tier)])), preBossRoomMin: 7, preBossRoomMax: 7, estimatedMinutes: { min: 8, max: 12 } })),
         eventExpeditions: eventExpeditionPreviews(loaded.serverNow).map((def) => {
           const matches = Boolean(activeLiveEventId && activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)), levelReady = character.level >= (isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)), available = matches && levelReady && prepared?.assessment.readiness.ready === true;
-          return { ...def, minLevel: isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel), tiers: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5] : [1], tierMinLevels: isFrostfallEventExpedition(def.id) ? [10, 15, 20, 25, 30] : [rebasedCombatLevelFromLegacyLevel(def.minLevel)], tierRewardMarks: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5].map((tier) => eventTierRewardMarks(def, tier)) : [def.rewardMarks], status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
+          return { ...def, ...isFrostfallEventExpedition(def.id) ? { routeNodeCount: void 0, endurance: { checkpointInterval: 7, maxNormalRooms: 42 }, ...matches && frostfallDailyBudget !== void 0 ? { rewardedClearsRemaining: frostfallDailyBudget } : {} } : {}, minLevel: isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel), tiers: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5] : [1], tierMinLevels: isFrostfallEventExpedition(def.id) ? [10, 15, 20, 25, 30] : [rebasedCombatLevelFromLegacyLevel(def.minLevel)], tierRewardMarks: isFrostfallEventExpedition(def.id) ? [1, 2, 3, 4, 5].map((tier) => eventTierRewardMarks(def, tier)) : [def.rewardMarks], status: available ? "available" : "preview", liveEventId: matches ? activeLiveEventId : void 0, lockedReason: available ? void 0 : !matches ? `Available only while ${def.eventName} is active.` : !levelReady ? `Requires level ${isFrostfallEventExpedition(def.id) ? def.minLevel : rebasedCombatLevelFromLegacyLevel(def.minLevel)}` : "Current co-op loadout is not expedition-ready." };
         }),
         loadouts: prepared ? [{ id: "current", characterId: character.id, revision: loaded.version, verifiedRevision: loaded.version, name: "Current equipment", characterName: character.name, className: CLASSES.find((row) => row.id === character.classId).name, role: prepared.assessment.readiness.role, status: prepared.assessment.readiness.ready ? "verified" : "ineligible", ready: prepared.assessment.readiness.ready, failures: prepared.assessment.readiness.failures, level: character.level, effectiveLevel: prepared.assessment.normalized.effectiveLevel, beforeStats: prepared.assessment.normalized.before, effectiveStats: prepared.assessment.normalized.snapshot, normalizationVersion: prepared.assessment.normalized.normalizationVersion, verifiedAt: new Date(loaded.serverNow).toISOString(), skills: prepared.record.abilities.map((row) => row.name), equipment: Object.values(character.equipment).filter(Boolean) }] : []
       });
@@ -52473,7 +52481,7 @@ function eventSyncLevel(definition, players) {
 }
 var displayId = (value) => value.replace(/^EVENT_[A-Z]+_BOSS_/, "").replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
 function eventBossMechanicProjection(run) {
-  if (run.graph.generatorVersion !== "event-route-v5") return void 0;
+  if (run.graph.generatorVersion !== "event-route-v5" && run.graph.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR) return void 0;
   const definition = definitionFor(run.eventId), mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run);
   const profile = eventBossMechanicProfile({ eventId: run.eventId, objectiveCount: objective.count, objectiveMax: objective.maxCount, mechanicStatus: mechanic.status });
   const baseBoss = buildExpeditionEncounter({ encounterId: definition.bossEncounterId, enemyLevel: run.syncLevel }).find((enemy4) => enemy4.boss);
@@ -52659,7 +52667,7 @@ var EventExpeditionService = class {
     if (input.players.length !== 4 || input.players.some((player2) => player2.level < requiredLevel)) throw new Error("event_level_requirement");
     validateUniqueDamageClasses(input.players.map((player2) => ({ role: player2.role, classId: player2.classId ?? "" })));
     if (!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId) || !/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId)) throw new Error("invalid_event_identity");
-    const syncLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : eventSyncLevel(definition, input.players), run = { id: input.runId, requestId: input.requestId, accountIds: input.members.map((member) => member.accountId), eventId: input.eventId, tier, graph: graph(input.eventId, input.runId, this.serverSecret), players: input.players, persistentState: initialPersistentRunState(input.players), mechanic: { id: definition.mechanic.id, value: definition.mechanic.startValue }, objective: { id: definition.objective.id, count: definition.objective.startCount }, ...syncLevel === void 0 ? {} : { syncLevel }, currentNodeId: "entry", phase: "awaiting_choice", settlement: "pending" };
+    const syncLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : eventSyncLevel(definition, input.players), run = { id: input.runId, requestId: input.requestId, accountIds: input.members.map((member) => member.accountId), eventId: input.eventId, tier, graph: graph(input.eventId, input.runId, this.serverSecret), players: input.players, persistentState: initialPersistentRunState(input.players), mechanic: { id: definition.mechanic.id, value: definition.mechanic.startValue }, objective: { id: definition.objective.id, count: definition.objective.startCount }, ...syncLevel === void 0 ? {} : { syncLevel }, currentNodeId: "entry", phase: "awaiting_choice", settlement: "pending", ...input.practiceOnly ? { practiceOnly: true } : {} };
     this.repository.save(run);
     return structuredClone(run);
   }
@@ -52704,7 +52712,8 @@ var EventExpeditionService = class {
       run.phase = "completed";
       const definition = definitionFor(run.eventId), mechanic = eventMechanicProjection(run), objective = eventObjectiveProjection(run);
       const tierBase = eventTierRewardMarks(definition, run.tier ?? 1), depthMultiplier = isFrostfallEndurance ? frostfallRewardMultiplierForBoss(run.graph, baseSelected) : 1;
-      run.rewardMarks = Math.round(tierBase * depthMultiplier) + mechanic.rewardBonus + objective.rewardBonus;
+      run.rewardMarks = run.practiceOnly ? 0 : Math.round(tierBase * depthMultiplier) + mechanic.rewardBonus + objective.rewardBonus;
+      if (run.practiceOnly) run.settlement = "claimed";
     }
     this.repository.save(run);
     this.commandReceipts.set(receiptKey, { hash, run: structuredClone(run) });
@@ -52776,7 +52785,7 @@ function projectOnlineEventRun(run, version, liveEventId, serverNow = Date.now()
     bossRecap,
     lastCombat: projectCombatReplay(run.lastResolution),
     lastRoomOutcome: publicCoopRoomOutcome(run.lastResolution?.nodeId, run.lastResolution?.result.summary),
-    settlement: { status: run.settlement, rewardMarks: run.rewardMarks ?? promotedEventCurrency(liveEventId, eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus, serverNow) }
+    settlement: { status: run.settlement, rewardMarks: run.rewardMarks ?? (run.practiceOnly ? 0 : promotedEventCurrency(liveEventId, eventTierRewardMarks(definition, run.tier ?? 1) + mechanic.rewardBonus + objective.rewardBonus, serverNow)) }
   };
 }
 var OnlineEventExpeditionRuntime = class {
@@ -52798,6 +52807,9 @@ var OnlineEventExpeditionRuntime = class {
     const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
     const runtime = game.liveEvent;
     if (!runtime?.enabled || game.serverNow < runtime.startsAtMs || game.serverNow >= runtime.endsAtMs || !runtime.eventId.startsWith(`${definition.liveEventSeriesId}_`)) throw new GameplayError("event_not_live");
+    const dailyBudget = isFrostfallEventExpedition(definition.id) ? await this.services.rpc("online_event_expedition_daily_budget_server_v1", { p_account_id: accountId, p_event_id: runtime.eventId }) : 2;
+    if (!Number.isInteger(dailyBudget) || dailyBudget < 0 || dailyBudget > 2) throw new GameplayError("event_reward_budget_unavailable", 503);
+    const practiceOnly = isFrostfallEventExpedition(definition.id) && dailyBudget === 0;
     if (!game.state?.character) throw new GameplayError("character_required");
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned", 403);
@@ -52824,7 +52836,7 @@ var OnlineEventExpeditionRuntime = class {
     const selectedSources = selected2.map((echo) => raw2.find((item) => item.profileId === echo.profileId)).filter((value) => Boolean(value));
     const scaling = definition.levelScaling, averageLobbyLevel = isFrostfallEventExpedition(definition.id) ? requiredLevel : scaling ? Math.max(scaling.minLevel, Math.min(scaling.maxLevel, Math.round([record.combatScalingLevel ?? record.characterLevel, ...selectedSources.map((echo) => echo.record.combatScalingLevel ?? echo.record.characterLevel)].reduce((sum, level) => sum + level, 0) / (1 + selectedSources.length)))) : definition.minLevel;
     const controller = freeze(record, averageLobbyLevel), snapshots = [controller, ...selectedSources.map((echo) => freeze(echo.record, averageLobbyLevel))], runId = this.services.randomId(), repository = new MemoryEventRunRepository(), domain = new EventExpeditionService(repository, seed);
-    const run = domain.start({ requestId: request.requestId, runId, accountId, eventId: definition.id, tier: selectedTier, activeLiveEventId: runtime.eventId, members: snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })), players: snapshots.map(player), nowMs: game.serverNow });
+    const run = domain.start({ requestId: request.requestId, runId, accountId, eventId: definition.id, tier: selectedTier, practiceOnly, activeLiveEventId: runtime.eventId, members: snapshots.map((snapshot) => ({ accountId: snapshot.accountId, characterId: snapshot.characterId, role: snapshot.readiness.role })), players: snapshots.map(player), nowMs: game.serverNow });
     const members = snapshots.map((snapshot, index) => {
       if (index === 0) return { snapshot, sourceHash: onlineCoopLoadoutHash(record), profileId: null };
       const chosen = selected2[index - 1], source = selectedSources[index - 1];
@@ -52851,7 +52863,7 @@ var OnlineEventExpeditionRuntime = class {
     repository.save(before);
     const domain = new EventExpeditionService(repository, loaded.privateState.seed);
     const run = domain.choose({ runId, accountId, optionNodeId: request.optionId, requestId: request.requestId });
-    if (run.phase === "completed" && before.phase !== "completed" && run.rewardMarks !== void 0) run.rewardMarks = promotedEventCurrency(loaded.privateState.liveEventId, run.rewardMarks, loaded.serverNow);
+    if (run.phase === "completed" && before.phase !== "completed" && !run.practiceOnly && run.rewardMarks !== void 0) run.rewardMarks = promotedEventCurrency(loaded.privateState.liveEventId, run.rewardMarks, loaded.serverNow);
     const result = run.lastResolution;
     if (!result) throw new GameplayError("event_resolution_missing");
     const projection3 = projectOnlineEventRun(run, loaded.stateVersion + 1, loaded.privateState.liveEventId, loaded.serverNow);

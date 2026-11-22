@@ -99,10 +99,17 @@ ok(settings.includes('if(!full)void badges.setProfileBadges')&&settings.includes
 ok(settings.includes('BESIDE YOUR NAME')&&settings.includes('ON YOUR PROFILE'),'both previews are shown, so the two choices are never confused');
 ok(settings.includes('<PlayerBadgeShowcase identity={badges.identity}'),'the profile preview renders the shelf, not the name row');
 
-const art=read('src/components/PlayerBadges.tsx');
+// Every destination (store, chat, guilds, parties, profiles and rankings) shares
+// the same asset mapping, so no membership can fall back to a text chip.
+const art=read('src/components/player-badge-artwork.ts');
 for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS])
- ok(art.includes(`player-badges-v1/${id}.webp`),'badge artwork bundled '+id);
-const badgeArt=read('src/components/PlayerBadges.tsx');
+ ok(art.includes(`player-badges-v1/${id}.webp`),'approved badge artwork bundled '+id);
+ok(art.includes('store-membership-badges-v1/vip.png')&&art.includes('store-membership-badges-v1/vip-plus.png'),'VIP badges use the same approved icons as Store');
+const badgeArt=read('src/components/PlayerBadges.tsx'),storeArt=read('src/components/CommerceProductBadge.tsx');
+ok(badgeArt.includes('source={PLAYER_BADGE_ARTWORK[id]}')&&badgeArt.includes("from './player-badge-artwork'"),'chat and profile badges render shared artwork rather than generated text marks');
+ok(storeArt.includes('vip:PLAYER_BADGE_ARTWORK.vip')&&storeArt.includes('vip_plus:PLAYER_BADGE_ARTWORK.vip_plus')&&storeArt.includes('supporter_monthly:PLAYER_BADGE_ARTWORK.supporter'),'all commerce membership icons come from the same catalogue');
+ok(!badgeArt.includes('vipMark')&&!badgeArt.includes("const vip=id==="),'old text-only VIP badge fallback is removed');
+ok(badgeArt.includes('export function PlayerBadges({identity,size=22'),'worn badges remain legible at compact 22dp');
 ok(badgeArt.includes('export function PlayerBadgeShowcase')&&badgeArt.includes('profileBadgeIds(identity,useBadgeClock(identity))'),'the profile shelf is its own component over the profile projection');
 for(const [path,marker] of [['components/PublicProfileScene.tsx','profile.playerBadges'],['components/profile/ProfileStage.tsx','badges.identity'],['components/profile/ProfileShowcasePanel.tsx','badges.identity']] as const)
  ok(read('src/'+path).includes('<PlayerBadgeShowcase identity={'+marker),'the profile badge shelf is shown on '+path);

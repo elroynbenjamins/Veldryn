@@ -32,12 +32,13 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const rosterIds=[state.character?.id,...(state.otherCharacters??[]).map(row=>row.character.id)].filter((id):id is string=>!!id).sort().join('|');
  const [creationIds,setCreationIds]=useState<string[]>([]);
  useEffect(()=>{
-  if(!supabase||!serverGameplayEnabled)return;
+  const client=supabase;
+  if(!client||!serverGameplayEnabled)return;
   let cancelled=false;
   const load=async()=>{
-   const {data:{user}}=await supabase.auth.getUser();
+   const {data:{user}}=await client.auth.getUser();
    if(!user){if(!cancelled)setCreationIds([]);return;}
-   const {data,error}=await supabase.from('characters').select('id,created_at')
+   const {data,error}=await client.from('characters').select('id,created_at')
     .eq('account_id',user.id).order('created_at',{ascending:true}).order('id',{ascending:true});
    if(!cancelled&&!error&&data)setCreationIds(data.map(row=>row.id));
   };

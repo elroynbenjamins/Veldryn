@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import {displayPercent,displayStat} from '../core/stat-display';
 import {gearEnhancement,gemSocketState} from '../core/equipment-enhancement';
@@ -35,12 +35,12 @@ type Props={
 
 const percent=displayPercent;
 function signed(value:number){const n=displayStat(value);return n===0?'—':n>0?'+'+n:String(n);}
-function bonusPercent(bps:number){return bps===0?'—':'+'+(bps/100).toFixed(1)+'%';}
+function bonusPercent(bps:number){return bps===0?'—':(bps>0?'+':'')+(bps/100).toFixed(1)+'%';}
 function bonusDifference(bps:number){return bps===0?'—':(bps>0?'+':'')+(bps/100).toFixed(1)+'%';}
 function statColor(C:ThemeColors,delta:number){return delta>0?C.good:delta<0?C.bad:C.muted;}
 
 /** Inventory's single, authoritative compare-before-equipping surface.
- * Only the primary equip action stays pinned; optional actions expand on demand. */
+ * Every loadout stat and roll is visible; storage and disposal stay separated at the footer. */
 export function EquipmentPreview({state,itemId,instanceId,source='inventory',onClose,onEquip,onInspect,favorite,locked,onToggleFavorite,onToggleLock,onSell,onSalvage,canSell=false,canSalvage=false,sellBlockReason,salvageBlockReason,onStoreInGear,canStoreInGear=false,onMoveToBank,onMoveToInventory}:Props){
  const {gt,gl,language}=useGameplayText();
  const gearText=(source:string)=>equipmentPouchText(state.settings.language,source);
@@ -161,7 +161,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     </View>
     {stats.slice(0,3).every(row=>displayStat(row.after-row.before)===0)?<Text style={s.impactText}>{gl('No visible Attack, Defense or Health change.')}</Text>:null}
     {oldSockets?.effectGemId!==sockets.effectGemId?<Text style={s.impactText}>{gl('Effect gem')}: {oldSockets?.effectGemId?itemDef(oldSockets.effectGemId).name:gl('Empty')} → {sockets.effectGemId?itemDef(sockets.effectGemId).name:gl('Empty')}</Text>:null}
-    {bonusChangeCount>0?<Text style={s.impactText}>{gl('BONUS STATS')}: {bonusChangeCount} · {gl('Full stats')}</Text>:null}
+    {bonusChangeCount>0?<Text style={s.impactText}>{gl('BONUS STATS')}: {bonusChangeCount}</Text>:null}
    </View>
 
    {sets.some(row=>row.after!==row.before)?<View style={s.setAlert}>

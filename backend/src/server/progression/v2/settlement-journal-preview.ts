@@ -24,6 +24,8 @@ export interface ServerSettlementProofV2 {
   readonly completed: boolean;
   readonly professionId?: ProfessionIdV2;
   readonly baseEffortSeconds: number;
+  /** Staging idle claim elapsed time; separate from buff-adjusted base effort. */
+  readonly claimedElapsedSeconds?: number;
   readonly difficultyBasisPoints: 2500|5000|10000|12500;
 }
 
@@ -56,10 +58,14 @@ export function projectServerSettlementV2(proof:ServerSettlementProofV2):Journal
     throw new Error('journal_v2_unverified_source');
   if(!['combat_reward','gathering_claim','craft_claim','processing_claim'].includes(proof.source))
     throw new Error('journal_v2_invalid_source');
-  // Staging public.claim_idle_progress_atomic currently caps one claim at 86,400s.
-  // A 30-hour reserve must be split into distinct server-verified claims.
-  if(proof.source==='gathering_claim' && proof.baseEffortSeconds>86400)
+  // The idle-claim RPC caps *elapsed* at 86,400s; XP's standard effort can
+  // legitimately exceed elapsed due to speed bonuses. Never confuse them.
+  if(proof.source==='gathering_claim' &&
+    (!Number.isSafeInteger(proof.claimedElapsedSeconds) ||
+     proof.claimedElapsedSeconds!<1 || proof.claimedElapsedSeconds!>86400))
     throw new Error('journal_v2_gathering_claim_exceeds_db_cap');
+  if(proof.source!=='gathering_claim' && proof.claimedElapsedSeconds!==undefined)
+    throw new Error('journal_v2_unexpected_elapsed_field');
   const combat=proof.source==='combat_reward';
   const gathering=proof.source==='gathering_claim';
   if(combat ? proof.professionId!==undefined :
@@ -77,7 +83,7 @@ export function projectServerSettlementV2(proof:ServerSettlementProofV2):Journal
   });
   const fingerprint=JSON.stringify([
     proof.source,proof.sourceId,proof.ownerCharacterId,proof.professionId??null,
-    proof.baseEffortSeconds,proof.difficultyBasisPoints,
+    proof.baseEffortSeconds,proof.claimedElapsedSeconds??null,proof.difficultyBasisPoints,
   ]);
   return {canonicalKey,fingerprint,characterId:proof.receivingCharacterId,award};
 }

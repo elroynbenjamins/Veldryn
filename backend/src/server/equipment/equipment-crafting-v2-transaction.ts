@@ -2,6 +2,7 @@ import {randomUUID,randomInt} from 'node:crypto';
 import {isValidEquipmentV2ServerProjection} from './equipment-crafting-v2-server-projection';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {v2ServerRecipeAndPiece,V2_SERVER_MANIFEST_VERSION,type V2ServerPiece,type V2ServerProfession} from './equipment-crafting-v2-manifest';
+import {mayWorkProfessionTierV2} from '../combat/v2/profession-progression';
 import {draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION,type V2DraftRollOutcome} from './equipment-crafting-v2-rolls';
 import {v2ServerCreateExactTemplate,type V2ExactEquipmentTemplate} from './equipment-crafting-v2-instances';
 
@@ -135,8 +136,13 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const {recipe,piece}=match;
  const owner=state.characters[ctx.characterId];
  if(piece.tier!==recipe.tier||piece.id!==recipe.pieceId)fail('inconsistent_canonical_manifest');
- if(owner.level<recipe.characterLevel
-   ||owner.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
+ // Crafting licenses depend exclusively on the trained profession. The
+ // authored characterLevel is old wearable guidance, NOT a Forge permission.
+ // Blueprint, Gold, materials, queue and custody checks remain mandatory.
+ if(!mayWorkProfessionTierV2({
+   combatLevel:owner.level,professionLevels:owner.professionLevels,primaryFocus:null,
+ },recipe.profession,recipe.tier)||
+   owner.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
  if(!safeCount(recipe.gold)||recipe.gold===0||!safeCount(recipe.seconds)||recipe.seconds===0||!safeCount(recipe.xp))fail('invalid_recipe_economy');
  if(owner.gold<recipe.gold)fail('insufficient_gold');
  const unclaimed=state.jobs.filter(j=>j.status==='queued');

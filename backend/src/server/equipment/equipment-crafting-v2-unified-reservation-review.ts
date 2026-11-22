@@ -63,7 +63,8 @@ const obj=(v:unknown):v is Record<string,unknown>=>{
  const p=Object.getPrototypeOf(v);return p===Object.prototype||p===null;
 };
 function validateBalances(input:unknown){
- if(!obj(input))denied('invalid_material_storage');
+ // Throw directly so strict TypeScript narrows unknown to a plain record.
+ if(!obj(input))throw new Eq2ReviewReserveError('invalid_material_storage');
  for(const [id,quantity] of Object.entries(input))
   if(!key(id)||!count(quantity))denied('invalid_material_storage');
 }

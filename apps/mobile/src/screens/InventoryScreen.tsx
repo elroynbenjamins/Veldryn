@@ -38,7 +38,7 @@ import {displayStat} from '../core/stat-display';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
-import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
+import {validateGatheringToolRoll} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
@@ -387,19 +387,34 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {selectedCopy?<EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>:null}
   </View>:undefined;
   const inspectActions=inspected?<View style={s.inspectActions}>
-    {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.quantityPanel}>
-      <Text style={s.quantityTitle}>ROLLED GATHERING TOOLS · {exactToolCopies.length}</Text>
-      <Text style={s.sub}>Base tier bonus uses Uncommon · Quality 50. A roll is always one stat: Speed +2–8% or rare finds +2–5%.</Text>
-      {exactToolCopies.map(copy=><View key={copy.id} style={[s.row,{flexWrap:'wrap',alignItems:'center',paddingVertical:5}]}>
-        <View style={[s.flex,{minWidth:138,gap:3}]}>
-          <Text style={[s.sub,{color:rarityMeta(copy.rarity).color}]}>{rarityMeta(copy.rarity).label} · Q{copy.quality} · {gatheringToolBonusLabel(copy)}</Text>
-          {inspectedToolDef?<Text style={s.sub}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).basePercent),adjusted:gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).adjustedBasePercent)})}</Text>:null}
-          {inspectedToolDef?<Text style={s.sub}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(gatheringToolContribution(inspectedToolDef,copy).rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).rarityAdjustmentPercent),quality:(gatheringToolContribution(inspectedToolDef,copy).qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(gatheringToolContribution(inspectedToolDef,copy).qualityAdjustmentPercent)})}</Text>:null}
-        </View>
-        <GameButton compact title={carried?'Equip copy':'Withdraw'} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/>
-        {carried?<GameButton compact title="To Bank" tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/>:null}
-        <GameButton compact title="Sell copy" tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/>
-      </View>)}
+    {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.toolCopies}>
+      {exactToolCopies.length>1?<Text style={s.quantityTitle}>{gt('GATHERING TOOLS')} · {exactToolCopies.length}</Text>:null}
+      {exactToolCopies.map((copy,index)=>{
+        const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
+        return <View key={copy.id} style={s.toolCopyCard}>
+          {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:null}
+          <View style={s.toolStatRow}>
+            <View style={s.toolStatDescription}>
+              <Text style={s.toolStatEyebrow}>{gt('GATHERING SPEED')}</Text>
+              <Text style={s.toolStatLabel}>{gt('Tier + Rarity + Quality')}</Text>
+            </View>
+            <Text style={s.toolSpeedValue}>{contribution?'+'+gatheringToolPercent(contribution.adjustedBasePercent)+'%':'—'}</Text>
+          </View>
+          <View style={s.toolStatDivider}/>
+          <View style={s.toolStatRow}>
+            <View style={s.toolStatDescription}>
+              <Text style={s.toolStatEyebrow}>{gt('BONUS STAT ROLL')}</Text>
+              <Text style={s.toolStatLabel}>{copy.bonus.stat==='speed'?gt('Gathering Speed'):gt('Gathering Rarity Chance')}</Text>
+            </View>
+            <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
+          </View>
+          <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
+            <View style={s.toolActionButton}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
+            {carried?<View style={s.toolActionButton}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
+            <View style={s.toolActionButton}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
+          </View>
+        </View>;
+      })}
     </View>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
@@ -719,6 +734,19 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   itemAuto:{position:'absolute',left:3,bottom:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,overflow:'hidden',fontSize:6,lineHeight:8,color:C.panel,fontWeight:'900',letterSpacing:.35,backgroundColor:C.good},
   itemSelected:{position:'absolute',left:3,bottom:3,width:17,height:17,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},itemSelectedOn:{borderColor:C.selectionLine,backgroundColor:C.selection},itemSelectedText:{fontSize:10,color:C.text,fontWeight:'900'},
   inspectActions:{gap:spacing.xs},
+  toolCopies:{gap:8},
+  toolCopyCard:{padding:12,gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},
+  toolCopyCaption:{...typography.caption,fontWeight:'800'},
+  toolStatRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
+  toolStatDescription:{flex:1,minWidth:0,gap:3},
+  toolStatEyebrow:{fontSize:10,lineHeight:14,letterSpacing:.6,fontWeight:'900',color:C.muted},
+  toolStatLabel:{...typography.bodyStrong,color:C.text,flexShrink:1},
+  toolSpeedValue:{fontSize:19,lineHeight:24,fontWeight:'900',color:C.good},
+  toolBonusValue:{fontSize:19,lineHeight:24,fontWeight:'900',color:C.info},
+  toolStatDivider:{height:1,backgroundColor:C.line},
+  toolActionRow:{flexDirection:'row',gap:6,alignItems:'stretch',paddingTop:2},
+  toolActionRowStacked:{flexDirection:'column'},
+  toolActionButton:{flex:1,minWidth:0},
   inspectQuickActions:{gap:8},
   inspectAmountRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:7,flexWrap:'wrap'},
   inspectAmountLabel:{...typography.caption,color:C.muted,flexShrink:1},

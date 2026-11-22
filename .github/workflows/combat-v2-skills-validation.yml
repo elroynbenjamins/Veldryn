@@ -130,6 +130,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+      - name: Measure six equal-stat real-engine curse and interrupt counterplay pairs
+        run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
       - name: Verify V2 cleanse parity and six authored boss counterplay routes
         run: node backend/dist/server/combat/v2/__tests__/counterplay-cleanse-boss.js
       - name: Verify signed Equipment V2 trait hooks coexist with class skills and counterplay

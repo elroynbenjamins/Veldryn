@@ -66,6 +66,35 @@ async function test(){
   activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
   reward:{xp:100,kills:1,elapsedSeconds:30},
  }]}),/unverified_combat_effort/,'no active fight window');
+ await reject(()=>projectPendingCombatCareerProofsV2({...data,segments:[{
+  activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
+  reward:{xp:100,kills:1,elapsedSeconds:30,
+    combatEffort:{startsAtMs:30000,endsAtMs:45000}},
+ }]}),/invalid_combat_duration/,'fight window cannot finish after claim elapsed boundary');
+ await reject(()=>projectPendingCombatCareerProofsV2({...data,segments:[{
+  activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
+  reward:{xp:100,kills:1,elapsedSeconds:30,
+    combatEffort:{startsAtMs:1000,endsAtMs:25000}},
+ },{
+  activity:{kind:'combat',targetId:'SAND_WYRM',lastClaimAtMs:20000},
+  reward:{xp:100,kills:1,elapsedSeconds:30,
+    combatEffort:{startsAtMs:20000,endsAtMs:40000}},
+ }]}),/overlapping_effort/,'two fight reward segments cannot credit the same seconds');
+ const adjacent=await projectPendingCombatCareerProofsV2({...data,segments:[{
+  activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
+  reward:{xp:100,kills:1,elapsedSeconds:30,
+    combatEffort:{startsAtMs:1000,endsAtMs:21000}},
+ },{
+  activity:{kind:'combat',targetId:'SAND_WYRM',lastClaimAtMs:21000},
+  reward:{xp:100,kills:1,elapsedSeconds:30,
+    combatEffort:{startsAtMs:21000,endsAtMs:40000}},
+ }]});
+ eq(adjacent.length,2,'adjacent non-overlapping fights still award both sources');
+ await reject(()=>projectPendingCombatCareerProofsV2({...data,segments:[{
+  activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:Number.MAX_SAFE_INTEGER-100},
+  reward:{xp:100,kills:1,elapsedSeconds:60,
+    combatEffort:{startsAtMs:Number.MAX_SAFE_INTEGER-90,endsAtMs:Number.MAX_SAFE_INTEGER-80}},
+ }]}),/invalid_combat_duration/,'claim-end timestamp overflow fails closed');
  eq((await projectPendingCombatCareerProofsV2({...data,segments:[{
   activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
   reward:{xp:0,kills:1,elapsedSeconds:30},
@@ -74,6 +103,6 @@ async function test(){
   activity:{kind:'combat',targetId:'MOSS_RAT',lastClaimAtMs:1000},
   reward:{xp:15,kills:0,elapsedSeconds:30},
  }]})).length,0,'no kills no XP credit');
- console.log('PASS: combat career proofs validate active-fight effort, kills, enemy level, and owner; no QA/boss/zero credit');
+ console.log('PASS: combat career proofs validate claim-bounded, non-overlapping active-fight effort, kills, enemy level, and owner; no QA/boss/zero credit');
 }
 void test().catch(e=>{throw e;});

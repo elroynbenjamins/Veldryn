@@ -305,7 +305,10 @@ export function previewProfessionCraftMaterialCustodyV2(
      fail('invalid_owned_material_identity');
    lots.set(lot.lotId,lot);
    const proof=originalProofs.get(lot.provenanceId);
-   if(!proof||proof.itemId!==lot.itemId||
+   // Explicit return ensures strict TS control flow knows that a missing
+   // proof can never proceed to transfer/deposit dereferences.
+   if(!proof)return fail('missing_or_mismatched_source_receipt');
+   if(proof.itemId!==lot.itemId||
       proof.originalLotId!==lot.lotId||
       consumedProofIds.has(lot.provenanceId)||
       proof.originalGrantedQuantity<lot.availableQuantity)

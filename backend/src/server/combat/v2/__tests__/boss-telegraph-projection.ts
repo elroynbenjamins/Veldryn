@@ -58,7 +58,9 @@ assert.equal(cancelled.casts.length,1);
 assert.equal(cancelled.casts[0].abilityName,'Living Bark');
 assert.equal(cancelled.casts[0].state,'interrupted');
 assert.equal(cancelled.casts[0].interruptedByActorId,'QA_PLAYER');
-assert.ok(cancelled.casts[0].endedAtMs!<cancelled.casts[0].expectedCompleteAtMs);
+assert.ok(cancelled.casts[0].endedAtMs!==null&&
+ cancelled.casts[0].endedAtMs<cancelled.casts[0].expectedCompleteAtMs,
+ 'interruption is recorded strictly before the authored cast deadline');
 assert.ok(!rootInterrupted.events.some(e=>e.type==='shield'&&
  e.abilityId==='ROOT_V2_LIVING_BARK'));
 const bellCleansed=combat('cleanse','BOSS_EXP_BELL');

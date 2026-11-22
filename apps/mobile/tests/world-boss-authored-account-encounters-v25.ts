@@ -331,6 +331,50 @@ async function main(){
  reject(()=>simulateWorldBossAuthoredAccountEncounterV25({
   ...eqArgs,equipmentV87:{...equipmentV87,rosterDigest:'f'.repeat(64)},
  }), 'untrusted_scope');
+ // 45 isolated V87 matrix replays: each regional boss, each phase and
+ // every 1–5 owned-character roster size. These use synthetic pinned
+ // receipts solely to test effect math, not reward or inventory custody.
+ let eqMatrix=0;
+ for(const eqBossId of bosses)for(const eqPhaseId of phases)
+  for(let size=1;size<=5;size++){
+   const subset=freezeWorldBossAccountRosterV22({
+    accountId:ACCOUNT,atUtcMs:NOW,verified:owned.slice(0,size),
+   });
+   const subsetSources=eqSources.slice(0,size);
+   const subsetProof={
+    ...equipmentV87,bossId:eqBossId,rosterDigest:subset.rosterDigest,
+    sources:subsetSources,
+    verifyPersisted:(context:{
+     eventId:string;accountId:string;rosterDigest:string;
+     actorIds:readonly string[];serverBossMaxHp:number;
+    },rows:readonly {actorId:string}[])=>
+     context.eventId===EVENT&&context.accountId===ACCOUNT&&
+     context.rosterDigest===subset.rosterDigest&&
+     context.serverBossMaxHp===1000000&&
+     context.actorIds.length===size&&rows.length===size&&
+     context.actorIds.every(id=>rows.some(row=>row.actorId===id)),
+   };
+   const profile=makeWorldBossEncounterProfileV13({
+    eventId:EVENT,boss:eqBossId,phase:eqPhaseId,gearBand:2,
+    configVersion:'wb87-matrix-synthetic',
+    attack:35,defense:100,guardMax:500,
+   });
+   const encounter=simulateWorldBossAuthoredAccountEncounterV25({
+    eventId:EVENT,requestId:'WB87_MATRIX_'+eqBossId+'_'+eqPhaseId+'_'+size,
+    roster:subset,order:'steady_assault',boss:eqBossId,phase:eqPhaseId,
+    serverSeed:'WB87_MATRIX_SERVER_NONCE_123456789',
+    encounter:profile,warCamp:lowCamp,equipmentV87:subsetProof,
+   });
+   assert.equal(encounter.equipmentV87Enabled,true);
+   assert.equal(encounter.characterLedger.length,size);
+   assert.equal(encounter.rewarded,false);
+   assert.ok(Number.isFinite(encounter.rawBossHpDamage));
+   assert.ok(encounter.proposedWorldHpDamage<=encounter.rawBossHpDamage+.01);
+   assert.ok(Math.abs(encounter.characterLedger.reduce((n,r)=>n+r.bossHpDamage,0)-
+    encounter.rawBossHpDamage)<=.05);
+   eqMatrix++;
+  }
+ assert.equal(eqMatrix,45);
  let authoredStatuses=0,authoredSpikes=0;
  for(const boss of bosses)for(const phase of phases){
   const lowProfile=makeWorldBossEncounterProfileV13({

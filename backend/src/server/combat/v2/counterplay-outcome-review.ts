@@ -108,8 +108,8 @@ export function reviewEquipmentMatchedCounterplayV2(input:{
  ensure(a.definition.classId===b.definition.classId&&
   a.definition.role===b.definition.role&&
   a.definition.level===b.definition.level&&
-  a.definition.combatV2.resource===b.definition.combatV2.resource&&
-  a.definition.combatV2.specializationId===b.definition.combatV2.specializationId,
+  a.definition.combatV2?.resource===b.definition.combatV2?.resource&&
+  a.definition.combatV2?.specializationId===b.definition.combatV2?.specializationId,
   'class_specialization_changed');
  const identicalStats=(x:CombatStats,y:CombatStats)=>same(x,y);
  ensure(identicalStats(a.definition.stats,b.definition.stats)&&

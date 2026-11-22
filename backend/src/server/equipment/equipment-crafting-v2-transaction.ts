@@ -135,8 +135,12 @@ function applyStart(state:V2DraftSnapshot,command:Extract<V2DraftCommand,{kind:'
  const {recipe,piece}=match;
  const owner=state.characters[ctx.characterId];
  if(piece.tier!==recipe.tier||piece.id!==recipe.pieceId)fail('inconsistent_canonical_manifest');
- if(owner.level<recipe.characterLevel
-   ||owner.professionLevels[recipe.profession]<recipe.professionLevel)fail('craft_requirement_locked');
+ // Crafting 2.0 requires only the recipe's own profession level. The
+ // legacy characterLevel field is a candidate WEAR gate enforced at equip,
+ // never a combat gate for an independent Smithing/Tailoring specialist.
+ // Other professions provide tradeable materials, not hidden skill gates.
+ if(owner.professionLevels[recipe.profession]<recipe.professionLevel)
+  fail('craft_requirement_locked');
  if(!safeCount(recipe.gold)||recipe.gold===0||!safeCount(recipe.seconds)||recipe.seconds===0||!safeCount(recipe.xp))fail('invalid_recipe_economy');
  if(owner.gold<recipe.gold)fail('insufficient_gold');
  const unclaimed=state.jobs.filter(j=>j.status==='queued');

@@ -36,6 +36,25 @@ eq(credit.award.overallCharacterXp,120,'recorded work XP awarded at rate');
 eq(credit.award.professionId,'mining','correct single skill');
 eq(credit.award.professionXp,240,'profession XP projection');
 eq(credit.award.combatXp,0,'no combat XP from gathering');
+const combat=recoverCommittedCareerProofV2({...proof,source_kind:'combat_reward',
+ profession_id:null,claimed_elapsed_seconds:0,base_effort_seconds:120},link);
+eq(combat.source,'combat_reward','combat source');
+eq(combat.professionId,undefined,'combat does not grant profession XP');
+eq(combat.claimedElapsedSeconds,undefined,'combat does not masquerade as idle claim');
+eq(projectServerSettlementV2(combat).award.overallCharacterXp,60,'combat independent Character XP');
+const craft=recoverCommittedCareerProofV2({...proof,source_kind:'craft_claim',
+ profession_id:'smithing',claimed_elapsed_seconds:0,base_effort_seconds:300},link);
+eq(craft.source,'craft_claim','completed instant craft');
+eq(craft.professionId,'smithing','crafting profession');
+eq(projectServerSettlementV2(craft).award.overallCharacterXp,150,'crafting independent Character XP');
+rejects(()=>recoverCommittedCareerProofV2({...proof,source_kind:'combat_reward',profession_id:'mining',claimed_elapsed_seconds:0},link),
+ /invalid_source/,'combat cannot grant mining XP');
+rejects(()=>recoverCommittedCareerProofV2({...proof,source_kind:'craft_claim',profession_id:'mining',claimed_elapsed_seconds:0},link),
+ /invalid_source/,'mining cannot be a craft reward');
+rejects(()=>recoverCommittedCareerProofV2({...proof,source_kind:'craft_claim',profession_id:'smithing',claimed_elapsed_seconds:5},link),
+ /invalid_source/,'instant craft does not have idle time');
+rejects(()=>recoverCommittedCareerProofV2({...proof,source_kind:'craft_claim',profession_id:'smithing',claimed_elapsed_seconds:0,base_effort_seconds:10801},link),
+ /invalid_source/,'bulk craft payout is capped');
 const retry=recoverCommittedCareerProofV2(proof,link);
 eq(projectServerSettlementV2(retry).fingerprint,credit.fingerprint,'retry fingerprint consistent');
 

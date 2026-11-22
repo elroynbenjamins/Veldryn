@@ -21,11 +21,11 @@ The new, unmounted `equipment-frozen-forge-bridge.ts` instead consumes exactly t
 
 `backend/src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts` generates deterministic, test-only actual Forge outcomes from `draftEquipmentV2Outcome` and freezes them using `v2ServerCreateExactTemplate`, rather than constructing ad hoc attack/defense/HP bonuses.
 
-- **18 T1** class/spec cases, **18 T2**, **18 T3**, and **12 T4 non-Tank** — **66** total, using real pinned `EQ2_` pieces with test-only provenance callbacks.
+- **18 T1**, **18 T2**, **18 T3**, and **18 T4** class/spec cases — **72** total, using real pinned `EQ2_` pieces and test-only provenance callbacks. T4 Tank uses the actual Forge expansion ring `EQ2_EXP_T4_TANK_RING` with an original MaxHP roll that is legal in Combat's ring slot.
 - A private four-player Ironwarden/Wayfinder/Hexweaver/Stonecaller fight with four independent EQ2 minted copies and original rolled affixes.
 - Stage-by-stage proof that `afterFrozenBase = afterSkills + exactItem.baseStats` for attack/defense/HP without rarity/quality double scaling; replay determinism and no dropped compatible affixes.
 - Tampered frozen stats, wrong owner/Bank location, duplicate item, cross-character equipped copy, nonexistent genuine DB verification, fake activation while gate off, prior-run HP injection, set effects, unsupported stat and off-slot roll all fail.
-- T4 Tank standalone Forge items have no complete legal mapped affix route in the current draft; they remain explicitly **held**, rather than falsely declared compatible. T4 Tank requires actual Forge/Combat affix-slot reconciliation and/or full approved set catalog.
+- **T4 Tank is included**, but only via an existing legal EQ2 expansion ring/MaxHP combination. Other T4 Tank rolls or slots may still be incompatible and remain rejected pending exact Forge/Combat affix-slot reconciliation; this does not claim full item, set or endgame readiness.
 
 ## Required next integrations
 

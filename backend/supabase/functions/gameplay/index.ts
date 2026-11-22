@@ -43252,7 +43252,9 @@ var seeds = [
   { id: "EVT_UNIT_007", name: "Veil Hound", rarity: "elite", role: "damage", event: "veilbreak", description: "A shadow damage specialist that excels at finishing weakened enemies." },
   { id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "elite", role: "tank", event: "veilbreak", description: "A hollow suit of enchanted armor that anchors the front line behind a heavy ward shield." },
   { id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "elite", role: "support", event: "veilbreak", description: "A lantern-bearing spirit that stabilizes allies with wardlight and recovery pulses." },
-  { id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "elite", role: "support", event: "frostfall_festival", description: "A fast restorative support companion built around winter bell cadence." },
+  { id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "elite", role: "support", event: "frostfall_festival", description: "A rapid winter healer whose bell pulse softens incoming burst damage." },
+  { id: "EVT_UNIT_012", name: "Rimeshard Lynx", rarity: "elite", role: "damage", event: "frostfall_festival", description: "An agile aurora hunter that exposes a target to follow-up strikes." },
+  { id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "elite", role: "tank", event: "frostfall_festival", description: "A woolly winter guardian with a bell-forged reflecting shield." },
   { id: "EVT_UNIT_010", name: "Caravan Sentinel", rarity: "elite", role: "support", event: "merchant_guild_festival", description: "A flexible support companion with balanced recovery, defense, and tempo." }
 ];
 var EVENT_IDENTITY_COPY = {
@@ -43265,7 +43267,9 @@ var EVENT_IDENTITY_COPY = {
   EVT_UNIT_007: { activeName: "Veil Rend", activeDescription: "A shadow strike with strong finishing pressure against weakened enemies.", activeKind: "damage", activeValue: 1.08, passiveKind: "execute", passiveValue: 0.07, passiveDescription: "Veil Hunter: dangerous against low-health targets.", bondName: "Deep Gloom", bondKind: "execute", bondValue: 0.03, bondDescription: "Bond 10 sharpens Veil Hound finishers." },
   EVT_UNIT_008: { activeName: "Hollow Ward", activeDescription: "Raises a heavy ward that reduces incoming pressure and protects the front line.", activeKind: "damage_reduction", activeValue: 0.07, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Hollow Armor: steadier mitigation during prolonged fights.", bondName: "Unbroken Ward", bondKind: "damage_reduction", bondValue: 0.03, bondDescription: "Bond 10 strengthens Hollow Knightling mitigation." },
   EVT_UNIT_011: { activeName: "Lantern Grace", activeDescription: "Restores the weakest ally and briefly accelerates recovery cadence.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.025, passiveDescription: "Wardlight: slightly faster support cadence.", bondName: "Last Lantern", bondKind: "utility", bondValue: 0.04, bondDescription: "Bond 10 strengthens Lantern Keeper restorative support." },
-  EVT_UNIT_009: { activeName: "Frostbell Cycle", activeDescription: "A fast restorative support pulse inspired by rotating winter bells.", activeKind: "utility", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.1, passiveDescription: "Bell Rotation: faster support cycles.", bondName: "Grand Bell", bondKind: "haste", bondValue: 0.02, bondDescription: "Bond 10 adds a small tempo bonus." },
+  EVT_UNIT_009: { activeName: "Frostbell Cycle", activeDescription: "Heals the most injured ally and briefly reduces damage taken; rapid bells counter incoming bursts.", activeKind: "heal", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.1, passiveDescription: "Winter Cadence: faster healing cycles.", bondName: "Grand Bell", bondKind: "heal", bondValue: 0.04, bondDescription: "Bond 10 strengthens Frostbell Cycle healing." },
+  EVT_UNIT_012: { activeName: "Rimeshard Mark", activeDescription: "A focused claw strike briefly exposes its target to allied attacks.", activeKind: "damage", activeValue: 1.06, passiveKind: "haste", passiveValue: 0.015, passiveDescription: "Aurora Pursuit: a small increase to combat tempo.", bondName: "Shattering Trail", bondKind: "damage", bondValue: 0.035, bondDescription: "Bond 10 improves Rimeshard Mark damage without guaranteeing a debuff." },
+  EVT_UNIT_013: { activeName: "Hearthguard Aegis", activeDescription: "Shields the owner and reflects a measured share of absorbed hits.", activeKind: "shield", activeValue: 0.052, passiveKind: "damage_reduction", passiveValue: 0.02, passiveDescription: "Woolen Bulwark: improves damage resistance.", bondName: "Hearthbound Vow", bondKind: "shield", bondValue: 0.04, bondDescription: "Bond 10 improves Hearthguard Aegis shield strength." },
   EVT_UNIT_010: { activeName: "Caravan Formation", activeDescription: "A flexible restorative support pulse with modest defensive and tempo advantages.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Roadwise: slightly faster support cadence.", bondName: "Long Road", bondKind: "cooldown_reduction", bondValue: 0.04, bondDescription: "Bond 10 shortens Caravan Sentinel support cycles." }
 };
 var effectFor = (role) => role === "damage" ? "damage" : role === "tank" ? "damage_reduction" : "haste";
@@ -43273,7 +43277,7 @@ var eventAscensionMaterials = (rarity) => rarity === "prestige" ? [{ tier: 1, it
 var baseStats = (role, rarity) => ({ hp: rarity === "prestige" ? 225 : 205, power: role === "damage" ? rarity === "prestige" ? 28 : 25 : 18, defense: role === "tank" ? rarity === "prestige" ? 27 : 24 : 15, attackSpeed: 2.2 });
 var EVENT_COMPANIONS = seeds.map((seed) => {
   const effect2 = effectFor(seed.role), copy = EVENT_IDENTITY_COPY[seed.id], amount = copy?.activeValue ?? (effect2 === "damage" ? 1.08 : effect2 === "damage_reduction" ? 0.06 : 0.05);
-  return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
+  return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.id === "EVT_UNIT_009" ? 21 : seed.id === "EVT_UNIT_013" ? 24 : seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
 });
 
 // ../apps/mobile/src/content/veilbreak-event.ts
@@ -43590,6 +43594,10 @@ var FROSTFALL_EVENT2 = {
     { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
     { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
     { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
+    // Three distinct Elite roles. Account-wide and permanent after the event.
+    // Keep the existing final 10k Frostbell milestone ID stable.
+    { points: 6e3, reward: { kind: "companion", id: "EVT_UNIT_012", name: "Rimeshard Lynx", rarity: "epic" } },
+    { points: 8500, reward: { kind: "companion", id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "epic" } },
     { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
   ],
   objectives: [
@@ -43793,7 +43801,8 @@ var GUILD_COMBAT_COMPANIONS = seeds2.map((seed) => {
 
 // ../apps/mobile/src/content/event-companions-active.ts
 var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT_UNIT_008", "EVT_UNIT_011"]);
-var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id) || FROSTFALL_REWARDS_RELEASED && companion.id === "EVT_UNIT_009");
+var FROSTFALL_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_009", "EVT_UNIT_012", "EVT_UNIT_013"]);
+var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id) || FROSTFALL_REWARDS_RELEASED && FROSTFALL_COMPANION_IDS.has(companion.id));
 
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
@@ -46619,7 +46628,9 @@ var COMPANION_AFFINITY_BY_ID = {
   EVT_UNIT_008: "umbral",
   EVT_UNIT_009: "arcane",
   EVT_UNIT_010: "construct",
-  EVT_UNIT_011: "radiant"
+  EVT_UNIT_011: "radiant",
+  EVT_UNIT_012: "arcane",
+  EVT_UNIT_013: "primal"
 };
 function companionAffinityById(id) {
   return COMPANION_AFFINITY_BY_ID[id] ?? "wild";
@@ -46663,7 +46674,9 @@ var raw = [
   ["EVT_UNIT_007", "Veil Hound", "damage", "elite", "EVENT_VEILBREAK", 205, 25, 15, 2.2, "damage", 1.08],
   ["EVT_UNIT_008", "Hollow Knightling", "tank", "elite", "EVENT_VEILBREAK", 205, 18, 24, 2.2, "mitigation", 0.07],
   ["EVT_UNIT_011", "Lantern Keeper", "support", "elite", "EVENT_VEILBREAK", 205, 18, 15, 2.2, "utility", 0.05],
-  ["EVT_UNIT_009", "Frostbell Herald", "support", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 18, 15, 2.2, "utility", 0.05],
+  ["EVT_UNIT_009", "Frostbell Herald", "support", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 18, 15, 2.2, "heal", 0.05],
+  ["EVT_UNIT_012", "Rimeshard Lynx", "damage", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 25, 15, 2, "damage", 1.06],
+  ["EVT_UNIT_013", "Hearthguard Ram", "tank", "elite", "EVENT_FROSTFALL_FESTIVAL", 215, 18, 24, 2.4, "shield", 0.052],
   ["EVT_UNIT_010", "Caravan Sentinel", "support", "elite", "EVENT_MERCHANT_GUILD_FESTIVAL", 205, 18, 15, 2.2, "utility", 0.05]
 ];
 var COMPANION_IDENTITY_PROFILES = {
@@ -46705,7 +46718,9 @@ var COMPANION_IDENTITY_PROFILES = {
   EVT_UNIT_007: { activeName: "Veil Rend", activeDamageMultiplier: 1.06, activeExecuteBonus: 0.07, hasteBonus: 0.01, bond: { activeExecuteBonus: 0.03 } },
   EVT_UNIT_008: { activeName: "Gravebell Ward", mitigationMultiplier: 1.12, defenseMultiplier: 1.04, activeCooldownMultiplier: 0.96, bond: { mitigationMultiplier: 1.05, defenseMultiplier: 1.02 } },
   EVT_UNIT_011: { activeName: "Lantern Grace", utilityMultiplier: 1.06, activeHealMultiplier: 1.08, activeCooldownMultiplier: 0.94, hasteBonus: 0.025, bond: { activeHealMultiplier: 1.05, hasteBonus: 0.01 } },
-  EVT_UNIT_009: { activeName: "Frostbell Cycle", utilityMultiplier: 1.08, activeHealMultiplier: 1.08, activeCooldownMultiplier: 0.9, hasteBonus: 0.01, bond: { activeHealMultiplier: 1.05 } },
+  EVT_UNIT_009: { activeName: "Frostbell Cycle", activeHealMultiplier: 1.05, activeCooldownMultiplier: 0.88, hasteBonus: 0.01, bond: { activeHealMultiplier: 1.04 } },
+  EVT_UNIT_012: { activeName: "Rimeshard Mark", activeDamageMultiplier: 1.03, hasteBonus: 0.01, bond: { activeDamageMultiplier: 1.03 } },
+  EVT_UNIT_013: { activeName: "Hearthguard Aegis", activeShieldMultiplier: 0.98, activeReflectPct: 0.1, defenseMultiplier: 1.01, bond: { activeReflectPct: 0.05, activeShieldMultiplier: 1.04 } },
   EVT_UNIT_010: { activeName: "Caravan Formation", utilityMultiplier: 1.05, activeHealMultiplier: 1.05, defenseMultiplier: 1.02, hasteBonus: 0.02, bond: { activeCooldownMultiplier: 0.96 } }
 };
 var cooldown = (rarity, role) => 1e3 * (role === "damage" ? rarity === "prestige" ? 18 : 20 : rarity === "prestige" ? 22 : 24);
@@ -46874,8 +46889,16 @@ var CUSTOM_TECHNIQUE_SEEDS = {
     { suffix: "LAST_LANTERN", name: "Last Lantern", description: "Cycle support more quickly while retaining a smaller recovery boost.", effects: [{ kind: "heal_strength", value: 0.05 }, { kind: "cooldown", value: -0.1 }] }
   ],
   EVT_UNIT_009: [
-    { suffix: "GRAND_BELL", name: "Grand Bell", description: "Favor stronger restorative bell auras.", effects: [{ kind: "heal_strength", value: 0.12 }] },
-    { suffix: "QUICK_BELL", name: "Quick Bell", description: "Rotate support bells more frequently.", effects: [{ kind: "cooldown", value: -0.14 }, { kind: "haste", value: 0.04 }] }
+    { suffix: "GRAND_BELL", name: "Grand Bell", description: "Strengthen Frostbell Cycle healing while keeping its brief protection.", effects: [{ kind: "heal_strength", value: 0.12 }] },
+    { suffix: "QUICK_BELL", name: "Quick Bell", description: "Rotate healing bells more frequently.", effects: [{ kind: "cooldown", value: -0.14 }, { kind: "haste", value: 0.04 }] }
+  ],
+  EVT_UNIT_012: [
+    { suffix: "RIMESHARD_FOCUS", name: "Rimeshard Focus", description: "Sharper marked-target strikes.", effects: [{ kind: "damage", value: 0.06 }] },
+    { suffix: "AURORA_PURSUIT", name: "Aurora Pursuit", description: "Quicker marks with less peak damage.", effects: [{ kind: "cooldown", value: -0.1 }, { kind: "haste", value: 0.06 }] }
+  ],
+  EVT_UNIT_013: [
+    { suffix: "HEARTH_WARD", name: "Hearth Ward", description: "Thicken the reflecting ward.", effects: [{ kind: "shield_strength", value: 0.14 }] },
+    { suffix: "WINTER_MIRROR", name: "Winter Mirror", description: "Give up some shield power for more reflection.", effects: [{ kind: "shield_strength", value: -0.04 }, { kind: "reflect", value: 0.1 }] }
   ],
   EVT_UNIT_010: [
     { suffix: "CARAVAN_WARD", name: "Caravan Ward", description: "Favor protection for long expeditions and boss fights.", effects: [{ kind: "defense", value: 0.08 }, { kind: "heal_strength", value: 0.06 }] },
@@ -47125,7 +47148,7 @@ function balancedActiveCoeff(def, progress) {
   const raw2 = def.active.baseCoeff + def.active.perLevelCoeff * Math.max(0, progress.level - 1);
   return def.active.effectKind === "damage" ? 1 + (raw2 - 1) * 0.25 : raw2;
 }
-function asterfallSignatureEffects(id) {
+function companionSignatureEffects(id) {
   switch (id) {
     case "UNIT_001":
       return [{ kind: "debuff", value: -0.035, durationMs: 5e3, tag: "damage_done" }];
@@ -47145,13 +47168,17 @@ function asterfallSignatureEffects(id) {
       return [{ kind: "debuff", value: 0.035, durationMs: 7e3, tag: "damage_taken" }];
     case "UNIT_011":
       return [{ kind: "debuff", value: 0.03, durationMs: 6e3, tag: "crit_taken" }];
+    case "EVT_UNIT_009":
+      return [{ kind: "buff", value: -0.025, durationMs: 4e3, tag: "damage_taken" }];
+    case "EVT_UNIT_012":
+      return [{ kind: "debuff", value: 0.025, durationMs: 5e3, tag: "damage_taken" }];
     default:
       return [];
   }
 }
 function engineEffects(def, progress, context) {
   const identity = identityModifiers(def, progress), levelCoeff = balancedActiveCoeff(def, progress), tDamage = effectValue(progress, "damage"), tHeal = effectValue(progress, "heal_strength"), tShield = effectValue(progress, "shield_strength");
-  const signature = asterfallSignatureEffects(def.id);
+  const signature = companionSignatureEffects(def.id);
   switch (def.active.effectKind) {
     case "damage":
       return [{ kind: "damage", coeff: Math.max(0.05, levelCoeff * (1 + tDamage) * identity.activeDamageMultiplier), executeBelowHpPct: 0.3, executeBonus: Math.min(0.3, effectValue(progress, "execute") + identity.activeExecuteBonus), ...def.id === "UNIT_009" ? { bonusVsDebuffed: 0.12 } : {}, tag: "companion_active" }, ...signature];
@@ -60660,6 +60687,10 @@ function signatureAssistEffects(id, maxHp) {
       return [{ kind: "debuff", value: 0.03, durationMs: 7e3, tag: "damage_taken" }];
     case "UNIT_011":
       return [{ kind: "debuff", value: 0.03, durationMs: 6e3, tag: "crit_taken" }];
+    case "EVT_UNIT_009":
+      return [{ kind: "buff", value: -0.025, durationMs: 4e3, tag: "damage_taken" }];
+    case "EVT_UNIT_012":
+      return [{ kind: "debuff", value: 0.025, durationMs: 5e3, tag: "damage_taken" }];
     default:
       return [];
   }

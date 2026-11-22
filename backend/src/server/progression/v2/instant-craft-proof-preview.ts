@@ -91,7 +91,16 @@ export async function projectPendingInstantCraftCareerProofV2(
   if(!recipe)throw Error('instant_craft_v2_unknown_recipe');
   if(recipe.isTimed)return null; // queued job start is not a completed craft
   if(source.owningSkillLevel<recipe.level)throw Error('instant_craft_v2_skill_locked');
-  const matched=source.contributions.filter(c=>c.kind==='crafting'&&c.contentId===recipe.id);
+  // A single 'craft' command requests one canonical recipe. A second crafted
+  // item in the same source envelope makes XP attribution ambiguous: fail
+  // closed instead of awarding Character XP for an unrelated work product.
+  if(source.contributions.some(c=>!c||typeof c.kind!=='string'||
+      typeof c.contentId!=='string'||!safeInt(c.units,0,999999)))
+    throw Error('instant_craft_v2_invalid_contributions');
+  const crafted=source.contributions.filter(c=>c.kind==='crafting');
+  if(crafted.some(c=>c.contentId!==recipe.id))
+    throw Error('instant_craft_v2_mixed_crafting_sources');
+  const matched=crafted.filter(c=>c.contentId===recipe.id);
   if(matched.length!==1||!safeInt(matched[0].units,1,999)||
      matched[0].units!==source.requestedQuantity)
     throw Error('instant_craft_v2_incomplete_work');

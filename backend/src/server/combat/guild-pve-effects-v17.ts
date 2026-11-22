@@ -23,7 +23,7 @@ import {guildPveV13PhaseCues} from './guild-pve-cues-v13';
 export const GUILD_PVE_V17_LIVE=false as const;
 const clamp=(x:number,a:number,b:number)=>Math.max(a,Math.min(b,x));
 const round=(x:number)=>Number(Math.max(0,x).toFixed(2));
-const fail=(s:string):never=>{throw Error('guild_pve_v17_'+s)};
+function fail(s:string):never{throw Error('guild_pve_v17_'+s);}
 export type GuildPveV17Shrine='warding'|'cleansing'|'insight';
 export interface GuildPveV17ServerTactics {
  /** Exact server-frozen node-cleared flags, NOT a list from the attacking user. */
@@ -114,7 +114,7 @@ const prepAbility=(id:string,kind:'shield'|'cleanse',flat=0):AbilityDefinition=>
  effects:kind==='shield'?[{kind:'shield',flat}]:[{kind:'cleanse'}],
 });
 function validateTactics(tactics:GuildPveV17ServerTactics){
- const manifest=new Map(GUILD_PVE_V8_MANIFEST.map(n=>[n.id,n]));
+ const manifest=new Map(GUILD_PVE_V8_MANIFEST.map(n=>[String(n.id),n] as const));
  if(!tactics||!tactics.clearedNodes||typeof tactics.clearedNodes!=='object'||
   !Number.isFinite(tactics.pressure)||tactics.pressure<0||tactics.pressure>100||
   ![null,'warding','cleansing','insight'].includes(tactics.shrineChoice)||

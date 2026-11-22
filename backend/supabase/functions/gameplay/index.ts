@@ -56766,6 +56766,14 @@ function auditCraftedGearOwnership(state) {
   }
   const observed = /* @__PURE__ */ new Map();
   const trackedItemIds = new Set(definitions2.map((row) => row.itemId));
+  const gatheringToolById = /* @__PURE__ */ new Map();
+  for (const raw2 of state.account.craftedGatheringToolInstances ?? []) {
+    const record = validateGatheringToolRoll(raw2, raw2.itemId);
+    if (!record || !record.id.startsWith("gtool:")) continue;
+    if (gatheringToolById.has(record.id)) audit.problems.push(`Duplicate gathering tool record: ${record.id}`);
+    else gatheringToolById.set(record.id, record);
+  }
+  const observedGatheringTools = /* @__PURE__ */ new Set();
   const register = (instanceId, itemId, place, holderCharacterId, slot) => {
     const record = byId.get(instanceId);
     if (!record) {
@@ -56793,6 +56801,13 @@ function auditCraftedGearOwnership(state) {
       }
       if (typeof stack.instanceId !== "string" || !stack.instanceId.trim() || stack.quantity !== 1) {
         audit.problems.push(`Invalid tagged equipment stack: ${String(stack.instanceId)}`);
+        continue;
+      }
+      const tool2 = place !== "equipment_pouch" && !byId.has(stack.instanceId) ? gatheringToolById.get(stack.instanceId) : void 0;
+      if (tool2) {
+        if (tool2.itemId !== stack.itemId) audit.problems.push(`Gathering tool item mismatch: ${stack.instanceId}`);
+        else if (observedGatheringTools.has(stack.instanceId)) audit.problems.push(`Duplicate gathering tool copy marker: ${stack.instanceId}`);
+        else observedGatheringTools.add(stack.instanceId);
         continue;
       }
       register(stack.instanceId, stack.itemId, place, holderCharacterId);

@@ -75,6 +75,8 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   const [openTools,setOpenTools]=useState<Record<string,boolean>>({});
    // One expanded recipe across every gathering tool tier; never reset the whole skill screen.
    const [expandedToolId,setExpandedToolId]=useState<string|null>(null);
+   const [expandedToolDetailId,setExpandedToolDetailId]=useState<string|null>(null);
+   const [toolMathOpen,setToolMathOpen]=useState(false);
   const region=WORLD_ZONES.find(zone=>zone.id===currentRegionId(state))??WORLD_ZONES[0];
   const availableAreas=regionAreas(region.id);
   const [selectedAreaId,setSelectedAreaId]=useState<string|undefined>(()=>regionalArea(region.id,initialAreaId)?.id);
@@ -138,12 +140,41 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
       const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
-      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToolTotalBreakdown(effects),totalToolPercent=gatheringToolPercent(totals.effectivePercent);
-      return <View key={sk.skillId} style={s.group}>
-        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4'+(effects.rarityChanceMultiplier>1?' · +'+Math.round((effects.rarityChanceMultiplier-1)*100)+'% rare finds':''):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{equippedTools.length>0?<View style={s.toolTotalBreakdown}>
-            <Text style={s.toolTotalStrong}>{gt('Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%',{base:gatheringToolPercent(totals.rawTierPercent),roll:gatheringToolPercent(totals.speedRollGainPoints),total:totalToolPercent})}</Text>
+      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToo
+        {mode==='gathering'&&<Panel style={s.toolPanel}>
+          <Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})}
+            accessibilityState={{expanded:!!openTools[sk.skillId]}}
+            onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);setExpandedToolDetailId(null);setToolMathOpen(false);}}
+            style={({pressed})=>[s.toolHeading,pressed&&s.pressed]}>
+            {equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?48:54}/>:<View style={[s.emptyTool,s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}
+            <View style={s.toolCopy}>
+              <Text numberOfLines={2} style={s.toolName}>{gt('GATHERING TOOLS')} · {equippedTools.length}/4</Text>
+              <Text style={s.toolRequirement}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt('No tool equipped')}</Text>
+              <Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text>
+            </View><DisclosureMark expanded={!!openTools[sk.skillId]}/>
+          </Pressable>
+          <View style={s.toolMetrics}>
+            <View style={s.toolMetric}><Text style={s.toolMetricLabel}>{gt('ACTION TIME')}</Text>
+              <Text style={[s.toolMetricValue,{color:C.good}]}>{equippedTools.length?'−'+totalToolPercent+'%':'+15.0%'}</Text>
+              <Text style={s.toolMetricCaption}>{equippedTools.length?gt('Shorter gathering actions'):gt('Slower without tools')}</Text>
+            </View>
+            <View style={s.toolMetric}><Text style={s.toolMetricLabel}>{gt('RARE FINDS')}</Text>
+              <Text style={[s.toolMetricValue,{color:C.warning}]}>{'+'+gatheringToolPercent(totals.rarityChanceRelativePercent)+'%'}</Text>
+              <Text style={s.toolMetricCaption}>{gt('relative chance')}</Text>
+            </View>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel={gt('How tool bonuses work')}
+            accessibilityState={{expanded:toolMathOpen}} onPress={()=>setToolMathOpen(open=>!open)}
+            style={({pressed})=>[s.toolMathToggle,pressed&&s.pressed]}>
+            <Text style={s.toolMathLink}>{gt('How tool bonuses work')}</Text><DisclosureMark expanded={toolMathOpen}/>
+          </Pressable>
+          {toolMathOpen?<View style={s.toolMathDetails}>
+            <Text style={s.toolRequirement}>{gt('Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%',{base:gatheringToolPercent(totals.rawTierPercent),roll:gatheringToolPercent(totals.speedRollGainPoints),total:totalToolPercent})}</Text>
             <Text style={s.toolRequirement}>{gt('Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.')}{totals.capped?' · '+gt('Speed cap reached'):''}</Text>
-            {totals.rarityChanceRelativePercent>0?<Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
+            <Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>
+          </View>:null}
+          {openTools[sk.skillId]?<View style={s.toolSectionHeader}><Text style={s.toolSectionTitle}>{gt('TOOL TIERS')}</Text><Text style={s.toolRequirement}>{equippedTools.length}/4</Text></View>:null}
+        nce (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
           </View>:null}{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
           const equipped=equippedTools.some(entry=>entry.id===tool.id);
           const equippedCopy=equippedGatheringToolRoll(state,gatheringSkill,tool.tier);
@@ -200,7 +231,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
     areaPicker:{flexDirection:'row',flexWrap:'wrap',gap:6,paddingVertical:3},
     areaChip:{minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:10},
     areaChipSelected:{borderColor:C.accent,backgroundColor:C.selection},
-    areaChipLocked:{opacity:.72},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
+    areaChipLocked:{opacity:.72},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolPanel:{gap:9},toolMetrics:{flexDirection:'row',gap:8},toolMetric:{flex:1,minWidth:0,padding:11,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,gap:3},toolMetricLabel:{...typography.caption,color:C.muted,fontWeight:'800',letterSpacing:.3},toolMetricValue:{...typography.title,fontSize:24,lineHeight:30,fontWeight:'900'},toolMetricCaption:{...typography.caption,color:C.muted},toolMathToggle:{minHeight:44,alignItems:'center',justifyContent:'center',gap:8,flexDirection:'row'},toolMathLink:{...typography.caption,color:C.info,fontWeight:'700'},toolMathDetails:{gap:5,padding:10,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},toolSectionHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingTop:5},toolSectionTitle:{...typography.caption,color:C.muted,fontWeight:'800',letterSpacing:.5},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
  toolRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  toolRowCompact:{flexDirection:'column',alignItems:'stretch',gap:8},
  toolRoll:{...typography.caption,color:C.good,fontWeight:'800'},

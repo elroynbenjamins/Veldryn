@@ -13,6 +13,15 @@
 - Added explicit production mobile-only `EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED` gate that requires `EXPO_PUBLIC_RELEASE_CHANNEL=production` and the exact production Supabase URL. It stays **false** in `eas.json`; the staging APK preview still uses its separate opt-in. The shared Edge/gameplay release flag stays false.
 - **Remaining release holds:** real signed staging Android APK manual QA across the account/character/privacy/localization matrix; security/advisor review and final CI on exact head; approved production migration history/versioning; then build signing/Play internal-track verification and a separate opt-in flip. Do not call this production deployed or player-available until those checks complete.
 
+## 22 November 2026 — additional refinement and compatibility validation
+
+- Social Name save failures returned as plain PostgREST objects now map to actionable, safe messages rather than generic errors. All five save-error messages use the existing eight-language identity catalog; no modal/layout redesign or new theme was introduced.
+- The editor no longer offers a rename action for case-only re-entry of an already selected name, matching the server's idempotent behavior.
+- The social roster migration now follows the actual v16 party entrypoint to its delegated roster source, verifies the expected `active_profile` alias and fails closed on source drift.
+- Full seven-file migration replay **PASS** on production in one rollback-only transaction. Inside that transaction: authenticated name write allowed, anonymous name write denied, showcase RLS enabled, direct showcase reads denied, v16 weekly party wrapper preserved, party/online name projections patched, old v43 RPC available. Values reported by `has_*_privilege` were checked for their intended true/false meanings. Production remains unmodified.
+- Concurrent `main` compact gathering recipe UI was incorporated into the PR branch via a merge commit, without replacing the newer layout. The optional tool-tier placeholder was made type-safe, fixing the `RecipeCard.tsx` error observed in early PR validation.
+- New source-contract regression checks cover eight-language save errors, plain-object PostgREST errors, production and staging build gates, and case-only no-op. **Exact-merge-head GitHub CI and signed Android QA still require completion; do not label the release ready based only on database dry runs.**
+
 ## Internal staging QA build profile
 
 - `eas build --platform android --profile staging` builds an **internal staging APK** with Social Names and three-hero showcases enabled against the staging Supabase backend only. Creating this APK still requires EAS access/signing; a GitHub CI AAB/emulator smoke is not an EAS staging build.

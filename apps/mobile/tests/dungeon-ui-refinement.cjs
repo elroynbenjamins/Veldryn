@@ -31,7 +31,7 @@ test('weekly quest snapshot validates actual objective targets, not a hard-coded
 });
 test('all new compact prompts exist in eight languages',()=>{
  const m=loadTypeScript('src/i18n/dungeon-ux-copy.ts');
- const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','continueDeeper','continueVote','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt'];
+ const keys=['bossChoice','bossFinish','bossVote','bossFinal','bossHint','continueDeeper','continueVote','weeklyExpand','weeklyCollapse','weeklyFallback','weeklyHeader','weeklyStatus','weeklyProgress','weeklyReset','weeklyClaim','weeklyClaimedNote','weeklyScope','weeklyLoading','weeklyUnavailable','enduranceRoute','threat','room','finalBossLegend','bossCheckpoint','nextBossAt','soloPowerHint'];
  for(const lang of ['en','de','es','nl','it','fr','ru','tr'])
   for(const key of keys)assert.ok(m.dungeonUxText(lang,key).trim().length>=2,lang+' '+key); // Short UI labels such as Room/Oda must remain valid.
  assert.notEqual(m.dungeonUxText('en','bossChoice'),m.dungeonUxText('de','bossChoice'));
@@ -101,5 +101,5 @@ test('solo dungeon difficulty shows server CP advice without imposing a CP entry
  assert.match(source,/requiredPower=\{0\} recommendedPower=\{dungeon\.tierMinPower\[value\]\} currentLevel=\{currentLevel\} currentPower=\{Number\.POSITIVE_INFINITY\}/);
  assert.match(source,/const suggestedPower=Number\.isFinite\(recommendedPower\)&&recommendedPower>0/);
  assert.match(source,/style=\{s\.tierSuggestedPower\}/);
- assert.match(source,/Approximate solo CP recommendation · Not an entry requirement/);
+ assert.match(source,/dungeonUxText\(language,'soloPowerHint'\)/);
 });

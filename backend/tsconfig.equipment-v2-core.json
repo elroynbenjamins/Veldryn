@@ -5,6 +5,7 @@
   },
   "include": [
     "src/server/equipment/__tests__/equipment-crafting-v2-transaction.test.ts",
+    "src/server/equipment/__tests__/equipment-crafting-v2-independent-profession.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-instances.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-custody.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-commit-plan.test.ts",

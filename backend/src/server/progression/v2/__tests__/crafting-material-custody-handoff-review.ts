@@ -51,6 +51,11 @@ const proofs=stock.map(lot=>({
    'combat'|'processing'|'gathering',
  itemId:lot.itemId,originalLotId:lot.lotId,
  originalGrantedQuantity:lot.availableQuantity,completed:true as const,
+ ...(lot.custody==='bank'?{bankDeposit:{
+  receiptId:'DEPOSIT_'+lot.lotId,
+  accountId:account,depositedByCharacterId:smith,lotId:lot.lotId,
+  committed:true as const,
+ }}:{}),
  ...(lot.lotId==='LOT_FANG_MARKET'?{settledTransfer:{
   transferReceiptId:'TRANSFER_MARKET_FANG_001',kind:'market' as const,
   originalSourceReceiptId:'SOURCE_LOT_FANG_MARKET',
@@ -59,7 +64,8 @@ const proofs=stock.map(lot=>({
  }}:{}),
 }));
 const state:TrustedCraftReviewStateV2={
- accountId:account,characterId:smith,revision:25,availableGold:2000,
+ accountId:account,characterId:smith,ownedCharacterIds:[smith,other],
+ revision:25,availableGold:2000,
  progression:{combatLevel:1,overallCharacterXp:0,professionXp:{
   smithing:professionTotalXpForLevelV2(12),
  }},
@@ -97,6 +103,16 @@ function test(){
  eq(base.debits.some(d=>!['inventory','bank'].includes(d.custody)),false,
     'listed material cannot be used while held in escrow');
  eq(base.debits.every(d=>d.quantity>0),true,'no zero debits');
+ const pooledBank=previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,originalSourceProofs:proofs.map(p=>
+   p.provenanceId==='PROOF_COPPER_BANK'?{
+    ...p,sourceCharacterId:other,
+    bankDeposit:{...p.bankDeposit!,depositedByCharacterId:other},
+   }:p),
+ },recipe);
+ eq(pooledBank.goldDebit,1400,'same-account alt can deposit resources for peaceful Smith');
+ eq(pooledBank.debits.some(d=>d.lotId==='LOT_COPPER_BANK'),true,
+   'alt source is usable only through account Bank deposit receipt');
  eq(JSON.stringify(previewProfessionCraftMaterialCustodyV2(request,state,recipe)),
     JSON.stringify(base),'deterministic review projection');
  const replay=previewProfessionCraftMaterialCustodyV2(request,{...state,priorRequests:[{
@@ -194,6 +210,33 @@ function test(){
         toAccountId:sellerAccount},
     }:p),
  },recipe),/invalid_market_transfer_provenance/,'self-account trade cannot launder source ancestry');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,originalSourceProofs:proofs.map(p=>
+   p.provenanceId==='PROOF_COPPER_BANK'?{...p,bankDeposit:undefined}:p),
+ },recipe),/missing_or_mismatched_bank_deposit/,'Bank quantity without deposited custody is not spendable');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,originalSourceProofs:proofs.map(p=>
+   p.provenanceId==='PROOF_COPPER_BANK'?{
+    ...p,bankDeposit:{...p.bankDeposit!,depositedByCharacterId:other},
+   }:p),
+ },recipe),/missing_or_mismatched_bank_deposit/,'Bank depositor must be the verified source recipient');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedCharacterIds:[smith],
+  originalSourceProofs:proofs.map(p=>
+   p.provenanceId==='PROOF_COPPER_BANK'?{
+    ...p,sourceCharacterId:other,
+    bankDeposit:{...p.bankDeposit!,depositedByCharacterId:other},
+   }:p),
+ },recipe),/missing_or_mismatched_bank_deposit/,'unauthorized alternate character cannot fill Bank');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedCharacterIds:[smith,smith],
+ },recipe),/invalid_account_character_roster/,'same character cannot be listed twice');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedLots:stock.map(lot=>
+   lot.lotId==='LOT_COPPER_BANK'?{
+     ...lot,custody:'inventory' as const,characterId:smith,
+   }:lot),
+ },recipe),/missing_or_mismatched_source_receipt/,'Bank deposit cannot silently become inventory without withdrawal');
  rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
   ...state,priorRequests:[{
    requestId:'__proto__',requestHash:hash,accountId:account,

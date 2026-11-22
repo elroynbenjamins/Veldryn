@@ -83,6 +83,19 @@ export async function projectCombinedGameCareerProofsV2(
    typeof source.commandType!=='string'||typeof source.adminQa!=='boolean')
    throw Error('career_game_v2_invalid_game_command');
  if(source.adminQa)return [];
+ // A queued claim is one simulation result, not two independently invented
+ // streams that happen to use different segment ordinals.
+ if(source.gathering&&source.combat){
+   const gs=source.gathering.segments,cs=source.combat.segments;
+   if(gs.length!==cs.length || gs.some((g,i)=>{
+     const combat=cs[i];
+     return !combat || g.activity.kind!==combat.activity.kind ||
+       g.activity.targetId!==combat.activity.targetId ||
+       g.activity.lastClaimAtMs!==combat.activity.lastClaimAtMs ||
+       g.reward.xp!==combat.reward.xp ||
+       g.reward.elapsedSeconds!==combat.reward.elapsedSeconds;
+   }))throw Error('career_game_v2_inconsistent_segments');
+ }
  const output:PendingGameCareerProofV2[]=[];
  if(source.gathering){
    assertNestedAuthority(source,{

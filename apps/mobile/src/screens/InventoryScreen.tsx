@@ -409,12 +409,19 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
-            <View style={s.toolActionButton}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
-            {carried?<View style={s.toolActionButton}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
-            <View style={s.toolActionButton}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
+            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
+            {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
+            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
           </View>
         </View>;
       })}
+    </View>:null}
+    {inspected.type==='tool'&&hasLegacyStack&&inspectedToolDef?<View style={s.toolLegacyStats}>
+      <View style={s.toolStatDescription}>
+        <Text style={s.toolStatEyebrow}>{gt('GATHERING SPEED')}</Text>
+        <Text style={s.toolStatLabel}>{gt('Tier base · No bonus roll')}</Text>
+      </View>
+      <Text style={s.toolSpeedValue}>+{gatheringToolPercent(gatheringToolContribution(inspectedToolDef).adjustedBasePercent)}%</Text>
     </View>:null}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
@@ -747,6 +754,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   toolActionRow:{flexDirection:'row',gap:6,alignItems:'stretch',paddingTop:2},
   toolActionRowStacked:{flexDirection:'column'},
   toolActionButton:{flex:1,minWidth:0},
+  toolActionButtonStacked:{flex:0,width:'100%'},
+  toolLegacyStats:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},
   inspectQuickActions:{gap:8},
   inspectAmountRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:7,flexWrap:'wrap'},
   inspectAmountLabel:{...typography.caption,color:C.muted,flexShrink:1},

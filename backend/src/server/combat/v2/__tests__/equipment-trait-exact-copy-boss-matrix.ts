@@ -194,8 +194,8 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     /persisted_run_ledger_not_verified/);sourceTests++;
    assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
     storedKit,port,{...rewardPort,snapshot:{...rewardPort.snapshot,
-     receipts:[{id:'RELIC_THORNBOUND_AEGIS',nodeId:'QA_TREASURE_1',
-      depth:1,room:'treasure'}]}}),/unimplemented_proc_/);sourceTests++;
+     receipts:[{id:'ROOM_BOON_WARDWEAVE',nodeId:'QA_SHRINE_1',
+      depth:1,room:'shrine'}]}}),/requires_authenticated_party_/);sourceTests++;
    assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,
     undefined,undefined,rewardPort),/dungeon_reward_requires_persisted_solo_encounter/);
    sourceTests++;

@@ -8,7 +8,7 @@
 ## Event reward roster
 | Companion | Role | Event reward | Counterplay niche |
 | --- | --- | --- | --- |
-| Rimeshard Lynx (`EVT_UNIT_012`) | Damage | 6,000 Frostfall reputation | Fast focused strike; 5-second, 2.5% increased damage taken on its marked target |
+| Rimeshard Wolverine (`EVT_UNIT_012`) | Damage | 6,000 Frostfall reputation | Fast focused strike; 5-second, 2.5% increased damage taken on its marked target |
 | Hearthguard Ram (`EVT_UNIT_013`) | Tank | 8,500 Frostfall reputation | Defensive shield with modest 10% reflection; Bond increases reflected share |
 | Frostbell Herald (`EVT_UNIT_009`) | Support | **Original** 10,000-reputation milestone (ID retained) | Direct heal to the lowest-health ally plus a 4-second, 2.5% damage-reduction buff |
 
@@ -24,7 +24,7 @@ The 20-offer Frostfall Shop and current pet/currency rewards remain untouched. A
 - No mandatory Frostfall companion: existing damage/mitigation/healing counter-builds must remain viable.
 
 ## Art direction / review needed (no assets committed)
-- **Rimeshard Lynx:** lean icy lynx, glimmering turquoise fur accents, crystalline shoulder flecks, rapid claw silhouette; not the Aurora Fox pet.
+- **Rimeshard Wolverine:** heavyset winter wolverine, glimmering cyan fur accents, crystalline shoulder flecks, short ears and broad clawed forelimbs; clearly not the Laurel Lynx pet.
 - **Hearthguard Ram:** round heavy-wool ram, broad winter horns, modest protective brass bell, sturdy stance; not a recolored Choir Golem.
 - Frostbell Herald retains its existing accepted 96 × 96 portrait unless a separate visual approval requests an update.
 - Commission unique transparent pixel-art PNGs for `EVT_UNIT_012` and `EVT_UNIT_013`, review multiple themes, then add them to `eventCompanionSourceById` and verify Android/Metro packaging before enabling rewards. Do not use generic placeholders.

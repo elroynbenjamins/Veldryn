@@ -120,7 +120,10 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
  const shortScreen=height<690||fontScale>=1.3;
  const compactBonusRows=width<380||fontScale>=1.2;
  const stackOtherActions=width<375||fontScale>=1.18;
- const hasOtherActions=Boolean(onStoreInGear||onMoveToBank||onSell||onSalvage);
+ // Compact Option A places the frequent Bank transfer beside the pinned equip action.
+ // At >=380dp the approved S24+ disclosure/footer remains unchanged.
+ const compactPinnedBank=width<380;
+ const hasOtherActions=Boolean(onStoreInGear||(!compactPinnedBank&&onMoveToBank)||onSell||onSalvage);
  const disposalBlocked=Boolean((onSell&&!canSell)||(onSalvage&&!canSalvage));
  const bonusChangeCount=slot==='weapon'?weaponChanges.filter(row=>row.deltaBps!==0).length:bonusChanges.filter(row=>row.before!==row.after).length;
  const gearSize=width<355?54:shortScreen?56:66;
@@ -231,7 +234,7 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
       {onStoreInGear?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
        <GameButton compact title={canStoreInGear?gearText('Store in Gear'):gearText('Gear storage full')} tone="secondary" disabled={!canStoreInGear||busy} loading={busy&&busyAction==='gear'} onPress={()=>void storeInGear()}/>
       </View>:null}
-      {onMoveToBank?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
+      {onMoveToBank&&!compactPinnedBank?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
        <GameButton compact title={gearText('Move to Bank')} tone="secondary" disabled={busy} loading={busy&&busyAction==='bank'} onPress={()=>void moveToBank()}/>
       </View>:null}
       {onSell?<View style={[s.otherActionCell,stackOtherActions&&s.otherActionCellStack]}>
@@ -250,6 +253,8 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
   <View style={s.footer}>
    {!!error?<Text accessibilityRole="alert" style={s.error}>{gl(error)}</Text>:null}
    {!!blocked?<Text style={s.warning}>{blocked}</Text>:null}
+   {compactPinnedBank&&onMoveToBank?<GameButton compact title={gearText('Move to Bank')} tone="secondary"
+    loading={busy&&busyAction==='bank'} disabled={busy} onPress={()=>void moveToBank()}/>:null}
    {onEquip?<GameButton title={alreadyEquipped?gl('Currently equipped'):busy&&busyAction==='equip'?gl('Equipping…'):old?gl('Swap Equipment'):gt('Equip {slot}',{slot:gl(slot)})}
     loading={busy&&busyAction==='equip'} disabled={alreadyEquipped||!!blocked||busy} onPress={()=>void submit()}/>:null}
   </View>

@@ -23,6 +23,43 @@ export const equipmentPouchUiRows={
   "Estimated sale · {gold} Gold": ["Voraussichtlicher Verkauf · {gold} Gold","Venta estimada · {gold} de oro","Verwachte verkoop · {gold} goud","Vendita prevista · {gold} oro","Vente estimée · {gold} or","Ожидаемая продажа · {gold} золота","Tahmini satış · {gold} altın"],
   "Quick sell": ["Schnell verkaufen","Venta rápida","Snel verkopen","Vendita rapida","Vente rapide","Быстрая продажа","Hızlı sat"],
   "Quick salvage": ["Schnell zerlegen","Desguace rápido","Snel ontmantelen","Smontaggio rapido","Recyclage rapide","Быстрая разборка","Hızlı sök"],
+
+  "Safe selection excludes Epic, Legendary and Mythic.": [
+    "Sichere Auswahl schließt epische, legendäre und mythische Ausrüstung aus.",
+    "La selección segura excluye equipo épico, legendario y mítico.",
+    "Veilig selecteren sluit epische, legendarische en mythische uitrusting uit.",
+    "La selezione sicura esclude equipaggiamento epico, leggendario e mitico.",
+    "La sélection sûre exclut les équipements épiques, légendaires et mythiques.",
+    "Безопасный выбор исключает эпическое, легендарное и мифическое снаряжение.",
+    "Güvenli seçim, Destansı, Efsanevi ve Mitik ekipmanı hariç tutar."
+  ],
+  "Tap a piece to inspect, equip or move it to Bank.": [
+    "Tippe auf ein Stück, um es anzusehen, anzulegen oder zur Bank zu verschieben.",
+    "Toca una pieza para inspeccionarla, equiparla o moverla al banco.",
+    "Tik op een stuk om het te bekijken, uit te rusten of naar de bank te verplaatsen.",
+    "Tocca un pezzo per esaminarlo, equipaggiarlo o spostarlo in banca.",
+    "Touchez une pièce pour l'inspecter, l'équiper ou la déplacer à la banque.",
+    "Нажмите на предмет, чтобы осмотреть, надеть или переместить его в банк.",
+    "Bir parçaya dokunarak inceleyin, kuşanın veya bankaya taşıyın."
+  ],
+  "The action was not confirmed. Try again.": [
+    "Aktion nicht bestätigt. Bitte erneut versuchen.",
+    "No se confirmó la acción. Inténtalo de nuevo.",
+    "De actie is niet bevestigd. Probeer het opnieuw.",
+    "Azione non confermata. Riprova.",
+    "Action non confirmée. Réessayez.",
+    "Действие не подтверждено. Попробуйте снова.",
+    "İşlem onaylanmadı. Tekrar deneyin."
+  ],
+  "High-rarity gear selected. Check each copy before confirming.": [
+    "Hochwertige Ausrüstung ausgewählt. Prüfe jedes Stück vor der Bestätigung.",
+    "Has seleccionado equipo de alta rareza. Revisa cada pieza antes de confirmar.",
+    "Uitrusting met hoge zeldzaamheid geselecteerd. Controleer elk exemplaar vóór bevestiging.",
+    "Equipaggiamento di alta rarità selezionato. Controlla ogni copia prima di confermare.",
+    "Équipement de grande rareté sélectionné. Vérifiez chaque exemplaire avant de confirmer.",
+    "Выбрано снаряжение высокой редкости. Проверьте каждый экземпляр перед подтверждением.",
+    "Yüksek nadirlikte ekipman seçildi. Onaylamadan önce her parçayı kontrol edin."
+  ],
   "Selected": ["Ausgewählt","Seleccionado","Geselecteerd","Selezionati","Sélectionnés","Выбрано","Seçilen"],
   "Sellable": ["Verkaufbar","Vendibles","Verkoopbaar","Vendibili","Vendables","Можно продать","Satılabilir"],
   "Salvageable": ["Zerlegbar","Reciclables","Te ontmantelen","Smontabili","Recyclables","Можно разобрать","Sökülebilir"],

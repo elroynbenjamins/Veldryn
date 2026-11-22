@@ -80,6 +80,9 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const healthState=liveHealthState(state,Date.now());
   const {width,fontScale}=useWindowDimensions();
   const stackStorageActions=width<380||fontScale>=1.25;
+  // Only narrow screens need larger inspector controls; do not change S24+ defaults.
+  const compactInspector=width<380||fontScale>=1.25;
+  const stackInspectorActions=width<345||fontScale>=1.25;
   const [gridWidth,setGridWidth]=useState(Math.max(280,Math.min(960,width)-32));
   const gridColumns=gridWidth<235?3:gridWidth>=600?8:gridWidth>=440?6:gridWidth>=345?5:4,tileSize=Math.max(48,Math.floor((gridWidth-(gridColumns-1)*5)/gridColumns)),iconSize=Math.min(42,tileSize-12);
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
@@ -325,13 +328,13 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     <View style={s.inspectAmountRow}>
       <Text style={s.inspectAmountLabel}>{gt('Amount')} · {formatGameNumber(inspectStock,state.settings.numberMode,language)} {gl('available')}</Text>
       <View style={s.inspectStepper}>
-        <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Decrease amount')} accessibilityState={{disabled:inspectAmount<=1}} disabled={inspectAmount<=1} onPress={()=>setInspectQuantity(value=>Math.max(1,value-1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount<=1&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>−</Text></Pressable>
         <Text style={s.inspectAmountValue}>{formatGameNumber(inspectAmount,state.settings.numberMode,language)}</Text>
-        <Pressable accessibilityRole="button" accessibilityLabel={gl('Increase amount')} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={gt('All')} onPress={()=>setInspectQuantity(inspectStock)} style={s.inspectStep}><Text style={s.inspectStepAll}>{gt('All')}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gl('Increase amount')} accessibilityState={{disabled:inspectAmount>=inspectStock}} disabled={inspectAmount>=inspectStock} onPress={()=>setInspectQuantity(value=>Math.min(inspectStock,value+1))} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount>=inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepText}>+</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={gt('All')} accessibilityState={{disabled:inspectAmount===inspectStock}} disabled={inspectAmount===inspectStock} onPress={()=>setInspectQuantity(inspectStock)} style={[s.inspectStep,compactInspector&&s.inspectStepCompact,inspectAmount===inspectStock&&s.inspectStepDisabled]}><Text style={s.inspectStepAll}>{gt('All')}</Text></Pressable>
       </View>
     </View>
-    <View style={s.inspectQuickButtons}>
+    <View style={[s.inspectQuickButtons,stackInspectorActions&&s.inspectQuickButtonsStacked]}>
       <View style={s.inspectQuickButton}><GameButton compact title={carried?(gemDepositDestination(state,inspected.id)==='gem_pouch'?gl('To Gem Pouch'):gl('To Bank')):gt('Withdraw')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={inventoryBusyLabel!==null} onPress={()=>{const id=inspected.id,amount=inspectAmount;
         if(carried)runInventory({kind:'deposit',itemId:id,quantity:amount},()=>onDeposit(id,amount));
         else runInventory({kind:'withdraw',itemId:id,quantity:amount},()=>onWithdraw(id,amount));
@@ -677,9 +680,10 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   inspectAmountLabel:{...typography.caption,color:C.muted,flexShrink:1},
   inspectStepper:{flexDirection:'row',alignItems:'center',gap:5},
   inspectStep:{minWidth:36,minHeight:38,paddingHorizontal:7,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},
+  inspectStepCompact:{minWidth:44,minHeight:44},
   inspectStepDisabled:{opacity:.35},inspectStepText:{fontSize:20,fontWeight:'900',color:C.text},inspectStepAll:{...typography.caption,color:C.accent,fontWeight:'900'},
   inspectAmountValue:{minWidth:38,textAlign:'center',...typography.bodyStrong,color:C.text},
-  inspectQuickButtons:{flexDirection:'row',gap:8},inspectQuickButton:{flex:1,minWidth:0},
+  inspectQuickButtons:{flexDirection:'row',gap:8},inspectQuickButtonsStacked:{flexDirection:'column'},inspectQuickButton:{flex:1,minWidth:0},
   utilityChip:{minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   utilityChipActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   utilityChipText:{fontSize:11,color:C.text,fontWeight:'800'},

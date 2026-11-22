@@ -42601,7 +42601,12 @@ function roundDownToolBlueprintDropChance(chance) {
   if (!Number.isFinite(chance) || chance < 0 || chance > 1) throw new Error("invalid_tool_blueprint_chance");
   return Math.floor(chance / TOOL_BLUEPRINT_DROP_ROUNDING_STEP + 1e-10) * TOOL_BLUEPRINT_DROP_ROUNDING_STEP;
 }
-var TOOL_CRAFT_COST_MULTIPLIER = 2;
+var TOOL_CRAFT_COST_MULTIPLIER_BY_TIER = {
+  1: 3,
+  2: 5,
+  3: 7,
+  4: 9
+};
 var TOOL_CRAFT_XP_BONUS = 3;
 var TOOL_CRAFT_XP_MULTIPLIER = 1.75;
 var TOOL_CRAFT_XP_ROUNDING_STEP = 10;
@@ -42615,8 +42620,8 @@ var tool = (definition) => ({
   recipe: {
     ...definition.recipe,
     xp: increasedToolCraftXp(definition.recipe.xp),
-    gold: increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER,
-    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER }))
+    gold: roundEquipmentCraftingGoldCost(increasedCraftingGoldCost(definition.recipe.gold) * TOOL_CRAFT_COST_MULTIPLIER_BY_TIER[definition.tier]),
+    inputs: definition.recipe.inputs.map((input) => ({ ...input, quantity: input.quantity * TOOL_CRAFT_COST_MULTIPLIER_BY_TIER[definition.tier] }))
   }
 });
 var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({
@@ -42631,17 +42636,17 @@ var GATHERING_TOOLS = [
   tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
   tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
   // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
-  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.05), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.05), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
-  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.05), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
+  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.017), recipe: { xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.016), recipe: { xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.015), recipe: { xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
   // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
-  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.02), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
-  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.02), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
-  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.02), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
+  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.013), recipe: { xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
+  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.012), recipe: { xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
+  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.01), recipe: { xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
   // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
-  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 0.01), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
-  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 0.01), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
-  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 0.01), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
+  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 9e-3), recipe: { xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
+  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 8e-3), recipe: { xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
+  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 8e-3), recipe: { xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
 ];
 var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
 var TOOL_BLUEPRINT_ITEMS = GATHERING_TOOLS.flatMap((entry2) => entry2.blueprint ? [{
@@ -43022,18 +43027,18 @@ var MONSTERS_RAW = [
   { id: "SILVERFIN_SWARM", name: "Silverfin Swarm", level: 5, hp: 66, attack: 9, defense: 4, xp: 34, gold: 2, secondsPerKill: 10, unlockLevel: 5, zone: "Silverbrook", drops: [{ itemId: "SILVERFIN", chance: 0.6, min: 1, max: 2 }, { itemId: "WISP_DUST", chance: 0.12, min: 1, max: 1 }] },
   { id: "IRONWOOD_WOLF", name: "Ironwood Wolf", level: 7, hp: 96, attack: 12, defense: 7, xp: 48, gold: 3, secondsPerKill: 12, unlockLevel: 7, zone: "Ironwood Forest", drops: [{ itemId: "WOLF_PELT", chance: 0.48, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.14, min: 1, max: 1 }, { itemId: "BOAR_HIDE", chance: 0.2, min: 1, max: 1 }] },
   { id: "VENOM_WEAVER", name: "Venom Weaver", level: 8, hp: 108, attack: 14, defense: 6, xp: 55, gold: 4, secondsPerKill: 13, unlockLevel: 8, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }] },
-  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "BP_ASTER_IRON_HATCHET", chance: 0.05, min: 1, max: 1 }] },
+  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "BP_ASTER_IRON_HATCHET", chance: 0.016, min: 1, max: 1 }] },
   { id: "BRIAR_HUSK", name: "Briar Husk", level: 11, hp: 154, attack: 18, defense: 10, xp: 82, gold: 5, secondsPerKill: 16, unlockLevel: 11, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.38, min: 1, max: 2 }, { itemId: "GREENWOOD_LOG", chance: 0.24, min: 1, max: 2 }] },
-  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.05, min: 1, max: 1 }] },
+  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.015, min: 1, max: 1 }] },
   { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.24, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.12, min: 1, max: 1 }] },
-  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.02, min: 1, max: 1 }] },
-  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
+  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.012, min: 1, max: 1 }] },
+  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.017, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
-  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
+  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.013, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
   { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
-  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
+  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.01, min: 1, max: 1 }] },
   { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.18, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.18, min: 1, max: 1 }] },
   { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "WOLF_PELT", chance: 0.28, min: 1, max: 1 }, { itemId: "THORN_SAP", chance: 0.24, min: 1, max: 1 }] },
   { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "TROLL_HIDE", chance: 0.2, min: 1, max: 1 }] },
@@ -43046,9 +43051,9 @@ var MONSTERS_RAW = [
   { id: "MIRAGE_SHADE", name: "Mirage Shade", level: 38, hp: 905, attack: 72, defense: 41, xp: 521, gold: 32, secondsPerKill: 39, unlockLevel: 36, zone: "Sunscar", areaId: "ZONE_008", regionalAreaAutoUnlock: true, drops: [{ itemId: "AMBERGLASS", chance: 0.34, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.09, min: 1, max: 1 }, { itemId: "SUNSCALE", chance: 0.24, min: 1, max: 1 }] },
   { id: "OBSERVATORY_KEEPER", name: "Observatory Keeper", level: 42, hp: 1090, attack: 79, defense: 50, xp: 622, gold: 38, secondsPerKill: 43, unlockLevel: 41, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "GLASSBOUND_CORE", chance: 0.25, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.18, min: 1, max: 1 }, { itemId: "AMBERGLASS", chance: 0.3, min: 1, max: 1 }] },
   { id: "ROYAL_SANDGUARD", name: "Royal Sandguard", level: 45, hp: 1240, attack: 87, defense: 58, xp: 705, gold: 43, secondsPerKill: 47, unlockLevel: 44, zone: "Sunscar", areaId: "ZONE_010", regionalAreaAutoUnlock: true, drops: [{ itemId: "SUNSTONE_ORE", chance: 0.45, min: 1, max: 2 }, { itemId: "GLASSBOUND_CORE", chance: 0.3, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
-  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
-  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
+  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", areaId: "ZONE_011", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.06, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 8e-3, min: 1, max: 1 }] },
+  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", areaId: "ZONE_012", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 9e-3, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_015", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 8e-3, min: 1, max: 1 }] },
   { id: "ICEBOUND_RAIDER", name: "Icebound Raider", level: 50, hp: 1330, attack: 93, defense: 58, xp: 766, gold: 47, secondsPerKill: 46, unlockLevel: 49, zone: "Frostmarch", areaId: "ZONE_011", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.44, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.12, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
   { id: "SNOW_TREANT", name: "Snow Treant", level: 53, hp: 1460, attack: 100, defense: 67, xp: 845, gold: 51, secondsPerKill: 48, unlockLevel: 51, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "RIME_RESIN", chance: 0.22, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.1, min: 1, max: 1 }] },
   { id: "RIME_STALKER", name: "Rime Stalker", level: 59, hp: 1770, attack: 112, defense: 71, xp: 995, gold: 60, secondsPerKill: 53, unlockLevel: 57, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.4, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.11, min: 1, max: 1 }, { itemId: "FROSTIRON", chance: 0.2, min: 1, max: 1 }] },
@@ -44421,6 +44426,79 @@ var CombatRng = class {
   }
 };
 
+// live-edge-v2-disabled:./enemy-v2-status-rules
+function applyEnemyV2Periodic() {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+}
+function applyEnemyV2Modifier() {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+}
+function enemyV2AllowedShieldAmount() {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+}
+
+// live-edge-v2-disabled:./v2/enemy-engine-authority
+function authorizeEnemyV2EngineExecution(input, authority) {
+  if (authority !== void 0 || input?.players?.some((player2) => player2.combatV2))
+    throw Error("combat_v2_not_available_in_live_edge_bundle");
+  return false;
+}
+
+// live-edge-v2-disabled:./v2/resource-runtime
+var blocked = () => {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+};
+function initCombatResourceV2(def) {
+  if (def.combatV2) blocked();
+  return void 0;
+}
+function awardCombatResourceV2(state) {
+  if (state.combatV2) blocked();
+  return void 0;
+}
+function spendCombatResourceV2(state, ability3) {
+  if (state.combatV2) blocked();
+  return { ability: ability3 };
+}
+function consumeQueuedCombatBonusV2(state, ability3) {
+  if (state.combatV2) blocked();
+  return ability3;
+}
+
+// live-edge-v2-disabled:./v2/capstone-runtime
+function triggerCapstoneV2() {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+}
+
+// live-edge-v2-disabled:./v2/reactive-passive-runtime
+var blocked2 = () => {
+  throw Error("combat_v2_not_available_in_live_edge_bundle");
+};
+function triggerReactivePassiveV2() {
+  blocked2();
+}
+function defensiveReactiveTriggerV2() {
+  blocked2();
+}
+function outgoingReactiveMultiplierV2() {
+  blocked2();
+}
+function incomingReactiveMultiplierV2() {
+  blocked2();
+}
+function reactiveDamageFlatReductionV2() {
+  blocked2();
+}
+function reactiveHasteV2() {
+  blocked2();
+}
+function reactiveHealingMultiplierV2() {
+  blocked2();
+}
+function reactiveShieldMultiplierV2() {
+  blocked2();
+}
+
 // src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
 var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
@@ -44698,7 +44776,7 @@ function gemOnBossPhaseV1(now, players) {
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
   const downed = carried?.downed ?? false;
-  return { definition: def, hp, shield: 0, alive: !downed && hp > 0, downed, threat: {}, cooldownReadyAt: { ...carried?.cooldownRemainingMs ?? {} }, nextBasicAt: carried?.basicAttackRemainingMs ?? 0, periodic: [], modifiers: [], damageDone: 0, healingDone: 0, damageTaken: 0, interrupts: 0, triggeredPhases: [] };
+  return { definition: def, combatV2: initCombatResourceV2(def), hp, shield: 0, alive: !downed && hp > 0, downed, threat: {}, cooldownReadyAt: { ...carried?.cooldownRemainingMs ?? {} }, nextBasicAt: carried?.basicAttackRemainingMs ?? 0, periodic: [], modifiers: [], damageDone: 0, healingDone: 0, damageTaken: 0, interrupts: 0, triggeredPhases: [] };
 }
 function living(xs) {
   return xs.filter((x) => x.alive);
@@ -44761,6 +44839,8 @@ function targetsFor(rule, actor, allies, enemies, rng, label) {
       const live = living(allies), poisoned = live.filter((x) => x.periodic.some((p) => p.kind === "dot")), candidates = poisoned.length ? poisoned : live;
       return candidates.length ? [candidates.reduce((a, b) => hpPct(b) < hpPct(a) ? b : a)] : [];
     }
+    case "two_lowest_hp_allies":
+      return [...living(allies)].sort((a, b) => hpPct(a) - hpPct(b) || a.definition.id.localeCompare(b.definition.id)).slice(0, 2);
     case "all_allies":
       return living(allies);
     case "all_enemies":
@@ -44808,15 +44888,49 @@ function conditionOk(a, actor, allies, enemies) {
       return true;
   }
 }
-function simulateCombat(input) {
+function simulateCombat(input, enemyV2Authority) {
   if (!input.players.length || !input.enemies.length) throw new Error("combat_requires_both_teams");
+  const enemyV2Effects = authorizeEnemyV2EngineExecution(input, enemyV2Authority);
   const maxMs = input.maxDurationMs ?? 18e4;
   const tick = input.tickMs ?? 100;
   const mitigationConstant = input.mitigationConstant ?? 1200;
   const accuracyScale = input.accuracyScale ?? 1400;
   const players = input.players.map((def) => init(def, input.initialPlayerState?.[def.id])), enemies = input.enemies.map((def) => init(def)), all = [...players, ...enemies];
+  const v2Encounter = players.some((player2) => Boolean(player2.definition.combatV2));
   const rng = new CombatRng(input.seed);
   const events = [{ atMs: 0, type: "combat_start" }];
+  let runCapstone = () => {
+  };
+  let runReactive = () => {
+  };
+  const resource = (actor, kind, now, id) => {
+    const event = awardCombatResourceV2(actor, kind, now, id);
+    if (event) {
+      events.push(event);
+      runCapstone(actor, "gain", now);
+      runReactive(actor, "gain", now);
+    }
+  };
+  const spend = (actor, ability3, now) => {
+    const queued = consumeQueuedCombatBonusV2(actor, ability3);
+    const resolved = spendCombatResourceV2(actor, queued, now);
+    if (resolved.event) {
+      events.push(resolved.event);
+      const spent = Math.max(0, (resolved.event.resourceBefore ?? 0) - (resolved.event.resourceAfter ?? 0));
+      runCapstone(actor, "spend", now, void 0, { spent });
+      runReactive(actor, "spend", now, void 0, { spent });
+    }
+    if (actor.combatV2 && actor.definition.combatV2?.resource === "resonance" && ability3.name === "Thunder Totem" && ability3.id.includes(":v2:")) {
+      actor.combatV2.activeTotem = {
+        abilityId: ability3.id,
+        nextPulseAtMs: now + 2e3,
+        pulsesRemaining: 3,
+        pulseCoeff: 0.18
+      };
+      actor.combatV2.scheduledTotemAt = actor.definition.combatV2.capstoneId?.endsWith(":ritual_surge") ? [now + 6e3] : [];
+    }
+    return resolved.ability;
+  };
   const abilitiesByActor = new Map(all.map((actor) => [actor, [...actor.definition.abilities].sort((a, b) => b.priority - a.priority)]));
   const bosses = enemies.filter((actor) => actor.definition.boss);
   const phasesByBoss = new Map(bosses.map((boss4) => [boss4, [...boss4.definition.phases ?? []].sort((a, b) => b.hpPct - a.hpPct)]));
@@ -44846,19 +44960,39 @@ function simulateCombat(input) {
   };
   const applyDamage = (now, source, target2, effect2, abilityId, eventType = "damage") => {
     if (!target2.alive) return;
-    const hc = hitChance(source.definition.stats.accuracy, target2.definition.stats.evasion, accuracyScale);
+    const v2Evasion = target2.definition.tags?.includes("combat-v2") ? modifier(target2, "evasion", now) : 0;
+    const sourceGear = v2Encounter ? source.definition.combatV2?.equipmentEffects : void 0;
+    const targetGear = v2Encounter ? target2.definition.combatV2?.equipmentEffects : void 0;
+    const hc = clamp2(hitChance(
+      source.definition.stats.accuracy,
+      target2.definition.stats.evasion + v2Evasion,
+      accuracyScale
+    ) + (sourceGear?.accuracyPp ?? 0) - (targetGear?.evasionPp ?? 0), 0, 1);
     if (rng.next(`${now}:${source.definition.id}:${abilityId}:hit`) > hc) {
-      if (eventType === "damage") events.push({ atMs: now, type: "miss", actorId: source.definition.id, targetId: target2.definition.id, abilityId });
+      if (eventType === "damage") {
+        events.push({ atMs: now, type: "miss", actorId: source.definition.id, targetId: target2.definition.id, abilityId });
+        if (source.definition.team === "enemies") {
+          resource(target2, "evade", now, abilityId);
+          if (!abilityId.startsWith("V2_")) {
+            runCapstone(target2, "evade", now, source);
+            runReactive(target2, "evade", now, source);
+          }
+        }
+      }
       return;
     }
-    const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
+    const v2Defense = v2Encounter ? Math.max(0.7, Math.min(1.3, 1 + modifier(target2, "defense_pct", now))) : 1;
+    const authoredPenetration = v2Encounter && source.definition.combatV2 ? clamp2((effect2.penetrationPct ?? 0) + (sourceGear?.penetrationPp ?? 0), 0, 1) : 0;
+    const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now) * v2Defense * (1 - authoredPenetration), mitigationConstant);
     const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now) + modifier(target2, "crit_taken", now), 0, 0.75);
     const qmodeStrike = input.enemyDamageProfile === "qmode-v1" && source.definition.team === "enemies" && target2.definition.team === "players" && eventType === "damage";
     const varianceRoll = rng.next(`${now}:${abilityId}:var`);
     const variance = qmodeStrike ? 0.925 + varianceRoll * 0.2 : 0.95 + varianceRoll * 0.1;
     const heavyHit = qmodeStrike && !crit && rng.next(`${now}:${source.definition.id}:${target2.definition.id}:${abilityId}:heavy`) * 2 < 0.04;
     const roleAttack = roleAdjustedAttackPower({ team: source.definition.team, role: source.definition.role, attackPower: source.definition.stats.attackPower, defense: source.definition.stats.defense, maxHp: source.definition.stats.maxHp, healingPower: source.definition.stats.healingPower });
-    let raw2 = damageAfterMitigation(roleAttack, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    const isMarked = v2Encounter && Boolean(source.definition.combatV2) && target2.modifiers.some((m) => m.kind === "debuff" && m.sourceId === source.definition.id && m.tag === "damage_taken" && m.expiresAt > now);
+    const critBoost = v2Encounter && Boolean(source.definition.combatV2) ? clamp2(effect2.critMultiplierBonus ?? 0, 0, 0.5) + (crit && isMarked ? clamp2(effect2.criticalDamageBonusVsMarked ?? 0, 0, 0.2) : 0) : 0;
+    let raw2 = damageAfterMitigation(roleAttack, effect2.coeff ?? 0, mit, variance, crit, source.definition.stats.critMultiplier + critBoost) + (effect2.flat ?? 0);
     if (heavyHit) raw2 *= 1.1;
     raw2 *= source.definition.alchemyModifiers?.outgoing ?? 1;
     raw2 *= target2.definition.alchemyModifiers?.incoming ?? 1;
@@ -44868,16 +45002,73 @@ function simulateCombat(input) {
     raw2 *= gemIncomingDamageMultiplierV1(target2, now);
     if (hpPct(target2) < clamp2(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp2(effect2.executeBonus ?? 0, 0, 1);
     if (effect2.bonusVsDebuffed && target2.modifiers.some((m) => m.kind === "debuff" && m.expiresAt > now)) raw2 *= 1 + clamp2(effect2.bonusVsDebuffed, 0, 0.2);
+    if (isMarked && crit) raw2 *= 1 + clamp2(effect2.criticalHitBonusVsMarked ?? 0, 0, 0.15);
+    if (v2Encounter && source.definition.combatV2 && hpPct(target2) < clamp2(effect2.additionalExecuteBelowHpPct ?? 0, 0, 0.5))
+      raw2 *= 1 + clamp2(effect2.additionalExecuteBonus ?? 0, 0, target2.definition.boss ? 0.08 : 0.15);
+    if (v2Encounter && eventType === "damage" && !abilityId.startsWith("V2_CAPSTONE") && source.definition.combatV2?.capstoneId?.endsWith(":final_verdict") && hpPct(target2) < 0.3)
+      raw2 *= target2.definition.boss ? 1.08 : 1.18;
+    const hpBeforeReactive = hpPct(target2);
+    if (v2Encounter && eventType === "damage" && !abilityId.startsWith("V2_")) {
+      if (source.combatV2) raw2 *= outgoingReactiveMultiplierV2(source, target2, now);
+      if (target2.combatV2) {
+        raw2 *= incomingReactiveMultiplierV2(target2, source, now);
+        raw2 = Math.max(0, raw2 - reactiveDamageFlatReductionV2(target2, raw2));
+      }
+    }
+    if (eventType === "damage" && source.combatV2 && !abilityId.startsWith("V2_") && (effect2.consumeOwnedDotFraction ?? 0) > 0) {
+      const i = target2.periodic.findIndex((p) => p.kind === "dot" && p.sourceId === source.definition.id && p.expiresAt > now && p.nextTickAt <= p.expiresAt);
+      if (i >= 0) {
+        const [dot] = target2.periodic.splice(i, 1);
+        const ticks = Math.max(0, Math.floor((dot.expiresAt - dot.nextTickAt) / Math.max(1, dot.tickMs)) + 1);
+        const fraction = clamp2(effect2.consumeOwnedDotFraction ?? 0, 0, 0.5);
+        const rupture = Math.min(
+          source.definition.stats.attackPower * (target2.definition.boss ? 0.35 : 0.65),
+          source.definition.stats.attackPower * Math.max(0, dot.coeff) * ticks * fraction
+        );
+        raw2 += rupture;
+        events.push({
+          atMs: now,
+          type: "status_remove",
+          actorId: source.definition.id,
+          targetId: target2.definition.id,
+          abilityId,
+          statusKind: "dot",
+          statusTag: dot.tag ?? "dot",
+          detail: "combat_v2_rupture"
+        });
+      }
+    }
+    if (v2Encounter && targetGear && effect2.damageType && effect2.damageType !== "physical" && effect2.damageType !== "true") {
+      raw2 *= 1 - clamp2(targetGear.wardPp, 0, 1);
+    }
     const bypassShield = eventType === "dot_tick" && effect2.damageType === "true";
     const absorbed = bypassShield ? 0 : Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
-    const dealt = Math.max(0, raw2 - absorbed);
+    const dealt = Math.max(0, source.combatV2 && eventType === "damage" ? Math.min(target2.hp, raw2 - absorbed) : raw2 - absorbed);
     target2.hp = Math.max(0, target2.hp - dealt);
     source.damageDone += dealt;
     target2.damageTaken += dealt;
+    if (eventType === "damage" && source.combatV2 && !abilityId.startsWith("V2_") && (effect2.lifestealPct ?? 0) > 0 && dealt > 0 && source.alive) {
+      const healed = Math.min(
+        source.definition.stats.maxHp - source.hp,
+        dealt * clamp2(effect2.lifestealPct ?? 0, 0, 0.2)
+      );
+      if (healed > 0) {
+        source.hp += healed;
+        source.healingDone += healed;
+        events.push({
+          atMs: now,
+          type: "heal",
+          actorId: source.definition.id,
+          targetId: source.definition.id,
+          abilityId: "V2_LIFESTEAL:" + abilityId,
+          amount: Number(healed.toFixed(2))
+        });
+      }
+    }
     gemOnDamageTakenV1(now, target2, dealt);
     emitGemState(now);
-    if (eventType === "damage") {
+    if (eventType === "damage" && !abilityId.startsWith("V2_COUNTER:")) {
       const proc = gemOnDirectHitV1(now, source, target2, abilityId, crit);
       emitGemState(now);
       if (proc.selfHeal > 0 && source.alive) {
@@ -44888,6 +45079,43 @@ function simulateCombat(input) {
     }
     addThreat(target2, source, dealt * (effect2.threatMultiplier ?? 1));
     events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...heavyHit ? { detail: "heavy_hit" } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
+    if (dealt > 0) {
+      if (source.definition.team === "players") {
+        resource(source, eventType === "dot_tick" ? "periodic_hit" : "direct_hit", now, abilityId);
+        if (eventType === "damage" && !abilityId.startsWith("V2_")) {
+          runCapstone(source, "hit", now, target2);
+          runReactive(source, "hit", now, target2, {
+            critical: crit,
+            abilityName: source.definition.abilities.find((a) => a.id === abilityId)?.name ?? "BASIC"
+          });
+          const v2 = source.combatV2;
+          if (source.definition.combatV2?.capstoneId?.endsWith(":endless_weave") && v2 && abilityId !== "BASIC") {
+            v2.procCounters.spell_hits = (v2.procCounters.spell_hits ?? 0) + 1;
+            if (v2.procCounters.spell_hits % 4 === 0) {
+              const dot = target2.periodic.find((p) => p.kind === "dot" && p.sourceId === source.definition.id && !p.extendedV2);
+              if (dot) {
+                dot.expiresAt += 2e3;
+                dot.extendedV2 = true;
+                events.push({
+                  atMs: now,
+                  type: "capstone_trigger",
+                  actorId: source.definition.id,
+                  targetId: target2.definition.id,
+                  abilityId: source.definition.combatV2.capstoneId,
+                  detail: "extend_dot_2000ms"
+                });
+              }
+            }
+          }
+        }
+      }
+      if (target2.definition.team === "players") {
+        resource(target2, "damage_taken", now, abilityId);
+        if (eventType === "damage" && !abilityId.startsWith("V2_"))
+          runReactive(target2, "damage_taken", now, source, { amount: dealt, previousHpPct: hpBeforeReactive });
+      }
+    }
+    if (absorbed > 0 && target2.definition.team === "players") resource(target2, "shield_absorb", now, abilityId);
     let reflectable = absorbed;
     for (const shield of target2.reflectiveShields ?? []) {
       const used = Math.min(reflectable, shield.remaining);
@@ -44913,15 +45141,36 @@ function simulateCombat(input) {
       target2.alive = false;
       target2.downed = target2.definition.team === "players";
       events.push({ atMs: now, type: target2.downed ? "down" : "death", targetId: target2.definition.id, actorId: source.definition.id, abilityId });
+      if (source.combatV2 && target2.definition.team === "enemies" && !abilityId.startsWith("V2_"))
+        runReactive(source, "kill", now, target2);
+    }
+    if (eventType === "damage" && source.definition.team === "enemies" && target2.definition.team === "players" && target2.alive && target2.hp > 0 && source.alive && target2.combatV2 && target2.combatV2.resource === "guard" && target2.modifiers.some((m) => m.sourceId === target2.definition.id && m.v2SourceAbilityId?.startsWith("SK2_IRON_RIPOSTE:v2:") && m.kind === "buff" && m.tag === "damage_taken" && m.expiresAt > now)) {
+      const key = "skill:iron_riposte_counter";
+      const v2 = target2.combatV2;
+      if (now - (v2.procCooldownAt[key] ?? -Infinity) >= 8e3) {
+        v2.procCooldownAt[key] = now;
+        applyDamage(
+          now,
+          target2,
+          source,
+          { kind: "damage", coeff: 0.32, damageType: "physical" },
+          "V2_COUNTER:IRON_RIPOSTE"
+        );
+      }
     }
   };
   const applyHeal = (now, source, target2, effect2, abilityId, eventType = "heal") => {
     if (!target2.alive) return;
     const direct = eventType === "heal", sourceMult = direct ? gemHealingMultiplierV1(source, now) : 1, receivedMult = Math.max(0, 1 + modifier(target2, "healing_received", now));
-    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult * (source.definition.alchemyModifiers?.healing ?? 1));
+    const v2HealBonus = v2Encounter && effect2.healBelowHpPct !== void 0 && hpPct(target2) < effect2.healBelowHpPct ? 1 + clamp2(effect2.healBonus ?? 0, 0, 0.4) : 1;
+    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult * (source.definition.alchemyModifiers?.healing ?? 1) * v2HealBonus * (direct && source.combatV2 ? reactiveHealingMultiplierV2(source, target2, now) : 1));
     const actual = Math.min(amount, target2.definition.stats.maxHp - target2.hp);
     target2.hp += actual;
     source.healingDone += actual;
+    if (actual > 0 && direct && source.definition.team === "players") {
+      resource(source, "effective_heal", now, abilityId);
+      if (!abilityId.startsWith("V2_")) runCapstone(source, "heal", now, target2, { amount: actual, healedAlly: source !== target2 });
+    }
     events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(actual.toFixed(2)) });
     if (direct) {
       const post = gemOnDirectHealV1(now, source, target2, amount, actual);
@@ -44949,18 +45198,49 @@ function simulateCombat(input) {
     if (effect2.kind === "damage") return applyDamage(now, source, target2, effect2, abilityId);
     if (effect2.kind === "heal") return applyHeal(now, source, target2, effect2, abilityId);
     if (effect2.kind === "shield") {
-      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1));
+      const requested = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now) * (source.definition.alchemyModifiers?.shielding ?? 1) * (source.combatV2 ? reactiveShieldMultiplierV2(source, target2, now) : 1) * (v2Encounter ? 1 + clamp2(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct ?? 0, 0, 1) : 1));
+      const amt = enemyV2Effects && target2.definition.team === "enemies" ? enemyV2AllowedShieldAmount(target2.definition.stats.maxHp, target2.shield, requested) : requested;
       target2.shield += amt;
       if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
       gemConsumeSupportChargeV1(now, source);
       emitGemState(now);
       events.push({ atMs: now, type: "shield", actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(amt.toFixed(2)) });
+      if (amt > 0 && source.definition.team === "players") {
+        resource(source, "shield_granted", now, abilityId);
+        if (!abilityId.startsWith("V2_CAPSTONE")) {
+          const ability3 = source.definition.abilities.find((a) => a.id === abilityId);
+          const isPartyShield = effect2.target === "all_allies" || ability3?.target === "all_allies";
+          runCapstone(source, "shield", now, target2, { amount: amt, isPartyShield });
+        }
+      }
       return;
     }
     if (effect2.kind === "dot" || effect2.kind === "hot") {
+      const isHex = effect2.kind === "dot" && (effect2.damageType === "shadow" || effect2.damageType === "arcane" || effect2.damageType === "nature");
+      const hexBonus = isHex && v2Encounter ? clamp2(source.definition.combatV2?.equipmentEffects?.hexPotencyPct ?? 0, 0, 1) : 0;
       const expiresAt = now + (effect2.durationMs ?? 3e3);
-      target2.periodic.push({ sourceId: source.definition.id, effectId: abilityId, kind: effect2.kind, coeff: effect2.coeff ?? 0, flat: effect2.flat ?? 0, damageType: effect2.damageType, tag: effect2.tag ?? effect2.damageType ?? effect2.kind, nextTickAt: now + (effect2.tickMs ?? 1e3), expiresAt, tickMs: effect2.tickMs ?? 1e3 });
+      const periodic = {
+        sourceId: source.definition.id,
+        effectId: abilityId,
+        kind: effect2.kind,
+        coeff: (effect2.coeff ?? 0) * (1 + hexBonus),
+        flat: (effect2.flat ?? 0) * (1 + hexBonus),
+        damageType: effect2.damageType,
+        tag: effect2.tag ?? effect2.damageType ?? effect2.kind,
+        nextTickAt: now + (effect2.tickMs ?? 1e3),
+        expiresAt,
+        tickMs: effect2.tickMs ?? 1e3,
+        ...source.combatV2 && abilityId.includes(":v2:") ? { v2AppliedAtMs: now } : {}
+      };
+      if (enemyV2Effects && source.definition.team === "enemies")
+        target2.periodic = applyEnemyV2Periodic(target2.periodic, periodic).entries;
+      else {
+        if (source.combatV2 && abilityId.includes(":v2:")) {
+          target2.periodic = target2.periodic.filter((p) => p.sourceId !== source.definition.id || p.effectId !== abilityId || p.kind !== periodic.kind || p.tag !== periodic.tag || p.v2AppliedAtMs === now);
+        }
+        target2.periodic.push(periodic);
+      }
       events.push({ atMs: now, type: "status_apply", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: effect2.kind, statusTag: effect2.tag ?? effect2.damageType ?? effect2.kind, expiresAtMs: expiresAt });
       return;
     }
@@ -44968,6 +45248,8 @@ function simulateCombat(input) {
       const removed = target2.periodic.filter((p) => p.kind === "dot");
       target2.periodic = target2.periodic.filter((p) => p.kind !== "dot");
       for (const p of removed) events.push({ atMs: now, type: "status_remove", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: "dot", statusTag: p.tag ?? "dot" });
+      if (removed.length && source.combatV2 && !abilityId.startsWith("V2_"))
+        runReactive(source, "cleanse", now, target2);
       return;
     }
     if (effect2.kind === "interrupt") {
@@ -44977,6 +45259,13 @@ function simulateCombat(input) {
           target2.casting = void 0;
           source.interrupts++;
           events.push({ atMs: now, type: "interrupt", actorId: source.definition.id, targetId: target2.definition.id, abilityId, interruptedAbilityId });
+          if (source.definition.team === "players") {
+            resource(source, "interrupt", now, abilityId);
+            if (!abilityId.startsWith("V2_")) {
+              runCapstone(source, "interrupt", now, target2);
+              runReactive(source, "interrupt", now, target2);
+            }
+          }
         }
       }
       return;
@@ -44985,12 +45274,34 @@ function simulateCombat(input) {
       if (target2.definition.team === "enemies") {
         const top = Math.max(1, ...Object.values(target2.threat));
         target2.threat[source.definition.id] = top + Math.max(100, effect2.value ?? 100);
+        if (source.definition.team === "players") {
+          resource(source, "taunt", now, abilityId);
+          if (!abilityId.startsWith("V2_")) runReactive(source, "taunt", now, target2);
+        }
       }
       return;
     }
     if (effect2.kind === "buff" || effect2.kind === "debuff") {
       const tag = effect2.tag ?? "generic", expiresAt = now + (effect2.durationMs ?? 5e3);
-      target2.modifiers.push({ sourceId: source.definition.id, tag, value: effect2.value ?? 0, expiresAt, createdAt: now, kind: effect2.kind });
+      const capstoneId = abilityId.startsWith("V2_CAPSTONE:") || abilityId.startsWith("V2_PASSIVE:") ? abilityId : void 0;
+      if (capstoneId && effect2.kind === "buff") target2.modifiers = target2.modifiers.filter((m) => m.v2CapstoneId !== capstoneId || m.tag !== tag);
+      const classSkillId = source.combatV2 && abilityId.includes(":v2:") ? abilityId : void 0;
+      if (classSkillId) {
+        target2.modifiers = target2.modifiers.filter((m) => m.v2SourceAbilityId !== classSkillId || m.sourceId !== source.definition.id || m.kind !== effect2.kind || m.tag !== tag || m.createdAt === now);
+      }
+      const modifierEntry = {
+        sourceId: source.definition.id,
+        tag,
+        value: effect2.value ?? 0,
+        expiresAt,
+        createdAt: now,
+        kind: effect2.kind,
+        ...capstoneId ? { v2CapstoneId: capstoneId } : {},
+        ...classSkillId ? { v2SourceAbilityId: classSkillId } : {}
+      };
+      if (enemyV2Effects && source.definition.team === "enemies")
+        target2.modifiers = applyEnemyV2Modifier(target2.modifiers, modifierEntry).entries;
+      else target2.modifiers.push(modifierEntry);
       events.push({ atMs: now, type: "status_apply", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: effect2.kind, statusTag: tag, expiresAtMs: expiresAt });
       if (effect2.kind === "debuff") gemOnDebuffAppliedV1(now, source, target2);
       else gemOnBuffAppliedV1(now, source, target2);
@@ -44998,7 +45309,80 @@ function simulateCombat(input) {
       return;
     }
   };
+  runCapstone = (actor, kind, now, target2, ctx = {}) => {
+    if (!v2Encounter || !actor.alive || !actor.combatV2) return;
+    const result = triggerCapstoneV2(actor, kind, now, ctx);
+    if (!result.event && !result.actions.length) return;
+    if (result.event) events.push(result.event);
+    for (const action of result.actions) {
+      let targets = [];
+      switch (action.target) {
+        case "self":
+          targets = [actor];
+          break;
+        case "target":
+          targets = target2 ? [target2] : [actor];
+          break;
+        case "enemy":
+          targets = living(actor.definition.team === "players" ? enemies : players).slice(0, 1);
+          break;
+        case "tank":
+          targets = living(players).filter((p) => p.definition.role === "tank").slice(0, 1);
+          break;
+        case "lowest_hp_ally": {
+          const allies = living(actor.definition.team === "players" ? players : enemies);
+          if (allies.length) targets = [allies.reduce((a, b) => hpPct(a) < hpPct(b) ? a : b)];
+          break;
+        }
+        case "all_allies":
+          targets = living(actor.definition.team === "players" ? players : enemies);
+          break;
+      }
+      for (const destination of targets) {
+        if (destination.alive) applyEffect(now, actor, destination, action.effect, "V2_CAPSTONE:" + actor.definition.combatV2?.capstoneId);
+      }
+    }
+  };
+  runReactive = (actor, kind, now, target2, ctx = {}) => {
+    if (!actor.alive || !actor.combatV2 || !v2Encounter) return;
+    const actions = triggerReactivePassiveV2(actor, kind, now, ctx);
+    if (kind === "damage_taken") actions.push(...defensiveReactiveTriggerV2(actor, now));
+    for (const action of actions) {
+      events.push({
+        atMs: now,
+        type: "passive_trigger",
+        actorId: actor.definition.id,
+        targetId: target2?.definition.id,
+        abilityId: "V2_PASSIVE:" + action.node,
+        detail: kind
+      });
+      const affected = action.target === "all_allies" ? living(players) : action.target === "self" ? [actor] : target2?.alive ? [target2] : [];
+      for (const recipient of affected) {
+        if (recipient.alive) applyEffect(now, actor, recipient, action.effect, "V2_PASSIVE:" + action.node);
+      }
+    }
+  };
   for (let now = 0; now <= maxMs; now += tick) {
+    if (v2Encounter) for (const actor of players) {
+      const v2 = actor.combatV2;
+      if (!actor.alive || !v2) continue;
+      let resolved = 0;
+      while (v2.activeTotem && now >= v2.activeTotem.nextPulseAtMs && resolved++ < 3) {
+        const totem = v2.activeTotem;
+        const target2 = living(enemies)[0];
+        if (target2) applyDamage(now, actor, target2, {
+          kind: "damage",
+          coeff: totem.pulseCoeff,
+          damageType: "nature"
+        }, "V2_TOTEM:" + totem.abilityId, "dot_tick");
+        totem.pulsesRemaining--;
+        totem.nextPulseAtMs += 2e3;
+        if (totem.pulsesRemaining <= 0) v2.activeTotem = void 0;
+      }
+      const due = v2.scheduledTotemAt.filter((at) => at <= now);
+      v2.scheduledTotemAt = v2.scheduledTotemAt.filter((at) => at > now);
+      for (const at of due) runCapstone(actor, "totem_expires", now);
+    }
     for (const state of all) {
       if (!state.alive) continue;
       state.modifiers = state.modifiers.filter((m) => m.expiresAt > now);
@@ -45031,7 +45415,7 @@ function simulateCombat(input) {
           gemOnBossPhaseV1(now, players);
           emitGemState(now);
           for (const fx of phase2.effects) {
-            for (const t of targetsFor(phase2.target, boss4, enemies, players, rng, `${now}:${phase2.id}:phase`)) applyEffect(now, boss4, t, fx, phase2.id);
+            for (const t of targetsFor(fx.target ?? phase2.target, boss4, enemies, players, rng, `${now}:${phase2.id}:phase`)) applyEffect(now, boss4, t, fx, phase2.id);
           }
         }
       }
@@ -45047,26 +45431,28 @@ function simulateCombat(input) {
           events.push({ atMs: now, type: "cast_complete", actorId: actor.definition.id, targetId: target2.definition.id, abilityId: ab2.id });
           gemOnAbilityUsedV1(now, actor, ab2);
           emitGemState(now);
-          for (const fx of ab2.effects) {
-            for (const t of targetsFor(ab2.target, actor, allies, foes, rng, `${now}:${ab2.id}:target`)) applyEffect(now, actor, t, fx, ab2.id);
+          const executed = spend(actor, ab2, now);
+          for (const fx of executed.effects) {
+            for (const t of targetsFor(fx.target ?? ab2.target, actor, allies, foes, rng, `${now}:${ab2.id}:target`)) applyEffect(now, actor, t, fx, ab2.id);
           }
         }
       }
       if (actor.casting) continue;
-      const ab = abilitiesByActor.get(actor)?.find((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes));
+      const ab = abilitiesByActor.get(actor)?.find((a) => (actor.cooldownReadyAt[a.id] ?? 0) <= now && conditionOk(a, actor, allies, foes) && !(actor.combatV2?.activeTotem && actor.definition.combatV2?.resource === "resonance" && a.name === "Thunder Totem" && a.id.includes(":v2:")));
       if (ab) {
         const ts = targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:select`);
         const t = ts[0];
         if (t) {
-          actor.cooldownReadyAt[ab.id] = now + Math.round(ab.cooldownMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now)));
+          actor.cooldownReadyAt[ab.id] = now + Math.round(ab.cooldownMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now) + (v2Encounter ? Math.max(-0.2, Math.min(0.2, modifier(actor, "haste", now) + reactiveHasteV2(actor))) : 0)));
           if (ab.castTimeMs > 0) {
             actor.casting = { abilityId: ab.id, completesAt: now + ab.castTimeMs, targetId: t.definition.id };
             events.push({ atMs: now, type: "cast_start", actorId: actor.definition.id, targetId: t.definition.id, abilityId: ab.id });
           } else {
             gemOnAbilityUsedV1(now, actor, ab);
             emitGemState(now);
-            for (const fx of ab.effects) {
-              for (const x of ts) {
+            const executed = spend(actor, ab, now);
+            for (const fx of executed.effects) {
+              for (const x of fx.target ? targetsFor(fx.target, actor, allies, foes, rng, `${now}:${ab.id}:effect`) : ts) {
                 if (x.alive) applyEffect(now, actor, x, fx, ab.id);
               }
             }
@@ -45078,7 +45464,7 @@ function simulateCombat(input) {
         const t = chooseEnemy(actor, foes, rng, `${now}:${actor.definition.id}:basic`);
         if (t) {
           applyDamage(now, actor, t, { kind: "damage", coeff: actor.definition.basicAttackCoeff, damageType: "physical", threatMultiplier: actor.definition.role === "tank" ? 2.5 : 1 }, "BASIC");
-          actor.nextBasicAt = now + Math.round(actor.definition.basicAttackMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now)));
+          actor.nextBasicAt = now + Math.round(actor.definition.basicAttackMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now) + (v2Encounter ? Math.max(-0.2, Math.min(0.2, modifier(actor, "haste", now))) : 0)));
         }
       }
     }
@@ -46468,6 +46854,95 @@ function craftedRarityStatMultiplier(itemId, rarity) {
   return beforeRecentBuff + (rolled - beforeRecentBuff) * CRAFTED_HIGHER_TIER_RARITY_UPLIFT_RETENTION;
 }
 
+// ../apps/mobile/src/core/weapon-bonus-rolls.ts
+var WEAPON_BONUS_ROLL_VERSION = 2;
+var ROLE_POOL = {
+  Tank: ["armor", "maxHp", "ward", "tenacity"],
+  Damage: ["critRate", "haste", "penetration", "accuracy"],
+  Support: ["potency", "haste", "ward", "maxHp"]
+};
+var WEAPON_BONUS_BPS_BY_BAND = {
+  3: {
+    maxHp: [200, 400],
+    armor: [150, 300],
+    ward: [50, 150],
+    tenacity: [200, 400],
+    critRate: [50, 150],
+    haste: [80, 200],
+    penetration: [100, 250],
+    accuracy: [50, 150],
+    potency: [150, 350]
+  },
+  5: {
+    maxHp: [300, 550],
+    armor: [200, 400],
+    ward: [80, 200],
+    tenacity: [300, 500],
+    critRate: [80, 200],
+    haste: [120, 250],
+    penetration: [150, 300],
+    accuracy: [80, 200],
+    potency: [250, 450]
+  },
+  7: {
+    maxHp: [400, 700],
+    armor: [250, 450],
+    ward: [100, 250],
+    tenacity: [400, 600],
+    critRate: [100, 250],
+    haste: [150, 300],
+    penetration: [200, 350],
+    accuracy: [100, 250],
+    potency: [300, 550]
+  },
+  9: {
+    maxHp: [500, 800],
+    armor: [300, 500],
+    ward: [150, 300],
+    tenacity: [500, 700],
+    critRate: [150, 300],
+    haste: [200, 350],
+    penetration: [250, 400],
+    accuracy: [150, 300],
+    potency: [400, 650]
+  }
+};
+var V1_RANGE_BY_BAND = {
+  3: [100, 300],
+  5: [200, 400],
+  7: [300, 500],
+  9: [400, 600]
+};
+function weaponBonusRange(tier, stat, version = WEAPON_BONUS_ROLL_VERSION) {
+  const band = tier === 9 ? 9 : tier >= 7 && tier <= 8 ? 7 : tier >= 5 && tier <= 6 ? 5 : tier >= 3 && tier <= 4 ? 3 : void 0;
+  if (band === void 0) return void 0;
+  return version === 1 ? V1_RANGE_BY_BAND[band] : version === 2 ? WEAPON_BONUS_BPS_BY_BAND[band][stat] : void 0;
+}
+var HIGH_RARITIES = ["epic", "legendary", "mythic"];
+var STEP_BPS = 10;
+function weaponBonusConfig(itemId, rarity) {
+  const item = itemDef(itemId);
+  const tier = Number(/^T([1-9])_/.exec(item.equipmentSetId ?? "")?.[1] ?? 0);
+  const role2 = CLASSES.find((c) => c.id === item.classRestriction)?.role;
+  if (item.type !== "gear" || item.slot !== "weapon" || tier < 3 || tier > 9 || !role2) return void 0;
+  const count = tier >= 5 || HIGH_RARITIES.includes(rarity) ? 2 : 1;
+  return { tier, role: role2, count, pool: ROLE_POOL[role2] };
+}
+function normalizeWeaponBonuses(itemId, rarity, raw2, version = WEAPON_BONUS_ROLL_VERSION) {
+  const cfg = weaponBonusConfig(itemId, rarity);
+  if (!cfg || !Array.isArray(raw2) || raw2.length !== cfg.count) return void 0;
+  const seen = /* @__PURE__ */ new Set(), out = [];
+  for (const entry2 of raw2) {
+    if (!entry2 || typeof entry2 !== "object") return void 0;
+    const { stat, basisPoints } = entry2;
+    const range = typeof stat === "string" && cfg.pool.includes(stat) ? weaponBonusRange(cfg.tier, stat, version) : void 0;
+    if (!range || seen.has(stat) || typeof basisPoints !== "number" || !Number.isInteger(basisPoints) || basisPoints < range[0] || basisPoints > range[1] || (basisPoints - range[0]) % STEP_BPS !== 0) return void 0;
+    seen.add(stat);
+    out.push({ stat, basisPoints });
+  }
+  return out;
+}
+
 // ../apps/mobile/src/core/crafted-gear-instances.ts
 var CRAFTED_GEAR_QUALITY_MIN = 0;
 var CRAFTED_GEAR_QUALITY_MAX = 100;
@@ -46493,6 +46968,7 @@ function normalizeCraftedGearInstances(raw2) {
       if (item.type !== "gear") return [];
       const rarity = ["common", "uncommon", "rare", "epic", "legendary", "mythic"].includes(row.rarity) ? row.rarity : itemRarity(item);
       const enhancement = row.enhancement && typeof row.enhancement === "object" ? row.enhancement : {};
+      const version = row.weaponBonusRollVersion === 1 || row.weaponBonusRollVersion === 2 ? row.weaponBonusRollVersion : row.weaponBonusRollVersion === void 0 && Array.isArray(row.weaponBonuses) ? 1 : void 0;
       return [{
         id: String(row.id).slice(0, 180),
         itemId: item.id,
@@ -46502,6 +46978,8 @@ function normalizeCraftedGearInstances(raw2) {
         quality: isValidCraftedGearQuality(row.quality) ? row.quality : void 0,
         locked: row.locked === true,
         statRoll: clampStatRoll(row.statRoll),
+        weaponBonuses: version ? normalizeWeaponBonuses(item.id, rarity, row.weaponBonuses, version) : void 0,
+        weaponBonusRollVersion: version,
         acquireSource: "craft",
         sourceReceiptKey: String(row.sourceReceiptKey ?? row.id).slice(0, 200),
         createdAtMs: Math.max(0, Math.floor(Number(row.createdAtMs) || 0)),
@@ -46838,6 +47316,16 @@ function isLiveSixPieceBonus(set) {
 function emptyEquipmentSetStats() {
   return { ...EMPTY_STATS };
 }
+function equippedWeaponBonusStats(state) {
+  const character = state.character, itemId = character?.equipment.weapon, instanceId = character?.equipmentInstanceIds?.weapon;
+  if (!character || !itemId || !instanceId) return {};
+  const raw2 = state.account.craftedGearInstances?.find((row) => row?.id === instanceId && row?.itemId === itemId);
+  const copy = raw2 ? normalizeCraftedGearInstances([raw2])[0] : void 0;
+  if (!copy?.weaponBonuses?.length) return {};
+  const stats6 = {};
+  for (const bonus of copy.weaponBonuses) stats6[bonus.stat] = (stats6[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  return stats6;
+}
 function parseEquipmentSetStaticBonus(text3) {
   const result = {};
   for (const match of String(text3 ?? "").matchAll(STATIC_BONUS_RE)) {
@@ -46891,19 +47379,20 @@ function activeEquipmentBuildStats(state) {
   const sets = activeEquipmentSetRuntime(state).stats;
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const t5Affixes = equippedT5EquipmentAffixStats(state);
+  const weapon = equippedWeaponBonusStats(state);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp),
-    armor: multiplied(sets.armor, p.armor),
-    ward: multiplied(sets.ward, p.ward),
-    tenacity: multiplied(sets.tenacity, p.tenacity),
-    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste,
+    maxHp: multiplied(sets.maxHp, p.maxHp) + (weapon.maxHp ?? 0),
+    armor: multiplied(sets.armor, p.armor) + (weapon.armor ?? 0),
+    ward: multiplied(sets.ward, p.ward) + (weapon.ward ?? 0),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + (weapon.tenacity ?? 0),
+    haste: multiplied(sets.haste, p.haste) + t5Affixes.haste + (weapon.haste ?? 0),
     power: multiplied(sets.power, p.power),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0),
-    penetration: sets.penetration + (pp.penetration ?? 0),
-    potency: multiplied(sets.potency, p.potency),
-    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate,
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + (weapon.accuracy ?? 0),
+    penetration: sets.penetration + (pp.penetration ?? 0) + (weapon.penetration ?? 0),
+    potency: multiplied(sets.potency, p.potency) + (weapon.potency ?? 0),
+    critRate: sets.critRate + (pp.critRate ?? 0) + t5Affixes.critRate + (weapon.critRate ?? 0),
     critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5,
     evasion: sets.evasion + (pp.evasion ?? 0) + t5Affixes.evasion
   };
@@ -48518,6 +49007,12 @@ init_faith2();
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
+// ../apps/mobile/src/core/balance-projection.ts
+init_progression();
+
+// ../apps/mobile/src/core/working-toward.ts
+var gatherDefs = [...GATHERING, ...HERB_NODES];
+
 // ../apps/mobile/src/core/profile-unlocks.ts
 init_progression();
 var PROFILE_BACKGROUNDS = [{ id: "asterfall-night", name: "Asterfall Night", requiredLevel: 1 }, { id: "ironwood-dawn", name: "Ironwood Dawn", requiredLevel: rebasedCombatLevelFromLegacyLevel(10) }, { id: "silverbrook-mist", name: "Silverbrook Mist", requiredLevel: rebasedCombatLevelFromLegacyLevel(20) }, { id: "oathglass-hall", name: "Oathglass Hall", requiredLevel: rebasedCombatLevelFromLegacyLevel(25) }];
@@ -48525,12 +49020,6 @@ var PROFILE_TITLES = [{ id: "new-adventurer", name: "New Adventurer", requiredLe
 
 // ../apps/mobile/src/core/inventory-bulk.ts
 init_faith();
-
-// ../apps/mobile/src/core/balance-projection.ts
-init_progression();
-
-// ../apps/mobile/src/core/working-toward.ts
-var gatherDefs = [...GATHERING, ...HERB_NODES];
 
 // ../apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
@@ -50236,8 +50725,9 @@ function resolveCoopNode(input) {
       break;
     }
     case "event":
-      state = { ...state, resources: state.resources + 1, boons: [...state.boons, `${input.node.contentId}:${roll}`] };
+      state = { ...state, resources: state.resources + 1 };
       break;
+    // Events award supplies, not a second boon.
     case "merchant":
       state = { ...state };
       break;
@@ -50510,10 +51000,13 @@ function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId) {
   const rootAttack = encounterId === "BOSS_EXP_ROOT" && tier === 2 ? 0.92 : encounterId === "BOSS_EXP_ROOT" && tier === 3 ? 0.88 : ROOTBOUND_TIER_ATTACK[tier - 1];
   const rootCorrection = rootbound ? rootAttack / LEGACY_ROOTBOUND_ATTACK_MULTIPLIER : 1;
   const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.06 : 1 : 1;
+  const bossTierThree = tier === 3 && encounterId?.startsWith("BOSS_");
+  const bossHpAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.965 : expeditionId === "EXP_003" ? 0.98 : 1 : 1;
+  const bossDefenseAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.985 : expeditionId === "EXP_003" ? 0.99 : 1 : 1;
   return {
     attack: row.attack[tier - 1] * rootCorrection * bossCorrection,
-    hp: row.hp[tier - 1] * bossCorrection,
-    defense: row.defense[tier - 1] * bossCorrection,
+    hp: row.hp[tier - 1] * bossCorrection * bossHpAdjustment,
+    defense: row.defense[tier - 1] * bossCorrection * bossDefenseAdjustment,
     enemyLevel: row.enemyLevel
   };
 }
@@ -50561,14 +51054,14 @@ var ROOM_BOON_CHOICES = [
   { id: "ROOM_BOON_RECOVERY", name: "Second Wind", description: "Restore 20% max HP to each party member (revives downed allies)." },
   { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Legacy supply boon; no longer offered in new dungeon runs." }
 ];
-var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo", "event", "treasure", "secret", "camp"]);
+var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo"]);
 function roomBoonOffers(run, secret) {
   if (run.qmodePressureVersion !== 1 || run.phase !== "awaiting_choice") return [];
   const last = run.lastResolution;
   if (!last || last.nodeId !== run.currentNodeId || !last.result.success || !CHOICE_ROOM_KINDS.has(String(last.result.summary.kind))) return [];
   if (run.chosenRoomBoons?.[last.nodeId]) return [];
   const current = run.graph.nodes.find((node) => node.nodeId === last.nodeId);
-  if (!current) return [];
+  if (!current || current.kind !== last.result.summary.kind) return [];
   const ids2 = generateBoonOffer({ secret, runId: run.id, characterId: run.players[0].id, nodeIndex: current.depth, contentVersion: run.graph.contentVersion, ownedBoonIds: [], eligibleBoonIds: ROOM_BOON_CHOICES.filter((choice) => choice.id !== "ROOM_BOON_SUPPLY").map((choice) => choice.id), choiceCount: 3 });
   return ids2.map((id) => ROOM_BOON_CHOICES.find((choice) => choice.id === id)).filter(Boolean);
 }

@@ -1,0 +1,39 @@
+name: Dungeon and AFK notification validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/components/NotificationSettingsPanel.tsx'
+      - 'apps/mobile/src/screens/SettingsScreen.tsx'
+      - 'apps/mobile/src/online/notification-preferences.ts'
+      - 'apps/mobile/src/online/useAfkReminder.ts'
+      - 'apps/mobile/App.tsx'
+      - 'backend/supabase/migrations/*custom_dungeon_afk_reminders*'
+      - '.github/workflows/notification-reminders-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  mobile-typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install shared backend type dependencies
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck mobile app
+        run: pnpm typecheck
+      - name: Typecheck core
+        run: pnpm typecheck:core

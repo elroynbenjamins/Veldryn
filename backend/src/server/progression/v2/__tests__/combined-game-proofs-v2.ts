@@ -69,8 +69,28 @@ async function test(){
         combatEffort:{startsAtMs:1000,endsAtMs:25000}}}],
   };
   await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:overlap}),
-    /double_segment/,'never claim same source index twice');
-
+    /mixed_queue_mismatch/,'never accept a shortened independent claim queue');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      {...segments[0],reward:{...segments[0].reward,xp:11}},
+      segments[1],
+    ],
+  }}),/mixed_queue_mismatch/,'the same ordinal cannot have changed earned XP');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      segments[0],
+      {...segments[1],activity:{...segments[1].activity,targetId:'OTHER_WOLF'}},
+    ],
+  }}),/mixed_queue_mismatch/,'combat target must match the original claim queue');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering,combat:{
+    ...combat,segments:[
+      {...segments[0],activity:{...segments[0].activity,lastClaimAtMs:2000}},
+      segments[1],
+    ],
+  }}),/mixed_queue_mismatch/,'claim start timestamp cannot diverge between projectors');
+  await reject(()=>projectCombinedGameCareerProofsV2({...common,gathering:{
+    ...gathering,segments:[segments[0]],
+  },combat}),/mixed_queue_mismatch/,'gathering cannot omit a combat segment from the shared queue');
   const craftBase={
     ...common,commandType:'craft',requestId:'command00002',
     instantCraft:{
@@ -94,6 +114,6 @@ async function test(){
     instantCraft:{...craftBase.instantCraft,commandType:'craft_cancel'}})
     .catch(error=>{if(/nested_source_mismatch/.test(String(error)))return [];throw error;})).length,
     0,'nested command tampering cannot award');
-  console.log('PASS: combined career proof audit prevents cross-character, cross-revision and mixed-queue double credit');
+  console.log('PASS: combined career proof audit prevents cross-character, cross-revision, split-queue tampering and mixed-queue double credit');
 }
 void test().catch(e=>{throw e;});

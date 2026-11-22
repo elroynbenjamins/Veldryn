@@ -25,7 +25,7 @@ const c2='44444444-4444-4444-8444-444444444444';
 const claim:ServerSettlementProofV2={
   source:'craft_claim',sourceId:'craft_000001',
   ownerCharacterId:c1,receivingCharacterId:c1,
-  completed:true,professionId:'smithing',
+  completed:true,completedAtMs:2000,professionId:'smithing',
   baseEffortSeconds:240,difficultyBasisPoints:10000,
 };
 class MemoryAtomicStore implements ProgressionV2TransactionStore {
@@ -33,6 +33,7 @@ class MemoryAtomicStore implements ProgressionV2TransactionStore {
   source:Record<string,ServerSettlementProofV2>={'craft_claim:craft_000001':claim};
   awards:Record<string,JournalAwardV2>={};
   balances:Record<string,number>={[c1]:0,[c2]:0};
+  activatedAt:Record<string,number>={[c1]:1000,[c2]:1000};
   failIncrementOnce=false;
   private gate:Promise<void>=Promise.resolve();
 
@@ -47,6 +48,7 @@ class MemoryAtomicStore implements ProgressionV2TransactionStore {
     try{
       const tx:ProgressionV2Transaction={
         characterAccountId:async id=>this.owner[id]??null,
+        characterXpActivatedAtMs:async id=>this.activatedAt[id]??null,
         completedSource:async locator=>this.source[locator.source+':'+locator.sourceId]??null,
         findAward:async canonical=>stagedAwards[canonical]??null,
         insertAwardOnce:async receipt=>{
@@ -92,6 +94,19 @@ async function test(){
   store.source['craft_claim:craft_000002']={...claim,sourceId:'craft_000002',completed:false};
   await rejects(()=>settleCharacterCareerXpV2(store,principal,c1,{source:'craft_claim',sourceId:'craft_000002'}),/unverified_source/,'incomplete source');
 
+  // Backfilled careers must NOT credit old receipt history a second time.
+  store.source['craft_claim:craft_legacy']={...claim,sourceId:'craft_legacy',completedAtMs:1000};
+  await rejects(()=>settleCharacterCareerXpV2(store,principal,c1,{source:'craft_claim',sourceId:'craft_legacy'}),/pre_activation_source/,'old receipt at cutover');
+  store.source['craft_claim:craft_before']={...claim,sourceId:'craft_before',completedAtMs:999};
+  await rejects(()=>settleCharacterCareerXpV2(store,principal,c1,{source:'craft_claim',sourceId:'craft_before'}),/pre_activation_source/,'old receipt before cutover');
+  store.source['craft_claim:craft_nodate']={...claim,sourceId:'craft_nodate',completedAtMs:undefined};
+  await rejects(()=>settleCharacterCareerXpV2(store,principal,c1,{source:'craft_claim',sourceId:'craft_nodate'}),/pre_activation_source/,'unverified receipt timestamp');
+  const savedActivation=store.activatedAt[c1];
+  delete store.activatedAt[c1];
+  await rejects(()=>settleCharacterCareerXpV2(store,principal,c1,locator),/character_not_activated/,'unactivated XP bank');
+  store.activatedAt[c1]=savedActivation;
+  equal(store.balances[c1],120,'migration cutoff rejects historical double credit');
+
   // Source insert + new XP increment must commit/rollback together.
   store.source['craft_claim:craft_000003']={...claim,sourceId:'craft_000003'};
   store.failIncrementOnce=true;
@@ -119,6 +134,7 @@ async function test(){
       let reads=0;
       const tx:ProgressionV2Transaction={
         characterAccountId:async()=>a1,
+        characterXpActivatedAtMs:async()=>1000,
         completedSource:async()=>store.source['craft_claim:craft_000004'],
         findAward:async()=>++reads===1?null:raceReceipt,
         insertAwardOnce:async()=>false,
@@ -133,7 +149,7 @@ async function test(){
 
   store.source['gathering_claim:idle_000001']={
     source:'gathering_claim',sourceId:'idle_000001',
-    ownerCharacterId:c2,receivingCharacterId:c2,completed:true,
+    ownerCharacterId:c2,receivingCharacterId:c2,completed:true,completedAtMs:2000,
     professionId:'mining',baseEffortSeconds:600,claimedElapsedSeconds:500,
     difficultyBasisPoints:10000,
   };

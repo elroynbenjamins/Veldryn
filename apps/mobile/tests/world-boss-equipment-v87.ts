@@ -72,6 +72,11 @@ assert.equal(r.retaliation(2,'tank',100,1000,500,false,'BASIC'),undefined,
 assert.equal(r.retaliation(2,'tank',0,1000,500,true,'BASIC'),undefined,
  'fully shielded hit cannot reflect');
 assert.equal(r.retaliation(2,'tank',100,1000,500,true,'BASIC')?.amount,1);
+const manyTanks=make({...proof,sources:sources.map(row=>
+ row.actorId==='dance'?{...row,reflectDamagePct:8}:row)});
+assert.equal(manyTanks.retaliation(1,'tank',100,1000,500,true,'BASIC')?.amount,1);
+assert.equal(manyTanks.retaliation(1,'dance',100,1000,500,true,'BASIC'),undefined,
+ 'two defenders cannot each spend a full shared 0.1% world boss HP window');
 assert.equal(r.effectiveAllyHeal(1,'medic','tank','dance',100,200)?.amount,8);
 assert.equal(r.effectiveAllyHeal(1,'medic','tank','dance',100,200),undefined);
 assert.equal(r.effectiveAllyHeal(1,'bloom','tank','echo',100,200)?.amount,5);
@@ -80,6 +85,13 @@ assert.equal(r.effectiveAllyHeal(1,'medic','tank','tank',100,200),undefined);
 reject(()=>make({...proof,verifyPersisted:()=>false}), 'persisted_receipt_not_verified');
 reject(()=>make({...proof,serverBossMaxHp:0}), 'untrusted_scope');
 reject(()=>make({...proof,accountId:'wrong'}), 'untrusted_scope');
+reject(()=>make({...proof,sources:[{...sources[0],
+  tenacityPct:99} as unknown as typeof sources[number],...sources.slice(1)]}),
+ 'untrusted_equipment');
+reject(()=>make({...proof,verifyPersisted:(_context,items)=>{
+  try{(items[0] as {basicAttackDamagePct:number}).basicAttackDamagePct=999;}catch{}
+  return true;
+ }}), 'persisted_receipt_not_verified');
 reject(()=>make({...proof,sources:[...sources.slice(0,4),{...sources[4],characterId:'foreign'}]}),
  'untrusted_equipment');
 reject(()=>make({...proof,sources:[...sources.slice(0,4),{...sources[4],basicAttackDamagePct:1900}]}),

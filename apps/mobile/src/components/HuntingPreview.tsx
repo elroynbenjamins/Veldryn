@@ -38,7 +38,7 @@ export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:G
  const fight=useMemo(()=>active?activeCombatHitProjection(state,clock,replayCursor.current):undefined,[state,active,clock]);
  useEffect(()=>{replayCursor.current=fight?.cursor;},[fight?.cursor]);
  const lastHit=!fight?.searching&&fight?.lastHit&&clock-fight.lastHit.atMs<3500?fight.lastHit:undefined;
- const recentSkillEffects=active?(fight?.lastSkillEffects??[]).filter(effect=>clock-effect.atMs>=0&&clock-effect.atMs<2700).slice(-2):[];
+ const recentSkillEffects=active&&!fight?.searching?(fight?.lastSkillEffects??[]).filter(effect=>clock-effect.atMs>=0&&clock-effect.atMs<2700).slice(-2):[];
  const classSkillLevels=useMemo(()=>state.character?characterClassSkills(state.character):[],[state.character]);
  const classSkillDefs=state.character?classSkillsFor(state.character.classId):[];
  const equippedCompanion=useMemo(()=>{

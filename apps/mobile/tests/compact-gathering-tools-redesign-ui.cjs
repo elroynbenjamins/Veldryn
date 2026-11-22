@@ -13,7 +13,7 @@ const recipes=read('components/ToolRecipeInlinePanel.tsx');
 assert.match(screen,/gatheringToolEffects\(state,gatheringSkill\)/);
 assert.match(screen,/gatheringToolTotalBreakdown\(effects\)/);
 assert.match(screen,/gatheringToolPercent\(totals\.rarityChanceRelativePercent\)/);
-assert.match(screen,/equippedTools\.length\?'−'\+totalToolPercent\+'%':\+'15\.0%'/);
+assert.ok(screen.includes("equippedTools.length?'−'+totalToolPercent+'%':'+15.0%'"),'Without tools, action time must show the real +15% penalty');
 assert.match(screen,/gatheringToolsFor\(gatheringSkill\)\.length>0&&<Panel/,'No tools panel for herbalism (which has no equipable gathering tiers)');
 const header=screen.slice(screen.indexOf('<Panel style={s.toolPanel}>'),screen.indexOf('{openTools[sk.skillId]&&gatheringToolsFor'));
 assert.ok(header.includes('toolMetrics')&&header.includes("gt('ACTION TIME')")&&header.includes("gt('RARE FINDS')"),'Two compact summary metrics should be visible');
@@ -36,7 +36,6 @@ assert.match(screen,/toolRecipeToggle:\{minHeight:48/);
 assert.match(screen,/toolCopyOptionCompact:\{flexDirection:'column'/);
 
 // Drill-down keeps the original authoritative command and source flows intact.
-assert.ok(card.includes("const something that cannot be in a card")===false);
 assert.match(screen,/const action=equipped\?\(\)=>onCommand\(\{type:'unequip_tool'/);
 assert.match(screen,/onWithdrawTool\?\(\)=>onWithdrawTool\(tool.id\):onInventory/);
 assert.match(screen,/const blueprintChanceText=actualBlueprintChance===undefined/);

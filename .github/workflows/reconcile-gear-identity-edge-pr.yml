@@ -1,0 +1,69 @@
+name: Temporary gear identity Edge reconciliation
+
+on:
+  push:
+    branches: [fix/gear-disposal-gathering-tool-identity-20261122]
+    paths:
+      - '.github/workflows/reconcile-gear-identity-edge-pr.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconcile-gear-identity-edge-pr
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/gear-disposal-gathering-tool-identity-20261122
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Regenerate canonical gameplay and co-op bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Ensure no unrelated tracked changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Unexpected generated writes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated artifacts to the PR branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=fix/gear-disposal-gathering-tool-identity-20261122
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'PR Edge bundles already match the shared engine.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync gear identity fix with gameplay bundle'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Branch moved during generation; refusing stale artifact push.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"

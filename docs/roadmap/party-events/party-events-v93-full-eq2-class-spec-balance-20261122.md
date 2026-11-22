@@ -10,12 +10,26 @@ The V92 144-case synthetic 90s matrix reported **48 victories, 26 wipes, 70 time
 
 Concurrent broader workflows were **not fully green**, independently of the V92 hidden test: Edge generated gameplay/co-op bundles diverged; the Live Edge V2 isolation bundler rejected hidden trait module imports; mobile core 4/403 checks failed (Gold recipe, tool blueprint odds, balance projection, scroll indicators), plus an independent mobile job failed. These are unresolved cross-branch release blockers; do not quietly weaken guards or regenerate/deploy public Edge bundles from this development branch.
 
+## First passing V93 class/spec run — diagnostics, not approved balance
+
+At development code head `375647fe65b29e89877b01fcbeb4ce6ddabe0477`, the hidden Combat/Equipment 2.0 engine job [run #45006983509](https://github.com/elroynbenjamins/Veldryn/actions/runs/45006983509) passed strict TS, V92 144 boss cases, V92 two-actor complete EQ2 source build, V93 648-case class/spec matrix, legacy parity and release-off guards.
+
+V93 emitted: **9 classes / 18 specializations, 648 encounters and deterministic replays, 1,944 completely compiled QA equipment member snapshots and 15,136 real V2 trait triggers.** Synthetic outcomes were **197 wins, 130 wipes and 321 timeouts**. This is still level-25 QA equipment with hand-authored tier policy and a fake independent persistence verifier. It does not certify that almost half of real players will time out.
+
+Across comparable sampled 54-scenario per-family/difficulty buckets: Broken Caravan had 24/16/13 wins (standard/veteran/heroic), Nightfall Hunt 21/17/15, Broken Wards 18/17/10, Lost Reliquary 20/16/10. This pattern suggests examining recurring ward and mirror shields plus late-tier throughput; no numeric buff/nerf is justified yet without stratifying by tier and actual equipment levels. **Do not change HP curves from pooled success percentages.**
+
+## V93 next diagnostic and source-seal refinement
+
+A subsequent branch refinement adds per-tier, tier+difficulty, party-size and primary-role diagnostic buckets, including P50/P95 successful-clear durations, all-outcome durations, effective healing, shields, interrupts, damage taken and phase exposure. The refinement also seals the result of the real per-member EQ2 class/item compiler in a private in-process WeakMap and rejects unsealed or post-compilation mutated actor sources before strict Party encounter QA. This is **defense in depth in a test-only runtime**, NOT a privileged persisted database witness. **The new exact-head CI result must be checked independently**; do not transfer the earlier green result to this later commit.
+
+The wider Edge/mobile failures match those already visible on hidden Combat parent head `c1f5882`; they are independent release blockers, not a reason to weaken the hidden trait-provenance gate.
+
 ## V93 implemented for review
 
 `backend/src/server/party/__tests__/weekly-party-event-eq2-class-spec-matrix-v93.ts` now uses the actual Equip/Skills 2.0 compilers for every member and runs:
 
 - **9 classes × 2 specializations × 4 Party boss families × 3 difficulties × 3 party sizes = 648** deterministic new-run encounters (each with a 90s limit).
-- Every class/spec as the primary slot, filling remaining positions with a consistent sampled flexible composition. Per scenario, one member is T1 or T4-equipped according to a rotating tier plan; **boss tiers 1,4,8,12** are distributed across scenario axes, NOT exhaustively crossed. This samples full-source classes at all four boss tiers but does not estimate competitive win rates.
+- Every class/spec as the primary slot, filling remaining positions with a consistent sampled flexible composition. Per scenario, all members are QA-equipped at T1 or T4 according to a rotating tier plan; **boss tiers 1,4,8,12** are distributed across scenario axes, NOT exhaustively crossed. This samples full-source classes at all four boss tiers but does not estimate competitive win rates.
 - Own-equipment simulated item receipts, verified class-only baselines, selected skills, quality/rarity, base stats, set/13-affix compiler, exact-copy new hit/reflect channel, server-chosen signature trait, then the actual V2 trait engine. No client-provided stat multipliers.
 - One replay of every identical frozen encounter, stats/phase/trait output validation, win/wipe/timeout diagnostics by class/spec/family/difficulty. Aggregated results are emitted for tuning review. It also checks 9 class and 18 spec coverage.
 - QA-only synthetic versioned authoring policies and a deliberately fake private verifier; **not** proof of actual account equipment or V87 victory/tier settlement. All T4 item slots are QA, so they do not certify real level requirements or drops.

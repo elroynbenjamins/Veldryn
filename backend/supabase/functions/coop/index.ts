@@ -50512,6 +50512,7 @@ var ROOM_BOON_CHOICES = [
   { id: "ROOM_BOON_RESERVE", name: "Supplies Cache", description: "Immediately gain 2 run supplies." },
   { id: "ROOM_BOON_SUPPLY", name: "Expedition Cache", description: "Legacy supply boon; no longer offered in new dungeon runs." }
 ];
+var RETIRED_SUPPLY_BOONS = /* @__PURE__ */ new Set(["ROOM_BOON_RESERVE", "ROOM_BOON_SUPPLY"]);
 var CHOICE_ROOM_KINDS = /* @__PURE__ */ new Set(["shrine", "forge", "echo"]);
 function roomBoonOffers(run, secret) {
   if (run.qmodePressureVersion !== 1 || run.phase !== "awaiting_choice") return [];
@@ -50520,7 +50521,7 @@ function roomBoonOffers(run, secret) {
   if (run.chosenRoomBoons?.[last.nodeId]) return [];
   const current = run.graph.nodes.find((node) => node.nodeId === last.nodeId);
   if (!current || current.kind !== last.result.summary.kind) return [];
-  const active3 = ROOM_BOON_CHOICES.filter((choice) => choice.id !== "ROOM_BOON_SUPPLY" && (run.enduranceRouteVersion === 1 || ["ROOM_BOON_STRIKE", "ROOM_BOON_WARD", "ROOM_BOON_RECOVERY"].includes(choice.id)));
+  const active3 = ROOM_BOON_CHOICES.filter((choice) => !RETIRED_SUPPLY_BOONS.has(choice.id) && (run.enduranceRouteVersion === 1 || ["ROOM_BOON_STRIKE", "ROOM_BOON_WARD", "ROOM_BOON_RECOVERY"].includes(choice.id)));
   const alreadyChosen = Object.values(run.chosenRoomBoons ?? {});
   const fresh = active3.filter((choice) => !alreadyChosen.includes(choice.id));
   const pool = fresh.length >= 3 ? fresh : active3;
@@ -50528,6 +50529,7 @@ function roomBoonOffers(run, secret) {
   return ids2.map((id) => ROOM_BOON_CHOICES.find((choice) => choice.id === id)).filter(Boolean);
 }
 function applyRoomBoon(run, boonId) {
+  if (RETIRED_SUPPLY_BOONS.has(boonId)) throw new Error("invalid_boon_choice");
   if (run.chosenRoomBoons?.[run.currentNodeId]) throw new Error("boon_already_chosen");
   const state = run.persistentState;
   if (boonId === "ROOM_BOON_RECOVERY") {
@@ -50538,8 +50540,6 @@ function applyRoomBoon(run, boonId) {
       actors[player2.id] = { ...actor, hp: Math.min(player2.stats.maxHp, actor.hp + player2.stats.maxHp * 0.2), downed: false };
     }
     run.persistentState = { ...state, actors };
-  } else if (boonId === "ROOM_BOON_SUPPLY" || boonId === "ROOM_BOON_RESERVE") {
-    run.persistentState = { ...state, resources: state.resources + 2 };
   } else {
     run.persistentState = { ...state, boons: [...state.boons, boonId] };
   }

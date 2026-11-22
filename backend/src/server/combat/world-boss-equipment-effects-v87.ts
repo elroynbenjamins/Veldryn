@@ -10,7 +10,16 @@
  * integration must replace this pilot with that one canonical implementation
  * after two-branch source reconciliation and exact-copy DB authorization.
  */
+import {sha256} from '@noble/hashes/sha256';
+import {bytesToHex} from '@noble/hashes/utils';
+import type {CombatantDefinition} from './types';
+
 export const WORLD_BOSS_EQUIPMENT_V87_LIVE=false as const;
+export const WORLD_BOSS_V88_COMPILED_POLICY='combat-v2-compiled-gear-v88' as const;
+/** Exact frozen actor fingerprint, not a substitute for an approved V2 compiler. */
+export function worldBossCombatantDigestV88(actor:CombatantDefinition):string{
+ return bytesToHex(sha256(new TextEncoder().encode(JSON.stringify(actor))));
+}
 export type WorldBossExecutableTraitV87='sword_dance'|'echoing_strike'|
  'thornbound_riposte'|'mending_echo'|'restorative_bloom';
 export interface WorldBossEquippedSourceV87{
@@ -19,6 +28,8 @@ export interface WorldBossEquippedSourceV87{
  readonly revision:number;
  readonly accountId:string;readonly characterId:string;readonly actorId:string;
  readonly equipmentReceiptDigest:string;
+ /** Must equal the digest of the actual V22-roster combatant, not a client value. */
+ readonly compiledCombatantDigest:string;
  readonly ownedEquippedInstanceIds:readonly string[];
  /** Actual percent points, not fractional multipliers. */
  readonly basicAttackDamagePct:number;
@@ -26,20 +37,38 @@ export interface WorldBossEquippedSourceV87{
  readonly reflectDamagePct:number;
  readonly traits:readonly {instanceId:string;traitId:WorldBossExecutableTraitV87}[];
 }
+export interface WorldBossActorSnapshotV88{
+ readonly actorId:string;readonly characterId:string;
+ readonly snapshotId:string;readonly sourceRevision:number;
+ readonly sourceHash:string;readonly combatantDigest:string;
+}
+export interface WorldBossEquipmentScopeV88{
+ readonly eventId:string;readonly accountId:string;readonly bossId:string;
+ readonly rosterDigest:string;readonly actorIds:readonly string[];
+ readonly actorSnapshots:readonly WorldBossActorSnapshotV88[];
+ readonly serverBossMaxHp:number;
+}
 export interface WorldBossEquipmentProofV87{
  readonly eventId:string;readonly accountId:string;readonly bossId:string;
  readonly rosterDigest:string;readonly serverBossMaxHp:number;
  readonly sources:readonly WorldBossEquippedSourceV87[];
- /** This MUST come from independent server-owned persisted storage / SQL. */
- readonly verifyPersisted:(scope:Readonly<{
-  eventId:string;accountId:string;bossId:string;rosterDigest:string;
-  actorIds:readonly string[];serverBossMaxHp:number;
- }>,sources:readonly WorldBossEquippedSourceV87[])=>boolean;
+ readonly compiledPolicy:typeof WORLD_BOSS_V88_COMPILED_POLICY;
+ /** Privileged check of exact-copy ownership, equip state and selected traits. */
+ readonly verifyPersisted:(scope:Readonly<WorldBossEquipmentScopeV88>,
+  sources:readonly WorldBossEquippedSourceV87[])=>boolean;
+ /** INDEPENDENT privileged check that these exact frozen actors were compiled
+  * from approved Combat 2.0 class/skills/item base/sets/13 old affix channels
+  * exactly once, not by the legacy V12 stat path or a client JSON snapshot. */
+ readonly verifyCompiledBuild:(scope:Readonly<WorldBossEquipmentScopeV88>,
+  sources:readonly WorldBossEquippedSourceV87[])=>boolean;
 }
 export interface WorldBossEquipmentContextV87{
  readonly eventId:string;readonly accountId:string;readonly bossId:string;
  readonly rosterDigest:string;
- readonly actors:readonly {id:string;characterId:string}[];
+ readonly actors:readonly {
+  id:string;characterId:string;snapshotId:string;
+  sourceRevision:number;sourceHash:string;combatantDigest:string;
+ }[];
 }
 export interface WorldBossTraitEffectV87{
  readonly traitId:WorldBossExecutableTraitV87|'reflect_damage_affix';
@@ -53,7 +82,7 @@ const finite=(x:number)=>Number.isFinite(x)&&x>=0;
 const r6=(x:number)=>Math.round(x*1000000)/1000000;
 const expectedSourceKeys=new Set([
  'source','policy','revision','accountId','characterId','actorId',
- 'equipmentReceiptDigest','ownedEquippedInstanceIds','basicAttackDamagePct',
+ 'equipmentReceiptDigest','compiledCombatantDigest','ownedEquippedInstanceIds','basicAttackDamagePct',
  'abilityDamagePct','reflectDamagePct','traits',
 ]);
 const allowed=new Set<WorldBossExecutableTraitV87>([
@@ -77,6 +106,8 @@ export class WorldBossEquipmentRuntimeV87{
  ):WorldBossEquipmentRuntimeV87{
   if(process.env.NODE_ENV==='production'||WORLD_BOSS_EQUIPMENT_V87_LIVE||
    !proof||!context||typeof proof.verifyPersisted!=='function'||
+   proof.compiledPolicy!==WORLD_BOSS_V88_COMPILED_POLICY||
+   typeof proof.verifyCompiledBuild!=='function'||
    !id(proof.eventId)||proof.eventId!==context.eventId||
    !id(proof.accountId)||proof.accountId!==context.accountId||
    proof.bossId!==context.bossId||!digest(proof.rosterDigest)||
@@ -87,7 +118,13 @@ export class WorldBossEquipmentRuntimeV87{
    proof.sources.length!==context.actors.length||
    context.actors.length<1||context.actors.length>5)
    fail('untrusted_scope');
-  const seen=new Set<string>();
+  const seen=new Set<string>(),allCopies=new Set<string>();
+  if(new Set(context.actors.map(a=>a.id)).size!==context.actors.length||
+   new Set(context.actors.map(a=>a.characterId)).size!==context.actors.length||
+   context.actors.some(a=>!id(a.id)||!id(a.characterId)||
+    !id(a.snapshotId)||!Number.isSafeInteger(a.sourceRevision)||
+    a.sourceRevision<1||!digest(a.sourceHash)||!digest(a.combatantDigest)))
+   fail('invalid_compiled_actor_roster');
   for(const source of proof.sources){
    const actor=context.actors.find(a=>a.id===source?.actorId);
    if(!source||source.source!=='server-persisted-equipment-v2'||
@@ -96,6 +133,8 @@ export class WorldBossEquipmentRuntimeV87{
     source.accountId!==context.accountId||seen.has(source.actorId)||
     !Number.isSafeInteger(source.revision)||source.revision<1||
     !digest(source.equipmentReceiptDigest)||
+    !digest(source.compiledCombatantDigest)||
+    source.compiledCombatantDigest!==actor.combatantDigest||
     !Array.isArray(source.ownedEquippedInstanceIds)||
     source.ownedEquippedInstanceIds.length>10||
     new Set(source.ownedEquippedInstanceIds).size!==source.ownedEquippedInstanceIds.length||
@@ -114,11 +153,22 @@ export class WorldBossEquipmentRuntimeV87{
      fail('unsupported_or_duplicate_trait');
     traits.add(selected.traitId);instances.add(selected.instanceId);
    }
+   // One physical equipment copy may be worn by at most one of the account's
+   // characters in this same raid. Do not count duplicated affix/trait power.
+   for(const copyId of source.ownedEquippedInstanceIds){
+    if(allCopies.has(copyId))fail('item_copy_shared_across_characters');
+    allCopies.add(copyId);
+   }
    seen.add(source.actorId);
   }
   const scope=Object.freeze({eventId:context.eventId,accountId:context.accountId,
    bossId:context.bossId,rosterDigest:context.rosterDigest,
    actorIds:Object.freeze(context.actors.map(x=>x.id)),
+   actorSnapshots:Object.freeze(context.actors.map(x=>Object.freeze({
+    actorId:x.id,characterId:x.characterId,snapshotId:x.snapshotId,
+    sourceRevision:x.sourceRevision,sourceHash:x.sourceHash,
+    combatantDigest:x.combatantDigest,
+   }))),
    serverBossMaxHp:proof.serverBossMaxHp});
   // Freeze exactly what the privileged verifier sees and what the encounter
   // later executes. A callback cannot mutate the accepted receipt between
@@ -131,6 +181,12 @@ export class WorldBossEquipmentRuntimeV87{
   let verified=false;
   try{verified=proof.verifyPersisted(scope,frozenSources)===true;}catch{verified=false;}
   if(!verified)fail('persisted_receipt_not_verified');
+  // The exact-copy receipt check cannot certify the original 13-affix stat
+  // compilation. Require a separate trusted proof before any extra effects.
+  let compiled=false;
+  try{compiled=proof.verifyCompiledBuild(scope,frozenSources)===true;}
+  catch{compiled=false;}
+  if(!compiled)fail('v2_compiled_build_not_verified');
   const runtime=new WorldBossEquipmentRuntimeV87(scope.serverBossMaxHp);
   for(const source of frozenSources){
    runtime.sources.set(source.actorId,source);

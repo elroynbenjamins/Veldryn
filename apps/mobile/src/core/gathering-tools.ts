@@ -1,7 +1,7 @@
 import {gatheringToolDef,gatheringToolsFor} from '../content/gathering-tools';
 import type {GatherDef} from '../content/skills';
 import type {GameState,GatheringSkillId} from './types';
-import {GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION,gatheringToolBaseMultiplier,validateGatheringToolRoll} from './gathering-tool-rolls';
+import {GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION,GATHERING_TOOL_MAX_XP_BONUS_BPS,gatheringToolBaseMultiplier,validateGatheringToolRoll} from './gathering-tool-rolls';
 import type {CraftedGatheringTool} from './gathering-tool-rolls';
 
 export const NO_TOOL_TIME_MULTIPLIER=1.15;
@@ -48,12 +48,12 @@ export function gatheringToolEffects(state:GameState,skillId:GatheringSkillId){
   baseReduction+=(1-tool.actionTimeMultiplier)*gatheringToolBaseMultiplier(copy);
   if(copy?.bonus.stat==='speed')speedMultiplier*=1-copy.bonus.basisPoints/10000;
   if(copy?.bonus.stat==='rarity')rarityBonus+=copy.bonus.basisPoints/10000;
-  // Multiple tier slots can be equipped at once. Use the strongest XP affix
-  // for this skill, never sum four tool XP rolls into an inflated bonus.
-  if(copy?.bonus.stat==='xp')xpBonus=Math.max(xpBonus,copy.bonus.basisPoints/10000);
+  // XP rolls add across distinct equipped tiers of this skill only.
+  // Never include the legacy best-tool pointer a second time.
+  if(copy?.bonus.stat==='xp')xpBonus+=copy.bonus.basisPoints/10000;
  }
  const timeMultiplier=Math.max(1-GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION,Math.max(0,1-baseReduction)*speedMultiplier);
- return {baseReduction,rolledSpeedReduction:1-speedMultiplier,effectiveReduction:1-timeMultiplier,timeMultiplier,rarityChanceMultiplier:1+rarityBonus,skillXpMultiplier:1+xpBonus,count:tools.length};
+ return {baseReduction,rolledSpeedReduction:1-speedMultiplier,effectiveReduction:1-timeMultiplier,timeMultiplier,rarityChanceMultiplier:1+rarityBonus,skillXpMultiplier:1+Math.min(xpBonus,GATHERING_TOOL_MAX_XP_BONUS_BPS/10000),count:tools.length};
 }
 export function gatheringToolTimeMultiplier(state:GameState,skillId:GatheringSkillId){
  return gatheringToolEffects(state,skillId).timeMultiplier;

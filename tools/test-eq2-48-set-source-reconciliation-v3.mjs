@@ -130,6 +130,13 @@ for(const [id,entry] of Object.entries(raw)){
  if(entry.origin.includes('UNREGISTERED'))assert.ok(!entry.recipeId);
 }
 assert.ok(Object.keys(raw).filter(id=>raw[id].origin.includes('UNREGISTERED')).length>=14);
+assert.deepEqual(raw.EQ2_SUNSCAR_HIDE.candidates,[],
+ 'No existing scorpion should be treated as a hide-bearing creature');
+assert.ok(raw.EQ2_GLASSBOUND_DUST.origin.includes('GATHERING'),
+ 'Dust must have an independent profession-accessible source proposal');
+assert.equal(next.resolution.tierSourceCandidates[2].proposedHideEnemies.length,0);
+assert.ok(next.resolution.tierSourceCandidates[3].proposedDustGatheringRoute.includes('noncombat'));
+
 const entries=next.resolution.tierSourceCandidates;
 assert.deepEqual(entries.map(x=>x.tier),[1,2,3,4]);
 for(const e of entries){

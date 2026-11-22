@@ -35,7 +35,7 @@ import {
 import type {V2DraftItem,V2DraftReceipt} from '../../equipment/equipment-crafting-v2-transaction';
 import type {V2CustodyCopy,V2CustodyState} from '../../equipment/equipment-crafting-v2-custody';
 
-const map:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
+export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
  armor:'defense_pct',maxHp:'max_hp_pct',ward:'ward_pp',
  critRate:'crit_rate_pp',critDamage:'crit_damage_pct',
  haste:'haste_pp',penetration:'penetration_pp',accuracy:'accuracy_pp',
@@ -121,6 +121,11 @@ export function compileRealFrozenForgeActorV2(
  const allIds=source.custody.copies.map(x=>x.instanceId);
  if(new Set(allIds).size!==allIds.length||new Set(source.items.map(x=>x.id)).size!==source.items.length)
   reject('duplicate_account_copy');
+ const requestIds=source.claims.map(x=>x.requestId);
+ if(new Set(requestIds).size!==requestIds.length||
+    requestIds.some(id=>!isId(id)))reject('duplicate_or_invalid_claim_request');
+ if(source.custody.copies.some(copy=>!v2ServerExactTemplateConsistent(copy.item)))
+  reject('invalid_account_forge_copy');
  if(source.items.some(x=>x.accountId!==source.accountId)||
     source.custody.copies.some(x=>x.accountId!==source.accountId))
   reject('cross_account_copy');
@@ -202,7 +207,7 @@ export function compileRealFrozenForgeActorV2(
   const item=mint.exactItem;
   return {instanceId:mint.id,slot:item.slot,tier:'T'+item.tier,
    rarity:item.rarity,quality:item.quality,affixes:item.affixes.map(roll=>{
-    const id=map[roll.stat];
+    const id=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.stat];
     if(!id)reject('forge_affix_effect_unimplemented:'+roll.stat);
     if(!EQUIPMENT_AFFIXES_V2[id].slots.includes(item.slot))
      reject('forge_combat_affix_slot_policy_conflict:'+roll.stat+':'+item.slot);

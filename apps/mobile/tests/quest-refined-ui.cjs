@@ -88,6 +88,8 @@ assert.ok(app.includes("destination.skillId==='faith'?'faith'")&&app.includes("?
 
 assert.ok(screen.includes("state.character?.personalSeasonal?.claimIds??state.account.seasonalContractClaimIds??[]"),
   'quest receipt reconciliation must observe per-character challenge claims');
-assert.ok(screen.includes("setSelected(null);setStoryExpanded(false);setMoment(null);setNotice('')"),
+assert.ok(screen.includes("setSelected(null);setStoryExpanded(false);setMoment(null);setMilestoneReceipt(null);setNotice('')"),
   'claiming closes any selection sheet immediately without a second screen');
+assert.ok(screen.includes("onClaimed={({characterName,skillId,xp})=>")&&screen.includes("milestoneReceipt?<View"),
+  'monthly milestones still require their skill selection but show the applied XP as a notification');
 console.log('PASS: Quest direct claims, selected rewards, confirmed toast receipts and weekly controls');

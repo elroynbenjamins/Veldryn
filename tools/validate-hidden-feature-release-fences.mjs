@@ -44,18 +44,26 @@ function check(read,migrations){
     requireExportFalse('flags',name);
   // Shared gameplay and backend bundles remain immutable and disabled.
   requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
-  // Only the mobile client can opt into the migrated staging backend for QA.
-  const socialStagingFlag=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*PRODUCTION_SOCIAL_IDENTITY_RELEASED\|\|\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'\s*\);/;
-  if(!source('socialGate').includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED as PRODUCTION_SOCIAL_IDENTITY_RELEASED} from '../core/release-flags';")||
-     !socialStagingFlag.test(source('socialGate')))
-    failures.push('Mobile Social Names QA gate must require unchanged production-off flag, staging channel, project and opt-in');
+  // Client-only Social Names gate supports staged QA and a deliberate later
+  // production build. Both paths must match channel, backend and explicit opt-in.
+  // The shared gameplay/Edge flag remains false irrespective of build profile.
+  const gate=source('socialGate');
+  const socialStagingFlag=/const\s+STAGING_SOCIAL_IDENTITY_PREVIEW\s*=\s*\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/iqfmmpvwanvvmxcftfxw\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'\s*\);/;
+  const socialProductionFlag=/const\s+PRODUCTION_SOCIAL_NAME_LAUNCH\s*=\s*\(\s*process\.env\.EXPO_PUBLIC_RELEASE_CHANNEL==='production'&&\s*process\.env\.EXPO_PUBLIC_SUPABASE_URL==='https:\/\/nyjwigipamnvpdvpauuv\.supabase\.co'&&\s*process\.env\.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'\s*\);/;
+  const socialExport=/export\s+const\s+ACCOUNT_SOCIAL_IDENTITY_RELEASED\s*=\s*STAGING_SOCIAL_IDENTITY_PREVIEW\|\|PRODUCTION_SOCIAL_NAME_LAUNCH\s*;/;
+  if(!socialStagingFlag.test(gate)||!socialProductionFlag.test(gate)||!socialExport.test(gate)||
+     /from\s+['"]\.\.\/core\/release-flags['"]/.test(gate))
+    failures.push('Mobile Social Names must require isolated staging and production channel, project and opt-in checks');
   try{
     const builds=JSON.parse(source('eas')).build;
     if(builds?.staging?.distribution!=='internal'||
        builds?.staging?.env?.EXPO_PUBLIC_RELEASE_CHANNEL!=='staging'||
        builds?.staging?.env?.EXPO_PUBLIC_SUPABASE_URL!=='https://iqfmmpvwanvvmxcftfxw.supabase.co'||
        builds?.staging?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='true'||
-       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='false')
+       builds?.production?.env?.EXPO_PUBLIC_RELEASE_CHANNEL!=='production'||
+       builds?.production?.env?.EXPO_PUBLIC_SUPABASE_URL!=='https://nyjwigipamnvpdvpauuv.supabase.co'||
+       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW!=='false'||
+       builds?.production?.env?.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED!=='false')
       failures.push('Social Names staging/production EAS build-profile isolation drift');
   }catch{failures.push('EAS release profiles are missing or invalid');}
   requireExportFalse('worldRead','WORLD_BOSS_V52_READ_ROUTE_LIVE');
@@ -102,6 +110,10 @@ function selfTest(){
     ['social-name-production-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'","true"],
     ['social-name-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'","true"],
     ['social-name-eas-prod-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "true"'],
+    ['social-name-prod-channel-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'","true"],
+    ['social-name-prod-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'","true"],
+    ['social-name-prod-optin-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'","true"],
+    ['social-name-eas-activation-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED": "true"'],
     ['preview-release',paths.routes,"typeof __DEV__!=='undefined'&&__DEV__===true",'true'],
     ['erasure-release',paths.worldErasure,'WORLD_BOSS_V56_ERASURE_LIVE=false','WORLD_BOSS_V56_ERASURE_LIVE=true'],
     ['read-endpoint-release',paths.worldRead,'WORLD_BOSS_V52_READ_ROUTE_LIVE=false','WORLD_BOSS_V52_READ_ROUTE_LIVE=true'],
@@ -121,7 +133,7 @@ function selfTest(){
     'Guard did not detect Party Event migration promotion');
   assert.ok(check(read,[...migrations,'20261118140000_world_boss_public_raid.sql']).length>0,
     'Guard did not detect World Boss migration promotion');
-  console.log('PASS: hidden feature fence detects staging-only Social Names plus unsafe release regressions');
+  console.log('PASS: hidden feature fence detects production-off Social Names and unsafe release regressions');
 }
 const failures=check(realRead,realMigrations());
 if(failures.length){

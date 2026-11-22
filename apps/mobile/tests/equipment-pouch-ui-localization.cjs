@@ -11,7 +11,7 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,97,'all authored Equipment Pouch copy, compact preview labels, shared inspector actions, quick disposal, selection metrics and eligibility reasons');
+assert.equal(keys.length,100,'all authored Equipment Pouch labels, including the three compact item disclosures, must be translated');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){

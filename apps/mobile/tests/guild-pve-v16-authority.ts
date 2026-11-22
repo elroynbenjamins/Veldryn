@@ -18,8 +18,7 @@ const run=makeGuildPveV9Run({
   attack:1000,defense:650,maxHp:4500,
  }),
 });
-// The V15 run starts at revision zero. We can still prove a consistent version.
-run.revision=1;
+// The first committed campaign snapshot may legitimately be revision zero.
 const ledger:GuildPveV9StoreState={
  guildRuns:{[JSON.stringify([CYCLE,GUILD])]:run},receipts:{},cycleBindings:{},
 };
@@ -27,7 +26,7 @@ const good:GuildPveV16ConsistentRead={
  authenticatedAccountId:ACCOUNT,
  membership:{accountId:ACCOUNT,guildId:GUILD,joinedAtUtcMs:START-DAY},
  character:{ownerAccountId:ACCOUNT,characterId:CHAR,revision:7,state},
- ledger,expeditionRevision:1,serverNowUtcMs:START+DAY,
+ ledger,expeditionRevision:0,serverNowUtcMs:START+DAY,
 };
 async function rejects(fn:()=>Promise<unknown>,message:string){
  let error='';try{await fn()}catch(e){error=String(e)}
@@ -71,6 +70,7 @@ async function main(){
  await rejects(()=>view({...good,character:{...good.character!,ownerAccountId:'GX_OTHER'}}),'not_owned_character');
  await rejects(()=>view({...good,character:{...good.character!,revision:0}}),'not_owned_character');
  await rejects(()=>view({...good,expeditionRevision:2}),'stale_expedition_revision');
+ await rejects(()=>view({...good,expeditionRevision:-1}),'stale_expedition_revision');
  await rejects(()=>view({...good,ledger:null}),'missing_private_expedition');
  await rejects(()=>view({...good,serverNowUtcMs:Infinity}),'invalid_clock');
  const badLedger=structuredClone(ledger);

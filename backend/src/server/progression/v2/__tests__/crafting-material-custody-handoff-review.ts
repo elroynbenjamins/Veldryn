@@ -158,6 +158,15 @@ function test(){
   ...state,ownedLots:[...stock,stock[0]],
  },recipe),/invalid_or_duplicate_lot/,'same physical source-lot twice');
  rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedLots:[...stock,{
+   ...stock[0],lotId:'LOT_COPPER_DUPLICATE',availableQuantity:2,
+  }],
+ },recipe),/missing_or_mismatched_source_receipt/,'one source receipt cannot sponsor a second spendable lot');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedLots:stock.map(lot=>
+   lot.lotId==='LOT_COPPER_INV'?{...lot,provenanceId:'PROOF_COPPER_BANK'}:lot),
+ },recipe),/missing_or_mismatched_source_receipt/,'cannot move Bank receipt to unrelated inventory lot');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
   ...state,originalSourceProofs:[...proofs,proofs[0]],
  },recipe),/invalid_source_provenance/,'duplicate immutable proof ID');
  rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
@@ -178,6 +187,19 @@ function test(){
       ...p,settledTransfer:{...p.settledTransfer!,recipientCharacterId:other},
     }:p),
  },recipe),/missing_or_mismatched_source_receipt/,'alt recipient cannot spend traded rare input');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,originalSourceProofs:proofs.map(p=>
+    p.provenanceId==='PROOF_FANG_MARKET'?{
+      ...p,settledTransfer:{...p.settledTransfer!,
+        toAccountId:sellerAccount},
+    }:p),
+ },recipe),/invalid_market_transfer_provenance/,'self-account trade cannot launder source ancestry');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,priorRequests:[{
+   requestId:'__proto__',requestHash:hash,accountId:account,
+   characterId:smith,recipeId:recipe.recipeId,quantity:2,settledRevision:25,
+  }],
+ },recipe),/invalid_prior_requests/,'poisoned request identity rejected');
  rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
   ...state,ownedLots:stock.map(lot=>
     lot.lotId==='LOT_FANG_MARKET'?{...lot,custody:'market_escrow' as const}:lot),

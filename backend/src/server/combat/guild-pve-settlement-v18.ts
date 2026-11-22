@@ -172,12 +172,8 @@ export class GuildPveV18SettlementService {
    const save=(value:GuildPveV18Receipt)=>{
     state.receipts[key]={fingerprint,value};return value;
    };
-   // Stale targets are free but MUST be fenced by guild/roster binding first.
-   if(node.cleared)return save(makeReceipt('stale',null,[],null));
-   if(!Number.isSafeInteger(member.sealsSpent)||member.sealsSpent<0||
-    member.sealsSpent>8)reject('corrupt_seal_budget');
-   if(member.sealsSpent>=(server.nowUtcMs>=run.startMs+7*DAY?8:4))
-    reject('no_assault_seals');
+   // Even zero-debit stale actions must prove ownership and current guild
+   // membership; the cleared-node state is not an authorization bypass.
    const actor=await this.authority.verifyOwnedGuildActor({
     principalAccountId:account,guildId:action.guildId,
     characterId:action.characterId,cycleId:action.cycleId,
@@ -189,6 +185,16 @@ export class GuildPveV18SettlementService {
     !Number.isSafeInteger(actor.gameRevision)||actor.gameRevision<1||
     !/^[a-f0-9]{64}$/.test(actor.sourceHash))
     reject('unverified_actor');
+   if(!Number.isSafeInteger(member.sealsSpent)||member.sealsSpent<0||
+    member.sealsSpent>8)reject('corrupt_seal_budget');
+   // Stale targets cost no Seals even if an account already spent its budget.
+   if(node.cleared)return save(makeReceipt('stale',null,[],actor));
+   if(member.sealsSpent>=(server.nowUtcMs>=run.startMs+7*DAY?8:4))
+    reject('no_assault_seals');
+   if(definition.kind==='guardian'||definition.kind==='final'){
+    const expected=nextPhase(definition.boss,node.hp,node.maxHp);
+    if(node.phase!==expected)reject('inconsistent_guardian_phase');
+   }
    const seed=sha([
     action.cycleId,action.guildId,account,action.characterId,
     action.requestId,action.nodeId,run.revision,actor.gameRevision,actor.sourceHash,

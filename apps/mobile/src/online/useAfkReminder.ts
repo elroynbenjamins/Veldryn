@@ -2,6 +2,7 @@ import {useEffect,useMemo,useRef} from 'react';
 import {AppState} from 'react-native';
 import {offlineCapBreakdown} from '../core/game';
 import {gameAlert} from '../core/game-alerts';
+import {recentScreenText} from '../i18n/recent-screens';
 import type {GameState} from '../core/types';
 import {acknowledgeAfkReminder,pendingAfkReminder,registerAfkReminderCap} from './notification-preferences';
 import {supabase} from './supabase';
@@ -13,6 +14,7 @@ export function useAfkReminder(
  const openRef=useRef(onOpenCharacter);openRef.current=onOpenCharacter;
  const characterId=state?.character?.id;
  const capHours=useMemo(()=>state?.character?offlineCapBreakdown(state).hours:undefined,[state]);
+ const language=state?.settings.language??'en';
  const shownRef=useRef(new Set<string>());
  useEffect(()=>{
   if(!accountId||!characterId||!capHours||!supabase)return;
@@ -36,11 +38,11 @@ export function useAfkReminder(
     if(disposed)return;
     shownRef.current.add(key);
     const text=reminder.isFull
-     ?reminder.characterName+' has filled a '+reminder.capHours+'-hour AFK reserve. Return to collect the rewards.'
-     :reminder.characterName+"'s AFK reserve will be full in about "+reminder.minutesLeft+' minutes.';
-    gameAlert.alert('AFK rewards ready',text,[
-     {text:'Later',style:'cancel'},
-     {text:'Open Character',onPress:()=>openRef.current()},
+     ?recentScreenText(language,'{name} has filled a {hours}-hour AFK reserve. Return to collect the rewards.',{name:reminder.characterName,hours:reminder.capHours})
+     :recentScreenText(language,"{name}'s AFK reserve will be full in about {minutes} minutes.",{name:reminder.characterName,minutes:reminder.minutesLeft});
+    gameAlert.alert(recentScreenText(language,'AFK rewards ready'),text,[
+     {text:recentScreenText(language,'Later'),style:'cancel'},
+     {text:recentScreenText(language,'Open Character'),onPress:()=>openRef.current()},
     ],{cancelable:true});
    }catch{
     // A notification is advisory; never block a save, foreground resume, or login.
@@ -52,5 +54,5 @@ export function useAfkReminder(
    if(next==='active')void check();
   });
   return()=>{disposed=true;clearInterval(timer);subscription.remove();};
- },[accountId,characterId,capHours]);
+ },[accountId,characterId,capHours,language]);
 }

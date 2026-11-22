@@ -156,6 +156,7 @@ import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyO
 import {weeklyOrderQuickStartPlan} from './src/core/weekly-order-quick-start';
 import type {WeeklyOrder} from './src/core/weekly-orders-v41';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
+import {useDungeonWeeklyReminder} from './src/online/dungeon-weekly-reminder';
 import {fetchActiveEventRuntime} from './src/online/live-events';
 import {EVENTS_RELEASED,RANKINGS_RELEASED} from './src/core/release-flags';
 import {onlineConfigured} from './src/online/supabase';
@@ -218,6 +219,7 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
+  useDungeonWeeklyReminder(auth.session?.user.id,()=>setCurrentTab('Coop'));
   const [transitionKind,setTransitionKind]=useState<ScreenTransitionKind>('none');
   const systemReduceMotion=useSystemReduceMotion();
   const tabRef=useRef(tab);tabRef.current=tab;

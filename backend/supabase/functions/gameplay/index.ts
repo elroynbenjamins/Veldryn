@@ -60790,18 +60790,18 @@ function findEffectGem(familyId) {
 
 // src/server/equipment/gems/gem-acquisition-v1.ts
 var GEM_SOURCE_POOLS_V1 = [
-  { id: "ZONE_006", kind: "enemy", regionId: "REG_002", families: ["stat_might", "stat_vitality", "effect_opening_strike", "effect_sustenance"], grade: 1, chance: 75e-4 },
-  { id: "ZONE_007", kind: "elite", regionId: "REG_002", families: ["stat_iron", "stat_piercing", "effect_predator", "effect_retaliation"], grade: 2, chance: 0.015, pityAt: 60 },
-  { id: "ZONE_008", kind: "elite", regionId: "REG_002", families: ["stat_precision", "stat_potent", "effect_ruin", "effect_mercy", "effect_opportunist"], grade: 2, chance: 0.015, pityAt: 60 },
-  { id: "ZONE_009", kind: "elite", regionId: "REG_002", families: ["stat_swift", "stat_ward", "effect_flow", "effect_benediction", "effect_aegis"], grade: 2, chance: 0.015, pityAt: 60 },
-  { id: "ZONE_010", kind: "regional_boss", regionId: "REG_002", families: ["effect_execution", "effect_last_stand", "effect_unyielding"], grade: 3, chance: 0.03, pityAt: 25, recipeChance: 0.02, catalystChance: 0.05 },
-  { id: "COP_004", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_bulwark", "effect_retaliation", "effect_predator", "stat_iron"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "COP_005", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_mercy", "effect_ruin", "effect_opportunist", "stat_precision", "stat_potent"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "COP_006", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_flow", "effect_benediction", "effect_critical_surge", "stat_swift", "stat_ward"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "COP_007", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_momentum", "effect_predator", "effect_sustenance", "stat_keen"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "COP_008", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_aegis", "effect_guardians_gift", "effect_unyielding", "stat_vitality", "stat_resolute"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "COP_009", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_execution", "effect_shared_resolve", "effect_battle_rhythm", "effect_renewal", "stat_savage"], grade: 3, chance: 0.18, pityAt: 8, recipeChance: 0.08, catalystChance: 0.15 },
-  { id: "PARTY_CONTRACT_WEEKLY", kind: "party_contract", families: ["effect_momentum", "effect_execution", "effect_bulwark", "effect_mercy", "effect_flow", "effect_opportunist"], grade: 3, chance: 0.25, pityAt: 4, catalystChance: 0.2 },
+  { id: "ZONE_006", kind: "enemy", regionId: "REG_002", families: ["stat_might", "stat_vitality", "effect_opening_strike", "effect_sustenance"], grade: 1, chance: 1875e-6 },
+  { id: "ZONE_007", kind: "elite", regionId: "REG_002", families: ["stat_iron", "stat_piercing", "effect_predator", "effect_retaliation"], grade: 2, chance: 375e-5, pityAt: 240 },
+  { id: "ZONE_008", kind: "elite", regionId: "REG_002", families: ["stat_precision", "stat_potent", "effect_ruin", "effect_mercy", "effect_opportunist"], grade: 2, chance: 375e-5, pityAt: 240 },
+  { id: "ZONE_009", kind: "elite", regionId: "REG_002", families: ["stat_swift", "stat_ward", "effect_flow", "effect_benediction", "effect_aegis"], grade: 2, chance: 375e-5, pityAt: 240 },
+  { id: "ZONE_010", kind: "regional_boss", regionId: "REG_002", families: ["effect_execution", "effect_last_stand", "effect_unyielding"], grade: 3, chance: 75e-4, pityAt: 100, recipeChance: 0.02, catalystChance: 0.05 },
+  { id: "COP_004", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_bulwark", "effect_retaliation", "effect_predator", "stat_iron"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_005", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_mercy", "effect_ruin", "effect_opportunist", "stat_precision", "stat_potent"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_006", kind: "dungeon_boss", regionId: "REG_002", families: ["effect_flow", "effect_benediction", "effect_critical_surge", "stat_swift", "stat_ward"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_007", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_momentum", "effect_predator", "effect_sustenance", "stat_keen"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_008", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_aegis", "effect_guardians_gift", "effect_unyielding", "stat_vitality", "stat_resolute"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "COP_009", kind: "dungeon_boss", regionId: "REG_003", families: ["effect_execution", "effect_shared_resolve", "effect_battle_rhythm", "effect_renewal", "stat_savage"], grade: 3, chance: 0.045, pityAt: 32, recipeChance: 0.08, catalystChance: 0.15 },
+  { id: "PARTY_CONTRACT_WEEKLY", kind: "party_contract", families: ["effect_momentum", "effect_execution", "effect_bulwark", "effect_mercy", "effect_flow", "effect_opportunist"], grade: 3, chance: 0.0625, pityAt: 16, catalystChance: 0.2 },
   { id: "LIVE_COOP_RESONANCE_CACHE", kind: "live_coop_weekly", families: ["effect_momentum", "effect_execution", "effect_opening_strike", "effect_predator", "effect_critical_surge", "effect_ruin", "effect_bulwark", "effect_aegis", "effect_last_stand", "effect_retaliation", "effect_unyielding", "effect_mercy", "effect_benediction", "effect_guardians_gift", "effect_renewal", "effect_shared_resolve", "effect_sustenance", "effect_battle_rhythm", "effect_flow", "effect_opportunist"], grade: 3, chance: 1 }
 ];
 function gemPoolForSourceV1(sourceId) {

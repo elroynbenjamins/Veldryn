@@ -34,6 +34,7 @@ import {
  PARTY_EVENT_EQ2_TRAIT_V92_VERSION,
  prepareFullyEquippedPartyV92,
  simulateFrozenPartyEventEquipmentV92,
+ simulateCompiledPartyEventEquipmentV92,
  type TrustedPartyV92BuildInput,
  type FrozenPartyEventV92Witness,
 } from '../weekly-party-event-eq2-traits-v92';
@@ -239,8 +240,21 @@ for(let ci=0;ci<classIds.length;ci++){
      witness:w,combatDigest:enemyV2SnapshotDigest(combat),sources,
     })},
   };
-  const first=simulateFrozenPartyEventEquipmentV92(request,true);
-  const second=simulateFrozenPartyEventEquipmentV92(request,true);
+  if(fights===0){
+   const fake={...prepared};
+   assert.throws(()=>simulateCompiledPartyEventEquipmentV92({
+    prepared:fake,witness,boss:combat.enemies[0],ports:request.ports,
+   },true),/unsealed_equipment_party/);
+   const modified=prepareFullyEquippedPartyV92(party,true);
+   modified.players[0].stats.attackPower+=1;
+   assert.throws(()=>simulateCompiledPartyEventEquipmentV92({
+    prepared:modified,witness,boss:combat.enemies[0],ports:request.ports,
+   },true),/compiled_equipment_party_tampered/);
+  }
+  const strictRequest={prepared,witness,boss:combat.enemies[0],
+   ports:request.ports};
+  const first=simulateCompiledPartyEventEquipmentV92(strictRequest,true);
+  const second=simulateCompiledPartyEventEquipmentV92(strictRequest,true);
   assert.deepEqual(first,second,'same frozen full-EQ2 Party replay');
   replayed++;
   assert.ok(first.durationMs<=90000);

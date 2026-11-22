@@ -34,6 +34,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const p=(text:string,params?:Record<string,string|number>)=>equipmentPouchText(language,text,params);
  const pouch=equipmentPouch(state),upgrade=equipmentPouchUpgradePreview(state);
  const [page,setPage]=useState(0),[selectedIndex,setSelectedIndex]=useState<number|null>(null),[gridWidth,setGridWidth]=useState(300);
+ const [selectedReceipt,setSelectedReceipt]=useState<{itemId:string;instanceId:string|null}|null>(null);
  const [previewStack,setPreviewStack]=useState<ItemStack|null>(null);
  const [transferError,setTransferError]=useState('');
  const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]);
@@ -64,7 +65,10 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const salvageSelectionValid=salvageCount>0;
  const confirmationValid=pendingRows.length>0&&pendingRows.length===(pendingSale?.ids.length??0)&&pendingRows.every(row=>row.eligible);
  const salvageConfirmationValid=pendingSalvageRows.length>0&&pendingSalvageRows.length===(pendingSalvage?.ids.length??0)&&pendingSalvageRows.every(row=>row.eligible);
- const salvageCandidate=selectedIndex===null?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
+ // A pouch reorder must never silently redirect an open inspector to another receipt.
+ const selectedAtIndex=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
+ const selected=selectedAtIndex&&selectedReceipt&&selectedReceipt.itemId===selectedAtIndex.itemId&&selectedReceipt.instanceId===(selectedAtIndex.instanceId??null)?selectedAtIndex:undefined;
+ const salvageCandidate=selectedIndex===null||!selected?undefined:equipmentPouchSalvageCandidates(state,[salvageByIndex.get(selectedIndex)?.id??''])[0];
  const salvageRewards=(rows:typeof salvageCandidates):ItemStack[]=>{
   const amounts=new Map<string,number>();
   for(const row of rows)for(const reward of row.rewards??(row.reward?[row.reward]:[]))amounts.set(reward.itemId,(amounts.get(reward.itemId)??0)+reward.quantity);
@@ -78,7 +82,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   const stack=pouch.stacks[row.index],copy=stack?.instanceId?copyById.get(stack.instanceId):undefined;
   return ['epic','legendary','mythic'].includes(copy?.rarity??itemRarity(itemDef(row.itemId)));
  });
- const saleCandidate=selectedIndex===null?undefined:byIndex.get(selectedIndex);
+ const saleCandidate=selectedIndex===null||!selected?undefined:byIndex.get(selectedIndex);
  const previewSale=previewStack?.instanceId?saleCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const previewSalvage=previewStack?.instanceId?salvageCandidates.find(row=>pouch.stacks[row.index]?.instanceId===previewStack.instanceId):undefined;
  const candidateReason=(row:{index:number;reason?:string})=>{
@@ -136,7 +140,6 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
   }catch{setDisposalError(p('The action was not confirmed. Try again.'));}
   finally{saleInFlight.current=false;setDisposalBusy(false);}
  };
- const selected=selectedIndex===null?undefined:pouch.stacks[selectedIndex];
  const isFavorite=(stack:ItemStack|null|undefined)=>!!stack&&!!state.settings.favoriteItemIds?.includes(stack.itemId);
  const isLocked=(stack:ItemStack|null|undefined)=>!!stack&&(!!state.settings.lockedItemIds?.includes(stack.itemId)||!!(stack.instanceId&&copyById.get(stack.instanceId)?.locked));
  const toggleFavorite=(stack:ItemStack|null|undefined)=>{
@@ -156,7 +159,7 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
  const choose=(stack:ItemStack|undefined,index:number)=>{
   if(!stack)return;
   if(selectMode){const candidate=byIndex.get(start+index);if(candidate)toggleSelected(candidate);return;}
-  setTransferError('');setSelectedIndex(start+index);
+  setTransferError('');setSelectedIndex(start+index);setSelectedReceipt({itemId:stack.itemId,instanceId:stack.instanceId??null});
  };
  const move=async(to:'inventory'|'bank')=>{
   if(!selected||!onAction||busy)return;

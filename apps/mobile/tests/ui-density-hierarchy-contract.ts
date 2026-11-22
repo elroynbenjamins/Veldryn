@@ -51,8 +51,8 @@ const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx')
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 
-ok(skills.includes('navigatorRow:{minHeight:72'),'Skills navigator rows must be compact and touch friendly');
-ok(skills.includes('navigatorTop:')&&skills.includes('navigatorProgress:'),'Skills navigator must keep icon, identity, level and progress visible together');
+ok(skills.includes("navigatorRow:{width:'48%',minWidth:138,minHeight:122")&&skills.includes("cardGrid:{flexDirection:'row',flexWrap:'wrap'"),'Skills hub must restore compact responsive two-column cards');
+ok(skills.includes('navigatorTop:')&&skills.includes('navigatorLevelRow:')&&skills.includes('navigatorProgress:'),'Skills cards must keep icon, identity, level and progress visible together');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
 ok(!skills.includes('TRAINING FOCUS · RECOMMENDED')&&!skills.includes('skillTrainingFocus(state)'),'Skills navigator must not force a training recommendation');
 ok(skills.includes("gt('NEXT LV {level} · {title}',{level:milestone.nextLevel,title:gl(milestone.next[0].title)})")&&skills.includes('skillMilestoneOverview(state,skillRow.skillId)'),"Skill cards must preview their next meaningful authored unlock instead of showing XP progress alone");

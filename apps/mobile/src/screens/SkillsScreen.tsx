@@ -195,29 +195,56 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const title=equipped?gt("Unequip"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
           const disabled=!equipped&&carried&&(!skillReady||!characterReady);
           const expanded=expandedToolId===tool.id;
+          const detailExpanded=expandedToolDetailId===tool.id;
           const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
           const action=equipped?()=>onCommand({type:'unequip_tool',args:{id:tool.id}}):carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
           const actionTitle=expanded&&!carried&&!banked&&!equipped?gt('Hide Recipe'):title;
           const showDetailsToggle=equipped||carried||banked;
-          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
-          return <View key={tool.id}>
-           <View style={[s.toolRow,compactTools&&s.toolRowCompact]}>
-           <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
-            <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
-            <Text style={s.toolEffect}>{gt('Tier {tier} · {percent}% shorter action time',{tier:tool.tier,percent:Math.round((1-tool.actionTimeMultiplier)*100)})+' · '+gl(tool.skillId)+' '+tool.unlockLevel+' · '+gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
-            {equipped?<><Text style={s.toolRoll}>{equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality+' · '+gatheringToolBonusLabel(equippedCopy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text>
-             <Text style={s.toolEffect}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
-             {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
-             </>:null}
-            <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
-           </View></View>
-           <View style={[s.toolActions,compactTools&&s.toolActionsCompact]}>
-             <View style={[s.toolButton,compactTools&&s.toolButtonCompact]}><GameButton title={actionTitle} accessibilityLabel={localizedItemName(language,tool.id)+': '+actionTitle} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
-             {showDetailsToggle?<Pressable accessibilityRole="button" accessibilityLabel={expanded?gt('Hide recipe details'):gt('Show recipe details')} accessibilityHint={localizedItemName(language,tool.id)} accessibilityState={{expanded}} onPress={toggleRecipe} style={({pressed})=>[s.toolDetailsToggle,expanded&&s.toolDetailsExpanded,pressed&&s.pressed]}><DisclosureMark expanded={expanded}/></Pressable>:null}
-           </View>
-          </View>
-          {expanded?<ToolRecipeInlinePanel state={state} tool={tool} blueprintDestination={blueprintDestination} onNavigate={onNavigateCraftingSource} onOpenSmithing={()=>onNavigateCraftingSource?onNavigateCraftingSource(recipeDestination):onViewToolRecipes()}/>:null}
-          {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}><Text style={s.toolRequirement}>Owned copies · select one to equip (speed +2–8% / rare finds +2–5%)</Text>{ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={s.toolCopyOption}><Text style={[s.toolRequirement,{flex:1}]} numberOfLines={2}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':('Legacy · Uncommon · Q50 · Base bonus only · '+gatheringToolPercent(gatheringToolContribution(tool).adjustedBasePercent)+'% tier')}</Text><View style={{minWidth:104}}><GameButton title={equipped?'Replace':'Equip copy'} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View></View>)}</View>:null}
+          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' ·return <View key={tool.id} style={[s.toolCard,detailExpanded&&s.toolCardExpanded]}>
+            <Pressable accessibilityRole="button" accessibilityLabel={localizedItemName(language,tool.id)+' · '+(equipped?gt('Equipped'):gt('Not equipped'))}
+              accessibilityHint={gt('Tap to inspect tool')} accessibilityState={{expanded:detailExpanded}}
+              onPress={()=>{setExpandedToolDetailId(current=>current===tool.id?null:tool.id);setExpandedToolId(null);}}
+              style={({pressed})=>[s.toolCardHeader,pressed&&s.pressed]}>
+              <GatheringToolArtwork itemId={tool.id} size={48}/>
+              <View style={s.toolCopy}>
+                <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
+                {equipped?<Text numberOfLines={2} style={s.toolSummary}>
+                  {'−'+gatheringToolPercent(contribution.adjustedBasePercent)+'% '+gt('tier time')}
+                  {equippedCopy?.bonus.stat==='rarity'?' · +'+gatheringToolPercent(contribution.rarityRollPercent)+'% '+gt('rare finds'):null}
+                  {equippedCopy?.bonus.stat==='speed'?' · +'+gatheringToolPercent(contribution.speedRollPercent)+'% '+gt('speed roll'):null}
+                </Text>:<Text numberOfLines={2} style={s.toolRequirement}>
+                  {(carried||banked)?gt('Not equipped'):gt('Not owned')} · {gl(tool.skillId)} {tool.unlockLevel}
+                </Text>}
+              </View><DisclosureMark expanded={detailExpanded}/>
+            </Pressable>
+            {detailExpanded?<View style={s.toolCardDetails}>
+              <View style={s.toolDetailPair}>
+                <View style={s.toolDetailCell}><Text style={s.toolMetricLabel}>{gt('Tier speed bonus')}</Text><Text style={s.toolDetailValue}>{gatheringToolPercent(contribution.adjustedBasePercent)}%</Text></View>
+                <View style={s.toolDetailCell}><Text style={s.toolMetricLabel}>{gt('Tool roll')}</Text><Text style={s.toolDetailValue}>{equipped?equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality:gt('Legacy · Q50'):gt('Not equipped')}</Text></View>
+              </View>
+              {equipped?<Text style={s.toolEffect}>{equippedCopy?gatheringToolBonusLabel(equippedCopy):gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>:null}
+              <Text style={s.toolRequirement}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
+              {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
+              <Text style={s.toolRequirement}>{gl(tool.skillId)} {tool.unlockLevel} · {gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
+              <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
+              <View style={s.toolInlineActions}>
+                <View style={s.toolInlinePrimary}><GameButton title={actionTitle} accessibilityLabel={localizedItemName(language,tool.id)+': '+actionTitle} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
+                {showDetailsToggle?<Pressable accessibilityRole="button" accessibilityLabel={expanded?gt('Hide recipe details'):gt('Show recipe details')}
+                  accessibilityHint={localizedItemName(language,tool.id)} accessibilityState={{expanded}}
+                  onPress={toggleRecipe} style={({pressed})=>[s.toolRecipeToggle,expanded&&s.toolDetailsExpanded,pressed&&s.pressed]}>
+                  <Text style={s.toolRecipeToggleText}>{gt('Recipe details')}</Text><DisclosureMark expanded={expanded}/>
+                </Pressable>:null}
+              </View>
+              {expanded?<ToolRecipeInlinePanel state={state} tool={tool} blueprintDestination={blueprintDestination} onNavigate={onNavigateCraftingSource} onOpenSmithing={()=>onNavigateCraftingSource?onNavigateCraftingSource(recipeDestination):onViewToolRecipes()}/>:null}
+              {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}>
+                <Text style={s.toolRequirement}>{gt('Owned copies')} · {gt('Select a tool roll to equip')}</Text>
+                {ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={[s.toolCopyOption,compactTools&&s.toolCopyOptionCompact]}>
+                  <Text style={[s.toolRequirement,{flex:1}]} numberOfLines={3}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>
+                  <View style={s.toolCopyAction}><GameButton compact title={equipped?gt('Replace'):gt('Equip copy')} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View>
+                </View>)}
+              </View>:null}
+            </View>:null}
+          </View>;ceId}:{})}})}/></View></View>)}</View>:null}
           </View>;
         })}</Panel>}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}
@@ -232,13 +259,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
     areaChip:{minHeight:44,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,paddingHorizontal:10},
     areaChipSelected:{borderColor:C.accent,backgroundColor:C.selection},
     areaChipLocked:{opacity:.72},areaChipText:{fontSize:11,color:C.muted,fontWeight:'700'},areaChipTextSelected:{color:C.text,fontWeight:'800'},root:{padding:spacing.lg,gap:spacing.md},plannerToggle:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,marginHorizontal:spacing.md,marginTop:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},plannerTitle:{...typography.bodyStrong,color:C.text},h:{...typography.hero,color:C.text},name:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},accentWord:{color:equipmentColors.goldSoft,fontWeight:'900'},infoWord:{color:C.info,fontWeight:'900'},weather:{...typography.caption,fontWeight:'900'},pacing:{...typography.caption,color:C.info},row:{flexDirection:'row',gap:spacing.sm},actionRow:{flexDirection:'row',gap:8},queueButton:{flex:1},startButton:{flex:2},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},modeChip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},modeChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},modeChipText:{fontSize:12,color:C.muted,fontWeight:'700'},modeChipTextSelected:{color:C.text},pressed:{opacity:.76},flex:{flex:1},group:{gap:spacing.md},output:{...typography.bodyStrong,color:C.accent},met:{...typography.caption,color:C.good},missing:{...typography.caption,color:C.warning},toolPanel:{gap:9},toolMetrics:{flexDirection:'row',gap:8},toolMetric:{flex:1,minWidth:0,padding:11,borderRadius:9,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,gap:3},toolMetricLabel:{...typography.caption,color:C.muted,fontWeight:'800',letterSpacing:.3},toolMetricValue:{...typography.title,fontSize:24,lineHeight:30,fontWeight:'900'},toolMetricCaption:{...typography.caption,color:C.muted},toolMathToggle:{minHeight:44,alignItems:'center',justifyContent:'center',gap:8,flexDirection:'row'},toolMathLink:{...typography.caption,color:C.info,fontWeight:'700'},toolMathDetails:{gap:5,padding:10,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},toolSectionHeader:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',paddingTop:5},toolSectionTitle:{...typography.caption,color:C.muted,fontWeight:'800',letterSpacing:.5},toolHeading:{minHeight:74,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:4}, manageHint:{...typography.caption,color:C.accent},emptyTool:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.stage},emptyToolCompact:{width:52,height:52},
- toolRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
+ toolCard:{borderWidth:1,borderColor:C.line,borderRadius:9,overflow:'hidden',backgroundColor:C.panel2},toolCardExpanded:{borderColor:C.selectionLine},toolCardHeader:{minHeight:72,flexDirection:'row',alignItems:'center',paddingHorizontal:9,paddingVertical:10,gap:10},toolSummary:{...typography.caption,color:C.good,flexShrink:1,fontWeight:'700'},toolCardDetails:{padding:10,paddingTop:12,gap:9,borderTopWidth:1,borderTopColor:C.line},toolDetailPair:{flexDirection:'row',gap:8},toolDetailCell:{flex:1,minWidth:0,gap:4},toolDetailValue:{...typography.bodyStrong,color:C.text,fontWeight:'800'},toolInlineActions:{flexDirection:'row',flexWrap:'wrap',gap:8},toolInlinePrimary:{flex:1,minWidth:130},toolRecipeToggle:{minHeight:48,flexDirection:'row',gap:6,paddingHorizontal:12,alignItems:'center',justifyContent:'center',borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},toolRecipeToggleText:{...typography.caption,color:C.info,fontWeight:'800'},toolCopyOptionCompact:{flexDirection:'column',alignItems:'stretch'},toolCopyAction:{minWidth:114,alignSelf:'stretch'},toolRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:spacing.sm,paddingTop:spacing.sm,borderTopWidth:1,borderTopColor:C.line},
  toolRowCompact:{flexDirection:'column',alignItems:'stretch',gap:8},
  toolRoll:{...typography.caption,color:C.good,fontWeight:'800'},
  toolTotalBreakdown:{gap:4,padding:10,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:9,marginBottom:4},
  toolTotalStrong:{...typography.caption,color:C.text,fontWeight:'800',flexShrink:1},
- toolCopies:{width:'100%',gap:6,paddingLeft:8,paddingBottom:8},
- toolCopyOption:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:2},
+ toolCopies:{width:'100%',gap:6,paddingTop:8,borderTopWidth:1,borderTopColor:C.line},
+ toolCopyOption:{minHeight:48,flexDirection:'row',alignItems:'center',gap:8,padding:8,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},
  toolInfo:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:spacing.sm},
  toolCopy:{flex:1,minWidth:0,gap:3},
  toolName:{...typography.bodyStrong,color:C.text,flexShrink:1},

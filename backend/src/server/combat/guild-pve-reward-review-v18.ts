@@ -16,7 +16,7 @@ function fail(message:string):never{throw Error('guild_pve_v18_reward_'+message)
 export interface GuildPveV18RewardReview {
  cycleId:string;guildId:string;accountId:string;
  band:'none'|'partial_review'|'full_review';
- reason:'not_frozen_member'|'cross_guild_binding'|'no_verified_action'|
+ reason:'not_frozen_member'|'cross_guild_binding'|'missing_guild_binding'|'no_verified_action'|
   'partial_progress'|'campaign_complete';
  verifiedActions:number;verifiedHpCredit:number;
  verifiedHealing:number;verifiedShielding:number;verifiedCleanses:number;
@@ -39,28 +39,43 @@ export function reviewGuildPveV18Reward(input:{
  const cleared=required.filter(id=>run.nodes[id]?.cleared&&run.nodes[id]?.hp===0).length;
  if(cleared>7||required.some(id=>!run.nodes[id]))fail('invalid_node_state');
  let actions=0,hp=0,healing=0,shield=0,cleanses=0,fair=0;
- const evidence:readonly (readonly [string,string])[]=[];
  const ownEvidence:Array<readonly [string,string]>=[];
  for(const [key,entry] of Object.entries(state.receipts)){
   const r=entry.value as GuildPveV18Receipt;
   if(r.cycleId!==cycleId||r.accountId!==accountId)continue;
+  const expectedFingerprint=sha([
+   r.cycleId,r.guildId,r.characterId,r.requestId,r.nodeId,r.stance,
+  ]);
   if(key!==JSON.stringify([cycleId,accountId,r.requestId])||
-   !/^[a-f0-9]{64}$/.test(entry.fingerprint)||
-   !safe(r.requestId)||!safe(r.guildId)||
-   r.rewardGranted!==false||r.walletWritten!==false||r.outboxCreated!==false)
+   entry.fingerprint!==expectedFingerprint||
+   !safe(r.requestId)||!safe(r.guildId)||!safe(r.characterId)||
+   !required.includes(r.nodeId)||
+   !['Assault','Guard','Rally'].includes(r.stance)||
+   r.rewardGranted!==false||r.walletWritten!==false||r.outboxCreated!==false||
+   !Number.isFinite(r.beforeHp)||!Number.isFinite(r.afterHp)||
+   r.beforeHp<0||r.afterHp<0||r.afterHp>r.beforeHp||
+   !Number.isFinite(r.beforePressure)||!Number.isFinite(r.afterPressure)||
+   r.beforePressure<0||r.afterPressure<0||
+   r.beforePressure>100||r.afterPressure>100)
    fail('invalid_receipt');
+  if(!Number.isFinite(r.creditedHp)||r.creditedHp<0||
+   Math.abs((r.beforeHp-r.afterHp)-r.creditedHp)>.02)
+   fail('hp_credit_mismatch');
   if(r.guildId!==guildId)continue;
   if(!frozen)fail('unrostered_receipt');
   ownEvidence.push([key,entry.fingerprint]);
   if(r.status==='stale'){
-   if(r.sealDebit!==0||r.combat!==null||r.creditedHp!==0)
+   if(r.sealDebit!==0||r.combat!==null||r.creditedHp!==0||
+    r.beforePressure!==r.afterPressure||
+    JSON.stringify(r.beforeCharges)!==JSON.stringify(r.afterCharges))
     fail('stale_has_credit');
    continue;
   }
   if(r.status!=='committed'||r.sealDebit!==1||!r.combat||
-   r.actorSourceHash?.length!==64||!Number.isSafeInteger(r.gameRevision)||
-   !Number.isFinite(r.creditedHp)||r.creditedHp<0||
-   r.creditedHp>r.beforeHp||
+   !/^[a-f0-9]{64}$/.test(r.actorSourceHash??'')||
+   !Number.isSafeInteger(r.gameRevision)||r.gameRevision!<=0||
+   r.creditedHp>r.combat.bossHpRemoved+.02||
+   r.combat.stance!==r.stance||
    !/^[a-f0-9]{64}$/.test(r.combat.deterministicEvidenceHash)||
    r.combat.rewardMinted!==false||r.combat.serverPersisted!==false)
    fail('unverified_committed_receipt');
@@ -68,6 +83,14 @@ export function reviewGuildPveV18Reward(input:{
    !Number.isFinite(r.combat.absorbedShield)||r.combat.absorbedShield<0||
    !Number.isSafeInteger(r.combat.cleanseEvents)||r.combat.cleanseEvents<0)
    fail('invalid_role_evidence');
+  for(const property of ['protection','cleanse','insight'] as const){
+   const before=r.beforeCharges?.[property],after=r.afterCharges?.[property];
+   const used=r.combat.proposedChargeUses[property];
+   if(!Number.isSafeInteger(before)||!Number.isSafeInteger(after)||
+    before<0||before>2||after<0||after>2||
+    (used!==0&&used!==1)||before-after!==used)
+    fail('invalid_charge_settlement');
+  }
   actions++;hp+=r.creditedHp;
   healing+=r.combat.effectiveHealing;
   shield+=r.combat.absorbedShield;
@@ -81,10 +104,11 @@ export function reviewGuildPveV18Reward(input:{
    Math.min(r.combat.cleanseEvents,4)*cap*.05;
  }
  const round=(n:number)=>Number(n.toFixed(2));
- const eligible=frozen&&!competing&&actions>0;
+ const eligible=frozen&&!competing&&actions>0&&binding===guildId;
  const complete=cleared===7;
  const reason:GuildPveV18RewardReview['reason']=!frozen?'not_frozen_member':
   competing?'cross_guild_binding':!actions?'no_verified_action':
+  binding!==guildId?'missing_guild_binding':
   complete?'campaign_complete':'partial_progress';
  return {
   cycleId,guildId,accountId,

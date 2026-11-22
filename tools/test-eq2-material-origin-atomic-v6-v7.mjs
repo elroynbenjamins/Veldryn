@@ -129,7 +129,8 @@ function rejects(transform,code){
   request,t.snapshot,catalog,t.lots,t.queue),
   error=>error?.code===code,code);
 }
-rejects(t=>{t.lots[0].quantity++;},'source_receipt_overclaimed');
+rejects(t=>{t.lots.push({...t.lots[0],lotId:'extra_lot',quantity:1});},
+ 'source_receipt_overclaimed');
 rejects(t=>{t.lots[0].accountId='other_account';},'forged_or_duplicate_lot');
 rejects(t=>{t.lots[0].characterId='char_2';},'incomplete_material_lot_coverage');
 rejects(t=>{t.lots.push({...t.lots[0]});},'forged_or_duplicate_lot');

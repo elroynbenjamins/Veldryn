@@ -29,7 +29,7 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
  };
  return <View style={s.root}>
   <View style={s.head}>
-   <View style={s.flex}><Text style={s.eyebrow}>{st('PARTY RECRUITMENT')}</Text><Text style={s.heading}>{st('Create advert')}</Text></View>
+   <Text style={s.eyebrow}>{st('PARTY RECRUITMENT')}</Text>
    <Text style={s.pill}>{recruiting?'LFM':'LFG'}</Text>
   </View>
   {recruiting?<Text style={s.hint}>{st('Party language and minimum level follow your Party settings.')}</Text>:null}
@@ -48,9 +48,8 @@ export function PartyRecruitmentComposer({initial,party,busy,onPublish,onCancel}
  </View>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({
- root:{gap:spacing.md},head:{flexDirection:'row',alignItems:'center',gap:10},flex:{flex:1,minWidth:0},
+ root:{gap:spacing.md},head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
  eyebrow:{fontSize:10,fontWeight:'900',letterSpacing:0.8,color:C.accent},
- heading:{fontSize:19,fontWeight:'900',color:C.text,marginTop:3},
  pill:{paddingHorizontal:9,paddingVertical:5,borderWidth:1,borderColor:C.selectionLine,borderRadius:99,backgroundColor:C.selection,fontSize:10,fontWeight:'900',color:C.text},
  hint:{fontSize:11,lineHeight:16,color:C.muted},
  section:{gap:7},label:{fontSize:12,fontWeight:'800',color:C.text},

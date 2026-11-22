@@ -57,9 +57,11 @@ do $guard$
 begin
  if not (select relrowsecurity from pg_class where oid='private.character_career_progress_v2'::regclass)
    or not (select relrowsecurity from pg_class where oid='private.character_career_awards_v2'::regclass)
+   or not (select relrowsecurity from pg_class where oid='private.online_career_reward_sources_v2'::regclass)
  then raise exception 'RLS missing'; end if;
  if has_table_privilege('anon','private.character_career_progress_v2','SELECT')
    or has_table_privilege('authenticated','private.character_career_awards_v2','INSERT')
+   or has_table_privilege('authenticated','private.online_career_reward_sources_v2','INSERT')
  then raise exception 'client privilege leak'; end if;
 end
 $guard$;
@@ -159,4 +161,42 @@ begin
 end
 $check$;
 SQL
-echo "PASS: disposable PG17 unique receipts, role isolation, 16-way concurrent claim, collision rejection and full rollback"
+# Verify server-proof uniqueness and DB-owned completion time.
+psql_test <<'SQL'
+insert into private.online_career_reward_sources_v2(
+ source_kind,source_id,account_id,request_id,request_hash,
+ segment_index,expected_game_revision,character_id,
+ profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+values(
+ 'gathering_claim',repeat('a',64),
+ '11111111-1111-4111-8111-111111111111','claim000001',repeat('b',64),
+ 0,12,'11111111-1111-4111-8111-111111111111',
+ 'mining',240,240,10000);
+do $check$
+begin
+ if (select count(*) from private.online_career_reward_sources_v2)<>1
+ or (select completed_at from private.online_career_reward_sources_v2 limit 1) is null
+ then raise exception 'source proof missing or invalid DB completion time'; end if;
+end
+$check$;
+SQL
+ERR="$(psql -X -w -v ON_ERROR_STOP=1 -tAqc \
+ "insert into private.online_career_reward_sources_v2(
+ source_kind,source_id,account_id,request_id,request_hash,
+ segment_index,expected_game_revision,character_id,
+ profession_id,claimed_elapsed_seconds,base_effort_seconds,difficulty_basis_points)
+ values ('gathering_claim',repeat('c',64),'11111111-1111-4111-8111-111111111111',
+ 'claim000001',repeat('d',64),0,12,'22222222-2222-4222-8222-222222222222',
+ 'fishing',240,240,10000);" 2>&1 || true)"
+if ! grep -q 'duplicate key value' <<<"$ERR"; then
+ echo 'Expected duplicate (account,request,segment) to fail across alternate character' >&2; exit 8
+fi
+psql_test <<'SQL'
+do $check$
+begin
+ if (select count(*) from private.online_career_reward_sources_v2)<>1
+ then raise exception 'duplicate source proof slipped into ledger'; end if;
+end
+$check$;
+SQL
+echo "PASS: disposable PG17 unique receipts, source proof exclusivity, role isolation, 16-way concurrency, collision rejection and rollback"

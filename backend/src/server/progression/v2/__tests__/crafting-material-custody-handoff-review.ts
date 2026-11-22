@@ -163,6 +163,29 @@ function test(){
    r.itemId==='IRONWOOD_FANG'?{...r,kind:'equipment_copy' as const}:r),
  },recipe),/material_source_unregistered/,'gear copy cannot be spoofed as fungible stack');
  rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,originalSourceProofs:[...proofs,{
+   ...proofs[0],provenanceId:'PROOF_UNUSED_EQ2',sourceReceiptId:'SOURCE_UNUSED_EQ2',
+   originalLotId:'LOT_UNUSED_EQ2',itemId:'EQ2_FAKE_RESOURCE',
+  }],
+ },recipe),/invalid_source_material_identity/,
+ 'unrelated forged EQ2 source row cannot hide outside selected recipe');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,ownedLots:stock.map(lot=>
+    lot.lotId==='LOT_COPPER_ESCROW'?{...lot,itemId:'EQ2_FAKE_RESOURCE'}:lot),
+ },recipe),/invalid_owned_material_identity/,
+ 'forged EQ2 escrow lot is rejected even when selected recipe never consumes it');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
+  ...state,registrations:[...state.registrations,{
+   itemId:'UNISSUED_GEAR_COPY',kind:'equipment_copy',registered:true,
+   originalSourceRegistered:true,
+  }],
+  originalSourceProofs:[...proofs,{
+   ...proofs[0],provenanceId:'PROOF_FAKE_EQUIP',sourceReceiptId:'SOURCE_FAKE_EQUIP',
+   originalLotId:'LOT_FAKE_EQUIP',itemId:'UNISSUED_GEAR_COPY',
+  }],
+ },recipe),/invalid_source_material_identity/,
+ 'registered gear copy is never allowed as a spare stackable material source');
+ rejection(()=>previewProfessionCraftMaterialCustodyV2(request,{
   ...state,ownedLots:stock.map(lot=>
    lot.lotId==='LOT_COPPER_BANK'?{...lot,availableQuantity:3}:lot),
  },recipe),/insufficient_verified_materials/,'no overspending scarce source-backed lots');

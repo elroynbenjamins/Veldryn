@@ -62,6 +62,10 @@ export function projectBossCombatReplaySignalsV2(
   fail('skills_v2_required');
  const bosses=confirmedV2Bosses(result);
  if(!bosses.size)fail('no_authored_boss');
+ const playerIds=new Set(result.players.map(p=>p.definition.id));
+ const v2PlayerIds=new Set(result.players.filter(p=>p.definition.combatV2?.version===2)
+  .map(p=>p.definition.id));
+ const participantIds=new Set([...playerIds,...result.enemies.map(e=>e.definition.id)]);
  const casts:VerifiedBossCastSignalV2[]=[];
  const statusClears:VerifiedBossStatusClearSignalV2[]=[];
  const open=new Map<string,OpenCast>();
@@ -74,8 +78,9 @@ export function projectBossCombatReplaySignalsV2(
   const boss=event.actorId?bosses.get(event.actorId):undefined;
   if(event.type==='cast_start'&&boss){
    const ability=boss.abilities.find(a=>a.id===event.abilityId);
-   if(!ability||!ability.castTimeMs||ability.castTimeMs<=0||
-      !id(event.targetId)||open.has(boss.id))fail('cast_start_unverifiable');
+   if(!ability||!Number.isSafeInteger(ability.castTimeMs)||
+      ability.castTimeMs<=0||!participantIds.has(event.targetId??'')||
+      open.has(boss.id))fail('cast_start_unverifiable');
    const signal:VerifiedBossCastSignalV2={
     bossId:boss.id,abilityId:ability.id,abilityName:ability.name,
     targetId:event.targetId!,startedAtMs:event.atMs,
@@ -89,6 +94,7 @@ export function projectBossCombatReplaySignalsV2(
   if(event.type==='cast_complete'&&boss){
    const active=open.get(boss.id);
    if(!active||active.signal.abilityId!==event.abilityId||
+      active.signal.targetId!==event.targetId||
       event.atMs<active.signal.expectedCompleteAtMs)
     fail('cast_complete_without_start');
    casts[active.index]={...active.signal,state:'completed',endedAtMs:event.atMs};
@@ -98,7 +104,8 @@ export function projectBossCombatReplaySignalsV2(
    const active=open.get(event.targetId);
    if(!active||!active.signal.interruptible||
       active.signal.abilityId!==event.interruptedAbilityId||
-      !id(event.actorId)||event.atMs>active.signal.expectedCompleteAtMs)
+      !playerIds.has(event.actorId??'')||
+      event.atMs>active.signal.expectedCompleteAtMs)
     fail('interruption_without_live_cast');
    casts[active.index]={...active.signal,state:'interrupted',
     endedAtMs:event.atMs,interruptedByActorId:event.actorId!};
@@ -108,7 +115,8 @@ export function projectBossCombatReplaySignalsV2(
    open.delete(event.targetId); // Death ends the cast; do not invent an interrupt.
   }
   if(event.type==='status_remove'&&(event.statusKind==='dot'||
-     event.statusKind==='debuff')&&id(event.actorId)&&id(event.targetId)&&
+     event.statusKind==='debuff')&&v2PlayerIds.has(event.actorId??'')&&
+     playerIds.has(event.targetId??'')&&
      id(event.abilityId)&&id(event.statusTag)){
    statusClears.push({
     actorId:event.actorId!,targetId:event.targetId!,

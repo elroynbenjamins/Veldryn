@@ -105,6 +105,13 @@ function runTests(){
  state.cycleBindings[JSON.stringify([CYCLE,'GX_UNKNOWN_ACC'])]=GUILD;
  rejects(()=>preview(),'unrostered_binding');
  delete state.cycleBindings[JSON.stringify([CYCLE,'GX_UNKNOWN_ACC'])];
+ // A forged guild receipt for someone outside the frozen roster is rejected
+ // even if there was no matching cycle binding record.
+ const foreign={...receipt,accountId:'GX_UNKNOWN_ACC',requestId:'GX_FOREIGN_REQ'};
+ const foreignKey=JSON.stringify([CYCLE,foreign.accountId,foreign.requestId]);
+ state.receipts[foreignKey]={fingerprint:'b'.repeat(64),value:foreign};
+ rejects(()=>preview(),'unrostered_receipt');
+ delete state.receipts[foreignKey];
  rejects(()=>projectGuildPveV15Campaign({
   state,cycleId:CYCLE,guildId:'INVALID_GUILD',nowUtcMs:START,
  }), 'unknown_run');

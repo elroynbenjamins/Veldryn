@@ -116,18 +116,16 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   const [enteringUtility,setEnteringUtility]=useState<{nodeId:string;kind:string;stateVersion?:number;decisionId?:string}>();
   const [companionMemberId,setCompanionMemberId]=useState<string|undefined>();
   const [selectedBoonId,setSelectedBoonId]=useState<string|undefined>();
-  const [reviewedRoomNodeId,setReviewedRoomNodeId]=useState<string|undefined>();
   useEffect(()=>setSelectedBoonId(undefined),[run.runId,run.lastRoomOutcome?.nodeId]);
   const artifactDraft=Boolean(run.artifactOffers?.length);
    const draftOffers=run.boonOffers?.length?run.boonOffers:run.artifactOffers;
    const needsBoon=run.mode==='qmode'&&Boolean(draftOffers?.length);
-  // Review server-confirmed utility rewards before presenting the next Solo route.
-  // Live voting remains on its existing timer and does not await acknowledgement.
-  const reviewingRoom=run.mode==='qmode'&&run.phase==='awaiting_choice'&&!!run.lastRoomOutcome&&!['merchant','merchant_purchase'].includes(run.lastRoomOutcome.kind)&&reviewedRoomNodeId!==run.lastRoomOutcome.nodeId;
+  // Solo choices open as soon as the server confirms the previous room.
+  // Live voting keeps its non-blocking informational outcome banner.
   useEffect(()=>setCompanionMemberId(undefined),[run.runId]);
   useEffect(()=>{setBattlePresentationReady(false);setEntryCombatArchetypes([]);setEntryCombatEnemies([]);},[run.runId]);
   // Warm only the server-revealed room choices, including the party's class art.
-  // Native decoding can overlap the time spent reviewing the route.
+  // Native decoding can overlap the time spent choosing the next route.
   useEffect(()=>{if(run.phase==='awaiting_choice')preloadDungeonCombatArt(run.options,run.roleSlots);},[run.phase,run.options,run.roleSlots]);
   useEffect(()=>{setEnteringUtility(undefined);},[run.runId]);
   const companionSlot=run.roleSlots.find(slot=>(slot.memberId??slot.name)===companionMemberId&&slot.companionId);
@@ -148,7 +146,7 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   // The battle stage opens before the request finishes. Combat cues, HP and
   // outcomes still come exclusively from the authoritative server response.
   const chooseRoom=(nodeId:string)=>{
-   if(reviewingRoom||(needsBoon&&!selectedBoonId))return;
+   if(needsBoon&&!selectedBoonId)return;
    const option=run.options.find(item=>item.nodeId===nodeId);
    if(onChoose&&run.mode==='qmode'&&isCoopCombatNodeKind(option?.kind)){
     enterFromVersion.current=run.stateVersion;
@@ -193,16 +191,16 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
      </View></FantasyPanel>:null}
     {run.phase==='resolving_node'&&!inCombat?<DungeonRoomResolution kind={run.selectedNodeKind} reduceMotion={reduceMotion}/>:enteringUtility?<DungeonRoomResolution kind={enteringUtility.kind} reduceMotion={reduceMotion}/>:null}
     {!!syncError&&<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.title}>{a('Connection interrupted')}</Text><Text style={s.copy}>{a('Showing the last saved expedition progress. Reconnecting automatically.')}</Text><Text style={s.copy} numberOfLines={2}>{syncError}</Text>{onRefresh?<GameButton compact title={a('Retry connection')} tone="secondary" disabled={busy} onPress={onRefresh}/>:null}</FantasyPanel>}
-    <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'&&(run.mode==='live'||reviewingRoom)?run.lastRoomOutcome:undefined} onContinue={reviewingRoom?()=>setReviewedRoomNodeId(run.lastRoomOutcome!.nodeId):undefined}/>
+    <DungeonRoomOutcomeBanner outcome={run.phase==='awaiting_choice'&&run.mode==='live'?run.lastRoomOutcome:undefined}/>
     {run.lastCombat?.reason==='victory'&&run.lastCombatMarks&&!inCombat&&!enteringCombat?<FantasyPanel variant="success"><View style={s.summary}><ExpeditionMarkIcon size={20}/><Text style={s.name}>{st('+{marks} Expedition Marks earned',{marks:run.lastCombatMarks})}</Text></View></FantasyPanel>:null}
-    {needsBoon&&run.phase==='awaiting_choice'&&!reviewingRoom?<FantasyPanel variant="selected">
+    {needsBoon&&run.phase==='awaiting_choice'?<FantasyPanel variant="selected">
       <View style={s.boonHeader}><Text style={s.title}>{artifactDraft?st('Choose an artifact'):st('Choose a boon')}</Text><Text style={s.copy}>{st('Select one reward before entering the next room.')}</Text></View>
       <View style={s.boonChoices}>{draftOffers!.map(offer=><Pressable key={offer.id} accessibilityRole="radio" accessibilityState={{selected:selectedBoonId===offer.id,disabled:busy}} disabled={busy} onPress={()=>setSelectedBoonId(offer.id)} style={[s.boonChoice,selectedBoonId===offer.id&&s.boonSelected]}>
        <View style={s.boonText}><Text style={s.name}>{offer.name}</Text><Text style={s.copy}>{offer.description}</Text></View>
        <Text style={s.boonMarker}>{selectedBoonId===offer.id?'✓':'○'}</Text>
       </Pressable>)}</View>
     </FantasyPanel>:null}
-        {run.phase==='awaiting_choice'&&run.options.length&&!enteringUtility&&!reviewingRoom?<View style={s.actionArea}>
+        {run.phase==='awaiting_choice'&&run.options.length&&!enteringUtility?<View style={s.actionArea}>
       {run.routePath?<RoutePathStrip path={run.routePath} reduceMotion={reduceMotion}/>:null}
       <View style={s.routeHeader}><View style={s.grow}><Text style={s.routeEyebrow}>{modeLabel}</Text><Text style={s.section}>{run.mode==='live'?st('Vote for the next path'):st('Choose the next room')}</Text></View>{bossNext?<StateChip label={run.options.length>1?st('BOSS EXIT AVAILABLE'):st('FINAL BOSS')} tone="warning"/>:null}</View>
       {!seasonal&&(dungeonTonic?.open||dungeonTonic?.preparedName||healingPotion)?<View style={s.routeSupplies}>{dungeonTonic&&(dungeonTonic.open||dungeonTonic.preparedName)?<Text style={s.routeSupply} numberOfLines={1}>{dungeonTonic.preparedName?`${gt('DUNGEON TONIC')}: ${dungeonTonic.preparedName}`:gt('Choose a tonic before the first room.')}</Text>:null}{healingPotion?<Text style={s.routeSupply}>{gt('DUNGEON HEALING')} {healingPotion.remaining}/{healingPotion.capacity}</Text>:null}</View>:null}

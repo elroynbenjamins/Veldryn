@@ -140,7 +140,8 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
       const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
-      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToo
+      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToolTotalBreakdown(effects),totalToolPercent=gatheringToolPercent(totals.effectivePercent);
+      return <View key={sk.skillId} style={s.group}>
         {mode==='gathering'&&gatheringToolsFor(gatheringSkill).length>0&&<Panel style={s.toolPanel}>
           <Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})}
             accessibilityState={{expanded:!!openTools[sk.skillId]}}
@@ -174,8 +175,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
             <Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>
           </View>:null}
           {openTools[sk.skillId]?<View style={s.toolSectionHeader}><Text style={s.toolSectionTitle}>{gt('TOOL TIERS')}</Text><Text style={s.toolRequirement}>{equippedTools.length}/4</Text></View>:null}
-        nce (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
-          </View>:null}{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
+        {openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
           const equipped=equippedTools.some(entry=>entry.id===tool.id);
           const equippedCopy=equippedGatheringToolRoll(state,gatheringSkill,tool.tier);
           const contribution=gatheringToolContribution(tool,equippedCopy);
@@ -200,7 +200,8 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           const action=equipped?()=>onCommand({type:'unequip_tool',args:{id:tool.id}}):carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
           const actionTitle=expanded&&!carried&&!banked&&!equipped?gt('Hide Recipe'):title;
           const showDetailsToggle=equipped||carried||banked;
-          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' ·return <View key={tool.id} style={[s.toolCard,detailExpanded&&s.toolCardExpanded]}>
+          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
+          return <View key={tool.id} style={[s.toolCard,detailExpanded&&s.toolCardExpanded]}>
             <Pressable accessibilityRole="button" accessibilityLabel={localizedItemName(language,tool.id)+' · '+(equipped?gt('Equipped'):gt('Not equipped'))}
               accessibilityHint={gt('Tap to inspect tool')} accessibilityState={{expanded:detailExpanded}}
               onPress={()=>{setExpandedToolDetailId(current=>current===tool.id?null:tool.id);setExpandedToolId(null);}}
@@ -244,7 +245,6 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
                 </View>)}
               </View>:null}
             </View>:null}
-          </View>;ceId}:{})}})}/></View></View>)}</View>:null}
           </View>;
         })}</Panel>}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}

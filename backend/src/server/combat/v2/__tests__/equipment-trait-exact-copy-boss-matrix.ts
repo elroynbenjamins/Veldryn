@@ -190,6 +190,20 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    out.moreCleanses+=Number(outcome.deltaDebuffsCleansed+outcome.deltaDotsCleansed>0);
    outcomeMetricsByBoss.set(boss.id,out);
    observedOutcomeDifferences+=Number(outcome.changedActualOutcomes);
+   if(which===0&&classId==='IRONWARDEN'&&boss.id==='BOSS_EXP_ROOT'){
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:alternateResult,seed:input.seed,
+     bossId:boss.id,actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:'0'.repeat(64),
+    }),/equipment_copy_digest_mismatch/,'mismatched item receipt must be rejected');
+    assert.throws(()=>reviewEquipmentMatchedCounterplayV2({
+     baseline:first,tactic:alternateResult,seed:input.seed,
+     bossId:'SPOOFED_BOSS',actorId:input.players[0].id,
+     baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+     tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    }),/actor_or_boss_changed/,'mismatched boss identity must be rejected');
+   }
    assert.ok(alternateResult.combat.events.length<5000);
    const changed=JSON.stringify(first.combat.events)!==JSON.stringify(alternateResult.combat.events);
    const casts=alternateResult.combat.events.filter(e=>e.actorId===input.players[0].id&&
@@ -281,8 +295,15 @@ for(const [classId,skillName] of interruptClasses){
    assert.deepEqual(noCounter.equipmentEvidence,withCounter.equipmentEvidence,
     'Tactical interruption must not add, substitute or reroll gear stats');
    assert.deepEqual(noCounter.enemyMechanicLabels,withCounter.enemyMechanicLabels);
-   assert.equal(compileExactEquipmentTraitSourceV2(counter,runtime,port).equipmentReceiptDigest,
-    expected.equipmentReceiptDigest,'new counter build must use same persisted copy');
+   const counterReceipt=compileExactEquipmentTraitSourceV2(counter,runtime,port);
+   const interruptReport=reviewEquipmentMatchedCounterplayV2({
+    baseline:noCounter,tactic:withCounter,seed:input.seed,bossId:boss.id,
+    actorId:input.players[0].id,
+    baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+    tacticalEquipmentReceiptDigest:counterReceipt.equipmentReceiptDigest,
+   });
+   assert.ok(interruptReport.deltaInterrupts>=0,
+    'a counter skill must not report fewer boss interruptions than a skill without interrupts');
    assert.equal(noCounter.combat.events.filter(e=>e.type==='interrupt').length,0,
     'generic no-interrupt choice unexpectedly interrupted enemy');
    const tactical=withCounter.combat.events.filter(e=>
@@ -341,8 +362,15 @@ for(const scenario of cureScenarios){
   assert.deepEqual(generic.equipmentEvidence,cured.equipmentEvidence,
    'Support cure may not alter compiled item stats or copy ownership');
   assert.deepEqual(generic.enemyMechanicLabels,cured.enemyMechanicLabels);
-  assert.equal(compileExactEquipmentTraitSourceV2(tactical,runtime,port).equipmentReceiptDigest,
-   expected.equipmentReceiptDigest);
+  const cureReceipt=compileExactEquipmentTraitSourceV2(tactical,runtime,port);
+  const cureReport=reviewEquipmentMatchedCounterplayV2({
+   baseline:generic,tactic:cured,seed:input.seed,bossId:boss.id,
+   actorId:input.players[0].id,
+   baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+   tacticalEquipmentReceiptDigest:cureReceipt.equipmentReceiptDigest,
+  });
+  assert.ok(cureReport.deltaDebuffsCleansed>0,
+   'authored cure must remove more hostile debuffs than its generic match');
   const bossDebuffs=generic.combat.events.filter(e=>e.type==='status_apply'&&
    e.actorId===boss.id&&e.statusKind==='debuff'&&e.targetId===input.players[0].id);
   assert.ok(bossDebuffs.length>=1,'original authored boss must apply a real debuff');

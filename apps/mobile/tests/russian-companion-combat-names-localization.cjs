@@ -22,7 +22,7 @@ const {
 }=require('../src/i18n/companion-combat-names-de.ts');
 const {companionContent}=require('../src/i18n/companions.ts');
 
-assert.equal(Object.keys(russianCompanionCombatNames).length,38);
+assert.equal(Object.keys(russianCompanionCombatNames).length,40,'Both new Frostfall companion abilities and bond traits require Russian names');
 assert.deepEqual(Object.keys(russianCompanionCombatNames).sort(),Object.keys(germanCompanionCombatNames).sort(),
  'Russian ability/trait names must match the source-verified German companion IDs');
 for(const [id,entry] of Object.entries(russianCompanionCombatNames)){
@@ -92,4 +92,4 @@ const panels=[
 for(const marker of ['companionCombatAbilityName(language','companionCombatBondName(language',
  'companionTechniqueName(language','companionTrialAbilityName(language'])
  assert.ok(panels.includes(marker),'Companion display wiring missing '+marker);
-console.log('PASS: 38 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');
+console.log('PASS: 40 Russian companion ability/Bond pairs, 82 techniques, 12 safe legacy Signatures, 22 Trial abilities, 16 descriptions and shared UI wiring');

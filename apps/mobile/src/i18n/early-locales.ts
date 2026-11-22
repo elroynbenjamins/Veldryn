@@ -15,6 +15,27 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  // Compact tool and inspection display in the newer two locales.
+  "BASE STATS": ["ОСНОВНЫЕ ХАРАКТЕРИСТИКИ","TEMEL ÖZELLİKLER"],
+  "Equipment base stats": ["Основные характеристики снаряжения","Ekipmanın temel özellikleri"],
+  "TRAIT": ["СВОЙСТВО","ÖZELLİK"],
+  "GATHERING TOOL DETAILS": ["ПОДРОБНОСТИ ИНСТРУМЕНТА","TOPLAMA ALETİ AYRINTILARI"],
+  "Tool {number}": ["Инструмент {number}","Alet {number}"],
+  "Legacy tool": ["Старый инструмент","Eski alet"],
+  "Tier gathering speed": ["Скорость сбора по уровню","Kademe toplama hızı"],
+  "Tier base {base}% · Rarity {rarity}% · Quality {quality}%": ["База уровня {base}% · Редкость {rarity}% · Качество {quality}%","Kademe tabanı %{base} · Nadirlik %{rarity} · Kalite %{quality}"],
+  "Bonus stat roll": ["Дополнительная характеристика","Ek özellik"],
+  "Gathering Speed": ["Скорость сбора","Toplama Hızı"],
+  "Gathering Rarity Chance": ["Шанс редкой добычи","Toplama Nadirlik Şansı"],
+  "Legacy tool · No bonus stat roll": ["Старый инструмент · Без дополнительной характеристики","Eski alet · Ek özellik yok"],
+  "Tool roll record unavailable · no bonus is assumed.": ["Данные инструмента недоступны · Бонус не учитывается.","Alet kaydı yok · Bonus varsayılmıyor."],
+  "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.": ["Каждый уровень повышает скорость сбора. Дополнительные бонусы действуют на оставшееся время, с учётом предела скорости.","Her kademe toplama hızını artırır. Ek hız bonusları kalan süreyi azaltır ve hız sınırına tabidir."],
+  "GATHERING TOOLS": ["ИНСТРУМЕНТЫ СБОРА","TOPLAMA ALETLERİ"],
+  "GATHERING SPEED": ["СКОРОСТЬ СБОРА","TOPLAMA HIZI"],
+  "Tier + Rarity + Quality": ["Уровень + Редкость + Качество","Kademe + Nadirlik + Kalite"],
+  "BONUS STAT ROLL": ["ДОПОЛНИТЕЛЬНАЯ ХАРАКТЕРИСТИКА","EK ÖZELLİK"],
+  "To Bank": ["В банк","Bankaya"],
+  "Tier base · No bonus roll": ["База уровня · Без доп. характеристики","Kademe tabanı · Ek özellik yok"],
   // Inventory multi-selection protection: complete Russian and Turkish copy.
   "Updating item protection…": ["Обновление защиты предметов…","Eşya koruması güncelleniyor…"],
   "Locked {count} selected stacks.": ["Заблокировано стопок: {count}.","{count} seçili yığın kilitlendi."],

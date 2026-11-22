@@ -9,6 +9,27 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Gathering-tool inspection labels: typed and translated alongside the released compact UI.
+ "BASE STATS":["BASE STATS","GRUNDWERTE","ESTADÍSTICAS BASE","BASISSTATISTIEKEN","STATISTICHE BASE","STATS DE BASE"],
+ "Equipment base stats":["Equipment base stats","Grundwerte der Ausrüstung","Estadísticas base del equipo","Basisstatistieken uitrusting","Statistiche base equipaggiamento","Stats de base de l'équipement"],
+ "TRAIT":["TRAIT","EIGENSCHAFT","RASGO","EIGENSCHAP","TRATTO","TRAIT"],
+ "GATHERING TOOL DETAILS":["GATHERING TOOL DETAILS","SAMMELWERKZEUG-DETAILS","DETALLES DE HERRAMIENTA","VERZAMELGEREEDSCHAP DETAILS","DETTAGLI ATTREZZO DI RACCOLTA","DÉTAILS DE L'OUTIL DE RÉCOLTE"],
+ "Tool {number}":["Tool {number}","Werkzeug {number}","Herramienta {number}","Gereedschap {number}","Attrezzo {number}","Outil {number}"],
+ "Legacy tool":["Legacy tool","Altes Werkzeug","Herramienta antigua","Oud gereedschap","Attrezzo precedente","Ancien outil"],
+ "Tier gathering speed":["Tier gathering speed","Sammeltempo der Stufe","Velocidad de recolección por nivel","Verzamelsnelheid per rang","Velocità raccolta per livello","Vitesse de récolte du palier"],
+ "Tier base {base}% · Rarity {rarity}% · Quality {quality}%":["Tier base {base}% · Rarity {rarity}% · Quality {quality}%","Stufenbasis {base}% · Seltenheit {rarity}% · Qualität {quality}%","Base de nivel {base}% · Rareza {rarity}% · Calidad {quality}%","Rangbasis {base}% · Zeldzaamheid {rarity}% · Kwaliteit {quality}%","Base livello {base}% · Rarità {rarity}% · Qualità {quality}%","Base de palier {base}% · Rareté {rarity}% · Qualité {quality}%"],
+ "Bonus stat roll":["Bonus stat roll","Zusätzlicher Attributswurf","Atributo adicional","Extra eigenschap","Statistica bonus","Stat bonus"],
+ "Gathering Speed":["Gathering Speed","Sammeltempo","Velocidad de recolección","Verzamelsnelheid","Velocità di raccolta","Vitesse de récolte"],
+ "Gathering Rarity Chance":["Gathering Rarity Chance","Chance auf seltene Sammelfunde","Probabilidad de rareza en recolección","Kans op zeldzame vondsten","Probabilità rarità raccolta","Chance de rareté en récolte"],
+ "Legacy tool · No bonus stat roll":["Legacy tool · No bonus stat roll","Altes Werkzeug · Kein Bonuswurf","Herramienta antigua · Sin atributo adicional","Oud gereedschap · Geen extra eigenschap","Attrezzo precedente · Nessuna stat bonus","Ancien outil · Aucun stat bonus"],
+ "Tool roll record unavailable · no bonus is assumed.":["Tool roll record unavailable · no bonus is assumed.","Werkzeugdaten fehlen · Kein Bonus wird angenommen.","Sin datos del atributo de la herramienta · No se aplica ninguna bonificación.","Gegevens ontbreken · Er wordt geen bonus aangenomen.","Dati attrezzo non disponibili · Nessun bonus presunto.","Données d'outil indisponibles · Aucun bonus supposé."],
+ "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.":["Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.","Jede Stufe erhöht das Sammeltempo. Gewürfelte Boni wirken auf die verbleibende Aktionszeit bis zur Obergrenze.","Cada nivel mejora la velocidad de recolección. Los bonos adicionales se aplican al tiempo restante, hasta el límite.","Elke rang verhoogt de verzamelsnelheid. Extra snelheid werkt op de resterende actietijd, tot het maximum.","Ogni livello aumenta la velocità di raccolta. I bonus extra agiscono sul tempo rimanente fino al limite.","Chaque palier augmente la vitesse de récolte. Les bonus s'appliquent au temps restant, jusqu'au plafond."],
+ "GATHERING TOOLS":["GATHERING TOOLS","SAMMELWERKZEUGE","HERRAMIENTAS DE RECOLECCIÓN","VERZAMELGEREEDSCHAP","ATTREZZI DI RACCOLTA","OUTILS DE RÉCOLTE"],
+ "GATHERING SPEED":["GATHERING SPEED","SAMMELTEMPO","VELOCIDAD DE RECOLECCIÓN","VERZAMELSNELHEID","VELOCITÀ DI RACCOLTA","VITESSE DE RÉCOLTE"],
+ "Tier + Rarity + Quality":["Tier + Rarity + Quality","Stufe + Seltenheit + Qualität","Nivel + Rareza + Calidad","Rang + Zeldzaamheid + Kwaliteit","Livello + Rarità + Qualità","Palier + Rareté + Qualité"],
+ "BONUS STAT ROLL":["BONUS STAT ROLL","BONUS-ATTRIBUTSWURF","ATRIBUTO ADICIONAL","EXTRA EIGENSCHAP","STATISTICA BONUS","STAT BONUS"],
+ "To Bank":["To Bank","Zur Bank","Al banco","Naar bank","In banca","Vers la banque"],
+ "Tier base · No bonus roll":["Tier base · No bonus roll","Stufenbasis · Kein Bonuswurf","Base de nivel · Sin atributo adicional","Rangbasis · Geen extra eigenschap","Base livello · Nessuna stat bonus","Base de palier · Aucun stat bonus"],
  // Compact inventory batch-protection controls.
  "Updating item protection…":["Updating item protection…","Objektschutz wird aktualisiert…","Actualizando protección…","Itembeveiliging bijwerken…","Aggiornamento protezione…","Mise à jour de la protection…"],
  "Locked {count} selected stacks.":["Locked {count} selected stacks.","{count} ausgewählte Stapel gesperrt.","{count} pilas bloqueadas.","{count} geselecteerde stapels vergrendeld.","{count} pile bloccate.","{count} piles verrouillées."],

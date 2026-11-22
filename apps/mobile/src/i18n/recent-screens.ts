@@ -6,6 +6,9 @@ import {accountText} from './account';
 /** New player-facing copy in Roadmap, Market Inbox and badges. Columns DE/ES/NL/IT/FR/RU/TR.
  * Only fixed product-authored UI strings belong here; never translate player or server content. */
 export const recentScreenTranslationRows = {
+  // Saturday 10:00 local-time charge reminder.
+  "Saturday dungeon reminder": ["Dungeon-Erinnerung am Samstag","Recordatorio de mazmorra del sábado","Kerkermelding op zaterdag","Promemoria dungeon del sabato","Rappel de donjon du samedi","Напоминание о подземелье в субботу","Cumartesi zindan hatırlatıcısı"],
+  "Remind me at 10:00 AM local time on Saturday when dungeon charges and enhanced rewards remain.": ["Erinnere mich samstags um 10:00 Uhr Ortszeit, wenn noch Dungeon-Versuche oder verbesserte Belohnungen übrig sind.","Avísame los sábados a las 10:00, hora local, si aún me quedan intentos de mazmorra o recompensas mejoradas.","Herinner me zaterdag om 10.00 uur lokale tijd als ik nog kerkerpogingen of verbeterde beloningen heb.","Ricordamelo sabato alle 10:00 ora locale se restano cariche dungeon o ricompense migliorate.","Rappelle-moi le samedi à 10 h, heure locale, s’il me reste des charges de donjon ou des récompenses améliorées.","Напоминайте мне по субботам в 10:00 по местному времени, если остались попытки подземелья или улучшенные награды.","Cumartesi günü yerel saatle 10.00'da zindan hakkım veya geliştirilmiş ödüllerim kaldığında beni hatırlat."],
   "Queue, mastery & rewards": ["Warteschlange, Meisterschaft & Belohnungen","Cola, maestría y recompensas","Wachtrij, meesterschap en beloningen","Coda, maestria e ricompense","File d’attente, maîtrise et récompenses","Очередь, мастерство и награды","Kuyruk, ustalık ve ödüller"],
   // One-page audio customization (DE, ES, NL, IT, FR, RU, TR).
   "Preview theme": ["Thema anhören","Escuchar tema","Muziek beluisteren","Ascolta il tema","Écouter le thème","Прослушать тему","Temayı Dinle"],

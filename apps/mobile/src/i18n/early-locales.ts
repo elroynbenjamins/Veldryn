@@ -70,6 +70,8 @@ export const EARLY_LOCALE_ROWS={
   // Character and Combat Power details for Russian and Turkish.
   "Edit profile": ["Изменить профиль","Profili düzenle"],
   "Combat Power": ["Боевая мощь","Savaş gücü"],
+  "MISS": ["ПРОМАХ","ISKA"],
+  "Your attack misses.": ["Ваша атака не попала в цель.","Saldırın hedefi ıskaladı."],
   "CLASS SKILLS · PASSIVE": ["НАВЫКИ КЛАССА · ПАССИВНО","SINIF BECERİLERİ · PASİF"],
   "COMBAT STYLE · PASSIVE": ["СТИЛЬ БОЯ · ПАССИВНО","SAVAŞ STİLİ · PASİF"],
   "COMPANION · PASSIVE BONUS": ["СПУТНИК · ПАССИВНЫЙ БОНУС","YOLDAŞ · PASİF BONUS"],

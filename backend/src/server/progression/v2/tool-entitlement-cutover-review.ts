@@ -166,15 +166,18 @@ export function previewLegacyToolEntitlementCutoverV2(
    if(copy.ownerCharacterId.toLowerCase()!==characterId)
      fail('copy_owner_mismatch');
    const template=templates.get(copy.itemId);
-   if(!template||template.tier===1)continue;
+   // First validate physical identity against the receipt, even when a
+   // character's skill would not qualify for a grandfathering candidate.
+   const proof=receipts.get(copy.grantReceiptId);
+   if(proof&&(proof.kind!=='tool_copy'||proof.itemId!==copy.itemId||
+      proof.objectId!==copy.instanceId))
+     fail('copy_proof_mismatch');
+   if(!template)fail('unsupported_tool_snapshot');
+   if(template.tier===1)continue;
    const current=levels[template.gatheringSkill]??0;
    const audit=reviewProfessionTierCompatibilityV2(current,template.tier);
    if(!audit.existingAccessAtRisk)continue;
-   const proof=receipts.get(copy.grantReceiptId);
    if(!proof){evidenceMissingCount++;continue;}
-   if(proof.kind!=='tool_copy'||proof.itemId!==copy.itemId||
-      proof.objectId!==copy.instanceId)
-     fail('copy_proof_mismatch');
    proposals.push({
      kind:'preserve_exact_copy',itemId:copy.itemId,objectId:copy.instanceId,
      profession:template.gatheringSkill,tier:template.tier,
@@ -195,15 +198,15 @@ export function previewLegacyToolEntitlementCutoverV2(
      fail('knowledge_owner_mismatch');
    const template=TOOL_TEMPLATES_CUTOVER_REVIEW_V2.find(
      t=>t.learnedKnowledgeId===learned.knowledgeId);
+   const proof=receipts.get(learned.grantReceiptId);
+   if(proof&&(!template||proof.kind!=='blueprint_knowledge'||
+      proof.itemId!==template.itemId||proof.objectId!==learned.knowledgeId))
+     fail('knowledge_proof_mismatch');
    if(!template||template.tier===1)continue;
    const current=levels.smithing??0;
    const audit=reviewProfessionTierCompatibilityV2(current,template.tier);
    if(!audit.existingAccessAtRisk)continue;
-   const proof=receipts.get(learned.grantReceiptId);
    if(!proof){evidenceMissingCount++;continue;}
-   if(proof.kind!=='blueprint_knowledge'||proof.itemId!==template.itemId||
-      proof.objectId!==learned.knowledgeId)
-     fail('knowledge_proof_mismatch');
    proposals.push({
      kind:'preserve_learned_knowledge',itemId:template.itemId,
      objectId:learned.knowledgeId,profession:'smithing',tier:template.tier,

@@ -1,10 +1,10 @@
 # Dedicated hidden 2.0 source-generation repair. Not a production deploy.
 # Modeled on the existing non-main 1.0.10 Edge bundle reconciliation flow.
-name: Hidden Combat 2.0 Edge bundle parity repair
+name: Hidden Combat 2.0 combined traits Edge bundle parity sync
 
 on:
   push:
-    branches: ['integration/combat-v2-edge-parity-rebuild-20261122']
+    branches: ['integration/combat-v2-edge-final-traits-sync-20261122']
     paths:
       - '.github/workflows/hidden-combat-v2-edge-parity-rebuild.yml'
       - 'tools/verify-gameplay-edge.mjs'
@@ -15,20 +15,20 @@ permissions:
   contents: write
 
 concurrency:
-  group: hidden-combat2-edge-parity-20261122
+  group: hidden-combat2-edge-traits-sync-20261122
   cancel-in-progress: false
 
 jobs:
   build-hidden:
     # Never run this write-capable task on main or on a release branch.
-    if: github.ref == 'refs/heads/integration/combat-v2-edge-parity-rebuild-20261122'
+    if: github.ref == 'refs/heads/integration/combat-v2-edge-final-traits-sync-20261122'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout exactly the isolated Combat 2.0 source branch
         uses: actions/checkout@v4
         with:
-          ref: integration/combat-v2-edge-parity-rebuild-20261122
+          ref: integration/combat-v2-edge-final-traits-sync-20261122
           fetch-depth: 1
           persist-credentials: true
       - uses: pnpm/action-setup@v4
@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BRANCH='integration/combat-v2-edge-parity-rebuild-20261122'
+          BRANCH='integration/combat-v2-edge-final-traits-sync-20261122'
           [[ "$GITHUB_REF" == "refs/heads/$BRANCH" ]] || exit 1
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'

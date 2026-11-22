@@ -43253,7 +43253,7 @@ var seeds = [
   { id: "EVT_UNIT_008", name: "Hollow Knightling", rarity: "elite", role: "tank", event: "veilbreak", description: "A hollow suit of enchanted armor that anchors the front line behind a heavy ward shield." },
   { id: "EVT_UNIT_011", name: "Lantern Keeper", rarity: "elite", role: "support", event: "veilbreak", description: "A lantern-bearing spirit that stabilizes allies with wardlight and recovery pulses." },
   { id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "elite", role: "support", event: "frostfall_festival", description: "A rapid winter healer whose bell pulse softens incoming burst damage." },
-  { id: "EVT_UNIT_012", name: "Rimeshard Lynx", rarity: "elite", role: "damage", event: "frostfall_festival", description: "An agile aurora hunter that exposes a target to follow-up strikes." },
+  { id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "elite", role: "damage", event: "frostfall_festival", description: "A stocky frost-clawed winter hunter that exposes a target to follow-up strikes." },
   { id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "elite", role: "tank", event: "frostfall_festival", description: "A woolly winter guardian with a bell-forged reflecting shield." },
   { id: "EVT_UNIT_010", name: "Caravan Sentinel", rarity: "elite", role: "support", event: "merchant_guild_festival", description: "A flexible support companion with balanced recovery, defense, and tempo." }
 ];
@@ -43595,7 +43595,7 @@ var FROSTFALL_EVENT2 = {
     { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
     // Three distinct Elite roles. Account-wide and permanent after the event.
     // Keep the existing final 10k Frostbell milestone ID stable.
-    { points: 6e3, reward: { kind: "companion", id: "EVT_UNIT_012", name: "Rimeshard Lynx", rarity: "epic" } },
+    { points: 6e3, reward: { kind: "companion", id: "EVT_UNIT_012", name: "Rimeshard Wolverine", rarity: "epic" } },
     { points: 6500, reward: { kind: "title", id: "title_winter_light", name: "Winter Light", rarity: "epic" } },
     { points: 8500, reward: { kind: "companion", id: "EVT_UNIT_013", name: "Hearthguard Ram", rarity: "epic" } },
     { points: 1e4, reward: { kind: "companion", id: "EVT_UNIT_009", name: "Frostbell Herald", rarity: "epic" } }
@@ -46675,7 +46675,7 @@ var raw = [
   ["EVT_UNIT_008", "Hollow Knightling", "tank", "elite", "EVENT_VEILBREAK", 205, 18, 24, 2.2, "mitigation", 0.07],
   ["EVT_UNIT_011", "Lantern Keeper", "support", "elite", "EVENT_VEILBREAK", 205, 18, 15, 2.2, "utility", 0.05],
   ["EVT_UNIT_009", "Frostbell Herald", "support", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 18, 15, 2.2, "heal", 0.05],
-  ["EVT_UNIT_012", "Rimeshard Lynx", "damage", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 25, 15, 2, "damage", 1.06],
+  ["EVT_UNIT_012", "Rimeshard Wolverine", "damage", "elite", "EVENT_FROSTFALL_FESTIVAL", 205, 25, 15, 2, "damage", 1.06],
   ["EVT_UNIT_013", "Hearthguard Ram", "tank", "elite", "EVENT_FROSTFALL_FESTIVAL", 215, 18, 24, 2.4, "shield", 0.052],
   ["EVT_UNIT_010", "Caravan Sentinel", "support", "elite", "EVENT_MERCHANT_GUILD_FESTIVAL", 205, 18, 15, 2.2, "utility", 0.05]
 ];

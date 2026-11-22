@@ -123,6 +123,8 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number]){
  return {build,runtime,port:verifiedPort,input,storedKit,receipt,expected:predicted};
 }
 let runs=0,traitEvents=0,sourceTests=0;
+let pairedVariantRuns=0,observedEventDifferences=0;
+const variantByBoss=new Map<string,{samples:number;differentEvents:number;variantSkillCasts:number}>();
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
   for(const boss of bosses){
@@ -141,6 +143,36 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     'Real class should execute original attacks or authored abilities');
    assert.equal(expected.equipmentReceiptDigest.length,64);
    traitEvents+=first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length;
+   // Same exact-copy item ledger, rarity, quality, original class and specialization;
+   // switch only the first verified ability variant, not gear, stats or CP weights.
+   // This measures authored-variant responsiveness on ALL 108 regional boss
+   // matchups, not equal-CP advantages or final counter-build win rates.
+   const chosen=build.selected.activeSkills[0];
+   const identity=SKILL_IDENTITIES_V2.find(s=>s.id===chosen.skillId&&s.classId===classId);
+   assert.ok(identity&&identity.variants.length===3,'authoritative variant identity');
+   const alternate:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,activeSkills:[
+      {skillId:chosen.skillId,variantId:identity.variants[1].id},
+      ...build.selected.activeSkills.slice(1),
+    ]},
+   };
+   const alternateResult=simulateUnifiedEquipmentCombatV2(
+    input,[alternate],[runtime],true,storedKit,port);
+   assert.deepEqual(alternateResult.equipmentEvidence,first.equipmentEvidence,
+    'Ability variant must not alter persisted equipped copies or compiler stat stages');
+   assert.deepEqual(alternateResult.enemyMechanicLabels,first.enemyMechanicLabels,
+    'Both tactical choices must face exactly the same authored boss');
+   assert.equal(compileExactEquipmentTraitSourceV2(alternate,runtime,port).equipmentReceiptDigest,
+    expected.equipmentReceiptDigest,'selected gear receipts must remain identical');
+   assert.ok(alternateResult.combat.events.length<5000);
+   const changed=JSON.stringify(first.combat.events)!==JSON.stringify(alternateResult.combat.events);
+   const casts=alternateResult.combat.events.filter(e=>e.actorId===input.players[0].id&&
+    e.abilityId?.endsWith(':v2:1')&&(e.type==='cast_start'||e.type==='cast_complete'||
+     e.type==='damage'||e.type==='shield'||e.type==='heal')).length;
+   const bucket=variantByBoss.get(boss.id)??{samples:0,differentEvents:0,variantSkillCasts:0};
+   bucket.samples++;bucket.differentEvents+=Number(changed);bucket.variantSkillCasts+=casts;
+   variantByBoss.set(boss.id,bucket);
+   observedEventDifferences+=Number(changed);pairedVariantRuns++;
    runs++;if(which!==0||classId!=='IRONWARDEN')continue;
    const tampered={...port,receiptsByInstanceId:{
      ...port.receiptsByInstanceId,
@@ -169,6 +201,15 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  }
 }
 assert.equal(runs,9*2*6);
+assert.equal(pairedVariantRuns,runs,'all class/spec/boss runs need a trusted-gear variant pair');
+assert.equal(variantByBoss.size,6,'one pair coverage group per authored regional boss');
+assert.ok([...variantByBoss.values()].every(x=>x.samples===18),
+ 'every regional boss must face all 18 class specializations');
+assert.ok(observedEventDifferences>0,
+ 'at least one ability variant changes real combat events in signed gear simulation');
+console.log(JSON.stringify({kind:'EQUIPMENT_BACKED_VARIANT_SENSITIVITY_NOT_EQUAL_CP',
+ matchedPairs:pairedVariantRuns,changedEventStreams:observedEventDifferences,
+ byBoss:Object.fromEntries([...variantByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
 assert.equal(sourceTests,30);
 console.log('PASS: '+runs+' genuine hidden V2 class-spec-regional boss encounters, '+traitEvents+

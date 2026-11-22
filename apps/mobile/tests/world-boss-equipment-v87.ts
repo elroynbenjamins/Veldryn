@@ -89,7 +89,7 @@ reject(()=>make({...proof,sources:[{...sources[0],
   tenacityPct:99} as unknown as typeof sources[number],...sources.slice(1)]}),
  'untrusted_equipment');
 reject(()=>make({...proof,verifyPersisted:(_context,items)=>{
-  try{(items[0] as {basicAttackDamagePct:number}).basicAttackDamagePct=999;}catch{}
+  (items[0] as {basicAttackDamagePct:number}).basicAttackDamagePct=999;
   return true;
  }}), 'persisted_receipt_not_verified');
 reject(()=>make({...proof,sources:[...sources.slice(0,4),{...sources[4],characterId:'foreign'}]}),

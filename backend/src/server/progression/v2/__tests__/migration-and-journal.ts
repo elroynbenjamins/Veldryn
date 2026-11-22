@@ -1,6 +1,7 @@
 import {overallLevelFromXpV2,professionLevelFromXpV2,overallTotalXpForLevelV2,professionTotalXpForLevelV2} from '../character-progression';
 import {
   legacySkillXpForNextLevelV1,legacySkillTotalXpAtLevelV1,legacySkillLevelFromXpV1,
+  legacyCombatLevelFromXpV1,
   previewMigratedProfessionXpV2,previewLegacyCareerMigrationV2,
 } from '../legacy-migration-preview';
 import {previewApplyJournalAwardV2,projectServerSettlementV2,type JournalSnapshotV2} from '../settlement-journal-preview';
@@ -28,6 +29,24 @@ for(let level=1;level<=100;level++){
       throw Error('mapped progress bounds '+level);
   }
 }
+// Existing server-saved levels must be preserved if an XP-derived level drifts.
+const driftSkill=previewLegacyCareerMigrationV2({combatLevel:1,
+  professionLifetimeXp:{smithing:legacySkillTotalXpAtLevelV1(20)},
+  professionSavedLevels:{smithing:26},
+});
+equal(driftSkill.highestLegacyCareerLevel,26,'server-saved skill level is never lowered');
+equal(professionLevelFromXpV2(driftSkill.professionXpV2.smithing!),26,'T2/T3 license is not lost due to XP mismatch');
+const driftCombat=previewLegacyCareerMigrationV2({
+  combatLevel:24,combatLifetimeXp:0,professionLifetimeXp:{},
+});
+equal(driftCombat.highestLegacyCareerLevel,24,'saved combat level preserved when XP-derived lower');
+const moreCombatXp=previewLegacyCareerMigrationV2({
+  combatLevel:1,combatLifetimeXp:1000000,professionLifetimeXp:{},
+});
+equal(moreCombatXp.highestLegacyCareerLevel,legacyCombatLevelFromXpV1(1000000),'XP higher than cached combat level also preserved as overall baseline');
+throws(()=>previewLegacyCareerMigrationV2({combatLevel:1,professionLifetimeXp:{smithing:0},professionSavedLevels:{mining:22}}),/invalid_saved_skills/,'saved skill cannot exist without a verified XP bank');
+throws(()=>previewLegacyCareerMigrationV2({combatLevel:1,combatLifetimeXp:-1,professionLifetimeXp:{}}),/invalid_combat_xp/,'invalid combat XP');
+
 const SmithXp=legacySkillTotalXpAtLevelV1(96);
 const legacy={combatLevel:8,professionLifetimeXp:{smithing:SmithXp,mining:legacySkillTotalXpAtLevelV1(20)}} as const;
 const before=JSON.stringify(legacy);

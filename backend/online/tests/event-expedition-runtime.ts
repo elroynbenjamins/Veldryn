@@ -107,6 +107,7 @@ async function main(){
   randomId:()=>randomIds.shift()??'44444444-4444-4444-8444-444444444444',
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='read_online_coop_receipt_server_v1')return null as T;
+   if(name==='online_event_expedition_daily_budget_server_v1')return 0 as T;
    if(name==='load_online_game_server_v1')return {state:controllerState,version:7,serverNow:now,liveEvent} as T;
    if(name==='eligible_online_coop_echoes_server_v1')return echoRecords.map((record,index)=>({profileId:`55555555-5555-4555-8555-55555555555${index}`,sourceAccountId:record.accountId,publishedAtMs:now-1000,record})) as T;
    if(name==='start_online_event_expedition_server_v1'){
@@ -136,6 +137,12 @@ async function main(){
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);
+ liveEvent={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
+ const frostPractice=await runtime.start(controllerRecord.accountId,{requestId:'frost-practice-0001',eventExpeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',tier:1,characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
+ assert.equal(frostPractice.eventExpeditionId,'EVENT_FROSTFALL_AURORA_HOLLOW');
+ assert.equal(frostPractice.settlement.status,'pending');
+ assert.equal(stored?.privateState.run.practiceOnly,true,'no daily reward slots makes the next Frostfall attempt practice-only');
+ assert.equal(stored?.privateState.run.graph.preBossNodeCount,42);
  liveEvent={eventId:'EVT_ANNUAL_010_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};
  await assert.rejects(()=>runtime.start(controllerRecord.accountId,{requestId:'event-start-0002',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}),/event_not_live/);
  console.log('PASS persistent seasonal expedition start, choice, settlement and LiveOps gating');

@@ -25,7 +25,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
  const r=(text:string,params?:Record<string,string|number>)=>characterRosterText(language,text,params);
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const {width,fontScale}=useWindowDimensions(),stackRows=width<390||fontScale>=1.25||state.settings.textScale>=1.25;
+ const {width,fontScale}=useWindowDimensions(),stackRows=width<335||fontScale>=1.3||state.settings.textScale>=1.3;
  const entries=accountCharacters(state).map(entry=>({
   character:entry.character,
   activity:entry.character.id===state.character?.id?state.activity:
@@ -41,8 +41,6 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const workingCount=entries.filter(entry=>!!entry.activity).length;
  const occupiedRoles=new Set(occupiedCharacterRoles(state));
  const roles:AccountCharacterRole[]=['Tank','Damage','Support'];
- const activeEntry=entries.find(entry=>entry.character.id===state.character?.id);
- const activeClass=CLASSES.find(row=>row.id===activeEntry?.character.classId);
  const [managingId,setManagingId]=useState<string>(),[confirmation,setConfirmation]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[showDeleteDetails,setShowDeleteDetails]=useState(false),[showDeleteOptions,setShowDeleteOptions]=useState(false);
  const modalScrollRef=useRef<ScrollViewInstance>(null);
  useEffect(()=>{
@@ -80,19 +78,10 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
     </View>
     <View style={s.slotBadge}><Text style={s.slotBadgeText}>{r('{count}/{total} slots',{count:entries.length,total:visibleSlots})}</Text></View>
    </View>
-   {activeEntry?<View style={s.playingCard}>
-    <View style={s.portraitFrame}><ProfileIcon id={activeEntry.character.profileIconId} classId={activeEntry.character.classId} size={46}/></View>
-    <View style={s.flex}>
-     <Text style={s.eyebrow}>{r('Currently playing').toLocaleUpperCase(language)}</Text>
-     <Text numberOfLines={1} style={s.playingName}>{activeEntry.character.name}</Text>
-     <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:activeClass?.name??activeEntry.character.classId,level:activeEntry.character.level})}</Text>
-    </View>
-    <Text style={s.playingCheck}>✓</Text>
-   </View>:null}
    <View style={s.rosterOverview}>
     <View style={s.overviewLine}><Text style={s.sectionLabel}>{r('Character roster')}</Text><Text style={s.skillTotal}>{a('ACCOUNT SKILL')} {skillTotal.toLocaleString(language)}</Text></View>
     {nextThreshold!==undefined?<View style={s.slotProgress}>
-      <View style={s.slotProgressHead}><Text style={s.slotHint}>{a('Next character slot unlocks at {count} combined account skill levels.',{count:nextThreshold})}</Text><Text style={s.slotCount}>{Math.min(skillTotal,nextThreshold).toLocaleString(language)}/{nextThreshold.toLocaleString(language)}</Text></View>
+      <View style={s.slotProgressHead}><Text style={s.slotHint}>{r('Next slot at {count}',{count:nextThreshold})}</Text><Text style={s.slotCount}>{Math.min(skillTotal,nextThreshold).toLocaleString(language)}/{nextThreshold.toLocaleString(language)}</Text></View>
       <View style={s.track} accessible accessibilityRole="progressbar" accessibilityLabel={a('Account skill')} accessibilityValue={{min:0,max:nextThreshold,now:Math.min(nextThreshold,skillTotal)}}><View style={[s.trackFill,{width:`${Math.min(100,Math.max(0,skillTotal/Math.max(1,nextThreshold)*100))}%`}]}/></View>
      </View>:null}
     {slots>=MAX_NEW_ACCOUNT_CHARACTERS?<Text style={s.slotHint}>{legacy?r('Legacy roster preserved'):r('Three role slots unlocked')}</Text>:null}
@@ -105,13 +94,13 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
        <View style={s.identityRow}>
         <View style={s.smallPortrait}><ProfileIcon id={character.profileIconId} classId={character.classId} size={44}/></View>
         <View style={s.flex}>
-         <View style={s.nameRow}><Text numberOfLines={1} style={s.name}>{character.name}</Text>{active?<Text style={s.active}>{r('Playing').toLocaleUpperCase(language)}</Text>:null}</View>
-         <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:classDef?.name??character.classId,level:character.level})}</Text>
-         <Text style={s.roleMeta}>{classDef?r(classDef.role):''}</Text>
+         <Text numberOfLines={1} style={s.name}>{character.name}</Text>
+         <Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:classDef?.name??character.classId,level:character.level})}{classDef?' · '+r(classDef.role):''}</Text>
         </View>
        </View>
        <View style={[s.actions,stackRows&&s.actionsStack]}>
-        {!active?<GameButton compact title={a('Switch')} accessibilityLabel={a('Switch')+': '+character.name} onPress={()=>switchTo(character.id)}/>:null}
+        {active?<View accessible accessibilityRole="text" accessibilityLabel={r('Currently playing')+': '+character.name} style={s.playingStatus}><Text numberOfLines={1} style={s.playingStatusText}>✓ {r('Playing')}</Text></View>
+        :<GameButton compact tone="secondary" style={s.switchButton} title={a('Switch')} accessibilityLabel={a('Switch')+': '+character.name} onPress={()=>switchTo(character.id)}/>}
         <Pressable accessibilityRole="button" accessibilityLabel={a('Manage')+': '+character.name} onPress={()=>open(character.id)} accessibilityHint={r('Review deletion options')} style={({pressed})=>[s.manageButton,pressed&&s.pressed]}><Text style={s.manageGlyph}>⋯</Text></Pressable>
        </View>
       </View>
@@ -125,16 +114,15 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
    </View>
    {canCreate?<GameButton title={a('Create another character')} tone="secondary" onPress={()=>onCreate?.()}/>:null}
   </ScrollView>
-  <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a('Close character management')}>
+  <GameModalSurface visible={!!target} presentation="dialog" surfaceStyle={s.modalSurface} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a('Close character management')}>
    <GameModalHeader eyebrow={a('CHARACTER MANAGEMENT')} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
    {target?<ScrollView ref={modalScrollRef} style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     {!showDeleteOptions?<View style={s.manageOverview}>
      <View style={s.manageProfile}>
-      <ProfileIcon id={target.character.profileIconId} classId={target.character.classId} size={58}/>
-      <View style={s.flex}><Text style={s.name}>{target.character.name}</Text><Text style={s.meta}>{a('{className} · Level {level}',{className:targetClass?.name??target.character.classId,level:target.character.level})}</Text><Text style={s.roleMeta}>{targetClass?r(targetClass.role):''}</Text></View>
+      <ProfileIcon id={target.character.profileIconId} classId={target.character.classId} size={42}/>
+      <View style={s.flex}><Text numberOfLines={1} style={s.meta}>{a('{className} · Level {level}',{className:targetClass?.name??target.character.classId,level:target.character.level})}{targetClass?' · '+r(targetClass.role):''}</Text></View>
      </View>
-     <Text style={s.meta}>{r('Class and role cannot be changed on an existing character.')}</Text>
-     <View style={s.manageActivity}><View style={[s.dot,target.activity?s.dotOn:s.dotIdle]}/><Text style={s.activity}>{target.activity?a(activityLabel(target.activity))+' · '+a(activityTargetLabel(target.activity)):a('Idle')}</Text></View>
+     <View style={s.manageActivity}><View style={[s.dot,target.activity?s.dotOn:s.dotIdle]}/><Text numberOfLines={2} style={s.activity}>{target.activity?a(activityLabel(target.activity))+' · '+a(activityTargetLabel(target.activity)):a('Idle')}</Text></View>
      {target.character.id!==state.character?.id?<GameButton title={a('Switch')} onPress={()=>switchTo(target.character.id)}/>:null}
      {onDelete?<GameButton title={r('Review deletion options')} tone="secondary" onPress={()=>setShowDeleteOptions(true)}/>:null}
     </View>:<>
@@ -161,45 +149,42 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
 function activityTone(kind:ActiveActivity['kind'],s:ReturnType<typeof makeStyles>){return kind==='combat'?s.combatTone:kind==='training'?s.trainingTone:kind==='faith'?s.faithTone:s.gatheringTone}
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
- root:{padding:spacing.md,gap:spacing.sm,paddingBottom:110,maxWidth:660,width:'100%',alignSelf:'center'},
+
+ root:{padding:spacing.sm,gap:spacing.sm,paddingBottom:110,maxWidth:660,width:'100%',alignSelf:'center'},
  flex:{flex:1,minWidth:0},
  titleRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  heading:{...typography.hero,color:C.text},
  subtitle:{...typography.caption,color:C.muted},
  slotBadge:{paddingHorizontal:9,paddingVertical:6,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
  slotBadgeText:{...typography.caption,color:C.accent,fontWeight:'800'},
- playingCard:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.selectionLine,borderRadius:12,backgroundColor:C.selection},
- portraitFrame:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:9,backgroundColor:C.panel2},
- eyebrow:{fontSize:9,fontWeight:'900',letterSpacing:.7,color:equipmentColors.selectedLine},
- playingName:{...typography.bodyStrong,color:C.text},
- playingCheck:{fontSize:20,color:C.good,fontWeight:'900',marginHorizontal:4},
- meta:{...typography.caption,color:C.muted},
- rosterOverview:{padding:10,gap:8,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:10},
+ meta:{...typography.caption,color:C.muted,flexShrink:1},
+ rosterOverview:{padding:10,gap:6,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:10},
  overviewLine:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6},
  sectionLabel:{...typography.bodyStrong,color:C.text},
  skillTotal:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'800'},
  slotHint:{...typography.caption,color:C.muted,flex:1},
- slotProgress:{gap:6},
+ slotProgress:{gap:4},
  slotProgressHead:{flexDirection:'row',alignItems:'center',gap:6},
  slotCount:{fontSize:11,fontWeight:'900',color:C.info},
- track:{height:6,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2},
+ track:{height:5,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2},
  trackFill:{height:'100%',backgroundColor:C.info},
- list:{gap:7},
- characterCard:{padding:10,gap:8,borderWidth:1,borderColor:C.line,borderRadius:11,backgroundColor:C.panel},
+ list:{gap:6},
+ characterCard:{padding:9,gap:6,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
  characterActive:{borderColor:equipmentColors.selectedLine,backgroundColor:C.selection},
- characterRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ characterRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},
  characterRowStack:{alignItems:'stretch',flexDirection:'column'},
- identityRow:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:9},
- smallPortrait:{width:46,height:46,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2},
- nameRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},
+ identityRow:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:8},
+ smallPortrait:{width:42,height:42,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.panel2},
  name:{...typography.bodyStrong,color:C.text,flexShrink:1},
- active:{fontSize:9,fontWeight:'900',color:C.good,letterSpacing:.3},
  roleMeta:{...typography.caption,color:C.info,fontWeight:'700'},
- actions:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:6},
+ actions:{flexDirection:'row',justifyContent:'flex-end',alignItems:'center',gap:5,flexShrink:0},
  actionsStack:{alignSelf:'flex-end'},
+ switchButton:{minWidth:69,paddingHorizontal:8},
+ playingStatus:{minWidth:69,minHeight:44,paddingHorizontal:7,borderRadius:8,borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,alignItems:'center',justifyContent:'center'},
+ playingStatusText:{...typography.caption,color:C.good,fontWeight:'900'},
  manageButton:{minWidth:44,minHeight:44,borderRadius:8,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},
  manageGlyph:{fontSize:23,lineHeight:26,fontWeight:'800',color:C.text},
- activityRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:26,borderTopWidth:1,borderTopColor:C.line,paddingTop:7},
+ activityRow:{flexDirection:'row',alignItems:'center',gap:6,minHeight:24,borderTopWidth:1,borderTopColor:C.line,paddingTop:5},
  activityRowStack:{flexWrap:'wrap'},
  dot:{width:8,height:8,borderRadius:4,flexShrink:0},
  dotOn:{backgroundColor:C.good},dotIdle:{backgroundColor:C.disabled},
@@ -207,26 +192,27 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  idle:{color:C.muted},
  combatTone:{color:C.bad},gatheringTone:{color:equipmentColors.goldSoft},trainingTone:{color:C.info},faithTone:{color:C.special},
  duration:{...typography.caption,color:C.muted,flexShrink:0,marginLeft:'auto'},
- rolesPanel:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel,gap:8},
+ rolesPanel:{padding:9,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel,gap:6},
  rolesTitle:{...typography.caption,color:C.muted,fontWeight:'900'},
- roleRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},
- roleChip:{minHeight:32,paddingHorizontal:9,paddingVertical:6,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ roleRow:{flexDirection:'row',gap:6,flexWrap:'wrap'},
+ roleChip:{minHeight:30,paddingHorizontal:8,paddingVertical:5,borderRadius:8,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  roleChipFilled:{borderColor:C.good},
  roleChipText:{fontSize:11,color:C.muted,fontWeight:'800'},
  roleChipTextFilled:{color:C.good},
  pressed:{opacity:.75},
- modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.md,paddingBottom:spacing.sm},
- manageOverview:{gap:12},manageProfile:{flexDirection:'row',alignItems:'center',gap:12},
- manageActivity:{flexDirection:'row',alignItems:'center',gap:8,padding:10,borderRadius:8,backgroundColor:C.panel2},
- warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},
+ modalSurface:{maxWidth:420,padding:spacing.md},
+ modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.sm,paddingBottom:spacing.sm},
+ manageOverview:{gap:8},manageProfile:{flexDirection:'row',alignItems:'center',gap:9},
+ manageActivity:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:7,paddingHorizontal:9,borderRadius:8,backgroundColor:C.panel2},
+ warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.sm,borderRadius:9,gap:4},
  warningTitle:{...typography.bodyStrong,color:C.bad},
  warningText:{...typography.caption,color:C.text,lineHeight:18},
  detailsToggle:{minHeight:44,justifyContent:'center',alignSelf:'flex-start'},
  detailsToggleText:{...typography.bodyStrong,color:C.accent},
- preserved:{borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,padding:spacing.md,borderRadius:10,gap:4},
+ preserved:{borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,padding:spacing.sm,borderRadius:9,gap:4},
  preservedTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},
  preservedText:{...typography.caption,color:C.text,lineHeight:18},
- block:{borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},
+ block:{borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface,padding:spacing.sm,borderRadius:9,gap:4},
  blockTitle:{...typography.bodyStrong,color:C.warning},
  blockText:{...typography.caption,color:C.text,lineHeight:18},
  confirmLabel:{...typography.body,color:C.text},

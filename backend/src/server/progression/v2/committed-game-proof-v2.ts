@@ -66,6 +66,12 @@ export function recoverCommittedCareerProofV2(
      !isIntBetween(proof.base_effort_seconds,1,86400)||
      ![2500,5000,10000].includes(proof.difficulty_basis_points as number))
     throw Error('committed_proof_v2_invalid_source');
+  if(typeof linked.accountId!=='string'||!UUID.test(linked.accountId)||
+     typeof linked.requestId!=='string'||!REQUEST.test(linked.requestId)||
+     typeof linked.requestHash!=='string'||!SHA.test(linked.requestHash)||
+     !isIntBetween(linked.committedRevision,1,Number.MAX_SAFE_INTEGER)||
+     typeof linked.committedCharacterId!=='string'||!UUID.test(linked.committedCharacterId))
+    throw Error('committed_proof_v2_invalid_commit_link');
   if(linked.action!=='online_game_v1'||
      linked.accountId.toLowerCase()!==proof.account_id.toLowerCase()||
      linked.requestId!==proof.request_id||

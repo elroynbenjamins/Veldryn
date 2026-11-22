@@ -18,7 +18,7 @@ import type {VerifiedV2EquipmentEffectSource} from
  '../combat/v2/equipment-trait-engine-authority';
 
 export const PARTY_EVENT_RESULT_AUDIT_V95_RELEASED=false;
-export const PARTY_EVENT_RESULT_AUDIT_V95_VERSION='party-event-result-audit-v95';
+export const PARTY_EVENT_RESULT_AUDIT_V95_VERSION='party-event-result-audit-v95' as const;
 
 export interface PartyEventCombatReviewV95 {
  readonly version:typeof PARTY_EVENT_RESULT_AUDIT_V95_VERSION;

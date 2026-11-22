@@ -45,6 +45,143 @@ create index character_career_awards_v2_character_created_idx
   on private.character_career_awards_v2(character_id,created_at desc);
 alter table private.character_career_awards_v2 enable row level security;
 
+-- Original source evidence is NOT inferred from legacy activity response.
+-- This future table must be populated from the same trusted transaction
+-- that commits public.online_game_states and server_action_receipts.
+-- The source_kind/source_id key is global and must match award ledger.
+-- The request_id is merely a duplicate-detection dimension, NOT evidence.
+create table private.online_career_reward_sources_v2 (
+  source_kind text not null check (source_kind = 'gathering_claim'),
+  source_id text not null check (source_id ~ '^[0-9a-f]{64}
+-- SECURITY DEFINER functions. Integration must read server-verified source
+-- receipts and commit source completion, insert-on-conflict-do-nothing
+-- award ledger and exactly-once increment of new overall XP in ONE
+-- transaction. NEVER update from a client-supplied XP amount or elapsed timer.
+--
+-- Historical event cutoff: only canonical source receipts completed strictly
+-- AFTER that character's career_progress.activated_at may award incremental
+-- Overall XP. Backfilled 1.x accomplishments already contributed to the
+-- character's initial balance; reprocessing older receipts would double-credit.
+-- A missing activation row/time or source-completion timestamp fails closed.
+-- The backend must inspect the persisted source receipt created_at; do NOT
+-- accept a device timestamp or a client-chosen idempotency key as provenance.
+--
+-- On replay, return the existing award without incrementing XP. If a source
+-- key collides but its owner/fingerprint/XP differs, reject as tampering;
+-- do not silently treat it as a successful replay.
+--
+-- Do not mirror profession XP into a second spendable source of truth.
+-- When production source settlement already updates character_skills,
+-- the same transaction must synchronize the new Character XP ledger.
+--
+-- Backfill: dry-run deterministic MAX(combat-level, highest validated skill
+-- level) as the new Overall Character Level floor, with new profession XP
+-- banks separately converted at their current level + proportional progress.
+-- Preserve ALL legacy character, combat and profession XP/levels unchanged.
+--
+-- Staging QA needed: two concurrent claims for one job; claim after cancel;
+-- retry with altered payload; same receipt claimed on an alternate character;
+-- actual T1-T9 crafting actions; offline queue flush; 30-hour AFK cap;
+-- rollback; role privileges and RLS in pg17; server restart/retry.
+),
+  account_id uuid not null,
+  request_id text not null check (request_id ~ '^[a-zA-Z0-9_-]{8,128}
+-- SECURITY DEFINER functions. Integration must read server-verified source
+-- receipts and commit source completion, insert-on-conflict-do-nothing
+-- award ledger and exactly-once increment of new overall XP in ONE
+-- transaction. NEVER update from a client-supplied XP amount or elapsed timer.
+--
+-- Historical event cutoff: only canonical source receipts completed strictly
+-- AFTER that character's career_progress.activated_at may award incremental
+-- Overall XP. Backfilled 1.x accomplishments already contributed to the
+-- character's initial balance; reprocessing older receipts would double-credit.
+-- A missing activation row/time or source-completion timestamp fails closed.
+-- The backend must inspect the persisted source receipt created_at; do NOT
+-- accept a device timestamp or a client-chosen idempotency key as provenance.
+--
+-- On replay, return the existing award without incrementing XP. If a source
+-- key collides but its owner/fingerprint/XP differs, reject as tampering;
+-- do not silently treat it as a successful replay.
+--
+-- Do not mirror profession XP into a second spendable source of truth.
+-- When production source settlement already updates character_skills,
+-- the same transaction must synchronize the new Character XP ledger.
+--
+-- Backfill: dry-run deterministic MAX(combat-level, highest validated skill
+-- level) as the new Overall Character Level floor, with new profession XP
+-- banks separately converted at their current level + proportional progress.
+-- Preserve ALL legacy character, combat and profession XP/levels unchanged.
+--
+-- Staging QA needed: two concurrent claims for one job; claim after cancel;
+-- retry with altered payload; same receipt claimed on an alternate character;
+-- actual T1-T9 crafting actions; offline queue flush; 30-hour AFK cap;
+-- rollback; role privileges and RLS in pg17; server restart/retry.
+),
+  request_hash text not null check (request_hash ~ '^[0-9a-f]{64}
+-- SECURITY DEFINER functions. Integration must read server-verified source
+-- receipts and commit source completion, insert-on-conflict-do-nothing
+-- award ledger and exactly-once increment of new overall XP in ONE
+-- transaction. NEVER update from a client-supplied XP amount or elapsed timer.
+--
+-- Historical event cutoff: only canonical source receipts completed strictly
+-- AFTER that character's career_progress.activated_at may award incremental
+-- Overall XP. Backfilled 1.x accomplishments already contributed to the
+-- character's initial balance; reprocessing older receipts would double-credit.
+-- A missing activation row/time or source-completion timestamp fails closed.
+-- The backend must inspect the persisted source receipt created_at; do NOT
+-- accept a device timestamp or a client-chosen idempotency key as provenance.
+--
+-- On replay, return the existing award without incrementing XP. If a source
+-- key collides but its owner/fingerprint/XP differs, reject as tampering;
+-- do not silently treat it as a successful replay.
+--
+-- Do not mirror profession XP into a second spendable source of truth.
+-- When production source settlement already updates character_skills,
+-- the same transaction must synchronize the new Character XP ledger.
+--
+-- Backfill: dry-run deterministic MAX(combat-level, highest validated skill
+-- level) as the new Overall Character Level floor, with new profession XP
+-- banks separately converted at their current level + proportional progress.
+-- Preserve ALL legacy character, combat and profession XP/levels unchanged.
+--
+-- Staging QA needed: two concurrent claims for one job; claim after cancel;
+-- retry with altered payload; same receipt claimed on an alternate character;
+-- actual T1-T9 crafting actions; offline queue flush; 30-hour AFK cap;
+-- rollback; role privileges and RLS in pg17; server restart/retry.
+),
+  segment_index integer not null check (segment_index between 0 and 63),
+  expected_game_revision bigint not null check (expected_game_revision >= 1),
+  character_id uuid not null references public.characters(id) on delete cascade,
+  profession_id text not null
+    check (profession_id in ('mining','woodcutting','fishing','herbalism')),
+  claimed_elapsed_seconds integer not null
+    check (claimed_elapsed_seconds between 1 and 86400),
+  base_effort_seconds integer not null
+    check (base_effort_seconds between 1 and 86400),
+  difficulty_basis_points integer not null
+    check (difficulty_basis_points in (2500,5000,10000)),
+  completed_at timestamptz not null default clock_timestamp(),
+  primary key (source_kind,source_id),
+  unique (account_id,request_id,segment_index)
+);
+create index online_career_reward_sources_v2_character_completed_idx
+  on private.online_career_reward_sources_v2(character_id,completed_at desc);
+alter table private.online_career_reward_sources_v2 enable row level security;
+
+-- This review DDL intentionally provides no public/client route for minting
+-- these proofs. Pending proof bytes from a gateway are not sufficient.
+-- The future internal commit must atomically:
+--   1. Fence account ID + expected state revision (and wallet).
+--   2. Require the PRE-command character ID and a valid server-simulated
+--      completed claim segment, not post-switch character or response.activity.
+--   3. Persist immutable source row with database-created completed_at.
+--   4. Compare completed_at strictly after per-character activated_at.
+--   5. Write globally unique award receipt and increment the new bank once.
+--   6. Commit existing state, game action receipt, materials and related
+--      economy changes in the SAME PostgreSQL transaction.
+-- Retry with same request_id but changed hash/source is a collision error.
+-- No extra client RPC should be needed after a completed game commit.
+
 -- Intentionally NO grants, RLS policies, public RPC, triggers or
 -- SECURITY DEFINER functions. Integration must read server-verified source
 -- receipts and commit source completion, insert-on-conflict-do-nothing

@@ -5,11 +5,10 @@ import {useSocialText} from '../../i18n/social';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing} from '../../theme/coop-ui-theme';
 import {dungeonRoomPresentation} from './dungeon-room-presentation';
-import {GameButton} from '../GameButton';
 
-/** Server-confirmed room rewards stay readable until the player progresses.
- * Solo rooms require acknowledgement; Live voting stays non-blocking. */
-export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoomOutcomeView;onContinue?:()=>void}){
+/** Informational, server-confirmed room feedback for Live voting.
+ * Solo opens its next route without a separate outcome acknowledgement. */
+export function DungeonRoomOutcomeBanner({outcome}:{outcome?:CoopRoomOutcomeView}){
  const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText();
  const enter=useRef(new Animated.Value(0)).current;
  const pulse=useRef(new Animated.Value(0)).current;
@@ -52,7 +51,6 @@ export function DungeonRoomOutcomeBanner({outcome,onContinue}:{outcome?:CoopRoom
     <Text style={s.text}>{summary}</Text>
    </View>
   </View>
-  {onContinue?<GameButton compact title={st('Continue dungeon')} onPress={onContinue}/>:null}
  </Animated.View>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

@@ -28,6 +28,7 @@ test('Option A shows selection-first Gear controls only on narrow screens',()=>{
  assert.ok(pouch.includes("p(compactActions?'Select safe to sell':'Select safe')"),'compact selection uses unambiguous, translated action');
  assert.ok(pouch.includes('equipmentPouchQuickSellIds(saleCandidates).slice(0,100)'),'safe selection retains eligible-only cap');
  assert.ok(pouch.includes('equipmentPouchQuickSalvageIds(state,salvageCandidates).slice(0,100)'),'salvage selection respects eligible-only safety and batch cap');
+ assert.ok(pouch.includes('startSale(equipmentPouchQuickSellIds(saleCandidates).slice(0,100)'),'wide quick-sell also respects server batch limit');
  assert.ok(pouch.includes('selectedIds.filter(id=>!eligibleSales.some'),'protected counts use exact chosen IDs');
  assert.ok(pouch.includes("p('Protected')"),'compact selection identifies protected copies');
 });

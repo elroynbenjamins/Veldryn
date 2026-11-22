@@ -1,7 +1,6 @@
 -- VELDRYN Android 1.0.11 What's New — UNPUBLISHED DRAFT ONLY.
--- This is a manually reviewed DML draft, NOT an auto-applied migration.
--- Safe before building an AAB: the app only fetches is_published=true notes.
--- Only publish with a separate, approved rollout operation; do not touch app_release_policy.
+-- The release-copy draft is intentionally safe to store before the AAB is approved.
+-- It does NOT publish notes, deploy functions, change Social Name flags or touch app_release_policy.
 BEGIN;
 DO $already_published$
 BEGIN
@@ -13,14 +12,14 @@ INSERT INTO public.app_release_notes
  (platform, version, title, highlights, published_at, is_published, updated_at)
 VALUES
  ('android','1.0.11','Beyond the Depths',jsonb_build_array(
-  'Equipment Rolls: New T1–T5 gear can roll useful class-neutral bonus stats, while existing equipment keeps its progress.',
-  'Gathering Tools: Stack tiers and forge individually rolled rarity, quality and Speed or Rare Find bonuses.',
-  'Dungeon Endurance: Explore tougher rooms and choose a boss encounter at every seven-room checkpoint.',
-  'Dungeon Weeklies: Take on dedicated weekly Dungeon challenges for Expedition Marks.',
-  'Friends & Guild Echoes: Recruit eligible friends or guildmates as Solo Dungeon allies.',
-  'Deeper Dungeons: Discover more boons and artifacts, plus quicker enemy previews and clearer room choices.',
+  'Equipment Rolls: New T1–T5 gear can roll class-neutral bonus stats; existing items keep their progress.',
+  'Gathering Tools: Stack four tool tiers and forge rarity, quality and one Speed or Rare Find bonus per tool.',
+  'Dungeon Endurance: Face escalating rooms and choose a boss at every seven-room checkpoint.',
+  'Dungeon Weeklies & Echoes: Earn Expedition Marks from weekly challenges and recruit eligible friend or guild Echo allies.',
+  'Deeper Dungeons: Discover more boons, artifacts and clearer enemy previews and room choices.',
+  'Social Name & Showcases: Choose one account-wide name and present each hero''s own showcase.',
   'Everyday Progress: Enjoy Supply Journey boosts, Companion XP banking, Cooking XP previews and extra Class Challenges.',
-  'More Polish: Clearer Skills and recipes, Gear Storage details, improved Character Roster, Inbox, Guild contributions and audio controls.'
+  'Cleaner Adventures: Improved crafting, inventory, gear comparisons, stable Character Roster, Rewards Inbox and audio controls.'
  ),now(),false,now())
 ON CONFLICT(platform,version) DO UPDATE
  SET title=excluded.title, highlights=excluded.highlights, updated_at=now()
@@ -35,7 +34,7 @@ BEGIN
  ) THEN RAISE EXCEPTION 'Unpublished release note verification failed'; END IF;
 END $verify$;
 COMMIT;
--- During actual release ONLY, after production readiness approval:
+-- Only after explicit 1.0.11 publication approval:
 -- UPDATE public.app_release_notes SET is_published=true,
 --   published_at=now(),updated_at=now()
 -- WHERE platform='android' AND version='1.0.11' AND is_published=false;

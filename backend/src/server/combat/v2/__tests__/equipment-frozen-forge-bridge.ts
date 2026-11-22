@@ -9,18 +9,17 @@ import {
  CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2,
 } from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
-import {EQUIPMENT_AFFIXES_V2,type EquipmentAffixIdV2,
- type ServerAffixPolicyV2} from '../equipment-affixes';
+import {EQUIPMENT_AFFIXES_V2,type ServerAffixPolicyV2} from '../equipment-affixes';
 import {
  compileRealFrozenForgeActorV2,simulateRealFrozenForgeCombatV2,
- type TrustedFrozenForgeCombatSourceV2,
+ EQ2_COMBAT_FROZEN_AFFIX_MAP_V2,type TrustedFrozenForgeCombatSourceV2,
 } from '../equipment-frozen-forge-bridge';
 import {
  V2_SERVER_PIECES,V2_SERVER_RECIPES,v2ServerPiece,v2ServerRecipeAndPiece,
 } from '../../../equipment/equipment-crafting-v2-manifest';
 import {
  draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,
- type V2Affix,type V2DraftRollOutcome,
+ type V2DraftRollOutcome,
 } from '../../../equipment/equipment-crafting-v2-rolls';
 import {
  v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent,
@@ -32,11 +31,7 @@ import type {VerifiedSkillBuildV2} from '../skill-effects';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
-const affixMap:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
- armor:'defense_pct',maxHp:'max_hp_pct',ward:'ward_pp',
- critRate:'crit_rate_pp',critDamage:'crit_damage_pct',
- haste:'haste_pp',penetration:'penetration_pp',accuracy:'accuracy_pp',
-};
+
 const statKeys:readonly (keyof CombatStats)[]=[
  'maxHp','attackPower','healingPower','defense','accuracy',
  'evasion','critChance','critMultiplier','haste',
@@ -80,7 +75,7 @@ function eligible(pieceId:string){
  const piece=v2ServerPiece(pieceId);
  assert.ok(piece);
  return (roll:V2DraftRollOutcome)=>roll.affixes.every(a=>{
-  const id=affixMap[a.stat];
+  const id=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[a.stat];
   return Boolean(id&&EQUIPMENT_AFFIXES_V2[id].slots.includes(piece.slot));
  });
 }
@@ -94,7 +89,7 @@ function make(classId:ClassIdV2,specIndex:0|1,kind:'supported'|'unsupported'|'se
  const pieceId=kind==='set'?'EQ2_FIELDBORN_GUARD_HELMET':
   role==='tank'?names.tank:role==='damage'?names.damage:names.support;
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
-  kind==='unsupported'?roll=>roll.affixes.length>0&&!affixMap[roll.affixes[0].stat]:()=>true);
+  kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:()=>true);
  const {roll,exact,profession}=selection;
  const actor={...launchPlayer(CLASS_NAMES_V2[classId],35),
   id:'QA_EQ2_'+classId+'_'+specIndex};

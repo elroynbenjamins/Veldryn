@@ -10,6 +10,9 @@ const stage=read('BattleStage.tsx');
 // The hit cursor retains the previous strike while searching for a new foe.
 // A finished encounter must never trigger a phantom opening attack.
 assert.ok(hunt.includes('const hit=lastHit;'));
+assert.ok(hunt.includes('const recentSkillEffects=active&&!fight?.searching?'));
+assert.ok(stage.includes('const recentSkillEffects=isLive&&!fight?.searching?'));
+
 assert.ok(hunt.includes('lastAnimatedHitAtMs.current===hit.atMs'));
 assert.ok(hunt.includes('lastAnimatedHitAtMs.current=hit.atMs'));
 assert.ok(!hunt.includes('const hit=fight?.searching?undefined:fight?.lastHit;'));

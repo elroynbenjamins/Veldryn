@@ -51,6 +51,11 @@ const digest=(x:unknown)=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
 const pct=(x:unknown,max:number)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max;
 const finite=(x:number)=>Number.isFinite(x)&&x>=0;
 const r6=(x:number)=>Math.round(x*1000000)/1000000;
+const expectedSourceKeys=new Set([
+ 'source','policy','revision','accountId','characterId','actorId',
+ 'equipmentReceiptDigest','ownedEquippedInstanceIds','basicAttackDamagePct',
+ 'abilityDamagePct','reflectDamagePct','traits',
+]);
 const allowed=new Set<WorldBossExecutableTraitV87>([
  'sword_dance','echoing_strike','thornbound_riposte','mending_echo','restorative_bloom',
 ]);
@@ -97,13 +102,15 @@ export class WorldBossEquipmentRuntimeV87{
     source.ownedEquippedInstanceIds.some(x=>!id(x))||
     !pct(source.basicAttackDamagePct,19)||!pct(source.abilityDamagePct,22)||
     !pct(source.reflectDamagePct,8)||
-    !Array.isArray(source.traits)||source.traits.length>2)
+    !Array.isArray(source.traits)||source.traits.length>2||
+    Object.keys(source).some(key=>!expectedSourceKeys.has(key)))
     fail('untrusted_equipment');
    const traits=new Set<string>(),instances=new Set<string>();
    for(const selected of source.traits){
     if(!selected||!allowed.has(selected.traitId)||
      !source.ownedEquippedInstanceIds.includes(selected.instanceId)||
-     traits.has(selected.traitId)||instances.has(selected.instanceId))
+     traits.has(selected.traitId)||instances.has(selected.instanceId)||
+     Object.keys(selected).some(key=>key!=='instanceId'&&key!=='traitId'))
      fail('unsupported_or_duplicate_trait');
     traits.add(selected.traitId);instances.add(selected.instanceId);
    }
@@ -112,12 +119,20 @@ export class WorldBossEquipmentRuntimeV87{
   const scope={eventId:context.eventId,accountId:context.accountId,
    bossId:context.bossId,rosterDigest:context.rosterDigest,
    actorIds:context.actors.map(x=>x.id),serverBossMaxHp:proof.serverBossMaxHp};
+  // Freeze exactly what the privileged verifier sees and what the encounter
+  // later executes. A callback cannot mutate the accepted receipt between
+  // persistence verification and the first authored round.
+  const frozenSources=Object.freeze(proof.sources.map(source=>Object.freeze({
+   ...source,
+   ownedEquippedInstanceIds:Object.freeze([...source.ownedEquippedInstanceIds]),
+   traits:Object.freeze(source.traits.map(t=>Object.freeze({...t}))),
+  })));
   let verified=false;
-  try{verified=proof.verifyPersisted(scope,proof.sources)===true;}catch{verified=false;}
+  try{verified=proof.verifyPersisted(scope,frozenSources)===true;}catch{verified=false;}
   if(!verified)fail('persisted_receipt_not_verified');
   const runtime=new WorldBossEquipmentRuntimeV87(proof.serverBossMaxHp);
-  for(const source of proof.sources){
-   runtime.sources.set(source.actorId,JSON.parse(JSON.stringify(source)) as WorldBossEquippedSourceV87);
+  for(const source of frozenSources){
+   runtime.sources.set(source.actorId,source);
    runtime.state.set(source.actorId,start());
   }
   return runtime;

@@ -42,7 +42,7 @@ const MODIFIERS = ['steady','thorned','volatile','warded','swift','attrition'] a
 // grant boons, while Secret rooms grant artifacts. Different categories may
 // coexist in one three-choice layer; only repeats within a category are banned.
 type SpecialRoomCategory='boon'|'artifact'|'campfire';
-function specialRoomCategory(kind:ExpeditionNodeType):SpecialRoomCategory|undefined{
+function specialRoomCategory(kind:ExpeditionNodeType|'entry'):SpecialRoomCategory|undefined{
  if(kind==='shrine'||kind==='forge'||kind==='echo')return 'boon';
  if(kind==='treasure'||kind==='secret')return 'artifact';
  if(kind==='camp')return 'campfire';

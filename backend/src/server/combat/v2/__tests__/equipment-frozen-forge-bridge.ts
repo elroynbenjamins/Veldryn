@@ -99,10 +99,9 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
    damage:'EQ2_EXP_T2_DAMAGE_AMULET',support:'EQ2_EXP_T2_SUPPORT_CAPE'},
  3:{tank:'EQ2_SOLO_SUNSCAR_GATEHELM',
    damage:'EQ2_EXP_T3_DAMAGE_RING',support:'EQ2_EXP_T3_SUPPORT_RING'},
- // T4 Tank solo items currently roll only Forge channels that conflict
- // with Combat V2 legal slots or unimplemented Tenacity. The mismatch is
- // an explicit blocker, not a reason to invent a usable T4 tank affix.
- 4:{tank:'EQ2_SOLO_GLASSBOUND_WARD_GLOVES',
+ // The actual T4 Tank expansion RING permits Forge MaxHP, which Combat
+ // explicitly supports on rings; no imaginary slot override is needed.
+ 4:{tank:'EQ2_EXP_T4_TANK_RING',
    damage:'EQ2_SOLO_GLASSBOUND_EMBER_RING',
    support:'EQ2_SOLO_GLASSBOUND_DEVOTION_CAPE'},
 };
@@ -190,11 +189,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
 }
 assert.equal(checked,18);
 // Cross-tier stage coverage uses genuine Forge T2-T4 exact-copy outcomes.
-// T4 Tank is intentionally HELD until there is a matching legal affix slot.
+// The existing T4 Tank expansion ring provides the legal MaxHP route.
 let extendedTiers=0;
 for(const tier of [2,3,4] as const){
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
-  if(tier===4&&CLASS_ROLES_V2[classId]==='tank')continue;
   for(const index of [0,1] as const){
    const qa=make(classId,index,'supported',tier);
    const result=compileRealFrozenForgeActorV2(qa.actor,qa.build,qa.source);
@@ -208,7 +206,7 @@ for(const tier of [2,3,4] as const){
   }
  }
 }
-assert.equal(extendedTiers,48,'T2:18 + T3:18 + T4: six non-tank classes x 2');
+assert.equal(extendedTiers,54,'T2:18 + T3:18 + T4:18 all nine classes');
 const teamClasses:readonly ClassIdV2[]=[
  'IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER',
 ];
@@ -287,4 +285,4 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  partyMembers:part.combat.players.length,partyReplayEvents:part.combat.events.length,
  inventoryLedger:'QA_VERIFIER_ONLY',liveReleased:false,
  unresolved:['unmapped_affixes','set_bonus_reconciliation','approved_caps',
-  'privileged_DB_custody','persistent_party_state','final_CP_weights','T4_tank_roll_slot_compatibility']}));
+  'privileged_DB_custody','persistent_party_state','final_CP_weights','full_10_slot_source_reconciliation']}));

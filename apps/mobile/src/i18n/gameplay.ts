@@ -1514,6 +1514,10 @@ const details={
 "TIMED PACE":["TIMED PACE","ZEITTAKT","RITMO TEMPORIZADO","TIJDTEMPO","RITMO TEMPORIZZATO","RYTHME CHRONOMÉTRÉ"],
 "MAX LEVEL":["MAX LEVEL","MAX. STUFE","NIVEL MÁX.","MAX. NIVEAU","LIVELLO MAX","NIVEAU MAX"],
 "RECIPE MASTERY":["RECIPE MASTERY","REZEPTMEISTERSCHAFT","MAESTRÍA DE RECETA","RECEPTMEESTERSCHAP","MAESTRIA RICETTA","MAÎTRISE DE RECETTE"],
+"Next bonus":["Next bonus","Nächster Bonus","Siguiente bonificación","Volgende bonus","Prossimo bonus","Prochain bonus"],
+"How tool stats work":["How tool stats work","So funktionieren Werkzeugwerte","Cómo funcionan las estadísticas","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comprendre les bonus d’outil"],
+"Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%","Tempo +{min}–{max}% oder seltene Funde +{rareMin}–{rareMax}%","Velocidad +{min}–{max}% o hallazgos raros +{rareMin}–{rareMax}%","Snelheid +{min}–{max}% of zeldzame vondsten +{rareMin}–{rareMax}%","Velocità +{min}–{max}% o ritrovamenti rari +{rareMin}–{rareMax}%","Vitesse +{min}–{max}% ou trouvailles rares +{rareMin}–{rareMax}%"],
+"Blueprint owned":["Blueprint owned","Bauplan vorhanden","Plano disponible","Blauwdruk in bezit","Progetto posseduto","Plan possédé"],
 "Maximum skill level reached":["Maximum skill level reached","Maximale Fertigkeitsstufe erreicht","Nivel máximo de habilidad alcanzado","Maximaal vaardigheidsniveau bereikt","Livello massimo abilità raggiunto","Niveau de compétence maximum atteint"],
 "Blueprint learned permanently":["Blueprint learned permanently","Bauplan dauerhaft gelernt","Plano aprendido permanentemente","Blauwdruk permanent geleerd","Progetto appreso permanentemente","Plan appris définitivement"],
 "Blueprint owned · consumed once when recipe is learned":["Blueprint owned · consumed once when recipe is learned","Bauplan vorhanden · wird beim Lernen verbraucht","Plano en posesión · se consume al aprender la receta","Blauwdruk in bezit · verbruikt bij leren van recept","Progetto posseduto · consumato all’apprendimento","Plan possédé · consommé à l’apprentissage"],
@@ -1670,6 +1674,10 @@ for(const [english,pair] of Object.entries(bonusGearCopyEarlyLocales)){
 }
 // New crafted gathering tool UI: keep the same roll explanations legible in RU/TR.
 const gatheringToolAffixEarlyLocales={
+  "Next bonus":["Следующий бонус","Sonraki bonus"],
+  "How tool stats work":["Как работают бонусы инструмента","Alet bonusları nasıl çalışır"],
+  "Speed +{min}–{max}% or rare finds +{rareMin}–{rareMax}%":["Скорость +{min}–{max}% или редкие находки +{rareMin}–{rareMax}%","Hız +{min}–{max}% veya nadir buluntu +{rareMin}–{rareMax}%"],
+  "Blueprint owned":["Чертёж есть","Plan mevcut"],
   "Every new tool rolls exactly one stat: Gathering Speed +{min}–{max}% OR Gathering Rarity Chance +{rareMin}–{rareMax}%. All tiers and rarities use identical roll ranges.":[
     "Каждый новый инструмент получает ровно один бонус: скорость сбора +{min}–{max}% ИЛИ шанс редких находок +{rareMin}–{rareMax}%. Диапазоны одинаковы для всех рангов и редкостей.",
     "Her yeni alet yalnızca bir bonus alır: toplama hızı +{min}–{max}% VEYA nadir buluntu şansı +{rareMin}–{rareMax}%. Aralıklar tüm kademeler ve nadirlikler için aynıdır."

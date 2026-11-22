@@ -8,7 +8,7 @@
  */
 import {strict as assert} from 'node:assert';
 import {launchPlayer} from '../../combat/content/launch-combat';
-import type {CombatantDefinition,CombatInput,CombatStats} from '../../combat/types';
+import type {CombatantDefinition,CombatInput,CombatResult,CombatStats} from '../../combat/types';
 import type {VerifiedSkillBuildV2} from '../../combat/v2/skill-effects';
 import {
  CLASS_ROLES_V2,type ClassIdV2,type GearSlotV2,
@@ -187,6 +187,63 @@ interface Metrics{
  phase70:number;phase35:number;
 }
 const metrics=new Map<string,Metrics>();
+interface TuningBucket{
+ fights:number;victories:number;wipes:number;timeouts:number;
+ phase70:number;phase35:number;healing:number;shields:number;
+ interrupts:number;damageTaken:number;traitEvents:number;
+ allDurationsMs:number[];victoryDurationsMs:number[];
+}
+const tuning=new Map<string,TuningBucket>();
+function recordTuning(key:string,fight:CombatResult,traits:number){
+ const bucket=tuning.get(key)??{
+  fights:0,victories:0,wipes:0,timeouts:0,phase70:0,phase35:0,
+  healing:0,shields:0,interrupts:0,damageTaken:0,traitEvents:0,
+  allDurationsMs:[],victoryDurationsMs:[],
+ };
+ bucket.fights++;
+ if(fight.reason==='victory'){
+  bucket.victories++;bucket.victoryDurationsMs.push(fight.durationMs);
+ }
+ if(fight.reason==='wipe')bucket.wipes++;
+ if(fight.reason==='timeout')bucket.timeouts++;
+ bucket.allDurationsMs.push(fight.durationMs);
+ const phases=fight.enemies[0].triggeredPhases;
+ if(phases.includes(fight.enemies[0].definition.phases![0].id))
+  bucket.phase70++;
+ if(phases.includes(fight.enemies[0].definition.phases![1].id))
+  bucket.phase35++;
+ bucket.healing+=fight.players.reduce((n,p)=>n+p.healingDone,0);
+ bucket.damageTaken+=fight.players.reduce((n,p)=>n+p.damageTaken,0);
+ bucket.interrupts+=fight.players.reduce((n,p)=>n+p.interrupts,0);
+ bucket.shields+=fight.events.filter(e=>e.type==='shield'&&
+  fight.players.some(p=>p.definition.id===e.actorId))
+  .reduce((n,e)=>n+(e.amount??0),0);
+ bucket.traitEvents+=traits;
+ tuning.set(key,bucket);
+}
+const percentile=(values:readonly number[],q:number):number|null=>{
+ if(!values.length)return null;
+ const ordered=[...values].sort((a,b)=>a-b);
+ return ordered[Math.min(ordered.length-1,Math.max(0,Math.ceil(q*ordered.length)-1))];
+};
+const summarize=(rows:readonly string[])=>Object.fromEntries(
+ rows.map(key=>{
+  const b=tuning.get(key);
+  assert.ok(b,'missing tuning bucket: '+key);
+  return [key,{
+   fights:b.fights,victories:b.victories,wipes:b.wipes,
+   timeouts:b.timeouts,phase70:b.phase70,phase35:b.phase35,
+   p50AllDurationMs:percentile(b.allDurationsMs,.5),
+   p95AllDurationMs:percentile(b.allDurationsMs,.95),
+   p50VictoryMs:percentile(b.victoryDurationsMs,.5),
+   p95VictoryMs:percentile(b.victoryDurationsMs,.95),
+   avgHealing:Math.round(b.healing/b.fights),
+   avgShields:Math.round(b.shields/b.fights),
+   avgDamageTaken:Math.round(b.damageTaken/b.fights),
+   avgInterrupts:Math.round(100*b.interrupts/b.fights)/100,
+   traitEvents:b.traitEvents,
+  }];
+ }));
 let fights=0,replayed=0,sourceBuilt=0,triggered=0;
 const classesWithSource=new Set<string>();
 const specsWithSource=new Set<string>();
@@ -284,6 +341,12 @@ for(let ci=0;ci<classIds.length;ci++){
   if(first.reason==='wipe')m.wipes++;
   if(first.reason==='timeout')m.timeouts++;
   metrics.set(key,m);
+  for(const diagnosticKey of [
+   'tier='+tier,
+   'tierDifficulty='+tier+':'+difficulty,
+   'partySize='+size,
+   'primaryRole='+CLASS_ROLES_V2[classId],
+  ])recordTuning(diagnosticKey,first,triggers.length);
   fights++;
  }
 }
@@ -293,6 +356,8 @@ assert.equal(specsWithSource.size,18);
 assert.equal(fights,9*2*4*3*3);
 assert.equal(replayed,fights);
 assert.equal(metrics.size,9*2*4*3);
+assert.equal(tierOptions.reduce((sum,tier)=>sum+
+  (tuning.get('tier='+tier)?.fights??0),0),fights);
 assert.ok(triggered>0,'actual equipped trait actions must occur');
 assert.ok([...metrics.values()].every(m=>m.fights===3&&
  m.victories+m.wipes+m.timeouts===3));
@@ -305,6 +370,12 @@ const summary={version:'v93',releaseReady:false,
   victories:x.victories+r.victories,wipes:x.wipes+r.wipes,
   timeouts:x.timeouts+r.timeouts,
  }),{victories:0,wipes:0,timeouts:0}),
+ byTier:summarize(tierOptions.map(tier=>'tier='+tier)),
+ byTierDifficulty:summarize(tierOptions.flatMap(tier=>
+  diffs.map(difficulty=>'tierDifficulty='+tier+':'+difficulty))),
+ byPartySize:summarize([2,3,4].map(size=>'partySize='+size)),
+ byPrimaryRole:summarize(['tank','damage','support'].map(role=>
+  'primaryRole='+role)),
  byFamilyDifficulty:Object.fromEntries(families.flatMap(f=>diffs.map(d=>{
   const rows=[...metrics].filter(([key])=>key.endsWith(':'+f+':'+d)).map(([,m])=>m);
   return [f+':'+d,rows.reduce((n,m)=>({

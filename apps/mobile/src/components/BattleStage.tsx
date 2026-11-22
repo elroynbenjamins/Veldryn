@@ -98,7 +98,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    ]),
    Animated.sequence([
     Animated.timing(impact,{toValue:1,duration:motion.impactMs,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
-    Animated.timing(impact,{toValue:0,duration:1,useNativeDriver:true}),
+    Animated.timing(impact,{toValue:0,duration:recentHit.missed?500:1,useNativeDriver:true}),
    ]),
   ]);
   attack.start();

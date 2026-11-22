@@ -64,15 +64,16 @@ export interface VerifiedPartyEventV92Ports {
  )=>boolean;
 }
 const bossProfiles:Readonly<Record<WeeklyPartyFamily,{
- name:string;trait:PartyBossTraitV90;phase70:string;phase35:string;
+ name:string;trait:PartyBossTraitV90;abilities:readonly [string,string];
+ phase70:string;phase35:string;
 }>>={
- broken_caravan:{name:'Roadbreaker Captain',trait:'roadbreaker_rally',
+ broken_caravan:{name:'Roadbreaker Captain',trait:'roadbreaker_rally',abilities:['PE_V90_RALLY_CLEAVE','PE_V90_REINFORCED_SWING'],
   phase70:'PE_V90_CARAVAN_FORMATION',phase35:'PE_V90_CARAVAN_LAST_STAND'},
- nightfall_hunt:{name:'Nightfall Alpha',trait:'nightfall_rend',
+ nightfall_hunt:{name:'Nightfall Alpha',trait:'nightfall_rend',abilities:['PE_V90_RENDING_HOWL','PE_V90_HUNTER_LUNGE'],
   phase70:'PE_V90_NIGHTFALL_SHROUD',phase35:'PE_V90_NIGHTFALL_LAST_HUNT'},
- broken_wards:{name:'The Unbound Guardian',trait:'runebound_ward',
+ broken_wards:{name:'The Unbound Guardian',trait:'runebound_ward',abilities:['PE_V90_RUNE_STORM','PE_V90_STONE_HEART'],
   phase70:'PE_V90_WARD_IGNITION',phase35:'PE_V90_WARD_FRACTURE'},
- lost_reliquary:{name:'Reliquary Sentinel',trait:'reliquary_mirror',
+ lost_reliquary:{name:'Reliquary Sentinel',trait:'reliquary_mirror',abilities:['PE_V90_SHADOW_ECHO','PE_V90_MIRROR_VEIL'],
   phase70:'PE_V90_RELIQUARY_REFLECTION',
   phase35:'PE_V90_RELIQUARY_FRACTURED_MIRROR'},
 };
@@ -116,10 +117,15 @@ function checkBoss(input:CombatInput,w:FrozenPartyEventV92Witness){
   !boss.tags.includes('party-event:boss-family:'+w.family)||
   boss.tags.some(tag=>tag.startsWith('enemy-v2:'))||
   boss.abilities.length!==2||boss.phases?.length!==2||
+  boss.abilities[0].id!==profile.abilities[0]||
+  boss.abilities[1].id!==profile.abilities[1]||
   boss.phases[0].id!==profile.phase70||boss.phases[1].id!==profile.phase35||
   boss.phases[0].hpPct!==.7||boss.phases[1].hpPct!==.35||
   !boss.abilities.every(a=>a.interruptible===true&&a.castTimeMs>=800&&
-    a.effects.every(e=>e.damageType!=='true'&&(e.shieldReflectPct??0)===0))||
+    a.castTimeMs<=3000&&a.cooldownMs>=8000&&
+    a.effects.every(e=>e.damageType!=='true'&&(e.shieldReflectPct??0)===0&&
+     (e.kind!=='damage'||(e.coeff??0)<=1.1)&&
+     (e.kind!=='shield'||(e.flat??0)<=Math.round(boss.stats.maxHp*.04))))||
   boss.phases.some(p=>p.effects.some(e=>
     (e.shieldReflectPct??0)!==0||
     (e.kind==='shield'&&(e.flat??0)>Math.round(boss.stats.maxHp*.04)))))

@@ -1,5 +1,5 @@
 /** Preview-only profession mastery policy; no live rewards or crafting mutations. */
-import type {ProfessionIdV2} from './character-progression';
+import {PROFESSION_IDS_V2,type ProfessionIdV2} from './character-progression';
 
 export type ProfessionSpecializationV2 = 'efficiency' | 'precision' | 'production';
 export type GatheringSpecializationV2 = 'extraction' | 'prospecting' | 'tempo';
@@ -18,6 +18,7 @@ export interface ProfessionBonusesV2 {
 }
 const GATHERING: ReadonlySet<string> = new Set(['mining','woodcutting','fishing','herbalism']);
 const CRAFTING: ReadonlySet<string> = new Set(['smithing','tailoring','cooking','alchemy','enchanting']);
+const KNOWN: ReadonlySet<string> = new Set(PROFESSION_IDS_V2);
 const valid = (n: number): boolean => Number.isSafeInteger(n) && n >= 1 && n <= 100;
 
 export function specializationRankV2(level: number): number {
@@ -26,6 +27,7 @@ export function specializationRankV2(level: number): number {
 }
 /** Every percentage is an integer basis-point value; quality is absolute 0–100 roll points. */
 export function professionBonusesV2(source: ProfessionMasteryV2): ProfessionBonusesV2 {
+  if (!source || !KNOWN.has(source.professionId)) throw new Error('mastery_v2_invalid_profession');
   if (!valid(source.level)) throw new Error('mastery_v2_invalid_level');
   const rank = specializationRankV2(source.level);
   const gathering = GATHERING.has(source.professionId);

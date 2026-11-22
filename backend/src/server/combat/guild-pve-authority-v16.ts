@@ -72,9 +72,13 @@ export class GuildPveV16PrivateReadService {
   },async read=>{
    if(!read||read.authenticatedAccountId!==accountId)
     fail('principal_snapshot_mismatch');
-   if(!Number.isSafeInteger(read.serverNowUtcMs)||read.serverNowUtcMs<0)
+   // The trusted DB callback owns repeatable-read isolation. Copy the
+   // complete observation before the first asynchronous actor derivation so
+   // a mutable/mock repository cannot silently change the read mid-flight.
+   const frozen=structuredClone(read);
+   if(!Number.isSafeInteger(frozen.serverNowUtcMs)||frozen.serverNowUtcMs<0)
     fail('invalid_clock');
-   const {membership,character,ledger}=read;
+   const {membership,character,ledger}=frozen;
    if(!membership||membership.accountId!==accountId||
     membership.guildId!==selection.guildId||
     !Number.isSafeInteger(membership.joinedAtUtcMs)||
@@ -85,8 +89,8 @@ export class GuildPveV16PrivateReadService {
     fail('not_owned_character');
    if(!ledger)fail('missing_private_expedition');
    const run=ledger.guildRuns[JSON.stringify([selection.cycleId,selection.guildId])];
-   if(!run||!positive(read.expeditionRevision)||
-    run.revision!==read.expeditionRevision)
+   if(!run||!Number.isSafeInteger(frozen.expeditionRevision)||
+    frozen.expeditionRevision<0||run.revision!==frozen.expeditionRevision)
     fail('stale_expedition_revision');
    if(!Object.hasOwn(run.members,accountId))
     fail('not_in_frozen_roster');
@@ -111,7 +115,7 @@ export class GuildPveV16PrivateReadService {
     fail('invalid_actor_role');
    const progress=projectGuildPveV15Campaign({
     state:structuredClone(ledger),cycleId:selection.cycleId,
-    guildId:selection.guildId,nowUtcMs:read.serverNowUtcMs,
+    guildId:selection.guildId,nowUtcMs:frozen.serverNowUtcMs,
    });
    return {
     actorSourceHash:actor.sourceHash,

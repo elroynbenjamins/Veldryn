@@ -45,13 +45,16 @@ function coopKind(secret:string, expeditionId:string, runId:string, contentVersi
   if (depth === 1) return 'battle';
   if (depth === 2) {
     if (choice < 2) return 'battle';
-    const utility=['event','treasure','camp','shrine'] as const;
+    // Resource-only Event Rooms no longer offer a meaningful choice: merchant rooms
+    // are absent from new routes, so their temporary supplies cannot be spent.
+    // Keep the legacy event resolver for saved in-progress dungeon graphs.
+    const utility=['treasure','camp','shrine'] as const;
     return utility[deterministicInt(secret,0,utility.length-1,'coop-route-opening-v2',runId,expeditionId,contentVersion,balanceVersion)];
   }
   if (choice === 0) return 'battle';
   if (depth === 3 && choice === 1) return 'camp';
   const def=EXPEDITIONS[expeditionId];
-  const entries=(Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType,number]>).filter(([kind])=>kind!=='boss'&&kind!=='merchant');
+  const entries=(Object.entries(def.nodeWeights) as Array<[ExpeditionNodeType,number]>).filter(([kind])=>kind!=='boss'&&kind!=='merchant'&&kind!=='event');
   const total=entries.reduce((sum,[,weight])=>sum+weight,0);
   let roll=deterministicUnit(secret,'coop-route-v1',runId,expeditionId,contentVersion,balanceVersion,'kind',depth,choice)*total;
   for(const [kind,weight] of entries){roll-=weight;if(roll<=0)return kind as Exclude<ExpeditionNodeType,'boss'>;}

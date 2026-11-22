@@ -176,18 +176,18 @@ insert into private.online_career_reward_sources_v2
   expected_game_revision,character_id,profession_id,claimed_elapsed_seconds,
   base_effort_seconds,difficulty_basis_points)
  values
- ('gathering_claim',repeat('e',64),'11111111-1111-4111-8111-111111111111',
+ ('gathering_claim',repeat('5',64),'11111111-1111-4111-8111-111111111111',
  'online000005',repeat('a',64),0,2,'11111111-1111-4111-8111-111111111111',
  'mining',120,120,10000),
- ('combat_reward',repeat('f',64),'11111111-1111-4111-8111-111111111111',
+ ('combat_reward',repeat('6',64),'11111111-1111-4111-8111-111111111111',
  'online000005',repeat('a',64),1,2,'11111111-1111-4111-8111-111111111111',
  null,0,120,10000);
 insert into private.character_career_awards_v2
  (source_kind,source_id,character_id,overall_character_xp_delta,profession_id,fingerprint)
  values
- ('gathering_claim',repeat('e',64),'11111111-1111-4111-8111-111111111111',
+ ('gathering_claim',repeat('5',64),'11111111-1111-4111-8111-111111111111',
  60,'mining','mixed-gathering-verified-disposable'),
- ('combat_reward',repeat('f',64),'11111111-1111-4111-8111-111111111111',
+ ('combat_reward',repeat('6',64),'11111111-1111-4111-8111-111111111111',
  60,null,'mixed-combat-verified-disposable');
 update private.character_career_progress_v2
  set overall_character_xp=overall_character_xp+120
@@ -202,7 +202,7 @@ begin
  or (select count(*) from private.online_career_reward_sources_v2
      where request_id='online000005')<>2
  or (select count(*) from private.character_career_awards_v2
-     where source_id in (repeat('e',64),repeat('f',64)))<>2
+     where source_id in (repeat('5',64),repeat('6',64)))<>2
  or (select overall_character_xp from private.character_career_progress_v2
      where character_id='11111111-1111-4111-8111-111111111111')<>360
  then raise exception 'mixed_claim_not_atomic';end if;
@@ -226,7 +226,7 @@ begin
    (source_kind,source_id,account_id,request_id,request_hash,segment_index,
     expected_game_revision,character_id,profession_id,claimed_elapsed_seconds,
     base_effort_seconds,difficulty_basis_points)
-   values ('gathering_claim',repeat('b',64),
+   values ('gathering_claim',repeat('0',64),
      '11111111-1111-4111-8111-111111111111',
      'online000006',repeat('a',64),0,3,'11111111-1111-4111-8111-111111111111',
      'mining',30,30,10000);

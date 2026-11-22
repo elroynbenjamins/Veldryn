@@ -1,0 +1,78 @@
+# Dedicated hidden 2.0 source-generation repair. Not a production deploy.
+# Modeled on the existing non-main 1.0.10 Edge bundle reconciliation flow.
+name: Hidden Combat 2.0 Edge bundle parity repair
+
+on:
+  push:
+    branches: ['integration/combat-v2-edge-parity-rebuild-20261122']
+    paths:
+      - '.github/workflows/hidden-combat-v2-edge-parity-rebuild.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: hidden-combat2-edge-parity-20261122
+  cancel-in-progress: false
+
+jobs:
+  build-hidden:
+    # Never run this write-capable task on main or on a release branch.
+    if: github.ref == 'refs/heads/integration/combat-v2-edge-parity-rebuild-20261122'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exactly the isolated Combat 2.0 source branch
+        uses: actions/checkout@v4
+        with:
+          ref: integration/combat-v2-edge-parity-rebuild-20261122
+          fetch-depth: 1
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install frozen dependencies without changing lockfiles
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild generated gameplay and co-op Edge sources together
+        run: pnpm --dir backend build:online
+      - name: Check legacy Edge isolation and byte-exact parity
+        run: node tools/verify-gameplay-edge.mjs
+      - name: Fail closed on changes outside the two generated Edge outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [[ -n "$unexpected" ]]; then
+            echo "Unexpected tracked source changed; refusing to commit:"
+            printf '%s\n' "$unexpected"
+            exit 1
+          fi
+          # Build tool writes BOTH outputs atomically and the isolation
+          # plugin refuses hidden Combat 2.0 engine code in live Edge bundles.
+          git diff --check
+      - name: Commit ONLY parity-verified bundles to the isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH='integration/combat-v2-edge-parity-rebuild-20261122'
+          [[ "$GITHUB_REF" == "refs/heads/$BRANCH" ]] || exit 1
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Both Edge bundles were already current."
+            exit 0
+          fi
+          unexpected=$(git diff --cached --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          [[ -z "$unexpected" ]] || { echo "Forbidden staged paths: $unexpected"; exit 1; }
+          git commit -m 'build(hidden combat2): sync isolated gameplay and co-op Edge bundle parity'
+          git push origin "HEAD:refs/heads/$BRANCH"
+          echo "Only hidden branch $BRANCH updated; no main, release or deployment action."

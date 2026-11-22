@@ -1,6 +1,6 @@
 # Veldryn 2.0 — tool XP affixes and innate percentage stats on rare equipment
 
-Status: **design + staged tool implementation; not released**. The existing mobile catalog has T1–T4 gathering tools. The complete T1–T9 profession-tool catalog and the proposed innate combat item modifiers are **not** implemented by this branch.
+Status: **staged tool and selected rare-piece gameplay implementation; not released**. The existing mobile tool catalog has T1–T4 gathering tools. T5–T9 profession tools remain unimplemented; the curated rare-piece innate stats are wired into mobile item definitions, combat modifiers, and existing inspection (no UI redesign). Backend/server parity and full automated CI approval remain release gates.
 
 ## Tool Skill XP affix (implemented on feature branch)
 
@@ -32,9 +32,13 @@ Status: **design + staged tool implementation; not released**. The existing mobi
 
 When crafting implements/production tools are added, their XP bonus must target their corresponding crafting or refining skill **only**, using the same validated skill mapping. Do not grant Smithing XP from pickaxes merely because a Smithing recipe created the pickaxe.
 
-## Innate percentage stats for selected rare combat gear (design only)
+## Innate percentage stats for selected rare combat gear (staged mobile implementation)
 
-Veldryn already distinguishes flat equipment stats, fixed set-piece threshold bonuses and random percent affixes. This adds an **item-definition-level**, always-on **innate percent stat** to a curated minority of distinctive rare set pieces. Example, illustrative values only:
+Veldryn already distinguishes flat equipment stats, fixed set-piece threshold bonuses and random percent affixes. This adds an **item-definition-level**, always-on **innate percent stat** to a curated minority of distinctive rare set pieces.
+
+The initial curated set/slot definitions are: T3_001 (Chest +0.8% Armor, Cape +0.5% Max HP); T3_007 (Chest +0.7% Ward, Gloves +0.4% Haste); T3_013 (Gloves +0.5% Crit Rate, Boots +0.4% Evasion); T4_001 (Chest +1.1% Armor, Cape +0.7% Max HP); T4_007 (Chest +1.0% Ward, Gloves +0.6% Haste); T4_013 (Gloves +0.7% Crit Rate, Boots +0.6% Evasion). All other catalog pieces currently receive no innate stat.
+
+Example, illustrative flat equipment values and random affixes:
 
 - Chest: +58 Defense (flat), +120 Health (flat), **+1.2% Armor (innate, same on every copy of that item)**.
 - Random forged copy A: +1.8% Ward.
@@ -51,10 +55,11 @@ Recommended safeguards:
 6. Keep established `equipmentBonusRollVersion` receipts valid. The eventual rollout must be versioned and validated server-side, with no retroactively invented random affixes.
 7. Review and explicitly approve actual equipment screens/themes before any UI changes are merged to production.
 
-### Implementation checklist (not yet completed)
-- Curate set-piece IDs and exact innate values.
-- Extend the equipment definition/types and combat calculation with one versioned innate-modifier source.
-- Ensure the item-inspect, inventory compare, market listing and dungeon preview show the same numbers.
+### Implementation checklist
+- [x] Curate set-piece identities by actual v33 set ID and equipment slot; exact innate values are deterministic and constant across copies.
+- [x] Extend mobile equipment definitions and combat build calculations using only supported combat stat keys.
+- [x] Expose innate stats separately in the existing item inspector; equipment preview uses the same effective combat stat calculation.
+- [ ] Verify backend combat/item API parity, market listings, and dungeon snapshots before release.
 - Enforce cap/rounding rules and test all old/new saves, equip swaps, set thresholds, and PvE simulations.
 - Implement the full T1–T9 profession tool catalog separately, including crafting skill tool mapping.
 

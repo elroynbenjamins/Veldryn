@@ -40,14 +40,14 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
+export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,disposalActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;disposalActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const ui=(label:string)=>equipmentPouchText(language,label);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),compactHeader=width<390||fontScale>=1.25;
-  const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false),[actionsOpen,setActionsOpen]=useState(false);
-  useEffect(()=>{setDetailsOpen(false);setActionsOpen(false)},[itemId,instanceId,source]);
+  const [sourceDisclosure,setSourceDisclosure]=useState<Record<string,boolean>>({}),[craftingDisclosure,setCraftingDisclosure]=useState<Record<string,boolean>>({}),[useLimits,setUseLimits]=useState<Record<string,number>>({}),[detailsOpen,setDetailsOpen]=useState(false);
+  useEffect(()=>{setDetailsOpen(false)},[itemId,instanceId,source]);
   const model=useMemo(()=>itemId?itemInspectModel(state,itemId,instanceId,source):undefined,[state,itemId,instanceId,source]);
   const craftPath=useMemo(()=>itemId&&model?.item.type==='gear'?equipmentCraftingPath(state,itemId):undefined,[state,itemId,model?.item.type]);
   if(!itemId||!model)return null;
@@ -134,14 +134,11 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={s.sourceDisclosureMark}>{useLimit>=uses.length?'−':'+'}</Text>
            </Pressable>:null}</>}</Section>:null}
           </>}
-          {item.type==='food'&&actions?<View style={s.foodActions}>{actions}</View>:null}
+          {actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
-        {(quickActions||(actions&&item.type!=='food'))?<View style={s.quickFooter}>
-          {actions&&actionsOpen&&item.type!=='food'?<ScrollView nestedScrollEnabled style={s.footerActionScroll} contentContainerStyle={s.footerActionContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityLabel={ui('More actions')}>{actions}</ScrollView>:null}
+        {(quickActions||disposalActions)?<View style={s.quickFooter}>
           {quickActions}
-          {actions&&item.type!=='food'?<Pressable accessibilityRole="button" accessibilityLabel={ui(actionsOpen?'Less actions':'More actions')} accessibilityState={{expanded:actionsOpen}} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,s.moreActionsToggle,pressed&&s.pressed]}>
-            <Text style={s.disclosureText}>{ui(actionsOpen?'Less actions':'More actions')}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text>
-          </Pressable>:null}
+          {disposalActions?<View style={s.footerDisposal}>{disposalActions}</View>:null}
         </View>:null}
   </GameModalSurface>;
 }
@@ -168,8 +165,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   heroCopy:{flex:1,minWidth:0,gap:3},heroCopyCompact:{minWidth:160},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.7},name:{...typography.title,fontWeight:'800'},owned:{...typography.caption,color:C.muted},
   close:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},closeText:{fontSize:24,lineHeight:27,color:C.text,fontWeight:'700'},
   scroll:{maxHeight:520,flexShrink:1,minHeight:0},content:{padding:spacing.sm,gap:spacing.sm,paddingBottom:spacing.md},
-   footerActionScroll:{maxHeight:210,flexShrink:1},footerActionContent:{paddingBottom:spacing.xs},
-   foodActions:{gap:spacing.xs},moreActionsToggle:{marginTop:spacing.xs},
+   foodActions:{gap:spacing.xs},
+   footerDisposal:{borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.lineStrong,marginTop:spacing.sm,paddingTop:spacing.sm,gap:spacing.xs},
    disclosure:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
    disclosureText:{...typography.bodyStrong,color:C.text,flex:1},disclosureMark:{fontSize:18,fontWeight:'900',color:C.accent},
    quickFooter:{padding:spacing.sm,borderTopWidth:1,borderTopColor:C.line,backgroundColor:C.panelRaised,flexShrink:0},

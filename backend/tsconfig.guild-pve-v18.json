@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-v18",
+    "rootDir": "src",
+    "strict": true
+  },
+  "include": [
+    "src/server/combat/guild-pve-pglite-v18.ts",
+    "src/server/combat/guild-pve-reward-review-v18.ts",
+    "src/server/combat/content/launch-combat.ts"
+  ],
+  "exclude": []
+}

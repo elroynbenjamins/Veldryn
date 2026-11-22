@@ -50750,6 +50750,24 @@ function validatePreBossNodeCount(count) {
 
 // src/server/expeditions/route-generation.ts
 var MODIFIERS = ["steady", "thorned", "volatile", "warded", "swift", "attrition"];
+function specialRoomCategory(kind) {
+  if (kind === "shrine" || kind === "forge" || kind === "echo") return "boon";
+  if (kind === "treasure" || kind === "secret") return "artifact";
+  if (kind === "camp") return "campfire";
+  return void 0;
+}
+function distinctSpecialRoomKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice, excluded) {
+  const def = EXPEDITIONS[expeditionId];
+  const entries = Object.entries(def.nodeWeights).filter(([kind, weight]) => kind !== "boss" && kind !== "merchant" && kind !== "event" && weight > 0 && specialRoomCategory(kind) !== excluded);
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+  if (total <= 0) return "battle";
+  let roll = deterministicUnit(secret, "coop-unique-special-v1", runId, expeditionId, contentVersion, balanceVersion, depth, choice, excluded) * total;
+  for (const [kind, weight] of entries) {
+    roll -= weight;
+    if (roll <= 0) return kind;
+  }
+  return "battle";
+}
 function coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice) {
   if (depth === 1) return "battle";
   if (depth === 2) {
@@ -50776,9 +50794,11 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
   if (!def.coopImplemented) throw new Error("expedition_not_implemented");
   const isEndurance = routeMode !== "legacy";
   const checkpointChoiceV2 = routeMode === "endurance";
-  const generatorVersion = isEndurance ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + (checkpointChoiceV2 ? "-endurance-v2" : "-endurance-v1") : COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
-  const regularRoomSeedVersion = checkpointChoiceV2 ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + "-endurance-v1" : generatorVersion;
-  const preBossNodeCount = isEndurance ? DUNGEON_ENDURANCE.maxNormalRooms : deterministicInt(secret, COOP_ROGUELITE_CONFIG.preBossNodeMin, COOP_ROGUELITE_CONFIG.preBossNodeMax, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "length");
+  const baseGeneratorVersion = isEndurance ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + (checkpointChoiceV2 ? "-endurance-v2" : "-endurance-v1") : COOP_ROGUELITE_CONFIG.routeGeneratorVersion;
+  const distinctSpecialChoices = routeMode !== "endurance-v1";
+  const generatorVersion = distinctSpecialChoices ? isEndurance ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + "-unique-special-v1-endurance-v2" : baseGeneratorVersion + "-unique-special-v1" : baseGeneratorVersion;
+  const regularRoomSeedVersion = checkpointChoiceV2 ? COOP_ROGUELITE_CONFIG.routeGeneratorVersion + "-endurance-v1" : baseGeneratorVersion;
+  const preBossNodeCount = isEndurance ? DUNGEON_ENDURANCE.maxNormalRooms : deterministicInt(secret, COOP_ROGUELITE_CONFIG.preBossNodeMin, COOP_ROGUELITE_CONFIG.preBossNodeMax, baseGeneratorVersion, runId, expeditionId, contentVersion, balanceVersion, "length");
   const finalBosses = dungeonBossVariantsFor(expeditionId);
   const bossId = finalBosses.length ? finalBosses[deterministicInt(secret, 0, finalBosses.length - 1, "regional-boss-v1", runId, expeditionId, contentVersion, balanceVersion)].bossId : def.bossId;
   const nodes = [];
@@ -50788,6 +50808,7 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
     const layerModifierOffset = deterministicInt(secret, 0, MODIFIERS.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "modifier-layer", depth);
     const checkpoint = isEndurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0;
     const usedContentIds = /* @__PURE__ */ new Set();
+    const usedSpecialCategories = /* @__PURE__ */ new Set();
     for (let choice = 0; choice < COOP_ROGUELITE_CONFIG.choicesPerDepth; choice++) {
       if (checkpoint && choice === 2) {
         nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: "boss", contentId: bossId, modifierId: "checkpoint", risk: 1.25, rewardTag: "boss", nextNodeIds: [] });
@@ -50796,11 +50817,17 @@ function generateCoopRouteGraph(secret, expeditionId, runId, contentVersion, bal
       if (checkpoint && checkpointChoiceV2) {
         const kind2 = choice === 0 ? "camp" : "shrine";
         const pool = coopContentPool(expeditionId, kind2);
-        const index = deterministicInt(secret, 0, pool.length - 1, generatorVersion, runId, expeditionId, contentVersion, balanceVersion, "checkpoint-choice", depth, kind2);
+        const index = deterministicInt(secret, 0, pool.length - 1, baseGeneratorVersion, runId, expeditionId, contentVersion, balanceVersion, "checkpoint-choice", depth, kind2);
         nodes.push({ nodeId: `d${depth}-c${choice}`, depth, kind: kind2, contentId: pool[index], modifierId: kind2 === "camp" ? "checkpoint-camp-v2" : "checkpoint-boon-v2", risk: 1, rewardTag: kind2 === "camp" ? "camp" : "boon", nextNodeIds: idsAt(depth + 1) });
         continue;
       }
-      const kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
+      let kind = coopKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice);
+      const category2 = specialRoomCategory(kind);
+      if (distinctSpecialChoices && category2 && usedSpecialCategories.has(category2)) {
+        kind = distinctSpecialRoomKind(secret, expeditionId, runId, contentVersion, balanceVersion, depth, choice, category2);
+      }
+      const chosenCategory = specialRoomCategory(kind);
+      if (chosenCategory) usedSpecialCategories.add(chosenCategory);
       const contentPool = coopContentPool(expeditionId, kind);
       let contentIndex = deterministicInt(secret, 0, contentPool.length - 1, regularRoomSeedVersion, runId, expeditionId, contentVersion, balanceVersion, "content", depth, choice);
       while (usedContentIds.has(contentPool[contentIndex])) contentIndex = (contentIndex + 1) % contentPool.length;
@@ -50865,6 +50892,10 @@ function validateCoopRouteGraph(graph2, limits) {
     if (depth === 1 && layer.some((node) => node.kind !== "battle")) throw new Error("mandatory_combat_missing");
     if (depth === 2 && layer.filter((node) => node.kind === "battle").length < 2) throw new Error("opening_combat_missing");
     if (depth > 2 && !layer.some((node) => node.kind === "battle") && !(enduranceV2 && layer.some((node) => node.kind === "boss"))) throw new Error("combat_option_missing");
+    if (graph2.generatorVersion.includes("-unique-special-v1")) {
+      const categories = layer.map((node) => specialRoomCategory(node.kind)).filter((category2) => category2 !== void 0);
+      if (new Set(categories).size !== categories.length) throw new Error("duplicate_special_room_choice");
+    }
     if (endurance && depth > 1 && (depth - 1) % DUNGEON_ENDURANCE.checkpointInterval === 0) {
       if (layer.filter((node) => node.kind === "boss").length !== 1 || layer.filter((node) => node.kind !== "boss").length !== 2) throw new Error("checkpoint_choices_invalid");
       if (enduranceV2 && (layer[0].kind !== "camp" || layer[0].modifierId !== "checkpoint-camp-v2" || layer[1].kind !== "shrine" || layer[1].modifierId !== "checkpoint-boon-v2" || layer[2].kind !== "boss")) throw new Error("checkpoint_recovery_boon_choices_invalid");

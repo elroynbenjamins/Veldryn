@@ -52,7 +52,7 @@ export function SocialNameEditor({onNameChange}:{onNameChange?:(name:string)=>vo
    invalidatePlayerIdentity(owner);
    setNotice(socialIdentityT(language,'Social name updated.'));
   }catch(e){
-   if(activeAccountRef.current===owner)setError(socialNameError(e));
+   if(activeAccountRef.current===owner)setError(socialIdentityT(language,socialNameError(e)));
   }finally{
    if(activeAccountRef.current===owner)setBusy(false);
   }

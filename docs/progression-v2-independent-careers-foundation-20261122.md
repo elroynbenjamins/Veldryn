@@ -86,3 +86,12 @@ Refinement adds:
 4. **More tests** for partial-progress migration, unchanged original XP, unauthorized alternate-character claims, repeat-collision tampering, source mismatches, zero combat stat contribution and integer overflow.
 
 **Still required before any deployment:** confirm source completion + overall XP update in the same DB transaction, reconcile 2.0 class/profession duplicate definitions, benchmark XP/hour including AFK, cover actual combat reward canonical IDs, game-owner approval of UI and themes, and stage disposable PG17 concurrency/rollback tests. No live or player-facing UI changes are authorized in this pass.
+
+## Pass 2 polish — deterministic benefit previews
+
+- Isolated profession-benefits-preview.ts models effective action duration as ceil(base duration / (1+speed)), sharing an explicitly provisional 20% cumulative cap with Forge rather than stacking unbounded speed.
+- Quality bonus affects only the quality roll (capped at Q100), never rarity or affix probability.
+- Common-input recovery is a server-RNG per-unit roll after successful settlement. Rare catalysts, combat trophies, boss drops, blueprints and currency are excluded, so rare materials remain genuine sinks.
+- Staging public.claim_idle_progress_atomic uses an 86,400-second per-claim cap and service_role-only execute access. A 30h reserve must split into separately verified at-most-24h claims; do not trust client timers or replayed idempotency keys. This was checked read-only; no function was changed.
+- Added focused benefits and review-only SQL safety tests to backend test:progression-v2; no actual rewards are minted.
+- Do not treat TS proof.completed=true as authorization. The production source completion must be verified by the private service handler against actual persisted receipts and settled in the same DB transaction as the new XP bank.

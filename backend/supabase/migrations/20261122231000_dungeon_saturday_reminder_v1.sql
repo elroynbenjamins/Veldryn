@@ -149,3 +149,16 @@ begin
  perform cron.schedule('veldryn-dungeon-reminder-sat-10-local','*/15 * * * *',
    'select private.enqueue_dungeon_reminders_v1();');
 end $$;
+
+-- Read-only preference for the in-app Settings toggle.
+create or replace function public.dungeon_reminder_preference_v1()
+returns boolean language plpgsql stable security definer set search_path='' as $$
+declare v_account uuid:=auth.uid(); v_enabled boolean;
+begin
+  if v_account is null then raise exception 'authentication_required'; end if;
+  select enabled into v_enabled from public.dungeon_reminder_preferences_v1
+  where account_id=v_account;
+  return coalesce(v_enabled,true);
+end $$;
+revoke all on function public.dungeon_reminder_preference_v1() from public,anon;
+grant execute on function public.dungeon_reminder_preference_v1() to authenticated;

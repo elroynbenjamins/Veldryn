@@ -109,7 +109,7 @@ function test(){
  });
  eq(bank.proposals[0].currentCustody,'bank','bank-held copy stays bank-held');
  const unknown=previewLegacyToolEntitlementCutoverV2({
-  ...snapshot,copies:[{...copyMining,itemId:'UNAUTHORED_T9_TOOL'}],
+  ...snapshot,copies:[{...copyMining,itemId:'UNAUTHORED_T9_TOOL'},copyWood],
  });
  eq(unknown.proposals.length,2,'unissued T9 item cannot become a tier entitlement');
 

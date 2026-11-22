@@ -87,9 +87,11 @@ export async function projectCombinedGameCareerProofsV2(
  // streams that happen to use different segment ordinals.
  if(source.gathering&&source.combat){
    const gs=source.gathering.segments,cs=source.combat.segments;
-   if(gs.length!==cs.length || gs.some((g,i)=>{
+   if(!Array.isArray(gs)||!Array.isArray(cs)||
+      gs.length!==cs.length || gs.some((g,i)=>{
      const combat=cs[i];
-     return !combat || g.activity.kind!==combat.activity.kind ||
+     return !g?.activity||!g.reward||!combat?.activity||!combat.reward||
+       g.activity.kind!==combat.activity.kind ||
        g.activity.targetId!==combat.activity.targetId ||
        g.activity.lastClaimAtMs!==combat.activity.lastClaimAtMs ||
        g.reward.xp!==combat.reward.xp ||

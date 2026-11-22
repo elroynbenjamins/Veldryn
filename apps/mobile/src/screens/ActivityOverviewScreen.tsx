@@ -6,10 +6,13 @@ import {GameButton} from '../components/GameButton';
 import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {ProfileIcon} from '../components/ProfileIcon';
+import {orderedCharacterRoster} from './character-roster-order';
+import {serverGameplayEnabled} from '../online/gameplay';
+import {supabase} from '../online/supabase';
 import {CLASSES} from '../content/classes';
 import {characterDeleteBlockReason,characterDeleteConfirmation} from '../core/account-actions';
 import {activityTargetLabel} from '../core/activity-target-label';
-import {accountCharacters,accountSkillLevel,CHARACTER_SLOT_THRESHOLDS,MAX_NEW_ACCOUNT_CHARACTERS,occupiedCharacterRoles,unlockedCharacterSlots,type AccountCharacterRole} from '../core/account-roster';
+import {accountSkillLevel,CHARACTER_SLOT_THRESHOLDS,MAX_NEW_ACCOUNT_CHARACTERS,occupiedCharacterRoles,unlockedCharacterSlots,type AccountCharacterRole} from '../core/account-roster';
 import {equipmentCraftingQueue} from '../core/equipment-crafting-queue';
 import type {ActiveActivity,GameState} from '../core/types';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
@@ -26,7 +29,22 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
  const r=(text:string,params?:Record<string,string|number>)=>characterRosterText(language,text,params);
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {width,fontScale}=useWindowDimensions(),stackRows=width<335||fontScale>=1.3||state.settings.textScale>=1.3;
- const entries=accountCharacters(state).map(entry=>({
+ const rosterIds=[state.character?.id,...(state.otherCharacters??[]).map(row=>row.character.id)].filter((id):id is string=>!!id).sort().join('|');
+ const [creationIds,setCreationIds]=useState<string[]>([]);
+ useEffect(()=>{
+  if(!supabase||!serverGameplayEnabled)return;
+  let cancelled=false;
+  const load=async()=>{
+   const {data:{user}}=await supabase.auth.getUser();
+   if(!user){if(!cancelled)setCreationIds([]);return;}
+   const {data,error}=await supabase.from('characters').select('id,created_at')
+    .eq('account_id',user.id).order('created_at',{ascending:true}).order('id',{ascending:true});
+   if(!cancelled&&!error&&data)setCreationIds(data.map(row=>row.id));
+  };
+  void load().catch(()=>{}); // Fallback remains stable if the roster projection is unavailable.
+  return ()=>{cancelled=true;};
+ },[rosterIds]);
+ const entries=orderedCharacterRoster(state,creationIds).map(entry=>({
   character:entry.character,
   activity:entry.character.id===state.character?.id?state.activity:
    (state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null

@@ -5,21 +5,8 @@ import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadg
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {recentScreenText} from '../i18n/recent-screens';
+import {PLAYER_BADGE_ARTWORK} from './player-badge-artwork';
 
-// Static require paths allow Metro to bundle artwork offline. These badges are never remotely downloaded.
-const artwork:Record<Exclude<PlayerBadgeId,'vip'|'vip_plus'>,number>={
- admin:require('../../assets/player-badges-v1/admin.webp'),
- moderator:require('../../assets/player-badges-v1/moderator.webp'),
- supporter:require('../../assets/player-badges-v1/supporter.webp'),
- supporter_3m:require('../../assets/player-badges-v1/supporter_3m.webp'),
- supporter_6m:require('../../assets/player-badges-v1/supporter_6m.webp'),
- supporter_12m:require('../../assets/player-badges-v1/supporter_12m.webp'),
- founder:require('../../assets/player-badges-v1/founder.webp'),
- veteran:require('../../assets/player-badges-v1/veteran.webp'),
- guild_leader:require('../../assets/player-badges-v1/guild_leader.webp'),
- community_champion:require('../../assets/player-badges-v1/community_champion.webp'),
- event_champion:require('../../assets/player-badges-v1/event_champion.webp'),
-};
 /**
  * The compact badge stays the same size in every name row. Its optional press target
  * opens a native popover outside clipped profile artwork and chat row containers.
@@ -29,10 +16,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const detail=recentScreenText(language,PLAYER_BADGE_DESCRIPTIONS[id]);
  const {width:screenWidth,height:screenHeight}=useWindowDimensions(),insets=useSafeAreaInsets();
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
- const vip=id==='vip'||id==='vip_plus';
- const art=(artSize:number)=>vip?<View style={[s.vipMark,{width:artSize,height:artSize,borderColor:id==='vip_plus'?'#C9A2FC':'#E6C365',backgroundColor:id==='vip_plus'?'#312044':'#3D3017'}]}>
-   <Text numberOfLines={1} adjustsFontSizeToFit style={{color:id==='vip_plus'?'#F0DFFF':'#FFECB0',fontWeight:'900',fontSize:artSize*.31,letterSpacing:-.25}}>{id==='vip_plus'?'VIP+':'VIP'}</Text>
-  </View>:<Image accessible={false} source={artwork[id as Exclude<PlayerBadgeId,'vip'|'vip_plus'>]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
+ const art=(artSize:number)=><Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
  const content=<>{art(size)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;
  const open=(pageX:number,pageY:number)=>{
@@ -68,7 +52,7 @@ function useBadgeClock(identity?:PlayerBadgeIdentity){
  return Math.max(now,Date.now());
 }
 /** The name row: automatic staff identity plus the one badge worn beside the name. */
-export function PlayerBadges({identity,size=20,showLabels=false}:{identity?:PlayerBadgeIdentity;size?:number;showLabels?:boolean}){
+export function PlayerBadges({identity,size=22,showLabels=false}:{identity?:PlayerBadgeIdentity;size?:number;showLabels?:boolean}){
  const ids=playerBadgeIds(identity,useBadgeClock(identity));
  if(!ids.length)return null;
  return <View style={s.row}>{ids.map(id=><PlayerBadge key={id} id={id} size={size} showLabel={showLabels} interactive/>)}</View>;
@@ -94,6 +78,5 @@ const s=StyleSheet.create({
  infoTitle:{fontSize:13,fontWeight:'900'},
  infoDescription:{fontSize:11,lineHeight:15},
 
- vipMark:{alignItems:'center',justifyContent:'center',borderWidth:2,borderRadius:3},
  showcase:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
 });

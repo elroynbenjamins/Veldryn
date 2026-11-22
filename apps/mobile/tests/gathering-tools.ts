@@ -79,7 +79,7 @@ const blueprintExpected:Readonly<Record<string,{rate:number;source:string;level:
  BP_OATHSCALE_ROD:{rate:.0035,source:'DROWNED_PILGRIM',level:22},
  BP_FROSTIRON_PICKAXE:{rate:.003,source:'BELLWRAITH',level:61},
  BP_FROSTIRON_HATCHET:{rate:.0025,source:'FROSTWOLF',level:51},
- BP_RIMEGLASS_ROD:{rate:.0025,source:'LAKEBOUND_SPECTER',level:62},
+ BP_RIMEGLASS_ROD:{rate:.0025,source:'LAKEBOUND_SPECTER',level:68},
 };
 ok(Object.keys(blueprintExpected).length===TOOL_BLUEPRINT_ITEMS.length,
  'Blueprint rate/sourcing snapshot must cover exactly nine items');

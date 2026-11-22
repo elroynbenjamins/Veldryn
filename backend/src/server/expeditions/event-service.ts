@@ -8,7 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss,FROSTFALL_DAILY_REWARDED_CLEARS} from './frostfall-endurance';
+import {FROSTFALL_ENDURANCE_GENERATOR,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -140,6 +140,8 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v5',runId,expeditionId:eventId,contentVersion:'event-v5',balanceVersion:'event-balance-v5',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
 }
 
+/** All event expeditions: per-account UTC-day reward cap, not a weekly attempt cap. */
+export const EVENT_EXPEDITION_DAILY_REWARDED_CLEARS=2;
 export class EventExpeditionService{
  private commandReceipts=new Map<string,{hash:string;run:EventRun}>();private claims=new Map<string,{marks:number}>();private dailyClears=new Map<string,number>();
  constructor(private repository:EventRunRepository,private serverSecret:string){}
@@ -175,5 +177,5 @@ export class EventExpeditionService{
   if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);const tierBase=eventTierRewardMarks(definition,run.tier??1),depthMultiplier=isFrostfallEndurance?frostfallRewardMultiplierForBoss(run.graph,baseSelected):1;run.rewardMarks=Math.round(tierBase*depthMultiplier)+mechanic.rewardBonus+objective.rewardBonus;}
   this.repository.save(run);this.commandReceipts.set(receiptKey,{hash,run:structuredClone(run)});return structuredClone(run);
  }
- claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=FROSTFALL_DAILY_REWARDED_CLEARS)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
+ claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=EVENT_EXPEDITION_DAILY_REWARDED_CLEARS)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
 }

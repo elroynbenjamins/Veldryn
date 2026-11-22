@@ -1,8 +1,9 @@
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
+import {equipmentInnatePercentLabel} from '../src/content/equipment-innate-percent';
 import {itemDef} from '../src/content/items';
 import {draftCraftedGearInstance} from '../src/core/crafted-gear-instances';
 import {createCharacter,effectiveStats,newGame} from '../src/core/game';
-import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
+import {activeEquipmentBuildStats,activeEquipmentSetRuntime,equippedInnateEquipmentStats,equipmentSetBonusCoverage,isLiveSixPieceBonus,equipmentSetCombatModifiers,equipmentSetStaticStatsForCount,parseEquipmentSetStaticBonus} from '../src/core/equipment-set-runtime';
 import {itemInspectModel} from '../src/core/item-inspect';
 import type {GameState} from '../src/core/types';
 
@@ -69,6 +70,56 @@ close(runtime10.stats.armor,.07,'Full Oathbound runtime must include both Armor 
 close(runtime10.stats.tenacity,.02,'Full Oathbound runtime must include Tenacity mastery');
 close(stats10.armor??0,.07,'Effective stats must surface live Armor');
 close(stats10.tenacity??0,.02,'Effective stats must surface live Tenacity');
+
+// Innate attributes belong to specific rare T3/T4 named pieces, never
+// to instance RNG or a 2/4/6/8/10-piece threshold.
+const curated:Record<string,Record<string,[string,number]>>={
+ T3_001:{chest:['armor',80],cape:['maxHp',50]},
+ T3_007:{chest:['ward',70],gloves:['haste',40]},
+ T3_013:{gloves:['critRate',50],boots:['evasion',40]},
+ T4_001:{chest:['armor',110],cape:['maxHp',70]},
+ T4_007:{chest:['ward',100],gloves:['haste',60]},
+ T4_013:{gloves:['critRate',70],boots:['evasion',60]},
+};
+for(const [setId,slotBonuses] of Object.entries(curated)){
+ const set=EQUIPMENT_SETS.find(row=>row.id===setId);
+ ok(set&&set.itemIds.length===10,setId+' curated set is in the authoritative catalog');
+ for(const [slot,[stat,basisPoints]] of Object.entries(slotBonuses)){
+  const id=set!.itemIds.find(itemId=>itemDef(itemId).slot===slot);
+  ok(id,setId+' contains '+slot);
+  const piece=itemDef(id!);
+  ok(piece.rarity==='rare',setId+' signature attributes are exclusive to rare catalog pieces');
+  ok(piece.innatePercent?.stat===stat&&piece.innatePercent?.basisPoints===basisPoints,
+    setId+' '+slot+' retains its fixed authored stat');
+  ok(piece.innatePercent?.basisPoints!==undefined&&piece.innatePercent.basisPoints<=150,
+    'Each individual signature bonus remains small relative to set milestones');
+ }
+ const other=set!.itemIds.find(itemId=>!Object.keys(slotBonuses).includes(itemDef(itemId).slot!));
+ ok(other&&!itemDef(other).innatePercent,setId+' non-signature pieces retain ordinary rolled stats only');
+}
+const signatureSet=EQUIPMENT_SETS.find(row=>row.id==='T3_001')!;
+const signatureChestId=signatureSet.itemIds.find(id=>itemDef(id).slot==='chest')!;
+let innateState=createCharacter(newGame(0),signatureSet.classId,'Rare Signature','male');
+const withoutSignature=activeEquipmentBuildStats(innateState);
+innateState={...innateState,character:{...innateState.character!,equipment:{...innateState.character!.equipment,chest:signatureChestId}}};
+const onePieceRuntime=activeEquipmentSetRuntime(innateState);
+ok(onePieceRuntime.activeSets[0]?.activeThresholds.length===0,'One signature piece does not activate a set milestone');
+close(equippedInnateEquipmentStats(innateState).armor??0,.008,'One chest piece grants innate Armor without a set threshold');
+close(activeEquipmentBuildStats(innateState).armor-withoutSignature.armor,.008,'Innate stats reach actual build combat bonuses');
+close(equipmentSetCombatModifiers(innateState).defenseMultiplier,1+.008,'Innate Armor reaches actual combat defense multiplier');
+ok(itemInspectModel(innateState,signatureChestId).effectLines.includes('Innate stat · '+equipmentInnatePercentLabel(itemDef(signatureChestId).innatePercent!)),
+  'The existing item inspector identifies the guaranteed innate stat separately');
+const signatureCopy=draftCraftedGearInstance({itemId:signatureChestId,ownerCharacterId:innateState.character!.id,jobId:'t3-innate-and-random',createdAtMs:44,roll:.42});
+const signatureRolledState:GameState={...innateState,account:{...innateState.account,craftedGearInstances:[signatureCopy]},
+ character:{...innateState.character!,equipmentInstanceIds:{chest:signatureCopy.id}}};
+const signedBuild=activeEquipmentBuildStats(signatureRolledState);
+const equippedRollOnArmor=signatureCopy.equipmentBonuses?.filter(row=>row.stat==='armor').reduce((sum,bonus)=>sum+bonus.basisPoints/10000,0)??0;
+close(signedBuild.armor-withoutSignature.armor,.008+equippedRollOnArmor,
+  'Innate percent and random affixes coexist on the same physical equipment copy');
+ok((signatureCopy.equipmentBonuses??[]).length>0,'Normal equipment random rolls remain enabled');
+const forgedInspect=itemInspectModel(signatureRolledState,signatureChestId,signatureCopy.id);
+ok(forgedInspect.effectLines.some(line=>line.startsWith('Innate stat ·')),'Innate line persists on an exact forged copy');
+ok(forgedInspect.effectLines.some(line=>line.startsWith('Equipment roll ·')),'RNG roll is shown separately on the exact copy');
 
 const t5Set=EQUIPMENT_SETS.find(row=>row.id==='T5_001');if(!t5Set)throw new Error('Missing T5_001 set');
 let t5State=createCharacter(newGame(0),'IRONWARDEN','No Fixed Affixes','male');

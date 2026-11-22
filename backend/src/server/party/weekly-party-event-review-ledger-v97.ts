@@ -96,9 +96,9 @@ export async function recordNonpayingPartyReviewV97(input:{
    audit.contributions.length||!input.store||
   typeof input.store.transact!=='function')
   fail('invalid_replay_source');
- const key=enemyV2SnapshotDigest({
-  eventId:audit.eventId,encounterId:audit.encounterId,
- });
+ // An encounter can have only one canonical event assignment. Reusing the
+ // same encounter ID with a different event cannot mint a second receipt.
+ const key=enemyV2SnapshotDigest({encounterId:audit.encounterId});
  const expected:NonpayingReviewReceiptV97={
   version:PARTY_EVENT_REVIEW_LEDGER_V97_VERSION,
   status:'qa_evidence_only',key,partyId:audit.partyId,

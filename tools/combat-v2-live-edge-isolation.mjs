@@ -13,6 +13,8 @@ const ALLOWED=new Set([
  './v2/capstone-runtime',
  './v2/reactive-passive-runtime',
  './v2/enemy-engine-authority',
+ './v2/equipment-trait-engine-authority',
+ './v2/equipment-trait-engine-runtime',
  './enemy-v2-status-rules',
 ]);
 const DISABLED='throw Error("combat_v2_not_available_in_live_edge_bundle");';
@@ -43,6 +45,17 @@ export function authorizeEnemyV2EngineExecution(input,authority){
  if(authority!==undefined||input?.players?.some(player=>player.combatV2))
    ${DISABLED}
  return false;
+}
+`,
+ './v2/equipment-trait-engine-authority':`
+export function authorizeEquipmentV2TraitEngine(_input,authority){
+ if(authority!==undefined) ${DISABLED}
+ return new Map();
+}
+`,
+ './v2/equipment-trait-engine-runtime':`
+export class EquipmentTraitRuntimeV2 {
+ constructor(){ ${DISABLED} }
 }
 `,
  './enemy-v2-status-rules':`
@@ -83,6 +96,7 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'combat_v2_enemy_authority_','combat_v2_solo_',
   'enemy-v2-prototype-1','issueEnemyV2EngineAuthority',
   'prepareSoloEnemyKitsV2','SoloEncounterPersistenceServiceV2',
+  'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

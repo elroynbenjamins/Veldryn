@@ -8,6 +8,10 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat} from '../engine';
+import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
+import {
+ compileExactEquipmentTraitSourceV2,type TrustedEquipmentTraitReceiptPortV2,
+} from './equipment-trait-exact-copy-adapter';
 import type {CombatInput,CombatResult,CombatantDefinition,CombatStats} from '../types';
 import type {GearSlotV2} from './build-contract';
 import {validateBuildV2} from './build-contract';
@@ -148,11 +152,18 @@ export function simulateUnifiedEquipmentCombatV2(
  runtime:readonly TrustedEquipmentRuntimeV2[],
  serverEnabled=false,
  authoredEnemyKit?:TrustedPersistedEnemyKitV2,
+ traitPort?:TrustedEquipmentTraitReceiptPortV2,
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled){
+  if(traitPort)throw Error('combat_v2_trait_port_requires_complete_v2');
   if(authoredEnemyKit)throw Error('combat_v2_enemy_kit_requires_complete_v2');
   return {combat:simulateCombat(input),enemyMechanicLabels:[],equipmentEvidence:[]};
  }
+ // Trait execution is limited to new, fully persisted SOLO Enemy/Boss 2.0
+ // encounters until authenticated party/dungeon replay custody is implemented.
+ if(traitPort&&(!authoredEnemyKit||input.players.length!==1||
+   runtime.length!==1||builds.length!==1))
+  throw Error('combat_v2_trait_requires_persisted_solo_enemy_and_gear');
  if(authoredEnemyKit&&(
    input.players.length!==1||runtime.length!==1||builds.length!==1||
    input.enemyDamageProfile!==undefined||
@@ -195,8 +206,11 @@ export function simulateUnifiedEquipmentCombatV2(
     playerIds:players.map(p=>p.id),enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
   },finalInput,(_scope,combatDigest)=>
     authoredEnemyKit.verifyPersisted(snapshot,combatDigest));
+  const traitAuthority=traitPort?issueEquipmentV2TraitAuthority(finalInput,[
+    compileExactEquipmentTraitSourceV2(builds[0],runtime[0],traitPort),
+   ],traitPort.verifyPersisted):undefined;
   return {
-    combat:simulateCombat(finalInput,authority),
+    combat:simulateCombat(finalInput,authority,traitAuthority),
     enemyMechanicLabels:proof.preview.flatMap(p=>[
       ...p.abilityNames.map(name=>p.enemyId+': '+name),
       ...p.phaseNames.map(name=>p.enemyId+': '+name),

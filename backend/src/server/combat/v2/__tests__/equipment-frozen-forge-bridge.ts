@@ -259,6 +259,32 @@ const forged={...initial.source,items:initial.source.items.map(item=>({
 }))};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,forged),/exact_copy_custody_claim_mismatch/);
+const duplicateClaim={...initial.source,claims:[
+ ...initial.source.claims,...initial.source.claims]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,duplicateClaim),
+ /duplicate_or_invalid_claim_request/,
+ 'same forged EQ2 claim request cannot appear twice');
+if(initial.claim.response.kind!=='claimed')throw Error('invalid test-only minted claim');
+const redirectedClaim:V2DraftReceipt={...initial.claim,
+ response:{...initial.claim.response,instanceId:'QA_FOREIGN_COPY'}};
+const wrongClaim={...initial.source,claims:[redirectedClaim]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,wrongClaim),
+ /missing_exact_copy_or_claim/,'wrong item-copy claim must be denied');
+const inflatedItem={...initial.mint.exactItem,baseStats:{
+ ...initial.mint.exactItem.baseStats,
+ defense:initial.mint.exactItem.baseStats.defense+999,
+}};
+const stolenProjection={...initial.source,
+ items:[{...initial.mint,exactItem:inflatedItem}],
+ claims:[{...initial.claim,response:{...initial.claim.response,
+  exactItem:inflatedItem}}],
+ custody:{...initial.source.custody,copies:[{...initial.custody,item:inflatedItem}]},
+};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,stolenProjection),
+ /invalid_account_forge_copy/,'coordinated forged base-stat snapshots must be rejected by canonical EQ2 policy');
 const copiedGear={...qaTeam[1].build,
  selected:{...qaTeam[1].build.selected,equipment:{[qaTeam[1].exact.slot]:initial.mint.id}}};
 assert.throws(()=>simulateRealFrozenForgeCombatV2(input,[

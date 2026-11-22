@@ -137,7 +137,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           {item.type==='food'&&actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
         {(quickActions||(actions&&item.type!=='food'))?<View style={s.quickFooter}>
-          {actions&&actionsOpen&&item.type!=='food'?<ScrollView nestedScrollEnabled style={s.footerActionScroll} contentContainerStyle={s.footerActionContent} showsVerticalScrollIndicator={true} accessibilityLabel={ui('More actions')}>{actions}</ScrollView>:null}
+          {actions&&actionsOpen&&item.type!=='food'?<ScrollView nestedScrollEnabled style={s.footerActionScroll} contentContainerStyle={s.footerActionContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} accessibilityLabel={ui('More actions')}>{actions}</ScrollView>:null}
           {quickActions}
           {actions&&item.type!=='food'?<Pressable accessibilityRole="button" accessibilityLabel={ui(actionsOpen?'Less actions':'More actions')} accessibilityState={{expanded:actionsOpen}} onPress={()=>setActionsOpen(value=>!value)} style={({pressed})=>[s.disclosure,s.moreActionsToggle,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui(actionsOpen?'Less actions':'More actions')}</Text><Text style={s.disclosureMark}>{actionsOpen?'−':'+'}</Text>

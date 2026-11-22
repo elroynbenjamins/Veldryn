@@ -12,7 +12,7 @@ import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
-import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,COMPANION_BOND_CONFIG} from '../src/content/combat-companions';
+import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS,COMPANION_BOND_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE} from '../src/content/combat-companions';
 import {FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
 import {companionBondProgress} from '../src/core/companion-bond-progress';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
@@ -59,6 +59,16 @@ ok(xpBankApplied.ascensionTier===1&&xpBankApplied.level>10,'successful ascension
 ok((xpBankApplied.bankedXp??0)===0,'stored XP does not get applied twice after ascension');
 const xpBankUnchanged=command(xpBankAfter,'companion_equip',{id:'UNIT_001'});
 ok(xpBankUnchanged.account.combatCompanionProgress!.UNIT_001.level===xpBankApplied.level,'unrelated commands do not replay banked XP');
+ok(JSON.stringify(COMPANION_SANCTUARY_TRAINING_XP_PER_DAY)==='[0,40,90,150]','Training Grounds have the increased tier 1–3 daily XP rewards');
+ok(JSON.stringify(COMPANION_SANCTUARY_WEEKLY_ESSENCE)==='[0,20,48,80]','Weekly Essence reward amounts remain unchanged');
+for(const level of [1,2,3] as const){
+ const before=fixture();
+ before.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,0]));
+ before.account.companionSanctuary={...before.account.companionSanctuary!,trainingGroundLevel:level,lastTrainingClaimAtMs:now-86400000};
+ const after=command(before,'companion_training');
+ const claim=sanctuaryClaimReceipt(before,after,'companion_training');
+ ok(claim?.status==='claimed'&&claim.companionCount===ids.length&&claim.companions.every(row=>row.xp===COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[level]),'Every eligible companion receives the configured XP at Training Grounds level '+level);
+}
 let receiptDailyBefore=fixture();
 receiptDailyBefore.account.companionSanctuary={...receiptDailyBefore.account.companionSanctuary!,trainingGroundLevel:1,lastTrainingClaimAtMs:now-86400000};
 const receiptDailyAfter=command(receiptDailyBefore,'companion_training');

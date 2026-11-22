@@ -1,0 +1,30 @@
+name: Progression 2.0 isolated contracts
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/progression/v2/**'
+      - 'backend/tsconfig.progression-v2.json'
+      - 'backend/package.json'
+      - '.github/workflows/progression-v2-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  preview-progression-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck and exercise isolated V2 progression policy
+        run: pnpm test:progression-v2

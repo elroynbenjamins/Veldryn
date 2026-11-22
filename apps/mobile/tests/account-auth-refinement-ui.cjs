@@ -36,6 +36,13 @@ assert.ok(auth.includes("import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from '../onli
 assert.ok(auth.includes('{auth.session&&ACCOUNT_SOCIAL_IDENTITY_RELEASED?<SocialNameEditor/>:null}'),'Social Name editor mounts only for signed-in users when the feature is released');
 assert.ok(releaseFlags.includes('export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false'),'Production social identity remains unavailable until production RPC migration and QA');
 assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW==='true'"),'Explicit staging Social Names preview remains available');
+const androidBuild=JSON.parse(read('eas.json'));
+assert.equal(androidBuild.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED,'false','Production build keeps Social Names disabled until backend and Android QA signoff');
+assert.equal(androidBuild.build.production.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW,'false','Production never inherits staging preview');
+assert.equal(androidBuild.build.staging.env.EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW,'true','Staging QA retains explicit preview');
+assert.ok(socialGate.includes("process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='production'")&&socialGate.includes("process.env.EXPO_PUBLIC_SOCIAL_NAMES_PRODUCTION_ENABLED==='true'")&&socialGate.includes("process.env.EXPO_PUBLIC_SUPABASE_URL==='https://nyjwigipamnvpdvpauuv.supabase.co'"),'Only explicitly approved production builds with the exact backend may mount the editor');
+const socialRosterMigration=read('../../backend/supabase/migrations/20261118142000_social_roster_account_name_projections_v1.sql');
+assert.ok(socialRosterMigration.includes('party_social_state_before_weekly_tiers_v1()')&&socialRosterMigration.includes('v_party_target')&&socialRosterMigration.includes('online_player_roster_v1()'),'Social Name migration patches production weekly-party source without dropping wrappers');
 assert.ok(auth.includes('Google Play Games is separate from your VELDRYN account'),'Play Games remains separate from VELDRYN recovery');
 assert.ok(auth.includes("auth.session?.user.is_anonymous")&&auth.includes('run(signOut)'),'Anonymous sign-out still warns before losing a guest account');
 assert.ok(!auth.includes('AuthModeChip'),'Legacy pill-style auth control was removed');

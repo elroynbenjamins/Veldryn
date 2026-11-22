@@ -94,3 +94,12 @@ test('Endurance boss exits are distinct without changing server-owned route subm
  assert.match(strip,/const checkpoints=Math\.max\(1,Math\.ceil\(\(path\.totalDepth-1\)\/7\)\)/);
  assert.match(strip,/reduceMotion\|\|path\.totalDepth>16/);
 });
+
+
+test('solo dungeon difficulty shows server CP advice without imposing a CP entry gate',()=>{
+ const source=read('src/components/coop/CoopDungeonBrowser.tsx');
+ assert.match(source,/requiredPower=\{0\} recommendedPower=\{dungeon\.tierMinPower\[value\]\} currentLevel=\{currentLevel\} currentPower=\{Number\.POSITIVE_INFINITY\}/);
+ assert.match(source,/const suggestedPower=Number\.isFinite\(recommendedPower\)&&recommendedPower>0/);
+ assert.match(source,/style=\{s\.tierSuggestedPower\}/);
+ assert.match(source,/Approximate solo CP recommendation · Not an entry requirement/);
+});

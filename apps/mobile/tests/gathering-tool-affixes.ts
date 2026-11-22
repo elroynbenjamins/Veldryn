@@ -1,5 +1,6 @@
 import {GATHERING_TOOLS} from '../src/content/gathering-tools';
-import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
+import {GATHERING} from '../src/content/skills';
+import {createCharacter,newGame,craftRecipe,startGathering,previewActivityReward,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
 import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier,gatheringToolSkillXpMultiplier} from '../src/core/gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel,gatheringToolBonusRange,GATHERING_TOOL_XP_RANGE_BPS_BY_TIER} from '../src/core/gathering-tool-rolls';
 import {auditCraftedGearOwnership} from '../src/core/crafted-gear-ownership';
@@ -79,6 +80,13 @@ assert(Math.abs(gatheringToolSkillXpMultiplier(xpTools,'woodcutting')-1.15)<1e-9
 assert(gatheringToolSkillXpMultiplier(xpTools,'mining')===1&&gatheringToolSkillXpMultiplier(xpTools,'fishing')===1,'Tool XP never transfers to another skill');
 assert(gatheringToolBonusLabel(xpCopies[3])==='+15.0% Woodcutting XP','Tool XP label names only its skill');
 assert(gatheringToolContribution(tools[3],xpCopies[3]).skillXpRollPercent===15,'Tool XP displayed separately from tier speed');
+const woodcuttingNode=GATHERING.find(node=>node.skillId==='woodcutting'&&node.zoneId==='asterfall')!;
+assert(!!woodcuttingNode,'Need an Asterfall woodcutting node for real XP reward test');
+const withoutXp=startGathering(state,woodcuttingNode.id,1000);
+const withXp=startGathering(xpTools,woodcuttingNode.id,1000);
+const baseReward=previewActivityReward(withoutXp,1000+60*60*1000);
+const boostedReward=previewActivityReward(withXp,1000+60*60*1000);
+assert(baseReward.xp>0&&boostedReward.xp>baseReward.xp,'Tool XP roll must increase actual woodcutting preview and offline-equivalent rewards');
 assert(Math.abs(gatheringToolTotalBreakdown(gatheringToolEffects(xpTools,'woodcutting')).skillXpRelativePercent-15)<1e-9,'Aggregated tool XP matches its actual skill multiplier');
 const expected=.4*.92**4;
 assert(Math.abs(gatheringToolTimeMultiplier(speeds,'woodcutting')-expected)<1e-9,'Four max speed rolls stack multiplicatively on remaining duration');

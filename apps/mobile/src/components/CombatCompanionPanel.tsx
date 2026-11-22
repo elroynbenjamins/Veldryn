@@ -10,7 +10,7 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} fro
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import type {CompanionSanctuaryUpgrade} from '../core/combat-companion-types';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_CONFIG,COMPANION_STAGE_CAPS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS} from '../content/combat-companions';
 import {combatCompanionUiModel,companionXpToNextLevel,companionSanctuaryUpgradeCost,companionCombatContribution,companionCanRecruitFromRequirements,sanitizeCombatCompanionState} from '../core/combat-companions';
 import {companionAvailability,companionView,companionEconomy,assertCompanionIdle,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam,recommendedCompanionTrialStageTeam} from '../core/companion-runtime';
 import {challengeBoard} from '../core/companion-challenge-board';
@@ -164,7 +164,9 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
   },[latestTrialBattle?.atMs,section,latestTrialBattle?.playback,latestTrialBattle?.title]);
   const assistPct=Math.round(contribution.contributionPct*1000)/10;
   const sanctuary=state.account.companionSanctuary;
-  const trainingBuilt=(sanctuary?.trainingGroundLevel??0)>0,essenceBuilt=(sanctuary?.essenceBasinLevel??0)>0;
+  const trainingLevel=Math.max(0,Math.min(3,sanctuary?.trainingGroundLevel??0)),essenceLevel=Math.max(0,Math.min(3,sanctuary?.essenceBasinLevel??0));
+  const trainingBuilt=trainingLevel>0,essenceBuilt=essenceLevel>0;
+  const trainingXpPerDay=COMPANION_SANCTUARY_TRAINING_XP_PER_DAY[trainingLevel],weeklyEssence=COMPANION_SANCTUARY_WEEKLY_ESSENCE[essenceLevel];
   const trainingLast=sanctuary?.lastTrainingClaimAtMs,essenceLast=sanctuary?.lastEssenceClaimAtMs;
   const trainingDue=trainingBuilt&&(trainingLast===undefined||now-trainingLast>=86400000);
   const essenceDue=essenceBuilt&&(essenceLast===undefined||now-essenceLast>=604800000);
@@ -214,16 +216,28 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
      </View>
      <View style={s.claimGrid}>
       <View style={s.claimCard}>
-       <UiIcon name="training" size={29}/>
-       <Text style={s.name}>{t('Daily Training')}</Text>
-       <Text style={s.body}>{!trainingBuilt?t('Build Training Grounds first'):trainingLast===undefined?t('Ready to claim'):claimWait(trainingLast,86400000)}</Text>
-       <GameButton compact title={!trainingBuilt?t('Not built'):trainingDue?t('Claim XP'):t('Not ready')} disabled={busy||!trainingDue} onPress={()=>act('companion_training')}/>
+       <UiIcon name="training" size={26}/>
+       <View style={s.claimDetails}>
+        <Text style={s.name}>{t('Daily Companion XP')}</Text>
+        <Text style={s.body}>{trainingBuilt?t('+{value0} XP / eligible companion / day',{value0:amount(trainingXpPerDay)}):t('Build Training Grounds first')}</Text>
+       </View>
+       <View style={s.claimMeta}>
+        {!trainingBuilt?<Text style={s.claimCountdown}>{t('Not built')}</Text>:trainingDue
+         ?<GameButton compact title={trainingLast===undefined?t('Start timer'):t('Claim XP')} disabled={busy} onPress={()=>act('companion_training')}/>
+         :<><Text style={s.claimCountdown}>{claimWait(trainingLast,86400000)}</Text><Text style={s.claimHint}>{t('Until claim')}</Text></>}
+       </View>
       </View>
       <View style={s.claimCard}>
-       <UiIcon name="sanctuary" size={29}/>
-       <Text style={s.name}>{t('Weekly Essence')}</Text>
-       <Text style={s.body}>{!essenceBuilt?t('Build Essence Basin first'):essenceLast===undefined?t('Ready to claim'):claimWait(essenceLast,604800000)}</Text>
-       <GameButton compact title={!essenceBuilt?t('Not built'):essenceDue?t('Claim Essence'):t('Not ready')} disabled={busy||!essenceDue} onPress={()=>act('companion_essence')}/>
+       <UiIcon name="sanctuary" size={26}/>
+       <View style={s.claimDetails}>
+        <Text style={s.name}>{t('Weekly Companion Essence')}</Text>
+        <Text style={s.body}>{essenceBuilt?t('+{value0} Essence / week',{value0:amount(weeklyEssence)}):t('Build Essence Basin first')}</Text>
+       </View>
+       <View style={s.claimMeta}>
+        {!essenceBuilt?<Text style={s.claimCountdown}>{t('Not built')}</Text>:essenceDue
+         ?<GameButton compact title={essenceLast===undefined?t('Start timer'):t('Claim Essence')} disabled={busy} onPress={()=>act('companion_essence')}/>
+         :<><Text style={s.claimCountdown}>{claimWait(essenceLast,604800000)}</Text><Text style={s.claimHint}>{t('Until claim')}</Text></>}
+       </View>
       </View>
      </View>
      <CompanionDisclosure title={t('Expedition supplies')} summary={t('{value0} owned',{value0:e.materials.SUPPLIES??0})} icon="inventory">
@@ -359,7 +373,7 @@ const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selecti
   </View>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
- root:{gap:12},sanctuaryIntro:{gap:3},claimGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},claimCard:{flexGrow:1,flexBasis:135,minWidth:0,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel,gap:8,justifyContent:'space-between'},supplyLine:{flexDirection:'row',alignItems:'center',gap:9},activeCompanion:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.accent,borderRadius:12,backgroundColor:C.panel},activeCompanionArt:{width:62,height:62},trialHeader:{flexDirection:'row',alignItems:'center',gap:8},trialIconAction:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},trialTeam:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,minHeight:74},trialTeamReady:{borderColor:C.good},trialMiniTeam:{flexDirection:'row',gap:4,alignItems:'center'},trialMiniSlot:{width:39,height:46,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:7,backgroundColor:C.panel,overflow:'hidden'},trialMiniArt:{width:35,height:33},trialMiniRole:{fontSize:9,fontWeight:'900',color:C.accent,lineHeight:11},trialArrow:{fontSize:24,lineHeight:27,color:C.muted},trialNext:{gap:4},trialMore:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md},trialMoreText:{...typography.caption,color:C.muted,flex:1},trialExpanded:{gap:10},resourceBar:{flexDirection:'row',flexWrap:'nowrap',alignItems:'center',justifyContent:'space-between',gap:6},navigation:{flexDirection:'row',padding:4,borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel2},navigationTab:{flex:1,minWidth:0,minHeight:54,alignItems:'center',justifyContent:'center',gap:4,paddingVertical:7,borderBottomWidth:2,borderBottomColor:'transparent'},navigationSelected:{borderBottomColor:C.accent,backgroundColor:C.selection,borderRadius:10},navigationText:{fontSize:10,lineHeight:14,color:C.muted,textAlign:'center'},navigationTextSelected:{color:C.text,fontWeight:'700'},rosterGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},rosterTile:{width:'48%',flexGrow:1,minWidth:0,padding:12,gap:6,borderWidth:1,borderRadius:12,backgroundColor:C.panel},tileName:{fontSize:13,lineHeight:18,fontWeight:'700',color:C.text},heroAssist:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:6,paddingTop:12,borderTopWidth:1,borderTopColor:C.line},ascent:{gap:8},floorRow:{flexDirection:'row',alignItems:'center',gap:10,padding:12,backgroundColor:C.panel2,borderRadius:10},floorNumber:{fontSize:18,fontWeight:'700',color:C.accent,width:32},floorCopy:{flex:1,color:C.text,fontSize:13},
+ root:{gap:12},sanctuaryIntro:{gap:3},claimGrid:{gap:8},claimCard:{flexDirection:'row',alignItems:'center',gap:10,minWidth:0,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},claimDetails:{flex:1,minWidth:0,gap:3},claimMeta:{alignItems:'flex-end',justifyContent:'center',maxWidth:118,flexShrink:0,gap:2},claimCountdown:{...typography.bodyStrong,color:C.text,textAlign:'right'},claimHint:{...typography.caption,color:C.muted,textAlign:'right'},supplyLine:{flexDirection:'row',alignItems:'center',gap:9},activeCompanion:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.accent,borderRadius:12,backgroundColor:C.panel},activeCompanionArt:{width:62,height:62},trialHeader:{flexDirection:'row',alignItems:'center',gap:8},trialIconAction:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},trialTeam:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,minHeight:74},trialTeamReady:{borderColor:C.good},trialMiniTeam:{flexDirection:'row',gap:4,alignItems:'center'},trialMiniSlot:{width:39,height:46,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:7,backgroundColor:C.panel,overflow:'hidden'},trialMiniArt:{width:35,height:33},trialMiniRole:{fontSize:9,fontWeight:'900',color:C.accent,lineHeight:11},trialArrow:{fontSize:24,lineHeight:27,color:C.muted},trialNext:{gap:4},trialMore:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md},trialMoreText:{...typography.caption,color:C.muted,flex:1},trialExpanded:{gap:10},resourceBar:{flexDirection:'row',flexWrap:'nowrap',alignItems:'center',justifyContent:'space-between',gap:6},navigation:{flexDirection:'row',padding:4,borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel2},navigationTab:{flex:1,minWidth:0,minHeight:54,alignItems:'center',justifyContent:'center',gap:4,paddingVertical:7,borderBottomWidth:2,borderBottomColor:'transparent'},navigationSelected:{borderBottomColor:C.accent,backgroundColor:C.selection,borderRadius:10},navigationText:{fontSize:10,lineHeight:14,color:C.muted,textAlign:'center'},navigationTextSelected:{color:C.text,fontWeight:'700'},rosterGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},rosterTile:{width:'48%',flexGrow:1,minWidth:0,padding:12,gap:6,borderWidth:1,borderRadius:12,backgroundColor:C.panel},tileName:{fontSize:13,lineHeight:18,fontWeight:'700',color:C.text},heroAssist:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:6,paddingTop:12,borderTopWidth:1,borderTopColor:C.line},ascent:{gap:8},floorRow:{flexDirection:'row',alignItems:'center',gap:10,padding:12,backgroundColor:C.panel2,borderRadius:10},floorNumber:{fontSize:18,fontWeight:'700',color:C.accent,width:32},floorCopy:{flex:1,color:C.text,fontSize:13},
 
  quartersCard:{padding:11,gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},
  quartersTitleRow:{flexDirection:'row',alignItems:'center',gap:8},

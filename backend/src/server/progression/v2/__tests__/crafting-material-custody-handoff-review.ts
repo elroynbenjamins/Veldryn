@@ -94,7 +94,7 @@ function test(){
     '2,2','traded combat-origin Fangs retain original provenance');
  eq(base.debits.find(d=>d.lotId==='LOT_FANG_MARKET')?.transferReceiptId,
     'TRANSFER_MARKET_FANG_001','market proof traced to finalized trade');
- eq(base.debits.some(d=>d.custody==='market_escrow'),false,
+ eq(base.debits.some(d=>!['inventory','bank'].includes(d.custody)),false,
     'listed material cannot be used while held in escrow');
  eq(base.debits.every(d=>d.quantity>0),true,'no zero debits');
  eq(JSON.stringify(previewProfessionCraftMaterialCustodyV2(request,state,recipe)),

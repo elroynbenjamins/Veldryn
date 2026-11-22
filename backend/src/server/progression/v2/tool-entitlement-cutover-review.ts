@@ -172,7 +172,7 @@ export function previewLegacyToolEntitlementCutoverV2(
    if(proof&&(proof.kind!=='tool_copy'||proof.itemId!==copy.itemId||
       proof.objectId!==copy.instanceId))
      fail('copy_proof_mismatch');
-   if(!template)fail('unsupported_tool_snapshot');
+   if(!template)return fail('unsupported_tool_snapshot');
    if(template.tier===1)continue;
    const current=levels[template.gatheringSkill]??0;
    const audit=reviewProfessionTierCompatibilityV2(current,template.tier);

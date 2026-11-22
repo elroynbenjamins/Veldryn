@@ -246,7 +246,7 @@ function VeldrynApp(){
   const [goalRegionId,setGoalRegionId]=useState<string|undefined>();
   const [goalDungeonId,setGoalDungeonId]=useState<string|undefined>();
   const [pendingGoalDestination,setPendingGoalDestination]=useState<WorkingTowardDestination|undefined>();
-  const pendingGoalDestinationRef=useRef<WorkingTowardDestination|undefined>();
+  const pendingGoalDestinationRef=useRef<WorkingTowardDestination|undefined>(undefined);
   pendingGoalDestinationRef.current=pendingGoalDestination;
   const [worldTravelBusy,setWorldTravelBusy]=useState(false);
   const worldTravelInFlight=useRef(false);

@@ -69,3 +69,20 @@ Preview combined Forge + profession speed is capped at 20%; existing Forge runti
 - Nothing imports this into production. XP only *proposed*, not issued; no money, drops, bonuses or equipment effects minted.
 
 Next: inspect live persistence and trusted settlement boundaries; calibrate XP/hour by T1–T9; implement authenticated award ledger on staging after schema review; reconcile 2.0 class/equipment contracts; test and review UI before any deployment.
+
+
+## Refinement / Pass 3 read-only staging audit (22 Nov 2026)
+
+Verified the *staging* PostgreSQL schema using metadata queries only; no user rows or production data were read or modified:
+- public.characters(id UUID primary key, account_id, level, xp) holds current **combat** identity; never repurpose its xp/level without a coordinated migration.
+- public.character_skills(character_id, skill_id, level, xp) has unique (character_id,skill_id). Existing levels are not freely replaceable when changing XP curves.
+- public.craft_receipts has unique (character_id,idempotency_key); public.server_action_receipts is account-scoped; private.v45_progression_receipts is keyed (account_id,event_id). These are not automatically suitable as a globally unique, character-bound Career XP award ledger.
+- Existing completed crafting/processing/action source receipts must be verified and their final status checked before any Overall XP award.
+
+Refinement adds:
+1. **Legacy migration preview** preserving old earned XP and skill levels through a level+fraction conversion, using the existing mobile V1 skill curve (parity anchors for levels 50/100); Overall Character Level gets a no-regression floor from max(combat level, strongest validated profession level), not a skill sum. More generous historical achievements need separately verified and deduplicated receipts.
+2. **Journal preview** modeling exact-once rewards keyed by global (source kind, canonical source ID), with ownership, completion and payload collision checks. This is not concurrent production persistence or a trust boundary; the actual SQL transaction must be tested against real server receipts and simultaneous claims.
+3. **Review-only PostgreSQL DDL draft** at docs/operations/sql-drafts/20261122_progression_v2_character_xp_REVIEW_ONLY.sql. No migration was applied. Private tables deliberately expose no client grants, RPCs or policies and do not duplicate live profession XP.
+4. **More tests** for partial-progress migration, unchanged original XP, unauthorized alternate-character claims, repeat-collision tampering, source mismatches, zero combat stat contribution and integer overflow.
+
+**Still required before any deployment:** confirm source completion + overall XP update in the same DB transaction, reconcile 2.0 class/profession duplicate definitions, benchmark XP/hour including AFK, cover actual combat reward canonical IDs, game-owner approval of UI and themes, and stage disposable PG17 concurrency/rollback tests. No live or player-facing UI changes are authorized in this pass.

@@ -8,6 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
+import {FROSTFALL_ENDURANCE_GENERATOR,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss,FROSTFALL_DAILY_REWARDED_CLEARS} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -64,7 +65,7 @@ export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultip
 
 export function effectiveEventNode(run:EventRun,node:CoopRouteNode):EffectiveEventNode{
  const next:EffectiveEventNode={...node};
- if(!['event-route-v4','event-route-v5'].includes(run.graph.generatorVersion)||node.kind==='entry'||node.kind==='boss')return next;
+ if(!['event-route-v4','event-route-v5',FROSTFALL_ENDURANCE_GENERATOR].includes(run.graph.generatorVersion)||node.kind==='entry'||node.kind==='boss')return next;
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),battleLike=node.kind==='battle'||node.kind==='elite';
  const title=()=>next.title??next.kind.charAt(0).toUpperCase()+next.kind.slice(1);
  const prefix=(label:string)=>{next.title=`${label}: ${title()}`;next.reactionLabel=label;};
@@ -118,6 +119,7 @@ function healBeforeBoss(state:PersistentRunState,players:readonly CombatantDefin
 
 function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const definition=definitionFor(eventId),prefix=definition.encounterPrefix,boss=definition.bossEncounterId,count=definition.routeNodeCount;
+ if(isFrostfallEventExpedition(eventId))return generateFrostfallEnduranceGraph(definition,runId,serverSecret);
  const idsAt=(depth:number)=>[0,1,2].map(choice=>`d${depth}-c${choice}`);
  const nodes:CoopRouteNode[]=[{nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)}];
  for(let depth=1;depth<=count;depth++){
@@ -156,9 +158,13 @@ export class EventExpeditionService{
   const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='awaiting_choice')throw new Error('event_run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const baseSelected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!baseSelected)throw new Error('invalid_event_option');const selected=effectiveEventNode(run,baseSelected);
   const beforeMechanic=eventMechanicProjection(run),beforeObjective=eventObjectiveProjection(run),bossMechanic=selected.kind==='boss'?eventBossMechanicProjection(run):undefined;
+  const isFrostfallEndurance=run.graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR;
+  // Only new seasonal graphs receive depth attrition. Saved short events stay numerically identical.
+  const depthBeyondOpening=isFrostfallEndurance&&['battle','elite','boss'].includes(selected.kind)?Math.max(0,selected.depth-8):0;
+  const depthAttack=Math.pow(1.022,depthBeyondOpening),depthHp=Math.pow(1.035,depthBeyondOpening),depthDefense=Math.pow(1.012,depthBeyondOpening);
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1),enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1,bossTuning:bossMechanic?.tuning});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(result.success&&selected.kind!=='boss'){
    const definition=definitionFor(run.eventId);
@@ -166,8 +172,8 @@ export class EventExpeditionService{
    if(selected.objectiveDelta){const currentCount=run.objective?.count??definition.objective.startCount;run.objective={id:definition.objective.id,count:clamp(currentCount+selected.objectiveDelta,0,definition.objective.maxCount)};}
   }
   if(!result.success)run.phase='failed';
-  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);run.rewardMarks=eventTierRewardMarks(definition,run.tier??1)+mechanic.rewardBonus+objective.rewardBonus;}
+  if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);const tierBase=eventTierRewardMarks(definition,run.tier??1),depthMultiplier=isFrostfallEndurance?frostfallRewardMultiplierForBoss(run.graph,baseSelected):1;run.rewardMarks=Math.round(tierBase*depthMultiplier)+mechanic.rewardBonus+objective.rewardBonus;}
   this.repository.save(run);this.commandReceipts.set(receiptKey,{hash,run:structuredClone(run)});return structuredClone(run);
  }
- claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=2)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
+ claimReward(input:{runId:string;accountId:string;requestId:string;nowMs?:number}):{marks:number;idempotentReplay:boolean}{const key=`${input.accountId}:${input.requestId}`,prior=this.claims.get(key);if(prior)return{marks:prior.marks,idempotentReplay:true};const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='completed'||!run.rewardMarks)throw new Error('event_reward_not_ready');if(run.settlement==='claimed')return{marks:run.rewardMarks,idempotentReplay:true};const day=new Date(input.nowMs??Date.now()).toISOString().slice(0,10),dailyKey=`${input.accountId}:${run.eventId}:${day}`,used=this.dailyClears.get(dailyKey)??0;if(used>=FROSTFALL_DAILY_REWARDED_CLEARS)throw new Error('event_daily_clear_limit');this.dailyClears.set(dailyKey,used+1);run.settlement='claimed';this.repository.save(run);const result={marks:run.rewardMarks,idempotentReplay:false};this.claims.set(key,{marks:result.marks});return result;}
 }

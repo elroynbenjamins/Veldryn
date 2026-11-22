@@ -96,6 +96,7 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'combat_v2_enemy_authority_','combat_v2_solo_',
   'enemy-v2-prototype-1','issueEnemyV2EngineAuthority',
   'prepareSoloEnemyKitsV2','SoloEncounterPersistenceServiceV2',
+  'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

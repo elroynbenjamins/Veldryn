@@ -71,6 +71,7 @@ throws(()=>projectServerSettlementV2({...proof,professionId:'mining'}),/invalid_
 throws(()=>projectServerSettlementV2({...proof,source:'combat_reward',professionId:'smithing'}),/invalid_skill_source/,'combat cannot also grant profession XP');
 throws(()=>previewApplyJournalAwardV2(first.state,projectServerSettlementV2({...proof,baseEffortSeconds:600})),/receipt_collision/,'same receipt changed payload');
 throws(()=>previewApplyJournalAwardV2(first.state,projectServerSettlementV2({...proof,ownerCharacterId:c2,receivingCharacterId:c2})),/receipt_collision/,'same source cannot migrate to alt');
+throws(()=>projectServerSettlementV2({source:'gathering_claim',sourceId:'idle_000001',ownerCharacterId:c1,receivingCharacterId:c1,completed:true,professionId:'mining',baseEffortSeconds:108000,difficultyBasisPoints:10000}),/exceeds_db_cap/,'30h AFK reserve must be split into <=24h source claims');
 const combat=projectServerSettlementV2({
   source:'combat_reward',sourceId:'boss_0000001',ownerCharacterId:c2,receivingCharacterId:c2,
   completed:true,baseEffortSeconds:300,difficultyBasisPoints:5000,

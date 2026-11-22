@@ -255,6 +255,13 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    favorite={isFavorite(previewStack)} locked={isLocked(previewStack)}
    onToggleFavorite={previewStack&&onAction?()=>toggleFavorite(previewStack):undefined}
    onToggleLock={previewStack&&onAction?()=>toggleLock(previewStack):undefined}
+   onMoveToInventory={previewStack&&onAction?async()=>{
+     if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
+     const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'inventory'}}
+       :{type:'equipment_pouch_move',args:{itemId:previewStack.itemId,quantity:1,from:'equipment_pouch',to:'inventory'}});
+     if(result===false)throw new Error('Equipment transfer failed. Check Inventory space and try again.');
+     setPreviewStack(null);
+   }:undefined}
    onMoveToBank={previewStack&&onAction?async()=>{
      if(!previewStack||!onAction)throw new Error('Equipment transfer is unavailable.');
      const result=await onAction(previewStack.instanceId?{type:'gear_move',args:{instanceId:previewStack.instanceId,to:'bank'}}
@@ -281,10 +288,12 @@ export function EquipmentPouchPanel({state,busy=false,onAction,onNavigate}:{stat
    quickActions={selected?<View style={s.detailFooter}>
     {!!transferError?<Text accessibilityRole="alert" style={s.saleWarning}>{p(transferError)}</Text>:null}
     <GameButton title={p('Compare & Equip')} disabled={!onAction||busy} onPress={()=>{setPreviewStack(selected);setSelectedIndex(null);setTransferError('')}}/>
-    <GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/>
+    <View style={s.transferRow}>
+     <View style={s.transferAction}><GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/></View>
+     <View style={s.transferAction}><GameButton compact title={p('To Bank')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('bank')}/></View>
+    </View>
    </View>:undefined}
-   actions={selected?<View style={s.detailActions}>
-    <GameButton compact title={p('To Inventory')} tone="secondary" disabled={!onAction||busy} loading={busy} onPress={()=>move('inventory')}/>
+   disposalActions={selected?<View style={s.detailActions}>
     <View style={s.transferRow}>
      <View style={s.transferAction}><GameButton compact title={p('Sell copy')} tone="secondary" disabled={!onAction||busy||!saleCandidate?.eligible} onPress={()=>{if(saleCandidate)startSale([saleCandidate.id])}}/></View>
      <View style={s.transferAction}><GameButton compact title={p('Salvage copy')} tone="danger" disabled={!onAction||busy||!salvageCandidate?.eligible} onPress={()=>{if(salvageCandidate)startSalvage([salvageCandidate.id])}}/></View>

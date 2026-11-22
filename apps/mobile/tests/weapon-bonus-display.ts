@@ -12,8 +12,8 @@ check(one.length===2&&one.some(row=>row.stat==='haste'&&row.deltaBps===50)&&one.
   'Equal stat pools must compare exact before/after bonus values, not total character power');
 check(weaponBonusDisplayPercent(0)==='—'&&weaponBonusDisplayPercent(80)==='+0.8%',
   'Missing and present bonus values need a readable distinction');
-check(weaponBonusDisplayDelta(50)==='+0.5 pp'&&weaponBonusDisplayDelta(-20)==='−0.2 pp'
-  &&weaponBonusDisplayDelta(0)==='—','Bonus delta is percentage points, including losses');
+check(weaponBonusDisplayDelta(50)==='+0.5%'&&weaponBonusDisplayDelta(-20)==='−0.2%'
+  &&weaponBonusDisplayDelta(0)==='—','Bonus deltas show the numeric difference between percent bonuses as % while preserving losses');
 
 const removed=weaponBonusComparisonRows([{stat:'critRate',basisPoints:150}],[]);
 check(removed.length===1&&removed[0].deltaBps===-150&&removed[0].afterBps===0,

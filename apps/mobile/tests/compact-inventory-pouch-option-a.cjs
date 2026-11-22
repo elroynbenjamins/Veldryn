@@ -33,13 +33,13 @@ test('Option A shows selection-first Gear controls only on narrow screens',()=>{
  assert.ok(pouch.includes("p('Protected')"),'compact selection identifies protected copies');
 });
 
-test('compact comparison promotes Bank transfer but keeps equip pinned',()=>{
- assert.ok(compare.includes('compactPinnedBank=width<380;'),'full-size comparison remains unchanged');
- assert.ok(compare.includes('(!compactPinnedBank&&onMoveToBank)'),'Bank action omitted from redundant compact disclosure');
- assert.ok(compare.includes('onMoveToBank&&!compactPinnedBank?<View'),'only wide view shows disclosure transfer');
- assert.ok(compare.includes("compactPinnedBank&&onMoveToBank?<GameButton compact title={gearText('Move to Bank')}"),'Bank action available in compact footer');
+test('approved comparison exposes transfers and disposal at all sizes',()=>{
+ assert.ok(compare.includes('hasStorageActions?<View style={s.footerActionRow}'),'storage stays visible above the divider');
+ assert.ok(compare.includes('hasDisposalActions?<View style={s.footerDisposal}'),'Sell and Salvage stay visible below the divider');
+ assert.ok(!compare.includes('compactPinnedBank')&&!compare.includes('actionsOpen'),'comparison has no hidden action drawer at any width');
  assert.ok(compare.includes("if(!onMoveToBank||busy)return;"),'Bank transfer retains pending guard');
  assert.ok(compare.includes("loading={busy&&busyAction==='bank'} disabled={busy}"),'footer is not repeatedly submitable');
+ assert.ok(compare.includes('onMoveToInventory'),'Gear Pouch comparison can return a copy directly to Inventory');
 });
 
 test('compact Inventory controls remain reachable without changing full-size sizing',()=>{

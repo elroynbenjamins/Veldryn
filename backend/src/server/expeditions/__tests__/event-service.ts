@@ -94,6 +94,21 @@ const frostCompleted=frostEnduranceService.choose({runId:frostRun.id,accountId:'
 assert.equal(frostCompleted.phase,'completed');
 assert.equal(frostCompleted.rewardMarks,eventTierRewardMarks(frostfall,1)+frostBefore.rewardBonus+frostObjective.rewardBonus);
 assert.equal(frostEnduranceService.claimReward({runId:frostCompleted.id,accountId:'a',requestId:'frost-endurance-claim',nowMs:now}).marks,frostCompleted.rewardMarks);
+const practiceService=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-practice-endurance');
+let practiceRun=practiceService.start({requestId:'frost-practice-start',runId:'frost-practice-run',accountId:'a',eventId:frostfall.id,practiceOnly:true,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
+assert.equal(practiceRun.practiceOnly,true,'practice-only entitlement is frozen on the run');
+for(let depth=1;depth<=7;depth++){
+ const current=practiceRun.graph.nodes.find(node=>node.nodeId===practiceRun.currentNodeId)!;
+ const selected=current.nextNodeIds.map(id=>practiceRun.graph.nodes.find(node=>node.nodeId===id)!).find(node=>node.kind==='battle')!;
+ practiceRun=practiceService.choose({runId:practiceRun.id,accountId:'a',optionNodeId:selected.nodeId,requestId:'frost-practice-step-'+depth});
+ assert.equal(practiceRun.phase,'awaiting_choice');
+}
+practiceRun=practiceService.choose({runId:practiceRun.id,accountId:'a',optionNodeId:'d8-c2',requestId:'frost-practice-exit'});
+assert.equal(practiceRun.phase,'completed');
+assert.equal(practiceRun.rewardMarks,0,'no event currency is generated after both rewarded clears');
+assert.equal(practiceRun.settlement,'claimed','practice completion never creates an unclaimable pending reward');
+assert.throws(()=>practiceService.claimReward({runId:practiceRun.id,accountId:'a',requestId:'frost-practice-claim',nowMs:now}),/event_reward_not_ready/);
+
 
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});

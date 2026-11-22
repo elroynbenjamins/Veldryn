@@ -70,6 +70,35 @@ function assertNestedAuthority(
     top.expectedGameRevision!==nested.expectedGameRevision)
    throw Error('career_game_v2_nested_source_mismatch');
 }
+/**
+ * Both projectors must consume the exact same source-owned queue when one
+ * claim contains gathering and combat. Validating only matching request hashes
+ * is insufficient: an independently truncated or modified nested array could
+ * describe a different activity at the same ordinal.
+ *
+ * Combat-only fields (kills and active effort) are intentionally excluded
+ * because gathering projection does not read them. The common reward identity
+ * MUST be identical at every original ordinal, even for excluded segments.
+ * This is a hidden pre-commit consistency check, not DB authorization.
+ */
+function assertSharedClaimSegmentsV2(
+ gathering:TrustedOnlineGameSettlementV2,
+ combat:TrustedCombatProofContextV2,
+):void {
+ if(gathering.segments.length!==combat.segments.length)
+   throw Error('career_game_v2_mixed_queue_mismatch');
+ for(let index=0;index<gathering.segments.length;index++){
+   const left=gathering.segments[index];
+   const right=combat.segments[index];
+   if(!left?.activity||!left.reward||!right?.activity||!right.reward||
+     left.activity.kind!==right.activity.kind||
+     left.activity.targetId!==right.activity.targetId||
+     left.activity.lastClaimAtMs!==right.activity.lastClaimAtMs||
+     left.reward.xp!==right.reward.xp||
+     left.reward.elapsedSeconds!==right.reward.elapsedSeconds)
+     throw Error('career_game_v2_mixed_queue_mismatch');
+ }
+}
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const REQUEST=/^[A-Za-z0-9_-]{8,128}$/;
 const HASH=/^[0-9a-f]{64}$/;
@@ -83,6 +112,8 @@ export async function projectCombinedGameCareerProofsV2(
    typeof source.commandType!=='string'||typeof source.adminQa!=='boolean')
    throw Error('career_game_v2_invalid_game_command');
  if(source.adminQa)return [];
+ if(source.gathering&&source.combat)
+   assertSharedClaimSegmentsV2(source.gathering,source.combat);
  const output:PendingGameCareerProofV2[]=[];
  if(source.gathering){
    assertNestedAuthority(source,{

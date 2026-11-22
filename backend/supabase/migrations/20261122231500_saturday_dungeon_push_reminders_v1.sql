@@ -191,13 +191,13 @@ revoke all on function private.dispatch_saturday_dungeon_push_v1(timestamptz) fr
 grant execute on function private.dispatch_saturday_dungeon_push_v1(timestamptz) to service_role;
 
 create or replace function private.expo_push_accepted_v1(p_status integer,p_body text)
-returns boolean language plpgsql stable set search_path=pg_catalog,pg_temp as $
+returns boolean language plpgsql stable set search_path=pg_catalog,pg_temp as $$
 begin
   if p_status not between 200 and 299 then return false; end if;
   return coalesce((p_body::jsonb #>> '{data,status}')='ok',false);
 exception when others then return false;
 end;
-$;
+$$;
 revoke all on function private.expo_push_accepted_v1(integer,text) from public,anon,authenticated;
 
 create or replace function private.reconcile_saturday_dungeon_push_v1(p_at timestamptz default now())

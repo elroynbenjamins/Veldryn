@@ -57,7 +57,7 @@ import {skillNavigatorText} from '../i18n/skill-navigator';
 import {gatheringToolsFor} from '../content/gathering-tools';
 import {equippedGatheringTools,equippedGatheringToolRoll,gatheringToolEffects} from '../core/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent,gatheringToolTotalBreakdown} from '../core/gathering-tool-presentation';
-import {gatheringToolBonusLabel,validateGatheringToolRoll} from '../core/gathering-tool-rolls';
+import {validateGatheringToolRoll} from '../core/gathering-tool-rolls';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {DisclosureMark} from '../components/DisclosureControl';
 import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
@@ -141,7 +141,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
       const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
       const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToo
-        {mode==='gathering'&&<Panel style={s.toolPanel}>
+        {mode==='gathering'&&gatheringToolsFor(gatheringSkill).length>0&&<Panel style={s.toolPanel}>
           <Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})}
             accessibilityState={{expanded:!!openTools[sk.skillId]}}
             onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);setExpandedToolDetailId(null);setToolMathOpen(false);}}
@@ -222,7 +222,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
                 <View style={s.toolDetailCell}><Text style={s.toolMetricLabel}>{gt('Tier speed bonus')}</Text><Text style={s.toolDetailValue}>{gatheringToolPercent(contribution.adjustedBasePercent)}%</Text></View>
                 <View style={s.toolDetailCell}><Text style={s.toolMetricLabel}>{gt('Tool roll')}</Text><Text style={s.toolDetailValue}>{equipped?equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality:gt('Legacy · Q50'):gt('Not equipped')}</Text></View>
               </View>
-              {equipped?<Text style={s.toolEffect}>{equippedCopy?gatheringToolBonusLabel(equippedCopy):gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>:null}
+              {equipped?<Text style={s.toolEffect}>{equippedCopy?'+'+gatheringToolPercent(equippedCopy.bonus.basisPoints/100)+'% '+gt(equippedCopy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance'):gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>:null}
               <Text style={s.toolRequirement}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
               {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
               <Text style={s.toolRequirement}>{gl(tool.skillId)} {tool.unlockLevel} · {gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
@@ -239,7 +239,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
               {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}>
                 <Text style={s.toolRequirement}>{gt('Owned copies')} · {gt('Select a tool roll to equip')}</Text>
                 {ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={[s.toolCopyOption,compactTools&&s.toolCopyOptionCompact]}>
-                  <Text style={[s.toolRequirement,{flex:1}]} numberOfLines={3}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>
+                  <Text style={[s.toolRequirement,{flex:1}]} numberOfLines={3}>{copy?copy.rarity+' · Q'+copy.quality+' · +'+gatheringToolPercent(copy.bonus.basisPoints/100)+'% '+gt(copy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance')+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':gt('Legacy · Uncommon · Q50 · Base bonus only')}</Text>
                   <View style={s.toolCopyAction}><GameButton compact title={equipped?gt('Replace'):gt('Equip copy')} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View>
                 </View>)}
               </View>:null}

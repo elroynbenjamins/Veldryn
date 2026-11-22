@@ -135,6 +135,15 @@ async function main(){
   boss:'seer',phase:'ash_veil',enemyId:'GX_seer_ash_veil',
   events:[{atMs:1,type:'cast_complete',actorId:'GX_seer_ash_veil',abilityId:'GX_SEER_ASH'}],
  }), 'resolve_without_cast');
+ const abandoned=observedGuildPveV17Cues({
+  boss:'seer',phase:'ash_veil',enemyId:'GX_seer_ash_veil',
+  events:[
+   {atMs:1,type:'cast_start',actorId:'GX_seer_ash_veil',abilityId:'GX_SEER_ASH'},
+   {atMs:5500,type:'cast_start',actorId:'GX_seer_ash_veil',abilityId:'GX_SEER_ASH'},
+   {atMs:6600,type:'cast_complete',actorId:'GX_seer_ash_veil',abilityId:'GX_SEER_ASH'},
+  ],
+ });
+ assert.deepEqual(abandoned.map(c=>c.kind),['warning','warning','resolve']);
  rejection(()=>observedGuildPveV17Cues({
   boss:'seer',phase:'ash_veil',enemyId:'GX_seer_ash_veil',
   events:[{atMs:1,type:'cast_start',actorId:'GX_seer_ash_veil',abilityId:'GX_SEER_ASH'},

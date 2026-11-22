@@ -15,6 +15,7 @@ import {
  type FrozenEquipmentTraitItemReceiptV2,type TrustedEquipmentTraitReceiptPortV2
 } from '../equipment-trait-exact-copy-adapter';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
+import {reviewEquipmentMatchedCounterplayV2} from '../counterplay-outcome-review';
 
 const bosses=[
  {id:'BOSS_EXP_ROOT',region:'asterfall',name:'Asterfall Root',tier:2,level:25},
@@ -123,7 +124,11 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number]){
  return {build,runtime,port:verifiedPort,input,storedKit,receipt,expected:predicted};
 }
 let runs=0,traitEvents=0,sourceTests=0;
-let pairedVariantRuns=0,observedEventDifferences=0;
+let pairedVariantRuns=0,observedEventDifferences=0,observedOutcomeDifferences=0;
+const outcomeMetricsByBoss=new Map<string,{
+ samples:number;meaningfulChanges:number;moreDamage:number;lessDamage:number;
+ moreHp:number;lessHp:number;moreInterrupts:number;moreCleanses:number;
+}>();
 const variantByBoss=new Map<string,{samples:number;differentEvents:number;variantSkillCasts:number}>();
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
@@ -162,8 +167,29 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     'Ability variant must not alter persisted equipped copies or compiler stat stages');
    assert.deepEqual(alternateResult.enemyMechanicLabels,first.enemyMechanicLabels,
     'Both tactical choices must face exactly the same authored boss');
-   assert.equal(compileExactEquipmentTraitSourceV2(alternate,runtime,port).equipmentReceiptDigest,
+   const alternateReceipt=compileExactEquipmentTraitSourceV2(alternate,runtime,port);
+   assert.equal(alternateReceipt.equipmentReceiptDigest,
     expected.equipmentReceiptDigest,'selected gear receipts must remain identical');
+   const outcome=reviewEquipmentMatchedCounterplayV2({
+    baseline:first,tactic:alternateResult,
+    baselineEquipmentReceiptDigest:expected.equipmentReceiptDigest,
+    tacticalEquipmentReceiptDigest:alternateReceipt.equipmentReceiptDigest,
+    seed:input.seed,bossId:boss.id,actorId:input.players[0].id,
+   });
+   const out=outcomeMetricsByBoss.get(boss.id)??{
+    samples:0,meaningfulChanges:0,moreDamage:0,lessDamage:0,moreHp:0,
+    lessHp:0,moreInterrupts:0,moreCleanses:0,
+   };
+   out.samples++;
+   out.meaningfulChanges+=Number(outcome.changedActualOutcomes);
+   out.moreDamage+=Number(outcome.deltaDamageDone>0);
+   out.lessDamage+=Number(outcome.deltaDamageDone<0);
+   out.moreHp+=Number(outcome.deltaPlayerHp>0);
+   out.lessHp+=Number(outcome.deltaPlayerHp<0);
+   out.moreInterrupts+=Number(outcome.deltaInterrupts>0);
+   out.moreCleanses+=Number(outcome.deltaDebuffsCleansed+outcome.deltaDotsCleansed>0);
+   outcomeMetricsByBoss.set(boss.id,out);
+   observedOutcomeDifferences+=Number(outcome.changedActualOutcomes);
    assert.ok(alternateResult.combat.events.length<5000);
    const changed=JSON.stringify(first.combat.events)!==JSON.stringify(alternateResult.combat.events);
    const casts=alternateResult.combat.events.filter(e=>e.actorId===input.players[0].id&&
@@ -206,9 +232,14 @@ assert.equal(variantByBoss.size,6,'one pair coverage group per authored regional
 assert.ok([...variantByBoss.values()].every(x=>x.samples===18),
  'every regional boss must face all 18 class specializations');
 assert.ok(observedEventDifferences>0,
- 'at least one ability variant changes real combat events in signed gear simulation');
-console.log(JSON.stringify({kind:'EQUIPMENT_BACKED_VARIANT_SENSITIVITY_NOT_EQUAL_CP',
+ 'at least one ability variant changes event trace, which alone is not a combat outcome');
+assert.equal(outcomeMetricsByBoss.size,6);
+assert.ok([...outcomeMetricsByBoss.values()].every(row=>row.samples===18));
+console.log(JSON.stringify({kind:'EQUIPMENT_MATCHED_OUTCOME_DIAGNOSTICS_NOT_EQUAL_CP',
  matchedPairs:pairedVariantRuns,changedEventStreams:observedEventDifferences,
+ changedActualOutcomes:observedOutcomeDifferences,
+ byBoss:Object.fromEntries([...outcomeMetricsByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
+console.log(JSON.stringify({kind:'SKILL_EVENT_IDS_NOT_BALANCE_PROOF',
  byBoss:Object.fromEntries([...variantByBoss.entries()].sort(([a],[b])=>a.localeCompare(b)))}));
 assert.ok(traitEvents>0,'At least some real skill or reflect event should trigger');
 assert.equal(sourceTests,30);

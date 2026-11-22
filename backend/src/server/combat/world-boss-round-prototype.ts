@@ -226,9 +226,12 @@ function simulateWorldBossCore(
    const preEquipment=money(damage*tonic.outgoing*
     (weak?1.10*camp.weakPointMultiplier:1)*
     (round<=bossVulnerabilityThrough?1+bossVulnerability:1));
-   // The original, post-mitigation hit alone receives the new 2.0 channel.
-   // Status ticks and generated trait hits never multiply or proc again.
-   const direct=!tags.dot&&equipment?
+   // Only the original actor-owned class-skill or ordinary BASIC action
+   // qualifies. DoT ticks, companion/gem/passive echoes and fake ability IDs
+   // cannot borrow the same actor's equipment rolls to create extra HP.
+   const originalClassHit=abilityId==='BASIC'||actor.def.abilities.some(a=>
+    a.id===abilityId&&a.effects.some(e=>e.kind==='damage'));
+   const direct=!tags.dot&&originalClassHit&&equipment?
     equipment.originalDirectHit(round,actor.def.id,bossName(input.boss),
      abilityId,preEquipment):undefined;
    const enhanced=money(direct?.damage??preEquipment);
@@ -244,7 +247,7 @@ function simulateWorldBossCore(
    const hp=money(Math.max(0,enhanced-(absorbed/guardCoeff)));
    bossHpDamage=money(bossHpDamage+hp);ledger[actor.def.id].bossHpDamage=money(ledger[actor.def.id].bossHpDamage+hp);
    emit({round,type:'strike',actorId:actor.def.id,targetId:bossName(input.boss),abilityId,amount:hp,guardAbsorbed:absorbed,detail:crit?'crit':undefined});
-   if(!tags.dot&&abilityId!=='BASIC'&&equipment){
+   if(!tags.dot&&originalClassHit&&abilityId!=='BASIC'&&equipment){
     const echo=equipment.skillEcho(round,actor.def.id,abilityId,hp,actor.def.stats.attackPower);
     if(echo)applyEquipmentDamage(round,actor.def.id,echo);
    }

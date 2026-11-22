@@ -1,0 +1,177 @@
+/**
+ * Party Events V92: HIDDEN / QA-ONLY Combat 2.0 equipment trait bridge.
+ *
+ * This composes the *actual* V2 equipment trait engine (not an estimated
+ * multiplier) with the V90 authored Party boss. It accepts only a fully
+ * compiled party actor + source-owned equipped receipt snapshot AND an
+ * independently persisted new-run Party event witness.
+ *
+ * The trusted verifier is deliberately NOT implemented here. It must be
+ * supplied later by a privileged, transactional DB adapter, NEVER by HTTP
+ * input. No existing Party event / solo/dungeon entrypoint imports this file.
+ */
+import {simulateCombat} from '../combat/engine';
+import type {CombatInput,CombatResult} from '../combat/types';
+import {enemyV2SnapshotDigest} from '../combat/v2/enemy-engine-authority';
+import {
+ issueEquipmentV2TraitAuthority,
+ type VerifiedV2EquipmentEffectSource,
+} from '../combat/v2/equipment-trait-engine-authority';
+import {
+ PARTY_EVENT_BOSS_TRAITS_V90_VERSION,
+ type PartyBossTraitV90,
+} from './weekly-party-boss-traits-v90';
+import type {WeeklyPartyFamily,WeeklyPartyDifficulty} from './weekly-party-events-v2';
+
+export const PARTY_EVENT_EQ2_TRAIT_V92_RELEASED=false;
+export const PARTY_EVENT_EQ2_TRAIT_V92_VERSION='party-event-eq2-traits-v92' as const;
+export const PARTY_EVENT_EQ2_TRAIT_V92_MAX_MS=90_000;
+export const PARTY_EVENT_EQ2_TRAIT_V92_SETTLE_GRACE_MS=3_600_000;
+
+export interface FrozenPartyEventV92Witness {
+ readonly source:'server-persisted-party-boss-v92';
+ readonly ruleset:typeof PARTY_EVENT_EQ2_TRAIT_V92_VERSION;
+ readonly phaseKitVersion:typeof PARTY_EVENT_BOSS_TRAITS_V90_VERSION;
+ readonly mode:'new-run-only';
+ readonly encounterId:string;
+ readonly eventId:string;
+ readonly partyId:string;
+ readonly family:WeeklyPartyFamily;
+ readonly difficulty:WeeklyPartyDifficulty;
+ readonly tier:number;
+ readonly revision:number;
+ readonly seed:string;
+ readonly weekStartsAtMs:number;
+ readonly weekEndsAtMs:number;
+ readonly frozenAtMs:number;
+ readonly settlementAtMs:number;
+ readonly roster:readonly {
+  readonly accountId:string;
+  readonly characterId:string;
+  readonly actorId:string;
+  readonly receiptRevision:number;
+  readonly equipmentReceiptDigest:string;
+ }[];
+}
+export interface VerifiedPartyEventV92Ports {
+ /** Server-private: must lock/read the canonical, immutable V11/V18/V23/V87
+  * event + victory/tier certificate, verified actor builds, exact worn items,
+  * and their receipt revisions. The callback does NOT make itself trusted. */
+ readonly verifyPersisted:(
+  witness:FrozenPartyEventV92Witness,
+  sources:readonly VerifiedV2EquipmentEffectSource[],
+  fullEncounterDigest:string,
+ )=>boolean;
+}
+const bossProfiles:Readonly<Record<WeeklyPartyFamily,{
+ name:string;trait:PartyBossTraitV90;phase70:string;phase35:string;
+}>>={
+ broken_caravan:{name:'Roadbreaker Captain',trait:'roadbreaker_rally',
+  phase70:'PE_V90_CARAVAN_FORMATION',phase35:'PE_V90_CARAVAN_LAST_STAND'},
+ nightfall_hunt:{name:'Nightfall Alpha',trait:'nightfall_rend',
+  phase70:'PE_V90_NIGHTFALL_SHROUD',phase35:'PE_V90_NIGHTFALL_LAST_HUNT'},
+ broken_wards:{name:'The Unbound Guardian',trait:'runebound_ward',
+  phase70:'PE_V90_WARD_IGNITION',phase35:'PE_V90_WARD_FRACTURE'},
+ lost_reliquary:{name:'Reliquary Sentinel',trait:'reliquary_mirror',
+  phase70:'PE_V90_RELIQUARY_REFLECTION',
+  phase35:'PE_V90_RELIQUARY_FRACTURED_MIRROR'},
+};
+const id=(v:unknown):v is string=>typeof v==='string'&&
+ v.length>0&&v.length<=128&&/^[A-Za-z0-9:_-]+$/.test(v);
+const digest=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
+const num=(v:unknown):v is number=>typeof v==='number'&&Number.isSafeInteger(v);
+const unique=(xs:readonly string[])=>new Set(xs).size===xs.length;
+const fail=(why:string):never=>{throw Error('party_event_v92_'+why);};
+function checkWitness(w:FrozenPartyEventV92Witness){
+ if(!w||w.source!=='server-persisted-party-boss-v92'||
+  w.ruleset!==PARTY_EVENT_EQ2_TRAIT_V92_VERSION||
+  w.phaseKitVersion!==PARTY_EVENT_BOSS_TRAITS_V90_VERSION||
+  w.mode!=='new-run-only'||!id(w.encounterId)||!id(w.eventId)||
+  !id(w.partyId)||!Object.prototype.hasOwnProperty.call(bossProfiles,w.family)||
+  !['standard','veteran','heroic'].includes(w.difficulty)||
+  !num(w.tier)||w.tier<1||w.tier>12||
+  !num(w.revision)||w.revision<1||
+  typeof w.seed!=='string'||w.seed.length<1||w.seed.length>256||
+  !num(w.weekStartsAtMs)||!num(w.weekEndsAtMs)||
+  w.weekEndsAtMs-w.weekStartsAtMs!==7*86_400_000||
+  !num(w.frozenAtMs)||w.frozenAtMs<w.weekStartsAtMs||
+  w.frozenAtMs>=w.weekEndsAtMs||
+  !num(w.settlementAtMs)||w.settlementAtMs<
+     w.weekEndsAtMs+PARTY_EVENT_EQ2_TRAIT_V92_SETTLE_GRACE_MS||
+  !Array.isArray(w.roster)||w.roster.length<2||w.roster.length>4)
+  fail('invalid_frozen_new_run_witness');
+ const rows=w.roster;
+ if(!unique(rows.map(r=>r.accountId))||!unique(rows.map(r=>r.characterId))||
+   !unique(rows.map(r=>r.actorId))||rows.some(r=>!id(r.accountId)||
+   !id(r.characterId)||!id(r.actorId)||!num(r.receiptRevision)||
+   r.receiptRevision<1||!digest(r.equipmentReceiptDigest)))
+  fail('invalid_or_duplicate_party_roster');
+}
+function checkBoss(input:CombatInput,w:FrozenPartyEventV92Witness){
+ const boss=input.enemies?.[0],profile=bossProfiles[w.family];
+ if(!Array.isArray(input.enemies)||input.enemies.length!==1||!boss||
+  boss.id!=='PARTY_EVENT_BOSS'||boss.team!=='enemies'||
+  boss.role!=='enemy'||boss.boss!==true||boss.name!==profile.name||
+  !Array.isArray(boss.tags)||!boss.tags.includes('party-event:boss-traits:v90')||
+  !boss.tags.includes('party-event:boss-family:'+w.family)||
+  boss.tags.some(tag=>tag.startsWith('enemy-v2:'))||
+  boss.abilities.length!==2||boss.phases?.length!==2||
+  boss.phases[0].id!==profile.phase70||boss.phases[1].id!==profile.phase35||
+  boss.phases[0].hpPct!==.7||boss.phases[1].hpPct!==.35||
+  !boss.abilities.every(a=>a.interruptible===true&&a.castTimeMs>=800&&
+    a.effects.every(e=>e.damageType!=='true'&&(e.shieldReflectPct??0)===0))||
+  boss.phases.some(p=>p.effects.some(e=>
+    (e.shieldReflectPct??0)!==0||
+    (e.kind==='shield'&&(e.flat??0)>Math.round(boss.stats.maxHp*.04)))))
+  fail('untrusted_or_unbounded_v90_boss');
+}
+/**
+ * Experimental execution for a server-frozen NEW 2.0 Party Event only.
+ * Real trait hooks run in the existing engine, with the shared boss reflect
+ * budget and no proc recursion. No equipment bonuses are applied twice here:
+ * player stats MUST already be compiled from source-owned EQ2 originals.
+ *
+ * Even correct code + a QA fake verifier does not certify a real DB result.
+ */
+export function simulateFrozenPartyEventEquipmentV92(input:{
+ readonly witness:FrozenPartyEventV92Witness;
+ readonly combat:CombatInput;
+ readonly sources:readonly VerifiedV2EquipmentEffectSource[];
+ readonly ports:VerifiedPartyEventV92Ports;
+},qaEnabled=false):CombatResult{
+ if(!qaEnabled||PARTY_EVENT_EQ2_TRAIT_V92_RELEASED||
+  process.env.NODE_ENV==='production')
+  fail('unreleased');
+ const {witness,combat,sources,ports}=input;
+ checkWitness(witness);
+ if(!ports||typeof ports.verifyPersisted!=='function'||
+   !combat||combat.seed!==witness.seed||
+   combat.maxDurationMs!==PARTY_EVENT_EQ2_TRAIT_V92_MAX_MS||
+   combat.tickMs!==undefined||combat.mitigationConstant!==undefined||
+   combat.accuracyScale!==undefined||combat.initialPlayerState!==undefined||
+   combat.enemyDamageProfile!==undefined||
+   !Array.isArray(combat.players)||combat.players.length!==witness.roster.length||
+   !Array.isArray(sources)||sources.length!==combat.players.length||
+   !unique(combat.players.map(p=>p.id))||
+   combat.players.some((p,i)=>p.team!=='players'||p.role==='enemy'||
+    p.combatV2?.version!==2||p.id!==witness.roster[i].actorId)||
+   sources.some((s,i)=>s.actorId!==witness.roster[i].actorId||
+    s.accountId!==witness.roster[i].accountId||
+    s.characterId!==witness.roster[i].characterId||
+    s.revision!==witness.roster[i].receiptRevision||
+    s.equipmentReceiptDigest!==witness.roster[i].equipmentReceiptDigest))
+   fail('party_equipment_snapshot_mismatch');
+ checkBoss(combat,witness);
+ const witnessDigest=enemyV2SnapshotDigest({
+  witness,combatDigest:enemyV2SnapshotDigest(combat),sources,
+ });
+ const traitAuthority=issueEquipmentV2TraitAuthority(combat,sources,
+  (verified,combatDigest)=>
+   combatDigest===enemyV2SnapshotDigest(combat)&&
+   ports.verifyPersisted(witness,verified,
+    enemyV2SnapshotDigest({witness,combatDigest,sources:verified}))===true);
+ // The entire witness + equipped source is bound to one verifier decision.
+ // QA-only returned evidence has no grant or reward authority.
+ if(witnessDigest.length!==64)fail('snapshot_digest_invalid');
+ return simulateCombat(combat,undefined,traitAuthority);
+}

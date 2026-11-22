@@ -7,6 +7,9 @@ on:
       - 'docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v2.json'
       - 'docs/equipment-2-0/T1_T4_48_SET_CRAFTING_RECONCILIATION_V2.md'
       - 'tools/test-eq2-48-set-crafting-review-v2.mjs'
+      - 'tools/test-eq2-48-set-source-reconciliation-v3.mjs'
+      - 'docs/equipment-2-0/eq2-expanded-48-set-member-authoring-v1.json'
+      - 'docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json'
       - 'backend/src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-set-synergy-review.ts'
       - 'tools/test-equipment-combat-v2-expanded-synergy.mjs'
@@ -50,6 +53,8 @@ jobs:
           node tools/validate-eq2-affix-traits-review.mjs
       - name: Validate 746 nonissuable Crafting 2.0 recipe previews and profession-only gates
         run: node tools/test-eq2-48-set-crafting-review-v2.mjs
+      - name: Verify 130 authored templates, 74 protected source links and 746 material-corrected routes
+        run: node tools/test-eq2-48-set-source-reconciliation-v3.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
           if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then

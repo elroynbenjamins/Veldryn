@@ -7,20 +7,29 @@ const read=(name)=>fs.readFileSync(path.resolve(__dirname,'../src/components',na
 const hunt=read('HuntingPreview.tsx');
 const stage=read('BattleStage.tsx');
 
-// Hit cursors retain the last strike across searches. A returning monster
-// must not replay that stale event as an apparent opening miss.
-assert.match(hunt,/const hit=lastHit;/);
-assert.match(hunt,/lastAnimatedHitAtMs\.current===hit\.atMs/);
-assert.match(hunt,/lastAnimatedHitAtMs\.current=hit\.atMs/);
-assert.doesNotMatch(hunt,/const hit=fight\?\.searching\?undefined:fight\?\.lastHit/);
+// The hit cursor retains the previous strike while searching for a new foe.
+// A finished encounter must never trigger a phantom opening attack.
+assert.ok(hunt.includes('const hit=lastHit;'));
+assert.ok(hunt.includes('lastAnimatedHitAtMs.current===hit.atMs'));
+assert.ok(hunt.includes('lastAnimatedHitAtMs.current=hit.atMs'));
+assert.ok(!hunt.includes('const hit=fight?.searching?undefined:fight?.lastHit;'));
 
-// A damage float must have an actor-matched numeric payload; no lone minus
-// when the opposite combatant was the most recent attacker.
-assert.match(hunt,/lastHit\?\.actor==='enemy'\?\`−\$\{damageText\(lastHit\.damage\)\}\`:null/);
-assert.match(hunt,/lastHit\?\.actor==='player'\?\`−\$\{damageText\(lastHit\.damage\)\}/);
-assert.doesNotMatch(hunt,/>−\{lastHit/);
-assert.match(stage,/recentHit\?\.actor==='enemy'\?\`−\$\{damageValue\(recentHit\.damage\)\}\`:null/);
-assert.match(stage,/recentHit\?\.actor==='player'\?\`−\$\{damageValue\(recentHit\.damage\)\}/);
-assert.doesNotMatch(stage,/>−\{recentHit/);
+// Every live damage float is gated by the most recent hit's actor. Damage 0
+// stays 0 (mitigated), never a negative 0 or a bare minus symbol.
+for(const source of [hunt,stage]){
+ assert.ok(source.includes('const damageFloat=(value:number)=>value>0?'));
+ assert.ok(source.includes("'0'"));
+ assert.ok(!source.includes('>−{lastHit'));
+ assert.ok(!source.includes('>−{recentHit'));
+}
+assert.ok(hunt.includes("lastHit?.actor==='enemy'?damageFloat(lastHit.damage):null"));
+assert.ok(hunt.includes("lastHit?.actor==='player'?"));
+assert.ok(stage.includes("recentHit?.actor==='enemy'?damageFloat(recentHit.damage):null"));
+assert.ok(stage.includes("recentHit?.actor==='player'?"));
 
-console.log('Live hunt damage floats require an actor-matched hit and no stale encounter replay.');
+// Alternating player/enemy strikes cancel the previous animation. Both sides
+// must reset, otherwise an interrupted impact flash can freeze indefinitely.
+assert.ok(hunt.includes('for(const value of [playerImpact,enemyImpact,playerStrike,enemyStrike,shake])'));
+assert.ok(stage.includes('for(const value of [playerLunge,enemyLunge,enemyImpact,playerImpact])'));
+
+console.log('PASS live hunt hit feedback, actor gating, zero damage and interrupted animation reset');

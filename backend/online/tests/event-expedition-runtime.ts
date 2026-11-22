@@ -8,6 +8,7 @@ import {OnlineEventExpeditionRuntime,projectOnlineEventRun} from '../event-exped
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
 import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,eventBossMechanicProjection} from '../../src/server/expeditions/event-service';
+import {FROSTFALL_ENDURANCE_GENERATOR} from '../../src/server/expeditions/frostfall-endurance';
 import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
@@ -38,8 +39,8 @@ async function main(){
  for(const [index,definition] of EVENT_EXPEDITIONS.entries()){
   const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
   const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
-  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`route length failed for ${definition.id}`);
-  assert.equal(run.graph.generatorVersion,'event-route-v5');
+  assert.equal(run.graph.preBossNodeCount,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?42:definition.routeNodeCount,`route length failed for ${definition.id}`);
+  assert.equal(run.graph.generatorVersion,definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'?FROSTFALL_ENDURANCE_GENERATOR:'event-route-v5');
   assert.equal(run.mechanic?.id,definition.mechanic.id);
   assert.equal(run.objective?.id,definition.objective.id);
   assert.equal(run.objective?.count,definition.objective.startCount);

@@ -24,6 +24,7 @@ on:
       - 'apps/mobile/tests/faith.ts'
       - 'apps/mobile/tests/exploration-balance.ts'
       - 'apps/mobile/src/core/gem-progression-v1.ts'
+      - 'backend/src/server/equipment/gems/gem-acquisition-v1.ts'
       - 'apps/mobile/tests/gem-progression-v1.ts'
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'

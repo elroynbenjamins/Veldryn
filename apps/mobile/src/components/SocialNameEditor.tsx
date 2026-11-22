@@ -35,7 +35,7 @@ export function SocialNameEditor({onNameChange}:{onNameChange?:(name:string)=>vo
  if(!accountId)return null;
  const ready=!!data&&!loading;
  const proposed=name.trim();
- const changed=!!data&&!loading&&(proposed!==data.socialName||!data.selected);
+ const changed=!!data&&!loading&&(!data.selected||proposed.toLowerCase()!==data.socialName.toLowerCase());
  const valid=isValidSocialName(name);
  const nextChange=Date.parse(data?.nextChangeAt??'');
  const locked=!!data?.selected&&Number.isFinite(nextChange)&&nextChange>Date.now();

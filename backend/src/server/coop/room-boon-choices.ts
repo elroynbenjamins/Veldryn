@@ -19,7 +19,7 @@ export type RoomBoonId=(typeof ROOM_BOON_CHOICES)[number]['id'];
 export type RoomBoonOffer=(typeof ROOM_BOON_CHOICES)[number];
 // Keep retired IDs in the catalog so persisted runs remain readable, but never
 // issue them again or allow them to be newly applied.
-const RETIRED_SUPPLY_BOONS:ReadonlySet<RoomBoonId>=new Set(['ROOM_BOON_RESERVE','ROOM_BOON_SUPPLY']);
+const RETIRED_SUPPLY_BOONS:ReadonlySet<RoomBoonId>=new Set<RoomBoonId>(['ROOM_BOON_RESERVE','ROOM_BOON_SUPPLY']);
 // Only purpose-built boon rooms prompt a second-stage choice. Treasure, camp,
 // secret and event rooms retain their own rewards without bonus buffs.
 const CHOICE_ROOM_KINDS=new Set(['shrine','forge','echo']);

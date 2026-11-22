@@ -8,8 +8,8 @@ import {type ThemeColors} from '../theme/theme';
  * An immersive presentation for authoritative combat replays and raid status.
  * This surface never starts a fight or computes damage/rewards.
  */
-export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone='dungeon',reduceMotion=false,footer,children}:PropsWithChildren<{
- visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;footer?:ReactNode;
+export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,compactHeader=false,tone='dungeon',reduceMotion=false,footer,children}:PropsWithChildren<{
+ visible:boolean;onClose:()=>void;title:string;eyebrow:string;subtitle?:string;compactHeader?:boolean;tone?:'dungeon'|'event'|'guild'|'companion';reduceMotion?:boolean;footer?:ReactNode;
 }>){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),insets=useSafeAreaInsets();
  const pulse=useRef(new Animated.Value(0)).current;
@@ -29,13 +29,13 @@ export function CombatTheaterModal({visible,onClose,title,eyebrow,subtitle,tone=
    <View pointerEvents="none" style={s.ambient}>
     <Animated.View style={[s.halo,{borderColor:accent,opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.14,.35]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.9,1.2]})}]}]}/>
    </View>
-   <View style={[s.header,{paddingTop:Math.max(insets.top,12)}]}>
-    <View style={s.heading}>
+   <View style={[s.header,compactHeader&&s.headerCompact,{paddingTop:Math.max(insets.top,12)}]}>
+    <View style={[s.heading,compactHeader&&s.headingCompact]}>
      <Text style={[s.eyebrow,{color:accent}]}>{eyebrow}</Text>
-     <Text accessibilityRole="header" numberOfLines={2} style={s.title}>{title}</Text>
+     <Text accessibilityRole="header" numberOfLines={2} style={[s.title,compactHeader&&s.titleCompact]}>{title}</Text>
      {subtitle?<Text style={s.subtitle}>{subtitle}</Text>:null}
     </View>
-    <Pressable accessibilityRole="button" accessibilityLabel="Minimize battle" onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Minimize battle" onPress={onClose} style={({pressed})=>[s.close,compactHeader&&s.closeCompact,pressed&&s.pressed]}>
      <Text style={s.closeText}>×</Text>
     </Pressable>
    </View>
@@ -52,6 +52,7 @@ function styles(C:ThemeColors){return StyleSheet.create({
  ambient:{...StyleSheet.absoluteFill,overflow:'hidden',alignItems:'center',justifyContent:'center'},
  halo:{width:310,height:310,borderRadius:160,borderWidth:56,borderColor:C.accent,backgroundColor:C.infoSurface},
  header:{flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:16,paddingBottom:12,borderBottomWidth:1,borderColor:C.line,backgroundColor:C.panel},
+ headerCompact:{paddingBottom:8},headingCompact:{gap:2},titleCompact:{fontSize:20,lineHeight:24},closeCompact:{width:44,height:44},
  heading:{flex:1,minWidth:0,gap:3},eyebrow:{fontSize:10,lineHeight:14,letterSpacing:1.2,fontWeight:'900',color:C.accent},
  title:{fontSize:21,lineHeight:26,fontWeight:'900',color:C.text},subtitle:{fontSize:11,lineHeight:16,color:C.muted},
  close:{width:46,height:46,alignItems:'center',justifyContent:'center',borderRadius:12,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},

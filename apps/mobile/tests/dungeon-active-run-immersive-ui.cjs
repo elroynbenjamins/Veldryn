@@ -8,6 +8,7 @@ const world=read('screens/WorldScreen.tsx');
 const screen=read('screens/CoopExpeditionScreen.tsx');
 const shell=read('components/coop/CoopVisualKit.tsx');
 const run=read('components/coop/CoopRunOverview.tsx');
+const theater=read('components/CombatTheaterModal.tsx');
 const browser=read('components/coop/CoopDungeonBrowser.tsx');
 const hero=read('components/coop/DungeonPreparation.tsx');
 const liveChat=read('components/coop/CoopLiveChatBar.tsx');
@@ -57,4 +58,13 @@ assert(shell.indexOf('{banner?<View style={s.banner}>')<shell.indexOf('<ScrollVi
 assert(run.indexOf('<DungeonRouteChoices')<run.indexOf('Party & formation'),'Room choices stay ahead of optional details');
 assert(run.includes('Return to dungeon list'),'Completed run still has an explicit exit');
 assert(browser.includes('accessibilityLabel={a("Back")} onPress={onBack}'),'Compact dungeon toolbar retains its navigation');
+
+// Q-Mode / Live / seasonal dungeon battles use a two-line, compact header.
+// Keep the mode in the lobby/route context, not as a third combat-header row.
+assert(run.includes("eyebrow={st('DUNGEON COMBAT')} compactHeader reduceMotion={reduceMotion}"),'Dungeon combat opts into the compact theater header');
+assert(!run.includes('subtitle={modeLabel}'),'Combat theater no longer displays Q-Mode or Live as a subtitle');
+assert(theater.includes('compactHeader?:boolean'),'Theater compact spacing is opt-in for dungeon combat only');
+assert(theater.includes('compactHeader&&s.headerCompact')&&theater.includes('compactHeader&&s.headingCompact'),'Dungeon header reduces vertical spacing');
+assert(theater.includes('closeCompact:{width:44,height:44}'),'Compact close target remains at least 44dp');
+
 console.log('PASS standalone Account Dungeon screen, immersive run and safe exit; no World dungeon tabs');

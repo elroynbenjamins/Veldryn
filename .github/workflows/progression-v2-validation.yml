@@ -6,6 +6,7 @@ on:
       - 'backend/tsconfig.progression-v2.json'
       - 'backend/package.json'
       - 'backend/tests/progression-v2-pg17-disposable.sh'
+      - 'backend/tests/progression-v2-online-commit-pg17-disposable.sh'
       - 'docs/operations/sql-drafts/20261122_progression_v2_character_xp_REVIEW_ONLY.sql'
       - '.github/workflows/progression-v2-validation.yml'
   workflow_dispatch:
@@ -63,3 +64,11 @@ jobs:
           PGDATABASE: progression_v2_disposable
           PGPASSWORD: progression_v2_local_only
         run: bash tests/progression-v2-pg17-disposable.sh
+      - name: Verify complete online state commit, career proof and XP atomicity
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: progression_v2_disposable
+          PGPASSWORD: progression_v2_local_only
+        run: bash tests/progression-v2-online-commit-pg17-disposable.sh

@@ -49,13 +49,18 @@ export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:G
  // rolls damage, predicts an outcome or delays the hunt.
  const animate=useMotionEnabled(state.settings.reduceMotion,active);
  const strike=useMemo(()=>huntStrikePresentation(dungeonCombatClassFx(state.character?.classId)),[state.character?.classId]);
+ const lastAnimatedHitAtMs=useRef<number|undefined>(undefined);
  const playerImpact=useRef(new Animated.Value(0)).current,enemyImpact=useRef(new Animated.Value(0)).current;
  const playerStrike=useRef(new Animated.Value(0)).current,enemyStrike=useRef(new Animated.Value(0)).current;
  const shake=useRef(new Animated.Value(0)).current,presence=useRef(new Animated.Value(1)).current;
  const [arenaWidth,setArenaWidth]=useState(0);
  useEffect(()=>{
-  const hit=fight?.searching?undefined:fight?.lastHit;
+  const hit=lastHit;
   if(!active||!animate||!hit){playerImpact.setValue(0);enemyImpact.setValue(0);playerStrike.setValue(0);enemyStrike.setValue(0);shake.setValue(0);return;}
+  // The replay cursor retains the previous strike while searching for the next
+  // monster. Do not replay that old strike as a phantom opening attack.
+  if(lastAnimatedHitAtMs.current===hit.atMs)return;
+  lastAnimatedHitAtMs.current=hit.atMs;
   const byPlayer=hit.actor==='player';
   const impact=byPlayer?enemyImpact:playerImpact,attack=byPlayer?playerStrike:enemyStrike;
   // A shot or spell lands after its flight; a melee blow lands at the end of the lunge.
@@ -78,7 +83,7 @@ export function HuntingPreview({state,monster,regionId,sceneOnly=false}:{state:G
   ]);
   animation.start();
   return()=>animation.stop();
- },[active,animate,fight?.searching,fight?.lastHit?.atMs,fight?.lastHit?.actor,fight?.lastHit?.critical,strike,playerImpact,enemyImpact,playerStrike,enemyStrike,shake]);
+ },[active,animate,fight?.searching,lastHit?.atMs,lastHit?.actor,lastHit?.critical,strike,playerImpact,enemyImpact,playerStrike,enemyStrike,shake]);
  // The enemy steps in when an encounter is found and falls away when it is defeated.
  const searching=!!fight?.searching;
  useEffect(()=>{

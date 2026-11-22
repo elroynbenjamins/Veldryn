@@ -11,6 +11,11 @@ import {
  preparePartyEventBossTraitKitV90,
 } from '../weekly-party-boss-traits-v90';
 import type {WeeklyPartyFamily,WeeklyPartyDifficulty} from '../weekly-party-events-v2';
+import {reviewFrozenPartyEventReplayV96} from '../weekly-party-event-replay-v96';
+import {
+ recordNonpayingPartyReviewV97,type NonpayingReviewReceiptV97,
+ type ReviewLedgerStoreV97,
+} from '../weekly-party-event-review-ledger-v97';
 import {
  PARTY_EVENT_RESULT_AUDIT_V95_RELEASED,
  reviewPartyEventCombatResultV95,
@@ -274,12 +279,99 @@ denied(()=>reviewPartyEventCombatResultV95({
 },true),'invalid_result_or_timeline');
 denied(()=>reviewPartyEventCombatResultV95(reviewInput),
  'party_event_v95_unreleased');
+// V96 must deterministically replay the exact frozen source before audit.
+const replayedReview=reviewFrozenPartyEventReplayV96(original,true);
+assert.equal(replayedReview.identicalReplay,true);
+assert.equal(replayedReview.replayCount,2);
+assert.equal(replayedReview.independentlyCertified,false);
+assert.equal(replayedReview.claimable,false);
+assert.equal(replayedReview.rewardGranted,false);
+assert.equal(replayedReview.audit.reviewDigest,review.reviewDigest);
+let verifierCalls=0;
+denied(()=>reviewFrozenPartyEventReplayV96({
+ ...original,ports:{verifyPersisted:()=>verifierCalls++===0},
+},true),'persisted_ledger_not_verified');
+denied(()=>reviewFrozenPartyEventReplayV96(original),
+ 'party_event_v96_unreleased');
 const env=process.env.NODE_ENV;
 try{
  process.env.NODE_ENV='production';
  denied(()=>simulateFrozenPartyEventEquipmentV92(original,true),
   'party_event_v92_unreleased');
 }finally{process.env.NODE_ENV=env}
+// V97 fake-only serializable transaction. This does not certify actual
+// PostgreSQL SERIALIZABLE behavior, row locks, auth, or reward settlements.
+async function testNonpayingLedgerV97():Promise<void>{
+ const saved=new Map<string,NonpayingReviewReceiptV97>();
+ const locks=new Map<string,Promise<void>>();
+ let failInsert=false;
+ const store:ReviewLedgerStoreV97={
+  async transact<T>(key:string,fn:(tx:{
+   read:(key:string)=>Promise<NonpayingReviewReceiptV97|null>;
+   insert:(r:NonpayingReviewReceiptV97)=>Promise<void>;
+  })=>Promise<T>):Promise<T>{
+   const previous=locks.get(key)??Promise.resolve();
+   let unlock:()=>void=()=>{};
+   const released=new Promise<void>(resolve=>{unlock=resolve;});
+   locks.set(key,previous.then(()=>released));
+   await previous;
+   const pending=new Map(saved);
+   try{
+    const value=await fn({
+     read:async k=>pending.get(k)??null,
+     insert:async receipt=>{
+      pending.set(receipt.key,receipt);
+      if(failInsert){failInsert=false;throw Error('qa_insert_fault');}
+     },
+    });
+    saved.clear();
+    for(const [k,v] of pending)saved.set(k,v);
+    return value;
+   }finally{unlock();}
+  },
+ };
+ assert.equal(saved.size,0);
+ failInsert=true;
+ await assert.rejects(recordNonpayingPartyReviewV97({
+  replay:replayedReview,store,
+ },true),/qa_insert_fault/);
+ assert.equal(saved.size,0,'failed insert must roll back in QA store');
+ const [winner,replayer]=await Promise.all([
+  recordNonpayingPartyReviewV97({replay:replayedReview,store},true),
+  recordNonpayingPartyReviewV97({replay:replayedReview,store},true),
+ ]);
+ assert.equal(Number(winner.newlyRecorded)+Number(replayer.newlyRecorded),1);
+ assert.deepEqual(winner.receipt,replayer.receipt);
+ assert.equal(saved.size,1);
+ assert.equal(winner.receipt.rewardGranted,false);
+ assert.equal(winner.receipt.claimable,false);
+ const ackLostRetry=await recordNonpayingPartyReviewV97({
+  replay:replayedReview,store,
+ },true);
+ assert.equal(ackLostRetry.newlyRecorded,false);
+ assert.deepEqual(ackLostRetry.receipt,winner.receipt);
+ const forgedReplay={...replayedReview,audit:{
+  ...replayedReview.audit,reviewDigest:'f'.repeat(64),
+ }};
+ await assert.rejects(recordNonpayingPartyReviewV97({
+  replay:forgedReplay,store,
+ },true),/conflicting_replay/);
+ const reusedEncounter={...replayedReview,audit:{
+  ...replayedReview.audit,eventId:'QA_WRONG_EVENT',
+ }};
+ await assert.rejects(recordNonpayingPartyReviewV97({
+  replay:reusedEncounter,store,
+ },true),/conflicting_replay/);
+ await assert.rejects(recordNonpayingPartyReviewV97({
+  replay:replayedReview,store,
+ }),/party_event_v97_unreleased/);
+ assert.equal(saved.size,1);
+ console.log('PARTY_EVENT_V96_V97_NONPAYING_REPLAY_LEDGER_PASS');
+}
+void testNonpayingLedgerV97().catch(error=>{
+ console.error(error);
+ process.exitCode=1;
+});
 console.log('PARTY_EVENT_V92_EQ2_TRAIT_MATRIX='+JSON.stringify({
  releaseReady:false,qaOnly:true,scenarios,traitEvents,totalReflect,
  phases70,phases35,losses,timeouts,baselineEvents,

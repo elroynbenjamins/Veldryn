@@ -49,7 +49,7 @@ function eventSyncLevel(definition:EventExpeditionDefinition,players:readonly Co
 const displayId=(value:string)=>value.replace(/^EVENT_[A-Z]+_BOSS_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
 
 export function eventBossMechanicProjection(run:EventRun){
- if(run.graph.generatorVersion!=='event-route-v5')return undefined;
+ if(run.graph.generatorVersion!=='event-route-v5'&&run.graph.generatorVersion!==FROSTFALL_ENDURANCE_GENERATOR)return undefined;
  const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
  const profile=eventBossMechanicProfile({eventId:run.eventId,objectiveCount:objective.count,objectiveMax:objective.maxCount,mechanicStatus:mechanic.status});
  const baseBoss=buildExpeditionEncounter({encounterId:definition.bossEncounterId,enemyLevel:run.syncLevel}).find(enemy=>enemy.boss);

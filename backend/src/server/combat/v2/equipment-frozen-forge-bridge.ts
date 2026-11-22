@@ -176,9 +176,11 @@ export function compileRealFrozenForgeActorV2(
   characterId:source.characterId,actorId:actor.id,
   copiedItems:resolved.map(x=>x.mint).sort((a,b)=>a.id.localeCompare(b.id)),
   custody:resolved.map(x=>x.copy).sort((a,b)=>a.instanceId.localeCompare(b.instanceId)),
-  claims:source.claims.filter(x=>x.response.kind==='claimed'&&
-   resolved.some(y=>y.mint.id===x.response.instanceId))
-    .sort((a,b)=>a.requestId.localeCompare(b.requestId)),
+  claims:source.claims.filter(receipt=>{
+   const response=receipt.response;
+   return response.kind==='claimed'&&
+     resolved.some(selected=>selected.mint.id===response.instanceId);
+  }).sort((a,b)=>a.requestId.localeCompare(b.requestId)),
   build:build.selected,
  });
  if(!source.verifyPersisted(digest))reject('persisted_custody_not_verified');

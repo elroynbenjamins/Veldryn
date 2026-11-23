@@ -10,7 +10,7 @@ import {
  V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION,
 } from '../../equipment/equipment-crafting-v2-manifest';
 import {
- V2_SERVER_RARITY_BANDS,EQUIPMENT_V2_SERVER_RULES_VERSION,
+ V2_SERVER_RARITY_BANDS,V2_SERVER_AFFIX_RANGES,EQUIPMENT_V2_SERVER_RULES_VERSION,
  v2ServerOriginalRoleAffixWeightsForReview,
  type V2Affix,type V2Role,type V2Slot,
 } from '../../equipment/equipment-crafting-v2-rolls';
@@ -88,8 +88,9 @@ export function reviewExactWeightedAffixDrawV2(
   fail('invalid_count_or_candidate_pool');
  const seen=new Set<V2Affix>(),total=rows.reduce((n,row)=>{
   if(!exactRow(row,['stat','weight'])||
-   typeof row.stat!=='string'||seen.has(row.stat)||
-   !safe(row.weight))
+   typeof row.stat!=='string'||row.stat==='potency'||
+   !Object.prototype.hasOwnProperty.call(V2_SERVER_AFFIX_RANGES,row.stat)||
+   seen.has(row.stat)||!safe(row.weight))
    fail('invalid_candidate_weight_or_identity');
   seen.add(row.stat);
   return n+row.weight;

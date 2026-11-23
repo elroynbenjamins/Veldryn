@@ -7,8 +7,8 @@ import {consumeGemFromStorage,gemStorageQuantity,isGemPouchItemId,storePouchGem}
 import {craftedGearInstances} from './crafted-gear-instances';
 import type {GearSlot} from './types';
 
-// New gem refining and combining fees are 20% higher. Previously queued jobs
-// keep their original reserved Gold snapshots for cancellation/refunds.
+// Existing queued gem jobs retain their reserved Gold and input snapshots.
+// New merges exchange two-thirds of the former Gold fee for crafted binding compound.
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
 /** Odds refer to the consumed grade (G1→G2 = 90%). G5+ are future-ready. */
 export const GEM_COMBINE_SUCCESS_PERCENT_V1={1:90,2:80,3:70,4:60,5:55,6:50} as const;
@@ -21,11 +21,11 @@ export function gemCombineSucceededV1(fromGrade:number,trustedRoll:number):boole
  if(!Number.isFinite(trustedRoll)||trustedRoll<0||trustedRoll>=1)throw new Error('Invalid trusted gem combination roll');
  return trustedRoll<gemCombineSuccessPercentV1(fromGrade)/100;
 }
-export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
- 1:{to:2,copies:3,dust:0,gold:1800,seconds:5*60,level:8,xp:140},
- 2:{to:3,copies:3,dust:5,gold:6000,seconds:15*60,level:20,xp:420},
- 3:{to:4,copies:3,dust:15,gold:21600,seconds:45*60,level:40,xp:1200,catalystId:'REGIONAL_CATALYST'},
- 4:{to:5,copies:3,dust:40,gold:72000,seconds:2*60*60,level:60,xp:3200,catalystId:'RADIANT_CATALYST'},
+export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;binding:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
+ 1:{to:2,copies:3,dust:0,binding:1,gold:600,seconds:5*60,level:8,xp:140},
+ 2:{to:3,copies:3,dust:5,binding:2,gold:2000,seconds:15*60,level:20,xp:420},
+ 3:{to:4,copies:3,dust:15,binding:4,gold:7200,seconds:45*60,level:40,xp:1200,catalystId:'REGIONAL_CATALYST'},
+ 4:{to:5,copies:3,dust:40,binding:8,gold:24000,seconds:2*60*60,level:60,xp:3200,catalystId:'RADIANT_CATALYST'},
 };
 export const GEM_REFINE_COSTS_V1:Readonly<Record<MobileGemGradeV1,{level:number;xp:number;gold:number;seconds:number;reagents:readonly ItemStack[]}>>={
  1:{level:1,xp:110,gold:90,seconds:60,reagents:[{itemId:'WISP_DUST',quantity:2}]},
@@ -224,6 +224,7 @@ export function gemCombineRecipeV1(recipeId:string):GemCombineRecipeV1|undefined
  const family=mobileGemFamilyV1(parsed.familyId)!;const cost=GEM_COMBINE_COSTS_V1[parsed.fromGrade];
  const inputs:ItemStack[]=[{itemId:mobileGemItemIdV1(parsed.familyId,parsed.fromGrade),quantity:3}];
  if(cost.dust)inputs.push({itemId:'GEM_DUST',quantity:cost.dust});
+  inputs.push({itemId:'GEM_BINDING_COMPOUND',quantity:cost.binding});
  if(cost.catalystId)inputs.push({itemId:cost.catalystId,quantity:1});
  return {id:recipeId,familyId:parsed.familyId,fromGrade:parsed.fromGrade,toGrade:cost.to,successChancePercent:gemCombineSuccessPercentV1(parsed.fromGrade),name:GEM_GRADE_LABEL_V1[cost.to]+' '+family.name+' Gem',skillId:'enchanting',level:cost.level,xp:cost.xp,inputs,output:{itemId:mobileGemItemIdV1(parsed.familyId,cost.to),quantity:1},gold:cost.gold,seconds:cost.seconds};
 }

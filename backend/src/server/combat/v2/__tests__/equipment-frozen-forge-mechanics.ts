@@ -75,11 +75,30 @@ function powered(
  if(!affixId)throw Error('unmapped_original_forge_roll:'+stat);
  assert.ok(EQUIPMENT_AFFIXES_V2[affixId].slots.includes(saved.exact.slot));
  const source=actor('QA_EQUIPPED_'+stat,role,abilities);
- const compiled=compileTrustedEquipmentAffixesV2(source,[{
+ const trustedSource=[{
   instanceId:'QA_MINTED_'+stat,slot:saved.exact.slot,
   tier:'T'+saved.exact.tier,rarity:saved.exact.rarity,quality:saved.exact.quality,
   affixes:saved.exact.affixes.map(roll=>({id:affixId,value:roll.percent/100})),
- }],policy,true);
+ }];
+ const compiled=compileTrustedEquipmentAffixesV2(source,trustedSource,policy,true);
+ // Neither a missing authored roll limit nor a missing active effect cap
+ // may allow an original EQ2 forged effect to enter a battle.
+ const missingRollLimit:ServerAffixPolicyV2={
+  ...policy,limits:{...policy.limits,[affixId]:undefined},
+ } as unknown as ServerAffixPolicyV2;
+ assert.throws(()=>compileTrustedEquipmentAffixesV2(
+  source,trustedSource,missingRollLimit,true),
+  /combat_v2_missing_approved_roll_limit/,
+  'original Forge roll cannot run without exact server limit');
+ const effectKey=stat==='tenacity'?'tenacityPp':
+  stat==='abilityDamage'?'abilityDamagePct':'forgeHealingPowerPct';
+ const missingActiveCap:ServerAffixPolicyV2={
+  ...policy,maxAdvancedEffects:{...policy.maxAdvancedEffects,[effectKey]:undefined},
+ };
+ assert.throws(()=>compileTrustedEquipmentAffixesV2(
+  source,trustedSource,missingActiveCap,true),
+  /combat_v2_invalid_approved_advanced_affix_cap/,
+  'original Forge effect cannot run without explicit total cap');
  assert.equal(compiled.sources.length,1);
  assert.equal(compiled.sources[0].id,affixId);
  assert.equal(compiled.sources[0].value,saved.exact.affixes[0].percent/100);

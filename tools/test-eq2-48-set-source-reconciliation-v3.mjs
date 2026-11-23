@@ -102,9 +102,17 @@ for(const r of next.recipes){
 assert.ok(revisedInputs>100,'expected actual material corrections');
 const readOutput=name=>next.processingReview.find(p=>p.output===name);
 const copper=readOutput('EQ2_COPPER_BAR');
-assert.deepEqual(copper.inputs,{COPPER_ORE:3});
+assert.deepEqual(copper.inputs,{COPPER_ORE:5});
 const iron=readOutput('EQ2_IRON_BAR');
-assert.deepEqual(iron.inputs,{ASTER_IRON_ORE:3});
+assert.deepEqual(iron.inputs,{ASTER_IRON_ORE:5});
+// Owner-approved 2.0 refining-batch input deltas: ore +2, raw wood +1.
+assert.deepEqual(readOutput('EQ2_GREENWOOD_PLANK').inputs,{GREENWOOD_LOG:4});
+assert.deepEqual(readOutput('EQ2_IRONWOOD_PLANK').inputs,{IRONWOOD_LOG:4});
+assert.deepEqual(readOutput('EQ2_TREATED_DUNEWOOD').inputs,{DUNEWOOD:5});
+assert.deepEqual(readOutput('EQ2_REINFORCED_DUNEWOOD').inputs,
+ {DUNEWOOD:6,EQ2_GLASSBOUND_DUST:1});
+assert.deepEqual(readOutput('EQ2_GLASSBOUND_ALLOY_BAR').inputs,
+ {SUNSTONE_INGOT:2,EQ2_GLASSBOUND_DUST:1});
 assert.deepEqual(readOutput('EQ2_SUNSCAR_LEATHER').inputs,{EQ2_SUNSCAR_HIDE:3});
 assert.deepEqual(readOutput('EQ2_HARDENED_SUNSCAR_LEATHER').inputs,
  {EQ2_SUNSCAR_HIDE:4,EQ2_GLASSBOUND_DUST:1});
@@ -113,6 +121,9 @@ assert.equal(ingot.recipeId,'SMELT_SUNSTONE_INGOT');
 assert.equal(ingot.authoringMode,'REFERENCE_ONLY_NO_DUPLICATE_PROCESSING');
 assert.equal(ingot.quantity,3);assert.equal(ingot.xp,520);assert.equal(ingot.seconds,180);
 assert.deepEqual(ingot.inputs,{SUNSTONE_ORE:6,DUNEWOOD:4});
+assert.equal(ingot.equipment2ProposedOrePerCanonicalBatch,8);
+assert.equal(ingot.equipment2ProposedOreIncrease,2);
+// Future 2.0 Sunstone reprice is a *proposal*, not a second smelt authorizer.
 assert.equal(next.processingReview.filter(p=>p.authoringMode!=='REFERENCE_ONLY_NO_DUPLICATE_PROCESSING').length,15);
 for(const p of next.processingReview){
  assert.equal(p.reviewOnly,true);

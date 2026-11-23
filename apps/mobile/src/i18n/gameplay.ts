@@ -9,6 +9,22 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Veldryn 2.0 compact recipe stats (shared six-language catalog).
+ "BASE TOOL EFFECT":["BASE TOOL EFFECT","GRUNDWERKZEUGBONUS","EFECTO BASE DE LA HERRAMIENTA","BASISEFFECT GEREEDSCHAP","EFFETTO BASE DELLO STRUMENTO","EFFET DE BASE DE L’OUTIL"],
+ "Shorter action time":["Shorter action time","Kürzere Aktionsdauer","Menor tiempo de acción","Kortere actietijd","Tempo d’azione ridotto","Temps d’action réduit"],
+ "Possible bonus roll":["Possible bonus roll","Möglicher Zufallsbonus","Posible bonificación aleatoria","Mogelijke bonusrol","Possibile bonus casuale","Bonus aléatoire possible"],
+ "Gathering speed":["Gathering speed","Sammelgeschwindigkeit","Velocidad de recolección","Verzamelsnelheid","Velocità di raccolta","Vitesse de récolte"],
+ "Rare finds":["Rare finds","Seltene Funde","Hallazgos raros","Zeldzame vondsten","Ritrovamenti rari","Trouvailles rares"],
+ "Skill XP gain":["Skill XP gain","Fertigkeits-EP-Bonus","Bonificación de EXP de habilidad","Extra vaardigheids-XP","Bonus PE abilità","Bonus d’XP de compétence"],
+ "One random bonus per crafted tool.":["One random bonus per crafted tool.","Jedes hergestellte Werkzeug erhält einen zufälligen Bonus.","Cada herramienta fabricada recibe una bonificación aleatoria.","Elk gemaakt gereedschap krijgt één willekeurige bonus.","Ogni strumento creato riceve un bonus casuale.","Chaque outil fabriqué reçoit un bonus aléatoire."],
+ "Skill XP applies only to this tool’s skill.":["Skill XP applies only to this tool’s skill.","Fertigkeits-EP gelten nur für die Fertigkeit dieses Werkzeugs.","La EXP de habilidad solo se aplica a la habilidad de esta herramienta.","Vaardigheids-XP geldt alleen voor de vaardigheid van dit gereedschap.","Il bonus PE vale solo per l’abilità di questo strumento.","L’XP ne concerne que la compétence de cet outil."],
+ "Crafting rarity chances":["Crafting rarity chances","Seltenheitschancen beim Herstellen","Probabilidades de rareza al fabricar","Zeldzaamheidskansen bij maken","Probabilità di rarità nella creazione","Probabilités de rareté à la fabrication"],
+ "View all rarity chances":["View all rarity chances","Alle Seltenheitschancen anzeigen","Ver todas las probabilidades de rareza","Alle zeldzaamheidskansen bekijken","Mostra tutte le probabilità di rarità","Voir toutes les probabilités de rareté"],
+ "Hide rarity chances":["Hide rarity chances","Seltenheitschancen ausblenden","Ocultar probabilidades de rareza","Zeldzaamheidskansen verbergen","Nascondi le probabilità di rarità","Masquer les probabilités de rareté"],
+ "Quality effect on base bonus":["Quality effect on base bonus","Qualitätseffekt auf den Grundbonus","Efecto de calidad en la bonificación base","Kwaliteitseffect op basisbonus","Effetto qualità sul bonus base","Effet de la qualité sur le bonus de base"],
+ "Rarity and quality adjust the base effect, not the bonus roll.":["Rarity and quality adjust the base effect, not the bonus roll.","Seltenheit und Qualität verändern den Grundeffekt, nicht den Zufallsbonus.","La rareza y la calidad modifican el efecto base, no la bonificación aleatoria.","Zeldzaamheid en kwaliteit veranderen het basiseffect, niet de bonusrol.","Rarità e qualità modificano l’effetto base, non il bonus casuale.","Rareté et qualité modifient l’effet de base, pas le bonus aléatoire."],
+ "Each crafted copy rolls one bonus. Speed and rare-find ranges stay unchanged across tiers. Skill XP ranges depend on tier and XP bonuses from eligible equipped tiers stack for this skill, subject to the total cap.":["Each crafted copy rolls one bonus. Speed and rare-find ranges stay unchanged across tiers. Skill XP ranges depend on tier and XP bonuses from eligible equipped tiers stack for this skill, subject to the total cap.","Jedes Werkzeug erhält einen Bonus. Tempo- und Fundchancenbereiche bleiben über alle Stufen gleich. EP-Bereiche hängen von der Stufe ab; passende ausgerüstete EP-Boni werden bis zur Gesamtgrenze addiert.","Cada herramienta recibe una bonificación. Los rangos de velocidad y hallazgos raros no cambian entre niveles. El rango de EXP depende del nivel y las bonificaciones equipadas compatibles se acumulan hasta el límite total.","Elk gereedschap krijgt één bonus. Snelheids- en zeldzame-vondstenbereiken blijven gelijk per tier. XP-bereiken hangen af van de tier; passende uitgeruste bonussen tellen op tot het maximum.","Ogni strumento riceve un bonus. Gli intervalli di velocità e ritrovamenti rari non cambiano per grado. L’XP dipende dal grado e i bonus compatibili equipaggiati si sommano fino al limite.","Chaque outil reçoit un bonus. Les plages de vitesse et de trouvailles rares restent identiques entre les paliers. La plage d’XP dépend du palier et les bonus équipés compatibles se cumulent dans la limite totale."],
+ "Output":["Output","Ergebnis","Resultado","Opbrengst","Risultato","Résultat"],
  // Compact inventory batch-protection controls.
  "Updating item protection…":["Updating item protection…","Objektschutz wird aktualisiert…","Actualizando protección…","Itembeveiliging bijwerken…","Aggiornamento protezione…","Mise à jour de la protection…"],
  "Locked {count} selected stacks.":["Locked {count} selected stacks.","{count} ausgewählte Stapel gesperrt.","{count} pilas bloqueadas.","{count} geselecteerde stapels vergrendeld.","{count} pile bloccate.","{count} piles verrouillées."],
@@ -1743,6 +1759,22 @@ const craftingFocusedEarlyLocales={
  "Total cost":["Общая стоимость","Toplam maliyet"],
  "types":["видов","tür"],
  "Missing a material?":["Не хватает материала?","Eksik malzeme mi var?"],
+ // Veldryn 2.0 compact crafting Stats tab.
+ "BASE TOOL EFFECT":["БАЗОВЫЙ ЭФФЕКТ ИНСТРУМЕНТА","TEMEL ALET ETKİSİ"],
+ "Shorter action time":["Сокращение времени действия","Daha kısa işlem süresi"],
+ "Possible bonus roll":["Возможный случайный бонус","Olası rastgele bonus"],
+ "Gathering speed":["Скорость сбора","Toplama hızı"],
+ "Rare finds":["Редкие находки","Nadir buluntular"],
+ "Skill XP gain":["Бонус опыта навыка","Beceri XP bonusu"],
+ "One random bonus per crafted tool.":["Каждый созданный инструмент получает один случайный бонус.","Üretilen her alet bir rastgele bonus kazanır."],
+ "Skill XP applies only to this tool’s skill.":["Бонус опыта действует только на навык этого инструмента.","XP bonusu yalnızca bu aletin becerisine uygulanır."],
+ "Crafting rarity chances":["Шансы редкости при создании","Üretim nadirlik olasılıkları"],
+ "View all rarity chances":["Показать все шансы редкости","Tüm nadirlik olasılıklarını göster"],
+ "Hide rarity chances":["Скрыть шансы редкости","Nadirlik olasılıklarını gizle"],
+ "Quality effect on base bonus":["Влияние качества на базовый бонус","Kalitenin temel bonusa etkisi"],
+ "Rarity and quality adjust the base effect, not the bonus roll.":["Редкость и качество меняют базовый эффект, но не случайный бонус.","Nadirlik ve kalite temel etkiyi değiştirir, rastgele bonusu değil."],
+ "Each crafted copy rolls one bonus. Speed and rare-find ranges stay unchanged across tiers. Skill XP ranges depend on tier and XP bonuses from eligible equipped tiers stack for this skill, subject to the total cap.":["Каждый инструмент получает один бонус. Диапазоны скорости и редких находок не зависят от тира. Бонус опыта зависит от тира; подходящие бонусы экипированных инструментов суммируются до общего лимита.","Her alet bir bonus kazanır. Hız ve nadir buluntu aralıkları kademeler arasında değişmez. XP aralığı kademeye bağlıdır ve uygun kuşanılmış aletlerin XP bonusları toplam sınıra kadar birikir."],
+ "Output":["Результат","Çıktı"],
 } as const;
 for(const [english,pair] of Object.entries(craftingFocusedEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];

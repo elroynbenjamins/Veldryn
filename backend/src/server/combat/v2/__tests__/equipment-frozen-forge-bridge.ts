@@ -283,6 +283,66 @@ assert.deepEqual(part.combat.players.map(p=>p.definition.role),
 assert.ok(part.enemyMechanicLabels.some(x=>x.includes('Disruptible Channel')));
 assert.ok(part.equipmentEvidence.every(e=>e.items.length===1&&
  e.affixSources.length>0),'real Forge identity and affixes preserved for every member');
+// Genuine EQ2 copy + verified Stonecaller Skills V2 counter route; none of
+// the four players uses invented generic gear. The counter-build should
+// recognize a hostile debuff at high HP and visibly remove it.
+const river=SKILL_IDENTITIES_V2.find(x=>x.classId==='STONECALLER'&&
+ x.name==='River Stone');
+if(!river||river.variants.length!==3)
+ throw Error('Stonecaller V2 Cleansing Stream source missing');
+const stonecaller=qaTeam[3];
+const stoneCleanseBuild:VerifiedSkillBuildV2={
+ ...stonecaller.build,selected:{...stonecaller.build.selected,
+  activeSkills:stonecaller.build.selected.activeSkills.map(x=>x.skillId===river.id?
+   {...x,variantId:river.variants[1].id}:x),
+ },
+};
+assert.ok(stoneCleanseBuild.selected.activeSkills.some(x=>
+ x.skillId===river.id&&x.variantId===river.variants[1].id),
+ 'real Skills 2.0 river source must be equipped alongside real EQ2 item');
+const skilledCleansing=compileRealFrozenForgeActorV2(
+ stonecaller.actor,stoneCleanseBuild,stonecaller.source);
+const compiledRiver=skilledCleansing.actor.abilities.find(x=>x.name==='River Stone');
+if(!compiledRiver)throw Error('missing compiled Stonecaller V2 River Stone');
+assert.equal(compiledRiver.target,'lowest_hp_ally_with_dot');
+assert.equal(compiledRiver.aiCondition,'ally_below_50_or_dot');
+assert.ok(compiledRiver.effects.some(x=>x.kind==='cleanse'));
+assert.equal(skilledCleansing.evidence.items.length,1);
+assert.ok(skilledCleansing.evidence.affixSources.length>0);
+const statusBoss:CombatantDefinition={
+ ...boss,abilities:[{
+  id:'QA_EQ2_AUTHORED_CURSE',name:'QA hostile curse and DoT',
+  cooldownMs:30000,castTimeMs:0,priority:1000,target:'all_enemies',
+  effects:[{kind:'debuff',tag:'damage_done',value:-.12,durationMs:14000},
+   {kind:'dot',tag:'corruption',coeff:.08,damageType:'nature',
+    durationMs:14000,tickMs:3000}],
+ }],
+};
+const counterInput:CombatInput={...input,enemies:[statusBoss],
+ seed:'AUTHORED_EQ2_4P_CLEANSE_COUNTER',maxDurationMs:12000};
+const counterBuilds=qaTeam.map((q,i)=>i===3?stoneCleanseBuild:q.build);
+const counterFight=simulateRealFrozenForgeCombatV2(counterInput,counterBuilds,
+ qaTeam.map(q=>q.source),true);
+assert.deepEqual(simulateRealFrozenForgeCombatV2(
+ counterInput,counterBuilds,qaTeam.map(q=>q.source),true),counterFight,
+ 'real Forge copy tactical counter replay must remain deterministic');
+const curedEvents=counterFight.combat.events.filter(e=>
+ e.type==='status_remove'&&e.actorId===stonecaller.actor.id&&
+ e.abilityId===compiledRiver.id);
+assert.ok(curedEvents.some(e=>e.statusKind==='debuff'&&
+ e.statusTag==='damage_done'),
+ 'real 2.0 Stonecaller source build must cure an actual hostile debuff');
+assert.ok(curedEvents.some(e=>e.statusKind==='dot'&&
+ e.statusTag==='corruption'),
+ 'real 2.0 Stonecaller source build must cure an actual hostile DoT');
+const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
+ qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);
+assert.equal(baselineFight.combat.events.filter(e=>
+ e.type==='status_remove'&&e.actorId===stonecaller.actor.id).length,0,
+ 'ordinary River Stone cannot implicitly borrow cleansing effect');
+assert.ok(counterFight.equipmentEvidence.every(x=>
+ x.equippedInstanceIds.length===1&&x.affixSources.length>0),
+ 'counterplay cannot discard original frozen Equipment 2.0 identity');
 assert.throws(()=>simulateRealFrozenForgeCombatV2(input,
  qaTeam.map(x=>x.build),qaTeam.map(x=>x.source),false),/release_gate_off/);
 assert.throws(()=>simulateRealFrozenForgeCombatV2({

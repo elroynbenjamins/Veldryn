@@ -430,5 +430,6 @@
   "tests/crafting-one-cost-preview-ui.cjs",
   "tests/offline-report-compact-ui.cjs",
   "tests/crafting-compact-tabbed-details-ui.cjs",
+  "tests/crafting-v2-tool-stats-tabs-ui.cjs",
   ".core-build/apps/mobile/tests/offline-report-layout.js"
 ]

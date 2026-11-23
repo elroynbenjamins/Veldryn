@@ -4,7 +4,6 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {mealBonusDef,MEAL_BONUSES,MAX_MEAL_BUFF_SECONDS,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {processingRecipeDef,processingRunCapacity,normalizeProcessingBatch} from '../src/core/processing';
-import {RECIPES} from '../src/content/skills';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
 
@@ -43,30 +42,8 @@ for(const [id,percent,hours,kind] of expected){
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
-// Fish recipes keep their original fish and specialty materials. Their new
-// five-wood, +10 XP and -40% Gold rules belong to draft PR #1693.
-// Only the non-fish Ashlands stew retains the earlier expensive x5/x3 loop.
-const baselineCooking:[string,number,number[]][]=[
- ['COOK_MEADOW_PERCH',80,[5,1]],['COOK_SILVERFIN',100,[5,1]],
- ['COOK_ROOTSTREAM_TROUT',145,[4,1]],['COOK_RIVER_EEL',180,[4,1]],
- ['COOK_OATHSCALE',260,[3,1]],['COOK_CAVE_LOACH',245,[3,1]],
- ['COOK_CROWN_CARP',330,[3,1]],['COOK_IRONWOOD_STEW',105,[2,1,1]],
- ['COOK_ASHLANDS_EMBER_STEW',760,[2,1,1]],['COOK_OASIS_CARP',420,[4,1]],
- ['COOK_GLASSFIN_FEAST',720,[3,1,1]],['COOK_ICEFISH',1100,[3,1,1]],
- ['COOK_EMBERFIN',1650,[3,1,1]],
-];
-const cookingRecipes=RECIPES.filter(recipe=>recipe.skillId==='cooking');
-ok(cookingRecipes.length===baselineCooking.length,'all Cooking recipes are covered by the balance snapshot');
-for(const [id,baseXp,ingredients] of baselineCooking){
- const recipe=processingRecipeDef(id);
- ok(!!recipe,id+' remains a working Cooking recipe');
- const nonFishStew=id==='COOK_ASHLANDS_EMBER_STEW';
- ok(recipe!.xp===baseXp*(nonFishStew?3:1),id+' preserves intended XP before fish-specific PR #1693');
- ok(recipe!.inputs.length===ingredients.length,id+' retains every ingredient');
- recipe!.inputs.forEach((input,i)=>ok(input.quantity===ingredients[i]*(nonFishStew?5:1),
-  id+' preserves original fish inputs or increases only non-fish stew material'));
-}
-ok(processingRecipeDef('COOK_IRONWOOD_STEW')!.output.quantity===1,'special stew output remains one meal');
+// Recipe ingredient, Gold and XP changes are verified by the separate
+// economy PR #1693. This PR tests meal activation, duration and snapshots.
 // Previous runs keep their exact paid input and XP snapshots despite rebalance.
 const reservedNew=executeGameCommand(fresh(),{type:'processing_start',args:{id:'COOK_IRONWOOD_STEW'}},now).state.activity!.processing!;
 const reservedLegacy=normalizeProcessingBatch({...reservedNew,
@@ -160,4 +137,4 @@ ok(!drillOne.state.character?.activeMealBuff,'class drill sessions consume meal 
 ok(JSON.stringify(drillOne.state.character?.classSkills)===JSON.stringify(drillTwo.state.character?.classSkills),'class drill rewards match across offline split and sequential claims');
 ok((drillOne.reward.trainingActions??0)===(drillPart.reward.trainingActions??0)+(drillTwo.reward.trainingActions??0),'class drill action summary includes both sides of meal expiry');
 
-console.log('PASS fish ingredient baseline / non-fish stew x5/x3 and special meal 24h duration stacking, save security, AFK expiry');
+console.log('PASS special meal 24h duration stacking, save security, AFK expiry and processing snapshots');

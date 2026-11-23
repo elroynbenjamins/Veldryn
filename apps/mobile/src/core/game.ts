@@ -1799,11 +1799,10 @@ export function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSn
   };
 }
 
-function fallenKnightDropRoll(state:GameState,seed:string,includeStorySigil:boolean):ItemStack[]{
+function fallenKnightDropRoll(state:GameState,seed:string):ItemStack[]{
   const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT');if(!boss||!state.character)return [];
   const items:ItemStack[]=[];
   boss.drops.forEach((drop,index)=>{
-    if(!includeStorySigil&&drop.itemId==='FALLEN_KNIGHT_SIGIL')return;
     if(random01(seed,index*2)>=Math.min(1,Math.max(0,drop.chance)))return;
     const quantity=drop.min+Math.floor(random01(seed,index*2+1)*(drop.max-drop.min+1));
     if(quantity>0)items.push({itemId:drop.itemId,quantity});
@@ -1840,7 +1839,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const weeklyRecorded=recordFallenKnightWeeklyVictory(next,nowMs);next=weeklyRecorded.state;
   const stone=awardCompanionRematchBondstone(next,nowMs);next=stone.state;
   const clearReward=FALLEN_KNIGHT_CLEAR_REWARD,bountyReward=weeklyRecorded.bountyTriggered?FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD:undefined;
-  const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`,false);
+  const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`);
   const fixedItems=[...clearReward.items.map(row=>({...row})),...(bountyReward?.items.map(row=>({...row}))??[])];
   const items=stackItems([],bossDrops.concat(fixedItems));
   const rewardGold=clearReward.gold+(bountyReward?.gold??0),rewardXp=clearReward.xp+(bountyReward?.xp??0),rewardEssence=clearReward.essence+(bountyReward?.essence??0);
@@ -1876,7 +1875,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
     return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.potionConsumed?battle.potionConsumed+' healing potions used. ':''}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.`};
   }
   const xp=state.character.xp+3000;
-  const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`,true);
+  const storyDrops=fallenKnightDropRoll(state,`${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`);
   const rewardRouted=routeRewards({...state,inventory:{...state.inventory,stacks:inventory}} as GameState,storyDrops,nowMs);
   let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,...(rewardRouted.character??{}),gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null,outOfCombatSinceMs:nowMs} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;

@@ -3,7 +3,7 @@ import {ITEMS} from '../content/items';
 import {equipmentV2LegacyPreservationAudit} from './equipment-crafting-v2-legacy-audit';
 import {equipmentCraftSlotBreakdown} from './equipment-crafting-queue';
 import {auditCraftedGearOwnership} from './crafted-gear-ownership';
-import type {V2DraftSnapshot,V2DraftCharacter} from '../../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
+import type {V2ReadinessSnapshot as V2DraftSnapshot,V2ReadinessCharacter as V2DraftCharacter} from '../../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
 
 /** READ ONLY: design for adapting the ACTUAL GameState persisted by online
  * gameplay.ts (load_online_game_server_v1 + commit_online_game_guild_pve_v1).

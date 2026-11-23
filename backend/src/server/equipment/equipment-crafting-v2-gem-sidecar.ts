@@ -1,12 +1,20 @@
 import type {GameState,ItemStack,InventoryState} from '../../../../apps/mobile/src/core/types';
-import {itemDef} from '../../../../apps/mobile/src/content/items';
+import type {
+ V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
+} from './equipment-crafting-v2-gem-sidecar-types';
+export type {
+ V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
+} from './equipment-crafting-v2-gem-sidecar-types';
+import {v2ServerSocketGemKind as gemKind} from './equipment-crafting-v2-gem-identity';
+import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
+export {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import {v2ServerExactTemplateConsistent} from './equipment-crafting-v2-instances';
-import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-history';
 import {validateEquipmentV2EffectGemInstall} from './equipment-crafting-v2-effect-gem-policy';
 import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,type V2DraftSkillAward} from './equipment-crafting-v2-transaction';
 
@@ -18,23 +26,6 @@ import {V2DraftCraftError,type V2DraftItem,type V2DraftJob,type V2DraftReceipt,t
  * Effect Gems remain fail-closed until Combat 2.0 has an authoritative
  * equipped-loadout resonance/duplicate-cap check for all characters.
  */
-export type V2GemSocketKind='stat'|'effect';
-export interface V2GemInstalled{gemId:string;rollPercent:number}
-export interface V2GemCopySockets {
- instanceId:string;
- stat?:V2GemInstalled;
- effect?:V2GemInstalled;
-}
-export interface V2GemReceipt {
- requestId:string;fingerprint:string;instanceId:string;
- socket:V2GemSocketKind;gemId:string;
- source:'gem_pouch'|'inventory'|'bank';
- rollPercent:number;burnedGemId:string|null;version:number;
-}
-export interface V2GemSidecarState{
- slots:V2GemCopySockets[];
- receipts:V2GemReceipt[];
-}
 export interface V2HiddenGemCommand{
  requestId:string;expectedVersion:number;instanceId:string;gemId:string;
 }
@@ -49,14 +40,6 @@ const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
 const safe=(x:number)=>Number.isSafeInteger(x)&&x>=0;
 const validRoll=(value:number)=>safe(value)&&value>=80&&value<=120&&(value-80)%5===0;
 const fingerprint=(command:V2HiddenGemCommand)=>'gem:'+command.instanceId+':'+command.gemId;
-const gemKind=(id:string):V2GemSocketKind=>{
- let gem:ReturnType<typeof itemDef>;
- try{gem=itemDef(id);}catch{return fail('unknown_v2_socket_gem');}
- if(gem.type!=='gem')fail('invalid_v2_socket_gem');
- const kind=gem.gemKind??(gem.gemEffect?'effect':'stat');
- if(kind!=='stat'&&kind!=='effect')fail('invalid_v2_socket_gem');
- return kind;
-};
 const cleanStacks=(storage:InventoryState|undefined)=>{
  if(!storage)return;
  if(!safe(storage.capacity)||!Array.isArray(storage.stacks))fail('invalid_v2_gem_storage');
@@ -94,54 +77,6 @@ function requireSidecar(state:unknown):V2GemSidecarState{
   ||!Array.isArray((state as V2GemSidecarState).receipts))fail('invalid_v2_gem_sidecar');
  return structuredClone(state as V2GemSidecarState);
 }
-export function verifyEquipmentV2GemSidecar(
- items:readonly V2DraftItem[],sidecar:V2GemSidecarState,
-):void{
- if(!sidecar||!Array.isArray(sidecar.slots)||!Array.isArray(sidecar.receipts))fail('invalid_v2_gem_sidecar');
- const itemIds=new Set(items.map(row=>row.id));
- const ids=new Set<string>(),receiptIds=new Set<string>();
- const rebuilt=new Map<string,V2GemCopySockets>();
- let lastVersion=-1;
- for(const row of sidecar.slots){
-  if(!row||!itemIds.has(row.instanceId)||ids.has(row.instanceId))
-   fail('invalid_v2_gem_copy_sockets');
-  ids.add(row.instanceId);
-  for(const kind of ['stat','effect'] as const){
-   const gem=row[kind];
-   if(!gem)continue;
-   if(!validRoll(gem.rollPercent)||gemKind(gem.gemId)!==kind)
-    fail('invalid_v2_installed_gem');
-  }
- }
- for(const row of sidecar.receipts){
-  if(!row||typeof row.requestId!=='string'||!row.requestId
-   ||receiptIds.has(row.requestId)||!itemIds.has(row.instanceId)
-   ||row.fingerprint!=='gem:'+row.instanceId+':'+row.gemId
-   ||!validRoll(row.rollPercent)||gemKind(row.gemId)!==row.socket
-   ||!safe(row.version)||!['gem_pouch','inventory','bank'].includes(row.source)
-   ||(row.burnedGemId!==null&&gemKind(row.burnedGemId)!==row.socket))
-   fail('invalid_v2_gem_receipt');
-  if(row.version<=lastVersion)fail('out_of_order_v2_gem_receipt');
-  lastVersion=row.version;
-  const before:V2GemCopySockets=rebuilt.get(row.instanceId)??{instanceId:row.instanceId};
-  const previous=before[row.socket];
-  const burned=previous&&previous.gemId!==row.gemId?previous.gemId:null;
-  if(burned!==row.burnedGemId
-   ||(previous?.gemId===row.gemId&&
-    (previous.rollPercent>=120||row.rollPercent<previous.rollPercent)))
-   fail('invalid_v2_gem_receipt_history');
-  rebuilt.set(row.instanceId,{...before,[row.socket]:{
-   gemId:row.gemId,rollPercent:row.rollPercent,
-  }});
-  receiptIds.add(row.requestId);
- }
- if(rebuilt.size!==sidecar.slots.length)fail('v2_gem_sidecar_state_mismatch');
- for(const current of sidecar.slots){
-  const expected=rebuilt.get(current.instanceId);
-  if(!expected||JSON.stringify(expected)!==JSON.stringify(current))
-   fail('v2_gem_sidecar_state_mismatch');
- }
-}
 /** One authenticated-account CAS *rehearsal*: one gem is consumed from the
  * existing storage exactly once, and the new socket plus immutable receipt are
  * written to the same hidden GameState result. This does not persist to DB.
@@ -149,7 +84,7 @@ export function verifyEquipmentV2GemSidecar(
 export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,command,serverRollPercent}=input;
  if(!state||!state.character||!onlineCharacterId||state.character.id!==onlineCharacterId)
-  fail('unauthenticated_v2_socket_character');
+  throw new V2DraftCraftError('unauthenticated_v2_socket_character');
  if(!safe(onlineVersion)||!safe(authoritativeWalletGold??NaN)
   ||state.character.gold!==authoritativeWalletGold)fail('untrusted_v2_socket_wallet');
  const readiness=equipmentV2AuthoritativeReadiness({
@@ -167,7 +102,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
   gemSocketState?:V2GemSidecarState;
   custodyReceipts?:V2VirtualMoveReceipt[];
  }|undefined;
- if(!raw||raw.schemaVersion!=='eq2-hidden-game-state-v1')fail('missing_v2_socket_ledger');
+ if(!raw||raw.schemaVersion!=='eq2-hidden-game-state-v1')throw new V2DraftCraftError('missing_v2_socket_ledger');
  verifyEquipmentV2HiddenLedger(accountId,raw.jobs,raw.items,raw.receipts,raw.skillAwards);
  verifyEquipmentV2StorageReservations(accountId,raw.items,raw.storageReservations??[]);
  const sidecar=requireSidecar(raw.gemSocketState);
@@ -184,7 +119,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  if(command.expectedVersion!==onlineVersion)fail('stale_v2_socket_version');
  if(!validRoll(serverRollPercent))fail('untrusted_v2_socket_roll');
  const item=raw.items.find(row=>row.id===command.instanceId);
- if(!item||!v2ServerExactTemplateConsistent(item.exactItem))fail('unknown_v2_socket_copy');
+ if(!item||!v2ServerExactTemplateConsistent(item.exactItem))throw new V2DraftCraftError('unknown_v2_socket_copy');
  if(item.accountId!==accountId)
   fail('wrong_v2_socket_account');
  // The original crafter is immutable, but custody can legally change via
@@ -195,7 +130,7 @@ export function simulateEquipmentV2GemInGameState(input:V2HiddenGemInput){
  const custody=readEquipmentV2VirtualCustody(raw.items,
   raw.storageReservations??[],raw.custodyReceipts??[]);
  const location=custody.find(row=>row.instanceId===item.id);
- if(!location)fail('unreconciled_v2_socket_custody');
+ if(!location)throw new V2DraftCraftError('unreconciled_v2_socket_custody');
  if(location.holderCharacterId!==onlineCharacterId
   ||!['pouch','inventory','equipped'].includes(location.location))
   fail('v2_socket_copy_not_in_character_custody');

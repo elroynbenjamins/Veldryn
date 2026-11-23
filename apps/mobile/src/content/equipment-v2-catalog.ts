@@ -1,6 +1,7 @@
 import type {ClassId,GearSlot} from '../core/types';
 import type {EquipmentV2Tier,EquipmentV2Profile,EquipmentV2Affix} from '../core/equipment-crafting-v2-foundation';
 import {EQUIPMENT_V2_PROFILES} from '../core/equipment-crafting-v2-foundation';
+import {EQUIPMENT_V2_EXPANDED_STANDALONES} from './equipment-v2-expansion';
 
 /** HIDDEN Equipment 2.0 catalogue. Stable EQ2_* IDs never alias a live V33 ID.
  * No item is spawned, equipped, traded, rendered in public lists or rolled by this module.
@@ -802,6 +803,7 @@ export const EQUIPMENT_V2_PIECES:readonly EquipmentV2PieceDescriptor[]=[
    setId:set.id,tier:set.tier,role:set.role,material:set.material,
  }))),
  ...EQUIPMENT_V2_STANDALONE.map(piece=>({...piece})),
+ ...EQUIPMENT_V2_EXPANDED_STANDALONES.map(piece=>({...piece})),
 ];
 export function equipmentV2Piece(id:string){return EQUIPMENT_V2_PIECES.find(piece=>piece.id===id);}
 export function equipmentV2Set(id:string){return EQUIPMENT_V2_SETS.find(set=>set.id===id);}
@@ -823,7 +825,7 @@ export function equipmentV2CatalogAudit(){
     ||set.bonuses.some(bonus=>bonus.pieces<2||bonus.pieces>set.pieces.length||bonus.percent<=0);
  });
  return {setCount:EQUIPMENT_V2_SETS.length,setPieceCount:EQUIPMENT_V2_SETS.reduce((n,set)=>n+set.pieces.length,0),
-  standaloneCount:EQUIPMENT_V2_STANDALONE.length,weaponArchetypes:EQUIPMENT_V2_CLASS_WEAPONS.length,
+  standaloneCount:EQUIPMENT_V2_STANDALONE.length+EQUIPMENT_V2_EXPANDED_STANDALONES.length,weaponArchetypes:EQUIPMENT_V2_CLASS_WEAPONS.length,
   uniqueIds:ids.length===new Set(ids).size&&setIds.length===new Set(setIds).size,
   invalidProfiles:invalidProfiles.map(piece=>piece.id),badSets:badSets.map(set=>set.id)};
 }

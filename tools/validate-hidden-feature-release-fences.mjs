@@ -70,10 +70,12 @@ function check(read,migrations){
 
   // These draft migration vintages were reviewed as documentation/rollback-only.
   // Never silently promote them to the executable Supabase migrations directory.
-  if(migrations.some(name=>/^202611(?:13|15)\d{6}_party_event_/i.test(name)))
-    failures.push('Hidden Party Event migrations must not be executable');
-  if(migrations.some(name=>/^202611(?:17|18)\d{6}_world_boss_/i.test(name)))
-    failures.push('Hidden World Boss migrations must not be executable');
+  const leakedParty=migrations.filter(name=>/^202611(?:13|15)\d{6}_party_event_/i.test(name));
+  if(leakedParty.length)
+    failures.push('Hidden Party Event migrations must not be executable: '+leakedParty.join(', '));
+  const leakedWorld=migrations.filter(name=>/^202611(?:17|18)\d{6}_world_boss_/i.test(name));
+  if(leakedWorld.length)
+    failures.push('Hidden World Boss migrations must not be executable: '+leakedWorld.join(', '));
   return failures;
 }
 

@@ -3,11 +3,21 @@ import {equipmentV2PreparationPlan} from '../src/core/equipment-crafting-v2-prep
 import type {Recipe} from '../src/content/skills';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION} from '../../../backend/src/server/equipment/equipment-crafting-v2-manifest';
 import {V2_SERVER_SLOT_BUDGET,v2ServerBaseStatProjection} from '../../../backend/src/server/equipment/equipment-crafting-v2-instances';
-import {V2_SERVER_RARITY_BASE_MULTIPLIER} from '../../../backend/src/server/equipment/equipment-crafting-v2-rolls';
 import {EQUIPMENT_V2_T1_SLOT_BUDGET,equipmentV2PreviewArmamentStats} from '../src/core/equipment-crafting-v2-foundation';
 import {itemDef,ITEMS} from '../src/content/items';
+import {EFFECT_GEMS_V1,gemItemId} from '../../../backend/src/server/equipment/gems/gem-catalog-v1';
 import {equipmentV2LegacyPreservationAudit} from '../src/core/equipment-crafting-v2-legacy-audit';
 import {equipmentV2AuthoritativeReadiness} from '../src/core/equipment-crafting-v2-authoritative-readiness';
+import type {V2ReadinessSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-readiness-contract';
+import type {V2DraftSnapshot as V2ServerDraftSnapshot} from '../../../backend/src/server/equipment/equipment-crafting-v2-transaction';
+import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
+import {levelFromXp,totalXpAtLevel} from '../src/core/progression';
+import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from
+ '../../../backend/src/server/equipment/equipment-crafting-v2-skill-xp';
+import {equipmentPouchForCharacter,EQUIPMENT_POUCH_BASE_CAPACITY,
+ EQUIPMENT_POUCH_UPGRADES} from '../src/core/equipment-pouch';
+import {v2ServerLegacyPouchSnapshot,V2_LEGACY_POUCH_CAPACITIES} from
+ '../../../backend/src/server/equipment/equipment-crafting-v2-pouch-snapshot';
 import {EQUIPMENT_V2_ARMAMENTS,V2_CLASS_ARMAMENT_SPECS,equipmentV2ClassLoadoutArmaments,equipmentV2ArmamentStats} from '../src/content/equipment-v2-armaments';
 import {equipmentV2WeaponAndOffhandBudget} from '../src/core/equipment-crafting-v2-foundation';
 import {newGame,createCharacter} from '../src/core/game';
@@ -22,6 +32,50 @@ import {equipmentV2PreviewBaseStats,equipmentV2StatBudget,equipmentV2Budget,
 import {equipmentV2DraftAssembly,equipmentV2SourcePlan,equipmentV2CostSummary} from '../src/core/equipment-crafting-v2-economy';
 import {equipmentV2HiddenRecipeScreen,equipmentV2PublicEntryAvailable} from '../src/core/equipment-crafting-v2-screen';
 const check=(ok:unknown,label:string)=>{if(!ok)throw new Error(label)};
+// Node-only type regression: the crypto-free mobile readiness projection must
+// remain structurally acceptable to the actual private Forge draft contract.
+const typeCompatible:V2ReadinessSnapshot extends V2ServerDraftSnapshot ? true : false=true;
+check(typeCompatible,'Hidden mobile readiness snapshot must fit private Forge contract');
+// Guard the original V33 Smithing/Tailoring XP curve against hidden server
+// implementation drift, including every boundary and maximum skill level.
+for(let level=1;level<=100;level++){
+ const xp=totalXpAtLevel(level);
+ check(v2ServerSkillTotalXpAtLevel(level)===xp,
+  'Server/mobile profession XP threshold drift at level '+level);
+ for(const bank of [Math.max(0,xp-1),xp,xp+1]){
+  check(v2ServerSkillLevelFromXp(bank)===levelFromXp(bank),
+   'Server/mobile profession level drift at XP '+bank);
+ }
+}
+
+// Guard the server/mobile Effect Gem item boundary without allowing mobile
+// item definitions to become the authority for combat socket eligibility.
+for(const family of EFFECT_GEMS_V1){
+ for(const grade of [1,2,3,4,5] as const){
+  const id=gemItemId(family.familyId,grade);
+  const mobile=itemDef(id);
+  check(mobile.type==='gem'&&mobile.gemKind==='effect'
+   &&mobile.gemFamilyId===family.familyId&&mobile.gemGrade===grade,
+   'Server authored Effect Gem missing or mismatched in mobile item catalogue: '+id);
+ }
+}
+
+// Explicit cross-package parity: a server must never reinterpret an existing
+// V33 player's paid/earned pouch capacity or silently discard old exact copies.
+const mobilePouchCapacities=[EQUIPMENT_POUCH_BASE_CAPACITY,
+ ...EQUIPMENT_POUCH_UPGRADES.map(row=>row.capacity)];
+check(JSON.stringify(mobilePouchCapacities)===JSON.stringify(V2_LEGACY_POUCH_CAPACITIES),
+ 'Server V2 pouch capacities must match all existing mobile V33 upgrades');
+const parityCharacter=createCharacter(newGame(2_000_000_000_000),'IRONWARDEN').character!;
+for(const capacity of [...mobilePouchCapacities,39,999]){
+ parityCharacter.equipmentPouch={capacity,stacks:[
+  {itemId:'V33_EXISTING_COPY',quantity:1,instanceId:'original-copy'},
+ ]};
+ check(JSON.stringify(v2ServerLegacyPouchSnapshot(parityCharacter))===
+  JSON.stringify(equipmentPouchForCharacter(parityCharacter)),
+  'Server V2 and existing mobile pouch reader must agree for capacity '+capacity);
+}
+
 check(!EQUIPMENT_V2_RELEASED&&!CRAFTING_V2_RELEASED&&!EQUIPMENT_CRAFTING_V2_RELEASED&&!equipmentV2PublicEntryAvailable(),'V2 client release must stay hidden and atomic');
 check(Math.abs(EQUIPMENT_V2_RARITIES.reduce((sum,row)=>sum+row.chance,0)-1)<1e-10,'Rarity odds must sum to 100%');
 check(equipmentV2AffixCount(1,'epic')===1&&equipmentV2AffixCount(3,'epic')===2,'Epic affix breakpoint');
@@ -61,12 +115,12 @@ check(purchasePreview.action==='prepare_components'&&!purchasePreview.canCraftNo
  'A hidden market never quotes or unlocks a purchase even if a preview asks for it');
 
 const catalogAudit=equipmentV2CatalogAudit();
-check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.standaloneCount===24&&catalogAudit.weaponArchetypes===9,
- 'Approved V2 catalogue should retain 15 sets, 42 set pieces, 24 standalone and nine weapon archetypes');
+check(catalogAudit.setCount===15&&catalogAudit.setPieceCount===42&&catalogAudit.standaloneCount===75&&catalogAudit.weaponArchetypes===9,
+ 'Approved V2 catalogue should retain 15 sets, 42 set pieces, 75 standalone and nine weapon archetypes');
 check(catalogAudit.uniqueIds&&!catalogAudit.invalidProfiles.length&&!catalogAudit.badSets.length,
  'V2 catalogue IDs, slots, allowed 1-2 stat profiles and set thresholds are valid');
-check(EQUIPMENT_V2_PIECES.length===66&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===118&&EQUIPMENT_V2_RECIPES.length===236,
- '66 core pieces plus 52 class weapons/offhands each require two hidden methods');
+check(EQUIPMENT_V2_PIECES.length===117&&EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.length===169&&EQUIPMENT_V2_RECIPES.length===338,
+ '117 core pieces plus 52 class weapons/offhands each require two hidden methods');
 check(EQUIPMENT_V2_PIECES.every(p=>p.id.startsWith('EQ2_')&&!p.id.startsWith('T1P_')),
  'V2 IDs must not alias legacy V33 item IDs');
 for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
@@ -86,6 +140,32 @@ for(const piece of EQUIPMENT_V2_ALL_CRAFTABLE_PIECES){
  }
 }
 
+
+const newCoverage=EQUIPMENT_V2_PIECES.filter(p=>p.id.startsWith('EQ2_EXP_T'));
+const newVariants=EQUIPMENT_V2_PIECES.filter(p=>p.id.startsWith('EQ2_ALT_T'));
+check(newCoverage.length===33&&newVariants.length===18,'Hidden T1–T4 catalog must contain 33 role/slot fills and 18 stat variants');
+const nonWeaponSlots=['helmet','chest','gloves','legs','boots','cape','amulet','ring'] as const;
+const roleNames=['tank','damage','support'] as const;
+for(const tier of [1,2,3,4] as const){
+ for(const role of roleNames)for(const slot of nonWeaponSlots){
+  check(EQUIPMENT_V2_PIECES.some(p=>p.tier===tier&&p.role===role&&p.slot===slot),
+   'Missing T'+tier+' '+role+' '+slot+' after expansion');
+ }
+ const tierVariants=newVariants.filter(p=>p.tier===tier);
+ check(tierVariants.length===(tier===1?0:6),'Wrong number of distinct alternate-stat items in T'+tier);
+ for(const variant of tierVariants){
+  const earlier=EQUIPMENT_V2_PIECES.filter(p=>!p.id.startsWith('EQ2_ALT_T')&&
+   p.tier===tier&&p.role===variant.role&&p.slot===variant.slot);
+  check(earlier.length>0&&earlier.every(p=>p.profile!==variant.profile),
+   'An alternate-stat piece must offer different stats from every matching same-role base piece: '+variant.id);
+  for(const original of earlier){
+   check(Math.abs(equipmentV2StatBudget(equipmentV2PreviewBaseStats(tier,variant.slot,variant.profile))-
+      equipmentV2StatBudget(equipmentV2PreviewBaseStats(tier,original.slot,original.profile)))<1e-8,
+    'Alternate-stat items cannot create extra same-tier power: '+variant.id);
+  }
+ }
+}
+
 const oneHand=EQUIPMENT_V2_ALL_CRAFTABLE_PIECES.filter(piece=>'classRestriction' in piece);
 check(oneHand.length===52,'All 52 class armaments are present in the hidden craftable catalogue');
 for(const item of oneHand){
@@ -102,7 +182,7 @@ check(EQUIPMENT_V2_CLASS_WEAPONS.some(w=>w.classId==='KNIFE_DANCER'&&w.hands==='
  'Weapon archetypes keep Knife Dancer identity separate from armor stat profiles');
 
 const model=equipmentV2HiddenCatalogueSummary();
-check(model.count===118&&model.t1===25&&model.t2===28&&model.t3===28&&model.t4===37,
+check(model.count===169&&model.t1===37&&model.t2===43&&model.t3===43&&model.t4===46,
  'Hidden catalogue tier counts include set pieces plus standalones');
 const hero=createCharacter(newGame(2000000000000),'IRONWARDEN');
 const t1Piece=EQUIPMENT_V2_PIECES.find(p=>p.tier===1)!;
@@ -142,7 +222,7 @@ let badRollRejected=false;
 try{draftEquipmentV2Outcome(trusted,()=>-1)}catch{badRollRejected=true}
 check(badRollRejected,'Out-of-range server RNG samples must fail closed');
 let randomSeed=77;
-const deterministic=max=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
+const deterministic=(max:number)=>{randomSeed=(Math.imul(randomSeed,1664525)+1013904223)>>>0;return randomSeed%max};
 for(let n=0;n<50;n++){
  const roll=draftEquipmentV2Outcome(trusted,deterministic);
  check(new Set(roll.affixes.map(x=>x.stat)).size===roll.affixes.length
@@ -387,8 +467,10 @@ const projectionBefore=JSON.stringify(liveProjectionFixture);
 const projectionInput={state:liveProjectionFixture,accountId:'account-v2-test',
  onlineVersion:17,onlineCharacterId:liveProjectionFixture.character!.id,authoritativeWalletGold:22222};
 const safeProjection=equipmentV2AuthoritativeReadiness(projectionInput);
-check(safeProjection.projection?.forgeSlotCapacity===3,
- 'Hidden projection inherits live base Forge slots, not a second queue constant');
+const liveForgeSlots=equipmentCraftSlotBreakdown(liveProjectionFixture);
+check(liveForgeSlots.base===3&&
+ safeProjection.projection?.forgeSlotCapacity===liveForgeSlots.capacity,
+ 'Hidden projection must inherit all earned live Forge slots, not hardcode base capacity');
 check(!safeProjection.blocked&&safeProjection.projection?.version===17,
  'Read-only gameplay projection must retain authenticated online version');
 check(safeProjection.projection?.characters[liveProjectionFixture.character!.id]?.gold===22222,

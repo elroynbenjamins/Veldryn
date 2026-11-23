@@ -1,0 +1,46 @@
+name: Equipment 2.0 isolated server core (hidden)
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+      - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-*.test.ts'
+      - 'backend/tsconfig.equipment-v2-core.json'
+      - 'tools/validate-eq2-server-boundary.mjs'
+      - '.github/workflows/equipment-v2-server-core-hidden.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-server-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Reject mobile imports in isolated EQ2 server authority
+        run: node tools/validate-eq2-server-boundary.mjs
+      - name: Typecheck server-only canonical EQ2 core (strict)
+        run: pnpm --dir backend exec tsc -p tsconfig.equipment-v2-core.json
+      - name: Test canonical rolls, exact copies, custody and transactional receipts
+        run: |
+          for spec in \
+            equipment-crafting-v2-transaction \
+            equipment-crafting-v2-instances \
+            equipment-crafting-v2-custody \
+            equipment-crafting-v2-commit-plan \
+            equipment-crafting-v2-pouch-snapshot \
+            equipment-crafting-v2-delivery-core \
+            equipment-crafting-v2-effect-gem-server \
+            equipment-crafting-v2-gem-verifier-server \
+            equipment-crafting-v2-physical-custody-server; do
+            node "backend/dist-equipment-v2-core/server/equipment/__tests__/${spec}.test.js"
+          done

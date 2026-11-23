@@ -91,8 +91,8 @@ export function equipmentV2RecipeMethods(piece:EquipmentV2PieceDescriptor):reado
   };
  });
 }
-/** 66 set/standalone pieces + 52 class armaments = 118 distinct new item IDs.
- * Every item has two market-neutral material methods, 236 drafts total.
+/** 66 original + expanded set/standalone pieces + 52 class armaments.
+ * Every ordinary item has two market-neutral material methods; hidden until released.
  */
 export type EquipmentV2CraftablePiece=EquipmentV2PieceDescriptor|V2CraftableArmament;
 export const EQUIPMENT_V2_ALL_CRAFTABLE_PIECES:readonly EquipmentV2CraftablePiece[]=[

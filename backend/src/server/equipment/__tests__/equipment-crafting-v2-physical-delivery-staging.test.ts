@@ -9,8 +9,11 @@ import {
 } from '../equipment-crafting-v2-physical-delivery-staging';
 
 const now=2_000_000_000_000,accountId='physical-staging-fixture';
-const recipe=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
-assert.ok(recipe);
+const recipe=(()=>{
+ const selected=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
+ if(!selected)throw new Error('missing_eq2_test_recipe');
+ return selected;
+})();
 function initial(){
  const state=createCharacter(newGame(now),'IRONWARDEN');
  assert.ok(state.character);

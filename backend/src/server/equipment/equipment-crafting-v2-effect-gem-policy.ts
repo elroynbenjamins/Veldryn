@@ -1,10 +1,8 @@
-import type {GameState} from '../../../../apps/mobile/src/core/types';
-import {itemDef} from '../../../../apps/mobile/src/content/items';
-import {findEffectGem,type GemGrade} from './gems/gem-catalog-v1';
-import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {findEffectGem,gemItemId,type GemGrade} from './gems/gem-catalog-v1';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-history';
 import type {V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
 import type {V2DraftItem} from './equipment-crafting-v2-transaction';
-import type {V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
+import type {V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar-types';
 import {V2DraftCraftError} from './equipment-crafting-v2-transaction';
 
 /**
@@ -20,17 +18,20 @@ const fail=(reason:string):never=>{throw new V2DraftCraftError(reason);};
 function effectIdentity(id:string){
  if(typeof id!=='string')fail('invalid_v2_effect_gem_identity');
  const match=/^gem:(effect_[a-z0-9_]+):g([1-5])$/.exec(id);
- if(!match)fail('invalid_v2_effect_gem_identity');
- let actual:ReturnType<typeof itemDef>;
- try{actual=itemDef(id);}catch{return fail('unknown_v2_effect_gem');}
- if(actual.type!=='gem'||actual.gemKind!=='effect'||actual.gemFamilyId!==match[1]
-  ||actual.gemGrade!==Number(match[2]))fail('invalid_v2_effect_gem_identity');
+ if(!match)throw new V2DraftCraftError('invalid_v2_effect_gem_identity');
  const definition=findEffectGem(match[1]);
- if(!definition)fail('unsupported_v2_effect_gem');
- return {definition,grade:Number(match[2]) as GemGrade};
+ if(!definition)throw new V2DraftCraftError('unknown_v2_effect_gem');
+ const grade=Number(match[2]) as GemGrade;
+ // A server-authored family and grade are the source of truth. The mobile
+ // item table must NOT decide whether a crafted effect is equip-eligible.
+ if(gemItemId(definition.familyId,grade)!==id)
+  fail('invalid_v2_effect_gem_identity');
+ return {definition,grade};
 }
 export interface V2EffectGemPolicyInput{
- state:GameState;accountId:string;actorCharacterId:string;
+ // Read-only legacy loadout guard; all other snapshot data is authoritative
+ // server custody/receipt input rather than a mobile GameState import.
+ state:{character:{id:string;equipment:object}|null};accountId:string;actorCharacterId:string;
  items:readonly V2DraftItem[];
  reservations:readonly V2HiddenStorageReservation[];
  custodyReceipts:readonly V2VirtualMoveReceipt[];
@@ -50,7 +51,7 @@ export function validateEquipmentV2EffectGemInstall(input:V2EffectGemPolicyInput
  const {state,accountId,actorCharacterId,items,reservations,
   custodyReceipts,installed,targetInstanceId,incomingGemId}=input;
  if(!state?.character||!accountId||state.character.id!==actorCharacterId)
-  fail('untrusted_v2_effect_actor');
+  throw new V2DraftCraftError('untrusted_v2_effect_actor');
  if(!Array.isArray(items)||!Array.isArray(reservations)
   ||!Array.isArray(custodyReceipts)||!installed||!Array.isArray(installed.slots))
   fail('invalid_v2_effect_snapshot');

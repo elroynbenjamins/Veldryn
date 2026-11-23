@@ -6,8 +6,11 @@ import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {runEquipmentV2InGameState,simulateEquipmentV2InGameState,
  type V2HiddenGameMetadata,type V2HiddenGameInput} from '../equipment-crafting-v2-game-state';
 
-const recipe=V2_SERVER_RECIPES.find(r=>r.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
-assert.ok(recipe);
+const recipe=(()=>{
+ const selected=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
+ if(!selected)throw new Error('missing_eq2_test_recipe');
+ return selected;
+})();
 const now=2_000_000_000_000;
 const accountId='account-hidden-2';
 function stateFixture(){

@@ -1,12 +1,15 @@
 import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
-import {levelFromXp,totalXpAtLevel} from '../../../../apps/mobile/src/core/progression';
+import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from './equipment-crafting-v2-skill-xp';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';
+import type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';
+export type {V2HiddenGameMetadata} from './equipment-crafting-v2-game-metadata';
 import {verifyEquipmentV2ReceiptNamespace} from './equipment-crafting-v2-receipt-coherence';
 import {verifyEquipmentV2HiddenLedger} from './equipment-crafting-v2-delivery';
 import {reserveEquipmentV2HiddenClaim,verifyEquipmentV2StorageReservations,type V2HiddenStorageReservation} from './equipment-crafting-v2-storage-reservations';
-import {verifyEquipmentV2GemSidecar,type V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar';
-import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-custody';
+import {verifyEquipmentV2GemSidecar} from './equipment-crafting-v2-gem-verifier';
+import type {V2GemSidecarState} from './equipment-crafting-v2-gem-sidecar-types';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt} from './equipment-crafting-v2-virtual-history';
 import {planEquipmentV2AtomicCommit,type V2AtomicCommitPlan} from './equipment-crafting-v2-commit-plan';
 import {
  type V2DraftCommand,type V2DraftContext,type V2DraftItem,type V2DraftJob,
@@ -21,19 +24,6 @@ import {
  * Only V2 metadata is held in account; Gold/materials/skills are modified in
  * the ORIGINAL GameState. There is no second persisted wallet or Bank ledger.
  */
-export interface V2HiddenGameMetadata{
- schemaVersion:'eq2-hidden-game-state-v1';
- jobs:V2DraftJob[];
- items:V2DraftItem[];
- receipts:V2DraftReceipt[];
- skillAwards:V2DraftSkillAward[];
- /** Optional for older hidden V1 snapshots; no public EQ2 storage is modified. */
- storageReservations?:V2HiddenStorageReservation[];
- /** Separate irreversible socket history; never rewrites the minted exact item. */
- gemSocketState?:V2GemSidecarState;
- /** Replayed account-wide Bank/equip custody decisions; still hidden only. */
- custodyReceipts?:V2VirtualMoveReceipt[];
-}
 export interface V2HiddenGameInput{
  state:GameState;accountId:string;onlineVersion:number;
  onlineCharacterId:string|null;authoritativeWalletGold:number|null;
@@ -83,7 +73,7 @@ function mapOwner<T>(
   character:state.character,inventory:state.inventory,skills:state.skills,
  })};
  const entry=state.otherCharacters?.find(c=>c.character.id===id);
- if(!entry)fail('unknown_gameplay_owner');
+ if(!entry)throw new V2DraftCraftError('unknown_gameplay_owner');
  return {isActive:false,row:update(entry)};
 }
 function debitOwner(state:GameState,id:string,gold:number,debited:V2AtomicCommitPlan['debitedMaterialsFromCharacter']){
@@ -102,10 +92,10 @@ function awardOwner(state:GameState,id:string,skill:'smithing'|'tailoring',point
  if(!safe(points))fail('invalid_craft_xp');
  const changed=mapOwner(state,id,row=>{
   const current=row.skills.find(s=>s.skillId===skill);
-  if(!current||!safe(current.xp))fail('missing_crafting_profession');
-  const xp=Math.min(totalXpAtLevel(100),current.xp+points);
+  if(!current||!safe(current.xp))throw new V2DraftCraftError('missing_crafting_profession');
+  const xp=Math.min(v2ServerSkillTotalXpAtLevel(100),current.xp+points);
   if(!safe(xp))fail('invalid_skill_xp');
-  return row.skills.map(s=>s.skillId===skill?{...s,xp,level:levelFromXp(xp)}:s);
+  return row.skills.map(s=>s.skillId===skill?{...s,xp,level:v2ServerSkillLevelFromXp(xp)}:s);
  });
  if(changed.isActive)return {...state,skills:changed.row};
  return {...state,otherCharacters:state.otherCharacters!.map(entry=>entry.character.id===id?
@@ -118,14 +108,16 @@ function awardOwner(state:GameState,id:string,skill:'smithing'|'tailoring',point
  */
 export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
  const {state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,command,nowMs}=input;
- if(!state||!state.character||state.character.id!==onlineCharacterId)fail('unauthenticated_character');
- if(authoritativeWalletGold===null||!safe(authoritativeWalletGold))fail('missing_online_wallet');
+ if(!state||!state.character||!onlineCharacterId||state.character.id!==onlineCharacterId)
+  throw new V2DraftCraftError('unauthenticated_character');
+ if(authoritativeWalletGold===null||!safe(authoritativeWalletGold))
+  throw new V2DraftCraftError('missing_online_wallet');
  if(state.character.gold!==authoritativeWalletGold)fail('untrusted_wallet_override_required');
  const readiness=equipmentV2AuthoritativeReadiness({
   state,accountId,onlineVersion,onlineCharacterId,authoritativeWalletGold,
  });
  if(readiness.blocked||!readiness.projection)
-  fail('v2_gameplay_not_ready:'+readiness.blockers.join(','));
+  throw new V2DraftCraftError('v2_gameplay_not_ready:'+readiness.blockers.join(','));
  const metadata=requireHidden(state);
  verifyEquipmentV2HiddenLedger(accountId,metadata.jobs,metadata.items,metadata.receipts,metadata.skillAwards);
  verifyEquipmentV2ReceiptNamespace({forge:metadata.receipts,gems:metadata.gemSocketState?.receipts,custody:metadata.custodyReceipts});
@@ -152,7 +144,7 @@ export function simulateEquipmentV2InGameState(input:V2HiddenGameInput){
    next.bank.stacks=takeMaterial(next.bank.stacks,mat.itemId,mat.quantity);
  }else{
   if(!plan.awardedXp||!plan.createdItem||plan.awardedXp.jobId!==plan.createdItem.jobId)
-   fail('incomplete_craft_claim');
+   throw new V2DraftCraftError('incomplete_craft_claim');
   next=awardOwner(next,plan.awardedXp.characterId,
    plan.awardedXp.profession,plan.awardedXp.xp);
  }

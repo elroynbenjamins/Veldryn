@@ -76,7 +76,7 @@ for(const d of global.dungeons){
   assert.equal(m.marketPolicy.marketEligibilityCandidate,true);
   assert.equal(m.marketPolicy.marketEnabled,false);
   assert.equal(m.marketPolicy.canResellAfterPurchase,true);
-  assert.equal(m.marketPolicy.originalAcquisitionNeverChangesAfterResale,true);
+  assert.equal(m.marketPolicy.originalBossAcquisitionNeverChangesAfterResale,true);
  }
  const allClassToRole=new Map(d.classWeapons.map(x=>[x.classId,x.role]));
  assert.equal([...allClassToRole.values()].filter(v=>v==='tank').length,3);

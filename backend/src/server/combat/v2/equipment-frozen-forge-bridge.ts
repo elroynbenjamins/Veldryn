@@ -148,6 +148,16 @@ export function compileRealFrozenForgeActorV2(
   source.claims,source.awards);
  verifyEquipmentV2ReceiptNamespace({forge:source.claims,
   custody:source.custodyReceipts});
+ // Bank and claim history must refer exclusively to verified characters
+ // of this account. A virtual receipt cannot introduce an unowned player.
+ const ownedCharacterIds=new Set(source.custody.characters.map(c=>c.id));
+ if(ownedCharacterIds.size!==source.custody.characters.length||
+   source.custodyReceipts.some(r=>
+    !ownedCharacterIds.has(r.actorCharacterId)||
+    (r.oldHolder!==null&&!ownedCharacterIds.has(r.oldHolder))||
+    (r.newHolder!==null&&!ownedCharacterIds.has(r.newHolder)))||
+   source.reservations.some(r=>!ownedCharacterIds.has(r.ownerCharacterId)))
+  reject('custody_history_other_account_character');
  const virtualCopies=readEquipmentV2VirtualCustody(source.items,
   source.reservations,source.custodyReceipts);
  if(virtualCopies.length!==source.custody.copies.length)
@@ -181,8 +191,13 @@ export function compileRealFrozenForgeActorV2(
   if(copies.length!==1||minted.length!==1||claims.length!==1)reject('missing_exact_copy_or_claim');
   const copy=copies[0],mint=minted[0],claim=claims[0];
   const item=mint.exactItem;
-  if(copy.ownerCharacterId!==source.characterId||copy.location!=='equipped'||
-     copy.equippedSlot!==slot||mint.ownerCharacterId!==source.characterId||
+  // The original Forge crafter remains immutable, but the *current*
+  // wearer may differ after a genuine same-account Bank handoff. Full
+  // claim-reservation + move-history replay above establishes custody;
+  // never rewrite the mint owner to the latest wearer.
+  const originalCrafter=source.custody.characters.find(c=>c.id===mint.ownerCharacterId);
+  if(!originalCrafter||copy.ownerCharacterId!==source.characterId||
+     copy.location!=='equipped'||copy.equippedSlot!==slot||
      copy.instanceId!==mint.id||!same(copy.item,item)||
      claim.response.kind!=='claimed'||claim.response.jobId!==mint.jobId||
      !same(claim.response.exactItem,item)||!same(claim.response.outcome,mint.outcome))

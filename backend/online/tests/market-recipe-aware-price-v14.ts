@@ -49,18 +49,18 @@ for(const id of ['METAL_CLASPS','REINFORCED_BUCKLES','ARMOR_RIVETS',
  assert(quote.unitMin- Math.ceil(quote.unitMin*.05)>=quote.recipeCost!.unitProductionCostGold*1.15-1e-8);
 }
 const copper=resource('COPPER_INGOT');
-assert.equal(copper.recipeCost?.unitProductionCostGold,82/5);
-assert.equal(copper.unitMin,20);
+assert.equal(copper.recipeCost?.unitProductionCostGold,99/5);
+assert.equal(copper.unitMin,24);
 assert.equal(copper.minimumLot,5,'Preserve existing minimum lots');
 const aster=resource('ASTER_IRON_INGOT');
-assert.equal(aster.recipeCost?.unitProductionCostGold,188/4);
-assert.equal(aster.unitMin,58);
+assert.equal(aster.recipeCost?.unitProductionCostGold,200/4);
+assert(aster.unitMin>=58,'Updated smelting input cost must not lower the previous minimum');
 const sun=resource('SUNSTONE_INGOT');
-assert.equal(sun.recipeCost?.unitProductionCostGold,736/3);
-assert.equal(sun.unitMin,298);
+assert.equal(sun.recipeCost?.unitProductionCostGold,776/3);
+assert(sun.unitMin>=298,'Updated smelting input cost must not lower the previous minimum');
 const black=resource('BLACKGLASS_INGOT');
-assert.equal(black.recipeCost?.unitProductionCostGold,3440/3);
-assert.equal(black.unitMin,1389);
+assert.equal(black.recipeCost?.unitProductionCostGold,3550/3);
+assert(black.unitMin>=1389,'Updated smelting input cost must not lower the previous minimum');
 const resin=resource('IRONWOOD_BINDING_RESIN');
 assert.equal(resin.recipeCost?.unitProductionCostGold,270);
 assert.equal(resin.unitMin,328);

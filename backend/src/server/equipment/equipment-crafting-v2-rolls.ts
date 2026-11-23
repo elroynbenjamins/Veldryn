@@ -57,6 +57,15 @@ const SLOT_AFFIX_PREFERENCES:Readonly<Record<V2Slot,readonly V2Affix[]>>={
  offhand:['armor','maxHp','ward','potency'],amulet:['critDamage','abilityDamage','healingPower','maxHp'],
  ring:['critRate','haste','penetration','potency'],
 };
+/** Read-only EXACT original Forge generator pool for compatibility analysis.
+ * This does NOT change the weighted RNG, item snapshot or rarity counts. */
+export function v2OriginalForgeAffixSourcePoolV2(role:V2Role,slot:V2Slot):
+ readonly Readonly<{stat:V2Affix;weight:number;slotPreferred:boolean}>[]{
+ return Object.freeze(ROLE_WEIGHTS[role].map(row=>Object.freeze({
+  stat:row.affix,weight:row.weight,
+  slotPreferred:SLOT_AFFIX_PREFERENCES[slot].includes(row.affix),
+ })));
+}
 export interface V2TrustedRecipeTemplate {
  /** Selected by authenticated server against canonical allowed recipe and catalogue. */
  recipeId:string;pieceId:string;slot:V2Slot;role:V2Role;tier:V2Tier;

@@ -399,16 +399,18 @@ const targetRouteIds=new Set([compiledRiver.id]);
 const sustainEvents=baselineFight.combat.events.filter(e=>
  e.actorId===stonecaller.actor.id&&sustainIds.has(e.abilityId??'')&&
  (e.type==='heal'||e.type==='shield'||e.type==='hot_tick')).length;
+const reviewedSpecializationId=stoneCleanseBuild.selected.specializationId;
+if(!reviewedSpecializationId)throw Error('real_forge_skills_specialization_missing');
 const explanation=reviewObservedCounterOpportunityV2([
  {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
-  classId:'STONECALLER',specializationId:stoneCleanseBuild.selected.specializationId,
+  classId:'STONECALLER',specializationId:reviewedSpecializationId,
   enemyId:statusBoss.id,strategy:'targeted',route:'cleanse',
   hasMatchingCounter:compiledRiver.effects.some(e=>e.kind==='cleanse'),
   observedOpportunityEvents:v2BossStatuses(counterFight.combat.events),
   eligibleSkillCasts:selectedCasts(counterFight.combat.events,targetRouteIds),
   attributedCounterEvents:curedEvents.length},
  {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
-  classId:'STONECALLER',specializationId:stoneCleanseBuild.selected.specializationId,
+  classId:'STONECALLER',specializationId:reviewedSpecializationId,
   enemyId:statusBoss.id,strategy:'alternative',route:'sustain',
   hasMatchingCounter:sustainIds.size>0,
   observedOpportunityEvents:baselineFight.combat.events.filter(e=>

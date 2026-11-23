@@ -19,6 +19,15 @@ assert.equal(known.counts.counter_effect_observed,2);
 assert.deepEqual(known,reviewObservedCounterOpportunityV2([alt,base]),
  'Review must be stable under input order reversal');
 
+// Instant source-authored skills emit their attributed effect, but the
+// current engine emits cast_complete only for cast-time skills. Do not
+// misreport a witnessed instant cleanse as a skill that never cast.
+const instant=reviewObservedCounterOpportunityV2([
+ {...base,eligibleSkillCasts:0,attributedCounterEvents:2},
+ {...alt,eligibleSkillCasts:0,attributedCounterEvents:1},
+]);
+assert.equal(instant.counts.counter_effect_observed,2);
+assert.ok(instant.rows.every(x=>x.eligibleCasts===0&&x.attributedEvents>0));
 const explanations=[
  {hasMatchingCounter:false,observedOpportunityEvents:5,eligibleSkillCasts:0,
   attributedCounterEvents:0,reason:'class_native_counter_unavailable'},

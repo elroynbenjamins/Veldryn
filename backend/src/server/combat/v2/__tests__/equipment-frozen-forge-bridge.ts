@@ -599,6 +599,34 @@ const fakeSetCountSource={...twoSetReadback,custody:{
 assert.throws(()=>reviewWornRealForgeSetsV2(fakeSetCountSource),
  /wrong_or_duplicate_equipment|unverified_worn_source/,
  'invented copy cannot increase source-backed Forge milestone eligibility');
+const wrongRoleReadback={...twoSetReadback,currentClassId:'WAYFINDER' as const,
+ custody:{...twoSetReadback.custody,
+  characters:twoSetReadback.custody.characters.map(row=>({
+   ...row,classId:'WAYFINDER',
+  })),
+ }};
+assert.throws(()=>reviewWornRealForgeSetsV2(wrongRoleReadback),
+ /unverified_worn_source/,
+ 'a real Tank set does not qualify for a different class role');
+const underLevelReadback={...twoSetReadback,currentLevel:1,
+ custody:{...twoSetReadback.custody,
+  characters:twoSetReadback.custody.characters.map(row=>({
+   ...row,level:1,
+  })),
+ }};
+assert.throws(()=>reviewWornRealForgeSetsV2(underLevelReadback),
+ /unverified_worn_source/,
+ 'a genuine but level-locked piece grants no design milestone');
+const tamperedRollReadback={...twoSetReadback,
+ custody:{...twoSetReadback.custody,
+  copies:twoSetReadback.custody.copies.map((row,i)=>i===0?{
+   ...row,item:{...row.item,baseStats:{...row.item.baseStats,
+    hp:row.item.baseStats.hp+1}},
+  }:row),
+ }};
+assert.throws(()=>reviewWornRealForgeSetsV2(tamperedRollReadback),
+ /wrong_or_duplicate_equipment|unverified_worn_source/,
+ 'a mutated frozen item cannot count as valid forged Equipment 2.0');
 const twoSetBuild={...setItem.build,
  verified:{...setItem.build.verified,
   ownedInstanceIds:new Set([setItem.mint.id,setSecond.mint.id])},

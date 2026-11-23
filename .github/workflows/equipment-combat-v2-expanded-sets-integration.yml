@@ -24,6 +24,10 @@ on:
       - 'backend/src/server/combat/v2/equipment-forge-affix-coverage-review.ts'
       - 'backend/src/server/combat/v2/equipment-forge-next-mint-roll-policy-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.ts'
+      - 'backend/src/server/combat/v2/equipment-universal-roll-rehearsal.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-universal-roll-rehearsal.ts'
+      - 'backend/src/server/combat/v2/equipment-authored-innate-percent-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-authored-innate-percent-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.ts'
@@ -93,6 +97,10 @@ jobs:
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.js
       - name: Prove 1,014 source-backed next-mint affix pools (review only, no RNG)
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.js
+      - name: Rehearse secure bounded universal bonus draws with no mint authority
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-universal-roll-rehearsal.js
+      - name: Prove authored class innate percentages never alter random roll pool
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-authored-innate-percent-review.js
       - name: Validate proposed EQ2 subtype affix consumes original Forge roll budget
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-physical-affix-budget-review.js
       - name: Verify 648 paired source-compiled Skills/Spec V2 physical matchups

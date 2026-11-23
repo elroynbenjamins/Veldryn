@@ -393,9 +393,20 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>
     {selectedCopy?<EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>:null}
   </View>:undefined;
+  // Reuse the active same-tier reference once, even when Inventory has many
+  // separately rolled copies of the same tool.
+  const equippedToolComparison=equippedSameTier?<View style={s.toolComparePanel}>
+      <View style={s.toolCopyHeaderRow}>
+        <Text style={s.toolCompareEyebrow}>{gt('Equipped').toLocaleUpperCase(language)} · T{equippedSameTier.tier}</Text>
+        {equippedSameTierCopy?<Text style={[s.toolCopyCaption,{color:rarityMeta(equippedSameTierCopy.rarity).color}]}>{rarityMeta(equippedSameTierCopy.rarity).label} · Q{equippedSameTierCopy.quality}</Text>:null}
+      </View>
+      <Text style={s.toolCompareName}>{localizedItemName(language,equippedSameTier.id)} · +{gatheringToolPercent(equippedSameTierSpeed??0)}% {gt('Gathering Speed')}</Text>
+      <Text style={s.toolCompareBonus}>{equippedSameTierCopy?('+'+gatheringToolPercent(equippedSameTierCopy.bonus.basisPoints/100)+'% '+(equippedSameTierCopy.bonus.stat==='speed'?gt('Gathering Speed'):equippedSameTierCopy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(equippedSameTier.skillId)+' XP')):equippedSameTierReceipt?gt('Tool roll record unavailable · no bonus is assumed.'):gt('Tier base · No bonus roll')}</Text>
+    </View>:null;
   const inspectActions=inspected?<View style={s.inspectActions}>
     {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.toolCopies}>
       {exactToolCopies.length>1?<Text style={s.quantityTitle}>{gt('GATHERING TOOLS')} · {exactToolCopies.length}</Text>:null}
+      {exactToolCopies.length>1?equippedToolComparison:null}
       {exactToolCopies.map((copy,index)=>{
         const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
         const isEquipped=equippedSameTierCopy?.id===copy.id;
@@ -419,14 +430,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             </View>
             <Text style={[s.toolBonusValue,{color:rarityMeta(copy.rarity).color}]}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
-          {equippedSameTier&&!isEquipped?<View style={s.toolComparePanel}>
-            <View style={s.toolCopyHeaderRow}>
-              <Text style={s.toolCompareEyebrow}>{gt('Equipped').toLocaleUpperCase(language)} · T{equippedSameTier.tier}</Text>
-              {equippedSameTierCopy?<Text style={[s.toolCopyCaption,{color:rarityMeta(equippedSameTierCopy.rarity).color}]}>{rarityMeta(equippedSameTierCopy.rarity).label} · Q{equippedSameTierCopy.quality}</Text>:null}
-            </View>
-            <Text style={s.toolCompareName}>{localizedItemName(language,equippedSameTier.id)} · +{gatheringToolPercent(equippedSameTierSpeed??0)}% {gt('Gathering Speed')}</Text>
-            <Text style={s.toolCompareBonus}>{equippedSameTierCopy?('+'+gatheringToolPercent(equippedSameTierCopy.bonus.basisPoints/100)+'% '+(equippedSameTierCopy.bonus.stat==='speed'?gt('Gathering Speed'):equippedSameTierCopy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(equippedSameTier.skillId)+' XP')):equippedSameTierReceipt?gt('Tool roll record unavailable · no bonus is assumed.'):gt('Tier base · No bonus roll')}</Text>
-          </View>:null}
+          {equippedSameTier&&!isEquipped&&exactToolCopies.length===1?equippedToolComparison:null}
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
             <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?(isEquipped?gt('Equipped'):gt('Equip')):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
             {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}

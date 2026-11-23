@@ -81,15 +81,18 @@ export function calculatePhysicalSubtypeV2(
  if(keys.length!==3||bonuses.length!==3||
     keys.some(k=>!types.has(k))||bonuses.some(k=>!types.has(k)))
    fail('invalid_profile_keys');
- let factor=0;
- for(const {type,basisPoints} of weights){
+ // Validate ALL typed channels, including unused weights, to reject
+ // malformed records before future status/gear integrations use them.
+ for(const type of PHYSICAL_SUBTYPES_V2){
   const r=resistance[type],b=outgoing[type];
   if(!Number.isFinite(r)||r< -PHYSICAL_DAMAGE_POLICY_V2.maxVulnerability||
      r>PHYSICAL_DAMAGE_POLICY_V2.maxResistance||
      !Number.isFinite(b)||b<0||b>PHYSICAL_DAMAGE_POLICY_V2.maxOutgoingBonus)
     fail('unapproved_profile_value');
-  factor+=(basisPoints/10000)*(1+b)*(1-r);
  }
+ let factor=0;
+ for(const {type,basisPoints} of weights)
+  factor+=(basisPoints/10000)*(1+outgoing[type])*(1-resistance[type]);
  return {damage:postPhysicalMitigation*factor,multiplier:factor};
 }
 const SKILL_OVERRIDES:Readonly<Record<string,{type:PhysicalDamageSubtypeV2;needsShield?:true}>>={
@@ -144,6 +147,13 @@ export function issueFrozenForgePhysicalAuthorityV2(
   }
   const weapon=e.items.filter(x=>v2ServerPiece(x.pieceId)?.slot==='weapon');
   if(weapon.length>1)fail('multiple_weapons');
+  // Defence in depth: even QA-issued tokens cannot turn a verified weapon
+  // from another class into this actor's physical damage profile.
+  if(weapon.length){
+   const sourceClass=Object.entries(CLASS_NAMES_V2).find(([,name])=>name===actor.classId)?.[0]??actor.classId;
+   if(v2ServerPiece(weapon[0].pieceId)?.classRestriction!==sourceClass)
+    fail('weapon_class_mismatch');
+  }
   const shield=e.items.filter(x=>v2PinnedPhysicalSubtypeReview(x.pieceId)?.shieldBashDamageType==='blunt');
   if(shield.length>1)fail('multiple_shields');
   const profile=weapon.length?v2PinnedPhysicalSubtypeReview(weapon[0].pieceId):null;

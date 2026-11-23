@@ -90,6 +90,26 @@ export function auditCraftedGearOwnership(state:GameState):CraftedGearOwnershipA
     scanStacks(inventory.stacks,'inventory',character.id);
     scanStacks(equipmentPouchForCharacter(character).stacks,'equipment_pouch',character.id);
     scanStacks(overflow.stacks,'overflow',character.id);
+    // Gathering-tool receipts also live in character equipment and their new
+    // dedicated reserve slots. Observe both so an ID duplicated in Inventory,
+    // Bank, another character or both slots cannot evade the global custody audit.
+    const registerToolSlot=(instanceId:string,itemId:string|undefined)=>{
+      const record=gatheringToolById.get(instanceId);
+      if(!record){audit.problems.push(`Unrecognized gathering tool copy: ${instanceId}`);return;}
+      if(record.itemId!==itemId){audit.problems.push(`Gathering tool item mismatch: ${instanceId}`);return;}
+      if(observedGatheringTools.has(instanceId)){audit.problems.push(`Duplicate gathering tool copy marker: ${instanceId}`);return;}
+      observedGatheringTools.add(instanceId);
+    };
+    for(const skillId of ['mining','woodcutting','fishing'] as const){
+      for(const [tier,id] of Object.entries(character.equippedToolInstanceIdsByTier?.[skillId]??{})){
+        const toolId=character.equippedToolIdsByTier?.[skillId]?.[Number(tier) as 1|2|3|4];
+        registerToolSlot(id,toolId);
+      }
+      for(const [tier,id] of Object.entries(character.savedToolInstanceIdsByTier?.[skillId]??{})){
+        const toolId=character.savedToolIdsByTier?.[skillId]?.[Number(tier) as 1|2|3|4];
+        registerToolSlot(id,toolId);
+      }
+    }
     for(const [slot,itemId] of Object.entries(character.equipment)){
       if(itemId&&trackedItemIds.has(itemId)&&!character.equipmentInstanceIds?.[slot as GearSlot])
         audit.unmarkedPhysicalCopies+=1;

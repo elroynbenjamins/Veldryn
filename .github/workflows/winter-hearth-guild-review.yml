@@ -1,0 +1,32 @@
+name: Winter Hearth 2026 Guild Market Review
+
+on:
+  push:
+    branches:
+      - 'feature/frostfall-2026-winter-hearth-guild-market-review'
+    paths:
+      - 'tools/frostfall-winter-hearth-2026-rules*'
+      - 'tools/winter-hearth-review/**'
+      - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
+      - '.github/workflows/winter-hearth-guild-review.yml'
+  pull_request:
+    paths:
+      - 'tools/frostfall-winter-hearth-2026-rules*'
+      - 'tools/winter-hearth-review/**'
+      - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
+      - '.github/workflows/winter-hearth-guild-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  pure-rules:
+    name: Isolated 2026 milestone and cap rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run Winter Hearth domain rule tests
+        run: node --test tools/frostfall-winter-hearth-2026-rules.test.mjs

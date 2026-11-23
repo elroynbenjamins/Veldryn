@@ -42,6 +42,9 @@ export interface ProposedMintPiecePoolV2{
  readonly tier:V2Tier;
  readonly slot:V2Slot;
  readonly forgeSetId:string|null;
+ /** Exact original class and weapon-hand restrictions; no universalizing. */
+ readonly classRestriction:string|null;
+ readonly hands:'one'|'two'|'dual'|null;
  readonly rarity:V2Rarity;
  readonly exactExistingRarityCount:number;
  readonly originalAvailableSourceStats:number;
@@ -148,7 +151,8 @@ export function reviewNextMintAffixPieceV2(
  // the review. Nothing below is accepted by existing mint or Combat handlers.
  return Object.freeze({
   pieceId:piece.id,role:piece.role,tier:piece.tier,slot:piece.slot,
-  forgeSetId:piece.setId??null,rarity,
+  forgeSetId:piece.setId??null,
+  classRestriction:piece.classRestriction??null,hands:piece.hands??null,rarity,
   exactExistingRarityCount:desired,
   originalAvailableSourceStats:original.length,
   potencyRejected:original.some(x=>x.stat==='potency'),

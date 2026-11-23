@@ -18,6 +18,15 @@ export interface CombatV2EquipmentEffects {
   shieldStrengthPct:number;
   /** Fractional outgoing shadow/arcane/nature DoT strength bonus. */
   hexPotencyPct:number;
+  /**
+   * HIDDEN Forge 2.0 sources only; explicitly optional for legacy and older
+   * synthetic Combat V2 copies. Never inferred from generic Potency.
+   */
+  tenacityPp?:number;
+  /** Direct authored class skills only; excludes BASIC, DoT, trait/gem hits. */
+  abilityDamagePct?:number;
+  /** Actual healing by authored class abilities (direct and HoT), not shields. */
+  forgeHealingPowerPct?:number;
 }
 export interface CombatV2LoadoutMeta {
   version:2;

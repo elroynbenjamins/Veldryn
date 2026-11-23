@@ -11,6 +11,21 @@
     "src/server/combat/v2/__tests__/equipment-expanded-member-source-audit.ts",
     "src/server/equipment/equipment-crafting-v2-material-source-review.ts",
     "src/server/equipment/equipment-crafting-v2-unified-reservation-review.ts",
-    "src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts"
+    "src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts",
+    "src/server/equipment/equipment-crafting-v2-material-origins-v6-review.ts",
+    "src/server/equipment/equipment-crafting-v2-atomic-handoff-v7-review.ts",
+    "src/server/combat/v2/equipment-frozen-forge-bridge.ts",
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts",
+    "src/server/combat/v2/equipment-forge-set-identity-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts",
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts",
+    "src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts",
+    "src/server/combat/v2/equipment-online-readback-review.ts",
+    "src/server/combat/v2/equipment-forge-set-worn-readiness.ts",
+    "src/server/combat/v2/equipment-online-cas-recheck.ts",
+    "src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts",
+    "src/server/combat/v2/boss-telegraph-projection.ts",
+    "src/server/combat/v2/__tests__/boss-telegraph-projection.ts"
   ]
 }

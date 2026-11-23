@@ -2,11 +2,31 @@ name: Equipment + Combat 2.0 expanded-set integration (private)
 on:
   pull_request:
     paths:
+      - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
+      - 'backend/src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts'
+      - 'backend/src/server/combat/v2/equipment-online-readback-review.ts'
+      - 'backend/src/server/combat/v2/equipment-online-cas-recheck.ts'
+      - 'backend/src/server/combat/v2/equipment-forge-set-worn-readiness.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts'
+      - 'backend/src/server/combat/types.ts'
+      - 'backend/src/server/combat/engine.ts'
+      - 'backend/src/server/combat/v2/equipment-affixes.ts'
+      - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
+      - 'backend/src/server/combat/v2/skill-effects.ts'
+      - 'backend/src/server/combat/v2/boss-telegraph-projection.ts'
+      - 'backend/src/server/combat/v2/__tests__/boss-telegraph-projection.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-launch-registry.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-member-source-audit.ts'
       - 'backend/src/server/equipment/equipment-crafting-v2-material-source-review.ts'
       - 'backend/src/server/equipment/equipment-crafting-v2-stackable-material-boundary-review.ts'
       - 'tools/test-eq2-stackable-material-boundary-v5.mjs'
+      - 'backend/src/server/equipment/equipment-crafting-v2-material-origins-v6-review.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-atomic-handoff-v7-review.ts'
+      - 'tools/test-eq2-material-origin-atomic-v6-v7.mjs'
       - 'backend/src/server/equipment/equipment-crafting-v2-unified-reservation-review.ts'
       - 'tools/test-eq2-material-source-and-reservation-v4.mjs'
       - 'docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v2.json'
@@ -49,6 +69,18 @@ jobs:
         run: pnpm --dir backend install --frozen-lockfile
       - name: Compile real Forge and Combat 2.0 manifest imports, strict TypeScript
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
+      - name: Review 15 original Forge set tactical identities without granting unapproved bonuses
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.js
+      - name: Verify source-only 15 original Forge set identities versus 48 unreleased set concepts
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-identity-review.js
+      - name: Prove original Forge Tenacity, direct ability damage and class-healing rolls hit only their intended engine events
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.js
+      - name: Project only actual Boss V2 cast and status-clear events, deny fake boss signals
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/boss-telegraph-projection.js
+      - name: Prove V1 cleanse isolation and two independent Combat V2 Support cures
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.js
+      - name: Rehearse 18 class-specs and 4 allies using real frozen Forge 2.0 item rolls
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-launch-registry.js
       - name: Enforce exact source-gapped 204 member plan and no legacy set hijacking
@@ -65,8 +97,10 @@ jobs:
         run: node tools/test-eq2-material-source-and-reservation-v4.mjs
       - name: Verify exact unregistered EQ2 material identities against all 746 crafting paths
         run: node tools/test-eq2-stackable-material-boundary-v5.mjs
+      - name: Verify V6 source processing and V7 atomic craft preflight hold
+        run: node tools/test-eq2-material-origin-atomic-v6-v7.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
-          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2|reviewWornRealForgeSetsV2|prepareForgeCombatRevisionPreflightV2|recheckForgeCombatPartyRevisionsV2|projectBossCombatReplaySignalsV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
             echo 'Unissued 2.0 set draft leaked into live routes'; exit 1
           fi

@@ -12,18 +12,18 @@ import {simulateCombat} from '../../engine';
 import {launchPlayer} from '../../content/launch-combat';
 import {CLASS_NAMES_V2} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
-import type {CombatantDefinition,CombatStats} from '../../types';
+import type {CombatantDefinition} from '../../types';
 import {
  reviewForgeRoleFitAndStackingV2,classifyForgeRoleAffixFitV2,
 } from '../equipment-forge-affix-role-balance-review';
 import {
  reviewProposedForgeRoleSlotAffixesV2,
 } from '../equipment-forge-affix-pool-reconciliation-review';
-import {V2_SERVER_AFFIX_RANGES,V2_SERVER_PIECES,V2_SERVER_RARITY_BANDS,
+import {V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BANDS,
  draftEquipmentV2Outcome,EQUIPMENT_V2_SERVER_RULES_VERSION,
  type V2Affix,type V2Slot}
  from '../../../equipment/equipment-crafting-v2-rolls';
-import {V2_SERVER_RECIPES}
+import {V2_SERVER_PIECES,V2_SERVER_RECIPES}
  from '../../../equipment/equipment-crafting-v2-manifest';
 import {
  compileTrustedEquipmentAffixesV2,EQUIPMENT_AFFIXES_V2,

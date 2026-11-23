@@ -241,6 +241,13 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_CAPSTONE')&&
        source.definition.combatV2?.capstoneId?.endsWith(':final_verdict')&&hpPct(target)<.30)
       raw*=target.definition.boss?1.08:1.18;
+    // Exact Forge Ability Damage applies only to direct original player class abilities.
+    // BASIC attacks, DoTs, trait/gem echoes and capstones cannot borrow this roll.
+    if(v2Encounter&&eventType==='damage'&&source.definition.combatV2&&
+       source.definition.team==='players'&&abilityId!=='BASIC'&&
+       !abilityId.startsWith('V2_')&&
+       source.definition.abilities.some(a=>a.id===abilityId))
+      raw*=1+clamp(sourceGear?.abilityDamagePct??0,0,1);
     const hpBeforeReactive=hpPct(target);
     if(v2Encounter&&eventType==='damage'&&!abilityId.startsWith('V2_')){
       if(source.combatV2)raw*=outgoingReactiveMultiplierV2(source,target,now);
@@ -416,8 +423,16 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   };
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=v2Encounter&&effect.healBelowHpPct!==undefined&&hpPct(target)<effect.healBelowHpPct
       ?1+clamp(effect.healBonus??0,0,.40):1;
+    // Original Forge Healing Power boosts authored class heals and class HoTs
+    // only, not shields, potion/leech/trait or GEM secondary effects.
+    const authoredClassHeal=v2Encounter&&source.definition.team==='players'&&
+      Boolean(source.definition.combatV2)&&
+      source.definition.abilities.some(a=>a.id===abilityId);
+    const forgeHealMultiplier=authoredClassHeal?
+      1+clamp(source.definition.combatV2?.equipmentEffects?.forgeHealingPowerPct??0,0,1):1;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
-      (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+      (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
+      forgeHealMultiplier); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
       if(!abilityId.startsWith('V2_'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});
@@ -459,6 +474,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
+  // Forge Tenacity modifies only ordinary hostile abilities on Combat 2.0
+  // actors; boss-exclusive status locks, authored phases, buffs and HoTs
+  // remain immune until a distinct approved mechanic tag exists.
+  const forgeStatusDuration=(source:CombatantState,target:CombatantState,
+      abilityId:string,baseDurationMs:number)=>{
+    if(!v2Encounter||source.definition.team!=='enemies'||source.definition.boss||
+      target.definition.team!=='players'||!target.definition.combatV2||
+      !source.definition.abilities.some(a=>a.id===abilityId))
+      return baseDurationMs;
+    const tenacity=clamp(target.definition.combatV2.equipmentEffects?.tenacityPp??0,0,1);
+    return Math.max(1,Math.round(baseDurationMs*(1-tenacity)));
+  };
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
@@ -480,7 +507,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         (effect.damageType==='shadow'||effect.damageType==='arcane'||effect.damageType==='nature');
       const hexBonus=isHex&&v2Encounter?
         clamp(source.definition.combatV2?.equipmentEffects?.hexPotencyPct??0,0,1):0;
-      const expiresAt=now+(effect.durationMs??3000);
+      const expiresAt=now+(effect.kind==='dot'?
+        forgeStatusDuration(source,target,abilityId,effect.durationMs??3000):
+        effect.durationMs??3000);
       const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
         coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
@@ -510,7 +539,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         resource(source,'taunt',now,abilityId);
         if(!abilityId.startsWith('V2_'))runReactive(source,'taunt',now,target);
       }}return;}
-    if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',expiresAt=now+(effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
+    if(effect.kind==='buff'||effect.kind==='debuff'){const tag=effect.tag??'generic',
+      expiresAt=now+(effect.kind==='debuff'?
+        forgeStatusDuration(source,target,abilityId,effect.durationMs??5000):
+        effect.durationMs??5000);const capstoneId=abilityId.startsWith('V2_CAPSTONE:')||abilityId.startsWith('V2_PASSIVE:')?abilityId:undefined;
       if(capstoneId&&effect.kind==='buff')target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==capstoneId||m.tag!==tag);
       const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
         ...(capstoneId?{v2CapstoneId:capstoneId}:{})};

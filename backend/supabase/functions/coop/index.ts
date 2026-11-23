@@ -52374,6 +52374,8 @@ function frostfallRewardMultiplierForBoss(graph2, bossNode) {
   if (bossNode.kind !== "boss" || bossNode.contentId !== graph2.nodes.find((node) => node.nodeId === graph2.bossNodeId)?.contentId) throw new Error("invalid_frostfall_boss_exit");
   const cleared = bossNode.depth - 1;
   if (cleared < 7 || cleared > DUNGEON_ENDURANCE.maxNormalRooms || cleared % DUNGEON_ENDURANCE.checkpointInterval !== 0) throw new Error("invalid_frostfall_boss_depth");
+  const canonical2 = graph2.nodes.find((node) => node.nodeId === bossNode.nodeId);
+  if (!canonical2 || canonical2.kind !== "boss" || canonical2.depth !== bossNode.depth || canonical2.contentId !== bossNode.contentId || canonical2.modifierId !== bossNode.modifierId || canonical2.nextNodeIds.length !== 0) throw new Error("invalid_frostfall_boss_exit");
   return FROSTFALL_ENDURANCE_DEPTH_REWARDS[cleared / DUNGEON_ENDURANCE.checkpointInterval - 1];
 }
 function generateFrostfallEnduranceGraph(def, runId, secret) {
@@ -52720,7 +52722,7 @@ var EventExpeditionService = class {
     return structuredClone(run);
   }
   claimReward(input) {
-    const key = `${input.accountId}:${input.requestId}`, prior = this.claims.get(key);
+    const key = `${input.accountId}:${input.runId}:${input.requestId}`, prior = this.claims.get(key);
     if (prior) return { marks: prior.marks, idempotentReplay: true };
     const run = this.repository.get(input.runId);
     if (!run) throw new Error("event_run_not_found");

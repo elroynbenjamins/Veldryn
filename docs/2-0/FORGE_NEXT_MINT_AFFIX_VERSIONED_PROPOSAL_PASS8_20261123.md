@@ -1,73 +1,35 @@
-# Veldryn Equipment 2.0 — Versioned Next-Mint Affix Policy, Pass 8
-**23 November 2026 — hidden authoring / source QA only — no deployment, original RNG changes, or real item modification.**
+# Veldryn Equipment 2.0 — UNIVERSAL random bonus rolls (revised Pass 8)
+**23 November 2026 · Approved DESIGN DIRECTION from owner, but code remains hidden review-only / nonissuable.**
 
-## Problem verified by source-backed pass 7
-The original Equipment 2.0 hidden Forge contains 169 pinned T1–T4 pieces (42 members of 15 source sets), six source rarity bands, and the original 70% slot preference / 30% weighted role fallback. The Combat 2.0 executor applies affixes only in its current slot allowlist. The verified audit reported:
-- 158 / 169 original templates have at least one possible original-roll channel that Combat cannot currently execute.
-- 77 / 169 templates cannot support *their maximum* original rarity roll count with only presently legal Combat channels.
-- 37 / 169 templates have **zero** currently safe executable roll channels.
-- These are template-level compatibility issues, NOT empirical probabilities of an unusable drop. No old item may be silently re-rolled, converted, replaced, traded, or granted stats.
+## User-approved separation
+1. **Random bonus affixes are NOT class- or role-bound.** Tank, Damage and Support equipment of the same slot and tier share exactly the same possible random bonuses, independently of the character who crafts, equips or trades it. A great off-role combination can be rare, valuable and useful in specialist builds. The roll probability must not silently prioritize the equipping class or its original role.
+2. **Fixed innate % stats can be item-specific or class-specific.** These are authored separately, on selected rare/special/set pieces, with a distinct signed, non-random item definition. They may interact with an explicitly authored class mechanic. They never use a random affix slot and do not override the universal random pool.
+3. **Slot restrictions still matter** (where the Combat 2.0 executor can apply the stat), but they must not be confused with class or role restrictions. A Tank weapon can roll Crit Rate/Ability Damage; Damage chest can roll Defense/HP; Support gloves can roll offensive stats. A stat without a working Combat effect or exact tier range is not quietly invented.
 
-## What this pass authors
-New *review-only* source version `eq2-hidden-next-mint-slot-safe-candidate-v1`, implemented in `backend/src/server/combat/v2/equipment-forge-next-mint-roll-policy-review.ts`. It is deliberately NOT the original Forge rulesVersion and is not accepted by the generator, craft ledger, drop/market service or Combat stat authorizer.
+## Current actual source status
+The old hidden Forge generator version `equipment-crafting-v2-draft-1` has ROLE-weighted pools and 70%-preferred-slot behavior. This is an **old draft**, NOT the newly accepted design and NOT a production-enabled generator. The 169 pinned server equipment identities, 42 original set members, 338 recipes and old generator remain unchanged in GitHub. The frozen item type `V2ExactEquipmentTemplate` includes minted base stats, random affixes, rarity, quality, role, source class and hands restriction, **but it does not yet have a distinct, executable authored innate % stat field**. Some reviewed class/set % concepts and traits exist elsewhere; they are *not evidence* that innate bonuses have been activated or released.
 
-For each actual server-pinned T1–T4 piece and each of the six original rarity bands, the pure read-only reviewer:
+The initial original-source audit (pass 7) found 158/169 templates exposed to unsupported original role rolls and 77/169 lacking enough source-role legal affix choices. That is **historical diagnostic of the old role-based pool only**, not a problem to fix by giving each role a different upgraded pool.
 
-1. Uses only the **actual original role-weighted stat list**, exact source slot preference, rarity count and affix %-range, with strict validation of the original 100 weight points.
-2. Excludes ambiguous `potency` rather than treating it as attack, healing or caster power. Every other chosen stat must have the exact source-to-Combat mapping already implemented in the frozen Forge bridge.
-3. Retains **every already-executable original source stat** for that role/slot. If the number of distinct choices falls short of that tier/rarity's existing affix count, it proposes the **minimum number** of additional role-authored slot permissions, prioritizing the original slot preference and original weights. These extra permissions are explicitly `PENDING_COMBAT_SLOT_APPROVAL`. No global Combat slot allowlist is widened in code.
-4. Proves the resulting **proposal** can theoretically fill all original 1/2/3-affix rarity counts with distinct existing source stats after the proposed slot permissions are reviewed and approved. It never adds bonus rolls or invents a new numerical stat magnitude.
-5. Returns immutable provenance and proposed-permission decisions; `permittedToMint:false`, `canIssueItems:false`, `canEditExistingItems:false`.
+## Revised candidate — shared pool independent of class and role
+The review-only `eq2-hidden-class-neutral-random-bonus-affixes-candidate-v2` derives **11 original mechanically mapped Forge affix identities** from the pinned `V2_SERVER_AFFIX_RANGES` and verified Forge->Combat mapping, excluding only ambiguous `potency`. It filters candidates **solely** by the existing Combat 2.0 supported slot allowlist; it does NOT consult the Forge role pool, any character's class, specialization or a set family to decide bonuses.
 
-### What the proposal does NOT automatically solve
-- Existing Combat 2.0 slot rules intentionally prohibit some combinations. The suggested permissions are **not currently executable**, and may be rejected for game balance or class identity reasons. For example, a tank weapon need not automatically get every defensive affix simply because they come from the original Tank role pool.
-- Renormalizing role weights after excluding `potency` would change exact roll probabilities; the proposed reviewer does **not** choose new weights, roll randomness, draw affixes, guarantee player outcomes, issue item templates or update the original 70% preference. These are **pending approval** and a versioned dedicated new-mint implementation.
-- Original `V2_SERVER_AFFIX_RANGES` percentages are reused as design source bounds, **not** approved final Combat 2.0 per-stat caps, multi-item CP budgets or final cross-class balancing.
-- A Combat type bonus (Blunt/Piercing/Slashing affix) would need to consume **one original random roll**; no free fourth roll is permitted.
-- Existing frozen pieces with `potency` or forbidden-slot rolls stay recorded and owned; no silent stat loss, item deletion or migration. They remain blocked from Combat 2.0 equip until their exact stat meaning and legitimate legacy conversion policy are agreed. Pre-2.0 equipment remains permanently nontradeable on Player Market 2.0.
-- The 48 new T1–T4 Combat sets and their 204 conceptual identities are **not** original pinned Forge items; this review does not authorize their crafting, rarity ranges or any 2/4/6/8/10 bonuses.
+For every combination of 169 equipment identities × 6 rarity bands, the proposed pool must contain at least as many unique roll channels as that tier/rarity's existing 1–3 roll budget. It never creates a fourth roll or a new numerical percentage. Exact source tier ranges are retained pending owner balance review. The class restriction and 1-/2-/dual-handed weapon identity are still carried into the immutable review as **equip/source data**, not a modifier to bonus availability. The same tier+slot returns the same candidate list across all three roles, with verified tests.
 
-## Verified CI results and exact slot-approval matrix
+**Scope of the 11 sourced random bonuses:** Defense %, Maximum HP %, Ward, Tenacity, Crit Rate, Crit Damage, Haste, Penetration, Accuracy, Ability Damage %, and Forge Healing Power %. These represent Forge's 11 non-Potency authored source stats with original tier magnitudes. Future Attack %, Evasion, Shield Strength, class-healing or class-magic channels need **their own source-approved magnitude and semantic integration** before entering the same universal pool. They must not be restricted to a class once approved.
 
-GitHub Actions scoped Equipment + Combat CI passed with original source manifest and strictly compiled test. The proposal produces **0 theoretical affix-count shortfalls after pending approvals** across 169 original templates × 6 rarities = **1,014 source scenarios**. Of those, **295** tier/rarity scenarios across **77** source items require a proposed slot expansion. **719** scenarios need no new slot permission. These are scenario counts, NOT observed rolls, expected drop rates or approvals. CI identified **36 distinct role × slot × stat permission changes**, all still inactive.
+### Probability and luck (still needs exact approval)
+- Use ONE class-neutral probability distribution for each slot/tier/rarity. The probability of a stat must not depend on character/class, or on whether its original equipment template belonged to the Tank/Damage/Support family.
+- Preserve **different stat values/grades** within the original authored tier range and the existing rarity-dependent number of bonus rolls. A high-grade roll in a coveted combination should remain unusual, especially on rare dungeon drops and premium set equipment.
+- Do **not** guarantee “best” stats for a class, hide unwanted rolls or auto-correct unlucky equipment. The player economy needs scarcity; no silent class weighting.
+- All rolls remain **distinct stat identities** per copy; bonuses on distinct worn pieces are additive where appropriate and constrained by a separately approved full-build cap, never only the strongest roll.
+- Future physical subtype bonuses, tool XP rolls or other new special channels must have separate source/semantic design, and if they are random equipment affixes, they **replace** one of the existing rarity roll slots rather than adding free affixes.
+- Any proposed new probability weighting, tier magnitude caps, accumulated CP values or “perfect roll” odds are **not approved** by this document.
 
-| Role | Equipment slot | Additional *proposed* Combat channel(s) |
-|---|---|---|
-| Damage | Boots | Accuracy, Critical Damage |
-| Damage | Cape | Critical Damage |
-| Damage | Chest | Ability Damage, Critical Damage, Critical Rate |
-| Damage | Helmet | Accuracy, Critical Damage, Critical Rate |
-| Damage | Legs | Ability Damage, Critical Damage, Critical Rate |
-| Damage | Offhand | Ability Damage, Critical Damage, Critical Rate |
-| Support | Amulet | Haste, Maximum HP |
-| Support | Boots | Maximum HP |
-| Support | Gloves | Forge Healing Power, Ward |
-| Support | Legs | Ward |
-| Support | Ring | Forge Healing Power |
-| Support | Weapon | Ward |
-| Tank | Amulet | Defense, Maximum HP, Tenacity |
-| Tank | Boots | Maximum HP |
-| Tank | Cape | Defense |
-| Tank | Gloves | Defense, Maximum HP, Tenacity |
-| Tank | Ring | Defense, Tenacity |
-| Tank | Weapon | Defense, Maximum HP, Tenacity |
+### Innate % stats — a different contract
+Authored innate % bonuses should be associated with a canonical piece ID (and where appropriate a specific class/skill/effect), not with RNG. For example, a rare Blade Dancer dagger could have a fixed, designed synergy with one of its abilities; the weapon's random bonus pool would still be identical to another item in the same slot/tier, and ownership/gear eligibility would remain source-verified. These effects cannot be activated until the exact item authority, server stats projection, stack interactions and owner-reviewed coefficients are implemented. **A class-specific innate must never imply class-restricted random rolls.**
 
-**Design-review considerations before approval:**
-- Crit Rate / Critical Damage on Damage armor can create powerful full-build stacking even if each individual roll fits its source range. Review class/build-wide crit caps and role-specific item identity; do not authorize automatically.
-- Ability Damage on Chest/Legs and Tenacity/HP on Tank weapons shift each equipment slot's intended specialization. If rejected, introduce a separately authored source stat/slot policy with strict replacement and the same 1–3 roll budget; do not make the item unrollable.
-- Support Ward/Healing distribution should remain useful in real class healing, barrier, support and boss-counterplay simulations, not simply inflate a synthetic DPS metric.
-- These 36 are **minimum coverage proposals chosen by existing source weights and preferences**, not finalized item design, exact new-mint RNG probabilities or approved mechanical effects.
-- Preserve original source class restrictions and one-, two- and dual-handed identities on every weapon; exhaustive CI checks now verify these metadata fields.
-- For approval, additionally validate summed multi-slot affix totals, outcome scarcity, original PvE counters, actual Skill/Companion 2.0 mechanics and the authoritative Combat Power formula. Slot widening must be versioned and never applied retroactively to existing items.
+## CI and launch gates
+The updated test exercises 1,014 actual source-pinned equipment/rarity scenarios; it cross-compares same-slot/tier candidates across roles and verifies that off-role bonuses are possible. It checks exact Combat slot legality, original tier magnitude arrays, no duplicate affix IDs, stable original class/hand data, and no new minting or item mutation. This is a pure authoring test, **not a generated-rarity statistics simulation or proof of future actual RNG odds**.
 
-## What must be approved before implementing a new-mint generator
-- Every proposed *role × slot × stat* extension after gameplay/economy review; especially sources with no currently legal channels.
-- Whether to assign distinct `potency` semantics by class/role, replace it in future roll pools with an already-approved stat, or introduce a separately versioned effect.
-- Rarity probability, quality distribution, 70/30 preference and future renormalized weights, including equipment volume, skill XP and market scarcity impacts.
-- True final Combat Power formula, cumulative affix caps, class/companion balance and source-complete set effects.
-- New immutable generation identity, server-side mint/claim/market custody enforcement (legacy excluded), hidden integration CI, and the coordinated 2.0 launch gate, with UI/theme owner review.
-
-## CI and scope
-Strict Equipment + Combat TypeScript compilation and an exhaustive **169 × 6 = 1,014** source-backed scenario test. Every selected candidate must match its source role pool, original percentage range, original count, class/slot source, unique stat type and current/pending Combat permission. Unknown/counterfeit pieces and client-invented rarity are rejected. Source generator and combat allowlists are not changed. Broader Skills CI failures from app import paths and TS rootDir are separate launch blockers.
-
-**This is a candidate design for approval, NOT an authorized roll table or promised release.**
+Before a real new-mint generator can ship: approve class-neutral draw weights, any stat-specific roll caps, versioned minted-identity and source provenance, integration with future item-specific innate % stats, true combined 10-slot Combat Power, authoritative source-set effects, companion and boss balance, Player Market legacy exclusion, and user review of the final UI/themes. All hidden PRs stay unmerged pending the coordinated 2.0 release.

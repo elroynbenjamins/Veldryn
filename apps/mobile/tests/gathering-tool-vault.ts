@@ -81,6 +81,13 @@ const legacy=createCharacter(newGame(0),'IRONWARDEN','Vault Legacy');
 const old:GameState={...legacy,character:{...legacy.character!,level:46,equippedToolIds:{woodcutting:toolId}},
  skills:legacy.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:46,xp:totalXpAtLevel(46)}:skill),
  inventory:{...legacy.inventory,stacks:[{itemId:toolId,quantity:1}]}};
+// A save with the single old best-tool pointer must retain its original
+// tier when a different new tier is equipped.
+const previousHighTool='ASTER_IRON_HATCHET';
+const migrated:GameState={...old,character:{...old.character!,equippedToolIds:{woodcutting:previousHighTool}}};
+const modernAdded=equipGatheringTool(migrated,toolId,100);
+ok(equippedGatheringTools(modernAdded,'woodcutting').length===2,'Legacy equipped tier is retained when another tier is added');
+ok(equippedGatheringTools(modernAdded,'woodcutting').some(tool=>tool.id===previousHighTool),'Modern tier migration cannot silently discard the legacy tool');
 const savedLegacy=saveGatheringToolReserve(old,toolId,undefined,100);
 ok(equippedGatheringTools(savedLegacy,'woodcutting').length===1,'Legacy pointer still contributes exactly once');
 ok(reservedGatheringTool(savedLegacy,'woodcutting',1)?.tool.id===toolId,'Pre-affix copy can be saved without inventing a rolled receipt');

@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts'
       - 'backend/src/server/combat/types.ts'
       - 'backend/src/server/combat/engine.ts'
       - 'backend/src/server/combat/v2/equipment-affixes.ts'
@@ -61,6 +62,8 @@ jobs:
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
       - name: Verify source-only 15 original Forge set identities versus 48 unreleased set concepts
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-identity-review.js
+      - name: Prove original Forge Tenacity, direct ability damage and class-healing rolls hit only their intended engine events
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.js
       - name: Rehearse 18 class-specs and 4 allies using real frozen Forge 2.0 item rolls
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas

@@ -52,9 +52,9 @@ export function reviewPhysicalAffixReplacementV2(
  if(!input||input.mintStatus!=='FUTURE_NEW_EQ2_TEMPLATE_UNISSUED_REVIEW_ONLY')
    fail('cannot_retrofit_original_items');
  const piece=v2ServerPiece(input.pieceId);
- if(!piece)fail('unregistered_piece');
+ if(!piece)throw Error('eq2_physical_affix_budget_unregistered_piece');
  const band=V2_SERVER_RARITY_BANDS.find(r=>r.rarity===input.rarity);
- if(!band)fail('unknown_original_forge_rarity');
+ if(!band)throw Error('eq2_physical_affix_budget_unknown_original_forge_rarity');
  const expectedCount=piece.tier>=3?band.affixesHighTier:band.affixesLowTier;
  if(!Array.isArray(input.sourceRolls)||input.sourceRolls.length!==expectedCount||
     !Number.isSafeInteger(input.replaceIndex)||input.replaceIndex<0||
@@ -74,7 +74,7 @@ export function reviewPhysicalAffixReplacementV2(
  const eligibility=reviewPhysicalAffixEligibilityV2(
   input.pieceId,input.proposedStat,input.subtype);
  if(!eligibility||eligibility.tier!==piece.tier)
-   fail('proposed_subtype_not_eligible');
+   throw Error('eq2_physical_affix_budget_proposed_subtype_not_eligible');
  if(!Number.isFinite(input.proposedPercent)||
     input.proposedPercent<eligibility.minPercent-1e-7||
     input.proposedPercent>eligibility.maxPercent+1e-7)
@@ -125,7 +125,7 @@ export function reviewPhysicalAffixBuildV2(
     !Number.isFinite(result.proposedPercent)||
     result.proposedPercent<eligible.minPercent-1e-7||
     result.proposedPercent>eligible.maxPercent+1e-7)
-   fail('tampered_or_duplicate_equipment_budget');
+   throw Error('eq2_physical_affix_budget_tampered_or_duplicate_equipment_budget');
   slots.add(piece.slot);
   const dest=result.proposedStat==='physical_type_damage_pct'?damage:resistance;
   dest[result.subtype]+=result.proposedPercent/100;

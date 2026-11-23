@@ -19,9 +19,8 @@ import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effec
 import {CLASS_NAMES_V2,serverBuildCatalogV2} from './skill-catalog';
 import {CLASS_ROLES_V2,validateBuildV2,type ClassIdV2,type GearSlotV2} from './build-contract';
 import {
- compileTrustedEquipmentAffixesV2,EQUIPMENT_AFFIXES_V2,
- type AppliedEquipmentAffixV2,type EquipmentAffixIdV2,
- type TrustedEquipmentItemAffixesV2,type ServerAffixPolicyV2,
+ compileOriginalFrozenForgeAffixesV2,ORIGINAL_FORGE_COMBAT_AFFIX_MAP_V2,
+ type AppliedEquipmentAffixV2,type ServerAffixPolicyV2,
 } from './equipment-affixes';
 import {
  v2ServerExactTemplateConsistent,v2ServerCreateExactTemplate,
@@ -41,16 +40,10 @@ import type {V2HiddenStorageReservation}
  from '../../equipment/equipment-crafting-v2-storage-reservations';
 import type {V2CustodyCopy,V2CustodyState} from '../../equipment/equipment-crafting-v2-custody';
 
-export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
- armor:'defense_pct',maxHp:'max_hp_pct',ward:'ward_pp',
- critRate:'crit_rate_pp',critDamage:'crit_damage_pct',
- haste:'haste_pp',penetration:'penetration_pp',accuracy:'accuracy_pp',
- tenacity:'tenacity_pp',abilityDamage:'ability_damage_pct',
- healingPower:'forge_healing_power_pct',
-};
-// Generic Potency remains ambiguous: NO automatic Potency->Hex or other
-// conversion. Healing Power, Tenacity and Ability Damage now have separate,
-// explicitly scoped, original-Forge mechanics with no invented percentages.
+export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2=ORIGINAL_FORGE_COMBAT_AFFIX_MAP_V2;
+// Original Forge mint+claim source owns slot legality. The SOURCE-ONLY
+// alternate compiler rechecks exact recipe and roll before granting a
+// slot-compatible affix; all synthetic/legacy items retain strict slot rules.
 const minLevel:Readonly<Record<V2ExactEquipmentTemplate['tier'],number>>={
  1:2,2:12,3:26,4:40,
 };
@@ -274,23 +267,14 @@ export function compileRealFrozenForgeActorV2(
  // unscaled definitions and would multiply Forge rarity/quality a second time.
  const baseActor:CombatantDefinition={...skilled,stats:baseStats,
   tags:[...(skilled.tags??[]),'combat-v2-gear-base-resolved']};
- const affixRows:TrustedEquipmentItemAffixesV2[]=resolved.map(({mint})=>{
-  const item=mint.exactItem;
-  return {instanceId:mint.id,slot:item.slot,tier:'T'+item.tier,
-   rarity:item.rarity,quality:item.quality,affixes:item.affixes.map(roll=>{
-    const id=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.stat];
-    if(!id)reject('forge_affix_effect_unimplemented:'+roll.stat);
-    if(!EQUIPMENT_AFFIXES_V2[id].slots.includes(item.slot))
-     reject('forge_combat_affix_slot_policy_conflict:'+roll.stat+':'+item.slot);
-    const range=V2_SERVER_AFFIX_RANGES[roll.stat][item.tier-1];
-    if(!range||roll.percent<range[0]-1e-7||roll.percent>range[1]+1e-7)
-     reject('forge_affix_range_mismatch');
-    return {id,value:round(roll.percent/100)};
-   })};
- });
  // No Combat re-roll, re-rarity, re-quality, generic Potency reinterpretation,
- // or unapproved proc is used. Original Forge percentages win.
- const affixes=compileTrustedEquipmentAffixesV2(baseActor,affixRows,
+ // or unapproved proc. Source-owned and original Forge percentage rolls win.
+ // Complete account mint/custody/claim replay was verified above. The exact
+ // Forge-specific affix compiler revalidates each original recipe + item,
+ // permitting the ORIGINAL roll outside synthetic Combat slot preferences
+ // without broadening generic or legacy equipment eligibility.
+ const affixes=compileOriginalFrozenForgeAffixesV2(baseActor,
+  resolved.map(({mint,copy})=>({mint,slot:copy.equippedSlot!})),
   source.affixPolicy,true);
  const evidence:FrozenForgeEvidenceV2={
   source:'EQ2_FROZEN_FORGE_PRE_SCALED_NO_DOUBLE_MULTIPLIER',

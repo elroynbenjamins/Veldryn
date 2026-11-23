@@ -1,11 +1,14 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 
 /** Crafting confirmations live in the existing button, not a toast or modal. */
+export type CraftActionOutcome='queued'|'completed';
+
 export type CraftActionFeedback={
   recipeId:string;
   quantity:number;
   phase:'pending'|'success'|'error';
   error?:string;
+  outcome?:CraftActionOutcome;
 }|null;
 
 export function useCraftActionFeedback(){
@@ -14,15 +17,15 @@ export function useCraftActionFeedback(){
   const resetTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
   useEffect(()=>()=>{if(resetTimer.current)clearTimeout(resetTimer.current)},[]);
 
-  const run=useCallback(async(recipeId:string,quantity:number,action:()=>void|Promise<void>)=>{
+  const run=useCallback(async(recipeId:string,quantity:number,action:()=>void|CraftActionOutcome|Promise<void|CraftActionOutcome>)=>{
     // Protect repeated taps while a signed command is being saved.
     if(inFlight.current)return;
     inFlight.current=true;
     if(resetTimer.current){clearTimeout(resetTimer.current);resetTimer.current=null;}
     setFeedback({recipeId,quantity,phase:'pending'});
     try{
-      await action();
-      setFeedback({recipeId,quantity,phase:'success'});
+      const outcome=await action();
+      setFeedback({recipeId,quantity,phase:'success',...(outcome?{outcome}:{})});
       resetTimer.current=setTimeout(()=>{
         setFeedback(current=>current?.recipeId===recipeId&&current.phase==='success'?null:current);
         resetTimer.current=null;

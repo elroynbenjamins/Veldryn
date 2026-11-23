@@ -6,6 +6,8 @@ import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../../engine';
 import {prepareAsterfallBossV2} from '../../boss-v2-asterfall-prototype';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
+import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
+import {ENEMY_PHYSICAL_RESISTANCE_RULES_V2} from '../enemy-physical-resistance-authority';
 import {projectBossCombatReplaySignalsV2}
  from '../boss-telegraph-projection';
 import {launchPlayer} from '../../content/launch-combat';
@@ -125,11 +127,12 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
 };
 const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
- kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1){
+ kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1,
+ pieceIdOverride?:string){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
-  tierItems[tier][role];
+  (pieceIdOverride??tierItems[tier][role]);
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
@@ -848,6 +851,96 @@ const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
  /forge_affix_effect_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
+// Source-bound integration: one actual frozen Forge WEAPON and one persisted
+// Enemy V2 boss kit can now share an encounter, but the *candidate* resistance
+// profile must be explicitly opted into the hidden review separately.
+const physicalWayfinder=make('WAYFINDER',0,'supported',1,
+ 'EQ2_WEAPON_T1_WAYFINDER');
+const physicalBoss:CombatantDefinition={
+ id:'BOSS_EXP_ROOT',name:'Rootbound Heart',team:'enemies',role:'enemy',level:35,
+ boss:true,stats:{maxHp:1000000,attackPower:1,healingPower:0,defense:180,
+ accuracy:0,evasion:0,critChance:0,critMultiplier:1.5,haste:0},
+ basicAttackMs:999999,basicAttackCoeff:0,abilities:[],phases:[],
+ tags:['pve:archetype:guardian'],
+};
+const physicalInput:CombatInput={
+ seed:'QA_AUTHENTIC_FORGE_SIGNED_ENEMY_V2_ROOT',
+ players:[physicalWayfinder.actor],enemies:[physicalBoss],
+ maxDurationMs:9500,tickMs:100,
+};
+const kitCandidate=prepareSoloEnemyKitsV2([physicalBoss],{
+ ruleset:ENEMY_V2_RULESET,serverSeed:physicalInput.seed,
+ encounterId:'QA_FORGE_ROOT_PERSISTED_KIT',region:'asterfall',
+ equipmentTier:2,eliteEnemyIds:[],
+});
+const savedKit:PersistedEnemyKitV2={
+ ...kitCandidate,source:'server-persisted-v2',revision:3,
+};
+const kitVerifier=(_snapshot:PersistedEnemyKitV2,digest:string)=>
+ _snapshot===savedKit&&/^[0-9a-f]{64}$/.test(digest);
+const trustedEnemy={snapshot:savedKit,verifyPersisted:kitVerifier};
+const neutralBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,trustedEnemy);
+const typedBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+});
+assert.deepEqual(typedBossRun,simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+}),'frozen Forge + persisted boss complete deterministic replay');
+assert.ok(typedBossRun.enemyMechanicLabels.some(x=>
+ x.includes('Living Bark')),'real saved Enemy 2.0 authored boss kit is executed');
+assert.ok(typedBossRun.equipmentEvidence[0].items.some(x=>
+ x.pieceId==='EQ2_WEAPON_T1_WAYFINDER'),
+ 'real source-authoritative T1 Wayfinder weapon must be equipped');
+assert.ok(typedBossRun.combat.events.some(x=>x.type==='damage'&&
+ x.actorId===physicalWayfinder.actor.id&&
+ x.physicalSubtypes?.some(w=>w.type==='piercing')),
+ 'signed persisted kit should preserve source-authored Piercing hit evidence');
+assert.deepEqual(typedBossRun.combat.events.filter(e=>e.type==='miss'),
+ neutralBossRun.combat.events.filter(e=>e.type==='miss'),
+ 'candidate type resistance does not change accuracy RNG');
+assert.ok(typedBossRun.combat.players[0].damageDone<
+ neutralBossRun.combat.players[0].damageDone,
+ 'explicit review-only +10% Root piercing resistance must reduce direct damage');
+const noKitDefault=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true);
+assert.ok(!noKitDefault.enemyMechanicLabels.some(x=>
+ x.includes('Living Bark')),
+ 'legacy/generic branch must never implicitly inject persisted boss mechanics');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyPersisted:()=>false,
+}),/unverified_persisted_scope/,
+ 'unverified Enemy V2 stored kit cannot claim a signed authority');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,snapshot:{...savedKit,preparedEnemyDigest:'c'.repeat(64)},
+}),/stored_kit_digest_mismatch/,
+ 'tampered stored Enemy V2 prepared kit must fail before simulation');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,snapshot:{...savedKit,source:'unpersisted-candidate-v2'} as unknown as PersistedEnemyKitV2,
+}),/invalid_stored_kit/,
+ 'unpersisted candidate Enemy V2 kits cannot run with real Forge sources');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:'client_bonus' as typeof ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+}),/unapproved_physical_review_policy/,
+ 'client-supplied balance version cannot activate candidate boss bonuses');
+assert.throws(()=>simulateRealFrozenForgeCombatV2({...physicalInput,seed:'STALE_SEED'},
+ [physicalWayfinder.build],[physicalWayfinder.source],true,trustedEnemy),
+ /signed_enemy_kit_snapshot_required/,
+ 'persisted boss kit is bound to exact frozen combat seed');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(input,
+ qaTeam.map(x=>x.build),qaTeam.map(x=>x.source),true,trustedEnemy),
+ /signed_enemy_kit_solo_only/,
+ 'solo Enemy 2.0 kit cannot be reused for a four-player dungeon');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],false,trustedEnemy),
+ /release_gate_off/,'failed release gate must prevent mixed signed encounter');
+
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,

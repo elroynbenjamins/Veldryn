@@ -1170,8 +1170,16 @@ for(const profile of exactBossProfiles){
  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
   for(const specIndex of [0,1] as const){
    const qa=make(classId,specIndex,'supported',profile.forgeTier);
+   const canonicalBossNames:Readonly<Record<typeof profile.id,string>>={
+    BOSS_EXP_ROOT:'Asterfall Root',
+    BOSS_EXP_BELL:'Asterfall Bell',
+    BOSS_EXP_SOLAR:'The Buried Heliarch',
+    BOSS_EXP_SPHINX:'The Veiled Sphinx',
+    BOSS_EXP_BELLBEAST:'The Bellbeast of Shiverlake',
+    BOSS_EXP_CANTOR:'The Frozen Cantor',
+   };
    const bossBase:CombatantDefinition={
-    ...boss,id:profile.id,name:'Original '+profile.id,
+    ...boss,id:profile.id,name:canonicalBossNames[profile.id],
     level:profile.level,abilities:[],phases:undefined,
    };
    const seed='ORIGINAL_FORGE_AUTHORED_'+profile.id+'_'+classId+'_'+specIndex;

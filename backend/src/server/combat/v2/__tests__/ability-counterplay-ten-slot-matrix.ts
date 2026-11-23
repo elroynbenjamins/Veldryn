@@ -104,6 +104,11 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      (e.type==='shield'&&e.actorId===actorId)||
      (e.type==='damage'&&e.targetId===actorId&&(e.absorbed??0)>0)).length;
     const completed=events.filter(targetedCast).length;
+    // Timed skills emit cast_complete, but castTimeMs=0 skills execute
+    // directly and can emit only an effect event. Do not misclassify those
+    // as 'never cast' when the trace cannot prove attempted use.
+    const instantMatchingSkillCount=player.definition.abilities.filter(a=>
+     routeAbilities.has(a.id)&&a.castTimeMs===0).length;
     confirmedActiveCasts+=completed;
     const observedCounters=events.filter(e=>attributed(e)&&(
      choice.route==='control'?e.type==='interrupt':
@@ -143,7 +148,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      scenarioId,classId,specializationId:spec.id,enemyId,strategy,
      route:choice.route,hasMatchingCounter:choice.hasMatchingCounter,
      observedOpportunityEvents:exposure,eligibleSkillCasts:completed,
-     attributedCounterEvents:observedCounters,
+     instantMatchingSkillCount,attributedCounterEvents:observedCounters,
     });
     if(strategy!=='generic'){
      const defaultChoice=selectReviewSkillLoadoutV2(classId,spec.id,x.actor,boss.id,'generic');

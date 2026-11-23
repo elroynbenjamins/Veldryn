@@ -45,6 +45,10 @@ const ROLE_WEIGHTS:Readonly<Record<V2Role,readonly {affix:V2Affix;weight:number}
  damage:[{affix:'critRate',weight:20},{affix:'critDamage',weight:20},{affix:'haste',weight:15},{affix:'penetration',weight:15},{affix:'abilityDamage',weight:15},{affix:'accuracy',weight:10},{affix:'potency',weight:5}],
  support:[{affix:'potency',weight:30},{affix:'healingPower',weight:25},{affix:'ward',weight:15},{affix:'haste',weight:15},{affix:'maxHp',weight:10},{affix:'tenacity',weight:5}],
 };
+/** Read-only source validation for hidden V2 proposal audits; this changes no RNG, rarity bands or roll pools. */
+export function v2OriginalForgeRoleAffixEligible(role:V2Role,stat:V2Affix):boolean{
+ return Boolean(ROLE_WEIGHTS[role]?.some(row=>row.affix===stat));
+}
 const SLOT_AFFIX_PREFERENCES:Readonly<Record<V2Slot,readonly V2Affix[]>>={
  helmet:['armor','maxHp','ward','accuracy'],chest:['armor','maxHp','ward','tenacity'],
  gloves:['critRate','critDamage','haste','accuracy'],legs:['maxHp','armor','ward','tenacity'],

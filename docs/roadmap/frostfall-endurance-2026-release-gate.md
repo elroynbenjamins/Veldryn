@@ -48,3 +48,11 @@ Status: **source candidate only**. Do not merge, deploy, activate Frostfall, rel
 - Staging co-op Edge runtime v39 deployed from review-branch generated source on November 22; event remains disabled.
 - Production unchanged: event disabled, rewards hidden, expedition module not yet enabled, migrations/Edge bundle not deployed.
 - Direct run/simulation, client preview, locale-theme approval, signed Android build and full CI remain necessary; do not claim launch readiness solely from SQL read-back.
+
+## Verified readiness pass — November 23, 2026
+
+- Staging-only event-completion parity repair applied as migration `20261123181718_frostfall_review_event_completion_parity_v1`: restored the receipt table used by the retained Veilbreak two-clear guard. Checked RLS=true, service-role SELECT/INSERT, authenticated SELECT=false and zero rows. The production table already exists and **production was not modified**.
+- A deterministic five-tier/six-checkpoint payout test now guards increasing rewards, the 1.52× cap and invalid/counterfeit boss nodes. This is a regression guard, **not a substitute for combat simulation**.
+- New source-based numerical review: [frostfall-balance-audit-2026-11-23.md](./frostfall-balance-audit-2026-11-23.md). The deepest exit faces 3.334× raw HP, 2.142× raw attack and 1.518× raw defense relative to the first exit, against 1.52× base tokens. Player success rate, time and Warmth/boon mitigation remain unmeasured.
+- Read-only RPC check on staging returns two available daily paid claims for a fresh account; both staging and production Frostfall flags remain disabled.
+- **Open gates:** authenticated end-to-end reward/claim/reconnect tests, real role-by-tier balance simulations, all 20 offers and reputation milestones, exact final-SHA CI and Edge parity, signed internal Android test, production expedition module/migration readiness and owner approval of the actual dungeon UI/themes. Do not merge or activate based solely on the SQL or static tests.

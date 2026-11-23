@@ -99,7 +99,7 @@ export function reviewMonthlyEventMaterial(input:{
  if(previous&&(previous.itemId!==current.itemId||nextMonth(previous.month)!==current.month))
   fail('nonconsecutive_or_mismatched_months');
  const item=MONTHLY_EVENT_SINK_MATERIALS.find(x=>x.itemId===current.itemId);
- if(!item)fail('unregistered_monthly_review_material');
+ if(!item)throw new MonthlySinkReviewError('unregistered_monthly_review_material');
  const flowKnown=current.generatedUnits!==null && current.consumedUnits!==null;
  const change=previous?current.activeHeld-previous.activeHeld:null;
  const net=flowKnown?current.generatedUnits!-current.consumedUnits!:null;

@@ -29,6 +29,7 @@
 
 - The private `equipment-combat-v2-expanded-sets-integration.yml` now compiles and runs this source audit, and prohibits importing the read-only reviewer into mobile, public online, or deployed Edge paths.
 - The Wave 2 hidden four-player original Forge × authored Bell fixture previously asserted that `Soul Curse` **must complete**, even when the party can interrupt it or `Veil Mirror` might cast first. Wave 3 checks that at least one real authored Bell ability produced an authentic, correctly timed and source-attributed cast signal, accepting only genuinely interrupted/completed/unresolved outcomes as produced by the engine. The separately isolated boss-projection QA still covers exact spell-specific durations and cancellation.
+- Its Skills tactic comparison previously compared the **entire** Forge evidence structure, including a digest intentionally bound to the selected skill build. Different variants should have different signed build digests; they should **not** change real physical instance IDs, item sources, original affix rolls or frozen base stat deltas. The regression now compares that immutable subset while preserving build-specific digest binding.
 - Exact-head private CI is mandatory. Previous inherited mobile-core/Edge parity/economy checks were red. This wave is not complete until appropriate checks pass; neither source-only tests nor all green checks would authorize 2.0 live activation.
 
 ## Recommended follow-up order

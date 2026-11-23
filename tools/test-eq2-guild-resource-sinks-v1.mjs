@@ -74,7 +74,7 @@ function checkPlan(plan, kind) {
 
 assert.equal(policy.guildDevelopmentGates.length, 6);
 assert.equal(policy.weeklySupplyCandidates.length, 3);
-const sourceRe = /\\{unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS\\.(\\w+),branch:'(\\w+)',tier:(\\d+),requiredGuildLevel:(\\d+),baseGold:(\\d+),goldPerActiveMember:(\\d+),baseWeightedResources:(\\d+),weightedResourcesPerActiveMember:(\\d+)/g;
+const sourceRe = /\{unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS\.(\w+),branch:'(\w+)',tier:(\d+),requiredGuildLevel:(\d+),baseGold:(\d+),goldPerActiveMember:(\d+),baseWeightedResources:(\d+),weightedResourcesPerActiveMember:(\d+)/g;
 const source = Array.from(progression.matchAll(sourceRe),match=>({
   sourceRef:match[1],branch:match[2],tier:Number(match[3]),
   requiredGuildLevel:Number(match[4]),goldBase:Number(match[5]),

@@ -3,7 +3,7 @@ import { launchPlayer } from '../../combat/content/launch-combat';
 import {buildExpeditionEncounter,expeditionEncounterPreview} from '../../combat/expedition-combat-service';
 import { EVENT_EXPEDITIONS,eventTierMinLevel,eventTierRewardMarks } from '../content/event-expeditions';
 import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_DEPTH_REWARDS,frostfallRewardMultiplierForBoss} from '../frostfall-endurance';
+import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_BALANCE_V3,FROSTFALL_ENDURANCE_ENEMY_PACING_V3,FROSTFALL_ENDURANCE_DEPTH_REWARDS,frostfallEnemyPacingForGraph,frostfallRewardMultiplierForBoss} from '../frostfall-endurance';
 
 const players=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
 const members=[['a','c1','tank'],['b','c2','damage'],['c','c3','damage'],['d','c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
@@ -70,6 +70,10 @@ const frostEnduranceService=new EventExpeditionService(new MemoryEventRunReposit
 const frostStart=frostEnduranceService.start({requestId:'frost-endurance-req',runId:'frost-endurance-run',accountId:'a',eventId:frostfall.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
 assert.equal(frostStart.graph.nodes.filter(node=>node.kind==='boss').length,6,'five optional exits and one mandatory final boss');
 assert.equal(frostStart.graph.nodes.find(node=>node.nodeId==='boss')?.depth,43);
+assert.equal(frostStart.graph.balanceVersion,FROSTFALL_ENDURANCE_BALANCE_V3);
+assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph),FROSTFALL_ENDURANCE_ENEMY_PACING_V3);
+assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,balanceVersion:'event-frostfall-endurance-v2'}),{attack:1,hp:1,defense:1},'already saved 42-room v2 runs preserve their original enemy stats');
+assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,generatorVersion:'event-route-v5'}),{attack:1,hp:1,defense:1},'legacy six-room event routes must not adopt v3 pacing');
 const frostGraphNodes=frostStart.graph.nodes;
 assert.equal(frostGraphNodes.length,128,'42 depths × 3 choices plus entry and final boss');
 for(let depth=1;depth<=42;depth++){

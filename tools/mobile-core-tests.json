@@ -1,4 +1,5 @@
 [
+  ".core-build/apps/mobile/tests/craft-command-outcome.js",
   ".core-build/apps/mobile/tests/forge-mastery.js",
   ".core-build/apps/mobile/tests/combat-level-rebase.js",
   ".core-build/apps/mobile/tests/monthly-quest-milestones.js",

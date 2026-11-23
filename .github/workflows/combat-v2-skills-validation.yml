@@ -138,6 +138,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-324-real-encounters.js
       - name: Test full ten-slot equipment, 2/4/6 sets, 13 affixes, signed traits and six bosses
         run: node backend/dist/server/combat/v2/__tests__/ability-full-ten-slot-boss-matrix.js
+      - name: Review observed counterplay opportunity, cast and effect reasons
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-opportunity-review.js
+      - name: Run 324 ten-slot boss counterplay scenarios with verified equipment evidence
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-ten-slot-matrix.js
       - name: Verify signed Equipment V2 trait hooks coexist with class skills and counterplay
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
       - name: Rehearse 9 classes × 2 specializations × 6 regional bosses with exact-copy equipped trait custody

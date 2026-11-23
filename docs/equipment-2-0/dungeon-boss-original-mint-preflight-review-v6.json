@@ -1,0 +1,172 @@
+{
+  "schema": "eq2-dungeon-premium-original-mint-preflight-v6",
+  "status": "HIDDEN_UNMOUNTED_PREFLIGHT_NO_RUNTIME_GRANT",
+  "asOf": "2026-11-23",
+  "releaseActivation": false,
+  "originalBossEquipmentMarketReleased": false,
+  "sourceGrounding": {
+    "sourceFile": "backend/src/server/expeditions/content/dungeon-boss-rotation.ts",
+    "productionProjectsReviewed": [
+      "Veldryn production read-only",
+      "Veldryn staging read-only"
+    ],
+    "exactExistingTables": {
+      "runs": "public.expedition_runs",
+      "entitlements": "public.coop_reward_entitlements",
+      "bossResults": "public.coop_node_results",
+      "rewardClaims": "public.expedition_reward_claims",
+      "chargeBalances": "public.coop_reward_charge_balances",
+      "noNewEquipmentMintTablePresent": true
+    },
+    "installedClaimFunction": "public.claim_coop_reward(uuid,text) actual function inspected read-only: marks/charge settlement, updates entitlement reward_json enhanced_reward and claimed_at; no equipment grant",
+    "joinRecipe": [
+      "expedition_runs.id = coop_reward_entitlements.run_id",
+      "boss_nodes FROM jsonb_array_elements(expedition_runs.route_graph_json->'nodes') WHERE kind='boss'",
+      "coop_node_results.run_id=expedition_runs.id AND coop_node_results.node_id=boss_nodes.nodeId",
+      "one successful committed combat boss victory with result_json.kind='combat' and reason='victory'",
+      "all boss nodes share one contentId authored in DUNGEON_BOSS_VARIANTS under exact surviving expedition_id",
+      "expedition_runs.status='completed' AND phase='completed' AND entitlement_kind='participant' AND reward_stage='final' AND claimed_at IS NOT NULL",
+      "enhanced_reward in committed reward_json strictly true for proposed limited gear-source eligibility",
+      "event digest evidence exists but actual cryptographic source signed authority still not present in this preview",
+      "idempotency ledger and original physical mint must be NEW and atomic in one future privileged SQL transaction"
+    ],
+    "enabledContentOnly": [
+      "EXP_001",
+      "EXP_003"
+    ],
+    "futureGated": [
+      "EXP_005",
+      "EXP_007"
+    ],
+    "retiredForbidden": [
+      "EXP_002",
+      "EXP_004",
+      "EXP_006",
+      "EXP_008"
+    ],
+    "actualBossIds": {
+      "EXP_001": [
+        "BOSS_EXP_ROOT",
+        "BOSS_EXP_BELL"
+      ],
+      "EXP_003": [
+        "BOSS_EXP_SOLAR",
+        "BOSS_EXP_SPHINX"
+      ],
+      "EXP_005": [
+        "BOSS_EXP_BELLBEAST",
+        "BOSS_EXP_CANTOR"
+      ],
+      "EXP_007": [
+        "BOSS_EXP_FEN",
+        "BOSS_EXP_PRIME"
+      ]
+    }
+  },
+  "observedProduction": {
+    "utcClaimWindowStart": "2026-10-26T00:00:00Z",
+    "utcClaimWindowEndExclusive": "2026-11-24T00:00:00Z",
+    "criteria": "participant final claimed + completed phase/status; join graph boss node and successful committed coop_node_results combat reason victory",
+    "rootbound": {
+      "allCompletedFinalClaims": 313,
+      "enhancedFinalClaims": 49,
+      "standardClaims": 264,
+      "enhancedDistinctClaimants": 7,
+      "successfullyMatchedBossVictoryFinalClaims": 313
+    },
+    "buriedObservatory": {
+      "allCompletedFinalClaims": 4,
+      "enhancedFinalClaims": 2,
+      "standardClaims": 2,
+      "enhancedDistinctClaimants": 1,
+      "successfullyMatchedBossVictoryFinalClaims": 4
+    },
+    "metadata": "All actual confirmed 317 completed final claims have one matched boss victory; proposed new 2.0 enhanced gear roll only 51 observed qualified *candidates*, not committed EQ2 mint rights.",
+    "ratesPerEligibility": [
+      {
+        "gearDropPctCandidate": 8,
+        "rootboundExpectedGear": 3.92,
+        "sunscarExpectedGear": 0.16,
+        "caveat": "one-item expectation only assuming every claimed enhanced final victory qualifies under future source policy; never live odds"
+      },
+      {
+        "gearDropPctCandidate": 10,
+        "rootboundExpectedGear": 4.9,
+        "sunscarExpectedGear": 0.2,
+        "caveat": "one-item expectation only assuming every claimed enhanced final victory qualifies under future source policy; never live odds"
+      },
+      {
+        "gearDropPctCandidate": 12,
+        "rootboundExpectedGear": 5.88,
+        "sunscarExpectedGear": 0.24,
+        "caveat": "one-item expectation only assuming every claimed enhanced final victory qualifies under future source policy; never live odds"
+      },
+      {
+        "gearDropPctCandidate": 16,
+        "rootboundExpectedGear": 7.84,
+        "sunscarExpectedGear": 0.32,
+        "caveat": "one-item expectation only assuming every claimed enhanced final victory qualifies under future source policy; never live odds"
+      },
+      {
+        "gearDropPctCandidate": 20,
+        "rootboundExpectedGear": 9.8,
+        "sunscarExpectedGear": 0.4,
+        "caveat": "one-item expectation only assuming every claimed enhanced final victory qualifies under future source policy; never live odds"
+      }
+    ],
+    "caution": "Participant concentration and very low Sunscar count make fixed global rate risky; calculate per-region demand/supply and market turnover before approving any live percent",
+    "doubleChanceBug": "Never roll once for successful boss node and again for final claim; only one roll keyed by the original entitlement ID",
+    "recurrentRoutes": "New Endurance has many boss nodes per graph; only the actually victorious boss node and one terminal claim may qualify. Existing legacy completed routes remain untouched."
+  },
+  "authBoundary": {
+    "codeFile": "backend/online/eq2-dungeon-boss-source-preflight-v6.mjs",
+    "unitTest": "tools/test-eq2-dungeon-boss-source-preflight-v6.mjs",
+    "returns": "eligibleInReview boolean, mintAuthorized:false, marketAuthorized:false in all cases",
+    "clientObjectTrust": "NONE; synthetic or client-submitted rows, including a complete-looking receipt, cannot authorize a mint or sale",
+    "noProductionImports": true,
+    "privilegeNotImplemented": "Requires a privileged DB-owned same-transaction function reading locked run/entitlement/node result/charge/source rows and authoritatively mapping entitlement to versioned EQ2 item grant",
+    "buildOnlyHidden": "No published route or Edge handler was added; never call source preflight to issue real items"
+  },
+  "proposedFutureSqlPrivateAuthority": {
+    "state": "SPECIFICATION_ONLY_NOT_MIGRATED",
+    "appendOnlyRewardLeg": "private.eq2_dungeon_boss_original_mint_receipts_v6 (candidate name, NOT deployed)",
+    "uniqueKey": "UNIQUE(entitlement_id) across all policy versions and reruns; no second gear decision for same actual final participant claim",
+    "rewardLegColumns": [
+      "entitlement_id uuid FK",
+      "run_id uuid FK",
+      "account_id uuid",
+      "character_id uuid",
+      "expedition_id text",
+      "authoritative_boss_content_id text",
+      "boss_node_id text",
+      "boss_result_digest text",
+      "premium_roll_policy_version text",
+      "premium_roll_success boolean",
+      "selected_gear_template_id text nullable",
+      "minted_physical_instance_id uuid nullable",
+      "original_server_receipt_id uuid",
+      "committed_at timestamptz"
+    ],
+    "mintUniqueness": "unique selected item physical instance and unique original minted equipment receipt, no shadow virtual item",
+    "transactionSteps": [
+      "authenticated server DB transaction lock e.id and run.id and necessary account/character custody state",
+      "reconfirm run completed, enhanced participant final entitlement from recorded charge and claimed reward (not current charge balance)",
+      "reconfirm exactly one successful boss result for graph's frozen variant and non-retired published dungeon",
+      "INSERT ... ON CONFLICT entitlement_id DO NOTHING for exactly one original reward decision; read existing receipt on retries",
+      "only within transaction, draw one privileged random outcome from approved and frozen loot policy; if failure commit decision with no item",
+      "if success, mint EQ2 exact versioned template with frozen rarity/quality/affixes/innate/boss origin, one physical inventory copy and source ledger",
+      "commit together and preserve existing Marks/gems/catalysts unaffected; never register new public RPC during preparation"
+    ],
+    "policyVersionDoesNotReroll": true,
+    "notAllowed": "No double-grant from retry, two simultaneous claims, after settlement, closed-run client API, or second charge"
+  },
+  "marketPrivatePositiveBridge": {
+    "inheritedNegativeFence": "GitHub Market PR #1651 V30 permanently rejects legacy-equipment V33 source/metadata for all sale/escrow transitions",
+    "newPositivePathState": "NOT IMPLEMENTED_NOT_GRANTED_NOT_MIGRATED",
+    "requirement": "Add a dedicated exact instance Equipment 2.0 boss origin + original mint source verification to future market listing, escrow, buy, seller payout, buyer claim, cancelled return and resale; reject without locked original source and current custody",
+    "resaleAudit": "Original first owner / run / boss / receipt / mint stats must be immutable; every later owner transfer requires one locked ledger transaction and no double sell or sale-created reroll",
+    "restrictions": "No direct craft/NPC/Marks/expired-legacy route to generate boss item, though actual legitimate Player Market purchase/resale allowed after positive bridge.",
+    "levelGateBlocker": "Market V17 T4 acquisition minimum 52 conflicts with proposed EQ2 Sunscar T4 wear42 and T5 market currently unsupported; needs new versioned EQ2 market rule, no automatic relaxation of V33."
+  },
+  "gate": "OWNER_APPROVAL_OF_RATE_AND_UI_REQUIRED; coordinated Equipment Skills Combat Enemies/Bosses Dungeon PlayerMarket 2.0 + fresh PG17 tests before any live activation"
+}

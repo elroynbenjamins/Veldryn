@@ -44475,6 +44475,7 @@ var BASE_ITEMS = [
   // Retired item ID: retain this catalog entry only so historical saves that
   // already contain OATHGLASS_CAPE remain readable. No quest or loot grants it.
   { id: "OATHGLASS_CAPE", name: "Oathglass Cape", type: "gear", slot: "cape", attack: 2, defense: 6, hp: 18, readiness: 5, rarity: "rare", requiredLevel: 25, value: 240 },
+  // Retired quest item: preserve only to read historical saved inventories safely; never drop or grant.
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
 var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
@@ -44537,7 +44538,7 @@ var MONSTERS_RAW = [
   { id: "FROSTNEEDLE_BROOD", name: "Frostneedle Brood", level: 64, hp: 2080, attack: 135, defense: 81, xp: 1510, gold: 80, secondsPerKill: 52, unlockLevel: 63, zone: "Frostmarch", areaId: "ZONE_012", regionalAreaAutoUnlock: true, drops: [{ itemId: "WHITEPINE_LOG", chance: 0.35, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.3, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }] },
   { id: "CHOIR_DEFILER", name: "Choir Defiler", level: 70, hp: 2530, attack: 160, defense: 96, xp: 1910, gold: 99, secondsPerKill: 60, unlockLevel: 69, zone: "Frostmarch", areaId: "ZONE_013", regionalAreaAutoUnlock: true, drops: [{ itemId: "RIMEGLASS", chance: 0.35, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.19, min: 1, max: 1 }, { itemId: "RIME_RESIN", chance: 0.13, min: 1, max: 1 }] },
   { id: "STORMGLASS_COLOSSUS", name: "Stormglass Colossus", level: 75, hp: 3230, attack: 175, defense: 127, xp: 2400, gold: 124, secondsPerKill: 66, unlockLevel: 74, zone: "Frostmarch", areaId: "ZONE_015", regionalAreaAutoUnlock: true, drops: [{ itemId: "FROSTIRON", chance: 0.51, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.38, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.22, min: 1, max: 1 }] },
-  { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
+  { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
 var toolBlueprintItemIds = new Set(TOOL_BLUEPRINT_ITEMS.map((blueprint2) => blueprint2.id));
 var MONSTER_TIME_SCALE = 1.95;
@@ -56056,12 +56057,11 @@ function fallenKnightPlayerSnapshot(state) {
     autoEatThresholdPct: state.settings.autoEatThresholdPct
   };
 }
-function fallenKnightDropRoll(state, seed, includeStorySigil) {
+function fallenKnightDropRoll(state, seed) {
   const boss2 = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
   if (!boss2 || !state.character) return [];
   const items = [];
   boss2.drops.forEach((drop, index) => {
-    if (!includeStorySigil && drop.itemId === "FALLEN_KNIGHT_SIGIL") return;
     if (random01(seed, index * 2) >= Math.min(1, Math.max(0, drop.chance))) return;
     const quantity2 = drop.min + Math.floor(random01(seed, index * 2 + 1) * (drop.max - drop.min + 1));
     if (quantity2 > 0) items.push({ itemId: drop.itemId, quantity: quantity2 });
@@ -56094,7 +56094,7 @@ function challengeFallenKnightRematch(state, nowMs) {
   const stone = awardCompanionRematchBondstone(next, nowMs);
   next = stone.state;
   const clearReward = FALLEN_KNIGHT_CLEAR_REWARD, bountyReward = weeklyRecorded.bountyTriggered ? FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD : void 0;
-  const bossDrops = fallenKnightDropRoll(next, `${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`, false);
+  const bossDrops = fallenKnightDropRoll(next, `${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`);
   const fixedItems = [...clearReward.items.map((row) => ({ ...row })), ...bountyReward?.items.map((row) => ({ ...row })) ?? []];
   const items = stackItems([], bossDrops.concat(fixedItems));
   const rewardGold = clearReward.gold + (bountyReward?.gold ?? 0), rewardXp = clearReward.xp + (bountyReward?.xp ?? 0), rewardEssence = clearReward.essence + (bountyReward?.essence ?? 0);
@@ -56129,7 +56129,7 @@ function challengeFallenKnight(state, nowMs = Date.now()) {
     return { state: next2, won: false, battle, message: `Fallen Knight repelled you after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. ${battle.potionConsumed ? battle.potionConsumed + " healing potions used. " : ""}Upgrade gear, improve class progression or select stronger healing potions before the next attempt.` };
   }
   const xp = state.character.xp + 3e3;
-  const storyDrops = fallenKnightDropRoll(state, `${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`, true);
+  const storyDrops = fallenKnightDropRoll(state, `${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`);
   const rewardRouted = routeRewards({ ...state, inventory: { ...state.inventory, stacks: inventory } }, storyDrops, nowMs);
   let next = { ...state, ...rewardRouted, defeatedBossIds: [...state.defeatedBossIds, "FALLEN_KNIGHT"], character: { ...postFightCharacter, ...rewardRouted.character ?? {}, gold: state.character.gold + 900, xp, level: characterLevelFromXp(xp) }, activity: null, outOfCombatSinceMs: nowMs };
   next.character = awardClassSkillXp(next.character, 3e3 * characterPermanentMultipliers(state).skillXpMultiplier).character;

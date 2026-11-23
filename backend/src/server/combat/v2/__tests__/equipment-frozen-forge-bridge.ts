@@ -133,7 +133,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const pieceId=kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
   (pieceIdOverride??tierItems[tier][role]);
- const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
+ const selection=generated(pieceId,kind==='supported'||kind==='set'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
    Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
@@ -197,7 +197,8 @@ function make(classId:ClassIdV2,specIndex:0|1,
    activeSkills:skill.map(s=>({skillId:s.id,variantId:s.variants[0].id})),
    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
   ownedItemsById:{[copyId]:{instanceId:copyId,slot:exact.slot,
-   tier:'T'+exact.tier,requiredLevel:minByTier[tier],eligibleRoles:[role]}},
+   tier:'T'+exact.tier,requiredLevel:minByTier[tier],eligibleRoles:[role],
+   ...(exact.setId?{setFamilyId:exact.setId}:{})}},
   setsById:{},
  };
  const classStats={...actor.stats};
@@ -738,9 +739,38 @@ assert.throws(()=>simulateRealFrozenForgeCombatV2(input,[
  qaTeam[0].build,copiedGear,...qaTeam.slice(2).map(x=>x.build)],
  qaTeam.map(x=>x.source),true),/cross_character_worn_copy/);
 const setItem=make('IRONWARDEN',0,'set');
+const acceptedBaseOnlySet=compileRealFrozenForgeActorV2(
+ setItem.actor,setItem.build,setItem.source);
+assert.equal(acceptedBaseOnlySet.evidence.verifiedBaseOnlySetPieces.length,1);
+assert.deepEqual(acceptedBaseOnlySet.evidence.verifiedBaseOnlySetPieces[0],{
+ instanceId:setItem.mint.id,pieceId:setItem.exact.pieceId,
+ setId:'EQ2_SET_FIELDBORN_GUARD',
+},'real single-piece Forge source identity must survive frozen copy validation');
+assert.equal(acceptedBaseOnlySet.evidence.setBonuses,
+ 'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION');
+for(const [key,forgeKey] of [
+ ['attackPower','attack'],['defense','defense'],['maxHp','hp'],
+] as const)
+ assert.ok(Math.abs(
+  acceptedBaseOnlySet.evidence.stages.afterFrozenBase[key]-
+  acceptedBaseOnlySet.evidence.stages.afterSkills[key]-
+  setItem.exact.baseStats[forgeKey])<.00001,
+  'single-piece set frozen stats apply once with no set bonus');
+const copiedSet={...setItem.build,
+ ownedItemsById:{...setItem.build.ownedItemsById,
+  [setItem.mint.id]:{...setItem.build.ownedItemsById[setItem.mint.id],
+   setFamilyId:'EQ2_SET_FABRICATED'}}};
 assert.throws(()=>compileRealFrozenForgeActorV2(
- setItem.actor,setItem.build,setItem.source),/set_source_bonus_unreconciled/,
- 'never invent 48-set or preapproved Forge set bonuses');
+ setItem.actor,copiedSet,setItem.source),
+ /skill_or_equipment_build_invalid|forge_set_member_source_mismatch/,
+ 'invented catalog identity cannot grant a set milestone');
+const removedSet={...setItem.build,
+ ownedItemsById:{...setItem.build.ownedItemsById,
+  [setItem.mint.id]:{...setItem.build.ownedItemsById[setItem.mint.id],
+   setFamilyId:undefined}}};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ setItem.actor,removedSet,setItem.source),/forge_set_member_source_mismatch/,
+ 'source-labeled set copy must not become ordinary untagged gear');
 // The source-owned two-piece review is allowed to COUNT milestones but NEVER
 // issue bonuses. Merge two independently minted source-confirmed pieces into
 // one same-account, same-character Forge ledger with ordered virtual receipts.
@@ -833,6 +863,7 @@ const twoSetBuild={...setItem.build,
   [setSecond.mint.id]:{
    instanceId:setSecond.mint.id,slot:'chest' as const,tier:'T1',
    requiredLevel:2,eligibleRoles:['tank' as const],
+   setFamilyId:'EQ2_SET_FIELDBORN_GUARD',
   }},
  selected:{...setItem.build.selected,
   equipment:{helmet:setItem.mint.id,chest:setSecond.mint.id},

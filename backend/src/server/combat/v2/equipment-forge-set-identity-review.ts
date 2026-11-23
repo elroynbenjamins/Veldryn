@@ -42,7 +42,7 @@ export interface ForgeSetSourceAuditV2{
  readonly forgeSetEvidence:readonly ForgeSetIdentityEvidenceV2[];
  readonly status:'BLOCKED_NO_APPROVED_COMBAT_SET_EFFECT_OR_AUTHORITATIVE_MEMBERSHIP';
 }
-const fail=(reason:string):never=>{throw Error('eq2_forge_set_identity_'+reason);};
+function fail(reason:string):never{throw Error('eq2_forge_set_identity_'+reason);}
 const validId=(s:unknown):s is string=>
  typeof s==='string'&&/^EQ2_[A-Z0-9_]+$/.test(s);
 const byPiece=new Map(V2_SERVER_PIECES.map(x=>[x.id,x]));

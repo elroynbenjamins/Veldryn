@@ -32,7 +32,9 @@ import {
  V2_SERVER_AFFIX_RANGES,V2_SERVER_RARITY_BANDS,
  type V2Affix,
 } from '../../equipment/equipment-crafting-v2-rolls';
-import type {V2DraftItem,V2DraftReceipt} from '../../equipment/equipment-crafting-v2-transaction';
+import type {V2DraftItem,V2DraftReceipt,V2DraftJob,V2DraftSkillAward} from '../../equipment/equipment-crafting-v2-transaction';
+import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
+import {verifyEquipmentV2ReceiptNamespace} from '../../equipment/equipment-crafting-v2-receipt-coherence';
 import type {V2CustodyCopy,V2CustodyState} from '../../equipment/equipment-crafting-v2-custody';
 
 export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
@@ -57,12 +59,17 @@ export interface TrustedFrozenForgeCombatSourceV2{
  readonly items:readonly V2DraftItem[];
  /** The same account's exclusive EQ2 custody, not a client loadout. */
  readonly custody:V2CustodyState;
+ /** Full server-read Forge settlement ledger: every job, award and receipt. */
+ readonly jobs:readonly V2DraftJob[];
+ readonly awards:readonly V2DraftSkillAward[];
  /** Immutable claimed Forge receipts, one per selected copy. */
  readonly claims:readonly V2DraftReceipt[];
+ /** Monotonic account/CAS revision from the same privileged readback. */
+ readonly ledgerRevision:number;
  /** Versioned Combat affix caps supplied by approved server policy only. */
  readonly affixPolicy:ServerAffixPolicyV2;
  /** Must independently validate locked, current server custody and claims. */
- readonly verifyPersisted:(digest:string)=>boolean;
+ readonly verifyPersisted:(digest:string,revision:number)=>boolean;
 }
 export interface FrozenForgeEvidenceV2{
  readonly source:'EQ2_FROZEN_FORGE_PRE_SCALED_NO_DOUBLE_MULTIPLIER';
@@ -102,6 +109,8 @@ export function compileRealFrozenForgeActorV2(
    source.actorId!==actor.id||build.actor!==actor||
    typeof source.verifyPersisted!=='function'||
    !Array.isArray(source.items)||!Array.isArray(source.claims)||
+   !Array.isArray(source.jobs)||!Array.isArray(source.awards)||
+   !Number.isSafeInteger(source.ledgerRevision)||source.ledgerRevision<1||
    !source.custody||source.custody.accountId!==source.accountId||
    !Array.isArray(source.custody.copies)||!Array.isArray(source.custody.characters))
   reject('trusted_scope_missing');
@@ -124,6 +133,14 @@ export function compileRealFrozenForgeActorV2(
  const allIds=source.custody.copies.map(x=>x.instanceId);
  if(new Set(allIds).size!==allIds.length||new Set(source.items.map(x=>x.id)).size!==source.items.length)
   reject('duplicate_account_copy');
+ // Verify complete Forge claim settlement, XP awards, recipe provenance and
+ // all account jobs BEFORE trusting any individual equipped item. Never
+ // treat one isolated claim JSON or an empty dummy receipt as authorization.
+ verifyEquipmentV2HiddenLedger(source.accountId,source.jobs,source.items,
+  source.claims,source.awards);
+ verifyEquipmentV2ReceiptNamespace({forge:source.claims});
+ if(source.claims.some(x=>x.response.version>source.ledgerRevision))
+   reject('stale_forge_ledger_revision');
  const requestIds=source.claims.map(x=>x.requestId);
  if(new Set(requestIds).size!==requestIds.length||
     requestIds.some(id=>!isId(id)))reject('duplicate_or_invalid_claim_request');
@@ -180,6 +197,10 @@ export function compileRealFrozenForgeActorV2(
  // future privileged adapter, not to input JSON. No such adapter is mounted.
  const digest=enemyV2SnapshotDigest({
   source:'EQ2_FROZEN_FORGE_COMBAT_QA',accountId:source.accountId,
+  ledgerRevision:source.ledgerRevision,
+  jobs:source.jobs,awards:source.awards,
+  fullAccountItems:source.items,fullAccountClaims:source.claims,
+  fullAccountCustody:source.custody,
   characterId:source.characterId,actorId:actor.id,
   copiedItems:resolved.map(x=>x.mint).sort((a,b)=>a.id.localeCompare(b.id)),
   custody:resolved.map(x=>x.copy).sort((a,b)=>a.instanceId.localeCompare(b.instanceId)),
@@ -190,7 +211,8 @@ export function compileRealFrozenForgeActorV2(
   }).sort((a,b)=>a.requestId.localeCompare(b.requestId)),
   build:build.selected,
  });
- if(!source.verifyPersisted(digest))reject('persisted_custody_not_verified');
+ if(!source.verifyPersisted(digest,source.ledgerRevision))
+  reject('persisted_custody_not_verified');
  const classOnly=issueClassOnlyActorV2(actor,build.verified,source.classBaselinePolicy);
  const skilled=compileServerSkillBuildV2(true,{...build,actor:classOnly});
  const sum={attack:0,defense:0,hp:0};

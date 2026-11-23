@@ -1,4 +1,5 @@
 # Staging-only generated Edge bundle reconciliation for draft Veldryn 2.0 tool vault.
+# Recheck parity after final account-deletion and tool-storage regression fixes.
 # NEVER checkout, push to, or deploy main / production from this workflow.
 name: Veldryn 2.0 tool vault Edge reconciliation
 on:

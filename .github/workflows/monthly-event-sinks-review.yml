@@ -1,0 +1,41 @@
+name: Veldryn 2.0 monthly event resource sink review (hidden)
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/liveops/monthly-resource-sink-review-v1.ts'
+      - 'backend/src/server/liveops/monthly-resource-sink-review-v1.test.ts'
+      - 'backend/tsconfig.monthly-event-sinks-review.json'
+      - '.github/workflows/monthly-event-sinks-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  monthly-review-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install frozen backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Strict source-only TypeScript compile
+        run: pnpm --dir backend exec tsc -p tsconfig.monthly-event-sinks-review.json
+      - name: Verify no event changes and safe monthly candidate selection
+        run: node backend/dist-monthly-event-sinks-review/server/liveops/monthly-resource-sink-review-v1.test.js
+      - name: Verify no live Party, Boss or SQL caller imports the review module
+        run: |
+          if grep -R -n 'monthly-resource-sink-review-v1' \
+              backend/src/server/party/weekly-party-events-v2.ts \
+              backend/src/server/party/weekly-party-event-planner-v2.ts \
+              backend/src/server/shared-world/world-boss-service.ts \
+              backend/src/server/shared-world/world-bosses.ts; then
+            echo 'ERROR: unexpected production event review import'
+            exit 1
+          fi

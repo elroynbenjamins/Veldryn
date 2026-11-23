@@ -56,6 +56,19 @@ assert.ok(frostEntry.stats.maxHp<frostBase.stats.maxHp*.5,'Tier I must not inher
 assert.ok(frostVeteran.stats.maxHp>frostEntry.stats.maxHp*2,'Tier V must be meaningfully tougher than Tier I');
 assert.equal(frostEntry.level,10);
 assert.equal(frostVeteran.level,30);
+
+const baseRimebell=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BOSS',enemyLevel:10})[0];
+const v3Rimebell=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BOSS',enemyLevel:10,enemyShieldMultiplier:.68*10/35})[0];
+const flatShields=(actor:typeof baseRimebell)=>[
+ ...actor.abilities.flatMap(ability=>ability.effects),
+ ...(actor.phases??[]).flatMap(phase=>phase.effects)
+].filter(effect=>effect.kind==='shield'&&typeof effect.flat==='number').map(effect=>effect.flat!);
+assert.equal(flatShields(baseRimebell).length,2,'Rimebell retains both Ward and Frozen Carapace');
+assert.deepEqual(flatShields(v3Rimebell),flatShields(baseRimebell).map(value=>value*.68*10/35),'Tier I boss barriers scale with the normalized boss HP bracket');
+assert.equal(v3Rimebell.stats.maxHp,baseRimebell.stats.maxHp,'shield-only tuning must not silently change boss HP');
+assert.equal(v3Rimebell.stats.attackPower,baseRimebell.stats.attackPower,'shield-only tuning must not silently change boss attack');
+assert.throws(()=>buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BOSS',enemyLevel:10,enemyShieldMultiplier:1.5}),/invalid_enemy_shield_multiplier/);
+
 assert.ok(expeditionEncounterPreview('EVENT_FROSTFALL_BATTLE_01',10),'tier encounter preview available');
 for(let tier=1;tier<=5;tier++){
  const service=new EventExpeditionService(new MemoryEventRunRepository(),'frostfall-tier-test-'+tier);

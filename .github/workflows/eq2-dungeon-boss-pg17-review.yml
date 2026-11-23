@@ -54,6 +54,9 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f tools/eq2-review/v7/00_disposable_pg17_original_mint_and_custody.sql
           psql -v ON_ERROR_STOP=1 -f tools/eq2-review/v7/01_disposable_pg17_regressions.sql
+      - name: Test simultaneous boss reward requests and competing buyers
+        run: |
+          bash tools/eq2-review/v7/02_pg17_concurrent_claim_and_resale.sh
       - name: Assert sample database has no live market or dungeon tables
         run: |
           test "$(psql -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('expedition_runs','coop_reward_entitlements','market_custody_assets_v1')")" = '0'

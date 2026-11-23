@@ -77,7 +77,7 @@
       "output": "EQ2_COPPER_BAR",
       "quantity": 1,
       "inputs": {
-        "COPPER_ORE": 3
+        "COPPER_ORE": 5
       },
       "xp": 8,
       "seconds": 18,
@@ -93,7 +93,7 @@
       "output": "EQ2_GREENWOOD_PLANK",
       "quantity": 1,
       "inputs": {
-        "GREENWOOD_LOG": 3
+        "GREENWOOD_LOG": 4
       },
       "xp": 7,
       "seconds": 16,
@@ -141,7 +141,7 @@
       "output": "EQ2_IRON_BAR",
       "quantity": 1,
       "inputs": {
-        "ASTER_IRON_ORE": 3
+        "ASTER_IRON_ORE": 5
       },
       "xp": 18,
       "seconds": 27,
@@ -157,7 +157,7 @@
       "output": "EQ2_IRONWOOD_PLANK",
       "quantity": 1,
       "inputs": {
-        "IRONWOOD_LOG": 3
+        "IRONWOOD_LOG": 4
       },
       "xp": 17,
       "seconds": 24,
@@ -217,13 +217,15 @@
       "authoritative": false,
       "conflict": "CANONICAL_EXISTING_REUSE_NO_NEW_RECIPE",
       "recipeId": "SMELT_SUNSTONE_INGOT",
-      "authoringMode": "REFERENCE_ONLY_NO_DUPLICATE_PROCESSING"
+      "authoringMode": "REFERENCE_ONLY_NO_DUPLICATE_PROCESSING",
+      "equipment2ProposedOrePerCanonicalBatch": 8,
+      "equipment2ProposedOreIncrease": 2
     },
     {
       "output": "EQ2_TREATED_DUNEWOOD",
       "quantity": 1,
       "inputs": {
-        "DUNEWOOD": 4
+        "DUNEWOOD": 5
       },
       "xp": 31,
       "seconds": 36,
@@ -288,7 +290,7 @@
       "output": "EQ2_REINFORCED_DUNEWOOD",
       "quantity": 1,
       "inputs": {
-        "DUNEWOOD": 5,
+        "DUNEWOOD": 6,
         "EQ2_GLASSBOUND_DUST": 1
       },
       "xp": 52,

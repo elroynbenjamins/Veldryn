@@ -1,6 +1,12 @@
 # Equipment / Crafting 2.0 — 48-set source, material and scarcity pass
 **22 November 2026 · HIDDEN REVIEW ONLY · no runtime activation or main merge**
 
+## 23 November 2026 — follow-up refining quantities for 2.0
+
+Owner-approved input increase applies to hidden next-generation processing **per output batch**: T1 Copper Bar and T2 Iron Bar **3 → 5 raw ore**, T1 Greenwood and T2 Ironwood Planks **3 → 4 raw logs**, T3 treated Dunewood **4 → 5 wood**, T4 reinforced Dunewood **5 → 6 wood** (still 1 Glassbound Dust). XP, duration and combat drops do not change.
+
+The T3 canonical `SMELT_SUNSTONE_INGOT` reference remains **6 Sunstone Ore + 4 Dunewood → 3 ingots** so no 1.x recipe is changed or duplicated. **8 ore** per three-ingot batch is the saved **2.0 target**, blocked on a versioned single-authority migration and integration tests. T4 Glassbound Alloy keeps its 2-ingot input (and thus benefits indirectly from the higher future ore cost). Hidden/non-authoritative only, no gameplay/release enablement.
+
 ## What is actually complete
 - 48 planned launch set structures across T1–T4, 204 exact nonissued set member IDs.
 - A distinct **204-entry item authoring sheet** including **130 newly authored draft template definitions** and **74 unapproved existing-template source suggestions**. These drafts are not canonical game items. Naming, archetype material, 1–2 base-stat profile, crafting profession, wear-gate suggestion and per-slot Style 4 art direction are now explicitly specified; numeric stats and art/owner approvals are NOT complete.

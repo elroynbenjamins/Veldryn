@@ -1,4 +1,4 @@
-import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,startGathering,startNextQueuedActivity} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,offlineCapSeconds,startClassTraining,startCombat,startGathering,startNextQueuedActivity} from '../src/core/game';
 import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueLocationIssue,activityQueueSchedulingIssue,enqueueActivity,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../src/core/activity-queue';
 import {accountEntitlementBenefits,withServerCommerceEntitlements} from '../src/core/account-entitlements';
 import {executeGameCommand,validateGameSettings} from '../src/core/game-commands';
@@ -144,4 +144,9 @@ const walking=startGathering(leveled(),'GREENWOOD_TREE',t);
 const walked=executeGameCommand(walking,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
 eq(walked.activity,null,'Region-bound gathering still stops on travel');
 eq(walked.currentRegionId,'SILVERBROOK','Region-bound gathering travel still succeeds');
+const drills=startClassTraining(leveled(),t);
+const travellingDrills=executeGameCommand(drills,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
+ok(!!travellingDrills.character?.classTraining,'Region-independent class drills must continue after travel');
+eq(travellingDrills.currentRegionId,'SILVERBROOK','Class drills do not block travel');
+
 console.log('PASS: travel preserves prepaid Cooking/Alchemy, stop refunds only remaining batches, regional work stops');

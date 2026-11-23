@@ -57,6 +57,7 @@ function attempt(tier:number,multiplier:number,seed:number,target=7){
   eventId:frost.id,tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,
   players:rosterMembers.map(member=>member.player),nowMs:startAt});
  let depth=0,combatMs=0,damageTaken=0;
+ let beforeBossHpPct:number|null=null,beforeBossWarmth:number|null=null,beforeBossHearths:number|null=null,bossReason:string|null=null,bossDurationMs=0;
  for(let step=0;step<45&&run.phase==='awaiting_choice';step++){
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId)!;
   const options=current.nextNodeIds.map(key=>run.graph.nodes.find(node=>node.nodeId===key)!);
@@ -64,12 +65,21 @@ function attempt(tier:number,multiplier:number,seed:number,target=7){
   const chooseExit=boss&&current.depth===target;
   const preference=['camp','shrine','event','treasure','forge','echo','battle','risk','elite'];
   const next=chooseExit?boss!:options.filter(node=>node.kind!=='boss').sort((a,b)=>preference.indexOf(a.kind)-preference.indexOf(b.kind))[0];
+  if(chooseExit){
+   const actors=rosterMembers.map(item=>item.player);
+   const currentHp=actors.reduce((sum,actor)=>sum+Math.max(0,run.persistentState.actors[actor.id]?.hp??0),0);
+   const maxHp=actors.reduce((sum,actor)=>sum+actor.stats.maxHp,0);
+   beforeBossHpPct=Number((currentHp/maxHp).toFixed(3));
+   beforeBossWarmth=run.mechanic?.value??null;
+   beforeBossHearths=run.objective?.count??null;
+  }
   assert.ok(next,'every live path must have an option');
   run=service.choose({runId:run.id,accountId:members[0].accountId,
    optionNodeId:next.nodeId,requestId:'step-'+id+'-'+step});
   depth=next.depth;
   const summary=run.lastResolution?.result.summary;
   if(summary?.kind==='combat'){
+   if(chooseExit){bossReason=typeof summary.reason==='string'?summary.reason:null;bossDurationMs=typeof summary.durationMs==='number'?summary.durationMs:0;}
    combatMs+=typeof summary.durationMs==='number'?summary.durationMs:0;
    const incoming=summary.damageTaken;
    if(incoming&&typeof incoming==='object')damageTaken+=Object.values(incoming).reduce<number>((sum,n)=>sum+(typeof n==='number'?n:0),0);
@@ -82,6 +92,7 @@ function attempt(tier:number,multiplier:number,seed:number,target=7){
  return {tier,multiplier,seed,target,clear:run.phase==='completed',depth,
   combatSeconds:Math.round(combatMs/1000),damageTaken:Math.round(damageTaken),
   remainingHpPct:Number((hp/fullHp).toFixed(3)),rewardMarks:run.rewardMarks??0,
+  beforeBossHpPct,beforeBossWarmth,beforeBossHearths,bossReason,bossDurationMs,
   averageCp:Math.round(rosterMembers.reduce((sum,member)=>sum+member.combatPower,0)/players.length),
   normalizedScores:rosterMembers.map(member=>Number(member.normalizedScore.toFixed(2)))};
 }

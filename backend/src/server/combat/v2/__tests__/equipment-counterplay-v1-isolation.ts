@@ -82,8 +82,8 @@ if(!river||!stoneSpec)throw Error('missing_stonecaller_research_skill_or_special
 function stoneBuild(index:0|1):VerifiedSkillBuildV2{
  return {
   actor:stonecaller,verified:{classId:'STONECALLER',level:25,ownedInstanceIds:new Set()},
-  selected:{specializationId:stoneSpec.id,equipment:{},
-   activeSkills:[{skillId:river.id,variantId:river.variants[index].id}],
+  selected:{specializationId:stoneSpec!.id,equipment:{},
+   activeSkills:[{skillId:river!.id,variantId:river!.variants[index].id}],
    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
   ownedItemsById:{},setsById:{},
  };

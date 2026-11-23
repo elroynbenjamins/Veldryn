@@ -1108,7 +1108,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    }}};
    assert.throws(()=>simulateRealFrozenForgeCombatV2(
     input,[duplicatedBuild],[composedSource],true),
-    /skill_or_equipment_build_invalid|duplicate_worn_copy/);
+    /skill_or_equipment_build_invalid|duplicate_worn_copy|cross_character_worn_copy/);
    multiForgeBadCopies++;
    const counterfeit={...composedSource,items:[
     {...composedSource.items[0],exactItem:{

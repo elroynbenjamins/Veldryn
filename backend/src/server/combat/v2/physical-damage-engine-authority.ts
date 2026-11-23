@@ -10,7 +10,7 @@ import type {CombatInput,CombatantDefinition,PhysicalDamageSubtypeV2} from '../t
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {v2PinnedPhysicalSubtypeReview} from '../../equipment/equipment-crafting-v2-physical-types-review';
 import {v2ServerPiece} from '../../equipment/equipment-crafting-v2-manifest';
-import {skillIdV2} from './skill-catalog';
+import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,skillIdV2} from './skill-catalog';
 
 const brand:unique symbol=Symbol('combat-v2-authored-physical-types');
 export type PhysicalDamageAuthorityV2=Readonly<{readonly [brand]:true}>;
@@ -183,7 +183,15 @@ export function authorizePhysicalSubtypeEngineV2(
    return undefined;
   if(abilityId!=='BASIC'&&!source.abilities.some(a=>a.id===abilityId))
    return undefined;
-  const special=SKILL_OVERRIDES[abilityId];
+  // Original V2 compiler emits baseAbilityId + ':v2:' + variantIndex.
+  // Never match the *concept* skill ID directly to an executed event ID.
+  // Resolve against the actual compiled server-authored ability identity.
+  const skill=source.abilities.find(a=>a.id===abilityId&&
+   /^.+:v2:[012]$/.test(a.id));
+  const known=skill?SKILL_IDENTITIES_V2.find(k=>
+   (source.classId===k.classId||source.classId===CLASS_NAMES_V2[k.classId])&&
+   k.name===skill.name):undefined;
+  const special=known?SKILL_OVERRIDES[known.id]:undefined;
   let weights:readonly PhysicalWeightV2[]=profile.weights;
   if(special&&(!special.needsShield||profile.shieldEquipped))
    weights=blast(special.type);

@@ -63,7 +63,7 @@ export interface ForgeRoleSlotFitRowV2{
  readonly crossRole:readonly V2Affix[];
  readonly missingRoleCore:boolean;
  readonly highTierMythicForcesCrossover:boolean;
- readonly action:'review_safe_candidate_fit'|'requires_role_slot_reauthoring';
+ readonly action:'review_safe_candidate_fit'|'review_defensive_slot_identity'|'requires_role_slot_reauthoring';
  readonly approvalRequired:true;
 }
 export interface ForgeClassTierStackingV2{
@@ -140,8 +140,8 @@ export function reviewForgeRoleFitAndStackingV2():ForgeRoleFitRiskReviewV2{
    roleCore:core,utility,crossRole:crossover,
    missingRoleCore:core.length===0,
    highTierMythicForcesCrossover:forced,
-   action:core.length===0||forced?
-    'requires_role_slot_reauthoring' as const:
+   action:forced?'requires_role_slot_reauthoring' as const:
+    core.length===0?'review_defensive_slot_identity' as const:
     'review_safe_candidate_fit' as const,
    approvalRequired:true as const,
   };

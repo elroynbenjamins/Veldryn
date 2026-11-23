@@ -599,13 +599,22 @@ const fakeSetCountSource={...twoSetReadback,custody:{
 assert.throws(()=>reviewWornRealForgeSetsV2(fakeSetCountSource),
  /wrong_or_duplicate_equipment|unverified_worn_source/,
  'invented copy cannot increase source-backed Forge milestone eligibility');
-assert.throws(()=>compileRealFrozenForgeActorV2(
- setItem.actor,{...setItem.build,selected:{
-  ...setItem.build.selected,
+const twoSetBuild={...setItem.build,
+ verified:{...setItem.build.verified,
+  ownedInstanceIds:new Set([setItem.mint.id,setSecond.mint.id])},
+ ownedItemsById:{...setItem.build.ownedItemsById,
+  [setSecond.mint.id]:{
+   instanceId:setSecond.mint.id,slot:'chest' as const,tier:'T1',
+   requiredLevel:2,eligibleRoles:['tank' as const],
+  }},
+ selected:{...setItem.build.selected,
   equipment:{helmet:setItem.mint.id,chest:setSecond.mint.id},
- }},twoSetSource),
+ },
+};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ setItem.actor,twoSetBuild,twoSetSource),
  /set_source_bonus_unreconciled/,
- 'verified 2-piece review still cannot enable unapproved set modifiers');
+ 'two genuinely owned EQ2 set copies still cannot activate unapproved effects');
 const offslot=make('HEXWEAVER',1,'offslot');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  offslot.actor,offslot.build,offslot.source),

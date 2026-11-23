@@ -762,7 +762,7 @@ const forgeTacticalBosses=[
 ] as const;
 const tacticalStrategies=['generic','targeted','alternative'] as const;
 let realForgeTacticalEncounters=0,realForgeSkillDiffering=0;
-let eligibleRealForgeCounterSpecs=0;
+let eligibleRealForgeCounterSpecs=0,buildPinnedRejections=0;
 const realForgeTacticalByGroup=new Map<string,string>();
 const tacticalGearByGroup=new Map<string,string>();
 const tacticalScopedReceiptByGroup=new Map<string,string>();
@@ -844,7 +844,31 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      assert.equal(scoped===tacticalScopedReceiptByGroup.get(key),
       selected===genericSkills,
       'Build-bound Forge digest must change iff selected tactics change');
-     if(selected!==genericSkills)realForgeSkillDiffering++;
+     if(selected!==genericSkills){
+      realForgeSkillDiffering++;
+      if(buildPinnedRejections===0){
+       // A service-owned pinned receipt binds the GENERIC build. Reusing it
+       // with newly selected tactical skills without a fresh approved build
+       // must reject, even when all minted gear is still physically identical.
+       const pinned={...qa.source,
+        verifyPersisted:(digest:string,revision:number)=>
+         revision===qa.source.ledgerRevision&&
+         digest===tacticalScopedReceiptByGroup.get(key)};
+       const baseline=selectReviewSkillLoadoutV2(
+        classId,spec.id,qa.actor,bossCase.id,'generic');
+       const baselineBuild:VerifiedSkillBuildV2={
+        ...qa.build,selected:{...qa.build.selected,
+         activeSkills:baseline.activeSkills},
+       };
+       assert.doesNotThrow(()=>
+        compileRealFrozenForgeActorV2(qa.actor,baselineBuild,pinned));
+       assert.throws(()=>
+        compileRealFrozenForgeActorV2(qa.actor,build,pinned),
+        /persisted_custody_not_verified/,
+        'Original account-bound build receipt cannot be replayed with new skills');
+       buildPinnedRejections++;
+      }
+     }
     }
     if(strategy==='targeted'&&choice.hasMatchingCounter)
      eligibleRealForgeCounterSpecs++;
@@ -858,8 +882,57 @@ assert.equal(realForgeTacticalEncounters,9*2*6*3);
 assert.equal(realForgeTacticalByGroup.size,9*2*6);
 assert.equal(tacticalGearByGroup.size,9*2*6);
 assert.equal(tacticalScopedReceiptByGroup.size,9*2*6);
+assert.equal(buildPinnedRejections,1);
 assert.ok(realForgeSkillDiffering>0,
  'Forge-backed QA must actually vary original authored class skill loadouts');
+// Actual original-source evidence must reject changes even when supplied
+// to the Skills branch's read-only shape inspector. These rows are generated
+// from one real pinned Forge roll and its complete original QA ledger; the
+// cross-branch inspector does not authenticate ownership or permit combat.
+const originalAudit=make('IRONWARDEN',0,'supported',2);
+const originalCompiled=compileRealFrozenForgeActorV2(
+ originalAudit.actor,originalAudit.build,originalAudit.source);
+const originalClassOnly=issueClassOnlyActorV2(
+ originalAudit.actor,originalAudit.build.verified,
+ originalAudit.source.classBaselinePolicy);
+const originalSkills=compileServerSkillBuildV2(true,{
+ ...originalAudit.build,actor:originalClassOnly,
+});
+const originalId=originalAudit.mint.id;
+const originalEvidence=originalCompiled.evidence;
+const audit=(row:typeof originalEvidence)=>
+ inspectFrozenForgeCombatHandoffV2(
+  originalAudit.actor.id,[originalId],originalSkills.stats,row);
+const approvedShape=audit(originalEvidence);
+assert.equal(approvedShape.canAuthorizeCombat,false);
+assert.equal(approvedShape.canGrantLoot,false);
+assert.equal(approvedShape.canListOnMarket,false);
+assert.equal(approvedShape.releaseApproved,false);
+assert.deepEqual(approvedShape.frozenBaseDelta,
+ originalAudit.exact.baseStats,
+ 'Original Forge authored roll was already scaled by rarity and quality');
+assert.throws(()=>audit({...originalEvidence,stages:{
+ ...originalEvidence.stages,
+ afterFrozenBase:{...originalEvidence.stages.afterFrozenBase,
+  defense:originalEvidence.stages.afterFrozenBase.defense+1},
+}}),/frozen_forge_scaled_twice_or_stat_basis_drift/);
+assert.throws(()=>audit({...originalEvidence,items:[
+ {...originalEvidence.items[0],scaledBaseStats:{
+  ...originalEvidence.items[0].scaledBaseStats,
+  hp:originalEvidence.items[0].scaledBaseStats.hp+1,
+ }},
+]}),/frozen_forge_scaled_twice_or_stat_basis_drift/);
+assert.throws(()=>audit({...originalEvidence,
+ equippedInstanceIds:['WRONG_BANK_COPY'],
+}),/forged_or_missing_source_item/);
+assert.throws(()=>audit({...originalEvidence,
+ setBonuses:'UNAPPROVED' as typeof originalEvidence.setBonuses,
+}),/unapproved_or_missing_forge_evidence/);
+assert.throws(()=>audit({...originalEvidence,affixSources:[
+ ...originalEvidence.affixSources,
+ {instanceId:'INVENTED_BONUS',id:'attack_pct' as const,
+  value:.02,unit:'relative_percent' as const},
+]}),/unverified_forge_affix_source_shape/);
 // One real source-proven Tank/2 Damage/Support party must also allow changing
 // Skills 2.0 tactics without changing the four ORIGINAL minted gear copies.
 const partySkilledBuilds=qaTeam.map(x=>{
@@ -886,7 +959,8 @@ assert.deepEqual(
 console.log('PASS: '+realForgeTacticalEncounters+
  ' real original-Forge source-owned Skills × generic-boss-engine encounters, '+
  tacticalGearByGroup.size+' source-matched triplets, '+realForgeSkillDiffering+
- ' nonbaseline tactical builds and '+eligibleRealForgeCounterSpecs+
+ ' nonbaseline tactical builds, '+buildPinnedRejections+
+ ' changed-skill pinned-ledger rejections and '+eligibleRealForgeCounterSpecs+
  ' counter-capable class/boss selections; original exact Forge frozen values applied once; 4-player replay; NO release approval');
 // ------------------------------------------------------------------------
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',

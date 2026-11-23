@@ -62,6 +62,10 @@ for(const piece of V2_SERVER_PIECES){
   assert.equal(preview.slot,piece.slot);
   assert.equal(preview.tier,piece.tier);
   assert.equal(preview.forgeSetId,piece.setId??null);
+  assert.equal(preview.classRestriction,piece.classRestriction??null,
+   'the next-mint review must not turn class-only weapons universal');
+  assert.equal(preview.hands,piece.hands??null,
+   'the next-mint review must not change dual/one/two-handed identity');
   assert.equal(preview.permittedToMint,false);
   assert.equal(preview.permittedToAlterLegacyOrExistingCopies,false);
   assert.equal(preview.currentSlotPermissionsUnchanged,true);
@@ -154,4 +158,5 @@ console.log('PASS original Forge next-mint review: ',JSON.stringify({
  sourceScenariosIncludingUnmappedPotency:originalsWithPotency,
  originalRngUnchanged:true,originalRollCountsUnchanged:true,
  sourceMagnitudeBandsUnchanged:true,liveMintEnabled:false,
+ pendingRoleSlotStatDecisions:report.distinctPendingRoleSlotStats,
 }));

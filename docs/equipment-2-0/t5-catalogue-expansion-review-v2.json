@@ -23,7 +23,10 @@
     "t5TotalSets": 16,
     "t5TotalItems": 84,
     "additiveProposedNewItems": 74,
-    "priorCrosswalk383PlusNewItems": 457
+    "priorCrosswalk383PlusNewItems": 457,
+    "rawPriorCrosswalkIncludesRetiredT4Drafts": 10,
+    "t4ReplacementIdentitiesReconciliation": "MISSING_FROM_INHERITED_383_CROSSWALK_YET_TO_RECONCILE",
+    "priorCrosswalk383PlusNewItemsNote": "457 is a raw row count only; inherited crosswalk still includes ten retired T4 Citadel/Bloodsteel members, excludes ten approved replacement IDs, and is NOT a releasable or canonical item count"
   },
   "craftRules": {
     "noCombatCraftGate": true,
@@ -38,7 +41,7 @@
     "sourceGrantStates": "ALL_UNREGISTERED",
     "XP": "UNSET_WILL_ANCHOR_TO_APPROVED_PROCESSING_CURVE",
     "recipeCosts": "DRAFT_FOR_ECONOMY_REVIEW_NOT_AUTHORITATIVE",
-    "rareCraftPremium": "Align to original +35% materials, +45% Gold, +35% queue after source comparison; current new rare figures are illustrative only",
+    "rareCraftPremium": "NEW rare candidates now explicitly apply +35% refined/wood/common materials (ceil), +45% Gold (round up to 100), +35% time (round up 10s) over slot template; rare signatures and scarce combat inputs remain mandatory and unscaled; existing Citadel/Bloodsteel recipes are untouched",
     "retiredT4IdsNeverReused": true
   },
   "materialCandidates": [
@@ -2337,31 +2340,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 2,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
               "iceveinSigils": 1,
               "bindingResin": 3,
-              "gold": 10900,
-              "queueSeconds": 880,
+              "gold": 15900,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 18,
-              "froststeelIngots": 9
+              "hardenedFrostleather": 25,
+              "froststeelIngots": 13
             },
             "alternate": {
-              "frostwoodPlanks": 2,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
               "iceveinSigils": 1,
               "bindingResin": 3,
-              "gold": 10900,
-              "queueSeconds": 880,
+              "gold": 15900,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 15,
-              "froststeelIngots": 13
+              "hardenedFrostleather": 21,
+              "froststeelIngots": 18
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2377,31 +2380,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11100,
-              "queueSeconds": 1020,
+              "gold": 16100,
+              "queueSeconds": 1380,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 21,
-              "froststeelIngots": 10
+              "hardenedFrostleather": 29,
+              "froststeelIngots": 14
             },
             "alternate": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11100,
-              "queueSeconds": 1020,
+              "gold": 16100,
+              "queueSeconds": 1380,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 17,
-              "froststeelIngots": 14
+              "hardenedFrostleather": 23,
+              "froststeelIngots": 19
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2417,31 +2420,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 6,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11700,
-              "queueSeconds": 1100,
+              "gold": 17000,
+              "queueSeconds": 1490,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 16,
-              "froststeelIngots": 15
+              "hardenedFrostleather": 22,
+              "froststeelIngots": 21
             },
             "alternate": {
-              "frostwoodPlanks": 6,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11700,
-              "queueSeconds": 1100,
+              "gold": 17000,
+              "queueSeconds": 1490,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 13,
-              "froststeelIngots": 21
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 29
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2458,30 +2461,30 @@
           "craftingRoutes": {
             "foundation": {
               "frostwoodPlanks": 0,
-              "rimeboneShards": 6,
+              "rimeboneShards": 9,
               "iceveinSigils": 1,
               "bindingResin": 2,
-              "gold": 10100,
-              "queueSeconds": 880,
+              "gold": 14700,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 13,
-              "froststeelIngots": 7
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 10
             },
             "alternate": {
               "frostwoodPlanks": 0,
-              "rimeboneShards": 6,
+              "rimeboneShards": 9,
               "iceveinSigils": 1,
               "bindingResin": 2,
-              "gold": 10100,
-              "queueSeconds": 880,
+              "gold": 14700,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "shardhearts": 2,
-              "hardenedFrostleather": 11,
-              "froststeelIngots": 10
+              "hardenedFrostleather": 15,
+              "froststeelIngots": 14
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         }
@@ -2532,31 +2535,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11200,
-              "queueSeconds": 1000,
+              "gold": 16300,
+              "queueSeconds": 1350,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 22,
-              "froststeelIngots": 10
+              "frostweaveCloth": 30,
+              "froststeelIngots": 14
             },
             "alternate": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11200,
-              "queueSeconds": 1000,
+              "gold": 16300,
+              "queueSeconds": 1350,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 18,
-              "froststeelIngots": 14
+              "frostweaveCloth": 25,
+              "froststeelIngots": 19
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2572,31 +2575,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 5,
-              "rimeboneShards": 12,
+              "frostwoodPlanks": 7,
+              "rimeboneShards": 17,
               "iceveinSigils": 3,
               "bindingResin": 5,
-              "gold": 16400,
-              "queueSeconds": 1550,
+              "gold": 23800,
+              "queueSeconds": 2100,
               "recipeFailureChance": 0,
               "dawnspireCores": 3,
-              "frostweaveCloth": 34,
-              "froststeelIngots": 15
+              "frostweaveCloth": 46,
+              "froststeelIngots": 21
             },
             "alternate": {
-              "frostwoodPlanks": 5,
-              "rimeboneShards": 12,
+              "frostwoodPlanks": 7,
+              "rimeboneShards": 17,
               "iceveinSigils": 3,
               "bindingResin": 5,
-              "gold": 16400,
-              "queueSeconds": 1550,
+              "gold": 23800,
+              "queueSeconds": 2100,
               "recipeFailureChance": 0,
               "dawnspireCores": 3,
-              "frostweaveCloth": 28,
-              "froststeelIngots": 21
+              "frostweaveCloth": 38,
+              "froststeelIngots": 29
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2612,31 +2615,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 2,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
               "iceveinSigils": 1,
               "bindingResin": 3,
-              "gold": 10900,
-              "queueSeconds": 880,
+              "gold": 15900,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 18,
-              "froststeelIngots": 9
+              "frostweaveCloth": 25,
+              "froststeelIngots": 13
             },
             "alternate": {
-              "frostwoodPlanks": 2,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
               "iceveinSigils": 1,
               "bindingResin": 3,
-              "gold": 10900,
-              "queueSeconds": 880,
+              "gold": 15900,
+              "queueSeconds": 1190,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 15,
-              "froststeelIngots": 13
+              "frostweaveCloth": 21,
+              "froststeelIngots": 18
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2652,31 +2655,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11100,
-              "queueSeconds": 1020,
+              "gold": 16100,
+              "queueSeconds": 1380,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 21,
-              "froststeelIngots": 10
+              "frostweaveCloth": 29,
+              "froststeelIngots": 14
             },
             "alternate": {
-              "frostwoodPlanks": 3,
-              "rimeboneShards": 8,
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11100,
-              "queueSeconds": 1020,
+              "gold": 16100,
+              "queueSeconds": 1380,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 17,
-              "froststeelIngots": 14
+              "frostweaveCloth": 23,
+              "froststeelIngots": 19
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2692,31 +2695,31 @@
           },
           "craftingRoutes": {
             "foundation": {
-              "frostwoodPlanks": 6,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11700,
-              "queueSeconds": 1100,
+              "gold": 17000,
+              "queueSeconds": 1490,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 16,
-              "froststeelIngots": 15
+              "frostweaveCloth": 22,
+              "froststeelIngots": 21
             },
             "alternate": {
-              "frostwoodPlanks": 6,
-              "rimeboneShards": 7,
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
               "iceveinSigils": 2,
               "bindingResin": 3,
-              "gold": 11700,
-              "queueSeconds": 1100,
+              "gold": 17000,
+              "queueSeconds": 1490,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 13,
-              "froststeelIngots": 21
+              "frostweaveCloth": 18,
+              "froststeelIngots": 29
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         },
@@ -2733,30 +2736,30 @@
           "craftingRoutes": {
             "foundation": {
               "frostwoodPlanks": 0,
-              "rimeboneShards": 6,
+              "rimeboneShards": 9,
               "iceveinSigils": 1,
               "bindingResin": 2,
-              "gold": 9700,
-              "queueSeconds": 830,
+              "gold": 14100,
+              "queueSeconds": 1130,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 11,
-              "froststeelIngots": 6
+              "frostweaveCloth": 15,
+              "froststeelIngots": 9
             },
             "alternate": {
               "frostwoodPlanks": 0,
-              "rimeboneShards": 6,
+              "rimeboneShards": 9,
               "iceveinSigils": 1,
               "bindingResin": 2,
-              "gold": 9700,
-              "queueSeconds": 830,
+              "gold": 14100,
+              "queueSeconds": 1130,
               "recipeFailureChance": 0,
               "dawnspireCores": 2,
-              "frostweaveCloth": 9,
-              "froststeelIngots": 9
+              "frostweaveCloth": 13,
+              "froststeelIngots": 13
             }
           },
-          "craftPremium": "DRAFT_ONLY_NOT_APPROVED_35_45_35_CHECK",
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
           "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
           "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
         }

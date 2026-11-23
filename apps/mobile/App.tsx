@@ -24,6 +24,7 @@ import {ActiveActivity,ClassId,CombatTacticId,GameState,QueuedActivity,RewardBun
 import type {HuntGoalId} from './src/core/hunt-goals';
 import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claimSeasonalContract,craftRecipe,createCharacter,depositAllMaterials,depositToBank,sellBankItem,depositGoldToBank,withdrawGoldFromBank,eatFood,equipFood,equipGatheringTool,newGame,previewActivityReward,salvageItem,sellItem,travelToRegion,unequipItem,upgradeStorage,withdrawFromBank} from './src/core/game';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
+import {verifyCraftCommandOutcome} from './src/core/craft-command-outcome';
 import {craftEquipmentPrerequisites} from './src/core/equipment-crafting-prerequisites';
 import {migrateGemPouch} from './src/core/gem-pouch';
 import {migrateRetiredStoryRewards} from './src/core/retired-story-rewards';
@@ -1012,23 +1013,13 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
       const result=await perform({type:'craft',args:{id,quantity:count}},false,false,true,true);
       if(!result)throw new Error('Crafting was not confirmed. Please retry.');
       queueMasteryNotice(state,result.state);
-      if(timed){
-        // The currently deployed gameplay function may finish tool crafts immediately.
-        // Require a persisted Forge job or a real newly minted tool before confirming.
-        const existingIds=new Set((previous.account.equipmentCraftingQueue??[]).map(job=>job.id));
-        const queued=(result.state.account.equipmentCraftingQueue??[]).filter(job=>job.recipeId===id&&!existingIds.has(job.id)).length;
-        if(queued>=count)return 'queued';
-        if(itemDef(timed.output.itemId).type==='tool'){
-          const before=(previous.account.craftedGatheringToolInstances??[]).filter(copy=>copy.itemId===timed.output.itemId).length;
-          const after=(result.state.account.craftedGatheringToolInstances??[]).filter(copy=>copy.itemId===timed.output.itemId).length;
-          if(after-before>=count)return 'completed';
-        }
-        throw new Error('The server saved this craft, but the job or result cannot be verified. Refresh before doing anything else; do not retry this craft.');
-      }
+      return verifyCraftCommandOutcome(previous,result.state,{
+        recipeId:id,outputItemId:timed?.output.itemId,requestedCount:count,
+        timed:!!timed,tool:!!timed&&itemDef(timed.output.itemId).type==='tool',
+      });
     }finally{
       setQuietCraftSaving(false);
     }
-    return 'completed';
   }
   let next=state;
   const craftNow=Date.now();

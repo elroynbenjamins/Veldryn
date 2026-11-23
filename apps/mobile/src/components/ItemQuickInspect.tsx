@@ -114,6 +114,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
           </View>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
+          {item.type==='tool'&&actions?<View style={s.foodActions}>{actions}</View>:null}
           <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>
           </Pressable>
@@ -174,7 +175,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={s.sourceDisclosureMark}>{useLimit>=uses.length?'−':'+'}</Text>
            </Pressable>:null}</>}</Section>:null}
           </>}
-          {actions?<View style={s.foodActions}>{actions}</View>:null}
+          {item.type!=='tool'&&actions?<View style={s.foodActions}>{actions}</View>:null}
         </ScrollView>
         {(quickActions||disposalActions)?<View style={s.quickFooter}>
           {quickActions}

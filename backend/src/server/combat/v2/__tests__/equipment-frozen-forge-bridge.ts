@@ -37,6 +37,8 @@ import {
 } from '../equipment-expanded-launch-registry';
 import {inspectOnlineGameStateForgeCombatV2}
  from '../equipment-online-readback-review';
+import {reviewWornRealForgeSetsV2}
+ from '../equipment-forge-set-worn-readiness';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
@@ -116,7 +118,8 @@ const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
  kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1){
  const role=CLASS_ROLES_V2[classId];
- const pieceId=kind==='set'?'EQ2_FIELDBORN_GUARD_HELMET':
+ const pieceId=kind==='set'?
+  (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
   tierItems[tier][role];
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
@@ -540,6 +543,69 @@ const setItem=make('IRONWARDEN',0,'set');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  setItem.actor,setItem.build,setItem.source),/set_source_bonus_unreconciled/,
  'never invent 48-set or preapproved Forge set bonuses');
+// The source-owned two-piece review is allowed to COUNT milestones but NEVER
+// issue bonuses. Merge two independently minted source-confirmed pieces into
+// one same-account, same-character Forge ledger with ordered virtual receipts.
+const setSecond=make('IRONWARDEN',1,'set');
+const normalizedSecond={
+ mint:{...setSecond.mint,accountId:setItem.source.accountId,
+  ownerCharacterId:setItem.source.characterId},
+ job:{...setSecond.job,accountId:setItem.source.accountId,
+  ownerCharacterId:setItem.source.characterId},
+ award:{...setSecond.award,characterId:setItem.source.characterId},
+ reservation:{...setSecond.reservation,ownerCharacterId:setItem.source.characterId},
+ equipReceipt:{...setSecond.equipReceipt,
+  actorCharacterId:setItem.source.characterId,
+  oldHolder:setItem.source.characterId,newHolder:setItem.source.characterId,
+  version:7},
+ custody:{...setSecond.custody,accountId:setItem.source.accountId,
+  ownerCharacterId:setItem.source.characterId},
+};
+const twoSetSource:TrustedFrozenForgeCombatSourceV2={
+ ...setItem.source,ledgerRevision:7,
+ items:[...setItem.source.items,normalizedSecond.mint],
+ jobs:[...setItem.source.jobs,normalizedSecond.job],
+ awards:[...setItem.source.awards,normalizedSecond.award],
+ claims:[...setItem.source.claims,...setSecond.source.claims],
+ reservations:[...setItem.source.reservations,normalizedSecond.reservation],
+ custodyReceipts:[...setItem.source.custodyReceipts,
+  normalizedSecond.equipReceipt],
+ custody:{...setItem.source.custody,copies:[
+  ...setItem.source.custody.copies,normalizedSecond.custody]},
+};
+const twoSetReadback=inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:twoSetSource.accountId,
+ characterId:twoSetSource.characterId,
+ expectedRevision:twoSetSource.ledgerRevision,
+ row:dbRow(twoSetSource),
+});
+const setReview=reviewWornRealForgeSetsV2(twoSetReadback);
+assert.equal(setReview.wornItemCount,2);
+assert.equal(setReview.uniqueEquipmentSlots,2);
+assert.equal(setReview.candidateSets.length,1);
+assert.deepEqual(setReview.candidateSets[0].wornPieceIds.slice().sort(),
+ ['EQ2_FIELDBORN_GUARD_HELMET','EQ2_FIELDBORN_GUARD_CHEST']);
+assert.deepEqual(setReview.candidateSets[0].reachedReviewMilestones,[2]);
+assert.equal(setReview.totalReviewMilestonesReached,1);
+assert.equal(setReview.activatedSetBonuses,0);
+assert.equal(setReview.authorizedToExecuteCombat,false);
+const fakeSetCountSource={...twoSetReadback,custody:{
+ ...twoSetReadback.custody,copies:[
+  ...twoSetReadback.custody.copies,
+  {...twoSetReadback.custody.copies[0],
+   instanceId:'QA_FORGED_DUPLICATE_SET_PIECE',
+   equippedSlot:'gloves' as const},
+ ]}};
+assert.throws(()=>reviewWornRealForgeSetsV2(fakeSetCountSource),
+ /wrong_or_duplicate_equipment|unverified_worn_source/,
+ 'invented copy cannot increase source-backed Forge milestone eligibility');
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ setItem.actor,{...setItem.build,selected:{
+  ...setItem.build.selected,
+  equipment:{helmet:setItem.mint.id,chest:setSecond.mint.id},
+ }},twoSetSource),
+ /set_source_bonus_unreconciled/,
+ 'verified 2-piece review still cannot enable unapproved set modifiers');
 const offslot=make('HEXWEAVER',1,'offslot');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  offslot.actor,offslot.build,offslot.source),

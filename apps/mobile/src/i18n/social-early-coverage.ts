@@ -21,6 +21,7 @@ export const socialEarlyRows={
   "Fight the boss to finish now, or continue deeper for a harder challenge.": ["Сразитесь с боссом, чтобы закончить сейчас, или идите глубже ради более сложного испытания.","Şimdi bitirmek için boss ile savaş veya daha zorlu bir mücadele için ilerle."],
   "Combat Marks": ["Боевые знаки","Savaş Nişanları"],
   "Run Build": ["Усиления похода","Sefer geliştirmeleri"],
+  "No companion": ["Нет спутника","Yoldaş yok"],
   "boons": ["благословения","lütuflar"],
   "artifacts": ["артефакты","eserler"],
   "final capped award": ["последняя награда с учётом лимита","son sınırlı ödül"],

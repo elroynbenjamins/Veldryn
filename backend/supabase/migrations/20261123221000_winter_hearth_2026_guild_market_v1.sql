@@ -73,9 +73,11 @@ begin
  from public.live_events e where e.event_id='EVT_ANNUAL_012_2026';
  select coalesce(p.logs,0),coalesce(p.lights,0) into v_logs,v_lights
  from public.guild_winter_hearth_2026_projects p where p.guild_id=v_gid;
+ v_logs:=coalesce(v_logs,0);v_lights:=coalesce(v_lights,0);
  select coalesce(w.logs,0),coalesce(w.lights,0) into v_used_logs,v_used_lights
  from public.guild_winter_hearth_2026_weekly w
  where w.account_id=v_uid and w.week_start=v_week;
+ v_used_logs:=coalesce(v_used_logs,0);v_used_lights:=coalesce(v_used_lights,0);
  select coalesce(max(percent),0) into v_earned
  from public.guild_winter_hearth_2026_milestones where guild_id=v_gid;
  v_stage:=case when v_logs>=25000 and v_lights>=2500 then 100
@@ -153,13 +155,14 @@ begin
  order by m.joined_at desc limit 1 for share;
  if v_gid is null or v_join>v_now then raise exception 'WINTER_HEARTH_GUILD_REQUIRED';end if;
 
- -- Serialize concurrent players of the same guild before applying milestones.
- perform 1 from public.guilds g where g.id=v_gid for update;
- if not found then raise exception 'WINTER_HEARTH_GUILD_REQUIRED';end if;
+ -- Lock online inventory before the guild: matches existing Guild Bank/Project lock order.
  select * into v_game from public.online_game_states
  where account_id=v_uid for update;
  if not found or v_game.character_id is null then
   raise exception 'WINTER_HEARTH_CHARACTER_REQUIRED';end if;
+ -- Serialize concurrent players of the same guild before applying milestones.
+ perform 1 from public.guilds g where g.id=v_gid for update;
+ if not found then raise exception 'WINTER_HEARTH_GUILD_REQUIRED';end if;
 
  insert into public.guild_winter_hearth_2026_projects(guild_id) values (v_gid)
  on conflict (guild_id) do nothing;

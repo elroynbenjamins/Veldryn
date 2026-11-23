@@ -969,6 +969,153 @@ console.log('PASS: '+realForgeTacticalEncounters+
  ' changed-skill pinned-ledger rejections and '+eligibleRealForgeCounterSpecs+
  ' counter-capable class/boss selections; original exact Forge frozen values applied once; 4-player replay; NO release approval');
 // ------------------------------------------------------------------------
+// Full original Forge equipped-copy QA using the REAL original 169-piece
+// catalog — only source-pinned NON-SET pieces may execute until the original
+// Forge 15-set and 48 proposed-set effects are reconciled. A class's two-hand
+// weapon may intentionally occupy weapon without inventing an offhand.
+const originalSlots=['helmet','chest','legs','gloves','boots','cape',
+ 'amulet','ring','weapon','offhand'] as const;
+let multiForgeCombatRuns=0,multiForgeVerifiedCopies=0;
+let multiForgeNineSlot=0,multiForgeTenSlot=0,multiForgeBadCopies=0;
+for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+ for(const specIndex of [0,1] as const){
+  const role=CLASS_ROLES_V2[classId];
+  const pinned=originalSlots.flatMap(slot=>{
+   const piece=V2_SERVER_PIECES
+    .filter(p=>p.role===role&&p.slot===slot&&!p.setId&&
+     (!p.classRestriction||p.classRestriction===classId))
+    .sort((a,b)=>a.tier-b.tier||a.id.localeCompare(b.id))[0];
+   return piece?[make(classId,specIndex,'supported',
+    piece.tier as 1|2|3|4,piece.id,slot,55)]:[];
+  });
+  assert.ok(pinned.length>=9&&pinned.length<=10,
+   'No invented offhand: real original Forge has 8 armor slots + owned weapon');
+  const first=pinned[0],accountId=first.source.accountId,
+   characterId=first.source.characterId;
+  const revision=6+3*(pinned.length-1);
+  const originalActor=first.actor;
+  const composedSource:TrustedFrozenForgeCombatSourceV2={
+   ...first.source,actorId:originalActor.id,accountId,characterId,
+   items:pinned.map(p=>({...p.mint,accountId,ownerCharacterId:characterId})),
+   jobs:pinned.map(p=>({...p.job,accountId,ownerCharacterId:characterId})),
+   awards:pinned.map(p=>({...p.award,characterId})),
+   claims:pinned.flatMap((p,i)=>[
+    {...p.start,response:{...p.start.response,version:4+3*i}},
+    {...p.claim,response:{...p.claim.response,version:5+3*i}},
+   ]),
+   reservations:pinned.map(p=>({...p.reservation,ownerCharacterId:characterId})),
+   custodyReceipts:pinned.map((p,i)=>({...p.equipReceipt,
+    actorCharacterId:characterId,oldHolder:characterId,
+    newHolder:characterId,version:6+3*i})),
+   custody:{accountId,characters:[{id:characterId,classId,level:55}],
+    copies:pinned.map(p=>({...p.custody,accountId,
+     ownerCharacterId:characterId}))},
+   ledgerRevision:revision,
+   verifyPersisted:(digest:string,version:number)=>
+    version===revision&&/^[a-f0-9]{64}$/.test(digest),
+  };
+  const ids=pinned.map(x=>x.mint.id);
+  const allSelections=Object.fromEntries(pinned.map(p=>[
+   p.exact.slot,p.mint.id])) as VerifiedSkillBuildV2['selected']['equipment'];
+  const build:VerifiedSkillBuildV2={
+   ...first.build,actor:originalActor,
+   verified:{...first.build.verified,level:55,
+    ownedInstanceIds:new Set(ids)},
+   selected:{...first.build.selected,equipment:allSelections},
+   ownedItemsById:Object.assign({},...pinned.map(p=>p.build.ownedItemsById)),
+  };
+  const allSlots=Object.keys(build.selected.equipment);
+  assert.equal(allSlots.length,pinned.length);
+  assert.equal(new Set(ids).size,ids.length);
+  const input:CombatInput={
+   seed:'FULL_ORIGINAL_FORGE_'+classId+'_'+specIndex,
+   players:[originalActor],enemies:[{...boss,
+    id:'EQ2_REAL_FORGE_FULL_SOURCE_BOSS'}],
+   maxDurationMs:9000,
+  };
+  const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+  let baselineFrozen='';
+  for(const strategy of ['generic','targeted'] as const){
+   const choice=selectReviewSkillLoadoutV2(classId,spec.id,originalActor,
+    'BOSS_EXP_BELL',strategy);
+   const tacticalBuild:VerifiedSkillBuildV2={
+    ...build,selected:{...build.selected,activeSkills:choice.activeSkills},
+   };
+   const fight=simulateRealFrozenForgeCombatV2(
+    input,[tacticalBuild],[composedSource],true);
+   const repeated=simulateRealFrozenForgeCombatV2(
+    input,[tacticalBuild],[composedSource],true);
+   assert.deepEqual(fight,repeated,
+    'Full original 9/10-slot minted item ledger must replay deterministically');
+   const evidence=fight.equipmentEvidence[0];
+   assert.equal(evidence.items.length,pinned.length);
+   assert.equal(evidence.equippedInstanceIds.length,pinned.length);
+   assert.deepEqual(new Set(evidence.equippedInstanceIds),new Set(ids));
+   const compiledClass=issueClassOnlyActorV2(
+    originalActor,tacticalBuild.verified,composedSource.classBaselinePolicy);
+   const compiledSkills=compileServerSkillBuildV2(true,{
+    ...tacticalBuild,actor:compiledClass});
+   const audit=inspectFrozenForgeCombatHandoffV2(
+    originalActor.id,ids,compiledSkills.stats,evidence);
+   assert.equal(audit.equipmentCount,pinned.length);
+   assert.equal(audit.doubleScaled,false);
+   assert.equal(audit.canAuthorizeCombat,false);
+   assert.equal(audit.canListOnMarket,false);
+   assert.equal(audit.canGrantLoot,false);
+   assert.equal(audit.releaseApproved,false);
+   const frozen=JSON.stringify({items:evidence.items,
+    base:evidence.stages.afterFrozenBase,
+    affixes:evidence.affixSources});
+   if(strategy==='generic')baselineFrozen=frozen;
+   else assert.equal(frozen,baselineFrozen,
+    'Class skill tactics may change build digest, never a frozen Forge copy');
+   multiForgeCombatRuns++;
+   multiForgeVerifiedCopies+=pinned.length;
+  }
+  if(pinned.length===9)multiForgeNineSlot++;
+  if(pinned.length===10)multiForgeTenSlot++;
+  if(classId==='IRONWARDEN'&&specIndex===0){
+   const badSource={...composedSource,custody:{
+    ...composedSource.custody,
+    copies:composedSource.custody.copies.map((row,i)=>i===0?{
+     ...row,instanceId:'QA_FOREIGN_BANK_SUBSTITUTION'}:row),
+   }};
+   assert.throws(()=>simulateRealFrozenForgeCombatV2(
+    input,[build],[badSource],true),
+    /virtual_custody_projection_mismatch/);
+   multiForgeBadCopies++;
+   const duplicatedBuild={...build,selected:{...build.selected,equipment:{
+    ...build.selected.equipment,helmet:build.selected.equipment.chest,
+   }}};
+   assert.throws(()=>simulateRealFrozenForgeCombatV2(
+    input,[duplicatedBuild],[composedSource],true),
+    /skill_or_equipment_build_invalid|duplicate_worn_copy/);
+   multiForgeBadCopies++;
+   const counterfeit={...composedSource,items:[
+    {...composedSource.items[0],exactItem:{
+     ...composedSource.items[0].exactItem,
+     baseStats:{...composedSource.items[0].exactItem.baseStats,
+      attack:composedSource.items[0].exactItem.baseStats.attack+1},
+    }},
+    ...composedSource.items.slice(1),
+   ]};
+   assert.throws(()=>simulateRealFrozenForgeCombatV2(
+    input,[build],[counterfeit],true),
+    /invalid_hidden_v2|forge_manifest_roll_source_mismatch|exact_copy/);
+   multiForgeBadCopies++;
+  }
+ }
+}
+assert.equal(multiForgeCombatRuns,36);
+assert.equal(multiForgeNineSlot+multiForgeTenSlot,18);
+assert.equal(multiForgeBadCopies,3);
+console.log('PASS: '+multiForgeCombatRuns+
+ ' full original Forge 9-10-slot actual engine runs (18 class/spec sets): '+
+ multiForgeVerifiedCopies+' immutable original source-copy compilations, '+
+ multiForgeNineSlot+' nine-slot two-hand/paired cases, '+multiForgeTenSlot+
+ ' ten-slot one-hand cases, '+multiForgeBadCopies+
+ ' invalid-ledger attacks; original Forge set bonuses DENIED');
+// ----------------------------------------------------------------------
 // Real original Forge mint+claim+virtual-equip source through the GENUINE
 // server-persisted six regional Enemy V2 boss profiles. Unlike the earlier
 // 324-case identity-only experiment, these use original authored cast/phase

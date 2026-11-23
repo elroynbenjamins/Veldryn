@@ -69,6 +69,20 @@ export function v2ServerAuthoredAffixChoices(
  return ROLE_WEIGHTS[role].map(row=>row.affix);
 }
 
+/**
+ * Read-only original source-role RNG weights for private probability reviews.
+ * This copies the original AUTHORITATIVE old-role weights, preserving the
+ * existing 30% slot fallback and all old mint outcomes. It does NOT select
+ * a new stat, roll loot, or authorize any new-mint distribution.
+ */
+export function v2ServerOriginalRoleAffixWeightsForReview(
+ role:V2Role,
+):readonly Readonly<{stat:V2Affix;weight:number}>[]{
+ if(!Object.prototype.hasOwnProperty.call(ROLE_WEIGHTS,role))
+  throw Error('unknown_forge_role_affix_review_scope');
+ return ROLE_WEIGHTS[role].map(row=>({stat:row.affix,weight:row.weight}));
+}
+
 export interface V2TrustedRecipeTemplate {
  /** Selected by authenticated server against canonical allowed recipe and catalogue. */
  recipeId:string;pieceId:string;slot:V2Slot;role:V2Role;tier:V2Tier;

@@ -91,7 +91,7 @@ function validDefinition(def:GuildV2SinkDefinition):void{
     basket.shareBps>10000||!Array.isArray(basket.options)||!basket.options.length)
    fail('invalid_sink_basket');
   ids.add(basket.id);sum+=basket.shareBps;
-  if(!basket.options.some(opt=>opt.registration==='existing_inventory_identity'))
+  if(!basket.options.some((opt:GuildV2MaterialOption)=>opt.registration==='existing_inventory_identity'))
    fail('no_existing_source_option');
   for(const opt of basket.options){
    if(!key(opt.itemId)||allItems.has(opt.itemId)||!positive(opt.credit)||opt.credit>8||

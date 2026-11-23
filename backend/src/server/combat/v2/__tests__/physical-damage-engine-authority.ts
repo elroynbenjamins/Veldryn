@@ -91,6 +91,10 @@ assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
  /not_pinned_forge_piece/);
 assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
  [{...evidence[0],receiptDigest:'not-signed'}]),/bad_frozen_evidence/);
+assert.throws(()=>issueFrozenForgePhysicalAuthorityV2({
+ ...input,players:[{...player,tags:[...(player.tags??[]),'combat_companion']}],
+},evidence),/companion_requires_separate_source_auth/,
+ 'companion origin may never borrow its owner Forge damage type');
 assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
  [{...evidence[0],items:[{instanceId:'QA_OTHER_CLASS',pieceId:'EQ2_WEAPON_T1_WAYFINDER'}]}]),
  /weapon_class_mismatch/,'foreign-class weapon cannot attach even to QA source authority');

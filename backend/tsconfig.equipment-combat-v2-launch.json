@@ -24,6 +24,8 @@
     "src/server/combat/v2/equipment-online-readback-review.ts",
     "src/server/combat/v2/equipment-forge-set-worn-readiness.ts",
     "src/server/combat/v2/equipment-online-cas-recheck.ts",
-    "src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts"
+    "src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts",
+    "src/server/combat/v2/boss-telegraph-projection.ts",
+    "src/server/combat/v2/__tests__/boss-telegraph-projection.ts"
   ]
 }

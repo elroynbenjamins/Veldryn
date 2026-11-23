@@ -54682,7 +54682,9 @@ function travelToRegion(state, regionId, nowMs) {
   if (!state.character || regionTravelAvailability(state, zone) !== "available") throw new Error(regionTravelLockReason(state, zone) ?? `Cannot travel to ${zone.name} yet`);
   if (currentRegionId(state) === zone.id && state.currentRegionId === zone.id) return { state, reward: { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 } };
   const settled = claimActivity(state, nowMs);
-  const travelled = { ...settled.state, currentRegionId: zone.id, activity: null, outOfCombatSinceMs: nowMs };
+  const portable = ["processing", "alchemy", "faith"].includes(settled.state.activity?.kind ?? "") || !settled.state.activity && !!settled.state.character?.classTraining;
+  const stopped = portable ? settled.state : stopActivity(settled.state, nowMs);
+  const travelled = { ...stopped, currentRegionId: zone.id, ...portable ? {} : { outOfCombatSinceMs: nowMs } };
   const next = normalizeActivityQueue(travelled.character?.activityQueue, activityQueueCapacity(travelled))[0];
   const locationIssue = next ? activityQueueLocationIssue(travelled, next) : void 0;
   const previousPause = travelled.character?.activityQueuePausedReason;

@@ -1,10 +1,13 @@
-import {claimActivity,createCharacter,newGame,offlineCapSeconds,startCombat,startGathering,startNextQueuedActivity} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,offlineCapSeconds,startClassTraining,startCombat,startGathering,startNextQueuedActivity} from '../src/core/game';
 import {activityQueueAvailableRegions,activityQueueCrossRegionAllowed,activityQueueLocationIssue,activityQueueSchedulingIssue,enqueueActivity,queuedActivityPlanningReadiness,queuedActivityReadiness} from '../src/core/activity-queue';
 import {accountEntitlementBenefits,withServerCommerceEntitlements} from '../src/core/account-entitlements';
 import {executeGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {characterTotalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
+import {startProcessingBatch} from '../src/core/processing';
+import {startAlchemyBatch} from '../src/core/alchemy';
+import {recipeDef} from '../src/content/skills';
 
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message)}
 function eq(a:unknown,b:unknown,message:string){if(a!==b)throw new Error(message+' ('+String(a)+' !== '+String(b)+')')}
@@ -98,3 +101,55 @@ eq(stopped.state.character?.activityQueue?.[0].targetId,remote.targetId,'Safety 
 ok(!!stopped.reward.activityResults?.[0].reward.stoppedReason,'Safety stop remains visible in offline results');
 
 console.log('PASS: VIP/VIP+/Supporter regional planning, auto travel, premium expiry, manual toggle, safe handoffs and offline cap');
+
+
+// A regional change must never erase prepaid Cooking/Alchemy work.
+// In particular, completed batches are credited before travel and unfinished
+// batches remain in their reservation rather than vanishing with activity:null.
+const stock=(state:GameState,id:string)=>[...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks].filter(row=>row.itemId===id).reduce((n,row)=>n+row.quantity,0);
+let kitchen=leveled();
+kitchen={...kitchen,character:{...kitchen.character!,gold:10000},inventory:{...kitchen.inventory,stacks:[{itemId:'MEADOW_PERCH',quantity:20},{itemId:'GREENWOOD_LOG',quantity:4}]}} as GameState;
+const preparedCooking=startProcessingBatch(kitchen,'COOK_MEADOW_PERCH',4,t);
+const cookingCycle=preparedCooking.activity!.processing!.cycleSeconds;
+eq(stock(preparedCooking,'MEADOW_PERCH'),0,'Cooking inputs are reserved at start');
+const travelledCooking=executeGameCommand(preparedCooking,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
+eq(travelledCooking.currentRegionId,'SILVERBROOK','Travel should still switch regions during Cooking');
+eq(travelledCooking.activity?.kind,'processing','Travel must not cancel portable Cooking');
+eq(travelledCooking.activity?.processing?.remainingBatches,4,'All unpaid Cooking batches remain reserved');
+const finishedCooking=claimActivity(travelledCooking,t+Math.ceil((cookingCycle*4+2)*1000));
+eq(finishedCooking.state.activity,null,'All completed Cooking batches clear normally');
+eq(stock(finishedCooking.state,'COOKED_MEADOW_PERCH'),20,'Cooking rewards arrive after region travel');
+eq(claimActivity(finishedCooking.state,t+Math.ceil((cookingCycle*4+2)*1000)).reward.craftingActions??0,0,'Travel cannot duplicate completed Cooking');
+
+const partialCooking=executeGameCommand(preparedCooking,{type:'travel',args:{id:'SILVERBROOK'}},t+Math.ceil((cookingCycle+1)*1000)).state;
+eq(partialCooking.activity?.processing?.remainingBatches,3,'Travel settles completed batches before preserving the remainder');
+const cancelledCooking=executeGameCommand(partialCooking,{type:'stop'},t+Math.ceil((cookingCycle+1)*1000)).state;
+eq(cancelledCooking.activity,null,'Explicit Stop still ends Cooking');
+eq(stock(cancelledCooking,'COOKED_MEADOW_PERCH'),5,'Completed output survives manual stop after travel');
+eq(stock(cancelledCooking,'MEADOW_PERCH'),15,'Stop returns ingredients from unfinished Cooking batches');
+eq(stock(cancelledCooking,'GREENWOOD_LOG'),3,'Stop returns unused Cooking fuel');
+eq(cancelledCooking.character!.gold,kitchen.character!.gold-(preparedCooking.activity!.processing!.goldPerBatch),'Only completed Cooking consumes Gold');
+const repeatedStop=executeGameCommand(cancelledCooking,{type:'stop'},t+Math.ceil((cookingCycle+1)*1000)).state;
+eq(stock(repeatedStop,'MEADOW_PERCH'),15,'Repeated Stop cannot refund ingredients twice');
+
+const brewInputs=recipeDef('BREW_DEWLEAF_DRAUGHT')!.inputs;
+const brewBase=leveled();
+const brewery={...brewBase,character:{...brewBase.character!,gold:10000},inventory:{...brewBase.inventory,stacks:brewInputs.map(input=>({itemId:input.itemId,quantity:input.quantity*3}))}} as GameState;
+const preparedAlchemy=startAlchemyBatch(brewery,'BREW_DEWLEAF_DRAUGHT',3,t);
+const travelledAlchemy=executeGameCommand(preparedAlchemy,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
+eq(travelledAlchemy.activity?.kind,'alchemy','Travel must not cancel a reserved brew');
+eq(travelledAlchemy.activity?.brew?.remainingBatches,3,'All unfinished brews stay reserved');
+const cancelledAlchemy=executeGameCommand(travelledAlchemy,{type:'stop'},t+1000).state;
+for(const input of brewInputs)eq(stock(cancelledAlchemy,input.itemId),input.quantity*3,`Stop refunds all reserved ${input.itemId} inputs`);
+eq(cancelledAlchemy.character!.gold,brewery.character!.gold,'Stop refunds unfinished Alchemy Gold');
+
+const walking=startGathering(leveled(),'GREENWOOD_TREE',t);
+const walked=executeGameCommand(walking,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
+eq(walked.activity,null,'Region-bound gathering still stops on travel');
+eq(walked.currentRegionId,'SILVERBROOK','Region-bound gathering travel still succeeds');
+const drills=startClassTraining(leveled(),t);
+const travellingDrills=executeGameCommand(drills,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
+ok(!!travellingDrills.character?.classTraining,'Region-independent class drills must continue after travel');
+eq(travellingDrills.currentRegionId,'SILVERBROOK','Class drills do not block travel');
+
+console.log('PASS: travel preserves prepaid Cooking/Alchemy, stop refunds only remaining batches, regional work stops');

@@ -28,6 +28,8 @@ on:
       - 'backend/src/server/combat/v2/__tests__/equipment-universal-roll-rehearsal.ts'
       - 'backend/src/server/combat/v2/equipment-authored-innate-percent-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-authored-innate-percent-review.ts'
+      - 'backend/src/server/combat/v2/equipment-full-loadout-affix-stack-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-full-loadout-affix-stack-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.ts'
@@ -99,6 +101,8 @@ jobs:
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.js
       - name: Rehearse secure bounded universal bonus draws with no mint authority
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-universal-roll-rehearsal.js
+      - name: Audit 216 class/tier/rarity loadout affix stacking envelopes and real hand restrictions
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-full-loadout-affix-stack-review.js
       - name: Prove authored class innate percentages never alter random roll pool
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-authored-innate-percent-review.js
       - name: Validate proposed EQ2 subtype affix consumes original Forge roll budget

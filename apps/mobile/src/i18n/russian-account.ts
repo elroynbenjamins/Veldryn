@@ -33,7 +33,6 @@ export const RUSSIAN_ACCOUNT_ROWS = {
   "COMBAT SPEED": "СКОРОСТЬ БОЯ",
   "DAMAGE TAKEN": "ПОЛУЧАЕМЫЙ УРОН",
   "Gathering speed": "Скорость сбора",
-  "GATHERING SPEED": "СКОРОСТЬ СБОРА",
   "FISHING SPEED": "СКОРОСТЬ РЫБАЛКИ",
   "HERBALISM SPEED": "СКОРОСТЬ СБОРА ТРАВ",
   "COOKING SPEED": "СКОРОСТЬ ГОТОВКИ",

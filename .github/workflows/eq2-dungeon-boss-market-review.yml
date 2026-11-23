@@ -9,6 +9,8 @@ on:
       - 'docs/equipment-2-0/t5-catalogue-expansion-review-v4.json'
       - 'tools/lib/eq2-dungeon-loot-market-preview-v5.mjs'
       - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
+      - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
+      - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
       - '.github/workflows/eq2-dungeon-boss-market-review.yml'
   pull_request:
     paths:
@@ -16,6 +18,8 @@ on:
       - 'docs/equipment-2-0/t5-catalogue-expansion-review-v4.json'
       - 'tools/lib/eq2-dungeon-loot-market-preview-v5.mjs'
       - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
+      - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
+      - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
       - '.github/workflows/eq2-dungeon-boss-market-review.yml'
 
 permissions:

@@ -8,7 +8,9 @@ import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import {typography,type ThemeColors} from '../theme/theme';
 
-const REGIONS:readonly MusicContextId[]=['town','asterfall','sunscar','frostmarch'];
+const REGIONS:readonly MusicContextId[]=['asterfall','sunscar','frostmarch'];
+// The former town/menu track is retained for existing saved choices, but not offered anew.
+const MUSIC_CHOICES=MUSIC_CONTEXTS.filter(track=>track!=='town');
 const ACTIVITIES:readonly MusicContextId[]=['dungeon','boss','world_boss'];
 const LABELS:Record<MusicContextId,string>={
  town:'Town & Menus',asterfall:'Asterfall',sunscar:'Sunscar',frostmarch:'Frostmarch',
@@ -56,7 +58,7 @@ export function MusicSettingsPanel({language}:{language:Language}){
     <Text style={s.chevron}>{open?'▴':'▾'}</Text>
    </Pressable>
    {open?<View style={s.choices}>
-    {([null,...MUSIC_CONTEXTS] as (MusicContextId|null)[]).map(track=>{
+    {([null,...MUSIC_CHOICES] as (MusicContextId|null)[]).map(track=>{
      const selected=choice.track===track;
      const text=track?a(LABELS[track]):a('Default theme');
      return <View key={track??'default'} style={[s.option,selected&&s.optionSelected]}>

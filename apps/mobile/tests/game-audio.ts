@@ -38,10 +38,15 @@ for(const kind of ['damage','critical','heal','shield','interrupt','phase','cast
  assert.ok(new RegExp(kind+":'[a-z_]+'").test(burst.slice(burst.indexOf('IMPACT_SOUND'))),'No sound for impact '+kind);
 
 // Music follows the player.
-assert.equal(backgroundMusicFor({screen:'Home',regionId:'SUNSCAR',hasCharacter:true}),'town');
+for(const [regionId,expected] of [['ASTERFALL','asterfall'],['SUNSCAR','sunscar'],['FROSTMARCH','frostmarch']] as const){
+ for(const screen of ['Home','World','Combat','Skills','Inventory','Account','Settings']){
+  assert.equal(backgroundMusicFor({screen,regionId,hasCharacter:true}),expected,screen+' follows '+regionId);
+ }
+}
 assert.equal(backgroundMusicFor({screen:'Combat',regionId:undefined,hasCharacter:true}),'asterfall');
 assert.equal(backgroundMusicFor({screen:'Dungeon',regionId:'SUNSCAR',hasCharacter:true}),'dungeon');
-assert.equal(backgroundMusicFor({screen:'World',regionId:'SUNSCAR',hasCharacter:false}),'town','Character creation uses the town theme');
+assert.equal(backgroundMusicFor({screen:'Coop',regionId:'FROSTMARCH',hasCharacter:true}),'dungeon');
+assert.equal(backgroundMusicFor({screen:'World',regionId:'SUNSCAR',hasCharacter:false}),'asterfall','Before character selection use the starting region theme');
 
 // Preferences: defaults on, corrupt values never throw.
 assert.deepEqual(parseAudioPreferences(null),DEFAULT_AUDIO_PREFERENCES);

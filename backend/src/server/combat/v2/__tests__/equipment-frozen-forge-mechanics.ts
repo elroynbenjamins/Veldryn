@@ -93,7 +93,18 @@ function powered(
  const effectKey=stat==='tenacity'?'tenacityPp':
   stat==='abilityDamage'?'abilityDamagePct':'forgeHealingPowerPct';
  const missingActiveCap:ServerAffixPolicyV2={
-  ...policy,maxAdvancedEffects:{...policy.maxAdvancedEffects,[effectKey]:undefined},
+  ...policy,maxAdvancedEffects:{
+   accuracyPp:policy.maxAdvancedEffects!.accuracyPp,
+   evasionPp:policy.maxAdvancedEffects!.evasionPp,
+   penetrationPp:policy.maxAdvancedEffects!.penetrationPp,
+   wardPp:policy.maxAdvancedEffects!.wardPp,
+   shieldStrengthPct:policy.maxAdvancedEffects!.shieldStrengthPct,
+   hexPotencyPct:policy.maxAdvancedEffects!.hexPotencyPct,
+   tenacityPp:policy.maxAdvancedEffects!.tenacityPp,
+   abilityDamagePct:policy.maxAdvancedEffects!.abilityDamagePct,
+   forgeHealingPowerPct:policy.maxAdvancedEffects!.forgeHealingPowerPct,
+   [effectKey]:undefined,
+  },
  };
  assert.throws(()=>compileTrustedEquipmentAffixesV2(
   source,trustedSource,missingActiveCap,true),

@@ -66,7 +66,7 @@ jobs:
       - name: Validate pixel audio settings and reversible mute
         run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
-        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
+        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs && node tests/chat-dock-responsive.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
         run: pnpm test:feature-hubs
       - name: Typecheck app

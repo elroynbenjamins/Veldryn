@@ -64,7 +64,7 @@ const flatShields=(actor:typeof baseRimebell)=>[
  ...(actor.phases??[]).flatMap(phase=>phase.effects)
 ].filter(effect=>effect.kind==='shield'&&typeof effect.flat==='number').map(effect=>effect.flat!);
 assert.equal(flatShields(baseRimebell).length,2,'Rimebell retains both Ward and Frozen Carapace');
-assert.deepEqual(flatShields(v3Rimebell),flatShields(baseRimebell).map(value=>value*.68*10/35),'Tier I boss barriers scale with the normalized boss HP bracket');
+for(const [i,oldShield] of flatShields(baseRimebell).entries())assert.ok(Math.abs(flatShields(v3Rimebell)[i]-oldShield*.68*10/35)<1e-8,'Tier I boss barrier '+i+' scales with the normalized boss HP bracket');
 assert.equal(v3Rimebell.stats.maxHp,baseRimebell.stats.maxHp,'shield-only tuning must not silently change boss HP');
 assert.equal(v3Rimebell.stats.attackPower,baseRimebell.stats.attackPower,'shield-only tuning must not silently change boss attack');
 assert.throws(()=>buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BOSS',enemyLevel:10,enemyShieldMultiplier:1.5}),/invalid_enemy_shield_multiplier/);

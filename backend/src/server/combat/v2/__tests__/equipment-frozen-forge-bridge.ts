@@ -37,6 +37,10 @@ import {
 } from '../equipment-expanded-launch-registry';
 import {inspectOnlineGameStateForgeCombatV2}
  from '../equipment-online-readback-review';
+import {
+ prepareForgeCombatRevisionPreflightV2,recheckForgeCombatRevisionV2,
+ recheckForgeCombatPartyRevisionsV2,
+} from '../equipment-online-cas-recheck';
 import {reviewWornRealForgeSetsV2}
  from '../equipment-forge-set-worn-readiness';
 
@@ -363,6 +367,40 @@ assert.equal(readback.scope,'ONLINE_EQ2_STAGING_READBACK_NO_DATABASE_LOCK_OR_AUT
 assert.deepEqual(readback.custody,initial.source.custody);
 assert.deepEqual(readback.items,initial.source.items);
 assert.deepEqual(readback.custodyReceipts,initial.source.custodyReceipts);
+const authRead={
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,row,
+};
+const casPreflight=prepareForgeCombatRevisionPreflightV2(authRead);
+assert.equal(casPreflight.mayAuthorizeCombat,false);
+assert.equal(casPreflight.maySettleRewards,false);
+assert.equal(casPreflight.requiresActualAccountLock,true);
+assert.equal(casPreflight.inspection.combatAuthority,false);
+const sameRevisionRecheck=recheckForgeCombatRevisionV2(casPreflight,authRead);
+assert.equal(sameRevisionRecheck.matchesOriginalState,true);
+assert.equal(sameRevisionRecheck.maySettleRewards,false);
+assert.equal(sameRevisionRecheck.requiresActualAtomicCasAndServiceAuth,true);
+assert.equal(sameRevisionRecheck.sourceDigest,
+ casPreflight.exactForgeLedgerDigest);
+assert.throws(()=>recheckForgeCombatRevisionV2(casPreflight,{
+ ...authRead,expectedRevision:row.revision+1,
+ row:{...row,revision:row.revision+1},
+}),/revision_moved_concurrent_update/,
+ 'concurrent Bank/craft transition invalidates encounter settlement');
+assert.throws(()=>recheckForgeCombatRevisionV2(casPreflight,{
+ ...authRead,row:{...row,state:{...row.state,
+  outOfCombatSinceMs:12345678}},
+}),/same_revision_but_state_mutated/,
+ 'same revision but modified game state must still fail closed');
+assert.throws(()=>recheckForgeCombatRevisionV2(casPreflight,{
+ ...authRead,authenticatedAccountId:'QA_OTHER_ACCOUNT',
+}),/rechecked_account_or_character_changed/,
+ 'another account cannot reuse previous revision authorization');
+assert.throws(()=>recheckForgeCombatRevisionV2(casPreflight,{
+ ...authRead,characterId:'QA_OTHER_CHARACTER',
+}),/rechecked_account_or_character_changed/,
+ 'switching characters after preview invalidates the readback');
 const wrongAccount={...row,account_id:'QA_OTHER_ACCOUNT'};
 assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
  authenticatedAccountId:initial.source.accountId,
@@ -407,6 +445,31 @@ assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
  characterId:initial.source.characterId,
  expectedRevision:initial.source.ledgerRevision,row:oldCopy,
 }),/invalid_hidden_v2_exact_copy/);
+const fourPartyReads=qaTeam.map(member=>({
+ authenticatedAccountId:member.source.accountId,
+ characterId:member.source.characterId,
+ expectedRevision:member.source.ledgerRevision,
+ row:dbRow(member.source),
+}));
+const fourPartyPreflights=fourPartyReads.map(
+ prepareForgeCombatRevisionPreflightV2);
+const fourPartyRechecks=recheckForgeCombatPartyRevisionsV2(
+ fourPartyPreflights,fourPartyReads);
+assert.equal(fourPartyRechecks.length,4);
+assert.ok(fourPartyRechecks.every(c=>c.matchesOriginalState&&
+ c.maySettleRewards===false));
+assert.throws(()=>recheckForgeCombatPartyRevisionsV2(
+ [fourPartyPreflights[0],fourPartyPreflights[0]],
+ [fourPartyReads[0],fourPartyReads[0]]),
+ /party_duplicate_character/,
+ 'duplicate party character cannot reuse one account snapshot twice');
+assert.throws(()=>recheckForgeCombatPartyRevisionsV2(
+ fourPartyPreflights,fourPartyReads.map((entry,i)=>i===1?{
+  ...entry,expectedRevision:entry.expectedRevision+1,
+  row:{...entry.row,revision:entry.row.revision+1},
+ }:entry)),
+ /revision_moved_concurrent_update/,
+ 'one stale participant invalidates entire party CAS review');
 const bankDb=dbRow(transferSource,initial.source.characterId);
 const sharedBankReadback=inspectOnlineGameStateForgeCombatV2({
  authenticatedAccountId:transferSource.accountId,
@@ -418,6 +481,33 @@ assert.equal(sharedBankReadback.currentClassId,'IRONWARDEN');
 assert.equal(sharedBankReadback.custody.copies[0].ownerCharacterId,
  transferSource.characterId);
 assert.equal(sharedBankReadback.combatAuthority,false);
+// Same-account characters must share one lock/revision, not be forbidden.
+const sharedAccountRead1={
+ authenticatedAccountId:transferSource.accountId,
+ characterId:initial.mint.ownerCharacterId,
+ expectedRevision:transferSource.ledgerRevision,row:bankDb,
+};
+const sharedAccountRead2={
+ ...sharedAccountRead1,characterId:transferSource.characterId,
+};
+const sameAccountParty=recheckForgeCombatPartyRevisionsV2(
+ [prepareForgeCombatRevisionPreflightV2(sharedAccountRead1),
+  prepareForgeCombatRevisionPreflightV2(sharedAccountRead2)],
+ [sharedAccountRead1,sharedAccountRead2]);
+assert.equal(sameAccountParty.length,2);
+assert.equal(sameAccountParty[0].accountId,sameAccountParty[1].accountId);
+assert.notEqual(sameAccountParty[0].characterId,
+ sameAccountParty[1].characterId);
+const splitAccountFirst=prepareForgeCombatRevisionPreflightV2(sharedAccountRead1);
+const splitAccountSecond=prepareForgeCombatRevisionPreflightV2({
+ ...sharedAccountRead2,expectedRevision:sharedAccountRead2.expectedRevision+1,
+ row:{...bankDb,revision:bankDb.revision+1},
+});
+assert.throws(()=>recheckForgeCombatPartyRevisionsV2(
+ [splitAccountFirst,splitAccountSecond],
+ [sharedAccountRead1,sharedAccountRead2]),
+ /party_account_snapshot_disagreement/,
+ 'two alts of one account must not use different account snapshot revisions');
 const transferred=compileRealFrozenForgeActorV2(
  initial.actor,initial.build,transferSource);
 assert.deepEqual(transferred.evidence.equippedInstanceIds,[initial.mint.id]);

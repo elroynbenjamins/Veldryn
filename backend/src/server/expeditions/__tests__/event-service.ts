@@ -70,6 +70,24 @@ const frostEnduranceService=new EventExpeditionService(new MemoryEventRunReposit
 const frostStart=frostEnduranceService.start({requestId:'frost-endurance-req',runId:'frost-endurance-run',accountId:'a',eventId:frostfall.id,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now});
 assert.equal(frostStart.graph.nodes.filter(node=>node.kind==='boss').length,6,'five optional exits and one mandatory final boss');
 assert.equal(frostStart.graph.nodes.find(node=>node.nodeId==='boss')?.depth,43);
+const frostGraphNodes=frostStart.graph.nodes;
+assert.equal(frostGraphNodes.length,128,'42 depths × 3 choices plus entry and final boss');
+for(let depth=1;depth<=42;depth++){
+ const room=frostGraphNodes.filter(node=>node.depth===depth);
+ assert.equal(room.length,3,'depth '+depth+' must expose exactly three branch options');
+ assert.deepEqual(room.map(node=>node.nodeId).sort(),['d'+depth+'-c0','d'+depth+'-c1','d'+depth+'-c2']);
+ const checkpoint=depth>1&&(depth-1)%7===0;
+ if(checkpoint){
+  assert.deepEqual(room.map(node=>node.kind),['camp','shrine','boss'],'checkpoint '+depth+' must keep optional exit');
+  assert.deepEqual(room.map(node=>node.nextNodeIds.length),[3,3,0],'checkpoint exit must end while continued paths remain connected');
+ }else{
+  assert.ok(room.every(node=>node.kind!=='boss'),'ordinary depth '+depth+' must not contain an unexpected boss exit');
+  assert.ok(room.every(node=>node.nextNodeIds.length=== (depth===42?1:3)),'normal route options must remain connected');
+ }
+ for(const node of room)for(const next of node.nextNodeIds)assert.ok(frostGraphNodes.some(candidate=>candidate.nodeId===next&&candidate.depth===depth+1),'all route edges point to the following depth');
+}
+assert.deepEqual(frostGraphNodes.find(node=>node.nodeId==='boss')?.nextNodeIds,[],'final 42-room boss is terminal');
+
 for(let stage=1;stage<=5;stage++){
  const d=7*stage+1;
  const choices=frostStart.graph.nodes.filter(node=>node.depth===d).sort((a,b)=>a.nodeId.localeCompare(b.nodeId));

@@ -172,11 +172,12 @@ export function authorizePhysicalSubtypeEngineV2(
     input.players.some((p,i)=>p.id!==scope.playerIds[i])||
     input.enemies.some((p,i)=>p.id!==scope.enemyIds[i]))
    fail('stale_or_forged_encounter');
+ const verifiedProfiles=scope.profiles;
  return (source,target,abilityId,damageType,postMitigationDamage,isDirect)=>{
   if(!isDirect||damageType!=='physical'||source.team!=='players'||target.team!=='enemies'||
      !Number.isFinite(postMitigationDamage)||postMitigationDamage<0)
    return undefined;
-  const profile=scope.profiles.get(source.id);
+  const profile=verifiedProfiles.get(source.id);
   if(!profile||!profile.pieceId||profile.mode==='spell_source'||profile.mode==='none')
    return undefined;
   if(abilityId!=='BASIC'&&!source.abilities.some(a=>a.id===abilityId))

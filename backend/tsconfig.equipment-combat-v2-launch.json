@@ -28,6 +28,7 @@
     "src/server/combat/v2/boss-telegraph-projection.ts",
     "src/server/combat/v2/__tests__/boss-telegraph-projection.ts",
     "src/server/combat/v2/__tests__/ability-counterplay-opportunity-review.ts",
-    "src/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.ts"
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.ts",
+    "src/server/equipment/__tests__/equipment-crafting-v2-ten-slot-original-forge-ledger.ts"
   ]
 }

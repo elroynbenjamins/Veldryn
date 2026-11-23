@@ -130,6 +130,12 @@ export function issueFrozenForgePhysicalAuthorityV2(
  const profiles=new Map<string,IssuedProfile>();
  const allInstances=new Set<string>();
  for(const actor of input.players){
+  // A companion may be a player-team ally, but it has no Forge weapon
+  // custody. It needs a separate persisted companion-origin authorization,
+  // never its owner's Equipment 2.0 damage mix.
+  if(actor.tags?.includes('combat_companion')||
+     actor.abilities.some(a=>a.tags?.includes('combat_companion')))
+   fail('companion_requires_separate_source_auth');
   const matches=evidence.filter(e=>e.actorId===actor.id);
   if(matches.length!==1||!actor.combatV2||actor.combatV2.version!==2||
      !actor.tags?.includes('combat-v2-gear-base-resolved'))

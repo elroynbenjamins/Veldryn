@@ -382,16 +382,23 @@ assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
  expectedRevision:initial.source.ledgerRevision,
  row:{...row,character_id:'QA_WRONG_ACTIVE'},
 }),/database_active_character_mismatch/);
-const swappedBody=structuredClone(row);
-swappedBody.state.account.equipmentV2Hidden.custodyReceipts[0].newHolder=
- 'QA_OTHER_ACCOUNT';
+const swappedBody={...row,state:{...row.state,account:{...row.state.account,
+ equipmentV2Hidden:{...row.state.account.equipmentV2Hidden,
+  custodyReceipts:row.state.account.equipmentV2Hidden.custodyReceipts.map(
+   (receipt,i)=>i===0?{...receipt,newHolder:'QA_OTHER_ACCOUNT'}:receipt),
+ }}}};
 assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
  authenticatedAccountId:initial.source.accountId,
  characterId:initial.source.characterId,
  expectedRevision:initial.source.ledgerRevision,row:swappedBody,
 }),/v2_virtual_move_owner_conflict|foreign_custody_movement/);
-const oldCopy=structuredClone(row);
-oldCopy.state.account.equipmentV2Hidden.items[0].exactItem.baseStats.hp+=999;
+const oldCopy={...row,state:{...row.state,account:{...row.state.account,
+ equipmentV2Hidden:{...row.state.account.equipmentV2Hidden,
+  items:row.state.account.equipmentV2Hidden.items.map((item,i)=>i===0?{
+   ...item,exactItem:{...item.exactItem,baseStats:{...item.exactItem.baseStats,
+    hp:item.exactItem.baseStats.hp+999}},
+  }:item),
+ }}}};
 assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
  authenticatedAccountId:initial.source.accountId,
  characterId:initial.source.characterId,

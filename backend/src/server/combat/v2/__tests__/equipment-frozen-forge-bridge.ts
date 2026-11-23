@@ -584,7 +584,8 @@ assert.equal(setReview.wornItemCount,2);
 assert.equal(setReview.uniqueEquipmentSlots,2);
 assert.equal(setReview.candidateSets.length,1);
 assert.deepEqual(setReview.candidateSets[0].wornPieceIds.slice().sort(),
- ['EQ2_FIELDBORN_GUARD_HELMET','EQ2_FIELDBORN_GUARD_CHEST']);
+ ['EQ2_FIELDBORN_GUARD_CHEST','EQ2_FIELDBORN_GUARD_HELMET'],
+ 'set milestone uses canonical item identity, never order of minted copies');
 assert.deepEqual(setReview.candidateSets[0].reachedReviewMilestones,[2]);
 assert.equal(setReview.totalReviewMilestonesReached,1);
 assert.equal(setReview.activatedSetBonuses,0);

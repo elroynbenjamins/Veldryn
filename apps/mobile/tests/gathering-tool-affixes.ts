@@ -1,7 +1,8 @@
 import {GATHERING_TOOLS} from '../src/content/gathering-tools';
-import {createCharacter,newGame,craftRecipe,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
-import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier} from '../src/core/gathering-tools';
-import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel} from '../src/core/gathering-tool-rolls';
+import {GATHERING} from '../src/content/skills';
+import {createCharacter,newGame,craftRecipe,startGathering,previewActivityReward,equipGatheringTool,unequipGatheringTool,depositToBank,withdrawFromBank,moveGatheringToolCopy,sellGatheringToolCopy} from '../src/core/game';
+import {equippedGatheringToolRoll,gatheringToolEffects,gatheringToolTimeMultiplier,gatheringToolSkillXpMultiplier,reservedGatheringTool} from '../src/core/gathering-tools';
+import {mintGatheringTool,validateGatheringToolRoll,gatheringToolBaseMultiplier,gatheringToolBonusLabel,gatheringToolBonusRange,GATHERING_TOOL_XP_RANGE_BPS_BY_TIER} from '../src/core/gathering-tool-rolls';
 import {auditCraftedGearOwnership} from '../src/core/crafted-gear-ownership';
 import {equipmentCopyDisposalDecision} from '../src/core/equipment-disposal-guidance';
 import {gatheringToolContribution,gatheringToolTotalBreakdown,gatheringToolPercent} from '../src/core/gathering-tool-presentation';
@@ -18,9 +19,16 @@ function assert(condition:unknown,message:string):asserts condition{if(!conditio
 const repeat=mintGatheringTool('GREENWOOD_HATCHET','CHAR_ONE','receipt',100);
 assert(JSON.stringify(repeat)===JSON.stringify(mintGatheringTool('GREENWOOD_HATCHET','CHAR_ONE','receipt',100)),'Trusted mint must be deterministic');
 assert(repeat.quality>=0&&repeat.quality<=100,'Quality must be between 0 and 100');
-assert(repeat.bonus.stat==='speed'||repeat.bonus.stat==='rarity','Exactly one permitted bonus stat');
+assert(['speed','rarity','xp'].includes(repeat.bonus.stat),'Exactly one permitted bonus stat');
 assert(repeat.bonus.basisPoints%10===0,'Bonus uses tenth-percent precision');
-assert(repeat.bonus.basisPoints>=(repeat.bonus.stat==='speed'?200:200)&&repeat.bonus.basisPoints<=(repeat.bonus.stat==='speed'?800:500),'Same fixed range for all rarities');
+const repeatRange=gatheringToolBonusRange(repeat.itemId,repeat.bonus.stat)!;
+assert(repeat.bonus.basisPoints>=repeatRange[0]&&repeat.bonus.basisPoints<=repeatRange[1],'Affix must be within its permitted tool-tier range');
+const newMints=Array.from({length:120},(_,index)=>mintGatheringTool('GREENWOOD_HATCHET','CHAR_ONE',`xp-coverage-${index}`,100));
+assert(newMints.some(row=>row.bonus.stat==='xp'),'New crafted tools can roll their own Skill XP');
+assert(newMints.some(row=>row.bonus.stat==='speed')&&newMints.some(row=>row.bonus.stat==='rarity'),'Existing tool affixes remain in the roll pool');
+assert(newMints.every(row=>validateGatheringToolRoll(row,row.itemId)),'All new rolls validate');
+assert(!validateGatheringToolRoll({...repeat,bonus:{stat:'xp',basisPoints:410}},repeat.itemId),'Tier 1 XP exceeds its +4% max');
+assert(!validateGatheringToolRoll({...repeat,bonus:{stat:'xp',basisPoints:190}},repeat.itemId),'Tier 1 XP cannot roll below +2%');
 assert(!validateGatheringToolRoll({...repeat,bonus:{stat:'speed',basisPoints:900}},repeat.itemId),'Forged invalid roll must be rejected');
 assert(gatheringToolBaseMultiplier({...repeat,rarity:'uncommon',quality:50})===1,'Uncommon Q50 remains neutral base');
 assert(gatheringToolBaseMultiplier({...repeat,rarity:'uncommon',quality:0})===.9,'Q0 adjusts base by -10%');
@@ -32,6 +40,7 @@ state={...state,character:{...state.character!,level:46,gold:100000},skills:stat
 for(const tool of GATHERING_TOOLS.filter(t=>t.skillId==='woodcutting'))state=equipGatheringTool(state,tool.id,100);
 assert(Math.abs(gatheringToolTimeMultiplier(state,'woodcutting')-.4)<1e-9,'Legacy four tiers preserve 60% reduction');
 assert(Math.abs(gatheringToolEffects(state,'woodcutting').rarityChanceMultiplier-1)<1e-9,'Legacy tools receive no fabricated affix');
+assert(gatheringToolSkillXpMultiplier(state,'woodcutting')===1,'Legacy tools receive no invented XP roll');
 
 // A validated gtool: marker in Inventory must not block disposal of unrelated,
 // exact-copy forged gear. Unknown or duplicated tool IDs must still fail closed.
@@ -62,6 +71,23 @@ const speedCopies:CraftedGatheringTool[]=tools.map((tool,index)=>({
 }));
 const speeds:GameState={...state,account:{...state.account,craftedGatheringToolInstances:speedCopies},
  character:{...state.character!,equippedToolInstanceIdsByTier:{woodcutting:{1:speedCopies[0].id,2:speedCopies[1].id,3:speedCopies[2].id,4:speedCopies[3].id}}}};
+const xpCopies:CraftedGatheringTool[]=tools.map((tool,index)=>({
+ ...speedCopies[index],bonus:{stat:'xp',basisPoints:GATHERING_TOOL_XP_RANGE_BPS_BY_TIER[tool.tier][1]},
+}));
+const xpTools:GameState={...speeds,account:{...speeds.account,craftedGatheringToolInstances:xpCopies}};
+assert(xpCopies.every(copy=>validateGatheringToolRoll(copy,copy.itemId)),'XP rolls validate per tool tier');
+assert(Math.abs(gatheringToolSkillXpMultiplier(xpTools,'woodcutting')-1.23)<1e-9,'All four distinct tool-tier XP bonuses stack additively for woodcutting');
+assert(gatheringToolSkillXpMultiplier(xpTools,'mining')===1&&gatheringToolSkillXpMultiplier(xpTools,'fishing')===1,'Tool XP never transfers to another skill');
+assert(gatheringToolBonusLabel(xpCopies[3])==='+8.0% Woodcutting XP','Tool XP label names only its skill');
+assert(gatheringToolContribution(tools[3],xpCopies[3]).skillXpRollPercent===8,'Tool XP displayed separately from tier speed');
+const woodcuttingNode=GATHERING.find(node=>node.skillId==='woodcutting'&&node.zoneId==='GREENFIELDS')!;
+assert(!!woodcuttingNode,'Need an accessible starting-region woodcutting node for real XP reward test');
+const withoutXp=startGathering(state,woodcuttingNode.id,1000);
+const withXp=startGathering(xpTools,woodcuttingNode.id,1000);
+const baseReward=previewActivityReward(withoutXp,1000+60*60*1000);
+const boostedReward=previewActivityReward(withXp,1000+60*60*1000);
+assert(baseReward.xp>0&&boostedReward.xp>baseReward.xp,'Tool XP roll must increase actual woodcutting preview and offline-equivalent rewards');
+assert(Math.abs(gatheringToolTotalBreakdown(gatheringToolEffects(xpTools,'woodcutting')).skillXpRelativePercent-23)<1e-9,'Stacked tool XP matches the actual skill multiplier');
 const expected=.4*.92**4;
 assert(Math.abs(gatheringToolTimeMultiplier(speeds,'woodcutting')-expected)<1e-9,'Four max speed rolls stack multiplicatively on remaining duration');
 assert(gatheringToolTimeMultiplier(speeds,'woodcutting')<.4,'Gathering speed must exceed original 60% reduction');
@@ -122,9 +148,13 @@ crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',2000,first.id);
 assert(equippedGatheringToolRoll(crafted,'woodcutting',1)?.id===first.id,'Selected physical copy must equip');
 crafted=equipGatheringTool(crafted,'GREENWOOD_HATCHET',3000,second.id);
 assert(equippedGatheringToolRoll(crafted,'woodcutting',1)?.id===second.id,'Replacing tool must select the correct distinct copy');
-assert(crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Replaced copy returns to Inventory intact');
+assert(reservedGatheringTool(crafted,'woodcutting',1)?.instanceId===first.id,'Replaced active copy moves into the free tool reserve, keeping Inventory capacity free');
+assert(!crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Saved reserve must not occupy an Inventory stack');
 crafted=unequipGatheringTool(crafted,'woodcutting',4000,'GREENWOOD_HATCHET');
-assert(crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Unequipped tool retains exact copy ID');
+assert(crafted.inventory.stacks.some(row=>row.instanceId===second.id),'Unequipping an active tool returns that precise copy to Inventory');
+assert(equippedGatheringToolRoll(crafted,'woodcutting',1)?.id===first.id,'Unequipping active should promote its reserve instead of discarding it');
+crafted=unequipGatheringTool(crafted,'woodcutting',4100,'GREENWOOD_HATCHET');
+assert(crafted.inventory.stacks.some(row=>row.instanceId===first.id),'Unequipping promoted reserve recovers the second exact copy');
 crafted=depositToBank(crafted,'GREENWOOD_HATCHET',2);
 assert([first.id,second.id].every(id=>crafted.bank.stacks.some(s=>s.instanceId===id)),'Bank deposit retains both rolled copies');
 crafted=withdrawFromBank(crafted,'GREENWOOD_HATCHET',2);

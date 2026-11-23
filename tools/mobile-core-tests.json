@@ -1,5 +1,4 @@
 [
-  ".core-build/apps/mobile/tests/craft-command-outcome.js",
   ".core-build/apps/mobile/tests/forge-mastery.js",
   ".core-build/apps/mobile/tests/combat-level-rebase.js",
   ".core-build/apps/mobile/tests/monthly-quest-milestones.js",
@@ -271,6 +270,7 @@
   ".core-build/apps/mobile/tests/gathering-drop-ui-contract.js",
   ".core-build/apps/mobile/tests/gathering-tools.js",
   ".core-build/apps/mobile/tests/gathering-tool-affixes.js",
+  ".core-build/apps/mobile/tests/gathering-tool-vault.js",
   ".core-build/apps/mobile/tests/startup-summary.js",
   ".core-build/apps/mobile/tests/dashboard-guidance.js",
   ".core-build/apps/mobile/tests/balance-projection.js",
@@ -431,5 +431,6 @@
   "tests/crafting-one-cost-preview-ui.cjs",
   "tests/offline-report-compact-ui.cjs",
   "tests/crafting-compact-tabbed-details-ui.cjs",
-  ".core-build/apps/mobile/tests/offline-report-layout.js"
+  ".core-build/apps/mobile/tests/offline-report-layout.js",
+  ".core-build/apps/mobile/tests/craft-command-outcome.js"
 ]

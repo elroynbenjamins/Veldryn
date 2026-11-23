@@ -1,0 +1,61 @@
+# Verify isolated tool-vault release branch before permitted main merge.
+name: Tool vault focused regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/main-tool-vault-focused-validation.yml'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-hybrid-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-skills-deeplink-ui.cjs'
+      - 'apps/mobile/tests/gathering-tool-affixes.ts'
+      - 'apps/mobile/tests/gathering-tool-vault.ts'
+      - 'apps/mobile/src/components/GatheringToolLoadoutPanel.tsx'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+  pull_request:
+    paths:
+      - '.github/workflows/main-tool-vault-focused-validation.yml'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-hybrid-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-skills-deeplink-ui.cjs'
+      - 'apps/mobile/tests/gathering-tool-affixes.ts'
+      - 'apps/mobile/tests/gathering-tool-vault.ts'
+      - 'apps/mobile/src/components/GatheringToolLoadoutPanel.tsx'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install locked mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install locked backend dependencies for shared Node type definitions
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck complete mobile app
+        run: pnpm --dir apps/mobile typecheck
+      - name: Verify collapsed tool layout and exact Smithing links
+        working-directory: apps/mobile
+        run: |
+          node tests/skill-disclosure-layout-ui.cjs
+          node tests/tool-recipe-skills-deeplink-ui.cjs
+          node tests/tool-recipe-hybrid-ui.cjs
+      - name: Compile and verify tool affixes and two-copy vault behavior
+        run: node tools/run-mobile-core-tests.mjs --match gathering-tool-affixes --match gathering-tool-vault

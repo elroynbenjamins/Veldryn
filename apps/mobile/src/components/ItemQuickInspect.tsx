@@ -128,7 +128,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
                 {detailToolCopies.length>1?<Text style={s.bodyStrong}>{gt('Tool {number}',{number:index+1})} · {copy?rarityMeta(copy.rarity).label+' · Q'+copy.quality:gt('Legacy tool')}</Text>:null}
                 <Text style={s.bodyStrong}>{gt('Tier gathering speed')} · +{gatheringToolPercent(breakdown.adjustedBasePercent)}%</Text>
                 <Text style={s.note}>{gt('Tier base {base}% · Rarity {rarity}% · Quality {quality}%',{base:gatheringToolPercent(breakdown.basePercent),rarity:rarityChange,quality:qualityChange})}</Text>
-                {copy?<Text style={s.note}>{gt('Bonus stat roll')} · +{gatheringToolPercent(copy.bonus.basisPoints/100)}% {gt(copy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance')}</Text>:<Text style={s.note}>{gt('Legacy tool · No bonus stat roll')}</Text>}
+                {copy?<Text style={s.note}>{gt('Bonus stat roll')} · +{gatheringToolPercent(copy.bonus.basisPoints/100)}% {copy.bonus.stat==='xp'?gl(toolDef.skillId)+' XP':gt(copy.bonus.stat==='speed'?'Gathering Speed':'Gathering Rarity Chance')}</Text>:<Text style={s.note}>{gt('Legacy tool · No bonus stat roll')}</Text>}
               </View>;
             })}
             {instanceId&&detailToolCopies.length===0?<Text style={s.note}>{gt('Tool roll record unavailable · no bonus is assumed.')}</Text>:null}

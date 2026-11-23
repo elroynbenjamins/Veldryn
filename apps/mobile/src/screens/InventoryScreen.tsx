@@ -38,7 +38,7 @@ import {displayStat} from '../core/stat-display';
 import {ot} from '../i18n';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-gear-instances';
-import {validateGatheringToolRoll} from '../core/gathering-tool-rolls';
+import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
@@ -404,7 +404,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
           <View style={s.toolStatRow}>
             <View style={s.toolStatDescription}>
               <Text style={s.toolStatEyebrow}>{gt('BONUS STAT ROLL')}</Text>
-              <Text style={s.toolStatLabel}>{copy.bonus.stat==='speed'?gt('Gathering Speed'):gt('Gathering Rarity Chance')}</Text>
+              <Text style={s.toolStatLabel}>{copy.bonus.stat==='speed'?gt('Gathering Speed'):copy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(inspectedToolDef?.skillId)+' XP'}</Text>
             </View>
             <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>

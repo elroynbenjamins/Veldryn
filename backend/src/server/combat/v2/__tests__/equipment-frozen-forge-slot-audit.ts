@@ -22,6 +22,26 @@ assert.equal(report.classTierSlotCells,9*4*10);
 assert.equal(report.cells.length,360);
 assert.equal(report.setBonusesActivated,0);
 assert.equal(report.actualPersistedCopiesExamined,0);
+assert.equal(report.cellsMissingTemplates,20,
+ 'Missing 20 cells means class-specific offhand allocation, not missing art');
+assert.equal(report.cellsReservedByTwoHandOrPairedWeapon,20);
+assert.equal(report.cellsMissingRequiredTemplates,0,
+ 'No existing T1–T4 character class lacks a physically required slot');
+const noOffhand=new Set([
+ 'DREADGUARD','WAYFINDER','RAVAGER','KNIFE_DANCER','STONECALLER',
+]);
+assert.deepEqual(new Set(report.cells.filter(r=>r.sourceCoverage==='reserved_offhand')
+ .map(r=>r.classId)),noOffhand);
+assert.equal(report.cells.filter(r=>r.requiredPhysicalCopy).length,340);
+for(const classId of Object.keys(CLASS_ROLES_V2)){
+ for(const tier of [1,2,3,4]){
+  const group=report.cells.filter(r=>r.classId===classId&&r.tier===tier);
+  assert.equal(group.length,10);
+  assert.equal(group.filter(r=>r.requiredPhysicalCopy).length,
+   noOffhand.has(classId)?9:10,
+   'Two-handed and paired weapons occupy offhand budget, not a second item');
+ }
+}
 assert.equal(new Set(report.cells.map(r=>[
  r.classId,r.tier,r.slot].join('|'))).size,360,'every class tier slot once');
 assert.ok(report.cellsWithUnsafeRngCandidate>0,
@@ -35,6 +55,18 @@ for(const row of report.cells){
  assert.ok(GEAR_SLOTS_V2.includes(row.slot));
  assert.ok(row.tier>=1&&row.tier<=4);
  assert.ok(Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,row.classId));
+ assert.equal(row.sourceCoverage,row.eligibleSourcePieceIds.length?'present':
+  row.reservedByTwoHandOrPairedWeapon?'reserved_offhand':'missing_required');
+ if(row.sourceCoverage==='reserved_offhand'){
+  assert.equal(row.slot,'offhand');
+  assert.equal(row.requiredPhysicalCopy,false);
+  assert.equal(row.compatibilityAction,'none_reserved');
+  assert.ok(!row.blockers.includes('NO_CLASS_ELIGIBLE_FORGE_TEMPLATE'),
+   'Intentional no-offhand does not demand a fabricated shield');
+ } else {
+  assert.equal(row.requiredPhysicalCopy,true);
+  assert.equal(row.reservedByTwoHandOrPairedWeapon,false);
+ }
  assert.equal(row.itemCustodyVerified,false);
  assert.equal(row.combatEffectsActivated,false);
  assert.equal(row.exactForgeCompatibleAffixes.length+
@@ -86,6 +118,12 @@ assert.ok(supportCape?.blockedOrOffSlotForgeAffixes.includes('potency'),
 console.log(JSON.stringify({
  kind:report.scope,cells:report.cells.length,realTemplateChecks:verifiedTemplates,
  missingTemplates:report.cellsMissingTemplates,
+ intentionalEmptyOffhand:report.cellsReservedByTwoHandOrPairedWeapon,
+ unexpectedlyMissingTemplates:report.cellsMissingRequiredTemplates,
+ realPhysicalSlots:report.cells.filter(c=>c.requiredPhysicalCopy).length,
+ noLegalAffixOnPhysicalSlots:report.cellsWithNoCompatibleAffixOnPhysicalSlots,
+ unsafeRngOnPhysicalSlots:report.cellsWithUnsafeRngCandidateOnPhysicalSlots,
+ maxRarityPoolShortageOnPhysicalSlots:report.cellsWithInsufficientMaximumRollPoolOnPhysicalSlots,
  noLegalAffix:report.cellsWithNoCompatibleAffix,
  unsafeRng:report.cellsWithUnsafeRngCandidate,
  mythicRollPoolShortage:report.cellsWithInsufficientMaximumRollPool,

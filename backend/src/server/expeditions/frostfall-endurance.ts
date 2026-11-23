@@ -11,11 +11,17 @@ export const FROSTFALL_ENDURANCE_DEPTH_REWARDS=[1,1.15,1.28,1.38,1.46,1.52] as c
  * original six-room Frostfall save math unchanged. Re-evaluate after calibrated
  * multi-seed combat results; never apply to regular dungeons/other events. */
 export const FROSTFALL_ENDURANCE_ENEMY_PACING_V3={attack:0.72,hp:0.80,defense:0.90} as const;
+/** Tier I has a smaller normalized player health/damage budget; this isolated
+ * starter bracket is deliberately gentler than the higher-level tiers. */
+export const FROSTFALL_ENDURANCE_TIER1_EXTRA_V3={attack:0.70,hp:0.85,defense:0.90} as const;
 export const FROSTFALL_ENDURANCE_BALANCE_V3='event-frostfall-endurance-v3';
 const ORIGINAL_FROSTFALL_ENEMY_PACING={attack:1,hp:1,defense:1} as const;
-export function frostfallEnemyPacingForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>){
- return graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR&&graph.balanceVersion===FROSTFALL_ENDURANCE_BALANCE_V3
-  ?FROSTFALL_ENDURANCE_ENEMY_PACING_V3:ORIGINAL_FROSTFALL_ENEMY_PACING;
+export function frostfallEnemyPacingForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>,tier:number){
+ if(graph.generatorVersion!==FROSTFALL_ENDURANCE_GENERATOR||graph.balanceVersion!==FROSTFALL_ENDURANCE_BALANCE_V3)return ORIGINAL_FROSTFALL_ENEMY_PACING;
+ if(tier!==1)return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
+ return {attack:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.attack,
+  hp:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.hp,
+  defense:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.defense};
 }
 
 

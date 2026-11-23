@@ -1,3 +1,5 @@
+import {combatTimeline,type CombatCandyWindow} from './combat-timing';
+
 /**
  * Server-only guild milestone timeline projection. No visual or gameplay
  * integration until event review; all calculations are deterministic and
@@ -70,4 +72,43 @@ export function winterHearthXpFactorForActionTimes(
   sum+=kind==='skill'?bonus.skillXpBps:bonus.combatXpBps;
  }
  return 1+sum/(times.length*10000);
+}
+
+/**
+ * Piecewise-constant gathering pace through actual milestone and candy cutoffs.
+ * Progress carries between segments; no bonus is applied to time before a
+ * milestone or after the seasonal end. No server action/reward mutations here.
+ * This replaces the uniform-cycle preview only when trusted bonus windows exist.
+ */
+export function winterHearthGatheringTimeline(input:{
+ startsAtMs:number;elapsedSeconds:number;progressFraction:number;
+ cycleSeconds:number;candy?:CombatCandyWindow;
+},windows:readonly WinterHearthBonusWindow[]){
+ if(!windows.length)return combatTimeline({
+  ...input,preparationEncounters:0,preparedCycleSeconds:input.cycleSeconds,
+ });
+ const end=input.startsAtMs+Math.max(0,input.elapsedSeconds)*1000;
+ const points=[input.startsAtMs,end];
+ const add=(point:number)=>{
+  if(Number.isFinite(point)&&point>input.startsAtMs&&point<end)points.push(point);
+ };
+ for(const win of windows){add(Date.parse(win.startsAt));add(Date.parse(win.endsAt));}
+ if(input.candy){add(input.candy.startsAtMs);add(input.candy.endsAtMs);}
+ const boundaries=[...new Set(points)].sort((a,b)=>a-b);
+ let progress=Math.max(0,Math.min(.999999999,input.progressFraction));
+ const encounters:ReturnType<typeof combatTimeline>['encounters']=[];
+ for(let i=0;i<boundaries.length-1;i++){
+  const start=boundaries[i],stop=boundaries[i+1];
+  if(stop<=start)continue;
+  const bps=winterHearthBonusesAt(windows,start).gatheringSpeedBps;
+  const candy=!!input.candy&&start>=input.candy.startsAtMs&&start<input.candy.endsAtMs;
+  const effectiveCycle=input.cycleSeconds/(1+bps/10000)/(candy?1.1:1);
+  const part=combatTimeline({
+   startsAtMs:start,elapsedSeconds:(stop-start)/1000,progressFraction:progress,
+   preparationEncounters:0,cycleSeconds:effectiveCycle,preparedCycleSeconds:effectiveCycle,
+  });
+  encounters.push(...part.encounters.map(row=>({...row,candy})));
+  progress=part.nextProgressFraction;
+ }
+ return {encounters,nextProgressFraction:progress,segments:[]};
 }

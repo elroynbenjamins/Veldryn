@@ -29,7 +29,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Winter Hearth domain rule tests
-        run: node --test tools/frostfall-winter-hearth-2026-rules.test.mjs
+        run: |
+          node --test tools/frostfall-winter-hearth-2026-rules.test.mjs
+          node --test tools/winter-hearth-review/v2/wisp-craft-supply-review.test.mjs
   disposable-guild-donations:
     name: PG17 Winter Hearth donation ledger and Guild Gold review
     runs-on: ubuntu-latest

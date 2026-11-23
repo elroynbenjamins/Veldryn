@@ -84,3 +84,33 @@ No donation alone grants combat/skilling project points or bypasses existing mea
 - `tools/test-eq2-guild-resource-sinks-v1.mjs` — source-contract, nonissuance and cost-share checks. Run with `node tools/test-eq2-guild-resource-sinks-v1.mjs`.
 
 Neither file is imported into server gameplay, Guild writes, the mobile app or live Ops. The test is a reviewer guard, not proof of authenticated database settlement. Next steps are formal cost approval, precise per-slot recipe adjustments if the source audit shows a shortage, and authenticated transaction adapter design only **after** the main Equipment 2.0 source authority is consolidated.
+
+## Pass 2: executable hidden cost review and draft settlement boundary (23 Nov)
+
+The new isolated `backend/src/server/guild/guild-v2-resource-sink-plan.ts` now provides strict, **non-committing** cost snapshots and donation previews. The snapshot consults the actual six `GUILD_TREE_DEVELOPMENT_GATES`, rejects source drift and freezes project membership, per-basket quotas and Gold at creation. Donations check exact account, character, guild, project and policy identities, project revision and active window. They calculate inventory-first/shared-Bank remainder and Gold separately; reject missing materials, fractional/negative quantities, overfill and unregistered `EQ2_*` items; and return zero debit for a valid idempotent replay. Every result explicitly returns `canPersist:false` and requires a future authenticated database adapter.
+
+The isolated strict TypeScript workflow compiles the real module and runs test cases at guild sizes 2/10/20, Gold/Bank splits, source matching, completion windows, replay conflicts, account switching and overfill. Passing a pure plan is **not** a production accounting transaction.
+
+### Equipment resource-demand audit (reference scenario, not forecast)
+
+`tools/report-eq2-raw-material-demand-v1.mjs` expands processing recipes to raw materials, pooling batches per tier. The scenario makes **one hypothetical copy of each candidate item within a tier**, using exclusively the foundation or alternate route; the item identities are *not currently issuable*.
+
+| Tier | Draft item IDs | Foundation raw timber | Alternate raw timber | Foundation raw ore | Alternate raw ore |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| T1 | 88 | 1,584 Greenwood | 1,744 Greenwood | 2,710 Copper | 2,315 Copper |
+| T2 | 94 | 2,096 Ironwood | 2,336 Ironwood | 4,725 Aster Iron | 3,950 Aster Iron |
+| T3 | 94 | 4,620 Dunewood | 4,785 Dunewood | 2,310 Sunstone | 1,920 Sunstone |
+| T4 | 97 | 8,938 Dunewood | 8,736 Dunewood | 6,594 Sunstone | 5,454 Sunstone |
+
+**Consequence:** High raw Greenwood/ Ironwood balances justify additional *recurring low-tier* uses, while **Dunewood and Crownwood should not receive a blanket cost increase**. T3/T4 require a real per-player gathering throughput and rare-drop bottleneck study before final recipe approval. These are combined draft-catalogue examples, not measured production use and not a claim every player will craft every set.
+
+### Required adapter before this can settle Guild donations
+
+- Reuse locked project ownership, version/hash, status, weekly window and active-member snapshot from the authoritative `guild_project_instances` lifecycle; prevent both legacy fixed-cost and 2.0 basket routes from accepting payment for the same project.
+- Under one database transaction, validate the signed-in account, active character, current Guild membership and exact project/version; lock the current owner of character Inventory, account Bank and Gold as well as project progress and the idempotency ledger. The live state is currently stored partly as JSON in `online_game_states`; confirm which row is authoritative before implementing a write adapter. **Never debit the client-rendered state directly.**
+- Preserve the existing donor share and multi-donor completion rules. Define a **versioned basket-progress authority** with integer target/credited units and exact item-level debit receipts, including source stack identity, immutable payload hash and unique `(project, account, requestKey)`. Keep it in a private/secured schema; do not opportunistically overload the existing per-resource project progress table without inspecting its constraints and reads.
+- Preflight whether the item can fill the exact remaining quota; reject excess before any item or Gold debit (never silently burn fractional excess). Reserve/debit, update basket/Gold progress and receipt, and increment revision in one commit. On duplicate identical request, return the original result; on same key with different payload, fail closed. Expired/completed projects reject new payment while legitimate receipt replays remain harmless.
+- Verify races: two sessions of one account, two characters drawing on the same Bank, two Guild members filling the last unit simultaneously, timeout then retry, stale policy version, project reset, membership removal, failed DB commit after material reservation and any processed-material provenance mismatch.
+- Only after accepted balance tests and server registration, introduce a separate versioned SQL migration and endpoint in staging. Full CI/PG17 concurrency, 2.0 Market trade provenance and owner-approved visual UI/themes remain release gates.
+
+**No live donation API imports this preview. No SQL or client integration was deployed.**

@@ -16,6 +16,8 @@ on:
       - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
       - 'backend/src/server/combat/v2/equipment-frozen-forge-slot-audit.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.ts'
+      - 'backend/src/server/combat/v2/equipment-forge-affix-pool-reconciliation-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-affix-pool-reconciliation-review.ts'
       - 'backend/src/server/equipment/__tests__/equipment-crafting-v2-ten-slot-original-forge-ledger.ts'
       - 'backend/src/server/equipment/equipment-crafting-v2-rolls.ts'
       - 'backend/src/server/combat/v2/skill-effects.ts'
@@ -94,6 +96,8 @@ jobs:
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Audit ten real Forge slots, nine classes, four tiers, source affix conflicts without minting
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.js
+      - name: Review new-mint-only Forge affix pool candidates without changing original RNG or approving weights
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-affix-pool-reconciliation-review.js
       - name: Verify nine complete original Forge physical loadouts with claim and virtual ownership replay
         run: node backend/dist-equipment-combat-v2-launch/server/equipment/__tests__/equipment-crafting-v2-ten-slot-original-forge-ledger.js
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
@@ -116,6 +120,6 @@ jobs:
         run: node tools/test-eq2-material-origin-atomic-v6-v7.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
-          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2|reviewWornRealForgeSetsV2|auditRealForgeTenSlotsV2|v2ServerAuthoredAffixChoices|prepareForgeCombatRevisionPreflightV2|recheckForgeCombatPartyRevisionsV2|projectBossCombatReplaySignalsV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2|reviewWornRealForgeSetsV2|auditRealForgeTenSlotsV2|v2ServerAuthoredAffixChoices|reviewForgeNewMintAffixPolicyV2|reviewProposedForgeRoleSlotAffixesV2|prepareForgeCombatRevisionPreflightV2|recheckForgeCombatPartyRevisionsV2|projectBossCombatReplaySignalsV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
             echo 'Unissued 2.0 set draft leaked into live routes'; exit 1
           fi

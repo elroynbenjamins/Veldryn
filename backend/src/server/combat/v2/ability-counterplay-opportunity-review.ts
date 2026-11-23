@@ -83,9 +83,12 @@ export function reviewObservedCounterOpportunityV2(
    const explanation:ObservedCounterExplanationV2=
     !row.hasMatchingCounter?'class_native_counter_unavailable':
     row.observedOpportunityEvents===0?'boss_opportunity_not_observed':
+    // Instant abilities produce source-attributed mechanic events without a
+    // cast_complete log. Never report "not cast" when the counter event
+    // itself is present; do not fabricate a cast event or change the engine.
+    row.attributedCounterEvents>0?'counter_effect_observed':
     row.eligibleSkillCasts===0?'selected_counter_not_cast':
-    row.attributedCounterEvents===0?'counter_cast_without_result':
-    'counter_effect_observed';
+    'counter_cast_without_result';
    rows.push({
     scenarioId:row.scenarioId,classId:row.classId,
     specializationId:row.specializationId,enemyId:row.enemyId,

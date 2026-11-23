@@ -2,6 +2,7 @@ import {strict as assert} from 'node:assert';
 import type {CombatStats} from '../../types';
 import {CLASS_NAMES_V2} from '../skill-catalog';
 import type {ClassIdV2} from '../build-contract';
+import type {EquipmentAffixIdV2} from '../equipment-affixes';
 import {simulateUnifiedEquipmentCombatV2} from '../unified-equipment-encounter';
 import {compileExactEquipmentTraitSourceV2} from '../equipment-trait-exact-copy-adapter';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';

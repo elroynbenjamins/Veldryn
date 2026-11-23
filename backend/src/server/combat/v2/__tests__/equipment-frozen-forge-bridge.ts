@@ -290,6 +290,32 @@ const banked={...initial.source,custody:{...initial.source.custody,
   equippedSlot:undefined,ownerCharacterId:null}))}};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,banked),/virtual_custody_projection_mismatch/);
+const missingMove={...initial.source,custodyReceipts:[]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,missingMove),
+ /virtual_custody_projection_mismatch/,
+ 'a claim reservation alone cannot authorize an equipped EQ2 copy');
+const forgedMove={...initial.source,custodyReceipts:[{
+ ...initial.equipReceipt,newHolder:'QA_FOREIGN_CHARACTER',
+}]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,forgedMove),
+ /v2_virtual_move_owner_conflict/,
+ 'a fake equip move to another character must never authorize the wearer');
+const wrongReservedLocation={...initial.source,reservations:[{
+ ...initial.reservation,destination:'inventory' as const,
+}]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,wrongReservedLocation),
+ /v2_virtual_move_history_conflict/,
+ 'equip replay requires original claim placement, not a forged location');
+const reusedRequest={...initial.source,custodyReceipts:[{
+ ...initial.equipReceipt,requestId:initial.claim.requestId,
+}]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,reusedRequest),
+ /duplicate_cross_system_v2_receipt_id/,
+ 'Forge claim and equipment movement cannot share a request ID');
 const duplicate={...initial.source,custody:{...initial.source.custody,
  copies:[...initial.source.custody.copies,...initial.source.custody.copies]}};
 assert.throws(()=>compileRealFrozenForgeActorV2(

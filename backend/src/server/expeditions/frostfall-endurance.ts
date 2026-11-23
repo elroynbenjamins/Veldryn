@@ -7,14 +7,24 @@ import {validateCoopRouteGraph,DUNGEON_ENDURANCE} from './route-generation';
 export const FROSTFALL_ENDURANCE_GENERATOR='event-route-v5-endurance-v2';
 export const FROSTFALL_ENDURANCE_DEPTH_REWARDS=[1,1.15,1.28,1.38,1.46,1.52] as const;
 /** REVIEW CANDIDATE ONLY. Entry enemies must not wipe well-equipped level-gated
- * parties before the first checkpoint. Retain late-depth scaling and all
- * original six-room Frostfall save math unchanged. Re-evaluate after calibrated
+ * parties before the first checkpoint. Keep original six-room Frostfall save
+ * math unchanged and version later-floor scaling separately. Re-evaluate after calibrated
  * multi-seed combat results; never apply to regular dungeons/other events. */
 export const FROSTFALL_ENDURANCE_ENEMY_PACING_V3={attack:0.72,hp:0.80,defense:0.90} as const;
 /** Tier I has a smaller normalized player health/damage budget; this isolated
  * starter bracket is deliberately gentler than the higher-level tiers. */
 export const FROSTFALL_ENDURANCE_TIER1_EXTRA_V3={attack:0.70,hp:0.85,defense:0.90} as const;
 export const FROSTFALL_ENDURANCE_BALANCE_V3='event-frostfall-endurance-v3';
+/** The original 3.334x HP / 2.142x attack at floor 42 was unreachable in the
+ * calibrated 125-case draft matrix. These slower multiplicative growth rates
+ * apply only to new v3 seasonal runs; all saved v2 curves stay frozen. */
+export const FROSTFALL_ENDURANCE_DEPTH_CURVE_V3={attack:1.010,hp:1.016,defense:1.005} as const;
+const ORIGINAL_FROSTFALL_DEPTH_CURVE={attack:1.022,hp:1.035,defense:1.012} as const;
+export function frostfallDepthCurveForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>){
+ return graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR&&graph.balanceVersion===FROSTFALL_ENDURANCE_BALANCE_V3
+  ?FROSTFALL_ENDURANCE_DEPTH_CURVE_V3:ORIGINAL_FROSTFALL_DEPTH_CURVE;
+}
+
 const ORIGINAL_FROSTFALL_ENEMY_PACING={attack:1,hp:1,defense:1} as const;
 export function frostfallEnemyPacingForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>,tier:number){
  if(graph.generatorVersion!==FROSTFALL_ENDURANCE_GENERATOR||graph.balanceVersion!==FROSTFALL_ENDURANCE_BALANCE_V3)return ORIGINAL_FROSTFALL_ENEMY_PACING;

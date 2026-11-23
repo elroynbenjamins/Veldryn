@@ -38,7 +38,7 @@ const batches=Math.ceil(ingotNeed/smelt.output.quantity);
 let prereqState=createCharacter(newGame(0),t4.classId,'Prereq Tester','male');
 const externalInputs=t4.inputs.filter(input=>input.itemId!=='SUNSTONE_INGOT');
 const smithingLevel=Math.max(t4.level,smelt.level,30);
-prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:smithingLevel,xp:totalXpAtLevel(smithingLevel)}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'SUNSTONE_ORE',quantity:batches*6},{itemId:'DUNEWOOD',quantity:batches*4+(externalInputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)},...externalInputs.filter(input=>input.itemId!=='DUNEWOOD').map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
+prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:smithingLevel,xp:totalXpAtLevel(smithingLevel)}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'SUNSTONE_ORE',quantity:batches*6},{itemId:'DUNEWOOD',quantity:batches*(smelt.inputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)+(externalInputs.find(input=>input.itemId==='DUNEWOOD')?.quantity??0)},...externalInputs.filter(input=>input.itemId!=='DUNEWOOD').map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
 const craftability=equipmentPrerequisiteCraftability(prereqState,t4.id);
 ok(craftability.available&&craftability.processableMissing>=1,'Missing processed equipment inputs must expose Craft prerequisites');
 const processed=craftEquipmentPrerequisites(prereqState,t4.id,5000);

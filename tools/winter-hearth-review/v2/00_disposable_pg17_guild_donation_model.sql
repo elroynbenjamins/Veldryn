@@ -214,7 +214,7 @@ BEGIN
    WHERE account_id=p_account AND item_id=p_item
    ORDER BY stack_id FOR UPDATE LOOP
    EXIT WHEN v_to_take=0;
-   v_take:=pg_catalog.least(v_to_take,v_stock.quantity);
+   v_take:=LEAST(v_to_take,v_stock.quantity);
    IF v_take=v_stock.quantity THEN
     DELETE FROM winter_hearth_review.bank_stacks WHERE stack_id=v_stock.stack_id;
    ELSE

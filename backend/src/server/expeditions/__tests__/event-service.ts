@@ -172,4 +172,19 @@ for(let index=0;index<3;index++)clearRepo.save({...run,id:`daily-clear-run-${ind
 assert.equal(clearService.claimReward({runId:'daily-clear-run-0',accountId:'a',requestId:'daily-clear-0',nowMs:now}).marks,1);
 assert.equal(clearService.claimReward({runId:'daily-clear-run-1',accountId:'a',requestId:'daily-clear-1',nowMs:now}).marks,1);
 assert.throws(()=>clearService.claimReward({runId:'daily-clear-run-2',accountId:'a',requestId:'daily-clear-2',nowMs:now}),/event_daily_clear_limit/);
+// Reward replay receipts are run-scoped: a client reusing a request ID on a
+// different successful event run must receive that run's independently settled amount.
+const sharedClaimRepo=new MemoryEventRunRepository();
+const sharedClaimService=new EventExpeditionService(sharedClaimRepo,'run-scope-claim-replay');
+for(const [index,marks] of [11,22].entries())sharedClaimRepo.save({...run,id:'scope-run-'+index,requestId:'scope-start-'+index,settlement:'pending',phase:'completed',rewardMarks:marks});
+const firstShared=sharedClaimService.claimReward({runId:'scope-run-0',accountId:'a',requestId:'same-claim-request',nowMs:now});
+const secondShared=sharedClaimService.claimReward({runId:'scope-run-1',accountId:'a',requestId:'same-claim-request',nowMs:now});
+assert.deepEqual([firstShared.marks,firstShared.idempotentReplay],[11,false]);
+assert.deepEqual([secondShared.marks,secondShared.idempotentReplay],[22,false],'same request ID on a distinct run must not reuse an earlier reward');
+assert.deepEqual(sharedClaimService.claimReward({runId:'scope-run-1',accountId:'a',requestId:'same-claim-request',nowMs:now}),{marks:22,idempotentReplay:true});
+
+// UTC midnight resets the daily *claim* cap, not the account identity or tier.
+assert.throws(()=>clearService.claimReward({runId:'daily-clear-run-2',accountId:'a',requestId:'next-day-check',nowMs:now+86_399_000}),/event_daily_clear_limit/);
+assert.equal(clearService.claimReward({runId:'daily-clear-run-2',accountId:'a',requestId:'next-day-check',nowMs:now+86_400_000}).marks,1,'new UTC day must admit a fresh rewarded claim');
+
 console.log('event service tests passed');

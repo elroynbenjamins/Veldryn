@@ -15,6 +15,9 @@ on:
       - 'backend/src/server/combat/v2/equipment-affixes.ts'
       - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
       - 'backend/src/server/combat/v2/physical-damage-engine-authority.ts'
+      - 'backend/src/server/combat/v2/enemy-physical-resistance-authority.ts'
+      - 'backend/src/server/combat/v2/equipment-physical-affix-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/enemy-physical-affix-review.ts'
       - 'backend/src/server/equipment/equipment-crafting-v2-physical-types-review.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-damage-engine-authority.ts'
       - 'docs/equipment-2-0/eq2-physical-subtype-catalogue-review-v1.json'
@@ -76,6 +79,8 @@ jobs:
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
       - name: Validate exact pinned equipment subtype catalogue source identity
         run: node tools/test-eq2-physical-subtype-catalogue-review-v1.mjs
+      - name: Test signed boss type resistances and no-mint affix source eligibility
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/enemy-physical-affix-review.js
       - name: Test server-issued basic physical subtypes, verified shield overrides, V1 isolation
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/physical-damage-engine-authority.js
       - name: Review 15 original Forge set tactical identities without granting unapproved bonuses

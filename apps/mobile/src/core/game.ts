@@ -12,6 +12,7 @@ import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
 import {frostfallWispDrops,WINTER_HEARTH_WISP_ITEM_ID} from './winter-hearth-2026';
+import {winterHearthGatheringTimeline,winterHearthXpFactorForActionTimes} from './winter-hearth-bonus-windows';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {CLASSES} from '../content/classes';
@@ -909,8 +910,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
       const totalSeconds=bankedSeconds+elapsed;
       const actions=Math.floor(totalSeconds/routeSeconds);
       const nextProgressFraction=actions>0?(totalSeconds%routeSeconds)/routeSeconds:(totalSeconds/routeSeconds);
-      let boostedActions=0;for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
-      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      let boostedActions=0;const actionTimes:number[]=[];for(let i=1;i<=actions;i++){const at=state.activity.lastClaimAtMs+(i*routeSeconds-bankedSeconds)*1000;actionTimes.push(at);if(candy&&at>candy.startsAtMs&&at<=candy.endsAtMs)boostedActions++;}
+      const winterXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],actionTimes,'skill'):1;
+      return {xp:Math.floor((actions+.1*boostedActions)*route.xp*characterPermanentMultipliers(state).skillXpMultiplier*winterXp),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -919,7 +921,14 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
     const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier*dailySupplySpeedMultiplier(state,'gathering_speed',elapsed));
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
-    const timeline=combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,progressFraction:state.activity.progressFraction??0,preparationEncounters:0,cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,candy:eventCandyWindow(state,'skill')});
+    const timeline=WINTER_HEARTH_GUILD_RELEASED&&state.winterHearthBonusWindows?.length
+      ?winterHearthGatheringTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,cycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')},state.winterHearthBonusWindows)
+      :combatTimeline({startsAtMs:state.activity.lastClaimAtMs,elapsedSeconds:elapsedMs/1000,
+        progressFraction:state.activity.progressFraction??0,preparationEncounters:0,
+        cycleSeconds:effectiveActionSeconds,preparedCycleSeconds:effectiveActionSeconds,
+        candy:eventCandyWindow(state,'skill')});
     const actions=timeline.encounters.length,candyActions=timeline.encounters.filter(row=>row.candy).length;
     const candyXpMultiplier=actions?1+.1*candyActions/actions:1;
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
@@ -929,7 +938,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const xpKey=affinityXpRemainderKey(state.character.id,g.skillId);
-    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
+    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
     // Event-only Wisp Glow: one deterministic independent roll per verified
@@ -980,7 +989,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const combatXpScale=characterCombatXpScale(m.level,m.boss);
   const rewardItems=items,champion=championBonus(Math.floor(m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
-  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
+  const winterCombatXp=WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],sim.completed.map(row=>row.atMs),'combat'):1;
+  const baseXpPerKill=m.xp*combatXpScale*effect.xpMultiplier*multipliers.characterXpMultiplier*combatCandy*winterCombatXp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier,sessionKills=state.activity.sessionKills??0;
   // Carry fractional per-kill rewards across claims of the same hunt clock.
   // Without this, two offline claims can floor the same earned XP/Gold twice.
   const xpFractionKey='combat:base-xp-fraction',goldFractionKey='combat:base-gold-fraction';
@@ -1274,7 +1284,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='alchemy'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewAlchemyReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -1287,7 +1297,7 @@ function claimActivitySegmentRaw(state:GameState,nowMs:number){
   if(state.activity?.kind==='processing'){
     const source=state.activity;
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),raw=dailySupplyAdjustTimedCraftReward(state,previewProcessingReward(state,dailySupplyCraftWorkSeconds(state,elapsed)),elapsed),baseReward={...raw,xp:Math.floor((raw.xp??0)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],raw.craftingCompletedAtMs??[],'skill'):1)),...timedEventRewards(state,'crafting',raw.craftingCompletedAtMs??[])},boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
     const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;

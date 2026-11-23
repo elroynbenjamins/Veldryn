@@ -38,6 +38,7 @@ let scenarios=0,compiledSkills=0,casts=0,physicalHitEvents=0;
 let matches=0,unchanged=0,improved=0,reduced=0;
 let bluntEvents=0,slashEvents=0,pierceEvents=0;
 const expectedSkills=new Set<string>();
+const exercisedVariants=new Set<string>();
 const report:Record<string,{scenarios:number;physical:number;skillCasts:number}>={};
 for(const classId of classes){
  const all=SKILL_IDENTITIES_V2.filter(x=>x.classId===classId);
@@ -48,6 +49,7 @@ for(const classId of classes){
   const key=classId+'|'+spec.id;
   report[key]={scenarios:0,physical:0,skillCasts:0};
   for(let loadoutIndex=0;loadoutIndex<2;loadoutIndex++){
+  for(let variantIndex=0;variantIndex<3;variantIndex++){
    const selected=all.slice(loadoutIndex*3,loadoutIndex*3+3);
    const original=launchPlayer(CLASS_NAMES_V2[classId],50);
    const base:CombatantDefinition={
@@ -62,7 +64,7 @@ for(const classId of classes){
     selected:{specializationId:spec.id,equipment:{},
      activeSkills:selected.map((skill)=>({
       skillId:skill.id,
-      variantId:skill.variants[loadoutIndex].id,
+      variantId:skill.variants[variantIndex].id,
      })),talentRanks:{},signaturePassiveIds:[],capstoneId:spec.capstoneId},
     ownedItemsById:{},setsById:{},
    };
@@ -70,8 +72,9 @@ for(const classId of classes){
    const compiled=compileServerSkillBuildV2(true,build);
    assert.equal(JSON.stringify(base),oldActor,'skill compiler must not mutate source actor');
    assert.deepEqual(compiled.abilities.map(a=>a.name),selected.map(s=>s.name));
-   assert.ok(compiled.abilities.every(a=>a.id.endsWith(':v2:'+loadoutIndex)));
+   assert.ok(compiled.abilities.every(a=>a.id.endsWith(':v2:'+variantIndex)));
    for(const a of compiled.abilities)expectedSkills.add(classId+'|'+a.name);
+   for(const skill of selected)exercisedVariants.add(skill.variants[variantIndex].id);
    assert.equal(compiled.combatV2?.specializationId,spec.id);
    assert.equal(compiled.combatV2?.capstoneId,spec.capstoneId);
    const player:CombatantDefinition={...compiled,
@@ -94,7 +97,7 @@ for(const classId of classes){
      tags:['enemy-v2:kit:v1',mark(bossId)],
     };
     const input:CombatInput={
-     seed:'QA_COMPILED_SKILLS_'+classId+'_'+spec.id+'_'+loadoutIndex+'_'+bossId,
+     seed:'QA_COMPILED_SKILLS_'+classId+'_'+spec.id+'_'+loadoutIndex+'_'+variantIndex+'_'+bossId,
      players:[player],enemies:[enemy],maxDurationMs:9000,tickMs:100,
     };
     const ea=issueEnemyV2EngineAuthority({
@@ -152,22 +155,25 @@ for(const classId of classes){
     scenarios++;matches++;
    }
   }
+  }
  }
 }
-assert.equal(scenarios,9*2*2*6);
-assert.equal(matches,216);
-assert.equal(compiledSkills,9*2*2*3);
+assert.equal(scenarios,9*2*2*3*6);
+assert.equal(matches,648);
+assert.equal(compiledSkills,9*2*2*3*3);
 assert.equal(expectedSkills.size,54);
+assert.equal(exercisedVariants.size,162,'every authored skill variant executed in an encounter');
 assert.ok(casts>0,'compiled skills must actually execute in Combat 2.0');
 assert.ok(physicalHitEvents>0,'non-caster source weapons must actually apply types');
 assert.ok(bluntEvents>0&&slashEvents>0&&pierceEvents>0,
  'all three types must appear in actual compiled Skills 2.0 battles');
 assert.ok(reduced>0&&improved>0,'counterplay must be bidirectional');
-assert.ok(Object.values(report).every(x=>x.scenarios===12),
- 'every spec must have 12 authored-skill/boss scenarios');
+assert.ok(Object.values(report).every(x=>x.scenarios===36),
+ 'every spec must have 36 source-compiled authored-skill/boss scenarios');
 console.log('PASS signed 2.0 compiled Skills physical encounter matrix',JSON.stringify({
- scenarios,classes:9,specializations:18,loadouts:2,bosses:6,
- sourceSkillIds:expectedSkills.size,compiledSkills,casts,physicalHitEvents,
+ scenarios,classes:9,specializations:18,loadouts:2,variants:3,bosses:6,
+ sourceSkillIds:expectedSkills.size,variantIds:exercisedVariants.size,
+ compiledSkills,casts,physicalHitEvents,
  slashEvents,pierceEvents,bluntEvents,improved,reduced,unchanged,
  scope:'paired same compiled actor; synthetic stats/receipts; not equal approved CP or real companion integration',
 }));

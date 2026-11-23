@@ -14,6 +14,11 @@ on:
       - 'backend/src/server/combat/engine.ts'
       - 'backend/src/server/combat/v2/equipment-affixes.ts'
       - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
+      - 'backend/src/server/combat/v2/physical-damage-engine-authority.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-physical-types-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/physical-damage-engine-authority.ts'
+      - 'docs/equipment-2-0/eq2-physical-subtype-catalogue-review-v1.json'
+      - 'tools/test-eq2-physical-subtype-catalogue-review-v1.mjs'
       - 'backend/src/server/combat/v2/skill-effects.ts'
       - 'backend/src/server/combat/v2/boss-telegraph-projection.ts'
       - 'backend/src/server/combat/v2/__tests__/boss-telegraph-projection.ts'
@@ -69,6 +74,10 @@ jobs:
         run: pnpm --dir backend install --frozen-lockfile
       - name: Compile real Forge and Combat 2.0 manifest imports, strict TypeScript
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
+      - name: Validate exact pinned equipment subtype catalogue source identity
+        run: node tools/test-eq2-physical-subtype-catalogue-review-v1.mjs
+      - name: Test server-issued basic physical subtypes, verified shield overrides, V1 isolation
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/physical-damage-engine-authority.js
       - name: Review 15 original Forge set tactical identities without granting unapproved bonuses
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.js
       - name: Verify source-only 15 original Forge set identities versus 48 unreleased set concepts

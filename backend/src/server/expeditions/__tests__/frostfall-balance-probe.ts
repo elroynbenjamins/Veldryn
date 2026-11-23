@@ -30,6 +30,7 @@ function simulate(tier:number,checkpoint:number,profile:Profile){
  let run=service.start({requestId:'start-'+id,runId:'run-'+id,accountId:members[0].accountId,eventId:event.id,
   tier,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:sampleTime});
  let visited=0,combatRooms=0,checkpointRestCount=0,attempts=0;
+ let combatDurationMs=0,partyDamageTaken=0,partyHealingDone=0;
  while(run.phase==='awaiting_choice'){
   attempts++;
   assert.ok(attempts<=50,'Frostfall Endurance cannot loop indefinitely');
@@ -48,6 +49,13 @@ function simulate(tier:number,checkpoint:number,profile:Profile){
   run=service.choose({runId:run.id,accountId:members[0].accountId,optionNodeId:next.nodeId,
    requestId:'choose-'+id+'-'+attempts});
   visited=Math.max(visited,next.depth);
+  if(run.lastResolution?.result.summary.kind==='combat'){
+   const summary=run.lastResolution.result.summary;
+   combatDurationMs+=typeof summary.durationMs==='number'?summary.durationMs:0;
+   const sum=(value:unknown)=>value&&typeof value==='object'?Object.values(value).reduce<number>((total,n)=>total+(typeof n==='number'?n:0),0):0;
+   partyDamageTaken+=sum(summary.damageTaken);
+   partyHealingDone+=sum(summary.healing);
+  }
   if(['battle','elite'].includes(next.kind))combatRooms++;
   if(boss&&!isTargetExit)checkpointRestCount++;
   if(prior.phase==='awaiting_choice'&&run.phase==='completed')assert.equal(next.kind,'boss');
@@ -66,7 +74,11 @@ function simulate(tier:number,checkpoint:number,profile:Profile){
  }
  return {tier,minimumLevel:minimum,level,profile,targetRooms:checkpoint,
   clear:run.phase==='completed',terminalDepth:visited,combatRooms,checkpointRests:checkpointRestCount,
-  partyHpPct,surviving,rawTokenReward:run.rewardMarks??0};
+  partyHpPct,surviving,rawTokenReward:run.rewardMarks??0,
+  combatDurationMs,partyDamageTaken:Math.round(partyDamageTaken),partyHealingDone:Math.round(partyHealingDone),
+  rawTokensPerCombatMinute:run.phase==='completed'&&combatDurationMs>0?Number(((run.rewardMarks??0)*60_000/combatDurationMs).toFixed(2)):0,
+  boons:run.persistentState.boons.length,artifacts:run.persistentState.artifacts.length,
+  curses:run.persistentState.curses.length};
 }
 
 const rows=[] as ReturnType<typeof simulate>[];
@@ -76,8 +88,14 @@ for(let tier=1;tier<=5;tier++)
    rows.push(simulate(tier,checkpoint,profile));
 assert.equal(rows.length,60);
 assert.equal(rows.filter(row=>row.tier===1).length,12);
-for(const row of rows)assert.ok(row.surviving>=0&&row.surviving<=4&&row.partyHpPct>=0&&row.partyHpPct<=1.0001);
+for(const row of rows){
+ assert.ok(row.surviving>=0&&row.surviving<=4&&row.partyHpPct>=0&&row.partyHpPct<=1.0001);
+ assert.ok(row.combatDurationMs>=0&&row.partyDamageTaken>=0&&row.partyHealingDone>=0);
+ assert.ok(row.boons>=0&&row.artifacts>=0&&row.curses>=0);
+}
 const summaries=checkpoints.map(depth=>({rooms:depth,
+ totalSimulatedCombatMinutes:Number((rows.filter(row=>row.targetRooms===depth).reduce((total,row)=>total+row.combatDurationMs,0)/60_000).toFixed(1)),
+ meanRawTokensPerCombatMinute:Number((rows.filter(row=>row.targetRooms===depth&&row.clear).reduce((total,row)=>total+row.rawTokensPerCombatMinute,0)/Math.max(1,rows.filter(row=>row.targetRooms===depth&&row.clear).length)).toFixed(2)),
  attempts:rows.filter(row=>row.targetRooms===depth).length,
  clears:rows.filter(row=>row.targetRooms===depth&&row.clear).length,
  byProfile:profiles.map(profile=>({profile,clears:rows.filter(row=>row.targetRooms===depth&&row.profile===profile&&row.clear).length})),

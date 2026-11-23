@@ -55945,6 +55945,10 @@ function setGatheringToolSlots(state, skillId, tier, active2, reserve) {
   const character = state.character;
   if (!character) throw new Error("Character required");
   const equippedIds = { ...character.equippedToolIdsByTier?.[skillId] ?? {} };
+  if (character.equippedToolIdsByTier?.[skillId] === void 0) {
+    const legacy = gatheringToolDef(character.equippedToolIds?.[skillId]);
+    if (legacy?.skillId === skillId) equippedIds[legacy.tier] = legacy.id;
+  }
   const equippedInstances = { ...character.equippedToolInstanceIdsByTier?.[skillId] ?? {} };
   const savedIds = { ...character.savedToolIdsByTier?.[skillId] ?? {} };
   const savedInstances = { ...character.savedToolInstanceIdsByTier?.[skillId] ?? {} };

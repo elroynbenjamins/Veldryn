@@ -19,6 +19,8 @@ on:
       - 'backend/src/server/combat/v2/__tests__/ability-counterplay-opportunity-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts'
       - 'backend/src/server/combat/v2/boss-telegraph-projection.ts'
+      - 'backend/src/server/combat/boss-v2-asterfall-prototype.ts'
+      - 'backend/src/server/combat/boss-v2-regional-prototype.ts'
       - 'backend/src/server/combat/v2/__tests__/boss-telegraph-projection.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts'

@@ -11,6 +11,7 @@ on:
       - 'apps/mobile/src/core/game-commands.ts'
       - 'apps/mobile/src/core/types.ts'
       - 'apps/mobile/src/core/crafted-gear-ownership.ts'
+      - 'apps/mobile/src/core/account-actions.ts'
   workflow_dispatch:
 
 permissions:

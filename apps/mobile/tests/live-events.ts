@@ -167,4 +167,22 @@ const currencyBefore=fullBank.account.eventCurrencyBalanceById?.[frostId];
 let bankFullBlocked=false;try{purchaseEventOffer(fullBank,'frostfall_moss_fiber_100',nextWeek)}catch{bankFullBlocked=true}
 ok(bankFullBlocked&&fullBank.account.eventCurrencyBalanceById?.[frostId]===currencyBefore,'A full Bank cannot consume currency or deliver a partial grant');
 
+// Calendar-accurate Frostfall gifts: Dec 3–26 UTC is 24 playable days.
+// The -25% future-event common currency adjustment applies to each daily gift,
+// but never to the three weekly Day-7 Aurora Chimes.
+const frostGiftStartMs=Date.UTC(2026,11,3);
+const frostGiftEndMs=Date.UTC(2026,11,27);
+let frostGiftJourney=createCharacter(newGame(frostGiftStartMs),'IRONWARDEN','FrostGiftTester');
+frostGiftJourney={...frostGiftJourney,account:{...frostGiftJourney.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:frostGiftStartMs,endsAtMs:frostGiftEndMs,graceEndsAtMs:Date.UTC(2026,11,29)}}};
+for(let day=0;day<24;day++){
+ const at=frostGiftStartMs+day*86_400_000+12*3_600_000;
+ const gift=eventDailyGift(frostGiftJourney,at);
+ ok(Boolean(gift)&&gift?.giftDay===day%7+1,'Frostfall daily gift must cycle over 24 UTC playable days');
+ frostGiftJourney=claimEventDailyGift(frostGiftJourney,at);
+ ok(eventDailyGift(frostGiftJourney,at)?.claimed===true,'Frostfall daily gifts are one claim per UTC day');
+}
+ok(eventProgress(frostGiftJourney,frostId)===4609,'All 24 Frostfall gifts grant exactly 4,609 Reputation after -25% adjustment');
+ok(eventPrestigeBalance(frostGiftJourney,frostId)===3,'Three Day-7 gifts grant exactly 3 unmodified Aurora Chimes');
+ok(!eventDailyGift(frostGiftJourney,frostGiftEndMs),'No new Frostfall gift may be generated during the claim-only period');
+
 console.log(JSON.stringify({status:'PASS',event:'Veilbreak',progress:eventProgress(state,eventId)},null,2));

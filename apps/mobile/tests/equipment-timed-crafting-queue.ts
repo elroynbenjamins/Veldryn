@@ -1,5 +1,6 @@
 import {EQUIPMENT_CRAFT_GOLD_MULTIPLIER,V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {NOVICE_RECIPES} from '../src/content/novice-sets';
+import {EQUIPMENT_CRAFT_GOLD_REDUCTION} from '../src/content/crafting-gold-cost';
 import {itemDef} from '../src/content/items';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {createCharacter,newGame} from '../src/core/game';
@@ -20,9 +21,10 @@ const forgeAutomatonRequirements=combatCompanionDef('UNIT_010')!.unlockRequireme
 ok(forgeAutomatonRequirements.some(req=>req.target==='EQUIPMENT_CRAFTS'&&req.amount===500)&&forgeAutomatonRequirements.some(req=>req.type==='skill_level'&&req.target==='smithing'&&req.amount===30),'Forge Automaton must require 500 equipment claims and Smithing 30');
 const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 ok(EQUIPMENT_CRAFT_GOLD_MULTIPLIER===3,'Standard forged equipment Gold costs must use the 3x balancing multiplier');
-for(const sample of [{tier:'T1',slot:'helmet',gold:400},{tier:'T1',slot:'weapon',gold:600},{tier:'T9',slot:'weapon',gold:243000}]){
+ok(EQUIPMENT_CRAFT_GOLD_REDUCTION===300,'Finished equipment receives the approved 300 Gold post-rounding reduction');
+for(const sample of [{tier:'T1',slot:'helmet',previousGold:400},{tier:'T1',slot:'weapon',previousGold:600},{tier:'T9',slot:'weapon',previousGold:243000}]){
  const crafted=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier===sample.tier&&itemDef(row.output.itemId).slot===sample.slot);
- ok(crafted?.gold===sample.gold,`${sample.tier} ${sample.slot} Gold cost must include the 20% surcharge above its original triple-forge price`);
+ ok(crafted?.gold===Math.max(100,sample.previousGold-EQUIPMENT_CRAFT_GOLD_REDUCTION),`${sample.tier} ${sample.slot} Gold cost must include surcharge, rounding, and 300 Gold reduction`);
 }
 ok(V33_EQUIPMENT_RECIPES.length===1620&&V33_EQUIPMENT_RECIPES.every(row=>row.gold>=100&&Number.isSafeInteger(row.gold)&&row.gold%100===0),'All 1,620 tiered equipment recipes must have the increased Gold costs');
 ok(NOVICE_RECIPES.filter(row=>row.output.itemId.endsWith('_WEAPON')).every(row=>row.gold===100),'Starter tutorial weapons must use the shared 3x equipment Gold multiplier');

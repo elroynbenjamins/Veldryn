@@ -11,6 +11,7 @@ export const socialEarlyRows={
   "{count} claims remaining": ["Осталось наград: {count}","Alınacak {count} ödül kaldı"],
   "Claimed": ["Получено","Alındı"],
   "Reward pending": ["Награда ожидается","Ödül bekleniyor"],
+  "No companion": ["Без спутника","Yoldaş yok"],
   "Combat Marks capped": ["Лимит боевых знаков достигнут","Savaş Nişanı sınırına ulaşıldı"],
   // Dungeon Endurance screen translations (Russian/Turkish).
   "Boon gained": ["Получено благословение","Lütuf kazanıldı"],

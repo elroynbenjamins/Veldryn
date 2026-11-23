@@ -335,7 +335,6 @@ export const RUSSIAN_RELEASE_POLISH_ROWS = {
   "artifacts": "артефакты",
   "final capped award": "итоговая награда с ограничением",
   "{count} quest rewards ready": "Доступно наград за задания: {count}",
-  "Gathering Speed": "Скорость добычи",
   "• Gathering Speed: mining, woodcutting, fishing and herbalism actions complete 10% faster.": "• Скорость добычи: добыча руды, рубка леса, рыбалка и травничество выполняются на 10% быстрее.",
   "2× Dungeon Combat Replay Speed": "Скорость повтора боя в подземелье ×2",
 } as const satisfies Record<string,string>;

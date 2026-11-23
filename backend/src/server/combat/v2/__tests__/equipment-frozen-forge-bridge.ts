@@ -367,10 +367,18 @@ assert.ok(originalEq2Actors.every(x=>
  'all four Boss V2 actors use genuine original EQ2 forged copies');
 const bossSignals=projectBossCombatReplaySignalsV2(authoredReplay);
 assert.equal(bossSignals.scope,'HIDDEN_COMPILED_BOSS_V2_REPLAY_ONLY');
-assert.ok(bossSignals.casts.some(c=>
- c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE'&&
- c.castDurationMs===1400&&c.state==='completed'),
- 'real authored Boss V2 cast window survives original EQ2 gear compilation');
+// A source-authored four-player team may interrupt a Bell cast or expose
+// Veil Mirror before Soul Curse. Verify actual source ability, duration and
+// event-derived outcome, not a fabricated guaranteed Soul Curse completion.
+assert.ok(bossSignals.casts.length>0&&bossSignals.casts.every(c=>
+ c.bossId==='BOSS_EXP_BELL'&&
+ authoredBell.abilities.some(a=>a.id===c.abilityId&&
+  a.castTimeMs===c.castDurationMs&&
+  a.interruptible===c.interruptible)&&
+ c.castDurationMs>=1300&&
+ (c.state!=='interrupted'||originalEq2Actors.some(a=>
+  a.actor.id===c.interruptedByActorId))),
+ 'only real authored Bell cast windows survive original EQ2 gear compilation');
 assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);

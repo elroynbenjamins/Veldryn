@@ -101,6 +101,10 @@ const counterfeitFrostBoss={...checkpointFrostBoss,contentId:'EVENT_VEILBREAK_BO
 assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,counterfeitFrostBoss),/invalid_frostfall_boss_exit/);
 const outOfRangeFrostBoss={...checkpointFrostBoss,depth:9};
 assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,outOfRangeFrostBoss),/invalid_frostfall_boss_depth/);
+const fabricatedFrostBoss={...checkpointFrostBoss,nodeId:'fabricated-reward-exit'};
+assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,fabricatedFrostBoss),/invalid_frostfall_boss_exit/,'forged non-graph exit cannot mint rewards');
+const mismatchedFrostBoss={...checkpointFrostBoss,nodeId:'d15-c2'};
+assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,mismatchedFrostBoss),/invalid_frostfall_boss_exit/,'graph node identity cannot be relabeled to an earlier checkpoint');
 
 let frostRun=frostStart;
 for(let d=1;d<=7;d++){

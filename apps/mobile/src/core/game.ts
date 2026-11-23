@@ -47,7 +47,7 @@ import {unlockedCharacterSlots,accountRegionAfkUnlocked} from './account-roster'
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {isGemPouchItemId,tryStoreGemInPouch,gemPouch} from './gem-pouch';
 import {isEquipmentPouchItemId,tryStoreEquipmentInPouch,equipmentPouch} from './equipment-pouch';
-import {equippedGatheringTools,gatheringPacing,gatheringToolRarityChanceMultiplier,gatheringToolSkillXpMultiplier} from './gathering-tools';
+import {equippedGatheringTools,reservedGatheringTool,gatheringPacing,gatheringToolRarityChanceMultiplier,gatheringToolSkillXpMultiplier} from './gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll} from './gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -1608,66 +1608,130 @@ export function startExploration(state:GameState,routeId:string,nowMs:number):Ga
  if(state.activity){state=claimActivity(state,nowMs).state;state=stopActivity(state,nowMs);}
  return {...state,outOfCombatSinceMs:undefined,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}};
 }
+/** An active copy and one reserve per tier live in character equipment storage.
+ * Existing equipped slots are the active copy: no save-time migration, changed
+ * ownership, or fabricated per-copy affix is required. */
+type StoredGatheringTool={itemId:string;instanceId?:string};
+function activeGatheringToolSlot(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):StoredGatheringTool|undefined{
+ const tool=equippedGatheringTools(state,skillId).find(row=>row.tier===tier);
+ if(!tool)return undefined;
+ return {itemId:tool.id,instanceId:state.character?.equippedToolInstanceIdsByTier?.[skillId]?.[tier]};
+}
+function reserveGatheringToolSlot(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):StoredGatheringTool|undefined{
+ const saved=reservedGatheringTool(state,skillId,tier);
+ if(state.character?.savedToolIdsByTier?.[skillId]?.[tier]&&!saved)throw new Error('Saved tool copy is invalid');
+ return saved?{itemId:saved.tool.id,instanceId:saved.instanceId}:undefined;
+}
+function setGatheringToolSlots(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,active?:StoredGatheringTool,reserve?:StoredGatheringTool):GameState{
+ const character=state.character;
+ if(!character)throw new Error('Character required');
+ const equippedIds={...(character.equippedToolIdsByTier?.[skillId]??{})};
+ const equippedInstances={...(character.equippedToolInstanceIdsByTier?.[skillId]??{})};
+ const savedIds={...(character.savedToolIdsByTier?.[skillId]??{})};
+ const savedInstances={...(character.savedToolInstanceIdsByTier?.[skillId]??{})};
+ if(active){equippedIds[tier]=active.itemId;if(active.instanceId)equippedInstances[tier]=active.instanceId;else delete equippedInstances[tier];}
+ else{delete equippedIds[tier];delete equippedInstances[tier];}
+ if(reserve){savedIds[tier]=reserve.itemId;if(reserve.instanceId)savedInstances[tier]=reserve.instanceId;else delete savedInstances[tier];}
+ else{delete savedIds[tier];delete savedInstances[tier];}
+ const equippedToolIds={...(character.equippedToolIds??{})};
+ const highest=Object.entries(equippedIds).map(([t,id])=>({tier:Number(t),id})).sort((a,b)=>b.tier-a.tier)[0];
+ if(highest)equippedToolIds[skillId]=highest.id;
+ else delete equippedToolIds[skillId];
+ return {...state,character:{...character,equippedToolIds,
+  equippedToolIdsByTier:{...(character.equippedToolIdsByTier??{}),[skillId]:equippedIds},
+  equippedToolInstanceIdsByTier:{...(character.equippedToolInstanceIdsByTier??{}),[skillId]:equippedInstances},
+  savedToolIdsByTier:{...(character.savedToolIdsByTier??{}),[skillId]:savedIds},
+  savedToolInstanceIdsByTier:{...(character.savedToolInstanceIdsByTier??{}),[skillId]:savedInstances}}};
+}
+/** Remove exactly one inventory copy, never implicitly consuming a different
+ * receipt when an untracked legacy stack shares the same item definition. */
+function takeInventoryGatheringTool(state:GameState,itemId:string,instanceId?:string){
+ const index=state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity>0&&(instanceId?row.instanceId===instanceId:!row.instanceId));
+ if(index<0)throw new Error('Tool copy is not in Inventory');
+ const row=state.inventory.stacks[index];
+ if(row.instanceId){
+  const copy=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(entry=>entry.id===row.instanceId),itemId);
+  if(!copy||row.quantity!==1)throw new Error('Unverified tool copy');
+ }
+ const stacks=state.inventory.stacks.flatMap((entry,i)=>i!==index?[entry]:entry.quantity>1?[{...entry,quantity:entry.quantity-1}]:[]);
+ return {stacks,copy:{itemId, ...(row.instanceId?{instanceId:row.instanceId}:{})} as StoredGatheringTool};
+}
 export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now(),instanceId?:string):GameState{
  if(!state.character)throw new Error('Create a character first');
  const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
  if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
- const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
- const previous=equippedGatheringTools(state,tool.skillId);
- const currentCopyId=state.character.equippedToolInstanceIdsByTier?.[tool.skillId]?.[tool.tier];
- const sameTier=previous.find(entry=>entry.tier===tool.tier);
- if(sameTier?.id===itemId&&(!instanceId||instanceId===currentCopyId))return state;
- // Settle before swapping: previous speed/rare finds are applied to the earned
- // actions; switching equipment cannot retroactively reroll a completed cycle.
+ const skill=state.skills.find(entry=>entry.skillId===tool.skillId);
+ if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
+ const current=activeGatheringToolSlot(state,tool.skillId,tool.tier);
+ if(current&&current.itemId===itemId&&instanceId&&current.instanceId===instanceId)return state;
  const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
- const selected=settled.inventory.stacks.find(row=>row.itemId===itemId&&row.quantity>0&&(instanceId===undefined||row.instanceId===instanceId));
- if(!selected)throw new Error('Tool copy is not in Inventory');
- if(selected.instanceId&&!validateGatheringToolRoll(settled.account.craftedGatheringToolInstances?.find(row=>row.id===selected.instanceId),itemId))
-  throw new Error('Unverified tool copy');
- let stacks=selected.instanceId
-  ?settled.inventory.stacks.filter(row=>row.instanceId!==selected.instanceId)
-  :consume(settled.inventory.stacks,itemId,1);
- if(sameTier){
-  const priorId=settled.character!.equippedToolInstanceIdsByTier?.[tool.skillId]?.[tool.tier];
-  const returned=addBounded(stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:sameTier.id,quantity:1,...(priorId?{instanceId:priorId}:{})}]);
-  if(returned.overflow.length)throw new Error('Free an Inventory slot before replacing this tool');
-  stacks=returned.stacks;
+ const selected=takeInventoryGatheringTool(settled,itemId,instanceId);
+ let stacks=selected.stacks;
+ const reserve=reserveGatheringToolSlot(settled,tool.skillId,tool.tier);
+ let nextReserve=reserve;
+ if(current){
+  if(!reserve)nextReserve=current;
+  else{
+   const returned=addBounded(stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
+   if(returned.overflow.length)throw new Error('Free an Inventory slot or withdraw your saved tool first');
+   stacks=returned.stacks;
+  }
  }
- const tools=[...previous.filter(entry=>entry.tier!==tool.tier),tool].sort((a,b)=>a.tier-b.tier);
- const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
-   [tool.skillId]:Object.fromEntries(tools.map(entry=>[entry.tier,entry.id]))};
- const instanceSlots={...(settled.character!.equippedToolInstanceIdsByTier?.[tool.skillId]??{})};
- if(selected.instanceId)instanceSlots[tool.tier]=selected.instanceId;
- else delete instanceSlots[tool.tier];
- const equippedToolInstanceIdsByTier={...(settled.character!.equippedToolInstanceIdsByTier??{}),[tool.skillId]:instanceSlots};
- const equippedToolIds={...(settled.character!.equippedToolIds??{}),[tool.skillId]:tools[tools.length-1].id};
- return {...settled,inventory:{...settled.inventory,stacks},
-   character:{...settled.character!,equippedToolIds,equippedToolIdsByTier,equippedToolInstanceIdsByTier}};
+ return setGatheringToolSlots({...settled,inventory:{...settled.inventory,stacks}},tool.skillId,tool.tier,selected.copy,nextReserve);
 }
-
-/** Without an item ID, remove the highest-tier equipped tool (legacy behavior). */
+/** Store one reserve per tier without Inventory capacity usage. If no active tool
+ * exists, the first tool is equipped instead, preserving legacy behaviour. */
+export function saveGatheringToolReserve(state:GameState,itemId:string,instanceId?:string,nowMs=Date.now()):GameState{
+ if(!state.character)throw new Error('Character required');
+ const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
+ const tier=tool.tier;
+ const current=activeGatheringToolSlot(state,tool.skillId,tier);
+ if(!current)return equipGatheringTool(state,itemId,nowMs,instanceId);
+ if(reserveGatheringToolSlot(state,tool.skillId,tier))throw new Error('This tier already has two saved tools');
+ const selected=takeInventoryGatheringTool(state,itemId,instanceId);
+ return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:selected.stacks}},tool.skillId,tier,current,selected.copy);
+}
+/** Instant swap inside tool storage. Settle the running activity using the old
+ * loadout before changing roll, so the new affix cannot modify past rewards. */
+export function activateGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,nowMs=Date.now()):GameState{
+ if(!state.character)throw new Error('Character required');
+ const reserve=reserveGatheringToolSlot(state,skillId,tier);
+ if(!reserve)throw new Error('No reserve tool saved in this tier');
+ const tool=gatheringToolDef(reserve.itemId);
+ if(!tool||tool.skillId!==skillId||tool.tier!==tier)throw new Error('Invalid saved tool tier');
+ if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
+ const skill=state.skills.find(row=>row.skillId===skillId);
+ if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${skillId} level ${tool.unlockLevel}`);
+ const current=activeGatheringToolSlot(state,skillId,tier);
+ const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
+ return setGatheringToolSlots(settled,skillId,tier,reserve,current);
+}
+/** Explicitly release only the reserve copy to Inventory. The active tool and
+ * effects remain untouched. Full Inventory safely rejects without mutation. */
+export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):GameState{
+ if(!state.character)throw new Error('Character required');
+ const reserve=reserveGatheringToolSlot(state,skillId,tier);
+ if(!reserve)throw new Error('No saved reserve in this tier');
+ const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error('Inventory is full');
+ return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
+}
+/** Removing an active copy promotes the reserve, if one exists, then returns
+ * only the removed physical copy to Inventory. */
 export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string):GameState{
  if(!state.character)return state;
  const equipped=equippedGatheringTools(state,skillId);
- const selected=itemId?equipped.find(entry=>entry.id===itemId):equipped[equipped.length-1];
+ const selected=itemId?equipped.find(row=>row.id===itemId):equipped[equipped.length-1];
  if(!selected)return state;
+ const tier=selected.tier;
+ if(reserveGatheringToolSlot(state,skillId,tier))
+  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier);
+ const current=activeGatheringToolSlot(state,skillId,tier);
+ if(!current)return state;
  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
- const remaining=equipped.filter(entry=>entry.id!==selected.id);
- const equippedToolIdsByTier={...(settled.character!.equippedToolIdsByTier??{}),
-   [skillId]:Object.fromEntries(remaining.map(entry=>[entry.tier,entry.id]))};
- const equippedToolIds={...(settled.character!.equippedToolIds??{})};
- if(remaining.length)equippedToolIds[skillId]=remaining[remaining.length-1].id;
- else delete equippedToolIds[skillId];
- const copyId=settled.character!.equippedToolInstanceIdsByTier?.[skillId]?.[selected.tier];
- const instanceSlots={...(settled.character!.equippedToolInstanceIdsByTier?.[skillId]??{})};
- delete instanceSlots[selected.tier];
- const equippedToolInstanceIdsByTier={...(settled.character!.equippedToolInstanceIdsByTier??{}),[skillId]:instanceSlots};
- const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[
-  {itemId:selected.id,quantity:1,...(copyId?{instanceId:copyId}:{})}
- ]);
+ const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
  if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
- return {...settled,inventory:{...settled.inventory,stacks:added.stacks},
-   character:{...settled.character!,equippedToolIds,equippedToolIdsByTier,equippedToolInstanceIdsByTier}};
+ return setGatheringToolSlots({...settled,inventory:{...settled.inventory,stacks:added.stacks}},skillId,tier,undefined,undefined);
 }
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),sequence=0):GameState{
   if(!state.character)throw new Error('No character');

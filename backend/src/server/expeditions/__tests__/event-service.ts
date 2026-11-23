@@ -3,7 +3,7 @@ import { launchPlayer } from '../../combat/content/launch-combat';
 import {buildExpeditionEncounter,expeditionEncounterPreview} from '../../combat/expedition-combat-service';
 import { EVENT_EXPEDITIONS,eventTierMinLevel,eventTierRewardMarks } from '../content/event-expeditions';
 import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_BALANCE_V3,FROSTFALL_ENDURANCE_ENEMY_PACING_V3,FROSTFALL_ENDURANCE_DEPTH_REWARDS,frostfallEnemyPacingForGraph,frostfallRewardMultiplierForBoss} from '../frostfall-endurance';
+import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_BALANCE_V3,FROSTFALL_ENDURANCE_ENEMY_PACING_V3,FROSTFALL_ENDURANCE_DEPTH_REWARDS,FROSTFALL_ENDURANCE_DEPTH_CURVE_V3,frostfallDepthCurveForGraph,frostfallEnemyPacingForGraph,frostfallRewardMultiplierForBoss} from '../frostfall-endurance';
 
 const players=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
 const members=[['a','c1','tank'],['b','c2','damage'],['c','c3','damage'],['d','c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
@@ -75,6 +75,12 @@ assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph,2),FROSTFALL_ENDU
 assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph,1),{attack:0.504,hp:0.68,defense:0.81},'Tier I receives explicit starter difficulty relief');
 assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,balanceVersion:'event-frostfall-endurance-v2'},1),{attack:1,hp:1,defense:1},'already saved 42-room v2 runs preserve their original enemy stats');
 assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,generatorVersion:'event-route-v5'},1),{attack:1,hp:1,defense:1},'legacy six-room event routes must not adopt v3 pacing');
+assert.deepEqual(frostfallDepthCurveForGraph(frostStart.graph),FROSTFALL_ENDURANCE_DEPTH_CURVE_V3);
+assert.deepEqual(frostfallDepthCurveForGraph({...frostStart.graph,balanceVersion:'event-frostfall-endurance-v2'}),{attack:1.022,hp:1.035,defense:1.012},'saved 42-room v2 runs retain their original difficulty curve');
+assert.deepEqual(frostfallDepthCurveForGraph({...frostStart.graph,generatorVersion:'event-route-v5'}),{attack:1.022,hp:1.035,defense:1.012},'legacy six-room events use their original curve');
+assert.ok(Math.pow(FROSTFALL_ENDURANCE_DEPTH_CURVE_V3.hp,35)<1.8,'v3 final-floor HP increase is capped below 1.8x');
+assert.ok(Math.pow(FROSTFALL_ENDURANCE_DEPTH_CURVE_V3.attack,35)<1.5,'v3 final-floor attack increase is capped below 1.5x');
+
 const frostGraphNodes=frostStart.graph.nodes;
 assert.equal(frostGraphNodes.length,128,'42 depths × 3 choices plus entry and final boss');
 for(let depth=1;depth<=42;depth++){

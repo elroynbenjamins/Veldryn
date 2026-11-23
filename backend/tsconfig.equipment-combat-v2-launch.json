@@ -27,6 +27,7 @@
     "src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts",
     "src/server/combat/v2/boss-telegraph-projection.ts",
     "src/server/combat/v2/__tests__/boss-telegraph-projection.ts",
-    "src/server/combat/v2/__tests__/ability-counterplay-opportunity-review.ts"
+    "src/server/combat/v2/__tests__/ability-counterplay-opportunity-review.ts",
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.ts"
   ]
 }

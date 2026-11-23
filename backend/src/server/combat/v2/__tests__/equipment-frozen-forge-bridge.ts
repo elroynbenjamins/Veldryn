@@ -35,6 +35,8 @@ import type {VerifiedSkillBuildV2} from '../skill-effects';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
+import {inspectOnlineGameStateForgeCombatV2}
+ from '../equipment-online-readback-review';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
@@ -321,6 +323,91 @@ const transferSource:TrustedFrozenForgeCombatSourceV2={
  verifyPersisted:(digest:string,revision:number)=>revision===8&&
   /^[0-9a-f]{64}$/.test(digest),
 };
+// Actual staging online_game_states is account_id/character_id/state/revision.
+// This is read-only adapter QA, never evidence that a transaction was locked.
+function dbRow(source:TrustedFrozenForgeCombatSourceV2,
+ activeCharacterId=source.characterId){
+ const accountCharacters=source.custody.characters.map(character=>({
+  id:character.id,classId:character.classId,level:character.level,
+ }));
+ const active=accountCharacters.find(c=>c.id===activeCharacterId);
+ if(!active)throw Error('staging source missing active character');
+ return {
+  account_id:source.accountId,character_id:activeCharacterId,
+  revision:source.ledgerRevision,
+  state:{version:11,character:active,
+   otherCharacters:accountCharacters.filter(x=>x.id!==activeCharacterId)
+    .map(character=>({character})),
+   account:{equipmentV2Hidden:{
+    schemaVersion:'eq2-hidden-game-state-v1',
+    jobs:source.jobs,items:source.items,receipts:source.claims,
+    skillAwards:source.awards,storageReservations:source.reservations,
+    custodyReceipts:source.custodyReceipts,
+   }},
+  },
+ };
+}
+const row=dbRow(initial.source);
+const readback=inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,row,
+});
+assert.equal(readback.combatAuthority,false,
+ 'a matching database-shaped snapshot is NOT authentication or a transaction');
+assert.equal(readback.requiresAuthenticatedLockAndRevisionRecheck,true);
+assert.equal(readback.scope,'ONLINE_EQ2_STAGING_READBACK_NO_DATABASE_LOCK_OR_AUTH');
+assert.deepEqual(readback.custody,initial.source.custody);
+assert.deepEqual(readback.items,initial.source.items);
+assert.deepEqual(readback.custodyReceipts,initial.source.custodyReceipts);
+const wrongAccount={...row,account_id:'QA_OTHER_ACCOUNT'};
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,row:wrongAccount,
+}),/account_or_revision_mismatch/);
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision-1,row,
+}),/account_or_revision_mismatch/);
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:'QA_STRANGER',
+ expectedRevision:initial.source.ledgerRevision,row,
+}),/unowned_combat_character/);
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,
+ row:{...row,character_id:'QA_WRONG_ACTIVE'},
+}),/database_active_character_mismatch/);
+const swappedBody=structuredClone(row);
+swappedBody.state.account.equipmentV2Hidden.custodyReceipts[0].newHolder=
+ 'QA_OTHER_ACCOUNT';
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,row:swappedBody,
+}),/v2_virtual_move_owner_conflict|foreign_custody_movement/);
+const oldCopy=structuredClone(row);
+oldCopy.state.account.equipmentV2Hidden.items[0].exactItem.baseStats.hp+=999;
+assert.throws(()=>inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:initial.source.accountId,
+ characterId:initial.source.characterId,
+ expectedRevision:initial.source.ledgerRevision,row:oldCopy,
+}),/invalid_hidden_v2_exact_copy/);
+const bankDb=dbRow(transferSource,initial.source.characterId);
+const sharedBankReadback=inspectOnlineGameStateForgeCombatV2({
+ authenticatedAccountId:transferSource.accountId,
+ characterId:transferSource.characterId,
+ expectedRevision:transferSource.ledgerRevision,row:bankDb,
+});
+assert.equal(sharedBankReadback.characterId,transferSource.characterId);
+assert.equal(sharedBankReadback.currentClassId,'IRONWARDEN');
+assert.equal(sharedBankReadback.custody.copies[0].ownerCharacterId,
+ transferSource.characterId);
+assert.equal(sharedBankReadback.combatAuthority,false);
 const transferred=compileRealFrozenForgeActorV2(
  initial.actor,initial.build,transferSource);
 assert.deepEqual(transferred.evidence.equippedInstanceIds,[initial.mint.id]);

@@ -13,7 +13,6 @@
 import type {V2HiddenGameMetadata} from '../../equipment/equipment-crafting-v2-game-metadata';
 import type {V2CustodyState,V2CustodyCopy}
  from '../../equipment/equipment-crafting-v2-custody';
-import type {V2DraftItem} from '../../equipment/equipment-crafting-v2-transaction';
 import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
 import {verifyEquipmentV2ReceiptNamespace}
  from '../../equipment/equipment-crafting-v2-receipt-coherence';
@@ -23,8 +22,6 @@ import {readEquipmentV2VirtualCustody}
  from '../../equipment/equipment-crafting-v2-virtual-history';
 import {CLASS_NAMES_V2} from './skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from './build-contract';
-import type {TrustedFrozenForgeCombatSourceV2}
- from './equipment-frozen-forge-bridge';
 
 export interface OnlineGameStateDbRowV2{
  readonly account_id:string;
@@ -87,7 +84,8 @@ export function inspectOnlineGameStateForgeCombatV2(
     input.row.revision!==input.expectedRevision)
   fail('account_or_revision_mismatch');
  const state=input.row.state;
- if(!obj(state)||!obj(state.account)||!obj(state.character))
+ if(!obj(state)||!obj(state.account)||!obj(state.character)||
+    (state.version!==6&&state.version!==11))
   fail('missing_online_game_state');
  if(input.row.character_id!==state.character.id||
     !id(state.character.id))
@@ -128,19 +126,26 @@ export function inspectOnlineGameStateForgeCombatV2(
  const virtual=readEquipmentV2VirtualCustody(
   ledger.items,ledger.storageReservations!,ledger.custodyReceipts!);
  if(virtual.length!==ledger.items.length)fail('incomplete_virtual_custody');
+ if(virtual.some(copy=>copy.location==='deferred'))
+  fail('deferred_claim_requires_physical_reconciliation');
+ if(ledger.custodyReceipts!.some(r=>
+  !seen.has(r.actorCharacterId)||
+  (r.oldHolder!==null&&!seen.has(r.oldHolder))||
+  (r.newHolder!==null&&!seen.has(r.newHolder))))
+  fail('foreign_custody_movement');
  const original=new Map(ledger.items.map(item=>[item.id,item]));
  const custody:V2CustodyCopy[]=virtual.map(copy=>{
   const item=original.get(copy.instanceId);
   if(!item||copy.itemId!==item.exactItem.pieceId||
      (copy.holderCharacterId!==null&&!seen.has(copy.holderCharacterId)))
    fail('unowned_or_unverified_copy');
+  if(copy.location==='deferred')
+   fail('deferred_claim_requires_physical_reconciliation');
   return {instanceId:item.id,accountId:item.accountId,
    ownerCharacterId:copy.holderCharacterId,location:copy.location,
    equippedSlot:copy.equippedSlot,item:item.exactItem,
    locked:false,favorite:false};
  });
- if(virtual.some(copy=>copy.location==='deferred'))
-  fail('deferred_claim_requires_physical_reconciliation');
  if(ledger.custodyReceipts!.some(r=>r.version>input.expectedRevision)||
     ledger.receipts.some(r=>r.response.version>input.expectedRevision))
   fail('ledger_revision_outpaces_online_state');
@@ -155,11 +160,4 @@ export function inspectOnlineGameStateForgeCombatV2(
   custodyReceipts:ledger.custodyReceipts!,
   requiresAuthenticatedLockAndRevisionRecheck:true,combatAuthority:false,
  };
-}
-/** Not a signer. This deliberately requires a separate privileged wrapper. */
-export function onlineReadbackIsNotCombatAuthorizationV2(
- candidate:OnlineForgeCombatReadbackV2,
-):boolean{
- return candidate.combatAuthority===false&&
-  candidate.requiresAuthenticatedLockAndRevisionRecheck===true;
 }

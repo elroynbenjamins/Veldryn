@@ -14,6 +14,8 @@ export const FROSTFALL_ENDURANCE_ENEMY_PACING_V3={attack:0.72,hp:0.80,defense:0.
 /** Tier I has a smaller normalized player health/damage budget; this isolated
  * starter bracket is deliberately gentler than the higher-level tiers. */
 export const FROSTFALL_ENDURANCE_TIER1_EXTRA_V3={attack:0.70,hp:0.85,defense:0.90} as const;
+/** Tier II remains noticeably harder than I but needs a viable first clear. */
+export const FROSTFALL_ENDURANCE_TIER2_EXTRA_V3={attack:0.85,hp:0.90,defense:0.95} as const;
 export const FROSTFALL_ENDURANCE_BALANCE_V3='event-frostfall-endurance-v3';
 /** The original 3.334x HP / 2.142x attack at floor 42 was unreachable in the
  * calibrated 125-case draft matrix. These slower multiplicative growth rates
@@ -28,10 +30,11 @@ export function frostfallDepthCurveForGraph(graph:Pick<CoopRouteGraph,'generator
 const ORIGINAL_FROSTFALL_ENEMY_PACING={attack:1,hp:1,defense:1} as const;
 export function frostfallEnemyPacingForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>,tier:number){
  if(graph.generatorVersion!==FROSTFALL_ENDURANCE_GENERATOR||graph.balanceVersion!==FROSTFALL_ENDURANCE_BALANCE_V3)return ORIGINAL_FROSTFALL_ENEMY_PACING;
- if(tier!==1)return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
- return {attack:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.attack,
-  hp:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.hp,
-  defense:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense*FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.defense};
+ const extra=tier===1?FROSTFALL_ENDURANCE_TIER1_EXTRA_V3:tier===2?FROSTFALL_ENDURANCE_TIER2_EXTRA_V3:null;
+ if(!extra)return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
+ return {attack:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack*extra.attack,
+  hp:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp*extra.hp,
+  defense:FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense*extra.defense};
 }
 
 

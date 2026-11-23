@@ -28,6 +28,18 @@ assert.ok(section.includes('goalProtection.has(copy.itemId)'),'Do not sell prote
 assert.ok(inventory.includes('stackInspectorActions&&s.toolActionRowStacked')&&inventory.includes('toolActionButtonStacked:{flex:0,width:'),'Large text/narrow screens need full-width touch targets');
 assert.ok(inventory.includes('hasLegacyStack&&inspectedToolDef')&&inventory.includes("gt('Tier base · No bonus roll')"),'Legacy tools retain tier speed without fabricating a roll');
 
+// Only the exact active copy is tagged Equipped. Other carried copies
+// compare against the same skill + tier, without combining all tier bonuses.
+assert.ok(inventory.includes('equippedGatheringTools(state,inspectedToolDef.skillId)'),'Find the active same-tier tool');
+assert.ok(inventory.includes('equippedGatheringToolRoll(state,inspectedToolDef.skillId,inspectedToolDef.tier)'),'Use the verified active physical receipt');
+assert.ok(section.includes('equippedSameTierCopy?.id===copy.id'),'The badge must match the physical copy, not just its item ID');
+assert.ok(section.includes("gt('Equipped').toLocaleUpperCase(language)")&&section.includes('toolEquippedBadge'),'Show an Equipped status pill');
+assert.ok(section.includes('equippedSameTier&&!isEquipped?'),'Compare only non-equipped copies');
+assert.ok(section.includes('gatheringToolPercent(equippedSameTierSpeed??0)'),'Use the real same-tier speed in comparisons');
+assert.ok(section.includes("gt('Tool roll record unavailable · no bonus is assumed.')"),'An unreadable active roll must not be fabricated');
+assert.ok(section.includes("color:rarityMeta(copy.rarity).color"),'Use the verified rarity to accent the bonus stat');
+assert.ok(section.includes("disabled={!onCommand||inventoryBusyLabel!==null||isEquipped}"),'Equipped copy must not re-equip');
+
 // Tool stats and action buttons appear before the optional technical details;
 // non-tool sheets retain their existing quick-action placement.
 const inlineToolActions=sheet.indexOf("item.type==='tool'&&actions?");

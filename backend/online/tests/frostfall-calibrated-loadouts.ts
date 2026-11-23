@@ -23,7 +23,7 @@ const startAt=Date.UTC(2026,11,10,12);
 function roster(tier:number,multiplier:number){
  const level=eventTierMinLevel(frost,tier);
  return characters.map((classId,index)=>{
-  const game=createCharacter(newGame(0),classId,'Frostfall Calibration');
+  const game=createCharacter(newGame(0),classId,'Frost Balance');
   const actor=game.character!;
   actor.id='frost-sample-'+tier+'-'+index;
   actor.xp=characterTotalXpAtLevel(level);

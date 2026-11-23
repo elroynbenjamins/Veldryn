@@ -28,7 +28,7 @@ ok(!unrefinedBonus.active&&unrefinedBonus.bonus.includes('No active bonus')&&unr
 const rawId='raw_gem:stat_vitality:g1',gemId='gem:stat_vitality:g1';
 const start=createCharacter(newGame(0),'IRONWARDEN','Pouch Tester');
 
-const mergeBase=storePouchGem({...start,character:{...start.character!,gold:5000},skills:start.skills.map(row=>row.skillId==='enchanting'?{...row,level:8}:row)},'gem:stat_might:g1',3);
+const mergeBase=storePouchGem({...start,character:{...start.character!,gold:5000},skills:start.skills.map(row=>row.skillId==='enchanting'?{...row,level:8}:row),inventory:{...start.inventory,stacks:[...start.inventory.stacks,{itemId:'GEM_BINDING_COMPOUND',quantity:1}]}},'gem:stat_might:g1',3);
 ok(gemPouch(mergeBase).stacks.find(row=>row.itemId==='gem:stat_might:g1')?.quantity===3,'Merge regression starts with all three gems in shared Gem Pouch');
 let favMergeBlocked=false;
 try{executeGameCommand({...mergeBase,settings:{...mergeBase.settings,favoriteItemIds:['gem:stat_might:g1']}},{type:'gem_combine',args:{familyId:'stat_might',grade:1}},1000)}catch(error){favMergeBlocked=String(error).includes('Unfavorite')}

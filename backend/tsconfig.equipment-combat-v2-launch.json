@@ -32,6 +32,7 @@
     "src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts",
     "src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts",
     "src/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.ts",
-    "src/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.ts"
+    "src/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.ts"
   ]
 }

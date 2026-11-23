@@ -113,6 +113,13 @@ export const RECIPES:Recipe[]=[
   inputs:recipe.inputs.map(input=>COOKING_FIREWOOD_ITEM_IDS.has(input.itemId)
    ?{...input,quantity:5}:input),
  };
+ // The only non-fish Cooking dish keeps the previously agreed 5× ingredient
+ // and 3× XP economy. Do not apply those multipliers to fish dishes.
+ if(recipe.id==='COOK_ASHLANDS_EMBER_STEW')return {...recipe,
+  xp:recipe.xp*3,
+  inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*5})),
+  gold:reducedCookingGoldCost(chargedGold),
+ };
  return {...recipe,gold:recipe.skillId==='cooking'?reducedCookingGoldCost(chargedGold):chargedGold};
 }),
 ].map(recipe=>recipe.characterLevel===undefined||REBASED_CHARACTER_LEVEL_RECIPES.has(recipe.id)?recipe:{...recipe,characterLevel:rebaseLevel(recipe.characterLevel)});

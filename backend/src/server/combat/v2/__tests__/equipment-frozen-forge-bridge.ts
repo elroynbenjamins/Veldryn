@@ -389,8 +389,28 @@ const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  * authored boss, source snapshot, encounter seed and equipped item history.
  * QA trace is unsigned: NO authenticated DB, approved CP, rewards or market.
  */
-assert.deepEqual(counterFight.equipmentEvidence,baselineFight.equipmentEvidence,
- 'Skills tactics must not alter verified original Forge copy provenance');
+// The receipt digest deliberately binds the selected Skills build, so it
+// MUST change when a skill variant changes. Compare only physical EQ2 source
+// identity, original rolled affixes, and the exact frozen base contribution;
+// never demand equal digests for intentionally different authenticated builds.
+const physicalForgeEvidence=(record:typeof counterFight.equipmentEvidence[number])=>{
+ const stages=record.stages;
+ const frozenDelta={
+  attack:Math.round((stages.afterFrozenBase.attackPower-
+   stages.afterSkills.attackPower)*1e5)/1e5,
+  defense:Math.round((stages.afterFrozenBase.defense-
+   stages.afterSkills.defense)*1e5)/1e5,
+  hp:Math.round((stages.afterFrozenBase.maxHp-
+   stages.afterSkills.maxHp)*1e5)/1e5,
+ };
+ return {actorId:record.actorId,equippedInstanceIds:record.equippedInstanceIds,
+  items:record.items,affixSources:record.affixSources,
+  setBonuses:record.setBonuses,
+  unsupportedForgeAffixes:record.unsupportedForgeAffixes,frozenDelta};
+};
+assert.deepEqual(counterFight.equipmentEvidence.map(physicalForgeEvidence),
+ baselineFight.equipmentEvidence.map(physicalForgeEvidence),
+ 'Skills tactics cannot change immutable real Forge item provenance or frozen contributions');
 const baselineStone=compileRealFrozenForgeActorV2(
  stonecaller.actor,stonecaller.build,stonecaller.source);
 const sustainIds=new Set(baselineStone.actor.abilities.filter(a=>

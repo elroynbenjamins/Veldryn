@@ -1,0 +1,61 @@
+# Frostfall 2026 — deterministic balance review (23 November)
+
+**Status:** REVIEW ONLY; not a gameplay balance approval or a release sign-off.
+Source basis: `backend/src/server/expeditions/frostfall-endurance.ts`,
+`event-service.ts`, `content/event-expeditions.ts` in the Endurance review branch.
+No app UI, production flags, migration, price or combat tuning is changed by this document.
+
+## Current event scope
+
+- UTC play window: December 3 00:00 to December 27 00:00 (inclusive dates December 3–26).
+- UTC claim-only cutoff: December 29 00:00.
+- Five minimum-level tiers: 10 / 15 / 20 / 25 / 30.
+- Six boss exits: after 7, 14, 21, 28, 35, or 42 cleared rooms.
+- Exactly two rewarded **claims per account per UTC day**, not per character/tier; subsequent new runs are practice-only. Pending paid completions are counted against the start budget so players cannot create an unclaimable third pending payout.
+- Base Frostbell Tokens per tier: 104 / 125 / 151 / 182 / 218. Depth multipliers: 1.00 / 1.15 / 1.28 / 1.38 / 1.46 / 1.52.
+- The seasonal common-currency reduction of 25% applies after the base-depth calculation and event objective bonuses. Aurora Chimes are prestige-only, not a depth reward.
+
+## Current *code-derived* enemy pressure versus base payout
+
+Enemy pressure starts after the first checkpoint. The multiplier at boss depth `room+1` is
+`HP = 1.035^max(0,room-7)`, `attack = 1.022^max(0,room-7)`,
+`defense = 1.012^max(0,room-7)`.
+These are raw enemy stat multipliers, **not measured player difficulty or completion odds**.
+
+| Cleared rooms | HP factor | Attack factor | Defense factor | Base currency factor |
+| ---: | ---: | ---: | ---: | ---: |
+| 7 | 1.000 | 1.000 | 1.000 | 1.00 |
+| 14 | 1.272 | 1.165 | 1.087 | 1.15 |
+| 21 | 1.619 | 1.356 | 1.182 | 1.28 |
+| 28 | 2.059 | 1.579 | 1.285 | 1.38 |
+| 35 | 2.620 | 1.839 | 1.397 | 1.46 |
+| 42 | 3.334 | 2.142 | 1.518 | 1.52 |
+
+At the deepest boss, raw HP is 3.33x and attack is 2.14x the first-exit baseline before Warmth/boon/party build modifiers, yet base tokens are only 1.52x. This might be acceptable for an optional mastery challenge, but **cannot be called balanced without role-specific time-to-clear and failure-rate simulations**.
+
+## Approximate token-budget sanity check
+
+The values below use the base-depth tokens with the 25% common-currency reduction and ordinary rounding; they **exclude** Warmth/objective bonuses, quests, gifts, ranking, shop fees, failed runs, or other event income and are not a complete economy simulation.
+
+| Tier | First exit, tokens/clear | Final exit, tokens/clear | 48 final-exit clears over 24 days |
+| ---: | ---: | ---: | ---: |
+| 1 | 78 | 119 | 5,712 |
+| 2 | 94 | 143 | 6,864 |
+| 3 | 113 | 173 | 8,304 |
+| 4 | 137 | 208 | 9,984 |
+| 5 | 164 | 248 | 11,904 |
+
+Important: the Frostfall companion reputation requirements are 6,000 / 8,500 / 10,000, **not necessarily token-purchase prices**; never compare them directly to this token-only table as though they were the same wallet. Verify reputation gain separately from Frostbell Token gain and include event tasks, shop stock, other resource sinks and bank handling.
+
+## Blocking experiments before balance lock
+
+1. **Combat:** reproduce all five tiers, six exits and low/high role builds; measure real clear rate, median/95th-percentile run duration, damage taken, skill counters, potion depletion, Warmth and boon accumulation. Preserve Tank/2 Damage/Support composition.
+2. **Reward fairness:** calculate tokens per minute and successful clear by exit/tier and compare to task rewards; avoid mandatory 42-room grinding. Verify two daily paid claims, pending claims, same-account multiple characters, UTC rollover and practice-only 0-currency settlements.
+3. **Economy:** price-check all 20 event offers, two pets, companion reputation milestones (6,000/8,500/10,000), player access across tiers, weekly x100 resource bundle locks, inventory/bank overflow, and exploit/rollback paths.
+4. **Compatibility:** test old event-route-v5 saves, co-op reconnect, duplicate reward request, Veilbreak migration parity, Rimebell boss loss and restart, and boss/season event coexistence.
+5. **Android/UI:** actual mobile dungeon screenshots and appearance/theme approval, small-screen depth and daily-cap visibility, localization, signed AAB, exact-commit CI and Edge parity.
+6. **Launch:** explicit separate go/no-go, production migration and Edge deployment, disabled event flags until authorized, monitored rollback plan.
+
+## Verified staging parity note
+
+On November 23, the staging-only migration `20261123181718_frostfall_review_event_completion_parity_v1` recreated the missing pre-existing Veilbreak `event_dungeon_completions_v1` table required by the seasonal advance RPC. Read-back confirmed RLS enabled, zero records, service-role SELECT/INSERT and no authenticated SELECT. Production already had the table and was not modified. This repairs predecessor-event parity; it does not count as Frostfall end-to-end combat validation.

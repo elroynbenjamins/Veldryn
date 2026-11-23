@@ -96,9 +96,10 @@ for(let tier=1;tier<=5;tier++){
   previous=payout;
  }
 }
-const counterfeitFrostBoss={...frostExit,contentId:'EVENT_VEILBREAK_BOSS_FAKE'};
+const checkpointFrostBoss=frostStart.graph.nodes.find(node=>node.nodeId==='d8-c2')!;
+const counterfeitFrostBoss={...checkpointFrostBoss,contentId:'EVENT_VEILBREAK_BOSS_FAKE'};
 assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,counterfeitFrostBoss),/invalid_frostfall_boss_exit/);
-const outOfRangeFrostBoss={...frostExit,depth:9};
+const outOfRangeFrostBoss={...checkpointFrostBoss,depth:9};
 assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,outOfRangeFrostBoss),/invalid_frostfall_boss_depth/);
 
 let frostRun=frostStart;

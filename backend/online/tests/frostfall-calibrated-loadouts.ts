@@ -98,6 +98,7 @@ for(let tier=1;tier<=5;tier++){
   for(let seed=1;seed<=3;seed++)rows.push(attempt(tier,multiplier,seed));
  }
 }
+console.log('FROSTFALL_NORMALIZATION_READINESS_REJECTIONS '+JSON.stringify(rejected));
 // Probe all levels even if novice min-power fails readiness. A properly
 // equipped 5x fixture should always be eligible after normalization.
 for(let tier=1;tier<=5;tier++)assert.ok(rows.some(row=>row.tier===tier&&row.multiplier===5),'5x geared fixture must be co-op eligible at tier '+tier);

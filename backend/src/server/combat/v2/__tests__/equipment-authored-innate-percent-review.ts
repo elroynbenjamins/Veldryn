@@ -2,7 +2,7 @@ import {strict as assert} from 'node:assert';
 import {
  V2_SERVER_PIECES,v2ServerPiece,
 } from '../../../equipment/equipment-crafting-v2-manifest';
-import {CLASS_NAMES_V2} from '../skill-catalog';
+import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2} from '../skill-catalog';
 import {
  reviewNextMintAffixPieceV2,PROPOSED_FORGE_NEXT_MINT_ROLL_POLICY_V2,
 } from '../equipment-forge-next-mint-roll-policy-review';
@@ -88,9 +88,6 @@ assert.equal(skillBridge.approvedItemSkillPairs,0);
 assert.equal(skillBridge.approvedEffects,0);
 assert.equal(skillBridge.canGrant,false);
 assert.ok(Object.isFrozen(skillBridge)&&Object.isFrozen(skillBridge.sourceRows));
-const {SKILL_IDENTITIES_V2}=require('../skill-catalog') as
- {SKILL_IDENTITIES_V2:readonly {id:string;name:string;classId:string;
- cooldownMs:number;variants:readonly {id:string}[]}[]};
 for(const weapon of skillBridge.sourceRows){
  assert.ok(Object.isFrozen(weapon)&&Object.isFrozen(weapon.proposedSkillOptions));
  const source=v2ServerPiece(weapon.pieceId)!;

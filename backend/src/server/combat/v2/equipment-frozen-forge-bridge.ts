@@ -12,6 +12,7 @@
  */
 import type {CombatInput,CombatantDefinition,CombatStats} from '../types';
 import {simulateCombat} from '../engine';
+import {issueFrozenForgePhysicalAuthorityV2} from './physical-damage-engine-authority';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
@@ -339,9 +340,14 @@ export function simulateRealFrozenForgeCombatV2(
   return compileRealFrozenForgeActorV2(actor,matches[0],source);
  });
  const enemies=compileEnemiesForCombatV2(input.enemies,true);
+ const prepared:CombatInput={...input,players:compiled.map(x=>x.actor),
+  enemies:[...enemies.enemies]};
+ // Full Forge compiler above must validate exact claim/receipt/custody for
+ // every selected piece before this disabled-by-default V2 authority is issued.
+ const physical=issueFrozenForgePhysicalAuthorityV2(prepared,
+  compiled.map(x=>x.evidence));
  return {
-  combat:simulateCombat({...input,players:compiled.map(x=>x.actor),
-   enemies:[...enemies.enemies]}),
+  combat:simulateCombat(prepared,undefined,undefined,undefined,physical),
   equipmentEvidence:compiled.map(x=>x.evidence),
   enemyMechanicLabels:enemies.mechanicLabels,
  };

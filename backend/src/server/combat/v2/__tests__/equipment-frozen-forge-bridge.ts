@@ -135,7 +135,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const claim:V2DraftReceipt={requestId:claimRequestId,
   commandFingerprint:'claim:'+mint.jobId,
   response:{kind:'claimed',jobId:mint.jobId,instanceId:mint.id,
-   exactItem:exact,outcome:roll,profession,xpAwarded:0,version:5}};
+   exactItem:exact,outcome:roll,profession,xpAwarded:originalRecipe.xp,version:5}};
  const start:V2DraftReceipt={requestId:'QA_START_'+classId+'_'+specIndex+'_T'+tier,
   commandFingerprint:'start:'+originalRecipe.id,
   response:{kind:'started',jobId:mint.jobId,recipeId:originalRecipe.id,
@@ -280,33 +280,48 @@ const forged={...initial.source,items:initial.source.items.map(item=>({
   baseStats:{...item.exactItem.baseStats,attack:item.exactItem.baseStats.attack+2000}},
 }))};
 assert.throws(()=>compileRealFrozenForgeActorV2(
- initial.actor,initial.build,forged),/exact_copy_custody_claim_mismatch/);
+ initial.actor,initial.build,forged),/invalid_hidden_v2_claim_receipt|invalid_hidden_v2_exact_copy/);
 const duplicateClaim={...initial.source,claims:[
  ...initial.source.claims,...initial.source.claims]};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,duplicateClaim),
- /duplicate_or_invalid_claim_request/,
+ /duplicate_hidden_v2_receipt/,
  'same forged EQ2 claim request cannot appear twice');
 if(initial.claim.response.kind!=='claimed')throw Error('invalid test-only minted claim');
 const redirectedClaim:V2DraftReceipt={...initial.claim,
  response:{...initial.claim.response,instanceId:'QA_FOREIGN_COPY'}};
-const wrongClaim={...initial.source,claims:[redirectedClaim]};
+const wrongClaim={...initial.source,claims:[initial.start,redirectedClaim]};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,wrongClaim),
- /missing_exact_copy_or_claim/,'wrong item-copy claim must be denied');
+ /invalid_hidden_v2_claim_receipt/,'wrong item-copy claim must be denied');
 const inflatedItem={...initial.mint.exactItem,baseStats:{
  ...initial.mint.exactItem.baseStats,
  defense:initial.mint.exactItem.baseStats.defense+999,
 }};
 const stolenProjection={...initial.source,
  items:[{...initial.mint,exactItem:inflatedItem}],
- claims:[{...initial.claim,response:{...initial.claim.response,
+ claims:[initial.start,{...initial.claim,response:{...initial.claim.response,
   exactItem:inflatedItem}}],
  custody:{...initial.source.custody,copies:[{...initial.custody,item:inflatedItem}]},
 };
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,stolenProjection),
- /invalid_account_forge_copy/,'coordinated forged base-stat snapshots must be rejected by canonical EQ2 policy');
+ /invalid_hidden_v2_exact_copy/,'coordinated forged base-stat snapshots must be rejected by canonical EQ2 policy');
+const withoutAward={...initial.source,awards:[]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,withoutAward),
+ /invalid_hidden_v2_claim_settlement/,
+ 'no equipment combat from claim lacking the original crafting XP settlement');
+const staleVersion={...initial.source,ledgerRevision:4};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,staleVersion),/stale_forge_ledger_revision/,
+ 'newer verified Forge claim may never compile using an older account revision');
+const alteredAward={...initial.source,awards:initial.source.awards.map(row=>({
+ ...row,xp:row.xp+1,
+}))};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,alteredAward),
+ /invalid_hidden_v2_claim_settlement/,'no accepted bonus from tampered craft XP');
 const copiedGear={...qaTeam[1].build,
  selected:{...qaTeam[1].build.selected,equipment:{[qaTeam[1].exact.slot]:initial.mint.id}}};
 assert.throws(()=>simulateRealFrozenForgeCombatV2(input,[
@@ -324,7 +339,7 @@ assert.throws(()=>compileRealFrozenForgeActorV2(
 const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
- /forge_affix_effect_unimplemented/,'no generic Potency, Tenacity or Ability Damage reinterpretation');
+ /forge_affix_effect_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,

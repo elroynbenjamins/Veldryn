@@ -878,7 +878,21 @@ const savedKit:PersistedEnemyKitV2={
 };
 const kitVerifier=(_snapshot:PersistedEnemyKitV2,digest:string)=>
  _snapshot===savedKit&&/^[0-9a-f]{64}$/.test(digest);
-const trustedEnemy={snapshot:savedKit,verifyPersisted:kitVerifier};
+const atomicEnemyForgeVerifier=(
+ snapshot:PersistedEnemyKitV2,digest:string,
+ evidence:readonly {accountId:string;characterId:string;actorId:string;
+  ledgerRevision:number;receiptDigest:string;equippedInstanceIds:readonly string[]}[],
+)=>snapshot===savedKit&&/^[0-9a-f]{64}$/.test(digest)&&
+ evidence.length===1&&
+ evidence[0].accountId===physicalWayfinder.source.accountId&&
+ evidence[0].characterId===physicalWayfinder.source.characterId&&
+ evidence[0].actorId===physicalWayfinder.actor.id&&
+ evidence[0].ledgerRevision===physicalWayfinder.source.ledgerRevision&&
+ /^[0-9a-f]{64}$/.test(evidence[0].receiptDigest)&&
+ evidence[0].equippedInstanceIds.length===1&&
+ evidence[0].equippedInstanceIds[0]===physicalWayfinder.mint.id;
+const trustedEnemy={snapshot:savedKit,verifyPersisted:kitVerifier,
+ verifyAtomicEncounter:atomicEnemyForgeVerifier};
 const neutralBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
  [physicalWayfinder.build],[physicalWayfinder.source],true,trustedEnemy);
 const typedBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
@@ -914,6 +928,21 @@ assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
  ...trustedEnemy,verifyPersisted:()=>false,
 }),/unverified_persisted_scope/,
  'unverified Enemy V2 stored kit cannot claim a signed authority');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:()=>false,
+}),/signed_enemy_forge_atomic_recheck_required/,
+ 'separately valid Forge and Enemy snapshots without one atomic read must fail');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:()=>{throw Error('stale_read');},
+}),/signed_enemy_forge_atomic_recheck_required/,
+ 'failed database transaction must be rejected, not interpreted as an approval');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:undefined as unknown as typeof atomicEnemyForgeVerifier,
+}),/signed_enemy_kit_snapshot_required/,
+ 'an absent database readback verifier is never silently optional');
 assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
  [physicalWayfinder.build],[physicalWayfinder.source],true,{
  ...trustedEnemy,snapshot:{...savedKit,preparedEnemyDigest:'c'.repeat(64)},

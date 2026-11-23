@@ -10,6 +10,8 @@ import {v2ServerPiece} from '../../equipment/equipment-crafting-v2-manifest';
 import {v2ServerExactTemplateConsistent}
  from '../../equipment/equipment-crafting-v2-instances';
 import {CLASS_ROLES_V2} from './build-contract';
+import {CLASS_NAMES_V2} from './skill-catalog';
+import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import type {OnlineForgeCombatReadbackV2}
  from './equipment-online-readback-review';
 import {reviewForgeSetEffectAuthoringV2,
@@ -39,6 +41,11 @@ export interface WornForgeSetReadinessV2{
  readonly status:'PENDING_OWNER_APPROVAL_AND_SIGNED_SET_POLICY';
 }
 function fail(code:string):never{throw Error('eq2_worn_set_readiness_'+code);}
+const minLevel:Readonly<Record<1|2|3|4,number>>={
+ 1:2,2:12,3:26,4:40,
+};
+const same=(a:unknown,b:unknown)=>
+ enemyV2SnapshotDigest(a)===enemyV2SnapshotDigest(b);
 export function reviewWornRealForgeSetsV2(
  readback:OnlineForgeCombatReadbackV2,
 ):WornForgeSetReadinessV2{
@@ -66,9 +73,12 @@ export function reviewWornRealForgeSetsV2(
   ids.add(copy.instanceId);slots.add(copy.equippedSlot);
   const original=readback.items.find(i=>i.id===copy.instanceId);
   const piece=v2ServerPiece(copy.item.pieceId);
-  if(!original||original.exactItem.pieceId!==copy.item.pieceId||
+  if(!original||!same(original.exactItem,copy.item)||
      !piece||piece.role!==role||piece.tier!==copy.item.tier||
-     piece.setId!==copy.item.setId)
+     piece.setId!==copy.item.setId||
+     char.level<minLevel[piece.tier]||
+     (piece.classRestriction&&piece.classRestriction!==char.classId&&
+      piece.classRestriction!==CLASS_NAMES_V2[char.classId]))
    fail('unverified_worn_source');
   if(!piece.setId)continue;
   const candidate=sets.find(c=>c.forgeSetId===piece.setId);

@@ -105,7 +105,7 @@ export function recheckForgeCombatRevisionV2(
   maySettleRewards:false,
  };
 }
-/** Verify party snapshots without accepting duplicate account actors. */
+/** Verify 1–4 party actors; same-account alts share ONE account CAS. */
 export function recheckForgeCombatPartyRevisionsV2(
  prepared:readonly OnlineForgeCombatRevisionPreflightV2[],
  latest:readonly OnlineForgeCombatInspectionInputV2[],
@@ -114,15 +114,26 @@ export function recheckForgeCombatPartyRevisionsV2(
     prepared.length!==latest.length||prepared.length<1||
     prepared.length>4)
   deny('invalid_party_size');
- // Account-wide equipment ownership is shared across characters. Never
- // allow two characters from the same account to create distinct concurrent
- // reward commitments from independent copies of one account revision.
- const seen=new Set<string>(),members:OnlineForgeCombatRevisionRecheckV2[]=[];
+ // Veldryn permits multiple characters under an account. Do not forbid a
+ // legitimate second character; require the exact SAME account snapshot,
+ // never two independent revisions or duplicate actor/character identities.
+ const seenActors=new Set<string>();
+ const byAccount=new Map<string,{revision:number;fullDigest:string}>();
+ const members:OnlineForgeCombatRevisionRecheckV2[]=[];
  for(let i=0;i<prepared.length;i++){
-  const key=prepared[i]?.accountId;
-  if(!key||seen.has(key))deny('party_duplicate_account');
-  seen.add(key);
-  members.push(recheckForgeCombatRevisionV2(prepared[i],latest[i]));
+  const prior=prepared[i],current=latest[i];
+  if(!prior||!current)deny('invalid_party_actor');
+  const unique=prior.accountId+':'+prior.characterId;
+  if(seenActors.has(unique))deny('party_duplicate_character');
+  seenActors.add(unique);
+  const known=byAccount.get(prior.accountId);
+  if(known&&(known.revision!==prior.revision||
+    known.fullDigest!==prior.fullGameStateDigest))
+   deny('party_account_snapshot_disagreement');
+  if(!known)byAccount.set(prior.accountId,{
+   revision:prior.revision,fullDigest:prior.fullGameStateDigest,
+  });
+  members.push(recheckForgeCombatRevisionV2(prior,current));
  }
  return members;
 }

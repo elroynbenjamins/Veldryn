@@ -22,6 +22,8 @@ on:
       - 'backend/src/server/combat/v2/equipment-physical-affix-budget-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.ts'
       - 'backend/src/server/combat/v2/equipment-forge-affix-coverage-review.ts'
+      - 'backend/src/server/combat/v2/equipment-forge-next-mint-roll-policy-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.ts'
@@ -89,9 +91,11 @@ jobs:
         run: node tools/test-eq2-physical-subtype-catalogue-review-v1.mjs
       - name: Audit all pinned Forge role rolls against Combat 2.0 slots (read-only)
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.js
+      - name: Prove 1,014 source-backed next-mint affix pools (review only, no RNG)
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.js
       - name: Validate proposed EQ2 subtype affix consumes original Forge roll budget
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-physical-affix-budget-review.js
-      - name: Verify 216 paired source-compiled Skills/Spec V2 physical matchups
+      - name: Verify 648 paired source-compiled Skills/Spec V2 physical matchups
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.js
       - name: Verify normalized 9-class 18-spec T1-T4 boss physical matchup matrix
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.js

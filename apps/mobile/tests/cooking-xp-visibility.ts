@@ -15,6 +15,22 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': '+String(actual)+' !== '+String(expected))}
 const cooking=RECIPES.filter(recipe=>recipe.skillId==='cooking');
 ok(cooking.length>=5,'Cooking browser should include multiple dish recipes');
+ok(cooking.every(recipe=>recipe.gold>0&&recipe.gold%10===0),'All Cooking Gold costs are multiples of 10');
+equal(cooking.find(recipe=>recipe.id==='COOK_MEADOW_PERCH')?.gold,30,'Starter Cooking cost reduces by 25% then rounds down');
+equal(cooking.find(recipe=>recipe.id==='COOK_SILVERFIN')?.gold,40,'Silverfin receives same rounded discount');
+equal(cooking.find(recipe=>recipe.id==='COOK_ICEFISH')?.gold,810,'High tier Cooking uses proportional discount');
+for(const [id,wood,quantity] of [
+ ['SMELT_COPPER_INGOT','GREENWOOD_LOG',3],
+ ['SMELT_ASTER_IRON_INGOT','IRONWOOD_LOG',3],
+ ['SMELT_OATHSTONE_INGOT','CROWNWOOD_LOG',4],
+ ['SMELT_SUNSTONE_INGOT','DUNEWOOD',5],
+ ['SMELT_FROSTIRON_INGOT','WHITEPINE_LOG',5],
+ ['SMELT_BLACKGLASS_INGOT','CINDERWOOD_LOG',5],
+] as const){
+ const smelting=RECIPES.find(recipe=>recipe.id===id);
+ equal(smelting?.inputs.find(input=>input.itemId===wood)?.quantity,quantity,id+' uses one additional wood per batch');
+}
+
 const now=Date.UTC(2026,10,19,12);
 let tested=0;
 for(const recipe of cooking.filter(recipe=>!!processingRecipeDef(recipe.id)).slice(0,20)){

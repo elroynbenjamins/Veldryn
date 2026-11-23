@@ -86,7 +86,8 @@ function setup(classId:ClassIdV2,specIndex:0|1,boss:Boss,profile:typeof profiles
   };
   const eligible=affixIds.filter(id=>EQUIPMENT_AFFIXES_V2[id].slots.includes(slot));
   assert.ok(eligible.length);
-  const affixId=eligible[(specIndex+roleOffset+index)%eligible.length];
+  const bossOffset=bosses.findIndex(b=>b.id===boss.id);
+  const affixId=eligible[(specIndex+roleOffset+index+bossOffset)%eligible.length];
   affixes[copyId]={instanceId:copyId,slot,tier,rarity:profile.rarity,
    quality:profile.quality,affixes:slot===traitSlot?[]:[{id:affixId,value:.01}]};
   const acquisition=slot===traitSlot?

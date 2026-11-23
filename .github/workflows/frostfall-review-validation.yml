@@ -43,6 +43,9 @@ jobs:
       - name: Verify all seasonal route, tier, rewards and claim tests
         run: pnpm event-expeditions
         working-directory: backend
+      - name: Profile all five Frostfall tiers at six boss checkpoints with two real combat loadouts
+        run: node dist/server/expeditions/__tests__/frostfall-balance-probe.js
+        working-directory: backend
       - name: Verify server-owned online expedition lifecycle, quotas and practice
         run: pnpm test:event-expedition-online
         working-directory: backend

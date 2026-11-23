@@ -127,11 +127,12 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
 };
 const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
- kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1){
+ kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1,
+ originalPieceId?:string,uniqueTag?:string,forcedLevel?:number){
  const role=CLASS_ROLES_V2[classId];
- const pieceId=kind==='set'?
+ const pieceId=originalPieceId??(kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
-  tierItems[tier][role];
+  tierItems[tier][role]);
  const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
@@ -142,21 +143,22 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const originalRecipe=V2_SERVER_RECIPES.find(r=>r.id===roll.recipeId);
  const originalPiece=v2ServerPiece(exact.pieceId);
  if(!originalRecipe||!originalPiece)throw Error('missing pinned Forge source');
- const level=tier===4?55:tier===3?45:35;
+ const level=forcedLevel??(tier===4?55:tier===3?45:35);
  const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),
   id:'QA_EQ2_'+classId+'_'+specIndex+'_T'+tier};
- const copyId='QA_EQ2_COPY_'+classId+'_'+specIndex+'_T'+tier,
+ const uniqueScope=classId+'_'+specIndex+'_T'+tier+(uniqueTag?'_'+uniqueTag:'');
+ const copyId='QA_EQ2_COPY_'+uniqueScope,
   accountId='QA_ACCOUNT_'+classId+'_'+specIndex+'_T'+tier,
   characterId='QA_CHARACTER_'+classId+'_'+specIndex+'_T'+tier;
- const claimRequestId='QA_CLAIM_'+classId+'_'+specIndex+'_T'+tier;
+ const claimRequestId='QA_CLAIM_'+uniqueScope;
  const mint:V2DraftItem={id:copyId,accountId,ownerCharacterId:characterId,
-  createdAtMs:3000,jobId:'QA_CRAFT_'+classId+'_'+specIndex+'_T'+tier,
+  createdAtMs:3000,jobId:'QA_CRAFT_'+uniqueScope,
   outcome:roll,exactItem:exact};
  const claim:V2DraftReceipt={requestId:claimRequestId,
   commandFingerprint:'claim:'+mint.jobId,
   response:{kind:'claimed',jobId:mint.jobId,instanceId:mint.id,
    exactItem:exact,outcome:roll,profession,xpAwarded:originalRecipe.xp,version:5}};
- const start:V2DraftReceipt={requestId:'QA_START_'+classId+'_'+specIndex+'_T'+tier,
+ const start:V2DraftReceipt={requestId:'QA_START_'+uniqueScope,
   commandFingerprint:'start:'+originalRecipe.id,
   response:{kind:'started',jobId:mint.jobId,recipeId:originalRecipe.id,
    pieceId:originalPiece.id,finishesAtMs:2000,goldCharged:originalRecipe.gold,version:4}};
@@ -181,7 +183,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
   itemId:exact.pieceId,destination:'equipment_pouch',quantity:1,
  };
  const equipReceipt:V2VirtualMoveReceipt={
-  requestId:'QA_EQUIP_'+classId+'_'+specIndex+'_T'+tier,
+  requestId:'QA_EQUIP_'+uniqueScope,
   fingerprint:v2VirtualFingerprint('equip',copyId),
   instanceId:copyId,actorCharacterId:characterId,
   from:'pouch',to:'equipped',oldHolder:characterId,

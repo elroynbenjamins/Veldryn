@@ -157,7 +157,7 @@ function qaActor(classId:ClassIdV2):CombatantDefinition{
 }
 function qaAffix(stat:V2Affix,slot:V2Slot,index:number):
  TrustedEquipmentItemAffixesV2{
- const roleChecked=['tank','damage','support'].some(role=>
+ const roleChecked=(['tank','damage','support'] as const).some(role=>
   reviewProposedForgeRoleSlotAffixesV2(role,slot)
    .proposedCombatCompatible.includes(stat));
  assert.ok(roleChecked);

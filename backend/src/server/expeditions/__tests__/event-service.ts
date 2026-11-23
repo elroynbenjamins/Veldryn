@@ -71,9 +71,10 @@ const frostStart=frostEnduranceService.start({requestId:'frost-endurance-req',ru
 assert.equal(frostStart.graph.nodes.filter(node=>node.kind==='boss').length,6,'five optional exits and one mandatory final boss');
 assert.equal(frostStart.graph.nodes.find(node=>node.nodeId==='boss')?.depth,43);
 assert.equal(frostStart.graph.balanceVersion,FROSTFALL_ENDURANCE_BALANCE_V3);
-assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph),FROSTFALL_ENDURANCE_ENEMY_PACING_V3);
-assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,balanceVersion:'event-frostfall-endurance-v2'}),{attack:1,hp:1,defense:1},'already saved 42-room v2 runs preserve their original enemy stats');
-assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,generatorVersion:'event-route-v5'}),{attack:1,hp:1,defense:1},'legacy six-room event routes must not adopt v3 pacing');
+assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph,2),FROSTFALL_ENDURANCE_ENEMY_PACING_V3);
+assert.deepEqual(frostfallEnemyPacingForGraph(frostStart.graph,1),{attack:0.504,hp:0.68,defense:0.81},'Tier I receives explicit starter difficulty relief');
+assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,balanceVersion:'event-frostfall-endurance-v2'},1),{attack:1,hp:1,defense:1},'already saved 42-room v2 runs preserve their original enemy stats');
+assert.deepEqual(frostfallEnemyPacingForGraph({...frostStart.graph,generatorVersion:'event-route-v5'},1),{attack:1,hp:1,defense:1},'legacy six-room event routes must not adopt v3 pacing');
 const frostGraphNodes=frostStart.graph.nodes;
 assert.equal(frostGraphNodes.length,128,'42 depths × 3 choices plus entry and final boss');
 for(let depth=1;depth<=42;depth++){

@@ -1,0 +1,863 @@
+{
+  "schema": "veldryn-eq2-guild-resource-sink-review-v1",
+  "asOf": "2026-11-23",
+  "releaseState": "HIDDEN_REVIEW_ONLY",
+  "safeguards": {
+    "mayCharge": false,
+    "mayMint": false,
+    "mayRegisterNewMaterials": false,
+    "mayActivateGuildProjects": false,
+    "mayAlterLiveRecipes": false,
+    "mayCreateExtraWeeklyProjectSlots": false,
+    "requiresServerOwnedInventoryAndBankProof": true,
+    "requiresAtomicDonationDebitAndReceipt": true,
+    "requiresFutureSourceRegistrationForEq2Outputs": true,
+    "professionIndependence": true,
+    "playerMarketLegacyGearExcluded": true,
+    "activeMembersFloor": 2,
+    "activeMembersCeiling": 20
+  },
+  "sourceAuthority": {
+    "guildGate": "backend/src/server/guild/progression.ts:GUILD_TREE_DEVELOPMENT_GATES",
+    "equipmentReview": "docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json",
+    "refiningReview": "backend/src/server/equipment/equipment-crafting-v2-material-origins-v6-review.ts",
+    "weeklyProjectModel": "backend/src/server/guild/guild-projects.ts"
+  },
+  "rules": {
+    "contributionUnits": "weighted_consumed_items_not_earned_points",
+    "quotaRounding": "largest_remainder_exact_total",
+    "goldCosts": "preserve_existing_gate_gold_formula",
+    "sourceCredit": "positive_integer_per_donated_unit; no credit for unregistered_eq2_output",
+    "memberSnapshot": "clamped_active_members_at_project_start; no_midproject_cost_changes",
+    "projectDonation": "atomic_item_debit_receipt_and_progress; no duplicate reward",
+    "requirementMode": "ALL_BASKETS_WITH_ALTERNATIVE_MATERIALS_WITHIN_EACH",
+    "influence": "donations_do_not_auto_award_combat_or_skilling_points",
+    "weeklySlots": "use_existing_standard_plus_voted_choice_only",
+    "minimumDonors": "retain existing anti-solo-contribution rule",
+    "noCombatLevelGateOnProfessionAccess": true
+  },
+  "guildDevelopmentGates": [
+    {
+      "unlockKey": "guild.tree.professions.tier2",
+      "branch": "professions",
+      "tier": 2,
+      "requiredGuildLevel": 5,
+      "goldBase": 75000,
+      "goldPerMember": 7500,
+      "weightedBase": 4500,
+      "weightedPerMember": 450,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 3000,
+          "options": [
+            {
+              "itemId": "GREENWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_GREENWOOD_PLANK",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 3000,
+          "options": [
+            {
+              "itemId": "COPPER_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_COPPER_BAR",
+              "credit": 4,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "textiles",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "MOSS_FIBER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "BOAR_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_MOSS_CLOTH",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "field_supplies",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "DEWLEAF",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "MEADOW_PERCH",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "RIVER_MINT",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlockKey": "guild.tree.professions.tier3",
+      "branch": "professions",
+      "tier": 3,
+      "requiredGuildLevel": 9,
+      "goldBase": 200000,
+      "goldPerMember": 15000,
+      "weightedBase": 12000,
+      "weightedPerMember": 900,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 1500,
+          "options": [
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DUNEWOOD",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "CROWNWOOD_LOG",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_IRONWOOD_PLANK",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 3000,
+          "options": [
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "SUNSTONE_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_INGOT",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "textiles",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "WOLF_PELT",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TROLL_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_THORN_CLOTH",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "monster_materials",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "IRONWOOD_FANG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "OATHGLASS_SHARD",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "WISP_DUST",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "reagents",
+          "shareBps": 1000,
+          "options": [
+            {
+              "itemId": "HOLY_WATER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TEMPERING_DUST",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "THORN_SAP",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlockKey": "guild.tree.fellowship.tier2",
+      "branch": "fellowship",
+      "tier": 2,
+      "requiredGuildLevel": 5,
+      "goldBase": 90000,
+      "goldPerMember": 8000,
+      "weightedBase": 4000,
+      "weightedPerMember": 400,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 4000,
+          "options": [
+            {
+              "itemId": "GREENWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_GREENWOOD_PLANK",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "textiles",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "MOSS_FIBER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "BOAR_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "food",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "MEADOW_PERCH",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "COOKED_MEADOW_PERCH",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "herbs",
+          "shareBps": 1500,
+          "options": [
+            {
+              "itemId": "DEWLEAF",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "RIVER_MINT",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlockKey": "guild.tree.fellowship.tier3",
+      "branch": "fellowship",
+      "tier": 3,
+      "requiredGuildLevel": 9,
+      "goldBase": 225000,
+      "goldPerMember": 16000,
+      "weightedBase": 11000,
+      "weightedPerMember": 850,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DUNEWOOD",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "CROWNWOOD_LOG",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_IRONWOOD_PLANK",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "textiles",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "WOLF_PELT",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TROLL_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_THORN_CLOTH",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "food",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "SILVERFIN",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "COOKED_SILVERFIN",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "RIVER_EEL",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "fittings",
+          "shareBps": 3000,
+          "options": [
+            {
+              "itemId": "METAL_CLASPS",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "PADDED_LININGS",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_INGOT",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlockKey": "guild.tree.vanguard.tier2",
+      "branch": "vanguard",
+      "tier": 2,
+      "requiredGuildLevel": 6,
+      "goldBase": 100000,
+      "goldPerMember": 9000,
+      "weightedBase": 4500,
+      "weightedPerMember": 450,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "GREENWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "EQ2_GREENWOOD_PLANK",
+              "credit": 3,
+              "registration": "unregistered_eq2_output"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 3500,
+          "options": [
+            {
+              "itemId": "COPPER_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_INGOT",
+              "credit": 4,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "monster_materials",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "BOAR_HIDE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "WOLF_PELT",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_FANG",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "reagents",
+          "shareBps": 1500,
+          "options": [
+            {
+              "itemId": "HOLY_WATER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TEMPERING_DUST",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DEWLEAF",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "unlockKey": "guild.tree.vanguard.tier3",
+      "branch": "vanguard",
+      "tier": 3,
+      "requiredGuildLevel": 10,
+      "goldBase": 250000,
+      "goldPerMember": 18000,
+      "weightedBase": 13000,
+      "weightedPerMember": 1000,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 1500,
+          "options": [
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DUNEWOOD",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "CROWNWOOD_LOG",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 3500,
+          "options": [
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "SUNSTONE_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "SUNSTONE_INGOT",
+              "credit": 4,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "monster_materials",
+          "shareBps": 3500,
+          "options": [
+            {
+              "itemId": "IRONWOOD_FANG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "OATHGLASS_SHARD",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TROLL_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "reagents",
+          "shareBps": 1500,
+          "options": [
+            {
+              "itemId": "TEMPERING_DUST",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "HOLY_WATER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "WISP_DUST",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "weeklySupplyCandidates": [
+    {
+      "id": "guild.v2.weekly.hall_maintenance",
+      "title": "Hall Maintenance",
+      "difficulty": "standard",
+      "minGuildLevel": 3,
+      "weightedBase": 1400,
+      "weightedPerMember": 100,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 5500,
+          "options": [
+            {
+              "itemId": "GREENWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "textiles",
+          "shareBps": 2500,
+          "options": [
+            {
+              "itemId": "MOSS_FIBER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "BOAR_HIDE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "COPPER_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guild.v2.weekly.workshop_contract",
+      "title": "Workshop Supply Contract",
+      "difficulty": "enhanced",
+      "minGuildLevel": 5,
+      "weightedBase": 2200,
+      "weightedPerMember": 140,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 3500,
+          "options": [
+            {
+              "itemId": "GREENWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DUNEWOOD",
+              "credit": 3,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 3500,
+          "options": [
+            {
+              "itemId": "COPPER_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "hides",
+          "shareBps": 3000,
+          "options": [
+            {
+              "itemId": "BOAR_HIDE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "WOLF_PELT",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "guild.v2.weekly.war_readiness",
+      "title": "War Readiness",
+      "difficulty": "prestige",
+      "minGuildLevel": 7,
+      "weightedBase": 3200,
+      "weightedPerMember": 160,
+      "baskets": [
+        {
+          "id": "timber",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "IRONWOOD_LOG",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "DUNEWOOD",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "metal",
+          "shareBps": 4000,
+          "options": [
+            {
+              "itemId": "ASTER_IRON_ORE",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "SUNSTONE_ORE",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "reagents",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "HOLY_WATER",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "TEMPERING_DUST",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        },
+        {
+          "id": "monster_materials",
+          "shareBps": 2000,
+          "options": [
+            {
+              "itemId": "WOLF_PELT",
+              "credit": 1,
+              "registration": "existing_inventory_identity"
+            },
+            {
+              "itemId": "IRONWOOD_FANG",
+              "credit": 2,
+              "registration": "existing_inventory_identity"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "equipmentRecipePolicy": {
+    "authority": "retain_746_review_routes_noncraftable",
+    "alreadyContainsWoodInRoutes": 472,
+    "routeTotal": 746,
+    "sourceGroupCount": 373,
+    "keepNewRefiningInputs": {
+      "EQ2_COPPER_BAR": {
+        "COPPER_ORE": 5
+      },
+      "EQ2_IRON_BAR": {
+        "ASTER_IRON_ORE": 5
+      },
+      "EQ2_GREENWOOD_PLANK": {
+        "GREENWOOD_LOG": 4
+      },
+      "EQ2_IRONWOOD_PLANK": {
+        "IRONWOOD_LOG": 4
+      },
+      "EQ2_TREATED_DUNEWOOD": {
+        "DUNEWOOD": 5
+      },
+      "EQ2_REINFORCED_DUNEWOOD": {
+        "DUNEWOOD": 6,
+        "EQ2_GLASSBOUND_DUST": 1
+      }
+    },
+    "noBlanketCraftCostMultiplier": true,
+    "retainRareEnemyDropPerFinishedEquipment": true,
+    "maintainTwoRoutesAndTradeCommissionSupply": true,
+    "prioritizeWoodInWeaponsShieldsSupportsAndFittings": true,
+    "requireMetalForMetalArmorBeforeIssuance": true,
+    "highTierRareDropsRemainMarketScarcityDriver": true
+  }
+}

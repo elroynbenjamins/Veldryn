@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist-monthly-event-sinks-review"
+  },
+  "include": [],
+  "files": [
+    "src/server/liveops/monthly-resource-sink-review-v1.ts",
+    "src/server/liveops/monthly-resource-sink-review-v1.test.ts"
+  ]
+}

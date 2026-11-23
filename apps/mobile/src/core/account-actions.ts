@@ -83,8 +83,29 @@ function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['ban
  const equipped=Object.entries(entry.character.equipment)
   .filter((entry):entry is [string,string]=>typeof entry[1]==='string'&&!!entry[1])
   .map(([slot,itemId])=>{const instanceId=entry.character.equipmentInstanceIds?.[slot as GearSlot];return {itemId,quantity:1,...(instanceId?{instanceId}:{})};});
- const tools=[...new Set(Object.values(entry.character.equippedToolIds??{}).filter((id):id is string=>typeof id==='string'&&!!id))];
- const held=[...equipped,...tools.map(itemId=>({itemId,quantity:1}))];
+ // Recover EVERY character-bound gathering tool, including all four active
+ // tiers and their second saved copies. The old best-tool pointer is only a
+ // fallback when no modern per-tier slots exist for a given skill.
+ const tools:ItemStack[]=[];
+ for(const skill of ['mining','woodcutting','fishing'] as const){
+  const active=entry.character.equippedToolIdsByTier?.[skill];
+  if(active!==undefined){
+   for(const [tier,id] of Object.entries(active)){
+    if(!id)continue;
+    const instanceId=entry.character.equippedToolInstanceIdsByTier?.[skill]?.[Number(tier) as 1|2|3|4];
+    tools.push({itemId:id,quantity:1,...(instanceId?{instanceId}:{})});
+   }
+  }else{
+   const legacy=entry.character.equippedToolIds?.[skill];
+   if(legacy)tools.push({itemId:legacy,quantity:1});
+  }
+  for(const [tier,id] of Object.entries(entry.character.savedToolIdsByTier?.[skill]??{})){
+   if(!id)continue;
+   const instanceId=entry.character.savedToolInstanceIdsByTier?.[skill]?.[Number(tier) as 1|2|3|4];
+   tools.push({itemId:id,quantity:1,...(instanceId?{instanceId}:{})});
+  }
+ }
+ const held=[...equipped,...tools];
  const ownedGearIds=new Set<string>([
   ...equipped.map(row=>row.itemId),
   ...entry.inventory.stacks.map(row=>row.itemId),

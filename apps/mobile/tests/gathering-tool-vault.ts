@@ -2,6 +2,8 @@ import {createCharacter,newGame,equipGatheringTool,saveGatheringToolReserve,acti
 import {reservedGatheringTool,equippedGatheringTools,equippedGatheringToolRoll,gatheringToolSkillXpMultiplier} from '../src/core/gathering-tools';
 import {mintGatheringTool,validateGatheringToolRoll} from '../src/core/gathering-tool-rolls';
 import {validateGameCommand,executeGameCommand} from '../src/core/game-commands';
+import {auditCraftedGearOwnership} from '../src/core/crafted-gear-ownership';
+import {deleteAccountCharacter,characterDeleteConfirmation} from '../src/core/account-actions';
 import {normalizeSave} from '../src/core/save-normalization';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
@@ -62,6 +64,15 @@ ok(equippedGatheringToolRoll(state,'woodcutting',1)?.id===first.id,'Unequipping 
 ok(!reservedGatheringTool(state,'woodcutting',1),'Promoted reserve does not remain duplicated in storage');
 ok(state.inventory.stacks.some(row=>row.instanceId===second.id),'Removed active copy returns to Inventory');
 ok(new Set(state.inventory.stacks.filter(row=>!!row.instanceId).map(row=>row.instanceId)).size===state.inventory.stacks.filter(row=>!!row.instanceId).length,'No physical receipt may duplicate in Inventory');
+const reserveSaved=saveGatheringToolReserve(state,toolId,second.id,110);
+const auditBefore=auditCraftedGearOwnership(reserveSaved);
+ok(!auditBefore.problems.some(problem=>problem.includes('Duplicate gathering tool copy')),'Active and reserve IDs are distinct for the custody audit');
+const duplicatedReceipt:GameState={...reserveSaved,inventory:{...reserveSaved.inventory,stacks:[...reserveSaved.inventory.stacks,{itemId:toolId,quantity:1,instanceId:first.id}]}};
+ok(auditCraftedGearOwnership(duplicatedReceipt).problems.some(problem=>problem.includes('Duplicate gathering tool copy')),'Custody audit must detect a vaulted copy forged into Inventory');
+const deleted=deleteAccountCharacter(reserveSaved,reserveSaved.character!.id,characterDeleteConfirmation(reserveSaved.character!.name),112);
+const recovered=[...deleted.bank.stacks,...deleted.overflow.stacks];
+ok(recovered.some(row=>row.instanceId===first.id)&&recovered.some(row=>row.instanceId===second.id),'Deleting the character must recover both vaulted physical receipts');
+ok(recovered.some(row=>row.instanceId===third.id),'Deleting the character must also preserve unsaved Inventory copies');
 const legacy=createCharacter(newGame(0),'IRONWARDEN','Vault Legacy');
 const old:GameState={...legacy,character:{...legacy.character!,level:46,equippedToolIds:{woodcutting:toolId}},
  skills:legacy.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:46,xp:totalXpAtLevel(46)}:skill),

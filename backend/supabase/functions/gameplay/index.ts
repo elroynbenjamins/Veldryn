@@ -51355,6 +51355,19 @@ function deterministicCraftRarityRoll(seed) {
 var GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION = 0.8;
 var GATHERING_TOOL_SPEED_RANGE_BPS = [200, 800];
 var GATHERING_TOOL_RARITY_RANGE_BPS = [200, 500];
+var GATHERING_TOOL_MAX_XP_BONUS_BPS = 6e3;
+var GATHERING_TOOL_XP_RANGE_BPS_BY_TIER = {
+  1: [200, 400],
+  2: [300, 500],
+  3: [400, 600],
+  4: [500, 800]
+};
+function gatheringToolBonusRange(itemId, stat) {
+  if (stat === "speed") return GATHERING_TOOL_SPEED_RANGE_BPS;
+  if (stat === "rarity") return GATHERING_TOOL_RARITY_RANGE_BPS;
+  const tier = gatheringToolDef(itemId)?.tier;
+  return tier ? GATHERING_TOOL_XP_RANGE_BPS_BY_TIER[tier] : void 0;
+}
 var GATHERING_TOOL_BASE_RARITY = {
   common: 0.95,
   uncommon: 1,
@@ -51374,8 +51387,10 @@ function gatheringToolBaseMultiplier(roll) {
 function validateGatheringToolRoll(raw2, itemId) {
   if (!raw2 || typeof raw2 !== "object" || Array.isArray(raw2)) return void 0;
   const row = raw2, bonus = row.bonus;
-  if (typeof row.id !== "string" || !row.id || row.itemId !== itemId || typeof row.ownerCharacterId !== "string" || !row.ownerCharacterId || typeof row.quality !== "number" || !Number.isInteger(row.quality) || row.quality < 0 || row.quality > 100 || !row.rarity || !(row.rarity in GATHERING_TOOL_BASE_RARITY) || typeof row.sourceReceiptKey !== "string" || !Number.isFinite(row.createdAtMs) || !bonus || !["speed", "rarity"].includes(bonus.stat) || !Number.isInteger(bonus.basisPoints)) return void 0;
-  const [min, max] = bonus.stat === "speed" ? GATHERING_TOOL_SPEED_RANGE_BPS : GATHERING_TOOL_RARITY_RANGE_BPS;
+  if (typeof row.id !== "string" || !row.id || row.itemId !== itemId || typeof row.ownerCharacterId !== "string" || !row.ownerCharacterId || typeof row.quality !== "number" || !Number.isInteger(row.quality) || row.quality < 0 || row.quality > 100 || !row.rarity || !(row.rarity in GATHERING_TOOL_BASE_RARITY) || typeof row.sourceReceiptKey !== "string" || !Number.isFinite(row.createdAtMs) || !bonus || !["speed", "rarity", "xp"].includes(bonus.stat) || !Number.isInteger(bonus.basisPoints)) return void 0;
+  const range = gatheringToolBonusRange(itemId, bonus.stat);
+  if (!range) return void 0;
+  const [min, max] = range;
   if (bonus.basisPoints < min || bonus.basisPoints > max || bonus.basisPoints % 10 !== 0) return void 0;
   return row;
 }
@@ -51395,18 +51410,25 @@ function rarityFromRoll(sample) {
   return "common";
 }
 function mintGatheringTool(itemId, characterId, receiptKey, createdAtMs) {
-  const seed = "gathering-tool:v1:" + characterId + ":" + itemId + ":" + receiptKey;
+  const seed = "gathering-tool:v2:" + characterId + ":" + itemId + ":" + receiptKey;
   const draw = (part) => deterministicCraftRarityRoll(seed + ":" + part);
-  const stat = draw("stat") < 0.5 ? "speed" : "rarity";
-  const [min, max] = stat === "speed" ? GATHERING_TOOL_SPEED_RANGE_BPS : GATHERING_TOOL_RARITY_RANGE_BPS;
+  const statSample = draw("stat");
+  const stat = statSample < 1 / 3 ? "speed" : statSample < 2 / 3 ? "rarity" : "xp";
+  const range = gatheringToolBonusRange(itemId, stat);
+  if (!range) throw new Error("Unknown gathering tool bonus range");
+  const [min, max] = range;
+  const rarity = rarityFromRoll(draw("rarity"));
+  const quality = Math.min(100, Math.floor(draw("quality") * 101));
+  const scarcityScore = { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.6, legendary: 0.8, mythic: 1 };
+  const sample = stat === "xp" ? Math.min(0.999999, draw("bonus") * 0.8 + quality / 100 * 0.15 + scarcityScore[rarity] * 0.05) : draw("bonus");
   const steps = (max - min) / 10;
   return {
     id: "gtool:" + characterId + ":" + receiptKey,
     itemId,
     ownerCharacterId: characterId,
-    rarity: rarityFromRoll(draw("rarity")),
-    quality: Math.min(100, Math.floor(draw("quality") * 101)),
-    bonus: { stat, basisPoints: min + 10 * Math.floor(draw("bonus") * (steps + 1)) },
+    rarity,
+    quality,
+    bonus: { stat, basisPoints: min + 10 * Math.floor(sample * (steps + 1)) },
     sourceReceiptKey: receiptKey,
     createdAtMs
   };
@@ -51425,6 +51447,15 @@ function equippedGatheringTools(state, skillId) {
   const legacy = gatheringToolDef(state.character?.equippedToolIds?.[skillId]);
   return legacy?.skillId === skillId ? [legacy] : [];
 }
+function reservedGatheringTool(state, skillId, tier) {
+  const id = state.character?.savedToolIdsByTier?.[skillId]?.[tier];
+  const tool2 = gatheringToolDef(id);
+  if (!tool2 || tool2.skillId !== skillId || tool2.tier !== tier) return void 0;
+  const instanceId = state.character?.savedToolInstanceIdsByTier?.[skillId]?.[tier];
+  const copy = instanceId ? validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find((row) => row.id === instanceId), tool2.id) : void 0;
+  if (instanceId && !copy) return void 0;
+  return { tool: tool2, instanceId, copy };
+}
 function equippedGatheringTool(state, skillId) {
   const tools = equippedGatheringTools(state, skillId);
   return tools[tools.length - 1];
@@ -51438,24 +51469,28 @@ function equippedGatheringToolRoll(state, skillId, tier) {
   return validateGatheringToolRoll(stored, tool2.id);
 }
 function gatheringToolEffects(state, skillId) {
-  if (skillId === "herbalism") return { baseReduction: 0, rolledSpeedReduction: 0, effectiveReduction: 0, timeMultiplier: 1, rarityChanceMultiplier: 1, count: 0 };
+  if (skillId === "herbalism") return { baseReduction: 0, rolledSpeedReduction: 0, effectiveReduction: 0, timeMultiplier: 1, rarityChanceMultiplier: 1, skillXpMultiplier: 1, count: 0 };
   const tools = equippedGatheringTools(state, skillId);
-  if (!tools.length) return { baseReduction: 0, rolledSpeedReduction: 0, effectiveReduction: -0.15, timeMultiplier: NO_TOOL_TIME_MULTIPLIER, rarityChanceMultiplier: 1, count: 0 };
-  let baseReduction = 0, speedMultiplier = 1, rarityBonus = 0;
+  if (!tools.length) return { baseReduction: 0, rolledSpeedReduction: 0, effectiveReduction: -0.15, timeMultiplier: NO_TOOL_TIME_MULTIPLIER, rarityChanceMultiplier: 1, skillXpMultiplier: 1, count: 0 };
+  let baseReduction = 0, speedMultiplier = 1, rarityBonus = 0, xpBonus = 0;
   for (const tool2 of tools) {
     const copy = equippedGatheringToolRoll(state, skillId, tool2.tier);
     baseReduction += (1 - tool2.actionTimeMultiplier) * gatheringToolBaseMultiplier(copy);
     if (copy?.bonus.stat === "speed") speedMultiplier *= 1 - copy.bonus.basisPoints / 1e4;
     if (copy?.bonus.stat === "rarity") rarityBonus += copy.bonus.basisPoints / 1e4;
+    if (copy?.bonus.stat === "xp") xpBonus += copy.bonus.basisPoints / 1e4;
   }
   const timeMultiplier = Math.max(1 - GATHERING_TOOL_MAX_EFFECTIVE_REDUCTION, Math.max(0, 1 - baseReduction) * speedMultiplier);
-  return { baseReduction, rolledSpeedReduction: 1 - speedMultiplier, effectiveReduction: 1 - timeMultiplier, timeMultiplier, rarityChanceMultiplier: 1 + rarityBonus, count: tools.length };
+  return { baseReduction, rolledSpeedReduction: 1 - speedMultiplier, effectiveReduction: 1 - timeMultiplier, timeMultiplier, rarityChanceMultiplier: 1 + rarityBonus, skillXpMultiplier: 1 + Math.min(xpBonus, GATHERING_TOOL_MAX_XP_BONUS_BPS / 1e4), count: tools.length };
 }
 function gatheringToolTimeMultiplier(state, skillId) {
   return gatheringToolEffects(state, skillId).timeMultiplier;
 }
 function gatheringToolRarityChanceMultiplier(state, skillId) {
   return gatheringToolEffects(state, skillId).rarityChanceMultiplier;
+}
+function gatheringToolSkillXpMultiplier(state, skillId) {
+  return gatheringToolEffects(state, skillId).skillXpMultiplier;
 }
 function gatheringPacing(state, activity) {
   const tool2 = equippedGatheringTool(state, activity.skillId);
@@ -55087,7 +55122,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const quantity2 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
     const xpKey = affinityXpRemainderKey(state.character.id, g.skillId);
-    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier, state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
+    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier * gatheringToolSkillXpMultiplier(state, g.skillId), state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
     const xp = gain.xp;
     const items2 = quantity2 ? [{ itemId: g.itemId, quantity: quantity2 }] : [];
     if (g.skillId === "mining") {
@@ -55862,6 +55897,68 @@ function startExploration(state, routeId, nowMs) {
   }
   return { ...state, outOfCombatSinceMs: void 0, activity: { kind: "exploration", targetId: routeId, startedAtMs: nowMs, lastClaimAtMs: nowMs, environment: captureActivityEnvironment(routeId, nowMs) } };
 }
+function activeGatheringToolSlot(state, skillId, tier) {
+  const tool2 = equippedGatheringTools(state, skillId).find((row) => row.tier === tier);
+  if (!tool2) return void 0;
+  return { itemId: tool2.id, instanceId: state.character?.equippedToolInstanceIdsByTier?.[skillId]?.[tier] };
+}
+function reserveGatheringToolSlot(state, skillId, tier) {
+  const saved = reservedGatheringTool(state, skillId, tier);
+  if (state.character?.savedToolIdsByTier?.[skillId]?.[tier] && !saved) throw new Error("Saved tool copy is invalid");
+  return saved ? { itemId: saved.tool.id, instanceId: saved.instanceId } : void 0;
+}
+function setGatheringToolSlots(state, skillId, tier, active2, reserve) {
+  const character = state.character;
+  if (!character) throw new Error("Character required");
+  const equippedIds = { ...character.equippedToolIdsByTier?.[skillId] ?? {} };
+  if (character.equippedToolIdsByTier?.[skillId] === void 0) {
+    const legacy = gatheringToolDef(character.equippedToolIds?.[skillId]);
+    if (legacy?.skillId === skillId) equippedIds[legacy.tier] = legacy.id;
+  }
+  const equippedInstances = { ...character.equippedToolInstanceIdsByTier?.[skillId] ?? {} };
+  const savedIds = { ...character.savedToolIdsByTier?.[skillId] ?? {} };
+  const savedInstances = { ...character.savedToolInstanceIdsByTier?.[skillId] ?? {} };
+  if (active2) {
+    equippedIds[tier] = active2.itemId;
+    if (active2.instanceId) equippedInstances[tier] = active2.instanceId;
+    else delete equippedInstances[tier];
+  } else {
+    delete equippedIds[tier];
+    delete equippedInstances[tier];
+  }
+  if (reserve) {
+    savedIds[tier] = reserve.itemId;
+    if (reserve.instanceId) savedInstances[tier] = reserve.instanceId;
+    else delete savedInstances[tier];
+  } else {
+    delete savedIds[tier];
+    delete savedInstances[tier];
+  }
+  const equippedToolIds = { ...character.equippedToolIds ?? {} };
+  const highest = Object.entries(equippedIds).map(([t, id]) => ({ tier: Number(t), id })).sort((a, b) => b.tier - a.tier)[0];
+  if (highest) equippedToolIds[skillId] = highest.id;
+  else delete equippedToolIds[skillId];
+  return { ...state, character: {
+    ...character,
+    equippedToolIds,
+    equippedToolIdsByTier: { ...character.equippedToolIdsByTier ?? {}, [skillId]: equippedIds },
+    equippedToolInstanceIdsByTier: { ...character.equippedToolInstanceIdsByTier ?? {}, [skillId]: equippedInstances },
+    savedToolIdsByTier: { ...character.savedToolIdsByTier ?? {}, [skillId]: savedIds },
+    savedToolInstanceIdsByTier: { ...character.savedToolInstanceIdsByTier ?? {}, [skillId]: savedInstances }
+  } };
+}
+function takeInventoryGatheringTool(state, itemId, instanceId) {
+  const preferred = state.inventory.stacks.findIndex((row2) => row2.itemId === itemId && row2.quantity > 0 && !row2.instanceId);
+  const index = instanceId ? state.inventory.stacks.findIndex((row2) => row2.itemId === itemId && row2.quantity === 1 && row2.instanceId === instanceId) : preferred >= 0 ? preferred : state.inventory.stacks.findIndex((row2) => row2.itemId === itemId && row2.quantity === 1 && !!row2.instanceId);
+  if (index < 0) throw new Error("Tool copy is not in Inventory");
+  const row = state.inventory.stacks[index];
+  if (row.instanceId) {
+    const copy = validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find((entry2) => entry2.id === row.instanceId), itemId);
+    if (!copy || row.quantity !== 1) throw new Error("Unverified tool copy");
+  }
+  const stacks = state.inventory.stacks.flatMap((entry2, i) => i !== index ? [entry2] : entry2.quantity > 1 ? [{ ...entry2, quantity: entry2.quantity - 1 }] : []);
+  return { stacks, copy: { itemId, ...row.instanceId ? { instanceId: row.instanceId } : {} } };
+}
 function equipGatheringTool(state, itemId, nowMs = Date.now(), instanceId) {
   if (!state.character) throw new Error("Create a character first");
   const tool2 = gatheringToolDef(itemId);
@@ -55869,65 +55966,70 @@ function equipGatheringTool(state, itemId, nowMs = Date.now(), instanceId) {
   if (state.character.level < tool2.requiredCharacterLevel) throw new Error(`Requires Level ${tool2.requiredCharacterLevel}`);
   const skill2 = state.skills.find((entry2) => entry2.skillId === tool2.skillId);
   if (!skill2 || skill2.level < tool2.unlockLevel) throw new Error(`Requires ${tool2.skillId} level ${tool2.unlockLevel}`);
-  const previous = equippedGatheringTools(state, tool2.skillId);
-  const currentCopyId = state.character.equippedToolInstanceIdsByTier?.[tool2.skillId]?.[tool2.tier];
-  const sameTier = previous.find((entry2) => entry2.tier === tool2.tier);
-  if (sameTier?.id === itemId && (!instanceId || instanceId === currentCopyId)) return state;
+  const current = activeGatheringToolSlot(state, tool2.skillId, tool2.tier);
+  if (current && current.itemId === itemId && (!instanceId || current.instanceId === instanceId)) return state;
   const settled = state.activity?.kind === tool2.skillId ? claimActivity(state, nowMs).state : state;
-  const selected2 = settled.inventory.stacks.find((row) => row.itemId === itemId && row.quantity > 0 && (instanceId === void 0 || row.instanceId === instanceId));
-  if (!selected2) throw new Error("Tool copy is not in Inventory");
-  if (selected2.instanceId && !validateGatheringToolRoll(settled.account.craftedGatheringToolInstances?.find((row) => row.id === selected2.instanceId), itemId))
-    throw new Error("Unverified tool copy");
-  let stacks = selected2.instanceId ? settled.inventory.stacks.filter((row) => row.instanceId !== selected2.instanceId) : consume2(settled.inventory.stacks, itemId, 1);
-  if (sameTier) {
-    const priorId = settled.character.equippedToolInstanceIdsByTier?.[tool2.skillId]?.[tool2.tier];
-    const returned = addBounded(stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: sameTier.id, quantity: 1, ...priorId ? { instanceId: priorId } : {} }]);
-    if (returned.overflow.length) throw new Error("Free an Inventory slot before replacing this tool");
-    stacks = returned.stacks;
+  const selected2 = takeInventoryGatheringTool(settled, itemId, instanceId);
+  let stacks = selected2.stacks;
+  const reserve = reserveGatheringToolSlot(settled, tool2.skillId, tool2.tier);
+  let nextReserve = reserve;
+  if (current) {
+    if (!reserve) nextReserve = current;
+    else {
+      const returned = addBounded(stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
+      if (returned.overflow.length) throw new Error("Free an Inventory slot or withdraw your saved tool first");
+      stacks = returned.stacks;
+    }
   }
-  const tools = [...previous.filter((entry2) => entry2.tier !== tool2.tier), tool2].sort((a, b) => a.tier - b.tier);
-  const equippedToolIdsByTier = {
-    ...settled.character.equippedToolIdsByTier ?? {},
-    [tool2.skillId]: Object.fromEntries(tools.map((entry2) => [entry2.tier, entry2.id]))
-  };
-  const instanceSlots = { ...settled.character.equippedToolInstanceIdsByTier?.[tool2.skillId] ?? {} };
-  if (selected2.instanceId) instanceSlots[tool2.tier] = selected2.instanceId;
-  else delete instanceSlots[tool2.tier];
-  const equippedToolInstanceIdsByTier = { ...settled.character.equippedToolInstanceIdsByTier ?? {}, [tool2.skillId]: instanceSlots };
-  const equippedToolIds = { ...settled.character.equippedToolIds ?? {}, [tool2.skillId]: tools[tools.length - 1].id };
-  return {
-    ...settled,
-    inventory: { ...settled.inventory, stacks },
-    character: { ...settled.character, equippedToolIds, equippedToolIdsByTier, equippedToolInstanceIdsByTier }
-  };
+  return setGatheringToolSlots({ ...settled, inventory: { ...settled.inventory, stacks } }, tool2.skillId, tool2.tier, selected2.copy, nextReserve);
+}
+function saveGatheringToolReserve(state, itemId, instanceId, nowMs = Date.now()) {
+  if (!state.character) throw new Error("Character required");
+  const tool2 = gatheringToolDef(itemId);
+  if (!tool2) throw new Error("Not a gathering tool");
+  const tier = tool2.tier;
+  const current = activeGatheringToolSlot(state, tool2.skillId, tier);
+  if (!current) return equipGatheringTool(state, itemId, nowMs, instanceId);
+  if (reserveGatheringToolSlot(state, tool2.skillId, tier)) throw new Error("This tier already has two saved tools");
+  const selected2 = takeInventoryGatheringTool(state, itemId, instanceId);
+  if (selected2.copy.instanceId && selected2.copy.instanceId === current.instanceId) throw new Error("Tool copy is already active");
+  return setGatheringToolSlots({ ...state, inventory: { ...state.inventory, stacks: selected2.stacks } }, tool2.skillId, tier, current, selected2.copy);
+}
+function activateGatheringToolReserve(state, skillId, tier, nowMs = Date.now()) {
+  if (!state.character) throw new Error("Character required");
+  const reserve = reserveGatheringToolSlot(state, skillId, tier);
+  if (!reserve) throw new Error("No reserve tool saved in this tier");
+  const tool2 = gatheringToolDef(reserve.itemId);
+  if (!tool2 || tool2.skillId !== skillId || tool2.tier !== tier) throw new Error("Invalid saved tool tier");
+  if (state.character.level < tool2.requiredCharacterLevel) throw new Error(`Requires Level ${tool2.requiredCharacterLevel}`);
+  const skill2 = state.skills.find((row) => row.skillId === skillId);
+  if (!skill2 || skill2.level < tool2.unlockLevel) throw new Error(`Requires ${skillId} level ${tool2.unlockLevel}`);
+  const current = activeGatheringToolSlot(state, skillId, tier);
+  const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
+  return setGatheringToolSlots(settled, skillId, tier, reserve, current);
+}
+function withdrawGatheringToolReserve(state, skillId, tier) {
+  if (!state.character) throw new Error("Character required");
+  const reserve = reserveGatheringToolSlot(state, skillId, tier);
+  if (!reserve) throw new Error("No saved reserve in this tier");
+  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error("Inventory is full");
+  return setGatheringToolSlots({ ...state, inventory: { ...state.inventory, stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
 }
 function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId) {
   if (!state.character) return state;
   const equipped = equippedGatheringTools(state, skillId);
-  const selected2 = itemId ? equipped.find((entry2) => entry2.id === itemId) : equipped[equipped.length - 1];
+  const selected2 = itemId ? equipped.find((row) => row.id === itemId) : equipped[equipped.length - 1];
   if (!selected2) return state;
+  const tier = selected2.tier;
+  if (reserveGatheringToolSlot(state, skillId, tier))
+    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier);
+  const current = activeGatheringToolSlot(state, skillId, tier);
+  if (!current) return state;
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
-  const remaining = equipped.filter((entry2) => entry2.id !== selected2.id);
-  const equippedToolIdsByTier = {
-    ...settled.character.equippedToolIdsByTier ?? {},
-    [skillId]: Object.fromEntries(remaining.map((entry2) => [entry2.tier, entry2.id]))
-  };
-  const equippedToolIds = { ...settled.character.equippedToolIds ?? {} };
-  if (remaining.length) equippedToolIds[skillId] = remaining[remaining.length - 1].id;
-  else delete equippedToolIds[skillId];
-  const copyId = settled.character.equippedToolInstanceIdsByTier?.[skillId]?.[selected2.tier];
-  const instanceSlots = { ...settled.character.equippedToolInstanceIdsByTier?.[skillId] ?? {} };
-  delete instanceSlots[selected2.tier];
-  const equippedToolInstanceIdsByTier = { ...settled.character.equippedToolInstanceIdsByTier ?? {}, [skillId]: instanceSlots };
-  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [
-    { itemId: selected2.id, quantity: 1, ...copyId ? { instanceId: copyId } : {} }
-  ]);
+  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
   if (added.overflow.length) throw new Error("Free one Inventory slot before unequipping this tool");
-  return {
-    ...settled,
-    inventory: { ...settled.inventory, stacks: added.stacks },
-    character: { ...settled.character, equippedToolIds, equippedToolIdsByTier, equippedToolInstanceIdsByTier }
-  };
+  return setGatheringToolSlots({ ...settled, inventory: { ...settled.inventory, stacks: added.stacks } }, skillId, tier, void 0, void 0);
 }
 function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (!state.character) throw new Error("No character");
@@ -56851,6 +56953,32 @@ function auditCraftedGearOwnership(state) {
     scanStacks(inventory.stacks, "inventory", character.id);
     scanStacks(equipmentPouchForCharacter(character).stacks, "equipment_pouch", character.id);
     scanStacks(overflow.stacks, "overflow", character.id);
+    const registerToolSlot = (instanceId, itemId) => {
+      const record = gatheringToolById.get(instanceId);
+      if (!record) {
+        audit.problems.push(`Unrecognized gathering tool copy: ${instanceId}`);
+        return;
+      }
+      if (record.itemId !== itemId) {
+        audit.problems.push(`Gathering tool item mismatch: ${instanceId}`);
+        return;
+      }
+      if (observedGatheringTools.has(instanceId)) {
+        audit.problems.push(`Duplicate gathering tool copy marker: ${instanceId}`);
+        return;
+      }
+      observedGatheringTools.add(instanceId);
+    };
+    for (const skillId of ["mining", "woodcutting", "fishing"]) {
+      for (const [tier, id] of Object.entries(character.equippedToolInstanceIdsByTier?.[skillId] ?? {})) {
+        const toolId = character.equippedToolIdsByTier?.[skillId]?.[Number(tier)];
+        registerToolSlot(id, toolId);
+      }
+      for (const [tier, id] of Object.entries(character.savedToolInstanceIdsByTier?.[skillId] ?? {})) {
+        const toolId = character.savedToolIdsByTier?.[skillId]?.[Number(tier)];
+        registerToolSlot(id, toolId);
+      }
+    }
     for (const [slot, itemId] of Object.entries(character.equipment)) {
       if (itemId && trackedItemIds.has(itemId) && !character.equipmentInstanceIds?.[slot])
         audit.unmarkedPhysicalCopies += 1;
@@ -57844,8 +57972,26 @@ function deletionRecoveryItems(entry2, sharedBank) {
     const instanceId = entry2.character.equipmentInstanceIds?.[slot];
     return { itemId, quantity: 1, ...instanceId ? { instanceId } : {} };
   });
-  const tools = [...new Set(Object.values(entry2.character.equippedToolIds ?? {}).filter((id) => typeof id === "string" && !!id))];
-  const held = [...equipped, ...tools.map((itemId) => ({ itemId, quantity: 1 }))];
+  const tools = [];
+  for (const skill2 of ["mining", "woodcutting", "fishing"]) {
+    const active2 = entry2.character.equippedToolIdsByTier?.[skill2];
+    if (active2 !== void 0) {
+      for (const [tier, id] of Object.entries(active2)) {
+        if (!id) continue;
+        const instanceId = entry2.character.equippedToolInstanceIdsByTier?.[skill2]?.[Number(tier)];
+        tools.push({ itemId: id, quantity: 1, ...instanceId ? { instanceId } : {} });
+      }
+    } else {
+      const legacy = entry2.character.equippedToolIds?.[skill2];
+      if (legacy) tools.push({ itemId: legacy, quantity: 1 });
+    }
+    for (const [tier, id] of Object.entries(entry2.character.savedToolIdsByTier?.[skill2] ?? {})) {
+      if (!id) continue;
+      const instanceId = entry2.character.savedToolInstanceIdsByTier?.[skill2]?.[Number(tier)];
+      tools.push({ itemId: id, quantity: 1, ...instanceId ? { instanceId } : {} });
+    }
+  }
+  const held = [...equipped, ...tools];
   const ownedGearIds = /* @__PURE__ */ new Set([
     ...equipped.map((row) => row.itemId),
     ...entry2.inventory.stacks.map((row) => row.itemId),
@@ -59595,6 +59741,9 @@ var fields = {
   overflow: [],
   equip_tool: ["id", "instanceId"],
   unequip_tool: ["id"],
+  tool_vault_save: ["id", "instanceId"],
+  tool_vault_activate: ["skillId", "tier"],
+  tool_vault_withdraw: ["skillId", "tier"],
   tool_move: ["instanceId", "to"],
   tool_sell: ["instanceId"],
   equip_set: [],
@@ -60239,6 +60388,18 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "equip_tool":
       state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200));
+      break;
+    case "tool_vault_save":
+      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200), now);
+      message = "Tool saved to its reserve slot";
+      break;
+    case "tool_vault_activate":
+      state = activateGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), now);
+      message = "Saved tool activated";
+      break;
+    case "tool_vault_withdraw":
+      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4));
+      message = "Saved tool moved to Inventory";
       break;
     case "tool_move":
       state = moveGatheringToolCopy(state, text(a, "instanceId", 200), oneOf(a.to, ["inventory", "bank"]));

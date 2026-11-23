@@ -41,7 +41,7 @@ const message=(id,name,body,created_at='2026-11-22T19:45:00Z')=>({id,sender_name
  const labels=()=>renderer.root.findAllByType('Text');
  const channelText=()=>labels().find(node=>node.props.children==='WORLD'||node.props.children==='CHAT');
  const dock=()=>renderer.root.findByType('Pressable');
- const iconFrame=()=>renderer.root.findAllByType('View').find(node=>node.props.style?.width===32&&node.props.style?.height===32);
+ const iconFrame=()=>renderer.root.findAllByType('View').find(node=>{const styles=Array.isArray(node.props.style)?node.props.style: [node.props.style];return styles.some(style=>style?.width===32&&style?.height===32);});
  const preview=()=>renderer.root.findAllByType('ChatMessageText');
  const names=()=>renderer.root.findAllByType('PlayerStyledName');
  await act(async()=>{renderer=create(render())});
@@ -77,6 +77,7 @@ const message=(id,name,body,created_at='2026-11-22T19:45:00Z')=>({id,sender_name
  assert.equal(preview()[0].props.numberOfLines,2,'two-line preview survives large fonts');
  assert.ok(dock().props.accessibilityLabel.includes('unread'),'unread count stays accessible');
  assert.ok(labels().some(x=>x.props.children==='@1'),'mentions are visible');
+ assert.ok(renderer.root.findAllByType('View').some(node=>Array.isArray(node.props.style)&&node.props.style.some(style=>style?.flexDirection==='column'&&style?.gap===2)),'narrow notification badges stack to preserve sender width');
  assert.ok(labels().some(x=>x.props.children===2),'unread badge is visible');
 
  fontScale=1;width=420;

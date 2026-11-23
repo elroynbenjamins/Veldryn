@@ -24,6 +24,14 @@ export interface ForgeSlotSourceCellV2{
  readonly classId:ClassIdV2;
  readonly tier:V2Tier;
  readonly slot:GearSlotV2;
+ /** A 2H or paired weapon occupies the offhand budget without another copy. */
+ readonly reservedByTwoHandOrPairedWeapon:boolean;
+ readonly requiredPhysicalCopy:boolean;
+ readonly sourceCoverage:'present'|'reserved_offhand'|'missing_required';
+ /** Proposed policy action only: not a permission to mint or rewrite old rolls. */
+ readonly compatibilityAction:'none_reserved'|'missing_source'|
+  'author_role_slot_affixes'|'reconcile_max_rarity_rolls'|
+  'restrict_unapproved_rng_candidates'|'await_signed_provenance';
  readonly eligibleSourcePieceIds:readonly string[];
  readonly exactForgeCompatibleAffixes:readonly V2Affix[];
  readonly blockedOrOffSlotForgeAffixes:readonly V2Affix[];
@@ -44,6 +52,11 @@ export interface ForgeTenSlotAuditV2{
  readonly actualPersistedCopiesExamined:0;
  readonly cells:readonly ForgeSlotSourceCellV2[];
  readonly cellsMissingTemplates:number;
+ readonly cellsReservedByTwoHandOrPairedWeapon:number;
+ readonly cellsMissingRequiredTemplates:number;
+ readonly cellsWithNoCompatibleAffixOnPhysicalSlots:number;
+ readonly cellsWithUnsafeRngCandidateOnPhysicalSlots:number;
+ readonly cellsWithInsufficientMaximumRollPoolOnPhysicalSlots:number;
  readonly cellsWithNoCompatibleAffix:number;
  readonly cellsWithUnsafeRngCandidate:number;
  readonly cellsWithInsufficientMaximumRollPool:number;
@@ -70,6 +83,14 @@ export function auditRealForgeTenSlotsV2():ForgeTenSlotAuditV2{
  for(const classId of Object.keys(CLASS_ROLES_V2) as ClassIdV2[]){
   const role=CLASS_ROLES_V2[classId];
   for(const tier of tiers){
+   const classWeapons=V2_SERVER_PIECES.filter(p=>p.tier===tier&&
+    p.role===role&&p.slot==='weapon'&&
+    (p.classRestriction===classId||
+     p.classRestriction===CLASS_NAMES_V2[classId]));
+   if(classWeapons.length!==1||
+      !['one','two','dual'].includes(classWeapons[0].hands??''))
+    fail('class_weapon_grip_unverifiable');
+   const occupiesOffhand=classWeapons[0].hands!=='one';
    const maxRolls=Math.max(...V2_SERVER_RARITY_BANDS.map(b=>
     tier>=3?b.affixesHighTier:b.affixesLowTier));
    for(const slot of GEAR_SLOTS_V2){
@@ -77,6 +98,9 @@ export function auditRealForgeTenSlotsV2():ForgeTenSlotAuditV2{
      p.tier===tier&&p.role===role&&p.slot===slot&&
      (!p.classRestriction||p.classRestriction===classId||
       p.classRestriction===CLASS_NAMES_V2[classId]));
+    const reservedByTwoHandOrPairedWeapon=slot==='offhand'&&occupiesOffhand;
+    if(reservedByTwoHandOrPairedWeapon&&sources.length)
+     fail('conflicting_offhand_source_for_two_hand');
     const authored=v2ServerAuthoredAffixChoices(role,slot);
     const compatible=authored.filter(source=>{
      const mapped=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[source];
@@ -84,13 +108,26 @@ export function auditRealForgeTenSlotsV2():ForgeTenSlotAuditV2{
     });
     const excluded=authored.filter(source=>!compatible.includes(source));
     const blockers:ForgeSlotReadinessBlockerV2[]=[];
-    if(sources.length===0)blockers.push('NO_CLASS_ELIGIBLE_FORGE_TEMPLATE');
+    if(sources.length===0&&!reservedByTwoHandOrPairedWeapon)
+     blockers.push('NO_CLASS_ELIGIBLE_FORGE_TEMPLATE');
     if(compatible.length===0)blockers.push('NO_COMPATIBLE_FORGE_AFFIX');
     if(compatible.length<maxRolls)
      blockers.push('FORGE_RARITY_ROLL_COUNT_EXCEEDS_ELIGIBLE_AFFIX_POOL');
     if(excluded.length)
      blockers.push('FORGE_ROLE_RNG_MAY_PRODUCE_UNSUPPORTED_OR_OFFSLOT_AFFIX');
+    const sourceCoverage=sources.length?'present':
+     reservedByTwoHandOrPairedWeapon?'reserved_offhand':'missing_required';
+    const compatibilityAction:ForgeSlotSourceCellV2['compatibilityAction']=
+     sourceCoverage==='reserved_offhand'?'none_reserved':
+     sourceCoverage==='missing_required'?'missing_source':
+     !compatible.length?'author_role_slot_affixes':
+     compatible.length<maxRolls?'reconcile_max_rarity_rolls':
+     excluded.length?'restrict_unapproved_rng_candidates':
+     'await_signed_provenance';
     cells.push({classId,tier,slot,
+     reservedByTwoHandOrPairedWeapon,
+     requiredPhysicalCopy:!reservedByTwoHandOrPairedWeapon,
+     sourceCoverage,compatibilityAction,
      eligibleSourcePieceIds:sources.map(s=>s.id).sort(),
      exactForgeCompatibleAffixes:compatible,
      blockedOrOffSlotForgeAffixes:excluded,
@@ -107,6 +144,17 @@ export function auditRealForgeTenSlotsV2():ForgeTenSlotAuditV2{
   authoredForgeRoutes:338,classTierSlotCells:360,
   setBonusesActivated:0,actualPersistedCopiesExamined:0,cells,
   cellsMissingTemplates:cells.filter(c=>!c.eligibleSourcePieceIds.length).length,
+  cellsReservedByTwoHandOrPairedWeapon:cells.filter(c=>
+   c.sourceCoverage==='reserved_offhand').length,
+  cellsMissingRequiredTemplates:cells.filter(c=>
+   c.sourceCoverage==='missing_required').length,
+  cellsWithNoCompatibleAffixOnPhysicalSlots:cells.filter(c=>
+   c.sourceCoverage==='present'&&!c.exactForgeCompatibleAffixes.length).length,
+  cellsWithUnsafeRngCandidateOnPhysicalSlots:cells.filter(c=>
+   c.sourceCoverage==='present'&&c.blockedOrOffSlotForgeAffixes.length>0).length,
+  cellsWithInsufficientMaximumRollPoolOnPhysicalSlots:cells.filter(c=>
+   c.sourceCoverage==='present'&&
+   c.exactForgeCompatibleAffixes.length<c.maximumAuthoredAffixRolls).length,
   cellsWithNoCompatibleAffix:cells.filter(c=>!c.exactForgeCompatibleAffixes.length).length,
   cellsWithUnsafeRngCandidate:cells.filter(c=>c.blockedOrOffSlotForgeAffixes.length>0).length,
   cellsWithInsufficientMaximumRollPool:cells.filter(c=>

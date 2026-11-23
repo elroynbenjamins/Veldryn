@@ -19,6 +19,24 @@ ok(cooking.every(recipe=>recipe.gold>0&&recipe.gold%10===0),'All Cooking Gold co
 equal(cooking.find(recipe=>recipe.id==='COOK_MEADOW_PERCH')?.gold,30,'Starter Cooking cost reduces by 25% then rounds down');
 equal(cooking.find(recipe=>recipe.id==='COOK_SILVERFIN')?.gold,40,'Silverfin receives same rounded discount');
 equal(cooking.find(recipe=>recipe.id==='COOK_ICEFISH')?.gold,810,'High tier Cooking uses proportional discount');
+// Starter-material rebalance: test charged Gold after the universal 20% surcharge.
+const copper=RECIPES.find(recipe=>recipe.id==='SMELT_COPPER_INGOT');
+ok(!!copper,'Copper smelting recipe exists');
+equal(copper!.output.itemId,'COPPER_INGOT','Copper output item is unchanged');
+equal(copper!.output.quantity,5,'Copper smelting still produces five ingots');
+equal(copper!.inputs.find(input=>input.itemId==='COPPER_ORE')?.quantity,15,'Copper ore raised to 15 per batch');
+equal(copper!.inputs.find(input=>input.itemId==='GREENWOOD_LOG')?.quantity,3,'Copper smelting uses three Greenwood');
+equal(copper!.gold,30,'Copper smelting costs exactly 30 charged Gold');
+equal(copper!.xp,105,'Copper smelting gains five XP');
+const bindings=RECIPES.find(recipe=>recipe.id==='WEAVE_CLOTH_BINDINGS');
+equal(bindings?.inputs.find(input=>input.itemId==='MOSS_FIBER')?.quantity,7,'Cloth Bindings use seven Moss Fiber');
+equal(bindings?.inputs.find(input=>input.itemId==='BOAR_HIDE')?.quantity,2,'Cloth Bindings use two Boar Hide');
+equal(bindings?.gold,30,'Cloth Bindings cost exactly 30 charged Gold');
+const linings=RECIPES.find(recipe=>recipe.id==='STITCH_PADDED_LININGS');
+equal(linings?.inputs.find(input=>input.itemId==='WOLF_PELT')?.quantity,5,'Padded Linings keep five Wolf Pelts');
+equal(linings?.inputs.find(input=>input.itemId==='MOSS_FIBER')?.quantity,6,'Padded Linings keep six Moss Fiber');
+equal(linings?.gold,80,'Padded Linings cost exactly 80 charged Gold');
+
 for(const [id,wood,quantity] of [
  ['SMELT_COPPER_INGOT','GREENWOOD_LOG',3],
  ['SMELT_ASTER_IRON_INGOT','IRONWOOD_LOG',3],

@@ -30,3 +30,42 @@ jobs:
           persist-credentials: false
       - name: Run Winter Hearth domain rule tests
         run: node --test tools/frostfall-winter-hearth-2026-rules.test.mjs
+  disposable-guild-donations:
+    name: PG17 Winter Hearth donation ledger and Guild Gold review
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: winter_hearth_review
+          POSTGRES_PASSWORD: disposable-only-winter-hearth
+          POSTGRES_DB: winter_hearth_review_2026
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U winter_hearth_review -d winter_hearth_review_2026"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: winter_hearth_review
+      PGPASSWORD: disposable-only-winter-hearth
+      PGDATABASE: winter_hearth_review_2026
+      PGSSLMODE: disable
+    steps:
+      - name: Checkout hidden review with no persistent token
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Confirm only disposable database is reachable
+        run: test "$(psql -X -v ON_ERROR_STOP=1 -Atc 'select current_database()')" = 'winter_hearth_review_2026'
+      - name: Execute isolated winter-hearth PG17 source and adversarial donation tests
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f tools/winter-hearth-review/v2/00_disposable_pg17_guild_donation_model.sql
+          psql -X -v ON_ERROR_STOP=1 -f tools/winter-hearth-review/v2/01_disposable_pg17_guild_donation_tests.sql
+      - name: Assert no actual app inventory or Guild PVE tables exist
+        run: |
+          test "$(psql -X -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('guild_members','account_bank_items','guild_pve_treasury_v1')")" = '0'

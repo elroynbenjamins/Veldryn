@@ -71,7 +71,11 @@ const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
 ok(recruitmentFilters.includes('clear:{minHeight:44')&&recruitmentFilters.includes('chip:{minHeight:44'),'Recruitment filter clear/chip actions must retain 44px touch targets');
 
 const inventoryTouch=read('src/screens/InventoryScreen.tsx');
-ok(inventoryTouch.includes('markSeen:{minHeight:44')&&inventoryTouch.includes('selectModeButton:{minHeight:44')&&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),'Inventory utility and bulk-selection controls must retain 44px touch targets');
+ok(inventoryTouch.includes('viewOptionsTrigger:{flex:1,minWidth:0,minHeight:44')
+  &&inventoryTouch.includes('textAction:{minHeight:44')
+  &&inventoryTouch.includes('protectionToolbarButton:{width:44,minHeight:44')
+  &&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),
+  'Current Inventory filter, bulk selection and protection buttons must retain 44px touch targets');
 
 const companionTrainingTouch=read('src/components/CompanionTrainingV50Panel.tsx');
 ok(companionTrainingTouch.includes('tab:{flex:1,minHeight:44')&&companionTrainingTouch.includes('sourceButton:{minWidth:56,minHeight:44'),'Companion Training tabs and source actions must retain 44px touch targets');

@@ -52368,6 +52368,19 @@ function eventBossMechanicProfile(input) {
 // src/server/expeditions/frostfall-endurance.ts
 var FROSTFALL_ENDURANCE_GENERATOR = "event-route-v5-endurance-v2";
 var FROSTFALL_ENDURANCE_DEPTH_REWARDS = [1, 1.15, 1.28, 1.38, 1.46, 1.52];
+var FROSTFALL_ENDURANCE_ENEMY_PACING_V3 = { attack: 0.72, hp: 0.8, defense: 0.9 };
+var FROSTFALL_ENDURANCE_TIER1_EXTRA_V3 = { attack: 0.7, hp: 0.85, defense: 0.9 };
+var FROSTFALL_ENDURANCE_BALANCE_V3 = "event-frostfall-endurance-v3";
+var ORIGINAL_FROSTFALL_ENEMY_PACING = { attack: 1, hp: 1, defense: 1 };
+function frostfallEnemyPacingForGraph(graph2, tier) {
+  if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR || graph2.balanceVersion !== FROSTFALL_ENDURANCE_BALANCE_V3) return ORIGINAL_FROSTFALL_ENEMY_PACING;
+  if (tier !== 1) return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
+  return {
+    attack: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.attack,
+    hp: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.hp,
+    defense: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.defense
+  };
+}
 var idsAt = (depth) => [0, 1, 2].map((choice) => "d" + depth + "-c" + choice);
 function frostfallRewardMultiplierForBoss(graph2, bossNode) {
   if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR) return 1;
@@ -52409,7 +52422,7 @@ function generateFrostfallEnduranceGraph(def, runId, secret) {
     }
   }
   nodes.push({ nodeId: "boss", depth: count + 1, kind: "boss", contentId: def.bossEncounterId, modifierId: "final", risk: 1.25, rewardTag: "boss", nextNodeIds: [], title: def.finalBoss });
-  const graph2 = { schemaVersion: 1, generatorVersion: FROSTFALL_ENDURANCE_GENERATOR, runId, expeditionId: def.id, contentVersion: "event-frostfall-endurance-v2", balanceVersion: "event-frostfall-endurance-v2", preBossNodeCount: count, entryNodeId: "entry", bossNodeId: "boss", nodes };
+  const graph2 = { schemaVersion: 1, generatorVersion: FROSTFALL_ENDURANCE_GENERATOR, runId, expeditionId: def.id, contentVersion: "event-frostfall-endurance-v2", balanceVersion: FROSTFALL_ENDURANCE_BALANCE_V3, preBossNodeCount: count, entryNodeId: "entry", bossNodeId: "boss", nodes };
   validateCoopRouteGraph(graph2);
   return graph2;
 }
@@ -52692,9 +52705,10 @@ var EventExpeditionService = class {
     const isFrostfallEndurance = run.graph.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR;
     const depthBeyondOpening = isFrostfallEndurance && ["battle", "elite", "boss"].includes(selected2.kind) ? Math.max(0, selected2.depth - 8) : 0;
     const depthAttack = Math.pow(1.022, depthBeyondOpening), depthHp = Math.pow(1.035, depthBeyondOpening), depthDefense = Math.pow(1.012, depthBeyondOpening);
+    const seasonalPacing = frostfallEnemyPacingForGraph(run.graph, run.tier ?? 1);
     let startingState = run.persistentState;
     if (selected2.kind === "boss" && beforeObjective.preBossHealPct > 0) startingState = healBeforeBoss(startingState, run.players, beforeObjective.preBossHealPct);
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: seasonalPacing.attack * depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: seasonalPacing.hp * depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: seasonalPacing.defense * depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;

@@ -1234,7 +1234,7 @@ for(const profile of exactBossProfiles){
     forgedRegionalChecks++;
     assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
      input,qa.build,{...qa.source,claims:[]},kit,true),
-     /invalid_hidden_v2|missing_exact_copy|claim/i);
+     /invalid_hidden_v2|missing_hidden_v2_receipt|missing_exact_copy|claim/i);
     forgedRegionalChecks++;
     assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
      {...input,players:[qa.actor,qa.actor]},qa.build,qa.source,kit,true),

@@ -141,7 +141,7 @@ export function issueFrozenForgePhysicalAuthorityV2(
   }
   const weapon=e.items.filter(x=>v2ServerPiece(x.pieceId)?.slot==='weapon');
   if(weapon.length>1)fail('multiple_weapons');
-  const shield=e.items.filter(x=>v2PinnedPhysicalSubtypeReview(x.pieceId)?.shieldBash);
+  const shield=e.items.filter(x=>v2PinnedPhysicalSubtypeReview(x.pieceId)?.shieldBashDamageType==='blunt');
   if(shield.length>1)fail('multiple_shields');
   const profile=weapon.length?v2PinnedPhysicalSubtypeReview(weapon[0].pieceId):null;
   if(weapon.length&&!profile?.profile)fail('noncanonical_physical_weapon');

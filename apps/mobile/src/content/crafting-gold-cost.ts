@@ -37,3 +37,11 @@ export function reducedFishCookingGoldCost(chargedGold:number):number{
   if(!Number.isSafeInteger(chargedGold)||chargedGold<0)throw new Error('invalid_fish_cooking_gold');
   return chargedGold===0?0:Math.max(10,Math.round(chargedGold*3/50)*10);
 }
+
+/** Newly queued ingot-smelting batches trade extra raw ore and firewood for
+ * roughly 15% less charged Gold, rounded to the nearest 10 (minimum 10).
+ * Copper stays at 30 Gold after rounding. Existing job receipts are immutable. */
+export function reducedIngotSmeltingGoldCost(chargedGold:number):number{
+  if(!Number.isSafeInteger(chargedGold)||chargedGold<0)throw new Error('invalid_ingot_smelting_gold');
+  return chargedGold===0?0:Math.max(10,Math.round(chargedGold*17/200)*10);
+}

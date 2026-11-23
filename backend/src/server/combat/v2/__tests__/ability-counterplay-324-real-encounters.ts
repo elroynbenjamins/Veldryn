@@ -112,7 +112,7 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number],strategy
   /^[a-f0-9]{64}$/.test(digest)};
  const baseEnemy=enemy(boss);
  const seed='QA_EQ2_'+classId+'_'+which+'_'+boss.id;
- const input:CombatInput={seed,players:[actor],enemies:[baseEnemy],maxDurationMs:7000};
+ const input:CombatInput={seed,players:[actor],enemies:[baseEnemy],maxDurationMs:35000};
  const candidate=prepareSoloEnemyKitsV2([baseEnemy],{
   ruleset:ENEMY_V2_RULESET,serverSeed:seed,encounterId:'QA_ENC_'+classId+'_'+which,
   region:boss.region,equipmentTier:boss.tier,eliteEnemyIds:[],
@@ -129,6 +129,10 @@ function fixture(classId:ClassIdV2,which:0|1,boss:typeof bosses[number],strategy
 const samples:AbilityCounterplaySampleV2[]=[];
 const equipmentFingerprints=new Map<string,string>();
 const baselineSkillSignatures=new Map<string,string>();
+// Three-route evidence includes whether the boss actually presented a mechanic;
+// missing cast opportunities are not interpreted as a player refusing a counter.
+const bossOpportunityById=new Map<string,{runs:number;casts:number;statusApplications:number;phases:number}>();
+const bossExposureByGroup=new Map<string,number>();
 let runs=0,traitEvents=0,sourceTests=0,divergentLoadouts=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const which of [0,1] as const){
@@ -159,6 +163,18 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    else assert.equal(proof,previous,'Skill choice cannot change gear receipt/stats '+group);
    const player=first.combat.players[0],target=first.combat.enemies[0];
    const events=first.combat.events,actorId=input.players[0].id;
+   const enemyId=boss.id;
+   const bossCasts=events.filter(e=>e.type==='cast_start'&&e.actorId===enemyId).length;
+   const bossStatus=events.filter(e=>e.type==='status_apply'&&e.actorId===enemyId).length;
+   const phases=events.filter(e=>e.type==='phase'&&e.actorId===enemyId).length;
+   const exposure=(bossOpportunityById.get(enemyId)??{
+    runs:0,casts:0,statusApplications:0,phases:0});
+   bossOpportunityById.set(enemyId,{
+    runs:exposure.runs+1,casts:exposure.casts+bossCasts,
+    statusApplications:exposure.statusApplications+bossStatus,
+    phases:exposure.phases+phases,
+   });
+   bossExposureByGroup.set(group,(bossExposureByGroup.get(group)??0)+bossCasts+bossStatus+phases);
    const own=(e:typeof events[number])=>e.actorId===actorId;
    const interrupts=events.filter(e=>e.type==='interrupt'&&own(e)).length;
    const cleanses=events.filter(e=>e.type==='status_remove'&&own(e)&&
@@ -234,6 +250,11 @@ assert.equal(runs,9*2*6*3);
 assert.equal(samples.length,324);
 assert.equal(equipmentFingerprints.size,108);
 assert.equal(baselineSkillSignatures.size,108);
+assert.equal(bossOpportunityById.size,6);
+assert.equal(bossExposureByGroup.size,108);
+assert.ok([...bossOpportunityById.values()].every(row=>row.runs===54));
+assert.ok([...bossOpportunityById.values()].some(row=>row.casts>0),
+ 'Boss cast exposure missing across all 35s synthetic fight windows');
 assert.ok(divergentLoadouts>0,'Three identical skill loadouts would not test counterplay');
 const reviewed=reviewAbilityCounterplayV2(samples);
 assert.equal(reviewed.comparisons.length,108);
@@ -246,6 +267,10 @@ assert.equal(sourceTests,30);
 console.log('PASS: '+runs+' genuine hidden V2 equipment-backed tactical boss encounters, '+
  traitEvents+' trait events, '+sourceTests+' fail-closed exact-copy checks; '+
  reviewed.findings.length+' read-only review flags (NEVER release approval)');
+console.log('Boss opportunity coverage (synthetic, not balance clearance): '+
+ JSON.stringify([...bossOpportunityById.entries()].sort(([a],[b])=>a.localeCompare(b))));
+console.log('Comparison triplets with no boss event exposure: '+
+ [...bossExposureByGroup.values()].filter(n=>n===0).length+'/108');
 console.log('Counterplay review flag counts: '+JSON.stringify(
  reviewed.findings.reduce<Record<string,number>>((out,f)=>{
   out[f.type]=(out[f.type]??0)+1;return out;

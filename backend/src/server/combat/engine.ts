@@ -64,7 +64,15 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
   switch(rule) {
     case 'self': return [actor];
     case 'lowest_hp_ally': { const live=living(allies); return live.length ? [live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)] : []; }
-    case 'lowest_hp_ally_with_dot': { const live=living(allies),poisoned=live.filter(x=>x.periodic.some(p=>p.kind==='dot')),candidates=poisoned.length?poisoned:live;return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[]; }
+    case 'lowest_hp_ally_with_dot': {
+      // Preserve V1 DoT targeting; hidden V2 cleanser also seeks debuff-only
+      // allies rather than healing a clean player at a lower HP percentage.
+      const live=living(allies),affected=live.filter(x=>
+        x.periodic.some(p=>p.kind==='dot')||
+        (actor.combatV2&&x.modifiers.some(m=>m.kind==='debuff'&&m.expiresAt>0)));
+      const candidates=affected.length?affected:live;
+      return candidates.length?[candidates.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[];
+    }
     case 'two_lowest_hp_allies':return [...living(allies)].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id)).slice(0,2);
     case 'all_allies': return living(allies);
     case 'all_enemies': return living(enemies);
@@ -84,7 +92,10 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
   switch(a.aiCondition || 'always') {
     case 'self_below_50': return hpPct(actor)<0.5;
     case 'ally_below_50': return living(allies).some(x=>hpPct(x)<0.5);
-    case 'ally_below_50_or_dot': return living(allies).some(x=>hpPct(x)<0.5||x.periodic.some(p=>p.kind==='dot'));
+    case 'ally_below_50_or_dot':
+      return living(allies).some(x=>hpPct(x)<0.5||
+        x.periodic.some(p=>p.kind==='dot')||
+        (actor.combatV2&&x.modifiers.some(m=>m.kind==='debuff')));
     case 'ally_below_80': return living(allies).some(x=>hpPct(x)<0.8);
     case 'ally_below_80_or_targeted': return Boolean(threatenedAlly(allies,enemies))||living(allies).some(x=>hpPct(x)<0.8);
     case 'target_casting': return living(enemies).some(x=>!!x.casting && (x.definition.abilities.find(z=>z.id===x.casting!.abilityId)?.interruptible ?? false));
@@ -519,12 +530,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       else target.periodic.push(periodic);
       events.push({atMs:now,type:'status_apply',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:effect.kind,statusTag:effect.tag??effect.damageType??effect.kind,expiresAtMs:expiresAt});return;}
     if(effect.kind==='cleanse'){
-      // Remove harmful periodic effects/debuffs only. Never wipe beneficial HoTs,
-      // shield amounts, buffs or boss phase state. The replay identifies the cure.
+      // Keep legacy V1's DoT-only cleanse unchanged. Authenticated V2 class
+      // cleanses additionally remove ordinary hostile debuffs, not buffs,
+      // beneficial HoTs, shield state, or boss phase mechanics.
       const removed=target.periodic.filter(p=>p.kind==='dot');
       target.periodic=target.periodic.filter(p=>p.kind!=='dot');
+      const removedDebuffs=source.combatV2
+        ?target.modifiers.filter(m=>m.kind==='debuff'&&m.expiresAt>now):[];
+      if(source.combatV2)
+        target.modifiers=target.modifiers.filter(m=>m.kind!=='debuff');
       for(const p of removed)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'dot',statusTag:p.tag??'dot'});
-      if(removed.length&&source.combatV2&&!abilityId.startsWith('V2_'))
+      for(const m of removedDebuffs)events.push({atMs:now,type:'status_remove',actorId:source.definition.id,targetId:target.definition.id,abilityId,statusKind:'debuff',statusTag:m.tag,detail:'combat_v2_cleanse'});
+      if((removed.length||removedDebuffs.length)&&source.combatV2&&!abilityId.startsWith('V2_'))
         runReactive(source,'cleanse',now,target);
       return;
     }

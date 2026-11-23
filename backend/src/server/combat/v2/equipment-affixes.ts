@@ -14,7 +14,7 @@ export type EquipmentAffixIdV2=
  'attack_pct'|'defense_pct'|'max_hp_pct'|'haste_pp'|
  'crit_rate_pp'|'crit_damage_pct'|'accuracy_pp'|'evasion_pp'|
  'penetration_pp'|'ward_pp'|'shield_strength_pct'|
- 'class_healing_pct'|'hex_potency_pct';
+ 'class_healing_pct'|'hex_potency_pct'|'tenacity_pp'|'ability_damage_pct'|'forge_healing_power_pct';
 export interface EquipmentAffixDefinitionV2{
  readonly id:EquipmentAffixIdV2;
  readonly unit:'relative_percent'|'percentage_points';
@@ -35,6 +35,10 @@ export const EQUIPMENT_AFFIXES_V2:Readonly<Record<EquipmentAffixIdV2,EquipmentAf
  shield_strength_pct:{id:'shield_strength_pct',unit:'relative_percent',slots:['chest','gloves','cape','offhand'],runtime:'supported'},
  class_healing_pct:{id:'class_healing_pct',unit:'relative_percent',slots:['weapon','chest','amulet','offhand'],runtime:'supported'},
  hex_potency_pct:{id:'hex_potency_pct',unit:'relative_percent',slots:['weapon','amulet','ring','cape'],runtime:'supported'},
+  // Original Forge 2.0 roll identities; generic Potency is deliberately NOT mapped.
+  tenacity_pp:{id:'tenacity_pp',unit:'percentage_points',slots:['helmet','chest','legs','boots','offhand'],runtime:'supported'},
+  ability_damage_pct:{id:'ability_damage_pct',unit:'relative_percent',slots:['weapon','gloves','amulet','ring'],runtime:'supported'},
+  forge_healing_power_pct:{id:'forge_healing_power_pct',unit:'relative_percent',slots:['weapon','chest','amulet','offhand'],runtime:'supported'},
 };
 export interface AuthoredRollLimitV2{readonly min:number;readonly max:number}
 /** Must originate from finalized, server-owned Equipment 2.0 roll policy. */
@@ -158,6 +162,9 @@ export function compileTrustedEquipmentAffixesV2(
    wardPp:percent(get('ward_pp')),
    shieldStrengthPct:percent(get('shield_strength_pct')),
    hexPotencyPct:percent(get('hex_potency_pct')),
+   tenacityPp:percent(get('tenacity_pp')),
+   abilityDamagePct:percent(get('ability_damage_pct')),
+   forgeHealingPowerPct:percent(get('forge_healing_power_pct')),
  };
  const hasAdvanced=Object.values(advanced).some(value=>value>0);
  if(hasAdvanced){

@@ -1,0 +1,87 @@
+{
+  "contractVersion": "eq2-t4-replacement-set-catalogue-review-v1",
+  "status": "REVIEW_ONLY_NOT_RUNTIME_AUTHORITY",
+  "releaseActivation": false,
+  "scope": "Two standard T4 tank-set replacements for the retired Citadel and Bloodsteel draft footprints; no live registration, minting, crafting, drops, market listing or combat activation.",
+  "tier": 4,
+  "regionTheme": "Glassbound",
+  "catalogueStructure": {
+    "plannedSetCount": 48,
+    "plannedMemberCount": 204,
+    "setDelta": 0,
+    "memberDelta": 0,
+    "rule": "Replace the two retired draft identities one-for-one; never append these as additional sets."
+  },
+  "standardTierPolicy": {
+    "catalogueScarcity": "standard_set",
+    "fixedInnatePercentageStats": false,
+    "rarity": "INHERIT_APPROVED_STANDARD_T4_TABLE",
+    "quality": "INHERIT_APPROVED_STANDARD_T4_TABLE",
+    "randomAffixes": "INHERIT_APPROVED_STANDARD_T4_TABLE",
+    "wearLevel": "INHERIT_RETIRED_T4_SLOT_FOOTPRINT",
+    "crafting": "INHERIT_APPROVED_STANDARD_T4_SMITHING_RECIPE_TABLE",
+    "recipeFailureChance": 0,
+    "normalRarityBordersRemainRuntimeDriven": true,
+    "provenanceAndMarketRules": "EQUIPMENT_2_0_ONLY"
+  },
+  "supersession": [
+    {
+      "retiredDraftSetId": "eq2_t4_citadel",
+      "replacementSetId": "eq2_t4_bastionmail",
+      "pieceCount": 6
+    },
+    {
+      "retiredDraftSetId": "eq2_t4_bloodsteel",
+      "replacementSetId": "eq2_t4_ashguard",
+      "pieceCount": 4
+    }
+  ],
+  "sets": [
+    {
+      "setId": "eq2_t4_bastionmail",
+      "name": "Glassbound Bastionmail",
+      "role": "tank",
+      "pieceCount": 6,
+      "artDirectory": "review_art/equipment-2-0/style4/t4-glassbound-bastionmail",
+      "identity": "Standard T4 defensive mail-and-plate set focused on dependable mitigation and one controlled emergency shield.",
+      "members": [
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET", "name": "Glassbound Bastionmail Helm", "slot": "helmet", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST", "name": "Glassbound Bastionmail Chestpiece", "slot": "chest", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS", "name": "Glassbound Bastionmail Legguards", "slot": "legs", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS", "name": "Glassbound Bastionmail Boots", "slot": "boots", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE", "name": "Glassbound Bastionmail Mantle", "slot": "cape", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_BASTIONMAIL_RING", "name": "Glassbound Bastionmail Ring", "slot": "ring", "fixedInnateStats": []}
+      ],
+      "setBonuses": [
+        {"pieces": 2, "id": "steady_links", "name": "Steady Links", "effect": [{"stat": "defense_pct", "value": 3.0}]},
+        {"pieces": 4, "id": "braced_formation", "name": "Braced Formation", "effect": "After blocking or mitigating an eligible direct hit, gain 4% Defense for 5 seconds.", "internalCooldownSeconds": 14, "stacking": "refresh_duration_only"},
+        {"pieces": 6, "id": "hold_the_line", "name": "Hold the Line", "effect": "When crossing below 35% HP, gain a shield equal to 5% maximum HP for 6 seconds.", "internalCooldownSeconds": 35, "activationRule": "Threshold crossing only; remaining below it cannot retrigger."}
+      ]
+    },
+    {
+      "setId": "eq2_t4_ashguard",
+      "name": "Glassbound Ashguard",
+      "role": "tank",
+      "pieceCount": 4,
+      "artDirectory": "review_art/equipment-2-0/style4/t4-glassbound-ashguard",
+      "identity": "Standard T4 leather-and-iron tank set with restrained offensive counterpressure.",
+      "members": [
+        {"id": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES", "name": "Glassbound Ashguard Gloves", "slot": "gloves", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS", "name": "Glassbound Ashguard Boots", "slot": "boots", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_ASHGUARD_AMULET", "name": "Glassbound Ashguard Amulet", "slot": "amulet", "fixedInnateStats": []},
+        {"id": "EQ2_LAUNCH_T4_ASHGUARD_RING", "name": "Glassbound Ashguard Ring", "slot": "ring", "fixedInnateStats": []}
+      ],
+      "setBonuses": [
+        {"pieces": 2, "id": "ashen_grip", "name": "Ashen Grip", "effect": [{"stat": "defense_pct", "value": 2.0}, {"stat": "attack_pct", "value": 2.0}]},
+        {"pieces": 4, "id": "guarded_return", "name": "Guarded Return", "effect": "After eligible direct HP damage, the next basic attack within 5 seconds deals 10% increased damage.", "internalCooldownSeconds": 10, "exclusions": ["self damage", "damage over time ticks", "reflection", "proc damage", "missed or avoided attacks"]}
+      ]
+    }
+  ],
+  "releaseGates": [
+    "Owner approves both replacement visual families and standard-T4 power read.",
+    "Reconcile exact wear levels, base stat profiles and recipes with the authoritative T4 catalogue without changing total set or member counts.",
+    "Register set, member and art identities in trusted server catalogues only after Equipment 2.0 approval.",
+    "Validate set trigger ordering, cooldowns, threshold crossings, exclusions and reconnect/offline combat determinism.",
+    "Keep both sets hidden until the coordinated Equipment, Skills and Combat 2.0 release gate."
+  ]
+}

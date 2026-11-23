@@ -14,6 +14,10 @@ export function frostfallRewardMultiplierForBoss(graph:CoopRouteGraph,bossNode:C
  if(bossNode.kind!=='boss'||bossNode.contentId!==graph.nodes.find(node=>node.nodeId===graph.bossNodeId)?.contentId)throw new Error('invalid_frostfall_boss_exit');
  const cleared=bossNode.depth-1;
  if(cleared<7||cleared>DUNGEON_ENDURANCE.maxNormalRooms||cleared%DUNGEON_ENDURANCE.checkpointInterval!==0)throw new Error('invalid_frostfall_boss_depth');
+ // Require an actual exit from the server-frozen graph, not just a forged boss
+ // object with a valid-looking depth/content ID.
+ const canonical=graph.nodes.find(node=>node.nodeId===bossNode.nodeId);
+ if(!canonical||canonical.kind!=='boss'||canonical.depth!==bossNode.depth||canonical.contentId!==bossNode.contentId||canonical.modifierId!==bossNode.modifierId||canonical.nextNodeIds.length!==0)throw new Error('invalid_frostfall_boss_exit');
  return FROSTFALL_ENDURANCE_DEPTH_REWARDS[cleared/DUNGEON_ENDURANCE.checkpointInterval-1];
 }
 

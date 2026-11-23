@@ -45,8 +45,12 @@ for(const [id,fish,fishQuantity,wood,oldXp,gold] of fishCookingBaselines){
  equal(recipe!.gold,gold,id+' gets 40% post-surcharge Gold discount, nearest ten');
 }
 const nonFish=cooking.find(recipe=>recipe.id==='COOK_ASHLANDS_EMBER_STEW');
-equal(nonFish?.xp,760,'Non-fish stew XP unchanged in this PR');
+equal(nonFish?.xp,2280,'Non-fish Ashlands stew keeps its earlier 3× XP balance');
 equal(nonFish?.gold,810,'Non-fish stew retains its earlier 25% Gold discount');
+for(const [material,quantity] of [['ASHEN_MYRRH',10],['CINDER_HEART',5],['CINDERWOOD_LOG',5]] as const){
+ equal(nonFish?.inputs.find(input=>input.itemId===material)?.quantity,quantity,
+  'Only non-fish Ashlands stew retains the previously planned 5× material sink: '+material);
+}
 // Starter-material rebalance: test charged Gold after the universal 20% surcharge.
 const copper=RECIPES.find(recipe=>recipe.id==='SMELT_COPPER_INGOT');
 ok(!!copper,'Copper smelting recipe exists');

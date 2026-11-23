@@ -35,6 +35,10 @@ import {
 import type {V2DraftItem,V2DraftReceipt,V2DraftJob,V2DraftSkillAward} from '../../equipment/equipment-crafting-v2-transaction';
 import {verifyEquipmentV2HiddenLedger} from '../../equipment/equipment-crafting-v2-delivery';
 import {verifyEquipmentV2ReceiptNamespace} from '../../equipment/equipment-crafting-v2-receipt-coherence';
+import {readEquipmentV2VirtualCustody,type V2VirtualMoveReceipt}
+ from '../../equipment/equipment-crafting-v2-virtual-history';
+import type {V2HiddenStorageReservation}
+ from '../../equipment/equipment-crafting-v2-storage-reservations';
 import type {V2CustodyCopy,V2CustodyState} from '../../equipment/equipment-crafting-v2-custody';
 
 export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2:Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
@@ -64,6 +68,9 @@ export interface TrustedFrozenForgeCombatSourceV2{
  readonly awards:readonly V2DraftSkillAward[];
  /** Immutable claimed Forge receipts, one per selected copy. */
  readonly claims:readonly V2DraftReceipt[];
+ /** Original claim placements and replayed custody moves, from one account read. */
+ readonly reservations:readonly V2HiddenStorageReservation[];
+ readonly custodyReceipts:readonly V2VirtualMoveReceipt[];
  /** Monotonic account/CAS revision from the same privileged readback. */
  readonly ledgerRevision:number;
  /** Versioned Combat affix caps supplied by approved server policy only. */
@@ -110,6 +117,7 @@ export function compileRealFrozenForgeActorV2(
    typeof source.verifyPersisted!=='function'||
    !Array.isArray(source.items)||!Array.isArray(source.claims)||
    !Array.isArray(source.jobs)||!Array.isArray(source.awards)||
+   !Array.isArray(source.reservations)||!Array.isArray(source.custodyReceipts)||
    !Number.isSafeInteger(source.ledgerRevision)||source.ledgerRevision<1||
    !source.custody||source.custody.accountId!==source.accountId||
    !Array.isArray(source.custody.copies)||!Array.isArray(source.custody.characters))
@@ -138,7 +146,23 @@ export function compileRealFrozenForgeActorV2(
  // treat one isolated claim JSON or an empty dummy receipt as authorization.
  verifyEquipmentV2HiddenLedger(source.accountId,source.jobs,source.items,
   source.claims,source.awards);
- verifyEquipmentV2ReceiptNamespace({forge:source.claims});
+ verifyEquipmentV2ReceiptNamespace({forge:source.claims,
+  custody:source.custodyReceipts});
+ const virtualCopies=readEquipmentV2VirtualCustody(source.items,
+  source.reservations,source.custodyReceipts);
+ if(virtualCopies.length!==source.custody.copies.length)
+  reject('virtual_custody_projection_mismatch');
+ for(const row of virtualCopies){
+  const matches=source.custody.copies.filter(c=>c.instanceId===row.instanceId);
+  const copy=matches[0];
+  if(matches.length!==1||!copy||copy.location!==row.location||
+    copy.ownerCharacterId!==row.holderCharacterId||
+    copy.item.pieceId!==row.itemId||
+    (copy.equippedSlot??null)!==(row.equippedSlot??null))
+   reject('virtual_custody_projection_mismatch');
+ }
+ if(source.custodyReceipts.some(receipt=>receipt.version>source.ledgerRevision))
+  reject('stale_custody_ledger_revision');
  if(source.claims.some(x=>x.response.version>source.ledgerRevision))
    reject('stale_forge_ledger_revision');
  const requestIds=source.claims.map(x=>x.requestId);
@@ -199,6 +223,7 @@ export function compileRealFrozenForgeActorV2(
   source:'EQ2_FROZEN_FORGE_COMBAT_QA',accountId:source.accountId,
   ledgerRevision:source.ledgerRevision,
   jobs:source.jobs,awards:source.awards,
+  reservations:source.reservations,custodyReceipts:source.custodyReceipts,
   fullAccountItems:source.items,fullAccountClaims:source.claims,
   fullAccountCustody:source.custody,
   characterId:source.characterId,actorId:actor.id,

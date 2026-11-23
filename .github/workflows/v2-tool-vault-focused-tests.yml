@@ -1,0 +1,45 @@
+# Staging-only focused acceptance checks for reviewed 2.0 gathering tools.
+name: Veldryn 2.0 tool vault focused tests
+on:
+  push:
+    branches: ['feature/v2-collapsible-tool-vault']
+    paths:
+      - '.github/workflows/v2-tool-vault-focused-tests.yml'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-hybrid-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-skills-deeplink-ui.cjs'
+      - 'apps/mobile/tests/gathering-tool-affixes.ts'
+      - 'apps/mobile/tests/gathering-tool-vault.ts'
+      - 'apps/mobile/src/components/GatheringToolLoadoutPanel.tsx'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install locked mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Verify collapsed tool layout and exact Smithing links
+        working-directory: apps/mobile
+        run: |
+          node tests/skill-disclosure-layout-ui.cjs
+          node tests/tool-recipe-skills-deeplink-ui.cjs
+          node tests/tool-recipe-hybrid-ui.cjs
+      - name: Compile and verify tool affixes and two-copy vault behavior
+        run: node tools/run-mobile-core-tests.mjs --match gathering-tool-affixes --match gathering-tool-vault

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   reviewDungeonPoolV5, previewItemOddsV5, previewExpectedGearV5,
-  inspectProposedMarketProofShapeV5
+  inspectProposedMarketProofShapeV5, previewSyntheticBossRollV5
 } from './lib/eq2-dungeon-loot-market-preview-v5.mjs';
 
 const read=name=>JSON.parse(fs.readFileSync('docs/equipment-2-0/'+name,'utf8'));
@@ -108,4 +108,40 @@ assert.equal(inspectProposedMarketProofShapeV5({originalMintSource:'client_tag'}
 assert.equal(inspectProposedMarketProofShapeV5(null).marketAuthorized,false);
 assert(next.marketPositiveBridgeContract.proof.some(x=>x.includes('original server-authorized boss victory claim')));
 assert(next.productionObservation.observations.find(x=>x.dungeonId==='EXP_001').uniqueAccounts===7);
+
+// Exhaustively hit every exact authored boss-source item through deterministic
+// fixture-only percentages; never authorize actual gear or Market custody.
+for (const dungeon of next.bossPools) {
+  for (const boss of dungeon.bosses) {
+    const noDrop=previewSyntheticBossRollV5(next,dungeon.dungeonId,boss.bossName,8,0.5,0.3,0.2);
+    assert.equal(noDrop.candidateItemId,null);
+    assert.equal(noDrop.mayMint,false);
+    let previousWeight=0;
+    for (const category of boss.categoryWeights) {
+      const categoryCenter=(previousWeight+category.weightPct/2)/100;
+      for(let i=0;i<category.itemIds.length;i++) {
+        const chosen=previewSyntheticBossRollV5(
+          next,dungeon.dungeonId,boss.bossName,8,0.01,
+          categoryCenter,(i+0.5)/category.itemIds.length
+        );
+        assert.equal(chosen.candidateItemId,category.itemIds[i]);
+        assert.equal(chosen.category,category.type);
+        assert.equal(chosen.sourceBoss,boss.bossName);
+        assert.equal(chosen.sourceDungeon,dungeon.dungeonId);
+        assert.equal(chosen.previewOnly,true);
+        assert.equal(chosen.mayMint,false);
+        assert.equal(chosen.marketAuthorized,false);
+        assert.equal(typeof chosen.note,'string');
+      }
+      previousWeight+=category.weightPct;
+    }
+    assert.equal(previousWeight,100);
+  }
+}
+assert.throws(()=>previewSyntheticBossRollV5(next,'EXP_002','Retired',8,0,0,0),/dungeon not a gated preview/);
+assert.throws(()=>previewSyntheticBossRollV5(next,'EXP_001','Rootbound Heart',8,0,1,0),/invalid synthetic categoryRoll/);
+assert.throws(()=>previewSyntheticBossRollV5(next,'EXP_001','Rootbound Heart',8,NaN,0,0),/invalid synthetic gearRoll/);
+assert.throws(()=>previewSyntheticBossRollV5(next,'EXP_001','Rootbound Heart',8,0,0,-1),/invalid synthetic itemRoll/);
+assert.throws(()=>previewSyntheticBossRollV5(next,'EXP_001','Rootbound Heart',101,0,0,0),/invalid drop percentage/);
+
 console.log('PASS source-only: 4 frozen boss pairs, 104 distinct pool IDs, all normalized 3/5/8/10% distributions, 16 offhand hooks, 2 magic-role corrections, market remains unauthorized');

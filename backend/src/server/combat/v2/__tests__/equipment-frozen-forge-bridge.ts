@@ -282,6 +282,69 @@ assert.throws(()=>simulateRealFrozenForgeCombatV2({
  }}},qaTeam.map(x=>x.build),qaTeam.map(x=>x.source),true),
  /complete_new_encounter_required/);
 const initial=qaTeam[0];
+// A real same-account Bank transfer changes current custody, NEVER the
+// immutable original Forge crafter/mint/receipt identity.
+const secondCharacterId='QA_SAME_ACCOUNT_SECOND_CHARACTER';
+const moves:V2VirtualMoveReceipt[]=[
+ {
+  requestId:'QA_BANK_DEPOSIT_TRANSFER_1',
+  fingerprint:v2VirtualFingerprint('deposit_bank',initial.mint.id),
+  instanceId:initial.mint.id,actorCharacterId:initial.mint.ownerCharacterId,
+  from:'pouch',to:'bank',oldHolder:initial.mint.ownerCharacterId,
+  newHolder:null,version:6,physicallyDelivered:false,
+ },
+ {
+  requestId:'QA_BANK_WITHDRAW_TRANSFER_2',
+  fingerprint:v2VirtualFingerprint('withdraw_bank',initial.mint.id),
+  instanceId:initial.mint.id,actorCharacterId:secondCharacterId,
+  from:'bank',to:'pouch',oldHolder:null,newHolder:secondCharacterId,
+  version:7,physicallyDelivered:false,
+ },
+ {
+  requestId:'QA_BANK_EQUIP_TRANSFER_3',
+  fingerprint:v2VirtualFingerprint('equip',initial.mint.id),
+  instanceId:initial.mint.id,actorCharacterId:secondCharacterId,
+  from:'pouch',to:'equipped',oldHolder:secondCharacterId,
+  newHolder:secondCharacterId,version:8,
+  equippedSlot:initial.exact.slot,physicallyDelivered:false,
+ },
+];
+const transferSource:TrustedFrozenForgeCombatSourceV2={
+ ...initial.source,characterId:secondCharacterId,
+ custodyReceipts:moves,ledgerRevision:8,
+ custody:{...initial.source.custody,
+  characters:[...initial.source.custody.characters,{
+   id:secondCharacterId,classId:'IRONWARDEN',level:35,
+  }],
+  copies:[{...initial.custody,ownerCharacterId:secondCharacterId}],
+ },
+ verifyPersisted:(digest:string,revision:number)=>revision===8&&
+  /^[0-9a-f]{64}$/.test(digest),
+};
+const transferred=compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,transferSource);
+assert.deepEqual(transferred.evidence.equippedInstanceIds,[initial.mint.id]);
+assert.equal(initial.mint.ownerCharacterId,initial.source.characterId);
+assert.notEqual(initial.mint.ownerCharacterId,transferSource.characterId);
+assert.equal(transferred.evidence.items[0].pieceId,initial.exact.pieceId);
+const missingOriginalCharacter:TrustedFrozenForgeCombatSourceV2={
+ ...transferSource,custody:{...transferSource.custody,
+  characters:transferSource.custody.characters.filter(
+   row=>row.id!==initial.mint.ownerCharacterId),
+ },
+};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,missingOriginalCharacter),
+ /custody_history_other_account_character/,
+ 'legitimate Bank handoff is impossible without both same-account characters');
+const spoofedWithdraw:TrustedFrozenForgeCombatSourceV2={
+ ...transferSource,custodyReceipts:moves.map((row,i)=>
+  i===1?{...row,actorCharacterId:'QA_OUTSIDE_ACCOUNT'}:row),
+};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,spoofedWithdraw),
+ /custody_history_other_account_character/,
+ 'other-account actor cannot withdraw a minted EQ2 copy');
 const denied={...initial.source,verifyPersisted:()=>false};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,denied),/persisted_custody_not_verified/);

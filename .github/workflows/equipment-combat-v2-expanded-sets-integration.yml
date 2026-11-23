@@ -20,6 +20,8 @@ on:
       - 'backend/src/server/combat/v2/enemy-physical-resistance-authority.ts'
       - 'backend/src/server/combat/v2/equipment-physical-affix-review.ts'
       - 'backend/src/server/combat/v2/equipment-physical-affix-budget-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.ts'
+      - 'backend/src/server/combat/v2/equipment-forge-affix-coverage-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts'
       - 'backend/src/server/combat/v2/__tests__/physical-authored-skills-matchup-matrix.ts'
@@ -85,6 +87,8 @@ jobs:
         run: pnpm --dir backend exec tsc -p tsconfig.equipment-combat-v2-launch.json
       - name: Validate exact pinned equipment subtype catalogue source identity
         run: node tools/test-eq2-physical-subtype-catalogue-review-v1.mjs
+      - name: Audit all pinned Forge role rolls against Combat 2.0 slots (read-only)
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.js
       - name: Validate proposed EQ2 subtype affix consumes original Forge roll budget
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-physical-affix-budget-review.js
       - name: Verify 216 paired source-compiled Skills/Spec V2 physical matchups

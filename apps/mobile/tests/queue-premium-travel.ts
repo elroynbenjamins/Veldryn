@@ -7,6 +7,7 @@ import {characterTotalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
 import {startProcessingBatch} from '../src/core/processing';
 import {startAlchemyBatch} from '../src/core/alchemy';
+import {recipeDef} from '../src/content/skills';
 
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message)}
 function eq(a:unknown,b:unknown,message:string){if(a!==b)throw new Error(message+' ('+String(a)+' !== '+String(b)+')')}
@@ -131,13 +132,15 @@ eq(cancelledCooking.character!.gold,kitchen.character!.gold-(preparedCooking.act
 const repeatedStop=executeGameCommand(cancelledCooking,{type:'stop'},t+Math.ceil((cookingCycle+1)*1000)).state;
 eq(stock(repeatedStop,'MEADOW_PERCH'),15,'Repeated Stop cannot refund ingredients twice');
 
-const brewery={...leveled(),character:{...leveled().character!,gold:10000},inventory:{...leveled().inventory,stacks:[{itemId:'DEWLEAF',quantity:6}]}} as GameState;
+const brewInputs=recipeDef('BREW_DEWLEAF_DRAUGHT')!.inputs;
+const brewBase=leveled();
+const brewery={...brewBase,character:{...brewBase.character!,gold:10000},inventory:{...brewBase.inventory,stacks:brewInputs.map(input=>({itemId:input.itemId,quantity:input.quantity*3}))}} as GameState;
 const preparedAlchemy=startAlchemyBatch(brewery,'BREW_DEWLEAF_DRAUGHT',3,t);
 const travelledAlchemy=executeGameCommand(preparedAlchemy,{type:'travel',args:{id:'SILVERBROOK'}},t+1000).state;
 eq(travelledAlchemy.activity?.kind,'alchemy','Travel must not cancel a reserved brew');
 eq(travelledAlchemy.activity?.brew?.remainingBatches,3,'All unfinished brews stay reserved');
 const cancelledAlchemy=executeGameCommand(travelledAlchemy,{type:'stop'},t+1000).state;
-eq(stock(cancelledAlchemy,'DEWLEAF'),6,'Stop refunds unfinished Alchemy ingredients');
+for(const input of brewInputs)eq(stock(cancelledAlchemy,input.itemId),input.quantity*3,`Stop refunds all reserved ${input.itemId} inputs`);
 eq(cancelledAlchemy.character!.gold,brewery.character!.gold,'Stop refunds unfinished Alchemy Gold');
 
 const walking=startGathering(leveled(),'GREENWOOD_TREE',t);

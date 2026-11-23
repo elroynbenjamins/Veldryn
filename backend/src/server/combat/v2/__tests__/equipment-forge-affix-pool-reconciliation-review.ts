@@ -17,6 +17,7 @@ import {draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,
 import {EQ2_COMBAT_FROZEN_AFFIX_MAP_V2}
  from '../equipment-frozen-forge-bridge';
 import {EQUIPMENT_AFFIXES_V2} from '../equipment-affixes';
+import {CLASS_ROLES_V2} from '../build-contract';
 import {auditRealForgeTenSlotsV2}
  from '../equipment-frozen-forge-slot-audit';
 
@@ -124,9 +125,7 @@ const existingSources=new Set(V2_SERVER_PIECES.map(x=>x.id));
 assert.equal(existingSources.size,169);
 for(const cell of audit.cells.filter(c=>c.sourceCoverage==='present')){
  const proposal=reviewProposedForgeRoleSlotAffixesV2(
-  ({IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
-    WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',
-    KNIFE_DANCER:'damage',DAWNKEEPER:'support',STONECALLER:'support'} as const)[cell.classId],
+  CLASS_ROLES_V2[cell.classId],
   cell.slot);
  assert.ok(proposal.proposedCombatCompatible.length>=cell.maximumAuthoredAffixRolls);
  for(const pieceId of cell.eligibleSourcePieceIds)

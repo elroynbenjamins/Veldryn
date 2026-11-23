@@ -26,6 +26,7 @@ import {compileEnemiesForCombatV2} from './enemy-bridge';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
 import {CLASS_NAMES_V2,serverBuildCatalogV2} from './skill-catalog';
+import {auditRealForgeSetIdentityV2} from './equipment-forge-set-identity-review';
 import {CLASS_ROLES_V2,validateBuildV2,type ClassIdV2,type GearSlotV2} from './build-contract';
 import {
  compileTrustedEquipmentAffixesV2,EQUIPMENT_AFFIXES_V2,
@@ -97,6 +98,10 @@ export interface FrozenForgeEvidenceV2{
  readonly stages:Readonly<{afterSkills:CombatStats;afterFrozenBase:CombatStats;
   afterForgeAffixes:CombatStats}>;
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
+ /** Real single worn set-members whose BASE stats are verified; no threshold
+  * reached and NO set effect granted. Combat still rejects 2+ same-family
+  * pieces until explicitly approved signed set mechanics exist. */
+ readonly verifiedBaseOnlySetPieces:readonly {instanceId:string;pieceId:string;setId:string}[];
  readonly setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION';
  readonly unsupportedForgeAffixes:'REJECTED_NOT_IGNORED';
 }
@@ -164,7 +169,18 @@ export function compileRealFrozenForgeActorV2(
     (c.classId===build.verified.classId||
      c.classId===CLASS_NAMES_V2[build.verified.classId])))
   reject('current_character_identity_mismatch');
- const catalog=serverBuildCatalogV2(build.ownedItemsById,build.setsById);
+ // Never accept a client- or caller-invented set catalogue. The set family
+ // and its legal slot membership come exclusively from the pinned 169-piece
+ // Forge catalogue. Their proposed effects remain unapproved.
+ const realForgeSets=auditRealForgeSetIdentityV2().forgeSetEvidence;
+ const canonicalSetCatalog=Object.fromEntries(realForgeSets.map(set=>[
+  set.forgeSetId,{
+   id:set.forgeSetId,role:set.role,
+   slots:set.members.map(m=>m.slot),
+   thresholds:set.members.length>=4?[2,4]:[2],
+  },
+ ]));
+ const catalog=serverBuildCatalogV2(build.ownedItemsById,canonicalSetCatalog);
  const checked=validateBuildV2(build.verified,build.selected,catalog);
  if(!checked.valid)reject('skill_or_equipment_build_invalid:'+checked.issues.map(i=>i.code).join(','));
  const selected=Object.entries(build.selected.equipment) as [GearSlotV2,string][];
@@ -256,17 +272,37 @@ export function compileRealFrozenForgeActorV2(
     reject('forge_equipment_role_or_level_locked');
   const owned=build.ownedItemsById[id];
   if(!owned||owned.slot!==slot||owned.instanceId!==id||
-     owned.tier!=='T'+item.tier||owned.setFamilyId||
+     owned.tier!=='T'+item.tier||
      owned.requiredLevel!==requiredLevel||
      !owned.eligibleRoles?.includes(CLASS_ROLES_V2[build.verified.classId]))
     reject('source_build_catalog_mismatch');
-  // Forge's 15 real set IDs and the draft 48 Combat sets are NOT yet one
-  // authoritative effect catalogue. Never issue an imaginary bonus.
-  if(item.setId)reject('set_source_bonus_unreconciled');
+  // A lone pinned Forge set member CAN provide its original frozen base and
+  // existing legal rolls. That is distinct from authorizing a set bonus.
+  if(item.setId){
+   const family=realForgeSets.find(f=>f.forgeSetId===item.setId);
+   if(!family||!family.members.some(m=>m.pieceId===piece.id&&
+       m.slot===slot&&m.role===piece.role&&m.tier===piece.tier)||
+      owned.setFamilyId!==item.setId)
+    reject('forge_set_member_source_mismatch');
+  }else if(owned.setFamilyId){
+   reject('forge_set_member_source_mismatch');
+  }
   if(item.gemSlots.length||item.enhancementRank!==0)
     reject('socket_or_enhancement_not_ready');
   resolved.push({copy,mint});
  }
+ // Two worn pieces of the same verified set reach an UNAPPROVED threshold.
+ // Fail rather than silently ignore a milestone a player expects to earn.
+ const wornSetCounts=new Map<string,number>();
+ for(const {mint} of resolved){
+  const family=mint.exactItem.setId;
+  if(!family)continue;
+  const count=(wornSetCounts.get(family)??0)+1;
+  if(count>=2)reject('set_source_bonus_unreconciled');
+  wornSetCounts.set(family,count);
+ }
+ if(checked.resolvedSets.some(x=>x.activeThresholds.length>0))
+  reject('set_source_bonus_unreconciled');
  // The verifier must be attached to a real locked account snapshot in a
  // future privileged adapter, not to input JSON. No such adapter is mounted.
  const digest=enemyV2SnapshotDigest({
@@ -340,6 +376,11 @@ export function compileRealFrozenForgeActorV2(
   stages:{afterSkills:{...skilled.stats},afterFrozenBase:{...baseStats},
    afterForgeAffixes:{...affixes.actor.stats}},
   affixSources:affixes.sources,
+  verifiedBaseOnlySetPieces:resolved.filter(x=>Boolean(x.mint.exactItem.setId))
+   .map(x=>({
+    instanceId:x.mint.id,pieceId:x.mint.exactItem.pieceId,
+    setId:x.mint.exactItem.setId!,
+   })),
   setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION',
   unsupportedForgeAffixes:'REJECTED_NOT_IGNORED',
  };

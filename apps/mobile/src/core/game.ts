@@ -10,6 +10,8 @@ import {huntClassSurvivalEvents} from './hunt-class-identity';
 import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
+import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
+import {frostfallWispDrops,WINTER_HEARTH_WISP_ITEM_ID} from './winter-hearth-2026';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {CLASSES} from '../content/classes';
@@ -930,6 +932,21 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
+    // Event-only Wisp Glow: one deterministic independent roll per verified
+    // gathering action, not per multiplied resource, and never on retired events.
+    const winterEvent=state.account.liveEvent;
+    const winterGlow=frostfallWispDrops({
+      released:WINTER_HEARTH_GUILD_RELEASED,
+      guildMember:state.account.guildMember===true,
+      eventEnabled:winterEvent?.enabled===true,
+      eventId:winterEvent?.eventId,
+      eventStartsAtMs:winterEvent?.startsAtMs??0,
+      eventEndsAtMs:winterEvent?.endsAtMs??0,
+      skillId:g.skillId,
+      seed:`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:winter-hearth-2026-wisp`,
+      actionTimesMs:timeline.encounters.map(encounter=>encounter.atMs),
+    });
+    if(winterGlow>0)items.push({itemId:WINTER_HEARTH_WISP_ITEM_ID,quantity:winterGlow});
     if(g.skillId==='mining'){
       const essence=MINING_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){

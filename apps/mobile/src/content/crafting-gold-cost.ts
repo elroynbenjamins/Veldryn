@@ -22,3 +22,10 @@ export function reducedEquipmentCraftingGoldCost(roundedGold:number):number{
  if(!Number.isSafeInteger(roundedGold)||roundedGold<0)throw new Error('invalid_crafting_gold');
  return roundedGold===0?0:Math.max(100,roundedGold-EQUIPMENT_CRAFT_GOLD_REDUCTION);
 }
+
+/** Reduce new Cooking Gold fees by 25%, rounding down to tens.
+ * Previously reserved processing jobs preserve their original fee snapshots. */
+export function reducedCookingGoldCost(chargedGold:number):number{
+  if(!Number.isSafeInteger(chargedGold)||chargedGold<0)throw new Error('invalid_cooking_gold');
+  return chargedGold===0?0:Math.max(10,Math.floor(chargedGold*3/40)*10);
+}

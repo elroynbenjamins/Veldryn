@@ -13,7 +13,15 @@
 import type {CombatInput,CombatantDefinition,CombatStats} from '../types';
 import {simulateCombat} from '../engine';
 import {issueFrozenForgePhysicalAuthorityV2} from './physical-damage-engine-authority';
-import {enemyV2SnapshotDigest} from './enemy-engine-authority';
+import {
+ enemyV2SnapshotDigest,issueEnemyV2EngineAuthority,
+} from './enemy-engine-authority';
+import {
+ verifyPersistedEnemyKitsV2,type PersistedEnemyKitV2,
+} from './enemy-kit-composer';
+import {
+ ENEMY_PHYSICAL_RESISTANCE_RULES_V2,issueAuthoredEnemyPhysicalResistancesV2,
+} from './enemy-physical-resistance-authority';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
@@ -91,6 +99,15 @@ export interface FrozenForgeEvidenceV2{
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
  readonly setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION';
  readonly unsupportedForgeAffixes:'REJECTED_NOT_IGNORED';
+}
+/** This adapter must be provided by a privileged, authenticated persistence
+ * transaction. The test-only callbacks MUST NEVER be mounted in live routes.
+ * The physical boss numbers are unapproved; they activate only in a separate
+ * explicitly named hidden balance review, never by simply supplying a kit. */
+export interface TrustedFrozenForgeEnemyKitPortV2 {
+ readonly snapshot:PersistedEnemyKitV2;
+ readonly verifyPersisted:(snapshot:PersistedEnemyKitV2,combatInputDigest:string)=>boolean;
+ readonly physicalBalanceReview?:typeof ENEMY_PHYSICAL_RESISTANCE_RULES_V2;
 }
 export interface FrozenForgeCombatResultV2{
  readonly combat:ReturnType<typeof simulateCombat>;
@@ -316,6 +333,7 @@ export function simulateRealFrozenForgeCombatV2(
  input:CombatInput,builds:readonly VerifiedSkillBuildV2[],
  sources:readonly TrustedFrozenForgeCombatSourceV2[],
  serverEnabled=false,
+ authoredEnemyKit?:TrustedFrozenForgeEnemyKitPortV2,
 ):FrozenForgeCombatResultV2{
  if(!serverEnabled)reject('release_gate_off');
  if(!Array.isArray(input.players)||!input.players.length||
@@ -339,6 +357,47 @@ export function simulateRealFrozenForgeCombatV2(
   }
   return compileRealFrozenForgeActorV2(actor,matches[0],source);
  });
+ // Persisted Enemy 2.0 is a new-run SOLO authority. Do not imply that its
+ // scope already supports party/dungeon persistent-state or 4-player replays.
+ if(authoredEnemyKit){
+  if(input.players.length!==1||input.enemyDamageProfile!==undefined)
+   reject('signed_enemy_kit_solo_only');
+  if(typeof authoredEnemyKit.verifyPersisted!=='function'||
+     !authoredEnemyKit.snapshot||
+     authoredEnemyKit.snapshot.seed!==input.seed)
+   reject('signed_enemy_kit_snapshot_required');
+  if(authoredEnemyKit.physicalBalanceReview!==undefined&&
+     authoredEnemyKit.physicalBalanceReview!==ENEMY_PHYSICAL_RESISTANCE_RULES_V2)
+   reject('unapproved_physical_review_policy');
+  // Verify that the PREPARED kit is exactly the saved, server-authored version;
+  // unpersisted candidates and client-supplied enemy tags cannot be accepted.
+  const proof=verifyPersistedEnemyKitsV2(input.enemies,authoredEnemyKit.snapshot);
+  const prepared:CombatInput={
+   ...input,players:compiled.map(x=>x.actor),enemies:[...proof.enemies],
+  };
+  const snapshot=authoredEnemyKit.snapshot;
+  const enemyAuthority=issueEnemyV2EngineAuthority({
+   source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,
+   mode:'solo',encounterId:snapshot.encounterId,revision:snapshot.revision,
+   seed:snapshot.seed,playerIds:prepared.players.map(x=>x.id),
+   enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
+  },prepared,(_scope,digest)=>authoredEnemyKit.verifyPersisted(snapshot,digest));
+  // PROVISIONAL balance is NOT implicitly granted by the persisted kit.
+  const physicalReview=authoredEnemyKit.physicalBalanceReview===
+   ENEMY_PHYSICAL_RESISTANCE_RULES_V2?
+    issueAuthoredEnemyPhysicalResistancesV2(prepared,enemyAuthority):undefined;
+  const physical=issueFrozenForgePhysicalAuthorityV2(prepared,
+   compiled.map(x=>x.evidence),physicalReview);
+  return {
+   combat:simulateCombat(prepared,enemyAuthority,undefined,undefined,physical),
+   equipmentEvidence:compiled.map(x=>x.evidence),
+   enemyMechanicLabels:proof.preview.flatMap(p=>[
+    ...p.abilityNames.map(n=>p.enemyId+': '+n),
+    ...p.phaseNames.map(n=>p.enemyId+': '+n),
+    ...p.traitIds.map(n=>p.enemyId+': '+n),
+   ]),
+  };
+ }
  const enemies=compileEnemiesForCombatV2(input.enemies,true);
  const prepared:CombatInput={...input,players:compiled.map(x=>x.actor),
   enemies:[...enemies.enemies]};

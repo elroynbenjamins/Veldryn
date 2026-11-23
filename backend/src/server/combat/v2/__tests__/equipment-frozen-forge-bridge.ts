@@ -3,6 +3,11 @@
  * Strictly QA mock custody verification; NOT real authenticated DB or live.
  */
 import {strict as assert} from 'node:assert';
+import {simulateCombat} from '../../engine';
+import {prepareAsterfallBossV2} from '../../boss-v2-asterfall-prototype';
+import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
+import {projectBossCombatReplaySignalsV2}
+ from '../boss-telegraph-projection';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatantDefinition,CombatInput,CombatStats} from '../../types';
 import {
@@ -335,6 +340,36 @@ assert.ok(curedEvents.some(e=>e.statusKind==='debuff'&&
 assert.ok(curedEvents.some(e=>e.statusKind==='dot'&&
  e.statusTag==='corruption'),
  'real 2.0 Stonecaller source build must cure an actual hostile DoT');
+// Exact Equipment 2.0 minted copies also coexist with the independently
+// authored Boss V2 source. This review path uses a server-only authored boss
+// compiler directly: the generic enemy bridge deliberately rejects mixing
+// authored and generic kits, and must NOT be bypassed in public handlers.
+const originalAuthoredBoss:CombatantDefinition={
+ ...boss,id:'BOSS_EXP_BELL',name:'QA authored Bell',
+ tags:[],abilities:[],phases:[],
+};
+const authoredBell=prepareAsterfallBossV2(originalAuthoredBoss,ENEMY_V2_RULESET);
+assert.ok(authoredBell.tags?.some(x=>x.startsWith('enemy-v2:')));
+const originalEq2Actors=qaTeam.map(q=>
+ compileRealFrozenForgeActorV2(q.actor,q.build,q.source));
+const bossMatchInput:CombatInput={...input,
+ seed:'AUTHORED_BOSS_WITH_FROZEN_EQ2_PARTY',
+ players:originalEq2Actors.map(x=>x.actor),enemies:[authoredBell],
+ maxDurationMs:5000,
+};
+const authoredReplay=simulateCombat(bossMatchInput);
+assert.deepEqual(simulateCombat(bossMatchInput),authoredReplay);
+assert.equal(authoredReplay.players.length,4);
+assert.ok(originalEq2Actors.every(x=>
+ x.evidence.items.length===1&&x.evidence.affixSources.length>0),
+ 'all four Boss V2 actors use genuine original EQ2 forged copies');
+const bossSignals=projectBossCombatReplaySignalsV2(authoredReplay);
+assert.equal(bossSignals.scope,'HIDDEN_COMPILED_BOSS_V2_REPLAY_ONLY');
+assert.ok(bossSignals.casts.some(c=>
+ c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE'&&
+ c.castDurationMs===1400&&c.state==='completed'),
+ 'real authored Boss V2 cast window survives original EQ2 gear compilation');
+assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);
 assert.equal(baselineFight.combat.events.filter(e=>

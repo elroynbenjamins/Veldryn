@@ -100,6 +100,17 @@ export interface FrozenForgeEvidenceV2{
  readonly setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION';
  readonly unsupportedForgeAffixes:'REJECTED_NOT_IGNORED';
 }
+/** A single privileged read/lock must attest that the stored encounter and
+ * every equipped Forge ownership revision were checked in the SAME atomic
+ * snapshot (not two individually fresh but mutually inconsistent reads). */
+export interface FrozenForgeEnemyAtomicWitnessV2{
+ readonly accountId:string;
+ readonly characterId:string;
+ readonly actorId:string;
+ readonly ledgerRevision:number;
+ readonly receiptDigest:string;
+ readonly equippedInstanceIds:readonly string[];
+}
 /** This adapter must be provided by a privileged, authenticated persistence
  * transaction. The test-only callbacks MUST NEVER be mounted in live routes.
  * The physical boss numbers are unapproved; they activate only in a separate
@@ -107,6 +118,12 @@ export interface FrozenForgeEvidenceV2{
 export interface TrustedFrozenForgeEnemyKitPortV2 {
  readonly snapshot:PersistedEnemyKitV2;
  readonly verifyPersisted:(snapshot:PersistedEnemyKitV2,combatInputDigest:string)=>boolean;
+ /** Required, independent privileged check of SAME atomic Enemy+Forge read.
+  * No client JSON or test callback may serve this function in production. */
+ readonly verifyAtomicEncounter:(
+  snapshot:PersistedEnemyKitV2,combatDigest:string,
+  equipped:readonly FrozenForgeEnemyAtomicWitnessV2[],
+ )=>boolean;
  readonly physicalBalanceReview?:typeof ENEMY_PHYSICAL_RESISTANCE_RULES_V2;
 }
 export interface FrozenForgeCombatResultV2{
@@ -363,6 +380,7 @@ export function simulateRealFrozenForgeCombatV2(
   if(input.players.length!==1||input.enemyDamageProfile!==undefined)
    reject('signed_enemy_kit_solo_only');
   if(typeof authoredEnemyKit.verifyPersisted!=='function'||
+     typeof authoredEnemyKit.verifyAtomicEncounter!=='function'||
      !authoredEnemyKit.snapshot||
      authoredEnemyKit.snapshot.seed!==input.seed)
    reject('signed_enemy_kit_snapshot_required');
@@ -376,6 +394,22 @@ export function simulateRealFrozenForgeCombatV2(
    ...input,players:compiled.map(x=>x.actor),enemies:[...proof.enemies],
   };
   const snapshot=authoredEnemyKit.snapshot;
+  // The independent single-read CAS check ties both authenticated data
+  // families to THIS final compiled combat digest. A forged or stale witness
+  // must not issue either new engine authority.
+  const digest=enemyV2SnapshotDigest(prepared);
+  const atomicWitnesses:readonly FrozenForgeEnemyAtomicWitnessV2[]=compiled.map(
+   (c,i)=>Object.freeze({
+    actorId:c.actor.id,accountId:sources[i].accountId,
+    characterId:sources[i].characterId,
+    ledgerRevision:sources[i].ledgerRevision,
+    receiptDigest:c.evidence.receiptDigest,
+    equippedInstanceIds:Object.freeze([...c.evidence.equippedInstanceIds]),
+   }));
+  let atomicAccepted=false;
+  try{atomicAccepted=authoredEnemyKit.verifyAtomicEncounter(
+   snapshot,digest,atomicWitnesses)===true;}catch{atomicAccepted=false;}
+  if(!atomicAccepted)reject('signed_enemy_forge_atomic_recheck_required');
   const enemyAuthority=issueEnemyV2EngineAuthority({
    source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,
    mode:'solo',encounterId:snapshot.encounterId,revision:snapshot.revision,

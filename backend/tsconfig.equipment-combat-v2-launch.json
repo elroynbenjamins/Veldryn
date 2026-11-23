@@ -32,6 +32,7 @@
     "src/server/equipment/__tests__/equipment-crafting-v2-ten-slot-original-forge-ledger.ts",
     "src/server/combat/v2/__tests__/equipment-forge-affix-pool-reconciliation-review.ts",
     "src/server/combat/v2/__tests__/equipment-forge-affix-newmint-shadow.ts",
-    "src/server/combat/v2/__tests__/equipment-forge-affix-probability-review.ts"
+    "src/server/combat/v2/__tests__/equipment-forge-affix-probability-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-affix-role-balance-review.ts"
   ]
 }

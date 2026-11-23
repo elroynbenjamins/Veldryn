@@ -67,7 +67,8 @@ const unknown={...base,archetypes:[{id:'new_archetype',label:'New threat'}]};
 assert.equal(localizedDungeonEncounterPreview('nl',unknown),unknown,'Unknown enemies stay unchanged');
 const empty={archetypes:[],mechanics:[],summary:''};
 assert.equal(localizedDungeonEncounterPreview('fr',empty).summary,'','Empty intel remains empty');
-assert.equal(Object.keys(DUNGEON_ROOM_PRESENTATION).length,12,'All twelve existing dungeon room kinds stay available');
+assert.equal(Object.keys(DUNGEON_ROOM_PRESENTATION).length,11,'Only the 11 supported dungeon room kinds remain');
+assert.ok(!Object.hasOwn(DUNGEON_ROOM_PRESENTATION,'event'),'Retired resource-only Event Room must remain hidden');
 for(const entry of Object.values(DUNGEON_ROOM_PRESENTATION)){
  for(const key of [entry.name,entry.description]){
   assert.ok(Object.prototype.hasOwnProperty.call(EARLY_LOCALE_ROWS,key),'Missing RU/TR room copy: '+key);

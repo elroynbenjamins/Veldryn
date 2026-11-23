@@ -130,4 +130,18 @@ const summary=[1,2,3,4,5].map(tier=>({
 }));
 const deepSummary=deepTargets.map(target=>({target,attempts:rows.filter(row=>row.target===target).length,clears:rows.filter(row=>row.target===target&&row.clear).length,byTier:[1,2,3,4,5].map(tier=>({tier,clears:rows.filter(row=>row.target===target&&row.tier===tier&&row.clear).length}))}));
 console.log('FROSTFALL_REAL_NORMALIZATION_BALANCE '+JSON.stringify({note:'synthetic fixture through production loadout pipeline, not measured player success',firstCheckpointSamples:firstCheckpointRows.length,deepSamples:rows.length-firstCheckpointRows.length,summary,deepSummary,rejected,rows}));
+/** Deliberately modest synthetic release guards: a diagnostic suite that allows
+ * 0/75 starter clears or no route to the final exit must not report green.
+ * These are not estimates of real player victory odds. */
+for(const tier of [1,2,3,4,5]){
+ const subset=firstCheckpointRows.filter(row=>row.tier===tier);
+ assert.equal(subset.length,15,'calibration requires all five gear strengths and three seeds for tier '+tier);
+ assert.ok(subset.filter(row=>row.clear).length>=9,'Frostfall Tier '+tier+' first boss is inaccessible to reasonable normalized co-op builds');
+}
+for(const [depth,minimumClears] of [[14,3],[21,2],[28,2],[35,1],[42,1]] as const){
+ const subset=rows.filter(row=>row.target===depth);
+ assert.equal(subset.length,10,'every deep exit requires two normalized builds across all tiers');
+ assert.ok(subset.filter(row=>row.clear).length>=minimumClears,'Frostfall '+depth+'-room boss cannot be unreachable in synthetic calibrated co-op combat');
+}
+
 console.log('PASS five-tier Frostfall production normalization + combat diagnostic (no clear-rate approval implied)');

@@ -50269,15 +50269,26 @@ function expeditionBossTelegraph(encounterId) {
   const factory = EXPEDITION_ENCOUNTERS[encounterId];
   return factory ? pveBossTelegraph(factory()) : void 0;
 }
+function withScaledBossShields(enemy4, scale) {
+  if (!enemy4.boss || scale === 1) return enemy4;
+  const effect2 = (e) => e.kind === "shield" && typeof e.flat === "number" ? { ...e, flat: e.flat * scale } : e;
+  return {
+    ...enemy4,
+    abilities: enemy4.abilities.map((a) => ({ ...a, effects: a.effects.map(effect2) })),
+    ...enemy4.phases ? { phases: enemy4.phases.map((p) => ({ ...p, effects: p.effects.map(effect2) })) } : {}
+  };
+}
 function buildExpeditionEncounter(input) {
   const factory = EXPEDITION_ENCOUNTERS[input.encounterId];
   if (!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
+  const shieldScale = input.enemyShieldMultiplier ?? 1;
+  if (!Number.isFinite(shieldScale) || shieldScale < 0 || shieldScale > 1) throw new Error("invalid_enemy_shield_multiplier");
   const tuning = input.bossTuning, removed = new Set(tuning?.removeAbilityIds ?? []);
   return factory().map((enemy4, index) => {
     const minimumRatio = input.encounterId.startsWith("EVENT_FROSTFALL_") ? 0.25 : 0.65;
     const levelRatio = input.enemyLevel === void 0 ? 1 : Math.max(minimumRatio, Math.min(1.2, input.enemyLevel / Math.max(1, enemy4.level)));
     const base = { ...enemy4, level: input.enemyLevel ?? enemy4.level, stats: { ...enemy4.stats, maxHp: enemy4.stats.maxHp * levelRatio * (input.enemyHpMultiplier ?? 1), attackPower: enemy4.stats.attackPower * levelRatio * (input.enemyAttackMultiplier ?? 1), defense: enemy4.stats.defense * levelRatio * (input.enemyDefenseMultiplier ?? 1) } };
-    if (!base.boss || !tuning) return applyCoopRoomModifier(base, input.roomModifierId, index, input.roomModifierElite);
+    if (!base.boss || !tuning) return withScaledBossShields(applyCoopRoomModifier(base, input.roomModifierId, index, input.roomModifierElite), shieldScale);
     const abilities = base.abilities.filter((ability3) => !removed.has(ability3.id)).map((ability3) => {
       const damageMultiplier = tuning.abilityDamageMultipliers?.[ability3.id] ?? 1, cooldownMultiplier = tuning.abilityCooldownMultipliers?.[ability3.id] ?? 1;
       return { ...ability3, cooldownMs: Math.max(500, Math.round(ability3.cooldownMs * cooldownMultiplier)), effects: ability3.effects.map((effect2) => (effect2.kind === "damage" || effect2.kind === "dot") && effect2.coeff !== void 0 ? { ...effect2, coeff: effect2.coeff * damageMultiplier } : effect2) };
@@ -50285,7 +50296,7 @@ function buildExpeditionEncounter(input) {
     for (const added of tuning.addAbilities ?? []) if (!abilities.some((ability3) => ability3.id === added.id)) abilities.push(structuredClone(added));
     const phases = [...base.phases ?? []];
     for (const added of tuning.addPhases ?? []) if (!phases.some((phase2) => phase2.id === added.id)) phases.push(structuredClone(added));
-    return applyCoopRoomModifier({ ...base, abilities, phases }, input.roomModifierId, index, input.roomModifierElite);
+    return withScaledBossShields(applyCoopRoomModifier({ ...base, abilities, phases }, input.roomModifierId, index, input.roomModifierElite), shieldScale);
   });
 }
 function publicReplay(result, initialPlayerState) {
@@ -50612,7 +50623,7 @@ function resolveCoopNode(input) {
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
-    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
+    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyShieldMultiplier: input.enemyShieldMultiplier, enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
     state = { ...state, actors: combat.endingPlayerState };
     return { success: combat.success, state, summary: { kind: "combat", ...combat.resultJson, ...input.bossTuning ? { bossTuningProfile: input.bossTuning.profileId } : {} } };
   }
@@ -52370,15 +52381,22 @@ var FROSTFALL_ENDURANCE_GENERATOR = "event-route-v5-endurance-v2";
 var FROSTFALL_ENDURANCE_DEPTH_REWARDS = [1, 1.15, 1.28, 1.38, 1.46, 1.52];
 var FROSTFALL_ENDURANCE_ENEMY_PACING_V3 = { attack: 0.72, hp: 0.8, defense: 0.9 };
 var FROSTFALL_ENDURANCE_TIER1_EXTRA_V3 = { attack: 0.7, hp: 0.85, defense: 0.9 };
+var FROSTFALL_ENDURANCE_TIER2_EXTRA_V3 = { attack: 0.85, hp: 0.9, defense: 0.95 };
 var FROSTFALL_ENDURANCE_BALANCE_V3 = "event-frostfall-endurance-v3";
+var FROSTFALL_ENDURANCE_DEPTH_CURVE_V3 = { attack: 1.01, hp: 1.016, defense: 1.005 };
+var ORIGINAL_FROSTFALL_DEPTH_CURVE = { attack: 1.022, hp: 1.035, defense: 1.012 };
+function frostfallDepthCurveForGraph(graph2) {
+  return graph2.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR && graph2.balanceVersion === FROSTFALL_ENDURANCE_BALANCE_V3 ? FROSTFALL_ENDURANCE_DEPTH_CURVE_V3 : ORIGINAL_FROSTFALL_DEPTH_CURVE;
+}
 var ORIGINAL_FROSTFALL_ENEMY_PACING = { attack: 1, hp: 1, defense: 1 };
 function frostfallEnemyPacingForGraph(graph2, tier) {
   if (graph2.generatorVersion !== FROSTFALL_ENDURANCE_GENERATOR || graph2.balanceVersion !== FROSTFALL_ENDURANCE_BALANCE_V3) return ORIGINAL_FROSTFALL_ENEMY_PACING;
-  if (tier !== 1) return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
+  const extra = tier === 1 ? FROSTFALL_ENDURANCE_TIER1_EXTRA_V3 : tier === 2 ? FROSTFALL_ENDURANCE_TIER2_EXTRA_V3 : null;
+  if (!extra) return FROSTFALL_ENDURANCE_ENEMY_PACING_V3;
   return {
-    attack: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.attack,
-    hp: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.hp,
-    defense: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense * FROSTFALL_ENDURANCE_TIER1_EXTRA_V3.defense
+    attack: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.attack * extra.attack,
+    hp: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.hp * extra.hp,
+    defense: FROSTFALL_ENDURANCE_ENEMY_PACING_V3.defense * extra.defense
   };
 }
 var idsAt = (depth) => [0, 1, 2].map((choice) => "d" + depth + "-c" + choice);
@@ -52704,11 +52722,13 @@ var EventExpeditionService = class {
     const beforeMechanic = eventMechanicProjection(run), beforeObjective = eventObjectiveProjection(run), bossMechanic = selected2.kind === "boss" ? eventBossMechanicProjection(run) : void 0;
     const isFrostfallEndurance = run.graph.generatorVersion === FROSTFALL_ENDURANCE_GENERATOR;
     const depthBeyondOpening = isFrostfallEndurance && ["battle", "elite", "boss"].includes(selected2.kind) ? Math.max(0, selected2.depth - 8) : 0;
-    const depthAttack = Math.pow(1.022, depthBeyondOpening), depthHp = Math.pow(1.035, depthBeyondOpening), depthDefense = Math.pow(1.012, depthBeyondOpening);
+    const curve = frostfallDepthCurveForGraph(run.graph);
+    const depthAttack = Math.pow(curve.attack, depthBeyondOpening), depthHp = Math.pow(curve.hp, depthBeyondOpening), depthDefense = Math.pow(curve.defense, depthBeyondOpening);
     const seasonalPacing = frostfallEnemyPacingForGraph(run.graph, run.tier ?? 1);
+    const eventBossShieldMultiplier = selected2.kind === "boss" && run.graph.balanceVersion === FROSTFALL_ENDURANCE_BALANCE_V3 && isFrostfallEndurance ? seasonalPacing.hp * Math.max(0.25, (run.syncLevel ?? 35) / 35) : void 0;
     let startingState = run.persistentState;
     if (selected2.kind === "boss" && beforeObjective.preBossHealPct > 0) startingState = healBeforeBoss(startingState, run.players, beforeObjective.preBossHealPct);
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: seasonalPacing.attack * depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: seasonalPacing.hp * depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: seasonalPacing.defense * depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: run.players, state: startingState, enemyLevel: run.syncLevel, enemyAttackMultiplier: seasonalPacing.attack * depthAttack * (selected2.kind === "boss" ? beforeMechanic.bossAttackMultiplier * beforeObjective.bossAttackMultiplier : selected2.encounterAttackMultiplier ?? 1), enemyHpMultiplier: seasonalPacing.hp * depthHp * (selected2.kind === "boss" ? beforeObjective.bossHpMultiplier : 1), enemyDefenseMultiplier: seasonalPacing.defense * depthDefense * (selected2.kind === "boss" ? beforeObjective.bossDefenseMultiplier : 1), enemyShieldMultiplier: eventBossShieldMultiplier, bossTuning: bossMechanic?.tuning, ...isFrostfallEndurance ? { enduranceLootVersion: 1, campfireBalanceVersion: 2 } : {} });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;

@@ -48,6 +48,8 @@ import {
 } from '../equipment-online-cas-recheck';
 import {reviewWornRealForgeSetsV2}
  from '../equipment-forge-set-worn-readiness';
+import {reviewObservedCounterOpportunityV2}
+ from '../ability-counterplay-opportunity-review';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
@@ -365,13 +367,96 @@ assert.ok(originalEq2Actors.every(x=>
  'all four Boss V2 actors use genuine original EQ2 forged copies');
 const bossSignals=projectBossCombatReplaySignalsV2(authoredReplay);
 assert.equal(bossSignals.scope,'HIDDEN_COMPILED_BOSS_V2_REPLAY_ONLY');
-assert.ok(bossSignals.casts.some(c=>
- c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE'&&
- c.castDurationMs===1400&&c.state==='completed'),
- 'real authored Boss V2 cast window survives original EQ2 gear compilation');
+// A source-authored four-player team may interrupt a Bell cast or expose
+// Veil Mirror before Soul Curse. Verify actual source ability, duration and
+// event-derived outcome, not a fabricated guaranteed Soul Curse completion.
+assert.ok(bossSignals.casts.length>0&&bossSignals.casts.every(c=>
+ c.bossId==='BOSS_EXP_BELL'&&
+ authoredBell.abilities.some(a=>a.id===c.abilityId&&
+  a.castTimeMs===c.castDurationMs&&
+  a.interruptible===c.interruptible)&&
+ c.castDurationMs>=1300&&
+ (c.state!=='interrupted'||originalEq2Actors.some(a=>
+  a.actor.id===c.interruptedByActorId))),
+ 'only real authored Bell cast windows survive original EQ2 gear compilation');
 assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);
+
+/**
+ * Wave 2: classify observed Skills counterplay on original, genuinely forged
+ * and virtual-custody-proven Equipment 2.0 copies. Both tactics share the same
+ * authored boss, source snapshot, encounter seed and equipped item history.
+ * QA trace is unsigned: NO authenticated DB, approved CP, rewards or market.
+ */
+// The receipt digest deliberately binds the selected Skills build, so it
+// MUST change when a skill variant changes. Compare only physical EQ2 source
+// identity, original rolled affixes, and the exact frozen base contribution;
+// never demand equal digests for intentionally different authenticated builds.
+const physicalForgeEvidence=(record:typeof counterFight.equipmentEvidence[number])=>{
+ const stages=record.stages;
+ const frozenDelta={
+  attack:Math.round((stages.afterFrozenBase.attackPower-
+   stages.afterSkills.attackPower)*1e5)/1e5,
+  defense:Math.round((stages.afterFrozenBase.defense-
+   stages.afterSkills.defense)*1e5)/1e5,
+  hp:Math.round((stages.afterFrozenBase.maxHp-
+   stages.afterSkills.maxHp)*1e5)/1e5,
+ };
+ return {actorId:record.actorId,equippedInstanceIds:record.equippedInstanceIds,
+  items:record.items,affixSources:record.affixSources,
+  setBonuses:record.setBonuses,
+  unsupportedForgeAffixes:record.unsupportedForgeAffixes,frozenDelta};
+};
+assert.deepEqual(counterFight.equipmentEvidence.map(physicalForgeEvidence),
+ baselineFight.equipmentEvidence.map(physicalForgeEvidence),
+ 'Skills tactics cannot change immutable real Forge item provenance or frozen contributions');
+const baselineStone=compileRealFrozenForgeActorV2(
+ stonecaller.actor,stonecaller.build,stonecaller.source);
+const sustainIds=new Set(baselineStone.actor.abilities.filter(a=>
+ a.effects.some(e=>e.kind==='heal'||e.kind==='hot'||e.kind==='shield'))
+ .map(a=>a.id));
+const v2BossStatuses=(events:typeof counterFight.combat.events)=>events.filter(e=>
+ e.type==='status_apply'&&e.actorId===statusBoss.id&&
+ (e.statusKind==='debuff'||e.statusKind==='dot')).length;
+const selectedCasts=(events:typeof counterFight.combat.events,
+ ids:ReadonlySet<string>)=>events.filter(e=>
+ e.type==='cast_complete'&&e.actorId===stonecaller.actor.id&&
+ ids.has(e.abilityId??'')).length;
+const targetRouteIds=new Set([compiledRiver.id]);
+const sustainEvents=baselineFight.combat.events.filter(e=>
+ e.actorId===stonecaller.actor.id&&sustainIds.has(e.abilityId??'')&&
+ (e.type==='heal'||e.type==='shield'||e.type==='hot_tick')).length;
+const reviewedSpecializationId=stoneCleanseBuild.selected.specializationId;
+if(!reviewedSpecializationId)throw Error('real_forge_skills_specialization_missing');
+const explanation=reviewObservedCounterOpportunityV2([
+ {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
+  classId:'STONECALLER',specializationId:reviewedSpecializationId,
+  enemyId:statusBoss.id,strategy:'targeted',route:'cleanse',
+  hasMatchingCounter:compiledRiver.effects.some(e=>e.kind==='cleanse'),
+  observedOpportunityEvents:v2BossStatuses(counterFight.combat.events),
+  eligibleSkillCasts:selectedCasts(counterFight.combat.events,targetRouteIds),
+  attributedCounterEvents:curedEvents.length},
+ {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
+  classId:'STONECALLER',specializationId:reviewedSpecializationId,
+  enemyId:statusBoss.id,strategy:'alternative',route:'sustain',
+  hasMatchingCounter:sustainIds.size>0,
+  observedOpportunityEvents:baselineFight.combat.events.filter(e=>
+   e.type==='damage'&&e.actorId===statusBoss.id&&
+   e.targetId===stonecaller.actor.id).length,
+  eligibleSkillCasts:selectedCasts(baselineFight.combat.events,sustainIds),
+  attributedCounterEvents:sustainEvents},
+]);
+assert.equal(explanation.provenance,'unsigned_replayed_engine_QA_only');
+assert.equal(explanation.releaseApproved,false);
+assert.equal(explanation.comparisons,1);
+const targetedObservation=explanation.rows.find(x=>x.strategy==='targeted');
+assert.equal(targetedObservation?.explanation,'counter_effect_observed',
+ 'Actual Skills cleansing requires observed boss opportunity and source-attributed effect');
+assert.equal(targetedObservation?.attributedEvents,curedEvents.length);
+assert.ok(explanation.rows.some(x=>x.strategy==='alternative'),
+ 'Source-derived alternate route must be assessed without claiming success');
+
 assert.equal(baselineFight.combat.events.filter(e=>
  e.type==='status_remove'&&e.actorId===stonecaller.actor.id).length,0,
  'ordinary River Stone cannot implicitly borrow cleansing effect');

@@ -26,6 +26,13 @@
     "src/server/combat/v2/equipment-online-cas-recheck.ts",
     "src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts",
     "src/server/combat/v2/boss-telegraph-projection.ts",
-    "src/server/combat/v2/__tests__/boss-telegraph-projection.ts"
+    "src/server/combat/v2/__tests__/boss-telegraph-projection.ts",
+    "src/server/combat/v2/__tests__/ability-counterplay-opportunity-review.ts",
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-slot-audit.ts",
+    "src/server/equipment/__tests__/equipment-crafting-v2-ten-slot-original-forge-ledger.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-affix-pool-reconciliation-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-affix-newmint-shadow.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-affix-probability-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-affix-role-balance-review.ts"
   ]
 }

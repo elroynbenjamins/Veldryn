@@ -37,6 +37,25 @@ for(const row of newProcesses){
  assert.equal(result.canGrant,false);
 }
 assert.equal(outputIds.size,15);
+// Batch costs are checked here as well as by the V3 source reconciliation,
+// so future source refreshes cannot silently lower the approved refining cost.
+const refineryCosts={
+ EQ2_COPPER_BAR:{COPPER_ORE:5},
+ EQ2_IRON_BAR:{ASTER_IRON_ORE:5},
+ EQ2_GREENWOOD_PLANK:{GREENWOOD_LOG:4},
+ EQ2_IRONWOOD_PLANK:{IRONWOOD_LOG:4},
+ EQ2_TREATED_DUNEWOOD:{DUNEWOOD:5},
+ EQ2_REINFORCED_DUNEWOOD:{DUNEWOOD:6,EQ2_GLASSBOUND_DUST:1},
+};
+for(const [output,inputs] of Object.entries(refineryCosts))
+ assert.deepEqual(v6.eq2V6ProcessDraft(output)?.inputs,inputs,output+' inputs');
+assert.deepEqual(v6.eq2V6ProcessDraft('EQ2_GLASSBOUND_ALLOY_BAR')?.inputs,
+ {SUNSTONE_INGOT:2,EQ2_GLASSBOUND_DUST:1},
+ 'T4 uses already-smelted ingots, not raw ore');
+const sunstone=source.processingReview.find(x=>x.output==='SUNSTONE_INGOT');
+assert.deepEqual(sunstone.inputs,{SUNSTONE_ORE:6,DUNEWOOD:4});
+assert.equal(sunstone.equipment2ProposedOrePerCanonicalBatch,8);
+assert.equal(sunstone.equipment2ProposedOreIncrease,2);
 assert.equal(v6.eq2V6ProcessDraft('SUNSTONE_INGOT'),undefined);
 assert.equal(source.processingReview.filter(x=>x.output==='SUNSTONE_INGOT').length,1);
 const coverage=v6.auditEq2V6SourceCoverage();

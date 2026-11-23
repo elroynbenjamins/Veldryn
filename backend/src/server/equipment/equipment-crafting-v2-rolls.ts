@@ -53,6 +53,36 @@ const SLOT_AFFIX_PREFERENCES:Readonly<Record<V2Slot,readonly V2Affix[]>>={
  offhand:['armor','maxHp','ward','potency'],amulet:['critDamage','abilityDamage','healingPower','maxHp'],
  ring:['critRate','haste','penetration','potency'],
 };
+/**
+ * Hidden source-only review adapter. Exposes the ACTUAL authored role roll
+ * candidates without making a new RNG pool, policy, roll or item. In the
+ * current Forge generator, the 30% off-slot fallback can draw from ANY of
+ * these role candidates; review every one against Combat's exact slot rules.
+ * Do not call this function to create or approve a client-side roll.
+ */
+export function v2ServerAuthoredAffixChoices(
+ role:V2Role,slot:V2Slot,
+):readonly V2Affix[]{
+ if(!Object.prototype.hasOwnProperty.call(ROLE_WEIGHTS,role)||
+    !Object.prototype.hasOwnProperty.call(SLOT_AFFIX_PREFERENCES,slot))
+  throw Error('unknown_forge_affix_review_scope');
+ return ROLE_WEIGHTS[role].map(row=>row.affix);
+}
+
+/**
+ * Read-only original source-role RNG weights for private probability reviews.
+ * This copies the original AUTHORITATIVE old-role weights, preserving the
+ * existing 30% slot fallback and all old mint outcomes. It does NOT select
+ * a new stat, roll loot, or authorize any new-mint distribution.
+ */
+export function v2ServerOriginalRoleAffixWeightsForReview(
+ role:V2Role,
+):readonly Readonly<{stat:V2Affix;weight:number}>[]{
+ if(!Object.prototype.hasOwnProperty.call(ROLE_WEIGHTS,role))
+  throw Error('unknown_forge_role_affix_review_scope');
+ return ROLE_WEIGHTS[role].map(row=>({stat:row.affix,weight:row.weight}));
+}
+
 export interface V2TrustedRecipeTemplate {
  /** Selected by authenticated server against canonical allowed recipe and catalogue. */
  recipeId:string;pieceId:string;slot:V2Slot;role:V2Role;tier:V2Tier;

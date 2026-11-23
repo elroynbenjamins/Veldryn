@@ -2,6 +2,14 @@
 
 **22 November 2026. Stacked draft on V5. No main merge, SQL, production, mobile, UI or release.**
 
+## 23 November 2026 — owner-approved refining input increase (review only)
+
+The next **Equipment/Crafting 2.0** batch formulas require **2 more raw ore to make one new bar** and **1 more raw log/wood per processed wood unit**. T1/T2 Copper and Iron Bars use **5 ore → 1 bar** (previously 3); Greenwood and Ironwood use **4 logs → 1 plank** (previously 3); T3 treated Dunewood uses **5 Dunewood → 1** (previously 4); T4 reinforced Dunewood uses **6 Dunewood + 1 Glassbound Dust → 1** (previously 5 wood). Smithing/Woodcutting XP, time, other binders/drops and equipment quantities remain unchanged.
+
+**Canonical exception:** existing T3 `SMELT_SUNSTONE_INGOT` remains **6 Sunstone Ore + 4 Dunewood → 3 ingots** in the actual 1.x recipe and the review's canonical reference. Its *2.0 target* is **8 ore per 3-ingot batch**, recorded solely as non-authoritative review metadata until a versioned, single-authority 2.0 recipe replacement is approved and implemented. Do **not** create a duplicate `SUNSTONE_INGOT` smelting route or silently change today's batches. T4 Glassbound Alloy uses **2 Sunstone Ingots + 1 Glassbound Dust → 1 alloy bar**; no raw-ore ingredient is directly added there, although the planned Sunstone upstream increase will raise its indirect ore demand.
+
+These adjustments change **hidden 2.0 review data only**, not live UI, backend processing permissions, inventory, Gold, XP, grants, drops, markets, or deployment flags. The earlier economy-v1 draft should not override these later reviewed input quantities.
+
 ## V6 — proposed material origins and processing
 
 - 14 pre-existing raw material proposals and 15 EXACT draft processing outputs are reconciled with the V3 746-route authoring catalogue.

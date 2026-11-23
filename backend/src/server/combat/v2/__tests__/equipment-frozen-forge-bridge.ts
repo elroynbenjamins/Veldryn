@@ -363,8 +363,15 @@ const forgedMove={...initial.source,custodyReceipts:[{
 }]};
 assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,forgedMove),
+ /custody_history_other_account_character/,
+ 'an equip receipt for a character outside the account must fail immediately');
+const ownerMismatch={...initial.source,custodyReceipts:[{
+ ...initial.equipReceipt,newHolder:null,
+}]};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ initial.actor,initial.build,ownerMismatch),
  /v2_virtual_move_owner_conflict/,
- 'a fake equip move to another character must never authorize the wearer');
+ 'even same-account equip receipts must name their exact replayed holder');
 const wrongReservedLocation={...initial.source,reservations:[{
  ...initial.reservation,destination:'inventory' as const,
 }]};

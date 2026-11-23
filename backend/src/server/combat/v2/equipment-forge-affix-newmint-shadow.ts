@@ -128,6 +128,20 @@ function checkedPolicies(policy:ForgeShadowPolicyV2):
   if(!byKey.has(role+'|'+slot))fail('missing_role_slot_policy');
  return byKey;
 }
+/**
+ * Validate and copy ALL 30 proposed shadow rows for independent read-only
+ * probability analysis. This is not a signed policy, approval or mint grant.
+ */
+export function inspectForgeShadowPolicyRowsV2(
+ policy:ForgeShadowPolicyV2,
+):readonly ForgeShadowRoleSlotPolicyV2[]{
+ const validated=checkedPolicies(policy);
+ return [...validated.values()].map(row=>({
+  role:row.role,slot:row.slot,
+  candidates:row.candidates.map(candidate=>({...candidate})),
+ }));
+}
+
 function draw(
  secureReviewDraw:(exclusiveMax:number)=>number,
  exclusiveMax:number,

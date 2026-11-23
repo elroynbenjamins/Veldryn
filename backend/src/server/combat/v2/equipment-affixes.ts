@@ -171,10 +171,15 @@ export function compileTrustedEquipmentAffixesV2(
    const caps=policy.maxAdvancedEffects;
    if(!caps)throw Error('combat_v2_missing_approved_advanced_affix_caps');
    for(const key of Object.keys(advanced) as (keyof CombatV2EquipmentEffects)[]){
+     const actual=advanced[key]??0;
+     // Old synthetic policies are permitted to omit NEW channels only
+     // when those channels are exactly zero. An active Forge effect
+     // absolutely requires an explicit server-authored cap.
+     if(actual===0)continue;
      const cap=caps[key];
      if(!finite(cap)||cap<0||cap>1)
        throw Error('combat_v2_invalid_approved_advanced_affix_cap:'+key);
-     if(advanced[key]>cap+1e-9)
+     if(actual>cap+1e-9)
        throw Error('combat_v2_advanced_affix_exceeds_approved_cap:'+key);
    }
  }

@@ -7,7 +7,7 @@ import {unlockCombatCompanion} from '../src/core/combat-companions';
 import {canUseProfileCosmetic,profileCosmeticReleased} from '../src/core/profile-cosmetics';
 import {profileRewardSource} from '../src/core/profile-customization';
 import {executeGameCommand} from '../src/core/game-commands';
-import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventShopOffers,eventOfferPurchaseCount,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {EVENT_BOND_CANDY_MATERIAL_CAP,eventBondCandyMaterialUses,canAnnounceLiveEventStart,acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,chooseEventProject,claimAllEventMilestones,claimEventDailyGift,claimEventDiscovery,claimEventReward,consumeEventCandy,availableEventRepeatCaches,eventCandyStatus,eventCollectionJournal,eventContractBoard,eventDailyGift,eventEffectiveDropRate,eventLifecycle,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventRewardOwned,eventShopOffers,eventOfferPurchaseCount,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -144,6 +144,27 @@ ok(liveEventDef('EVT_ANNUAL_012_2027')?.name==='Frostfall Festival','Frostfall c
 ok(EQUIPMENT_MAIN_RESOURCE_BUNDLES.length===7,'Both shops use seven reviewed equipment resource inputs');
 ok(eventShopOffers(frost,frostTime).filter(offer=>offer.reward.kind==='crafting_material').length===7,'Frostfall offers all seven selectable main materials');
 ok(eventShopOffers(frost,frostTime).length>=20,'Frostfall has a full holiday catalogue beyond the original five rewards');
+const frostShopCatalog=liveEventDef(frostId)!.shop;
+ok(frostShopCatalog.length===20,'Frostfall shop must retain its 20 permanent/consumable offer definitions');
+ok(new Set(frostShopCatalog.map(offer=>offer.id)).size===20,'Frostfall offer IDs must remain unique');
+for(const offer of frostShopCatalog){
+ ok(Number.isInteger(offer.cost)&&offer.cost>0&&Number.isInteger(offer.limit)&&offer.limit>=1,'Frostfall prices and purchase limits must be positive integers: '+offer.id);
+ const trialBase=createCharacter(newGame(frostTime),'IRONWARDEN','FrostShopAudit');
+ const prepared={...trialBase,character:{...trialBase.character!,level:100},skills:trialBase.skills.map(skill=>({...skill,level:100})),account:{...trialBase.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:Date.UTC(2026,11,3),endsAtMs:Date.UTC(2026,11,27),graceEndsAtMs:Date.UTC(2026,11,29)},eventCurrencyBalanceById:{[frostId]:100_000},eventPrestigeBalanceById:{[frostId]:100}}};
+ const purchased=purchaseEventOffer(prepared,offer.id,frostTime);
+ const commonAfter=purchased.account.eventCurrencyBalanceById?.[frostId]??0;
+ const prestigeAfter=purchased.account.eventPrestigeBalanceById?.[frostId]??0;
+ ok(commonAfter===(offer.currency==='common'?100_000-offer.cost:100_000),'Frostfall common price must be debited once: '+offer.id);
+ ok(prestigeAfter===(offer.currency==='prestige'?100-offer.cost:100),'Frostfall prestige price must be debited once: '+offer.id);
+ ok(eventOfferPurchaseCount(purchased,frostId,offer.id,frostTime)===1,'Frostfall receipt must record exactly one purchase: '+offer.id);
+ if(!['candy','gold','companion_essence','bondstones','crafting_material'].includes(offer.reward.kind))ok(eventRewardOwned(purchased,offer.reward),'Frostfall durable reward must be owned after claim: '+offer.id);
+ if(offer.limit===1){
+  let duplicateRejected=false;try{purchaseEventOffer(purchased,offer.id,frostTime)}catch{duplicateRejected=true}
+  ok(duplicateRejected,'Frostfall single-purchase offer must reject duplicates: '+offer.id);
+ }
+}
+
+
 ok(!equipmentShopTierUnlocked(frost,4),'New characters cannot buy T4 equipment materials');
 const bundleId='frostfall_sunstone_ingot_100';
 let earlyMaterialBlocked=false;
@@ -166,5 +187,23 @@ const fullBank={...frost,bank:{...frost.bank,capacity:1,stacks:[{itemId:'SOME_OT
 const currencyBefore=fullBank.account.eventCurrencyBalanceById?.[frostId];
 let bankFullBlocked=false;try{purchaseEventOffer(fullBank,'frostfall_moss_fiber_100',nextWeek)}catch{bankFullBlocked=true}
 ok(bankFullBlocked&&fullBank.account.eventCurrencyBalanceById?.[frostId]===currencyBefore,'A full Bank cannot consume currency or deliver a partial grant');
+
+// Calendar-accurate Frostfall gifts: Dec 3–26 UTC is 24 playable days.
+// The -25% future-event common currency adjustment applies to each daily gift,
+// but never to the three weekly Day-7 Aurora Chimes.
+const frostGiftStartMs=Date.UTC(2026,11,3);
+const frostGiftEndMs=Date.UTC(2026,11,27);
+let frostGiftJourney=createCharacter(newGame(frostGiftStartMs),'IRONWARDEN','FrostGiftTester');
+frostGiftJourney={...frostGiftJourney,account:{...frostGiftJourney.account,liveEvent:{eventId:frostId,enabled:true,startsAtMs:frostGiftStartMs,endsAtMs:frostGiftEndMs,graceEndsAtMs:Date.UTC(2026,11,29)}}};
+for(let day=0;day<24;day++){
+ const at=frostGiftStartMs+day*86_400_000+12*3_600_000;
+ const gift=eventDailyGift(frostGiftJourney,at);
+ ok(Boolean(gift)&&gift?.giftDay===day%7+1,'Frostfall daily gift must cycle over 24 UTC playable days');
+ frostGiftJourney=claimEventDailyGift(frostGiftJourney,at);
+ ok(eventDailyGift(frostGiftJourney,at)?.claimed===true,'Frostfall daily gifts are one claim per UTC day');
+}
+ok(eventProgress(frostGiftJourney,frostId)===4609,'All 24 Frostfall gifts grant exactly 4,609 Reputation after -25% adjustment');
+ok(eventPrestigeBalance(frostGiftJourney,frostId)===3,'Three Day-7 gifts grant exactly 3 unmodified Aurora Chimes');
+ok(!eventDailyGift(frostGiftJourney,frostGiftEndMs),'No new Frostfall gift may be generated during the claim-only period');
 
 console.log(JSON.stringify({status:'PASS',event:'Veilbreak',progress:eventProgress(state,eventId)},null,2));

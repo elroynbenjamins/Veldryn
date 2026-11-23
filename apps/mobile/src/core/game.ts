@@ -1626,6 +1626,13 @@ function setGatheringToolSlots(state:GameState,skillId:GatheringSkillId,tier:1|2
  const character=state.character;
  if(!character)throw new Error('Character required');
  const equippedIds={...(character.equippedToolIdsByTier?.[skillId]??{})};
+ // Older saves have only equippedToolIds (best-tool pointer). Preserve that
+ // physical tool when adding a different tier for the first time, rather than
+ // discarding the legacy contribution during modern slot initialization.
+ if(character.equippedToolIdsByTier?.[skillId]===undefined){
+  const legacy=gatheringToolDef(character.equippedToolIds?.[skillId]);
+  if(legacy?.skillId===skillId)equippedIds[legacy.tier]=legacy.id;
+ }
  const equippedInstances={...(character.equippedToolInstanceIdsByTier?.[skillId]??{})};
  const savedIds={...(character.savedToolIdsByTier?.[skillId]??{})};
  const savedInstances={...(character.savedToolInstanceIdsByTier?.[skillId]??{})};

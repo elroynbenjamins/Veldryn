@@ -16,10 +16,11 @@ const byExpedition={
  EXP_007:['BOSS_EXP_FEN','BOSS_EXP_PRIME']
 };
 for(const [expeditionId,variants] of Object.entries(byExpedition)){
- const pattern=new RegExp(expeditionId+'\\s*:\\s*\\[([\\s\\S]*?)\\]');
- const section=bossRegistry.match(pattern);
- assert(section,'missing authored boss source '+expeditionId);
- for(const id of variants)assert(section[1].includes("bossId:'"+id+"'"),'unknown authored boss '+id);
+ const from=bossRegistry.indexOf(' '+expeditionId+':[');
+ const to=from<0?-1:bossRegistry.indexOf('\n ],',from);
+ assert(from>=0 && to>from,'missing source boss rotation '+expeditionId);
+ const section=bossRegistry.slice(from,to);
+ for(const id of variants)assert(section.includes("bossId:'"+id+"'"),'unknown authored boss '+id);
 }
 const fixture=(dungeonId='EXP_001',bossId='BOSS_EXP_ROOT')=>({
  run:{

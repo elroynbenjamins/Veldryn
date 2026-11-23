@@ -29,3 +29,11 @@ export function reducedCookingGoldCost(chargedGold:number):number{
   if(!Number.isSafeInteger(chargedGold)||chargedGold<0)throw new Error('invalid_cooking_gold');
   return chargedGold===0?0:Math.max(10,Math.floor(chargedGold*3/40)*10);
 }
+
+/** Fish Cooking only: 40% less Gold after the universal surcharge,
+ * rounded to the nearest 10 Gold (minimum 10 for paid recipes).
+ * Already-reserved batches retain their original Gold snapshots. */
+export function reducedFishCookingGoldCost(chargedGold:number):number{
+  if(!Number.isSafeInteger(chargedGold)||chargedGold<0)throw new Error('invalid_fish_cooking_gold');
+  return chargedGold===0?0:Math.max(10,Math.round(chargedGold*3/50)*10);
+}

@@ -76,7 +76,7 @@ assert.equal(build.netResistancePct.blunt,defensive.proposedPercent/100);
 assert.equal(build.noExtraRolls,true);
 assert.throws(()=>reviewPhysicalAffixBuildV2([p1,p1]),/tampered_or_duplicate_equipment_budget/);
 assert.throws(()=>reviewPhysicalAffixBuildV2([{...p1,proposedRollCount:4}]),/tampered_or_duplicate_equipment_budget/);
-assert.throws(()=>reviewPhysicalAffixBuildV2([p1,{...p2,originalForgeMintAllowed:true}]),/tampered_or_duplicate_equipment_budget/);
+assert.throws(()=>reviewPhysicalAffixBuildV2([p1,{...p2,originalForgeMintAllowed:true} as unknown as typeof p2]),/tampered_or_duplicate_equipment_budget/);
 assert.throws(()=>reviewPhysicalAffixBuildV2(Array(11).fill(p1)),/overfull_equipment_build/);
 console.log('PASS EQ2 subtype replacement audit:',permutations,
  'source-tier/rarity/role/slot combinations; zero additional rolls, no original item mutations.');

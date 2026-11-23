@@ -7,7 +7,8 @@ export type ObservedCounterStrategyV2='targeted'|'alternative';
 export type ObservedCounterRouteV2='control'|'cleanse'|'sustain'|'pressure';
 export type ObservedCounterExplanationV2=
  'class_native_counter_unavailable'|'boss_opportunity_not_observed'|
- 'selected_counter_not_cast'|'counter_cast_without_result'|'counter_effect_observed';
+ 'selected_counter_not_cast'|'instant_counter_use_unobservable'|
+ 'counter_cast_without_result'|'counter_effect_observed';
 
 export interface ObservedCounterAttemptV2{
  readonly scenarioId:string;
@@ -22,6 +23,9 @@ export interface ObservedCounterAttemptV2{
  readonly observedOpportunityEvents:number;
  /** Actual completed selected class skill casts with eligible effects. */
  readonly eligibleSkillCasts:number;
+ /** Count of selected matching authored instant skills. Casts of these do
+  * not emit cast_complete, so zero completed casts is not proof of non-use. */
+ readonly instantMatchingSkillCount?:number;
  /** Actual mechanic events attributed to a selected class skill/effect. */
  readonly attributedCounterEvents:number;
 }
@@ -35,6 +39,7 @@ export interface ObservedCounterExplanationRowV2{
  readonly explanation:ObservedCounterExplanationV2;
  readonly opportunityEvents:number;
  readonly eligibleCasts:number;
+ readonly instantMatchingSkillCount:number;
  readonly attributedEvents:number;
 }
 export interface ObservedCounterOpportunityReviewV2{
@@ -47,7 +52,8 @@ export interface ObservedCounterOpportunityReviewV2{
 const invalid=(reason:string):never=>{throw Error('combat_v2_opportunity_qa_'+reason);};
 const possible:readonly ObservedCounterExplanationV2[]=[
  'class_native_counter_unavailable','boss_opportunity_not_observed',
- 'selected_counter_not_cast','counter_cast_without_result','counter_effect_observed',
+ 'selected_counter_not_cast','instant_counter_use_unobservable',
+ 'counter_cast_without_result','counter_effect_observed',
 ];
 const nonnegative=(v:number)=>Number.isSafeInteger(v)&&v>=0;
 export function reviewObservedCounterOpportunityV2(
@@ -65,7 +71,9 @@ export function reviewObservedCounterOpportunityV2(
    !['control','cleanse','sustain','pressure'].includes(row.route)||
    typeof row.hasMatchingCounter!=='boolean'||
    !nonnegative(row.observedOpportunityEvents)||
-   !nonnegative(row.eligibleSkillCasts)||!nonnegative(row.attributedCounterEvents))
+   !nonnegative(row.eligibleSkillCasts)||!nonnegative(row.attributedCounterEvents)||
+   (row.instantMatchingSkillCount!==undefined&&
+    !nonnegative(row.instantMatchingSkillCount)))
    invalid('invalid_observed_attempt');
   const key=[row.scenarioId,row.classId,row.specializationId,row.enemyId].join('|');
   const unique=key+'|'+row.strategy;
@@ -80,18 +88,24 @@ export function reviewObservedCounterOpportunityV2(
    !entries.some(r=>r.strategy==='alternative'))
    invalid('missing_counter_route');
   for(const row of [...entries].sort((a,b)=>a.strategy.localeCompare(b.strategy))){
+   // Instant abilities execute without cast_complete in the current engine.
+   // A source-attributed effect is stronger proof of execution than an
+   // absent cast event; without either, attempted use remains unproven.
    const explanation:ObservedCounterExplanationV2=
     !row.hasMatchingCounter?'class_native_counter_unavailable':
+    row.attributedCounterEvents>0?'counter_effect_observed':
     row.observedOpportunityEvents===0?'boss_opportunity_not_observed':
+    row.eligibleSkillCasts===0&&
+      (row.instantMatchingSkillCount??0)>0?'instant_counter_use_unobservable':
     row.eligibleSkillCasts===0?'selected_counter_not_cast':
-    row.attributedCounterEvents===0?'counter_cast_without_result':
-    'counter_effect_observed';
+    'counter_cast_without_result';
    rows.push({
     scenarioId:row.scenarioId,classId:row.classId,
     specializationId:row.specializationId,enemyId:row.enemyId,
     strategy:row.strategy,route:row.route,explanation,
     opportunityEvents:row.observedOpportunityEvents,
     eligibleCasts:row.eligibleSkillCasts,
+    instantMatchingSkillCount:row.instantMatchingSkillCount??0,
     attributedEvents:row.attributedCounterEvents,
    });
    counts[explanation]++;

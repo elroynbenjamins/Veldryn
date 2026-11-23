@@ -73,7 +73,9 @@ export function authorizeAuthoredEnemyPhysicalResistancesV2(
  input:CombatInput,token:EnemyPhysicalResistanceAuthorityV2,
 ):(enemyId:string)=>PhysicalResistanceV2{
  const scope=scopes.get(token);
- if(!scope||scope.digest!==enemyV2SnapshotDigest(input))
+ if(!scope)throw Error('enemy_v2_physical_resistance_stale_or_forged_profile');
+ if(scope.digest!==enemyV2SnapshotDigest(input))
    fail('stale_or_forged_profile');
- return (enemyId:string)=>scope.profiles.get(enemyId)??neutral;
+ const verifiedProfiles=scope.profiles;
+ return (enemyId:string)=>verifiedProfiles.get(enemyId)??neutral;
 }

@@ -23,7 +23,7 @@ equal(AUTHORED_EVENT_CATALOG.length,8,'Eight shipped or future annual festivals 
 equal(new Set(AUTHORED_EVENT_CATALOG.map(event=>event.signature.title)).size,8,'Every annual event should have a distinct signature identity');
 ok(AUTHORED_EVENT_CATALOG.every(event=>event.signature.highlights.length>=2),'Every annual event should explain its signature loop');
 const communityEvents=AUTHORED_EVENT_CATALOG.filter(event=>event.communityEnabled===true).map(event=>event.name).sort();
-equal(communityEvents.join('|'),['Bloomwake','Frostfall Festival','Merchant & Guild Festival'].sort().join('|'),'Only future communal festivals should use shared progression');
+equal(communityEvents.join('|'),['Bloomwake','Merchant & Guild Festival'].sort().join('|'),'Frostfall is guild-only; only remaining communal festivals use shared progression');
 ok(AUTHORED_EVENT_CATALOG.flatMap(event=>[...event.milestones('IRONWARDEN'),...event.shop].map(entry=>entry.reward)).filter(reward=>reward.kind==='companion').every(reward=>reward.rarity==='epic'),'Event companions must remain Epic rewards until a higher event rank is intentionally introduced');
 
 

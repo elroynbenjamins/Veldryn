@@ -34,14 +34,16 @@ assert.ok(inventory.includes('equippedGatheringTools(state,inspectedToolDef.skil
 assert.ok(inventory.includes('equippedGatheringToolRoll(state,inspectedToolDef.skillId,inspectedToolDef.tier)'),'Use the verified active physical receipt');
 assert.ok(section.includes('equippedSameTierCopy?.id===copy.id'),'The badge must match the physical copy, not just its item ID');
 assert.ok(section.includes("gt('Equipped').toLocaleUpperCase(language)")&&section.includes('toolEquippedBadge'),'Show an Equipped status pill');
-assert.ok(section.includes('equippedSameTier&&!isEquipped?'),'Compare only non-equipped copies');
-assert.ok(section.includes('gatheringToolPercent(equippedSameTierSpeed??0)'),'Use the real same-tier speed in comparisons');
-assert.ok(section.includes("gt('Tool roll record unavailable · no bonus is assumed.')"),'An unreadable active roll must not be fabricated');
+assert.ok(section.includes('equippedSameTier&&!isEquipped&&exactToolCopies.length===1?equippedToolComparison:null'),'Single-copy comparisons sit beneath the candidate stats');
+assert.ok(section.includes('exactToolCopies.length>1?equippedToolComparison:null'),'Multi-copy comparisons are displayed only once above the list');
+assert.ok(inventory.includes('const equippedToolComparison=equippedSameTier?'),'Comparison reference is created once, not in every card');
+assert.ok(inventory.includes('gatheringToolPercent(equippedSameTierSpeed??0)'),'Use the real same-tier speed in comparisons');
+assert.ok(inventory.includes("gt('Tool roll record unavailable · no bonus is assumed.')"),'An unreadable active roll must not be fabricated');
 assert.ok(section.includes("color:rarityMeta(copy.rarity).color"),'Use the verified rarity to accent the bonus stat');
 assert.ok(section.includes("disabled={!onCommand||inventoryBusyLabel!==null||isEquipped}"),'Equipped copy must not re-equip');
 assert.ok(section.includes("disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Moving tool to Bank…'"),'Active tool cannot be moved to Bank from this sheet');
 assert.ok(section.includes('isEquipped||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)'), 'Active, locked, favorited and goal-protected copies cannot be sold');
-assert.ok(section.includes("rarityMeta(equippedSameTierCopy.rarity).label")&&section.includes("equippedSameTierCopy.quality"),'Equipped comparison must show verified rarity and quality');
+assert.ok(inventory.includes("rarityMeta(equippedSameTierCopy.rarity).label")&&inventory.includes("equippedSameTierCopy.quality"),'Equipped comparison must show verified rarity and quality');
 
 
 // Tool stats and action buttons appear before the optional technical details;

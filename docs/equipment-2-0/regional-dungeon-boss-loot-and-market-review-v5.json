@@ -1383,5 +1383,440 @@
     "Owner reviews actual premium gear icons, dungeon drop/chest/Market UI and themes before implementation; style4 art pending",
     "GitHub CI source data and hypothetical QA only, then actual server regression/PG17 integration in disposable database and staging, no prod writes",
     "No release before coordinated 2.0 launch gate and explicit owner GO"
-  ]
+  ],
+  "classAndSpecReconciliation": {
+    "designRule": "All 9 classes have exactly one source-authored class-specific weapon per dungeon. Role armor set families are affinities, not hard class locks; if a class can equip same item slot it can use relevant set, while meaningful 2p/4p effect requires valid corresponding damage, healing, debuff or defensive event. Hybrid and cross-role builds remain possible.",
+    "sourceClassesByPrimaryAffinity": {
+      "tank": [
+        "IRONWARDEN",
+        "BASTION",
+        "DREADGUARD"
+      ],
+      "damage": [
+        "WAYFINDER",
+        "RAVAGER",
+        "HEXWEAVER",
+        "KNIFE_DANCER"
+      ],
+      "support": [
+        "DAWNKEEPER",
+        "STONECALLER"
+      ]
+    },
+    "expectedSpecializations": 18,
+    "dangerFound": "V4 damage-set wording for Shiverlake Cantorshard and future Ashlands Fenreaver referred to physical class ability hits and would make four-piece damage sets unusable for Hexweaver direct spells. V5 supersedes those TWO bonus descriptions for the eventual Combat 2.0 implementation; original V4 file retained for historical comparison.",
+    "damageSetCorrections": [
+      {
+        "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+        "originalVersion": "V4 proposed physical-only or physical-primed",
+        "newVersion": "V5 direct class ability damage including real direct spell hit",
+        "effect": "After two successful authenticated direct class-ability damage hits, the next successful direct class-ability damage hit within 6s deals +8% damage. Both spell and physical direct hits qualify, but no unrelated weapon subtype/status is inherited.",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT",
+          "reflected",
+          "proc",
+          "gem damage",
+          "companion ability",
+          "environmental"
+        ]
+      },
+      {
+        "setId": "eq2_dungeon_blackglass_t7_fenreaver",
+        "originalVersion": "V4 proposed physical-only or physical-primed",
+        "newVersion": "V5 direct class ability damage including real direct spell hit",
+        "effect": "After an authenticated successful direct class-ability damage hit, the next successful direct class-ability damage hit within 6s deals +9% damage. Both direct spells and physical abilities qualify; no DoT, reflected or proc recursion.",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT",
+          "reflected",
+          "proc",
+          "gem damage",
+          "companion ability",
+          "environmental"
+        ]
+      }
+    ],
+    "classSpecificWeaponSource": "Original V4 weapon templates and subtype weights unchanged; valid class ID required at equip time and market purchase/claim where approved.",
+    "noMandatoryClass": "Bosses allow multiple counterbuilds, not one mandatory class, weapon trait or pet; no equipment may automatically apply Blunt/Slash/Pierce penetration/bleed/stagger.",
+    "proofOnly": "combat effectiveness requires authenticated DirectAbilityDamage / EffectiveDirectHeal / Debuff/Cleanse / PostMitigationDamage event, class/specialization and hit target identity; source not client claimed",
+    "sourceStatus": "UNMOUNTED_REVIEW_ONLY"
+  },
+  "offhandSignatureReview": [
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+      "dungeonId": "EXP_001",
+      "bossName": "Rootbound Heart",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_001",
+      "bossName": "Rootbound Heart",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_001",
+      "bossName": "Bell-Warden",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_001",
+      "bossName": "Bell-Warden",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.2,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+      "dungeonId": "EXP_003",
+      "bossName": "Buried Heliarch",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_003",
+      "bossName": "Buried Heliarch",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_003",
+      "bossName": "Veiled Sphinx",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_003",
+      "bossName": "Veiled Sphinx",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.6,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+      "dungeonId": "EXP_005",
+      "bossName": "Bellbeast",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_005",
+      "bossName": "Bellbeast",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_005",
+      "bossName": "Frozen Cantor",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_005",
+      "bossName": "Frozen Cantor",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_BASTION",
+      "dungeonId": "EXP_007",
+      "bossName": "Blackglass Fen Prime",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_007",
+      "bossName": "Blackglass Fen Prime",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_007",
+      "bossName": "Crucible Prime",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_007",
+      "bossName": "Crucible Prime",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 4.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    }
+  ],
+  "sourceBalanceAndV2Gates": {
+    "marketMinLevelConflict": "Hidden Market PR #1055 has older V17 T4 market acquisition level52 and no T5+ gear; V4 dungeon T4 Sunscar wear level candidate42 is below existing Market T4 min52 and Sunscar region ends50. No inherited old-market level policy may silently block Sunscar dungeon equipment or auto-drop its wear level. Separate versioned EQ2 purchase+wear policy must be approved.",
+    "intendedResolution": "Keep Sunscar T4 proposed combat wear42 while review is pending; future EQ2 equipment-specific Market acquisition rule should use approved exact template and source-bound equip minimum, not blindly reuse original tier gate. The market must still reject buying if class/level gating is enforced by final policy, and allow sellers to list valid loot without meeting buyer wear level. Do not activate until reconciled.",
+    "liveMarketState": "V30 negative legacy fence exists on separate unmerged market branch but has NO positive EQ2 mint/ownership/market bridge. Current market item approval and all flags remain OFF.",
+    "specialStatLimit": "Innate only once; cannot double rarity- or quality-scale or appear as a free additional affix. T5 fixed innates generally about +2.5–3.1% or 1.5 percentage points before gear-specific slot/counterplay audit. Offhand signature procs share one original-hit proc budget with weapon where events collide.",
+    "noServerGameplayCodeTouched": true
+  }
 }

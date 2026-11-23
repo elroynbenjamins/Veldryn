@@ -24,9 +24,11 @@ assert.equal(global.summary.newItemIds,100);
 assert.equal(global.summary.proposedTotalDungeonBossItemsAcrossAllFour,104);
 assert.equal(next.summary.t5TotalItems,125);
 assert.equal(next.summary.t5TotalSets,26);
-assert.equal(prevT5.length,100);
+// V3 JSON carries 90 newly authored identity rows; 10 accepted Citadel/Bloodsteel identities
+// are inherited by reference rather than duplicated. Its conceptual total is 100.
+assert.equal(prevT5.length,90);
 const previousIds=new Set(prevT5.map(m=>m.itemId));
-assert.equal(previousIds.size,100);
+assert.equal(previousIds.size,90);
 const all=global.dungeons.flatMap(itemsOf);
 assert.equal(all.length,100);
 assert.equal(new Set(all.map(m=>m.itemId)).size,100);

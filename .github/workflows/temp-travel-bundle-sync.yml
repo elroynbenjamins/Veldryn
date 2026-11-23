@@ -1,0 +1,44 @@
+name: Temporary travel fix — rebuild deployable gameplay bundles
+# TEMPORARY PR helper. Delete this workflow before merging the fix.
+on:
+  push:
+    branches:
+      - fix/travel-preserve-reserved-crafting-20261123
+permissions:
+  contents: write
+concurrency:
+  group: temp-travel-bundle-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Build server gameplay and coop bundles from shared canonical sources
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit updated server bundles to this isolated PR branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo "Canonical server bundles are already in sync."
+          else
+            git commit -m "build(edge): include travel reservation safety in server gameplay"
+            git push origin HEAD:refs/heads/fix/travel-preserve-reserved-crafting-20261123
+          fi

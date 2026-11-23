@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts'
+      - 'backend/src/server/combat/v2/equipment-online-readback-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts'
@@ -90,6 +91,6 @@ jobs:
         run: node tools/test-eq2-material-origin-atomic-v6-v7.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
-          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
             echo 'Unissued 2.0 set draft leaked into live routes'; exit 1
           fi

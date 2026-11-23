@@ -37,6 +37,8 @@ jobs:
       - name: Install shared mobile workspace dependencies
         run: pnpm install --frozen-lockfile
         working-directory: apps/mobile
+      - name: Validate Frostfall mobile Shop purchases, 24-day gifts and reward ownership
+        run: node tools/run-mobile-core-tests.mjs --match live-events
       - name: Build and typecheck the backend
         run: pnpm build
         working-directory: backend

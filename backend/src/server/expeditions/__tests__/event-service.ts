@@ -80,6 +80,27 @@ for(let stage=1;stage<=5;stage++){
 }
 assert.equal(frostfallRewardMultiplierForBoss(frostStart.graph,frostStart.graph.nodes.find(node=>node.nodeId==='boss')!),FROSTFALL_ENDURANCE_DEPTH_REWARDS[5]);
 assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,frostStart.graph.nodes.find(node=>node.nodeId==='d7-c0')!),/invalid_frostfall_boss_exit/);
+// All five Frostfall tiers must preserve a strictly increasing, bounded
+// boss-exit payout. A later checkpoint must never mint a worse base reward.
+const frostExitDepths=[8,15,22,29,36,43] as const;
+for(let tier=1;tier<=5;tier++){
+ const tierBase=eventTierRewardMarks(frostfall,tier);
+ let previous=0;
+ for(const [index,depth] of frostExitDepths.entries()){
+  const exit=depth===43?frostStart.graph.nodes.find(node=>node.nodeId==='boss')!:frostStart.graph.nodes.find(node=>node.nodeId==='d'+depth+'-c2')!;
+  const multiplier=frostfallRewardMultiplierForBoss(frostStart.graph,exit);
+  const payout=Math.round(tierBase*multiplier);
+  assert.ok(payout>previous,'Frostfall tier '+tier+' checkpoint '+depth+' must improve base tokens');
+  assert.ok(payout<=Math.round(tierBase*1.52),'Frostfall depth cap must remain 1.52x');
+  assert.equal(multiplier,FROSTFALL_ENDURANCE_DEPTH_REWARDS[index]);
+  previous=payout;
+ }
+}
+const counterfeitFrostBoss={...frostExit,contentId:'EVENT_VEILBREAK_BOSS_FAKE'};
+assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,counterfeitFrostBoss),/invalid_frostfall_boss_exit/);
+const outOfRangeFrostBoss={...frostExit,depth:9};
+assert.throws(()=>frostfallRewardMultiplierForBoss(frostStart.graph,outOfRangeFrostBoss),/invalid_frostfall_boss_depth/);
+
 let frostRun=frostStart;
 for(let d=1;d<=7;d++){
  const options=frostRun.graph.nodes.find(node=>node.nodeId===frostRun.currentNodeId)!.nextNodeIds;

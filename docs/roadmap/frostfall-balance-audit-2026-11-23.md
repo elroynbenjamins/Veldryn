@@ -59,3 +59,19 @@ Important: the Frostfall companion reputation requirements are 6,000 / 8,500 / 1
 ## Verified staging parity note
 
 On November 23, the staging-only migration `20261123181718_frostfall_review_event_completion_parity_v1` recreated the missing pre-existing Veilbreak `event_dungeon_completions_v1` table required by the seasonal advance RPC. Read-back confirmed RLS enabled, zero records, service-role SELECT/INSERT and no authenticated SELECT. Production already had the table and was not modified. This repairs predecessor-event parity; it does not count as Frostfall end-to-end combat validation.
+
+## Calendar-correct milestone and shop affordability — verified against authored source
+
+The 2026 Frostfall calendar runs for 24 playable UTC days (December 3–26).
+`eventDailyGift` cycles its seven-day array rather than stopping after day 7.
+The 2026 -25% seasonal common-currency adjustment applies **to each individual gift** with integer rounding down; Aurora Chimes are not reduced.
+
+- All 24 gifts, if individually claimed: **4,609 Frostbell Tokens and 4,609 Frostfall Reputation, plus 3 Aurora Chimes**. This is a maximum for a player who claims every day, not typical player retention.
+- Reputation thresholds from gifts alone still require **1,391** additional earned Reputation for the 6,000-point Rimeshard Wolverine, **3,891** for the 8,500-point Hearthguard Ram, and **5,391** for the 10,000-point Frostbell Herald. Shop purchases **spend tokens, not accrued reputation**.
+- If all four community milestones are reached and claimed, they add **1,349** common Tokens/Reputation and **4** Aurora Chimes after the same common-currency adjustment. Gifts + all community rewards would total **5,958 Reputation** and **7 Aurora Chimes** before player activity.
+- The two explicitly authored prestige shop items cost **4+10 = 14 Aurora Chimes**; claiming every daily gift and all community milestones only yields 7. The rest would need repeat caches or other verified sources, and that scarcity is **not yet signed off**.
+- Fixed-price non-resource common shop stock totals **19,700 Tokens** if every quantity-limited offer is exhausted. The seven x100 equipment-resource bundles cost **8,500 Tokens per full weekly set** and reset weekly. An all-stock purchase is **not an expected entitlement**; these figures are a pressure test for choice and accessibility.
+- Current product design permits profession-only progression, but **minimum time to earn 10,000 Reputation via gathering-only/crafting-only and boss-only routes is still unverified**. Include partial first/last event weeks and no compulsory combat in final economy QA.
+- The production event_contributions, event_progress and event_daily_gift_claims tables returned **no Veilbreak/Merchant 2026 aggregate records** during the Nov 23 review. Do not claim a measured player-economy baseline; simulate the content and validate with staging fixtures instead.
+
+This is an **authored-code calculation**, not evidence of a full end-to-end reward grant. Dedicated tests on the mobile release-check branch now assert the exact 24-day gift and prestige totals against `claimEventDailyGift`, including the claim-only cutoff.

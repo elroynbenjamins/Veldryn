@@ -43,8 +43,9 @@ for(const [id,percent,hours,kind] of expected){
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
-// Every Cooking dish consumes 5x its old ingredients and awards 3x base XP.
-// No change to the per-batch output, duration, gold cost or other professions.
+// Fish recipes keep their original fish and specialty materials. Their new
+// five-wood, +10 XP and -40% Gold rules belong to draft PR #1693.
+// Only the non-fish Ashlands stew retains the earlier expensive x5/x3 loop.
 const baselineCooking:[string,number,number[]][]=[
  ['COOK_MEADOW_PERCH',80,[5,1]],['COOK_SILVERFIN',100,[5,1]],
  ['COOK_ROOTSTREAM_TROUT',145,[4,1]],['COOK_RIVER_EEL',180,[4,1]],
@@ -59,9 +60,11 @@ ok(cookingRecipes.length===baselineCooking.length,'all Cooking recipes are cover
 for(const [id,baseXp,ingredients] of baselineCooking){
  const recipe=processingRecipeDef(id);
  ok(!!recipe,id+' remains a working Cooking recipe');
- ok(recipe!.xp===baseXp*3,id+' awards 3x base Cooking XP');
+ const nonFishStew=id==='COOK_ASHLANDS_EMBER_STEW';
+ ok(recipe!.xp===baseXp*(nonFishStew?3:1),id+' preserves intended XP before fish-specific PR #1693');
  ok(recipe!.inputs.length===ingredients.length,id+' retains every ingredient');
- recipe!.inputs.forEach((input,i)=>ok(input.quantity===ingredients[i]*5,id+' requires 5x '+input.itemId));
+ recipe!.inputs.forEach((input,i)=>ok(input.quantity===ingredients[i]*(nonFishStew?5:1),
+  id+' preserves original fish inputs or increases only non-fish stew material'));
 }
 ok(processingRecipeDef('COOK_IRONWOOD_STEW')!.output.quantity===1,'special stew output remains one meal');
 // Previous runs keep their exact paid input and XP snapshots despite rebalance.
@@ -157,4 +160,4 @@ ok(!drillOne.state.character?.activeMealBuff,'class drill sessions consume meal 
 ok(JSON.stringify(drillOne.state.character?.classSkills)===JSON.stringify(drillTwo.state.character?.classSkills),'class drill rewards match across offline split and sequential claims');
 ok((drillOne.reward.trainingActions??0)===(drillPart.reward.trainingActions??0)+(drillTwo.reward.trainingActions??0),'class drill action summary includes both sides of meal expiry');
 
-console.log('PASS Cooking materials x5 / XP x3 and special meal 24h duration-only stacking, save security, AFK expiry and repeatable stew');
+console.log('PASS fish ingredient baseline / non-fish stew x5/x3 and special meal 24h duration stacking, save security, AFK expiry');

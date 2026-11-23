@@ -15,17 +15,17 @@ import {
  EQ2_COMBAT_FROZEN_AFFIX_MAP_V2,type TrustedFrozenForgeCombatSourceV2,
 } from '../equipment-frozen-forge-bridge';
 import {
- V2_SERVER_PIECES,V2_SERVER_RECIPES,v2ServerPiece,v2ServerRecipeAndPiece,
+ V2_SERVER_PIECES,V2_SERVER_RECIPES,V2_SERVER_MANIFEST_VERSION,v2ServerPiece,v2ServerRecipeAndPiece,
 } from '../../../equipment/equipment-crafting-v2-manifest';
 import {
- draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,
+ draftEquipmentV2Outcome,V2_SERVER_RARITY_BANDS,EQUIPMENT_V2_SERVER_RULES_VERSION,
  type V2DraftRollOutcome,
 } from '../../../equipment/equipment-crafting-v2-rolls';
 import {
  v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent,
  type V2ExactEquipmentTemplate,
 } from '../../../equipment/equipment-crafting-v2-instances';
-import type {V2DraftItem,V2DraftReceipt} from '../../../equipment/equipment-crafting-v2-transaction';
+import type {V2DraftItem,V2DraftReceipt,V2DraftJob,V2DraftSkillAward} from '../../../equipment/equipment-crafting-v2-transaction';
 import type {V2CustodyCopy} from '../../../equipment/equipment-crafting-v2-custody';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
 import {
@@ -119,6 +119,9 @@ function make(classId:ClassIdV2,specIndex:0|1,
    !EQUIPMENT_AFFIXES_V2[EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]!]
     .slots.includes(v2ServerPiece(pieceId)!.slot):()=>true);
  const {roll,exact,profession}=selection;
+ const originalRecipe=V2_SERVER_RECIPES.find(r=>r.id===roll.recipeId);
+ const originalPiece=v2ServerPiece(exact.pieceId);
+ if(!originalRecipe||!originalPiece)throw Error('missing pinned Forge source');
  const level=tier===4?55:tier===3?45:35;
  const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),
   id:'QA_EQ2_'+classId+'_'+specIndex+'_T'+tier};
@@ -130,9 +133,26 @@ function make(classId:ClassIdV2,specIndex:0|1,
   createdAtMs:3000,jobId:'QA_CRAFT_'+classId+'_'+specIndex+'_T'+tier,
   outcome:roll,exactItem:exact};
  const claim:V2DraftReceipt={requestId:claimRequestId,
-  commandFingerprint:'QA_REVIEW_FIXTURE_NEVER_ACCEPTED_FOR_PAYMENT',
+  commandFingerprint:'claim:'+mint.jobId,
   response:{kind:'claimed',jobId:mint.jobId,instanceId:mint.id,
    exactItem:exact,outcome:roll,profession,xpAwarded:0,version:5}};
+ const start:V2DraftReceipt={requestId:'QA_START_'+classId+'_'+specIndex+'_T'+tier,
+  commandFingerprint:'start:'+originalRecipe.id,
+  response:{kind:'started',jobId:mint.jobId,recipeId:originalRecipe.id,
+   pieceId:originalPiece.id,finishesAtMs:2000,goldCharged:originalRecipe.gold,version:4}};
+ const job:V2DraftJob={
+  id:mint.jobId,accountId,ownerCharacterId:characterId,
+  recipeId:originalRecipe.id,pieceId:originalPiece.id,startedAtMs:1000,
+  finishesAtMs:2000,slotIndex:0,goldReserved:originalRecipe.gold,
+  materialsReserved:[],status:'claimed',resultId:copyId,
+  craftContract:{manifestVersion:V2_SERVER_MANIFEST_VERSION,
+   rulesVersion:EQUIPMENT_V2_SERVER_RULES_VERSION,
+   recipeId:originalRecipe.id,piece:originalPiece,
+   profession:originalRecipe.profession,assemblyGold:originalRecipe.gold,
+   xpAwarded:originalRecipe.xp,craftSeconds:originalRecipe.seconds},
+ };
+ const award:V2DraftSkillAward={characterId,profession:originalRecipe.profession,
+  xp:originalRecipe.xp,jobId:mint.jobId};
  const custody:V2CustodyCopy={instanceId:copyId,accountId,
   ownerCharacterId:characterId,location:'equipped',equippedSlot:exact.slot,
   item:exact,locked:false,favorite:false};
@@ -150,7 +170,7 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const classStats={...actor.stats};
  const source:TrustedFrozenForgeCombatSourceV2={
   actorId:actor.id,accountId,characterId,
-  items:[mint],claims:[claim],
+  items:[mint],jobs:[job],awards:[award],claims:[start,claim],ledgerRevision:5,
   custody:{accountId,characters:[{id:characterId,classId,level}],copies:[custody]},
   classBaselinePolicy:{version:'QA_LEVEL_ONLY_REAL_EQ2_ITEMS',profiles:{
    [classId]:{classId,minLevel:1,maxLevel:75,statsAtLevel:()=>({...classStats}),
@@ -158,9 +178,10 @@ function make(classId:ClassIdV2,specIndex:0|1,
     basicAttackCoeff:actor.basicAttackCoeff},
   }},
   affixPolicy:qaCaps,
-  verifyPersisted:(digest:string)=>/^[0-9a-f]{64}$/.test(digest),
+  verifyPersisted:(digest:string,revision:number)=>
+   revision===5&&/^[0-9a-f]{64}$/.test(digest),
  };
- return {actor,build,source,mint,exact,claim,custody};
+ return {actor,build,source,mint,exact,claim,start,job,award,custody};
 }
 let checked=0,actualFrozenPositive=0,mappedAffixes=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){

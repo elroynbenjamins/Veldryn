@@ -62,3 +62,24 @@ The corresponding strict-source QA explicitly rejects an attempted `EQ2_LAUNCH_`
 The hidden EQ2 V7 lot-audit QA now distinguishes a **wrong-character lot quantity mismatch** from an **actually missing lot**, preserving both fail-closed negative checks. This fixes an assertion mismatch observed in the original independent private CI job without relaxing service custody validation.
 
 Two separate draft stacks remain: this Equipment/Crafting V6/V7-derived integration PR #1661 and Combat counterplay PR #1637. They are **not merged together** and should not be merged onto main without a fully reviewed source reconciliation, genuine server-side account/character authorization, approved 2.0 numerical caps and UX/themes, and a coordinated release gate. Source compilation/tests cannot certify signed production persistence; GitHub exact-head checks must complete successfully before any pass is called validated.
+
+
+## Pass 3 — Full Forge settlement and replayed account custody before a Combat 2.0 hit
+
+The frozen-copy compiler now independently invokes the existing **server-only** `verifyEquipmentV2HiddenLedger` for the **complete account** (all jobs, minted copies, Forge start/claim receipts and one original profession XP award per claimed job). It rejects missing settlement, altered XP, tampered exact item copies, duplicated claim requests, and claim revisions newer than the account snapshot. `verifyEquipmentV2ReceiptNamespace` additionally rejects replay IDs reused between Forge and virtual custody.
+
+Equipped identity is now derived from the authoritative-looking **hidden virtual claim reservation + ordered move history** using `readEquipmentV2VirtualCustody`. Each replayed virtual owner, slot, Forge item ID and location must agree with the complete supplied account custody. Merely injecting `location:'equipped'` into one copy's JSON, moving a copy out of another character's Bank, deleting its equip receipt, forging the destination, or changing the original placement does **not** grant combat authority. An equip-move receipt newer than the account revision fails. The snapshot digest now binds the revision, entire Forge and physical-like virtual custody snapshot, original reservations and all move receipts—not just the items selected in the current loadout.
+
+The **72 original Forge class/spec/tier QA cases** now construct matching manifest-backed job/recipe, start, claim, XP award, claim reservation and equip-movement history. The independent four-player fixture uses the same real original Forge roll format and rejects cross-character copy reuse.
+
+**Security limit:** these are real server-shaped receipt validators but still use a QA callback and hidden virtual metadata. There is NO production authenticated database reader, SERIALIZABLE lock, real physical GameState equipment issuance, shared four-account dungeon snapshot, final CP policy or live release approval. A server-controlled lock/readback adapter and subsequent revision re-check are mandatory before a real player encounter could use this bridge.
+
+## Pass 4 — Distinct original Forge set authoring, with zero activated bonuses
+
+`equipment-forge-set-effect-authoring-review.ts` gives each of the **15 pinned Forge set identities** a distinct **candidate** combat-counterplay direction, using the actual 42 source pieces and roles, rather than accidentally relabeling 48 unissued Combat 2.0 set concepts. It proposes **18 potential 2-/4-piece milestones** based on actual available piece counts. For the six three-piece sets, the third piece has no distinct milestone in the current 2/4/6/8/10 philosophy; the appropriate third-piece value/bonus requires user review.
+
+Possible T4 approaches deliberately differ within each role (two Tank, two Damage, two Support identities), so no single mechanic, class, item or fixed mandatory loadout is assumed. All 15 have `proposedPercentCoefficients:'UNSET_PENDING_OWNER_APPROVAL'`, `effectImplementation:'MISSING_NOT_EXECUTABLE'` and `appliesToCombat:false`. A four-piece set can be counted without a false bonus unlock. No set buff, effect, damage coefficient, rarity boost, market permission or client UI is minted or activated.
+
+## Integration notes and validation gate
+
+The earlier pre-virtual-custody ledger pass passed the **private Equipment + Combat 2.0 expanded-set integration CI**; the newer exact-head work (including virtual history, 15-set review, and its new negative tests) must still pass independently before it can be called verified. The separate hidden Combat counterplay branch PR #1637 has not been merged or reconciled with this hidden Equipment branch PR #1661. Broad backend CI may also fail on older mobile/backend cross-import dependencies and generated Edge bundle parity. Do not mask these with skipped checks or claim a production-ready release.

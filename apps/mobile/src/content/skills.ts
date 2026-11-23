@@ -69,7 +69,7 @@ export const RECIPES:Recipe[]=[
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
 ...([
-{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:100,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10},{itemId:'GREENWOOD_LOG',quantity:3}],output:{itemId:'COPPER_INGOT',quantity:5}},
+{id:'SMELT_COPPER_INGOT',name:'Smelt Copper Ingot',skillId:'smithing',level:1,xp:105,gold:25,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:15},{itemId:'GREENWOOD_LOG',quantity:3}],output:{itemId:'COPPER_INGOT',quantity:5}},
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Ingot',skillId:'smithing',level:8,xp:165,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8},{itemId:'IRONWOOD_LOG',quantity:3}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
 {id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Ingot',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6},{itemId:'CROWNWOOD_LOG',quantity:4}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},

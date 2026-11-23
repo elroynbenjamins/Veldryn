@@ -42,8 +42,14 @@ export const EQUIPMENT_AFFIXES_V2:Readonly<Record<EquipmentAffixIdV2,EquipmentAf
 };
 export interface AuthoredRollLimitV2{readonly min:number;readonly max:number}
 /** Must originate from finalized, server-owned Equipment 2.0 roll policy. */
+type OriginalCombatAffixIdV2=Exclude<EquipmentAffixIdV2,
+ 'tenacity_pp'|'ability_damage_pct'|'forge_healing_power_pct'>;
+type ExtraForgeAffixIdV2=Exclude<EquipmentAffixIdV2,OriginalCombatAffixIdV2>;
 export interface ServerAffixPolicyV2{
- readonly limits:Readonly<Record<EquipmentAffixIdV2,AuthoredRollLimitV2>>;
+ // Keep the thirteen original Combat 2.0 policy entries mandatory, while
+ // requiring a NEW Forge range only for an equipped source channel.
+ readonly limits:Readonly<Record<OriginalCombatAffixIdV2,AuthoredRollLimitV2>&
+   Partial<Record<ExtraForgeAffixIdV2,AuthoredRollLimitV2>>>;
  readonly countsByTierRarity:Readonly<Record<string,number>>;
  /** Approved server caps, NEVER arbitrary transport defaults. */
  readonly maxFinalHaste:number;

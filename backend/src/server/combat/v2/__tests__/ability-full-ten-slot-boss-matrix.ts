@@ -7,7 +7,7 @@ import {strict as assert} from 'node:assert';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatInput,CombatStats,CombatantDefinition} from '../../types';
 import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SKILLS_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
-import {CLASS_ROLES_V2,GEAR_SLOTS_V2,type ClassIdV2,type GearSlotV2} from '../build-contract';
+import {CLASS_ROLES_V2,GEAR_SLOTS_V2,type ClassIdV2,type GearSlotV2,type EquipmentInstanceV2} from '../build-contract';
 import {tieredSetV2} from '../set-catalog';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {EQUIPMENT_AFFIXES_V2,type EquipmentAffixIdV2,type ServerAffixPolicyV2} from '../equipment-affixes';
@@ -54,7 +54,7 @@ function setup(classId:ClassIdV2,specIndex:0|1,boss:Boss,profile:typeof profiles
  const skills=SKILL_IDENTITIES_V2.filter(s=>s.classId===classId&&
   SKILLS_V2.some(item=>item.id===s.id&&item.unlockLevel<=boss.level)).slice(0,2);
  assert.equal(skills.length,2);
- const owned:VerifiedSkillBuildV2['ownedItemsById'] extends infer X ? Record<string,any> : never={};
+ const owned:Record<string,EquipmentInstanceV2>={};
  const selected:Partial<Record<GearSlotV2,string>>={};
  const items:Record<string,TrustedEquipmentRuntimeV2['instancesById'][string]>={};
  const definitions:Record<string,TrustedEquipmentRuntimeV2['definitionsByItemId'][string]>={};
@@ -165,7 +165,7 @@ function setup(classId:ClassIdV2,specIndex:0|1,boss:Boss,profile:typeof profiles
  };
  return {actor,build,runtime,signedPort,input,trustedKit,receipts,traitSlot,statName};
 }
-let runs=0,negativeChecks=0,traits=0,statInversions=0;
+let runs=0,negativeChecks=0,traits=0;
 const observedAffixes=new Set<EquipmentAffixIdV2>();
 const comparisons=new Map<string,{low:number;high:number}>();
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){

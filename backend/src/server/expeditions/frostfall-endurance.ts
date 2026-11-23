@@ -6,6 +6,11 @@ import {validateCoopRouteGraph,DUNGEON_ENDURANCE} from './route-generation';
 /** Unreleased seasonal variant. Existing event-route-v5 saves retain their six-room graph. */
 export const FROSTFALL_ENDURANCE_GENERATOR='event-route-v5-endurance-v2';
 export const FROSTFALL_ENDURANCE_DEPTH_REWARDS=[1,1.15,1.28,1.38,1.46,1.52] as const;
+/** REVIEW CANDIDATE ONLY. Entry enemies must not wipe well-equipped level-gated
+ * parties before the first checkpoint. Retain late-depth scaling and all
+ * original six-room Frostfall save math unchanged. Re-evaluate after calibrated
+ * multi-seed combat results; never apply to regular dungeons/other events. */
+export const FROSTFALL_ENDURANCE_ENEMY_PACING_V3={attack:0.72,hp:0.80,defense:0.90} as const;
 
 const idsAt=(depth:number)=>[0,1,2].map(choice=>'d'+depth+'-c'+choice);
 

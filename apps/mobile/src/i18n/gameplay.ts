@@ -9,6 +9,27 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ // Tool copy details shared by Inventory and Quick Inspect (all six core locales).
+ "GATHERING TOOL DETAILS":["GATHERING TOOL DETAILS","DETAILS ZUM SAMMELWERKZEUG","DETALLES DE LA HERRAMIENTA","DETAILS VAN VERZAMELGEREEDSCHAP","DETTAGLI ATTREZZO DI RACCOLTA","DÉTAILS DE L’OUTIL DE COLLECTE"],
+ "Tool {number}":["Tool {number}","Werkzeug {number}","Herramienta {number}","Gereedschap {number}","Attrezzo {number}","Outil {number}"],
+ "Legacy tool":["Legacy tool","Älteres Werkzeug","Herramienta antigua","Oud gereedschap","Attrezzo precedente","Ancien outil"],
+ "Tier gathering speed":["Tier gathering speed","Sammeltempo der Stufe","Velocidad de recolección del nivel","Verzamelsnelheid niveau","Velocità di raccolta del livello","Vitesse de collecte du palier"],
+ "Tier base {base}% · Rarity {rarity}% · Quality {quality}%":["Tier base {base}% · Rarity {rarity}% · Quality {quality}%","Stufenbasis {base}% · Seltenheit {rarity}% · Qualität {quality}%","Base {base}% · Rareza {rarity}% · Calidad {quality}%","Niveaubasis {base}% · Zeldzaamheid {rarity}% · Kwaliteit {quality}%","Base {base}% · Rarità {rarity}% · Qualità {quality}%","Base {base}% · Rareté {rarity}% · Qualité {quality}%"],
+ "Bonus stat roll":["Bonus stat roll","Zufälliger Bonuswert","Bonificación aleatoria","Willekeurige bonus","Bonus statistica casuale","Bonus de caractéristique aléatoire"],
+ "Legacy tool · No bonus stat roll":["Legacy tool · No bonus stat roll","Älteres Werkzeug · Kein zusätzlicher Bonus","Herramienta antigua · Sin bonificación adicional","Oud gereedschap · Geen extra bonus","Attrezzo precedente · Nessun bonus casuale","Ancien outil · Aucun bonus aléatoire"],
+ "Tool roll record unavailable · no bonus is assumed.":["Tool roll record unavailable · no bonus is assumed.","Werkzeugwurf nicht verfügbar · Kein Bonus angenommen.","Registro de bonificación no disponible · No se supone ningún bono.","Bonusgegevens ontbreken · Er wordt geen bonus toegekend.","Dati del bonus non disponibili · Nessun bonus presunto.","Bonus de l’outil introuvable · Aucun bonus présumé."],
+ "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.":["Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.","Jede Stufe erhöht das Sammeltempo. Zufällige Tempoboni wirken separat auf die Restzeit, bis zur Obergrenze.","Cada nivel aumenta la velocidad de recolección. Los bonos aleatorios reducen el tiempo restante, con un límite máximo.","Elk niveau verhoogt de verzamelsnelheid. Willekeurige snelheidsbonussen verminderen apart de resterende tijd, tot het maximum.","Ogni livello aumenta la velocità di raccolta. I bonus casuali riducono separatamente il tempo rimanente, fino al limite.","Chaque palier augmente la vitesse de collecte. Les bonus aléatoires réduisent séparément le temps restant, jusqu’au plafond."],
+ "BASE STATS":["BASE STATS","BASISWERTE","ESTADÍSTICAS BASE","BASISSTATISTIEKEN","STATISTICHE BASE","STATS DE BASE"],
+ "Equipment base stats":["Equipment base stats","Grundwerte der Ausrüstung","Estadísticas base del equipo","Basisstatistieken van uitrusting","Statistiche base dell’equipaggiamento","Stats de base de l’équipement"],
+ "TRAIT":["TRAIT","EIGENSCHAFT","RASGO","EIGENSCHAP","TRATTO","TRAIT"],
+ "GATHERING TOOLS":["GATHERING TOOLS","SAMMELWERKZEUGE","HERRAMIENTAS DE RECOLECCIÓN","VERZAMELGEREEDSCHAP","ATTREZZI DI RACCOLTA","OUTILS DE COLLECTE"],
+ "GATHERING SPEED":["GATHERING SPEED","SAMMELTEMPO","VELOCIDAD DE RECOLECCIÓN","VERZAMELSNELHEID","VELOCITÀ DI RACCOLTA","VITESSE DE COLLECTE"],
+ "Tier + Rarity + Quality":["Tier + Rarity + Quality","Stufe + Seltenheit + Qualität","Nivel + rareza + calidad","Niveau + zeldzaamheid + kwaliteit","Livello + rarità + qualità","Palier + rareté + qualité"],
+ "BONUS STAT ROLL":["BONUS STAT ROLL","ZUFÄLLIGER BONUS","BONIFICACIÓN ALEATORIA","WILLEKEURIGE BONUS","BONUS CASUALE","BONUS ALÉATOIRE"],
+ "Gathering Speed":["Gathering Speed","Sammeltempo","Velocidad de recolección","Verzamelsnelheid","Velocità di raccolta","Vitesse de collecte"],
+ "Gathering Rarity Chance":["Gathering Rarity Chance","Chance auf seltene Funde","Probabilidad de hallazgos raros","Kans op zeldzame vondsten","Probabilità di reperti rari","Chance de trouvailles rares"],
+ "To Bank":["To Bank","Zur Bank","Al banco","Naar bank","Alla banca","Vers la banque"],
+ "Tier base · No bonus roll":["Tier base · No bonus roll","Stufenbasis · Kein Zufallsbonus","Base del nivel · Sin bono aleatorio","Niveaubasis · Geen willekeurige bonus","Base del livello · Nessun bonus casuale","Base du palier · Aucun bonus aléatoire"],
  // Veldryn 2.0 tier-first tool vault (all six core translations).
  "TOOL TIERS · SELECT TO INSPECT":["TOOL TIERS · SELECT TO INSPECT","WERKZEUGSTUFEN · ZUM ANSEHEN WÄHLEN","NIVELES DE HERRAMIENTA · TOCA PARA VER","GEREEDSCHAPSNIVEAUS · KIES OM TE BEKIJKEN","LIVELLI ATTREZZI · SELEZIONA","PALIERS D’OUTILS · SÉLECTIONNER"],
  "saved copies":["saved copies","gespeicherte Exemplare","copias guardadas","opgeslagen exemplaren","copie salvate","copies enregistrées"],
@@ -1839,6 +1860,33 @@ const toolVaultEarlyLocales={
  "Only active copies count. Skill XP rolls stack additively within this skill, capped at +60%. Gathering speed is capped at 80%.":["Учитываются только активные копии. Опыт навыка суммируется до +60%. Скорость сбора ограничена 80%.","Yalnızca etkin kopyalar sayılır. Beceri XP bonusları +%60’a kadar toplanır. Toplama hızı %80 ile sınırlıdır."],
 } as const;
 for(const [english,pair] of Object.entries(toolVaultEarlyLocales)){
+ gameplayCatalogs.ru[english as GameplayKey]=pair[0];
+ gameplayCatalogs.tr[english as GameplayKey]=pair[1];
+}
+// Tool details from Inventory and Quick Inspect in Russian and Turkish.
+const toolDetailsEarlyLocales={
+ "GATHERING TOOL DETAILS":["СВЕДЕНИЯ ОБ ИНСТРУМЕНТЕ","TOPLAMA ALETİ DETAYLARI"],
+ "Tool {number}":["Инструмент {number}","Alet {number}"],
+ "Legacy tool":["Старый инструмент","Eski Alet"],
+ "Tier gathering speed":["Скорость сбора уровня","Kademe Toplama Hızı"],
+ "Tier base {base}% · Rarity {rarity}% · Quality {quality}%":["База {base}% · Редкость {rarity}% · Качество {quality}%","Kademe tabanı %{base} · Nadirlik %{rarity} · Kalite %{quality}"],
+ "Bonus stat roll":["Случайный бонус характеристики","Rastgele Özellik Bonusu"],
+ "Legacy tool · No bonus stat roll":["Старый инструмент · Нет случайного бонуса","Eski Alet · Rastgele bonus yok"],
+ "Tool roll record unavailable · no bonus is assumed.":["Данные бонуса недоступны · Бонус не предполагается.","Alet bonus kaydı yok · Bonus varsayılmaz."],
+ "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.":["Каждый уровень ускоряет сбор. Случайные бонусы скорости отдельно сокращают оставшееся время, до предела.","Her kademe toplama hızını artırır. Rastgele hız bonusları kalan süreye ayrı uygulanır; üst sınır geçerlidir."],
+ "BASE STATS":["БАЗОВЫЕ ХАРАКТЕРИСТИКИ","TEMEL İSTATİSTİKLER"],
+ "Equipment base stats":["Базовые характеристики снаряжения","Ekipman Temel İstatistikleri"],
+ "TRAIT":["ОСОБЕННОСТЬ","ÖZELLİK"],
+ "GATHERING TOOLS":["ИНСТРУМЕНТЫ ДЛЯ СБОРА","TOPLAMA ALETLERİ"],
+ "GATHERING SPEED":["СКОРОСТЬ СБОРА","TOPLAMA HIZI"],
+ "Tier + Rarity + Quality":["Уровень + редкость + качество","Kademe + Nadirlik + Kalite"],
+ "BONUS STAT ROLL":["СЛУЧАЙНЫЙ БОНУС","RASTGELE BONUS"],
+ "Gathering Speed":["Скорость сбора","Toplama Hızı"],
+ "Gathering Rarity Chance":["Шанс редкой находки","Nadir Buluntu Şansı"],
+ "To Bank":["В банк","Bankaya"],
+ "Tier base · No bonus roll":["Базовый уровень · Без случайного бонуса","Kademe tabanı · Rastgele bonus yok"],
+} as const;
+for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
  gameplayCatalogs.ru[english as GameplayKey]=pair[0];
  gameplayCatalogs.tr[english as GameplayKey]=pair[1];
 }

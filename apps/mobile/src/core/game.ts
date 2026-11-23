@@ -359,7 +359,7 @@ function pauseActivityQueue(state:GameState,reason:string){
  return {...state,character:{...state.character,activityQueuePausedReason:reason}};
 }
 
-/** Travel is instantaneous for now, but always settles and stops the prior activity. */
+/** Travel settles earned work, but preserves region-independent tasks and their reservations. */
 export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   const zone=WORLD_ZONES.find(entry=>entry.id===regionId);
   if(!zone)throw new Error('Unknown region');
@@ -367,7 +367,13 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   if(!state.character||regionTravelAvailability(state,zone)!=='available')throw new Error(regionTravelLockReason(state,zone)??`Cannot travel to ${zone.name} yet`);
   if(currentRegionId(state)===zone.id&&state.currentRegionId===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
-  const travelled={...settled.state,currentRegionId:zone.id,activity:null,outOfCombatSinceMs:nowMs};
+  // Cooking, smithing, enchanting, alchemy and Faith do not depend on location.
+  // Keep their already-paid batches running instead of discarding the escrow.
+  const portable=['processing','alchemy','faith'].includes(settled.state.activity?.kind??'');
+  // Regional activities must stop; use the ordinary stop path to return any
+  // unfinished reservation instead of clearing activity and losing materials.
+  const stopped=portable?settled.state:stopActivity(settled.state,nowMs);
+  const travelled={...stopped,currentRegionId:zone.id,...(portable?{}:{outOfCombatSinceMs:nowMs})};
   const next=normalizeActivityQueue(travelled.character?.activityQueue,activityQueueCapacity(travelled))[0];
   const locationIssue=next?activityQueueLocationIssue(travelled,next):undefined;
   // Travel never deletes queue entries or silently restarts them. Flag pending work

@@ -115,7 +115,7 @@ export function reviewOriginalForgeWornSetDraftV2(
  const draft=reviewOriginalForgeSetBalanceDraftV2();
  const reached=source.activeSetCounts.map(row=>{
   const set=draft.families.find(f=>f.setId===row.forgeSetId);
-  if(!set)fail('unknown_original_set');
+  if(!set)throw Error('eq2_set_balance_review_unknown_original_set');
   return {setId:set.setId,members:row.pieces,
    proposedMilestones:set.milestones.filter(m=>m.requiredPieces<=row.pieces)};
  });

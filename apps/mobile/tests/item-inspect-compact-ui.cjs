@@ -2,12 +2,25 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const source=relative=>fs.readFileSync(path.join(__dirname,'..',relative),'utf8');
+const modal=source('src/components/GameModalSurface.tsx');
 const sheet=source('src/components/ItemQuickInspect.tsx');
 const inventory=source('src/screens/InventoryScreen.tsx');
 const pouch=source('src/components/EquipmentPouchPanel.tsx');
 const controls=source('src/components/InventoryItemHeaderControls.tsx');
 const disposal=source('src/components/EquipmentDisposalStatus.tsx');
 const i18n=source('src/i18n/equipment-pouch-ui.ts');
+
+// Android three-button navigation: the modal's own native window must
+// measure and reserve its bottom safe area OUTSIDE the button footer.
+const modalHost=modal.indexOf('return <Modal');
+const provider=modal.indexOf('<SafeAreaProvider style={{flex:1}}>',modalHost);
+const insetRead=modal.indexOf('insets=useSafeAreaInsets()',provider);
+assert(modalHost>=0&&provider>modalHost&&insetRead>provider,'A nested provider must measure safe-area insets in the modal window');
+assert(modal.includes("navigationBarTranslucent={Platform.OS==='android'}"),'Android navigation must be consistently edge-to-edge for insets to be measured');
+assert(modal.includes('const bottomClearance=sheet?Math.max(insets.bottom,keyboardOverlap)'),'Sheet clearance must include the native bottom inset without double-counting keyboard overlap');
+assert(modal.includes('paddingBottom:bottomClearance'),'Sheet clearance must apply to the backdrop outside action controls');
+assert(modal.includes('sheet&&{paddingBottom:spacing.lg}'),'Keep a constant touch-safe gap inside the sheet, not a duplicate safe-area inset');
+assert(!modal.includes('sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}'),'Do not consume the native bar inset twice');
 
 assert(sheet.includes('[detailsOpen,setDetailsOpen]=useState(false)'),'Detailed content must start collapsed');
 assert(sheet.includes('setDetailsOpen(false)'),'Details disclosure must reset for each exact selected copy');

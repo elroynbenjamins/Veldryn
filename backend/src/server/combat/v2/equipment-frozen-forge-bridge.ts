@@ -325,7 +325,12 @@ export function compileRealFrozenForgeActorV2(
  if(!source.verifyPersisted(digest,source.ledgerRevision))
   reject('persisted_custody_not_verified');
  const classOnly=issueClassOnlyActorV2(actor,build.verified,source.classBaselinePolicy);
- const skilled=compileServerSkillBuildV2(true,{...build,actor:classOnly});
+ // The Skills compiler performs a SECOND build validation internally. Pass
+ // the exact same canonical real-Forge set catalogue we already checked;
+ // never fall back to the caller's empty/forged set map in that stage.
+ const skilled=compileServerSkillBuildV2(true,{
+  ...build,actor:classOnly,setsById:canonicalSetCatalog,
+ });
  const sum={attack:0,defense:0,hp:0};
  for(const {mint} of resolved){
   const s=mint.exactItem.baseStats;

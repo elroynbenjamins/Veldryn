@@ -36,3 +36,29 @@ The new, unmounted `equipment-frozen-forge-bridge.ts` instead consumes exactly t
 5. Authenticated versioned four-player/dungeon/world-boss state, signed loadout/trait/companion effects, final approved Combat Power and boss scaling, telemetry, readback-verified CI, and the user's explicit actual-screen/theme approval.
 
 **No production database writes, player item issuance, change to rarity RNG, item pricing, skill XP, craft queues, Player Market listings, online routes, mobile UI, release flags, main merge or deploy.**
+
+## Pass 2A — Source-backed Forge affix behavior (hidden, test-only)
+
+Three of the four previously blocked **original minted Forge** roll names now have separate, strictly scoped Combat 2.0 runtime effects. These use the unchanged **original saved percentage** and still require the private compiled actor and a server-approved affix-policy cap:
+
+- `tenacity → tenacity_pp`: shortens the duration of enemy *ordinary* direct-ability debuffs and DoTs on the affected Combat V2 player. Does not affect HoTs, buffs, authored phases, or any boss-origin status until boss-specific dispel eligibility is explicitly defined and reviewed.
+- `abilityDamage → ability_damage_pct`: multiplies only direct damage from original class abilities verified in the actor's authored skill list. Never increases basic attacks (`BASIC`), DoT ticks, gems, trait echoes, or capstone/secondary events.
+- `healingPower → forge_healing_power_pct`: multiplies actual source-authored class heals and class HoTs, not shield magnitude, leech, potions, gems, traits, or other non-class recovery. It is **not** relabelled as the pre-existing Combat `class_healing_pct`, which has a different historical stat scope.
+
+**`potency` remains blocked.** The original Forge roll does not specify whether Potency means direct damage, DoT/Hex, healing, or another source. The approved source review states `AMBIGUOUS_NO_AUTOMATIC_MAPPING`. It is therefore deliberately not `hex_potency_pct`; no item roll can lose or silently exchange its identity.
+
+The new `equipment-frozen-forge-mechanics.ts` uses the original pinned Forge outcome generator and exact template creation, then compiles that roll through the actual Combat affix engine to run deterministic mechanic-level QA. It checks correct increased direct skill output/class heal/class HoT, unaffected BASIC/DoT/shield amounts, shorter ordinary hostile statuses, and preserved boss-unique statuses; Potency stays unassigned. These are **synthetic ability fixtures with genuine Forge roll values**, not yet a final four-player signed-trait production simulation. Final numerical caps, skill coefficients, double-scaling audits, all 10 slots and per-tier boss matchups still need approval and readback.
+
+## Pass 2B — Original Forge sets versus unreleased Combat family identities
+
+`equipment-forge-set-identity-review.ts` reads the *real* server-owned Forge manifest and recipe catalogue. It verifies exactly **15 original Forge set identities and 42 pinned pieces**; one unique tier/role/slot source per member; and a canonical foundation recipe for every member. It separately audits the proposed **48 Combat T1–T4 tiered sets and 204 staged member IDs**, verifying those 204 are unissuable, uncraftable, unequippable, combat-disabled and do not reuse an actual Forge identity.
+
+A read-only worn-item inspection can count how many verified real Forge set pieces would be present, while returning `combatEffectsApplied:false`, `combatSetId:null` and **zero effective bonuses**, even for two or more genuine pieces. The private executable EQ2→Combat bridge continues **rejecting** set pieces until a source-authorized set effect catalogue is reconciled. This prevents silent loss of intended effects or accidental inheritance of unrelated `eq2_tN_...` prototype buffs. A full signed 10-slot custody and effect activation path remains a release blocker.
+
+The corresponding strict-source QA explicitly rejects an attempted `EQ2_LAUNCH_` member, duplicate physical copies, invalid/legacy-looking copy IDs, two items in one equipment slot, and any unapproved threshold. Full numeric set-bonus design and trait source custody have **not** been invented or enabled.
+
+## Polish, independent CI, and known blockers
+
+The hidden EQ2 V7 lot-audit QA now distinguishes a **wrong-character lot quantity mismatch** from an **actually missing lot**, preserving both fail-closed negative checks. This fixes an assertion mismatch observed in the original independent private CI job without relaxing service custody validation.
+
+Two separate draft stacks remain: this Equipment/Crafting V6/V7-derived integration PR #1661 and Combat counterplay PR #1637. They are **not merged together** and should not be merged onto main without a fully reviewed source reconciliation, genuine server-side account/character authorization, approved 2.0 numerical caps and UX/themes, and a coordinated release gate. Source compilation/tests cannot certify signed production persistence; GitHub exact-head checks must complete successfully before any pass is called validated.

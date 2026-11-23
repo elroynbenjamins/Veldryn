@@ -12,8 +12,8 @@ import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES} from '../../.
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message);};
 const ids=ALL_COMBAT_COMPANIONS.map(def=>def.id);
-ok(ids.length===38&&new Set(ids).size===ids.length,'All 38 authored companions must have unique IDs');
-ok(EVENT_COMPANIONS.length===11&&GUILD_COMBAT_COMPANIONS.length===3,'Event and guild catalog sizes must remain intentional');
+ok(ids.length===40&&new Set(ids).size===ids.length,'All 40 authored companions must have unique IDs');
+ok(EVENT_COMPANIONS.length===13&&GUILD_COMBAT_COMPANIONS.length===3,'Frostfall brings 13 authored event companions while three guild companions remain stable');
 const serverIds=new Set(COMPANION_SERVER_DEFINITIONS.map(def=>def.id));
 ok(serverIds.size===ids.length&&ids.every(id=>serverIds.has(id)),'Client and server companion catalogs must be aligned');
 const specialById=new Map(COMPANION_SPECIAL_CHALLENGES.map(challenge=>[challenge.id,challenge]));

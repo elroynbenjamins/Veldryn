@@ -160,7 +160,7 @@ export function auditUntrustedForgeRollCrosswalkV2(
    continue;
   }
   const id=DIRECT_MAP[stat];
-  if(!id)fail('unmapped_roll');
+  if(!id)throw Error('combat_v2_forge_audit_unmapped_roll');
   const definition=EQUIPMENT_AFFIXES_V2[id];
   if(!definition.slots.includes(receipt.slot)){
    issues.push({code:'slot_ineligible',stat,

@@ -1004,6 +1004,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   const timed=timedEquipmentRecipe(id);
   const count=Math.max(1,Math.min(999,Math.floor(quantity)));
   if(serverGameplayEnabled){
+    const previous=stateRef.current??state;
     // Keep the global Saving spinner hidden for routine crafts: their button is the
     // status indicator. Do not hide genuine errors or pending-action recovery UI.
     setQuietCraftSaving(true);
@@ -1011,10 +1012,23 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
       const result=await perform({type:'craft',args:{id,quantity:count}},false,false,true,true);
       if(!result)throw new Error('Crafting was not confirmed. Please retry.');
       queueMasteryNotice(state,result.state);
+      if(timed){
+        // The currently deployed gameplay function may finish tool crafts immediately.
+        // Require a persisted Forge job or a real newly minted tool before confirming.
+        const existingIds=new Set((previous.account.equipmentCraftingQueue??[]).map(job=>job.id));
+        const queued=(result.state.account.equipmentCraftingQueue??[]).filter(job=>job.recipeId===id&&!existingIds.has(job.id)).length;
+        if(queued>=count)return 'queued';
+        if(itemDef(timed.output.itemId).type==='tool'){
+          const before=(previous.account.craftedGatheringToolInstances??[]).filter(copy=>copy.itemId===timed.output.itemId).length;
+          const after=(result.state.account.craftedGatheringToolInstances??[]).filter(copy=>copy.itemId===timed.output.itemId).length;
+          if(after-before>=count)return 'completed';
+        }
+        throw new Error('The server saved this craft, but the job or result cannot be verified. Refresh before doing anything else; do not retry this craft.');
+      }
     }finally{
       setQuietCraftSaving(false);
     }
-    return;
+    return 'completed';
   }
   let next=state;
   const craftNow=Date.now();
@@ -1024,6 +1038,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   // Confirm only after saving locally; errors are rendered in the recipe's status area.
   await commit(next,{confirmSaved:true});
   if(!timed)queueMasteryNotice(state,next);
+  return timed?'queued':'completed';
 }}/>}
     {tab==='Inventory'&&<InventoryScreen key={`${state.createdAtMs}:${state.character.id}`} state={state} viewMemory={inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]??(inventoryViews.current[`${state.createdAtMs}:${state.character.id}`]=newInventoryScreenState())} foodRequest={inventoryFoodScope===`${state.createdAtMs}:${state.character.id}`?inventoryFoodRequest:0} onEquip={id=>runCompanionCommand({type:'equip',args:{id}})} onFood={id=>void quickFoodCommand({type:'food',args:{id}}).catch(error=>showAlert('Food',error.message))} onEat={id=>void quickFoodCommand({type:'eat',args:{id}}).catch(error=>showAlert('Food',error.message))} onSell={(id,quantity)=>inventoryCommand({type:'sell',args:{id,quantity}},()=>sellItem(state,id,quantity))} onSalvage={id=>inventoryCommand({type:'salvage',args:{id}},()=>salvageItem(state,id))} onDeposit={(id,quantity)=>inventoryCommand({type:'deposit',args:{id,quantity}},()=>depositToBank(state,id,quantity))} onDepositMaterials={()=>inventoryCommand({type:'deposit_materials'},()=>depositAllMaterials(state))} onUpgradeStorage={location=>inventoryCommand({type:'storage',args:{location}},()=>upgradeStorage(state,location))} onBankSell={(id,quantity)=>inventoryCommand({type:'bank_sell',args:{id,quantity}},()=>sellBankItem(state,id,quantity))} onBankGoldTransfer={(direction,amount)=>inventoryCommand({type:direction==='deposit'?'bank_gold_deposit':'bank_gold_withdraw',args:{amount}},()=>direction==='deposit'?depositGoldToBank(state,amount):withdrawGoldFromBank(state,amount))} onWithdraw={(id,quantity)=>inventoryCommand({type:'withdraw',args:{id,quantity}},()=>withdrawFromBank(state,id,quantity))} onOverflow={()=>inventoryCommand({type:'overflow'},()=>claimOverflowToBank(state))} onToggleFavorite={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'favorite',enabled:!state.settings.favoriteItemIds?.includes(id)}}):void commit(toggleInventoryFavorite(state,id))} onToggleLock={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'lock',enabled:!state.settings.lockedItemIds?.includes(id)}}):void commit(toggleInventoryLock(state,id))} onAcknowledgeItem={id=>serverGameplayEnabled?void perform({type:'inventory_preference',args:{id,kind:'seen',enabled:true}}):void commit(acknowledgeInventoryItem(state,id))} onAcknowledgeAll={()=>serverGameplayEnabled?void perform({type:'inventory_seen_all'}):void commit(acknowledgeAllInventoryItems(state))} onBulkPreference={(kind,enabled,ids)=>inventoryCommand({type:'inventory_preference_bulk',args:{kind,enabled,ids}},()=>applyBulkInventoryProtection(state,ids,kind,enabled))} onBulkAction={(kind,location,ids)=>inventoryCommand({type:kind==='transfer'?'bulk_transfer':kind==='sell'?'bulk_sell':'bulk_salvage',args:{location,ids}},()=>kind==='transfer'?bulkTransferSelected(state,ids,location):kind==='sell'?bulkSellSelected(state,ids,location):bulkSalvageSelected(state,ids,location))} onNavigateInspect={openWorkingTowardDestination} onCommand={runCompanionCommand}/>}
     {tab==='DailySupplies'&&<DailySuppliesScreen state={state} nowMs={now} onCommand={runCompanionCommand}/>}

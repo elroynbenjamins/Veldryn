@@ -20,6 +20,7 @@
     "src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts",
     "src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts",
     "src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts",
-    "src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts"
+    "src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts",
+    "src/server/combat/v2/equipment-online-readback-review.ts"
   ]
 }

@@ -21,6 +21,18 @@ export function equippedGatheringTools(state:GameState,skillId:GatheringSkillId)
   return legacy?.skillId===skillId?[legacy]:[];
 }
 
+/** Read the additional saved physical copy for a tier, excluding any active
+ * tool. No missing affix is synthesized for pre-update legacy items. */
+export function reservedGatheringTool(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4){
+ const id=state.character?.savedToolIdsByTier?.[skillId]?.[tier];
+ const tool=gatheringToolDef(id);
+ if(!tool||tool.skillId!==skillId||tool.tier!==tier)return undefined;
+ const instanceId=state.character?.savedToolInstanceIdsByTier?.[skillId]?.[tier];
+ const copy=instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===instanceId),tool.id):undefined;
+ if(instanceId&&!copy)return undefined;
+ return {tool,instanceId,copy};
+}
+
 /** Retain the highest-tier accessor for legacy UI and compatibility consumers. */
 export function equippedGatheringTool(state:GameState,skillId:GatheringSkillId){
   const tools=equippedGatheringTools(state,skillId);

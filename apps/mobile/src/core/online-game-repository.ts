@@ -24,12 +24,12 @@ export class OnlineGameRepository implements GameRepository{
  async save(_state:GameState):Promise<void>{throw new Error('Online saves require a gameplay command.');}
  async reset():Promise<void>{throw new Error('Online characters cannot be reset from a local save action.');}
  async hasPending(){return Boolean(await this.pending.read());}
- async execute(command?:GameCommand):Promise<ExecutedOnlineCommand>{
-  const next=this.queue.then(()=>this.executeQueued(command));
+ async execute(command?:GameCommand,returnClaim=false):Promise<ExecutedOnlineCommand>{
+  const next=this.queue.then(()=>this.executeQueued(command,returnClaim));
   this.queue=next.then(()=>undefined,()=>undefined);
   return next;
  }
- private async executeQueued(command?:GameCommand):Promise<ExecutedOnlineCommand>{
+ private async executeQueued(command?:GameCommand,returnClaim=false):Promise<ExecutedOnlineCommand>{
   // A timed-out response is not proof that the gameplay command failed.
   // Replay the durable request ID first, so server receipts stay idempotent.
   const previous=await this.pending.read();
@@ -46,7 +46,20 @@ export class OnlineGameRepository implements GameRepository{
   if(!this.snapshot)await this.refresh();
   const request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};
   await this.pending.write(request);
-  const completed=await this.sendPending(request);
+  const characterId=this.snapshot!.state.character?.id;
+  let completed:ExecutedOnlineCommand;
+  try{completed=await this.sendPending(request);}
+  catch(error){
+   // sendPending already refreshed after this definitive rejection. Only retry a
+   // foreground claim for the same character when there is still work to settle.
+   const latest=this.snapshot;
+   if(!returnClaim||previous||command.type!=='claim'||!(error instanceof OnlineCommandError)||
+      !error.definitive||error.message!=='stale_state'||!characterId||!latest||
+      latest.state.character?.id!==characterId||(!latest.state.activity&&!latest.state.character.classTraining))throw error;
+   const retry={requestId:this.key(),expectedVersion:latest.version,command};
+   await this.pending.write(retry);
+   completed=await this.sendPending(retry);
+  }
   return recovered?{...completed,recovered}:completed;
  }
 

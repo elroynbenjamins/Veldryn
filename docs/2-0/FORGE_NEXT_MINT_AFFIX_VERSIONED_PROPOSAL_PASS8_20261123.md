@@ -27,6 +27,39 @@ For each actual server-pinned T1–T4 piece and each of the six original rarity 
 - Existing frozen pieces with `potency` or forbidden-slot rolls stay recorded and owned; no silent stat loss, item deletion or migration. They remain blocked from Combat 2.0 equip until their exact stat meaning and legitimate legacy conversion policy are agreed. Pre-2.0 equipment remains permanently nontradeable on Player Market 2.0.
 - The 48 new T1–T4 Combat sets and their 204 conceptual identities are **not** original pinned Forge items; this review does not authorize their crafting, rarity ranges or any 2/4/6/8/10 bonuses.
 
+## Verified CI results and exact slot-approval matrix
+
+GitHub Actions scoped Equipment + Combat CI passed with original source manifest and strictly compiled test. The proposal produces **0 theoretical affix-count shortfalls after pending approvals** across 169 original templates × 6 rarities = **1,014 source scenarios**. Of those, **295** tier/rarity scenarios across **77** source items require a proposed slot expansion. **719** scenarios need no new slot permission. These are scenario counts, NOT observed rolls, expected drop rates or approvals. CI identified **36 distinct role × slot × stat permission changes**, all still inactive.
+
+| Role | Equipment slot | Additional *proposed* Combat channel(s) |
+|---|---|---|
+| Damage | Boots | Accuracy, Critical Damage |
+| Damage | Cape | Critical Damage |
+| Damage | Chest | Ability Damage, Critical Damage, Critical Rate |
+| Damage | Helmet | Accuracy, Critical Damage, Critical Rate |
+| Damage | Legs | Ability Damage, Critical Damage, Critical Rate |
+| Damage | Offhand | Ability Damage, Critical Damage, Critical Rate |
+| Support | Amulet | Haste, Maximum HP |
+| Support | Boots | Maximum HP |
+| Support | Gloves | Forge Healing Power, Ward |
+| Support | Legs | Ward |
+| Support | Ring | Forge Healing Power |
+| Support | Weapon | Ward |
+| Tank | Amulet | Defense, Maximum HP, Tenacity |
+| Tank | Boots | Maximum HP |
+| Tank | Cape | Defense |
+| Tank | Gloves | Defense, Maximum HP, Tenacity |
+| Tank | Ring | Defense, Tenacity |
+| Tank | Weapon | Defense, Maximum HP, Tenacity |
+
+**Design-review considerations before approval:**
+- Crit Rate / Critical Damage on Damage armor can create powerful full-build stacking even if each individual roll fits its source range. Review class/build-wide crit caps and role-specific item identity; do not authorize automatically.
+- Ability Damage on Chest/Legs and Tenacity/HP on Tank weapons shift each equipment slot's intended specialization. If rejected, introduce a separately authored source stat/slot policy with strict replacement and the same 1–3 roll budget; do not make the item unrollable.
+- Support Ward/Healing distribution should remain useful in real class healing, barrier, support and boss-counterplay simulations, not simply inflate a synthetic DPS metric.
+- These 36 are **minimum coverage proposals chosen by existing source weights and preferences**, not finalized item design, exact new-mint RNG probabilities or approved mechanical effects.
+- Preserve original source class restrictions and one-, two- and dual-handed identities on every weapon; exhaustive CI checks now verify these metadata fields.
+- For approval, additionally validate summed multi-slot affix totals, outcome scarcity, original PvE counters, actual Skill/Companion 2.0 mechanics and the authoritative Combat Power formula. Slot widening must be versioned and never applied retroactively to existing items.
+
 ## What must be approved before implementing a new-mint generator
 - Every proposed *role × slot × stat* extension after gameplay/economy review; especially sources with no currently legal channels.
 - Whether to assign distinct `potency` semantics by class/role, replace it in future roll pools with an already-approved stat, or introduce a separately versioned effect.

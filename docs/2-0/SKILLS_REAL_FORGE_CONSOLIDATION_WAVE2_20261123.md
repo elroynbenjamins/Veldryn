@@ -15,6 +15,19 @@ The combined Equipment + Combat hidden workflow stopped at strict TypeScript com
 5. Include the new classifier test in `backend/tsconfig.equipment-combat-v2-launch.json` and the existing private `equipment-combat-v2-expanded-sets-integration.yml` strict TypeScript / node workflow. No public/Edge runtime import allowed.
 6. Preserve truthful instant-ability diagnostics: the existing engine emits `cast_complete` for timed casts but not for instant casts. A verified, source-attributed instant cleanse can therefore have **zero explicit cast-complete events and positive effect events**; classify it as observed counterplay without inventing a cast, changing the engine, or granting combat authority. Added the negative/instant regression to the pure analyzer test.
 
+## Cross-branch authored boss reconciliation
+
+The earlier combined hidden Equipment–Combat CI revealed a **real source divergence**: the Forge-side Asterfall Root/Bell and Sphinx boss compiler still had short, non-interruptible cast definitions; Skills counterplay draft #1637 includes longer, interruptible telegraphs. Ported the exact four source lines rather than altering tests to accept obsolete behavior:
+
+| Verified authored boss cast | Previous Forge draft | Reconciled Combat 2.0 draft |
+| --- | --- | --- |
+| Root: Living Bark | 600ms, not interruptible | 1300ms, interruptible |
+| Bell: Soul Curse | 750ms, not interruptible | 1400ms, interruptible |
+| Bell: Veil Mirror | 650ms, not interruptible | 1300ms, interruptible |
+| Sphinx: Mirage Veil | 650ms, not interruptible | 1300ms, interruptible |
+
+All other existing authored boss source lines are retained. These values are **draft source reconciliation**, not a promise of final player-facing boss balance; they remain behind the coordinated 2.0 gate and subject to final QA and owner tuning. Do not back-port these combat values into current 1.x.
+
 ## Release blockers still open
 
 - Source-authoritative Forge equipment **all ten slots** and all real set effects, including unapproved 15 pinned + 48 expanded set-family design: do not fill gaps with synthetic set bonuses.

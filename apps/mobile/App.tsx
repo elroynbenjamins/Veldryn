@@ -5,6 +5,7 @@ import {SavedLoadoutsPanel} from './src/components/SavedLoadoutsPanel';
 import {useCallback,useEffect,useMemo,useRef,useState,useSyncExternalStore} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {APP_BUILD_INFO} from './src/app-build';
+import {runWhileForeground} from './src/online/foreground-tasks';
 import {fetchReleaseNotes} from './src/online/release-notes';
 import {firstInstalledReleaseVersion,shouldAutoAnnounceReleaseNotes,shouldAutoShowReleaseNotes,type ReleaseNote} from './src/core/release-notes';
 import {WhatsNewModal} from './src/components/WhatsNewModal';
@@ -364,14 +365,12 @@ function VeldrynApp(){
     setStartupOverlayVisible(true);
     startupOpacity.setValue(1);appEntranceOpacity.setValue(reduced?1:.94);appEntranceY.setValue(reduced?0:4);
     if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}
-    const timer=setTimeout(()=>{
-      Animated.parallel([
-        Animated.timing(startupOpacity,{toValue:0,duration:420,useNativeDriver:true}),
+    Animated.parallel([
+        Animated.timing(startupOpacity,{toValue:0,duration:240,useNativeDriver:true}),
         Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true}),
         Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true}),
       ]).start(({finished})=>{if(finished)setStartupOverlayVisible(false);});
-    },160);
-    return()=>{clearTimeout(timer);startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
+    return()=>{startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
   },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
   useEffect(()=>{let alive=true;
     const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
@@ -391,13 +390,13 @@ function VeldrynApp(){
     void AsyncStorage.getItem(optionalUpdateSeenKey).then(value=>{if(active)setOptionalUpdateSeen(value==='1')}).catch(()=>{}).finally(()=>{if(active)setOptionalUpdateSeenLoaded(true)});
     return()=>{active=false};
   },[optionalUpdateSeenKey]);
+  const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;
   useEffect(()=>{
-    let active=true;
-    const load=async()=>{const notes=await fetchReleaseNotes();if(active)setReleaseNotes(notes)};
-    void load();
-    const listener=AppState.addEventListener('change',status=>{if(status==='active')void load()});
-    return()=>{active=false;listener.remove()};
-  },[]);
+    if(!loadOptionalContent&&!showWhatsNew)return;
+    return runWhileForeground(isCurrent=>{
+      void fetchReleaseNotes().then(notes=>{if(isCurrent())setReleaseNotes(notes);});
+    });
+  },[loadOptionalContent,showWhatsNew]);
   useEffect(()=>{
     // New installs are quiet, even after the first character is created.
     // Legacy saves from earlier builds retain their returning-player eligibility.
@@ -550,19 +549,25 @@ function VeldrynApp(){
     setUnlockInbox(current=>markUnlockInboxSeen(current));
     void markUnlockInboxRead(profileAttentionScope).catch(()=>{});
   },[tab,profileAttentionScope,unlockInboxLoaded]);
-  const syncLiveEventRuntime=useCallback(async()=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
+  const syncLiveEventRuntime=useCallback(async(isCurrent:()=>boolean)=>{if(!EVENTS_RELEASED||!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();if(!isCurrent())return;const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)!==JSON.stringify(nextRuntime)){const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}
     const announcedAt=Date.now(),announcementScope=auth.session?.user.id??current.character?.id??'device';
     if(runtime&&tabRef.current==='Events'){void eventAnnouncementStore.markSeen(announcementScope,runtime,announcedAt);setEventStartPopup(null);}
-     else if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt)&&tabRef.current!=='Events')setEventStartPopup(runtime);
+     else if(runtime&&canAnnounceLiveEventStart(current.character?.level)&&await eventAnnouncementStore.claim(announcementScope,runtime,announcedAt)&&isCurrent()&&tabRef.current!=='Events')setEventStartPopup(runtime);
   }catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[auth.session?.user.id]);
-  // Event configuration is server-authoritative, but it changes on a live-ops cadence, not a frame cadence.
-  // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
-  useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),60_000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
+  useEffect(()=>{
+    if(!loadOptionalContent||!ready||!EVENTS_RELEASED||!onlineConfigured)return;
+    let inFlight:(()=>boolean)|undefined;
+    return runWhileForeground(isCurrent=>{
+      if(inFlight?.())return;
+      inFlight=isCurrent;
+      void syncLiveEventRuntime(isCurrent).finally(()=>{if(inFlight===isCurrent)inFlight=undefined;});
+    },60_000);
+  },[loadOptionalContent,ready,syncLiveEventRuntime]);
    useEffect(()=>{if(tab!=='Events')return;setEventStartPopup(null);const runtime=state?.account.liveEvent;if(!runtime)return;void eventAnnouncementStore.markSeen(auth.session?.user.id??state?.character?.id??'device',runtime);},[tab,auth.session?.user.id,state?.account.liveEvent?.eventId,state?.account.liveEvent?.startsAtMs,state?.character?.id]);
   const needsLiveClock=!!state?.activity||!!state?.character?.classTraining;
   const needsFastClock=needsLiveClock&&(tab==='Home'||tab==='Combat');
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.
-  useEffect(()=>{setNow(Date.now());const interval=needsFastClock?2_000:needsLiveClock?15_000:60_000;const id=setInterval(()=>setNow(Date.now()),interval);return()=>clearInterval(id)},[needsFastClock,needsLiveClock]);
+  useEffect(()=>runWhileForeground(()=>setNow(Date.now()),needsFastClock?2_000:needsLiveClock?15_000:60_000),[needsFastClock,needsLiveClock]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(!forgeClaimFeedback)return;const timer=setTimeout(()=>setForgeClaimFeedback(null),4500);return()=>clearTimeout(timer)},[forgeClaimFeedback]);

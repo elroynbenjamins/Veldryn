@@ -37,6 +37,10 @@ ok(gatheringToolSkillXpMultiplier(state,'woodcutting')===1,'Inactive XP affix mu
 ok(gatheringToolSkillXpMultiplier(state,'mining')===1,'Tools cannot grant another profession XP');
 rejects(()=>saveGatheringToolReserve(state,toolId,third.id,102),'A third copy cannot enter a full two-copy tier');
 ok(state.inventory.stacks.some(row=>row.instanceId===third.id),'Rejected third save must stay in Inventory');
+const fullInventory:GameState={...state,inventory:{...state.inventory,capacity:1}};
+ok(activateGatheringToolReserve(fullInventory,'woodcutting',1,102).inventory.stacks.length===1,'A full Inventory must not block swapping saved copies');
+rejects(()=>withdrawGatheringToolReserve(fullInventory,'woodcutting',1),'Withdrawing a reserve into a full Inventory must reject without loss');
+ok(fullInventory.character?.savedToolInstanceIdsByTier?.woodcutting?.[1]===second.id,'Rejected full-inventory withdrawal must leave the reserve untouched');
 const swapBefore=state.inventory.stacks.length;
 state=activateGatheringToolReserve(state,'woodcutting',1,103);
 ok(state.inventory.stacks.length===swapBefore,'Activating saved copy must not require free Inventory slots');

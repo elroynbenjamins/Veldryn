@@ -58003,8 +58003,26 @@ function deletionRecoveryItems(entry2, sharedBank) {
     const instanceId = entry2.character.equipmentInstanceIds?.[slot];
     return { itemId, quantity: 1, ...instanceId ? { instanceId } : {} };
   });
-  const tools = [...new Set(Object.values(entry2.character.equippedToolIds ?? {}).filter((id) => typeof id === "string" && !!id))];
-  const held = [...equipped, ...tools.map((itemId) => ({ itemId, quantity: 1 }))];
+  const tools = [];
+  for (const skill2 of ["mining", "woodcutting", "fishing"]) {
+    const active2 = entry2.character.equippedToolIdsByTier?.[skill2];
+    if (active2 !== void 0) {
+      for (const [tier, id] of Object.entries(active2)) {
+        if (!id) continue;
+        const instanceId = entry2.character.equippedToolInstanceIdsByTier?.[skill2]?.[Number(tier)];
+        tools.push({ itemId: id, quantity: 1, ...instanceId ? { instanceId } : {} });
+      }
+    } else {
+      const legacy = entry2.character.equippedToolIds?.[skill2];
+      if (legacy) tools.push({ itemId: legacy, quantity: 1 });
+    }
+    for (const [tier, id] of Object.entries(entry2.character.savedToolIdsByTier?.[skill2] ?? {})) {
+      if (!id) continue;
+      const instanceId = entry2.character.savedToolInstanceIdsByTier?.[skill2]?.[Number(tier)];
+      tools.push({ itemId: id, quantity: 1, ...instanceId ? { instanceId } : {} });
+    }
+  }
+  const held = [...equipped, ...tools];
   const ownedGearIds = /* @__PURE__ */ new Set([
     ...equipped.map((row) => row.itemId),
     ...entry2.inventory.stacks.map((row) => row.itemId),

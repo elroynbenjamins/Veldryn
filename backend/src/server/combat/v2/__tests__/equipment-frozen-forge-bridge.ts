@@ -27,6 +27,10 @@ import {
 } from '../../../equipment/equipment-crafting-v2-instances';
 import type {V2DraftItem,V2DraftReceipt,V2DraftJob,V2DraftSkillAward} from '../../../equipment/equipment-crafting-v2-transaction';
 import type {V2CustodyCopy} from '../../../equipment/equipment-crafting-v2-custody';
+import type {V2HiddenStorageReservation}
+ from '../../../equipment/equipment-crafting-v2-storage-reservations';
+import {v2VirtualFingerprint,type V2VirtualMoveReceipt}
+ from '../../../equipment/equipment-crafting-v2-virtual-history';
 import type {VerifiedSkillBuildV2} from '../skill-effects';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
@@ -156,6 +160,18 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const custody:V2CustodyCopy={instanceId:copyId,accountId,
   ownerCharacterId:characterId,location:'equipped',equippedSlot:exact.slot,
   item:exact,locked:false,favorite:false};
+ const reservation:V2HiddenStorageReservation={
+  instanceId:copyId,jobId:mint.jobId,ownerCharacterId:characterId,
+  itemId:exact.pieceId,destination:'equipment_pouch',quantity:1,
+ };
+ const equipReceipt:V2VirtualMoveReceipt={
+  requestId:'QA_EQUIP_'+classId+'_'+specIndex+'_T'+tier,
+  fingerprint:v2VirtualFingerprint('equip',copyId),
+  instanceId:copyId,actorCharacterId:characterId,
+  from:'pouch',to:'equipped',oldHolder:characterId,
+  newHolder:characterId,version:6,equippedSlot:exact.slot,
+  physicallyDelivered:false,
+ };
  const skill=SKILL_IDENTITIES_V2.filter(s=>s.classId===classId).slice(0,2);
  const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
  const build:VerifiedSkillBuildV2={
@@ -170,7 +186,9 @@ function make(classId:ClassIdV2,specIndex:0|1,
  const classStats={...actor.stats};
  const source:TrustedFrozenForgeCombatSourceV2={
   actorId:actor.id,accountId,characterId,
-  items:[mint],jobs:[job],awards:[award],claims:[start,claim],ledgerRevision:5,
+  items:[mint],jobs:[job],awards:[award],claims:[start,claim],
+  reservations:[reservation],custodyReceipts:[equipReceipt],
+  ledgerRevision:6,
   custody:{accountId,characters:[{id:characterId,classId,level}],copies:[custody]},
   classBaselinePolicy:{version:'QA_LEVEL_ONLY_REAL_EQ2_ITEMS',profiles:{
    [classId]:{classId,minLevel:1,maxLevel:75,statsAtLevel:()=>({...classStats}),
@@ -179,9 +197,10 @@ function make(classId:ClassIdV2,specIndex:0|1,
   }},
   affixPolicy:qaCaps,
   verifyPersisted:(digest:string,revision:number)=>
-   revision===5&&/^[0-9a-f]{64}$/.test(digest),
+   revision===6&&/^[0-9a-f]{64}$/.test(digest),
  };
- return {actor,build,source,mint,exact,claim,start,job,award,custody};
+ return {actor,build,source,mint,exact,claim,start,job,award,custody,
+  reservation,equipReceipt};
 }
 let checked=0,actualFrozenPositive=0,mappedAffixes=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
@@ -270,7 +289,7 @@ const banked={...initial.source,custody:{...initial.source.custody,
  copies:initial.source.custody.copies.map(x=>({...x,location:'bank' as const,
   equippedSlot:undefined,ownerCharacterId:null}))}};
 assert.throws(()=>compileRealFrozenForgeActorV2(
- initial.actor,initial.build,banked),/exact_copy_custody_claim_mismatch/);
+ initial.actor,initial.build,banked),/virtual_custody_projection_mismatch/);
 const duplicate={...initial.source,custody:{...initial.source.custody,
  copies:[...initial.source.custody.copies,...initial.source.custody.copies]}};
 assert.throws(()=>compileRealFrozenForgeActorV2(
@@ -312,9 +331,9 @@ assert.throws(()=>compileRealFrozenForgeActorV2(
  initial.actor,initial.build,withoutAward),
  /invalid_hidden_v2_claim_settlement/,
  'no equipment combat from claim lacking the original crafting XP settlement');
-const staleVersion={...initial.source,ledgerRevision:4};
+const staleVersion={...initial.source,ledgerRevision:5};
 assert.throws(()=>compileRealFrozenForgeActorV2(
- initial.actor,initial.build,staleVersion),/stale_forge_ledger_revision/,
+ initial.actor,initial.build,staleVersion),/stale_custody_ledger_revision/,
  'newer verified Forge claim may never compile using an older account revision');
 const alteredAward={...initial.source,awards:initial.source.awards.map(row=>({
  ...row,xp:row.xp+1,

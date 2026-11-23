@@ -68,3 +68,44 @@ export function inspectProposedMarketProofShapeV5(proof) {
     reason: 'REQUIRES_NEW_SERVER_DB_PROOF_AND_ATOMIC_CUSTODY_ADAPTER_NOT_IMPLEMENTED'
   });
 }
+
+/**
+ * Deterministic SYNTHETIC QA selector: callers provide three synthetic rolls.
+ * It is NOT server RNG, does not accept verified authority and is never a mint.
+ * Each result has mayMint=false and marketAuthorized=false regardless of input.
+ */
+export function previewSyntheticBossRollV5(data, dungeonId, bossName, anyRatePct, gearRoll, categoryRoll, itemRoll) {
+  if (!Number.isFinite(anyRatePct) || anyRatePct < 0 || anyRatePct > 100) reject('invalid drop percentage');
+  for (const [kind, value] of [['gearRoll',gearRoll],['categoryRoll',categoryRoll],['itemRoll',itemRoll]]) {
+    if (!Number.isFinite(value) || value < 0 || value >= 1) reject('invalid synthetic '+kind);
+  }
+  const pool = reviewDungeonPoolV5(data, dungeonId, bossName);
+  const neverAuthority = Object.freeze({
+    previewOnly:true, mayMint:false, marketAuthorized:false, sourceBoss:bossName,
+    sourceDungeon:dungeonId
+  });
+  if (gearRoll >= anyRatePct / 100) {
+    return Object.freeze({...neverAuthority, candidateItemId:null, category:null});
+  }
+  let index = categoryRoll * 100;
+  const categories = data.bossPools.find(d=>d.dungeonId===dungeonId).bosses
+    .find(b=>b.bossName===bossName).categoryWeights;
+  let selectedCategory;
+  for (const category of categories) {
+    if (index < category.weightPct) {
+      selectedCategory = category;
+      break;
+    }
+    index -= category.weightPct;
+  }
+  if (!selectedCategory) reject('non-normalized category selection');
+  const chosenId = selectedCategory.itemIds[Math.floor(itemRoll * selectedCategory.itemIds.length)];
+  if (!pool.entries.some(p=>p.itemId===chosenId && p.category===selectedCategory.type)) {
+    reject('candidate not in frozen source boss pool');
+  }
+  return Object.freeze({
+    ...neverAuthority, candidateItemId:chosenId, category:selectedCategory.type,
+    note:'SYNTHETIC_DESIGN_PREVIEW_CANNOT_ISSUE_OR_TRADE'
+  });
+}
+

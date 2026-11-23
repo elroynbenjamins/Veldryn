@@ -90,3 +90,32 @@ The earlier pre-virtual-custody ledger pass passed the **private Equipment + Com
 The immutable Forge mint record's `ownerCharacterId` is the **original crafter**, not a perpetual equipment owner. This must not prevent a character on the **same account** from withdrawing legitimately traded/shared gear from the Bank and wearing it when role, class, level, and all item restrictions pass. The combat bridge now accepts that change only if the complete original claim reservation and ordered **pouch → Bank deposit → second-character Bank withdrawal → equip** history verifies. Both original crafter and current wearer must be among the authoritative account's characters; old/new move holders, revision and item identity must match the replay. The test proves that a second character can use the original unchanged frozen Forge stats and affixes, while spoofed external-account actors and missing original-crafter account membership remain rejected.
 
 This is a **hidden virtual-ledger behavioral proof**, not a live Bank transfer or an authenticated cross-account transaction. Actual physical EQ2 storage, the approved Player Market 2.0 mint-only trading restriction, and production account locks remain separate launch blockers.
+
+
+## Pass 5 — Schema-grounded online account readback (server-only, not a DB lock)
+
+A read-only inspection of **Veldryn staging PostgreSQL**, without reading player rows or changing any data, confirms that the existing `public.online_game_states` table is keyed by `account_id uuid` and contains `character_id uuid`, `state jsonb`, and monotonic `revision bigint`. A dedicated new module, `equipment-online-readback-review.ts`, parses that **actual row shape**, not a guessed second equipment database:
+
+- Match the server-authenticated account identity to the loaded row; compare exact expected revision, selected account-owned character, current character ID, class and level.
+- Parse the existing `state.account.equipmentV2Hidden` metadata in the saved GameState, not a new account wallet, Forge inventory or direct player ItemInstances API.
+- Verify the **complete pinned Forge job/claim/XP ledger**, universal craft+gem+movement request namespace, original storage reservations, and every ordered movement. Reconstruct present equipped, pouch, inventory, and Bank custody from persisted history, rejecting external character actors and unverified item IDs.
+- Deny a foreign account, stale revision, active-character mismatch, non-owned chosen character, duplicate account IDs, damaged exact Forge stats, unsupported deferred claims, and a virtual move outside the authoritative account roster. No client-provided JSON may be used as this trusted row.
+- Return `combatAuthority:false` and `requiresAuthenticatedLockAndRevisionRecheck:true`. **Inspecting a row is NOT service authorization, a database transaction or proof of lock.** This stage never mounts the adapter, creates an RPC, performs DB reads itself or releases Combat 2.0.
+
+### Required production transaction protocol (still NOT implemented)
+
+1. Server validates the real auth/session account and an eligible character. Never use user-editable JWT metadata to select an account; never expose service role credentials.
+2. A privileged server-internal read obtains the unique account row and correct current version, under its existing online state serialization/lock. Read only the account's row; do not scan players' states or trust incoming claims.
+3. Validate the entire EQ2 hidden metadata, physical inventory/Bank/Market custody, claim/storage/gem receipts and current character loadouts. Bind one immutable compilation digest to the exact row revision and the authenticated server request.
+4. At resolution and before a reward/charge/HP commit, **re-read/recheck the same account revision** under the existing atomic CAS mechanism; on conflict retry or reject. A prior read alone is not an exclusive lease. Four-player battles must coordinate all four participants with deterministic lock order or a server-stored reserved snapshot; never lock accounts using client-provided actor order.
+5. Only after full integration and owner approval may a private server-authorized adapter issue an executable Combat 2.0 source. The experimental `verifyPersisted` callbacks in QA are not and must never be treated as a live authorization mechanism. Do not create a `SECURITY DEFINER` Data API function or open public execute grants to simulate the missing lock.
+
+No SQL was executed to mutate staging or production, no migration or role grants are requested, and the GameState row's original `revision` remains the sole currently grounded authoritative account version for the design.
+
+## Pass 6 — Exact worn Forge source set readiness, no effect grant
+
+`equipment-forge-set-worn-readiness.ts` accepts only a source-labelled internal readback and counts original **minted, same-account, physically slot-consistent** 2.0 items that are actually marked equipped in the verified virtual custody history. It checks the pinned set ID, tier, role, unique item instance, original piece definition and unique equipment slot. It reports potential 2-/4-piece design milestones for **the original 15 actual Forge set families**. This is a *design inspection only*: `authorizedToExecuteCombat:false` and `activatedSetBonuses:0` are invariant. No percentage bonuses, resistances, innate set traits, market eligibility or boss rewards are added.
+
+A deterministic two-piece QA case now assembles both real Fieldborn Guard set members from separately generated original Forge recipes and exact-copy rolls, joins their complete job/claim/XP/custody histories into one same-account, same-character source, and checks that **two source-matched pieces give one visible design milestone but zero combat effects**. The original executable bridge continues rejecting the set until its effect mechanics and coefficients are fully approved. A fabricated third copy cannot increase eligibility. A Bank-transferred copy remains eligible for the *new wearer* without erasing its original crafter.
+
+Both modules are included in the private TypeScript build and public-import isolation check. The exact-head CI has to finish; existing broad validation on these hidden stacks is not clean. Nothing goes to `main`, production DB, the mobile UI, Player Market or a live combat flag.

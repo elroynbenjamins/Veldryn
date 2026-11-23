@@ -132,7 +132,10 @@ function rejects(transform,code){
 rejects(t=>{t.lots.push({...t.lots[0],lotId:'extra_lot',quantity:1});},
  'source_receipt_overclaimed');
 rejects(t=>{t.lots[0].accountId='other_account';},'forged_or_duplicate_lot');
-rejects(t=>{t.lots[0].characterId='char_2';},'incomplete_material_lot_coverage');
+rejects(t=>{t.lots[0].characterId='char_2';},'material_lot_quantity_mismatch');
+// A true missing lot drops a required storage identity, unlike an incorrect
+// holder when another lot still accounts for the same inventory record.
+rejects(t=>{t.lots.pop();},'incomplete_material_lot_coverage');
 rejects(t=>{t.lots.push({...t.lots[0]});},'forged_or_duplicate_lot');
 rejects(t=>{t.lots[0].materialId='EQ2_FAKE_COPY';},'forged_or_duplicate_lot');
 rejects(t=>{t.lots[0].sourceId='PROCESS:EQ2_FORGED';},

@@ -139,6 +139,27 @@ async function main(){
 
  const stale=new OnlineGameRepository('alice',{read:async()=>snapshot,send:async()=>{throw new OnlineCommandError('stale_state',true);}},{read:async()=>pending,write:async value=>{pending=value;}},()=>`key-${++keys}`);
  await stale.load();try{await stale.execute({type:'claim'})}catch{}ok(!await stale.hasPending(),'definitive stale failure cleared');
+ for(const scenario of ['warm','stale','switched','timeout'] as const){
+  const sequence:string[]=[];
+  let request:PendingGameCommand|null=null,ids=0;
+  const refreshed={...snapshot,version:5,state:scenario==='switched'?{...state,character:{...state.character!,id:'other-character'}}:state};
+  const returning=new OnlineGameRepository('alice',{
+   read:async()=>{sequence.push('read');return refreshed;},
+   send:async req=>{
+    sequence.push('send-'+req.expectedVersion);
+    if(scenario==='timeout')throw new Error('connection_lost');
+    if(scenario!=='warm'&&req.expectedVersion===0)throw new OnlineCommandError('stale_state',true);
+    return {...snapshot,version:req.expectedVersion+1};
+   },
+  },{read:async()=>request,write:async value=>{request=value;}},()=>`return-${++ids}`);
+  returning.snapshot=snapshot;
+  let failed=false;
+  try{await returning.execute({type:'claim'},true);}catch{failed=true;}
+  const expected=scenario==='stale'?'send-0,read,send-5':scenario==='switched'?'send-0,read':'send-0';
+  ok(sequence.join(',')===expected,'foreground claim request sequence '+scenario);
+  ok(failed===(scenario==='timeout'||scenario==='switched'),'foreground outcome '+scenario);
+  ok(await returning.hasPending()===(scenario==='timeout'),'durable foreground claim '+scenario);
+ }
  let releaseRead:(value:OnlineSnapshot)=>void=()=>{};
  const racing=new OnlineGameRepository('alice',{read:()=>new Promise(resolve=>{releaseRead=resolve;}),send:async()=>({...snapshot,version:2,serverNow:now+2})},{read:async()=>null,write:async()=>{}},()=> 'race-key');
  const initial=racing.refresh();releaseRead({...snapshot,version:1});await initial;

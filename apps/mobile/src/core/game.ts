@@ -369,7 +369,8 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   const settled=claimActivity(state,nowMs);
   // Cooking, smithing, enchanting, alchemy and Faith do not depend on location.
   // Keep their already-paid batches running instead of discarding the escrow.
-  const portable=['processing','alchemy','faith'].includes(settled.state.activity?.kind??'');
+  const portable=['processing','alchemy','faith'].includes(settled.state.activity?.kind??'')
+    || (!settled.state.activity && !!settled.state.character?.classTraining);
   // Regional activities must stop; use the ordinary stop path to return any
   // unfinished reservation instead of clearing activity and losing materials.
   const stopped=portable?settled.state:stopActivity(settled.state,nowMs);

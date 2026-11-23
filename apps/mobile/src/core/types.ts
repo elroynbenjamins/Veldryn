@@ -54,6 +54,10 @@ export interface CharacterState {
   equippedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   /** Exact physical copy in each tier. Missing IDs are pre-affix legacy tools. */
   equippedToolInstanceIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Dedicated character-bound reserve: one extra physical tool per gathering tier, outside Inventory and Bank. Active copies remain in equippedTool*ByTier for save compatibility. */
+  savedToolIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
+  /** Immutable crafted-copy receipt for the reserve; absent for pre-affix legacy tools. */
+  savedToolInstanceIdsByTier?:Partial<Record<GatheringSkillId,Partial<Record<1|2|3|4,string>>>>;
   equippedFoodId?:string;
   /** Auto-eat backup order (up to four different food types); never consumes bank food. */
   foodQueueIds?:string[];

@@ -1,0 +1,46 @@
+name: Guild 2.0 economy and resource-sink review (hidden)
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/guild/guild-v2-resource-sink-plan.ts'
+      - 'backend/src/server/guild/guild-v2-resource-sink-plan.test.ts'
+      - 'backend/src/server/guild/progression.ts'
+      - 'backend/tsconfig.guild-v2-resource-sinks.json'
+      - 'docs/2-0/resource-sinks-equipment-guild-v1.json'
+      - 'docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json'
+      - 'tools/test-eq2-guild-resource-sinks-v1.mjs'
+      - '.github/workflows/guild-v2-resource-sink-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-only-economy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install frozen backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Pin source recipes, costs and non-issuance
+        run: node tools/test-eq2-guild-resource-sinks-v1.mjs
+      - name: Strict isolated TypeScript review contract compilation
+        run: pnpm --dir backend exec tsc -p tsconfig.guild-v2-resource-sinks.json
+      - name: Verify guild preview Gold, material, replay and anti-overfill invariants
+        run: node backend/dist-guild-v2-resource-sinks/server/guild/guild-v2-resource-sink-plan.test.js
+      - name: Verify no live Guild/SQL imports from new proposal
+        run: |
+          if grep -R -n "guild-v2-resource-sink-plan\|resource-sinks-equipment-guild-v1" \
+            backend/src/server/guild/guild-api-contracts.ts \
+            backend/src/server/guild/guild-project-api.ts \
+            backend/src/server/guild/supabase-guild-repository.ts; then
+            echo "Unexpected runtime Guild sink import"
+            exit 1
+          fi

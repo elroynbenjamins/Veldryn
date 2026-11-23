@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {equippedCanonicalStatGemBonusesV1,equippedGemBonuses,equippedEffectGemBonuses,gearEnhancement,normalizeEnhancementGemSlots,replaceGem,socketGem,unsocketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel,normalizeEquipmentCraftingQueue} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemCombineSuccessPercentV1,gemCombineSucceededV1,gemRefineRecipeIdV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemCombineRecipeV1,gemCombineSuccessPercentV1,gemCombineSucceededV1,gemRefineRecipeIdV1,GEM_REFINE_COSTS_V1,formatGemValueV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {gemRollPercentFromUnitV1,gemRolledValueV1,gemValueRangeV1} from '../src/content/gems-v1';
@@ -27,6 +27,7 @@ state={...state,character:{...state.character!,gold:250000,equipment:{...state.c
  {itemId:'GEM_DUST',quantity:100},
  {itemId:'REGIONAL_CATALYST',quantity:2},
  {itemId:'RADIANT_CATALYST',quantity:1},
+  {itemId:'GEM_BINDING_COMPOUND',quantity:2},
 ]}};
 
 state=socketGem(state,'basic_sword','gem:effect_bulwark:g1');
@@ -90,17 +91,32 @@ ok(regionalCatalystRecipe?.level===70&&regionalCatalystRecipe.inputs.some(row=>r
 ok(radiantCatalystRecipe?.level===90&&radiantCatalystRecipe.inputs.some(row=>row.itemId==='ASHLANDS_BOTANICAL_ESSENCE'),'Enchanting 90 should synthesize Radiant Catalysts from Ashlands botanical essence');
 state={...state,account:{...state.account,unlockedKnowledgeIds:[...(state.account.unlockedKnowledgeIds??[]),'recipe_gem_bulwark']}};
 ok(availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1&&row.recipeReady),'Discovered Effect Gem recipe should unlock the forge family account-wide');
+const binderRecipe=RECIPES.find(row=>row.id==='BREW_GEM_BINDING_COMPOUND');
+ok(binderRecipe?.skillId==='alchemy'&&binderRecipe.gold===36,'Gem Binding Compound should be craftable through low-cost Alchemy');
+ok(binderRecipe?.inputs.some(row=>row.itemId==='GREENWOOD_LOG'&&row.quantity===12)
+ &&binderRecipe?.inputs.some(row=>row.itemId==='COPPER_ORE'&&row.quantity===8)
+ &&binderRecipe?.inputs.some(row=>row.itemId==='MEADOW_PERCH'&&row.quantity===5),'Binding Compound must consume surplus wood, ore and fish');
+ok(itemDef('GEM_BINDING_COMPOUND').type==='material','Gem Binding Compound must be registered as a tradeable material');
+for(const [grade,expectedGold,expectedBinder] of [[1,600,1],[2,2000,2],[3,7200,4],[4,24000,8]] as const){
+ const recipe=gemCombineRecipeV1(gemCombineRecipeIdV1('stat_might',grade))!;
+ ok(recipe.gold===expectedGold&&recipe.inputs.some(input=>input.itemId==='GEM_BINDING_COMPOUND'&&input.quantity===expectedBinder),'Gem Gold/binding compound pricing for G'+grade);
+}
 const recipeId=gemCombineRecipeIdV1('stat_might',1);
 for(const [grade,expected] of [[1,90],[2,80],[3,70],[4,60],[5,55],[6,50],[7,45],[14,10]] as const)
  ok(gemCombineSuccessPercentV1(grade)===expected,'Combine success progression must match declared odds for grade '+grade);
 ok(gemCombineSucceededV1(1,.899999)&&!gemCombineSucceededV1(1,.9),'Gem rolls must honor exact odds boundaries');
 ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&!row.skillReady),'Gem combining should expose its Enchanting level requirement');
 state={...state,skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:60,xp:totalXpAtLevel(60)}:row)};
+const noBinder={...state,inventory:{...state.inventory,stacks:state.inventory.stacks.filter(row=>row.itemId!=='GEM_BINDING_COMPOUND')}};
+ok(!availableGemCombinesV1(noBinder).some(row=>row.recipe.id===recipeId&&row.ready),'Gem combining must require the compound');
 ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&row.ready),'Owned three Cut Might Gems should be combine-ready once the Enchanting gate is met');
 const enchantingBeforeCombine=state.skills.find(row=>row.skillId==='enchanting')!.xp;
 const started=startGemCombine(state,recipeId,1000);
 ok(started.recipe.successChancePercent===90&&started.job.combineSuccessChancePercent===90,'New G1 merge jobs must freeze 90% odds at enqueue');
 ok(started.seconds===300,'Cut to Polished base combine should take five minutes without speed modifiers');
+ok(started.recipe.gold===600&&started.recipe.inputs.some(row=>row.itemId==='GEM_BINDING_COMPOUND'&&row.quantity===1),'Merge should charge the reduced Gold fee plus the binding compound');
+ok(gemStorageQuantity(started.state,'GEM_BINDING_COMPOUND')===gemStorageQuantity(state,'GEM_BINDING_COMPOUND')-1,'Binding compound must be reserved and consumed at start');
+ok(started.job.reservedGold===600&&started.job.reservedInputs?.some(row=>row.itemId==='GEM_BINDING_COMPOUND'&&row.quantity===1),'Merge queue snapshots must preserve Gold and materials');
 ok(equipmentCraftQueueModel(started.state,1000).jobs.some(job=>job.id===started.job.id),'Gem combine must occupy the shared equipment forge queue');
 const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs,.1);
 ok(gemPouch(claimed.state).stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');

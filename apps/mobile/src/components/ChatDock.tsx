@@ -28,13 +28,13 @@ export function ChatDock({enabled,onOpen,lines=1,selectedChannel=1,unreadCount=0
  const label=latest?st('Open chat. Latest World message from {name}: {message}',{name:latest.sender_name,message:latest.body})+(attention?'. '+attention:''):st('Open chat')+(attention?'. '+attention:'');
  return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={st('Opens full chat')} onPress={onOpen} style={({pressed})=>[s.dock,{minHeight:height},pressed&&s.pressed]}>
    <View style={s.iconFrame}><ThemedIcon name="chat" size={20}/></View>
-   <View style={s.messages}>{(shown.length?shown:[null]).map(row=><View key={row?.id??'empty'} style={s.line}>
+   <View style={s.messages}>{(shown.length?shown:[null]).map(row=>{const time=row&&showTime?chatDockTime(row.created_at):'';return <View key={row?.id??'empty'} style={s.line}>
     <View style={s.header}>
      <Text numberOfLines={1} style={s.channel}>{enabled?st('WORLD'):st('CHAT')}</Text>
-     {row?<><Text style={s.separator}>·</Text><View style={s.playerName}><PlayerStyledName name={row.sender_name} nameStyle={row.player_name_style??undefined} reduceMotion numberOfLines={1} style={s.name}/></View>{showTime&&chatDockTime(row.created_at)?<Text style={s.time}>{chatDockTime(row.created_at)}</Text>:null}</>:null}
+     {row?<><Text style={s.separator}>·</Text><View style={s.playerName}><PlayerStyledName name={row.sender_name} nameStyle={row.player_name_style??undefined} reduceMotion numberOfLines={1} style={s.name}/></View>{time?<Text style={s.time}>{time}</Text>:null}</>:null}
     </View>
-    {row?<View style={s.bodyWrap}><ChatMessageText body={row.body} compact numberOfLines={lines===1?2:1} style={s.body}/></View>:<Text numberOfLines={1} style={s.empty}>{enabled?st('World chat is quiet.'):st('Tap to open chat.')}</Text>}
-   </View>)}</View>
+    {row?<View style={s.bodyWrap}><ChatMessageText body={row.body.replace(/\s+/g,' ').trim()} compact numberOfLines={lines===1?2:1} style={s.body}/></View>:<Text numberOfLines={1} style={s.empty}>{enabled?st('World chat is quiet.'):st('Tap to open chat.')}</Text>}
+   </View>})}</View>
    <View style={s.trailing}>{mentionCount>0?<View style={s.mentionBadge}><Text style={s.mentionText}>@{mentionCount>9?'9+':mentionCount}</Text></View>:null}{unreadCount>0?<View style={s.unreadBadge}><Text style={s.unreadText}>{unreadCount>99?'99+':unreadCount}</Text></View>:null}<Text style={s.open}>›</Text></View>
  </Pressable>;
 }

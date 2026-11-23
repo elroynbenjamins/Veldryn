@@ -35,6 +35,7 @@
     "src/server/combat/v2/__tests__/equipment-forge-affix-coverage-review.ts",
     "src/server/combat/v2/__tests__/equipment-forge-next-mint-roll-policy-review.ts",
     "src/server/combat/v2/__tests__/equipment-universal-roll-rehearsal.ts",
-    "src/server/combat/v2/__tests__/equipment-authored-innate-percent-review.ts"
+    "src/server/combat/v2/__tests__/equipment-authored-innate-percent-review.ts",
+    "src/server/combat/v2/__tests__/equipment-full-loadout-affix-stack-review.ts"
   ]
 }

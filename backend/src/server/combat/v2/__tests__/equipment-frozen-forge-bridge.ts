@@ -765,6 +765,7 @@ let realForgeTacticalEncounters=0,realForgeSkillDiffering=0;
 let eligibleRealForgeCounterSpecs=0;
 const realForgeTacticalByGroup=new Map<string,string>();
 const tacticalGearByGroup=new Map<string,string>();
+const tacticalScopedReceiptByGroup=new Map<string,string>();
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  for(const specIndex of [0,1] as const){
   for(const bossCase of forgeTacticalBosses){
@@ -822,7 +823,6 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     }),signedInputs,'QA combat cannot mutate original Forge settlement/custody');
     const sourceDigest=JSON.stringify({
      items:compiled.evidence.items,
-     receiptDigest:compiled.evidence.receiptDigest,
      afterSkills:compiled.evidence.stages.afterSkills,
      afterFrozenBase:compiled.evidence.stages.afterFrozenBase,
      afterForgeAffixes:compiled.evidence.stages.afterForgeAffixes,
@@ -832,8 +832,20 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     else assert.equal(sourceDigest,earlier,
      'Changing only skill variants cannot change original Forge minted stats');
     const selected=JSON.stringify(choice.activeSkills);
-    if(strategy==='generic')genericSkills=selected;
-    else if(selected!==genericSkills)realForgeSkillDiffering++;
+    // The original Forge ledger digest correctly binds the selected Skills
+    // build as well as minted equipment. Unlike frozen ITEM stats, this
+    // authorization digest MUST change when skill variants change.
+    const scoped=compiled.evidence.receiptDigest;
+    assert.match(scoped,/^[a-f0-9]{64}$/);
+    if(strategy==='generic'){
+     genericSkills=selected;
+     tacticalScopedReceiptByGroup.set(key,scoped);
+    }else{
+     assert.equal(scoped===tacticalScopedReceiptByGroup.get(key),
+      selected===genericSkills,
+      'Build-bound Forge digest must change iff selected tactics change');
+     if(selected!==genericSkills)realForgeSkillDiffering++;
+    }
     if(strategy==='targeted'&&choice.hasMatchingCounter)
      eligibleRealForgeCounterSpecs++;
     realForgeTacticalEncounters++;
@@ -845,6 +857,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
 assert.equal(realForgeTacticalEncounters,9*2*6*3);
 assert.equal(realForgeTacticalByGroup.size,9*2*6);
 assert.equal(tacticalGearByGroup.size,9*2*6);
+assert.equal(tacticalScopedReceiptByGroup.size,9*2*6);
 assert.ok(realForgeSkillDiffering>0,
  'Forge-backed QA must actually vary original authored class skill loadouts');
 // One real source-proven Tank/2 Damage/Support party must also allow changing
@@ -862,7 +875,7 @@ const partySkillsAgain=simulateRealFrozenForgeCombatV2(
 assert.deepEqual(partySkillsResult,partySkillsAgain);
 assert.deepEqual(
  partySkillsResult.equipmentEvidence.map(x=>({
-  receiptDigest:x.receiptDigest,items:x.items,
+  items:x.items,
   afterFrozenBase:x.stages.afterFrozenBase,
  })),
  part.equipmentEvidence.map(x=>({

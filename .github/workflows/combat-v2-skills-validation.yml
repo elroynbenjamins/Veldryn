@@ -142,6 +142,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-opportunity-review.js
       - name: Run 324 ten-slot boss counterplay scenarios with verified equipment evidence
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-ten-slot-matrix.js
+      - name: Review pre-scaled Forge once-only handoff and reject synthetic ownership
+        run: node backend/dist/server/combat/v2/__tests__/equipment-frozen-forge-handoff-audit.js
       - name: Verify signed Equipment V2 trait hooks coexist with class skills and counterplay
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
       - name: Rehearse 9 classes × 2 specializations × 6 regional bosses with exact-copy equipped trait custody

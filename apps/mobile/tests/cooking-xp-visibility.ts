@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
-import {RECIPES,FISH_COOKING_RECIPE_IDS} from '../src/content/skills';
+import {RECIPES,FISH_COOKING_RECIPE_IDS,INGOT_SMELTING_RECIPE_IDS} from '../src/content/skills';
+import {increasedCraftingGoldCost,reducedIngotSmeltingGoldCost} from '../src/content/crafting-gold-cost';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../src/content/novice-sets';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import equipmentCatalog from '../src/content/equipment_catalog_t1_t9_v33.json';
@@ -57,9 +58,9 @@ ok(!!copper,'Copper smelting recipe exists');
 equal(copper!.output.itemId,'COPPER_INGOT','Copper output item is unchanged');
 equal(copper!.output.quantity,5,'Copper smelting still produces five ingots');
 equal(copper!.inputs.find(input=>input.itemId==='COPPER_ORE')?.quantity,15,'Copper ore raised to 15 per batch');
-equal(copper!.inputs.find(input=>input.itemId==='GREENWOOD_LOG')?.quantity,3,'Copper smelting uses three Greenwood');
+equal(copper!.inputs.find(input=>input.itemId==='GREENWOOD_LOG')?.quantity,5,'Copper smelting now uses five Greenwood');
 equal(copper!.gold,30,'Copper smelting costs exactly 30 charged Gold');
-equal(copper!.xp,125,'Copper smelting gains the earlier five XP plus another twenty');
+equal(copper!.xp,135,'Copper smelting keeps the prior +25 XP and gains another ten');
 const bindings=RECIPES.find(recipe=>recipe.id==='WEAVE_CLOTH_BINDINGS');
 equal(bindings?.inputs.find(input=>input.itemId==='MOSS_FIBER')?.quantity,7,'Cloth Bindings use seven Moss Fiber');
 equal(bindings?.inputs.find(input=>input.itemId==='BOAR_HIDE')?.quantity,2,'Cloth Bindings use two Boar Hide');
@@ -69,10 +70,26 @@ equal(linings?.inputs.find(input=>input.itemId==='WOLF_PELT')?.quantity,5,'Padde
 equal(linings?.inputs.find(input=>input.itemId==='MOSS_FIBER')?.quantity,6,'Padded Linings keep six Moss Fiber');
 equal(linings?.gold,80,'Padded Linings cost exactly 80 charged Gold');
 
-for(const [id,xp] of [
- ['SMELT_COPPER_INGOT',125],['SMELT_ASTER_IRON_INGOT',185],['SMELT_OATHSTONE_INGOT',250],
- ['SMELT_SUNSTONE_INGOT',540],['SMELT_FROSTIRON_INGOT',1000],['SMELT_BLACKGLASS_INGOT',1870],
-] as const){equal(RECIPES.find(recipe=>recipe.id===id)?.xp,xp,id+' has the added 20 XP');}
+const ingotCases=[
+ ['SMELT_COPPER_INGOT','COPPER_ORE',15,'GREENWOOD_LOG',5,30,135,5],
+ ['SMELT_ASTER_IRON_INGOT','ASTER_IRON_ORE',13,'IRONWOOD_LOG',5,50,195,4],
+ ['SMELT_OATHSTONE_INGOT','OATHSTONE_ORE',11,'CROWNWOOD_LOG',6,80,260,3],
+ ['SMELT_SUNSTONE_INGOT','SUNSTONE_ORE',11,'DUNEWOOD',7,290,550,3],
+ ['SMELT_FROSTIRON_INGOT','FROSTIRON',11,'WHITEPINE_LOG',7,730,1010,3],
+ ['SMELT_BLACKGLASS_INGOT','BLACKGLASS_ORE',11,'CINDERWOOD_LOG',7,1840,1880,3],
+] as const;
+equal(INGOT_SMELTING_RECIPE_IDS.size,ingotCases.length,'All six ingot recipes use the same smelting-gold policy');
+for(const [id,ore,oreQty,wood,woodQty,gold,xp,yieldCount] of ingotCases){
+ const recipe=RECIPES.find(row=>row.id===id);
+ ok(recipe,id+' smelting recipe exists');
+ equal(recipe!.inputs.find(input=>input.itemId===ore)?.quantity,oreQty,id+' consumes the agreed ore amount');
+ equal(recipe!.inputs.find(input=>input.itemId===wood)?.quantity,woodQty,id+' uses exactly two more wood');
+ equal(recipe!.gold,gold,id+' has the charged Gold reduction rounded to nearest ten');
+ equal(recipe!.xp,xp,id+' adds ten XP to the previous planned reward');
+ equal(recipe!.output.quantity,yieldCount,id+' keeps its original output per batch');
+}
+equal(reducedIngotSmeltingGoldCost(increasedCraftingGoldCost(25)),30,'Copper retains 30 charged Gold');
+equal(reducedIngotSmeltingGoldCost(increasedCraftingGoldCost(1800)),1840,'Blackglass charged Gold is reduced 15%, to nearest ten');
 
 // Verify equipment-specific XP bonuses across both existing equipment catalogs;
 // tools, guild components and material processing must not inherit this increase.
@@ -89,18 +106,6 @@ for(const piece of equipmentCatalog.pieces){
  const boosted=['T2','T3','T4'].includes(tier)?Math.round(Math.round(baseXp*1.25)*1.2):baseXp;
  const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.id==='CRAFT_V33_'+piece['Piece ID']);
  equal(recipe?.xp,boosted+5,recipe?.id??'unknown V33 item'+' gains five equipment XP');
-}
-
-for(const [id,wood,quantity] of [
- ['SMELT_COPPER_INGOT','GREENWOOD_LOG',3],
- ['SMELT_ASTER_IRON_INGOT','IRONWOOD_LOG',3],
- ['SMELT_OATHSTONE_INGOT','CROWNWOOD_LOG',4],
- ['SMELT_SUNSTONE_INGOT','DUNEWOOD',5],
- ['SMELT_FROSTIRON_INGOT','WHITEPINE_LOG',5],
- ['SMELT_BLACKGLASS_INGOT','CINDERWOOD_LOG',5],
-] as const){
- const smelting=RECIPES.find(recipe=>recipe.id===id);
- equal(smelting?.inputs.find(input=>input.itemId===wood)?.quantity,quantity,id+' uses one additional wood per batch');
 }
 
 const now=Date.UTC(2026,10,19,12);

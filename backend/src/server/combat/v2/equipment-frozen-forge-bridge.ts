@@ -152,14 +152,18 @@ export function compileRealFrozenForgeActorV2(
      mint.outcome.tier!==item.tier||
      !same(v2ServerCreateExactTemplate(piece,mint.outcome),item))
     reject('forge_manifest_roll_source_mismatch');
-  if(build.verified.level<minLevel[item.tier]||
+  const forgeTier=Number(item.tier);
+  if(!Number.isSafeInteger(forgeTier)||forgeTier<1||forgeTier>4)
+    reject('invalid_frozen_forge_tier');
+  const requiredLevel=minLevel[forgeTier as 1|2|3|4];
+  if(build.verified.level<requiredLevel||
      piece.role!==CLASS_ROLES_V2[build.verified.classId]||
      (piece.classRestriction&&piece.classRestriction!==build.verified.classId))
     reject('forge_equipment_role_or_level_locked');
   const owned=build.ownedItemsById[id];
   if(!owned||owned.slot!==slot||owned.instanceId!==id||
      owned.tier!=='T'+item.tier||owned.setFamilyId||
-     owned.requiredLevel!==minLevel[item.tier]||
+     owned.requiredLevel!==requiredLevel||
      !owned.eligibleRoles?.includes(CLASS_ROLES_V2[build.verified.classId]))
     reject('source_build_catalog_mismatch');
   // Forge's 15 real set IDs and the draft 48 Combat sets are NOT yet one

@@ -35,6 +35,9 @@ for(const invalid of [NaN,-.21,.31,Infinity]){
  {slashing:0,piercing:0,blunt:invalid}),
  /combat_v2_physical_subtype_unapproved_profile_value/);
 }
+assert.throws(()=>calculatePhysicalSubtypeV2(100,[{type:'blunt',basisPoints:10000}],
+ {slashing:NaN,piercing:0,blunt:0}),/unapproved_profile_value/,
+ 'all channels must be validated, including the unused Slashing key');
 assert.throws(()=>calculatePhysicalSubtypeV2(-1,mix),/invalid_damage_or_weights/);
 assert.throws(()=>calculatePhysicalSubtypeV2(Number.POSITIVE_INFINITY,mix),/invalid_damage_or_weights/);
 
@@ -88,4 +91,8 @@ assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
  /not_pinned_forge_piece/);
 assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
  [{...evidence[0],receiptDigest:'not-signed'}]),/bad_frozen_evidence/);
+assert.throws(()=>issueFrozenForgePhysicalAuthorityV2(input,
+ [{...evidence[0],items:[{instanceId:'QA_OTHER_CLASS',pieceId:'EQ2_WEAPON_T1_WAYFINDER'}]}]),
+ /weapon_class_mismatch/,'foreign-class weapon cannot attach even to QA source authority');
+
 console.log('PASS: hidden source-bound physical subtype direct-hit resolver, mixed splits, limits, Rune Bash shield requirement, replay and V1 isolation (QA synthetic evidence only)');

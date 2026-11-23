@@ -76,7 +76,7 @@ const message=(id,name,body,created_at='2026-11-22T19:45:00Z')=>({id,sender_name
  assert.ok(channelText(),'large accessibility text still has a channel label');
  assert.equal(preview()[0].props.numberOfLines,2,'two-line preview survives large fonts');
  assert.ok(dock().props.accessibilityLabel.includes('unread'),'unread count stays accessible');
- assert.ok(labels().some(x=>x.props.children==='@1'),'mentions are visible');
+ assert.ok(labels().some(x=>Array.isArray(x.props.children)&&x.props.children.join('')==='@1'),'mentions are visible');
  assert.ok(renderer.root.findAllByType('View').some(node=>Array.isArray(node.props.style)&&node.props.style.some(style=>style?.flexDirection==='column'&&style?.gap===2)),'narrow notification badges stack to preserve sender width');
  assert.ok(labels().some(x=>x.props.children===2),'unread badge is visible');
 

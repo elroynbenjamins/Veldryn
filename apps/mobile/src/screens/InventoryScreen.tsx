@@ -420,14 +420,17 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             <Text style={[s.toolBonusValue,{color:rarityMeta(copy.rarity).color}]}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
           {equippedSameTier&&!isEquipped?<View style={s.toolComparePanel}>
-            <Text style={s.toolCompareEyebrow}>{gt('Equipped').toLocaleUpperCase(language)} · T{equippedSameTier.tier}</Text>
+            <View style={s.toolCopyHeaderRow}>
+              <Text style={s.toolCompareEyebrow}>{gt('Equipped').toLocaleUpperCase(language)} · T{equippedSameTier.tier}</Text>
+              {equippedSameTierCopy?<Text style={[s.toolCopyCaption,{color:rarityMeta(equippedSameTierCopy.rarity).color}]}>{rarityMeta(equippedSameTierCopy.rarity).label} · Q{equippedSameTierCopy.quality}</Text>:null}
+            </View>
             <Text style={s.toolCompareName}>{localizedItemName(language,equippedSameTier.id)} · +{gatheringToolPercent(equippedSameTierSpeed??0)}% {gt('Gathering Speed')}</Text>
             <Text style={s.toolCompareBonus}>{equippedSameTierCopy?('+'+gatheringToolPercent(equippedSameTierCopy.bonus.basisPoints/100)+'% '+(equippedSameTierCopy.bonus.stat==='speed'?gt('Gathering Speed'):equippedSameTierCopy.bonus.stat==='rarity'?gt('Gathering Rarity Chance'):gl(equippedSameTier.skillId)+' XP')):equippedSameTierReceipt?gt('Tool roll record unavailable · no bonus is assumed.'):gt('Tier base · No bonus roll')}</Text>
           </View>:null}
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
             <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?(isEquipped?gt('Equipped'):gt('Equip')):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
-            {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
-            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
+            {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
+            <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||isEquipped||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
           </View>
         </View>;
       })}

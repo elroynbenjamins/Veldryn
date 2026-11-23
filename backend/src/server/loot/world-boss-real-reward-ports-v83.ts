@@ -46,6 +46,8 @@ interface InboxRow extends Record<string,unknown>{
 }
 const readGameSql='SELECT character_id::text AS character_id,state '+
  'FROM public.online_game_states WHERE account_id=$1::uuid FOR UPDATE';
+const readOwnedCharacterSql='SELECT id::text AS id FROM public.characters '+
+ 'WHERE id=$1::uuid AND account_id=$2::uuid FOR KEY SHARE';
 const readWalletSql='SELECT gold::text AS gold FROM public.character_wallets '+
  'WHERE character_id=$1::uuid FOR UPDATE';
 const readAuditSql='SELECT id::text AS id,source_key,account_id::text AS account_id,'+
@@ -125,6 +127,13 @@ async function lockedGame(tx:ChestSqlV70,accountId:string){
  const game=state(rows[0]!.state);
  if(game.character.id!==rows[0]!.character_id)
   throw Error('world_boss_v83_active_character_mismatch');
+ // A matching active-state UUID alone does not prove ownership. Without
+ // this same-transaction check, a corrupted online_game_states binding could
+ // credit a character wallet belonging to another account.
+ const owned=(await tx.query<{id:string}>(readOwnedCharacterSql,
+  [rows[0]!.character_id,accountId])).rows;
+ if(owned.length!==1||owned[0]!.id!==rows[0]!.character_id)
+  throw Error('world_boss_v83_character_not_owned');
  return {characterId:rows[0]!.character_id,game};
 }
 function rewardBalance(s:GameStateV83,id:RewardId,

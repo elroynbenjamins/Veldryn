@@ -10,11 +10,26 @@
  */
 import type {CombatantDefinition,CombatStats,CombatV2EquipmentEffects} from '../types';
 import type {GearSlotV2} from './build-contract';
+import {v2ServerPiece,v2ServerRecipeAndPiece} from '../../equipment/equipment-crafting-v2-manifest';
+import {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent} from '../../equipment/equipment-crafting-v2-instances';
+import {V2_SERVER_AFFIX_RANGES,type V2Affix} from '../../equipment/equipment-crafting-v2-rolls';
+import type {V2DraftItem} from '../../equipment/equipment-crafting-v2-transaction';
 export type EquipmentAffixIdV2=
  'attack_pct'|'defense_pct'|'max_hp_pct'|'haste_pp'|
  'crit_rate_pp'|'crit_damage_pct'|'accuracy_pp'|'evasion_pp'|
  'penetration_pp'|'ward_pp'|'shield_strength_pct'|
  'class_healing_pct'|'hex_potency_pct'|'tenacity_pp'|'ability_damage_pct'|'forge_healing_power_pct';
+/** Exact ORIGINAL Forge roll identities only. Potency stays unmapped until
+ * its unambiguous mechanic is authored; NEVER convert it to Hex/Pure Damage. */
+export const ORIGINAL_FORGE_COMBAT_AFFIX_MAP_V2:
+ Readonly<Partial<Record<V2Affix,EquipmentAffixIdV2>>>={
+ armor:'defense_pct',maxHp:'max_hp_pct',ward:'ward_pp',
+ critRate:'crit_rate_pp',critDamage:'crit_damage_pct',
+ haste:'haste_pp',penetration:'penetration_pp',accuracy:'accuracy_pp',
+ tenacity:'tenacity_pp',abilityDamage:'ability_damage_pct',
+ healingPower:'forge_healing_power_pct',
+};
+
 export interface EquipmentAffixDefinitionV2{
  readonly id:EquipmentAffixIdV2;
  readonly unit:'relative_percent'|'percentage_points';
@@ -80,8 +95,9 @@ const limit=(id:EquipmentAffixIdV2,policy:ServerAffixPolicyV2)=>{
    range.min>range.max)throw Error('combat_v2_missing_approved_roll_limit:'+id);
  return range;
 };
-export function validateTrustedAffixesV2(
+function validateAffixesWithSourcePolicy(
  item:TrustedEquipmentItemAffixesV2,policy:ServerAffixPolicyV2,
+ originalForgeVerified=false,
 ):readonly TrustedPersistedAffixV2[]{
  if(!item.instanceId||!Number.isInteger(item.quality)||item.quality<0||item.quality>100||
     !/^T[1-5]$/.test(item.tier)||!item.rarity||!Array.isArray(item.affixes))
@@ -96,7 +112,13 @@ export function validateTrustedAffixesV2(
    if(!isObject(row)||typeof row.id!=='string'||!Object.prototype.hasOwnProperty.call(EQUIPMENT_AFFIXES_V2,row.id))
      throw Error('combat_v2_unknown_affix');
    const id=row.id as EquipmentAffixIdV2,definition=EQUIPMENT_AFFIXES_V2[id];
-   if(!definition.slots.includes(item.slot))throw Error('combat_v2_affix_slot_ineligible');
+   // The ORIGINAL Forge roller selects from role weights and only favors
+   // slot-specific stats 70% of the time. A legitimate original item can
+   // therefore have a valid affix outside synthetic Combat slot preferences.
+   // Only the separately verified exact-mint entrypoint below can request
+   // this source-specific compatibility. Generic Combat snapshots cannot.
+   if(!originalForgeVerified&&!definition.slots.includes(item.slot))
+     throw Error('combat_v2_affix_slot_ineligible');
    if(ids.has(id))throw Error('combat_v2_duplicate_item_affix');
    ids.add(id);
    if(!finite(row.value))throw Error('combat_v2_invalid_roll_value');
@@ -106,6 +128,12 @@ export function validateTrustedAffixesV2(
    // The values are copied; callers cannot mutate source item snapshots.
    return {id,value:percent(row.value)};
  });
+}
+/** Generic synthetic/other-item validation retains strict slot policy. */
+export function validateTrustedAffixesV2(
+ item:TrustedEquipmentItemAffixesV2,policy:ServerAffixPolicyV2,
+):readonly TrustedPersistedAffixV2[]{
+ return validateAffixesWithSourcePolicy(item,policy,false);
 }
 export interface AppliedEquipmentAffixV2{
  readonly instanceId:string;readonly id:EquipmentAffixIdV2;
@@ -120,11 +148,12 @@ export interface CompiledEquipmentAffixesV2{
  * included in actor.stats. Cannot double-apply: needs a trusted explicit tag.
  * This is an opt-in advanced-effect bridge, not the final rarity/quality formula.
  */
-export function compileTrustedEquipmentAffixesV2(
+function compileAffixesWithSourcePolicy(
  actor:CombatantDefinition,
  items:readonly TrustedEquipmentItemAffixesV2[],
  policy:ServerAffixPolicyV2,
  serverEnabled=false,
+ originalForgeVerified=false,
 ):CompiledEquipmentAffixesV2{
  if(!serverEnabled)return {actor,sources:[]};
  if(actor.team!=='players'||!actor.combatV2||!actor.tags?.includes('combat-v2-gear-base-resolved')||
@@ -136,7 +165,8 @@ export function compileTrustedEquipmentAffixesV2(
    if(ids.has(item.instanceId)||slots.has(item.slot))
      throw Error('combat_v2_affix_item_duplicate');
    ids.add(item.instanceId);slots.add(item.slot);
-   for(const affix of validateTrustedAffixesV2(item,policy)){
+   for(const affix of validateAffixesWithSourcePolicy(
+    item,policy,originalForgeVerified)){
      const definition=EQUIPMENT_AFFIXES_V2[affix.id];
      if(definition.runtime!=='supported')
        throw Error('combat_v2_affix_effect_unimplemented:'+affix.id);
@@ -201,4 +231,62 @@ export function compileTrustedEquipmentAffixesV2(
      }},
    sources:all,
  };
+}
+
+/** Standard trusted Combat 2.0 items still use original strict slot caps.
+ * No generic/legacy item may request the original-Forge exception. */
+export function compileTrustedEquipmentAffixesV2(
+ actor:CombatantDefinition,items:readonly TrustedEquipmentItemAffixesV2[],
+ policy:ServerAffixPolicyV2,serverEnabled=false,
+):CompiledEquipmentAffixesV2{
+ return compileAffixesWithSourcePolicy(actor,items,policy,serverEnabled,false);
+}
+export interface OriginalFrozenForgeAffixMintV2{
+ readonly mint:V2DraftItem;
+ readonly slot:GearSlotV2;
+}
+/** HIDDEN test-only. Call ONLY AFTER verifying the complete, current original
+ * Forge ledger, claims and equipped custody under an authenticated account
+ * transaction. This function checks original source recipe/roll again, then
+ * permits ONLY its genuine stat/slot identity via the already implemented
+ * Combat mechanic. It cannot authorize equipment or grant any items.
+ *
+ * Generic Potency remains rejected; forged role/slot/piece/rolls are denied.
+ */
+export function compileOriginalFrozenForgeAffixesV2(
+ actor:CombatantDefinition,
+ mints:readonly OriginalFrozenForgeAffixMintV2[],
+ policy:ServerAffixPolicyV2,serverEnabled=false,
+):CompiledEquipmentAffixesV2{
+ if(!serverEnabled)throw Error('combat_v2_forge_original_slot_gate_off');
+ if(!Array.isArray(mints)||mints.length===0||mints.length>10)
+  throw Error('combat_v2_forge_original_mint_count_invalid');
+ const rows:TrustedEquipmentItemAffixesV2[]=mints.map(({mint,slot})=>{
+  if(!mint||!mint.exactItem||!mint.outcome||
+   mint.exactItem.slot!==slot||mint.exactItem.pieceId!==mint.outcome.pieceId||
+   !v2ServerExactTemplateConsistent(mint.exactItem))
+   throw Error('combat_v2_forge_exact_mint_or_slot_invalid');
+  const piece=v2ServerPiece(mint.exactItem.pieceId);
+  const recipe=v2ServerRecipeAndPiece(mint.outcome.recipeId);
+  if(!piece||!recipe||recipe.piece!==piece||
+   piece.slot!==slot||piece.tier!==mint.exactItem.tier||
+   JSON.stringify(v2ServerCreateExactTemplate(piece,mint.outcome))!==
+    JSON.stringify(mint.exactItem))
+   throw Error('combat_v2_forge_original_recipe_or_roll_mismatch');
+  const item=mint.exactItem;
+  return {instanceId:mint.id,slot:item.slot,tier:'T'+item.tier,
+   rarity:item.rarity,quality:item.quality,affixes:item.affixes.map(roll=>{
+    const mapped=ORIGINAL_FORGE_COMBAT_AFFIX_MAP_V2[roll.stat];
+    if(!mapped)throw Error('combat_v2_forge_original_affix_unimplemented:'+roll.stat);
+    const range=V2_SERVER_AFFIX_RANGES[roll.stat][item.tier-1];
+    if(!range||roll.percent<range[0]-1e-7||
+       roll.percent>range[1]+1e-7)
+     throw Error('combat_v2_forge_original_affix_range_mismatch');
+    return {id:mapped,value:Math.round(roll.percent/100*1e6)/1e6};
+   })};
+ });
+ // Canonical original Forge slot roulette is authenticated separately by
+ // its immutable mint/claim provenance. No client-provided "Forge" tag,
+ // policy exception or generic affix snapshot can reach this branch.
+ return compileAffixesWithSourcePolicy(actor,rows,policy,true,true);
 }

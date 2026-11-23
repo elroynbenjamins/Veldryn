@@ -274,7 +274,16 @@ export function compileServerSkillBuildV2(serverEnabled:boolean,input:VerifiedSk
       'Hex Detonation':'all','Final Dance':'all','Solar Hymn':'all',
       'Resonance Burst':'all',
     };
+    // Hidden EQ2-combined 2.0 counterplay: the Stonecaller River Stone
+    // Cleansing Stream (variant 2) must wake for hostile statuses even at
+    // full HP. Do NOT modify other variants or legacy V1 heal selection.
+    const cleansingStream=verified.classId==='STONECALLER'&&
+      record.name==='River Stone'&&index===1;
     return {...upgraded,id:base.id+':v2:'+index,
+      ...(cleansingStream?{
+        target:'lowest_hp_ally_with_dot' as const,
+        aiCondition:'ally_below_50_or_dot' as const,
+      }:{}),
       ...(spenders[record.name]?{combatV2:{spend:spenders[record.name],bonusPerStack:.055}}:{})};
   });
   const s=actor.stats;

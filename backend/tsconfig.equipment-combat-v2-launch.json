@@ -28,6 +28,8 @@
     "src/server/combat/v2/boss-telegraph-projection.ts",
     "src/server/combat/v2/__tests__/boss-telegraph-projection.ts",
     "src/server/combat/v2/__tests__/physical-damage-engine-authority.ts",
-    "src/server/combat/v2/__tests__/enemy-physical-affix-review.ts"
+    "src/server/combat/v2/__tests__/enemy-physical-affix-review.ts",
+    "src/server/combat/v2/__tests__/equipment-physical-affix-budget-review.ts",
+    "src/server/combat/v2/__tests__/physical-equal-stats-matchup-matrix.ts"
   ]
 }

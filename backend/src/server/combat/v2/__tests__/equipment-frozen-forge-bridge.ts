@@ -48,6 +48,8 @@ import {
 } from '../equipment-online-cas-recheck';
 import {reviewWornRealForgeSetsV2}
  from '../equipment-forge-set-worn-readiness';
+import {reviewObservedCounterOpportunityV2}
+ from '../ability-counterplay-opportunity-review';
 
 assert.equal(V2_SERVER_PIECES.length,169,'must import the genuine pinned EQ2 Forge catalogue');
 assert.equal(V2_SERVER_RECIPES.length,338,'must import its real recipe routes');
@@ -372,6 +374,59 @@ assert.ok(bossSignals.casts.some(c=>
 assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);
+
+/**
+ * Wave 2: classify observed Skills counterplay on original, genuinely forged
+ * and virtual-custody-proven Equipment 2.0 copies. Both tactics share the same
+ * authored boss, source snapshot, encounter seed and equipped item history.
+ * QA trace is unsigned: NO authenticated DB, approved CP, rewards or market.
+ */
+assert.deepEqual(counterFight.equipmentEvidence,baselineFight.equipmentEvidence,
+ 'Skills tactics must not alter verified original Forge copy provenance');
+const baselineStone=compileRealFrozenForgeActorV2(
+ stonecaller.actor,stonecaller.build,stonecaller.source);
+const sustainIds=new Set(baselineStone.actor.abilities.filter(a=>
+ a.effects.some(e=>e.kind==='heal'||e.kind==='hot'||e.kind==='shield'))
+ .map(a=>a.id));
+const v2BossStatuses=(events:typeof counterFight.combat.events)=>events.filter(e=>
+ e.type==='status_apply'&&e.actorId===statusBoss.id&&
+ (e.statusKind==='debuff'||e.statusKind==='dot')).length;
+const selectedCasts=(events:typeof counterFight.combat.events,
+ ids:ReadonlySet<string>)=>events.filter(e=>
+ e.type==='cast_complete'&&e.actorId===stonecaller.actor.id&&
+ ids.has(e.abilityId??'')).length;
+const targetRouteIds=new Set([compiledRiver.id]);
+const sustainEvents=baselineFight.combat.events.filter(e=>
+ e.actorId===stonecaller.actor.id&&sustainIds.has(e.abilityId??'')&&
+ (e.type==='heal'||e.type==='shield'||e.type==='hot_tick')).length;
+const explanation=reviewObservedCounterOpportunityV2([
+ {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
+  classId:'STONECALLER',specializationId:stoneCleanseBuild.selected.specializationId,
+  enemyId:statusBoss.id,strategy:'targeted',route:'cleanse',
+  hasMatchingCounter:compiledRiver.effects.some(e=>e.kind==='cleanse'),
+  observedOpportunityEvents:v2BossStatuses(counterFight.combat.events),
+  eligibleSkillCasts:selectedCasts(counterFight.combat.events,targetRouteIds),
+  attributedCounterEvents:curedEvents.length},
+ {scenarioId:'EQ2_ORIGINAL_FORGE_STATUS_BOSS',
+  classId:'STONECALLER',specializationId:stoneCleanseBuild.selected.specializationId,
+  enemyId:statusBoss.id,strategy:'alternative',route:'sustain',
+  hasMatchingCounter:sustainIds.size>0,
+  observedOpportunityEvents:baselineFight.combat.events.filter(e=>
+   e.type==='damage'&&e.actorId===statusBoss.id&&
+   e.targetId===stonecaller.actor.id).length,
+  eligibleSkillCasts:selectedCasts(baselineFight.combat.events,sustainIds),
+  attributedCounterEvents:sustainEvents},
+]);
+assert.equal(explanation.provenance,'unsigned_replayed_engine_QA_only');
+assert.equal(explanation.releaseApproved,false);
+assert.equal(explanation.comparisons,1);
+const targetedObservation=explanation.rows.find(x=>x.strategy==='targeted');
+assert.equal(targetedObservation?.explanation,'counter_effect_observed',
+ 'Actual Skills cleansing requires an observed boss opportunity and cast');
+assert.equal(targetedObservation?.attributedEvents,curedEvents.length);
+assert.ok(explanation.rows.some(x=>x.strategy==='alternative'),
+ 'Source-derived alternate route must be assessed without claiming success');
+
 assert.equal(baselineFight.combat.events.filter(e=>
  e.type==='status_remove'&&e.actorId===stonecaller.actor.id).length,0,
  'ordinary River Stone cannot implicitly borrow cleansing effect');

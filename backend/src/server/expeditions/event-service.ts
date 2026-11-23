@@ -8,7 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,FROSTFALL_ENDURANCE_ENEMY_PACING_V3,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
+import {FROSTFALL_ENDURANCE_GENERATOR,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -164,7 +164,7 @@ export class EventExpeditionService{
   // Only new seasonal graphs receive depth attrition. Saved short events stay numerically identical.
   const depthBeyondOpening=isFrostfallEndurance&&['battle','elite','boss'].includes(selected.kind)?Math.max(0,selected.depth-8):0;
   const depthAttack=Math.pow(1.022,depthBeyondOpening),depthHp=Math.pow(1.035,depthBeyondOpening),depthDefense=Math.pow(1.012,depthBeyondOpening);
-  const seasonalPacing=isFrostfallEndurance?FROSTFALL_ENDURANCE_ENEMY_PACING_V3:{attack:1,hp:1,defense:1};
+  const seasonalPacing=frostfallEnemyPacingForGraph(run.graph);
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:seasonalPacing.attack*depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:seasonalPacing.hp*depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:seasonalPacing.defense*depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});

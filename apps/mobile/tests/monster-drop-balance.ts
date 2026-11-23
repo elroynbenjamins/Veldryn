@@ -53,6 +53,9 @@ check(dropChance('CAVE_SKITTER','ASTER_IRON_ORE')!==undefined,'Cave Skitter reta
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='THORN_SAP')),'Thorn Sap still available elsewhere');
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='IRONWOOD_LOG')),'Ironwood Log still available elsewhere');
 check(MONSTERS.some(m=>m.drops.some(d=>d.itemId==='COPPER_ORE')),'Copper Ore still available elsewhere');
+check(MONSTERS.every(m=>m.drops.every(drop=>drop.itemId!=='FALLEN_KNIGHT_SIGIL')),'Retired Sigil is not obtainable from any monster');
+check(dropChance('FALLEN_KNIGHT','ECHO_TOUCHED_PELT')===1,'Fallen Knight keeps guaranteed pelts');
+check(dropChance('FALLEN_KNIGHT','TORN_OATHCLOTH')===1,'Fallen Knight keeps guaranteed oathcloth');
 for(const bossDrop of monster('FALLEN_KNIGHT').drops.filter(drop=>drop.chance===1)){
  closeTo(bossDrop.chance,1,`Guaranteed boss drop ${bossDrop.itemId} remains guaranteed`);
 }

@@ -16,6 +16,7 @@ on:
       - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
       - 'backend/src/server/combat/v2/skill-effects.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-launch-registry.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-member-source-audit.ts'
       - 'backend/src/server/equipment/equipment-crafting-v2-material-source-review.ts'
@@ -72,6 +73,8 @@ jobs:
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-identity-review.js
       - name: Prove original Forge Tenacity, direct ability damage and class-healing rolls hit only their intended engine events
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.js
+      - name: Prove V1 cleanse isolation and two independent Combat V2 Support cures
+        run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-counterplay-v1-isolation.js
       - name: Rehearse 18 class-specs and 4 allies using real frozen Forge 2.0 item rolls
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas

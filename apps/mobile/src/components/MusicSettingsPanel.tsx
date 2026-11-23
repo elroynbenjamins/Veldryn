@@ -8,7 +8,7 @@ import {Panel} from './Panel';
 import {useGameTheme} from '../theme/ThemeContext';
 import {typography,type ThemeColors} from '../theme/theme';
 
-const REGIONS:readonly MusicContextId[]=['town','asterfall','sunscar','frostmarch'];
+const REGIONS:readonly MusicContextId[]=['asterfall','sunscar','frostmarch'];
 const ACTIVITIES:readonly MusicContextId[]=['dungeon','boss','world_boss'];
 const LABELS:Record<MusicContextId,string>={
  town:'Town & Menus',asterfall:'Asterfall',sunscar:'Sunscar',frostmarch:'Frostmarch',

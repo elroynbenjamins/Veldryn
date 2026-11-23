@@ -6,7 +6,7 @@ import {GEAR_SLOTS_V2,CLASS_ROLES_V2}
  from '../build-contract';
 import {V2_SERVER_PIECES,V2_SERVER_RECIPES}
  from '../../../equipment/equipment-crafting-v2-manifest';
-import {draftEquipmentV2Outcome}
+import {draftEquipmentV2Outcome,v2ServerAuthoredAffixChoices}
  from '../../../equipment/equipment-crafting-v2-rolls';
 import {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent}
  from '../../../equipment/equipment-crafting-v2-instances';
@@ -38,10 +38,9 @@ for(const row of report.cells){
  assert.equal(row.itemCustodyVerified,false);
  assert.equal(row.combatEffectsActivated,false);
  assert.equal(row.exactForgeCompatibleAffixes.length+
-  row.blockedOrOffSlotForgeAffixes.length,[
-    4,7,6,
-  ][row.classId==='IRONWARDEN'?0:row.classId==='WAYFINDER'?1:2] || 0,
-  'Roles must report actual authored roll candidates');
+  row.blockedOrOffSlotForgeAffixes.length,
+  v2ServerAuthoredAffixChoices(CLASS_ROLES_V2[row.classId],row.slot).length,
+  'All possible authored Forge role affixes must be classified');
  assert.equal(row.possibleAtMaximumRollCount,
   row.eligibleSourcePieceIds.length>0&&
   row.exactForgeCompatibleAffixes.length>=row.maximumAuthoredAffixRolls);

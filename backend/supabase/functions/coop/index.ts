@@ -42838,6 +42838,20 @@ function equipmentStatsForSetPath(classId, path, base) {
   };
 }
 
+// ../apps/mobile/src/content/equipment-innate-percent.ts
+var SIGNATURE_RARE_PIECES = {
+  T3_001: { chest: { stat: "armor", basisPoints: 80 }, cape: { stat: "maxHp", basisPoints: 50 } },
+  T3_007: { chest: { stat: "ward", basisPoints: 70 }, gloves: { stat: "haste", basisPoints: 40 } },
+  T3_013: { gloves: { stat: "critRate", basisPoints: 50 }, boots: { stat: "evasion", basisPoints: 40 } },
+  T4_001: { chest: { stat: "armor", basisPoints: 110 }, cape: { stat: "maxHp", basisPoints: 70 } },
+  T4_007: { chest: { stat: "ward", basisPoints: 100 }, gloves: { stat: "haste", basisPoints: 60 } },
+  T4_013: { gloves: { stat: "critRate", basisPoints: 70 }, boots: { stat: "evasion", basisPoints: 60 } }
+};
+function equipmentInnatePercentForPiece(setId, slot, rarity) {
+  if (rarity !== "rare") return void 0;
+  return SIGNATURE_RARE_PIECES[setId]?.[slot];
+}
+
 // ../apps/mobile/src/content/equipment-items-v33.ts
 var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
 var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
@@ -42875,7 +42889,8 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
     rarity: rarityByTier[tier] ?? "common",
     classRestriction: classIdByName2[String(piece.Class)],
     requiredLevel: rebasedCombatLevelFromLegacyLevel(level),
-    equipmentSetId: String(piece["Set ID"])
+    equipmentSetId: String(piece["Set ID"]),
+    innatePercent: equipmentInnatePercentForPiece(String(piece["Set ID"]), slot, rarityByTier[tier])
   };
 });
 
@@ -47132,6 +47147,25 @@ function equippedEquipmentBonusStats(state) {
   }
   return stats6;
 }
+function equippedInnateEquipmentStats(state) {
+  const character = state.character;
+  if (!character) return {};
+  const stats6 = {};
+  for (const [slot, itemId] of Object.entries(character.equipment)) {
+    if (!itemId) continue;
+    let item;
+    try {
+      item = itemDef(itemId);
+    } catch {
+      continue;
+    }
+    if (item.type !== "gear" || item.slot !== slot || item.classRestriction && item.classRestriction !== character.classId) continue;
+    const bonus = item.innatePercent;
+    if (!bonus) continue;
+    stats6[bonus.stat] = (stats6[bonus.stat] ?? 0) + bonus.basisPoints / 1e4;
+  }
+  return stats6;
+}
 function parseEquipmentSetStaticBonus(text3) {
   const result = {};
   for (const match of String(text3 ?? "").matchAll(STATIC_BONUS_RE)) {
@@ -47191,26 +47225,28 @@ function activeEquipmentBuildStats(state) {
   const gems = equippedCanonicalStatGemBonusesV1(state);
   const weapon = equippedWeaponBonusStats(state);
   const equipment = equippedEquipmentBonusStats(state);
+  const innate = equippedInnateEquipmentStats(state);
   const rolled = (stat) => (weapon[stat] ?? 0) + (equipment[stat] ?? 0);
+  const pieceBonuses = (stat) => rolled(stat) + (innate[stat] ?? 0);
   const p = gems.statPercent, pp = gems.statPercentagePoints;
   const multiplied = (bonus, percent) => (1 + bonus) * (1 + (percent ?? 0)) - 1;
   return {
-    maxHp: multiplied(sets.maxHp, p.maxHp) + rolled("maxHp"),
-    armor: multiplied(sets.armor, p.armor) + rolled("armor"),
-    ward: multiplied(sets.ward, p.ward) + rolled("ward"),
-    tenacity: multiplied(sets.tenacity, p.tenacity) + rolled("tenacity"),
-    haste: multiplied(sets.haste, p.haste) + rolled("haste"),
-    power: sets.power + rolled("power"),
+    maxHp: multiplied(sets.maxHp, p.maxHp) + pieceBonuses("maxHp"),
+    armor: multiplied(sets.armor, p.armor) + pieceBonuses("armor"),
+    ward: multiplied(sets.ward, p.ward) + pieceBonuses("ward"),
+    tenacity: multiplied(sets.tenacity, p.tenacity) + pieceBonuses("tenacity"),
+    haste: multiplied(sets.haste, p.haste) + pieceBonuses("haste"),
+    power: sets.power + pieceBonuses("power"),
     // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
-    attack: multiplied(sets.attack, p.attack) + rolled("attack"),
-    accuracy: sets.accuracy + (pp.accuracy ?? 0) + rolled("accuracy"),
-    penetration: sets.penetration + (pp.penetration ?? 0) + rolled("penetration"),
-    potency: multiplied(sets.potency, p.potency) + rolled("potency"),
-    critRate: sets.critRate + (pp.critRate ?? 0) + rolled("critRate"),
-    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5 + rolled("critDamage"),
-    evasion: sets.evasion + (pp.evasion ?? 0) + rolled("evasion"),
-    abilityDamage: rolled("abilityDamage"),
-    healingPower: rolled("healingPower")
+    attack: multiplied(sets.attack, p.attack) + pieceBonuses("attack"),
+    accuracy: sets.accuracy + (pp.accuracy ?? 0) + pieceBonuses("accuracy"),
+    penetration: sets.penetration + (pp.penetration ?? 0) + pieceBonuses("penetration"),
+    potency: multiplied(sets.potency, p.potency) + pieceBonuses("potency"),
+    critRate: sets.critRate + (pp.critRate ?? 0) + pieceBonuses("critRate"),
+    critDamage: (0.5 + sets.critDamage) * (1 + (p.critDamage ?? 0)) - 0.5 + pieceBonuses("critDamage"),
+    evasion: sets.evasion + (pp.evasion ?? 0) + pieceBonuses("evasion"),
+    abilityDamage: pieceBonuses("abilityDamage"),
+    healingPower: pieceBonuses("healingPower")
   };
 }
 

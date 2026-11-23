@@ -1,0 +1,79 @@
+# Staging-only generated Edge bundle reconciliation for draft Veldryn 2.0 tool vault.
+# Recheck parity after final account-deletion and tool-storage regression fixes.
+# Final source revision includes legacy equipped-tier migration and custody tests.
+# NEVER checkout, push to, or deploy main / production from this workflow.
+name: Veldryn 2.0 tool vault Edge reconciliation
+on:
+  push:
+    branches: ['feature/v2-collapsible-tool-vault']
+    paths:
+      - '.github/workflows/v2-tool-vault-reconcile-edge.yml'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+      - 'apps/mobile/src/core/types.ts'
+      - 'apps/mobile/src/core/crafted-gear-ownership.ts'
+      - 'apps/mobile/src/core/account-actions.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: v2-tool-vault-staging-reconcile
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v2-collapsible-tool-vault
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked backend and mobile packages
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild gameplay and co-op Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Reject generator writes outside deployable bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          if [ -n "$unexpected" ]; then
+            printf 'Refusing unrelated generated changes:\n%s\n' "$unexpected"
+            exit 1
+          fi
+      - name: Commit generated artifacts only to the staging branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=feature/v2-collapsible-tool-vault
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then
+            echo 'Staging Edge bundles already match their source.'
+            exit 0
+          fi
+          git commit -m 'build(edge): sync staged v2 tool-vault gameplay and co-op bundles'
+          git fetch origin "$branch"
+          if [ "$(git rev-parse HEAD^)" != "$(git rev-parse "origin/$branch")" ]; then
+            echo 'Staging branch advanced; refusing stale generated output.'
+            exit 1
+          fi
+          git push origin "HEAD:$branch"
+          echo 'Staging bundles synchronized; no deployment made.'

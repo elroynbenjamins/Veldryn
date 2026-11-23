@@ -31,7 +31,10 @@ import type {V2HiddenStorageReservation}
  from '../../../equipment/equipment-crafting-v2-storage-reservations';
 import {v2VirtualFingerprint,type V2VirtualMoveReceipt}
  from '../../../equipment/equipment-crafting-v2-virtual-history';
-import type {VerifiedSkillBuildV2} from '../skill-effects';
+import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from '../skill-effects';
+import {issueClassOnlyActorV2} from '../class-baseline';
+import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
+import {inspectFrozenForgeCombatHandoffV2} from '../equipment-frozen-forge-handoff-audit';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
@@ -743,6 +746,136 @@ const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
  /forge_affix_effect_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
+// Private cross-stack integration: the EXACT same Skills 2.0 authored
+// generic / targeted / alternative selector imported from hidden PR #1700,
+// now run with REAL original Forge rolled copies, jobs, claims, XP and current
+// virtual custody from the source-owning Equipment 2.0 branch. Boss identities
+// route the tactic selector but opponents still use the GENERIC V2 enemy
+// compiler, NOT a signed six-boss authored encounter kit or final boss balance.
+const forgeTacticalBosses=[
+ {id:'BOSS_EXP_ROOT',tier:1},
+ {id:'BOSS_EXP_BELL',tier:2},
+ {id:'BOSS_EXP_SOLAR',tier:3},
+ {id:'BOSS_EXP_SPHINX',tier:3},
+ {id:'BOSS_EXP_BELLBEAST',tier:4},
+ {id:'BOSS_EXP_CANTOR',tier:4},
+] as const;
+const tacticalStrategies=['generic','targeted','alternative'] as const;
+let realForgeTacticalEncounters=0,realForgeSkillDiffering=0;
+let eligibleRealForgeCounterSpecs=0;
+const realForgeTacticalByGroup=new Map<string,string>();
+const tacticalGearByGroup=new Map<string,string>();
+for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+ for(const specIndex of [0,1] as const){
+  for(const bossCase of forgeTacticalBosses){
+   const qa=make(classId,specIndex,'supported',bossCase.tier);
+   const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+   const key=classId+'|'+specIndex+'|'+bossCase.id;
+   const signedInputs=JSON.stringify({
+    mint:qa.mint,claims:qa.source.claims,jobs:qa.source.jobs,
+    awards:qa.source.awards,custody:qa.source.custody,
+    reservations:qa.source.reservations,
+    custodyReceipts:qa.source.custodyReceipts,
+   });
+   const enemy:CombatantDefinition={
+    ...boss,id:bossCase.id,level:qa.actor.level,
+   };
+   const encounter:CombatInput={
+    seed:'EQ2_REAL_FORGE_SKILL_'+key,players:[qa.actor],
+    enemies:[enemy],maxDurationMs:12000,
+   };
+   let genericSkills='';
+   for(const strategy of tacticalStrategies){
+    const choice=selectReviewSkillLoadoutV2(
+     classId,spec.id,qa.actor,bossCase.id,strategy);
+    const build:VerifiedSkillBuildV2={
+     ...qa.build,selected:{...qa.build.selected,activeSkills:choice.activeSkills},
+    };
+    const replay=simulateRealFrozenForgeCombatV2(
+     encounter,[build],[qa.source],true);
+    const repeat=simulateRealFrozenForgeCombatV2(
+     encounter,[build],[qa.source],true);
+    assert.deepEqual(replay,repeat,
+     'Original minted gear + the same authored ability must replay: '+key);
+    const compiled=compileRealFrozenForgeActorV2(qa.actor,build,qa.source);
+    assert.deepEqual(replay.equipmentEvidence,[compiled.evidence],
+     'Signed original Forge compiler stages must be exactly those used in combat');
+    const classOnly=issueClassOnlyActorV2(
+     qa.actor,build.verified,qa.source.classBaselinePolicy);
+    const skills=compileServerSkillBuildV2(true,{...build,actor:classOnly});
+    const inspection=inspectFrozenForgeCombatHandoffV2(
+     qa.actor.id,[qa.mint.id],skills.stats,compiled.evidence);
+    assert.equal(inspection.equipmentCount,1);
+    assert.equal(inspection.doubleScaled,false);
+    assert.equal(inspection.canAuthorizeCombat,false);
+    assert.equal(inspection.canListOnMarket,false);
+    assert.equal(inspection.canGrantLoot,false);
+    assert.equal(inspection.releaseApproved,false);
+    assert.equal(replay.combat.players[0].definition.abilities.length,2);
+    assert.ok(replay.combat.events.some(event=>event.type==='combat_start'));
+    assert.equal(replay.combat.players[0].definition.combatV2?.version,2);
+    assert.equal(JSON.stringify({
+     mint:qa.mint,claims:qa.source.claims,jobs:qa.source.jobs,
+     awards:qa.source.awards,custody:qa.source.custody,
+     reservations:qa.source.reservations,
+     custodyReceipts:qa.source.custodyReceipts,
+    }),signedInputs,'QA combat cannot mutate original Forge settlement/custody');
+    const sourceDigest=JSON.stringify({
+     items:compiled.evidence.items,
+     receiptDigest:compiled.evidence.receiptDigest,
+     afterSkills:compiled.evidence.stages.afterSkills,
+     afterFrozenBase:compiled.evidence.stages.afterFrozenBase,
+     afterForgeAffixes:compiled.evidence.stages.afterForgeAffixes,
+    });
+    const earlier=tacticalGearByGroup.get(key);
+    if(earlier===undefined)tacticalGearByGroup.set(key,sourceDigest);
+    else assert.equal(sourceDigest,earlier,
+     'Changing only skill variants cannot change original Forge minted stats');
+    const selected=JSON.stringify(choice.activeSkills);
+    if(strategy==='generic')genericSkills=selected;
+    else if(selected!==genericSkills)realForgeSkillDiffering++;
+    if(strategy==='targeted'&&choice.hasMatchingCounter)
+     eligibleRealForgeCounterSpecs++;
+    realForgeTacticalEncounters++;
+   }
+   realForgeTacticalByGroup.set(key,genericSkills);
+  }
+ }
+}
+assert.equal(realForgeTacticalEncounters,9*2*6*3);
+assert.equal(realForgeTacticalByGroup.size,9*2*6);
+assert.equal(tacticalGearByGroup.size,9*2*6);
+assert.ok(realForgeSkillDiffering>0,
+ 'Forge-backed QA must actually vary original authored class skill loadouts');
+// One real source-proven Tank/2 Damage/Support party must also allow changing
+// Skills 2.0 tactics without changing the four ORIGINAL minted gear copies.
+const partySkilledBuilds=qaTeam.map(x=>{
+ const spec=SPECIALIZATIONS_V2.find(s=>s.classId===x.build.verified.classId)!;
+ const choice=selectReviewSkillLoadoutV2(
+  x.build.verified.classId,spec.id,x.actor,'BOSS_EXP_BELL','targeted');
+ return {...x.build,selected:{...x.build.selected,activeSkills:choice.activeSkills}};
+});
+const partySkillsResult=simulateRealFrozenForgeCombatV2(
+ input,partySkilledBuilds,qaTeam.map(x=>x.source),true);
+const partySkillsAgain=simulateRealFrozenForgeCombatV2(
+ input,partySkilledBuilds,qaTeam.map(x=>x.source),true);
+assert.deepEqual(partySkillsResult,partySkillsAgain);
+assert.deepEqual(
+ partySkillsResult.equipmentEvidence.map(x=>({
+  receiptDigest:x.receiptDigest,items:x.items,
+  afterFrozenBase:x.stages.afterFrozenBase,
+ })),
+ part.equipmentEvidence.map(x=>({
+  receiptDigest:x.receiptDigest,items:x.items,
+  afterFrozenBase:x.stages.afterFrozenBase,
+ })),
+ 'Party skill variants cannot change independently verified original Forge copies');
+console.log('PASS: '+realForgeTacticalEncounters+
+ ' real original-Forge source-owned Skills × generic-boss-engine encounters, '+
+ tacticalGearByGroup.size+' source-matched triplets, '+realForgeSkillDiffering+
+ ' nonbaseline tactical builds and '+eligibleRealForgeCounterSpecs+
+ ' counter-capable class/boss selections; original exact Forge frozen values applied once; 4-player replay; NO release approval');
+// ------------------------------------------------------------------------
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,

@@ -35,6 +35,10 @@ import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from '../skill-effe
 import {issueClassOnlyActorV2} from '../class-baseline';
 import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
 import {inspectFrozenForgeCombatHandoffV2} from '../equipment-frozen-forge-handoff-audit';
+import {simulateOriginalForgeAuthoredBossReviewV2}
+ from '../equipment-original-forge-authored-boss';
+import {prepareSoloEnemyKitsV2} from '../enemy-kit-composer';
+import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
@@ -963,6 +967,120 @@ console.log('PASS: '+realForgeTacticalEncounters+
  ' changed-skill pinned-ledger rejections and '+eligibleRealForgeCounterSpecs+
  ' counter-capable class/boss selections; original exact Forge frozen values applied once; 4-player replay; NO release approval');
 // ------------------------------------------------------------------------
+// Real original Forge mint+claim+virtual-equip source through the GENUINE
+// server-persisted six regional Enemy V2 boss profiles. Unlike the earlier
+// 324-case identity-only experiment, these use original authored cast/phase
+// scripts and Enemy V2 engine authority, NOT generic V2_ENEMY pressure phases.
+const exactBossProfiles=[
+ {id:'BOSS_EXP_ROOT',region:'asterfall',tier:2,forgeTier:1,level:25},
+ {id:'BOSS_EXP_BELL',region:'asterfall',tier:2,forgeTier:2,level:25},
+ {id:'BOSS_EXP_SOLAR',region:'sunscar',tier:3,forgeTier:3,level:40},
+ {id:'BOSS_EXP_SPHINX',region:'sunscar',tier:3,forgeTier:3,level:40},
+ {id:'BOSS_EXP_BELLBEAST',region:'frostmarch',tier:4,forgeTier:4,level:60},
+ {id:'BOSS_EXP_CANTOR',region:'frostmarch',tier:4,forgeTier:4,level:60},
+] as const;
+let realForgeAuthoredBossRuns=0,realForgeAuthoredBossThreats=0;
+let forgedRegionalChecks=0;
+const sameForgeBossGroups=new Set<string>();
+for(const profile of exactBossProfiles){
+ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+  for(const specIndex of [0,1] as const){
+   const qa=make(classId,specIndex,'supported',profile.forgeTier);
+   const bossBase:CombatantDefinition={
+    ...boss,id:profile.id,name:'Original '+profile.id,
+    level:profile.level,abilities:[],phases:undefined,
+   };
+   const seed='ORIGINAL_FORGE_AUTHORED_'+profile.id+'_'+classId+'_'+specIndex;
+   const input:CombatInput={
+    seed,players:[qa.actor],enemies:[bossBase],maxDurationMs:35000,
+   };
+   const proposed=prepareSoloEnemyKitsV2([bossBase],{
+    ruleset:ENEMY_V2_RULESET,region:profile.region,
+    equipmentTier:profile.tier,encounterId:'QA_ORIGINAL_'+profile.id+
+      '_'+classId+'_'+specIndex,serverSeed:seed,
+   });
+   const persisted={...proposed,source:'server-persisted-v2' as const,
+    revision:6};
+   const kit={
+    snapshot:persisted,
+    verifyPersisted:(snap:typeof persisted,digest:string)=>
+      snap===persisted&&/^[0-9a-f]{64}$/.test(digest),
+   };
+   const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+   const group=profile.id+'|'+classId+'|'+specIndex;
+   let originalFreeze='';
+   for(const strategy of ['generic','targeted'] as const){
+    const chosen=selectReviewSkillLoadoutV2(
+     classId,spec.id,qa.actor,profile.id,strategy);
+    const build:VerifiedSkillBuildV2={...qa.build,selected:{
+     ...qa.build.selected,activeSkills:chosen.activeSkills,
+    }};
+    const first=simulateOriginalForgeAuthoredBossReviewV2(
+     input,build,qa.source,kit,true);
+    const replay=simulateOriginalForgeAuthoredBossReviewV2(
+     input,build,qa.source,kit,true);
+    assert.deepEqual(first,replay,
+     'Original Forge + authored persisted boss replay must be deterministic');
+    assert.equal(first.authenticBossProfile,true);
+    assert.equal(first.equipmentSource,'ORIGINAL_EQ2_MINT_AND_CUSTODY_TEST_LEDGER');
+    assert.equal(first.grantAllowed,false);
+    assert.equal(first.marketTradeAllowed,false);
+    assert.equal(first.releaseApproved,false);
+    assert.ok(first.bossMechanicLabels.length>=1);
+    assert.equal(first.equipmentEvidence.items.length,1);
+    assert.equal(first.equipmentEvidence.items[0].instanceId,qa.mint.id);
+    assert.ok(first.combat.events.some(e=>e.type==='combat_start'));
+    assert.ok(!first.bossMechanicLabels.some(label=>label.includes('V2_BOSS_PRESSURE')),
+     'No generic boss pressure script may replace the authored kit');
+    const freezing=JSON.stringify({
+     items:first.equipmentEvidence.items,
+     stages:first.equipmentEvidence.stages.afterFrozenBase,
+     affixes:first.equipmentEvidence.affixSources,
+    });
+    if(strategy==='generic')originalFreeze=freezing;
+    else assert.equal(freezing,originalFreeze,
+     'Targeted skills must not replace genuine original Forge copies');
+    realForgeAuthoredBossThreats+=first.combat.events.filter(e=>
+     e.actorId===profile.id&&
+      (e.type==='cast_start'||e.type==='status_apply'||e.type==='phase')).length;
+    realForgeAuthoredBossRuns++;
+   }
+   sameForgeBossGroups.add(group);
+   if(classId==='IRONWARDEN'&&specIndex===0){
+    assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
+     input,qa.build,qa.source,{...kit,verifyPersisted:()=>false},true),
+     /enemy_v2|authority|persist/i);
+    forgedRegionalChecks++;
+    assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
+     {...input,seed:'WRONG_ENCOUNTER_SEED'},qa.build,qa.source,kit,true),
+     /encounter_actor_seed_or_boss_mismatch/);
+    forgedRegionalChecks++;
+    assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
+     input,qa.build,qa.source,{...kit,snapshot:{...persisted,
+      preparedEnemyDigest:'a'.repeat(64)}},true),/stored_kit_digest_mismatch/);
+    forgedRegionalChecks++;
+    assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
+     input,qa.build,{...qa.source,claims:[]},kit,true),
+     /invalid_hidden_v2|missing_exact_copy|claim/i);
+    forgedRegionalChecks++;
+    assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
+     {...input,players:[qa.actor,qa.actor]},qa.build,qa.source,kit,true),
+     /source_only_complete_solo_boss_required/);
+    forgedRegionalChecks++;
+   }
+  }
+ }
+}
+assert.equal(realForgeAuthoredBossRuns,216);
+assert.equal(sameForgeBossGroups.size,108);
+assert.equal(forgedRegionalChecks,30);
+assert.ok(realForgeAuthoredBossThreats>0,
+ 'Actual regional boss casts/status/phase events must occur');
+console.log('PASS: 216 original minted Forge Skills × 6 authentic persisted regional '+
+ 'Enemy V2 boss engine runs (108 generic/targeted pairs); '+
+ realForgeAuthoredBossThreats+' boss mechanics and '+forgedRegionalChecks+
+ ' invalid-source tests, zero grants; NOT approved final balance');
+// --------------------------------------------------------------
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,

@@ -11,6 +11,13 @@ export const FROSTFALL_ENDURANCE_DEPTH_REWARDS=[1,1.15,1.28,1.38,1.46,1.52] as c
  * original six-room Frostfall save math unchanged. Re-evaluate after calibrated
  * multi-seed combat results; never apply to regular dungeons/other events. */
 export const FROSTFALL_ENDURANCE_ENEMY_PACING_V3={attack:0.72,hp:0.80,defense:0.90} as const;
+export const FROSTFALL_ENDURANCE_BALANCE_V3='event-frostfall-endurance-v3';
+const ORIGINAL_FROSTFALL_ENEMY_PACING={attack:1,hp:1,defense:1} as const;
+export function frostfallEnemyPacingForGraph(graph:Pick<CoopRouteGraph,'generatorVersion'|'balanceVersion'>){
+ return graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR&&graph.balanceVersion===FROSTFALL_ENDURANCE_BALANCE_V3
+  ?FROSTFALL_ENDURANCE_ENEMY_PACING_V3:ORIGINAL_FROSTFALL_ENEMY_PACING;
+}
+
 
 const idsAt=(depth:number)=>[0,1,2].map(choice=>'d'+depth+'-c'+choice);
 
@@ -56,7 +63,7 @@ export function generateFrostfallEnduranceGraph(def:EventExpeditionDefinition,ru
   }
  }
  nodes.push({nodeId:'boss',depth:count+1,kind:'boss',contentId:def.bossEncounterId,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[],title:def.finalBoss});
- const graph:CoopRouteGraph={schemaVersion:1,generatorVersion:FROSTFALL_ENDURANCE_GENERATOR,runId,expeditionId:def.id,contentVersion:'event-frostfall-endurance-v2',balanceVersion:'event-frostfall-endurance-v2',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};
+ const graph:CoopRouteGraph={schemaVersion:1,generatorVersion:FROSTFALL_ENDURANCE_GENERATOR,runId,expeditionId:def.id,contentVersion:'event-frostfall-endurance-v2',balanceVersion:FROSTFALL_ENDURANCE_BALANCE_V3,preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};
  validateCoopRouteGraph(graph);
  return graph;
 }

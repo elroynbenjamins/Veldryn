@@ -1,0 +1,51 @@
+name: EQ2 Dungeon Boss Loot and Market Source Review
+
+on:
+  push:
+    branches:
+      - 'design/eq2-t5-catalogue-expansion-review-*'
+    paths:
+      - 'docs/equipment-2-0/regional-dungeon-boss-**'
+      - 'docs/equipment-2-0/t5-catalogue-expansion-review-v4.json'
+      - 'tools/lib/eq2-dungeon-loot-market-preview-v5.mjs'
+      - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
+      - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
+      - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
+      - 'backend/online/eq2-dungeon-boss-source-preflight-v6.mjs'
+      - 'backend/src/server/expeditions/content/dungeon-boss-rotation.ts'
+      - 'tools/test-eq2-dungeon-boss-source-preflight-v6.mjs'
+      - '.github/workflows/eq2-dungeon-boss-market-review.yml'
+  pull_request:
+    paths:
+      - 'docs/equipment-2-0/regional-dungeon-boss-**'
+      - 'docs/equipment-2-0/t5-catalogue-expansion-review-v4.json'
+      - 'tools/lib/eq2-dungeon-loot-market-preview-v5.mjs'
+      - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
+      - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
+      - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
+      - 'backend/online/eq2-dungeon-boss-source-preflight-v6.mjs'
+      - 'backend/src/server/expeditions/content/dungeon-boss-rotation.ts'
+      - 'tools/test-eq2-dungeon-boss-source-preflight-v6.mjs'
+      - '.github/workflows/eq2-dungeon-boss-market-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  review-only:
+    name: Read-only boss pool, rarity and Market safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout isolated hidden review branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Show Node runtime
+        run: node --version
+      - name: Run source-only catalogue checks (never connect to a game environment)
+        run: |
+          node tools/test-eq2-t5-dungeon-combos-review-v3.mjs
+          node tools/test-eq2-dungeon-boss-market-review-v4.mjs
+          node tools/test-eq2-dungeon-loot-market-review-v5.mjs
+          node tools/test-eq2-dungeon-boss-source-preflight-v6.mjs

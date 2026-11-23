@@ -1,0 +1,62 @@
+name: EQ2 Dungeon Original Mint/Custody PG17 Review
+
+on:
+  push:
+    branches:
+      - 'design/eq2-t5-catalogue-expansion-review-*'
+    paths:
+      - 'tools/eq2-review/v7/**'
+      - '.github/workflows/eq2-dungeon-boss-pg17-review.yml'
+  pull_request:
+    paths:
+      - 'tools/eq2-review/v7/**'
+      - '.github/workflows/eq2-dungeon-boss-pg17-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  disposable-pg17:
+    name: Synthetic PG17 exactly-once original boss mint & custody
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: eq2_review_v7
+          POSTGRES_PASSWORD: disposable-review-password
+          POSTGRES_DB: eq2_review_v7
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U eq2_review_v7 -d eq2_review_v7"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: eq2_review_v7
+      PGPASSWORD: disposable-review-password
+      PGDATABASE: eq2_review_v7
+      PGSSLMODE: disable
+    steps:
+      - name: Checkout review branch, no persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify isolated, disposable PostgreSQL version
+        run: |
+          psql -v ON_ERROR_STOP=1 -Atc 'show server_version;'
+          test "$(psql -v ON_ERROR_STOP=1 -Atc 'select current_database()')" = 'eq2_review_v7'
+      - name: Run source-free, non-deploying PG17 mint and custody tests
+        run: |
+          psql -v ON_ERROR_STOP=1 -f tools/eq2-review/v7/00_disposable_pg17_original_mint_and_custody.sql
+          psql -v ON_ERROR_STOP=1 -f tools/eq2-review/v7/01_disposable_pg17_regressions.sql
+      - name: Test simultaneous boss reward requests and competing buyers
+        run: |
+          bash tools/eq2-review/v7/02_pg17_concurrent_claim_and_resale.sh
+      - name: Assert sample database has no live market or dungeon tables
+        run: |
+          test "$(psql -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('expedition_runs','coop_reward_entitlements','market_custody_assets_v1')")" = '0'

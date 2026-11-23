@@ -1,0 +1,3323 @@
+{
+  "schema": "eq2-t5-expanded-catalogue-review-v2",
+  "status": "HIDDEN_REVIEW_ONLY_NOT_ITEM_OR_COMBAT_AUTHORITY",
+  "releaseActivation": false,
+  "inheritsFrom": "design/eq2-physical-damage-types-catalogue-review-20261123",
+  "asOf": "2026-11-23",
+  "goals": [
+    "Maintain 12 standard structural sets mirroring T1-T4 51-member count",
+    "Preserve two approved prior rare tank sets unchanged",
+    "Propose one rare physical damage set and one rare support set",
+    "Add nine exact class weapon plus four offhand candidates while preserving T1-T4 grip profiles",
+    "Support independent high-tier professions, wood/material sinks and sourced tradeable combat requirements"
+  ],
+  "summary": {
+    "standardSetCount": 12,
+    "standardSetPieces": 51,
+    "existingRareSetCount": 2,
+    "existingRarePieces": 10,
+    "newRareSetCount": 2,
+    "newRarePieces": 10,
+    "armamentWeapons": 9,
+    "armamentOffhands": 4,
+    "t5TotalSets": 16,
+    "t5TotalItems": 84,
+    "additiveProposedNewItems": 74,
+    "priorCrosswalk383PlusNewItems": 457,
+    "rawPriorCrosswalkIncludesRetiredT4Drafts": 10,
+    "t4ReplacementIdentitiesReconciliation": "MISSING_FROM_INHERITED_383_CROSSWALK_YET_TO_RECONCILE",
+    "priorCrosswalk383PlusNewItemsNote": "457 is a raw row count only; inherited crosswalk still includes ten retired T4 Citadel/Bloodsteel members, excludes ten approved replacement IDs, and is NOT a releasable or canonical item count"
+  },
+  "craftRules": {
+    "noCombatCraftGate": true,
+    "standardCraftSkillLevelCandidate": 42,
+    "armamentsCraftSkillLevelCandidate": 44,
+    "newRareCraftSkillLevelCandidate": 48,
+    "standardAndArmamentsWearLevelCandidate": 52,
+    "newRareWearLevelCandidate": 56,
+    "recipeFailureChance": 0,
+    "foundationAndAlternateBothRequireCommonCombat": true,
+    "foundationAndAlternateBothRequireScarceCombat": true,
+    "sourceGrantStates": "ALL_UNREGISTERED",
+    "XP": "UNSET_WILL_ANCHOR_TO_APPROVED_PROCESSING_CURVE",
+    "recipeCosts": "DRAFT_FOR_ECONOMY_REVIEW_NOT_AUTHORITATIVE",
+    "rareCraftPremium": "NEW rare candidates now explicitly apply +35% refined/wood/common materials (ceil), +45% Gold (round up to 100), +35% time (round up 10s) over slot template; rare signatures and scarce combat inputs remain mandatory and unscaled; existing Citadel/Bloodsteel recipes are untouched",
+    "retiredT4IdsNeverReused": true
+  },
+  "materialCandidates": [
+    {
+      "key": "froststeelIngots",
+      "id": "EQ2_T5_FROSTSTEEL_INGOT",
+      "group": "refined_primary",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "frostmailLinks",
+      "id": "EQ2_T5_FROSTMAIL_LINKS",
+      "group": "refined_armor_component",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "frostweaveCloth",
+      "id": "EQ2_T5_FROSTWEAVE_CLOTH",
+      "group": "refined_secondary",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "hardenedFrostleather",
+      "id": "EQ2_T5_HARDENED_FROSTLEATHER",
+      "group": "refined_secondary",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "smokeglassPlates",
+      "id": "EQ2_T5_SMOKEGLASS_PLATE",
+      "group": "rare_refined_component",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "bindingResin",
+      "id": "EQ2_T5_BINDING_RESIN",
+      "group": "alchemy_binder",
+      "status": "UNREGISTERED_DRAFT_NO_BYPASS"
+    },
+    {
+      "key": "fortressCores",
+      "id": "EQ2_T5_FORTRESS_CORE",
+      "group": "rare_combat_signature",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "bloodtemperedSteel",
+      "id": "EQ2_T5_BLOODTEMPERED_STEEL",
+      "group": "rare_refined_primary",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "temperedHearts",
+      "id": "EQ2_T5_TEMPERED_HEART",
+      "group": "rare_combat_signature",
+      "status": "UNREGISTERED_DRAFT"
+    },
+    {
+      "key": "frostwoodPlanks",
+      "id": "EQ2_T5_FROSTWOOD_PLANK",
+      "group": "woodcutting_refined",
+      "status": "NEW_UNREGISTERED_CANDIDATE",
+      "sourcePolicy": "profession gathering/refining or trade, never mandatory combat level"
+    },
+    {
+      "key": "rimeboneShards",
+      "id": "EQ2_T5_RIMEBONE_SHARD",
+      "group": "common_combat",
+      "status": "NEW_UNREGISTERED_CANDIDATE",
+      "sourcePolicy": "author specific eligible Frostmarch enemy sources"
+    },
+    {
+      "key": "iceveinSigils",
+      "id": "EQ2_T5_ICEVEIN_SIGIL",
+      "group": "scarce_combat",
+      "status": "NEW_UNREGISTERED_CANDIDATE",
+      "sourcePolicy": "low effective rate must be derived from verified payout telemetry"
+    },
+    {
+      "key": "shardhearts",
+      "id": "EQ2_T5_SHARDHEART",
+      "group": "rare_damage_signature",
+      "status": "NEW_UNREGISTERED_CANDIDATE",
+      "tradeableCandidate": true
+    },
+    {
+      "key": "dawnspireCores",
+      "id": "EQ2_T5_DAWNSPIRE_CORE",
+      "group": "rare_support_signature",
+      "status": "NEW_UNREGISTERED_CANDIDATE",
+      "tradeableCandidate": true
+    }
+  ],
+  "inheritedRareSetsUnchanged": [
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "name": "Frostmarch Citadel",
+      "role": "tank",
+      "pieceCount": 6,
+      "memberIdPrefix": "EQ2_RARE_T5_CITADEL_",
+      "lockedReference": "docs/equipment-2-0/t5-rare-set-catalogue-review-v1.json",
+      "policy": "EXISTING_APPROVED_DRAFT_DO_NOT_CHANGE"
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "name": "Frostmarch Bloodsteel",
+      "role": "tank",
+      "pieceCount": 4,
+      "memberIdPrefix": "EQ2_RARE_T5_BLOODSTEEL_",
+      "lockedReference": "docs/equipment-2-0/t5-rare-set-catalogue-review-v1.json",
+      "policy": "EXISTING_APPROVED_DRAFT_DO_NOT_CHANGE"
+    }
+  ],
+  "standardSets": [
+    {
+      "setId": "eq2_t5_oathplate",
+      "name": "Frostmarch Oathplate",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "tank",
+      "profession": "smithing",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Steadfast guard",
+      "identity": "Reliable frontline mitigation without Citadel's emergency healing",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Oathbound Guard",
+          "effect": "+3% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Oathplate Resolve",
+          "effect": "After a qualifying direct hit removes at least 5% maximum HP after mitigation, gain +4% Defense for 6 seconds",
+          "icdSeconds": 16
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_OATHPLATE_HELMET",
+          "name": "Frostmarch Oathplate Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 22,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 18,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_OATHPLATE_CHEST",
+          "name": "Frostmarch Oathplate Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 34,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 28,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_OATHPLATE_LEGS",
+          "name": "Frostmarch Oathplate Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 30,
+              "hardenedFrostleather": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 24,
+              "hardenedFrostleather": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_OATHPLATE_CAPE",
+          "name": "Frostmarch Oathplate Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 16,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 13,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "name": "Frostmarch Rimewatch",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "tank",
+      "profession": "smithing",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Shield discipline",
+      "identity": "Staged protective shields rather than Citadel's HP threshold recovery",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Winterwall",
+          "effect": "+3% maximum HP"
+        },
+        {
+          "pieces": 4,
+          "name": "Rimeguard",
+          "effect": "When a qualifying direct hit is received while below 50% HP, create a shield for 4% maximum HP lasting 6 seconds",
+          "icdSeconds": 24
+        },
+        {
+          "pieces": 6,
+          "name": "Weather the Break",
+          "effect": "When Rimeguard's shield is fully broken by a direct hit, reduce incoming non-true damage by 6% for 4 seconds",
+          "icdSeconds": 30
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_HELMET",
+          "name": "Frostmarch Rimewatch Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 22,
+              "frostweaveCloth": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 18,
+              "frostweaveCloth": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_CHEST",
+          "name": "Frostmarch Rimewatch Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 34,
+              "frostweaveCloth": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 28,
+              "frostweaveCloth": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_LEGS",
+          "name": "Frostmarch Rimewatch Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 30,
+              "frostweaveCloth": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 24,
+              "frostweaveCloth": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_BOOTS",
+          "name": "Frostmarch Rimewatch Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 21,
+              "frostweaveCloth": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 17,
+              "frostweaveCloth": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_CAPE",
+          "name": "Frostmarch Rimewatch Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 16,
+              "frostweaveCloth": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 13,
+              "frostweaveCloth": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEWATCH_RING",
+          "name": "Frostmarch Rimewatch Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 11,
+              "frostweaveCloth": 6
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 9,
+              "frostweaveCloth": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_rimebrand",
+      "name": "Frostmarch Rimebrand",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "tank",
+      "profession": "smithing",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Counterstrike",
+      "identity": "Ability-counter tank; no healing and no free Blunt subtype",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Tempered Edge",
+          "effect": "+2% Attack and +2% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Measured Reprisal",
+          "effect": "After taking eligible direct HP damage, the next direct class-ability hit within 6 seconds deals +9% damage",
+          "icdSeconds": 16
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_GLOVES",
+          "name": "Frostmarch Rimebrand Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 18,
+              "hardenedFrostleather": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 15,
+              "hardenedFrostleather": 13
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_BOOTS",
+          "name": "Frostmarch Rimebrand Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 21,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 17,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_AMULET",
+          "name": "Frostmarch Rimebrand Amulet",
+          "slot": "amulet",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 13,
+              "hardenedFrostleather": 7
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 11,
+              "hardenedFrostleather": 10
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_RIMEBRAND_RING",
+          "name": "Frostmarch Rimebrand Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 11,
+              "hardenedFrostleather": 6
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 9,
+              "hardenedFrostleather": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_snowveil",
+      "name": "Frostmarch Snowveil",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "tank",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Evasive guard",
+      "identity": "Evasive tank path with an actual avoidance trigger",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Cold Footing",
+          "effect": "+2 percentage points Evasion"
+        },
+        {
+          "pieces": 3,
+          "name": "Slip and Brace",
+          "effect": "After successfully evading a qualifying direct attack, gain +4% Defense for 5 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_HELMET",
+          "name": "Frostmarch Snowveil Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 22,
+              "froststeelIngots": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_GLOVES",
+          "name": "Frostmarch Snowveil Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 15,
+              "froststeelIngots": 13
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_SNOWVEIL_BOOTS",
+          "name": "Frostmarch Snowveil Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 21,
+              "froststeelIngots": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 17,
+              "froststeelIngots": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_whitefang",
+      "name": "Frostmarch Whitefang",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "damage",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Mobile physical damage",
+      "identity": "Skirmishing; no auto-bleed or damage subtype conversion",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Swift Pursuit",
+          "effect": "+3% Haste"
+        },
+        {
+          "pieces": 3,
+          "name": "Snowstep Opening",
+          "effect": "After successfully evading a direct enemy attack, the next direct class-ability hit within 5 seconds deals +8% damage",
+          "icdSeconds": 14
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_WHITEFANG_GLOVES",
+          "name": "Frostmarch Whitefang Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18,
+              "frostweaveCloth": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 15,
+              "frostweaveCloth": 13
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WHITEFANG_BOOTS",
+          "name": "Frostmarch Whitefang Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 21,
+              "frostweaveCloth": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 17,
+              "frostweaveCloth": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WHITEFANG_CAPE",
+          "name": "Frostmarch Whitefang Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 16,
+              "frostweaveCloth": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 13,
+              "frostweaveCloth": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_farwind",
+      "name": "Frostmarch Farwind",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "damage",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Precision ranged",
+      "identity": "Bow-friendly but not locked to Wayfinder; no piercing armor bypass",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Clear Sight",
+          "effect": "+3% Attack"
+        },
+        {
+          "pieces": 4,
+          "name": "Patient Volley",
+          "effect": "After three consecutive successful direct weapon hits on the same target, the next direct weapon hit within 6 seconds deals +8% damage",
+          "icdSeconds": 14
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_FARWIND_HELMET",
+          "name": "Frostmarch Farwind Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 10,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 22
+            },
+            "alternate": {
+              "frostwoodPlanks": 14,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_FARWIND_GLOVES",
+          "name": "Frostmarch Farwind Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18
+            },
+            "alternate": {
+              "frostwoodPlanks": 13,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 15
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_FARWIND_AMULET",
+          "name": "Frostmarch Farwind Amulet",
+          "slot": "amulet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 7,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 10,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 11
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_FARWIND_RING",
+          "name": "Frostmarch Farwind Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 11
+            },
+            "alternate": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_nightglass",
+      "name": "Frostmarch Nightglass",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "damage",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Direct spellcraft",
+      "identity": "Spell-authoritative; DoT ticks, reflections and procs do not qualify",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Arcane Etching",
+          "effect": "+3% direct class-ability damage"
+        },
+        {
+          "pieces": 4,
+          "name": "Fractured Tempo",
+          "effect": "After an eligible direct spell hit, gain +4% Haste for 6 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_CHEST",
+          "name": "Frostmarch Nightglass Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 34,
+              "smokeglassPlates": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 28,
+              "smokeglassPlates": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_LEGS",
+          "name": "Frostmarch Nightglass Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 30,
+              "smokeglassPlates": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 24,
+              "smokeglassPlates": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_BOOTS",
+          "name": "Frostmarch Nightglass Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 21,
+              "smokeglassPlates": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 17,
+              "smokeglassPlates": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_NIGHTGLASS_CAPE",
+          "name": "Frostmarch Nightglass Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 16,
+              "smokeglassPlates": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 13,
+              "smokeglassPlates": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "name": "Frostmarch Avalanche",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "damage",
+      "profession": "smithing",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Heavy burst",
+      "identity": "Slashing-friendly melee burst; no free Stagger or Blunt",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Weight of Winter",
+          "effect": "+3% Attack"
+        },
+        {
+          "pieces": 4,
+          "name": "Follow-Through",
+          "effect": "After a direct physical class-ability hit, the next basic attack within 6 seconds deals +6% damage",
+          "icdSeconds": 16
+        },
+        {
+          "pieces": 6,
+          "name": "Crushing Finish",
+          "effect": "A direct physical class-ability hit against a target below 30% HP deals +8% damage",
+          "icdSeconds": 20
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_HELMET",
+          "name": "Frostmarch Avalanche Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 22,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 18,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_CHEST",
+          "name": "Frostmarch Avalanche Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 34,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 28,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_LEGS",
+          "name": "Frostmarch Avalanche Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 30,
+              "hardenedFrostleather": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 24,
+              "hardenedFrostleather": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_BOOTS",
+          "name": "Frostmarch Avalanche Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 21,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 17,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_AMULET",
+          "name": "Frostmarch Avalanche Amulet",
+          "slot": "amulet",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 13,
+              "hardenedFrostleather": 7
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 11,
+              "hardenedFrostleather": 10
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_AVALANCHE_RING",
+          "name": "Frostmarch Avalanche Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "smithing",
+          "baseStatProfile": "attack_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 11,
+              "hardenedFrostleather": 6
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "froststeelIngots": 9,
+              "hardenedFrostleather": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_dawnweave",
+      "name": "Frostmarch Dawnweave",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "support",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Efficient healing",
+      "identity": "Actual effective heals only; no shield chain",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Gentle Radiance",
+          "effect": "+3% Healing Power"
+        },
+        {
+          "pieces": 4,
+          "name": "Soft Refuge",
+          "effect": "After an eligible direct heal that restores missing HP, grant that target a shield for 3% of their maximum HP for 6 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_CHEST",
+          "name": "Frostmarch Dawnweave Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 34,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 28,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_GLOVES",
+          "name": "Frostmarch Dawnweave Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 18,
+              "hardenedFrostleather": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 15,
+              "hardenedFrostleather": 13
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_CAPE",
+          "name": "Frostmarch Dawnweave Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 16,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 13,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_DAWNWEAVE_AMULET",
+          "name": "Frostmarch Dawnweave Amulet",
+          "slot": "amulet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 13,
+              "hardenedFrostleather": 7
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 10100,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 11,
+              "hardenedFrostleather": 10
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_stormthread",
+      "name": "Frostmarch Stormthread",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "support",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Tempo and buffs",
+      "identity": "Requires a real authored ally-buff; not a passive global aura",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Gathering Wind",
+          "effect": "+3% Haste"
+        },
+        {
+          "pieces": 3,
+          "name": "Storm's Cover",
+          "effect": "After granting an authenticated class ally-buff, grant that ally 3% reduction to incoming non-true damage for 5 seconds",
+          "icdSeconds": 20
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_HELMET",
+          "name": "Frostmarch Stormthread Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 22,
+              "froststeelIngots": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 18,
+              "froststeelIngots": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_GLOVES",
+          "name": "Frostmarch Stormthread Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 18,
+              "froststeelIngots": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 2,
+              "rimeboneShards": 7,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 10900,
+              "queueSeconds": 880,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 15,
+              "froststeelIngots": 13
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_STORMTHREAD_BOOTS",
+          "name": "Frostmarch Stormthread Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 21,
+              "froststeelIngots": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 17,
+              "froststeelIngots": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "name": "Frostmarch Winterroot",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "support",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Recovery and cleanse",
+      "identity": "Support counter-build; cleanse must exist in equipped skills to benefit",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Rooted Hope",
+          "effect": "+3% maximum HP"
+        },
+        {
+          "pieces": 4,
+          "name": "Shelter Bloom",
+          "effect": "An effective direct heal on an ally below 50% HP grants a shield for 4% of target maximum HP for 6 seconds",
+          "icdSeconds": 20
+        },
+        {
+          "pieces": 6,
+          "name": "Purifying Shelter",
+          "effect": "A successful authored cleanse grants its target 6% reduction to incoming non-true damage for 5 seconds",
+          "icdSeconds": 30
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_HELMET",
+          "name": "Frostmarch Winterroot Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 22,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 18,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_CHEST",
+          "name": "Frostmarch Winterroot Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 34,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 12,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 16400,
+              "queueSeconds": 1550,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 28,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_LEGS",
+          "name": "Frostmarch Winterroot Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 30,
+              "hardenedFrostleather": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 24,
+              "hardenedFrostleather": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_BOOTS",
+          "name": "Frostmarch Winterroot Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 21,
+              "hardenedFrostleather": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 17,
+              "hardenedFrostleather": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_CAPE",
+          "name": "Frostmarch Winterroot Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 16,
+              "hardenedFrostleather": 15
+            },
+            "alternate": {
+              "frostwoodPlanks": 6,
+              "rimeboneShards": 7,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11700,
+              "queueSeconds": 1100,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 13,
+              "hardenedFrostleather": 21
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_WINTERROOT_RING",
+          "name": "Frostmarch Winterroot Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 11,
+              "hardenedFrostleather": 6
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "frostweaveCloth": 9,
+              "hardenedFrostleather": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_t5_echohide",
+      "name": "Frostmarch Echohide",
+      "tier": 5,
+      "category": "standard_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "support",
+      "profession": "tailoring",
+      "wearLevelCandidate": 52,
+      "craftLevelCandidate": 42,
+      "intendedPlaystyle": "Reactive healing",
+      "identity": "Reactive support; no autoheal, reflect/DoT/proc triggers excluded",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Winter Echo",
+          "effect": "+3% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Answering Care",
+          "effect": "After an ally takes eligible direct HP damage, the next effective direct heal on that ally within 6 seconds gains +7% Healing Power",
+          "icdSeconds": 16
+        }
+      ],
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "members": [
+        {
+          "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_HELMET",
+          "name": "Frostmarch Echohide Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 22,
+              "frostweaveCloth": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11200,
+              "queueSeconds": 1000,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 18,
+              "frostweaveCloth": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_LEGS",
+          "name": "Frostmarch Echohide Legguards",
+          "slot": "legs",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 30,
+              "frostweaveCloth": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 4,
+              "rimeboneShards": 11,
+              "iceveinSigils": 3,
+              "bindingResin": 4,
+              "gold": 15100,
+              "queueSeconds": 1420,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 24,
+              "frostweaveCloth": 18
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_BOOTS",
+          "name": "Frostmarch Echohide Boots",
+          "slot": "boots",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 21,
+              "frostweaveCloth": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 8,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 11100,
+              "queueSeconds": 1020,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 17,
+              "frostweaveCloth": 14
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_LAUNCH_T5_ECHOHIDE_RING",
+          "name": "Frostmarch Echohide Ring",
+          "slot": "ring",
+          "tier": 5,
+          "profession": "tailoring",
+          "baseStatProfile": "defense_health",
+          "fixedInnatePercentageStats": [],
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 11,
+              "frostweaveCloth": 6
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 6,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 9700,
+              "queueSeconds": 830,
+              "recipeFailureChance": 0,
+              "hardenedFrostleather": 9,
+              "frostweaveCloth": 9
+            }
+          },
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    }
+  ],
+  "proposedRareSets": [
+    {
+      "setId": "eq2_rare_t5_shardrunner",
+      "name": "Frostmarch Shardrunner",
+      "tier": 5,
+      "category": "rare_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "damage",
+      "profession": "tailoring",
+      "wearLevelCandidate": 56,
+      "craftLevelCandidate": 48,
+      "masterBlueprintId": "EQ2_BP_RARE_T5_SHARDRUNNER",
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "scarcity": "Tradeable authenticated master blueprint + separate tradeable combat signature; no recipe failure; premium budgets must be calibrated against existing Citadel/Bloodsteel",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Frozen Pursuit",
+          "effect": "+3% Attack and +2 percentage points Evasion"
+        },
+        {
+          "pieces": 4,
+          "name": "Shatterstep",
+          "effect": "After successfully evading an eligible direct attack, the next direct physical class-ability hit within 6 seconds deals +12% damage",
+          "icdSeconds": 16
+        }
+      ],
+      "members": [
+        {
+          "itemId": "EQ2_RARE_T5_SHARDRUNNER_GLOVES",
+          "name": "Frostmarch Shardrunner Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "innate": {
+            "stat": "attack_pct",
+            "value": 3,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 15900,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 25,
+              "froststeelIngots": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 15900,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 21,
+              "froststeelIngots": 18
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_SHARDRUNNER_BOOTS",
+          "name": "Frostmarch Shardrunner Boots",
+          "slot": "boots",
+          "tier": 5,
+          "innate": {
+            "stat": "evasion_pp",
+            "value": 2,
+            "unit": "percentage_points"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16100,
+              "queueSeconds": 1380,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 29,
+              "froststeelIngots": 14
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16100,
+              "queueSeconds": 1380,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 23,
+              "froststeelIngots": 19
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_SHARDRUNNER_CAPE",
+          "name": "Frostmarch Shardrunner Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "innate": {
+            "stat": "haste_pct",
+            "value": 2.5,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 17000,
+              "queueSeconds": 1490,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 22,
+              "froststeelIngots": 21
+            },
+            "alternate": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 17000,
+              "queueSeconds": 1490,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 29
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_SHARDRUNNER_AMULET",
+          "name": "Frostmarch Shardrunner Amulet",
+          "slot": "amulet",
+          "tier": 5,
+          "innate": {
+            "stat": "ability_damage_pct",
+            "value": 3,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 9,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 14700,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 18,
+              "froststeelIngots": 10
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 9,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 14700,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "shardhearts": 2,
+              "hardenedFrostleather": 15,
+              "froststeelIngots": 14
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "name": "Frostmarch Dawnspire",
+      "tier": 5,
+      "category": "rare_set",
+      "approval": "NEW_CANDIDATE_REVIEW",
+      "role": "support",
+      "profession": "tailoring",
+      "wearLevelCandidate": 56,
+      "craftLevelCandidate": 48,
+      "masterBlueprintId": "EQ2_BP_RARE_T5_DAWNSPIRE",
+      "art": "NOT_GENERATED_OR_APPROVED",
+      "scarcity": "Tradeable authenticated master blueprint + separate tradeable combat signature; no recipe failure; premium budgets must be calibrated against existing Citadel/Bloodsteel",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "First Light",
+          "effect": "+4% Healing Power and +2% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Sanctuary Thread",
+          "effect": "After an eligible effective direct heal, shield that target for 5% of target maximum HP for 6 seconds",
+          "icdSeconds": 20
+        },
+        {
+          "pieces": 6,
+          "name": "Dawnspire Rally",
+          "effect": "When an ally crosses below 35% maximum HP, the next effective direct heal on that ally within 6 seconds gains +14% Healing Power and grants 6% incoming non-true damage reduction for 5 seconds",
+          "icdSeconds": 35
+        }
+      ],
+      "members": [
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_HELMET",
+          "name": "Frostmarch Dawnspire Helm",
+          "slot": "helmet",
+          "tier": 5,
+          "innate": {
+            "stat": "max_hp_pct",
+            "value": 3,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16300,
+              "queueSeconds": 1350,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 30,
+              "froststeelIngots": 14
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16300,
+              "queueSeconds": 1350,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 25,
+              "froststeelIngots": 19
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_CHEST",
+          "name": "Frostmarch Dawnspire Chestpiece",
+          "slot": "chest",
+          "tier": 5,
+          "innate": {
+            "stat": "defense_pct",
+            "value": 3.2,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 7,
+              "rimeboneShards": 17,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 23800,
+              "queueSeconds": 2100,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 3,
+              "frostweaveCloth": 46,
+              "froststeelIngots": 21
+            },
+            "alternate": {
+              "frostwoodPlanks": 7,
+              "rimeboneShards": 17,
+              "iceveinSigils": 3,
+              "bindingResin": 5,
+              "gold": 23800,
+              "queueSeconds": 2100,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 3,
+              "frostweaveCloth": 38,
+              "froststeelIngots": 29
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_GLOVES",
+          "name": "Frostmarch Dawnspire Gloves",
+          "slot": "gloves",
+          "tier": 5,
+          "innate": {
+            "stat": "healing_power_pct",
+            "value": 3,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 15900,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 25,
+              "froststeelIngots": 13
+            },
+            "alternate": {
+              "frostwoodPlanks": 3,
+              "rimeboneShards": 10,
+              "iceveinSigils": 1,
+              "bindingResin": 3,
+              "gold": 15900,
+              "queueSeconds": 1190,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 21,
+              "froststeelIngots": 18
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_BOOTS",
+          "name": "Frostmarch Dawnspire Boots",
+          "slot": "boots",
+          "tier": 5,
+          "innate": {
+            "stat": "haste_pct",
+            "value": 2.5,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16100,
+              "queueSeconds": 1380,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 29,
+              "froststeelIngots": 14
+            },
+            "alternate": {
+              "frostwoodPlanks": 5,
+              "rimeboneShards": 11,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 16100,
+              "queueSeconds": 1380,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 23,
+              "froststeelIngots": 19
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_CAPE",
+          "name": "Frostmarch Dawnspire Mantle",
+          "slot": "cape",
+          "tier": 5,
+          "innate": {
+            "stat": "ward_pp",
+            "value": 1.5,
+            "unit": "percentage_points"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 17000,
+              "queueSeconds": 1490,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 22,
+              "froststeelIngots": 21
+            },
+            "alternate": {
+              "frostwoodPlanks": 9,
+              "rimeboneShards": 10,
+              "iceveinSigils": 2,
+              "bindingResin": 3,
+              "gold": 17000,
+              "queueSeconds": 1490,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 18,
+              "froststeelIngots": 29
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        },
+        {
+          "itemId": "EQ2_RARE_T5_DAWNSPIRE_RING",
+          "name": "Frostmarch Dawnspire Ring",
+          "slot": "ring",
+          "tier": 5,
+          "innate": {
+            "stat": "healing_power_pct",
+            "value": 3,
+            "unit": "relative_percent"
+          },
+          "craftingRoutes": {
+            "foundation": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 9,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 14100,
+              "queueSeconds": 1130,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 15,
+              "froststeelIngots": 9
+            },
+            "alternate": {
+              "frostwoodPlanks": 0,
+              "rimeboneShards": 9,
+              "iceveinSigils": 1,
+              "bindingResin": 2,
+              "gold": 14100,
+              "queueSeconds": 1130,
+              "recipeFailureChance": 0,
+              "dawnspireCores": 2,
+              "frostweaveCloth": 13,
+              "froststeelIngots": 13
+            }
+          },
+          "craftPremium": "PROPOSED_APPLIED_35_PERCENT_REFINED_AND_COMMON_45_PERCENT_GOLD_35_PERCENT_TIME_NOT_APPROVED",
+          "sourceStatus": "UNREGISTERED_REVIEW_ONLY",
+          "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL"
+        }
+      ]
+    }
+  ],
+  "armaments": {
+    "weapons": [
+      {
+        "itemId": "EQ2_WEAPON_T5_IRONWARDEN",
+        "name": "Frostmarch Ironwarden Oathblade",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "IRONWARDEN",
+        "archetype": "sword",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "slashing": 100
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "frostwoodPlanks": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "frostwoodPlanks": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_BASTION",
+        "name": "Frostmarch Bastion Shieldblade",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "BASTION",
+        "archetype": "shieldblade",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "slashing": 100
+        },
+        "exception": "Shieldblade art identity still pending owner decision",
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "frostwoodPlanks": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "frostwoodPlanks": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_DREADGUARD",
+        "name": "Frostmarch Dreadguard Chained Scourge",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "DREADGUARD",
+        "archetype": "chained_scourge",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "blunt": 70,
+          "slashing": 30
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "hardenedFrostleather": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "hardenedFrostleather": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_WAYFINDER",
+        "name": "Frostmarch Wayfinder Bow",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "WAYFINDER",
+        "archetype": "bow",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "piercing": 100
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "frostwoodPlanks": 36,
+            "hardenedFrostleather": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "frostwoodPlanks": 29,
+            "hardenedFrostleather": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_RAVAGER",
+        "name": "Frostmarch Ravager Greatblade",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "RAVAGER",
+        "archetype": "greatblade",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "slashing": 100
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "frostwoodPlanks": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "frostwoodPlanks": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_HEXWEAVER",
+        "name": "Frostmarch Hexweaver Wand",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "HEXWEAVER",
+        "archetype": "wand",
+        "profession": "tailoring",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": null,
+        "exception": "Spell-authored damage only; no automatic physical subtype",
+        "recipeRoutes": {
+          "foundation": {
+            "frostwoodPlanks": 36,
+            "smokeglassPlates": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "frostwoodPlanks": 29,
+            "smokeglassPlates": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_KNIFE_DANCER",
+        "name": "Frostmarch Knife Dancer Paired Blades",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "KNIFE_DANCER",
+        "archetype": "paired_blades",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "piercing": 60,
+          "slashing": 40
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "hardenedFrostleather": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "hardenedFrostleather": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_DAWNKEEPER",
+        "name": "Frostmarch Dawnkeeper Mace",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "DAWNKEEPER",
+        "archetype": "mace",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "blunt": 100
+        },
+        "exception": null,
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 36,
+            "frostwoodPlanks": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 29,
+            "frostwoodPlanks": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_WEAPON_T5_STONECALLER",
+        "name": "Frostmarch Stonecaller Staff",
+        "tier": 5,
+        "slot": "weapon",
+        "classId": "STONECALLER",
+        "archetype": "staff",
+        "profession": "tailoring",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": {
+          "blunt": 100
+        },
+        "exception": "Blunt applies only to explicitly authored staff melee hits, not spells",
+        "recipeRoutes": {
+          "foundation": {
+            "frostwoodPlanks": 36,
+            "smokeglassPlates": 20,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "frostwoodPlanks": 29,
+            "smokeglassPlates": 27,
+            "rimeboneShards": 12,
+            "iceveinSigils": 3,
+            "bindingResin": 5,
+            "gold": 18900,
+            "queueSeconds": 1520,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "authoritativeWeaponProfile": "REFERENCE_T1_T4_PHYSICAL_CROSSWALK_NOT_LIVE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      }
+    ],
+    "offhands": [
+      {
+        "itemId": "EQ2_OFFHAND_T5_IRONWARDEN",
+        "name": "Frostmarch Guardian Shield",
+        "tier": 5,
+        "slot": "offhand",
+        "classId": "IRONWARDEN",
+        "archetype": "shield",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": null,
+        "exception": "Authored Shield Bash may be Blunt",
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 27,
+            "frostwoodPlanks": 15,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 22,
+            "frostwoodPlanks": 21,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_OFFHAND_T5_BASTION",
+        "name": "Frostmarch Tower Shield",
+        "tier": 5,
+        "slot": "offhand",
+        "classId": "BASTION",
+        "archetype": "shield",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": null,
+        "exception": "Authored Shield Bash may be Blunt",
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 27,
+            "frostwoodPlanks": 15,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 22,
+            "frostwoodPlanks": 21,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_OFFHAND_T5_HEXWEAVER",
+        "name": "Frostmarch Hex Focus",
+        "tier": 5,
+        "slot": "offhand",
+        "classId": "HEXWEAVER",
+        "archetype": "focus",
+        "profession": "tailoring",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": null,
+        "exception": "No physical attack subtype",
+        "recipeRoutes": {
+          "foundation": {
+            "smokeglassPlates": 27,
+            "frostwoodPlanks": 15,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "smokeglassPlates": 22,
+            "frostwoodPlanks": 21,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      },
+      {
+        "itemId": "EQ2_OFFHAND_T5_DAWNKEEPER",
+        "name": "Frostmarch Dawn Aegis",
+        "tier": 5,
+        "slot": "offhand",
+        "classId": "DAWNKEEPER",
+        "archetype": "shield",
+        "profession": "smithing",
+        "wearLevelCandidate": 52,
+        "craftLevelCandidate": 44,
+        "directPhysicalStrikeSubtypeWeightsPct": null,
+        "exception": "Authored Shield Bash may be Blunt",
+        "recipeRoutes": {
+          "foundation": {
+            "froststeelIngots": 27,
+            "frostwoodPlanks": 15,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          },
+          "alternate": {
+            "froststeelIngots": 22,
+            "frostwoodPlanks": 21,
+            "rimeboneShards": 10,
+            "iceveinSigils": 2,
+            "bindingResin": 4,
+            "gold": 15000,
+            "queueSeconds": 1200,
+            "recipeFailureChance": 0
+          }
+        },
+        "equipmentGeneration": "2.0_ONLY_FUTURE",
+        "artStatus": "NEEDS_OWNER_VISUAL_APPROVAL",
+        "sourceStatus": "UNREGISTERED_REVIEW_ONLY"
+      }
+    ]
+  },
+  "combatRules": [
+    "All physical subtype weights are review metadata, not extra damage or an item affix",
+    "No automatic Slash/Pierce/Blunt proc, Bleed, Stagger, Armor Break, resistance, generic penetration or vulnerability",
+    "No effect triggered by DoT, reflect, proc chains, self-damage, duplicate simultaneous ticks, failed or absorbed-only hits unless specifically authorized",
+    "Stat channels use authored flat base profiles; new standard set members have no fixed innate percentage stats",
+    "New rare authored innate percentage stat per member is deterministic and not rarity-scaled twice",
+    "Do not introduce new physical affixes into existing pinned 13-affix pipeline",
+    "All effects must be server-owned and deterministic across offline/Q-mode/reconnect without phantom party auras"
+  ],
+  "marketRules": [
+    "Legacy equipment stays permanently ineligible for Player Market 2.0",
+    "Only authenticated newly minted and custodied EQ2 items may ever list, resell or be bought after separate launch approval",
+    "Profession crafting cannot require combat character level; wear can",
+    "Rare components and blueprints must be tradeable or obtainable by commission, independent of own combat level"
+  ],
+  "releaseGates": [
+    "Owner visual review for all new Style 4 art and actual UI/themes before app implementation",
+    "Reserve exact identities and reconcile with 169 original pinned plus 204 proposed T1–T4 plus 10 existing T5 source records, never merge accidental duplicates",
+    "Register all new material sources with actual enemy/gathering grants and payout telemetry, including Frostwood specialist throughput",
+    "Approve numeric base stat budgets, set-specific trigger semantics, overlapping caps, class/spec eligibility and new rare innates",
+    "Enforce original fixed rare Citadel/Bloodsteel innates and set bonuses byte-for-byte unchanged",
+    "Approve future T5 rarity/quality/13-affix compatibility, recipes and XP/Gold/time with observable economy impact",
+    "Implement authenticated PG custody, escrow, commissions, 2-route server reservations, rollback, duplicate protection and protected market provenance",
+    "Prove distinct weapon source + physical subtype handling for all nine classes and skill overrides; no automatic shield bash",
+    "Run nine-class/eighteen-spec/role counterplay replays and signed source tests across T4 and T5 plus dungeons/bosses",
+    "Obtain coordinated Veldryn 2.0 release approval; DO NOT merge this review, deploy, change runtime or reveal in live market"
+  ]
+}

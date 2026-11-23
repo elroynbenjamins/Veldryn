@@ -64,9 +64,9 @@ assert.equal(v2.players[0].damageDone,v1.players[0].damageDone,
  'neutral subtypes cannot change real baseline damage');
 assert.ok(v1.events.every(e=>!e.physicalSubtypes));
 
-const bashId=skillIdV2('IRONWARDEN','Rune Bash');
+const bashId='SK2_RUNE_BASH:v2:0';
 const bash:CombatantDefinition={...player,basicAttackMs:999999,
- abilities:[{id:bashId,name:'QA Rune Bash',target:'current_target',cooldownMs:500,
+ abilities:[{id:bashId,name:'Rune Bash',target:'current_target',cooldownMs:500,
  priority:100,castTimeMs:0,effects:[{kind:'damage',coeff:1,damageType:'physical'}]}]};
 const bashInput={...input,players:[bash]};
 const bashEvidence=[{...evidence[0],items:[...evidence[0].items,

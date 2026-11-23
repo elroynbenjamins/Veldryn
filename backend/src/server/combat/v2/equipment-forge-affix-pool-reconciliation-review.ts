@@ -16,6 +16,7 @@ import {EQ2_COMBAT_FROZEN_AFFIX_MAP_V2}
  from './equipment-frozen-forge-bridge';
 import {EQUIPMENT_AFFIXES_V2}
  from './equipment-affixes';
+import {CLASS_ROLES_V2} from './build-contract';
 import {auditRealForgeTenSlotsV2}
  from './equipment-frozen-forge-slot-audit';
 
@@ -143,9 +144,7 @@ export function reviewForgeNewMintAffixPolicyV2():ForgeProposedAffixPolicyReport
  if(policies.length!==30)fail('role_slot_matrix_missing');
  const covered=audit.cells.filter(c=>c.sourceCoverage==='present').filter(c=>{
   const plan=policies.find(p=>p.role===
-   ({IRONWARDEN:'tank',BASTION:'tank',DREADGUARD:'tank',
-     WAYFINDER:'damage',RAVAGER:'damage',HEXWEAVER:'damage',KNIFE_DANCER:'damage',
-     DAWNKEEPER:'support',STONECALLER:'support'} as const)[c.classId]&&p.slot===c.slot);
+   CLASS_ROLES_V2[c.classId]&&p.slot===c.slot);
   return plan&&plan.proposedCombatCompatible.length>=c.maximumAuthoredAffixRolls;
  }).length;
  if(covered!==340)fail('proposed_physical_source_uncovered');

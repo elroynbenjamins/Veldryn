@@ -196,7 +196,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     traits+=first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length;
     const key=classId+'|'+which+'|'+boss.id;
     const previous=comparisons.get(key)??{low:0,high:0};
-    const finalStat=evidence.statStages.afterAffixes[x.statName];
+    const finalStat=evidence.statStages.afterAffixes[x.statName as keyof CombatStats];
     comparisons.set(key,qualityIndex===0?
      {...previous,low:finalStat}:{...previous,high:finalStat});
     runs++;

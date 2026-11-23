@@ -281,7 +281,6 @@ export const TURKISH_COVERAGE = {
   "Possible counter": "Olası karşı hamle",
   "Level": "Seviye",
   "No companions unlocked yet.": "Henüz yoldaş açılmadı.",
-  "No companion": "Yoldaş yok",
   "Continue without a companion assist": "Yoldaş desteği olmadan devam et",
   "Saving companion…": "Yoldaş kaydediliyor…",
   "Only companions outside your class role can assist.": "Yalnızca sınıfınla farklı roldeki yoldaşlar destek verebilir.",

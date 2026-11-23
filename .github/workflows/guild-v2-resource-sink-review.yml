@@ -9,6 +9,7 @@ on:
       - 'docs/2-0/resource-sinks-equipment-guild-v1.json'
       - 'docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json'
       - 'tools/test-eq2-guild-resource-sinks-v1.mjs'
+      - 'tools/report-eq2-raw-material-demand-v1.mjs'
       - '.github/workflows/guild-v2-resource-sink-review.yml'
   workflow_dispatch:
 permissions:
@@ -31,6 +32,8 @@ jobs:
         run: pnpm --dir backend install --frozen-lockfile
       - name: Pin source recipes, costs and non-issuance
         run: node tools/test-eq2-guild-resource-sinks-v1.mjs
+      - name: Audit planned raw wood and ore demand across protected recipes
+        run: node tools/report-eq2-raw-material-demand-v1.mjs
       - name: Strict isolated TypeScript review contract compilation
         run: pnpm --dir backend exec tsc -p tsconfig.guild-v2-resource-sinks.json
       - name: Verify guild preview Gold, material, replay and anti-overfill invariants

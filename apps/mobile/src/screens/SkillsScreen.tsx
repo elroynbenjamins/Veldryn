@@ -54,21 +54,14 @@ import {skillMilestoneOverview} from '../core/skill-milestones';
 import {filterSkillNavigatorEntries,skillNavigatorCategoryFor,skillNavigatorRouteFor,SKILL_NAVIGATOR_CATEGORIES,type SkillNavigatorCategory,type SkillNavigatorEntry} from '../core/skill-hub-navigator';
 import {sharedText} from '../i18n/shared';
 import {skillNavigatorText} from '../i18n/skill-navigator';
-import {gatheringToolsFor} from '../content/gathering-tools';
-import {equippedGatheringTools,equippedGatheringToolRoll,gatheringToolEffects} from '../core/gathering-tools';
-import {gatheringToolContribution,gatheringToolPercent,gatheringToolTotalBreakdown} from '../core/gathering-tool-presentation';
-import {gatheringToolBonusLabel,validateGatheringToolRoll} from '../core/gathering-tool-rolls';
-import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
-import {DisclosureMark} from '../components/DisclosureControl';
 import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
-import {ToolRecipeInlinePanel} from '../components/ToolRecipeInlinePanel';
+import {GatheringToolLoadoutPanel} from '../components/GatheringToolLoadoutPanel';
 
 export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onWithdrawTool,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialAreaId,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string,quantity?:number)=>void|CraftActionOutcome|Promise<void|CraftActionOutcome>;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onWithdrawTool?:(id:string)=>void|Promise<void>;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialAreaId?:string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const {feedback:craftFeedback,run:runCraftAction}=useCraftActionFeedback();
  const onCraftWithFeedback=(id:string,quantity=1)=>{void runCraftAction(id,quantity,()=>onCraft(id,quantity));};
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const {width:windowWidth,fontScale}=useWindowDimensions(),compactTools=windowWidth<420||fontScale>=1.25;
   const baseGatheringDefs=[...GATHERING,...HERB_NODES],gatheringDefs=initialActionId?[...baseGatheringDefs].sort((a,b)=>a.id===initialActionId?-1:b.id===initialActionId?1:0):baseGatheringDefs;
   const mode=initialMode;
   const initialRecipe=initialRecipeId?RECIPES.find(row=>row.id===initialRecipeId):undefined,goalAction=initialActionId?gatheringDefs.find(row=>row.id===initialActionId):initialRecipe;
@@ -137,58 +130,13 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     {mode==='crafting'&&<>{initialSkill==='enchanting'?<><GameButton title={gt('Open Forge')} tone="secondary" onPress={()=>onSelectSkill?.('forge')}/><Text style={s.sub}>{gt("Forge work reserves materials and Gold when it starts. Equipment, gem refinement and gem combining share the same crafting slots; repeatable processing uses the Active Activity timer.")}</Text></>:<Text style={s.sub}>{gt("Materials are taken from Inventory first, then Bank.")}</Text>}</>}
     {mode==='crafting'&&initialSkill==='enchanting'?<EnchantingRefineryPanel state={state} onCommand={onCommand}/>:null}
     {mode!=='novice'&&mode!=='faith'&&initialSkill!=='faith'&&state.skills.filter(sk=>(!initialSkill||sk.skillId===initialSkill)&&(mode==='gathering'?gatheringDefs.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId))).map(sk=>{
-      const gatheringSkill=sk.skillId as GatheringSkillId,equippedTools=mode==='gathering'?equippedGatheringTools(state,gatheringSkill):[];
-      const equippedTool=equippedTools[equippedTools.length-1],effects=gatheringToolEffects(state,gatheringSkill),totals=gatheringToolTotalBreakdown(effects),totalToolPercent=gatheringToolPercent(totals.effectivePercent);
+      const gatheringSkill=sk.skillId as GatheringSkillId;
       return <View key={sk.skillId} style={s.group}>
-        {mode==='gathering'&&<Panel><Pressable accessibilityRole="button" accessibilityLabel={gt('Manage {skill} tools',{skill:gl(gatheringSkill)})} accessibilityState={{expanded:!!openTools[sk.skillId]}} onPress={()=>{setOpenTools(value=>({...value,[sk.skillId]:!value[sk.skillId]}));setExpandedToolId(null);}} style={s.toolHeading}>{equippedTool?<GatheringToolArtwork itemId={equippedTool.id} size={compactTools?52:64}/>:<View style={[s.emptyTool,compactTools&&s.emptyToolCompact]}><ActivityArtwork id={gatheringSkill}/></View>}<View style={s.toolCopy}><Text numberOfLines={2} style={s.name}>{equippedTools.length?gt('{count} tools equipped',{count:equippedTools.length}):gt("No tool equipped")}</Text><Text numberOfLines={2} style={s.sub}>{equippedTools.length?gt('{percent}% shorter action time',{percent:totalToolPercent})+' · '+equippedTools.length+'/4'+(effects.rarityChanceMultiplier>1?' · +'+Math.round((effects.rarityChanceMultiplier-1)*100)+'% rare finds':''):gt("No tool · 15% slower gathering")}</Text><Text style={s.manageHint}>{gt(openTools[sk.skillId]?'Tap to hide tool tiers':'Tap to manage tool tiers')}</Text></View><DisclosureMark expanded={!!openTools[sk.skillId]}/></Pressable>{equippedTools.length>0?<View style={s.toolTotalBreakdown}>
-            <Text style={s.toolTotalStrong}>{gt('Tier bonuses {base}% · Speed rolls +{roll} points · Effective {total}%',{base:gatheringToolPercent(totals.rawTierPercent),roll:gatheringToolPercent(totals.speedRollGainPoints),total:totalToolPercent})}</Text>
-            <Text style={s.toolRequirement}>{gt('Speed rolls reduce remaining action time. Total reduction cannot exceed 80%.')}{totals.capped?' · '+gt('Speed cap reached'):''}</Text>
-            {totals.rarityChanceRelativePercent>0?<Text style={s.toolRequirement}>{gt('Rare finds: +{percent}% relative chance (eligible gathering drops only)',{percent:gatheringToolPercent(totals.rarityChanceRelativePercent)})}</Text>:null}
-          </View>:null}{openTools[sk.skillId]&&gatheringToolsFor(gatheringSkill).map(tool=>{
-          const equipped=equippedTools.some(entry=>entry.id===tool.id);
-          const equippedCopy=equippedGatheringToolRoll(state,gatheringSkill,tool.tier);
-          const contribution=gatheringToolContribution(tool,equippedCopy);
-          const availableCopies=state.inventory.stacks.filter(stack=>stack.itemId===tool.id&&stack.quantity>0);
-          const ownedCopies=availableCopies.map(stack=>({stack,copy:stack.instanceId?validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(row=>row.id===stack.instanceId),tool.id):undefined}));
-          const carried=state.inventory.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
-          const banked=state.bank.stacks.some(stack=>stack.itemId===tool.id&&stack.quantity>0);
-          const skillReady=sk.level>=tool.unlockLevel,characterReady=(state.character?.level??0)>=tool.requiredCharacterLevel;
-          const learned=!tool.blueprint||(state.account.unlockedKnowledgeIds??[]).includes(tool.blueprint.knowledgeId);
-          const blueprintOwned=!!tool.blueprint&&[...state.inventory.stacks,...state.bank.stacks].some(stack=>stack.itemId===tool.blueprint!.itemId&&stack.quantity>0);
-          const sourceMonster=tool.blueprint?MONSTERS.find(monster=>monster.id===tool.blueprint!.sourceMonsterId):undefined;
-          const sourceRegionId=sourceMonster?WORLD_ZONES.find(zone=>zone.name===sourceMonster.zone)?.id:undefined;
-          const actualBlueprintChance=sourceMonster?.drops.find(drop=>drop.itemId===tool.blueprint?.itemId)?.chance;
-          const blueprintChanceText=actualBlueprintChance===undefined?'':(actualBlueprintChance*100).toFixed(actualBlueprintChance<.01?2:1)+'%';
-          const recipeDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'CRAFT_'+tool.id,button:gt('Craft {name}',{name:tool.name}),detail:gt('Open the Smithing recipe for {name}.',{name:tool.name})};
-          const blueprintDestination=sourceMonster&&sourceRegionId?{kind:'combat' as const,monsterId:sourceMonster.id,zoneName:sourceMonster.zone,regionId:sourceRegionId,button:gt('Hunt {name}',{name:sourceMonster.name}),detail:gt('{name} can drop the {tool} Blueprint.',{name:sourceMonster.name,tool:tool.name})+' '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:'')}:undefined;
-          const title=equipped?gt("Unequip"):carried&&!characterReady?gt('Level {value}',{value:tool.requiredCharacterLevel}):carried&&!skillReady?gl(tool.skillId)+' '+tool.unlockLevel:carried?gt("Equip"):banked?gt("Withdraw"):tool.blueprint&&!learned&&!blueprintOwned?gt("Find Blueprint"):gt("Recipe");
-          const disabled=!equipped&&carried&&(!skillReady||!characterReady);
-          const expanded=expandedToolId===tool.id;
-          const toggleRecipe=()=>setExpandedToolId(current=>current===tool.id?null:tool.id);
-          const action=equipped?()=>onCommand({type:'unequip_tool',args:{id:tool.id}}):carried?()=>onEquipTool(tool.id):banked?(onWithdrawTool?()=>onWithdrawTool(tool.id):onInventory):toggleRecipe;
-          const actionTitle=expanded&&!carried&&!banked&&!equipped?gt('Hide Recipe'):title;
-          const showDetailsToggle=equipped||carried||banked;
-          const blueprintText=!tool.blueprint?gt("recipe known"):learned?gt("blueprint learned"):blueprintOwned?gt("blueprint owned"):sourceMonster?gt('Blueprint: {name}',{name:sourceMonster.name})+' · '+sourceMonster.zone+(blueprintChanceText?' · '+blueprintChanceText:''):gt("blueprint required");
-          return <View key={tool.id}>
-           <View style={[s.toolRow,compactTools&&s.toolRowCompact]}>
-           <View style={s.toolInfo}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.toolCopy}>
-            <Text numberOfLines={2} style={s.toolName}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
-            <Text style={s.toolEffect}>{gt('Tier {tier} · {percent}% shorter action time',{tier:tool.tier,percent:Math.round((1-tool.actionTimeMultiplier)*100)})+' · '+gl(tool.skillId)+' '+tool.unlockLevel+' · '+gt('Level {value}',{value:tool.requiredCharacterLevel})}</Text>
-            {equipped?<><Text style={s.toolRoll}>{equippedCopy?equippedCopy.rarity+' · Q'+equippedCopy.quality+' · '+gatheringToolBonusLabel(equippedCopy):'Legacy · Uncommon · Q50 · Base bonus only'}</Text>
-             <Text style={s.toolEffect}>{gt('Tier contribution: {base}% base → {adjusted}% with rarity and quality',{base:gatheringToolPercent(contribution.basePercent),adjusted:gatheringToolPercent(contribution.adjustedBasePercent)})}</Text>
-             {equippedCopy?<Text style={s.toolRequirement}>{gt('Rarity {rarity}% · Quality {quality}% (relative to tier base)',{rarity:(contribution.rarityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.rarityAdjustmentPercent),quality:(contribution.qualityAdjustmentPercent>=0?'+':'')+gatheringToolPercent(contribution.qualityAdjustmentPercent)})}</Text>:null}
-             </>:null}
-            <Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text>
-           </View></View>
-           <View style={[s.toolActions,compactTools&&s.toolActionsCompact]}>
-             <View style={[s.toolButton,compactTools&&s.toolButtonCompact]}><GameButton title={actionTitle} accessibilityLabel={localizedItemName(language,tool.id)+': '+actionTitle} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View>
-             {showDetailsToggle?<Pressable accessibilityRole="button" accessibilityLabel={expanded?gt('Hide recipe details'):gt('Show recipe details')} accessibilityHint={localizedItemName(language,tool.id)} accessibilityState={{expanded}} onPress={toggleRecipe} style={({pressed})=>[s.toolDetailsToggle,expanded&&s.toolDetailsExpanded,pressed&&s.pressed]}><DisclosureMark expanded={expanded}/></Pressable>:null}
-           </View>
-          </View>
-          {expanded?<ToolRecipeInlinePanel state={state} tool={tool} blueprintDestination={blueprintDestination} onNavigate={onNavigateCraftingSource} onOpenSmithing={()=>onNavigateCraftingSource?onNavigateCraftingSource(recipeDestination):onViewToolRecipes()}/>:null}
-          {ownedCopies.length>0&&(equipped||ownedCopies.length>1)?<View style={s.toolCopies}><Text style={s.toolRequirement}>Owned copies · select one to equip (speed +2–8% / rare finds +2–5%)</Text>{ownedCopies.map(({stack,copy},copyIndex)=><View key={stack.instanceId??'legacy-'+copyIndex} style={s.toolCopyOption}><Text style={[s.toolRequirement,{flex:1}]} numberOfLines={2}>{copy?copy.rarity+' · Q'+copy.quality+' · '+gatheringToolBonusLabel(copy)+' · '+gatheringToolPercent(gatheringToolContribution(tool,copy).adjustedBasePercent)+'% tier':('Legacy · Uncommon · Q50 · Base bonus only · '+gatheringToolPercent(gatheringToolContribution(tool).adjustedBasePercent)+'% tier')}</Text><View style={{minWidth:104}}><GameButton title={equipped?'Replace':'Equip copy'} tone="secondary" onPress={()=>onCommand({type:'equip_tool',args:{id:tool.id,...(stack.instanceId?{instanceId:stack.instanceId}:{})}})}/></View></View>)}</View>:null}
-          </View>;
-        })}</Panel>}
+        {mode==='gathering'&&gatheringSkill!=='herbalism'?<Panel>
+          <GatheringToolLoadoutPanel state={state} skillId={gatheringSkill} onCommand={onCommand}
+            onInventory={onInventory} onWithdrawTool={onWithdrawTool} onViewToolRecipes={onViewToolRecipes}
+            onNavigateCraftingSource={onNavigateCraftingSource}/>
+         </Panel>:null}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}
         {mode==='gathering'&&<GatheringActivityList state={state} skillId={gatheringSkill} skillLevel={sk.level} preferredActionId={initialActionId} onGather={onGather} onNavigate={onNavigateCraftingSource}/>}
         {mode==='crafting'&&<CraftingRecipeBrowser state={state} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraftWithFeedback} craftFeedback={craftFeedback} onAlchemyStart={(id,batches)=>onCommand({type:'alchemy_start',args:{id,batches,batchMode:'selected'}})} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites}/>}

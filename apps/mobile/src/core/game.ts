@@ -1646,7 +1646,9 @@ function setGatheringToolSlots(state:GameState,skillId:GatheringSkillId,tier:1|2
 /** Remove exactly one inventory copy, never implicitly consuming a different
  * receipt when an untracked legacy stack shares the same item definition. */
 function takeInventoryGatheringTool(state:GameState,itemId:string,instanceId?:string){
- const index=state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity>0&&(instanceId?row.instanceId===instanceId:!row.instanceId));
+ const preferred=state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity>0&&!row.instanceId);
+ const index=instanceId?state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity===1&&row.instanceId===instanceId):
+  preferred>=0?preferred:state.inventory.stacks.findIndex(row=>row.itemId===itemId&&row.quantity===1&&!!row.instanceId);
  if(index<0)throw new Error('Tool copy is not in Inventory');
  const row=state.inventory.stacks[index];
  if(row.instanceId){
@@ -1663,7 +1665,7 @@ export function equipGatheringTool(state:GameState,itemId:string,nowMs=Date.now(
  const skill=state.skills.find(entry=>entry.skillId===tool.skillId);
  if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
  const current=activeGatheringToolSlot(state,tool.skillId,tool.tier);
- if(current&&current.itemId===itemId&&instanceId&&current.instanceId===instanceId)return state;
+ if(current&&current.itemId===itemId&&(!instanceId||current.instanceId===instanceId))return state;
  const settled=state.activity?.kind===tool.skillId?claimActivity(state,nowMs).state:state;
  const selected=takeInventoryGatheringTool(settled,itemId,instanceId);
  let stacks=selected.stacks;
@@ -1689,6 +1691,7 @@ export function saveGatheringToolReserve(state:GameState,itemId:string,instanceI
  if(!current)return equipGatheringTool(state,itemId,nowMs,instanceId);
  if(reserveGatheringToolSlot(state,tool.skillId,tier))throw new Error('This tier already has two saved tools');
  const selected=takeInventoryGatheringTool(state,itemId,instanceId);
+ if(selected.copy.instanceId&&selected.copy.instanceId===current.instanceId)throw new Error('Tool copy is already active');
  return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:selected.stacks}},tool.skillId,tier,current,selected.copy);
 }
 /** Instant swap inside tool storage. Settle the running activity using the old

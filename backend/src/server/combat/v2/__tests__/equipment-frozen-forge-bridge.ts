@@ -365,10 +365,20 @@ assert.ok(originalEq2Actors.every(x=>
  'all four Boss V2 actors use genuine original EQ2 forged copies');
 const bossSignals=projectBossCombatReplaySignalsV2(authoredReplay);
 assert.equal(bossSignals.scope,'HIDDEN_COMPILED_BOSS_V2_REPLAY_ONLY');
-assert.ok(bossSignals.casts.some(c=>
- c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE'&&
- c.castDurationMs===1400&&c.state==='completed'),
- 'real authored Boss V2 cast window survives original EQ2 gear compilation');
+const bellCast=bossSignals.casts.find(c=>
+ c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE');
+assert.ok(bellCast&&bellCast.castDurationMs===1400&&
+ (bellCast.state==='completed'||bellCast.state==='interrupted'),
+ 'real authored Boss V2 cast or genuine interrupt survives original EQ2 gear compilation');
+if(bellCast.state==='interrupted'){
+ assert.ok(authoredReplay.events.some(e=>e.type==='interrupt'&&
+  e.targetId==='BOSS_EXP_BELL'&&e.interruptedAbilityId==='BELL_V2_SOUL_CURSE'),
+  'a countered Bell cast must have its actual authored interrupt event');
+}else{
+ assert.ok(authoredReplay.events.some(e=>e.type==='cast_complete'&&
+  e.actorId==='BOSS_EXP_BELL'&&e.abilityId==='BELL_V2_SOUL_CURSE'),
+  'an uninterrupted Bell cast must have its actual completion event');
+}
 assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);

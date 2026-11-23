@@ -166,7 +166,7 @@ export function reviewForgeRoleFitAndStackingV2():ForgeRoleFitRiskReviewV2{
    const statBounds:Partial<Record<V2Affix,number>>={};
    for(const cell of cells){
     const policy=roleSlotMatrix.find(x=>x.role===role&&x.slot===cell.slot);
-    if(!policy)fail('missing_class_slot_policy');
+    if(!policy)throw Error('eq2_affix_role_review_missing_class_slot_policy');
     for(const stat of policy.proposed){
      const max=V2_SERVER_AFFIX_RANGES[stat][tier-1][1];
      statBounds[stat]=(statBounds[stat]??0)+max;

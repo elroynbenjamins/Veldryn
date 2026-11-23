@@ -9,19 +9,20 @@ import {subscribePlayerIdentityChanges} from './player-identity-cache';
 export function useOwnChatSocialName(accountId:string|null|undefined,active:boolean){
  const [name,setName]=useState<string|null>(null);
  useEffect(()=>{
-  let mounted=true;
+  let mounted=true,requestVersion=0;
   setName(null);
   if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!accountId||!active)return()=>{mounted=false};
   const refresh=()=>{
+   const version=++requestVersion;
    void accountSocialNameSelf().then(row=>{
-    if(mounted)setName(row.socialName);
+    if(mounted&&version===requestVersion)setName(row.socialName);
    }).catch(()=>{});
   };
   const unsubscribe=subscribePlayerIdentityChanges(changedId=>{
    if(changedId===accountId)refresh();
   });
   refresh();
-  return()=>{mounted=false;unsubscribe()};
+  return()=>{mounted=false;requestVersion++;unsubscribe()};
  },[accountId,active]);
  return name;
 }

@@ -39,9 +39,12 @@ export const EQ2_COMBAT_FROZEN_AFFIX_MAP_V2:Readonly<Partial<Record<V2Affix,Equi
  armor:'defense_pct',maxHp:'max_hp_pct',ward:'ward_pp',
  critRate:'crit_rate_pp',critDamage:'crit_damage_pct',
  haste:'haste_pp',penetration:'penetration_pp',accuracy:'accuracy_pp',
+ tenacity:'tenacity_pp',abilityDamage:'ability_damage_pct',
+ healingPower:'forge_healing_power_pct',
 };
-// No false Potency->Hex, HealingPower->ClassHealing or AbilityDamage
-// -> generic attack. Tenacity is not an executable V2 status-resistance yet.
+// Generic Potency remains ambiguous: NO automatic Potency->Hex or other
+// conversion. Healing Power, Tenacity and Ability Damage now have separate,
+// explicitly scoped, original-Forge mechanics with no invented percentages.
 const minLevel:Readonly<Record<V2ExactEquipmentTemplate['tier'],number>>={
  1:2,2:12,3:26,4:40,
 };
@@ -223,8 +226,8 @@ export function compileRealFrozenForgeActorV2(
     return {id,value:round(roll.percent/100)};
    })};
  });
- // No Combat re-roll, re-rarity, re-quality, Potency reinterpretation, or
- // unapproved proc is used. Forge's real locked percentage values win.
+ // No Combat re-roll, re-rarity, re-quality, generic Potency reinterpretation,
+ // or unapproved proc is used. Original Forge percentages win.
  const affixes=compileTrustedEquipmentAffixesV2(baseActor,affixRows,
   source.affixPolicy,true);
  const evidence:FrozenForgeEvidenceV2={

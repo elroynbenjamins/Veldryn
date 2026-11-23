@@ -8,7 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
+import {FROSTFALL_ENDURANCE_GENERATOR,frostfallDepthCurveForGraph,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -163,7 +163,8 @@ export class EventExpeditionService{
   const isFrostfallEndurance=run.graph.generatorVersion===FROSTFALL_ENDURANCE_GENERATOR;
   // Only new seasonal graphs receive depth attrition. Saved short events stay numerically identical.
   const depthBeyondOpening=isFrostfallEndurance&&['battle','elite','boss'].includes(selected.kind)?Math.max(0,selected.depth-8):0;
-  const depthAttack=Math.pow(1.022,depthBeyondOpening),depthHp=Math.pow(1.035,depthBeyondOpening),depthDefense=Math.pow(1.012,depthBeyondOpening);
+  const curve=frostfallDepthCurveForGraph(run.graph);
+  const depthAttack=Math.pow(curve.attack,depthBeyondOpening),depthHp=Math.pow(curve.hp,depthBeyondOpening),depthDefense=Math.pow(curve.defense,depthBeyondOpening);
   const seasonalPacing=frostfallEnemyPacingForGraph(run.graph,run.tier??1);
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);

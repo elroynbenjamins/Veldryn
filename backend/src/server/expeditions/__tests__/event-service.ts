@@ -154,6 +154,38 @@ assert.equal(practiceRun.settlement,'claimed','practice completion never creates
 assert.throws(()=>practiceService.claimReward({runId:practiceRun.id,accountId:'a',requestId:'frost-practice-claim',nowMs:now}),/event_reward_not_ready/);
 
 
+// Older six-room Frostfall runs are persisted with event-route-v5. They must
+// remain resolvable after new 42-room runs use the endurance generator.
+const frostLegacyRepository=new MemoryEventRunRepository();
+const frostLegacyService=new EventExpeditionService(frostLegacyRepository,'frostfall-saved-v5-secret');
+const frostLegacyStarted=frostLegacyService.start({
+ requestId:'frostfall-saved-v5-start',runId:'frostfall-saved-v5-run',accountId:'a',
+ eventId:frostfall.id,tier:1,activeLiveEventId:'EVT_ANNUAL_012_2026',members,players,nowMs:now
+});
+const oldNodes=frostLegacyStarted.graph.nodes.filter(node=>node.nodeId==='entry'||node.depth>=1&&node.depth<=6)
+ .map(node=>node.depth===6?{...node,nextNodeIds:['boss']}:node);
+const oldBoss={...frostLegacyStarted.graph.nodes.find(node=>node.nodeId==='boss')!,depth:7};
+const frostLegacySaved={...frostLegacyStarted,graph:{
+ ...frostLegacyStarted.graph,generatorVersion:'event-route-v5',contentVersion:'event-v5',
+ balanceVersion:'event-balance-v5',preBossNodeCount:6,nodes:[...oldNodes,oldBoss]
+}};
+frostLegacyRepository.save(frostLegacySaved);
+let legacyContinue=frostLegacyRepository.get(frostLegacySaved.id)!;
+for(let depth=1;depth<=6;depth++){
+ const current=legacyContinue.graph.nodes.find(node=>node.nodeId===legacyContinue.currentNodeId)!;
+ const options=current.nextNodeIds.map(id=>legacyContinue.graph.nodes.find(node=>node.nodeId===id)!);
+ const target=options.find(node=>node.kind==='battle')??options[0];
+ legacyContinue=frostLegacyService.choose({runId:legacyContinue.id,accountId:'a',optionNodeId:target.nodeId,requestId:'legacy-choice-'+depth});
+ assert.equal(legacyContinue.phase,'awaiting_choice','legacy saved Frostfall route should not unexpectedly fail at depth '+depth);
+}
+const legacyWarmth=eventMechanicProjection(legacyContinue),legacyObjective=eventObjectiveProjection(legacyContinue);
+legacyContinue=frostLegacyService.choose({runId:legacyContinue.id,accountId:'a',optionNodeId:'boss',requestId:'legacy-boss-clear'});
+assert.equal(legacyContinue.phase,'completed','legacy six-room Frostfall final boss must remain playable');
+assert.equal(legacyContinue.graph.generatorVersion,'event-route-v5','saved generator version must remain stable');
+assert.equal(legacyContinue.rewardMarks,eventTierRewardMarks(frostfall,1)+legacyWarmth.rewardBonus+legacyObjective.rewardBonus,
+ 'legacy saved rewards must not receive a new 42-room depth multiplier');
+assert.equal(frostLegacyService.claimReward({runId:legacyContinue.id,accountId:'a',requestId:'legacy-reward',nowMs:now}).marks,legacyContinue.rewardMarks);
+
 const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
 const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
 assert.equal(veil.minLevel,15);

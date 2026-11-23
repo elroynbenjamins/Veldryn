@@ -424,7 +424,7 @@ assert.equal(explanation.releaseApproved,false);
 assert.equal(explanation.comparisons,1);
 const targetedObservation=explanation.rows.find(x=>x.strategy==='targeted');
 assert.equal(targetedObservation?.explanation,'counter_effect_observed',
- 'Actual Skills cleansing requires an observed boss opportunity and cast');
+ 'Actual Skills cleansing requires observed boss opportunity and source-attributed effect');
 assert.equal(targetedObservation?.attributedEvents,curedEvents.length);
 assert.ok(explanation.rows.some(x=>x.strategy==='alternative'),
  'Source-derived alternate route must be assessed without claiming success');

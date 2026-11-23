@@ -9,7 +9,7 @@ import {
  CLASS_NAMES_V2,SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2,
 } from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
-import {EQUIPMENT_AFFIXES_V2,type ServerAffixPolicyV2} from '../equipment-affixes';
+import {EQUIPMENT_AFFIXES_V2,validateTrustedAffixesV2,type ServerAffixPolicyV2} from '../equipment-affixes';
 import {
  compileRealFrozenForgeActorV2,simulateRealFrozenForgeCombatV2,
  EQ2_COMBAT_FROZEN_AFFIX_MAP_V2,type TrustedFrozenForgeCombatSourceV2,
@@ -109,7 +109,10 @@ function eligible(pieceId:string){
  if(!piece)throw Error('missing canonical EQ2 eligible item: '+pieceId);
  return (roll:V2DraftRollOutcome)=>roll.affixes.every(a=>{
   const id=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[a.stat];
-  return Boolean(id&&EQUIPMENT_AFFIXES_V2[id].slots.includes(piece.slot));
+  // A genuine original Forge roll is selected by ROLE pool, with only 70%
+  // slot preference. Its exact provenance (not generic slot preferences)
+  // determines eligibility for the source-specific compiler.
+  return Boolean(id);
  });
 }
 const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support',string>>>>={
@@ -744,14 +747,22 @@ assert.throws(()=>compileRealFrozenForgeActorV2(
  /set_source_bonus_unreconciled/,
  'two genuinely owned EQ2 set copies still cannot activate unapproved effects');
 const offslot=make('HEXWEAVER',1,'offslot');
-assert.throws(()=>compileRealFrozenForgeActorV2(
- offslot.actor,offslot.build,offslot.source),
- /forge_combat_affix_slot_policy_conflict/,
- 'Forge 30% off-slot roll must not violate Combat 2.0 slot eligibility');
+const offslotResult=compileRealFrozenForgeActorV2(
+ offslot.actor,offslot.build,offslot.source);
+const originalRolledId=EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[
+ offslot.exact.affixes[0].stat]!;
+assert.equal(offslotResult.evidence.affixSources[0].id,originalRolledId);
+assert.equal(offslotResult.evidence.affixSources[0].instanceId,offslot.mint.id);
+assert.throws(()=>validateTrustedAffixesV2({
+ instanceId:offslot.mint.id,slot:offslot.exact.slot,tier:'T1',
+ rarity:offslot.exact.rarity,quality:offslot.exact.quality,
+ affixes:[{id:originalRolledId,value:offslot.exact.affixes[0].percent/100}],
+},qaCaps),/combat_v2_affix_slot_ineligible/,
+ 'Generic or legacy Combat affix snapshots cannot borrow original Forge slot provenance');
 const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
- /forge_affix_effect_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
+ /combat_v2_forge_original_affix_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
 // Private cross-stack integration: the EXACT same Skills 2.0 authored
 // generic / targeted / alternative selector imported from hidden PR #1700,
 // now run with REAL original Forge rolled copies, jobs, claims, XP and current

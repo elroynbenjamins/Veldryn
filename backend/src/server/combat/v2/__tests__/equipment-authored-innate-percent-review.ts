@@ -10,6 +10,7 @@ import {rehearseUniversalForgeRollV2} from '../equipment-universal-roll-rehearsa
 import {
  AUTHORED_EQ2_INNATE_PERCENT_REVIEW_V2,
  reviewAuthoredClassInnatesV2,reviewClassInnateForPinnedPieceV2,
+ reviewInnateOriginalSkillTargetsV2,
 } from '../equipment-authored-innate-percent-review';
 
 const audit=reviewAuthoredClassInnatesV2();
@@ -77,3 +78,48 @@ console.log('PASS separate class-authored innate percent source boundary',JSON.s
  randomBonusPoolStillClassNeutral:true,
  freeExtraRollsFromInnates:0,liveGrantedInnates:0,
 }));
+
+const skillBridge=reviewInnateOriginalSkillTargetsV2();
+assert.deepEqual(skillBridge,reviewInnateOriginalSkillTargetsV2());
+assert.equal(skillBridge.sourceWeaponCandidates,18);
+assert.equal(skillBridge.sourceClassSkillOptions,108);
+assert.equal(skillBridge.classes,9);
+assert.equal(skillBridge.approvedItemSkillPairs,0);
+assert.equal(skillBridge.approvedEffects,0);
+assert.equal(skillBridge.canGrant,false);
+assert.ok(Object.isFrozen(skillBridge)&&Object.isFrozen(skillBridge.sourceRows));
+const {SKILL_IDENTITIES_V2}=require('../skill-catalog') as
+ {SKILL_IDENTITIES_V2:readonly {id:string;name:string;classId:string;
+ cooldownMs:number;variants:readonly {id:string}[]}[]};
+for(const weapon of skillBridge.sourceRows){
+ assert.ok(Object.isFrozen(weapon)&&Object.isFrozen(weapon.proposedSkillOptions));
+ const source=v2ServerPiece(weapon.pieceId)!;
+ assert.equal(source.classRestriction,weapon.classId);
+ assert.equal(source.tier,weapon.originalTier);
+ assert.equal(weapon.approvedSelectedSkillId,null);
+ assert.equal(weapon.approvedPercentCoefficient,null);
+ assert.equal(weapon.combatAuthority,false);
+ assert.equal(weapon.randomAffixPoolUnchanged,true);
+ assert.equal(weapon.randomAffixSlotsConsumed,0);
+ assert.equal(weapon.proposedSkillOptions.length,6);
+ const canonical=SKILL_IDENTITIES_V2.filter(x=>x.classId===weapon.classId);
+ assert.deepEqual(weapon.proposedSkillOptions.map(x=>x.id),
+  canonical.map(x=>x.id),'no cross-class innate skill target admitted');
+ for(const option of weapon.proposedSkillOptions){
+  assert.ok(Object.isFrozen(option)&&Object.isFrozen(option.variantIds));
+  const skill=canonical.find(x=>x.id===option.id)!;
+  assert.ok(skill);
+  assert.equal(option.name,skill.name);
+  assert.equal(option.cooldownMs,skill.cooldownMs);
+  assert.equal(option.sourceClass,weapon.classId);
+  assert.deepEqual(option.variantIds,skill.variants.map(x=>x.id));
+  assert.equal(option.itemPercentCoefficient,null);
+  assert.equal(option.itemAbilityBindingApproved,false);
+  assert.equal(option.sourceOnly,true);
+ }
+}
+console.log('PASS authored innate to original Skills 2.0 identity bridge',JSON.stringify({
+ classWeapons:skillBridge.sourceWeaponCandidates,classes:skillBridge.classes,
+ verifiedClassSkillOptions:skillBridge.sourceClassSkillOptions,
+ approvedEffects:0,approvedSkillPairs:0,randomAffixChanges:0,
+ }));

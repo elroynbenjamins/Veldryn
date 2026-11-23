@@ -1,8 +1,20 @@
 # Verify isolated tool-vault release branch before permitted main merge.
-name: Tool vault isolated main integration validation
+name: Tool vault focused regression
 on:
   push:
-    branches: ['feature/main-tool-vault-isolated-20261123']
+    branches: [main]
+    paths:
+      - '.github/workflows/main-tool-vault-focused-validation.yml'
+      - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-hybrid-ui.cjs'
+      - 'apps/mobile/tests/tool-recipe-skills-deeplink-ui.cjs'
+      - 'apps/mobile/tests/gathering-tool-affixes.ts'
+      - 'apps/mobile/tests/gathering-tool-vault.ts'
+      - 'apps/mobile/src/components/GatheringToolLoadoutPanel.tsx'
+      - 'apps/mobile/src/core/gathering-tools.ts'
+      - 'apps/mobile/src/core/game.ts'
+      - 'apps/mobile/src/core/game-commands.ts'
+  pull_request:
     paths:
       - '.github/workflows/main-tool-vault-focused-validation.yml'
       - 'apps/mobile/tests/skill-disclosure-layout-ui.cjs'

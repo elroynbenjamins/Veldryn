@@ -127,7 +127,12 @@ for(const scenario of scenarios){
    close(result.probabilityTotal,1);
    close(result.expectedSelectedCount,count);
    close(result.firstDraw.reduce((n,x)=>n+x.probability,0),1);
-   assert.ok(result.subsets.length>=1&&result.subsets.length<=4);
+   const factorial=(n:number)=>Array.from({length:n},(_,i)=>i+1)
+    .reduce((value,index)=>value*index,1);
+   const choose=factorial(row!.candidates.length)/
+    (factorial(count)*factorial(row!.candidates.length-count));
+   assert.equal(result.subsets.length,choose,
+    'Every positive-weight unordered affix subset must be enumerable');
    assert.ok(result.subsets.every(x=>x.stats.length===count));
    assert.ok(result.inclusion.every(x=>x.probability>0&&x.probability<=1));
    assert.ok(result.subsets.every(x=>x.probability>0&&x.probability<=1));

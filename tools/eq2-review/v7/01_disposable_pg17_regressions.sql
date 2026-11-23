@@ -193,16 +193,16 @@ SELECT eq2review_v7.simulate_transfer_without_gold(
  '60000000-0000-4000-8000-000000000003');
 DO $$
 DECLARE n integer;
-DECLARE owner_id uuid;
+DECLARE v_owner_id uuid;
 DECLARE original_owner uuid;
 DECLARE original_boss text;
 DECLARE snapshot jsonb;
 BEGIN
- SELECT owner_id,custody_revision INTO owner_id,n
+ SELECT owner_id,custody_revision INTO v_owner_id,n
  FROM eq2review_v7.current_custody
  WHERE instance_id='40000000-0000-4000-8000-000000000001';
- IF owner_id<>'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid OR n<>7 THEN
-   RAISE EXCEPTION 'V7_TRANSFER_CUSTODY_EXPECTED_CHARLIE_REV7_GOT_%_%',owner_id,n;
+ IF v_owner_id<>'cccccccc-cccc-4ccc-8ccc-cccccccccccc'::uuid OR n<>7 THEN
+   RAISE EXCEPTION 'V7_TRANSFER_CUSTODY_EXPECTED_CHARLIE_REV7_GOT_%_%',v_owner_id,n;
  END IF;
  SELECT original_owner_id,original_boss_id,immutable_roll_snapshot
  INTO original_owner,original_boss,snapshot

@@ -11,6 +11,7 @@ import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {v2PinnedPhysicalSubtypeReview} from '../../equipment/equipment-crafting-v2-physical-types-review';
 import {v2ServerPiece} from '../../equipment/equipment-crafting-v2-manifest';
 import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2,skillIdV2} from './skill-catalog';
+import {authorizeAuthoredEnemyPhysicalResistancesV2,type EnemyPhysicalResistanceAuthorityV2} from './enemy-physical-resistance-authority';
 
 const brand:unique symbol=Symbol('combat-v2-authored-physical-types');
 export type PhysicalDamageAuthorityV2=Readonly<{readonly [brand]:true}>;
@@ -42,6 +43,7 @@ interface Scope {
  readonly playerIds:readonly string[];
  readonly enemyIds:readonly string[];
  readonly profiles:ReadonlyMap<string,IssuedProfile>;
+ readonly resistancesFor?:(enemyId:string)=>PhysicalResistanceV2;
 }
 const issued=new WeakMap<object,Scope>();
 const fail=(suffix:string):never=>{throw Error('combat_v2_physical_subtype_'+suffix);};
@@ -114,6 +116,7 @@ export interface PhysicalSubtypeHitV2{
  */
 export function issueFrozenForgePhysicalAuthorityV2(
  input:CombatInput,evidence:readonly FrozenPhysicalEvidenceV2[],
+ enemyProfile?:EnemyPhysicalResistanceAuthorityV2,
 ):PhysicalDamageAuthorityV2{
  if(!Array.isArray(input.players)||!Array.isArray(input.enemies)||
     !input.players.length||!input.enemies.length||input.players.length>4||
@@ -153,8 +156,9 @@ export function issueFrozenForgePhysicalAuthorityV2(
    shieldEquipped:Boolean(shield.length),
   }));
  }
+ const resistanceFor=enemyProfile?authorizeAuthoredEnemyPhysicalResistancesV2(input,enemyProfile):undefined;
  const token=Object.freeze({[brand]:true}) as PhysicalDamageAuthorityV2;
- issued.set(token,{digest:enemyV2SnapshotDigest(input),
+ issued.set(token,{digest:enemyV2SnapshotDigest(input),resistancesFor:resistanceFor,
    playerIds:input.players.map(x=>x.id),enemyIds:input.enemies.map(x=>x.id),
    profiles});
  return token;
@@ -174,6 +178,7 @@ export function authorizePhysicalSubtypeEngineV2(
     input.enemies.some((p,i)=>p.id!==scope.enemyIds[i]))
    fail('stale_or_forged_encounter');
  const verifiedProfiles=scope.profiles;
+ const verifiedEnemyResistances=scope.resistancesFor;
  return (source,target,abilityId,damageType,postMitigationDamage,isDirect)=>{
   if(!isDirect||damageType!=='physical'||source.team!=='players'||target.team!=='enemies'||
      !Number.isFinite(postMitigationDamage)||postMitigationDamage<0)
@@ -197,9 +202,12 @@ export function authorizePhysicalSubtypeEngineV2(
    weights=blast(special.type);
   else if(profile.mode==='physical_staff_strike_only')
    return undefined;
-  // No enemy resistance, bonus affix or set trait is approved yet.
-  // Neutral values retain exact baseline damage while still recording provenance.
-  const result=calculatePhysicalSubtypeV2(postMitigationDamage,weights,zero,noBonus);
+  // No subtype bonus affix or set trait is approved. Enemy resistances are
+  // optional and require a separate, signed persisted Enemy V2 authority.
+  // Applies only profiles issued from an already verified persisted Enemy V2 kit.
+  // Legacy/generic/unverified enemies remain neutral by construction.
+  const result=calculatePhysicalSubtypeV2(postMitigationDamage,weights,
+    verifiedEnemyResistances?.(target.id)??zero,noBonus);
   return {damage:result.damage,multiplier:result.multiplier,weights,
     sourcePieceId:profile.pieceId};
  };

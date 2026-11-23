@@ -1,6 +1,6 @@
 # Frostfall 2026 — Winter Hearth Guild Christmas Market (review-only)
 
-**Status:** owner-approved concept; source design and pure rules only. **Not released, merged, deployed or visually approved.** No change to production flags, existing global festival rewards, Guild Boss, live crafting, UI, season schedule, or existing saves.
+**Status:** implementation in a hidden GitHub draft, backend schema and RPCs installed on **staging only**; independent mobile runtime flag remains disabled. **Not merged, production-deployed, launched or visually approved.** Global Frostfall community participation is intentionally disabled in the draft catalogue, preserving its prior reward definitions; Guild Boss and production are unchanged.
 
 ## Scope and lifecycle
 
@@ -50,9 +50,9 @@ The seasonal Smithing recipe is gated by **Smithing skill level 4**, with no com
 - Only lights, not raw Wisp Glow, count toward the lighting donation goal; lights have no combat stat and no permanent power. After event end, stop new Wisp Glow drops/crafting and permit leftover lights to be sold/salvaged at a conservative, separately reviewed value if desired. They cannot boost another event.
 - Never grant forging XP for attempted, cancelled or double-settled crafts. Use existing Smithing recipe provenance and authoritative resource consumption. Cross-account trade, if supported, cannot bypass donor's account weekly cap.
 
-## Authoritative persistence and security (implementation work required)
+## Authoritative persistence and security (first staging implementation complete; release QA pending)
 
-Use an additive versioned schema, event-keyed guild project rows, account-week per-track counters, itemized immutable donation receipts, milestone receipts and guild cosmetic unlock receipts. Access restricted to the backend service and authenticated current-guild server checks. In a **single transaction** with an advisory lock covering the guild track and an account-week ledger lock:
+Implemented as additive versioned staging tables with event-keyed guild project rows, account-week per-track counters, immutable donation receipts, milestone receipts and guild cosmetic unlock receipts. Direct Data API reads/writes are denied; the signed-in account is resolved with `auth.uid()`. In a **single transaction** protected by account advisory and guild/inventory row locks:
 1. Require active, independently enabled 2026 event and project release flag, current guild membership, integer quantity >0, frozen valid item ID and server-owned account/inventory custody.
 2. Compute target remaining and account-week remaining from locked authoritative ledgers; reject overspend/overcap/insufficient inventory without mutation.
 3. Debit actual owned item quantity from the correct inventory location, write unique idempotency-key receipt, increment **guild** track and **account** weekly totals atomically.
@@ -64,6 +64,14 @@ Security tests: membership loss race, guild switch, multi-character bypass, week
 ## Review-only visual concept (not implemented)
 
 Guild Hall → Seasonal Projects → **Winter Hearth: Christmas Market**. Two independent bars with current/member weekly allowance; a small market drawing gains stalls at 25%, lanterns at 50%, decorated trees at 75%, and full aurora market at 100%. Tap-to-donate wood type and crafted lights, no unnecessary filters; compact milestone strip, active bonuses, guild treasury gains and permanent color preview. Must receive explicit owner UI/theme approval, localized copy, Android review and full CI before runtime changes.
+
+## Staging verification (2026-11-23)
+
+- SQL migrations successfully installed only on staging; event remains disabled and `winterHearthGuildEnabled=false`.
+- Rollback-only fixtures verified actual inventory debit, identical receipt replay without second debit/payout, 25% milestone, weekly cap, 100% milestone, exactly 110,000 Guild Bank Gold and permanent color entitlement.
+- Security checks verified no direct authenticated or anon table reads and service-only historical bonus projection; all QA rows rolled back, leaving empty project/donation/milestone/weekly tables.
+- Independent source/client release flag remains false, temporary bonus windows are server-derived, and historical action timestamps are used for XP/speed math. Final CI is not yet verified.
+- Original icon candidate PNGs were generated and delivered separately for review; they are not yet registered in the Android asset map.
 
 ## Release gates
 

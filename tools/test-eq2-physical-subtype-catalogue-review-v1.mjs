@@ -10,9 +10,10 @@ const catalogue=JSON.parse(read('docs/equipment-2-0/eq2-physical-subtype-catalog
 const expansion=JSON.parse(read('docs/equipment-2-0/eq2-expanded-48-set-member-authoring-v1.json')).members;
 const t5=JSON.parse(read('docs/equipment-2-0/t5-rare-set-catalogue-review-v1.json'));
 function pieces(path,name){
- const s=read(path),start=s.indexOf(name+':readonly V2ServerPiece[]=');
+ const s=read(path),anchor=name+':readonly V2ServerPiece[]=';
+ const start=s.indexOf(anchor);
  assert.ok(start>=0,name+' missing');
- const a=s.indexOf('[',start+name.length),b=s.indexOf('];',a);
+ const a=start+anchor.length,b=s.indexOf('];',a);
  assert.ok(a>=0&&b>a);
  return JSON.parse(s.slice(a,b+1));
 }
@@ -36,7 +37,7 @@ for(const p of pinned){
  if(p.slot==='weapon')assert.ok(row.attack);
  else assert.equal(row.attack,null);
 }
-for(const p of expansion){const row=byId.get(p.id);assert.equal(row.setId,p.setId);assert.equal(row.material,p.material);assert.equal(row.attack,null);}
+for(const p of expansion){const row=byId.get(p.id);assert.equal(row.setId,p.setId);assert.equal(row.material,p.material);assert.equal(row.attack,null);if(['eq2_t4_citadel','eq2_t4_bloodsteel'].includes(p.setId))assert.equal(row.status,'retired_superseded_never_register_mint_or_craft');}
 for(const p of rare){const row=byId.get(p.id);assert.equal(row.preserveExistingInnateStat,p.innate.stat);assert.equal(row.attack,null);}
 const wp=catalogue.entries.filter(x=>x.attack), shields=catalogue.entries.filter(x=>x.shieldBash);
 assert.equal(wp.length,36);assert.equal(shields.length,12);assert.equal(wp.filter(x=>x.attack.mode==='spell_source').length,4);

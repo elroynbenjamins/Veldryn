@@ -83,3 +83,10 @@ Possible T4 approaches deliberately differ within each role (two Tank, two Damag
 ## Integration notes and validation gate
 
 The earlier pre-virtual-custody ledger pass passed the **private Equipment + Combat 2.0 expanded-set integration CI**; the newer exact-head work (including virtual history, 15-set review, and its new negative tests) must still pass independently before it can be called verified. The separate hidden Combat counterplay branch PR #1637 has not been merged or reconciled with this hidden Equipment branch PR #1661. Broad backend CI may also fail on older mobile/backend cross-import dependencies and generated Edge bundle parity. Do not mask these with skipped checks or claim a production-ready release.
+
+
+### Shared-Bank and multi-character correction
+
+The immutable Forge mint record's `ownerCharacterId` is the **original crafter**, not a perpetual equipment owner. This must not prevent a character on the **same account** from withdrawing legitimately traded/shared gear from the Bank and wearing it when role, class, level, and all item restrictions pass. The combat bridge now accepts that change only if the complete original claim reservation and ordered **pouch → Bank deposit → second-character Bank withdrawal → equip** history verifies. Both original crafter and current wearer must be among the authoritative account's characters; old/new move holders, revision and item identity must match the replay. The test proves that a second character can use the original unchanged frozen Forge stats and affixes, while spoofed external-account actors and missing original-crafter account membership remain rejected.
+
+This is a **hidden virtual-ledger behavioral proof**, not a live Bank transfer or an authenticated cross-account transaction. Actual physical EQ2 storage, the approved Player Market 2.0 mint-only trading restriction, and production account locks remain separate launch blockers.

@@ -15,6 +15,8 @@
     "src/server/equipment/equipment-crafting-v2-material-origins-v6-review.ts",
     "src/server/equipment/equipment-crafting-v2-atomic-handoff-v7-review.ts",
     "src/server/combat/v2/equipment-frozen-forge-bridge.ts",
-    "src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts"
+    "src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts",
+    "src/server/combat/v2/equipment-forge-set-identity-review.ts",
+    "src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts"
   ]
 }

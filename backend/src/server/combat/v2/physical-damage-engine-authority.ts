@@ -167,7 +167,8 @@ export function authorizePhysicalSubtypeEngineV2(
    isDirect:boolean)=>PhysicalSubtypeHitV2|undefined)|null{
  if(!token)return null;
  const scope=issued.get(token);
- if(!scope||scope.digest!==enemyV2SnapshotDigest(input)||
+ if(!scope)fail('stale_or_forged_encounter');
+ if(scope.digest!==enemyV2SnapshotDigest(input)||
     !unique(scope.playerIds)||!unique(scope.enemyIds)||
     input.players.some((p,i)=>p.id!==scope.playerIds[i])||
     input.enemies.some((p,i)=>p.id!==scope.enemyIds[i]))

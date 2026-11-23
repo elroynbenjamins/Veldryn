@@ -7,7 +7,7 @@
  * not item grants, set effects, approved percentages, or balance coefficients.
  */
 import {V2_SERVER_PIECES,v2ServerPiece} from '../../equipment/equipment-crafting-v2-manifest';
-import {CLASS_NAMES_V2} from './skill-catalog';
+import {CLASS_NAMES_V2,SKILL_IDENTITIES_V2} from './skill-catalog';
 import type {ClassIdV2} from './build-contract';
 import {PROPOSED_FORGE_NEXT_MINT_ROLL_POLICY_V2}
  from './equipment-forge-next-mint-roll-policy-review';
@@ -88,4 +88,75 @@ export function reviewClassInnateForPinnedPieceV2(pieceId:string):
  if(typeof pieceId!=='string'||pieceId.length>128||!v2ServerPiece(pieceId))
   return null;
  return reviewAuthoredClassInnatesV2().candidates.find(c=>c.sourcePieceId===pieceId)??null;
+}
+
+/**
+ * Source-identity JOIN ONLY. Do not choose/authorize a skill target yet:
+ * enumerates all six authored active Skills V2 for each candidate weapon,
+ * with their canonical variants. Real class-specific item effects must be
+ * approved as a second signed channel, never appended to random affixes.
+ */
+export interface InnateSkillIdentityOptionV2{
+ readonly id:string;
+ readonly name:string;
+ readonly cooldownMs:number;
+ readonly variantIds:readonly string[];
+ readonly sourceClass:ClassIdV2;
+ readonly itemPercentCoefficient:null;
+ readonly itemAbilityBindingApproved:false;
+ readonly sourceOnly:true;
+}
+export interface InnateWeaponSkillAuthoringV2{
+ readonly pieceId:string;
+ readonly classId:ClassIdV2;
+ readonly originalTier:3|4;
+ readonly proposedSkillOptions:readonly InnateSkillIdentityOptionV2[];
+ readonly approvedSelectedSkillId:null;
+ readonly approvedPercentCoefficient:null;
+ readonly randomAffixPoolUnchanged:true;
+ readonly randomAffixSlotsConsumed:0;
+ readonly combatAuthority:false;
+}
+export interface InnateSkillSourceBridgeReviewV2{
+ readonly sourceWeaponCandidates:number;
+ readonly sourceClassSkillOptions:number;
+ readonly classes:number;
+ readonly approvedItemSkillPairs:0;
+ readonly approvedEffects:0;
+ readonly canGrant:false;
+ readonly sourceRows:readonly InnateWeaponSkillAuthoringV2[];
+ readonly status:'SOURCE_SKILL_IDENTITIES_ONLY_NOT_APPROVED';
+}
+export function reviewInnateOriginalSkillTargetsV2():InnateSkillSourceBridgeReviewV2{
+ const innate=reviewAuthoredClassInnatesV2();
+ if(SKILL_IDENTITIES_V2.length!==54||innate.candidates.length!==18)
+  fail('unreconciled_skills_or_class_weapon_count');
+ const sourceRows=innate.candidates.map(item=>{
+  const skills=SKILL_IDENTITIES_V2.filter(s=>s.classId===item.classRestriction);
+  if(skills.length!==6||new Set(skills.map(s=>s.id)).size!==6||
+     skills.some(s=>s.variants.length!==3))
+   fail('canonical_class_skill_identity_mismatch');
+  return Object.freeze({
+   pieceId:item.sourcePieceId,classId:item.classRestriction,
+   originalTier:item.tier,
+   proposedSkillOptions:Object.freeze(skills.map(skill=>Object.freeze({
+    id:skill.id,name:skill.name,cooldownMs:skill.cooldownMs,
+    variantIds:Object.freeze(skill.variants.map(v=>v.id)),
+    sourceClass:skill.classId,
+    itemPercentCoefficient:null,itemAbilityBindingApproved:false as const,
+    sourceOnly:true as const,
+   }))),
+   approvedSelectedSkillId:null,approvedPercentCoefficient:null,
+   randomAffixPoolUnchanged:true as const,
+   randomAffixSlotsConsumed:0 as const,combatAuthority:false as const,
+  });
+ });
+ return Object.freeze({
+  sourceWeaponCandidates:sourceRows.length,
+  sourceClassSkillOptions:sourceRows.reduce((n,x)=>n+x.proposedSkillOptions.length,0),
+  classes:new Set(sourceRows.map(x=>x.classId)).size,
+  approvedItemSkillPairs:0 as const,approvedEffects:0 as const,
+  canGrant:false as const,sourceRows:Object.freeze(sourceRows),
+  status:'SOURCE_SKILL_IDENTITIES_ONLY_NOT_APPROVED' as const,
+ });
 }

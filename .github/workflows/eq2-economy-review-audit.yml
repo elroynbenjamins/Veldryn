@@ -1,0 +1,76 @@
+name: Equipment 2.0 economy review-only audits
+on:
+  push:
+    branches:
+      - 'analysis/eq2-economy-scarcity-stress-20261121'
+  pull_request:
+    paths:
+      - 'tools/lib/eq2-drop-risk-v2.mjs'
+      - 'tools/lib/eq2-source-introspection-v1.mjs'
+      - 'tools/evaluate-eq2-drop-risk-v2.mjs'
+      - 'tools/audit-eq2-material-sources-v1.mjs'
+      - 'tools/compare-eq2-refining-sources-v1.mjs'
+      - 'tools/evaluate-eq2-dust-supply-v1.mjs'
+      - 'tools/lib/eq2-joint-gathering-v1.mjs'
+      - 'tools/tests/eq2-joint-gathering-v1.test.mjs'
+      - 'tools/lib/eq2-signature-contract-v1.mjs'
+      - 'tools/preview-eq2-signature-equipment-v1.mjs'
+      - 'tools/tests/eq2-signature-equipment-v1.test.mjs'
+      - 'tools/lib/eq2-signature-combat-preview-v1.mjs'
+      - 'tools/tests/eq2-signature-combat-preview-v1.test.mjs'
+      - 'tools/lib/eq2-signature-tank-support-preview-v1.mjs'
+      - 'tools/tests/eq2-signature-tank-support-preview-v1.test.mjs'
+      - 'tools/lib/eq2-signature-matrix-v1.mjs'
+      - 'tools/evaluate-eq2-signature-matrix-v1.mjs'
+      - 'tools/tests/eq2-signature-matrix-v1.test.mjs'
+      - 'tools/lib/eq2-signature-recipes-v1.mjs'
+      - 'tools/tests/eq2-signature-recipes-v1.test.mjs'
+      - 'tools/tests/eq2-drop-risk-v2.test.mjs'
+      - 'tools/tests/eq2-source-introspection-v1.test.mjs'
+      - 'docs/equipment-2-0/**'
+      - 'apps/mobile/src/content/monsters.ts'
+      - 'apps/mobile/src/content/skills.ts'
+      - 'apps/mobile/src/content/herbalism.ts'
+      - 'apps/mobile/src/content/items.ts'
+      - 'apps/mobile/src/content/alchemy.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-*.ts'
+      - '.github/workflows/eq2-economy-review-audit.yml'
+permissions:
+  contents: read
+jobs:
+  review-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check review-only JS syntax
+        run: |
+          node --check tools/lib/eq2-drop-risk-v2.mjs
+          node --check tools/lib/eq2-source-introspection-v1.mjs
+          node --check tools/evaluate-eq2-drop-risk-v2.mjs
+          node --check tools/audit-eq2-material-sources-v1.mjs
+          node --check tools/compare-eq2-refining-sources-v1.mjs
+          node --check tools/lib/eq2-joint-gathering-v1.mjs
+          node --check tools/evaluate-eq2-dust-supply-v1.mjs
+          node --check tools/lib/eq2-signature-contract-v1.mjs
+          node --check tools/preview-eq2-signature-equipment-v1.mjs
+          node --check tools/lib/eq2-signature-combat-preview-v1.mjs
+          node --check tools/lib/eq2-signature-tank-support-preview-v1.mjs
+          node --check tools/lib/eq2-signature-matrix-v1.mjs
+          node --check tools/evaluate-eq2-signature-matrix-v1.mjs
+          node --check tools/lib/eq2-signature-recipes-v1.mjs
+      - name: Deterministic risk and source-provenance regression suites
+        run: node --test tools/tests/eq2-drop-risk-v2.test.mjs tools/tests/eq2-source-introspection-v1.test.mjs tools/tests/eq2-joint-gathering-v1.test.mjs tools/tests/eq2-signature-equipment-v1.test.mjs tools/tests/eq2-signature-combat-preview-v1.test.mjs tools/tests/eq2-signature-tank-support-preview-v1.test.mjs tools/tests/eq2-signature-matrix-v1.test.mjs tools/tests/eq2-signature-recipes-v1.test.mjs
+      - name: Verify hidden 169-item and 338-route design-only generator
+        run: node tools/preview-eq2-economy-v1.mjs
+      - name: Run source and material risk audit without writing game data
+        run: |
+          node tools/audit-eq2-material-sources-v1.mjs > "$RUNNER_TEMP/eq2-source-audit.json"
+          node tools/evaluate-eq2-drop-risk-v2.mjs > "$RUNNER_TEMP/eq2-drop-risk.json"
+          node tools/compare-eq2-refining-sources-v1.mjs > "$RUNNER_TEMP/eq2-refining-sources.json"
+          node tools/evaluate-eq2-dust-supply-v1.mjs > "$RUNNER_TEMP/eq2-dust-supply.json"
+          node tools/preview-eq2-signature-equipment-v1.mjs > "$RUNNER_TEMP/eq2-signature-gear.json"
+          node tools/evaluate-eq2-signature-matrix-v1.mjs > "$RUNNER_TEMP/eq2-signature-matrix.json"
+          node -e "const fs=require('node:fs');const s=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-source-audit.json','utf8'));const d=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-drop-risk.json','utf8'));const t=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-refining-sources.json','utf8'));const g=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-dust-supply.json','utf8'));const p=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-signature-gear.json','utf8'));const m=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/eq2-signature-matrix.json','utf8'));if(m.status!=='REVIEW_ONLY_NO_RUNTIME'||m.coverage.syntheticScenarios!==486||m.coverage.realCombatSimulations!==0||m.summaries.length!==9)process.exit(1);if(p.status!=='REVIEW_ONLY_NO_RUNTIME'||p.validated.validatedItems!==6||p.validated.dungeonVariants!==3||p.items.length!==6)process.exit(1);if(g.status!=='REVIEW_ONLY_NO_RUNTIME'||g.reports.length!==3||g.selectedForFurtherReview!=='balanced-coupled')process.exit(1);if(t.status!=='REVIEW_ONLY_NO_RUNTIME'||t.sourceChoiceDelta.smithingXP!==86560||t.sourceChoiceDelta.sunstoneOre!==-606)process.exit(1);if(s.status!=='REVIEW_ONLY_NO_RUNTIME'||d.status!=='REVIEW_ONLY_NO_RUNTIME')process.exit(1);if(s.coverage.conflictingExistingRecipeIds.indexOf('SUNSTONE_INGOT')<0)process.exit(1);if(d.tiers.length!==4)process.exit(1);console.log('Review only: source references',s.coverage.references,'tiers',d.tiers.length,'conflicts',s.coverage.conflictingExistingRecipeIds.join(','));"

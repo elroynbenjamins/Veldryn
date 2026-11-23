@@ -1,0 +1,204 @@
+{
+  "schema": "eq2-signature-cross-system-review-v1",
+  "status": "REVIEW_ONLY_NO_RUNTIME",
+  "latestInspectedExternalCombatBranch": "feature/combat-v2-foundation-contract-20261118",
+  "pinnedExternalSourceFiles": [
+    {
+      "path": "backend/src/server/combat/engine.ts",
+      "blobSha": "a719d7b6d2566b61750127497b208610aa4a5cce",
+      "observed": "Direct-hit damage, mitigation, ward, shield/dealt, resource/reaction callbacks; timed DoT events and healing/shield emission."
+    },
+    {
+      "path": "backend/src/server/combat/v2/equipment-affixes.ts",
+      "blobSha": "0d51e21549aab5c2cea4c9d798b1edecd370c15c",
+      "observed": "13 authored affixes including hex_potency_pct, shield_strength_pct, ward_pp and accuracy/evasion."
+    },
+    {
+      "path": "backend/src/server/combat/v2/skill-effects.ts",
+      "blobSha": "2573d7f51028ac126c6c2988050cf00c46cfc597",
+      "observed": "54 class skills, 162 variants, 18 specialization skill styles; authoritative compile."
+    },
+    {
+      "path": "backend/src/server/combat/v2/reactive-passive-runtime.ts",
+      "blobSha": "4a09d832510a4d81ecf467fdfb021ea7922bddc0",
+      "observed": "Finite reactive triggers and per-encounter cooldown state. Heal and shield triggers exist in union but are not a signature trait executor."
+    },
+    {
+      "path": "backend/src/server/combat/v2/specialization-styles.ts",
+      "blobSha": "b61306f06e8809843b33e27adb191779a8558376",
+      "observed": "9 classes x 2 authored specializations."
+    },
+    {
+      "path": "backend/src/server/combat/v2/unified-equipment-encounter.ts",
+      "blobSha": "248cc68e6e6622a8e191a71086566af4a0b57293",
+      "observed": "Server-compiled equipment and owned actor source before encounter."
+    }
+  ],
+  "scope": "Unmerged Equipment 2.0 review branch cannot import sibling Combat 2.0 branch; manual source comparison and static contracts only, not executable engine parity.",
+  "rolesAndSpecializations": [
+    {
+      "classId": "IRONWARDEN",
+      "role": "tank",
+      "specializations": [
+        "Sentinel",
+        "Warlord"
+      ],
+      "illustrativePhysicalHitFraction": 0.82
+    },
+    {
+      "classId": "BASTION",
+      "role": "tank",
+      "specializations": [
+        "Fortress",
+        "Guardian"
+      ],
+      "illustrativePhysicalHitFraction": 0.7
+    },
+    {
+      "classId": "DREADGUARD",
+      "role": "tank",
+      "specializations": [
+        "Bloodbound",
+        "Harbinger"
+      ],
+      "illustrativePhysicalHitFraction": 0.86
+    },
+    {
+      "classId": "WAYFINDER",
+      "role": "damage",
+      "specializations": [
+        "Deadeye",
+        "Pathfinder"
+      ],
+      "illustrativePhysicalHitFraction": 0.98
+    },
+    {
+      "classId": "RAVAGER",
+      "role": "damage",
+      "specializations": [
+        "Executioner",
+        "Berserker"
+      ],
+      "illustrativePhysicalHitFraction": 0.98
+    },
+    {
+      "classId": "HEXWEAVER",
+      "role": "damage",
+      "specializations": [
+        "Cursebinder",
+        "Voidcaller"
+      ],
+      "illustrativePhysicalHitFraction": 0.1
+    },
+    {
+      "classId": "KNIFE_DANCER",
+      "role": "damage",
+      "specializations": [
+        "Bladedancer",
+        "Shadowblade"
+      ],
+      "illustrativePhysicalHitFraction": 0.99
+    },
+    {
+      "classId": "DAWNKEEPER",
+      "role": "support",
+      "specializations": [
+        "Lightbringer",
+        "Sunwarden"
+      ],
+      "illustrativePhysicalHitFraction": 0.2
+    },
+    {
+      "classId": "STONECALLER",
+      "role": "support",
+      "specializations": [
+        "Earthwarden",
+        "Runeshaper"
+      ],
+      "illustrativePhysicalHitFraction": 0.35
+    }
+  ],
+  "fixtureProfile": {
+    "label": "pure-synthetic-preview-not-authoritative-combat-calibration",
+    "durationSecondsByKind": {
+      "normal": 120,
+      "elite": 180,
+      "boss": 240
+    },
+    "hitsPerSecondByProfile": {
+      "slow": 0.65,
+      "baseline": 1.25,
+      "fast": 2.2
+    },
+    "accuracyOnAllProfiles": 0.9,
+    "baseDamageOnCreditedDirectHit": 100,
+    "profileQualityMultiplier": {
+      "slow": 0.85,
+      "baseline": 1,
+      "fast": 1.15
+    },
+    "classPhysicalHitFractionMeaning": "illustrative expected fraction of direct attacks qualifying as physical in this fixture; not a measured or authored Combat 2.0 class mechanic",
+    "roleDataUsage": "Only synthetic class coverage and source ability eligibility stress, not auto-calculated balance pass/fail"
+  },
+  "requiredHostHooks": [
+    {
+      "trait": "riverthorn_cut|scorpionstrike_bleed|riftfang_bleed",
+      "owner": "server-owned outgoing hit settlement",
+      "when": "after final hit/crit/mitigation/shield resolution and positive actual HP damage, original direct physical ability use",
+      "exclude": "DoT ticks, class reactive/capstone secondary damage, gem echoes, companion hits, client hits, multi-hit extra rolls",
+      "type": "physical dot tag EQ2_SIG_BLEED, distinct from hex"
+    },
+    {
+      "trait": "heartwood_retort",
+      "owner": "server-owned incoming direct-hit settlement",
+      "when": "after credited incoming HP loss >=15% max HP, then add 5-second protection for NEXT eligible hit",
+      "exclude": "triggering hit, full shield absorption, environmental and DoT; count true damage as trigger only after explicit design decision",
+      "type": "damage_taken modifier -0.02 under shared mitigation family limit"
+    },
+    {
+      "trait": "oasis_afterglow",
+      "owner": "server-owned actual direct heal or shield credit",
+      "when": "positive credited amount on distinct ally; one ability-use cursor with 18-second source-wide ICD",
+      "exclude": "self heal, zero effective healing, HoT ticks, GEM_MERCY/GEM_RENEWAL, capstone/companion/generated shields",
+      "type": "target 2% maxHP protective shield, cannot self-trigger"
+    },
+    {
+      "trait": "glassfin_guard",
+      "owner": "server-compiled exact equipment snapshot",
+      "when": "mitigation after Defense / magical Ward before shield absorption, only incoming non-true direct enemy damage",
+      "exclude": "DoT ticks, true damage, environmental damage and recursive reflection",
+      "type": "multiplicative 0.97; one defensive/support trait family"
+    }
+  ],
+  "tickAndSeed": {
+    "v2EngineUnit": "milliseconds",
+    "previewUnit": "seconds",
+    "conversion": "round(1000 * seconds) at the server entry boundary exactly once",
+    "rng": "domain-separated server RNG in signed persisted encounter, never client-provided; preview seededRng is NOT cryptographic or reward authority",
+    "actionKey": "encounterID + actorID + server-issued action sequence; ability ID by itself is NOT unique",
+    "idempotency": "one credited trigger per action ID, one replay-safe proc decision and one instance-bound stack/cooldown state; rollback on unsupported status effect"
+  },
+  "crossSystemRules": {
+    "physicalBleedHexPotencyMultiplier": 1,
+    "physicalBleedElementalWardMultiplier": 1,
+    "physicalBleedBossCoefficientMultiplier": 0.5,
+    "physicalBleedNoRarityQualityOrATKDoubleScaling": true,
+    "physicalBleedDoTAndReflectProcsDenied": true,
+    "maximumPersistentSignatureMitigation": 0.03,
+    "triggerAndDotOwnership": "status owner is exact instance owner + attacker, no cross-character replay",
+    "sharedEffectBudget": "one offensive and one defensive/support signature/blueprint family slot; actual set/effect gem stacking requires explicit server policy",
+    "statusCoexistence": "do not remove/consume class-authored DoTs (Hexweaver and Knife Dancer) when signature Bleed refreshes",
+    "futureWeaponEffect": "damage dealt from offensive gem and attack-affix applied to original credited hit only, then bleed uses that amount once",
+    "noPityOrGuaranteeToFishingAndDungeon": true
+  },
+  "criticalIntegrationGaps": [
+    "No verified Combat 2.0 signature item ownership / Gear instance trait resolver in the inspected engine.",
+    "Current reactive-passive event union alone does not supply exact equipment instance / action-use dedup or 18s shield trigger implementation.",
+    "Existing engine tick/DoT type supports damageType physical; status-tag reapply/refresh cap and boss immunity for a new equipment DoT are not yet implemented.",
+    "Rare Blueprint and Signature source families require a single shared two-trait budget to prevent equipment+gem+set uncontrolled layering.",
+    "Existing Combat 2.0 engine source is on a DIFFERENT draft branch; this contract must be regenerated against canonical latest before implementation.",
+    "Gem 2.0 Might ATK backport and live legacy gems use separate revision schedules; never infer Power/Attack migration from older mobile file.",
+    "Do not trust this synthetic QA to establish balanced 9-class/18-spec fights. Real server-simulated enemy/dungeon/boss replays remain mandatory."
+  ],
+  "noImplementationAuthorized": true
+}

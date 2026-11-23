@@ -1,0 +1,58 @@
+{
+  "schema": "eq2-signature-recipe-anchors-v1",
+  "status": "REVIEW_ONLY_DO_NOT_IMPORT_TO_RUNTIME",
+  "policy": {
+    "basis": "Exact corresponding hidden ordinary role/tier/slot foundation recipe, selected by canonical ID; new signature item does not overwrite the ordinary one.",
+    "approvedBudget": false,
+    "oneFoundationRoutePerSignature": true,
+    "refinedInputsFactor": 1.25,
+    "preserveCombatCommonAndRareCounts": true,
+    "preserveBinderCount": true,
+    "signatureCatalystQty": 1,
+    "goldFactor": 1.5,
+    "goldRoundUpTo": 100,
+    "durationFactor": 1.25,
+    "xpFactor": 1,
+    "noOtherUniqueSources": true,
+    "allItemSourceAndRuntimeFlagsOff": true
+  },
+  "anchors": [
+    {
+      "signatureItemId": "EQ2_SIG_T2_RIVERTHORN_GRIPS",
+      "pieceId": "EQ2_IRONWOOD_STALKER_GLOVES",
+      "recipeId": "EQ2_IRONWOOD_STALKER_GLOVES_FOUNDATION",
+      "note": "T2 leather Damage gloves; no alternate-stat item overwrite"
+    },
+    {
+      "signatureItemId": "EQ2_SIG_T2_HEARTWOOD_MANTLE",
+      "pieceId": "EQ2_SOLO_IRONWOOD_BASTION_CAPE",
+      "recipeId": "EQ2_SOLO_IRONWOOD_BASTION_CAPE_FOUNDATION",
+      "note": "T2 mail Tank cape"
+    },
+    {
+      "signatureItemId": "EQ2_SIG_T3_OASISTIDE_SIGNET",
+      "pieceId": "EQ2_EXP_T3_SUPPORT_RING",
+      "recipeId": "EQ2_EXP_T3_SUPPORT_RING_FOUNDATION",
+      "note": "T3 Support ring; Sunstone/Amberglass and common combat gating"
+    },
+    {
+      "signatureItemId": "EQ2_SIG_T3_SCORPIONSTRIKE_GRIPS",
+      "pieceId": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES",
+      "recipeId": "EQ2_SUNSCAR_BREAKSTEEL_GLOVES_FOUNDATION",
+      "note": "T3 Damage gloves, steel-based instead of alternative-stat crafted gloves"
+    },
+    {
+      "signatureItemId": "EQ2_SIG_T4_GLASSFIN_MANTLE",
+      "pieceId": "EQ2_GLASSBOUND_RETALIATOR_CAPE",
+      "recipeId": "EQ2_GLASSBOUND_RETALIATOR_CAPE_FOUNDATION",
+      "note": "T4 Tank cape, preserves Plate, Glassheart and Binder"
+    },
+    {
+      "signatureItemId": "EQ2_SIG_T4_RIFTFANG_PENDANT",
+      "pieceId": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET",
+      "recipeId": "EQ2_GLASSBOUND_SPELLWEAVE_AMULET_FOUNDATION",
+      "note": "T4 Damage amulet, preserves Plate, Glassheart and Binder"
+    }
+  ],
+  "noImplementationAuthorized": true
+}

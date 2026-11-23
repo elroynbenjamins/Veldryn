@@ -102,12 +102,21 @@ console.log('FROSTFALL_NORMALIZATION_READINESS_REJECTIONS '+JSON.stringify(rejec
 // Probe all levels even if novice min-power fails readiness. A properly
 // equipped 5x fixture should always be eligible after normalization.
 for(let tier=1;tier<=5;tier++)assert.ok(rows.some(row=>row.tier===tier&&row.multiplier===5),'5x geared fixture must be co-op eligible at tier '+tier);
+
+const deepTargets=[14,21,28,35,42] as const;
+for(let tier=1;tier<=5;tier++)
+ for(const multiplier of [1.5,3] as const)
+  for(const target of deepTargets)
+   rows.push(attempt(tier,multiplier,1,target));
+const firstCheckpointRows=rows.filter(row=>row.target===7);
+
 const summary=[1,2,3,4,5].map(tier=>({
  tier,profiles:calibrations.map(multiplier=>({
-  multiplier,attempts:rows.filter(x=>x.tier===tier&&x.multiplier===multiplier).length,
-  clears:rows.filter(x=>x.tier===tier&&x.multiplier===multiplier&&x.clear).length,
-  averageCp:rows.find(x=>x.tier===tier&&x.multiplier===multiplier)?.averageCp??null,
+  multiplier,attempts:firstCheckpointRows.filter(x=>x.tier===tier&&x.multiplier===multiplier).length,
+  clears:firstCheckpointRows.filter(x=>x.tier===tier&&x.multiplier===multiplier&&x.clear).length,
+  averageCp:firstCheckpointRows.find(x=>x.tier===tier&&x.multiplier===multiplier)?.averageCp??null,
  }))
 }));
-console.log('FROSTFALL_REAL_NORMALIZATION_BALANCE '+JSON.stringify({note:'synthetic fixture through production loadout pipeline, not measured player success',summary,rejected,rows}));
+const deepSummary=deepTargets.map(target=>({target,attempts:rows.filter(row=>row.target===target).length,clears:rows.filter(row=>row.target===target&&row.clear).length,byTier:[1,2,3,4,5].map(tier=>({tier,clears:rows.filter(row=>row.target===target&&row.tier===tier&&row.clear).length}))}));
+console.log('FROSTFALL_REAL_NORMALIZATION_BALANCE '+JSON.stringify({note:'synthetic fixture through production loadout pipeline, not measured player success',firstCheckpointSamples:firstCheckpointRows.length,deepSamples:rows.length-firstCheckpointRows.length,summary,deepSummary,rejected,rows}));
 console.log('PASS five-tier Frostfall production normalization + combat diagnostic (no clear-rate approval implied)');

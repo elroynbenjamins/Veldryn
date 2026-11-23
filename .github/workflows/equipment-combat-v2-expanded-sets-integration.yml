@@ -10,6 +10,8 @@ on:
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-effect-authoring-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.ts'
+      - 'backend/src/server/combat/boss-v2-asterfall-prototype.ts'
+      - 'backend/src/server/combat/boss-v2-regional-prototype.ts'
       - 'backend/src/server/combat/types.ts'
       - 'backend/src/server/combat/engine.ts'
       - 'backend/src/server/combat/v2/equipment-affixes.ts'

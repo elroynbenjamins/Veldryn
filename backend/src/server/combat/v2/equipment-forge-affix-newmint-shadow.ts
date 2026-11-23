@@ -81,7 +81,7 @@ function fail(reason:string):never{
  throw Error('eq2_affix_shadow_'+reason);
 }
 function exactFields(o:unknown,fields:readonly string[]):boolean{
- return Boolean(o)&&typeof o==='object'&&!Array.isArray(o)&&
+ return o!==null&&typeof o==='object'&&!Array.isArray(o)&&
   Object.keys(o).length===fields.length&&
   fields.every(field=>own(o as object,field));
 }

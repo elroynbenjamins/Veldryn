@@ -1,5 +1,7 @@
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
 import {newGame} from '../../apps/mobile/src/core/game';
+import {WINTER_HEARTH_GUILD_RELEASED} from '../../apps/mobile/src/core/release-flags';
+import {validateWinterHearthBonusWindows} from '../../apps/mobile/src/core/winter-hearth-bonus-windows';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
 import {ensurePersonalSeasonalState} from '../../apps/mobile/src/core/personal-seasonal-state';
@@ -72,6 +74,16 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   // are unreleased, so this is a no-op until the database owner releases them.
   state.guildSkillEffects=undefined;
   if(state.account.guildMember){try{state.guildSkillEffects=await services.rpc('guild_skill_effects_server_v1',{p_account_id:accountId});}catch{/* no bonus this resolution */}}
+  // A time-stamped, service-role-only guild event projection for the current
+  // resolution. Never carry saved/client window data forward after switching
+  // Guilds, after event shutdown, or while Frostfall is unreleased.
+  state.winterHearthBonusWindows=undefined;
+  if(WINTER_HEARTH_GUILD_RELEASED&&state.account.guildMember){
+   try{
+    const windows=await services.rpc<unknown>('winter_hearth_2026_bonus_windows_server_v1',{p_account_id:accountId});
+    state.winterHearthBonusWindows=validateWinterHearthBonusWindows(windows);
+   }catch{/* Fail closed; do not mint unverified bonus XP or shorten gathering time. */}
+  }
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});
   if(body.expectedVersion!==loaded.version){
    // Another request may commit this key between the first receipt read and state read.

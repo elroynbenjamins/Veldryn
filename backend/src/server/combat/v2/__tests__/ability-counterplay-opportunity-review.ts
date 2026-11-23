@@ -25,6 +25,9 @@ const explanations=[
  {hasMatchingCounter:true,observedOpportunityEvents:0,eligibleSkillCasts:0,
   attributedCounterEvents:0,reason:'boss_opportunity_not_observed'},
  {hasMatchingCounter:true,observedOpportunityEvents:2,eligibleSkillCasts:0,
+  instantMatchingSkillCount:1,attributedCounterEvents:0,
+  reason:'instant_counter_use_unobservable'},
+ {hasMatchingCounter:true,observedOpportunityEvents:2,eligibleSkillCasts:0,
   attributedCounterEvents:0,reason:'selected_counter_not_cast'},
  {hasMatchingCounter:true,observedOpportunityEvents:2,eligibleSkillCasts:1,
   attributedCounterEvents:0,reason:'counter_cast_without_result'},
@@ -36,6 +39,7 @@ for(const [index,row] of explanations.entries()){
   hasMatchingCounter:row.hasMatchingCounter,
   observedOpportunityEvents:row.observedOpportunityEvents,
   eligibleSkillCasts:row.eligibleSkillCasts,
+  instantMatchingSkillCount:'instantMatchingSkillCount' in row?row.instantMatchingSkillCount:undefined,
   attributedCounterEvents:row.attributedCounterEvents};
  const review=reviewObservedCounterOpportunityV2([first,{
   ...first,strategy:'alternative',route:'sustain',
@@ -52,7 +56,23 @@ fail([base,{...alt,scenarioId:'different'}],/missing_counter_route/);
 fail([base,{...alt,eligibleSkillCasts:-1}],/invalid_observed_attempt/);
 fail([base,{...alt,attributedCounterEvents:NaN}],/invalid_observed_attempt/);
 fail([base,{...alt,observedOpportunityEvents:1.5}],/invalid_observed_attempt/);
+fail([base,{...alt,instantMatchingSkillCount:-1}],/invalid_observed_attempt/);
+// Effect events from an instant class skill prove execution even without a
+// cast_complete. If neither event exists, report unobservable, not not-cast.
+const instant={
+ ...base,instantMatchingSkillCount:1,eligibleSkillCasts:0,
+ attributedCounterEvents:1,
+};
+const instantReview=reviewObservedCounterOpportunityV2([
+ instant,{...instant,strategy:'alternative'},
+]);
+assert.equal(instantReview.counts.counter_effect_observed,2);
+const unseen=reviewObservedCounterOpportunityV2([
+ {...instant,attributedCounterEvents:0},
+ {...instant,strategy:'alternative',attributedCounterEvents:0},
+]);
+assert.equal(unseen.counts.instant_counter_use_unobservable,2);
 fail([base,{...alt,strategy:'cheat' as 'alternative'}],/invalid_observed_attempt/);
 fail([base,{...alt,route:'invincible' as 'sustain'}],/invalid_observed_attempt/);
 fail([base,{...alt,hasMatchingCounter:'yes' as unknown as boolean}],/invalid_observed_attempt/);
-console.log('PASS: 5 observed route classifications, stable ordering, no release authorization, forged/incomplete matrix rejection');
+console.log('PASS: 6 observed route classifications, stable ordering, no release authorization, forged/incomplete matrix rejection');

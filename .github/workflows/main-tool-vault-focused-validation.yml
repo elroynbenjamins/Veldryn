@@ -49,6 +49,8 @@ jobs:
         run: pnpm --dir apps/mobile install --frozen-lockfile
       - name: Install locked backend dependencies for shared Node type definitions
         run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck complete mobile app
+        run: pnpm --dir apps/mobile typecheck
       - name: Verify collapsed tool layout and exact Smithing links
         working-directory: apps/mobile
         run: |

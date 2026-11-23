@@ -164,7 +164,7 @@ export class EventExpeditionService{
   // Only new seasonal graphs receive depth attrition. Saved short events stay numerically identical.
   const depthBeyondOpening=isFrostfallEndurance&&['battle','elite','boss'].includes(selected.kind)?Math.max(0,selected.depth-8):0;
   const depthAttack=Math.pow(1.022,depthBeyondOpening),depthHp=Math.pow(1.035,depthBeyondOpening),depthDefense=Math.pow(1.012,depthBeyondOpening);
-  const seasonalPacing=frostfallEnemyPacingForGraph(run.graph);
+  const seasonalPacing=frostfallEnemyPacingForGraph(run.graph,run.tier??1);
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:seasonalPacing.attack*depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:seasonalPacing.hp*depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:seasonalPacing.defense*depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});

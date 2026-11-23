@@ -59,7 +59,8 @@ const qaCaps:ServerAffixPolicyV2={
    tier<=2?band.affixesLowTier:band.affixesHighTier]))),
  maxFinalHaste:3,maxFinalCritChance:3,maxFinalCritMultiplier:10,
  maxAdvancedEffects:{accuracyPp:1,evasionPp:1,penetrationPp:1,
-  wardPp:1,shieldStrengthPct:1,hexPotencyPct:1},
+  wardPp:1,shieldStrengthPct:1,hexPotencyPct:1,
+  tenacityPp:1,abilityDamagePct:1,forgeHealingPowerPct:1},
 };
 const drawFor=(seed:number)=>{
  let state=seed>>>0;

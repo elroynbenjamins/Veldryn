@@ -70,7 +70,7 @@ function makeHarness({user = null, recovering = false} = {}) {
   };
   const mocks = new Map([
     ['react', React], ['react-native', native],
-    ['react-native-safe-area-context', {useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
+    ['react-native-safe-area-context', {SafeAreaProvider: ({children}) => React.createElement(React.Fragment, null, children),useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => ({...auth})}],
     [path.join(app, 'src/online/account'), api],
     // Native Google modules are tested separately; this offline UI harness must not load Expo.

@@ -11,7 +11,8 @@
 import type {CombatantDefinition,CombatStats,CombatV2EquipmentEffects} from '../types';
 import type {GearSlotV2} from './build-contract';
 import {v2ServerPiece,v2ServerRecipeAndPiece} from '../../equipment/equipment-crafting-v2-manifest';
-import {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent} from '../../equipment/equipment-crafting-v2-instances';
+import {v2ServerCreateExactTemplate,v2ServerExactTemplateConsistent,
+ type V2ExactEquipmentTemplate} from '../../equipment/equipment-crafting-v2-instances';
 import {V2_SERVER_AFFIX_RANGES,type V2Affix} from '../../equipment/equipment-crafting-v2-rolls';
 import type {V2DraftItem} from '../../equipment/equipment-crafting-v2-transaction';
 export type EquipmentAffixIdV2=
@@ -273,9 +274,9 @@ export function compileOriginalFrozenForgeAffixesV2(
    JSON.stringify(v2ServerCreateExactTemplate(piece,mint.outcome))!==
     JSON.stringify(mint.exactItem))
    throw Error('combat_v2_forge_original_recipe_or_roll_mismatch');
-  const item=mint.exactItem;
+  const item:V2ExactEquipmentTemplate=mint.exactItem;
   return {instanceId:mint.id,slot:item.slot,tier:'T'+item.tier,
-   rarity:item.rarity,quality:item.quality,affixes:item.affixes.map(roll=>{
+   rarity:item.rarity,quality:item.quality,affixes:item.affixes.map((roll:V2ExactEquipmentTemplate['affixes'][number])=>{
     const mapped=ORIGINAL_FORGE_COMBAT_AFFIX_MAP_V2[roll.stat];
     if(!mapped)throw Error('combat_v2_forge_original_affix_unimplemented:'+roll.stat);
     const range=V2_SERVER_AFFIX_RANGES[roll.stat][item.tier-1];

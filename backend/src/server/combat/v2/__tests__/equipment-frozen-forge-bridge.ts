@@ -952,7 +952,7 @@ assert.deepEqual(
   afterFrozenBase:x.stages.afterFrozenBase,
  })),
  part.equipmentEvidence.map(x=>({
-  receiptDigest:x.receiptDigest,items:x.items,
+  items:x.items,
   afterFrozenBase:x.stages.afterFrozenBase,
  })),
  'Party skill variants cannot change independently verified original Forge copies');

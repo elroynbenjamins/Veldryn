@@ -11,6 +11,9 @@ on:
       - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
       - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
       - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
+      - 'backend/online/eq2-dungeon-boss-source-preflight-v6.mjs'
+      - 'backend/src/server/expeditions/content/dungeon-boss-rotation.ts'
+      - 'tools/test-eq2-dungeon-boss-source-preflight-v6.mjs'
       - '.github/workflows/eq2-dungeon-boss-market-review.yml'
   pull_request:
     paths:
@@ -20,6 +23,9 @@ on:
       - 'tools/test-eq2-dungeon-loot-market-review-v5.mjs'
       - 'tools/test-eq2-dungeon-boss-market-review-v4.mjs'
       - 'tools/test-eq2-t5-dungeon-combos-review-v3.mjs'
+      - 'backend/online/eq2-dungeon-boss-source-preflight-v6.mjs'
+      - 'backend/src/server/expeditions/content/dungeon-boss-rotation.ts'
+      - 'tools/test-eq2-dungeon-boss-source-preflight-v6.mjs'
       - '.github/workflows/eq2-dungeon-boss-market-review.yml'
 
 permissions:
@@ -42,3 +48,4 @@ jobs:
           node tools/test-eq2-t5-dungeon-combos-review-v3.mjs
           node tools/test-eq2-dungeon-boss-market-review-v4.mjs
           node tools/test-eq2-dungeon-loot-market-review-v5.mjs
+          node tools/test-eq2-dungeon-boss-source-preflight-v6.mjs

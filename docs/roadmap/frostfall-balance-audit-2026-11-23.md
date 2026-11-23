@@ -75,3 +75,27 @@ The 2026 -25% seasonal common-currency adjustment applies **to each individual g
 - The production event_contributions, event_progress and event_daily_gift_claims tables returned **no Veilbreak/Merchant 2026 aggregate records** during the Nov 23 review. Do not claim a measured player-economy baseline; simulate the content and validate with staging fixtures instead.
 
 This is an **authored-code calculation**, not evidence of a full end-to-end reward grant. Dedicated tests on the mobile release-check branch now assert the exact 24-day gift and prestige totals against `claimEventDailyGift`, including the claim-only cutoff.
+
+## Nov 23 diagnostic follow-up — V3 proposal, NOT authorized for release
+
+The original 60-case `launchPlayer` Endurance probe recorded 0/60 successful clears. An improved 75-case synthetic suite exercised the authoritative equipped-character -> co-op normalization -> combat chain across five tiers and multiple gear strengths. The initial baseline recorded 3/75 first-exit clears; all five deeper boss checkpoints failed at or beyond room 21.
+
+To test **scoped fixes only** on the review branch, V3 introduced:
+- New-run-only enemy baseline: attack ×0.72, HP ×0.80, defense ×0.90. Starter Tier I receives additional ×0.70 attack, ×0.85 HP, ×0.90 defense; Tier II receives ×0.85 attack, ×0.90 HP, ×0.95 defense. V3 is frozen by `run.graph.balanceVersion` and cannot affect already persisted V2 / six-room legacy runs.
+- Later-floor scaling after initial checkpoint: attack ×1.010, HP ×1.016, defense ×1.005 per depth. At deepest boss: attack ≈1.42, HP ≈1.74 and defense ≈1.19 times its initial value **before V3 baseline**, compared with old unbounded-for-release 2.14 / 3.33 / 1.52.
+- Rimebell boss **flat Ward + Frozen Carapace shield** values were defined at level 35 but not scaled to low tiers. A V3-only, server-owned `enemyShieldMultiplier` path now scales those two flat shield amounts to `seasonalPacing.hp × syncLevel/35` (minimum level ratio 0.25). Shield behavior is not changed for existing saved V2 runs, regular dungeons or other events. This separate fix is **still unverified in the final-source calibration**.
+
+Measured CI results **before the shield correction** from the validated V3 depth/entry candidate (75 first-checkpoint cases; 50 deep-checkpoint cases, 1 seed per deep profile):
+
+| Exit after rooms | Synthetic wins / attempts |
+| --- | ---: |
+| 7 | 61 / 75 |
+| 14 | 9 / 10 |
+| 21 | 8 / 10 |
+| 28 | 6 / 10 |
+| 35 | 2 / 10 |
+| 42 | 1 / 10 |
+
+The 61/75 first-checkpoint figure consists of Tier I 12, Tier II 12, Tier III 12, Tier IV 12 and Tier V 13 (each out of 15). Source: review workflow run `45271274464` at SHA `1dfb3fa913d05400dd323249a92a638d6d061e15`, whose **gameplay tests passed but overall workflow failed stale generated-Edge parity**. Newer shields and full-source CI are pending. Results are deterministic synthetic snapshots, not randomized production player outcomes; 1 deep seed/profile and missing real companions/potions are insufficient for release balancing.
+
+Pre-boss diagnostics frequently showed combined party health at 75–90% of maximum, Warmth at 99 and 3/3 hearths; deeper boss fights still wiped. Therefore simply increasing camp healing is not the right first response. Need genuine boss counterplay, multi-seed build variety, rank-specific time-to-clear, and a physical Android acceptance before final tuning. Do not merge/deploy/activate based on these partial tests.

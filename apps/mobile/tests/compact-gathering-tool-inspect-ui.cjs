@@ -28,6 +28,14 @@ assert.ok(section.includes('goalProtection.has(copy.itemId)'),'Do not sell prote
 assert.ok(inventory.includes('stackInspectorActions&&s.toolActionRowStacked')&&inventory.includes('toolActionButtonStacked:{flex:0,width:'),'Large text/narrow screens need full-width touch targets');
 assert.ok(inventory.includes('hasLegacyStack&&inspectedToolDef')&&inventory.includes("gt('Tier base · No bonus roll')"),'Legacy tools retain tier speed without fabricating a roll');
 
+// Tool stats and action buttons appear before the optional technical details;
+// non-tool sheets retain their existing quick-action placement.
+const inlineToolActions=sheet.indexOf("item.type==='tool'&&actions?");
+const detailToggle=sheet.indexOf("accessibilityLabel={ui('Details & sources')}");
+const nonToolActions=sheet.indexOf("item.type!=='tool'&&actions?");
+assert.ok(inlineToolActions>0&&detailToggle>inlineToolActions&&nonToolActions>detailToggle,
+  'Stats and actions must precede Details & sources only for gathering tools');
+
 // Advanced breakdown stays under the existing collapsed Details & sources disclosure.
 const details=sheet.indexOf('detailsOpen&&<>');
 const advanced=sheet.indexOf("gt('GATHERING TOOL DETAILS')");

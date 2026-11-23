@@ -58,6 +58,26 @@ export function equippedEquipmentBonusStats(state:GameState):Partial<EquipmentSe
   return stats;
 }
 
+/** Definition-owned percent modifiers apply whenever the matching gear piece
+ * is genuinely equipped. Unlike rolled affixes they do NOT require a receipt,
+ * and unlike set bonuses they do NOT require 2/4/6/8/10 matching pieces. */
+export function equippedInnateEquipmentStats(state:GameState):Partial<EquipmentSetStats>{
+  const character=state.character;
+  if(!character)return {};
+  const stats:Partial<EquipmentSetStats>={};
+  for(const [slot,itemId] of Object.entries(character.equipment)){
+    if(!itemId)continue;
+    let item:ReturnType<typeof itemDef>;
+    try{item=itemDef(itemId);}catch{continue;}
+    if(item.type!=='gear'||item.slot!==slot||
+      (item.classRestriction&&item.classRestriction!==character.classId))continue;
+    const bonus=item.innatePercent;
+    if(!bonus)continue;
+    stats[bonus.stat]=(stats[bonus.stat]??0)+bonus.basisPoints/10_000;
+  }
+  return stats;
+}
+
 export function parseEquipmentSetStaticBonus(text:string):Partial<EquipmentSetStats>{
   const result:Partial<EquipmentSetStats>={};
   for(const match of String(text??'').matchAll(STATIC_BONUS_RE)){
@@ -153,25 +173,27 @@ export function activeEquipmentBuildStats(state:GameState):EquipmentSetStats{
   const gems=equippedCanonicalStatGemBonusesV1(state);
   const weapon=equippedWeaponBonusStats(state);
   const equipment=equippedEquipmentBonusStats(state);
+  const innate=equippedInnateEquipmentStats(state);
   const rolled=(stat:EquipmentSetStatKey)=>(weapon[stat]??0)+(equipment[stat]??0);
+  const pieceBonuses=(stat:EquipmentSetStatKey)=>rolled(stat)+(innate[stat]??0);
   const p=gems.statPercent,pp=gems.statPercentagePoints;
   const multiplied=(bonus:number,percent:number|undefined)=>(1+bonus)*(1+(percent??0))-1;
   return {
-    maxHp:multiplied(sets.maxHp,p.maxHp)+rolled('maxHp'),
-    armor:multiplied(sets.armor,p.armor)+rolled('armor'),
-    ward:multiplied(sets.ward,p.ward)+rolled('ward'),
-    tenacity:multiplied(sets.tenacity,p.tenacity)+rolled('tenacity'),
-    haste:multiplied(sets.haste,p.haste)+rolled('haste'),
-    power:sets.power+rolled('power'), // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
-    attack:multiplied(sets.attack,p.attack)+rolled('attack'),
-    accuracy:sets.accuracy+(pp.accuracy??0)+rolled('accuracy'),
-    penetration:sets.penetration+(pp.penetration??0)+rolled('penetration'),
-    potency:multiplied(sets.potency,p.potency)+rolled('potency'),
-    critRate:sets.critRate+(pp.critRate??0)+rolled('critRate'),
-    critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5+rolled('critDamage'),
-    evasion:sets.evasion+(pp.evasion??0)+rolled('evasion'),
-    abilityDamage:rolled('abilityDamage'),
-    healingPower:rolled('healingPower'),
+    maxHp:multiplied(sets.maxHp,p.maxHp)+pieceBonuses('maxHp'),
+    armor:multiplied(sets.armor,p.armor)+pieceBonuses('armor'),
+    ward:multiplied(sets.ward,p.ward)+pieceBonuses('ward'),
+    tenacity:multiplied(sets.tenacity,p.tenacity)+pieceBonuses('tenacity'),
+    haste:multiplied(sets.haste,p.haste)+pieceBonuses('haste'),
+    power:sets.power+pieceBonuses('power'), // Power still belongs to sets/affixes; there is no Power Stat Gem in 2.0.
+    attack:multiplied(sets.attack,p.attack)+pieceBonuses('attack'),
+    accuracy:sets.accuracy+(pp.accuracy??0)+pieceBonuses('accuracy'),
+    penetration:sets.penetration+(pp.penetration??0)+pieceBonuses('penetration'),
+    potency:multiplied(sets.potency,p.potency)+pieceBonuses('potency'),
+    critRate:sets.critRate+(pp.critRate??0)+pieceBonuses('critRate'),
+    critDamage:(.5+sets.critDamage)*(1+(p.critDamage??0))-.5+pieceBonuses('critDamage'),
+    evasion:sets.evasion+(pp.evasion??0)+pieceBonuses('evasion'),
+    abilityDamage:pieceBonuses('abilityDamage'),
+    healingPower:pieceBonuses('healingPower'),
   };
 }
 

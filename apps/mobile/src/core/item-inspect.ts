@@ -1,4 +1,5 @@
 import {itemDef} from '../content/items';
+import {equipmentInnatePercentLabel} from '../content/equipment-innate-percent';
 import {gemPouch,isGemPouchItemId} from './gem-pouch';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -182,6 +183,7 @@ export function itemInspectModel(state:GameState,itemId:string,instanceId?:strin
     }
     if(item.requiredLevel&&item.requiredLevel>1)effectLines.push(`Requires character Lv ${item.requiredLevel}`);
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
+    if(item.innatePercent)effectLines.push('Innate stat · '+equipmentInnatePercentLabel(item.innatePercent));
     if(selectedCopy?.equipmentBonuses?.length){
       for(const bonus of selectedCopy.equipmentBonuses)effectLines.push(`Equipment roll · ${equipmentBonusLine(itemId,selectedCopy.rarity,bonus,selectedCopy.equipmentBonusRollVersion)}`);
     }

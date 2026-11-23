@@ -9,6 +9,7 @@ import {CombatRng} from './deterministic-rng';
 import type {CombatantDefinition, AbilityDefinition, AbilityEffect} from './types';
 import {deriveWorldBossWarCampEffectsV11,type WorldBossWarCampSnapshotV11} from './world-boss-war-camp-v11';
 import {verifyWorldBossEncounterProfileV13,type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
+import {WorldBossEquipmentRuntimeV87,type WorldBossTraitEffectV87} from './world-boss-equipment-effects-v87';
 
 /** V58: one buff tonic per account raid, frozen and already paid at reservation.
  * Multipliers come from the server dungeon tonic catalog, never from player JSON. */
@@ -25,7 +26,7 @@ function verifiedTonic(t:WorldBossTonicModifiersV58|undefined):WorldBossTonicMod
 export type WorldBossId='hollowroot'|'sunscar'|'frostmarch';
 export type WorldBossPhase='armored'|'exposed'|'enraged';
 export type WorldBossOrder='break_armor'|'hold_line'|'steady_assault';
-export type WorldBossEventType='telegraph'|'basic'|'strike'|'miss'|'shield'|'guard'|'exposure'|'guard_break'|'heal'|'status_apply'|'status_tick'|'cleanse'|'interrupt'|'mitigate'|'down'|'battle_end';
+export type WorldBossEventType='telegraph'|'basic'|'strike'|'miss'|'shield'|'guard'|'exposure'|'guard_break'|'heal'|'status_apply'|'status_tick'|'cleanse'|'interrupt'|'mitigate'|'down'|'battle_end'|'equipment_trait_trigger';
 export interface WorldBossRoundEvent {
   round:number;type:WorldBossEventType;abilityId:string;actorId?:string;targetId?:string;
   amount?:number;absorbed?:number;guardAbsorbed?:number;mitigated?:number;ownerId?:string;detail?:string;
@@ -52,6 +53,8 @@ export interface WorldBossRoundInput {
   serverWarCamp?:WorldBossWarCampSnapshotV11;
   /** V58 account raids only: the frozen tonic shared by the whole owned party. */
   serverTonic?:WorldBossTonicModifiersV58;
+  /** V87: private owned-character, exact-copy verified trait calculation pilot. */
+  serverEquipmentV87?:WorldBossEquipmentRuntimeV87;
 }
 export interface WorldBossRoundResult {
   boss:WorldBossId;phase:WorldBossPhase;roundsCompleted:number;survived:boolean;bossHpDamage:number;
@@ -90,7 +93,7 @@ export function validateWorldBossScripts():number{
  return total;
 }
 type Shield={amount:number;ownerId:string};
-type Status={id:string;kind:'burn'|'frostbite'|'root'|'freeze'|'hot'|'dot';value:number;tickRounds:number[];sourceId:string;};
+type Status={id:string;kind:'burn'|'frostbite'|'root'|'freeze'|'hot'|'trait_hot'|'dot';value:number;tickRounds:number[];sourceId:string;};
 type Player={def:CombatantDefinition;hp:number;shields:Shield[];statuses:Status[];cooldowns:Record<string,number>;buffs:Record<string,{value:number;until:number}>};
 type Telegraph={id:string;targetIds:string[];resolvesRound:number;interruptible:boolean;cancelled:boolean};
 const money=(n:number)=>Math.round(Math.max(0,n)*100)/100;
@@ -151,6 +154,10 @@ function simulateWorldBossCore(
  const camp=deriveWorldBossWarCampEffectsV11(input.serverWarCamp);
  if(input.serverTonic!==undefined&&!accountRaid)throw Error('world_boss_v58_tonic_requires_account_raid');
  const tonic=verifiedTonic(input.serverTonic);
+ if(input.serverEquipmentV87&&(!accountRaid||
+   !(input.serverEquipmentV87 instanceof WorldBossEquipmentRuntimeV87)))
+  throw Error('world_boss_v87_requires_verified_account_raid');
+ const equipment=input.serverEquipmentV87;
  const players:Player[]=input.players.map(original=>{
   const def={...original,stats:{...original.stats,maxHp:money(original.stats.maxHp*camp.startingHpMultiplier)}};
   return {def,hp:def.stats.maxHp,shields:[],statuses:[],cooldowns:{},buffs:{}};
@@ -169,6 +176,23 @@ function simulateWorldBossCore(
  let bossVulnerability=0,bossVulnerabilityThrough=0;
  let pending:Telegraph|undefined;
  const emit=(e:WorldBossRoundEvent)=>events.push(e);
+ // Secondary effects MUST pass through local Guard before becoming actual
+ // shared-HP candidate damage. They never become a new triggering direct hit.
+ const applyEquipmentDamage=(round:number,actorId:string,
+  effect:WorldBossTraitEffectV87)=>{
+  if(!ledger[actorId]||effect.amount<=0)return;
+  const guardCoeff=(order==='break_armor'?1.05:1)*camp.guardBreakMultiplier;
+  const absorbed=money(Math.min(guard,effect.amount*guardCoeff));
+  guard=money(guard-absorbed);
+  guardDamage=money(guardDamage+absorbed);
+  ledger[actorId].guardDamage=money(ledger[actorId].guardDamage+absorbed);
+  const hp=money(Math.max(0,effect.amount-absorbed/guardCoeff));
+  bossHpDamage=money(bossHpDamage+hp);
+  ledger[actorId].bossHpDamage=money(ledger[actorId].bossHpDamage+hp);
+  emit({round,type:'equipment_trait_trigger',actorId,
+   targetId:bossName(input.boss),abilityId:'WB87_'+effect.traitId,
+   amount:hp,guardAbsorbed:absorbed,detail:effect.effect});
+ };
  const aliveTank=()=>living(players).find(p=>p.def.role==='tank');
  const targetSet=(id:string,round:number):string[]=>{
   const live=living(players);if(!live.length)return[];
@@ -192,13 +216,29 @@ function simulateWorldBossCore(
    if(!actor||actor.hp<=0||!Number.isFinite(coeff)||coeff<=0)return;
    const acc=hitChance(actor.def.stats.accuracy,120,1400);
    if(noRngBelow(rng,round+':'+actor.def.id+':'+abilityId+':hit')>acc){
+    equipment?.miss(actor.def.id,abilityId);
     emit({round,type:'miss',actorId:actor.def.id,abilityId,targetId:bossName(input.boss)});return;
    }
    const crit=noRngBelow(rng,round+':'+actor.def.id+':'+abilityId+':crit')<actor.def.stats.critChance;
    const ap=roleAdjustedAttackPower({team:'players',role:actor.def.role,attackPower:actor.def.stats.attackPower,defense:actor.def.stats.defense,maxHp:actor.def.stats.maxHp,healingPower:actor.def.stats.healingPower});
    const damage=money(damageAfterMitigation(ap,coeff,defenseMitigation(bossDefense,1200),.95+noRngBelow(rng,round+':damage_variance')*.1,crit,actor.def.stats.critMultiplier));
    const weak=round<=exposedThrough && guard<=0;
-   const enhanced=money(damage*tonic.outgoing*(weak?1.10*camp.weakPointMultiplier:1)*(round<=bossVulnerabilityThrough?1+bossVulnerability:1));
+   const preEquipment=money(damage*tonic.outgoing*
+    (weak?1.10*camp.weakPointMultiplier:1)*
+    (round<=bossVulnerabilityThrough?1+bossVulnerability:1));
+   // Only the original actor-owned class-skill or ordinary BASIC action
+   // qualifies. DoT ticks, companion/gem/passive echoes and fake ability IDs
+   // cannot borrow the same actor's equipment rolls to create extra HP.
+   const originalClassHit=abilityId==='BASIC'||actor.def.abilities.some(a=>
+    a.id===abilityId&&a.effects.some(e=>e.kind==='damage'));
+   const direct=!tags.dot&&originalClassHit&&equipment?
+    equipment.originalDirectHit(round,actor.def.id,bossName(input.boss),
+     abilityId,preEquipment):undefined;
+   const enhanced=money(direct?.damage??preEquipment);
+   if(direct?.proc)emit({round,type:'equipment_trait_trigger',
+    actorId:actor.def.id,targetId:bossName(input.boss),
+    abilityId:'WB87_'+direct.proc.traitId,amount:money(direct.proc.amount),
+    detail:'included_in_original_direct_hit'});
    const guardCoeff=(order==='break_armor'?1.05:1)*camp.guardBreakMultiplier;
    const absorbed=money(Math.min(guard,enhanced*guardCoeff));
    guard=money(guard-absorbed);
@@ -207,6 +247,10 @@ function simulateWorldBossCore(
    const hp=money(Math.max(0,enhanced-(absorbed/guardCoeff)));
    bossHpDamage=money(bossHpDamage+hp);ledger[actor.def.id].bossHpDamage=money(ledger[actor.def.id].bossHpDamage+hp);
    emit({round,type:'strike',actorId:actor.def.id,targetId:bossName(input.boss),abilityId,amount:hp,guardAbsorbed:absorbed,detail:crit?'crit':undefined});
+   if(!tags.dot&&originalClassHit&&abilityId!=='BASIC'&&equipment){
+    const echo=equipment.skillEcho(round,actor.def.id,abilityId,hp,actor.def.stats.attackPower);
+    if(echo)applyEquipmentDamage(round,actor.def.id,echo);
+   }
    return;
   }
   if(!target||target.hp<=0)return;
@@ -282,12 +326,47 @@ function simulateWorldBossCore(
   const hpDamage=money(Math.min(target.hp,remaining));target.hp=money(target.hp-hpDamage);
   emit({round,type:'strike',abilityId,actorId:bossName(input.boss),targetId:target.def.id,amount:hpDamage,absorbed,mitigated:money(blockedByDefense+campSaved+protectedAmount+warOrderSaved)});
   if(target.hp===0)emit({round,type:'down',abilityId,actorId:bossName(input.boss),targetId:target.def.id});
+  // Reflect/Thornbound only on a surviving defender losing actual HP to
+  // the original ordinary boss attack, never specials, shields or DoTs.
+  const retaliation=equipment?.retaliation(round,target.def.id,hpDamage,
+   target.def.stats.maxHp,target.def.stats.attackPower,target.hp>0,abilityId);
+  if(retaliation)applyEquipmentDamage(round,target.def.id,retaliation);
  };
- const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,amount:number)=>{
+ const secondaryHeal=(round:number,actor:Player,target:Player,
+  abilityId:string,amount:number)=>{
+  if(target.hp<=0||amount<=0)return;
+  const healed=money(Math.min(amount,target.def.stats.maxHp-target.hp));
+  if(healed<=0)return;
+  target.hp=money(target.hp+healed);
+  ledger[actor.def.id].effectiveHealing=money(ledger[actor.def.id].effectiveHealing+healed);
+  emit({round,type:'equipment_trait_trigger',actorId:actor.def.id,
+   targetId:target.def.id,abilityId,amount:healed,detail:'secondary_heal_no_recursion'});
+ };
+ const applyHeal=(round:number,actor:Player,target:Player,abilityId:string,
+  amount:number,direct=true)=>{
   if(target.hp<=0)return;
   const healed=money(Math.min(money(amount*camp.healingMultiplier*tonic.healing),target.def.stats.maxHp-target.hp));
   target.hp=money(target.hp+healed);ledger[actor.def.id].effectiveHealing=money(ledger[actor.def.id].effectiveHealing+healed);
   emit({round,type:'heal',actorId:actor.def.id,targetId:target.def.id,abilityId,amount:healed});
+  if(direct&&equipment&&healed>0){
+   const other=living(players).filter(p=>p!==target&&p!==actor&&
+    p.hp<p.def.stats.maxHp).sort((a,b)=>
+     a.hp/a.def.stats.maxHp-b.hp/b.def.stats.maxHp||
+     a.def.id.localeCompare(b.def.id))[0];
+   if(other){
+    const bonus=equipment.effectiveAllyHeal(round,actor.def.id,target.def.id,
+     other.def.id,healed,other.def.stats.maxHp-other.hp);
+    if(bonus?.effect==='secondary_heal')
+     secondaryHeal(round,actor,other,'WB87_'+bonus.traitId,bonus.amount);
+    if(bonus?.effect==='secondary_hot'&&round<14){
+     other.statuses.push({kind:'trait_hot',id:'WB87_'+bonus.traitId,
+      sourceId:actor.def.id,value:bonus.amount,tickRounds:[round+1]});
+     emit({round,type:'equipment_trait_trigger',actorId:actor.def.id,
+      targetId:other.def.id,abilityId:'WB87_'+bonus.traitId,
+      amount:bonus.amount,detail:'secondary_hot_scheduled'});
+    }
+   }
+  }
  };
  const cleanse=(round:number,actor:Player,target:Player,abilityId:string)=>{
   const removable=target.statuses.filter(s=>['burn','frostbite','root','freeze','dot'].includes(s.kind));
@@ -444,9 +523,11 @@ function simulateWorldBossCore(
       if(p.hp===0)emit({round,type:'down',abilityId:s.id,targetId:p.def.id});
      }
     }else if(s.kind==='hot'&&p.hp>0){
-     const owner=byId.get(s.sourceId);if(owner)applyHeal(round,owner,p,s.id,s.value);
+     const owner=byId.get(s.sourceId);if(owner)applyHeal(round,owner,p,s.id,s.value,false);
+    }else if(s.kind==='trait_hot'&&p.hp>0){
+     const owner=byId.get(s.sourceId);if(owner)secondaryHeal(round,owner,p,s.id,s.value);
     }else if(s.kind==='dot'&&p.hp>0){
-     const owner=byId.get(s.sourceId);if(owner)applyDamage(round,owner,undefined,s.id,s.value/Math.max(1,owner.def.stats.attackPower),'player');
+     const owner=byId.get(s.sourceId);if(owner)applyDamage(round,owner,undefined,s.id,s.value/Math.max(1,owner.def.stats.attackPower),'player',{dot:true});
     }
    }
    p.statuses=p.statuses.filter(s=>s.tickRounds.some(r=>r>round)||(['freeze','root'].includes(s.kind)));

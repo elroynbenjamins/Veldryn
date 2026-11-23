@@ -199,6 +199,12 @@ export function createWorldBossRealRewardPortsV83(qaEnabled=false):
     const rows=(await tx.query<WalletRow>(readWalletSql,[characterId])).rows;
     if(rows.length!==1)throw Error('world_boss_v83_wallet_missing');
     before=number(rows[0]!.gold,'wallet_gold');
+    // The canonical Gold wallet and its mirrored active-character state
+    // must agree BEFORE the first credit. Otherwise paying a chest would
+    // conceal an existing stale/misbound state and overwrite visible Gold.
+    // Abort the entire V70 transaction; never attempt silent reconciliation.
+    if(number(game.character.gold,'character_gold')!==before)
+     throw Error('world_boss_v83_wallet_state_mismatch');
     after=before+reward.quantity;
     if(!Number.isSafeInteger(after)||after>Number.MAX_SAFE_INTEGER)
      throw Error('world_boss_v83_gold_overflow');

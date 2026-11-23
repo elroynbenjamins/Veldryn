@@ -19,6 +19,8 @@ import {deriveWorldBossWarCampEffectsV11,
 import {verifyWorldBossEncounterProfileV13,
  type WorldBossEncounterProfileV13} from './world-boss-encounter-profile-v13';
 import {DUNGEON_ROLE_TONIC_MODIFIERS} from '../coop/potion-modifiers';
+import {WorldBossEquipmentRuntimeV87,worldBossCombatantDigestV88,
+ type WorldBossEquipmentProofV87} from './world-boss-equipment-effects-v87';
 
 export const WORLD_BOSS_V25_AUTHORED_ENCOUNTERS_LIVE=false as const;
 export const WORLD_BOSS_V25_ENGINE_VERSION='world-boss-account-rounds-v25-prototype' as const;
@@ -55,6 +57,8 @@ export interface WorldBossAccountEncounterOutputV25{
  characterLedger:readonly WorldBossAccountRoleLedgerV25[];
  result:WorldBossRoundResult;
  persisted:false;rewarded:false;
+ /** true only for test-only persisted source-verified 2.0 equipment pilot. */
+ equipmentV87Enabled:boolean;
 }
 export function simulateWorldBossAuthoredAccountEncounterV25(input:{
  eventId:string;requestId:string;roster:WorldBossAccountRosterV22;
@@ -63,6 +67,8 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
  warCamp?:WorldBossWarCampSnapshotV11;
  /** V58: tonic ID frozen and paid at reservation; effects come from the server catalog. */
  tonicItemId?:string|null;
+ /** V87 server-only receipt port; never accept from a mobile attack request. */
+ equipmentV87?:WorldBossEquipmentProofV87;
 }):WorldBossAccountEncounterOutputV25{
  if(!input||!ID.test(input.eventId)||!ID.test(input.requestId)||
   !SERVER_SEED.test(input.serverSeed)||
@@ -109,6 +115,17 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   throw Error('world_boss_v25_unknown_tonic');
  const tonic=tonicItemId===null?undefined:
   {...DUNGEON_ROLE_TONIC_MODIFIERS[tonicItemId as keyof typeof DUNGEON_ROLE_TONIC_MODIFIERS]};
+ const equipment=input.equipmentV87?WorldBossEquipmentRuntimeV87.fromVerified(
+  input.equipmentV87,{
+   eventId:input.eventId,accountId:roster.accountId,bossId:input.boss,
+   rosterDigest:roster.rosterDigest,
+   actors:characters.map(c=>({
+    id:c.combatant.id,characterId:c.characterId,
+    snapshotId:c.snapshotId,sourceRevision:c.sourceRevision,
+    sourceHash:c.sourceHash,
+    combatantDigest:worldBossCombatantDigestV88(c.combatant),
+   })),
+  }):undefined;
  const result=simulateWorldBossAccountRoundsV25({
   seed:[WORLD_BOSS_V25_ENGINE_VERSION,input.eventId,roster.accountId,
    input.serverSeed].join(':'),
@@ -117,6 +134,7 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   serverEncounterProfile:input.encounter,
   serverWarCamp:input.warCamp,
   serverTonic:tonic,
+  serverEquipmentV87:equipment,
  });
  const characterLedger:WorldBossAccountRoleLedgerV25[]=characters.map(c=>{
   const row=result.participants[c.characterId];
@@ -160,6 +178,6 @@ export function simulateWorldBossAuthoredAccountEncounterV25(input:{
   proposedWorldHpDamage,localGuardDamage:result.localGuardDamage,
   remainingGuard:result.remainingGuard,guardRestored:result.guardRestored,
   events:result.events,characterLedger,result,
-  persisted:false,rewarded:false,
+  persisted:false,rewarded:false,equipmentV87Enabled:Boolean(equipment),
  };
 }

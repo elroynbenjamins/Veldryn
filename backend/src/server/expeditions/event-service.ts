@@ -8,7 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
 import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
-import {FROSTFALL_ENDURANCE_GENERATOR,frostfallDepthCurveForGraph,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
+import {FROSTFALL_ENDURANCE_BALANCE_V3,FROSTFALL_ENDURANCE_GENERATOR,frostfallDepthCurveForGraph,frostfallEnemyPacingForGraph,generateFrostfallEnduranceGraph,frostfallRewardMultiplierForBoss} from './frostfall-endurance';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -166,9 +166,14 @@ export class EventExpeditionService{
   const curve=frostfallDepthCurveForGraph(run.graph);
   const depthAttack=Math.pow(curve.attack,depthBeyondOpening),depthHp=Math.pow(curve.hp,depthBeyondOpening),depthDefense=Math.pow(curve.defense,depthBeyondOpening);
   const seasonalPacing=frostfallEnemyPacingForGraph(run.graph,run.tier??1);
+  // Event boss ward/carpace originally kept level-35 flat shield values at
+  // tier-1 sync level 10. Scale only new v3 boss barriers to their actual HP
+  // bracket; retain v2, saved legacy and every other dungeon unchanged.
+  const eventBossShieldMultiplier=selected.kind==='boss'&&run.graph.balanceVersion===FROSTFALL_ENDURANCE_BALANCE_V3&&isFrostfallEndurance
+   ?seasonalPacing.hp*Math.max(.25,(run.syncLevel??35)/35):undefined;
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:seasonalPacing.attack*depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:seasonalPacing.hp*depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:seasonalPacing.defense*depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyLevel:run.syncLevel,enemyAttackMultiplier:seasonalPacing.attack*depthAttack*(selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1)),enemyHpMultiplier:seasonalPacing.hp*depthHp*(selected.kind==='boss'?beforeObjective.bossHpMultiplier:1),enemyDefenseMultiplier:seasonalPacing.defense*depthDefense*(selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1),enemyShieldMultiplier:eventBossShieldMultiplier,bossTuning:bossMechanic?.tuning,...(isFrostfallEndurance?{enduranceLootVersion:1 as const,campfireBalanceVersion:2 as const}:{})});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(result.success&&selected.kind!=='boss'){
    const definition=definitionFor(run.eventId);

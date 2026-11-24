@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -134,6 +134,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
       - name: Validate 18 Synchronizations and all dungeon and flexible four-player class compositions
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
+      - name: Validate synchronization authority and real private engine modifiers
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-authority.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

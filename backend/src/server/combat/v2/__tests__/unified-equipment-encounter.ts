@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {reviewCompanionContributionV2,type CompanionContributionSourceV2} from '../companion-contribution-review';
 import {launchPlayer} from '../../content/launch-combat';
-import {reviewCandidatePowerV1,reviewCandidatePowerStagesV1,CANDIDATE_POWER_WEIGHTS_V1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
+import {reviewCandidatePowerV1,reviewCandidatePowerStagesV1,reviewCandidatePowerWithHitPointsV2,reviewCandidatePowerExtensionsV2,CANDIDATE_POWER_WEIGHTS_V1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
 import type {CombatStats} from '../../types';
 import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -423,6 +423,21 @@ assert.equal(stagesCandidate.trainedBaseline+stagesCandidate.gearContribution,fu
 assert.deepEqual(stagesCandidate,reviewCandidatePowerStagesV1(evidence.statStages,'tank',candidateReference));
 assert.ok(Object.isFrozen(candidateReference.roles.tank));
 assert.equal(stagesCandidate.canGateContent,false);
+const noPoints={accuracyPp:0,evasionPp:0};
+assert.equal(reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,noPoints).partialScore,fullCandidate.partialScore);
+const points={accuracyPp:.02,evasionPp:.03};
+const withHit=reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,points);
+assert.ok(withHit.unroundedScore>=fullCandidate.unroundedScore);
+const companionStats={...resolved.stats};
+for(const key of keys)companionStats[key]+=companionReview.permanentStatDelta[key];
+const extended=reviewCandidatePowerExtensionsV2(evidence.statStages,'tank',candidateReference,points,companionStats);
+assert.equal(extended.total,extended.base.partialScore+extended.hitPointContribution+extended.companionPassiveContribution);
+assert.equal(extended.activeAssistPriced,false);
+assert.equal(extended.gemInnateRuntimeIntegrated,false);
+assert.equal(reviewCandidatePowerExtensionsV2(evidence.statStages,'tank',candidateReference,noPoints,resolved.stats).companionPassiveContribution,0);
+assert.throws(()=>reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,{...points,accuracyPp:NaN}),/invalid_hit_points/);
+assert.throws(()=>reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,{...points,evasionPp:1}),/unbounded_survival_proxy/);
+
 
 assert.deepEqual(fullCandidate,reviewCandidatePowerV1(resolved.stats,'tank',candidateReference));
 assert.throws(()=>reviewCandidatePowerV1({...resolved.stats,critChance:NaN},'tank',candidateReference),/invalid_stats/);

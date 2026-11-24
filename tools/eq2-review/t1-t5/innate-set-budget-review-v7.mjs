@@ -14,10 +14,16 @@ export function inspectInnateAndRandomLoadoutV2(rows){
   if(authored.tier!==row.tier||authored.slot!==row.slot||authored.mayApply!==false)
    throw Error('eq2_innate_source_identity_mismatch');
   for(const innate of authored.innates){
-   const entry={itemId:row.itemId,...innate};
+   // Same critical chance percentage-point mechanic, different authored ID.
+   // Preserve source spelling and frozen V7 record; explicit candidate alias.
+   const alias=innate.canonicalChannel===null&&innate.stat==='crit_chance_pp'&&
+     innate.unit==='percentage_points'?'crit_rate_pp':null;
+   const candidateChannel=innate.canonicalChannel??alias;
+   const entry={itemId:row.itemId,...innate,candidateChannel,
+     candidateAlias:alias!==null};
    sourceRows.push(entry);
-   if(innate.canonicalChannel===null){unresolved.push(entry);continue;}
-   const channel=random.channels.find(x=>x.channel===innate.canonicalChannel);
+   if(candidateChannel===null){unresolved.push(entry);continue;}
+   const channel=random.channels.find(x=>x.channel===candidateChannel);
    if(!channel||channel.unit!==innate.unit||!Number.isSafeInteger(innate.centipercent)||innate.centipercent<0)
     throw Error('eq2_innate_channel_mismatch');
    sums.set(channel.channel,sums.get(channel.channel)+innate.centipercent);

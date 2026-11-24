@@ -50,3 +50,7 @@ ok(winterHearthUnlockedStock(stock,'IRONWOOD_LOG')===0&&winterHearthUnlockedStoc
 ok(winterHearthUnlockedStock(stock,WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID)===90,'Crafted lights can be donated.');
 ok(winterHearthMaxDonation(150,100,80)===80&&winterHearthMaxDonation(150,10,80)===10,'Guild and weekly limits constrain available stock.');
 ok(winterHearthMaxDonation(150,100,0)===0&&winterHearthMaxDonation(150,-1,80)===0&&winterHearthMaxDonation(NaN,100,80)===0,'Full goals and invalid limits fail closed.');
+
+import {winterHearthStageFromProgress} from '../src/core/winter-hearth-2026';
+for(const p of [25,50,75,100] as const){ok(winterHearthStageFromProgress(p*250,p*25)===p,'Joint threshold selects exact scene');ok(winterHearthStageFromProgress(p*250-1,p*25)<p&&winterHearthStageFromProgress(p*250,p*25-1)<p,'Neither resource track alone advances the scene');}
+ok(winterHearthStageFromProgress(NaN,2500)===0,'Invalid progress uses initial scene');

@@ -5,6 +5,8 @@ export const guildBackgroundSources=new Map<string,CardBackgroundSources>([
  ['guild_plaza',{wide:require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp'),square:require('../../assets/card-backgrounds/guild_plaza_square.webp'),portrait:require('../../assets/card-backgrounds/guild_plaza_portrait.webp')}],
  ['forest_sanctum',{wide:require('../../assets/card-backgrounds/forest_sanctum_wide_v2.webp'),square:require('../../assets/card-backgrounds/forest_sanctum_square.webp'),portrait:require('../../assets/card-backgrounds/forest_sanctum_portrait.webp')}],
 ]);
+const winterAurora=require('../../assets/events/frostfall/winter-hearth/background_frostfall_winter_aurora_2026.webp');
+guildBackgroundSources.set('background_frostfall_winter_aurora_2026',{wide:winterAurora,square:winterAurora,portrait:winterAurora});
 // Art reuse does not change personal cosmetic ownership or unlock rules.
 export const personalBackgroundVariants=new Map<string,CardBackgroundSources>([
  ['bg_forest_sanctum',guildBackgroundSources.get('forest_sanctum')!],

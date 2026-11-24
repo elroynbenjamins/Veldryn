@@ -10,7 +10,8 @@ import {localizedItemName} from '../i18n/starter-item-names';
 import {BoardTabs} from './BoardTabs';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
 import {eventTheme} from '../theme/event-palette';
-import {liveEventVisuals} from '../ui/live-event-visuals-active';
+import {winterHearthMarketSource,warmNextWinterHearthMarket} from '../theme/winter-hearth-market-assets';
+import {winterHearthStageFromProgress} from '../core/winter-hearth-2026';
 import {FROSTFALL_EVENT} from '../content/annual-events-v2';
 import {getWinterHearthGuildSnapshot,type WinterHearthGuildSnapshot} from '../online/winter-hearth-guild';
 import {useGameplayText} from '../i18n/gameplay';
@@ -51,7 +52,10 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  },[]);
  useEffect(()=>{void reload();return()=>{generation.current++;};},[reload,scope]);
  const fmt=(n:number)=>n.toLocaleString(language);
- const stage=snapshot?.milestonePercent??0,logs=snapshot?.logs??0,lights=snapshot?.lights??0;
+ const logs=snapshot?.logs??0,lights=snapshot?.lights??0;
+ const stage=snapshot?.milestonePercent??0;
+ const sceneStage=winterHearthStageFromProgress(logs,lights);
+ useEffect(()=>{if(!snapshot?.enabled)return;const timer=setTimeout(()=>warmNextWinterHearthMarket(sceneStage),250);return()=>clearTimeout(timer);},[sceneStage,snapshot?.enabled]);
  const progress=clamp(Math.floor(Math.min(logs/25000,lights/2500)*100));
  const next=stages.find(row=>row.percent>stage);
  const available=(id:string)=>winterHearthUnlockedStock(state,id);
@@ -80,7 +84,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  return <View style={[s.screen,{backgroundColor:C.bg}]}>
   <View style={[s.header,{borderBottomColor:C.line,backgroundColor:C.panel}]}><GameButton compact tone="secondary" title={gl('← Guild Home')} onPress={onClose}/><Text style={[s.headerText,{color:C.accent}]}>{gl('Frostfall 2026')}</Text></View>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-   <ImageBackground source={liveEventVisuals('frostfall').heroBackground} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text><Text style={s.heroCopy}>{snapshot?.active&&remainingHours>0?remainingLabel+' · '+gl('remaining'):snapshot?.enabled&&!snapshot.active?gl('Donations closed'):gl('December 3–26')}</Text></View></ImageBackground>
+   <ImageBackground source={winterHearthMarketSource(sceneStage)} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text><Text style={s.heroCopy}>{snapshot?.active&&remainingHours>0?remainingLabel+' · '+gl('remaining'):snapshot?.enabled&&!snapshot.active?gl('Donations closed'):gl('December 3–26')}</Text></View></ImageBackground>
    {loading?<Panel><ActivityIndicator color={C.accent}/><Text style={smallStyle}>{gl('Loading guild progress…')}</Text></Panel>:error?<Panel><Text style={smallStyle}>{gl(error)}</Text><GameButton compact title={gl('Retry')} onPress={reload}/></Panel>:!snapshot?.inGuild||!snapshot.enabled?<Panel><Text style={titleStyle}>{gl('Winter Hearth is not available.')}</Text><GameButton tone="secondary" compact title={gl('Refresh')} onPress={reload}/></Panel>:<>
     <BoardTabs compact label={gl('Guild event sections')} items={[{id:'Market',label:gl('Market')},{id:'Rewards',label:gl('Rewards')}] as const} value={page} onChange={setPage}/>
     {feedback?<Panel accentColor={C.lineStrong}><Text accessibilityRole="alert" style={smallStyle}>{gl(feedback)}</Text></Panel>:null}
@@ -118,4 +122,4 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
   </GameModalSurface>
  </View>;
 }
-const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{minHeight:150,borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(8,23,43,.48)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},flex:{flex:1,minWidth:0},input:{borderWidth:1,borderRadius:6,padding:10,fontSize:17,textAlign:'center'},donationRow:{flexDirection:'row',gap:7},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});
+const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{aspectRatio:16/9,backgroundColor:'#101d32',borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(8,23,43,.23)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},flex:{flex:1,minWidth:0},input:{borderWidth:1,borderRadius:6,padding:10,fontSize:17,textAlign:'center'},donationRow:{flexDirection:'row',gap:7},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});

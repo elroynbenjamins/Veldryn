@@ -12,3 +12,10 @@ export function winterHearthLightRecipeAvailable(state:GameState,nowMs:number):b
  return WINTER_HEARTH_GUILD_RELEASED&&event?.enabled===true&&event.eventId===WINTER_HEARTH_2026_ID&&
   Number.isFinite(nowMs)&&nowMs>=Math.max(event.startsAtMs,WINTER_HEARTH_2026_START_MS)&&nowMs<Math.min(event.endsAtMs,WINTER_HEARTH_2026_END_MS);
 }
+
+export type WinterHearthStage=0|25|50|75|100;
+export function winterHearthStageFromProgress(logs:number,lights:number):WinterHearthStage{
+ if(!Number.isSafeInteger(logs)||!Number.isSafeInteger(lights)||logs<0||lights<0)return 0;
+ for(const p of [100,75,50,25] as const)if(logs>=p*250&&lights>=p*25)return p;
+ return 0;
+}

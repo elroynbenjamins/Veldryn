@@ -1,0 +1,5 @@
+-- NON-EXECUTABLE rollback notes for profile_cosmetics_tester_ascendant_v1.
+-- Do not delete player badge ownership rows or game-state cosmetic ownership.
+-- Rollback should restore the prior badge allowlists only after every Ascendant
+-- badge has been unequipped/removed from profile shelves, and remove the public
+-- cosmeticsPreview/effectId additions only if all deployed clients tolerate it.

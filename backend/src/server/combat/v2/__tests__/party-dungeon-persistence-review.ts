@@ -116,6 +116,16 @@ const partyTraitToken=issuePersistedPartyEquipmentV2TraitAuthority(
  (binding,rows,digest)=>binding.runId==='RUN_1'&&rows.length===4&&
   digest===persisted.binding.combatInputDigest);
 assert.equal(authorizeEquipmentV2TraitEngine(persistedInput,partyTraitToken).size,4);
+assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,sources.map((row,i)=>i<2?{...row,ownedEquippedInstanceIds:['SHARED_COPY']}:row),
+ persisted.binding,()=>true),/duplicate_party_equipment_copy/);
+const mutableSources=sources.map(row=>({...row}));
+assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,mutableSources,persisted.binding,()=>{
+  mutableSources[0].basicAttackDamagePct=19;
+  return true;
+ }),/party_persisted_ledger_not_verified/);
+
 assert.throws(()=>issueEquipmentV2TraitAuthority(persistedInput,sources,()=>true),
  /no_legacy_or_inflight_encounter/);
 assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(

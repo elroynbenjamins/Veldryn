@@ -44,7 +44,7 @@ function InspectArt({itemId,model}:{itemId:string;model:ReturnType<typeof itemIn
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,actions,quickActions,disposalActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode;quickActions?:ReactNode;disposalActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
+export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onClose,onNavigate,overview,actions,quickActions,disposalActions,favorite=false,locked=false,onToggleFavorite,onToggleLock}:{state:GameState;itemId:string|null;instanceId?:string|null;source?:'inventory'|'bank'|'equipment_pouch';onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;overview?:ReactNode;actions?:ReactNode;quickActions?:ReactNode;disposalActions?:ReactNode;favorite?:boolean;locked?:boolean;onToggleFavorite?:()=>void|Promise<unknown>;onToggleLock?:()=>void|Promise<unknown>}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const ui=(label:string)=>equipmentPouchText(language,label);
@@ -115,6 +115,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             <Text style={s.statHeading}>{gt("TRAIT")}</Text>
             <View style={s.traitPanel}><Text style={s.traitText}>{contentText(traitLine)}</Text></View>
           </View>:null}
+          {overview}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
           <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>

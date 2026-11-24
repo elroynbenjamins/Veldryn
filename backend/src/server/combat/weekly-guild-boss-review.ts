@@ -48,6 +48,8 @@ export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:W
  const result=simulateCombat({seed,players:[player],enemies:[boss],maxDurationMs:WEEKLY_GUILD_ATTEMPT_MS,tickMs:100});
  const hero=result.players[0],enemy=result.enemies[0];
  const events=result.events;
+ const assistIds=new Set(player.abilities.filter(a=>a.tags?.includes('combat_companion')).map(a=>a.id));
+ const assistEvents=events.filter(e=>e.actorId===player.id&&e.abilityId!==undefined&&assistIds.has(e.abilityId));
  const count=(type:CombatEvent['type'],actorId:string)=>events.filter(e=>e.type===type&&e.actorId===actorId).length;
  const sum=(predicate:(e:CombatEvent)=>boolean,field:'amount'|'absorbed')=>events.filter(predicate).reduce((n,e)=>n+Math.max(0,e[field]??0),0);
  return {boss:input.boss,role:player.role,classId:player.classId??'',durationMs:result.durationMs,reason:result.reason,
@@ -55,8 +57,38 @@ export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:W
   rawDamage:hero.damageDone,damageTaken:hero.damageTaken,effectiveHealing:hero.healingDone,
   shieldAbsorbed:sum(e=>e.targetId===player.id&&(e.type==='damage'||e.type==='dot_tick'),'absorbed'),
   interrupts:hero.interrupts,cleanses:count('status_remove',player.id),
+  // Companion assists are abilities of the owner, NOT extra combatants.
+  // Only directly attributable events are reported; indirect buffs/reflect and
+  // effective absorbed shield ownership cannot be inferred from these totals.
+  companionDirectDamage:assistEvents.filter(e=>e.type==='damage'||e.type==='dot_tick').reduce((n,e)=>n+(e.amount??0),0),
+  companionEffectiveHealing:assistEvents.filter(e=>e.type==='heal'||e.type==='hot_tick').reduce((n,e)=>n+(e.amount??0),0),
+  companionShieldGranted:assistEvents.filter(e=>e.type==='shield').reduce((n,e)=>n+(e.amount??0),0),
+  companionInterrupts:assistEvents.filter(e=>e.type==='interrupt').length,
+  companionCleanses:assistEvents.filter(e=>e.type==='status_remove').length,
+  companionAbilityEvents:assistEvents.length,
   bossCastWarnings:count('cast_start',boss.id),bossPhases:count('phase',boss.id),
   events,attemptConsumed:false as const,rewardGranted:false as const,sharedHpWritten:false as const,
   contribution:null,liveEnabled:WEEKLY_GUILD_ENGINE_RELEASED,
  };
+}
+
+/** Source-aligned legacy diagnostic only. Inputs must be the raw stat units
+ * from the old SQL; fixture effective stats are a labelled proxy, not DB proof.
+ * Assumes roll 1.0, no guild-skill bonuses, and a fresh weekly personal cap.
+ * Never compare its absolute score with engine HP loss as equivalent units. */
+export function previewLegacyWeeklyScore(input:{boss:WeeklyGuildBoss;role:'tank'|'damage'|'support';attack:number;defense:number;hp:number;level:number;companionLevel?:number;companionBond?:number;sharedMaxHp:number;personalAlready:number}){
+ const {boss,role,attack:a,defense:d,hp:h,level:l,sharedMaxHp,personalAlready}=input;
+ if(!WEEKLY_GUILD_BOSSES.includes(boss)||!['tank','damage','support'].includes(role)||!valid(a)||!valid(h)||!valid(l)||!Number.isFinite(d)||d<0||!Number.isSafeInteger(sharedMaxHp)||sharedMaxHp<=0||!Number.isSafeInteger(personalAlready)||personalAlready<0)throw Error('invalid_legacy_review_input');
+ if(input.companionLevel!==undefined&&(!Number.isInteger(input.companionLevel)||input.companionLevel<1||input.companionLevel>35||!Number.isInteger(input.companionBond)||input.companionBond!<1||input.companionBond!>10))throw Error('invalid_legacy_companion_review_input');
+ const baseline=a*180+d*35+h*2+l*450;
+ const focus=boss===WEEKLY_GUILD_BOSSES[0]?'tank':boss===WEEKLY_GUILD_BOSSES[1]?'damage':'support';
+ const focusScore=focus==='tank'?d*110+h*3+l*265:focus==='damage'?a*250+l*265:a*90+d*90+h*3+l*240;
+ const clamp=(n:number,lo:number,hi:number)=>Math.min(hi,Math.max(lo,n));
+ const factor=Number(clamp(.65+.35*clamp(focusScore/baseline*1.35,.80,1.20)*(role===focus?1.32:.80),.82,1.18).toFixed(4));
+ const character=Math.floor(Math.floor(baseline)*factor);
+ const companion=input.companionLevel===undefined?0:Math.floor(character*(.06+input.companionLevel*.006+input.companionBond!*.004));
+ const perAttempt=Math.ceil(sharedMaxHp*.11*Math.min(1,factor)),personalCap=Math.ceil(sharedMaxHp*.28*Math.min(1,factor));
+ const remaining=Math.max(0,personalCap-personalAlready);
+ return {factor,uncapped:character+companion,perAttempt,personalCap,capReached:remaining===0,
+  capped:Math.min(character+companion,perAttempt,remaining),liveEnabled:false as const};
 }

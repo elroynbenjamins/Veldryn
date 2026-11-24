@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {reviewCompanionContributionV2,type CompanionContributionSourceV2} from '../companion-contribution-review';
 import {launchPlayer} from '../../content/launch-combat';
-import {reviewCandidatePowerV1,CANDIDATE_POWER_WEIGHTS_V1,type CandidatePowerReferenceV1} from '../candidate-power-review';
+import {reviewCandidatePowerV1,reviewCandidatePowerStagesV1,CANDIDATE_POWER_WEIGHTS_V1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
 import type {CombatStats} from '../../types';
 import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -399,13 +399,7 @@ assert.deepEqual(
  enabled,'Explicit authored raw bases must retain exactly-once scaling');
 
 
-const candidateReference:CandidatePowerReferenceV1={
- version:'QA_L25_LAUNCH_REFERENCE_V1',anchor:1000,enemyAccuracy:1600,enemyEvasion:100,
- accuracyScale:1400,mitigationConstant:1200,roles:{
-  tank:launchPlayer('Ironwarden',25).stats,damage:launchPlayer('Ravager',25).stats,
-  support:launchPlayer('Dawnkeeper',25).stats,
- },
-};
+const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
 for(const role of ['tank','damage','support'] as const){
  const stats=candidateReference.roles[role],base=reviewCandidatePowerV1(stats,role,candidateReference);
  assert.equal(base.partialScore,1000);
@@ -421,6 +415,15 @@ for(const role of ['tank','damage','support'] as const){
 const fullCandidate=reviewCandidatePowerV1(resolved.stats,'tank',candidateReference);
 const classCandidate=reviewCandidatePowerV1(evidence.statStages.classOnly,'tank',candidateReference);
 assert.ok(fullCandidate.unroundedScore>classCandidate.unroundedScore);
+const stagesCandidate=reviewCandidatePowerStagesV1(evidence.statStages,'tank',candidateReference);
+assert.equal(stagesCandidate.partialScore,fullCandidate.partialScore);
+assert.equal(stagesCandidate.stageRows.reduce((n,r)=>n+r.value,0),fullCandidate.partialScore);
+assert.equal(stagesCandidate.stageRows[0].cumulative,classCandidate.partialScore);
+assert.equal(stagesCandidate.trainedBaseline+stagesCandidate.gearContribution,fullCandidate.partialScore);
+assert.deepEqual(stagesCandidate,reviewCandidatePowerStagesV1(evidence.statStages,'tank',candidateReference));
+assert.ok(Object.isFrozen(candidateReference.roles.tank));
+assert.equal(stagesCandidate.canGateContent,false);
+
 assert.deepEqual(fullCandidate,reviewCandidatePowerV1(resolved.stats,'tank',candidateReference));
 assert.throws(()=>reviewCandidatePowerV1({...resolved.stats,critChance:NaN},'tank',candidateReference),/invalid_stats/);
 assert.throws(()=>reviewCandidatePowerV1(resolved.stats,'tank',{...candidateReference,accuracyScale:0}),/invalid_reference/);

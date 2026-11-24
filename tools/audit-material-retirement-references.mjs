@@ -36,3 +36,12 @@ for(const version of [27,29,30,33]){
  const matches=recipes.filter(recipe=>new RegExp(pattern,'i').test(JSON.stringify(recipe)));
  console.log('RECIPE CATALOG V'+version+': '+matches.length+'/'+recipes.length+' matching recipes, examples: '+matches.slice(0,5).map(recipe=>recipe.pieceId??recipe.id??'unknown').join(', '));
 }
+
+// Locate import/call sites for old exact-recipe consumers; existence of an exported
+// function is not proof that the production HTTP handler reaches it.
+const consumers='equipment-exact-recipes-v27|exactRecipeV27|canStartExactPieceCraftV27|canCraftCompositeComponentV27|finalInventoryRequirementsV27|recipeInventoryRequirementsV33|equipment-recipe-materials-v33|equipment-recipe-sources-v25|inventoryItemIdV25';
+let usage='';
+try {usage=execFileSync('git',['grep','-InE',consumers,'--','backend/src','backend/online','apps/mobile/src','backend/supabase/functions/gameplay/index.ts','backend/supabase/functions/coop/index.ts'],{encoding:'utf8',maxBuffer:16*1024*1024});}catch(e){if(e.status!==1)throw e;}
+const usageRows=usage.trim().split('\n').filter(Boolean);
+for(const row of usageRows)console.log('RECIPE ROUTE: '+row.slice(0,900));
+console.log('Recipe route references: '+usageRows.length+'; manually distinguish definitions, tests and live route calls.');

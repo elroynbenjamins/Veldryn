@@ -537,7 +537,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
-   if(patch.profileEffectId&&!PROFILE_ANIMATED_COSMETICS_RELEASED)throw new Error('feature_not_released');
+   if(patch.profileEffectId&&!PROFILE_ANIMATED_COSMETICS_RELEASED&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
    if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
    state={...state,character:{...state.character,...patch}};break;

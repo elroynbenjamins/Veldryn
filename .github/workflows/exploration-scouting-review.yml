@@ -2,7 +2,9 @@ name: Hidden Exploration 2.0 scouting validation
 on:
   pull_request:
     paths:
-      - 'backend/src/server/companions/exploration-scouting-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-tutorial-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-tutorial-review.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'
@@ -29,3 +31,4 @@ jobs:
       - run: pnpm --dir ../../backend install --frozen-lockfile
       - run: pnpm exec tsc -p tsconfig.exploration-scouting-review.json --outDir .core-build
       - run: node .core-build/apps/mobile/tests/exploration-scouting-review.js
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-tutorial-review.js

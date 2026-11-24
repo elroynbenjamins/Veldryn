@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {EXPLORATION_2_RELEASED,SCOUT_ROUTES,reserveScout,scoutClaimPreview,scoutingMigrationPreview,scoutingAvailability,type ScoutAuthority,type ScoutState} from '../../../backend/src/server/companions/exploration-scouting-review';
+import {EXPLORATION_2_RELEASED,SCOUT_ROUTES,reserveScout,scoutClaimPreview,scoutingMigrationPreview,scoutingAvailability,type ScoutAuthority,type ScoutState} from '../src/core/exploration-scouting-review';
 const state:ScoutState={accountId:'account',characterId:'char',explorationLevel:1,explorationXp:123,discoveredRouteIds:[],visitedZoneIds:['GREENFIELDS']};
 const authority:ScoutAuthority={owned:{UNIT_001:{companionId:'UNIT_001',level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false}},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
 const start={state,authority,receipts:[],routeId:'scout2:SCOUT_GREENFIELDS',kind:'route' as const,companionIds:[],requestId:'request_01',now:1000};

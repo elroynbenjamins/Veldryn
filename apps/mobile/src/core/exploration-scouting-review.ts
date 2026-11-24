@@ -1,13 +1,13 @@
 /** Hidden Exploration 2.0 review. No live command, wallet, XP or unlock mutation. */
-import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier} from '../../../../apps/mobile/src/content/exploration';
-import {WORLD_ZONES,worldZoneInDevelopment} from '../../../../apps/mobile/src/content/world-map';
-import {companionServerDefinition} from './content';
-import {busyCompanionIds,rolloverCompanionAssignmentStatuses} from './assignments';
-import type {CompanionAssignment,OwnedCompanionSnapshot} from './domain';
+import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier} from '../content/exploration';
+import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
+import {companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {busyCompanionIds,rolloverCompanionAssignmentStatuses} from '../../../../backend/src/server/companions/assignments';
+import type {CompanionAssignment,OwnedCompanionSnapshot} from '../../../../backend/src/server/companions/domain';
 
 export const EXPLORATION_2_RELEASED=false as const;
 export const SCOUT_POLICY_VERSION='exploration-2-review-v1';
-export type ScoutKind='route'|'survey';
+export type ScoutKind='route'|'practice'|'survey';
 export type ScoutRoute={id:string;legacyId:string;zoneId:string;name:string;requiredExplorationLevel:number;legacyCharacterLevel:number;prerequisite?:string;targetRegion?:string;monsterId?:string;seconds:number;xp:number;released:boolean};
 export const SCOUT_ROUTES:readonly ScoutRoute[]=EXPLORATION_ROUTES.map(r=>({
  id:'scout2:'+r.id,legacyId:r.id,zoneId:r.zoneId,name:r.name,requiredExplorationLevel:r.requiredExplorationLevel,legacyCharacterLevel:r.requiredLevel,
@@ -31,7 +31,7 @@ export function scoutingAvailability(state:ScoutState,route:ScoutRoute,kind:Scou
  if(state.explorationLevel<route.requiredExplorationLevel)return 'exploration_level';
  const known=state.discoveredRouteIds.includes(route.legacyId);
  if(kind==='route'&&known)return 'already_discovered';
- if(kind==='survey'&&!known)return 'discover_first';
+ if(kind!=='route'&&!known)return 'discover_first';
  if(!known&&route.prerequisite&&!state.discoveredRouteIds.includes(route.prerequisite))return 'prerequisite';
  // Frontier route discovery may be performed remotely once the route chain opens.
  // Independent gathering/crafting access and combat story gates are separate policy.
@@ -47,7 +47,7 @@ export function scoutingTeamBonus(route:ScoutRoute,ids:readonly string[],authori
  * shared with existing expeditions/trials/equip, and a trusted server clock. */
 export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;receipts:readonly ScoutReceipt[];routeId:string;kind:ScoutKind;companionIds:readonly string[];requestId:string;now:number}):ScoutReceipt{
  const {state,authority,receipts,routeId,kind,companionIds,requestId,now}=input;
- if(!state.accountId||!state.characterId||!Number.isSafeInteger(now)||now<0||!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)||!['route','survey'].includes(kind))return fail('invalid_request');
+ if(!state.accountId||!state.characterId||!Number.isSafeInteger(now)||now<0||!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)||!['route','practice','survey'].includes(kind))return fail('invalid_request');
  const previous=receipts.find(r=>r.accountId===state.accountId&&r.requestId===requestId);
  if(previous){if(previous.characterId!==state.characterId||previous.routeId!==routeId||previous.kind!==kind||JSON.stringify(previous.companionIds)!==JSON.stringify(companionIds))return fail('nonce_conflict');return previous;}
  if(receipts.some(r=>r.accountId===state.accountId&&r.status==='active'))return fail('scout_slot_busy');
@@ -62,11 +62,11 @@ export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;re
   if(busy.has(id)||authority.equipped.has(id)||authority.trialLocked.has(id)||authority.unavailable.has(id))return fail('companion_unavailable');
  }
  const bonus=scoutingTeamBonus(route,companionIds,authority),loanedGuide=companionIds.length===0;
- const baseMs=kind==='route'?route.seconds*1000:2*3600000;
+ const baseMs=kind==='route'?route.seconds*1000:kind==='practice'?300000:2*3600000;
  const duration=Math.max(30000,Math.round(baseMs*(loanedGuide?1.25:1)/(explorationScoutingSpeedMultiplier(state.explorationLevel)*(1+bonus))));
  // Survey XP uses the authored route rate, capped at one XP-earning team/account.
  // Parallel training economy and optional material payouts require calibration.
- const xp=kind==='route'?route.xp:Math.floor(route.xp/route.seconds*7200);
+ const xp=kind==='route'?route.xp:Math.floor(route.xp/route.seconds*(kind==='practice'?300:7200));
  return {accountId:state.accountId,characterId:state.characterId,requestId,routeId,kind,companionIds:[...companionIds],loanedGuide,startedAt:now,endsAt:now+duration,xp,policyVersion:SCOUT_POLICY_VERSION,status:'active',discovery:kind==='route'};
 }
 export function scoutClaimPreview(receipt:ScoutReceipt,state:ScoutState,now:number){

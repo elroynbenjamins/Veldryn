@@ -120,6 +120,10 @@ V21 focused CI remains queued at readback; no new benchmark outcomes confirmed. 
 
 V21 backend typecheck/release economy, dungeon mechanics, isolated core and catalogue passed; private GameState stopped at an underfunded second-character QA fixture and expanded combat stopped at wrong generic boss name. Both exact fixture causes corrected; no new result claims. V23 adds three phase-separated one-use charge candidates (Follow-Through, Talonstrike, Thornstrider), seven source IDs/five mechanics including V22. Post-effective-HP-loss earning, later pre-hit consumption, exact expiry, receipt and same-tick guards; conservative same-target and timing policy. 96 matched QA pairs prepared, CI unconfirmed. Remaining 135 conditional records, CP, D1–D10, Expo, mobile regression and Edge parity remain open. See `docs/2-0/EQUIPMENT_2_0_ONE_USE_CHARGE_REVIEW_V23.md`.
 
+## 3K. V24 private incoming damage reduction
+
+V22/V23 focused CI remains queued. V24 corrects a non-exported V17 source import in the V22 audit and adds three private defensive source definitions: Heliarch Guard, Unyielding Frame, Rimevanguard. Actual post-hit HP-loss threshold, next-hit/timed reduction, strongest-only overlap and expiry; conservative QA semantics, no ownership or release authority. 96 matched Ironwarden pairs prepared, execution unconfirmed. Ten source definitions/eight mechanics supported, 132 remaining. CP and D1–D10, previous mobile/Edge blockers remain open. See `docs/2-0/EQUIPMENT_2_0_INCOMING_DEFENSE_REVIEW_V24.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

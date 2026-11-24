@@ -43,7 +43,8 @@ import {simulateOriginalForgeAuthoredBossReviewV2}
 import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2} from '../enemy-kit-composer';
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {simulateCombat} from '../../engine';
-import {issueEq2PrivateHitQaV22,authorizeEq2PrivateHitQaV22,type Eq2PrivateHitIdV22} from '../equipment-private-hit-qa-v22';
+import {issueEq2PrivateHitQaV22,type Eq2PrivateHitIdV22} from '../equipment-private-hit-qa-v22';
+import {runPrivateConditionalBoundaries,runPrivateSupportBoundaries} from './equipment-private-conditional-boundaries';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {reviewOriginalForgeSetBossOpportunitiesV2}
  from '../equipment-forge-set-boss-opportunity-review';
@@ -1621,6 +1622,17 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  unresolved:['unmapped_affixes','set_bonus_reconciliation','approved_caps',
   'privileged_DB_custody','persistent_party_state','final_CP_weights','full_10_slot_source_reconciliation']}));
 
+// Run the same independent adapter tests using verified original Forge actors.
+{
+ const rv=make('RAVAGER',0,'supported',4),iw=make('IRONWARDEN',0,'supported',4);
+ const ravager=compileRealFrozenForgeActorV2(rv.actor,rv.build,rv.source).actor;
+ const ironwarden=compileRealFrozenForgeActorV2(iw.actor,iw.build,iw.source).actor;
+ runPrivateConditionalBoundaries(ravager,ironwarden,boss);
+ const dk=make('DAWNKEEPER',0,'supported',4),sc=make('STONECALLER',0,'supported',4);
+ runPrivateSupportBoundaries(compileRealFrozenForgeActorV2(dk.actor,dk.build,dk.source).actor,
+  compileRealFrozenForgeActorV2(sc.actor,sc.build,sc.source).actor,ironwarden,ravager,boss);
+}
+
 if(process.env.EQ2_V21_MULTISLOT_PATH){
  const rows:unknown[]=[];
  const v22Rows:unknown[]=[];
@@ -1806,105 +1818,3 @@ if(process.env.EQ2_V21_PARTY_PATH){
   actualOwnedCandidateCopies:false,conditionalEffectsApplied:false,releaseApproved:false,rows}));
 }
 
-// V22 isolated event boundary tests (not reported as full combat runs).
-{
- const fixture=make('RAVAGER',0,'supported',4);
- const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
- const i:CombatInput={seed:'QA_V22_BOUNDARY',players:[compiled.actor],enemies:[boss]};
- const winter='EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER' as const;
- const avalanche='eq2_t5_avalanche:6' as const;
- const token=issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter,avalanche],()=>true);
- const runtime=authorizeEq2PrivateHitQaV22(i,token)!;
- const event={now:1000,actorId:compiled.actor.id,targetId:boss.id,abilityId:'AUTHORED_SKILL',
-  originalClassAbility:true,direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,
-  targetHp:290,targetMaxHp:1000,shield:0,raw:100};
- for(const change of [{direct:false},{originalClassAbility:false},{nontrue:false},{sourceAlive:false},{targetAlive:false},
-  {abilityId:'BASIC'},{abilityId:'GEM_X'},{targetHp:350},{shield:100},{actorId:'OTHER'}]){
-  assert.equal(runtime.beforeDirectHit({...event,...change}).raw,100);
- }
- const active=runtime.beforeDirectHit(event);
- assert.equal(active.bonusPct,15);assert.equal(active.activated.length,2);
- assert.ok(Math.abs(active.raw-115)<.000001);
- assert.equal(runtime.beforeDirectHit({...event,now:20999}).raw,100);
- assert.equal(runtime.beforeDirectHit({...event,now:21000,physical:false}).bonusPct,7);
- assert.equal(authorizeEq2PrivateHitQaV22(i),undefined);
- assert.throws(()=>authorizeEq2PrivateHitQaV22({...i,seed:'CHANGED'},token),/invalid_authority/);
- assert.throws(()=>authorizeEq2PrivateHitQaV22(i,{} as typeof token),/invalid_authority/);
- assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter],()=>false),/fixture_unverified/);
- assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter,'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER'],()=>true),/fixture_scope/);
- console.log('PASS: V22 private current-hit phase, HP threshold, physical scope, shared family, shield exclusion and exact-input token tests');
-}
-
-// V23 event-phase tests: exercise the exact engine receipt contract.
-{
- const fixture=make('RAVAGER',0,'supported',4);
- const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
- const input:CombatInput={seed:'QA_V23_CHARGE_BOUNDARY',players:[compiled.actor],enemies:[boss]};
- const follow='eq2_t5_avalanche:4' as const, talons='eq2_combo_t5_glacier_talons:2' as const, thorn='eq2_dungeon_rootbound_t2_thornstrider:4' as const;
- const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,compiled.actor.id,ids,()=>true))!;
- const hit=(now:number,abilityId='AUTHORED_SKILL',targetId=boss.id)=>({now,actorId:compiled.actor.id,targetId,abilityId,
-  originalClassAbility:abilityId!=='BASIC',direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100});
- const r=runtime([follow,talons]);const event=hit(1000);
- assert.deepEqual(r.afterDirectHit(event,100),[],'unpaired post receipt cannot generate charge');
- assert.equal(r.beforeDirectHit(event).bonusPct,0);
- assert.deepEqual(r.afterDirectHit(event,100),[follow,talons]);
- assert.deepEqual(r.afterDirectHit(event,100),[],'duplicate post denied');
- assert.equal(r.beforeDirectHit(hit(1000,'BASIC')).bonusPct,0,'same tick cannot consume');
- assert.equal(r.beforeDirectHit({...hit(2000,'BASIC'),shield:100}).bonusPct,0);
- assert.equal(r.beforeDirectHit(hit(2000)).bonusPct,0,'wrong ability does not consume');
- const consume=hit(2001,'BASIC');
- assert.equal(r.beforeDirectHit(consume).bonusPct,12);assert.equal(r.beforeDirectHit(consume).bonusPct,0);
- assert.deepEqual(r.afterDirectHit(consume,112),[]);assert.equal(r.beforeDirectHit(hit(2002,'BASIC')).bonusPct,0);
- const early=hit(3000);r.beforeDirectHit(early);assert.deepEqual(r.afterDirectHit(early,100),[]);
- const expired=runtime([follow,talons]);const start=hit(1000);expired.beforeDirectHit(start);expired.afterDirectHit(start,100);
- assert.equal(expired.beforeDirectHit(hit(6000,'BASIC')).bonusPct,6,'Talonstrike expires at 5 seconds; Follow-Through at 6');
- assert.equal(expired.beforeDirectHit(hit(7000,'BASIC')).bonusPct,0);
- const seq=runtime([thorn]);
- const record=(e:ReturnType<typeof hit>)=>{seq.beforeDirectHit(e);return seq.afterDirectHit(e,100);};
- assert.deepEqual(record(hit(1000)),[]);
- seq.miss(compiled.actor.id,'AUTHORED_SKILL');
- assert.deepEqual(record(hit(2000)),[]);
- assert.deepEqual(record(hit(3000,'AUTHORED_SKILL','OTHER')),[]);
- assert.deepEqual(record(hit(4000)),[]);
- assert.deepEqual(record(hit(5000)),[thorn]);
- assert.equal(seq.beforeDirectHit(hit(5000)).bonusPct,0);
- assert.equal(seq.beforeDirectHit(hit(5100,'AUTHORED_SKILL','OTHER')).bonusPct,0);
- assert.equal(seq.beforeDirectHit(hit(5200)).bonusPct,6);
- assert.equal(seq.beforeDirectHit(hit(5300)).bonusPct,0);
- const noLoss=runtime([follow]);const blocked=hit(1000);noLoss.beforeDirectHit(blocked);assert.deepEqual(noLoss.afterDirectHit(blocked,0),[]);
- assert.equal(noLoss.beforeDirectHit(hit(2000,'BASIC')).bonusPct,0);
- console.log('PASS: V23 one-use charge earning, expiry, same-tick exclusion, cooldown, target streak, missed-hit reset and duplicate receipt negatives');
-}
-
-// V24 defensive hit phase and strongest-only temporary reduction tests.
-{
- const fixture=make('IRONWARDEN',0,'supported',4);
- const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
- const input:CombatInput={seed:'QA_V24_DEFENSE_BOUNDARY',players:[compiled.actor],enemies:[boss]};
- const helio='eq2_dungeon_observatory_t4_helioguard:4' as const,stone='eq2_combo_t5_stonewinter_frame:2' as const,rime='eq2_dungeon_shiverlake_t5_rimevanguard:4' as const;
- const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,compiled.actor.id,ids,()=>true))!;
- const hit=(now:number)=>({now,actorId:boss.id,targetId:compiled.actor.id,abilityId:'BASIC',originalEnemyAbility:true,
-  direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100});
- const r=runtime([helio,stone,rime]),start=hit(1000);
- assert.deepEqual(r.afterIncomingHit(start,100),[]);
- assert.equal(r.beforeIncomingHit(start).raw,100);assert.deepEqual(r.afterIncomingHit(start,70),[helio,stone,rime]);
- assert.deepEqual(r.afterIncomingHit(start,70),[]);
- assert.equal(r.beforeIncomingHit(hit(1000)).reductionPct,0);
- for(const change of [{nontrue:false},{originalEnemyAbility:false},{abilityId:'V2_PROC'},{targetId:'OTHER'}])
-  assert.equal(r.beforeIncomingHit({...hit(2000),...change}).reductionPct,0);
- assert.equal(r.beforeIncomingHit({...hit(2000),direct:false}).reductionPct,6);
- const overlap=hit(2100);assert.equal(r.beforeIncomingHit(overlap).reductionPct,6);assert.equal(r.beforeIncomingHit(overlap).reductionPct,0);
- assert.equal(r.beforeIncomingHit(hit(6000)).reductionPct,5);
- assert.equal(r.beforeIncomingHit(hit(6100)).reductionPct,4);
- assert.equal(r.beforeIncomingHit(hit(6200)).reductionPct,0);
- const weak=runtime([helio]);const small=hit(1000);weak.beforeIncomingHit(small);assert.deepEqual(weak.afterIncomingHit(small,59),[]);
- const exact=hit(2000);weak.beforeIncomingHit(exact);assert.deepEqual(weak.afterIncomingHit(exact,60),[helio]);
- assert.equal(weak.beforeIncomingHit({...hit(2500),shield:100}).reductionPct,0);
- assert.equal(weak.beforeIncomingHit({...hit(2600),direct:false}).reductionPct,0);
- assert.equal(weak.beforeIncomingHit(hit(8000)).reductionPct,0);
- const fatal=runtime([rime]),dead={...hit(1000),targetHp:70};
- fatal.beforeIncomingHit(dead);assert.deepEqual(fatal.afterIncomingHit(dead,70),[]);
- const periodic={...hit(2000),direct:false};fatal.beforeIncomingHit(periodic);assert.deepEqual(fatal.afterIncomingHit(periodic,100),[]);
- assert.throws(()=>issueEq2PrivateHitQaV22(input,compiled.actor.id,['eq2_t5_avalanche:4'],()=>true),/fixture_scope/);
- console.log('PASS: V24 actual HP thresholds, incoming pre/post receipts, strongest-only mitigation, one-use versus timed, expiry and unauthorized damage exclusions');
-}

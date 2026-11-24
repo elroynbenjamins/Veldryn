@@ -124,6 +124,22 @@ V21 backend typecheck/release economy, dungeon mechanics, isolated core and cata
 
 V22/V23 focused CI remains queued. V24 corrects a non-exported V17 source import in the V22 audit and adds three private defensive source definitions: Heliarch Guard, Unyielding Frame, Rimevanguard. Actual post-hit HP-loss threshold, next-hit/timed reduction, strongest-only overlap and expiry; conservative QA semantics, no ownership or release authority. 96 matched Ironwarden pairs prepared, execution unconfirmed. Ten source definitions/eight mechanics supported, 132 remaining. CP and D1–D10, previous mobile/Edge blockers remain open. See `docs/2-0/EQUIPMENT_2_0_INCOMING_DEFENSE_REVIEW_V24.md`.
 
+## 3L. V25 temporary stat overlays
+
+V22–V24 focused CI remains queued; no new measured outcomes. V25 adds ten source-exact timed records: Oathplate T1–T5, Ironwarden Riposte T2/T4/T5, Bastionmail and Runeforge Momentum. Readback matched all ten magnitudes, durations and cooldowns. Strongest-only Defense overlay and future-only Haste scheduling, conservative actual HP/mitigation/effective-heal triggers. Boundary tests before long matrices; no execution pass confirmed, no new matched matrix yet. Twenty source definitions/twelve distinct mechanics supported, 122 remaining. CP, D1–D10 and broader blockers open. See `docs/2-0/EQUIPMENT_2_0_TIMED_STAT_REVIEW_V25.md`.
+
+## 3M. V26 independent equipment shield ledger
+
+V22 exact-head CI failed TS7053 readonly ID indexing and non-exported V17 import; corrected typed unknown-ID validation in V26 and import in V24. V23–V25 focused CI remains queued. V26 adds eight self-shield source definitions, all eight source magnitudes/thresholds/durations/cooldowns/units verified on readback. Independent named pool, ordinary shield first, residual eligible damage absorption, receipt phases, strongest pool replacement and exact expiry; no reflection or recursive proc. Twenty-eight definitions supported by private adapter, 114 remaining. Boundary/source tests added, no new full shield matrix or confirmed CI execution. Composite/ally shields and actual CP/release authority still blocked; D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_INDEPENDENT_SHIELD_REVIEW_V26.md`.
+
+## 3N. V27 named shield break and independent validation
+
+V23–V26 focused runs remained queued at readback. Extracted shared V22–V26 boundaries, retained real Forge actor suite, added minimal typed independent strict compile and boundary/source/Edge-isolation workflow. No successful current-head execution yet. V27 adds Rimewatch Weather the Break: exact named Rimeguard direct depletion, +6% incoming nontrue reduction for 4s, 30s cooldown, both milestone IDs required, no expiry/replacement/DoT/fatal/duplicate trigger. Source readback verified; no candidate ownership, CP or release authority. Twenty-nine definitions supported, 113 remaining. D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_NAMED_SHIELD_BREAK_REVIEW_V27.md`.
+
+## 3O. V28 support recipient effects and independent smoke evidence
+
+V27 144 and V28 186 boundary assertions passed in isolated type-erased JS runtime with canonical serialization substituted for imported digest; no strict compile/actual digest/engine or full benchmark pass claimed. Eight source-exact heal-recipient records (Brightweave T1–4, Sanctuary Thread, Soft Refuge, Lifebloom, Comforting Thread) matched on readback. Private support-only 1–4 QA player roster, exact owner and target, per-healer cooldown, per-recipient independent shield/Defense, actual effective class heal required; conservative stacking and source scope. Thirty-seven definitions supported, 105 remaining. Full party and CI verification, D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_SUPPORT_RECIPIENT_REVIEW_V28.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

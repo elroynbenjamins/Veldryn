@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-equipment-conditional-boundaries"
+  },
+  "include": [
+    "src/types/node-shims.d.ts",
+    "src/server/combat/v2/__tests__/equipment-private-conditional-isolated.ts"
+  ]
+}

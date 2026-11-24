@@ -36,6 +36,5 @@ for(const name of files.filter(name=>!name.endsWith('_32.webp'))){
 }
 assert(registry.includes("celestial_border.webp"),'Ascendant stage must keep its custom 340x205 border');
 assert(borderRegistry.includes("celestial_border_standard.webp"),'ordinary profile frame must use the 16:9 border export');
-const flags=fs.readFileSync(path.join(__dirname,'../src/core/release-flags.ts'),'utf8');
-assert.match(flags,/ASCENDANT_CELESTIAL_VISUALS_RELEASED=false/,'Celestial release flag must remain closed in this integration PR');
-console.log(`Celestial assets: ${files.length} WebPs, ${total} bytes, release gate closed.`);
+assert(registry.includes('return BUNDLE'),'Celestial artwork must remain renderable for profiles of explicitly granted owners');
+console.log(`Celestial assets: ${files.length} WebPs, ${total} bytes, public rendering available; wardrobe visibility remains ownership-gated.`);

@@ -6,6 +6,7 @@ import {profileRewardSource,type ProfileCustomizationDestination} from './profil
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
+import {CELESTIAL_COLLECTION,CELESTIAL_IDS,isCelestialBackground,isCelestialBorder,releasedCelestialPetWardrobeDefinition} from './ascendant-cosmetics';
 
 /** One flat wardrobe model so the Look tab renders every cosmetic family the same way:
  * a chip with an owned/total count and a grid of tiles that carry their own unlock source. */
@@ -47,7 +48,7 @@ function sceneRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const base=BASE_PROFILE_BACKGROUNDS.map(item=>({kind:'scene' as const,id:item.id,name:item.name,group:'Starter',unlocked:true,equipped:equipped===item.id}));
  const released=assets.scenes.filter(item=>!BASE_PROFILE_BACKGROUNDS.some(row=>row.id===item.id)&&profileCosmeticReleased(state,'background',item.id));
  return [...base,...released.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id);
-  return {kind:'scene' as const,id:item.id,name:item.name,group:item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
+  return {kind:'scene' as const,id:item.id,name:item.name,group:isCelestialBackground(item.id)?'Ascendant':item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
 }
 
 function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
@@ -55,14 +56,16 @@ function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const released=assets.frames.filter(id=>profileCosmeticReleased(state,'border',id));
  return [{kind:'frame' as const,id:'',name:'No frame',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
   ...released.map(id=>{const unlocked=canUseProfileCosmetic(state,'border',id),source=profileRewardSource(state,'border',id);
-   return {kind:'frame' as const,id,name:source.name,group:source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
+   return {kind:'frame' as const,id,name:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:isCelestialBorder(id)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
 function petRows(state:GameState):WardrobeRow[]{
  const equipped=state.character?.selectedCosmeticPetId??'';
  const rows=collectibleJournal(state).filter(row=>row.kind==='pet'&&(row.owned||row.collectionGroup==='event'))
   .sort((a,b)=>Number(b.owned)-Number(a.owned)||a.name.localeCompare(b.name));
+ const celestial=releasedCelestialPetWardrobeDefinition(state);
  return [{kind:'pet' as const,id:'',name:'No Pet',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
+  ...(celestial?[{kind:'pet' as const,id:CELESTIAL_IDS.pet,name:celestial.name,group:celestial.group,unlocked:true,equipped:equipped===CELESTIAL_IDS.pet}]:[]),
   ...rows.map(row=>({kind:'pet' as const,id:row.id,name:row.name,group:row.collectionGroup==='event'?'Event':'Collection',unlocked:row.owned,equipped:equipped===row.id,
    ...(row.owned?{}:{lockTag:'COLLECTION',sourceLabel:'Collections',sourceDetail:'Unlock this Pet through its collection source.',destination:'Collections' as ProfileCustomizationDestination,actionLabel:'Open Collections'})}))];
 }

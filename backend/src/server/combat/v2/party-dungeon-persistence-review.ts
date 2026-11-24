@@ -1,0 +1,128 @@
+/**
+ * Hidden review-only bridge from current co-op ready-check/loadout snapshots to
+ * a future persisted Combat 2.0 party encounter. No DB table or live route.
+ *
+ * Existing live QModeRun/createLive does not retain partyId, readyCheckId,
+ * rosterRevision or all frozen loadout hashes. Do not infer them later.
+ */
+import type {CombatInput} from '../types';
+import type {FrozenLoadoutSnapshot} from '../../coop/loadout-snapshots';
+import type {ReadyCheckRecord} from '../../coop/ready-checks';
+import {enemyV2SnapshotDigest} from './enemy-engine-authority';
+import {CLASS_NAMES_V2,} from './skill-catalog';
+import {CLASS_ROLES_V2,type ClassIdV2} from './build-contract';
+
+export const PARTY_V2_RUN_BINDING_POLICY='party-v2-run-binding-review-1' as const;
+export interface PartyV2RunBindingMember{
+ readonly accountId:string;
+ readonly characterId:string;
+ readonly actorId:string;
+ readonly classId:ClassIdV2;
+ readonly loadoutId:string;
+ readonly loadoutRevision:number;
+ readonly loadoutSnapshotHash:string;
+}
+export interface PartyV2RunBindingReview{
+ readonly source:'server-persisted-party-v2-review';
+ readonly policy:typeof PARTY_V2_RUN_BINDING_POLICY;
+ readonly runId:string;
+ readonly nodeId:string;
+ readonly encounterRevision:number;
+ readonly stateRevision:number;
+ readonly partyId:string;
+ readonly readyCheckId:string;
+ readonly rosterRevision:number;
+ readonly contentVersion:string;
+ readonly balanceVersion:string;
+ readonly seed:string;
+ readonly members:readonly PartyV2RunBindingMember[];
+ readonly combatInputDigest:string;
+}
+export interface PartyV2RunBindingResult{
+ readonly binding:PartyV2RunBindingReview;
+ readonly releaseEnabled:false;
+ readonly canAuthorizeCombat:false;
+ readonly canGrantRewards:false;
+ readonly canPersistState:false;
+}
+const validId=(x:unknown):x is string=>typeof x==='string'&&/^[A-Za-z0-9:_-]{1,128}$/.test(x);
+const reverseClass=new Map<string,ClassIdV2>(
+ (Object.entries(CLASS_NAMES_V2) as [ClassIdV2,string][]).flatMap(([id,name])=>[
+   [id,id] as const,[name.toUpperCase().replaceAll(' ','_'),id] as const,
+ ]));
+const classId=(value:string):ClassIdV2|undefined=>
+ reverseClass.get(value.trim().toUpperCase().replaceAll(' ','_'));
+const fail=(why:string):never=>{throw Error('party_v2_run_binding_'+why);};
+
+export function reviewPartyV2RunBinding(input:{
+ readonly runId:string;
+ readonly nodeId:string;
+ readonly encounterRevision:number;
+ readonly stateRevision:number;
+ readonly contentVersion:string;
+ readonly balanceVersion:string;
+ readonly seed:string;
+ readonly readyCheck:ReadyCheckRecord;
+ readonly frozenRoster:readonly FrozenLoadoutSnapshot[];
+ readonly combatInput:CombatInput;
+}):PartyV2RunBindingResult{
+ const {readyCheck:check,frozenRoster,combatInput}=input;
+ if(!validId(input.runId)||!validId(input.nodeId)||
+   !Number.isSafeInteger(input.encounterRevision)||input.encounterRevision<1||
+   !Number.isSafeInteger(input.stateRevision)||input.stateRevision<1||
+   !validId(input.contentVersion)||!validId(input.balanceVersion)||
+   typeof input.seed!=='string'||!input.seed.length||input.seed.length>256||
+   !check||!validId(check.id)||!validId(check.partyId)||
+   !Number.isSafeInteger(check.rosterRevision)||check.rosterRevision<1||
+   check.status!=='committed'||check.roster.length!==4||
+   !check.roster.every(member=>check.accepts[member.accountId]===true)||
+   frozenRoster.length!==4||combatInput.seed!==input.seed||
+   combatInput.players.length!==4||!combatInput.enemies.length||
+   combatInput.enemyDamageProfile!==undefined)
+  fail('invalid_scope');
+ const accounts=new Set<string>(),characters=new Set<string>(),actors=new Set<string>();
+ const byCharacter=new Map(frozenRoster.map(row=>[row.characterId,row]));
+ if(byCharacter.size!==4)fail('duplicate_frozen_character');
+ const members:PartyV2RunBindingMember[]=[];
+ for(let i=0;i<check.roster.length;i++){
+  const ready=check.roster[i],frozen=byCharacter.get(ready.characterId),actor=combatInput.players[i];
+  if(!frozen||ready.accountId!==frozen.accountId||
+    ready.loadoutId!==frozen.loadoutId||ready.loadoutRevision!==frozen.revision||
+    ready.loadoutSnapshotHash!==frozen.snapshotHash||
+    !validId(ready.accountId)||!validId(ready.characterId)||
+    !validId(ready.loadoutId)||!validId(ready.loadoutSnapshotHash)||
+    accounts.has(ready.accountId)||characters.has(ready.characterId)||
+    !actor||!validId(actor.id)||actors.has(actor.id)||actor.team!=='players'||
+    actor.combatV2?.version!==2)
+   fail('roster_snapshot_mismatch');
+  const canonical=classId(frozen.classId);
+  if(!canonical||actor.classId!==CLASS_NAMES_V2[canonical]||
+    actor.role!==CLASS_ROLES_V2[canonical])
+   fail('class_actor_mismatch');
+  accounts.add(ready.accountId);characters.add(ready.characterId);actors.add(actor.id);
+  members.push({accountId:ready.accountId,characterId:ready.characterId,
+    actorId:actor.id,classId:canonical,loadoutId:ready.loadoutId,
+    loadoutRevision:ready.loadoutRevision,loadoutSnapshotHash:ready.loadoutSnapshotHash});
+ }
+ const roles=members.map(m=>CLASS_ROLES_V2[m.classId]);
+ if(roles.filter(r=>r==='tank').length!==1||roles.filter(r=>r==='damage').length!==2||
+   roles.filter(r=>r==='support').length!==1||
+   new Set(members.filter(m=>CLASS_ROLES_V2[m.classId]==='damage').map(m=>m.classId)).size!==2)
+  fail('invalid_dungeon_roles');
+ if(combatInput.initialPlayerState){
+  const stateIds=Object.keys(combatInput.initialPlayerState).sort();
+  if(stateIds.length!==4||stateIds.some((id,i)=>id!==[...actors].sort()[i]))
+   fail('persistent_state_roster_mismatch');
+ }
+ const binding:PartyV2RunBindingReview={
+  source:'server-persisted-party-v2-review',policy:PARTY_V2_RUN_BINDING_POLICY,
+  runId:input.runId,nodeId:input.nodeId,encounterRevision:input.encounterRevision,
+  stateRevision:input.stateRevision,partyId:check.partyId,readyCheckId:check.id,
+  rosterRevision:check.rosterRevision,contentVersion:input.contentVersion,
+  balanceVersion:input.balanceVersion,seed:input.seed,
+  members:Object.freeze(members.map(m=>Object.freeze({...m}))),
+  combatInputDigest:enemyV2SnapshotDigest(combatInput),
+ };
+ return {binding:Object.freeze(binding),releaseEnabled:false,canAuthorizeCombat:false,
+  canGrantRewards:false,canPersistState:false};
+}

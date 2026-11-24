@@ -4,7 +4,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const source=read('core/ultra-luxe-motion.ts');
 const mod={exports:{}};
 new Function('exports','module','require',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(mod.exports,mod,require);
-const {ULTRA_LUXE_CYCLE_MS,SIGNATURE_PHASE,SIGNATURE_ENERGY,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,FX_POINTS,shiftClosed}=mod.exports;
+const {ULTRA_LUXE_CYCLE_MS,SIGNATURE_PHASE,SIGNATURE_ENERGY,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,FX_POINTS,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES}=mod.exports;
 assert.equal(ULTRA_LUXE_CYCLE_MS,24000);
 assert.equal(SIGNATURE_PHASE.length,SIGNATURE_ENERGY.length);
 assert.deepEqual(SIGNATURE_PHASE,[0,8/24,14/24,16/24,19/24,1]);
@@ -17,6 +17,18 @@ for(const path of [RAIL_PATH,ORBIT_X,ORBIT_Y]){
 }
 for(const [x,y] of RAIL_PATH)assert(x<=26||x>=314||y<=12||y>=190,'rail stays outside the identity and guild slots');
 for(const points of Object.values(FX_POINTS)){assert(points.length<=8);for(const [x,y] of points)assert(x>=0&&x<=340&&y>=0&&y<=205);}
+assert.equal(PET_IDLE_PHASE.length,97);
+for(const kind of ['celestial','draconic','alternate']){
+ const frames=PET_IDLE_POSES[kind];
+ assert.equal(frames.length,PET_IDLE_PHASE.length);
+ assert.deepEqual(frames[0],frames.at(-1));
+ assert(frames.some(p=>p.lift<-1)&&frames.some(p=>p.scaleY>1.01)&&frames.some(p=>Math.abs(p.tilt)>1));
+ for(const p of frames){
+  assert(p.lift>=-5&&p.lift<=0);
+  assert(p.scaleX>=1&&p.scaleX<=1.03&&p.scaleY>=1&&p.scaleY<=1.04);
+  assert(Math.abs(p.tilt)<=4.1&&p.glow>=0&&p.glow<=1);
+ }
+}
 const fx=read('components/profile/UltraLuxeMotion.tsx');
 for(const name of ['soft_glow','drifting_haze']){
  const asset=fs.readFileSync(path.join(root,'../assets/ascendant/shared',name+'.webp'));
@@ -34,5 +46,7 @@ for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
  const environment=s.indexOf('<UltraLuxeEnvironment'),pet=s.indexOf(name.startsWith('Celestial')?"{petMode==='matching'":"{mode==='matching'"),aura=s.indexOf('<UltraLuxePetAura');
  assert(environment>=0&&environment<pet&&pet<aura,'environment is independent; matching aura follows pet condition');
  assert(s.includes('<UltraLuxeRail'));
+ assert(s.includes('petIdleMotion(clock,')&&s.includes('idle.scaleY')&&s.includes('idle.tilt')&&s.includes('idle.lift'));
+ assert(s.includes('<Animated.Image source={alternatePetSource}'));
 }
 console.log('Ultra Luxe shared timing, closed paths, native-driver and pet-independent layer contracts passed.');

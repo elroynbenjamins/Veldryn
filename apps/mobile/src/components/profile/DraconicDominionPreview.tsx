@@ -1,5 +1,5 @@
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
@@ -35,7 +35,8 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const box=(b:{x:number;y:number;w:number;h:number})=>pos(b.x,b.y,b.w,b.h);
  const mode=draconicPetMode(equippedPetId,!!alternatePetSource);
  const pulse=signatureEnergy(clock);
- const float=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,-3*k,0,-3*k,0]});
+ const idle=petIdleMotion(clock,k,mode==='alternate'?'alternate':'draconic');
+ const mirroredBody=[{rotate:idle.tilt},{scaleX:Animated.multiply(idle.scaleX,-1)},{scaleY:idle.scaleY}];
  const ringGlow=clock.interpolate({inputRange:[0,8/24,14/24,16/24,19/24,1],outputRange:[.72,.72,.9,1,.85,.72]});
  return <View style={s.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
@@ -44,13 +45,13 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
    <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
    <UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
    {mode==='matching'?<>
-    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:float}]}]}>
+    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
-     <Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:[{scaleX:-1}]}]}/>
-     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse,transform:[{scaleX:-1}]}]}/>
+     <Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>
+     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.18),Animated.multiply(pulse,.85)),transform:mirroredBody}]}/>
      <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
     </Animated.View>
-   </>:mode==='alternate'&&alternatePetSource?<><Image source={assets.fallbackGlow} resizeMode="contain" style={box(B.glow)}/><Image source={alternatePetSource} resizeMode="contain" style={box(B.alternate)}/></>:null}
+   </>:mode==='alternate'&&alternatePetSource?<><Animated.Image source={assets.fallbackGlow} resizeMode="contain" style={[box(B.glow),{opacity:Animated.add(.55,Animated.multiply(idle.glow,.5))}]}/><Animated.Image source={alternatePetSource} resizeMode="contain" style={[box(B.alternate),{transform:[{translateY:idle.lift},{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/></>:null}
   </View>
   {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
   <View style={[box(B.plate),s.plate]}/>

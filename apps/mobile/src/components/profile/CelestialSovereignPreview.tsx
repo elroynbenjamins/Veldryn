@@ -1,5 +1,5 @@
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,CELESTIAL_IDENTITY_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
@@ -31,7 +31,6 @@ type Props={
  active?:boolean;
  reduceMotion?:boolean;
 };
-const PHASE=[0,.18,.36,.54,.72,.85,1];
 export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,guild,fallback,active=false,reduceMotion=false}:Props){
  const clock=useRef(new Animated.Value(0)).current;
  const [width,setWidth]=useState(0);
@@ -57,9 +56,8 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const scale=width/CELESTIAL_STAGE.width;
  const pos=(x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*scale,top:y*scale,width:w*scale,height:h*scale});
  const box=(b:{x:number;y:number;width:number;height:number})=>pos(b.x,b.y,b.width,b.height);
- const interp=(outputRange:number[])=>clock.interpolate({inputRange:PHASE,outputRange});
  const pulse=signatureEnergy(clock);
- const bob=interp([0,-3,0,-3,0,-5,0]);
+ const idle=petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial');
  const orbit=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']});
  return <View style={styles.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
@@ -73,12 +71,14 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     </Animated.View>
     <Animated.Image source={assets.corona} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
     {petMode==='matching'?<>
-     <Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{translateY:Animated.multiply(bob,scale)}]}]}/>
-     <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
-     <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:pulse,transform:[{translateY:Animated.multiply(bob,scale)}]}]}/>
+     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
+      <Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>
+      <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
+      <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(idle.glow,Animated.multiply(pulse,.35))}]}/>
+     </Animated.View>
     </>:petMode==='alternate'&&alternatePetSource?<>
-     <Image source={assets.fallbackGlow} resizeMode="contain" style={box(CELESTIAL_PET_BOX.glow)}/>
-     <Image source={alternatePetSource} resizeMode="contain" style={box(CELESTIAL_PET_BOX.alternate)}/>
+     <Animated.Image source={assets.fallbackGlow} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.glow),{opacity:Animated.add(.55,Animated.multiply(idle.glow,.5))}]}/>
+     <Animated.Image source={alternatePetSource} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.alternate),{transform:[{translateY:idle.lift},{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>
     </>:null}
    </View>
    {petMode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(CELESTIAL_PET_BOX[petMode])}/>:null}

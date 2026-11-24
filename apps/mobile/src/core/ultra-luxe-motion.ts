@@ -14,3 +14,28 @@ export function shiftClosed<T>(values:readonly T[],offset:number):T[]{
  const a=values.slice(0,-1),n=((offset%a.length)+a.length)%a.length;
  return [...a.slice(n),...a.slice(0,n),a[n]];
 }
+
+/** Smooth sampled, periodic idle motion on the existing native signature clock.
+ * Six breathing cycles per 24 seconds, plus occasional attentive posture changes.
+ * Sampling is done once, not in an animation frame callback. */
+export const PET_IDLE_PHASE=Array.from({length:97},(_,i)=>i/96);
+export type PetIdleKind='celestial'|'draconic'|'alternate';
+export function petIdlePose(kind:PetIdleKind,t:number){
+ const breath=(1-Math.cos(t*Math.PI*12))/2;
+ const sway=Math.sin(t*Math.PI*8);
+ const alert=Math.pow(Math.max(0,Math.sin(t*Math.PI*4)),8);
+ const dragon=kind==='draconic',alternate=kind==='alternate';
+ return {
+  lift:-(alternate?1.8:dragon?2.6:1.6)*breath-(alternate?1:dragon?2:1.2)*alert,
+  scaleX:1+(alternate?.018:dragon?.024:.012)*breath,
+  scaleY:1+(alternate?.025:dragon?.036:.022)*breath,
+  tilt:(alternate?1.4:dragon?2.4:1.25)*sway+(dragon?-1.6:1)*alert,
+  glow:.22+.4*breath,
+ };
+}
+export const PET_IDLE_POSES=Object.fromEntries((['celestial','draconic','alternate'] as const).map(kind=>{
+ const frames=PET_IDLE_PHASE.map(t=>petIdlePose(kind,t));
+ // Make the loop endpoint exactly equal to its start, including floating-point rounding.
+ frames[frames.length-1]=frames[0];
+ return [kind,frames];
+})) as Record<PetIdleKind,ReturnType<typeof petIdlePose>[]>;

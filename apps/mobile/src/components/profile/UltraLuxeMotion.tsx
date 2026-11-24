@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
-import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_ENERGY,shiftClosed} from '../../core/ultra-luxe-motion';
+import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,type PetIdleKind} from '../../core/ultra-luxe-motion';
 const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
 const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
 const light=(theme:'celestial'|'draconic')=>theme==='celestial'?'#ffdf9b':'#ff6928';
@@ -8,6 +8,13 @@ type Clock=Animated.Value;
 type Common={clock:Clock;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType};
 const pos=(k:number,x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
 export function signatureEnergy(clock:Clock){return clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[...SIGNATURE_ENERGY]});}
+/** Reuse the scene clock: no JS frame updates or independent pet timers. */
+export function petIdleMotion(clock:Clock,k:number,kind:PetIdleKind){
+ const frames=PET_IDLE_POSES[kind], inputRange=PET_IDLE_PHASE;
+ const channel=(key:'lift'|'scaleX'|'scaleY'|'glow',factor=1)=>clock.interpolate({inputRange,outputRange:frames.map(p=>p[key]*factor)});
+ return {lift:channel('lift',k),scaleX:channel('scaleX'),scaleY:channel('scaleY'),glow:channel('glow'),
+ tilt:clock.interpolate({inputRange,outputRange:frames.map(p=>p.tilt+'deg')})};
+}
 function pulse(clock:Clock,index:number){
  return clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed([.25,.65,.35,.9,.3,.65,.25,.45,.25],index)});
 }

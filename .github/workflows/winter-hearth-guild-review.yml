@@ -7,12 +7,22 @@ on:
     paths:
       - 'tools/frostfall-winter-hearth-2026-rules*'
       - 'tools/winter-hearth-review/**'
+      - 'backend/supabase/migrations/*winter_hearth*'
+      - 'apps/mobile/src/core/winter-hearth-*'
+      - 'apps/mobile/src/components/WinterHearthGuildScreen.tsx'
+      - 'apps/mobile/src/online/winter-hearth-*'
+      - 'apps/mobile/tests/winter-hearth-2026.ts'
       - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
       - '.github/workflows/winter-hearth-guild-review.yml'
   pull_request:
     paths:
       - 'tools/frostfall-winter-hearth-2026-rules*'
       - 'tools/winter-hearth-review/**'
+      - 'backend/supabase/migrations/*winter_hearth*'
+      - 'apps/mobile/src/core/winter-hearth-*'
+      - 'apps/mobile/src/components/WinterHearthGuildScreen.tsx'
+      - 'apps/mobile/src/online/winter-hearth-*'
+      - 'apps/mobile/tests/winter-hearth-2026.ts'
       - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
       - '.github/workflows/winter-hearth-guild-review.yml'
 
@@ -73,3 +83,9 @@ jobs:
       - name: Assert no actual app inventory or Guild PVE tables exist
         run: |
           test "$(psql -X -v ON_ERROR_STOP=1 -Atc "select count(*) from information_schema.tables where table_schema='public' and table_name in ('guild_members','account_bank_items','guild_pve_treasury_v1')")" = '0'
+
+      - name: Run exact donation RPC migrations in a separate disposable database
+        run: |
+          test "$PGDATABASE" = 'winter_hearth_review_2026'
+          createdb winter_hearth_rpc_review_2026
+          PGDATABASE=winter_hearth_rpc_review_2026 psql -X -v ON_ERROR_STOP=1 -f tools/winter-hearth-review/v2/03_actual_rpc_fixture.sql

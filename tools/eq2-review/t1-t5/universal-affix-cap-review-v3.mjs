@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 const load=p=>JSON.parse(readFileSync(new URL(p,import.meta.url),'utf8'));
-const contract=load('../../../docs/2-0/eq2-universal-affix-cap-review-v3.json');
 const catalogue=load('../../../docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json');
+export function createAffixReview(contract){
 const stats=new Map(contract.stats.map(s=>[s.id,s]));
 const byChannel=new Map(contract.stats.map(s=>[s.channel,s]));
 const items=new Map(catalogue.entries.map(s=>[s.itemId,s]));
@@ -11,7 +11,7 @@ const draw=(rng,max)=>{const v=rng(max);if(!integer(v,0,max-1))fail('invalid_tes
 const bandFor=rarity=>contract.rarityBands.find(b=>b.rarity===rarity);
 const noAuthority=Object.freeze({reviewOnly:true,mayMint:false,mayEquip:false,mayTrade:false,mayApplyEffects:false,releaseApproved:false});
 const roundHalfUp=(n,d)=>Math.floor((n+Math.floor(d/2))/d);
-export function previewUniversalRoll(itemId,testDraw){
+function previewUniversalRoll(itemId,testDraw){
  const item=items.get(itemId);
  if(!item||typeof testDraw!=='function')fail('unknown_item_or_missing_test_draw');
  let cursor=0;
@@ -33,7 +33,7 @@ export function previewUniversalRoll(itemId,testDraw){
  return {version:contract.policy.newRulesVersionCandidate,itemId,tier:item.tier,slot:item.slot,rarity:band.rarity,quality,
   baseMultiplier:contract.policy.baseRarityMultiplier[band.rarity]*(.75+quality*.005),affixes,...noAuthority};
 }
-export function inspectReviewLoadout(rows){
+function inspectReviewLoadout(rows){
  if(!Array.isArray(rows)||rows.length>10)fail('invalid_slot_count');
  const occupied=new Set(),seen=new Set();
  const totals=new Map(contract.stats.map(s=>[s.channel,0]));
@@ -67,8 +67,13 @@ export function inspectReviewLoadout(rows){
  });
  return {channels,slots:occupied.size,scope:'RANDOM_AFFIX_ONLY_NO_INNATE_SET_GEM_OR_SKILL_VALUES',combatBalanceApproved:false,...noAuthority};
 }
-export function capChannel(channel,raw){
+function capChannel(channel,raw){
  const s=byChannel.get(channel);
  if(!s||!integer(raw,0,1000000))fail('invalid_cap_input');
  return Math.min(s.hardCapCentipercent,raw<=s.softKneeCentipercent?raw:s.softKneeCentipercent+Math.floor((raw-s.softKneeCentipercent)/2));
 }
+
+return Object.freeze({previewUniversalRoll,inspectReviewLoadout,capChannel});
+}
+const v3=createAffixReview(load('../../../docs/2-0/eq2-universal-affix-cap-review-v3.json'));
+export const {previewUniversalRoll,inspectReviewLoadout,capChannel}=v3;

@@ -88,8 +88,8 @@ export function DraconicStandardEffects({ember,kind,active,reduceMotion=false}:{
 const s=StyleSheet.create({
  outer:{width:'100%',maxWidth:480,alignSelf:'center'},
  card:{width:'100%',position:'relative',overflow:'hidden',backgroundColor:'#170c13'},
- fill:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
- heat:{...StyleSheet.absoluteFillObject,backgroundColor:'#f65d12'},
+ fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
+ heat:{...StyleSheet.absoluteFill,backgroundColor:'#f65d12'},
  plate:{backgroundColor:'#200e17',borderColor:'#b16a34',borderWidth:1,borderRadius:6},
  portrait:{backgroundColor:'#200e17',borderColor:'#c78c46',borderWidth:1,borderRadius:5},
  protected:{overflow:'hidden'},

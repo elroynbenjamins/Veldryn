@@ -109,7 +109,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
 const styles=StyleSheet.create({
  outer:{width:'100%',maxWidth:480,alignSelf:'center'},
  card:{width:'100%',overflow:'hidden',backgroundColor:'#091225',position:'relative'},
- fillImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
+ fillImage:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
  identityPlate:{borderRadius:6,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228'},
  guildPlate:{borderRadius:4,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228',justifyContent:'center',alignItems:'stretch'},
 });

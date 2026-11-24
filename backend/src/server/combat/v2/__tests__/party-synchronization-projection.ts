@@ -11,6 +11,7 @@ assert.equal(radiant.activeCount,1);
 assert.equal(radiant.scalePercent,100);
 assert.equal(radiant.links[0].id,'radiant_covenant');
 assert.equal(radiant.links[0].nameKey,'party_sync.radiant_covenant.name');
+assert.equal(radiant.links[0].bonuses[0].valueKind,'percent');
 assert.equal(radiant.personalCpDelta,0);
 assert.equal(radiant.requiresProgression,false);
 assert.equal(radiant.canGateEntry,false);
@@ -52,10 +53,12 @@ const capped=projectPartySynchronizationLobbyV2('party_event',[
 ]);
 assert.deepEqual(capped.cappedStats,[{
  stat:'healing_received_pct',statKey:'party_sync.stat.healing_received_pct',
- rawBps:1040,effectiveBps:1000,discardedBps:40,
+ rawBps:1040,effectiveBps:1000,discardedBps:40,valueKind:'percent',
 }]);
 const catalogue=projectPartySynchronizationCatalogueV2();
 assert.equal(catalogue.length,18);
+const predator=catalogue.find(x=>x.id==='predators_instinct')!;
+assert.equal(predator.baseBonuses.find(x=>x.stat==='crit_chance_pp')?.valueKind,'percentage_points');
 assert.equal(new Set(catalogue.map(x=>x.id)).size,18);
 assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&
  x.visibleOnRecruitmentBoard===false&&x.canRankCandidates===false&&

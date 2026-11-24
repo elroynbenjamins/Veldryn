@@ -3,6 +3,8 @@ import type {CombatInput,PersistentActorState} from '../../types';
 import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
 import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
+import type {PartyV2RunBindingReview} from '../party-dungeon-persistence-review';
+import type {VerifiedV2EquipmentEffectSource} from '../equipment-trait-engine-authority';
 import {
  simulateUnifiedEquipmentCombatV2,simulateUnifiedEquipmentPersistedPartyCombatV2,
 } from '../unified-equipment-encounter';
@@ -35,9 +37,9 @@ const party={
  runId:'RUN_10S',nodeId:'NODE_10S',encounterRevision:3,stateRevision:7,
  contentVersion:'content_v2',balanceVersion:'balance_v2',
  readyCheck,frozenRoster,traitPorts,
- verifyPersisted:(binding:Parameters<typeof simulateUnifiedEquipmentPersistedPartyCombatV2>[3]['verifyPersisted'] extends (...a:infer A)=>unknown?A[0]:never,
-  _sources:unknown[],digest:string)=>binding.runId==='RUN_10S'&&
-   digest===binding.combatInputDigest,
+ verifyPersisted:(binding:PartyV2RunBindingReview,
+  _sources:readonly VerifiedV2EquipmentEffectSource[],digest:string)=>
+   binding.runId==='RUN_10S'&&digest===binding.combatInputDigest,
 };
 
 const baseline=simulateUnifiedEquipmentCombatV2(input,builds,runtime,true);
@@ -63,7 +65,8 @@ const carried=Object.fromEntries(players.map(p=>[p.id,{
 } satisfies PersistentActorState]));
 const carriedInput={...input,seed:'QA_PERSISTED_10S_PARTY_CARRIED',initialPlayerState:carried};
 const carriedParty={...party,verifyPersisted:(
- binding:Parameters<typeof party.verifyPersisted>[0],_sources:unknown[],digest:string,
+ binding:PartyV2RunBindingReview,_sources:readonly VerifiedV2EquipmentEffectSource[],
+ digest:string,
  )=>binding.runId==='RUN_10S'&&digest===binding.combatInputDigest};
 const carriedFirst=simulateUnifiedEquipmentPersistedPartyCombatV2(
  carriedInput,builds,runtime,carriedParty,true);

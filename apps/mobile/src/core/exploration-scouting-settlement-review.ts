@@ -7,6 +7,7 @@ import {creditAccountExploration,projectAccountExploration,type AccountExplorati
 import type {CompanionStaminaFoodSelection} from './companion-stamina-selection';
 import {freezeScoutCompanionReward,settleScoutRareReward,applyScoutCompanionProgress,type FrozenScoutReward,type ScoutBondstoneWeek} from './exploration-scouting-companion-reward-review';
 import {companionMission} from '../../../../backend/src/server/companions/content';
+import {rolloverCompanionAssignmentStatuses} from '../../../../backend/src/server/companions/assignments';
 import {awardCompanionMasteryXp,companionMasteryAward} from './companion-mastery';
 import type {CompanionOverflowState,CompanionAssignmentReward} from '../../../../backend/src/server/companions/domain';
 import type {GameState} from './types';
@@ -77,4 +78,27 @@ export function claimScoutingReview(l:ScoutLedger,accountId:string,characterId:s
  if(origin){const key='COMPANION_MISSIONS:'+origin;unlockProgress[key]=add(unlockProgress[key]??0,1);if(camp.frozen.grade==='S'){const gradeKey='COMPANION_S_GRADE:'+origin;unlockProgress[gradeKey]=add(unlockProgress[gradeKey]??0,1);}}
  const claim:Claim={requestId,characterId,xp:credit.awarded,discoveryId:null,kind:'camp',companionReward:structuredClone(q),grade:camp.frozen.grade};
  return {ledger:{...l,account:credit.account,wallets:{...l.wallets,[characterId]:{gold:add(wallet.gold,q.gold),materials}},essence:progressed.essence,authority:{...l.authority,owned:progressed.owned},companionOverflow:progressed.overflow,companionMasteryXp:mastery.companionMasteryXp,companionUnlockProgress:unlockProgress,bondstones:add(l.bondstones??0,q.bondstones),bondstoneWeek:settled.weekly,companionXp,bondXp,camps:l.camps.map(r=>r===camp?{...r,status:'claimed' as const}:r),claims:[...l.claims,claim]},claim};
+}
+
+export function scoutingReportsReview(l:ScoutLedger,accountId:string,characterId:string,now:number){
+ owned(l,accountId,characterId);
+ const training=l.training.filter(r=>r.accountId===accountId).map(r=>({
+  id:r.requestId,source:'training' as const,characterId:r.characterId,otherCharacter:r.characterId!==characterId,status:r.status,
+  claimable:r.status==='active'&&r.characterId===characterId&&now>=r.endsAt,remainingMs:r.status==='active'?Math.max(0,r.endsAt-now):0,
+  routeId:r.routeId,kind:r.kind,explorationXp:r.xp,discovery:r.discovery,trainingMinutes:r.trainingMinutes,
+ }));
+ const camps=l.camps.filter(r=>r.accountId===accountId).map(r=>{
+  const claim=l.claims.find(c=>c.requestId===r.requestId);
+  return {id:r.requestId,source:'scouting' as const,characterId:r.characterId,otherCharacter:r.characterId!==characterId,status:r.status,
+   claimable:r.status==='active'&&r.characterId===characterId&&now>=r.endsAt,remainingMs:r.status==='active'?Math.max(0,r.endsAt-now):0,
+   missionId:r.missionId,companionIds:[...r.companionIds],explorationXp:r.explorationXp,
+   preview:r.status==='claimed'?undefined:{gold:r.quote.preview.gold,essence:r.quote.preview.essence,companionXp:r.quote.preview.companionXpPerScout,bondXp:r.quote.preview.bondXpPerScout,bondstoneEligible:r.quote.preview.bondstoneEligible},
+   final:r.status==='claimed'&&claim?.companionReward?{grade:claim.grade,reward:structuredClone(claim.companionReward)}:undefined};
+ });
+ const legacy=rolloverCompanionAssignmentStatuses(l.authority.legacyAssignments,now).map(r=>({
+  id:r.assignmentId,source:'legacy' as const,characterId:characterId,otherCharacter:false,status:r.status,
+  claimable:r.status==='completed',remainingMs:r.status==='active'?Math.max(0,Date.parse(r.endsAt)-now):0,missionId:r.missionId,
+  companionIds:[...r.companionIds],final:r.status==='claimed'&&r.rewardSnapshot?{grade:r.performanceGrade,reward:structuredClone(r.rewardSnapshot)}:undefined,
+ }));
+ return {training,camps,legacy,all:[...training,...camps,...legacy]};
 }

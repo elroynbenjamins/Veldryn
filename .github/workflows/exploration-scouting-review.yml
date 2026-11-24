@@ -27,6 +27,9 @@ on:
       - 'apps/mobile/src/components/ExplorationScoutingAssignmentReview.tsx'
       - 'apps/mobile/src/core/exploration-scouting-content-review.ts'
       - 'apps/mobile/tests/exploration-scouting-ui-content-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingReportsReview.tsx'
+      - 'apps/mobile/src/core/exploration-scouting-release-guard-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-reports-release-review.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'
@@ -72,3 +75,5 @@ jobs:
       - run: node .core-build/apps/mobile/tests/exploration-scouting-companion-reward-review.js
 
       - run: node .core-build/apps/mobile/tests/exploration-scouting-ui-content-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-reports-release-review.js

@@ -203,7 +203,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const hc=clamp(hitChance(source.definition.stats.accuracy,
       target.definition.stats.evasion+v2Evasion,accuracyScale)+
       (sourceGear?.accuracyPp??0)-(targetGear?.evasionPp??0),0,1);
-    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players')equipmentTraitRuntime?.miss(source.definition.id,abilityId);events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
+    if(rng.next(`${now}:${source.definition.id}:${abilityId}:hit`)>hc){if(eventType==='damage'){if(source.definition.team==='players'){equipmentTraitRuntime?.miss(source.definition.id,abilityId);eq2PrivateHit?.miss(source.definition.id,abilityId);}events.push({atMs:now,type:'miss',actorId:source.definition.id,targetId:target.definition.id,abilityId});if(source.definition.team==='enemies'){resource(target,'evade',now,abilityId);
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
@@ -297,12 +297,16 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         abilityId:'V2_EQUIPMENT_TRAIT:'+adjusted.trigger.traitId,
         amount:Math.round(adjusted.trigger.amount*100)/100,detail:'original_direct_hit_only'});
     }
-    // V22 private QA only: confirmed original hit before shield/HP resolution.
-    if(eq2PrivateHit&&source.definition.team==='players'&&target.definition.team==='enemies'){
-      const adjusted=eq2PrivateHit.beforeDirectHit({now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
-        originalClassAbility:source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')),
-        direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
-        sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield,raw});
+    // Private QA only. Receipt object is shared across pre-hit and post-HP
+    // phases, never exposed in CombatInput or reused by secondary effects.
+    const eq2Event=eq2PrivateHit&&source.definition.team==='players'&&target.definition.team==='enemies'?{
+      now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+      originalClassAbility:source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')),
+      direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
+      sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield,raw
+    }:undefined;
+    if(eq2PrivateHit&&eq2Event){
+      const adjusted=eq2PrivateHit.beforeDirectHit(eq2Event);
       if(adjusted.activated.length){
         const extra=Math.max(0,Math.min(target.hp,adjusted.raw-target.shield)-Math.min(target.hp,raw-target.shield));
         raw=adjusted.raw;
@@ -317,6 +321,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const dealt=Math.max(0,source.combatV2&&eventType==='damage'
       ?Math.min(target.hp,raw-absorbed):raw-absorbed);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    if(eq2PrivateHit&&eq2Event){
+      for(const id of eq2PrivateHit.afterDirectHit(eq2Event,dealt))
+        events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+          abilityId:'V2_QA_CHARGE:'+id,detail:'private_qa_charge_earned'});
+    }
     // Echoing Strike is the only extra direct-skill damage hook in this pass.
     // It is applied ONCE as tagged secondary HP loss, not via applyDamage,
     // so no crit, lifesteal, Ward or gem/trait reentry is possible.

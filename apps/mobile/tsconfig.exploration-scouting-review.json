@@ -2,7 +2,8 @@
   "extends": "./tsconfig.world-boss-v12.json",
   "include": [
     "tests/exploration-scouting-review.ts",
-    "tests/exploration-scouting-tutorial-review.ts"
+    "tests/exploration-scouting-tutorial-review.ts",
+    "tests/exploration-scouting-missions-review.ts"
   ],
   "exclude": []
 }

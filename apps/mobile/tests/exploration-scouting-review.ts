@@ -4,7 +4,7 @@ const state:ScoutState={accountId:'account',characterId:'char',explorationLevel:
 const authority:ScoutAuthority={owned:{UNIT_001:{companionId:'UNIT_001',level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false}},legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
 const start={state,authority,receipts:[],routeId:'scout2:SCOUT_GREENFIELDS',kind:'route' as const,companionIds:[],requestId:'request_01',now:1000};
 assert.equal(EXPLORATION_2_RELEASED,false);
-assert.equal(SCOUT_ROUTES.length,11);
+assert.equal(SCOUT_ROUTES.length,14);
 assert.equal(SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_ASHLANDS')?.released,false);
 const a=reserveScout(start);
 assert.equal(a.loanedGuide,true);assert.equal(a.xp,24);assert.equal(a.endsAt,61000);
@@ -38,3 +38,7 @@ assert.equal(scoutClaimPreview(a,known,a.endsAt).explorationXp,0);
 const iron=SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_IRONWOOD')!;
 assert.equal(scoutingAvailability({...state,explorationLevel:3},iron,'route'),'prerequisite');
 assert.equal(scoutingAvailability({...state,explorationLevel:3,discoveredRouteIds:['SCOUT_SILVERBROOK']},iron,'route'),'available');
+
+assert.deepEqual(SCOUT_ROUTES.filter(r=>r.zoneId==='FROSTMARCH').map(r=>r.areaId),['ZONE_011','ZONE_012','ZONE_013','ZONE_015']);
+assert.equal(new Set(SCOUT_ROUTES.map(r=>r.id)).size,SCOUT_ROUTES.length);
+for(const route of SCOUT_ROUTES.filter(r=>r.released)){if(route.prerequisite)assert.ok(SCOUT_ROUTES.some(r=>r.legacyId===route.prerequisite&&r.released));}

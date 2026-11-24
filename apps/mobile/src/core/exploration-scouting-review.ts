@@ -1,5 +1,6 @@
 /** Hidden Exploration 2.0 review. No live command, wallet, XP or unlock mutation. */
 import {EXPLORATION_ROUTES,explorationGatheringSpeedBonus,explorationScoutingSpeedMultiplier} from '../content/exploration';
+import {REGIONAL_AREAS} from '../content/regional-areas';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
 import {companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {busyCompanionIds,rolloverCompanionAssignmentStatuses} from '../../../../backend/src/server/companions/assignments';
@@ -8,13 +9,22 @@ import type {CompanionAssignment,OwnedCompanionSnapshot} from '../../../../backe
 export const EXPLORATION_2_RELEASED=false as const;
 export const SCOUT_POLICY_VERSION='exploration-2-review-v1';
 export type ScoutKind='route'|'practice'|'survey';
-export type ScoutRoute={id:string;legacyId:string;zoneId:string;name:string;requiredExplorationLevel:number;legacyCharacterLevel:number;prerequisite?:string;targetRegion?:string;monsterId?:string;seconds:number;xp:number;released:boolean};
-export const SCOUT_ROUTES:readonly ScoutRoute[]=EXPLORATION_ROUTES.map(r=>({
- id:'scout2:'+r.id,legacyId:r.id,zoneId:r.zoneId,name:r.name,requiredExplorationLevel:r.requiredExplorationLevel,legacyCharacterLevel:r.requiredLevel,
+export type ScoutRoute={id:string;legacyId:string;zoneId:string;name:string;areaId?:string;requiredExplorationLevel:number;legacyCharacterLevel:number;prerequisite?:string;targetRegion?:string;monsterId?:string;seconds:number;xp:number;released:boolean};
+export const SCOUT_ROUTES:readonly ScoutRoute[]=[...EXPLORATION_ROUTES.map(r=>({
+ id:'scout2:'+r.id,legacyId:r.id,zoneId:r.zoneId,name:r.name,areaId:r.areaId??(r.id==='SCOUT_FROSTMARCH'?'ZONE_011':undefined),requiredExplorationLevel:r.requiredExplorationLevel,legacyCharacterLevel:r.requiredLevel,
  prerequisite:r.prerequisiteRouteId??({SCOUT_SILVERBROOK:'SCOUT_GREENFIELDS',SCOUT_IRONWOOD:'SCOUT_SILVERBROOK',SCOUT_OLD_MINES:'SCOUT_IRONWOOD',SCOUT_KINGS_ROAD:'SCOUT_OLD_MINES',SCOUT_SUNSCAR:'SCOUT_KINGS_ROAD',SCOUT_FROSTMARCH:'SCOUT_SUNSCAR'} as Record<string,string>)[r.id],
  targetRegion:r.unlockZoneId,monsterId:r.unlockMonsterId,seconds:r.seconds,xp:r.xp,
  released:WORLD_ZONES.some(z=>z.id===r.zoneId&&!worldZoneInDevelopment(z))
-}));
+})),
+ ...([
+  {legacyId:'SCOUT2_FROST_WHITEPINE',areaId:'ZONE_012',prerequisite:'SCOUT_FROSTMARCH',requiredExplorationLevel:13,seconds:252,xp:530},
+  {legacyId:'SCOUT2_FROST_SHIVERLAKE',areaId:'ZONE_013',prerequisite:'SCOUT2_FROST_WHITEPINE',requiredExplorationLevel:14,seconds:264,xp:590},
+  {legacyId:'SCOUT2_FROST_WYRMSPINE',areaId:'ZONE_015',prerequisite:'SCOUT2_FROST_SHIVERLAKE',requiredExplorationLevel:15,seconds:276,xp:650},
+ ] as const).map(r=>{
+  const area=REGIONAL_AREAS.find(a=>a.regionId==='FROSTMARCH'&&a.id===r.areaId)!;
+  return {...r,id:'scout2:'+r.legacyId,zoneId:area.regionId,name:'Survey '+area.name,legacyCharacterLevel:area.minLevel,released:true};
+ })
+];
 export type ScoutState={accountId:string;characterId:string;explorationLevel:number;explorationXp:number;discoveredRouteIds:readonly string[];visitedZoneIds:readonly string[]};
 export type ScoutReceipt={accountId:string;characterId:string;requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];loanedGuide:boolean;startedAt:number;endsAt:number;xp:number;policyVersion:string;status:'active'|'claimed';discovery:boolean};
 export type ScoutAuthority={owned:Record<string,OwnedCompanionSnapshot>;legacyAssignments:CompanionAssignment[];equipped:ReadonlySet<string>;trialLocked:ReadonlySet<string>;unavailable:ReadonlySet<string>};

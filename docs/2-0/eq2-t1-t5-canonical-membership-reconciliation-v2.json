@@ -66,6 +66,12 @@
       "branch": "review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124",
       "path": "backend/src/server/combat/v2/set-catalog.ts",
       "blobSha": "b5b0e12e43649a05723c8471cb17de4ac8a0df0b"
+    },
+    {
+      "id": "replacementRecipes",
+      "branch": "review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124",
+      "path": "docs/2-0/eq2-t4-replacement-recipe-review-v2.json",
+      "blobSha": "a7b3cfdeb1eef813fdaa51bd788519173930891c"
     }
   ],
   "summary": {
@@ -76,12 +82,12 @@
     "originalCompactMembers": 42,
     "expandedMembers": 204,
     "expandedWithExistingAuthoring": 194,
-    "replacementMembersNeedingRecipeReauthoring": 10,
+    "replacementMembersNeedingRecipeReauthoring": 0,
     "existingRecipeReviewRows": 746,
     "retainedT1T4RecipeReviewRows": 726,
     "retiredRecipeRows": 20,
-    "newReplacementRecipeRoutesRequired": 20,
-    "recipeLinkedItemsT1T4": 363,
+    "newReplacementRecipeRoutesRequired": 0,
+    "recipeLinkedItemsT1T4": 373,
     "activeCompatibilityCandidates": 69,
     "distinctCandidateForgeIds": 69,
     "exactBossPoolItems": 79,
@@ -103,15 +109,18 @@
       "EXACT_FROZEN_BOSS_POOL_REVIEW_ONLY": 79,
       "NEW_DRAFT_TEMPLATE_AUTHORED": 125,
       "PINNED_FORGE_TWO_REVIEW_ROUTES": 169,
-      "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING": 10,
       "T5_SINGLE_DRAFT_RECIPE_NEEDS_ALTERNATE": 10,
       "T5_TWO_DRAFT_RECIPE_METHODS": 86,
-      "UNAPPROVED_EXACT_SOURCE_COMPATIBILITY": 69
+      "UNAPPROVED_EXACT_SOURCE_COMPATIBILITY": 69,
+      "REPLACEMENT_TWO_NEW_REVIEW_ROUTES": 10
     },
     "thresholds": 195,
     "mayMintCount": 0,
     "mayEquipCount": 0,
-    "mayTradeCount": 0
+    "mayTradeCount": 0,
+    "newReplacementRecipeReviewRows": 20,
+    "currentT1T4RecipeReviewRows": 746,
+    "replacementMembersWithNewReviewRecipes": 10
   },
   "policy": {
     "noOriginalForgeIdentityReuse": true,
@@ -13760,11 +13769,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_ASHGUARD_AMULET_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_ASHGUARD_AMULET_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13792,11 +13806,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "attack_defense",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13824,11 +13843,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "attack_defense",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13856,11 +13880,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_ASHGUARD_RING_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_ASHGUARD_RING_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13888,11 +13917,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "defense_health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13920,11 +13954,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13952,11 +13991,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "defense_health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -13984,11 +14028,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "defense_health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -14016,11 +14065,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "defense_health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -14048,11 +14102,16 @@
       "combatEnabled": false,
       "needsProductionSourceApproval": true,
       "reconciliation": {
-        "sourceStatus": "REPLACEMENT_NEEDS_EXACT_RECIPE_REAUTHORING",
-        "recipeIds": [],
-        "recipeSource": null,
+        "sourceStatus": "REPLACEMENT_TWO_NEW_REVIEW_ROUTES",
+        "recipeIds": [
+          "EQ2_LAUNCH_T4_BASTIONMAIL_RING_FOUNDATION_REVIEW_V2",
+          "EQ2_LAUNCH_T4_BASTIONMAIL_RING_ALTERNATE_REVIEW_V2"
+        ],
+        "recipeSource": "replacementRecipes",
+        "profession": "smithing",
+        "baseStatsProfile": "defense_health",
         "requiresDistinctNewItemIdentity": true,
-        "recipeRoutesMissing": 2,
+        "sourceCandidate": null,
         "authority": false,
         "registered": false,
         "sourceApprovalRequired": true
@@ -22590,7 +22649,7 @@
         "EQ2_LAUNCH_T4_ASHGUARD_RING"
       ],
       "itemCount": 4,
-      "status": "REPLACEMENT_DRAFT_SOURCE_PENDING",
+      "status": "REPLACEMENT_DRAFT_RECIPES_AUTHORED_NOT_APPROVED",
       "setEffectsRuntime": false,
       "sourcePath": "docs/equipment-2-0/t4-replacement-set-catalogue-review-v1.json",
       "reconciliation": {
@@ -22621,7 +22680,7 @@
         "EQ2_LAUNCH_T4_BASTIONMAIL_RING"
       ],
       "itemCount": 6,
-      "status": "REPLACEMENT_DRAFT_SOURCE_PENDING",
+      "status": "REPLACEMENT_DRAFT_RECIPES_AUTHORED_NOT_APPROVED",
       "setEffectsRuntime": false,
       "sourcePath": "docs/equipment-2-0/t4-replacement-set-catalogue-review-v1.json",
       "reconciliation": {
@@ -23875,7 +23934,7 @@
     },
     {
       "id": "T4_REPLACEMENT_20_ROUTES",
-      "status": "REAUTHOR_PENDING_NO_ALIAS"
+      "status": "20_DRAFT_ROUTES_AUTHORED_COST_AND_SOURCE_APPROVAL_PENDING"
     },
     {
       "id": "SOURCE_COMPATIBILITY_IS_NOT_MEMBERSHIP",

@@ -30,8 +30,9 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
  const r=(text:string,params?:Record<string,string|number>)=>recentScreenText(language,text,params);
  const C=useGameTheme();
  const [slot,setSlot]=useState<Slot>('name');
- const collectibleIds=visibleCollectiblePlayerBadgeIds();
- const owned=(badges.ownedExtras??[]).filter(id=>collectibleIds.includes(id));
+ const ownedExtras=badges.ownedExtras??[];
+ const collectibleIds=visibleCollectiblePlayerBadgeIds(ownedExtras);
+ const owned=ownedExtras.filter(id=>collectibleIds.includes(id));
  const showcase=(badges.featuredExtras??[]).filter(playerBadgeReleased);
  const projectedEquipped:EquippablePlayerBadgeId|null=badges.identity?.equippedBadgeId!==undefined
   ?badges.identity.equippedBadgeId

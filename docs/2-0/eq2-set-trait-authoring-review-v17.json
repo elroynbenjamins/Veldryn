@@ -1,0 +1,4795 @@
+{
+  "schema": "eq2-set-trait-authoring-review-v17",
+  "status": "HIDDEN_REVIEW_ONLY",
+  "sourceHead": "9f544b1b9538797b5159dda73d10fc8b39e03667",
+  "policy": {
+    "thresholds": "canonical V2 attainable thresholds only; V15 original optional extra 3p on 4p sets not adopted",
+    "newStructuralTierScale": [
+      0.8,
+      0.9,
+      1,
+      1.1
+    ],
+    "cooldown": "per owner and effect identity, same family across item versions",
+    "charges": "one-use no stacking or refresh until next eligible activation",
+    "exclusions": [
+      "duplicate_event",
+      "proc_recursive",
+      "reflect_recursive",
+      "self_damage",
+      "miss",
+      "overheal",
+      "absorbed_only",
+      "unauthorized_skill",
+      "true_damage_for_nontrue_effects"
+    ],
+    "shield": "candidate strongest same-effect shield replaces only if larger; no stacking across same effect; no claim of global shield policy",
+    "setSource": "34 V7 proposals preserved verbatim; 61 new numerical designs not approved",
+    "runtime": false
+  },
+  "sets": [
+    {
+      "setId": "EQ2_SET_FIELDBORN_ACOLYTE",
+      "tier": 1,
+      "role": "support",
+      "memberIds": [
+        "EQ2_FIELDBORN_ACOLYTE_AMULET",
+        "EQ2_FIELDBORN_ACOLYTE_CAPE"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 1.5,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_FIELDBORN_GUARD",
+      "tier": 1,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_FIELDBORN_GUARD_CHEST",
+        "EQ2_FIELDBORN_GUARD_HELMET"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.5,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_FIELDBORN_TRAIL",
+      "tier": 1,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_FIELDBORN_TRAIL_BOOTS",
+        "EQ2_FIELDBORN_TRAIL_GLOVES"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 1.5,
+          "unit": "percentage_points"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_blackscript",
+      "tier": 1,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_BLACKSCRIPT_BOOTS",
+        "EQ2_LAUNCH_T1_BLACKSCRIPT_CAPE",
+        "EQ2_LAUNCH_T1_BLACKSCRIPT_CHEST",
+        "EQ2_LAUNCH_T1_BLACKSCRIPT_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_class_spell_hit",
+          "effect": "next_direct_spell_damage",
+          "value": 4.8,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_bloodsteel",
+      "tier": 1,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_BLOODSTEEL_AMULET",
+        "EQ2_LAUNCH_T1_BLOODSTEEL_BOOTS",
+        "EQ2_LAUNCH_T1_BLOODSTEEL_GLOVES",
+        "EQ2_LAUNCH_T1_BLOODSTEEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss",
+          "effect": "next_basic_damage",
+          "value": 5.6,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_breakerforge",
+      "tier": 1,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_BREAKERFORGE_AMULET",
+        "EQ2_LAUNCH_T1_BREAKERFORGE_BOOTS",
+        "EQ2_LAUNCH_T1_BREAKERFORGE_CHEST",
+        "EQ2_LAUNCH_T1_BREAKERFORGE_HELMET",
+        "EQ2_LAUNCH_T1_BREAKERFORGE_LEGS",
+        "EQ2_LAUNCH_T1_BREAKERFORGE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit",
+          "effect": "next_basic_damage",
+          "value": 4.8,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit_target_below_30",
+          "effect": "direct_hit_damage",
+          "value": 6.4,
+          "unit": "relative_percent",
+          "durationSeconds": 0,
+          "internalCooldownSeconds": 22,
+          "target": "enemy"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_brightweave",
+      "tier": 1,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_BRIGHTWEAVE_AMULET",
+        "EQ2_LAUNCH_T1_BRIGHTWEAVE_CAPE",
+        "EQ2_LAUNCH_T1_BRIGHTWEAVE_CHEST",
+        "EQ2_LAUNCH_T1_BRIGHTWEAVE_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal",
+          "effect": "shield",
+          "value": 2.4,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_citadel",
+      "tier": 1,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_CITADEL_BOOTS",
+        "EQ2_LAUNCH_T1_CITADEL_CAPE",
+        "EQ2_LAUNCH_T1_CITADEL_CHEST",
+        "EQ2_LAUNCH_T1_CITADEL_HELMET",
+        "EQ2_LAUNCH_T1_CITADEL_LEGS",
+        "EQ2_LAUNCH_T1_CITADEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_6pct",
+          "effect": "shield",
+          "value": 3.2,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 24,
+          "target": "self"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "cross_below_35pct_hp",
+          "effect": "incoming_nontrue_reduction",
+          "value": 4.8,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 35,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_echohide",
+      "tier": 1,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_ECHOHIDE_BOOTS",
+        "EQ2_LAUNCH_T1_ECHOHIDE_HELMET",
+        "EQ2_LAUNCH_T1_ECHOHIDE_LEGS",
+        "EQ2_LAUNCH_T1_ECHOHIDE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "ally_direct_nontrue_hp_loss",
+          "effect": "next_effective_heal_on_same_ally",
+          "value": 5.6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_horizon",
+      "tier": 1,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_HORIZON_AMULET",
+        "EQ2_LAUNCH_T1_HORIZON_GLOVES",
+        "EQ2_LAUNCH_T1_HORIZON_HELMET",
+        "EQ2_LAUNCH_T1_HORIZON_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 0.8,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "three_consecutive_direct_weapon_hits_same_target",
+          "effect": "next_direct_weapon_damage",
+          "value": 5.6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_oathplate",
+      "tier": 1,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_OATHPLATE_CAPE",
+        "EQ2_LAUNCH_T1_OATHPLATE_CHEST",
+        "EQ2_LAUNCH_T1_OATHPLATE_HELMET",
+        "EQ2_LAUNCH_T1_OATHPLATE_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_5pct",
+          "effect": "defense_pct",
+          "value": 3.2,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_quickstep",
+      "tier": 1,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_QUICKSTEP_BOOTS",
+        "EQ2_LAUNCH_T1_QUICKSTEP_CAPE",
+        "EQ2_LAUNCH_T1_QUICKSTEP_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 0.8,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 5.6,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_rootshield",
+      "tier": 1,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_ROOTSHIELD_BOOTS",
+        "EQ2_LAUNCH_T1_ROOTSHIELD_CAPE",
+        "EQ2_LAUNCH_T1_ROOTSHIELD_CHEST",
+        "EQ2_LAUNCH_T1_ROOTSHIELD_HELMET",
+        "EQ2_LAUNCH_T1_ROOTSHIELD_LEGS",
+        "EQ2_LAUNCH_T1_ROOTSHIELD_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 1.6,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_50",
+          "effect": "shield",
+          "value": 3.2,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "healed_target"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "successful_authored_cleanse",
+          "effect": "incoming_nontrue_reduction",
+          "value": 4,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 30,
+          "target": "cleansed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_stormthread",
+      "tier": 1,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_STORMTHREAD_BOOTS",
+        "EQ2_LAUNCH_T1_STORMTHREAD_GLOVES",
+        "EQ2_LAUNCH_T1_STORMTHREAD_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 1.2,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "authenticated_class_ally_buff",
+          "effect": "incoming_nontrue_reduction",
+          "value": 2.4,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 20,
+          "target": "buffed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t1_vigilhide",
+      "tier": 1,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T1_VIGILHIDE_BOOTS",
+        "EQ2_LAUNCH_T1_VIGILHIDE_GLOVES",
+        "EQ2_LAUNCH_T1_VIGILHIDE_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 0.8,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "defense_pct",
+          "value": 3.2,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_CHEST",
+        "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_HELMET",
+        "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_LEGS",
+        "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Rootbound Heartward Foundation",
+            "effect": "+3% Defense",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Rootbound Heartward Signature",
+            "effect": "After eligible direct non-true HP loss of >=6% own Max HP, gain a 4%-Max-HP shield for 6s",
+            "internalCooldownSeconds": 22,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CAPE",
+        "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CHEST",
+        "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_HELMET",
+        "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Rootbound Lifebloom Foundation",
+            "effect": "+3% Healing Power",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Rootbound Lifebloom Signature",
+            "effect": "An effective direct class heal grants its target +3% Defense for 6s",
+            "internalCooldownSeconds": 20,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_AMULET",
+        "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_BOOTS",
+        "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_CAPE",
+        "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Rootbound Thornstrider Foundation",
+            "effect": "+3% Attack",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Rootbound Thornstrider Signature",
+            "effect": "After two direct class ability hits against the same enemy, the next direct class ability hit within 6s deals +6% damage",
+            "internalCooldownSeconds": 18,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_IRONWOOD_MENDER",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_IRONWOOD_MENDER_AMULET",
+        "EQ2_IRONWOOD_MENDER_GLOVES",
+        "EQ2_IRONWOOD_MENDER_HELMET"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_authored_cleanse",
+          "effect": "incoming_nontrue_reduction",
+          "value": 2.75,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 20,
+          "target": "cleansed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_IRONWOOD_SENTINEL",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_IRONWOOD_SENTINEL_BOOTS",
+        "EQ2_IRONWOOD_SENTINEL_CHEST",
+        "EQ2_IRONWOOD_SENTINEL_LEGS"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_5pct",
+          "effect": "next_direct_nontrue_reduction",
+          "value": 2.75,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_IRONWOOD_STALKER",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_IRONWOOD_STALKER_CAPE",
+        "EQ2_IRONWOOD_STALKER_GLOVES",
+        "EQ2_IRONWOOD_STALKER_HELMET"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 2,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "direct_hit_on_authored_marked_target",
+          "effect": "next_direct_class_ability_damage",
+          "value": 2.75,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_blackscript",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_BLACKSCRIPT_BOOTS",
+        "EQ2_LAUNCH_T2_BLACKSCRIPT_CAPE",
+        "EQ2_LAUNCH_T2_BLACKSCRIPT_CHEST",
+        "EQ2_LAUNCH_T2_BLACKSCRIPT_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_class_spell_hit",
+          "effect": "next_direct_spell_damage",
+          "value": 5.4,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_bloodsteel",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_BLOODSTEEL_AMULET",
+        "EQ2_LAUNCH_T2_BLOODSTEEL_BOOTS",
+        "EQ2_LAUNCH_T2_BLOODSTEEL_GLOVES",
+        "EQ2_LAUNCH_T2_BLOODSTEEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss",
+          "effect": "next_basic_damage",
+          "value": 6.3,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_breakerforge",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_BREAKERFORGE_AMULET",
+        "EQ2_LAUNCH_T2_BREAKERFORGE_BOOTS",
+        "EQ2_LAUNCH_T2_BREAKERFORGE_CHEST",
+        "EQ2_LAUNCH_T2_BREAKERFORGE_HELMET",
+        "EQ2_LAUNCH_T2_BREAKERFORGE_LEGS",
+        "EQ2_LAUNCH_T2_BREAKERFORGE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit",
+          "effect": "next_basic_damage",
+          "value": 5.4,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit_target_below_30",
+          "effect": "direct_hit_damage",
+          "value": 7.2,
+          "unit": "relative_percent",
+          "durationSeconds": 0,
+          "internalCooldownSeconds": 22,
+          "target": "enemy"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_brightweave",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_BRIGHTWEAVE_AMULET",
+        "EQ2_LAUNCH_T2_BRIGHTWEAVE_CAPE",
+        "EQ2_LAUNCH_T2_BRIGHTWEAVE_CHEST",
+        "EQ2_LAUNCH_T2_BRIGHTWEAVE_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal",
+          "effect": "shield",
+          "value": 2.7,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_citadel",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_CITADEL_BOOTS",
+        "EQ2_LAUNCH_T2_CITADEL_CAPE",
+        "EQ2_LAUNCH_T2_CITADEL_CHEST",
+        "EQ2_LAUNCH_T2_CITADEL_HELMET",
+        "EQ2_LAUNCH_T2_CITADEL_LEGS",
+        "EQ2_LAUNCH_T2_CITADEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_6pct",
+          "effect": "shield",
+          "value": 3.6,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 24,
+          "target": "self"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "cross_below_35pct_hp",
+          "effect": "incoming_nontrue_reduction",
+          "value": 5.4,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 35,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_echohide",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_ECHOHIDE_BOOTS",
+        "EQ2_LAUNCH_T2_ECHOHIDE_HELMET",
+        "EQ2_LAUNCH_T2_ECHOHIDE_LEGS",
+        "EQ2_LAUNCH_T2_ECHOHIDE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "ally_direct_nontrue_hp_loss",
+          "effect": "next_effective_heal_on_same_ally",
+          "value": 6.3,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_horizon",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_HORIZON_AMULET",
+        "EQ2_LAUNCH_T2_HORIZON_GLOVES",
+        "EQ2_LAUNCH_T2_HORIZON_HELMET",
+        "EQ2_LAUNCH_T2_HORIZON_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 0.9,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "three_consecutive_direct_weapon_hits_same_target",
+          "effect": "next_direct_weapon_damage",
+          "value": 6.3,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_oathplate",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_OATHPLATE_CAPE",
+        "EQ2_LAUNCH_T2_OATHPLATE_CHEST",
+        "EQ2_LAUNCH_T2_OATHPLATE_HELMET",
+        "EQ2_LAUNCH_T2_OATHPLATE_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_5pct",
+          "effect": "defense_pct",
+          "value": 3.6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_quickstep",
+      "tier": 2,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_QUICKSTEP_BOOTS",
+        "EQ2_LAUNCH_T2_QUICKSTEP_CAPE",
+        "EQ2_LAUNCH_T2_QUICKSTEP_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 0.9,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 6.3,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_rootshield",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_ROOTSHIELD_BOOTS",
+        "EQ2_LAUNCH_T2_ROOTSHIELD_CAPE",
+        "EQ2_LAUNCH_T2_ROOTSHIELD_CHEST",
+        "EQ2_LAUNCH_T2_ROOTSHIELD_HELMET",
+        "EQ2_LAUNCH_T2_ROOTSHIELD_LEGS",
+        "EQ2_LAUNCH_T2_ROOTSHIELD_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 1.8,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_50",
+          "effect": "shield",
+          "value": 3.6,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "healed_target"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "successful_authored_cleanse",
+          "effect": "incoming_nontrue_reduction",
+          "value": 4.5,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 30,
+          "target": "cleansed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_stormthread",
+      "tier": 2,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_STORMTHREAD_BOOTS",
+        "EQ2_LAUNCH_T2_STORMTHREAD_GLOVES",
+        "EQ2_LAUNCH_T2_STORMTHREAD_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 1.35,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "authenticated_class_ally_buff",
+          "effect": "incoming_nontrue_reduction",
+          "value": 2.7,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 20,
+          "target": "buffed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t2_vigilhide",
+      "tier": 2,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T2_VIGILHIDE_BOOTS",
+        "EQ2_LAUNCH_T2_VIGILHIDE_GLOVES",
+        "EQ2_LAUNCH_T2_VIGILHIDE_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 0.9,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "defense_pct",
+          "value": 3.6,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_SUNSCAR_BREAKSTEEL",
+      "tier": 3,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_SUNSCAR_BREAKSTEEL_CHEST",
+        "EQ2_SUNSCAR_BREAKSTEEL_GLOVES",
+        "EQ2_SUNSCAR_BREAKSTEEL_LEGS"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "penetration_pp",
+          "value": 2.5,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "direct_physical_hit_on_armored_target",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 3.25,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_SUNSCAR_THORNHIDE",
+      "tier": 3,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_SUNSCAR_THORNHIDE_CAPE",
+        "EQ2_SUNSCAR_THORNHIDE_CHEST",
+        "EQ2_SUNSCAR_THORNHIDE_GLOVES"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 2.5,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss",
+          "effect": "next_basic_hit_self_heal",
+          "value": 1.5,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_SUNSCAR_WILDROOT",
+      "tier": 3,
+      "role": "support",
+      "memberIds": [
+        "EQ2_SUNSCAR_WILDROOT_BOOTS",
+        "EQ2_SUNSCAR_WILDROOT_CAPE",
+        "EQ2_SUNSCAR_WILDROOT_HELMET"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "ward_pp",
+          "value": 2.5,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_on_ally_with_hostile_dot",
+          "effect": "periodic_nontrue_reduction",
+          "value": 3.25,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_blackscript",
+      "tier": 3,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_BLACKSCRIPT_BOOTS",
+        "EQ2_LAUNCH_T3_BLACKSCRIPT_CAPE",
+        "EQ2_LAUNCH_T3_BLACKSCRIPT_CHEST",
+        "EQ2_LAUNCH_T3_BLACKSCRIPT_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_class_spell_hit",
+          "effect": "next_direct_spell_damage",
+          "value": 6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_bloodsteel",
+      "tier": 3,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_BLOODSTEEL_AMULET",
+        "EQ2_LAUNCH_T3_BLOODSTEEL_BOOTS",
+        "EQ2_LAUNCH_T3_BLOODSTEEL_GLOVES",
+        "EQ2_LAUNCH_T3_BLOODSTEEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss",
+          "effect": "next_basic_damage",
+          "value": 7,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_breakerforge",
+      "tier": 3,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_BREAKERFORGE_AMULET",
+        "EQ2_LAUNCH_T3_BREAKERFORGE_BOOTS",
+        "EQ2_LAUNCH_T3_BREAKERFORGE_CHEST",
+        "EQ2_LAUNCH_T3_BREAKERFORGE_HELMET",
+        "EQ2_LAUNCH_T3_BREAKERFORGE_LEGS",
+        "EQ2_LAUNCH_T3_BREAKERFORGE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit",
+          "effect": "next_basic_damage",
+          "value": 6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit_target_below_30",
+          "effect": "direct_hit_damage",
+          "value": 8,
+          "unit": "relative_percent",
+          "durationSeconds": 0,
+          "internalCooldownSeconds": 22,
+          "target": "enemy"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_brightweave",
+      "tier": 3,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_BRIGHTWEAVE_AMULET",
+        "EQ2_LAUNCH_T3_BRIGHTWEAVE_CAPE",
+        "EQ2_LAUNCH_T3_BRIGHTWEAVE_CHEST",
+        "EQ2_LAUNCH_T3_BRIGHTWEAVE_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal",
+          "effect": "shield",
+          "value": 3,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_citadel",
+      "tier": 3,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_CITADEL_BOOTS",
+        "EQ2_LAUNCH_T3_CITADEL_CAPE",
+        "EQ2_LAUNCH_T3_CITADEL_CHEST",
+        "EQ2_LAUNCH_T3_CITADEL_HELMET",
+        "EQ2_LAUNCH_T3_CITADEL_LEGS",
+        "EQ2_LAUNCH_T3_CITADEL_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_6pct",
+          "effect": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 24,
+          "target": "self"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "cross_below_35pct_hp",
+          "effect": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 35,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_echohide",
+      "tier": 3,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_ECHOHIDE_BOOTS",
+        "EQ2_LAUNCH_T3_ECHOHIDE_HELMET",
+        "EQ2_LAUNCH_T3_ECHOHIDE_LEGS",
+        "EQ2_LAUNCH_T3_ECHOHIDE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "ally_direct_nontrue_hp_loss",
+          "effect": "next_effective_heal_on_same_ally",
+          "value": 7,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_horizon",
+      "tier": 3,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_HORIZON_AMULET",
+        "EQ2_LAUNCH_T3_HORIZON_GLOVES",
+        "EQ2_LAUNCH_T3_HORIZON_HELMET",
+        "EQ2_LAUNCH_T3_HORIZON_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "three_consecutive_direct_weapon_hits_same_target",
+          "effect": "next_direct_weapon_damage",
+          "value": 7,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_oathplate",
+      "tier": 3,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_OATHPLATE_CAPE",
+        "EQ2_LAUNCH_T3_OATHPLATE_CHEST",
+        "EQ2_LAUNCH_T3_OATHPLATE_HELMET",
+        "EQ2_LAUNCH_T3_OATHPLATE_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_5pct",
+          "effect": "defense_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_quickstep",
+      "tier": 3,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_QUICKSTEP_BOOTS",
+        "EQ2_LAUNCH_T3_QUICKSTEP_CAPE",
+        "EQ2_LAUNCH_T3_QUICKSTEP_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 7,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_rootshield",
+      "tier": 3,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_ROOTSHIELD_BOOTS",
+        "EQ2_LAUNCH_T3_ROOTSHIELD_CAPE",
+        "EQ2_LAUNCH_T3_ROOTSHIELD_CHEST",
+        "EQ2_LAUNCH_T3_ROOTSHIELD_HELMET",
+        "EQ2_LAUNCH_T3_ROOTSHIELD_LEGS",
+        "EQ2_LAUNCH_T3_ROOTSHIELD_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_50",
+          "effect": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "healed_target"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "successful_authored_cleanse",
+          "effect": "incoming_nontrue_reduction",
+          "value": 5,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 30,
+          "target": "cleansed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_stormthread",
+      "tier": 3,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_STORMTHREAD_BOOTS",
+        "EQ2_LAUNCH_T3_STORMTHREAD_GLOVES",
+        "EQ2_LAUNCH_T3_STORMTHREAD_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 1.5,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "authenticated_class_ally_buff",
+          "effect": "incoming_nontrue_reduction",
+          "value": 3,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 20,
+          "target": "buffed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t3_vigilhide",
+      "tier": 3,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T3_VIGILHIDE_BOOTS",
+        "EQ2_LAUNCH_T3_VIGILHIDE_GLOVES",
+        "EQ2_LAUNCH_T3_VIGILHIDE_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "defense_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_CHEST",
+        "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_HELMET",
+        "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_LEGS",
+        "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Heliarch Guard Foundation",
+            "effect": "+3.5% Defense",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Heliarch Guard Signature",
+            "effect": "After an eligible direct hit removes >=6% Max HP, gain 5% non-true damage reduction against the next direct hit within 6s",
+            "internalCooldownSeconds": 20,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CAPE",
+        "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CHEST",
+        "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_HELMET",
+        "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Mirageveil Oracle Foundation",
+            "effect": "+3.5% Healing Power",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Mirageveil Oracle Signature",
+            "effect": "A successful authored cleanse grants the cleansed target a shield for 4% of Max HP for 6s",
+            "internalCooldownSeconds": 22,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_AMULET",
+        "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_BOOTS",
+        "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_CAPE",
+        "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Sphinxclaw Pursuit Foundation",
+            "effect": "+3.5% direct ability damage",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Sphinxclaw Pursuit Signature",
+            "effect": "A direct class ability hit on a target with a verified authored vulnerability or debuff empowers the next direct class ability hit by +7%",
+            "internalCooldownSeconds": 18,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_BULWARK",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_GLASSBOUND_BULWARK_BOOTS",
+        "EQ2_GLASSBOUND_BULWARK_CHEST",
+        "EQ2_GLASSBOUND_BULWARK_HELMET",
+        "EQ2_GLASSBOUND_BULWARK_LEGS"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_6pct",
+          "effect": "shield",
+          "value": 4.5,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_DAWNSHIELD",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_GLASSBOUND_DAWNSHIELD_CAPE",
+        "EQ2_GLASSBOUND_DAWNSHIELD_GLOVES"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_35",
+          "effect": "shield",
+          "value": 3,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_LIFEWOVEN",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_GLASSBOUND_LIFEWOVEN_BOOTS",
+        "EQ2_GLASSBOUND_LIFEWOVEN_CHEST",
+        "EQ2_GLASSBOUND_LIFEWOVEN_HELMET",
+        "EQ2_GLASSBOUND_LIFEWOVEN_LEGS"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_50",
+          "effect": "next_effective_heal_on_same_ally",
+          "value": 4.5,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_RETALIATOR",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_GLASSBOUND_RETALIATOR_CAPE",
+        "EQ2_GLASSBOUND_RETALIATOR_GLOVES"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss",
+          "effect": "nonrecursive_reflect_of_actual_hp_loss",
+          "value": 3,
+          "unit": "percent_trigger_hp_loss",
+          "durationSeconds": 0,
+          "internalCooldownSeconds": 18,
+          "target": "attacker"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_SHADOWSTEP",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_GLASSBOUND_SHADOWSTEP_BOOTS",
+        "EQ2_GLASSBOUND_SHADOWSTEP_CHEST",
+        "EQ2_GLASSBOUND_SHADOWSTEP_GLOVES",
+        "EQ2_GLASSBOUND_SHADOWSTEP_HELMET"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 3,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 4.5,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "EQ2_SET_GLASSBOUND_SPELLWEAVE",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_GLASSBOUND_SPELLWEAVE_AMULET",
+        "EQ2_GLASSBOUND_SPELLWEAVE_CAPE"
+      ],
+      "status": "COMPACT_DIRECTION_RECONCILED_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "conditional",
+          "trigger": "direct_spell_hit_on_warded_enemy",
+          "effect": "next_direct_spell_damage",
+          "value": 3,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_ASHGUARD_AMULET",
+        "EQ2_LAUNCH_T4_ASHGUARD_BOOTS",
+        "EQ2_LAUNCH_T4_ASHGUARD_GLOVES",
+        "EQ2_LAUNCH_T4_ASHGUARD_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "ashen_grip",
+            "name": "Ashen Grip",
+            "effect": [
+              {
+                "stat": "defense_pct",
+                "value": 2
+              },
+              {
+                "stat": "attack_pct",
+                "value": 2
+              }
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "id": "guarded_return",
+            "name": "Guarded Return",
+            "effect": "After eligible direct HP damage, the next basic attack within 5 seconds deals 10% increased damage.",
+            "internalCooldownSeconds": 10,
+            "exclusions": [
+              "self damage",
+              "damage over time ticks",
+              "reflection",
+              "proc damage",
+              "missed or avoided attacks"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "steady_links",
+            "name": "Steady Links",
+            "effect": [
+              {
+                "stat": "defense_pct",
+                "value": 3
+              }
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "id": "braced_formation",
+            "name": "Braced Formation",
+            "effect": "After blocking or mitigating an eligible direct hit, gain 4% Defense for 5 seconds.",
+            "internalCooldownSeconds": 14,
+            "stacking": "refresh_duration_only"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "id": "hold_the_line",
+            "name": "Hold the Line",
+            "effect": "When crossing below 35% HP, gain a shield equal to 5% maximum HP for 6 seconds.",
+            "internalCooldownSeconds": 35,
+            "activationRule": "Threshold crossing only; remaining below it cannot retrigger."
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_blackscript",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_BLACKSCRIPT_BOOTS",
+        "EQ2_LAUNCH_T4_BLACKSCRIPT_CAPE",
+        "EQ2_LAUNCH_T4_BLACKSCRIPT_CHEST",
+        "EQ2_LAUNCH_T4_BLACKSCRIPT_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_class_spell_hit",
+          "effect": "next_direct_spell_damage",
+          "value": 6.6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_breakerforge",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_BREAKERFORGE_AMULET",
+        "EQ2_LAUNCH_T4_BREAKERFORGE_BOOTS",
+        "EQ2_LAUNCH_T4_BREAKERFORGE_CHEST",
+        "EQ2_LAUNCH_T4_BREAKERFORGE_HELMET",
+        "EQ2_LAUNCH_T4_BREAKERFORGE_LEGS",
+        "EQ2_LAUNCH_T4_BREAKERFORGE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit",
+          "effect": "next_basic_damage",
+          "value": 6.6,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "direct_physical_ability_hit_target_below_30",
+          "effect": "direct_hit_damage",
+          "value": 8.8,
+          "unit": "relative_percent",
+          "durationSeconds": 0,
+          "internalCooldownSeconds": 22,
+          "target": "enemy"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_brightweave",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_BRIGHTWEAVE_AMULET",
+        "EQ2_LAUNCH_T4_BRIGHTWEAVE_CAPE",
+        "EQ2_LAUNCH_T4_BRIGHTWEAVE_CHEST",
+        "EQ2_LAUNCH_T4_BRIGHTWEAVE_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal",
+          "effect": "shield",
+          "value": 3.3,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 20,
+          "target": "healed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_echohide",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_ECHOHIDE_BOOTS",
+        "EQ2_LAUNCH_T4_ECHOHIDE_HELMET",
+        "EQ2_LAUNCH_T4_ECHOHIDE_LEGS",
+        "EQ2_LAUNCH_T4_ECHOHIDE_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "ally_direct_nontrue_hp_loss",
+          "effect": "next_effective_heal_on_same_ally",
+          "value": 7.7,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_horizon",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_HORIZON_AMULET",
+        "EQ2_LAUNCH_T4_HORIZON_GLOVES",
+        "EQ2_LAUNCH_T4_HORIZON_HELMET",
+        "EQ2_LAUNCH_T4_HORIZON_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "accuracy_pp",
+          "value": 1.1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "three_consecutive_direct_weapon_hits_same_target",
+          "effect": "next_direct_weapon_damage",
+          "value": 7.7,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 16,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_oathplate",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_OATHPLATE_CAPE",
+        "EQ2_LAUNCH_T4_OATHPLATE_CHEST",
+        "EQ2_LAUNCH_T4_OATHPLATE_HELMET",
+        "EQ2_LAUNCH_T4_OATHPLATE_LEGS"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "direct_nontrue_hp_loss_at_least_5pct",
+          "effect": "defense_pct",
+          "value": 4.4,
+          "unit": "relative_percent",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_quickstep",
+      "tier": 4,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_QUICKSTEP_BOOTS",
+        "EQ2_LAUNCH_T4_QUICKSTEP_CAPE",
+        "EQ2_LAUNCH_T4_QUICKSTEP_GLOVES"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 1.1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "next_direct_physical_ability_damage",
+          "value": 7.7,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self",
+          "charges": 1
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_rootshield",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_ROOTSHIELD_BOOTS",
+        "EQ2_LAUNCH_T4_ROOTSHIELD_CAPE",
+        "EQ2_LAUNCH_T4_ROOTSHIELD_CHEST",
+        "EQ2_LAUNCH_T4_ROOTSHIELD_HELMET",
+        "EQ2_LAUNCH_T4_ROOTSHIELD_LEGS",
+        "EQ2_LAUNCH_T4_ROOTSHIELD_RING"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 2.2,
+          "unit": "relative_percent"
+        },
+        {
+          "pieces": 4,
+          "kind": "conditional",
+          "trigger": "effective_direct_class_heal_target_below_50",
+          "effect": "shield",
+          "value": 4.4,
+          "unit": "percent_target_max_hp",
+          "durationSeconds": 6,
+          "internalCooldownSeconds": 22,
+          "target": "healed_target"
+        },
+        {
+          "pieces": 6,
+          "kind": "conditional",
+          "trigger": "successful_authored_cleanse",
+          "effect": "incoming_nontrue_reduction",
+          "value": 5.5,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 30,
+          "target": "cleansed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_stormthread",
+      "tier": 4,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_STORMTHREAD_BOOTS",
+        "EQ2_LAUNCH_T4_STORMTHREAD_GLOVES",
+        "EQ2_LAUNCH_T4_STORMTHREAD_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 1.65,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "authenticated_class_ally_buff",
+          "effect": "incoming_nontrue_reduction",
+          "value": 3.3,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 20,
+          "target": "buffed_target"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_vigilhide",
+      "tier": 4,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T4_VIGILHIDE_BOOTS",
+        "EQ2_LAUNCH_T4_VIGILHIDE_GLOVES",
+        "EQ2_LAUNCH_T4_VIGILHIDE_HELMET"
+      ],
+      "status": "NEW_STRUCTURAL_FAMILY_CANDIDATE",
+      "milestones": [
+        {
+          "pieces": 2,
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 1.1,
+          "unit": "percentage_points"
+        },
+        {
+          "pieces": 3,
+          "kind": "conditional",
+          "trigger": "successful_direct_attack_evade",
+          "effect": "defense_pct",
+          "value": 4.4,
+          "unit": "relative_percent",
+          "durationSeconds": 5,
+          "internalCooldownSeconds": 18,
+          "target": "self"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_astral_rime",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_COMBO_T5_ASTRAL_RIME_CAPE",
+        "EQ2_COMBO_T5_ASTRAL_RIME_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "astral_rime_2p",
+            "name": "Echoing Spellglass",
+            "effect": "After a successful direct spell hit, the next direct class spell hit within 6 seconds deals +5% damage; exclude DoT/reflection/procs",
+            "internalCooldownSeconds": 16,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_dawnmender_chain",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_COMBO_T5_DAWNMENDER_CHAIN_AMULET",
+        "EQ2_COMBO_T5_DAWNMENDER_CHAIN_LEGS"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "dawnmender_chain_2p",
+            "name": "Comforting Thread",
+            "effect": "An effective direct class heal restoring missing HP grants the target +3% Defense for 6 seconds (self-heal eligible)",
+            "internalCooldownSeconds": 18,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_frostclasp_aegis",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_COMBO_T5_FROSTCLASP_AEGIS_CAPE",
+        "EQ2_COMBO_T5_FROSTCLASP_AEGIS_HELMET"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "frostclasp_aegis_2p",
+            "name": "Ward Against the Deep",
+            "effect": "On successful hostile debuff application, gain +3 percentage points Tenacity for 6 seconds; never retroactively shorten the triggering debuff",
+            "internalCooldownSeconds": 20,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_glacier_talons",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_COMBO_T5_GLACIER_TALONS_BOOTS",
+        "EQ2_COMBO_T5_GLACIER_TALONS_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "glacier_talons_2p",
+            "name": "Talonstrike",
+            "effect": "After a successful direct physical class-ability hit, the next basic direct weapon hit within 5 seconds deals +6% damage; no free Bleed/Stagger/Piercing",
+            "internalCooldownSeconds": 14,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_runeforge_link",
+      "tier": 5,
+      "role": "all_roles",
+      "memberIds": [
+        "EQ2_COMBO_T5_RUNEFORGE_LINK_AMULET",
+        "EQ2_COMBO_T5_RUNEFORGE_LINK_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "runeforge_link_2p",
+            "name": "Frostworked Momentum",
+            "effect": "After a successful direct class-ability hit OR effective direct class heal, gain +2% Haste for 6 seconds, once per source event",
+            "internalCooldownSeconds": 18,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_stonewinter_frame",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_COMBO_T5_STONEWINTER_FRAME_CHEST",
+        "EQ2_COMBO_T5_STONEWINTER_FRAME_LEGS"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "stonewinter_frame_2p",
+            "name": "Unyielding Frame",
+            "effect": "After eligible direct non-true damage removes at least 6% max HP, reduce damage from the next eligible direct non-true hit within 6 seconds by 4%",
+            "internalCooldownSeconds": 18,
+            "exclusions": [
+              "DoT ticks",
+              "reflect",
+              "proc recursion",
+              "self damage",
+              "misses",
+              "absorption-only hits",
+              "duplicated event receipts"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_AMULET",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_BOOTS",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_CAPE",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Shiverlake Cantorshard Foundation",
+            "effect": "+4% Attack",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Shiverlake Cantorshard Signature",
+            "effect": "After two successful direct physical weapon hits, the next direct physical ability hit within 6s deals +8% damage",
+            "internalCooldownSeconds": 18,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CAPE",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CHEST",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_HELMET",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Shiverlake Frosthymn Foundation",
+            "effect": "+4% Healing Power",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Shiverlake Frosthymn Signature",
+            "effect": "An effective direct class heal on an ally below 50% HP creates a 4%-Max-HP shield on that ally for 6s",
+            "internalCooldownSeconds": 20,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_CHEST",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_HELMET",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_LEGS",
+        "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Shiverlake Rimevanguard Foundation",
+            "effect": "+4% maximum HP",
+            "bonusSource": "verified_set_ownership_only",
+            "status": "PROPOSED_BUDGET"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Shiverlake Rimevanguard Signature",
+            "effect": "After eligible direct non-true HP loss >=7% Max HP, reduce incoming non-true damage by 6% for 5s",
+            "internalCooldownSeconds": 22,
+            "excludedTriggers": [
+              "DoT",
+              "reflected",
+              "proc-recursive",
+              "self-inflicted",
+              "absorbed-only",
+              "missed",
+              "non-authorized skills",
+              "expired state"
+            ],
+            "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "tier": 5,
+      "role": "all_roles_defensive_counterplay",
+      "memberIds": [
+        "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CAPE",
+        "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CHEST",
+        "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_HELMET",
+        "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "bellward",
+            "name": "Bellward",
+            "effect": "+2% maximum HP and +2 percentage points Tenacity",
+            "bonusStats": [
+              {
+                "stat": "max_hp_pct",
+                "value": 2,
+                "unit": "relative_percent"
+              },
+              {
+                "stat": "tenacity_pp",
+                "value": 2,
+                "unit": "percentage_points"
+              }
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "id": "answer_the_toll",
+            "name": "Answer the Toll",
+            "effect": "After eligible direct non-true damage removes at least 7% of own maximum HP post-mitigation, receive one shield of 5% maximum HP for 6 seconds and one Resonant Answer charge. Within 6 seconds, the next authenticated direct class-ability damage hit OR effective direct class heal consumes that one charge for +5% potency (not both).",
+            "internalCooldownSeconds": 28,
+            "shieldPctMaxHp": 5,
+            "shieldSeconds": 6,
+            "thresholdActualHpLossPctMax": 7,
+            "chargeExpirySeconds": 6,
+            "chargeOneUsePotencyPct": 5,
+            "prohibitedSources": [
+              "true damage",
+              "DoT ticks",
+              "self damage",
+              "reflection",
+              "procs",
+              "absorbed-only damage",
+              "missed hits",
+              "echo NPCs",
+              "simultaneous duplicate events"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_RARE_T5_BLOODSTEEL_AMULET",
+        "EQ2_RARE_T5_BLOODSTEEL_BOOTS",
+        "EQ2_RARE_T5_BLOODSTEEL_GLOVES",
+        "EQ2_RARE_T5_BLOODSTEEL_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "tempered_guard",
+            "name": "Tempered Guard",
+            "effect": [
+              {
+                "stat": "defense_pct",
+                "value": 3
+              },
+              {
+                "stat": "attack_pct",
+                "value": 3
+              }
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "id": "red_reprisal",
+            "name": "Red Reprisal",
+            "effect": "After taking eligible post-mitigation HP damage, the next basic attack within 5 seconds deals 18% increased damage and heals 1.5% of maximum HP.",
+            "internalCooldownSeconds": 8,
+            "exclusions": [
+              "self damage",
+              "damage over time ticks",
+              "reflect loops",
+              "proc damage",
+              "missed or avoided attacks"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_RARE_T5_CITADEL_BOOTS",
+        "EQ2_RARE_T5_CITADEL_CAPE",
+        "EQ2_RARE_T5_CITADEL_CHEST",
+        "EQ2_RARE_T5_CITADEL_HELMET",
+        "EQ2_RARE_T5_CITADEL_LEGS",
+        "EQ2_RARE_T5_CITADEL_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "id": "citadel_foundation",
+            "name": "Citadel Foundation",
+            "effect": [
+              {
+                "stat": "max_hp_pct",
+                "value": 4
+              },
+              {
+                "stat": "defense_pct",
+                "value": 3
+              }
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "id": "tower_guard",
+            "name": "Tower Guard",
+            "effect": "After one eligible hit deals at least 8% of maximum HP as post-mitigation damage, gain a shield equal to 6% of maximum HP for 6 seconds.",
+            "internalCooldownSeconds": 18,
+            "exclusions": [
+              "true damage",
+              "self damage",
+              "already absorbed damage",
+              "duplicate simultaneous triggers"
+            ]
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "id": "citadel_unbroken",
+            "name": "Citadel Unbroken",
+            "effect": "When falling below 35% HP, gain 10% incoming damage reduction and 20% increased healing received for 8 seconds.",
+            "internalCooldownSeconds": 35,
+            "activationRule": "Crossing the threshold only; remaining below it cannot retrigger."
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_RARE_T5_DAWNSPIRE_BOOTS",
+        "EQ2_RARE_T5_DAWNSPIRE_CAPE",
+        "EQ2_RARE_T5_DAWNSPIRE_CHEST",
+        "EQ2_RARE_T5_DAWNSPIRE_GLOVES",
+        "EQ2_RARE_T5_DAWNSPIRE_HELMET",
+        "EQ2_RARE_T5_DAWNSPIRE_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "First Light",
+            "effect": "+4% Healing Power and +2% Defense"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Sanctuary Thread",
+            "effect": "After an eligible effective direct heal, shield that target for 5% of target maximum HP for 6 seconds",
+            "icdSeconds": 20
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "name": "Dawnspire Rally",
+            "effect": "When an ally crosses below 35% maximum HP, the next effective direct heal on that ally within 6 seconds gains +14% Healing Power and grants 6% incoming non-true damage reduction for 5 seconds",
+            "icdSeconds": 35
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_shardrunner",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_RARE_T5_SHARDRUNNER_AMULET",
+        "EQ2_RARE_T5_SHARDRUNNER_BOOTS",
+        "EQ2_RARE_T5_SHARDRUNNER_CAPE",
+        "EQ2_RARE_T5_SHARDRUNNER_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Frozen Pursuit",
+            "effect": "+3% Attack and +2 percentage points Evasion"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Shatterstep",
+            "effect": "After successfully evading an eligible direct attack, the next direct physical class-ability hit within 6 seconds deals +12% damage",
+            "icdSeconds": 16
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_AVALANCHE_AMULET",
+        "EQ2_LAUNCH_T5_AVALANCHE_BOOTS",
+        "EQ2_LAUNCH_T5_AVALANCHE_CHEST",
+        "EQ2_LAUNCH_T5_AVALANCHE_HELMET",
+        "EQ2_LAUNCH_T5_AVALANCHE_LEGS",
+        "EQ2_LAUNCH_T5_AVALANCHE_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Weight of Winter",
+            "effect": "+3% Attack"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Follow-Through",
+            "effect": "After a direct physical class-ability hit, the next basic attack within 6 seconds deals +6% damage",
+            "icdSeconds": 16
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "name": "Crushing Finish",
+            "effect": "A direct physical class-ability hit against a target below 30% HP deals +8% damage",
+            "icdSeconds": 20
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_dawnweave",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_DAWNWEAVE_AMULET",
+        "EQ2_LAUNCH_T5_DAWNWEAVE_CAPE",
+        "EQ2_LAUNCH_T5_DAWNWEAVE_CHEST",
+        "EQ2_LAUNCH_T5_DAWNWEAVE_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Gentle Radiance",
+            "effect": "+3% Healing Power"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Soft Refuge",
+            "effect": "After an eligible direct heal that restores missing HP, grant that target a shield for 3% of their maximum HP for 6 seconds",
+            "icdSeconds": 18
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_echohide",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_ECHOHIDE_BOOTS",
+        "EQ2_LAUNCH_T5_ECHOHIDE_HELMET",
+        "EQ2_LAUNCH_T5_ECHOHIDE_LEGS",
+        "EQ2_LAUNCH_T5_ECHOHIDE_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Winter Echo",
+            "effect": "+3% Defense"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Answering Care",
+            "effect": "After an ally takes eligible direct HP damage, the next effective direct heal on that ally within 6 seconds gains +7% Healing Power",
+            "icdSeconds": 16
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_farwind",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_FARWIND_AMULET",
+        "EQ2_LAUNCH_T5_FARWIND_GLOVES",
+        "EQ2_LAUNCH_T5_FARWIND_HELMET",
+        "EQ2_LAUNCH_T5_FARWIND_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Clear Sight",
+            "effect": "+3% Attack"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Patient Volley",
+            "effect": "After three consecutive successful direct weapon hits on the same target, the next direct weapon hit within 6 seconds deals +8% damage",
+            "icdSeconds": 14
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_nightglass",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_NIGHTGLASS_BOOTS",
+        "EQ2_LAUNCH_T5_NIGHTGLASS_CAPE",
+        "EQ2_LAUNCH_T5_NIGHTGLASS_CHEST",
+        "EQ2_LAUNCH_T5_NIGHTGLASS_LEGS"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Arcane Etching",
+            "effect": "+3% direct class-ability damage"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Fractured Tempo",
+            "effect": "After an eligible direct spell hit, gain +4% Haste for 6 seconds",
+            "icdSeconds": 18
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_oathplate",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_OATHPLATE_CAPE",
+        "EQ2_LAUNCH_T5_OATHPLATE_CHEST",
+        "EQ2_LAUNCH_T5_OATHPLATE_HELMET",
+        "EQ2_LAUNCH_T5_OATHPLATE_LEGS"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Oathbound Guard",
+            "effect": "+3% Defense"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Oathplate Resolve",
+            "effect": "After a qualifying direct hit removes at least 5% maximum HP after mitigation, gain +4% Defense for 6 seconds",
+            "icdSeconds": 16
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimebrand",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_RIMEBRAND_AMULET",
+        "EQ2_LAUNCH_T5_RIMEBRAND_BOOTS",
+        "EQ2_LAUNCH_T5_RIMEBRAND_GLOVES",
+        "EQ2_LAUNCH_T5_RIMEBRAND_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Tempered Edge",
+            "effect": "+2% Attack and +2% Defense"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Measured Reprisal",
+            "effect": "After taking eligible direct HP damage, the next direct class-ability hit within 6 seconds deals +9% damage",
+            "icdSeconds": 16
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_RIMEWATCH_BOOTS",
+        "EQ2_LAUNCH_T5_RIMEWATCH_CAPE",
+        "EQ2_LAUNCH_T5_RIMEWATCH_CHEST",
+        "EQ2_LAUNCH_T5_RIMEWATCH_HELMET",
+        "EQ2_LAUNCH_T5_RIMEWATCH_LEGS",
+        "EQ2_LAUNCH_T5_RIMEWATCH_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Winterwall",
+            "effect": "+3% maximum HP"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Rimeguard",
+            "effect": "When a qualifying direct hit is received while below 50% HP, create a shield for 4% maximum HP lasting 6 seconds",
+            "icdSeconds": 24
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "name": "Weather the Break",
+            "effect": "When Rimeguard's shield is fully broken by a direct hit, reduce incoming non-true damage by 6% for 4 seconds",
+            "icdSeconds": 30
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_snowveil",
+      "tier": 5,
+      "role": "tank",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_SNOWVEIL_BOOTS",
+        "EQ2_LAUNCH_T5_SNOWVEIL_GLOVES",
+        "EQ2_LAUNCH_T5_SNOWVEIL_HELMET"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Cold Footing",
+            "effect": "+2 percentage points Evasion"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 3,
+          "sourceEffect": {
+            "pieces": 3,
+            "name": "Slip and Brace",
+            "effect": "After successfully evading a qualifying direct attack, gain +4% Defense for 5 seconds",
+            "icdSeconds": 18
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_stormthread",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_STORMTHREAD_BOOTS",
+        "EQ2_LAUNCH_T5_STORMTHREAD_GLOVES",
+        "EQ2_LAUNCH_T5_STORMTHREAD_HELMET"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Gathering Wind",
+            "effect": "+3% Haste"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 3,
+          "sourceEffect": {
+            "pieces": 3,
+            "name": "Storm's Cover",
+            "effect": "After granting an authenticated class ally-buff, grant that ally 3% reduction to incoming non-true damage for 5 seconds",
+            "icdSeconds": 20
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_whitefang",
+      "tier": 5,
+      "role": "damage",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_WHITEFANG_BOOTS",
+        "EQ2_LAUNCH_T5_WHITEFANG_CAPE",
+        "EQ2_LAUNCH_T5_WHITEFANG_GLOVES"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Swift Pursuit",
+            "effect": "+3% Haste"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 3,
+          "sourceEffect": {
+            "pieces": 3,
+            "name": "Snowstep Opening",
+            "effect": "After successfully evading a direct enemy attack, the next direct class-ability hit within 5 seconds deals +8% damage",
+            "icdSeconds": 14
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "tier": 5,
+      "role": "support",
+      "memberIds": [
+        "EQ2_LAUNCH_T5_WINTERROOT_BOOTS",
+        "EQ2_LAUNCH_T5_WINTERROOT_CAPE",
+        "EQ2_LAUNCH_T5_WINTERROOT_CHEST",
+        "EQ2_LAUNCH_T5_WINTERROOT_HELMET",
+        "EQ2_LAUNCH_T5_WINTERROOT_LEGS",
+        "EQ2_LAUNCH_T5_WINTERROOT_RING"
+      ],
+      "status": "PRESERVED_V7_SOURCE_PROPOSAL",
+      "milestones": [
+        {
+          "pieces": 2,
+          "sourceEffect": {
+            "pieces": 2,
+            "name": "Rooted Hope",
+            "effect": "+3% maximum HP"
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 4,
+          "sourceEffect": {
+            "pieces": 4,
+            "name": "Shelter Bloom",
+            "effect": "An effective direct heal on an ally below 50% HP grants a shield for 4% of target maximum HP for 6 seconds",
+            "icdSeconds": 20
+          },
+          "requiresTypedEventAndUnitReview": true
+        },
+        {
+          "pieces": 6,
+          "sourceEffect": {
+            "pieces": 6,
+            "name": "Purifying Shelter",
+            "effect": "A successful authored cleanse grants its target 6% reduction to incoming non-true damage for 5 seconds",
+            "icdSeconds": 30
+          },
+          "requiresTypedEventAndUnitReview": true
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "traits": [
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN",
+      "tier": 2,
+      "classId": "IRONWARDEN",
+      "sourceTrait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "mitigated_direct_hit",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "sharedTraitFamily": "IRONWARDEN",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_BASTION",
+      "tier": 2,
+      "classId": "BASTION",
+      "sourceTrait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "authenticated_direct_shield_bash",
+      "effect": "shield",
+      "value": 4,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 22,
+      "target": "self",
+      "requiresEquippedShield": true,
+      "sharedTraitFamily": "BASTION",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DREADGUARD",
+      "tier": 2,
+      "classId": "DREADGUARD",
+      "sourceTrait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "effect": "next_basic_chained_scourge_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "DREADGUARD",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_WAYFINDER",
+      "tier": 2,
+      "classId": "WAYFINDER",
+      "sourceTrait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "three_consecutive_direct_bow_hits_same_target",
+      "effect": "next_direct_class_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "WAYFINDER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER",
+      "tier": 2,
+      "classId": "RAVAGER",
+      "sourceTrait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_class_ability_hit_target_below_35",
+      "effect": "direct_hit_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 0,
+      "internalCooldownSeconds": 20,
+      "target": "enemy",
+      "sharedTraitFamily": "RAVAGER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_HEXWEAVER",
+      "tier": 2,
+      "classId": "HEXWEAVER",
+      "sourceTrait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_non_dot_class_spell_hit",
+      "effect": "next_direct_spell_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "HEXWEAVER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_KNIFE_DANCER",
+      "tier": 2,
+      "classId": "KNIFE_DANCER",
+      "sourceTrait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "effect": "next_direct_physical_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "KNIFE_DANCER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DAWNKEEPER",
+      "tier": 2,
+      "classId": "DAWNKEEPER",
+      "sourceTrait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "effect": "shield",
+      "value": 3,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "healed_target",
+      "sharedTraitFamily": "DAWNKEEPER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_STONECALLER",
+      "tier": 2,
+      "classId": "STONECALLER",
+      "sourceTrait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_authored_cleanse_or_effective_direct_heal",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 22,
+      "target": "event_target",
+      "sharedTraitFamily": "STONECALLER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN",
+      "tier": 4,
+      "classId": "IRONWARDEN",
+      "sourceTrait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "mitigated_direct_hit",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "sharedTraitFamily": "IRONWARDEN",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_BASTION",
+      "tier": 4,
+      "classId": "BASTION",
+      "sourceTrait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "authenticated_direct_shield_bash",
+      "effect": "shield",
+      "value": 4,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 22,
+      "target": "self",
+      "requiresEquippedShield": true,
+      "sharedTraitFamily": "BASTION",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DREADGUARD",
+      "tier": 4,
+      "classId": "DREADGUARD",
+      "sourceTrait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "effect": "next_basic_chained_scourge_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "DREADGUARD",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_WAYFINDER",
+      "tier": 4,
+      "classId": "WAYFINDER",
+      "sourceTrait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "three_consecutive_direct_bow_hits_same_target",
+      "effect": "next_direct_class_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "WAYFINDER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER",
+      "tier": 4,
+      "classId": "RAVAGER",
+      "sourceTrait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_class_ability_hit_target_below_35",
+      "effect": "direct_hit_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 0,
+      "internalCooldownSeconds": 20,
+      "target": "enemy",
+      "sharedTraitFamily": "RAVAGER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_HEXWEAVER",
+      "tier": 4,
+      "classId": "HEXWEAVER",
+      "sourceTrait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_non_dot_class_spell_hit",
+      "effect": "next_direct_spell_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "HEXWEAVER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_KNIFE_DANCER",
+      "tier": 4,
+      "classId": "KNIFE_DANCER",
+      "sourceTrait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "effect": "next_direct_physical_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "KNIFE_DANCER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DAWNKEEPER",
+      "tier": 4,
+      "classId": "DAWNKEEPER",
+      "sourceTrait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "effect": "shield",
+      "value": 3,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "healed_target",
+      "sharedTraitFamily": "DAWNKEEPER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_STONECALLER",
+      "tier": 4,
+      "classId": "STONECALLER",
+      "sourceTrait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_authored_cleanse_or_effective_direct_heal",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 22,
+      "target": "event_target",
+      "sharedTraitFamily": "STONECALLER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN",
+      "tier": 5,
+      "classId": "IRONWARDEN",
+      "sourceTrait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "mitigated_direct_hit",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "sharedTraitFamily": "IRONWARDEN",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_BASTION",
+      "tier": 5,
+      "classId": "BASTION",
+      "sourceTrait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "authenticated_direct_shield_bash",
+      "effect": "shield",
+      "value": 4,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 5,
+      "internalCooldownSeconds": 22,
+      "target": "self",
+      "requiresEquippedShield": true,
+      "sharedTraitFamily": "BASTION",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DREADGUARD",
+      "tier": 5,
+      "classId": "DREADGUARD",
+      "sourceTrait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "effect": "next_basic_chained_scourge_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "DREADGUARD",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_WAYFINDER",
+      "tier": 5,
+      "classId": "WAYFINDER",
+      "sourceTrait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "three_consecutive_direct_bow_hits_same_target",
+      "effect": "next_direct_class_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 18,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "WAYFINDER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER",
+      "tier": 5,
+      "classId": "RAVAGER",
+      "sourceTrait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_class_ability_hit_target_below_35",
+      "effect": "direct_hit_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 0,
+      "internalCooldownSeconds": 20,
+      "target": "enemy",
+      "sharedTraitFamily": "RAVAGER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_HEXWEAVER",
+      "tier": 5,
+      "classId": "HEXWEAVER",
+      "sourceTrait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "direct_non_dot_class_spell_hit",
+      "effect": "next_direct_spell_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "HEXWEAVER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_KNIFE_DANCER",
+      "tier": 5,
+      "classId": "KNIFE_DANCER",
+      "sourceTrait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "effect": "next_direct_physical_ability_damage",
+      "value": 7,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "self",
+      "charges": 1,
+      "sharedTraitFamily": "KNIFE_DANCER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DAWNKEEPER",
+      "tier": 5,
+      "classId": "DAWNKEEPER",
+      "sourceTrait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "effect": "shield",
+      "value": 3,
+      "unit": "percent_target_max_hp",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 20,
+      "target": "healed_target",
+      "sharedTraitFamily": "DAWNKEEPER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_STONECALLER",
+      "tier": 5,
+      "classId": "STONECALLER",
+      "sourceTrait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "kind": "conditional",
+      "trigger": "successful_authored_cleanse_or_effective_direct_heal",
+      "effect": "defense_pct",
+      "value": 4,
+      "unit": "relative_percent",
+      "durationSeconds": 6,
+      "internalCooldownSeconds": 22,
+      "target": "event_target",
+      "sharedTraitFamily": "STONECALLER",
+      "perOwnerCooldown": true,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "reviewOnly": true,
+  "mayApply": false,
+  "mayMint": false,
+  "mayEquip": false,
+  "mayTrade": false,
+  "releaseApproved": false
+}

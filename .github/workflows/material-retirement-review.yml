@@ -2,6 +2,7 @@ name: Material retirement review
 on:
   pull_request:
     paths:
+      - 'backend/supabase/review/material-retirement-atomic-pg17.sql'
       - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'tools/material-retirement-review.mjs'
       - 'tools/audit-material-retirement-references.mjs'
@@ -28,3 +29,24 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Audit expanded material registries and item-use regressions
         run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex
+  atomic-retirement-pg17:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: retirement_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d retirement_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test transaction and rollback on disposable database
+        env:
+          PGPASSWORD: fixture-only
+        run: psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1 -f backend/supabase/review/material-retirement-atomic-pg17.sql

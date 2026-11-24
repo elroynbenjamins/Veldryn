@@ -18,7 +18,7 @@ export const REGIONAL_DUNGEON_BALANCE=Object.freeze({
 } as const);
 const LEGACY_ROOTBOUND_ATTACK_MULTIPLIER=2.9;
 const ROOTBOUND_TIER_ATTACK=[1.2,.95,.94] as const;
-export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled:boolean,encounterId?:string){
+export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled:boolean,encounterId?:string,rootboundT3CalibrationVersion?:1){
  if(!enabled||![1,2,3].includes(tier))return undefined;
  const row=REGIONAL_DUNGEON_BALANCE[expeditionId as keyof typeof REGIONAL_DUNGEON_BALANCE];
  if(!row)return undefined;
@@ -33,8 +33,9 @@ export function regionalPowerMultipliers(expeditionId:string,tier:number,enabled
  // First-checkpoint Endurance probes show 20/40 clears with the original
  // Bell-Warden T2 coefficient. Moderate Bell-Warden only while retaining the
  // established Rootbound T2 correction to preserve a meaningful boss lottery.
- // keep normal encounters, Tier I/III, and unversioned legacy runs unchanged.
- const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .98 : 1):
+ // New Q-Mode runs pin the smallest passing Rootbound T3 calibration (0.975).
+ // Saved runs without the explicit version and Live runs retain 0.95.
+ const bossCorrection=expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_ROOT'?(tier===3 ? (rootboundT3CalibrationVersion===1?.975:.95) : tier===2 ? .98 : 1):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SOLAR'?(tier===3 ? .759:tier===2 ? .768:.77):
   expeditionId==='EXP_003'&&encounterId==='BOSS_EXP_SPHINX'?(tier===3?1.017:tier===2?1.015:1):
   expeditionId==='EXP_001'&&encounterId==='BOSS_EXP_BELL'?(tier===3?1.025:tier===2?1.03:1):1;

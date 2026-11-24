@@ -302,6 +302,11 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
 
   const exactCopies=inspected?.type==='gear'?craftedGearCopiesAt(state,inspected.id,location).map(row=>exactRecordsById.get(row.instanceId)!).filter(Boolean):[];
   const selectedCopy=exactCopies.find(row=>row.id===selectedInstanceId)??exactCopies[0];
+  // A lone verified receipt is unambiguous. Never invent a specific rolled
+  // gear copy when multiple receipts share the same item ID.
+  const inspectedGearReceiptId=inspected?.type==='gear'
+    ?(exactCopies.some(row=>row.id===selectedInstanceId)?selectedInstanceId:exactCopies.length===1?exactCopies[0].id:null)
+    :selectedInstanceId;
   const inspectedToolDef=inspected?.type==='tool'?gatheringToolDef(inspected.id):undefined;
   const exactToolCopies=inspected?.type==='tool'?state[location].stacks.filter(row=>row.itemId===inspected.id&&!!row.instanceId).flatMap(row=>{const verified=validateGatheringToolRoll(state.account.craftedGatheringToolInstances?.find(copy=>copy.id===row.instanceId),row.itemId);return verified?[verified]:[]}):[];
   const inspectedCopySell=selectedCopy?equipmentCopyDisposalDecision(state,selectedCopy.id,'sell'):null;
@@ -520,7 +525,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
    else await onEquip(id);
    setPreviewId(null);setPreviewInstanceId(null);
  }}
- onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} instanceId={selectedInstanceId} source={location} onClose={closeInspect}
+ onInspect={()=>{setSelectedInstanceId(previewInstanceId);setInspectQuantity(1);setInspectId(previewId);setPreviewId(null);setPreviewInstanceId(null)}}/><ItemQuickInspect state={state} itemId={inspectId} instanceId={inspectedGearReceiptId} source={location} onClose={closeInspect}
   favorite={inspectFavorite} locked={inspectLocked}
   onToggleFavorite={inspected?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(inspected.id)):undefined}
   onToggleLock={inspected?changeInspectLock:undefined}

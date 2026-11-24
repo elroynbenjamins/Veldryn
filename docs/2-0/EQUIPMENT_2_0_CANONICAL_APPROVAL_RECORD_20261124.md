@@ -112,6 +112,10 @@ V19 exact-head catalogue (99 tests, zero failures) and private engine integratio
 
 V20 focused catalogue, isolated core and private integration passed; the broader backend/private-state check failed through a sixth cross-project effect-gem test. V21 retains all six tests in the dedicated strict harness, fixes pure type imports, and runs private compilation independently. Expo, tool economy/blueprint/scroll regressions and both stale generated Edge bundles remain open. New 648 solo and 108 controlled-party matched permanent-stat pairs are authored and wired to private CI, NOT confirmed executed. Tier-bounded original Forge QA copies only, exact source coefficient, explicit hypothetical boss stat bands, 120s limit and missing/downgraded slots recorded. Party workloads are generic, not authored solo authority. No conditional effects, CP or release approval; see `docs/2-0/EQUIPMENT_2_0_MULTISLOT_BENCHMARK_REVIEW_V21.md`. D1–D10 remain open.
 
+## 3I. V22 first private conditional engine execution candidates
+
+V21 focused CI remains queued at readback; no new benchmark outcomes confirmed. V22 adds a private exact-input QA authority and actual current-hit engine hook for Winterbreaker (+7%, below 35% HP) and Avalanche Crushing Finish (+8%, physical below 30% HP), four source IDs / two mechanics, shared family 20s cooldown. No source custody or live authority; explicit legacy Edge denial. 120 new matched QA pairs prepared, not yet verified executed. Other 138 conditional records not supported by this adapter. Source coefficients preserved; no CP/release approval, no deployment. See `docs/2-0/EQUIPMENT_2_0_PRIVATE_CURRENT_HIT_REVIEW_V22.md`. D1–D10 remain open.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

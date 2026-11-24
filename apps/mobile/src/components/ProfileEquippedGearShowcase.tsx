@@ -95,7 +95,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
   {!gear.length?<Text style={s.emptyText}>{profileT(language,'No equipment equipped yet')}</Text>:null}
   <GameModalSurface visible={!!selected} reduceMotion={reduceMotion} onClose={()=>setSelectedSlot(null)} presentation="dialog" surfaceStyle={s.detail}>
    <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={(item?localizedItemName(language,item.id):profileT(language,'Equipment'))+(selected?.rank?' +'+selected.rank:'')} titleColor={rarityId?rarityNameColor(rarityId,C.dark,C.text):C.text} onClose={()=>setSelectedSlot(null)}/>
-   {selected?<ScrollView style={s.scroll} contentContainerStyle={s.inspect} showsVerticalScrollIndicator={true}>
+   {selected?<ScrollView style={s.scroll} contentContainerStyle={s.inspect} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.inspectHead}>
      {item?<EquipmentArtwork item={item} rarity={selected.rarity??itemRarity(item)} size={62} framed/>:<GearIcon unknown/>}
      <View style={s.inspectCopy}>

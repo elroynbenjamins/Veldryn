@@ -88,6 +88,10 @@ V14 index records 21 original/current source pins, contract precedence and denia
 
 V14 remains the canonical catalogue/economy baseline. `tools/eq2-review/t1-t5/equipment-power-contract-review-v15.mjs` (documented in `docs/2-0/EQUIPMENT_2_0_POWER_CONTRACT_REVIEW_V15.md`) combines V4/V5/V6/V7 for a **partial equipment budget index, not final CP**. 9,720 matched and 4,860 mixed grade fixtures; ten budget lanes with independent grade/quality on combined weapons; exact scalar parity does not imply equal combat outcomes. Only 233/554 identities have authored profiles; 321 remain unprofiled, zero premium entries in the benchmark fixtures, 28 unresolved innate lines and 61 sets outside numerical audit. All D1–D10 remain open, no approval inferred. Next: source-backed profile extension, semantic decisions, then legal mixed build and combat calibration.
 
+## 3C. V16 complete candidate profile coverage
+
+V16 extends V15 without altering the V14 canonical catalogue or existing V5 profiles. All 554 exact identities now have candidate profiles: 233 preserved, 226 additional explicit source profiles and 95 proposed role/class-slot profiles requiring review. 105 premium/blueprint candidates and 259 same-slot class comparisons are non-executable; zero blanket boss base-stat premium, six source-authored blueprint budget modifiers retained. Five unresolved innate semantic decisions, 27 signature traits and 61 sets outside the prior numerical audit remain open. Matched random rolls in the premium sensitivity comparison are not approval of additive premium budgets. CP, legal ownership, Skills/Combat effects, D1–D10 and all release gates remain unapproved. See `docs/2-0/EQUIPMENT_2_0_PROFILE_PREMIUM_REVIEW_V16.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

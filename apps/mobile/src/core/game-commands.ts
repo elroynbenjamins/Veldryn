@@ -5,7 +5,7 @@ import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
 import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
 import {canUseProfileEffect} from './profile-effects';
-import {PROFILE_ANIMATED_COSMETICS_RELEASED} from './release-flags';
+import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -537,7 +537,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
-   if(patch.profileEffectId&&!PROFILE_ANIMATED_COSMETICS_RELEASED&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
+   if(patch.profileEffectId&&!profileAnimatedCosmeticsEnabled(state)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
    if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
    state={...state,character:{...state.character,...patch}};break;

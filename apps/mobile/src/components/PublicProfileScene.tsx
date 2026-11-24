@@ -30,14 +30,15 @@ import {ProfileGuildAffiliation} from './ProfileGuildAffiliation';
 
 /** Local-only QA overrides. Never derive effects from a border or grant ownership. */
 export type ProfileCosmeticReviewSelection={borderArt?:CosmeticArt;effectArt?:CosmeticArt;borderRuntime?:ProfileCosmeticRuntime;effectRuntime?:ProfileCosmeticRuntime;active:boolean;surroundColor:string};
-export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,reviewCosmetics}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;reviewCosmetics?:ProfileCosmeticReviewSelection}){
+export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,reviewCosmetics,allowUnreleasedCosmetics=false}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;reviewCosmetics?:ProfileCosmeticReviewSelection;allowUnreleasedCosmetics?:boolean}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
- const equippedBorderArt=!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
- const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
- const borderRuntime=review?.borderRuntime??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.borderId?profileCosmeticRuntimeByBorder.get(profile.borderId):undefined),effectRuntime=review?.effectRuntime??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
+ const animated=PROFILE_ANIMATED_COSMETICS_RELEASED||allowUnreleasedCosmetics;
+ const equippedBorderArt=!review&&animated&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
+ const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&animated&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
+ const borderRuntime=review?.borderRuntime??(!review&&animated&&profile.borderId?profileCosmeticRuntimeByBorder.get(profile.borderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
  const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
  const border=review?(borderArt?.border??(runtimeFallbackBorderId?profileBorderSourceById.get(runtimeFallbackBorderId):undefined)):borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;

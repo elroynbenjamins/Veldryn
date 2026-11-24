@@ -17,6 +17,7 @@ import {localProfileGear} from '../core/profile-equipped-gear';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {useSelfProfileGuild} from '../online/useSelfProfileGuild';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
+import {profileAnimatedCosmeticsEnabled} from '../core/profile-cosmetic-access';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
  {id:'public',label:'Public viewer',detail:'Signed-in player outside your guild'},
@@ -77,7 +78,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
     <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityLabel={profileText(language,row.label)} accessibilityHint={profileText(language,row.detail)} accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text numberOfLines={2} style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{profileText(language,row.label)}</Text><Text numberOfLines={3} style={s.audienceDetail}>{profileText(language,row.detail)}</Text></Pressable>)}</View>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>{profileT(language,"Profile hidden from this viewer")}</Text><Text style={s.hiddenCopy}>{profileText(language,hiddenReason)}</Text></View>:<>
-      <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
+      <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion} allowUnreleasedCosmetics={profileAnimatedCosmeticsEnabled(state)}/>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.muted}>{profileT(language,"No biography selected.")}</Text></View>}
       <ProfileEquippedGearShowcase key={character.id} gear={localProfileGear(state,character.id)} reduceMotion={state.settings.reduceMotion}/>
       <View style={s.card}>

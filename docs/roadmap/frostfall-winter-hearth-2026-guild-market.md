@@ -80,3 +80,14 @@ Guild Hall → Seasonal Projects → **Winter Hearth: Christmas Market**. Two in
 3. Transactional Supabase migration + authenticated Edge handler + mobile read-only presentation, all under a default-disabled flag and no live payout.
 4. Staging season-week simulation (including small guilds and UTC boundaries), multi-device concurrency, inventory and offline-skill integration tests.
 5. Exact-head mobile/online/Edge/native CI, signed internal AAB/device QA; coordinated separate go/no-go and rollback. Frostfall itself remains disabled in production until explicit activation.
+
+
+## Approved event cosmetic collection (2026-11-24)
+Use permanent, guild-owned achievements for Frostfall and future major guild events, with event/year-specific IDs and no Shop alternative. Both donation tracks must qualify. Award automatically within the committed milestone transaction, never from UI progress or individual claims.
+- 50%: Winter's Aurora — `background_frostfall_winter_aurora_2026`
+- 75%: Frostfall Standard — `banner_frostfall_standard_2026`
+- 100%: Frozen Majesty — `border_frostfall_frozen_majesty_2026` and `name_frostfall_aurora_2026`
+- No change to Gold, buffs, donation targets or caps. All cosmetic rights survive the event end, membership changes, or unequipping.
+- Existing production schema has guild-scoped unique ownership in guild_cosmetic_unlocks and separate background/banner/profile frame/name color selections. Existing selection validators and CHECK constraints use explicit allowlists; extend these and register actual approved art before enabling. Preserve existing authorization and row locks; only linked guild leaders/officers can equip; reject wrong slot, wrong guild, unowned ID and unreleased asset. Preserve existing construction and Halloween cosmetics. Future collections add event-scoped definitions, not automatic grants for all events.
+- Review implementation: tools/guild-event-cosmetic-review.mjs, milestone regression suite, disposable PG17 settlement tests, and tools/winter-hearth-review/v2/event-cosmetic-settlement-candidate.sql. SQL candidate is NOT an applied migration. No production or staging writes; actual equip/UI/asset registry, migration validation and CI remain required.
+- Approved visual direction: Build the Market with compact contribution/buffs. Five local scenes selected by the highest joint milestone (0/25/50/75/100); generated artwork accepted by owner. Profile background is separate from the progression artwork. Verify alpha and mobile dimensions for banner/border before integration.

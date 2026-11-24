@@ -31,3 +31,13 @@ export function ultraLuxeNamePresetStyle(id:unknown):PlayerNameStylePreference|u
 export function verifiedUltraLuxeNameStyle(selectedId:unknown,verifiedOwnedIds:readonly string[]|undefined){
  return typeof selectedId==='string'&&verifiedOwnedIds?.includes(selectedId)?ultraLuxeNamePresetStyle(selectedId):undefined;
 }
+
+/** Account-scoped server readback. Unknown IDs and cross-account payloads fail closed. */
+export function normalizeUltraLuxeNameSelection(raw:unknown,accountId:string){
+ if(!raw||typeof raw!=='object'||!accountId)return undefined;
+ const row=raw as {accountId?:unknown;ownedIds?:unknown;selectedId?:unknown};
+ if(row.accountId!==accountId||!Array.isArray(row.ownedIds))return undefined;
+ const ownedIds=ownedUltraLuxeNamePresets(row.ownedIds.filter((id):id is string=>typeof id==='string')).map(p=>p.id);
+ const selectedId=ownedIds.find(id=>id===row.selectedId)??null;
+ return {accountId,ownedIds,selectedId};
+}

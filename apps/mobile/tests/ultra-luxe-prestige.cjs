@@ -18,4 +18,8 @@ assert.equal(p.verifiedUltraLuxeNameStyle('fake',['fake']),undefined);
 const picker=fs.readFileSync(path.join(root,'components/profile/UltraLuxeNameStylePicker.tsx'),'utf8');
 assert(picker.includes('if(!presets.length)return null'));
 assert(!picker.includes('onSaveNameStyle'));
+const id=p.ULTRA_LUXE_NAME_PRESETS[0].id;
+assert.equal(p.normalizeUltraLuxeNameSelection({accountId:'other',ownedIds:[id],selectedId:id},'self'),undefined);
+assert.deepEqual(p.normalizeUltraLuxeNameSelection({accountId:'self',ownedIds:[id,id,'unknown'],selectedId:id},'self'),{accountId:'self',ownedIds:[id],selectedId:id});
+assert.equal(p.normalizeUltraLuxeNameSelection({accountId:'self',ownedIds:[],selectedId:id},'self').selectedId,null);
 console.log('Private icon ownership and verified prestige preset resolution passed.');

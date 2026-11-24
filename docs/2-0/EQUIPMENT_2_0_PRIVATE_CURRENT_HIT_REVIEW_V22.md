@@ -1,0 +1,23 @@
+# Equipment 2.0 V22 — private current-hit conditional execution
+
+24 November 2026. Preserve V14 canonical catalogue/economy and V18 authored candidate effects. No change to approved release policy C12 or open D1–D10.
+
+## Previous validation
+At last readback V21 exact head 2afc6e08d8ae06212f0448996bd59d481971e1c0 still has queued focused workflows: private expanded integration 45392474050, hidden catalogue 45392474019, private GameState 45392473832, isolated core 45392473904 and Edge parity 45392474109. No V21 outcome numbers or source coverage yet verified. V20/V19 focused passes remain historical evidence only. Expo, tool economy, UX, private GameState compile and generated Edge parity remain unresolved.
+
+## First narrow conditional execution adapter
+The V19 phase compiler had 142 review records, but no actual conditional engine invocation. V22 adds a private, opt-in engine hook at the actual successful direct hit boundary after core damage modifiers and before shield/HP resolution. It supports exactly two candidate mechanics, four exact source IDs:
+- Winterbreaker, Ravager T2/T4/T5 dungeon weapon IDs: +7% current eligible direct class ability hit damage when target starts below 35% HP, shared 20s family cooldown.
+- Avalanche Crushing Finish, T5 six-piece milestone: +8% current eligible direct physical class ability hit damage below 30% HP, 20s cooldown.
+- If both are eligible, additive +15%, bounded by 20% candidate same-event equipment cap. No extra generated attack; same normal shield and HP accounting. A tagged QA activation reports incremental actual HP loss after shield/overkill clamp.
+- Conservative QA eligibility excludes basic attacks, misses (pre-hook hit check), periodic hits, missing damage school/true damage, generated V2/gem/companion IDs, fully shielded baseline hits, invalid or dead actors, wrong owner, same actor/target. Explicit damage school requirement and fully-absorbed baseline exclusion are review decisions, not final global effect semantics. A proc can be recorded with zero marginal HP damage if the baseline already kills the target.
+- Per-encounter runtime cooldown state keyed by effect family; repeated tier variants rejected. Mixed old equipment trait/dungeon reward authority denied to avoid unapproved overlap. Scope token WeakMap binds exact compiled input digest, a single QA Ravager actor and exact candidate IDs; forged/mismatched authority rejects. Test-only verifier, not production storage authentication. No candidate copy minted, owned or equipped, no set completion asserted.
+- No-token path unchanged in the proposed shared engine; Edge isolation plugin explicitly neutralizes this import and rejects any supplied authority or V2 actor, forbids real private source and issuer/policy markers. Generated Edge bundles NOT rebuilt or deployed. New actual engine source change is on draft branch only.
+
+## Test and experiment preparation
+Add isolated positive/negative tests: below threshold, physical restriction, current-hit +15%, exact 20s cooldown, duplicate tier family, wrong owner, basic/generated/periodic/true/absorbed/dead event, missing/forged/changed-input authority. These are authored tests, not yet confirmed passing. Source audit compares four IDs and original exact coefficients/cooldowns. Synthetic report audit rejects nonexistent outcome changes in zero-activation runs.
+
+Extend V21 private solo matrix for Ravager: 72 Winterbreaker pairs (6 bosses ×2 specs ×3 strategies ×2 bands), 24 Avalanche-only pairs and 24 combined pairs (Frostmarch only), total 120 matched candidate/baseline comparisons, 72 distinct baseline groups. Use identical original multi-slot QA fixture, enemy, seed, skills and no mutation/replay equality. V21 tier-bounded original Forge items only; hypothetical T5 effects do not imply T5 ownership. Actual engine run compares applied current-hit candidates vs no candidate; report activations, marginal HP damage, gained/lost wins, matched-win time and damage. New workflow wired, exact-head execution unconfirmed. V21 756 pairs remain queued; V22 120 not yet executed as verified results. Do not present synthetic report as measured combat.
+
+## Next
+Validate V21/V22 and broader build boundaries, review actual source gaps and role outcomes. Extend adapter incrementally to one-use charges on later eligible events (separate trigger and consumption receipts), then incoming-hit reductions and timed buffs, then shields with origin-aware depletion/expiry, healing and cleanse. The other 138 conditional records are not executable through this V22 adapter; 4 source records represent 2 distinct mechanics. No final CP weighting, market/ownership approval or release. No production/staging state, flags, main merge or deployment.

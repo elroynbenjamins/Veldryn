@@ -13,6 +13,7 @@ import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '.
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from './regional-power-balance';
 import {preparedCoopCombatants} from './potion-modifiers';
 import {scaleSocialEchoToHost} from './social-echo-balance';
+import {COOP_HOST_LEVEL_NORMALIZATION_VERSION} from './normalization';
 import {dungeonEncounterDepthMultipliers,dungeonBossTimeLimitMs,DUNGEON_BOSS_ENDURANCE_VERSION} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 import {roomArtifactOffers,applyRoomArtifact} from './room-artifact-choices';
@@ -61,7 +62,8 @@ export class QModeService{
   const hostBoost=regionalCombatPowerBoost(input.expeditionId,input.controllerSnapshot.combatPower,regionalEnabled);
   const players=[player,...allies.map(ally=>{
    const base=regionalCombatant(ally.snapshot,input.expeditionId,input.balanceVersion);
-   if(!ally.echo||!preferred.has(ally.echo.profileId))return base;
+   // Host-level normalization already bounds the donor. Do not flatten gear by host CP.
+   if(input.controllerSnapshot.normalized.normalizationVersion===COOP_HOST_LEVEL_NORMALIZATION_VERSION||!ally.echo||!preferred.has(ally.echo.profileId))return base;
    const donorBoost=regionalCombatPowerBoost(input.expeditionId,ally.snapshot.combatPower,regionalEnabled);
    return scaleSocialEchoToHost(base,input.controllerSnapshot.combatPower,ally.snapshot.combatPower,hostBoost,donorBoost);
   })];

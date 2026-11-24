@@ -44,3 +44,25 @@ assert.equal(evaluateRoleReadiness('STONECALLER',.9,['mitigate','utility']).read
 assert.equal(evaluateRoleReadiness('STONECALLER',.9,['damage']).ready,false);
 
 console.log('coop phase3 normalization OK', JSON.stringify({before:over.normalized.before,after:over.normalized.snapshot}));
+
+// Q-Mode: host keeps visible level even when internal legacy calibration differs.
+const hostRecord = {...records.get('over')!, characterLevel:40, combatScalingLevel:80};
+const hostFreeze = (record:AuthoritativeLoadoutRecord, syncLevel:number) => resolveAndFreezeLoadout({
+ accountId:record.accountId, characterId:record.characterId, loadoutId:record.loadoutId,
+ expectedRevision:record.revision, minLevel:10, syncLevel, hostLevelSync:true,
+ repository:{getOwnedLoadout:()=>record},
+});
+const host=hostFreeze(hostRecord,40);
+assert.equal(host.normalized.effectiveLevel,40);
+assert.equal(host.normalized.snapshot.level,40);
+assert.equal(host.normalized.normalizationVersion,'coop-host-level-v1');
+const high=hostFreeze({...hostRecord,characterLevel:55},40);
+const low=hostFreeze({...hostRecord,characterLevel:30},40);
+assert.equal(high.normalized.snapshot.level,40);
+assert.equal(low.normalized.snapshot.level,30);
+const stronger=hostFreeze({...hostRecord,stats:{...hostRecord.stats,attackPower:hostRecord.stats.attackPower*2}},40);
+assert.ok(stronger.normalized.snapshot.attackPower>host.normalized.snapshot.attackPower,'Strong equipment must improve actual output past the old hard cap');
+assert.equal(stronger.normalized.snapshot.critChance,hostRecord.stats.critChance);
+assert.ok(stronger.normalized.snapshot.attackPower < 625*40/25*1.75,'Diminishing gear tail remains bounded');
+assert.equal(hostRecord.characterLevel,40,'Frozen policy never edits source progression');
+console.log('PASS host-level Q-Mode, lower/higher donors, visible/legacy units and gear differences');

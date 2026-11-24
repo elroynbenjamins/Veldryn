@@ -54,8 +54,8 @@ export class OnlineQModeRuntime{
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
   const entryError=regularDungeonEntryError(definition,game.state,record.characterLevel,record.combatPower,request.tier,'qmode');
   if(entryError)throw new GameplayError(entryError);
-  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),sync=definition.recommendedLevel;
-  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,repository:{getOwnedLoadout:()=>source}});
+  const minimum=regularDungeonTierRequiredLevel(definition,request.tier),sync=record.characterLevel;
+  const freeze=(source:AuthoritativeLoadoutRecord)=>resolveAndFreezeLoadout({accountId:source.accountId,characterId:source.characterId,loadoutId:source.loadoutId,expectedRevision:source.revision,minLevel:minimum,syncLevel:sync,hostLevelSync:true,repository:{getOwnedLoadout:()=>source}});
   if(record.characterId!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned');
   // The loadout revision is a UI observation, not a lock on unrelated gathering/combat progress.
   // The actual dungeon snapshot is rebuilt from current authoritative state and checked again
@@ -73,7 +73,7 @@ export class OnlineQModeRuntime{
    for(const characterId of requestedCharacters){
     const source=sources.find(item=>item.candidate.characterId===characterId);
     if(!source)throw new GameplayError('social_echo_unavailable',409);
-    // Recheck role-readiness at this dungeon's actual sync level.
+    // Recheck role-readiness at the host's authoritative character level.
     try{freeze(source.record);}
     catch{throw new GameplayError('social_echo_unavailable',409);}
     let published:{echoProfileId?:string|null};
@@ -99,7 +99,8 @@ export class OnlineQModeRuntime{
   }
   const preferredProfileIds=publishedSelections;
   if(preferredProfileIds.some(id=>!profiles.some(profile=>profile.profileId===id)))throw new GameplayError('social_echo_unavailable',409);
-  const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:sync,controllerLevel:record.characterLevel});
+  // NPC filler power is unchanged: host-level syncing applies to real borrowed builds only.
+   const npcSnapshots=createQModeNpcAllies({minimumLevel:minimum,syncLevel:Math.min(sync,definition.recommendedLevel),controllerLevel:record.characterLevel});
   const seed=this.services.randomId()+this.services.randomId(),id=this.services.randomId();
   const domain=new QModeService(new MemoryQModeRunRepository(),seed);
   const run=domain.create({requestId:request.requestId,runId:id,controllerAccountId:accountId,controllerSnapshot:controller,expeditionId:definition.id,tier:request.tier,contentVersion:content,balanceVersion:REGIONAL_DUNGEON_BALANCE_VERSION,nowMs:game.serverNow,profiles,npcSnapshots,preferredProfileIds});

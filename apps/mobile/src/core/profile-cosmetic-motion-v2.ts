@@ -25,3 +25,8 @@ export function cosmeticGlowOpacity(profile:MotionProfile,clock:number,periodMs:
  const pulse=Math.sin(Math.PI*f)**2;
  switch(profile){case 'gloamward':return peak*pulse**4;case 'frostbound':return peak*pulse**6;case 'amberglass':return peak*pulse**2;case 'briarbound':return peak*pulse;case 'celestial':return peak*(.2+.8*pulse**3);case 'draconic':return peak*(.25+.75*pulse**2);case 'abyssal':return peak*(.18+.82*pulse);case 'paradox':return peak*(.15+.85*Math.abs(Math.sin(3*Math.PI*f)));}
 }
+
+/** Scroll-content coordinates. Treat missing measurements and zero-sized cards as inactive. */
+export function cosmeticViewportVisible(sceneTop:number,sceneHeight:number,scrollTop:number,viewportHeight:number){
+ return [sceneTop,sceneHeight,scrollTop,viewportHeight].every(Number.isFinite)&&sceneHeight>0&&viewportHeight>0&&sceneTop+sceneHeight>scrollTop&&sceneTop<scrollTop+viewportHeight;
+}

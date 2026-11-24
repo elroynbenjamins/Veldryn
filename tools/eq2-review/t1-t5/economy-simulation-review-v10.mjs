@@ -24,7 +24,7 @@ export const assumptions=Object.freeze({
   // Work hours are synthetic active-equivalent hours, not calendar elapsed.
   profiles:Object.freeze([
     Object.freeze({id:'casual',hours:1,goldIncomePerHour:[0,400,1000,3000,6500,13000],buyRefined:.75,buyCombat:.75}),
-    Object.freeze({id:'profession_specialist',hours:4,goldIncomePerHour:[0,600,1500,4500,9500,19000],buyRefined:0,buyCombat:1}),
+    Object.freeze({id:'profession_specialist',hours:4,goldIncomePerHour:[0,600,1500,4500,9500,19000],buyRefined:.5,buyCombat:1}),
     Object.freeze({id:'combat_focused',hours:4,goldIncomePerHour:[0,800,2000,6000,13000,26000],buyRefined:1,buyCombat:0})
   ]),
   // Only illustrative throughput for unexpanded inputs. Rare inputs remain a stochastic expectation, not guaranteed.
@@ -101,7 +101,7 @@ export function simulateProfile(row,profile,stress=1,version='candidate'){
   let bought=0,ownHours=0;
   for(const x of row.inputs){
     const k=kind(x),isCombat=k==='common'||k==='rare';
-    // Specialists buy combat and unmodeled raw finds and binders, not forced to level another skill.
+    // Specialists buy all combat and half of processed supplies (a synthetic own-specialty share), plus binders and raw finds; no secondary profession gate.
     const share=k==='binder'||k==='preserved_other'?1:isCombat?profile.buyCombat:profile.buyRefined;
     const q=x[version],v=q*prices[k]*assumptions.tierUnitGold[row.tier]*stress;
     bought+=v*share;
@@ -116,7 +116,7 @@ export function simulateProfile(row,profile,stress=1,version='candidate'){
   return {sourceId:row.sourceId,tier:row.tier,profile:profile.id,stress,version,cash,fullOpportunityCost:cost.cost,
     purchasedMaterialValue:bought,ownHours,fundingHours,forgeHours:row.seconds/3600,effortHours,
     activeDayEquivalents:effortHours/profile.hours,knownPrepHours:prep.knownProcessingSeconds/3600,
-    assumesMarketSupply:true,combatProgressionRequired:false,...deny};
+    assumesMarketSupply:true,requiresSecondaryProfession:false,combatProgressionRequired:false,...deny};
 }
 const median=xs=>{const s=[...xs].sort((a,b)=>a-b),i=Math.floor(s.length/2);return s.length%2?s[i]:(s[i-1]+s[i])/2;};
 export function summarizeEconomy(){

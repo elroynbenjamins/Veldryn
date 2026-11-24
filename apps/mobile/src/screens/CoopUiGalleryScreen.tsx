@@ -46,6 +46,7 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
       view={assertCoopSynchronizationPresentation({
         activeCount:3,scalePercent:80,partyWide:true,personalCpDelta:0,
         requiresProgression:false,canGateEntry:false,canFilterRecruitment:false,
+        visibleOnRecruitmentBoard:false,canRankCandidates:false,
         links:[
           {id:'runebound_pact',name:'Runebound Pact',classNames:['Ironwarden','Stonecaller'],
            bonuses:[{statKey:'armor_pct',label:'Armor',value:'+4%'},{statKey:'ward_strength_pct',label:'Ward effectiveness',value:'+4%'},{statKey:'shield_strength_pct',label:'Shield effectiveness',value:'+2.4%'}]},

@@ -176,3 +176,27 @@ const credits=accounts.map((_,i)=>small.read(principal(i),'nonce_shared')!.share
 assert.equal(credits.reduce((n,x)=>n+x,0),100);assert.ok(credits.every(x=>x>=0&&x<=11));
 assert.equal(small.settleDue(week+180002).settled,0);
 console.log('PASS private weekly transaction reference: frozen replay, account caps, nonce conflicts, late settlement, shared HP conservation');
+
+import {weeklyReviewSurvivalBuild} from '../../../backend/src/server/combat/weekly-guild-survival-review';
+import {weeklyRaidReplayFrame} from '../src/core/weekly-guild-raid-replay-review';
+let survivalRuns=0;
+for(const cohort of cohorts)for(const boss of WEEKLY_GUILD_BOSSES)for(const choice of ['current','guarded','resilient'] as const){
+ const group=cohort.actors.filter(a=>a.variant==='none'&&a.player.role==='damage').flatMap(a=>[0,1].map(seed=>{
+  const actor=weeklyReviewSurvivalBuild(a.player,choice);
+  return previewWeeklyGuildCombat({boss,reference:cohort.reference,player:actor,seed:'WG_survival_'+a.player.classId+'_'+seed});
+ }));
+ survivalRuns+=group.length;
+ console.log('WEEKLY_GUILD_SURVIVAL '+JSON.stringify({tier:cohort.tier,boss,choice,runs:group.length,meanDuration:mean(group.map(r=>r.durationMs)),meanHpRemoved:mean(group.map(r=>r.actualBossHpRemoved)),wipes:group.filter(r=>r.reason==='wipe').length}));
+}
+assert.equal(survivalRuns,360);
+const replaySource=settled.replay!;
+assert.equal(weeklyRaidReplayFrame(null,1000,0,false).state,'pending');
+const full=weeklyRaidReplayFrame(replaySource,180000,null,false);
+assert.equal(full.state,'complete');assert.equal(full.events.length,replaySource.events.length);assert.equal(full.effects.length,0);
+assert.equal(weeklyRaidReplayFrame(replaySource,30000,0,false).effects.length,0);
+assert.equal(weeklyRaidReplayFrame(replaySource,1000,0,true).effects.length,0);
+assert.equal(weeklyRaidReplayFrame(replaySource,500,1000,false).effects.length,0);
+const cue=replaySource.events.find(e=>e.atMs>0&&['damage','cast_start'].includes(e.type))!;
+assert.ok(weeklyRaidReplayFrame(replaySource,cue.atMs,Math.max(0,cue.atMs-100),false).effects.some(e=>e===cue));
+expectReject(()=>weeklyRaidReplayFrame({...replaySource,events:[{type:'damage',atMs:10},{type:'damage',atMs:5}]},1000,0,false),'invalid_raid_replay_order');
+console.log('PASS 360 survival trade-off scenarios and settled-only replay seek contracts');

@@ -1,0 +1,41 @@
+name: Weekly Guild Boss private PostgreSQL review
+on:
+  pull_request:
+    paths:
+      - 'tools/weekly-guild-raid-postgres-*'
+      - '.github/workflows/weekly-guild-raid-postgres-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: veldryn_ci
+          POSTGRES_PASSWORD: local_ci_fixture_only
+          POSTGRES_DB: weekly_raid_review_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U veldryn_ci -d weekly_raid_review_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: veldryn_ci
+      PGPASSWORD: local_ci_fixture_only
+      PGDATABASE: weekly_raid_review_ci
+      PGCONNECT_TIMEOUT: '5'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+      - run: node tools/weekly-guild-raid-postgres-concurrency.mjs

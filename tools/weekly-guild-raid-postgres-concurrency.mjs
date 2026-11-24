@@ -1,0 +1,45 @@
+import assert from 'node:assert/strict';
+import {spawn,spawnSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+const args=['-X','-q','-t','-A','-v','ON_ERROR_STOP=1'];
+if(process.env.PGDATABASE!=='weekly_raid_review_ci'||process.env.PGHOST!=='127.0.0.1')throw Error('ephemeral CI only');
+function sync(s,ok=true){const r=spawnSync('psql',[...args,'-c',s],{encoding:'utf8',timeout:20000});assert.equal(r.status===0,ok,r.stderr);return ok?r.stdout.trim():r.stderr}
+function asyncSql(s){return new Promise((resolve,reject)=>{const p=spawn('psql',[...args,'-c',s]);let out='',err='';p.stdout.on('data',v=>out+=v);p.stderr.on('data',v=>err+=v);p.on('error',reject);p.on('close',status=>resolve({status,out:out.trim(),err}))})}
+const file=fileURLToPath(new URL('./weekly-guild-raid-postgres-qa.sql',import.meta.url));
+const schema=spawnSync('psql',[...args,'-f',file],{encoding:'utf8',timeout:20000});assert.equal(schema.status,0,schema.stderr);
+const q='weekly_raid_qa.';
+sync("INSERT INTO "+q+"encounter VALUES ('raid','guild','2026-11-23 UTC','2026-11-30 UTC',100,100,0),('cap','guild','2026-11-23 UTC','2026-11-30 UTC',10000,10000,0)");
+sync("INSERT INTO "+q+"roster SELECT e.id,'a'||i,true FROM "+q+"encounter e CROSS JOIN generate_series(1,12) i");
+sync("INSERT INTO "+q+"actor SELECT 'a'||i,c,1,'{}'::jsonb FROM generate_series(1,12) i CROSS JOIN (VALUES ('hero'),('alt')) x(c)");
+const reserve=(e,a,n,c='hero',time='2026-11-24 12:00:00+00',revision=1)=>"SELECT "+q+"reserve('"+e+"','"+a+"','"+c+"','"+n+"','"+time+"',"+revision+",1000,900000,'{\"fixture\":true}')";
+const settle=(e,time='2026-11-24 12:03:00+00')=>"SELECT "+q+"settle('"+e+"','"+time+"')";
+const retries=await Promise.all(Array.from({length:8},()=>asyncSql(reserve('raid','a1','nonce_same'))));
+assert.ok(retries.every(r=>r.status===0&&r.out==='1'),JSON.stringify(retries));
+assert.equal(sync("SELECT count(*) FROM "+q+"attempt"),'1');
+assert.match(sync(reserve('raid','a1','nonce_same','alt'),false),/NONCE_CONFLICT/);
+assert.match(sync(reserve('raid','a1','nonce_diff','alt'),false),/PENDING/);
+assert.equal(sync(settle('raid','2026-11-24 12:02:59+00')),'0');
+sync("UPDATE "+q+"actor SET revision=2,snapshot='{\"changed\":true}' WHERE account_id='a1' AND character_id='hero'");
+assert.equal(sync("SELECT actor_revision FROM "+q+"attempt WHERE account_id='a1'"),'1');
+const entries=await Promise.all(Array.from({length:11},(_,i)=>asyncSql(reserve('raid','a'+(i+2),'nonce_same'))));
+assert.ok(entries.every(r=>r.status===0),JSON.stringify(entries));
+const workers=await Promise.all(Array.from({length:5},()=>asyncSql(settle('raid'))));
+assert.ok(workers.every(r=>r.status===0),JSON.stringify(workers));assert.equal(workers.reduce((n,r)=>n+Number(r.out),0),12);
+assert.equal(sync("SELECT remaining_hp FROM "+q+"encounter WHERE id='raid'"),'0');
+assert.equal(sync("SELECT sum(credited_hp) FROM "+q+"attempt WHERE encounter_id='raid'"),'100');
+assert.equal(sync(settle('raid')),'0');
+assert.match(sync(reserve('cap','a1','nonce_stale'),false),/ACTOR_REVISION/);
+assert.equal(sync(reserve('cap','a1','nonce_001','hero','2026-11-24 12:00:00+00',2)),'1');
+// Rolled-back worker changes must disappear, including shared HP.
+sync('BEGIN; '+settle('cap')+'; ROLLBACK;');
+assert.equal(sync("SELECT remaining_hp FROM "+q+"encounter WHERE id='cap'"),'10000');
+assert.equal(sync("SELECT count(*) FROM "+q+"attempt WHERE encounter_id='cap' AND settled_at IS NOT NULL"),'0');
+assert.equal(sync(settle('cap')),'1');
+assert.equal(sync(reserve('cap','a1','nonce_002','alt','2026-11-24 12:03:01+00')),'2');
+sync(settle('cap','2026-11-24 12:06:01+00'));
+assert.equal(sync(reserve('cap','a1','nonce_003','alt','2026-11-24 12:06:02+00')),'3');
+sync(settle('cap','2026-11-24 12:09:02+00'));
+assert.match(sync(reserve('cap','a1','nonce_004','alt','2026-11-24 12:09:03+00'),false),/CAP/);
+assert.equal(sync("SELECT sum(credited_hp) FROM "+q+"attempt WHERE encounter_id='cap' AND account_id='a1'"),'2800');
+assert.equal(sync("SELECT bool_and(relrowsecurity)::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='weekly_raid_qa' AND c.relkind='r'"),'true');
+console.log('PASS isolated PostgreSQL independent-session retries, worker race, rollback and caps; synthetic inputs only');

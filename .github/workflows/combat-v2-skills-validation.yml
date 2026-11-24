@@ -158,6 +158,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-sync-balance-matrix.js
       - name: Run 36 dungeon compositions against six authored regional bosses
         run: node backend/dist/server/combat/v2/__tests__/party-sync-regional-boss-matrix.js
+      - name: Run 432 ten-slot Skills Equipment party Synchronization integration cases
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

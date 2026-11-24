@@ -314,6 +314,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           abilityId:'V2_QA_HIT:'+adjusted.activated.join('+'),amount:Number(extra.toFixed(2)),detail:'private_qa_current_hit_only'});
       }
     }
+    const eq2Incoming=eq2PrivateHit&&source.definition.team==='enemies'&&target.definition.team==='players'?{
+      now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+      originalEnemyAbility:abilityId==='BASIC'||(source.definition.abilities.some(a=>a.id===abilityId)&&
+        !(source.definition.phases??[]).some(p=>p.id===abilityId)),
+      direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
+      sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield,raw
+    }:undefined;
+    if(eq2PrivateHit&&eq2Incoming){
+      const adjusted=eq2PrivateHit.beforeIncomingHit(eq2Incoming);
+      if(adjusted.activated.length){
+        const prevented=Math.max(0,Math.min(target.hp,Math.max(0,raw-target.shield))-Math.min(target.hp,Math.max(0,adjusted.raw-target.shield)));
+        raw=adjusted.raw;
+        events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
+          abilityId:'V2_QA_DEFENSE:'+adjusted.activated.join('+'),amount:Number(prevented.toFixed(2)),detail:'private_qa_incoming_reduction'});
+      }
+    }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
@@ -321,6 +337,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const dealt=Math.max(0,source.combatV2&&eventType==='damage'
       ?Math.min(target.hp,raw-absorbed):raw-absorbed);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
+    if(eq2PrivateHit&&eq2Incoming){
+      for(const id of eq2PrivateHit.afterIncomingHit(eq2Incoming,Math.max(0,eq2Incoming.targetHp-target.hp)))
+        events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
+          abilityId:'V2_QA_DEFENSE_EARN:'+id,detail:'private_qa_defense_earned'});
+    }
     if(eq2PrivateHit&&eq2Event){
       for(const id of eq2PrivateHit.afterDirectHit(eq2Event,dealt))
         events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,

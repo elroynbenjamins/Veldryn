@@ -104,6 +104,10 @@ V18 preserves V14/V17 authority boundaries: 68 remaining source milestones norma
 
 V18 exact-head focused checks succeeded; 324 baseline traces, 648 shadow rows, 444 with broad hints, no applied candidate effects. Seven broader workflows failed; exact historical mobile preview economy module restored, backend readiness and Edge isolation remain blockers. V19 compiles 142 conditional definitions into phase-bound QA intents, not engine execution. Private harness prepares 324 matched actual-engine counterfactual pairs for one permanent candidate stat only; new CI unconfirmed, no results claimed and no candidate custody or conditional effect authority. D1–D10 remain open; see `docs/2-0/EQUIPMENT_2_0_EFFECT_COMPILER_REVIEW_V19.md`.
 
+## 3G. V20 integration recovery and measured static sensitivity
+
+V19 exact-head catalogue (99 tests, zero failures) and private engine integration passed. The 324 matched static-stat counterfactuals actually ran; zero wins in either condition, raw damage delta +430.0902 averaged across heterogeneous channels, healing delta zero. Single-item 35s QA boss fixtures cannot calibrate final CP. V20 restores two exact historical readiness dependencies, confines opaque metadata to the private cross-project rehearsal type, moves exact cross-project files to a dedicated strict build with all five original tests retained, and adds fail-closed legacy-build replacements for three equipment/dungeon hooks. Edge generated bundles remain stale until verified regeneration; Expo mismatch and all new V20 CI remain outstanding. No live runtime or gate change. See `docs/2-0/EQUIPMENT_2_0_INTEGRATION_RECOVERY_V20.md`. D1–D10 remain open.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

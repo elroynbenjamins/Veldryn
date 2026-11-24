@@ -45,7 +45,7 @@ ok(app.includes("partyUnlocked={earlyFeatureUnlocked(state,'party')}"),'Both Par
 ok(shared.includes("if(mode!=='legacy')")&&shared.includes("<PartyHubPanel dedicated"),'The live Party view must use its focused layout, not the legacy Social tabs');
 ok(shared.includes("['Overview','Contracts','Chat'] as const")&&shared.includes('view===\'Chat\'&&!canUsePartyChat'),'Party must expose only Overview, Contracts and membership-gated Chat');
 ok(shared.includes('shouldShowPartyChat(social.party,social.accountId)')&&shared.includes("setPartyView('Overview')"),'Chat access must be checked against current Party membership and recover after disbanding');
-ok(shared.includes('<PartyCreateSheet')&&shared.includes('savePartyPreferences')&&shared.includes('idempotencyKey:key(\'create:\'+activityLevel+\':\'+partyLanguage+\':\'+minimumLevel)'),'Party creation must use the activity/language/level sheet and preserve idempotent backend creation');
+ok(shared.includes('<PartyCreateSheet')&&shared.includes('savePartyPreferences')&&shared.includes('idempotencyKey:key(\'create:\'+activityLevel+\':\'+partyLanguage+\':\'+minimumLevel+\':\'+shortName)'),'Party creation must use the activity/language/level sheet and preserve idempotent backend creation');
 const createPartySheet=read('src/components/PartyCreateSheet.tsx');
 const partyPostComposer=read('src/components/PartyRecruitmentComposer.tsx');
 const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
@@ -61,7 +61,7 @@ ok(recruitmentListing.includes("card.activityLevel==='regular'?'Regular'")&&recr
 ok(partyPostComposer.includes('activityKind:undefined,goal:undefined,startMode:undefined,scheduledAt:undefined'),'Unused old advert metadata is not published');
 ok(party.includes("if(props.dedicated){props.onOpenRecruitment?.();}else{setBrowseMode('players');setSection('find');}}} style={({pressed})=>[s.emptySlots"),'The empty Party slot Recruit action must open the dedicated Recruitment route rather than a hidden embedded section');
 ok(shared.includes('PartyRecruitmentComposer')&&shared.includes("post('party_recruiting')"),'Party creation can continue directly to simplified recruiting');
-ok(partyBackend.includes("'create_party_with_preferences_v1'")&&partyBackend.includes("'update_party_preferences_v1'")&&partyBackend.includes("'party_social_state_v18'")&&partyBackend.includes("'join_party_auto_role_v1'"),'Party preferences and joins are backed by authenticated RPCs');
+ok(partyBackend.includes("'create_party_named_v1'")&&partyBackend.includes("'update_party_preferences_v1'")&&partyBackend.includes("'party_social_state_v18'")&&partyBackend.includes("'join_party_auto_role_v1'"),'Party preferences and joins are backed by authenticated RPCs');
 ok(party.includes('onEditPreferences')&&party.includes('Edit Party preferences'),'Party leaders can edit preferences without disbanding the team');
 
 ok(shared.includes('respondPartyInvitation(invite.id,true,character())')&&shared.includes('respondPartyInvitation(invite.id,false)')&&shared.includes('cancelPartyInvitation(invite.id)'),'Party invitations must preserve verified accept, decline and cancel paths');

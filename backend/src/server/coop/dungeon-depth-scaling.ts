@@ -19,3 +19,15 @@ export function dungeonDepthMultipliers(roomDepth:number,enabled:boolean):Dungeo
   defense:Math.pow(DUNGEON_ENDURANCE_DIFFICULTY.defensePerRoom,steps),
  };
 }
+
+/** Boss durability grows separately from ordinary rooms. Versioned on new
+ * runs so reconnects and already-created expeditions keep their frozen curve.
+ * Preserve baseline checkpoint, attack pressure and the global combat limit.
+ * Candidate coefficients require real-engine checkpoint calibration before release. */
+export const DUNGEON_BOSS_ENDURANCE_VERSION=2 as const;
+export function dungeonEncounterDepthMultipliers(roomDepth:number,enabled:boolean,isBoss:boolean,bossVersion?:typeof DUNGEON_BOSS_ENDURANCE_VERSION):DungeonDepthMultipliers{
+ const original=dungeonDepthMultipliers(roomDepth,enabled);
+ if(!enabled||!isBoss||bossVersion!==DUNGEON_BOSS_ENDURANCE_VERSION)return original;
+ const steps=roomDepth-1;
+ return {hp:Math.pow(1.022,steps),attack:original.attack,defense:Math.pow(1.006,steps)};
+}

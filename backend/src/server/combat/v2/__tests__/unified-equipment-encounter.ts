@@ -154,6 +154,33 @@ const expectedWithSet=round6(expectedDefenseBase*1.02);
 const expectedWithAffix=round5(expectedWithSet*1.03);
 // Class/spec first, then quality/rarity, set, and finally the random roll.
 assert.equal(resolved.stats.defense,expectedWithAffix);
+ // Marginal accounting must reconstruct every personal stat. It must not
+ // reapply percentages to an already resolved total or price temporary effects.
+ const contributions=evidence.statContributions;
+ for(const key of keys){
+  const reconstructed=contributions.classOnly[key]+contributions.skills[key]+
+   contributions.itemBase[key]+contributions.sets[key]+contributions.affixes[key];
+  assert.ok(Math.abs(reconstructed-resolved.stats[key])<1e-8,'contribution mismatch '+key);
+ }
+ assert.equal(contributions.itemBase.defense,
+  evidence.statStages.afterItemBase.defense-evidence.statStages.afterSkills.defense);
+ assert.equal(contributions.sets.defense,expectedWithSet-expectedDefenseBase);
+ assert.equal(contributions.affixes.defense,expectedWithAffix-expectedWithSet);
+ // Neither upstream final ceiling can be bypassed by the last affix stage.
+ const midCeiling=(expectedWithSet+expectedWithAffix)/2;
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ // Exact boundary stays eligible and retains the old numerical result.
+ const exactCap=simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:expectedWithAffix}},
+   setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:expectedWithAffix}}},
+ ],true);
+ assert.deepEqual(exactCap.combat,enabled.combat);
+
 
 assert.ok(resolved.tags?.includes('combat-v2-class-base-only'));
 assert.notEqual(resolved.stats,actor.stats,'Output must use a separately issued stat object');

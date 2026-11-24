@@ -406,8 +406,20 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       }
     }
   };
-  const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=v2Encounter&&effect.healBelowHpPct!==undefined&&hpPct(target)<effect.healBelowHpPct
-      ?1+clamp(effect.healBonus??0,0,.40):1;
+  // Evaluate the recipient's current HP at effect resolution, never at cast
+  // selection or as a party-wide snapshot. Only original V2 player class
+  // techniques may use authored threshold fields; periodic/proc/legacy paths
+  // cannot inherit a bonus merely because a V2 ally is in the encounter.
+  const thresholdSupportMultiplier=(source:CombatantState,target:CombatantState,
+    abilityId:string,threshold:number|undefined,bonus:number|undefined)=>{
+    if(!source.alive||!target.alive||!source.combatV2||
+      source.definition.team!=='players'||target.definition.team!=='players'||
+      !abilityId.includes(':v2:')||!source.definition.abilities.some(a=>a.id===abilityId)||
+      threshold===undefined||bonus===undefined||!Number.isFinite(threshold)||
+      !Number.isFinite(bonus)||threshold<=0||threshold>.75||hpPct(target)>=threshold)return 1;
+    return 1+clamp(bonus,0,.40);
+  };
+  const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=direct?thresholdSupportMultiplier(source,target,abilityId,effect.healBelowHpPct,effect.healBonus):1;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
       (1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct'))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
@@ -455,7 +467,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+    if(effect.kind==='shield'){if(!target.alive)return;const requested=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*gemShieldMultiplierV1(source,now)*(source.definition.alchemyModifiers?.shielding??1)*
+      thresholdSupportMultiplier(source,target,abilityId,effect.shieldBelowHpPct,effect.shieldBonus)*
       (source.combatV2?reactiveShieldMultiplierV2(source,target,now):1)*
       (v2Encounter?1+clamp(source.definition.combatV2?.equipmentEffects?.shieldStrengthPct??0,0,1):1)*
       (1+sync(source,'shield_strength_pct')));

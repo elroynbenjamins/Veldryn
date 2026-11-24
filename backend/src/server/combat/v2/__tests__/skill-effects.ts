@@ -332,3 +332,60 @@ const soulRend=abilityFor('HEXWEAVER','Hex Detonation',1);
 assert.ok(soulRend.effects.some(e=>e.kind==='damage'&&e.lifestealPct===.10),
  'Hexweaver Soul Rend must use damage-based lifesteal');
 console.log('PASS: all nine classes, 18 profiles, 162 variants across 54 skills, deterministic runtime, trust and legacy parity');
+
+// Critical-support pass: real authored variants, per-recipient resolution,
+// exact boundary, dead recipients, mixed legacy isolation and deterministic replay.
+const sanctuary=abilityFor('DAWNKEEPER','Solar Hymn',0);
+const wideRoots=abilityFor('STONECALLER','Seismic Shelter',1);
+assert.ok(sanctuary.effects.some(e=>e.kind==='heal'&&e.healBelowHpPct===.30&&e.healBonus===.20));
+assert.ok(wideRoots.effects.some(e=>e.kind==='shield'&&e.shieldBelowHpPct===.30&&e.shieldBonus===.25));
+assert.ok(abilityFor('DAWNKEEPER','Solar Hymn',1).effects.every(e=>e.healBelowHpPct===undefined));
+assert.ok(abilityFor('STONECALLER','Seismic Shelter',0).effects.every(e=>e.shieldBelowHpPct===undefined));
+for(const [classId,skillName,variant,kind,threshold,bonus] of [
+ ['DAWNKEEPER','Solar Hymn',0,'heal',.30,.20],
+ ['STONECALLER','Seismic Shelter',1,'shield',.30,.25],
+ ['DAWNKEEPER','Dawn Mend',0,'heal',.35,.25],
+ ['STONECALLER','River Stone',0,'heal',.40,.25],
+] as const){
+ const base=launchPlayer(CLASS_NAMES_V2[classId],50);
+ const skill=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===skillName)!;
+ const data:VerifiedSkillBuildV2={actor:base,
+   verified:{classId,level:50,ownedInstanceIds:new Set()},
+   selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId===classId)!.id,
+     equipment:{},activeSkills:[{skillId:skill.id,variantId:skill.variants[variant].id}],
+     talentRanks:{},signaturePassiveIds:[],capstoneId:null},ownedItemsById:{},setsById:{}};
+ const compiled=compileServerSkillBuildV2(true,data);
+ // Fixed HP and healing power isolate the authored multiplier from scaling.
+ const healer={...compiled,id:'CR_SUPPORT',stats:{...compiled.stats,maxHp:1000,healingPower:100},basicAttackCoeff:0};
+ const ally=(id:string):CombatantDefinition=>({...launchPlayer('Ironwarden',50),id,
+   stats:{...base.stats,maxHp:1000},abilities:[],basicAttackCoeff:0,basicAttackMs:999999});
+ const critical=ally('CR_LOW'),boundary=ally('CR_BOUNDARY'),fallen=ally('CR_DOWN');
+ const carry=(hp:number,downed=false)=>({hp,downed,cooldownRemainingMs:{},basicAttackRemainingMs:999999});
+ const input={seed:'critical-support-'+skillName,players:[healer,critical,boundary,fallen],
+   enemies:[enemy],maxDurationMs:1000,tickMs:100,initialPlayerState:{
+     [healer.id]:carry(800),[critical.id]:carry(Math.round(threshold*1000)-1),
+     [boundary.id]:carry(Math.round(threshold*1000)),[fallen.id]:carry(0,true)}};
+ const plain={...healer,abilities:healer.abilities.map(a=>({...a,effects:a.effects.map(e=>({
+   ...e,healBelowHpPct:undefined,healBonus:undefined,shieldBelowHpPct:undefined,shieldBonus:undefined}))}))};
+ const run=simulateCombat(input), control=simulateCombat({...input,players:[plain,critical,boundary,fallen]});
+ assert.deepEqual(run,simulateCombat(input),'deterministic critical support '+skillName);
+ const event=(r:typeof run,id:string)=>r.events.find(e=>e.type===kind&&e.actorId===healer.id&&
+   e.targetId===id&&e.abilityId===healer.abilities[0].id);
+ const boosted=event(run,critical.id),normal=event(control,critical.id);
+ assert.ok(boosted&&normal&&normal.amount!>0,skillName+' must reach injured ally');
+ assert.ok(Math.abs(boosted.amount!-normal.amount!*(1+bonus))<=.03,skillName+' conditional multiplier');
+ assert.equal(event(run,fallen.id),undefined,'no effect on downed actor');
+ if(skillName==='Solar Hymn'||skillName==='Seismic Shelter'){
+   assert.ok(event(run,boundary.id),'party-wide skill must include boundary ally');
+   assert.equal(event(run,boundary.id)?.amount,event(control,boundary.id)?.amount,'strict below threshold');
+   assert.equal(event(run,healer.id)?.amount,event(control,healer.id)?.amount,'healthy recipient unchanged');
+ }
+ const legacy={...healer,combatV2:undefined,tags:[]};
+ const legacyPlain={...plain,combatV2:undefined,tags:[]};
+ // Keep a different V2 party member present to exercise mixed-mode isolation.
+ const mixed={...boundary,combatV2:compiled.combatV2};
+ assert.deepEqual(simulateCombat({...input,players:[legacy,critical,mixed,fallen]}).events,
+   simulateCombat({...input,players:[legacyPlain,critical,mixed,fallen]}).events,
+   'legacy source must not gain threshold bonus from another V2 party member');
+}
+console.log('PASS: authored critical-support variants, recipient boundaries, downed exclusion and mixed-mode parity');

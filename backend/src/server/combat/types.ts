@@ -82,6 +82,9 @@ export interface AbilityEffect {
   /** Only applied to v2 direct heals; no changes to legacy healing. */
   healBelowHpPct?:number;
   healBonus?:number;
+  /** V2 class shield only: additional fractional strength below recipient HP threshold. */
+  shieldBelowHpPct?:number;
+  shieldBonus?:number;
   shieldReflectPct?:number;
   kind: EffectKind;
   /** Optional per-effect target for Combat 2.0 compound abilities. Existing effects keep ability target. */

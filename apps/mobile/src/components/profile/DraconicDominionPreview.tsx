@@ -42,13 +42,13 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.background} resizeMode="cover" style={s.fill}/>
    <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
-   <UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
+   <UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
    {mode==='matching'?<>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:float}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
      <Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:[{scaleX:-1}]}]}/>
      <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse,transform:[{scaleX:-1}]}]}/>
-     <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
+     <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
     </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Image source={assets.fallbackGlow} resizeMode="contain" style={box(B.glow)}/><Image source={alternatePetSource} resizeMode="contain" style={box(B.alternate)}/></>:null}
   </View>
@@ -60,7 +60,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
-   <UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
+   <UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
   </View>
  </View>}
  </View>;

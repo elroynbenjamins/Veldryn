@@ -18,6 +18,13 @@ for(const path of [RAIL_PATH,ORBIT_X,ORBIT_Y]){
 for(const [x,y] of RAIL_PATH)assert(x<=26||x>=314||y<=12||y>=190,'rail stays outside the identity and guild slots');
 for(const points of Object.values(FX_POINTS)){assert(points.length<=8);for(const [x,y] of points)assert(x>=0&&x<=340&&y>=0&&y<=205);}
 const fx=read('components/profile/UltraLuxeMotion.tsx');
+for(const name of ['soft_glow','drifting_haze']){
+ const asset=fs.readFileSync(path.join(root,'../assets/ascendant/shared',name+'.webp'));
+ assert.equal(asset.subarray(0,4).toString(),'RIFF');
+ assert.equal(asset.subarray(8,12).toString(),'WEBP');
+ assert(asset.length<2048,'shared effect texture budget');
+ assert(fx.includes(name+'.webp'));
+}
 assert(!fx.includes('Animated.loop('),'effect layers must not create their own clocks');
 assert(fx.includes('pointerEvents="none"')&&fx.includes('importantForAccessibility="no-hide-descendants"'));
 for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){

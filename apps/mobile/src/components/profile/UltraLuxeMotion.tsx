@@ -1,8 +1,11 @@
 import type {ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
 import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_ENERGY,shiftClosed} from '../../core/ultra-luxe-motion';
+const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
+const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
+const light=(theme:'celestial'|'draconic')=>theme==='celestial'?'#ffdf9b':'#ff6928';
 type Clock=Animated.Value;
-type Common={clock:Clock;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType;halo:ImageSourcePropType};
+type Common={clock:Clock;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType};
 const pos=(k:number,x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
 export function signatureEnergy(clock:Clock){return clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[...SIGNATURE_ENERGY]});}
 function pulse(clock:Clock,index:number){
@@ -12,22 +15,22 @@ function Decorative({children}:{children:ReactNode}){
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{children}</View>;
 }
 /** Environment is mounted behind the identity plates, in all pet modes. */
-export function UltraLuxeEnvironment({clock,scale:k,theme,particle,halo}:Common){
+export function UltraLuxeEnvironment({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',energy=signatureEnergy(clock);
  const swell=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.85,.85,1.2,1.5,1.12,.85]});
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
  const glow=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.12,.12,.33,.65,.25,.12]});
  return <Decorative>
   {celestial?<CelestialAlignmentLines clock={clock} scale={k}/>:<DraconicHeatChannels clock={clock} scale={k}/>}
-  <Animated.Image source={halo} resizeMode="contain" style={[pos(k,112,9,118,75),{opacity:glow,transform:[{scale:swell},{translateX:drift}]}]}/>
-  <Animated.Image source={halo} resizeMode="contain" style={[pos(k,237,46,77,112),{opacity:Animated.multiply(energy,.5),transform:[{scale:swell}]}]}/>
+  <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,112,9,118,75),{tintColor:celestial?'#a9b8ff':'#a95c48',opacity:glow,transform:[{scale:swell},{translateX:drift}]}]}/>
+  <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,237,46,77,112),{tintColor:light(theme),opacity:Animated.multiply(energy,.65),transform:[{scale:swell}]}]}/>
   {FX_POINTS[theme].map(([x,y],i)=>{
    const size=i%3===0?9:6;
    const dy=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(celestial?[0,-3,-5,-2,1,3,4,2,0]:[0,-8,-15,-22,-29,-22,-13,-6,0],i).map(v=>v*k)});
    const dx=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,(i%2?4:-4)*k,(i%2?8:-8)*k,2*k,0]});
    return <Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,size,size),{opacity:pulse(clock,i),transform:[{translateX:dx},{translateY:dy}]}]}/>;
   })}
-  <Animated.Image source={halo} resizeMode="contain" style={[pos(k,142,24,56,42),{opacity:Animated.multiply(energy,.82),transform:[{scale:swell}]}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,142,24,56,42),{tintColor:light(theme),opacity:Animated.multiply(energy,.95),transform:[{scale:swell}]}]}/>
  </Decorative>;
 }
 /** Fine constellation links illuminate during alignment, always behind identity. */
@@ -45,31 +48,30 @@ function DraconicHeatChannels({clock,scale:k}:{clock:Clock;scale:number}){
  const energy=signatureEnergy(clock);
  const lift=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,-7*k,-23*k,-9*k,0]});
  return <>{[[227,174,29,-50],[261,177,31,-68],[292,169,27,-58]].map(([x,y,w,angle],i)=>
-  <Animated.View key={i} style={[pos(k,x,y,w,2),{backgroundColor:'#ff782c',borderRadius:2,opacity:Animated.multiply(energy,.63),transform:[{translateY:lift},{rotate:angle+'deg'},{scaleX:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.65,.65,.95,1.3,.8,.65]})}]}]}/>
+  <Animated.Image key={i} source={GLOW} resizeMode="stretch" style={[pos(k,x,y,w,6),{tintColor:'#ff782c',opacity:Animated.multiply(energy,.9),transform:[{translateY:lift},{rotate:angle+'deg'},{scaleX:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.65,.65,.95,1.3,.8,.65]})}]}]}/>
  )}</>;
 }
 
 /** Closed perimeter paths and crest illumination, not over the readable identity area. */
-export function UltraLuxeRail({clock,scale:k,theme,particle,halo}:Common){
+export function UltraLuxeRail({clock,scale:k,theme,particle}:Common){
  const energy=signatureEnergy(clock);
  return <Decorative>
   {[0,4].map(offset=>{
    const path=shiftClosed(RAIL_PATH,offset);
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[0]*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[1]*k)});
-   return <Animated.Image key={offset} source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:pulse(clock,offset),transform:[{translateX:x},{translateY:y}]}]}/>;
+   return <View key={offset} style={StyleSheet.absoluteFill}><Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,-15,-15,30,30),{tintColor:light(theme),opacity:Animated.multiply(pulse(clock,offset),.85),transform:[{translateX:x},{translateY:y}]}]}/><Animated.Image source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:pulse(clock,offset),transform:[{translateX:x},{translateY:y}]}]}/></View>;
   })}
-  {[[30,10,280,1],[30,193,280,1],[12,27,1,148],[327,27,1,148]].map(([x,y,w,h],i)=><Animated.View key={i} style={[pos(k,x,y,w,h),{backgroundColor:theme==='celestial'?'#ffdda0':'#ff762e',opacity:Animated.multiply(energy,.48)}]}/>)}
-  <Animated.Image source={halo} resizeMode="contain" style={[pos(k,147,2,46,25),{opacity:Animated.multiply(energy,.85),transform:[{scale:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.8,.8,1,1.35,1,.8]})}]}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,147,2,46,25),{tintColor:light(theme),opacity:Animated.multiply(energy,.95),transform:[{scale:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.8,.8,1,1.35,1,.8]})}]}]}/>
   {[[10,90],[320,90],[165,184]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,12,12),{opacity:Animated.multiply(energy,.75)}]}/>)}
  </Decorative>;
 }
 /** Matching pet only, synchronized with the same native clock. */
-export function UltraLuxePetAura({clock,scale:k,theme,particle,halo}:Common){
+export function UltraLuxePetAura({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',cx=celestial?279:266,cy=147,rx=celestial?27:33,ry=celestial?8:6;
  const energy=signatureEnergy(clock);
  return <Decorative>
-  <Animated.Image source={halo} resizeMode="contain" style={[pos(k,cx-34,76,68,64),{opacity:Animated.multiply(energy,.68)}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,cx-34,112,68,36),{tintColor:light(theme),opacity:Animated.multiply(energy,.65)}]}/>
   {[0,4].map(offset=>{
    const x=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(ORBIT_X,offset).map(v=>v*rx*k)});
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:shiftClosed(ORBIT_Y,offset).map(v=>v*ry*k)});

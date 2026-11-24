@@ -65,7 +65,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.background} resizeMode="cover" style={styles.fillImage}/>
-    <UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star} halo={assets.corona}/>
+    <UltraLuxeEnvironment clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
     <Image source={assets.orrery} resizeMode="contain" style={pos(119,26,102,48)}/>
     <Animated.View style={[pos(129,24,82,55),{transform:[{rotate:orbit}]}]}>
      <Image source={assets.star} resizeMode="contain" style={{position:'absolute',left:0,top:21*scale,width:7*scale,height:7*scale}}/>
@@ -74,7 +74,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     <Animated.Image source={assets.corona} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
     {petMode==='matching'?<>
      <Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{translateY:Animated.multiply(bob,scale)}]}]}/>
-     <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star} halo={assets.corona}/>
+     <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
      <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:pulse,transform:[{translateY:Animated.multiply(bob,scale)}]}]}/>
     </>:petMode==='alternate'&&alternatePetSource?<>
      <Image source={assets.fallbackGlow} resizeMode="contain" style={box(CELESTIAL_PET_BOX.glow)}/>
@@ -89,7 +89,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
    {guild!=null?<View style={[pos(42,151,188,18),styles.guildPlate]}>{guild}</View>:null}
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>
-    <UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star} halo={assets.corona}/>
+    <UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
    </View>
   </View>}
  </View>;

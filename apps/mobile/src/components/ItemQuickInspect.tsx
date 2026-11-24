@@ -11,6 +11,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'rea
 import {GameModalSurface} from './GameModalSurface';
 import {GameState} from '../core/types';
 import {itemInspectModel} from '../core/item-inspect';
+import {companionMaterialUseLabels} from '../core/resource-codex';
 import {equipmentPouch} from '../core/equipment-pouch';
 import {prioritizeItemSources,prioritizeItemUses} from '../core/item-source-display';
 import {rarityMeta,rarityNameColor} from '../core/item-rarity';
@@ -74,6 +75,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   const traitLine=item.type==='gear'?item.passive?.trim():undefined;
   const otherEffectLines=model.effectLines.filter(line=>!isBonusRoll(line)&&(!traitLine||line!==traitLine)&&!(item.type==='tool'&&(line.includes(' · Q')||line.startsWith('Tool roll record unavailable'))));
   const sources=prioritizeItemSources(model.sources),uses=prioritizeItemUses(model.usedIn);
+  const companionUses=item.type==='material'?companionMaterialUseLabels(item.id):[];
   const primarySource=sources[0],otherSources=sources.slice(1),otherSourcesOpen=!!sourceDisclosure[itemId];
   const craftingOpen=!!craftingDisclosure[itemId],useLimit=useLimits[itemId]??4,useRows=uses.slice(0,useLimit);
   const readyUses=uses.filter(row=>row.availability.status==='ready').length;
@@ -142,6 +144,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
 
           {sockets&&<Section title={gt("SOCKETS")}><Text style={s.body}>{it('{filled}/{capacity} filled · 1 Stat + 1 Effect',{filled:sockets.filled,capacity:sockets.capacity})}</Text>{gearDecision?.gems.length?gearDecision.gems.map(gem=><Text key={gem.id} style={s.body}>{(gem.kind==='stat'?'S ◆ ':'FX ✦ ')+gem.name+' · '+contentText(gem.detail)}</Text>):<><Text style={s.note}>{it('Stat · {gem}',{gem:sockets.statGemName??gt("Empty")})}</Text><Text style={s.note}>{it('Effect · {gem}',{gem:sockets.effectGemName??gt("Empty")})}</Text></>}</Section>}
 
+          {companionUses.length>0?<Section title={gt("WHAT IT DOES")}>{companionUses.map(use=><Text key={use} style={s.body}>{'• '+contentText(use)}</Text>)}</Section>:null}
           {sources.length>0?<Section title={gt("HOW TO GET")+(sources.length?' · '+sources.length:'')}>{primarySource?<><SourceRow source={primarySource} primary onNavigate={onNavigate}/>{otherSources.length?<><Pressable accessibilityRole="button" accessibilityState={{expanded:otherSourcesOpen}} accessibilityLabel={it(otherSourcesOpen?'Hide other sources for {item}':'Show other sources for {item}',{item:localizedItemName(language,item.id)})} onPress={()=>setSourceDisclosure(value=>({...value,[itemId]:!value[itemId]}))} style={({pressed})=>[s.sourceDisclosure,pressed&&s.pressed]}><Text style={s.sourceDisclosureText}>{it('Other sources · {count}',{count:otherSources.length})}</Text><Text style={s.sourceDisclosureMark}>{otherSourcesOpen?'−':'+'}</Text></Pressable>{otherSourcesOpen?<View style={s.otherSourceList}>{otherSources.map((source,index)=><SourceRow key={source.kind+':'+source.title+':'+index} source={source} onNavigate={onNavigate}/>)}</View>:null}</>:null}</>:<Text style={s.note}>{gt("No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.")}</Text>}</Section>:null}
 
           {uses.length>0?<Section title={gt("USED IN CRAFTING")+(model.usedIn.length?' · '+model.usedIn.length:'')}>

@@ -76,7 +76,10 @@ for(const secret of [
 }
 for(const leak of ['issueEnemyV2EngineAuthority','combat_v2_solo_test',
  'enemy-v2-prototype-1','SoloEncounterPersistenceServiceV2',
- 'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2','issuePartySyncAuthorityV2','party_sync_authority_']){
+ 'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2','issuePartySyncAuthorityV2','party_sync_authority_',
+ 'issuePersistedPartyEquipmentV2TraitAuthority','party-v2-run-binding-review-1',
+ 'issuePersistedPartyEnemyV2EngineAuthority','preparePartyEnemyKitsV2',
+ 'projectPartySynchronizationLobbyV2','previewPartySynchronizationCandidateV2']){
  assert.throws(()=>assertLegacyEdgeIsolation(fake('backend/online/edge.ts',leak),'gameplay'),
  /private_token_in_bundle/);
 }

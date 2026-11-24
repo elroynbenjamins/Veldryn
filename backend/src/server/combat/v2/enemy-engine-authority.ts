@@ -8,6 +8,7 @@
 import {sha256} from '@noble/hashes/sha256';
 import {bytesToHex} from '@noble/hashes/utils';
 import type {CombatInput} from '../types';
+import type {PartyV2RunBindingReview} from './party-dungeon-persistence-review';
 
 const brand:unique symbol=Symbol('combat-v2-enemy-snapshot');
 export type EnemyV2EngineAuthority=Readonly<{readonly [brand]:true}>;
@@ -34,12 +35,14 @@ interface ImmutableScope{
  readonly enemyIds:readonly string[];
  readonly inputDigest:string;
  readonly bossIds:readonly string[];
+ readonly mode:'solo'|'party';
+ readonly allowPersistedState:boolean;
 }
 const issued=new WeakMap<object,ImmutableScope>();
 const validId=(x:unknown):x is string=>
  typeof x==='string'&&x.length>0&&x.length<=128&&/^[A-Za-z0-9:_-]+$/.test(x);
 const unique=(xs:readonly string[])=>new Set(xs).size===xs.length;
-const invalid=(suffix:string):never=>{throw Error('combat_v2_enemy_authority_'+suffix);};
+function invalid(suffix:string):never{throw Error('combat_v2_enemy_authority_'+suffix);}
 /** Shared-engine-compatible UTF-8. Hermes does not always expose TextEncoder. */
 const utf8=(value:string):Uint8Array=>{
  const bytes:number[]=[];
@@ -131,6 +134,7 @@ export function issueEnemyV2EngineAuthority(
   playerIds:Object.freeze([...snapshot.playerIds]),
   enemyIds:Object.freeze([...snapshot.enemyIds]),
   bossIds:Object.freeze([...(snapshot.bossIds??[])]),inputDigest,
+  mode:'solo',allowPersistedState:false,
  }));
  return token;
 }
@@ -152,10 +156,63 @@ export function authorizeEnemyV2EngineExecution(
     input.enemies.some((e,i)=>e.id!==saved.enemyIds[i])||
     fingerprint(input)!==saved.inputDigest)
   invalid('scope_does_not_match_combat_input');
- if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0||
+ if((!saved.allowPersistedState&&input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0)||
     input.enemyDamageProfile!==undefined||
     input.players.some(p=>p.team!=='players'||!p.combatV2||p.combatV2.version!==2)||
     input.enemies.some(e=>e.team!=='enemies'||Boolean(e.boss)!==saved.bossIds.includes(e.id)))
   invalid('nonfresh_or_nonv2_encounter');
  return true;
+}
+
+
+/** Separate persisted-party issuer. Existing solo snapshots remain one-player
+ * and fresh-state only; this path requires the reviewed committed run binding. */
+export function issuePersistedPartyEnemyV2EngineAuthority(
+ input:CombatInput,
+ binding:PartyV2RunBindingReview,
+ enemyIds:readonly string[],
+ bossIds:readonly string[],
+ verifyPersisted:(binding:PartyV2RunBindingReview,inputDigest:string)=>boolean,
+):EnemyV2EngineAuthority{
+ if(typeof verifyPersisted!=='function'||!binding||
+   binding.source!=='server-persisted-party-v2-review'||
+   binding.policy!=='party-v2-run-binding-review-1'||
+   binding.seed!==input?.seed||binding.combatInputDigest!==fingerprint(input)||
+   input.players.length!==4||input.enemyDamageProfile!==undefined||
+   binding.members.length!==4||binding.members.some((m,i)=>m.actorId!==input.players[i]?.id)||
+   !Array.isArray(enemyIds)||enemyIds.length<1||enemyIds.length>4||
+   !Array.isArray(bossIds)||bossIds.length>1||
+   [...enemyIds,...bossIds].some(id=>!validId(id))||
+   !unique(enemyIds)||!unique(bossIds)||bossIds.some(id=>!enemyIds.includes(id))||
+   input.enemies.length!==enemyIds.length||
+   input.enemies.some((e,i)=>e.team!=='enemies'||e.id!==enemyIds[i]||
+     Boolean(e.boss)!==bossIds.includes(e.id))||
+   input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2))
+  invalid('invalid_party_persisted_scope');
+ const carried=Object.keys(input.initialPlayerState??{}).sort();
+ if(carried.length){
+  const expected=input.players.map(p=>p.id).sort();
+  if(carried.length!==4||carried.some((id,i)=>id!==expected[i]))
+   invalid('party_persistent_state_mismatch');
+ }
+ const inputDigest=fingerprint(input);
+ const bindingDigest=enemyV2SnapshotDigest(binding);
+ const enemyIdsDigest=enemyV2SnapshotDigest(enemyIds);
+ const bossIdsDigest=enemyV2SnapshotDigest(bossIds);
+ let accepted=false;
+ try{accepted=verifyPersisted(binding,inputDigest)===true;}catch{accepted=false;}
+ if(!accepted||fingerprint(input)!==inputDigest||
+    enemyV2SnapshotDigest(binding)!==bindingDigest||
+    enemyV2SnapshotDigest(enemyIds)!==enemyIdsDigest||
+    enemyV2SnapshotDigest(bossIds)!==bossIdsDigest)
+  invalid('unverified_party_persisted_scope');
+ const token=Object.freeze({[brand]:true}) as EnemyV2EngineAuthority;
+ issued.set(token,Object.freeze({
+  encounterId:binding.runId+':'+binding.nodeId,
+  revision:binding.encounterRevision,seed:binding.seed,
+  playerIds:Object.freeze(input.players.map(p=>p.id)),
+  enemyIds:Object.freeze([...enemyIds]),bossIds:Object.freeze([...bossIds]),
+  inputDigest,mode:'party',allowPersistedState:true,
+ }));
+ return token;
 }

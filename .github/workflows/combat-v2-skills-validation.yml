@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2|issuePersistedPartyEquipmentV2TraitAuthority|reviewPartyV2RunBinding|PARTY_V2_RUN_BINDING_POLICY|issuePersistedPartyEnemyV2EngineAuthority|preparePartyEnemyKitsV2|projectPartySynchronizationLobbyV2|previewPartySynchronizationCandidateV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -130,10 +130,32 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
+      - name: Review 18-specialization equal-CP generic, targeted and alternative ability counters
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-review.js
+      - name: Review 324 real authored skill selections across 18 specs and six bosses
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-strategies.js
+      - name: Review 324 actual equipment-backed tactical boss encounters (no release approval)
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-324-real-encounters.js
+      - name: Test full ten-slot equipment, 2/4/6 sets, 13 affixes, signed traits and six bosses
+        run: node backend/dist/server/combat/v2/__tests__/ability-full-ten-slot-boss-matrix.js
+      - name: Review observed counterplay opportunity, cast and effect reasons
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-opportunity-review.js
+      - name: Run 324 ten-slot boss counterplay scenarios with verified equipment evidence
+        run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-ten-slot-matrix.js
+      - name: Review pre-scaled Forge once-only handoff and reject synthetic ownership
+        run: node backend/dist/server/combat/v2/__tests__/equipment-frozen-forge-handoff-audit.js
       - name: Measure six equal-stat real-engine curse and interrupt counterplay pairs
         run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
       - name: Validate 18 Synchronizations and all dungeon and flexible four-player class compositions
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
+      - name: Guard Synchronization diminishing scale and nominal link budget
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-scale-policy.js
+      - name: Audit Synchronization stat concentration and cap pressure
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-stat-pressure-audit.js
+      - name: Audit strict dungeon Synchronization fairness across all classes
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-dungeon-fairness.js
+      - name: Validate informational Synchronization lobby and recruitment projection
+        run: node backend/dist/server/combat/v2/__tests__/party-synchronization-projection.js
       - name: Validate synchronization authority and real private engine modifiers
         run: node backend/dist/server/combat/v2/__tests__/party-sync-authority.js
       - name: Validate synchronization resource, harmful-effect and interrupt mechanics
@@ -144,6 +166,16 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-sync-balance-matrix.js
       - name: Run 36 dungeon compositions against six authored regional bosses
         run: node backend/dist/server/combat/v2/__tests__/party-sync-regional-boss-matrix.js
+      - name: Run 432 ten-slot Skills Equipment party Synchronization integration cases
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js
+      - name: Exercise all 18 Synchronization pairs with ten-slot flexible parties
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-all-pairs.js
+      - name: Validate committed ready roster and persistent party run binding provenance
+        run: node backend/dist/server/combat/v2/__tests__/party-dungeon-persistence-review.js
+      - name: Execute persisted four-player ten-slot traits and Synchronization rehearsal
+        run: node backend/dist/server/combat/v2/__tests__/persisted-party-ten-slot-execution.js
+      - name: Run 432 matched persisted-party Synchronization tuning pairs
+        run: node backend/dist/server/combat/v2/__tests__/persisted-party-sync-full-matrix.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

@@ -125,10 +125,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const bonusBps=Math.round(sync(actor,'resource_generation_pct')*10000);
       if(bonusBps>0&&actor.combatV2){
         const key='party_sync_resource_credit_bps';
-        actor.combatV2.procCounters[key]=(actor.combatV2.procCounters[key]??0)+bonusBps;
-        if(actor.combatV2.procCounters[key]>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
+        const credit=(actor.combatV2.procCounters[key]??0)+bonusBps;
+        // A whole bonus that cannot fit is lost, not banked for a later spend.
+        // Preserve only the fractional remainder. No capstone/reactive recursion.
+        actor.combatV2.procCounters[key]=credit%10000;
+        if(credit>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
           const before=actor.combatV2.stacks;
-          actor.combatV2.procCounters[key]-=10000;
           actor.combatV2.stacks++;
           events.push({atMs:now,type:'resource_gain',actorId:actor.definition.id,abilityId:id,
             resource:actor.combatV2.resource,resourceBefore:before,resourceAfter:actor.combatV2.stacks,
@@ -410,7 +412,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       ?1+clamp(effect.healBonus??0,0,.40):1;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
-      (1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct'))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+      // Renewal and Restorative Bloom snapshot the originating boosted heal.
+       // Do not apply the same party-wide multipliers again on their ticks.
+       (eventType==='hot_tick'&&(abilityId==='GEM_RENEWAL'||abilityId==='V2_EQUIPMENT_TRAIT:restorative_bloom')
+         ?1:(1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct')))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
       if(!abilityId.startsWith('V2_'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});

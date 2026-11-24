@@ -194,6 +194,10 @@ test('future rare/Market proposals never make legacy or original Forge QA copies
  assert(canonical.includes('REVIEW-ONLY, NON-ISSUABLE, NON-TRADEABLE, NON-EXECUTABLE'));
  assert(canonical.includes('Legacy/pre-2.0 equipment is permanently ineligible'));
  assert(canonical.includes('D10. Market eligibility contract'));
+ assert(canonical.includes('EQ2-C12'));
+ assert(canonical.includes('ALL Equipment 2.0 across T1–T5'));
+ assert(canonical.includes('must remain hidden/unavailable throughout 1.0.x'));
+
 });
 test('malformed catalogue clones are rejected by review validator',()=>{
  const altered=structuredClone(manifest);

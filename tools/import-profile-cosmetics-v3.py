@@ -57,6 +57,17 @@ def main():
         refs = set(re.findall(r"require\('../../assets/([^']+\.png)'\)", registry))
         if len(refs) != 110 or any('apps/mobile/assets/' + ref not in payload for ref in refs):
             fail('Registry asset references do not match the archive.')
+        registry_replacements = {
+            "'frame_gloamward'": "'cosmetic:gloamward:arcane-frame'",
+            "'dungeon:frostmarch:frostbound-chime'": "'cosmetic:frostbound:chime-frame'",
+            "'dungeon:sunscar:amberglass-loop'": "'cosmetic:amberglass:loop-frame'",
+            "'dungeon:asterfall:briarbound-frame'": "'cosmetic:briarbound:verdant-frame'",
+        }
+        for old, new in registry_replacements.items():
+            if old not in registry:
+                fail('Approved registry is missing expected visual-base id: ' + old)
+            registry = registry.replace(old, new)
+        payload[REGISTRY] = registry.encode('utf-8')
         if not args.check:
             # Write artwork first, registry last. The empty registry remains safe if a write fails.
             for name in [n for n in payload if n != REGISTRY] + [REGISTRY]:

@@ -39,7 +39,8 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
  const borderRuntime=review?.borderRuntime??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.borderId?profileCosmeticRuntimeByBorder.get(profile.borderId):undefined),effectRuntime=review?.effectRuntime??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
- const border=review?(borderArt?.border??(reviewBorderId?profileBorderSourceById.get(reviewBorderId):undefined)):borderArt?.border??(profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;
+ const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
+ const border=review?(borderArt?.border??(runtimeFallbackBorderId?profileBorderSourceById.get(runtimeFallbackBorderId):undefined)):borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;

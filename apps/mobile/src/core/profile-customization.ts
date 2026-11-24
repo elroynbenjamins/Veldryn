@@ -3,7 +3,7 @@ import type {GameState} from './types';
 import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './profile-unlocks';
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
-import {PROFILE_EFFECTS,profileEffectDefinition} from './profile-effects';
+import {PROFILE_EFFECTS,profileAnimatedBorderDefinition,profileEffectDefinition} from './profile-effects';
 import {PROFILE_ANIMATED_COSMETICS_RELEASED} from './release-flags';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections'|'Store';
@@ -96,6 +96,10 @@ export function profileRewardSource(state:GameState,kind:ProfileRewardKind,id:st
  if(kind==='effect'){
   const effect=profileEffectDefinition(id);
   if(effect)return {kind,id,name:effect.name,label:effect.collection+' Collection',detail:'Animated showcase effect · Account-wide cosmetic ownership.',destination:'Store',actionLabel:'Open Cosmetics'};
+ }
+ if(kind==='border'){
+  const animated=profileAnimatedBorderDefinition(id);
+  if(animated)return {kind,id,name:animated.borderName,label:animated.collection+' Collection',detail:'Animated collection border · Separate from the original reward border.',destination:'Store',actionLabel:'Open Cosmetics'};
  }
  const dungeon=DUNGEON_SHOP_COLLECTIBLES_V1.find(row=>row.kind===kind&&row.id===id);
  if(dungeon)return {kind,id,name:dungeon.name,label:'Dungeon Marks Shop',

@@ -4,6 +4,8 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
 equal(PROFILE_COSMETIC_RUNTIME.length,4,'four approved animated profile collections');
 equal(new Set(PROFILE_COSMETIC_RUNTIME.map(r=>r.borderId)).size,4,'border ids are unique');
+ok(PROFILE_COSMETIC_RUNTIME.every(r=>r.borderId!==r.fallbackBorderId),'animated product border ids never reuse exclusive reward ids');
+ok(PROFILE_COSMETIC_RUNTIME.filter(r=>r.motionProfile!=='gloamward').every(r=>r.fallbackBorderId.startsWith('dungeon:')),'dungeon reward art is fallback-only, never the product identity');
 equal(new Set(PROFILE_COSMETIC_RUNTIME.map(r=>r.effectId)).size,4,'effect ids are unique');
 for(const row of PROFILE_COSMETIC_RUNTIME){
  ok(row.tracks.length>=5&&row.tracks.length<=12,row.collection+' keeps motion subtle');

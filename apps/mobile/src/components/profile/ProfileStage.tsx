@@ -39,7 +39,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
  const borderArt=PROFILE_ANIMATED_COSMETICS_RELEASED?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=PROFILE_ANIMATED_COSMETICS_RELEASED?cosmeticArtByEffect.get(character.profileEffectId??''):undefined;
  const borderRuntime=PROFILE_ANIMATED_COSMETICS_RELEASED?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=PROFILE_ANIMATED_COSMETICS_RELEASED?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined;
- const frame=borderArt?.border??profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const frame=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(character.profileBorderId??'')),pet=petArtSource(character.selectedCosmeticPetId??'');
  const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");

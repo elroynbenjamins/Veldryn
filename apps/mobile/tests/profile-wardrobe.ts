@@ -12,7 +12,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 const assets:WardrobeAssets={
  scenes:[{id:'asterfall-night',name:'Asterfall Night'},{id:'bg_veilbreak',name:'Veilbreak Gothic Moonruins'}],
- frames:['frame_gloamward','guild-border-silver'],
+ frames:['frame_gloamward','guild-border-silver','cosmetic:gloamward:arcane-frame','cosmetic:frostbound:chime-frame','cosmetic:amberglass:loop-frame','cosmetic:briarbound:verdant-frame'],
  effects:[{id:'effect_gloamward_wisps',name:'Arcane Wisps'},{id:'effect_frostbound_winter_veil',name:'Winter Veil'},{id:'effect_amberglass_ember_motes',name:'Ember Motes'},{id:'effect_briarbound_verdant_whispers',name:'Verdant Whispers'}],
 };
 let state=createCharacter(newGame(0),'IRONWARDEN','Wardrobe Test');

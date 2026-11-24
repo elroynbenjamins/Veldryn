@@ -23,15 +23,15 @@ import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
-import {PROFILE_EFFECTS} from '../../core/profile-effects';
-import {cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {PROFILE_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
  scenes:[...BASE_PROFILE_BACKGROUNDS.map(row=>({id:row.id,name:row.name})),...PROFILE_BACKGROUND_PREVIEWS.map(row=>({id:row.id,name:row.name}))],
- frames:[...profileBorderSourceById.keys()],
+ frames:[...profileBorderSourceById.keys(),...PROFILE_EFFECTS.map(row=>row.borderId)],
  effects:PROFILE_EFFECTS.map(row=>({id:row.id,name:row.name})),
 };
 /** Badges have their own owned-state provider, so they ride beside the wardrobe chips. */
@@ -121,7 +121,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
   if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
    return scene?<Image source={scene.source} resizeMode="cover" style={s.fill}/>:base?<View style={s.fill}><RegionArtwork regionId={base.region}/></View>:null}
-  if(row.kind==='frame'){const source=profileBorderSourceById.get(row.id);
+  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
    return source?<View style={s.fill}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={source}/></View>:<View style={s.blank}><Text style={s.blankMark}>◇</Text></View>}
   if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
    return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}

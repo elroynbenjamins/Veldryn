@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.world-boss-v12.json",
+  "include": [
+    "tests/exploration-scouting-review.ts"
+  ],
+  "exclude": []
+}

@@ -1,0 +1,31 @@
+name: Hidden Exploration 2.0 scouting validation
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/companions/exploration-scouting-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-review.ts'
+      - 'apps/mobile/tsconfig.exploration-scouting-review.json'
+      - '.github/workflows/exploration-scouting-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scouting:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - run: pnpm exec tsc -p tsconfig.exploration-scouting-review.json --outDir .core-build
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-review.js

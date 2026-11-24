@@ -21,6 +21,7 @@ const defensiveSpecs=Object.freeze({
  'eq2_dungeon_observatory_t4_helioguard:4':{pct:5,threshold:.06,window:6000,cd:20000,mode:'next_hit',family:'helioguard'},
  'eq2_combo_t5_stonewinter_frame:2':{pct:4,threshold:.06,window:6000,cd:18000,mode:'next_hit',family:'stonewinter'},
  'eq2_dungeon_shiverlake_t5_rimevanguard:4':{pct:6,threshold:.07,window:5000,cd:22000,mode:'timed',family:'rimevanguard'},
+ 'eq2_t5_rimewatch:6':{pct:6,threshold:0,window:4000,cd:30000,mode:'timed',family:'weather_the_break'},
 } as const);
 const timedSpecs=Object.freeze({
  'eq2_t1_oathplate:4':{channel:'defense',pct:3.2,window:6000,cd:18000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
@@ -70,7 +71,8 @@ export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:rea
  const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id)||isShield(id);
  const exactIds=rawIds.filter(allowedId);
  if(exactIds.length!==rawIds.length||exactIds.length<1||exactIds.length>4||
-    new Set(exactIds.map(family)).size!==exactIds.length)return fail('fixture_scope');
+    new Set(exactIds.map(family)).size!==exactIds.length||
+    (exactIds.includes('eq2_t5_rimewatch:6')&&!exactIds.includes('eq2_t5_rimewatch:4')))return fail('fixture_scope');
  const actor=input.players.find(x=>x.id===actorId);
  if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||
  !((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||
@@ -99,6 +101,7 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
  let shieldState:{id:ShieldId;ownerId:string;earnedAt:number;expiresAt:number;remaining:number}|undefined;
  const shieldAbsorbed=new WeakSet<Eq2PrivateIncomingEventV24>();
  const shieldGranted=new WeakSet<Eq2PrivateIncomingEventV24>();
+ const namedDirectBreaks=new WeakSet<Eq2PrivateIncomingEventV24>();
  const shieldAvailable=(ownerId:string,now:number)=>shieldState&&shieldState.ownerId===ownerId&&now>shieldState.earnedAt&&now<shieldState.expiresAt?shieldState.remaining:0;
  const timedState=new Map<TimedId,{earnedAt:number;expiresAt:number}>();
  const healReceipts=new WeakSet<object>();
@@ -148,7 +151,10 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    const amount=Math.min(unabsorbed,shieldState.remaining),id=shieldState.id;
    shieldState.remaining-=amount;
    const broken=shieldState.remaining<=0;
-   if(broken)shieldState=undefined;
+   if(broken){
+    if(id==='eq2_t5_rimewatch:4'&&e.direct)namedDirectBreaks.add(e);
+    shieldState=undefined;
+   }
    return {id,amount,broken};
   },
   afterShieldHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number){
@@ -202,9 +208,19 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
   afterIncomingHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number):readonly (DefensiveId|TimedId)[]{
    if(!incomingBefore.has(e)||incomingAfter.has(e))return [];
    incomingAfter.add(e);
-   if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>=e.targetHp)return [];
+   if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<0||actualHpLoss>=e.targetHp)return [];
    const earned:(DefensiveId|TimedId)[]=[];
+   // A hit that exactly depletes Rimeguard can remove zero HP. The named
+   // break receipt, not HP loss or a generic shield amount, is its trigger.
+   const breakId='eq2_t5_rimewatch:6' as const;
+   if(scope.ids.includes(breakId)&&namedDirectBreaks.has(e)&&e.now>=(cooldown.get(defensiveSpecs[breakId].family)??0)){
+    const s=defensiveSpecs[breakId];
+    defensiveState.set(breakId,{earnedAt:e.now,expiresAt:e.now+s.window});
+    cooldown.set(s.family,e.now+s.cd);earned.push(breakId);
+   }
+   if(actualHpLoss===0)return earned;
    for(const id of scope.ids.filter(isDefensive)){
+    if(id===breakId)continue;
     const s=defensiveSpecs[id],state=defensiveState.get(id);
     if(state&&e.now>=state.expiresAt)defensiveState.delete(id);
     if(defensiveState.has(id)||e.now<(cooldown.get(s.family)??0)||actualHpLoss/e.targetMaxHp<s.threshold)continue;

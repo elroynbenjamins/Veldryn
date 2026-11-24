@@ -2,6 +2,7 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Guild Tokens": ["Жетоны гильдии","Lonca jetonları"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Название группы","Parti adı"],
   "Choose Party name": ["Выбрать название группы","Parti adı seç"],

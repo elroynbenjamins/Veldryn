@@ -15,7 +15,8 @@
     "tests/exploration-scouting-ui-content-review.ts",
     "src/components/ExplorationScoutingAssignmentReview.tsx",
     "tests/exploration-scouting-reports-release-review.ts",
-    "src/components/ExplorationScoutingReportsReview.tsx"
+    "src/components/ExplorationScoutingReportsReview.tsx",
+    "tests/exploration-scouting-cutover-localization-achievements-review.ts"
   ],
   "exclude": []
 }

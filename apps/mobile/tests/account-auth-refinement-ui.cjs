@@ -100,7 +100,7 @@ for(const key of ['This name is already used by another player.','You can change
  }
 }
 const socialEditor=read('src/components/SocialNameEditor.tsx');
-assert.ok(socialEditor.includes('socialIdentityT(language,socialNameError(e))'),'Editor localizes the parsed PostgREST error rather than showing raw SQL');
+assert.ok(socialEditor.includes('const reason=socialNameError(e)')&&socialEditor.includes('socialIdentityT(language,reason)')&&socialEditor.includes("reason==='This name is already used by another player.'"),'Editor localizes parsed errors and handles name collisions as taken');
 assert.ok(socialEditor.includes('proposed.toLowerCase()!==data.socialName.toLowerCase()'),'Case-only re-entry does not offer a pointless 30-day rename action');
 
 assert.ok(socialNameSource.includes("rpc('account_social_name_availability_v1'"),'Client queries the protected Social Name availability RPC');

@@ -7,15 +7,15 @@ import {subscribePlayerIdentityChanges} from './player-identity-cache';
  * The account-scoped cleanup prevents stale login responses leaking across users.
  */
 export function useOwnChatSocialName(accountId:string|null|undefined,active:boolean){
- const [name,setName]=useState<string|null>(null);
+ const [resolved,setResolved]=useState<{accountId:string;name:string}|null>(null);
  useEffect(()=>{
   let mounted=true,requestVersion=0;
-  setName(null);
+  setResolved(null);
   if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!accountId||!active)return()=>{mounted=false};
   const refresh=()=>{
    const version=++requestVersion;
    void accountSocialNameSelf().then(row=>{
-    if(mounted&&version===requestVersion)setName(row.socialName);
+    if(mounted&&version===requestVersion)setResolved({accountId,name:row.socialName});
    }).catch(()=>{});
   };
   const unsubscribe=subscribePlayerIdentityChanges(changedId=>{
@@ -24,5 +24,5 @@ export function useOwnChatSocialName(accountId:string|null|undefined,active:bool
   refresh();
   return()=>{mounted=false;requestVersion++;unsubscribe()};
  },[accountId,active]);
- return name;
+ return active&&resolved?.accountId===accountId?resolved.name:null;
 }

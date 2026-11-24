@@ -75,7 +75,7 @@ function isAuthoredOpportunity(
   case 'guard_recovery':case 'healing_stability':
   case 'damage_taken_window':case 'retaliation_sustain':
   case 'shield_preservation':case 'healing_continuity':
-  case 'measured_reflect':return damage||dot;
+  case 'reflect_timing':return damage||dot;
   case 'precision_window':return opening;
   case 'cleanse_timing':
    // Authored debuff is a possible window, not proof of removability.
@@ -86,7 +86,7 @@ function isAuthoredOpportunity(
   case 'armored_enemy_pressure':
    return effects.some(e=>e.kind==='buff'&&e.tag==='armor');
   case 'dot_damage_tolerance':return dot;
-  case 'strong_shield':return damage||dot;
+
   case 'evasive_opening':
    return boss.abilities.some(a=>a.castTimeMs>0&&
     a.effects.some(e=>e.kind==='damage'));
@@ -139,7 +139,7 @@ export function reviewOriginalForgeSetBossOpportunitiesV2(
  const rows=originalSetDraft.families.map(set=>{
   const two=set.milestones.find(m=>m.requiredPieces===2);
   if(!two||two.status!=='PROPOSAL_NOT_COMBAT_APPLIED')
-   reject('missing_unapproved_original_set_review');
+   throw Error('eq2_forge_set_boss_review_missing_unapproved_original_set_review');
   const channel=two.channel;
   const authored=isAuthoredOpportunity(channel,boss,effects);
   const relevantObservedEvents=authored?

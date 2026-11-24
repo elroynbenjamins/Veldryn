@@ -18,6 +18,7 @@ export function UltraLuxeEnvironment({clock,scale:k,theme,particle,halo}:Common)
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
  const glow=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.12,.12,.33,.65,.25,.12]});
  return <Decorative>
+  {celestial?<CelestialAlignmentLines clock={clock} scale={k}/>:<DraconicHeatChannels clock={clock} scale={k}/>}
   <Animated.Image source={halo} resizeMode="contain" style={[pos(k,112,9,118,75),{opacity:glow,transform:[{scale:swell},{translateX:drift}]}]}/>
   <Animated.Image source={halo} resizeMode="contain" style={[pos(k,237,46,77,112),{opacity:Animated.multiply(energy,.5),transform:[{scale:swell}]}]}/>
   {FX_POINTS[theme].map(([x,y],i)=>{
@@ -29,8 +30,27 @@ export function UltraLuxeEnvironment({clock,scale:k,theme,particle,halo}:Common)
   <Animated.Image source={halo} resizeMode="contain" style={[pos(k,142,24,56,42),{opacity:Animated.multiply(energy,.82),transform:[{scale:swell}]}]}/>
  </Decorative>;
 }
+/** Fine constellation links illuminate during alignment, always behind identity. */
+function CelestialAlignmentLines({clock,scale:k}:{clock:Clock;scale:number}){
+ const energy=signatureEnergy(clock);
+ const points=[[42,44],[79,27],[104,51],[128,32],[233,35],[278,30],[302,55]];
+ return <>{[[0,1],[1,2],[2,3],[4,5],[5,6]].map(([a,b],i)=>{
+  const [x,y]=points[a],[u,v]=points[b],length=Math.hypot(u-x,v-y),angle=Math.atan2(v-y,u-x)*180/Math.PI;
+  return <Animated.View key={i} style={[pos(k,(x+u-length)/2,(y+v)/2,length,1),{backgroundColor:'#f8dca0',opacity:Animated.multiply(energy,.72),transform:[{rotate:angle+'deg'}]}]}/>;
+ })}</>;
+}
+/** Narrow molten streaks and a rising heat plume in the open right-side scenery.
+ * Layered authored ember/glow art supplies the texture; these are light channels, not smoke simulation. */
+function DraconicHeatChannels({clock,scale:k}:{clock:Clock;scale:number}){
+ const energy=signatureEnergy(clock);
+ const lift=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,-7*k,-23*k,-9*k,0]});
+ return <>{[[227,174,29,-50],[261,177,31,-68],[292,169,27,-58]].map(([x,y,w,angle],i)=>
+  <Animated.View key={i} style={[pos(k,x,y,w,2),{backgroundColor:'#ff782c',borderRadius:2,opacity:Animated.multiply(energy,.63),transform:[{translateY:lift},{rotate:angle+'deg'},{scaleX:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.65,.65,.95,1.3,.8,.65]})}]}]}/>
+ )}</>;
+}
+
 /** Closed perimeter paths and crest illumination, not over the readable identity area. */
-export function UltraLuxeRail({clock,scale:k,particle,halo}:Common){
+export function UltraLuxeRail({clock,scale:k,theme,particle,halo}:Common){
  const energy=signatureEnergy(clock);
  return <Decorative>
   {[0,4].map(offset=>{
@@ -39,6 +59,7 @@ export function UltraLuxeRail({clock,scale:k,particle,halo}:Common){
    const y=clock.interpolate({inputRange:[...LOOP_PHASE],outputRange:path.map(p=>p[1]*k)});
    return <Animated.Image key={offset} source={particle} resizeMode="contain" style={[pos(k,-6,-6,12,12),{opacity:pulse(clock,offset),transform:[{translateX:x},{translateY:y}]}]}/>;
   })}
+  {[[30,10,280,1],[30,193,280,1],[12,27,1,148],[327,27,1,148]].map(([x,y,w,h],i)=><Animated.View key={i} style={[pos(k,x,y,w,h),{backgroundColor:theme==='celestial'?'#ffdda0':'#ff762e',opacity:Animated.multiply(energy,.48)}]}/>)}
   <Animated.Image source={halo} resizeMode="contain" style={[pos(k,147,2,46,25),{opacity:Animated.multiply(energy,.85),transform:[{scale:clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.8,.8,1,1.35,1,.8]})}]}]}/>
   {[[10,90],[320,90],[165,184]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,12,12),{opacity:Animated.multiply(energy,.75)}]}/>)}
  </Decorative>;

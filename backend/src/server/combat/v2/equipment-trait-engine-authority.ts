@@ -145,7 +145,7 @@ export function issuePersistedPartyEquipmentV2TraitAuthority(
    binding.combatInputDigest!==enemyV2SnapshotDigest(input)||
    binding.members.length!==4)
   fail('party_persisted_scope_required');
- const ids=new Set<string>(),characters=new Set<string>(),accounts=new Set<string>();
+ const ids=new Set<string>(),characters=new Set<string>(),accounts=new Set<string>(),copies=new Set<string>();
  for(const [i,source] of sources.entries()){
   validate(source);
   const member=binding.members[i],actor=input.players[i];
@@ -154,6 +154,10 @@ export function issuePersistedPartyEquipmentV2TraitAuthority(
     actor.id!==member.actorId||ids.has(source.actorId)||
     characters.has(source.characterId)||accounts.has(source.accountId))
    fail('party_source_binding_mismatch');
+  for(const copy of source.ownedEquippedInstanceIds){
+   if(copies.has(copy))fail('duplicate_party_equipment_copy');
+   copies.add(copy);
+  }
   ids.add(source.actorId);characters.add(source.characterId);accounts.add(source.accountId);
  }
  const carried=Object.keys(input.initialPlayerState??{}).sort();
@@ -163,16 +167,21 @@ export function issuePersistedPartyEquipmentV2TraitAuthority(
    fail('party_persistent_state_mismatch');
  }
  const digest=enemyV2SnapshotDigest(input);
- let accepted=false;
- try{accepted=verifyPersisted(binding,sources,digest)===true;}catch{accepted=false;}
- if(!accepted)fail('party_persisted_ledger_not_verified');
- const token=Object.freeze({[brand]:true}) as EquipmentV2TraitEngineAuthority;
- scoped.set(token,Object.freeze({inputDigest:digest,inputSeed:input.seed,
-  allowPersistedState:true,
-  actors:Object.freeze(sources.map(row=>Object.freeze({
+ const verifiedSources=Object.freeze(sources.map(row=>Object.freeze({
    ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
    traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
-  }))),
+ })));
+ const sourceDigest=enemyV2SnapshotDigest(verifiedSources);
+ const bindingDigest=enemyV2SnapshotDigest(binding);
+ let accepted=false;
+ try{accepted=verifyPersisted(binding,verifiedSources,digest)===true;}catch{accepted=false;}
+ if(!accepted||enemyV2SnapshotDigest(input)!==digest||
+    enemyV2SnapshotDigest(sources)!==sourceDigest||
+    enemyV2SnapshotDigest(binding)!==bindingDigest)
+  fail('party_persisted_ledger_not_verified');
+ const token=Object.freeze({[brand]:true}) as EquipmentV2TraitEngineAuthority;
+ scoped.set(token,Object.freeze({inputDigest:digest,inputSeed:input.seed,
+  allowPersistedState:true,actors:verifiedSources,
  }));
  return token;
 }

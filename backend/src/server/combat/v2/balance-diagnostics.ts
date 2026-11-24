@@ -12,7 +12,7 @@ export interface CombatV2SyntheticBalanceSample {
  readonly tier:string;
  readonly profile:CombatV2GearProfile;
  readonly kind:CombatV2BalanceKind;
- readonly enemyKit:'generic-t1'|'authored-v2';
+ readonly enemyKit:'generic-t1'|'t1-authored'|'authored-v2';
  readonly dps:number;
  readonly hps:number;
  readonly damageTaken:number;
@@ -77,8 +77,8 @@ export function analyzeSyntheticBalanceV2(
   if(!s||!s.classId||!s.spec||!s.role||
    !/^T[1-5]$/.test(s.tier)||!['normal','elite','boss'].includes(s.kind)||
    !['low','high'].includes(s.profile)||
-   !['generic-t1','authored-v2'].includes(s.enemyKit)||
-   (s.tier==='T1')!==(s.enemyKit==='generic-t1')||
+   !['generic-t1','t1-authored','authored-v2'].includes(s.enemyKit)||
+   (s.tier==='T1'?s.enemyKit==='authored-v2':s.enemyKit!=='authored-v2')||
    typeof s.victory!=='boolean'||[
     s.dps,s.hps,s.damageTaken,s.durationMs,s.resourceEvents,
     s.mechanics,s.baseEquipmentStat,
@@ -126,7 +126,7 @@ export function analyzeSyntheticBalanceV2(
    type:'role_spread',severity:'review',group:key,
    detail:'Max/min DPS ratio '+round(max/min)+'; requires class balance review',
   });
-  if(rows[0].tier==='T1')findings.push({
+  if(rows[0].tier==='T1'&&rows.some(s=>s.enemyKit==='generic-t1'))findings.push({
    type:'t1_unverified',severity:'coverage_gap',group:key,
    detail:'T1 uses generic enemy bridge, not an authored Enemy V2 kit',
   });

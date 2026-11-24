@@ -5,8 +5,8 @@
  *
  * 9 classes x 2 specs x 5 gear tiers x 2 quality/rarity profiles
  * x (normal,elite,boss) = 540 deterministic calibration encounters.
- * T1 uses generic enemy bridge ONLY: authored Enemy V2 kits currently require
- * equipmentTier >=2. This remains a marked, blocking coverage gap.
+ * T1 exercises deterministic low-pressure authored introductions, not random traits.
+ * All cases stay synthetic and are NOT production-level balance approval.
  */
 import {strict as assert} from 'node:assert';
 import {analyzeSyntheticBalanceV2} from '../balance-diagnostics';
@@ -43,20 +43,21 @@ const affixLimits=Object.fromEntries([
 ].map(key=>[key,{min:.01,max:.10}])) as ServerAffixPolicyV2['limits'];
 const region=(tier:Tier):'asterfall'|'sunscar'|'frostmarch'=>
  tier<=2?'asterfall':tier<=4?'sunscar':'frostmarch';
-const bossByRegion={asterfall:'BOSS_EXP_ROOT',sunscar:'BOSS_EXP_SOLAR',
- frostmarch:'BOSS_EXP_BELLBEAST'} as const;
-const bossNameByRegion={asterfall:'Rootbound Heart',sunscar:'The Buried Heliarch',
- frostmarch:'The Bellbeast of Shiverlake'} as const;
+const bossByRegion={
+ asterfall:{id:'BOSS_EXP_ROOT',name:'Rootbound Heart'},
+ sunscar:{id:'BOSS_EXP_SOLAR',name:'The Buried Heliarch'},
+ frostmarch:{id:'BOSS_EXP_BELLBEAST',name:'The Bellbeast of Shiverlake'},
+} as const;
 const roleCounts={tank:0,damage:0,support:0};
 const resultRows:{
  classId:string;spec:string;role:string;tier:GearTier;
  profile:'low'|'high';kind:EncounterKind;
- enemyKit:'generic-t1'|'authored-v2';
+ enemyKit:'t1-authored'|'authored-v2';
  dps:number;hps:number;damageTaken:number;victory:boolean;
  durationMs:number;resourceEvents:number;mechanics:number;
  baseEquipmentStat:number;
 }[]=[];
-let authored=0,t1Gaps=0,deterministicChecks=0;
+let authored=0,t1Authored=0,deterministicChecks=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
  const role=CLASS_ROLES_V2[classId];
  const specs=SPECIALIZATIONS_V2.filter(spec=>spec.classId===classId);
@@ -70,8 +71,7 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
    assert.ok(selectedSkills.length>=1,
     'Every class must have an unlocked active skill at the tier level');
    const gearTier=`T${tier}` as GearTier;
-   // Legacy launchPlayer IDs contain whitespace for Knife Dancer; persisted V2
-   // encounters require trusted, canonical IDs without whitespace.
+   // Legacy display-name IDs can contain spaces; V2 persistence needs stable IDs.
    const actor={...launchPlayer(CLASS_NAMES_V2[classId],level),id:'QA_PLAYER_'+classId};
    const classStats={...actor.stats};
    const mainStat: keyof CombatStats =
@@ -127,9 +127,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
     for(const kind of kinds){
      const locale=region(tier);
      const isBoss=kind==='boss';
-     const enemyId=isBoss?bossByRegion[locale]:'QA_ENEMY_'+kind;
+     const enemyId=isBoss?bossByRegion[locale].id:'QA_ENEMY_'+kind;
+     const enemyName=isBoss?bossByRegion[locale].name:'Synthetic '+kind;
      const enemy:CombatantDefinition={
-      id:enemyId,name:isBoss?bossNameByRegion[locale]:'Synthetic '+kind,team:'enemies',role:'enemy',
+      id:enemyId,name:enemyName,team:'enemies',role:'enemy',
       level,stats:{
        maxHp:8000+tier*3500,attackPower:60+tier*40,healingPower:0,
        defense:90+tier*40,accuracy:700+tier*40,evasion:100+tier*10,
@@ -141,18 +142,23 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      };
      const seed='v2-balance-'+classId+'-'+spec.id+'-'+tier+'-'+kind;
      const input={seed,players:[actor],enemies:[enemy],maxDurationMs:6000};
-     const fixtureKit=tier===1?undefined:prepareSoloEnemyKitsV2([enemy],{
+     const fixtureKit=prepareSoloEnemyKitsV2([enemy],{
       ruleset:'enemy-v2-prototype-1',serverSeed:seed,
       encounterId:'QA_'+classId+'_'+tier+'_'+kind,
       region:locale,equipmentTier:tier,
       eliteEnemyIds:kind==='elite'?[enemyId]:[],
      });
-     const trusted=fixtureKit?{
+     const trusted={
       snapshot:{...fixtureKit,source:'server-persisted-v2' as const,
        revision:1} as PersistedEnemyKitV2,
       verifyPersisted:(_snapshot:PersistedEnemyKitV2,digest:string)=>
        /^[0-9a-f]{64}$/.test(digest),
-     }:undefined;
+     };
+     if(isBoss){
+      assert.equal(fixtureKit.preview[0].kind,'boss');
+      assert.equal(fixtureKit.preview[0].phaseNames.length,2,
+       'Regional boss must have authored phases, not an unnamed generic foe');
+     }
      // This fixture issues one synthetic trusted kit per encounter. The real
      // service still demands a persisted receipt; this is not a game route.
      const a=simulateUnifiedEquipmentCombatV2(input,[build],[runtime],true,trusted);
@@ -186,25 +192,23 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
        evt.resourceAfter!>=0&&evt.resourceAfter!<=cap,
        'Resource overflow '+classId+' '+spec.id);
      }
-     if(tier===1){t1Gaps++;assert.equal(trusted,undefined);}
-     else {
-      authored++;
-      // A persisted V2 kit is not the same thing as an always-rolled trait:
-      // ordinary enemies intentionally have a region-dependent chance to
-      // remain unmodified, whereas elites and bosses author mechanics.
-      const expectedLabels=trusted!.snapshot.preview.flatMap(p=>[
-       ...p.abilityNames.map(name=>p.enemyId+': '+name),
-       ...p.phaseNames.map(name=>p.enemyId+': '+name),
-       ...p.traitIds.map(id=>p.enemyId+': '+id),
-      ]);
-      assert.deepEqual(a.enemyMechanicLabels,expectedLabels,
-       'Only frozen persisted enemy mechanics may be shown: '+seed);
-      if(kind!=='normal')assert.ok(expectedLabels.length>0,
-       'Elite/boss must have a persisted authored mechanic: '+seed);
-     }
+     authored++;
+     if(tier===1)t1Authored++;
+     // A normal enemy can intentionally have no rolled traits. The public
+     // mechanic labels must match the immutable server-signed snapshot.
+     const expectedLabels=trusted.snapshot.preview.flatMap(p=>[
+      ...p.abilityNames.map(name=>p.enemyId+': '+name),
+      ...p.phaseNames.map(name=>p.enemyId+': '+name),
+      ...p.traitIds.map(id=>p.enemyId+': '+id),
+     ]);
+     assert.deepEqual(a.enemyMechanicLabels,expectedLabels,
+      'Only server-persisted enemy mechanics may be shown: '+seed);
+     if(kind!=='normal'||tier===1)
+      assert.ok(expectedLabels.length>0,
+       'Boss, elite and Tier 1 introduction must show authored mechanics: '+seed);
      resultRows.push({
       classId,spec:spec.id,role,tier:gearTier,profile:profile.id,kind,
-      enemyKit:tier===1?'generic-t1':'authored-v2',
+      enemyKit:tier===1?'t1-authored':'authored-v2',
       dps:Math.round(p.damageDone/Math.max(1,a.combat.durationMs)*1000),
       hps:Math.round(p.healingDone/Math.max(1,a.combat.durationMs)*1000),
       damageTaken:Math.round(p.damageTaken),
@@ -222,8 +226,8 @@ assert.equal(roleCounts.tank,6);
 assert.equal(roleCounts.damage,8);
 assert.equal(roleCounts.support,4);
 assert.equal(resultRows.length,540);
-assert.equal(authored,432);
-assert.equal(t1Gaps,108);
+assert.equal(authored,540);
+assert.equal(t1Authored,108);
 assert.equal(deterministicChecks,540);
 const summary=Object.fromEntries(tiers.map(tier=>[
  'T'+tier,{
@@ -231,7 +235,7 @@ const summary=Object.fromEntries(tiers.map(tier=>[
   avgDps:Math.round(resultRows.filter(r=>r.tier==='T'+tier)
    .reduce((sum,r)=>sum+r.dps,0)/108),
   victories:resultRows.filter(r=>r.tier==='T'+tier&&r.victory).length,
-  authoredEnemyKit:tier>1,
+  authoredEnemyKit:true,
  },
 ]));
 const diagnostics=analyzeSyntheticBalanceV2(resultRows);
@@ -240,7 +244,7 @@ assert.equal(diagnostics.gearProgression.length,270);
 console.log(JSON.stringify({fixture:'SYNTHETIC_NOT_RELEASE_BALANCE',
  diagnostics,
  scenarios:resultRows.length,deterministicChecks,roleCounts,
- authoredEnemyCases:authored,unapprovedT1KitCases:t1Gaps,
+ authoredEnemyCases:authored,authoredT1Cases:t1Authored,unapprovedT1KitCases:0,
  summary,
  // Developer-only diagnostics, not player data or final DPS promises.
  results:resultRows,

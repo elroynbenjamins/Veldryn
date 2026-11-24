@@ -22,6 +22,11 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/src/content/boss-v2-preview-locales.ts'
+      - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
+      - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
+      - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/boss-v2-preview-runtime.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -45,6 +50,11 @@ on:
       - 'apps/mobile/src/content/skills-v2-preview.ts'
       - 'apps/mobile/src/content/skills-v2-preview-descriptions.ts'
       - 'apps/mobile/tests/skills-v2-preview-ui.cjs'
+      - 'apps/mobile/src/content/boss-v2-preview-locales.ts'
+      - 'apps/mobile/src/content/boss-v2-replay-preview.ts'
+      - 'apps/mobile/src/components/BossV2CounterplayPreview.tsx'
+      - 'apps/mobile/tests/boss-v2-preview-ui.cjs'
+      - 'apps/mobile/tests/boss-v2-preview-runtime.cjs'
       - 'tools/build-online.mjs'
       - 'tools/combat-v2-live-edge-isolation.mjs'
       - 'tools/tests/combat-v2-edge-isolation.test.mjs'
@@ -108,6 +118,16 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-baseline.js
       - name: Validate deterministic Enemy/Boss 2.0 kit composition and six profiles
         run: node backend/dist/server/combat/v2/__tests__/enemy-kit-composer.js
+      - name: Validate eight authored Tier 1 archetypes and persisted replays
+        run: node backend/dist/server/combat/v2/__tests__/enemy-t1-intro-kit.js
+      - name: Validate six Boss 2.0 mobile-readable tells, counterplay and legacy replay lock
+        run: node backend/dist/server/combat/v2/__tests__/boss-counterplay-contract.js
+      - name: Validate boss phase/cast ordering and QA-only synthetic pacing aggregation
+        run: node backend/dist/server/combat/v2/__tests__/boss-pacing-diagnostics.js
+      - name: Exercise six boss-exclusive combat traits under snapshot authority
+        run: node backend/dist/server/combat/v2/__tests__/boss-trait-runtime.js
+      - name: Observe six bosses across 108 deterministic class/spec baseline encounters
+        run: node backend/dist/server/combat/v2/__tests__/boss-cross-system-readiness.js
       - name: Validate private solo V2 encounter reservation, RPC adapter and replay
         run: node backend/dist/server/combat/v2/__tests__/solo-encounter-persistence.js
       - name: Validate disabled-by-default solo reward settlement contract
@@ -155,6 +175,10 @@ jobs:
         run: pnpm --dir apps/mobile typecheck
       - name: Verify preview catalogue, accessible interactions and isolation from production
         run: node apps/mobile/tests/skills-v2-preview-ui.cjs
+      - name: Verify localized and accessible Boss 2.0 replay preview isolation
+        run: node apps/mobile/tests/boss-v2-preview-ui.cjs
+      - name: Execute six-boss localized replay projection tamper and timeline tests
+        run: node apps/mobile/tests/boss-v2-preview-runtime.cjs
 
   build_api_boundary:
     name: Hidden authenticated Combat 2.0 build transport
@@ -258,3 +282,5 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
       - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
         run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
+      - name: Compare six regional bosses against 216 verified low/high synthetic set and affix loadouts
+        run: node backend/dist/server/combat/v2/__tests__/boss-full-gear-pacing-matrix.js

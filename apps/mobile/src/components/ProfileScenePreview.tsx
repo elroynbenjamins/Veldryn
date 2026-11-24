@@ -23,7 +23,8 @@ import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
 import {CelestialSovereignPreview} from './profile/CelestialSovereignPreview';
-import {CELESTIAL_IDS,celestialVisualSelection,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
+import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from './profile/CelestialStandardEffects';
 
 export function ProfileScenePreview({state,backgroundId,active=false}:{state:GameState;backgroundId:string;active?:boolean}){
  const language=useGameLanguage();
@@ -34,11 +35,15 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
  const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
+ const celestialAssets=getEnabledCelestialAssets();
+ const celestialBackground=!!celestialAssets&&backgroundId===CELESTIAL_IDS.background;
+ const celestialBorder=!!celestialAssets&&character.profileBorderId===CELESTIAL_IDS.border;
  const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
-   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
+   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
+   {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}<View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
@@ -50,8 +55,9 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   </View>
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}
+  {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
- const celestial=celestialVisualSelection(backgroundId,character.profileBorderId)?getEnabledCelestialAssets():undefined;
+ const celestial=celestialBackground&&celestialBorder?celestialAssets:undefined;
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}

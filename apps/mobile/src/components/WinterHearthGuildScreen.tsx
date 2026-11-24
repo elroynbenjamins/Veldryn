@@ -45,7 +45,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  const remainingHours=Math.max(0,Math.ceil((endsAtMs-now)/3600000));
  const remainingLabel=remainingHours>=24?Math.floor(remainingHours/24)+'d '+remainingHours%24+'h':remainingHours+'h';
  const reload=useCallback(async()=>{
-  const key=++generation.current;setLoading(true);setError('');setSnapshot(null);
+  const key=++generation.current;setLoading(true);setError('');
   try{const next=await getWinterHearthGuildSnapshot();if(generation.current===key)setSnapshot(next);}
   catch{if(generation.current===key)setError('Unable to refresh guild event progress.');}
   finally{if(generation.current===key)setLoading(false);}

@@ -38,7 +38,9 @@ import {selectReviewSkillLoadoutV2} from '../ability-counterplay-strategies';
 import {inspectFrozenForgeCombatHandoffV2} from '../equipment-frozen-forge-handoff-audit';
 import {simulateOriginalForgeAuthoredBossReviewV2}
  from '../equipment-original-forge-authored-boss';
-import {prepareSoloEnemyKitsV2} from '../enemy-kit-composer';
+import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2} from '../enemy-kit-composer';
+import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
+import {simulateCombat} from '../../engine';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {reviewOriginalForgeSetBossOpportunitiesV2}
  from '../equipment-forge-set-boss-opportunity-review';
@@ -1222,6 +1224,31 @@ const exactBossProfiles=[
  {id:'BOSS_EXP_BELLBEAST',region:'frostmarch',tier:4,forgeTier:4,level:60},
  {id:'BOSS_EXP_CANTOR',region:'frostmarch',tier:4,forgeTier:4,level:60},
 ] as const;
+// QA-only counterfactuals: one permanent set channel at a time on the
+// identical original source-compiled actor. These are NOT owned set copies,
+// candidate mint receipts, or an authorization to wear/apply a set.
+const v19PermanentEffects={
+ asterfall:{tank:{channel:'defense_pct',pct:3},damage:{channel:'attack_pct',pct:3},support:{channel:'forge_healing_power_pct',pct:3}},
+ sunscar:{tank:{channel:'defense_pct',pct:3.5},damage:{channel:'ability_damage_pct',pct:3.5},support:{channel:'forge_healing_power_pct',pct:3.5}},
+ frostmarch:{tank:{channel:'max_hp_pct',pct:4},damage:{channel:'attack_pct',pct:4},support:{channel:'forge_healing_power_pct',pct:4}},
+} as const;
+type V19Effect=typeof v19PermanentEffects[keyof typeof v19PermanentEffects][keyof typeof v19PermanentEffects['asterfall']];
+function v19ApplyPermanentSensitivity(actor:CombatantDefinition,effect:V19Effect):CombatantDefinition{
+ const result=structuredClone(actor),factor=1+effect.pct/100;
+ const meta=result.combatV2,gear=meta?.equipmentEffects;
+ if(!meta||!gear)throw Error('v19_verified_source_actor_required');
+ switch(effect.channel){
+  case 'defense_pct':result.stats.defense*=factor;break;
+  case 'attack_pct':result.stats.attackPower*=factor;break;
+  case 'max_hp_pct':result.stats.maxHp*=factor;break;
+  case 'ability_damage_pct':result.combatV2={...meta,equipmentEffects:{...gear,abilityDamagePct:(gear.abilityDamagePct??0)+effect.pct/100}};break;
+  case 'forge_healing_power_pct':result.combatV2={...meta,equipmentEffects:{...gear,forgeHealingPowerPct:(gear.forgeHealingPowerPct??0)+effect.pct/100}};break;
+ }
+ return result;
+}
+const v19SensitivityRows: {bossId:string;classId:string;specIndex:number;strategy:string;channel:string;pct:number;
+ baseline:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number};
+ candidate:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number}}[]=[];
 const v18TraceRows: {bossId:string;classId:string;specIndex:number;strategy:string;actorId:string;events:unknown[];victory:boolean;durationMs:number}[]=[];
 let realForgeAuthoredBossRuns=0,realForgeAuthoredBossThreats=0;
 let realOriginalBossThreewayComparisons=0,comparableThreewayTactics=0;
@@ -1292,6 +1319,29 @@ for(const profile of exactBossProfiles){
     assert.ok(!first.bossMechanicLabels.some(label=>label.includes('V2_BOSS_PRESSURE')),
      'No generic boss pressure script may replace the authored kit');
     threeWay.push({choice:chosen,result:first});
+    if(process.env.EQ2_V19_PERMANENT_SENSITIVITY_PATH){
+     const compiled=compileRealFrozenForgeActorV2(input.players[0],build,qa.source);
+     assert.deepEqual(compiled.evidence,first.equipmentEvidence);
+     const verified=verifyPersistedEnemyKitsV2(input.enemies,persisted);
+     const baselineInput:CombatInput={...input,players:[compiled.actor],enemies:[...verified.enemies]};
+     const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+      mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+      playerIds:[compiled.actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+     const run=(caseInput:CombatInput)=>simulateCombat(caseInput,issueEnemyV2EngineAuthority(scope,caseInput,
+      (_scope,digest)=>kit.verifyPersisted(persisted,digest)));
+     const before=run(baselineInput);
+     assert.deepEqual(before,first.combat,'baseline must reproduce pinned real source run');
+     const effect=v19PermanentEffects[profile.region][CLASS_ROLES_V2[classId]];
+     const actor=v19ApplyPermanentSensitivity(compiled.actor,effect);
+     const scenario:CombatInput={...baselineInput,players:[actor]};
+     const after=run(scenario);
+     assert.deepEqual(after,run(scenario),'QA-only static effect counterfactual must replay');
+     assert.deepEqual(run(baselineInput),before,'counterfactual cannot mutate source actor');
+     const metrics=(fight:typeof before)=>({victory:fight.victory,reason:fight.reason,durationMs:fight.durationMs,
+      damage:fight.players[0].damageDone,healing:fight.players[0].healingDone,hp:fight.players[0].hp});
+     v19SensitivityRows.push({bossId:profile.id,classId,specIndex,strategy,channel:effect.channel,pct:effect.pct,
+      baseline:metrics(before),candidate:metrics(after)});
+    }
     if(process.env.EQ2_V18_TRACE_PATH)v18TraceRows.push({bossId:profile.id,classId,specIndex,strategy,actorId:qa.actor.id,events:first.combat.events,victory:first.combat.victory,durationMs:first.combat.durationMs});
     const freezing=JSON.stringify({
      items:first.equipmentEvidence.items,
@@ -1431,6 +1481,12 @@ console.log('PASS: 1620 reviewed 15-original-Forge-set × six-authored-boss × '
 assert.equal(realOriginalBossThreewayComparisons,108);
 assert.equal([...originalThreewayOutcomes.values()].reduce((a,b)=>a+b,0),108);
 assert.equal(realForgeAuthoredBossRuns,324);
+if(process.env.EQ2_V19_PERMANENT_SENSITIVITY_PATH){
+ assert.equal(v19SensitivityRows.length,324);
+ writeFileSync(process.env.EQ2_V19_PERMANENT_SENSITIVITY_PATH,JSON.stringify({
+  scope:'QA_ORIGINAL_SOURCE_STATIC_STAT_COUNTERFACTUAL',actualOwnedCandidateCopies:false,
+  conditionalEffectsApplied:false,releaseApproved:false,rows:v19SensitivityRows}));
+}
 if(process.env.EQ2_V18_TRACE_PATH){
  assert.equal(v18TraceRows.length,324);
  writeFileSync(process.env.EQ2_V18_TRACE_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_BASELINE_TRACE_ONLY',effectApplied:false,rows:v18TraceRows}));

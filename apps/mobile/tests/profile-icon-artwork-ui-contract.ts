@@ -7,3 +7,11 @@ for(const id of ['event:veilbreak-2026-lantern-warden','event:veilbreak-2026-pum
 }
 console.log('PASS: Veilbreak event profile icons resolve to dedicated artwork');
 export {};
+
+const atlasSource=fs.readFileSync('src/theme/profile-icon-assets.ts','utf8');
+const profileIcon=fs.readFileSync('src/components/ProfileIcon.tsx','utf8');
+check(atlasSource.includes('standard-set-portraits-atlas.webp'),'approved standard-set portrait atlas must be bundled');
+check((atlasSource.match(/cosmetic:[^']+:portrait-[^']+'/g)??[]).length>=8,'all eight standard-set portrait IDs must have atlas cells');
+check(profileIcon.includes('profileCosmeticPortraitAtlasCell')&&profileIcon.includes('overflow:\'hidden\''),'ProfileIcon must crop the shared portrait atlas instead of showing the full sheet');
+
+check(profileIcon.includes("width:'400%'")&&profileIcon.includes("height:'200%'")&&profileIcon.includes('cell.column*100')&&profileIcon.includes('cell.row*100'),'atlas crop must scale with the actual styled icon viewport rather than the default size prop');

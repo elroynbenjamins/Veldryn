@@ -12,11 +12,13 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
+import {useCosmeticScrollVisibility} from './ProfileCosmeticMotion';
 import {ProfileEquippedGearShowcase} from './ProfileEquippedGearShowcase';
 import {localProfileGear} from '../core/profile-equipped-gear';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {useSelfProfileGuild} from '../online/useSelfProfileGuild';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
+import {profileAnimatedCosmeticsEnabled} from '../core/profile-cosmetic-access';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
  {id:'public',label:'Public viewer',detail:'Signed-in player outside your guild'},
@@ -28,6 +30,7 @@ const visibilityLabel={public:'Public',guild:'Guild only',private:'Private'} as 
 const words=(value?:string|null)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Not selected';
 
 export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose}:{visible:boolean;state:GameState;identityDraft:ProfileExtensionSelfV43|null;onClose:()=>void}){
+ const cosmeticViewport=useCosmeticScrollVisibility();
  const guild=useSelfProfileGuild(state,visible),badges=usePlayerBadges();
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<400||fontScale>=1.2;
@@ -50,6 +53,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   title:character.profileTitle??'New Adventurer',
   backgroundId:character.profileBackgroundId??'asterfall-night',
   borderId:character.profileBorderId??null,
+  effectId:character.profileEffectId??null,
   petId:character.selectedCosmeticPetId??null,
   bio:identityDraft?.bio??'',
   favoriteSkillId:identityDraft?.favoriteSkillId??null,
@@ -74,9 +78,9 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
     <GameModalHeader eyebrow={profileT(language,"AUDIENCE PREVIEW")} title={profileT(language,"As other players see you")} onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?profileText(language,visibilityLabel[visibility]).toUpperCase():profileT(language,"LOCAL ONLY")}</Text></View>}/>
     <Text style={s.copy}>{profileT(language,"Switch audiences to test profile visibility. This preview never publishes or saves changes.")}</Text>
     <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityLabel={profileText(language,row.label)} accessibilityHint={profileText(language,row.detail)} accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text numberOfLines={2} style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{profileText(language,row.label)}</Text><Text numberOfLines={3} style={s.audienceDetail}>{profileText(language,row.detail)}</Text></Pressable>)}</View>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
+    <ScrollView onLayout={cosmeticViewport.onViewportLayout} onScroll={cosmeticViewport.onScroll} scrollEventThrottle={64} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>{profileT(language,"Profile hidden from this viewer")}</Text><Text style={s.hiddenCopy}>{profileText(language,hiddenReason)}</Text></View>:<>
-      <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
+      <View onLayout={cosmeticViewport.onSceneLayout}><PublicProfileScene cosmeticsActive={visible&&cosmeticViewport.visible} profile={profile} reduceMotion={state.settings.reduceMotion} allowUnreleasedCosmetics={profileAnimatedCosmeticsEnabled(state)}/></View>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.muted}>{profileT(language,"No biography selected.")}</Text></View>}
       <ProfileEquippedGearShowcase key={character.id} gear={localProfileGear(state,character.id)} reduceMotion={state.settings.reduceMotion}/>
       <View style={s.card}>

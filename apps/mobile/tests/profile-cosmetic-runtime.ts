@@ -1,0 +1,96 @@
+import {profileSceneBorderZones,profileSceneGlowBounds} from '../src/core/profile-frame-layout';
+import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase,cosmeticViewportVisible} from '../src/core/profile-cosmetic-motion-v2';
+import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
+function fail(message:string):never{throw new Error(message)}
+function ok(value:unknown,message:string){if(!value)fail(message)}
+function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
+equal(PROFILE_COSMETIC_RUNTIME.length,8,'four standard and four Ascendant animated profile collections');
+equal(new Set(PROFILE_COSMETIC_RUNTIME.map(r=>r.borderId)).size,8,'border ids are unique');
+ok(PROFILE_COSMETIC_RUNTIME.every(r=>r.borderId!==r.fallbackBorderId),'animated product border ids never reuse exclusive reward ids');
+const standard=PROFILE_COSMETIC_RUNTIME.filter(r=>['gloamward','frostbound','amberglass','briarbound'].includes(r.motionProfile));
+ok(standard.filter(r=>r.motionProfile!=='gloamward').every(r=>r.fallbackBorderId.startsWith('dungeon:')),'standard dungeon reward art is fallback-only, never the product identity');
+equal(new Set(PROFILE_COSMETIC_RUNTIME.map(r=>r.effectId)).size,8,'effect ids are unique');
+for(const row of PROFILE_COSMETIC_RUNTIME){
+ ok(row.tracks.length>=5&&row.tracks.length<=12,row.collection+' keeps motion subtle');
+ ok(row.glows.length>=6&&row.glows.length<=12,row.collection+' has staggered border lights');
+ ok(row.tracks.some(t=>t.points.some(([x,y])=>x>.82&&y<.38)),row.collection+' uses the approved upper-right empty space');
+ equal(profileCosmeticRuntimeByBorder.get(row.borderId),row,row.collection+' resolves by border');
+ equal(profileCosmeticRuntimeByEffect.get(row.effectId),row,row.collection+' resolves by effect');
+}
+const kinds=new Map(PROFILE_COSMETIC_RUNTIME.map(r=>[r.motionProfile,new Set(r.tracks.map(t=>t.particle))]));
+ok(kinds.get('frostbound')?.has('snowflake'),'Frostbound uses snowflakes');
+ok(kinds.get('amberglass')?.has('ember'),'Amberglass uses embers');
+ok(kinds.get('briarbound')?.has('leaf')&&kinds.get('briarbound')?.has('firefly'),'Briarbound uses leaves and fireflies');
+ok(kinds.get('gloamward')?.has('arcane'),'Gloamward uses arcane sparks');
+ok(kinds.get('celestial')?.has('arcane'),'Celestial Sovereign uses celestial arcane motes');
+ok(kinds.get('draconic')?.has('ember'),'Draconic Dominion uses embers');
+ok(kinds.get('abyssal')?.has('firefly'),'Abyssal Majesty uses slow bioluminescent motes');
+ok(kinds.get('paradox')?.has('arcane')&&kinds.get('paradox')?.has('snowflake'),'Paradox Eternal mixes fractured arcane and crystalline motes');
+console.log('PASS: eight native cosmetic runtimes retain unique particles, placement and bounded motion');
+
+ // Real authored tracks and glow periods must have identical endpoints on the native clock.
+for(const row of PROFILE_COSMETIC_RUNTIME){
+ for(const t of row.tracks){
+  for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+   const a=sampleCosmeticTrack(t,0,w,h),b=sampleCosmeticTrack(t,1,w,h);
+   for(const key of ['x','y','width','height','opacity','rotation'] as const) equal(a[key],b[key],row.collection+' closes particle '+key);
+  }
+ }
+ for(const g of row.glows){
+  equal(cosmeticGlowOpacity(row.motionProfile,0,g.periodMs,g.phaseMs,g.peakOpacity),cosmeticGlowOpacity(row.motionProfile,1,g.periodMs,g.phaseMs,g.peakOpacity),row.collection+' closes glow');
+  equal(cosmeticGlowOpacity(row.motionProfile,0,g.periodMs,g.phaseMs,g.peakOpacity,true),cosmeticGlowOpacity(row.motionProfile,1,g.periodMs,g.phaseMs,g.peakOpacity,true),row.collection+' closes lantern glow');
+ }
+}
+for(const cycles of [.75,.9,1,1.25,1.4,3.75,5]){
+ let prior=0;
+ for(let i=1;i<=120;i++){
+  const p=periodicCosmeticPhase(i/120,cycles);
+  const delta=(p-prior+1)%1;
+  ok(delta>0&&delta<.1,'authored tempo remains forward and bounded');
+  prior=p;
+ }
+}
+console.log('PASS: particle and glow loop endpoints match across all collections and viewport sizes');
+
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const motionSource=fs.readFileSync('src/components/ProfileCosmeticMotion.tsx','utf8');
+const stageSource=fs.readFileSync('src/components/profile/ProfileStage.tsx','utf8');
+const audienceSource=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
+const publicSource=fs.readFileSync('src/components/PublicProfileScene.tsx','utf8');
+ok(motionSource.includes("if(!enabled)return;setForeground"),'inactive and static layers skip AppState subscriptions');
+ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()=>!enabled?[]:runtime.tracks.map'),'static effects skip native interpolation graphs');
+ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
+const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
+ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
+ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('active={cosmeticsActive&&(review?.active??true)}'),'hidden audience preview stops cosmetics');
+console.log('PASS: cosmetic idle and static rendering contract');
+
+for(const [top,height,scroll,viewport,expected] of [
+ [0,0,0,200,false],[0,180,0,0,false],[0,180,0,200,true],
+ [0,180,179,200,true],[0,180,180,200,false],[250,180,0,250,false],
+ [250,180,1,250,true],[250,180,430,100,false],[-20,180,0,200,true],
+ [0,180,-30,200,true],[0,180,NaN,200,false],
+] as const)equal(cosmeticViewportVisible(top,height,scroll,viewport),expected,'scroll viewport intersection');
+for(const row of standard){
+ for(const [width,height] of [[104,72],[260,174],[340,205],[480,270],[640,360]]){
+  const zones=profileSceneBorderZones(width,height);
+  for(const g of row.glows){
+   const box=profileSceneGlowBounds(width,height,g.x,g.y,g.size);
+   ok(!!box,row.collection+' glow fits border stencil');
+   if(!box)continue;
+   ok(zones.some(z=>box.x>=z.x-.001&&box.y>=z.y-.001&&box.x+box.width<=z.x+z.width+.001&&box.y+box.height<=z.y+z.height+.001),row.collection+' glow remains fully inside border zone');
+  }
+ }
+}
+ok(motionSource.includes('if(next!==last.current)')&&audienceSource.includes('onScroll={cosmeticViewport.onScroll}'),'scroll visibility only updates on crossings');
+ok(motionSource.includes('profileSceneGlowBounds(size.width,size.height'),'procedural glows use the safe frame stencil');
+console.log('PASS: standard cosmetic glow clipping and scroll viewport boundary regressions');
+
+ok(motionSource.includes('Animated.timing(entryOpacity,{toValue:1,duration:180')&&motionSource.includes('entry.stop();loop.stop()'),'entry fade is native and stopped with the main clock');
+for(const name of ['AnimatedProfileBorderGlows','ProfileCosmeticExteriorMatte','ProfileSceneEffect','ProceduralProfileBorderGlows','ProceduralProfileSceneEffect']){
+ ok(motionSource.includes('export const '+name+'=memo(function '+name),'cosmetic layer has a stable memoized boundary: '+name);
+}
+ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('left:box.left-left,top:box.top-top'),'sprite glows composite only their clipped footprint');
+const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
+ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:profile.borderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
+console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');

@@ -766,7 +766,7 @@ function VeldrynApp(){
       if(JSON.stringify(candidate)===JSON.stringify(current))return;
       if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
       if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
-      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] as const;
+      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));
         if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){await perform({type:'profile',args:Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,value??null]))});return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;

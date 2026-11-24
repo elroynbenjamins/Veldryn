@@ -168,7 +168,8 @@ export function partySyncScopeFromRunBindingV2(
   encounterId:b.runId,partyId:b.partyId,revision:b.encounterRevision,
   seed:b.seed,mode:'dungeon',
   persistedRun:{runId:b.runId,nodeId:b.nodeId,readyCheckId:b.readyCheckId,
-   rosterRevision:b.rosterRevision,stateRevision:b.stateRevision},
+   rosterRevision:b.rosterRevision,stateRevision:b.stateRevision,
+   bindingDigest:enemyV2SnapshotDigest(b)},
   members:b.members.map(m=>({actorId:m.actorId,characterId:m.characterId,classId:m.classId})),
  };
 }

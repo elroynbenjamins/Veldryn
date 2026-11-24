@@ -47,6 +47,11 @@ const validPct=(x:unknown,max:number)=>typeof x==='number'&&Number.isFinite(x)&&
 function fail(why:string):never{throw Error('combat_v2_equipment_trait_'+why);}
 const allowed=new Set<string>(EXECUTABLE_EQUIPMENT_TRAITS_V2);
 const frozen=<T>(x:T):T=>JSON.parse(JSON.stringify(x)) as T;
+/** Keep the readonly element type after Array.isArray runtime guards. */
+const freezeSources=(sources:readonly VerifiedV2EquipmentEffectSource[])=>Object.freeze(sources.map(row=>Object.freeze({
+ ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
+ traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
+})));
 function validate(source:VerifiedV2EquipmentEffectSource){
  if(!source||source.source!=='server-persisted-equipment-v2'||
   source.policy!==EQUIPMENT_V2_TRAIT_ENGINE_POLICY||
@@ -108,16 +113,16 @@ export function issueEquipmentV2TraitAuthority(
   ids.add(source.actorId);characters.add(source.characterId);
  }
  const digest=enemyV2SnapshotDigest(input);
+ const verifiedSources=freezeSources(sources);
+ const sourceDigest=enemyV2SnapshotDigest(verifiedSources);
  let accepted=false;
- try{accepted=verifyPersisted(sources,digest)===true;}catch{accepted=false;}
- if(!accepted)fail('persisted_ledger_not_verified');
+ try{accepted=verifyPersisted(verifiedSources,digest)===true;}catch{accepted=false;}
+ if(!accepted||enemyV2SnapshotDigest(input)!==digest||
+    enemyV2SnapshotDigest(sources)!==sourceDigest)
+  fail('persisted_ledger_not_verified');
  const token=Object.freeze({[brand]:true}) as EquipmentV2TraitEngineAuthority;
  scoped.set(token,Object.freeze({inputDigest:digest,inputSeed:input.seed,
-  allowPersistedState:false,
-  actors:Object.freeze(sources.map(row=>Object.freeze({
-   ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
-   traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
-  }))),
+  allowPersistedState:false,actors:verifiedSources,
  }));
  return token;
 }
@@ -180,10 +185,7 @@ export function issuePersistedPartyEquipmentV2TraitAuthority(
    fail('party_persistent_state_mismatch');
  }
  const digest=enemyV2SnapshotDigest(input);
- const verifiedSources=Object.freeze(sources.map(row=>Object.freeze({
-   ...frozen(row),ownedEquippedInstanceIds:Object.freeze([...row.ownedEquippedInstanceIds]),
-   traits:Object.freeze(row.traits.map(trait=>Object.freeze({...trait}))),
- })));
+ const verifiedSources=freezeSources(sources);
  const sourceDigest=enemyV2SnapshotDigest(verifiedSources);
  const bindingDigest=enemyV2SnapshotDigest(binding);
  let accepted=false;

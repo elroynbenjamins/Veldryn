@@ -1,7 +1,9 @@
+export type CoopSynchronizationValueKind='percent'|'percentage_points';
 export interface CoopSynchronizationBonusView{
  statKey:string;
  label:string;
- value:string;
+ bps:number;
+ valueKind:CoopSynchronizationValueKind;
 }
 export interface CoopSynchronizationLinkView{
  id:string;
@@ -12,8 +14,9 @@ export interface CoopSynchronizationLinkView{
 export interface CoopSynchronizationCapView{
  statKey:string;
  label:string;
- rawValue:string;
- effectiveValue:string;
+ rawBps:number;
+ effectiveBps:number;
+ valueKind:CoopSynchronizationValueKind;
 }
 export interface CoopSynchronizationView{
  activeCount:number;
@@ -40,4 +43,14 @@ export function assertCoopSynchronizationPresentation(view:CoopSynchronizationVi
   !Array.isArray(view.cappedStats))
   throw new Error('invalid_coop_synchronization_view');
  return view;
+}
+
+
+export function formatCoopSynchronizationValue(
+ bps:number,kind:CoopSynchronizationValueKind,
+):string{
+ if(!Number.isFinite(bps))throw new Error('invalid_coop_synchronization_value');
+ const amount=bps/100;
+ const text=Number.isInteger(amount)?String(amount):amount.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');
+ return '+'+text+(kind==='percentage_points'?' pp':'%');
 }

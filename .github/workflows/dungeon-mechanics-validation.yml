@@ -81,6 +81,9 @@ jobs:
       - name: Validate one dungeon per region, retired content, and frozen two-boss rotation
         run: pnpm test:regional-dungeon-rotation
         working-directory: backend
+      - name: Validate versioned Endurance boss durability and room reward caps
+        run: pnpm build && node dist/server/coop/__tests__/endurance-depth-marks.js
+        working-directory: backend
       - name: Validate meaningful route choices and historical dungeon graph compatibility
         run: node dist/server/coop/__tests__/phase4-routes.js
         working-directory: backend

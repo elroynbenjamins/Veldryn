@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/supabase/review/material-retirement-*.sql'
       - 'tools/test-material-retirement-schema-fixture.mjs'
+      - 'tools/test-echo-bat-wing-source-closure.mjs'
       - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'tools/preview-echo-bat-wing-source-closure.mjs'
       - 'tools/material-retirement-review.mjs'
@@ -33,6 +34,13 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Audit expanded material registries and item-use regressions
         run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex
+      - name: Exercise exact drop removal and rebuilt runtime bundles
+        if: github.event_name == 'pull_request' && github.head_ref == 'review/material-purpose-loot-cleanup-20261124'
+        run: |
+          node tools/test-echo-bat-wing-source-closure.mjs --fixture-only
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; for(const p of ['gameplay','coop']) {const c=readFileSync('backend/supabase/functions/'+p+'/index.ts','utf8'); if(/itemId:\\s*['\x22]ECHO_BAT_WING['\x22]/.test(c)) throw Error('Remaining wing drop: '+p); if(!c.includes('RUNEBOUND_CORE')) throw Error('Protected core missing: '+p); console.log('PASS: '+p+' rebuilt without exact wing drop');}"
   atomic-retirement-pg17:
     runs-on: ubuntu-latest
     services:

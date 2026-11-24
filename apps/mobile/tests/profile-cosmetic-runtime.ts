@@ -85,3 +85,12 @@ for(const row of standard){
 ok(motionSource.includes('if(next!==last.current)')&&audienceSource.includes('onScroll={cosmeticViewport.onScroll}'),'scroll visibility only updates on crossings');
 ok(motionSource.includes('profileSceneGlowBounds(size.width,size.height'),'procedural glows use the safe frame stencil');
 console.log('PASS: standard cosmetic glow clipping and scroll viewport boundary regressions');
+
+ok(motionSource.includes('Animated.timing(entryOpacity,{toValue:1,duration:180')&&motionSource.includes('entry.stop();loop.stop()'),'entry fade is native and stopped with the main clock');
+for(const name of ['AnimatedProfileBorderGlows','ProfileCosmeticExteriorMatte','ProfileSceneEffect','ProceduralProfileBorderGlows','ProceduralProfileSceneEffect']){
+ ok(motionSource.includes('export const '+name+'=memo(function '+name),'cosmetic layer has a stable memoized boundary: '+name);
+}
+ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('left:box.left-left,top:box.top-top'),'sprite glows composite only their clipped footprint');
+const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
+ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:profile.borderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
+console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');

@@ -61,6 +61,8 @@ function canonical(value: unknown): string {
 export function resolveAndFreezeLoadout(input: {
   accountId: string; characterId: string; loadoutId: string; expectedRevision: number;
   minLevel: number; minCombatPower?:number; syncLevel: number; repository: LoadoutRepository;
+  /** Only new regular Q-Mode runs opt into the visible host-level policy. */
+  hostLevelSync?: boolean;
 }): FrozenLoadoutSnapshot {
   const record = input.repository.getOwnedLoadout(input.accountId, input.characterId, input.loadoutId);
   if (!record || record.accountId !== input.accountId || record.characterId !== input.characterId) throw new Error('loadout_not_owned');
@@ -71,7 +73,7 @@ export function resolveAndFreezeLoadout(input: {
   if (!record.legalEquipment) throw new Error('illegal_equipment');
   const role = deriveRole(record.classId);
   const source: VerifiedCombatSnapshot = { ...record.stats, role, classId: record.classId, characterId: record.characterId, level: record.combatScalingLevel ?? record.characterLevel };
-  const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role]);
+  const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role], undefined, input.hostLevelSync ? record.characterLevel : undefined);
   const reference = ROOTBOUND_ROLE_REFERENCES[role];
   // Compare against the same effective-level reference used by normalization.
   // Otherwise an undergeared level-45 character passes against level-25 budgets.

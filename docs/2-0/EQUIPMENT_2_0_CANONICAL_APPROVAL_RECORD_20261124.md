@@ -84,6 +84,10 @@ Owner requested V9–V13 consolidation before proceeding. C14 remains confirmed 
 
 V14 index records 21 original/current source pins, contract precedence and denial flags. It does not replace the historical source files or create runtime authority. See `docs/2-0/EQUIPMENT_2_0_CONSOLIDATED_REVIEW_V14.md`.
 
+## 3B. V15 power contract review extension
+
+V14 remains the canonical catalogue/economy baseline. `tools/eq2-review/t1-t5/equipment-power-contract-review-v15.mjs` (documented in `docs/2-0/EQUIPMENT_2_0_POWER_CONTRACT_REVIEW_V15.md`) combines V4/V5/V6/V7 for a **partial equipment budget index, not final CP**. 9,720 matched and 4,860 mixed grade fixtures; ten budget lanes with independent grade/quality on combined weapons; exact scalar parity does not imply equal combat outcomes. Only 233/554 identities have authored profiles; 321 remain unprofiled, zero premium entries in the benchmark fixtures, 28 unresolved innate lines and 61 sets outside numerical audit. All D1–D10 remain open, no approval inferred. Next: source-backed profile extension, semantic decisions, then legal mixed build and combat calibration.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

@@ -11,7 +11,8 @@ const {gemPouchUiRows,gemPouchText}=require('../src/i18n/gem-pouch-ui.ts');
 const languages=['en','de','es','nl','it','fr','ru','tr'];
 assert.deepEqual([...SUPPORTED_LANGUAGES],languages);
 const keys=Object.keys(equipmentPouchUiRows);
-assert.equal(keys.length,104,'all authored Equipment Pouch copy, compact preview labels, shared inspector actions, quick disposal, selection metrics and eligibility reasons');
+// The original 104 Equipment Pouch labels plus seven authored stat-first inspection labels.
+assert.equal(keys.length,111,'all Equipment Pouch and equipment-inspection labels, actions, selection metrics and eligibility reasons');
 const params={used:5,capacity:30,character:'PLAYER-NAME',count:7,gold:'15,000',quality:72,slot:'SLOT',name:'DUST'};
 const tokens=s=>[...s.matchAll(/\{([A-Za-z][A-Za-z0-9_]*)\}/g)].map(m=>m[1]).sort();
 for(const key of keys){
@@ -71,4 +72,4 @@ for(const marker of [
  ])assert.ok(screen.includes(marker),'canonical sale protection/action removed: '+marker);
 const ast=ts.createSourceFile('EquipmentPouchPanel.tsx',screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
 assert.equal(ast.parseDiagnostics.length,0,'Equipment Pouch must parse as TSX');
-console.log('PASS: 104 localized Equipment Pouch templates, shared details/actions in eight languages, sale guards and canonical commands');
+console.log('PASS: 111 localized Equipment Pouch and inspector templates in eight languages, sale guards and canonical commands');

@@ -1,8 +1,7 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {CelestialPreviewAssets} from '../components/profile/CelestialSovereignPreview';
 
-/** Reserved candidate identifiers, not a server catalogue or entitlement grant.
- * Coordinate with the authoritative catalogue before enabling rendering. */
+/** Candidate identifiers remain unregistered until authoritative catalogue/entitlement work lands. */
 export const CELESTIAL_IDS={
  background:'ascendant-celestial-astral-sanctum',
  border:'ascendant-celestial-crown-of-the-cosmos',
@@ -10,6 +9,20 @@ export const CELESTIAL_IDS={
  showcase:'ascendant-celestial-alignment',
  badge:'ascendant-celestial-sovereign-of-the-stars',
 } as const;
+
+const background=require('../../assets/ascendant/celestial/celestial_background_wide.webp') as ImageSourcePropType;
+const petRegular=require('../../assets/ascendant/celestial/aetherion_runtime.webp') as ImageSourcePropType;
+
+const scene:CelestialPreviewAssets={
+ background,
+ border:require('../../assets/ascendant/celestial/celestial_border.webp'),
+ petShowcase:require('../../assets/ascendant/celestial/celestial_pet_showcase.webp'),
+ orrery:require('../../assets/ascendant/celestial/celestial_orrery.webp'),
+ star:require('../../assets/ascendant/celestial/celestial_star.webp'),
+ corona:require('../../assets/ascendant/celestial/celestial_corona.webp'),
+ fallbackGlow:require('../../assets/ascendant/celestial/celestial_fallback_glow.webp'),
+};
+
 export type CelestialAssetBundle={
  scene:CelestialPreviewAssets;
  backgroundSquare:ImageSourcePropType;
@@ -17,13 +30,25 @@ export type CelestialAssetBundle={
  petPortrait:ImageSourcePropType;
  badge:ImageSourcePropType;
 };
-/** Fail closed until the binary overlay is committed. Do not use remote placeholders. */
-export function getCelestialAssetBundle():CelestialAssetBundle|undefined{return undefined;}
-/** Separate activation gate: asset presence must never unlock commerce or grant equipment. */
+
+const BUNDLE:CelestialAssetBundle={
+ scene,
+ // The reviewed art is authored wide. CardBackground cover-crops it on square surfaces.
+ backgroundSquare:background,
+ petRegular,
+ // Regular Aetherion artwork is intentionally used outside the dedicated showcase.
+ petPortrait:petRegular,
+ badge:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),
+};
+
+export function getCelestialAssetBundle():CelestialAssetBundle{return BUNDLE;}
+
+/** Release gate only. Asset presence never grants ownership, equip rights, commerce, or blessings. */
 export function celestialVisualsEnabled():boolean{return false;}
+
 export function celestialVisualSelection(backgroundId:string|undefined|null,borderId:string|undefined|null){
  return backgroundId===CELESTIAL_IDS.background&&borderId===CELESTIAL_IDS.border;
 }
 export function getEnabledCelestialAssets(){
- return celestialVisualsEnabled()?getCelestialAssetBundle():undefined;
+ return celestialVisualsEnabled()?BUNDLE:undefined;
 }

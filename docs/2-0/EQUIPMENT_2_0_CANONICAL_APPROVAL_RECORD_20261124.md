@@ -100,6 +100,10 @@ All 95 exact families /195 attainable milestones have numerical proposals: 68 V7
 
 V18 preserves V14/V17 authority boundaries: 68 remaining source milestones normalized, all 195 candidate milestones structured, 27 dungeon and six blueprint trait candidates. 142 conditional records have isolated classified-event QA tests and proposed cross-effect limits, not runtime implementation. Private baseline engine trace export/audit prepares 324 baseline plus 648 shadow rows; no candidate effects applied or candidate outcomes measured. V17 focused workflows passed but six broad workflows failed; V18 exact-head CI unconfirmed. D1–D10, actual trigger evidence, effect compiler, final CP and all release approvals remain open. See `docs/2-0/EQUIPMENT_2_0_NORMALIZED_EFFECTS_REVIEW_V18.md`.
 
+## 3F. V19 effect compiler and permanent-stat sensitivity review
+
+V18 exact-head focused checks succeeded; 324 baseline traces, 648 shadow rows, 444 with broad hints, no applied candidate effects. Seven broader workflows failed; exact historical mobile preview economy module restored, backend readiness and Edge isolation remain blockers. V19 compiles 142 conditional definitions into phase-bound QA intents, not engine execution. Private harness prepares 324 matched actual-engine counterfactual pairs for one permanent candidate stat only; new CI unconfirmed, no results claimed and no candidate custody or conditional effect authority. D1–D10 remain open; see `docs/2-0/EQUIPMENT_2_0_EFFECT_COMPILER_REVIEW_V19.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

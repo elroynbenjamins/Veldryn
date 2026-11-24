@@ -24,10 +24,10 @@ const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],max
 const enemyKitFor=(kitSeed:string)=>{
  const candidate=preparePartyEnemyKitsV2(input.enemies,{
   ruleset:ENEMY_V2_RULESET,serverSeed:kitSeed,
-  encounterId:'QA_PARTY_KIT_'+kitSeed,region:boss.region,
+  encounterId:'RUN_10S:NODE_10S',region:boss.region,
   equipmentTier:boss.tier,eliteEnemyIds:[],
  });
- const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:1};
+ const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:3};
  return {snapshot,verifyPersisted:(_row:PersistedEnemyKitV2,digest:string)=>
   /^[0-9a-f]{64}$/.test(digest)};
 };
@@ -102,6 +102,10 @@ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,traitPorts:traitPorts.map((x,i)=>i?x:
   ({...x,accountId:traitPorts[1].accountId}))},true),
  /party_source_binding_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,encounterRevision:4},true),/party_enemy_kit_revision_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,nodeId:'OTHER_NODE'},true),/party_enemy_kit_revision_mismatch/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,enemyKit:fixtures[0].trustedKit},true),
  /invalid_stored_kit/);

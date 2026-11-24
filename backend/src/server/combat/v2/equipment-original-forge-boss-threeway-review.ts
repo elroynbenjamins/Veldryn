@@ -133,10 +133,12 @@ export function reviewOriginalForgeBossThreeWayV2(
    fail('changed_skill_using_stale_receipt_digest');
   all.add(row.receiptDigest);
   const active=choice.activeSkills;
-  const identities=[...active];
-  const activeIds=new Set(identities);
+  const identities=active.map(x=>x.skillId+':'+x.variantId);
+  const authoredIds=new Set(actor.definition.abilities.filter(x=>
+   x.id.includes(':v2:')).map(x=>x.id));
   const effectEvents=result.combat.events.filter(e=>
-   e.actorId===playerId&&Boolean(e.abilityId)&&activeIds.has(e.abilityId!)&&
+   e.actorId===playerId&&Boolean(e.abilityId)&&
+   authoredIds.has(e.abilityId!)&&
    ['damage','heal','shield','status_apply','interrupt','dot_tick','hot_tick']
     .includes(e.type)).length;
   const observedBossEvents=result.combat.events.filter(e=>

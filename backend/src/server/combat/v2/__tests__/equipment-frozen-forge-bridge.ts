@@ -922,7 +922,7 @@ let universalGatePositive=0,universalGateNegative=0;
 for(const tier of [1,2,3,4] as const){
  const actual=make('IRONWARDEN',0,'supported',tier);
  const draft=previewClassIndependentOriginalForgeAffixesV2(
-  actual.exact.pieceId,actual.roll.recipeId,(max:number)=>max-1);
+  actual.exact.pieceId,actual.mint.outcome.recipeId,(max:number)=>max-1);
  const gate=reviewOriginalForgeToUniversalBonusGateV2(actual.mint,draft);
  assert.equal(gate.sourceItemIsOriginalForge,true);
  assert.equal(gate.originalCopyCanBeRebrandedUniversal,false);

@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {profileT,profileText} from '../i18n/profile';
 import {localizedItemName} from '../i18n/starter-item-names';
@@ -90,7 +90,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
   {!gear.length?<Text style={s.emptyText}>{profileT(language,'No equipment equipped yet')}</Text>:null}
   <GameModalSurface visible={!!selected} reduceMotion={reduceMotion} onClose={()=>setSelectedSlot(null)} presentation="dialog" surfaceStyle={s.detail}>
    <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={profileT(language,'Equipment')} onClose={()=>setSelectedSlot(null)}/>
-   {selected?<View style={s.inspect}>
+   {selected?<ScrollView style={s.inspectScroll} contentContainerStyle={s.inspect} showsVerticalScrollIndicator={false}>
     <View style={s.inspectHead}>
      <GearIcon item={item} rarity={selected.rarity} unknown={!item}/>
      <View style={s.inspectCopy}>
@@ -114,7 +114,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
      {extraGemIds.map(id=><Text key={id} style={s.gemLine}>{profileT(language,'Gems')}: {byItemId.has(id)?localizedItemName(language,id):id.replace(/_/g,' ')}</Text>)}
     </View>:null}
     <Text style={s.readOnly}>{profileT(language,'View only · Equipment belongs to this player')}</Text>
-   </View>:null}
+   </ScrollView>:null}
   </GameModalSurface>
  </View>;
 }
@@ -136,7 +136,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  legacyGemMark:{fontSize:8,fontWeight:'900',color:C.good},
  pressed:{opacity:.72},
  emptyText:{fontSize:9,color:C.muted,textAlign:'center'},
- detail:{gap:8},
+ detail:{gap:8,maxHeight:'88%'},inspectScroll:{flexShrink:1,minHeight:0},
  inspect:{gap:11,paddingTop:3,paddingBottom:4},
  inspectHead:{flexDirection:'row',alignItems:'center',gap:11},
  inspectCopy:{flex:1,minWidth:0,gap:3},

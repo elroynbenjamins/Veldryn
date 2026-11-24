@@ -1,3 +1,5 @@
+import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
@@ -20,7 +22,7 @@ function useEmberClock(active:boolean,reduceMotion:boolean){
  useEffect(()=>{
   clock.stopAnimation();clock.setValue(0);
   if(!active||reduceMotion||systemReduced||!foreground)return;
-  const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:20000,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
+  const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:ULTRA_LUXE_CYCLE_MS,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   loop.start();return()=>{loop.stop();clock.stopAnimation();};
  },[active,reduceMotion,systemReduced,foreground,clock]);
  return clock;
@@ -32,23 +34,21 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const pos=(x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
  const box=(b:{x:number;y:number;w:number;h:number})=>pos(b.x,b.y,b.w,b.h);
  const mode=draconicPetMode(equippedPetId,!!alternatePetSource);
- const pulse=clock.interpolate({inputRange:[0,.68,.8,.86,.94,1],outputRange:[0,0,.85,1,.4,0]});
- const flicker=clock.interpolate({inputRange:[0,.2,.4,.6,.8,1],outputRange:[.2,.65,.35,.8,.4,.2]});
- const rise=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,-16*k,0]});
+ const pulse=signatureEnergy(clock);
  const float=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,-3*k,0,-3*k,0]});
- const ringGlow=clock.interpolate({inputRange:[0,.68,.86,1],outputRange:[.72,.72,1,.72]});
- const sweep=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,260*k,0]});
+ const ringGlow=clock.interpolate({inputRange:[0,8/24,14/24,16/24,19/24,1],outputRange:[.72,.72,.9,1,.85,.72]});
  return <View style={s.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.background} resizeMode="cover" style={s.fill}/>
    <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
-   {[{x:33,y:112},{x:75,y:146},{x:134,y:63},{x:149,y:119},{x:291,y:55},{x:305,y:146}].map((p,i)=><Animated.Image key={i} source={assets.ember} resizeMode="contain" style={[pos(p.x,p.y,8,8),{opacity:flicker,transform:[{translateY:rise}]}]}/>)}
+   <UltraLuxeEnvironment clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
    {mode==='matching'?<>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:float}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
      <Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:[{scaleX:-1}]}]}/>
      <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse,transform:[{scaleX:-1}]}]}/>
+     <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
     </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Image source={assets.fallbackGlow} resizeMode="contain" style={box(B.glow)}/><Image source={alternatePetSource} resizeMode="contain" style={box(B.alternate)}/></>:null}
   </View>
@@ -60,8 +60,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
-   <Animated.Image source={assets.ember} resizeMode="contain" style={[pos(36,184,12,12),{opacity:flicker,transform:[{translateX:sweep}]}]}/>
-   {[{x:12,y:97},{x:316,y:97},{x:163,y:14}].map((p,i)=><Animated.Image key={i} source={assets.ember} resizeMode="contain" style={[pos(p.x,p.y,12,12),{opacity:pulse}]}/>)}
+   <UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember} halo={assets.fallbackGlow}/>
   </View>
  </View>}
  </View>;

@@ -15,6 +15,7 @@ ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
 ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===9,'five ordinary and four private earned badge IDs exist');
 ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_sovereign_of_stars'),'unowned ultra-luxe badge is absent from player-facing badge settings');
 ok(visibleCollectiblePlayerBadgeIds(['ascendant_sovereign_of_stars']).includes('ascendant_sovereign_of_stars'),'granted ultra-luxe badge becomes visible only to its owner');
+for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_'))){ok(!visibleCollectiblePlayerBadgeIds().includes(id),'private badge hidden without grant '+id);ok(visibleCollectiblePlayerBadgeIds([id]).includes(id),'verified ownership exposes exactly that badge '+id);}
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_sovereign_of_stars',extras:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders publicly when equipped');
 ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders on its owner profile');
 ok(!COLLECTIBLE_PLAYER_BADGE_IDS.some(id=>String(id)==='beta_tester'),'retired Beta Tester badge is not available');
@@ -111,7 +112,7 @@ for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admi
 ok(art.includes("assets/ascendant/celestial/sovereign_badge_64.webp"),'hidden Celestial badge uses its dedicated Ascendant artwork');
 ok(art.includes('store-membership-badges-v1/vip.png')&&art.includes('store-membership-badges-v1/vip-plus.png'),'VIP badges use the same approved icons as Store');
 const badgeArt=read('src/components/PlayerBadges.tsx'),storeArt=read('src/components/CommerceProductBadge.tsx');
-ok(badgeArt.includes('source={PLAYER_BADGE_ARTWORK[id]}')&&badgeArt.includes("from './player-badge-artwork'"),'chat and profile badges render shared artwork rather than generated text marks');
+ok(badgeArt.includes('const source=PLAYER_BADGE_ARTWORK[id]')&&badgeArt.includes('source={source}')&&badgeArt.includes('PLAYER_BADGE_FALLBACK_GLYPHS[id]')&&badgeArt.includes("from './player-badge-artwork'"),'chat and profile badges render shared artwork rather than generated text marks');
 ok(storeArt.includes('vip:PLAYER_BADGE_ARTWORK.vip')&&storeArt.includes('vip_plus:PLAYER_BADGE_ARTWORK.vip_plus')&&storeArt.includes('supporter_monthly:PLAYER_BADGE_ARTWORK.supporter'),'all commerce membership icons come from the same catalogue');
 ok(!badgeArt.includes('vipMark')&&!badgeArt.includes("const vip=id==="),'old text-only VIP badge fallback is removed');
 ok(badgeArt.includes('export function PlayerBadges({identity,size=22'),'worn badges remain legible at compact 22dp');

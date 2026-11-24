@@ -6,7 +6,7 @@ export const CELESTIAL_IDS={
  border:'ascendant-celestial-crown-of-the-cosmos',
  pet:'ascendant-celestial-aetherion',
  showcase:'ascendant-celestial-alignment',
- badge:'ascendant-celestial-sovereign-of-the-stars',
+ badge:'ascendant_celestial_sovereign',
 } as const;
 
 export const CELESTIAL_COLLECTION={

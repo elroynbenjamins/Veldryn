@@ -39,6 +39,12 @@ jobs:
           node-version: '24'
       - name: Audit 554 exact item IDs, 95 sets and fail-closed visibility
         run: node --test tools/eq2-review/t1-t5/hidden-catalogue-policy-v1.test.mjs
+      - name: Refuse public-app or online-server imports of hidden source registry
+        run: |
+          if git grep -n -F 'eq2-t1-t5-unified-hidden-review-catalogue-v1.json' -- apps/mobile/src backend/src; then
+            echo 'Hidden Equipment 2.0 registry leaked into player-facing source' >&2
+            exit 1
+          fi
       - name: Prohibit enabled equipment server gate
         run: |
           grep -Eq 'export const EQUIPMENT_CRAFTING_V2_SERVER_RELEASED=false;' backend/src/server/equipment/equipment-crafting-v2-gate.ts

@@ -17,6 +17,7 @@ import {CardBackground} from '../CardBackground';
 import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 
@@ -37,7 +38,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}>{art}<View style={s.stripScrim}/></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/></ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
@@ -49,8 +50,10 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
 
  return <View style={s.root}>
   <View style={[s.surface,!!frame&&s.surfaceFramed]}>
+   <ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
+   </ProfileBorderBackdrop>
    {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,!!frame&&s.petFramed]}/>:null}
    <View style={[s.identity,!!frame&&s.identityFramed]}>
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>

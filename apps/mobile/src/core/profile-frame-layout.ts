@@ -24,3 +24,15 @@ export function profileFrameSegments(width:number,height:number,sourceAspect=16/
  }
  return segments;
 }
+
+/** Provisional source-space top-rail calibration for the reported Gloamward
+ * background bleed. Other artwork stays unchanged until its aperture is audited.
+ * Keep this separate from content layout: only the backdrop is clipped.
+ * 10% of source height is a conservative screenshot-derived safe edge, not
+ * a claim that all legacy assets have the same aperture. */
+export function profileBackdropTopInset(borderId:string|undefined,width:number,height:number,sourceAspect=16/9,existingInset=8){
+ if(borderId!=='frame_gloamward')return 0;
+ const rail=profileFrameSegments(width,height,sourceAspect).find(segment=>segment.key==='0:2');
+ if(!rail)return 0;
+ return Math.max(0,Math.min(height/4,Math.ceil(rail.imageHeight*.10)-existingInset));
+}

@@ -16,6 +16,7 @@ import {radii,type ThemeColors} from '../theme/theme';
 import {profileShowcaseStyles} from '../theme/profile-showcase-styles';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
+import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
@@ -33,8 +34,10 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  return <View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
+   <ProfileBorderBackdrop borderId={profile.borderId} source={border} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
+   </ProfileBorderBackdrop>
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>

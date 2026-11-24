@@ -18,6 +18,7 @@ import {COLLECTIBLES} from '../content/collectibles';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
+import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
@@ -35,8 +36,10 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
+   <ProfileBorderBackdrop borderId={character.profileBorderId} source={borderSource} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
-   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
+   <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
+   </ProfileBorderBackdrop><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>

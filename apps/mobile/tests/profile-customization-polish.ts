@@ -1,6 +1,8 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {newlyUnlockedProfileRewards,profileAudienceCanView,profileRewardSource} from '../src/core/profile-customization';
 
+import {profileBackdropTopInset} from '../src/core/profile-frame-layout';
+
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
@@ -63,3 +65,13 @@ equal(profileAudienceCanView('private','guild'),false,'private profiles stay hid
 ok(profileAudienceCanView('private','self'),'self preview always remains visible');
 
 console.log('PASS: profile customization sources and unlock moments');
+
+for(const [width,height] of [[320,168],[350,221],[480,270],[350,58]]){
+ const inset=height===58?5:8;
+ const extra=profileBackdropTopInset('frame_gloamward',width,height,16/9,inset);
+ ok(Number.isFinite(extra)&&extra>=0&&extra<=height/4,'calibrated background crop remains bounded');
+ equal(profileBackdropTopInset('frame_wheat_crown',width,height,16/9,inset),0,'unreviewed border stays unchanged');
+}
+ok(profileBackdropTopInset('frame_gloamward',350,221)>0,'reported public profile size needs additional top clipping');
+ok(profileBackdropTopInset('frame_gloamward',480,270)>=profileBackdropTopInset('frame_gloamward',350,221),'large scene scales the calibrated aperture');
+equal(profileBackdropTopInset('frame_gloamward',0,0),0,'unmeasured scene has no calculated crop');

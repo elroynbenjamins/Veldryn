@@ -7,7 +7,7 @@ export interface ProfileCosmeticGrantReceipt{
  accountId:string;sku:string;idempotencyKey:string;source:'verified_google_play'|'ops_comp';
 }
 export interface ProfileCosmeticGrantResult{
- applied:boolean;replayed:boolean;sku:string;addedBorderId:string|null;addedEffectId:string|null;revision:number;
+ applied:boolean;replayed:boolean;sku:string;addedBorderId:string|null;addedEffectId:string|null;addedIconIds:string[];revision:number;
 }
 export interface ProfileCosmeticGrantRepository{
  grantVerified(input:ProfileCosmeticGrantReceipt):Promise<ProfileCosmeticGrantResult>;

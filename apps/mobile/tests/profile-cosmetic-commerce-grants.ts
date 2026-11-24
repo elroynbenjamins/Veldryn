@@ -26,6 +26,7 @@ for(const row of PROFILE_COSMETIC_GRANTS){
  const mobile=PROFILE_COSMETIC_STORE_PRODUCTS.find(product=>product.sku===row.sku)!;
  equal(row.grants.find(g=>g.kind==='border')?.id,mobile.borderId,row.sku+' set border matches mobile catalog');
  equal(row.grants.find(g=>g.kind==='effect')?.id,mobile.effectId,row.sku+' set effect matches mobile catalog');
+equal(row.grants.filter(g=>g.kind==='icon').map(g=>g.id).join('|'),mobile.iconIds.join('|'),row.sku+' portrait grants match mobile catalog');
 }
 for(const retired of [
  'profile_cosmetic_gloamward_border_v1','profile_cosmetic_gloamward_effect_v1','profile_cosmetic_gloamward_bundle_v1',
@@ -38,18 +39,21 @@ throws(()=>assertProfileCosmeticGrantDefinition('unknown'),'unknown cosmetic SKU
 
 const setSku='profile_cosmetic_frostbound_set_v1';
 let first=applyProfileCosmeticGrant({},setSku);
-equal(first.added.length,2,'first set grant adds exactly two independently equipable contents');
+equal(first.added.length,4,'first set grant adds four independently equipable contents');
 ok(first.state.unlockedProfileBorderIds?.includes('cosmetic:frostbound:chime-frame'),'set grants product border');
 ok(first.state.unlockedProfileEffectIds?.includes('effect_frostbound_winter_veil'),'set grants product effect');
+ok(first.state.unlockedProfileIconIds?.includes('cosmetic:frostbound:portrait-oracle'),'set grants female portrait');
+ok(first.state.unlockedProfileIconIds?.includes('cosmetic:frostbound:portrait-warden'),'set grants male portrait');
 ok(!first.state.unlockedProfileBorderIds?.includes('dungeon:frostmarch:frostbound-chime'),'set never grants exclusive dungeon fallback');
 const second=applyProfileCosmeticGrant(first.state,setSku);
 equal(second.added.length,0,'replaying the same set is idempotent');
 ok(second.alreadyOwned,'idempotent replay is reported as already owned');
 equal(second.state.unlockedProfileBorderIds?.length,1,'idempotent replay does not duplicate border ownership');
 equal(second.state.unlockedProfileEffectIds?.length,1,'idempotent replay does not duplicate effect ownership');
-const partial=applyProfileCosmeticGrant({unlockedProfileBorderIds:['cosmetic:frostbound:chime-frame']},setSku);
-equal(partial.added.length,1,'set grant fills only a missing content item after partial legacy/ops ownership');
-equal(partial.added[0].kind,'effect','partial ownership receives the missing effect');
+equal(second.state.unlockedProfileIconIds?.length,2,'idempotent replay does not duplicate portrait ownership');
+const partial=applyProfileCosmeticGrant({unlockedProfileBorderIds:['cosmetic:frostbound:chime-frame'],unlockedProfileEffectIds:['effect_frostbound_winter_veil'],unlockedProfileIconIds:['cosmetic:frostbound:portrait-oracle']},setSku);
+equal(partial.added.length,1,'set grant fills only a missing portrait after partial legacy/ops ownership');
+equal(partial.added[0].id,'cosmetic:frostbound:portrait-warden','partial ownership receives only the missing male portrait');
 
 ok(profileCosmeticGrantDefinition('profile_cosmetic_gloamward_set_v1')?.kind==='set','set SKU resolves');
 ok(profileCosmeticGrantDefinition('not-real')===undefined,'unknown lookup does not invent a grant');

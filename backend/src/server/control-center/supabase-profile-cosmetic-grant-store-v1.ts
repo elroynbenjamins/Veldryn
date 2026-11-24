@@ -17,6 +17,7 @@ function result(value:unknown):ProfileCosmeticGrantResult{
   applied:row.applied,replayed:row.replayed,sku:row.sku,
   addedBorderId:typeof row.addedBorderId==='string'?row.addedBorderId:null,
   addedEffectId:typeof row.addedEffectId==='string'?row.addedEffectId:null,
+  addedIconIds:Array.isArray(row.addedIconIds)?row.addedIconIds.filter((id):id is string=>typeof id==='string'):[],
   revision:row.revision,
  };
 }

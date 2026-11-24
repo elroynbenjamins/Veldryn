@@ -20,7 +20,7 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
  const status=(value:boolean)=>value?'OWNED':'INCLUDED';
  return <View style={s.root}>
   <View style={s.between}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>Profile Cosmetics</Text><Text style={s.copy}>Standard cosmetic sets · Account-wide ownership · Per-character equipment</Text></View><Text style={s.disabled}>CHECKOUT OFF</Text></View>
-  <Text style={s.copy}>These smaller collections are sold only as complete sets. Each set unlocks both pieces together; after purchase, the border and showcase effect can be equipped independently.</Text>
+  <Text style={s.copy}>These smaller collections are sold only as complete sets. Each set unlocks four cosmetics together: the animated border, showcase effect and two human portrait icons. All four remain independently equippable afterward.</Text>
 
   <View accessibilityRole="tablist" accessibilityLabel="Cosmetic sets" style={s.tabs}>
    {PROFILE_COSMETIC_STORE_COLLECTIONS.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:selected===row.id}} onPress={()=>setSelected(row.id)}
@@ -38,13 +38,14 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
   </View>
 
   <View style={[s.setCard,{borderColor:owned.setOwned?C.good:collection.accent}]}>
-   <View style={s.between}><View style={s.flex}><Text style={s.pieceType}>SET ONLY</Text><Text style={s.setName}>{collection.set.name}</Text></View><Text style={[s.bundleCount,{color:owned.setOwned?C.good:collection.accent}]}>{owned.ownedPieces}/2</Text></View>
-   <Text style={s.copy}>The Store does not sell either piece separately.</Text>
+   <View style={s.between}><View style={s.flex}><Text style={s.pieceType}>SET ONLY</Text><Text style={s.setName}>{collection.set.name}</Text></View><Text style={[s.bundleCount,{color:owned.setOwned?C.good:collection.accent}]}>{owned.ownedPieces}/4</Text></View>
+   <Text style={s.copy}>The Store does not sell any of the four set contents separately.</Text>
    <View style={s.contents}>
     <View style={s.contentRow}><View style={s.flex}><Text style={s.contentLabel}>BORDER</Text><Text style={s.contentName}>{collection.border.name}</Text></View><Text style={[s.status,{color:owned.borderOwned?C.good:C.muted}]}>{status(owned.borderOwned)}</Text></View>
     <View style={s.contentRow}><View style={s.flex}><Text style={s.contentLabel}>SHOWCASE EFFECT</Text><Text style={s.contentName}>{collection.effect.name}</Text></View><Text style={[s.status,{color:owned.effectOwned?C.good:C.muted}]}>{status(owned.effectOwned)}</Text></View>
+    {collection.portraits.map((portrait,index)=><View key={portrait.id} style={s.contentRow}><View style={s.flex}><Text style={s.contentLabel}>PROFILE ICON</Text><Text style={s.contentName}>{portrait.name}</Text></View><Text style={[s.status,{color:owned.portraitsOwned[index]?C.good:C.muted}]}>{status(owned.portraitsOwned[index])}</Text></View>)}
    </View>
-   <Text style={s.copy}>Once owned, both pieces remain independently equippable and can be mixed with other compatible profile cosmetics.</Text>
+   <Text style={s.copy}>Once owned, the border, effect and either portrait icon can be equipped independently and mixed with other compatible profile cosmetics.</Text>
    <Text style={s.noPrice}>Price and checkout are intentionally not registered in this build.</Text>
   </View>
 

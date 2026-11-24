@@ -14,7 +14,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
  equal(blockedCalls,0,'disabled grant service never reaches the database adapter');
 
  let call:{fn:string;args:Record<string,unknown>}|null=null;
- const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async(fn,args)=>{call={fn,args};return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_set_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',revision:42},error:null}}});
+ const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async(fn,args)=>{call={fn,args};return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_set_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',addedIconIds:['cosmetic:gloamward:portrait-seer','cosmetic:gloamward:portrait-magus'],revision:42},error:null}}});
  const result=await repo.grantVerified({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_set_v1',idempotencyKey:'receipt-12345678',source:'verified_google_play'});
  equal(call?.fn,'profile_cosmetic_grant_server_v1','repository calls the atomic profile cosmetic grant RPC');
  equal(call?.args.p_account_id,'00000000-0000-0000-0000-000000000001','account id is server supplied');
@@ -22,7 +22,8 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
  equal(call?.args.p_idempotency_key,'receipt-12345678','idempotency key is forwarded unchanged');
  equal(call?.args.p_source,'verified_google_play','verified source is forwarded');
  ok(result.applied&&!result.replayed,'valid RPC response is normalized');
- equal(result.revision,42,'authoritative revision is returned');
+ equal(result.addedIconIds.length,2,'both portrait grants are returned');
+equal(result.revision,42,'authoritative revision is returned');
 
  const errorRepo=new SupabaseProfileCosmeticGrantRepository({rpc:async()=>({data:null,error:{message:'PROFILE_COSMETIC_IDEMPOTENCY_CONFLICT'}})});
  let rejected=false;try{await errorRepo.grantVerified({accountId:'a',sku:'b',idempotencyKey:'c',source:'ops_comp'})}catch(error){rejected=error instanceof Error&&error.message==='PROFILE_COSMETIC_IDEMPOTENCY_CONFLICT'}

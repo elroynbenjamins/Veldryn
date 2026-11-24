@@ -286,3 +286,30 @@ async function commandChecks(){
  console.log('PASS private bearer-auth command contract, trusted clock, ownership and rejected extra fields');
 }
 void commandChecks().catch(error=>{console.error(error);process.exitCode=1});
+
+import {weeklyRaidPresentationFrame,weeklyRaidBattleSummary,WEEKLY_RAID_SCREEN_RELEASED} from '../src/core/weekly-guild-raid-replay-review';
+assert.equal(WEEKLY_RAID_SCREEN_RELEASED,false);
+assert.equal(weeklyRaidBattleSummary(first),null);
+const settledReplay=settled.replay!;
+const endFrame=weeklyRaidPresentationFrame(settledReplay,180000,null,false);
+assert.equal(endFrame.bossHp,settledReplay.presentation.boss.finalHp);
+assert.equal(endFrame.heroHp,settledReplay.presentation.hero.finalHp);
+assert.equal(endFrame.approximateHp,false);
+assert.equal(endFrame.cue,null);
+const summary=weeklyRaidBattleSummary(settled)!;
+assert.equal(summary.sharedHpCredit,settled.sharedHpCredit!);
+assert.equal(summary.localBossHpDamage,settledReplay.actualBossHpRemoved);
+assert.equal(summary.claimable,false);
+assert.ok(endFrame.log.length<=5);
+const castEvent=settledReplay.events.find(e=>e.type==='cast_start'&&e.actorId===settledReplay.presentation.boss.id);
+if(castEvent){
+ const castFrame=weeklyRaidPresentationFrame(settledReplay,castEvent.atMs,null,false);
+ assert.ok(castFrame.events.every(e=>e.atMs<=castEvent.atMs));
+ assert.equal(castFrame.approximateHp,true);
+ assert.equal(castFrame.cue,null);
+}
+const seekFrame=weeklyRaidPresentationFrame(settledReplay,1000,15000,false);
+assert.equal(seekFrame.cue,null);
+assert.equal(weeklyRaidBattleSummary({...settled,sharedHpCredit:0})!.sharedHpCredit,0);
+assert.equal(weeklyRaidBattleSummary({nonce:'missing',replay:settledReplay})!.sharedHpCredit,null);
+console.log('PASS review UI presentation: exact terminal HP, event log, separate contribution and seek safety');

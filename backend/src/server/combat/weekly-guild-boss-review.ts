@@ -71,6 +71,12 @@ export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:W
   companionCleanses:assistEvents.filter(e=>e.type==='status_remove').length,
   companionAbilityEvents:assistEvents.length,
   bossCastWarnings:count('cast_start',boss.id),bossPhases:count('phase',boss.id),
+  presentation:{
+   hero:{id:player.id,name:player.name,maxHp:player.stats.maxHp,finalHp:hero.hp},
+   boss:{id:boss.id,name:boss.name,maxHp:boss.stats.maxHp,finalHp:enemy.hp},
+   abilities:[...player.abilities,...boss.abilities].map(a=>({id:a.id,name:a.name,companion:Boolean(a.tags?.includes('combat_companion')),castTimeMs:a.castTimeMs})),
+   phases:(boss.phases??[]).map(p=>({id:p.id,name:p.name??p.id})),
+  },
   events,attemptConsumed:false as const,rewardGranted:false as const,sharedHpWritten:false as const,
   contribution:null,liveEnabled:WEEKLY_GUILD_ENGINE_RELEASED,
  };

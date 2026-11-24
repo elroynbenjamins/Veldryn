@@ -9,6 +9,8 @@ on:
       - 'apps/mobile/tests/exploration-scouting-missions-review.ts'
       - 'apps/mobile/src/core/exploration-scouting-cutover-review.ts'
       - 'apps/mobile/tests/exploration-scouting-cutover-review.ts'
+      - 'apps/mobile/src/core/exploration-scouting-economy-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-economy-review.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'
@@ -40,3 +42,5 @@ jobs:
       - run: node .core-build/apps/mobile/tests/exploration-scouting-missions-review.js
 
       - run: node .core-build/apps/mobile/tests/exploration-scouting-cutover-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-economy-review.js

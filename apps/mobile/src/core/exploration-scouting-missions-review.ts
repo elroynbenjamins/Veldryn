@@ -1,7 +1,8 @@
 /** Hidden mission catalogue adapter. No rewards are issued or persisted. */
-import {COMPANION_MISSIONS,COMPANION_EXPEDITION_BOND_RATE} from '../../../../backend/src/server/companions/content';
+import {COMPANION_MISSIONS,COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION} from '../../../../backend/src/server/companions/content';
 import {validateCompanionMissionTeam,rolloverCompanionAssignmentStatuses,companionExpeditionPenCapacity} from '../../../../backend/src/server/companions/assignments';
 import {SCOUT_ROUTES,scoutingAvailability,scoutingTeamBonus,type ScoutAuthority,type ScoutState,type ScoutReceipt} from './exploration-scouting-review';
+import {companionExpeditionStaminaCost,COMPANION_STAMINA_HP_PER_POINT} from './companion-provisions';
 import {explorationScoutingSpeedMultiplier} from '../content/exploration';
 export const SCOUT_MISSION_REVIEW_RELEASED=false as const;
 const missionLevel:Readonly<Record<string,number>>={
@@ -24,7 +25,7 @@ export const SCOUT_OPTIONAL_MISSIONS=COMPANION_MISSIONS.filter(m=>Object.hasOwn(
  missionId:m.id,routeId:'scout2:'+routeByMission[m.id],name:m.name,originId:m.originId,requiredExplorationLevel:missionLevel[m.id],durationMs:m.durationMs,minimumPenLevel:m.minimumPenLevel??1,base:m
 }));
 const fail=(reason:string)=>({ok:false as const,reason});
-export function scoutingMissionQuote(input:{state:ScoutState;authority:ScoutAuthority;receipts:readonly ScoutReceipt[];missionId:string;companionIds:string[];pensLevel:number;now:number}){
+export function scoutingMissionQuote(input:{state:ScoutState;authority:ScoutAuthority;receipts:readonly ScoutReceipt[];missionId:string;companionIds:string[];pensLevel:number;now:number;earnExplorationXp?:boolean}){
  const {state,authority,receipts,companionIds,pensLevel,now}=input;
  if(!state.accountId||!state.characterId||!Number.isSafeInteger(now)||now<0||!Number.isInteger(pensLevel)||pensLevel<0||pensLevel>3)return fail('invalid_request');
  const m=SCOUT_OPTIONAL_MISSIONS.find(x=>x.missionId===input.missionId);
@@ -34,19 +35,23 @@ export function scoutingMissionQuote(input:{state:ScoutState;authority:ScoutAuth
  if(state.explorationLevel<m.requiredExplorationLevel||scoutingAvailability(state,route,'survey')!=='available')return fail('exploration_level');
  const legacy=rolloverCompanionAssignmentStatuses(authority.legacyAssignments,now);
  const active=receipts.filter(r=>r.accountId===state.accountId&&r.status==='active');
- if(active.length)return fail('scout_slot_busy');
- if(legacy.filter(x=>x.status==='active').length>=companionExpeditionPenCapacity(pensLevel))return fail('pen_capacity');
- const team=validateCompanionMissionTeam({missionId:m.missionId,companionIds,owned:authority.owned,assignments:legacy,equippedCompanionIds:authority.equipped,lockedTrialCompanionIds:authority.trialLocked,unavailableCompanionIds:authority.unavailable,expeditionPensLevel:pensLevel});
+ const camps=(authority.campAssignments??[]).filter(a=>a.accountId===state.accountId&&a.status==='active');
+ const xpEnabled=input.earnExplorationXp!==false;
+ if(xpEnabled&&(active.length||camps.some(a=>a.explorationXp>0)))return fail('scout_slot_busy');
+ if(legacy.filter(x=>x.status==='active').length+camps.filter(a=>a.endsAt>now).length>=companionExpeditionPenCapacity(pensLevel))return fail('pen_capacity');
+ const reserved=new Set([...authority.unavailable,...active.filter(a=>a.endsAt>now).flatMap(a=>a.companionIds),...camps.filter(a=>a.endsAt>now).flatMap(a=>a.companionIds)]);
+ const team=validateCompanionMissionTeam({missionId:m.missionId,companionIds,owned:authority.owned,assignments:legacy,equippedCompanionIds:authority.equipped,lockedTrialCompanionIds:authority.trialLocked,unavailableCompanionIds:reserved,expeditionPensLevel:pensLevel});
  if(!team.ok)return fail(team.reason);
  // Preserve the authored gold/material sink. Base rewards only: no additional bonus
  // roll, rarity item, gold multiplier or Bondstone issuance in this review.
  const hours=m.durationMs/3600000,bonus=scoutingTeamBonus(route,companionIds,authority);
- const durationMs=Math.max(60000,Math.round(m.durationMs/(explorationScoutingSpeedMultiplier(state.explorationLevel)*(1+bonus))));
+ const durationMs=Math.max(60000,Math.round(m.durationMs*(1-(COMPANION_EXPEDITION_PEN_DURATION_REDUCTION[pensLevel]??0))/(explorationScoutingSpeedMultiplier(state.explorationLevel)*(1+bonus))));
  // Training rate: optional missions trade half of pure survey XP for other rewards.
  // No extra XP per companion; one active XP-bearing team per account.
- const explorationXp=Math.floor(route.xp/route.seconds*hours*3600*.5);
+ const explorationXp=xpEnabled?Math.floor(route.xp/route.seconds*hours*3600*.5):0;
+ const stamina=companionExpeditionStaminaCost(hours);
  const base=m.base.baseRewards;
- return {ok:true as const,missionId:m.missionId,routeId:m.routeId,durationMs,explorationXp,grade:team.grade,
+ return {ok:true as const,missionId:m.missionId,routeId:m.routeId,durationMs,explorationXp,grade:team.grade,stamina,healingHpRequired:stamina*COMPANION_STAMINA_HP_PER_POINT,
   costs:{gold:m.base.costs.gold,materials:{...m.base.costs.materials}},preview:{
   gold:base.gold,essence:base.companionEssence,companionXpPerScout:base.companionXp,
   bondXpPerScout:Math.max(1,Math.round(base.bondXp*COMPANION_EXPEDITION_BOND_RATE)),materials:{...base.materials},

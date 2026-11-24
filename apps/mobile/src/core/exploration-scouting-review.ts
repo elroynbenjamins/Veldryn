@@ -27,7 +27,8 @@ export const SCOUT_ROUTES:readonly ScoutRoute[]=[...EXPLORATION_ROUTES.map(r=>({
 ];
 export type ScoutState={accountId:string;characterId:string;explorationLevel:number;explorationXp:number;discoveredRouteIds:readonly string[];visitedZoneIds:readonly string[];retainedPrerequisiteRouteIds?:readonly string[]};
 export type ScoutReceipt={accountId:string;characterId:string;requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];loanedGuide:boolean;startedAt:number;endsAt:number;xp:number;policyVersion:string;status:'active'|'claimed';discovery:boolean};
-export type ScoutAuthority={owned:Record<string,OwnedCompanionSnapshot>;legacyAssignments:CompanionAssignment[];equipped:ReadonlySet<string>;trialLocked:ReadonlySet<string>;unavailable:ReadonlySet<string>};
+export type ScoutCampAssignment={accountId:string;characterId:string;assignmentId:string;missionId:string;companionIds:readonly string[];endsAt:number;status:'active'|'claimed';explorationXp:number};
+export type ScoutAuthority={owned:Record<string,OwnedCompanionSnapshot>;legacyAssignments:CompanionAssignment[];campAssignments?:readonly ScoutCampAssignment[];equipped:ReadonlySet<string>;trialLocked:ReadonlySet<string>;unavailable:ReadonlySet<string>};
 const fail=(why:string):never=>{throw Error(why)};
 const regionOrigin=(zone:string)=>zone==='SUNSCAR'?'REG_SUNSCAR':zone==='FROSTMARCH'?'REG_FROSTMARCH':'REG_001';
 /** Historical progress is never reset. Discoveries are evidence, not grants to unreleased travel or combat. */
@@ -63,13 +64,14 @@ export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;re
  if(!state.accountId||!state.characterId||!Number.isSafeInteger(now)||now<0||!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)||!['route','practice','survey'].includes(kind))return fail('invalid_request');
  const previous=receipts.find(r=>r.accountId===state.accountId&&r.requestId===requestId);
  if(previous){if(previous.characterId!==state.characterId||previous.routeId!==routeId||previous.kind!==kind||JSON.stringify(previous.companionIds)!==JSON.stringify(companionIds))return fail('nonce_conflict');return previous;}
- if(receipts.some(r=>r.accountId===state.accountId&&r.status==='active'))return fail('scout_slot_busy');
+ if(receipts.some(r=>r.accountId===state.accountId&&r.status==='active')||(authority.campAssignments??[]).some(r=>r.accountId===state.accountId&&r.status==='active'&&r.explorationXp>0))return fail('scout_slot_busy');
  const route=SCOUT_ROUTES.find(r=>r.id===routeId);if(!route)return fail('unknown_route');
  const available=scoutingAvailability(state,route,kind);if(available!=='available')return fail(available);
  if(companionIds.length>3||new Set(companionIds).size!==companionIds.length)return fail('invalid_team');
  // Loaned non-collectible guide means basic discovery never requires a rare companion or paid slot.
  if(kind==='survey'&&companionIds.length===0)return fail('companion_required');
  const busy=busyCompanionIds(rolloverCompanionAssignmentStatuses(authority.legacyAssignments,now));
+ for(const a of authority.campAssignments??[])if(a.accountId===state.accountId&&a.status==='active'&&a.endsAt>now)for(const id of a.companionIds)busy.add(id);
  for(const id of companionIds){
   if(!authority.owned[id]||!companionServerDefinition(id))return fail('not_owned');
   if(busy.has(id)||authority.equipped.has(id)||authority.trialLocked.has(id)||authority.unavailable.has(id))return fail('companion_unavailable');

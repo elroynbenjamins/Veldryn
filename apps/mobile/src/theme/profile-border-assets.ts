@@ -1,4 +1,6 @@
 import type {ImageSourcePropType} from 'react-native';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
+const celestial=getEnabledCelestialAssets();
 import {EVENT_DECORATIONS} from './event-decoration-assets-active';
 
 export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
@@ -11,5 +13,6 @@ export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['dungeon:asterfall:briarbound-frame',require('../../assets/profile-borders/dungeon-asterfall-briarbound-frame.webp')],
   ['dungeon:sunscar:amberglass-loop',require('../../assets/profile-borders/dungeon-sunscar-amberglass-loop.webp')],
   ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
+  ...(celestial?[[CELESTIAL_IDS.border,celestial.scene.border] as [string,ImageSourcePropType]]:[]),
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);

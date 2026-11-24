@@ -16,6 +16,8 @@ export interface PartySyncPersistedRunScopeV2{
  readonly readyCheckId:string;
  readonly rosterRevision:number;
  readonly stateRevision:number;
+ /** Canonical digest of the full frozen run binding, including loadout hashes. */
+ readonly bindingDigest:string;
 }
 export interface PartySyncScopeV2{
  readonly ruleset:typeof PARTY_SYNCHRONIZATION_RULESET_V2;
@@ -46,7 +48,7 @@ export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInp
    scope.mode!=='dungeon'||!validId(persisted.runId)||!validId(persisted.nodeId)||
    !validId(persisted.readyCheckId)||!Number.isSafeInteger(persisted.rosterRevision)||
    persisted.rosterRevision<1||!Number.isSafeInteger(persisted.stateRevision)||
-   persisted.stateRevision<1))reject('invalid_persisted_scope');
+   persisted.stateRevision<1||!/^[0-9a-f]{64}$/.test(persisted.bindingDigest)))reject('invalid_persisted_scope');
  const carriedIds=Object.keys(input?.initialPlayerState??{}).sort();
  if(!input||input.seed!==scope.seed||input.players.length!==scope.members.length||
   input.enemyDamageProfile!==undefined||(carriedIds.length>0&&!persisted)||

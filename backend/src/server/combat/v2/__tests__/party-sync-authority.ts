@@ -55,7 +55,7 @@ const dungeonScope:PartySyncScopeV2={...scope,mode:'dungeon',encounterId:'RUN_QA
  seed:dungeonInput.seed,members:dungeonClasses.map((classId,i)=>({
   actorId:classId,characterId:'QA_CHAR_'+i,classId,
  })),persistedRun:{runId:'RUN_QA',nodeId:'NODE_1',readyCheckId:'READY_QA',
-  rosterRevision:1,stateRevision:1}};
+  rosterRevision:1,stateRevision:1,bindingDigest:'a'.repeat(64)}};
 const dungeonToken=issuePartySyncAuthorityV2(dungeonScope,dungeonInput,()=>true);
 assert.deepEqual(authorizePartySyncV2(structuredClone(dungeonInput),dungeonToken),
  authorizePartySyncV2(dungeonInput,dungeonToken));
@@ -64,7 +64,7 @@ const carried=Object.fromEntries(dungeonInput.players.map(actor=>[actor.id,{
 }]));
 const nextInput:CombatInput={...dungeonInput,seed:'SYNC_NODE_2',initialPlayerState:carried};
 const nextScope:PartySyncScopeV2={...dungeonScope,revision:2,seed:nextInput.seed,
- persistedRun:{...dungeonScope.persistedRun!,nodeId:'NODE_2',stateRevision:2}};
+ persistedRun:{...dungeonScope.persistedRun!,nodeId:'NODE_2',stateRevision:2,bindingDigest:'b'.repeat(64)}};
 assert.equal(authorizePartySyncV2(nextInput,issuePartySyncAuthorityV2(nextScope,nextInput,()=>true)).size,4);
 assert.throws(()=>authorizePartySyncV2(nextInput,dungeonToken),/input_mismatch/);
 const original=carried.IRONWARDEN;

@@ -7,6 +7,7 @@ import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {RESOURCE_BY_CLASS_V2} from '../resource-runtime';
 import {reviewPartyV2RunBinding,partySyncScopeFromRunBindingV2} from '../party-dungeon-persistence-review';
 import {issuePartySyncAuthorityV2,authorizePartySyncV2} from '../party-sync-authority';
+import {enemyV2SnapshotDigest} from '../enemy-engine-authority';
 import {
  EQUIPMENT_V2_TRAIT_ENGINE_POLICY,authorizeEquipmentV2TraitEngine,
  issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
@@ -99,13 +100,32 @@ assert.notEqual(persisted.binding.combatInputDigest,first.binding.combatInputDig
 const persistedScope=partySyncScopeFromRunBindingV2(persisted);
 assert.deepEqual(persistedScope.persistedRun,{
  runId:'RUN_1',nodeId:'NODE_1',readyCheckId:'READY_1',rosterRevision:4,stateRevision:3,
+ bindingDigest:enemyV2SnapshotDigest(persisted.binding),
 });
 const persistedToken=issuePartySyncAuthorityV2(persistedScope,persistedInput,
  (scope,digest)=>scope.persistedRun?.runId===persisted.binding.runId&&
   scope.persistedRun?.nodeId===persisted.binding.nodeId&&
   scope.persistedRun?.stateRevision===persisted.binding.stateRevision&&
+  scope.persistedRun?.bindingDigest===enemyV2SnapshotDigest(persisted.binding)&&
   digest===persisted.binding.combatInputDigest);
 assert.equal(authorizePartySyncV2(persistedInput,persistedToken).size,4);
+ // A pair of internally consistent substituted loadout hashes must NOT
+ // look identical to the independently pinned original binding.
+const substituted=reviewPartyV2RunBinding({...args,combatInput:persistedInput,
+ readyCheck:{...check,roster:roster.map((row,i)=>i?row:
+  {...row,loadoutSnapshotHash:'f'.repeat(64)})},
+ frozenRoster:frozen.map((row,i)=>i?row:{...row,snapshotHash:'f'.repeat(64)}),
+});
+assert.equal(substituted.binding.combatInputDigest,persisted.binding.combatInputDigest);
+const substitutedScope=partySyncScopeFromRunBindingV2(substituted);
+assert.notEqual(substitutedScope.persistedRun!.bindingDigest,persistedScope.persistedRun!.bindingDigest);
+assert.throws(()=>issuePartySyncAuthorityV2(substitutedScope,persistedInput,
+ (candidate,digest)=>candidate.persistedRun?.bindingDigest===enemyV2SnapshotDigest(persisted.binding)&&
+  digest===persisted.binding.combatInputDigest),/unverified_scope/);
+assert.throws(()=>issuePartySyncAuthorityV2({...persistedScope,persistedRun:{
+ ...persistedScope.persistedRun!,bindingDigest:'invalid',
+}},persistedInput,()=>true),/invalid_persisted_scope/);
+
 const sources:VerifiedV2EquipmentEffectSource[]=ids.map((_,i)=>({
  source:'server-persisted-equipment-v2',policy:EQUIPMENT_V2_TRAIT_ENGINE_POLICY,
  revision:1,accountId:'ACCOUNT_'+i,characterId:'CHAR_'+i,actorId:'ACTOR_'+i,

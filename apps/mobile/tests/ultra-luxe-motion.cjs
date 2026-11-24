@@ -51,4 +51,13 @@ for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
  assert(s.includes('petIdleMotion(clock,')&&s.includes('idle.scaleY')&&s.includes('idle.tilt')&&s.includes('idle.lift'));
  assert(s.includes('<Animated.Image source={alternatePetSource}'));
 }
+const reaction=read('components/profile/UltraLuxePetReaction.tsx');
+assert(reaction.includes('if(!enabled||playing.current)return'));
+assert(reaction.includes('reaction.stopAnimation()')&&reaction.includes('reaction.setValue(0)'));
+assert(reaction.includes('useNativeDriver:true')&&!reaction.includes('Animated.loop(')&&!reaction.includes('setInterval'));
+for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
+ const source=read('components/profile/'+name+'.tsx');
+ assert(source.includes('useUltraLuxePetReaction(reactionEnabled)')&&source.includes('onPress={trigger}'));
+ assert(source.includes("reactionEnabled=running&&"));
+}
 console.log('Ultra Luxe shared timing, closed paths, native-driver and pet-independent layer contracts passed.');

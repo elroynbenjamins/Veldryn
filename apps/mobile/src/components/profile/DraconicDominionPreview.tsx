@@ -1,9 +1,10 @@
+import {useUltraLuxePetReaction,UltraLuxePetReaction} from './UltraLuxePetReaction';
 import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {AccessibilityInfo,Animated,AppState,Easing,Image,Pressable,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
 
 export type DraconicSceneAssets={
@@ -28,15 +29,17 @@ function useEmberClock(active:boolean,reduceMotion:boolean){
   const loop=Animated.loop(Animated.timing(clock,{toValue:1,duration:ULTRA_LUXE_CYCLE_MS,easing:Easing.linear,useNativeDriver:true,isInteraction:false}));
   loop.start();return()=>{loop.stop();clock.stopAnimation();};
  },[active,reduceMotion,systemReduced,foreground,clock]);
- return clock;
+ return {clock,running:active&&!reduceMotion&&!systemReduced&&foreground};
 }
 export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();
- const supported=draconicStageSupported(width,fontScale),clock=useEmberClock(active&&supported,reduceMotion);
+ const supported=draconicStageSupported(width,fontScale),{clock,running}=useEmberClock(active&&supported,reduceMotion);
  const k=width/S.width;
  const pos=(x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
  const box=(b:{x:number;y:number;w:number;h:number})=>pos(b.x,b.y,b.w,b.h);
  const mode=draconicPetMode(equippedPetId,!!alternatePetSource);
+ const reactionEnabled=running&&mode==='matching';
+ const {reaction,trigger}=useUltraLuxePetReaction(reactionEnabled);
  const pulse=signatureEnergy(clock);
  const idle=petIdleMotion(clock,k,mode==='alternate'?'alternate':'draconic');
  // Atlas already animates local body parts; do not layer rocking/stretching over it.
@@ -54,10 +57,11 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
      {assets.smoothPoseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
      <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.08),Animated.multiply(pulse,.55)),transform:mirroredBody}]}/>
      <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
+     <UltraLuxePetReaction reaction={reaction} scale={k} theme="draconic" particle={assets.ember} glow={assets.fallbackGlow}/>
     </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Animated.Image source={assets.fallbackGlow} resizeMode="contain" style={[box(B.glow),{opacity:Animated.add(.55,Animated.multiply(idle.glow,.5))}]}/><Animated.Image source={alternatePetSource} resizeMode="contain" style={[box(B.alternate),{transform:[{translateY:idle.lift},{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/></>:null}
   </View>
-  {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
+  {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Vharaxis'} onPress={trigger} style={box(B.dragon)}/>:mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
   <View style={[box(B.plate),s.plate]}/>
   <View style={[box(B.portrait),s.portrait]}>{portrait}</View>
   <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet}>
@@ -75,7 +79,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
 }
 /** Independent lightweight effects for ordinary layouts. No signature or matching pet effects. */
 export function DraconicStandardEffects({ember,kind,active,reduceMotion=false}:{ember:ImageSourcePropType;kind:'background'|'border';active:boolean;reduceMotion?:boolean}){
- const clock=useEmberClock(active,reduceMotion);
+ const {clock}=useEmberClock(active,reduceMotion);
  const opacity=clock.interpolate({inputRange:[0,.2,.5,.8,1],outputRange:[.25,.8,.35,.65,.25]});
  const y=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,-14,0]});
  const locations=kind==='background'?[{right:'12%' as const,top:'25%' as const},{right:'27%' as const,bottom:'20%' as const}]:[{left:5,top:5},{right:5,bottom:5}];

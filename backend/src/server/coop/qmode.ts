@@ -22,7 +22,7 @@ import type {DungeonArtifactId} from './dungeon-artifacts';
 export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
- players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; bossEnduranceVersion?:typeof DUNGEON_BOSS_ENDURANCE_VERSION; tierScalingVersion?:2; regionalBalanceVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; chosenRoomArtifacts?:Record<string,DungeonArtifactId>;
+ players:CombatantDefinition[]; persistentState:PersistentRunState; enduranceRouteVersion?:1; bossEnduranceVersion?:typeof DUNGEON_BOSS_ENDURANCE_VERSION; tierScalingVersion?:2; regionalBalanceVersion?:1; rootboundT3CalibrationVersion?:1; qmodePressureVersion?:1; echoSourceAccountIds:string[]; npcCharacterIds?:string[]; rewardBaseMarks?:number; rewardMarks?:number; chosenRoomBoons?:Record<string,RoomBoonId>; chosenRoomArtifacts?:Record<string,DungeonArtifactId>;
  lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
@@ -100,7 +100,7 @@ export class QModeService{
    applyRoomArtifact(run,selectedArtifact as DungeonArtifactId);
   }else if(input.boonId)throw new Error('invalid_boon_choice');
   const isCombat=selected.kind==='battle'||selected.kind==='elite'||selected.kind==='boss';
-  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId);
+  const regional=regionalPowerMultipliers(run.expeditionId,run.tier,run.regionalBalanceVersion===1,selected.contentId,run.rootboundT3CalibrationVersion);
   // The first Endurance boss is a baseline clear checkpoint at room 8;
   // only continued seven-room chapters add boss pressure. Regular rooms keep
   // the original per-room difficulty ramp. Solo and Live share this engine.
@@ -134,7 +134,7 @@ export class QModeService{
  private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];qmodePressureVersion?:1;echoSourceAccountIds:string[];npcCharacterIds?:string[]}):QModeRun{
   const endurance=input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION;
   const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion,endurance?'endurance':'legacy');
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),...(endurance?{enduranceRouteVersion:1 as const,bossEnduranceVersion:DUNGEON_BOSS_ENDURANCE_VERSION}:{}),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,rewardBaseMarks:currentDungeonBaseMarks(input.expeditionId),graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),...(endurance?{enduranceRouteVersion:1 as const,bossEnduranceVersion:DUNGEON_BOSS_ENDURANCE_VERSION}:{}),tierScalingVersion:2,...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION?{regionalBalanceVersion:1 as const}:{}),...(input.balanceVersion===REGIONAL_DUNGEON_BALANCE_VERSION&&input.qmodePressureVersion===1&&input.expeditionId==='EXP_001'&&input.tier===3?{rootboundT3CalibrationVersion:1 as const}:{}),qmodePressureVersion:input.qmodePressureVersion,echoSourceAccountIds:input.echoSourceAccountIds,npcCharacterIds:input.npcCharacterIds??[]};
   this.repository.save(run);return structuredClone(run);
  }
 }

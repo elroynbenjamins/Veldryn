@@ -17,7 +17,7 @@ import {profileShowcaseStyles} from '../theme/profile-showcase-styles';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
-import {profileBorderContentOffsets} from '../core/profile-frame-layout';
+import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
@@ -29,7 +29,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const border=profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
- const offsets=profileBorderContentOffsets(border?profile.borderId:undefined);
+ const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
  const guild=profile.guild===undefined?(profile.guildTag?{tag:profile.guildTag,tagColorId:profile.guildTagColorId}:null):profile.guild;
@@ -50,12 +50,12 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <View style={s.identityFill}/>
    <PlayerBadgeShowcase identity={profile.playerBadges}/>
   </View>
-  {showGuild&&guild?<View style={[s.guildAnchor,offsets.guildLeftOffset>0&&{left:22+offsets.guildLeftOffset}]}><ProfileGuildAffiliation guild={guild}/></View>:null}
+  {showGuild&&guild?<View style={[s.guildAnchor,{left:anchors.side,bottom:anchors.bottom,right:pet?anchors.guildRightWithPet:anchors.side}]}><ProfileGuildAffiliation guild={guild}/></View>:null}
   <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={s.character}/>
-  {pet?<Image source={pet} resizeMode="contain" style={[s.pet,offsets.petRightOffset>0&&{right:22+offsets.petRightOffset}]}/>:null}
+  {pet?<Image source={pet} resizeMode="contain" style={[s.pet,{right:anchors.side,bottom:anchors.bottom}]}/>:null}
   </View>
   </View>
-  {border?<ProfileFrameOverlay source={border}/>:null}
+  {border?<ProfileFrameOverlay source={border} sceneSafe/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
@@ -65,9 +65,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  surface:{borderRadius:radii.lg,overflow:'hidden',backgroundColor:C.stage},
  framedSurface:{margin:8,borderRadius:4},
  shade:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'},
- guildAnchor:{position:'absolute',left:22,bottom:20,maxWidth:'58%',zIndex:4},
+ guildAnchor:{position:'absolute',maxWidth:'58%',alignItems:'flex-start',zIndex:4},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
- pet:{position:'absolute',right:22,bottom:20,width:58,height:58,zIndex:3},
+ pet:{position:'absolute',width:58,height:58,zIndex:3},
  /** Combat power rides on the level line rather than taking one of its own: a second line
   * pushed the badge shelf past the portrait edge it is meant to finish level with. The class
   * name gives way first, so the number a visitor came to read is never the part truncated. */

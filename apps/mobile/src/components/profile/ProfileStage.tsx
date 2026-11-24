@@ -18,7 +18,7 @@ import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';
-import {profileBorderContentOffsets} from '../../core/profile-frame-layout';
+import {profileSceneContentAnchors} from '../../core/profile-frame-layout';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 
@@ -34,7 +34,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const backgroundId=character.profileBackgroundId??'asterfall-night';
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
  const frame=profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
- const offsets=profileBorderContentOffsets(frame?character.profileBorderId:undefined);
+ const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
@@ -47,7 +47,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    <Text numberOfLines={1} style={s.stripMeta}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
-  {frame?<ProfileFrameOverlay source={frame}/>:null}
+  {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
  </Pressable>;
 
  return <View style={s.root}>
@@ -56,8 +56,8 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    {art}
    <View style={s.scrim}/>
    </ProfileBorderBackdrop>
-   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,!!frame&&s.petFramed,offsets.petRightOffset>0&&{right:26+offsets.petRightOffset}]}/>:null}
-   <View style={[s.identity,!!frame&&s.identityFramed]}>
+   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,{right:anchors.side,bottom:anchors.bottom}]}/>:null}
+   <View style={[s.identity,!!frame&&s.identityFramed,!!pet&&{right:anchors.guildRightWithPet}]}>
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>
      <View style={s.nameRow}>
@@ -70,7 +70,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
     </View>
    </View>
   </View>
-  {frame?<ProfileFrameOverlay source={frame}/>:null}
+  {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
   <View style={[s.tools,!!frame&&s.toolsFramed]}>
    {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>
@@ -88,8 +88,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tool:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.dark?'rgba(185,192,198,.44)':'rgba(40,46,52,.28)',backgroundColor:C.dark?'rgba(3,4,5,.62)':'rgba(255,255,255,.72)'},
  toolMark:{fontSize:15,lineHeight:18,color:C.text,fontWeight:'800'},
  pressed:{opacity:.72},
- pet:{position:'absolute',right:14,bottom:12,width:58,height:58,zIndex:3},
- petFramed:{right:26,bottom:24},
+ pet:{position:'absolute',width:58,height:58,zIndex:3},
  identity:{position:'absolute',left:12,right:12,bottom:10,flexDirection:'row',alignItems:'flex-end',gap:10,zIndex:2},
  identityFramed:{left:24,right:24,bottom:22},
  avatar:{width:62,height:62,borderRadius:radii.lg,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.42)':'rgba(255,255,255,.52)'},

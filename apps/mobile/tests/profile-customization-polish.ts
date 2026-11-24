@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {newlyUnlockedProfileRewards,profileAudienceCanView,profileRewardSource} from '../src/core/profile-customization';
 
-import {profileBackdropTopInset,profileBorderContentOffsets} from '../src/core/profile-frame-layout';
+import {profileBackdropTopInset,profileSceneContentAnchors,profileSceneBorderZones,profileSceneFrameSegments,profileFrameSegments,PROFILE_SCENE_SAFE_LAYOUT} from '../src/core/profile-frame-layout';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -76,11 +76,27 @@ ok(profileBackdropTopInset('frame_gloamward',350,221)>0,'reported public profile
 ok(profileBackdropTopInset('frame_gloamward',480,270)>=profileBackdropTopInset('frame_gloamward',350,221),'large scene scales the calibrated aperture');
 equal(profileBackdropTopInset('frame_gloamward',0,0),0,'unmeasured scene has no calculated crop');
 
-const gloamwardOffsets=profileBorderContentOffsets('frame_gloamward');
-equal(gloamwardOffsets.petRightOffset,16,'Gloamward pet moves left by 16dp');
-equal(gloamwardOffsets.guildLeftOffset,8,'Gloamward guild tag moves right by 8dp');
-for(const id of [undefined,null,'','frame_wheat_crown','guild-border-royal']){
- const offsets=profileBorderContentOffsets(id);
- equal(offsets.petRightOffset,0,'other borders preserve pet horizontal position');
- equal(offsets.guildLeftOffset,0,'other borders preserve guild horizontal position');
+
+const safe=PROFILE_SCENE_SAFE_LAYOUT;
+for(const inset of [0,8]){
+ const a=profileSceneContentAnchors(inset);
+ equal(a.side+inset,46,'fixed horizontal anchor regardless of border');
+ equal(a.bottom+inset,28,'fixed bottom anchor regardless of border');
+ equal(a.guildRightWithPet+inset,112,'guild reserves pet width and gap');
+}
+equal(profileSceneContentAnchors(8,true).bottom+8,31,'compact stage maintains existing vertical anchor');
+for(const [w,h] of [[260,190],[340,205],[480,286],[320,168],[320,58]]){
+ const zones=profileSceneBorderZones(w,h),raw=profileFrameSegments(w,h),clipped=profileSceneFrameSegments(w,h);
+ ok(zones.length>0&&clipped.length>0,'safe ornament stencil remains usable');
+ for(const z of zones){
+  const overlaps=(x:number,y:number,width:number,height:number)=>z.x<x+width&&z.x+z.width>x&&z.y<y+height&&z.y+z.height>y;
+  ok(!overlaps(w-safe.sideAnchor-safe.petSize,h-safe.bottomAnchor-safe.petSize,safe.petSize,safe.petSize)||h<168,'border never crosses fixed pet zone on full scenes');
+  ok(!overlaps(safe.sideAnchor,h-safe.bottomAnchor-28,w-2*safe.sideAnchor-safe.petSize-safe.contentGap,28)||h<168,'border never crosses fixed guild zone on full scenes');
+ }
+ for(const p of clipped){
+  const original=raw.find(r=>p.key.startsWith(r.key+':'))!;
+  ok(!!original,'clipped segment retains original artwork');
+  ok(Math.abs(p.x+p.imageLeft-original.x-original.imageLeft)<1e-7&&Math.abs(p.y+p.imageTop-original.y-original.imageTop)<1e-7,'clipping does not stretch or shift artwork');
+  ok(zones.some(z=>p.x>=z.x-1e-7&&p.y>=z.y-1e-7&&p.x+p.width<=z.x+z.width+1e-7&&p.y+p.height<=z.y+z.height+1e-7),'every segment stays inside permitted stencil');
+ }
 }

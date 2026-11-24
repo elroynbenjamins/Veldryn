@@ -16,6 +16,7 @@ assert.equal(radiant.requiresProgression,false);
 assert.equal(radiant.canGateEntry,false);
 assert.equal(radiant.canFilterRecruitment,false);
 assert.ok(radiant.totals.some(x=>x.stat==='damage_reduction_pct'&&x.bps===300));
+assert.deepEqual(radiant.cappedStats,[]);
 
 const before=[
  p('iron','IRONWARDEN'),p('way','WAYFINDER'),p('stone','STONECALLER'),
@@ -46,6 +47,13 @@ assert.deepEqual(
  'relationship history must not affect projected Synchronization',
 );
 
+const capped=projectPartySynchronizationLobbyV2('party_event',[
+ p('b','BASTION'),p('d','DAWNKEEPER'),p('x','DREADGUARD'),p('i','IRONWARDEN'),
+]);
+assert.deepEqual(capped.cappedStats,[{
+ stat:'healing_received_pct',statKey:'party_sync.stat.healing_received_pct',
+ rawBps:1040,effectiveBps:1000,discardedBps:40,
+}]);
 const catalogue=projectPartySynchronizationCatalogueV2();
 assert.equal(catalogue.length,18);
 assert.equal(new Set(catalogue.map(x=>x.id)).size,18);

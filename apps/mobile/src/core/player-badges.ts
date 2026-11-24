@@ -1,4 +1,4 @@
-import {ASCENDANT_CELESTIAL_VISUALS_RELEASED} from './release-flags';
+import {isUltraLuxeBadge} from './ultra-luxe-cosmetics';
 
 /** Player badges are verified by server identity, never by a client-chosen unlock. */
 export const COLLECTIBLE_PLAYER_BADGE_IDS=['founder','veteran','guild_leader','community_champion','event_champion','ascendant_celestial_sovereign'] as const;
@@ -67,9 +67,11 @@ export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter_6m:'Unlock after 6 total verified months of Supporter.',
  supporter_12m:'Unlock after 12 total verified months of Supporter.',
 };
-export function playerBadgeReleased(id:EquippablePlayerBadgeId){return id!=='ascendant_celestial_sovereign'||ASCENDANT_CELESTIAL_VISUALS_RELEASED;}
-export function visibleCollectiblePlayerBadgeIds():readonly CollectiblePlayerBadgeId[]{
- return COLLECTIBLE_PLAYER_BADGE_IDS.filter(playerBadgeReleased);
+/** Public rendering trusts the verified server projection. Private ultra-luxe badges
+ * are visible in the chooser only to accounts whose owned badge projection includes them. */
+export function playerBadgeReleased(_id:EquippablePlayerBadgeId){return true;}
+export function visibleCollectiblePlayerBadgeIds(owned:readonly CollectiblePlayerBadgeId[]=[]):readonly CollectiblePlayerBadgeId[]{
+ return COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>!isUltraLuxeBadge(id)||owned.includes(id));
 }
 /** One elective earned or Supporter badge beside the name, in chat and every name row.
  * Staff role is shown independently and never costs the player a slot. */

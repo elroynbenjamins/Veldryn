@@ -7,7 +7,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {usePlayerBadges,type BadgeState} from '../online/PlayerBadgeProvider';
 import {PlayerBadge,PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {
- COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_FEATURED_PLAYER_BADGES,
+ SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_FEATURED_PLAYER_BADGES,
  PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,VIP_BADGE_UNLOCK_HINTS,visibleCollectiblePlayerBadgeIds,
  SUPPORTER_BADGE_UNLOCK_HINTS,canEquipSupporterBadge,type EquippablePlayerBadgeId,
  type SupporterBadgeId,

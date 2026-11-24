@@ -1,0 +1,104 @@
+name: Generate profile cosmetics migration once
+on:
+  push:
+    branches: [chatgpt/profile-cosmetics-aperture-pass1]
+permissions:
+  contents: write
+concurrency:
+  group: profile-cosmetics-migration-generator
+  cancel-in-progress: false
+jobs:
+  generate:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.3.0
+      - name: Generate migration with Supabase CLI
+        working-directory: backend/supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase migration new --help >/tmp/supabase-migration-new-help.txt
+          before="$(find migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)"
+          supabase migration new profile_animated_cosmetics_v1
+          after="$(find migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort)"
+          file="$(comm -13 <(printf '%s\n' "$before") <(printf '%s\n' "$after") | tail -n1)"
+          test -n "$file"
+          cat > "migrations/$file" <<'SQL'
+          -- Animated profile cosmetics V1.
+          -- Preserve each environment's current profile function body and only add
+          -- account-owned effect validation plus public effect projection.
+          do $patch$
+          declare
+            d text;
+            changed text;
+          begin
+            select pg_get_functiondef(p.oid) into d
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='private'
+              and p.proname='profile_collection_owned_v43'
+              and pg_get_function_identity_arguments(p.oid)='p_state jsonb, p_kind text, p_id text';
+            if d is null then raise exception 'profile_collection_owned_v43_missing'; end if;
+            if position('unlockedProfileEffectIds' in d)=0 then
+              changed:=replace(
+                d,
+                $$      or p_state#>>'{character,profileBorderId}'=p_id;$$,
+                $$      or p_state#>>'{character,profileBorderId}'=p_id;
+            elsif p_kind='effect' then
+              return coalesce(p_state#>'{account,unlockedProfileEffectIds}','[]'::jsonb) @> jsonb_build_array(p_id);$$
+              );
+              if changed=d then raise exception 'profile_collection_owned_v43_anchor_not_found'; end if;
+              execute changed;
+            end if;
+
+            select pg_get_functiondef(p.oid) into d
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public'
+              and p.proname='profile_public_v43'
+              and pg_get_function_identity_arguments(p.oid)='p_target_account_id uuid';
+            if d is null then raise exception 'profile_public_v43_missing'; end if;
+            if position('''effectId''' in d)=0 then
+              changed:=replace(
+                d,
+                $$'borderId',v_character->>'profileBorderId','petId',v_character->>'selectedCosmeticPetId'$$,
+                $$'borderId',v_character->>'profileBorderId','effectId',v_character->>'profileEffectId','petId',v_character->>'selectedCosmeticPetId'$$
+              );
+              if changed=d then raise exception 'profile_public_v43_anchor_not_found'; end if;
+              execute changed;
+            end if;
+
+            select pg_get_functiondef(p.oid) into d
+            from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+            where n.nspname='public'
+              and p.proname='profile_character_public_v1'
+              and pg_get_function_identity_arguments(p.oid)='p_target_account_id uuid, p_character_id uuid';
+            if d is null then raise exception 'profile_character_public_v1_missing'; end if;
+            if position('''effectId''' in d)=0 then
+              changed:=replace(
+                d,
+                $$'borderId',nullif(v_hero->>'profileBorderId',''),$$,
+                $$'borderId',nullif(v_hero->>'profileBorderId',''),
+            'effectId',nullif(v_hero->>'profileEffectId',''),$$
+              );
+              if changed=d then raise exception 'profile_character_public_v1_anchor_not_found'; end if;
+              execute changed;
+            end if;
+          end
+          $patch$;
+          SQL
+          echo "MIGRATION_FILE=$file" >> "$GITHUB_ENV"
+      - name: Commit generated migration and remove this generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/profile-cosmetics-migration-generator.yml
+          git add "backend/supabase/migrations/$MIGRATION_FILE"
+          git commit -m "Add animated profile cosmetics server migration"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

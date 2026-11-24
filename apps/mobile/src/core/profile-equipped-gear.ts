@@ -38,7 +38,7 @@ const cleanQuality=(value:unknown)=>typeof value==='number'&&Number.isInteger(va
 const cleanBonusRolls=(itemId:string,rarity:ItemRarity|undefined,row:Record<string,unknown>):WeaponBonusRoll[]|undefined=>{
  if(!rarity||!ITEMS.some(item=>item.id===itemId&&item.type==='gear'))return undefined;
  const equipment=normalizeEquipmentBonuses(itemId,rarity,row.equipmentBonuses,row.equipmentBonusRollVersion);
- const version=row.weaponBonusRollVersion;
+ const version=row.weaponBonusRollVersion??(Array.isArray(row.weaponBonuses)?1:undefined);
  const weapon=typeof version==='number'&&Number.isInteger(version)&&version>=1&&version<=7
   ?normalizeWeaponBonuses(itemId,rarity,row.weaponBonuses,version as WeaponBonusRollVersion):undefined;
  return equipment??weapon;

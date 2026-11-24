@@ -22,7 +22,8 @@ import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 import {PlayerBadgeShowcase} from './PlayerBadges';
 import {ProfileGuildAffiliation} from './ProfileGuildAffiliation';
 import {CelestialSovereignPreview} from './profile/CelestialSovereignPreview';
-import {CELESTIAL_IDS,celestialVisualSelection,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
+import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from './profile/CelestialStandardEffects';
 
 export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,active=false}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;active?:boolean}){
  const language=useGameLanguage();
@@ -32,11 +33,15 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
  const guild=profile.guild===undefined?(profile.guildTag?{tag:profile.guildTag,tagColorId:profile.guildTagColorId}:null):profile.guild;
+ const celestialAssets=getEnabledCelestialAssets();
+ const celestialBackground=!!celestialAssets&&profile.backgroundId===CELESTIAL_IDS.background;
+ const celestialBorder=!!celestialAssets&&profile.borderId===CELESTIAL_IDS.border;
  const standard=<View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
+   {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>
@@ -53,8 +58,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border}/>:null}
+  {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
- const celestial=height>=205&&celestialVisualSelection(profile.backgroundId,profile.borderId)?getEnabledCelestialAssets():undefined;
+ const celestial=height>=205&&celestialBackground&&celestialBorder?celestialAssets:undefined;
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}

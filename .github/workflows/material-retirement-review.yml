@@ -2,7 +2,8 @@ name: Material retirement review
 on:
   pull_request:
     paths:
-      - 'backend/supabase/review/material-retirement-atomic-pg17.sql'
+      - 'backend/supabase/review/material-retirement-*.sql'
+      - 'tools/test-material-retirement-schema-fixture.mjs'
       - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'tools/preview-echo-bat-wing-source-closure.mjs'
       - 'tools/material-retirement-review.mjs'
@@ -53,3 +54,12 @@ jobs:
         env:
           PGPASSWORD: fixture-only
         run: psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1 -f backend/supabase/review/material-retirement-atomic-pg17.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate production-shaped transaction in disposable database
+        env:
+          PGPASSWORD: fixture-only
+        run: |
+          set -o pipefail
+          node tools/test-material-retirement-schema-fixture.mjs | psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1

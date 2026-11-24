@@ -4,29 +4,34 @@ import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel,StateChip} from './CoopVisualKit';
 
-export function CoopSynchronizationPanel({
- view,title='Class Synchronization',partyWideLabel='Party-wide',
- noProgressionLabel='Instant · No levels or affinity grind',
-}:{
+export interface CoopSynchronizationLabels{
+ title:string;
+ partyWide:string;
+ noProgression:string;
+ active:(count:number)=>string;
+ fullStrength:string;
+ scaledStrength:(scalePercent:number)=>string;
+ empty:string;
+ note:string;
+}
+export function CoopSynchronizationPanel({view,labels}:{
  view:CoopSynchronizationView;
- title?:string;
- partyWideLabel?:string;
- noProgressionLabel?:string;
+ labels:CoopSynchronizationLabels;
 }){
- const {colors:C,styles:s}=useCoopStyles(makeStyles);
- const scale=view.activeCount<=2?'Full strength':`${view.scalePercent}% strength per link`;
+ const {styles:s}=useCoopStyles(makeStyles);
+ const scale=view.activeCount<=2?labels.fullStrength:labels.scaledStrength(view.scalePercent);
  return <FantasyPanel>
   <View style={s.header}>
    <View style={s.heading}>
-    <Text style={s.title}>{title}</Text>
-    <Text style={s.meta}>{noProgressionLabel}</Text>
+    <Text style={s.title}>{labels.title}</Text>
+    <Text style={s.meta}>{labels.noProgression}</Text>
    </View>
    <View style={s.chips}>
-    <StateChip label={`${view.activeCount} active`} tone={view.activeCount?'selected':'neutral'}/>
-    <StateChip label={partyWideLabel} tone="success"/>
+    <StateChip label={labels.active(view.activeCount)} tone={view.activeCount?'selected':'neutral'}/>
+    <StateChip label={labels.partyWide} tone="success"/>
    </View>
   </View>
-  {view.activeCount?<Text style={s.scale}>{scale}</Text>:<Text style={s.empty}>No active class links in this party.</Text>}
+  {view.activeCount?<Text style={s.scale}>{scale}</Text>:<Text style={s.empty}>{labels.empty}</Text>}
   <View style={s.links}>
    {view.links.map(link=><View key={link.id} style={s.link}>
     <View style={s.linkHeader}>
@@ -38,7 +43,7 @@ export function CoopSynchronizationPanel({
     </View>
    </View>)}
   </View>
-  <Text style={s.note}>Does not change Combat Power, queue eligibility or matchmaking priority.</Text>
+  <Text style={s.note}>{labels.note}</Text>
  </FantasyPanel>;
 }
 const makeStyles=(C:CoopColors)=>StyleSheet.create({

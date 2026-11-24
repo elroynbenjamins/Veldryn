@@ -1,6 +1,5 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {CelestialPreviewAssets} from '../components/profile/CelestialSovereignPreview';
-import {ASCENDANT_CELESTIAL_VISUALS_RELEASED} from '../core/release-flags';
 import {CELESTIAL_IDS} from '../core/ascendant-cosmetics';
 export {CELESTIAL_IDS} from '../core/ascendant-cosmetics';
 
@@ -37,12 +36,9 @@ const BUNDLE:CelestialAssetBundle={
 
 export function getCelestialAssetBundle():CelestialAssetBundle{return BUNDLE;}
 
-/** Release gate only. Asset presence never grants ownership, equip rights, commerce, or blessings. */
-export function celestialVisualsEnabled():boolean{return ASCENDANT_CELESTIAL_VISUALS_RELEASED;}
-
 export function celestialVisualSelection(backgroundId:string|undefined|null,borderId:string|undefined|null){
  return backgroundId===CELESTIAL_IDS.background&&borderId===CELESTIAL_IDS.border;
 }
-export function getEnabledCelestialAssets(){
- return celestialVisualsEnabled()?BUNDLE:undefined;
-}
+/** Rendering availability is intentionally independent from wardrobe discovery.
+ * Other players must be able to see a granted member's ultra-luxe profile. */
+export function getEnabledCelestialAssets(){return BUNDLE;}

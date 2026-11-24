@@ -17,7 +17,10 @@
     "tests/exploration-scouting-reports-release-review.ts",
     "src/components/ExplorationScoutingReportsReview.tsx",
     "tests/exploration-scouting-cutover-localization-achievements-review.ts",
-    "src/online/scouting-client.ts"
+    "src/online/scouting-client.ts",
+    "tests/exploration-scouting-online-review.ts",
+    "src/components/ExplorationScoutingOnlineReview.tsx",
+    "src/screens/SkillsScreen.tsx"
   ],
   "exclude": []
 }

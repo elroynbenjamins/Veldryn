@@ -43,6 +43,10 @@ on:
       - 'tools/verify-exploration-scouting-2-release-gate.mjs'
       - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
       - 'apps/mobile/src/online/scouting-client.ts'
+      - 'apps/mobile/src/core/exploration-scouting-online-review.ts'
+      - 'apps/mobile/src/components/ExplorationScoutingOnlineReview.tsx'
+      - 'apps/mobile/src/screens/SkillsScreen.tsx'
+      - 'apps/mobile/tests/exploration-scouting-online-review.ts'
       - 'backend/src/server/exploration/scouting-http-application.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
@@ -96,3 +100,5 @@ jobs:
       - run: node .core-build/apps/mobile/tests/exploration-scouting-reports-release-review.js
 
       - run: node .core-build/apps/mobile/tests/exploration-scouting-cutover-localization-achievements-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-online-review.js

@@ -37,14 +37,18 @@ jobs:
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Backend strict typecheck without cross-project rehearsal modules
         run: pnpm --dir backend run typecheck
-      - name: Compile all five exact cross-project tests with the existing mobile core TypeScript boundary
+      - name: Compile all six exact cross-project tests with the existing mobile core TypeScript boundary
+        if: ${{ !cancelled() }}
+        id: compile_private
         run: pnpm --dir apps/mobile exec tsc -p tsconfig.eq2-private-game-state.json
-      - name: Run all five private GameState rehearsals including negative cases
+      - name: Run all six private GameState rehearsals including negative cases
+        if: ${{ !cancelled() && steps.compile_private.outcome == 'success' }}
         run: |
-          for spec in delivery game-state gem-sidecar virtual-custody physical-delivery-staging; do
+          for spec in delivery game-state gem-sidecar virtual-custody physical-delivery-staging effect-gem-policy; do
             node "apps/mobile/.eq2-private-state-build/backend/src/server/equipment/__tests__/equipment-crafting-v2-${spec}.test.js"
           done
       - name: Fail on hidden state routes or public imports
+        if: ${{ !cancelled() }}
         run: |
           if git grep -n -E 'equipment-crafting-v2-(game-state|gem-sidecar|virtual-custody|private-game-state-type|authoritative-readiness|legacy-audit)' -- backend/online backend/supabase/functions apps/mobile/App.tsx apps/mobile/src/screens apps/mobile/src/navigation; then
             echo 'Private Equipment 2.0 GameState path imported by public code'

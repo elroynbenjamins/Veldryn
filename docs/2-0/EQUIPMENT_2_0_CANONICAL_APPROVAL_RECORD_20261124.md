@@ -132,6 +132,10 @@ V22–V24 focused CI remains queued; no new measured outcomes. V25 adds ten sour
 
 V22 exact-head CI failed TS7053 readonly ID indexing and non-exported V17 import; corrected typed unknown-ID validation in V26 and import in V24. V23–V25 focused CI remains queued. V26 adds eight self-shield source definitions, all eight source magnitudes/thresholds/durations/cooldowns/units verified on readback. Independent named pool, ordinary shield first, residual eligible damage absorption, receipt phases, strongest pool replacement and exact expiry; no reflection or recursive proc. Twenty-eight definitions supported by private adapter, 114 remaining. Boundary/source tests added, no new full shield matrix or confirmed CI execution. Composite/ally shields and actual CP/release authority still blocked; D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_INDEPENDENT_SHIELD_REVIEW_V26.md`.
 
+## 3N. V27 named shield break and independent validation
+
+V23–V26 focused runs remained queued at readback. Extracted shared V22–V26 boundaries, retained real Forge actor suite, added minimal typed independent strict compile and boundary/source/Edge-isolation workflow. No successful current-head execution yet. V27 adds Rimewatch Weather the Break: exact named Rimeguard direct depletion, +6% incoming nontrue reduction for 4s, 30s cooldown, both milestone IDs required, no expiry/replacement/DoT/fatal/duplicate trigger. Source readback verified; no candidate ownership, CP or release authority. Twenty-nine definitions supported, 113 remaining. D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_NAMED_SHIELD_BREAK_REVIEW_V27.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

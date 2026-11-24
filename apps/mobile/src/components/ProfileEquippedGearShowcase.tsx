@@ -13,6 +13,7 @@ import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork} from './EquipmentArtwork';
+import {ItemInspectIdentity,ItemInspectStatRow} from './ItemInspectIdentity';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 const byItemId=new Map(ITEMS.map(item=>[item.id,item]));
@@ -34,8 +35,7 @@ const icon=StyleSheet.create({
 });
 
 function DetailStat({label,value}:{label:string;value:number}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- return <View style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{displayStatPrecise(value)}</Text></View>;
+ return <ItemInspectStatRow label={label} value={displayStatPrecise(value)}/>;
 }
 
 /** Read-only equipment inspection. Never exposes inventory, ownership identifiers or gear actions. */
@@ -89,17 +89,12 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
   </View>
   {!gear.length?<Text style={s.emptyText}>{profileT(language,'No equipment equipped yet')}</Text>:null}
   <GameModalSurface visible={!!selected} reduceMotion={reduceMotion} onClose={()=>setSelectedSlot(null)} presentation="dialog" surfaceStyle={s.detail}>
-   <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={item?localizedItemName(language,item.id):selected?.itemId??profileT(language,'Equipment')} onClose={()=>setSelectedSlot(null)}/>
+   <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={profileT(language,'Equipment')} onClose={()=>setSelectedSlot(null)}/>
    {selected?<View style={s.inspect}>
     <View style={s.inspectHead}>
      <GearIcon item={item} rarity={selected.rarity} unknown={!item}/>
      <View style={s.inspectCopy}>
-      <Text style={s.detailSlot}>{profileText(language,slotLabels[selected.slot])}</Text>
-      {rarity?<Text style={[s.rarity,{color:rarity.color}]}>{profileText(language,rarity.label)}</Text>:null}
-      <View style={s.tags}>
-       {selected.quality!==undefined?<Text style={s.tag}>{profileT(language,'Quality {quality}',{quality:selected.quality})}</Text>:null}
-       {selected.rank?<Text style={s.tag}>{profileT(language,'Enhancement +{rank}',{rank:selected.rank})}</Text>:null}
-      </View>
+      <ItemInspectIdentity name={(item?localizedItemName(language,item.id):selected.itemId)+(selected.rank?' +'+selected.rank:'')} metadata={(rarity?profileText(language,rarity.label).toLocaleUpperCase(language)+' · ':'')+(selected.quality!==undefined?'Q'+selected.quality+' · ':'')+profileText(language,slotLabels[selected.slot])} nameColor={rarity?.color} metadataColor={rarity?.color}/>
      </View>
     </View>
     {baseStats.length>0?<View style={s.statBlock}>
@@ -109,7 +104,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
     </View>:null}
     {selected.bonusRolls?.length?<View style={s.statBlock}>
      <Text style={s.detailCaption}>{gt('BONUS STATS')}</Text>
-     <View style={s.bonusPanel}>{selected.bonusRolls.map(roll=><View key={roll.stat} style={s.bonusRow}><Text style={s.bonusLabel}>{gl(WEAPON_BONUS_LABELS[roll.stat])}</Text><Text style={s.bonusValue}>+{(roll.basisPoints/100).toFixed(1)}%</Text></View>)}</View>
+     <View style={s.bonusPanel}>{selected.bonusRolls.map(roll=><ItemInspectStatRow key={roll.stat} label={gl(WEAPON_BONUS_LABELS[roll.stat])} value={'+'+(roll.basisPoints/100).toFixed(1)+'%'} bonus/>)}</View>
     </View>:null}
     {item?.passive?.trim()?<View style={s.statBlock}><Text style={s.detailCaption}>{gt('TRAIT')}</Text><Text style={s.traitText}>{gl(item.passive)}</Text></View>:null}
     {hasGemDetails?<View style={s.gemBlock}>

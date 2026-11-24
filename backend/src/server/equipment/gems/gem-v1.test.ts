@@ -28,6 +28,9 @@ for (const [sourceId,chance,pityAt] of [
 }
 assert.equal(gemPoolForSourceV1('LIVE_COOP_RESONANCE_CACHE')?.chance,1,'Earned Live weekly cache stays guaranteed');
 assert.ok(gemPoolForSourceV1('COP_004'));
+for(const [source,chance] of Object.entries({COP_004:0,COP_005:0,COP_006:.03,COP_007:.03,COP_008:.04,COP_009:.05})){
+ assert.equal(gemPoolForSourceV1(source)?.catalystChance??0,chance,'Regional Catalyst source progression: '+source);
+}
 assert.ok(buildGemDropsForSourceV1('COP_004').length>0);
 const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:31},unlockedRecipeIds:[]});
 assert.ok(forcedPity.gem,'Dungeon pity must settle one unrefined gem');

@@ -75,7 +75,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
    <Text numberOfLines={1} style={s.draconicTitle}>{profile.title}</Text>
-   <View style={s.draconicMetaRow}><Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
+   <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
   </View>}
   badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12}/>}
   guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} compact/>:undefined}/>;
@@ -96,8 +96,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  draconicIdentity:{flex:1,minWidth:0,overflow:'hidden'},
  draconicName:{fontSize:11,lineHeight:12,includeFontPadding:false,color:'#fff0d6',fontWeight:'800',flexShrink:1,minWidth:0},
  draconicTitle:{fontSize:9,lineHeight:10,includeFontPadding:false,color:'#ffb76b'},
- draconicMeta:{fontSize:8,lineHeight:10,includeFontPadding:false,color:'#f6d4b9',flexShrink:1,minWidth:0},
- draconicMetaRow:{flexDirection:'row',gap:3,alignItems:'baseline'},
+ draconicMeta:{fontSize:8,lineHeight:9,includeFontPadding:false,color:'#f6d4b9',flexShrink:1,minWidth:0},
  celestialIdentity:{flex:1,minWidth:0,overflow:'hidden'},
  celestialName:{fontSize:12,lineHeight:15,color:'#fff0c8',fontWeight:'800'},
  celestialTitle:{fontSize:10,lineHeight:12,color:'#efd69b'},

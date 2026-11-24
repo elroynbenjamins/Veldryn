@@ -15,16 +15,16 @@ export const DRACONIC_COLLECTION={
  showcaseName:'Awakening of the Dragon',
  badgeName:'Dragon Sovereign',
 } as const;
-export const DRACONIC_STAGE={width:340,height:205,minWidth:300,maxWidth:480,maxFontScale:1.1} as const;
+export const DRACONIC_STAGE={width:340,height:205,minWidth:300,maxWidth:480,maxFontScale:1.05} as const;
 export const DRACONIC_BOXES={
  dragon:{x:24,y:50,w:125,h:106},
  ring:{x:28,y:141,w:116,h:21},
  alternate:{x:63,y:79,w:46,h:46},
  glow:{x:65,y:122,w:42,h:10},
  flames:{x:22,y:49,w:128,h:116},
- portrait:{x:182,y:61,w:39,h:39},
- badges:{x:226,y:69,w:77,h:27},
- identity:{x:182,y:103,w:122,h:40},
+ portrait:{x:182,y:61,w:32,h:32},
+ badges:{x:220,y:65,w:83,h:27},
+ identity:{x:182,y:96,w:122,h:48},
  plate:{x:175,y:59,w:133,h:86},
  guild:{x:188,y:146,w:113,h:19},
 } as const;

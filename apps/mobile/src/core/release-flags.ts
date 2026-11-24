@@ -33,3 +33,7 @@ export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
 
 /** Ascendant I artwork and renderer are integrated for QA only. Keep hidden until entitlement, native QA and non-P2W blessing parity are approved. */
 export const ASCENDANT_CELESTIAL_VISUALS_RELEASED=false;
+/** Ascendant blessing settlement remains disabled until its server/economy implementation is released. */
+export const ASCENDANT_PROGRESSION_BLESSINGS_RELEASED=false;
+/** Separate non-P2W fuse: requires an approved gameplay-earned path to the same 5% pet and 3% background power. */
+export const ASCENDANT_BLESSING_PARITY_APPROVED=false;

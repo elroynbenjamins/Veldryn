@@ -7,7 +7,7 @@ on:
       - 'backend/src/server/combat/types.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-private-conditional-*.ts'
       - 'backend/tsconfig.equipment-private-conditional-boundaries.json'
-      - 'tools/eq2-review/t1-t5/*v2[2-7]*'
+      - 'tools/eq2-review/t1-t5/*v2[2-8]*'
       - 'docs/2-0/eq2-set-trait-authoring-review-v17.json'
       - 'docs/2-0/eq2-normalized-effects-review-v18.json'
       - '.github/workflows/equipment-v2-private-conditional-boundaries.yml'
@@ -42,7 +42,7 @@ jobs:
       - name: Check all conditional source audits and synthetic report guards
         if: ${{ !cancelled() }}
         run: |
-          node --test tools/eq2-review/t1-t5/current-hit-review-v22.test.mjs tools/eq2-review/t1-t5/one-use-charge-review-v23.test.mjs tools/eq2-review/t1-t5/incoming-defense-review-v24.test.mjs tools/eq2-review/t1-t5/timed-stat-review-v25.test.mjs tools/eq2-review/t1-t5/independent-shield-review-v26.test.mjs tools/eq2-review/t1-t5/named-shield-break-review-v27.test.mjs
+          node --test tools/eq2-review/t1-t5/current-hit-review-v22.test.mjs tools/eq2-review/t1-t5/one-use-charge-review-v23.test.mjs tools/eq2-review/t1-t5/incoming-defense-review-v24.test.mjs tools/eq2-review/t1-t5/timed-stat-review-v25.test.mjs tools/eq2-review/t1-t5/independent-shield-review-v26.test.mjs tools/eq2-review/t1-t5/named-shield-break-review-v27.test.mjs tools/eq2-review/t1-t5/support-heal-recipient-review-v28.test.mjs
       - name: Verify Edge private-import isolation tests (not generated bundle parity)
         if: ${{ !cancelled() }}
         run: node --test tools/tests/combat-v2-edge-isolation.test.mjs

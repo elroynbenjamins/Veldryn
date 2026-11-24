@@ -1,3 +1,4 @@
+import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
 import {ultraLuxeVisualTier} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {verifiedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
@@ -81,7 +82,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
-   <Text numberOfLines={1} style={[s.draconicTitle,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#ffb76b'}]}>{profile.title}</Text>
+   <UltraLuxeTitleText title={profile.title} verified={!!verifiedTitleId} color={verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#ffb76b'} style={s.draconicTitle}/>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
   </View>}
   badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12} variant="bare"/>}
@@ -92,7 +93,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>
-   <Text numberOfLines={1} style={[s.celestialTitle,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#efd69b'}]}>{profile.title}</Text>
+   <UltraLuxeTitleText title={profile.title} verified={!!verifiedTitleId} color={verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#efd69b'} style={s.celestialTitle}/>
    <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
    <PlayerBadgeShowcase identity={profile.playerBadges} size={13} variant="bare"/>
   </View>}

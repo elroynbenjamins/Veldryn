@@ -1,3 +1,4 @@
+import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
@@ -85,10 +86,12 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     </>:null}
    </View>
    {petMode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(CELESTIAL_PET_BOX[petMode])}/>:null}
+   <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet}>
    <View style={[box(CELESTIAL_IDENTITY_BOX.plate),styles.identityPlate]}>
     <View style={pos(4,5,56,56)}>{portrait}</View>
     <View style={pos(66,5,126,60)}>{identity}</View>
    </View>
+   </UltraLuxeIdentityMotionProvider>
    {guild!=null?<View style={[box(CELESTIAL_IDENTITY_BOX.guild),styles.guildPlate]}>{guild}</View>:null}
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>

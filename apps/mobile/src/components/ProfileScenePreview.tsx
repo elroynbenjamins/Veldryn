@@ -1,3 +1,4 @@
+import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
 import {ultraLuxeVisualTier} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
@@ -78,7 +79,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
-   <Text numberOfLines={1} style={[s.draconicTitle,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#ffb76b'}]}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <UltraLuxeTitleText title={character.profileTitle??profileT(language,'New Adventurer')} verified={!!verifiedTitleId} color={ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#ffb76b'} style={s.draconicTitle}/>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
   </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12} variant="bare"/>}/>;
  }
@@ -87,7 +88,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
-   <Text numberOfLines={1} style={[s.celestialTitle,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#efd69b'}]}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <UltraLuxeTitleText title={character.profileTitle??profileT(language,'New Adventurer')} verified={!!verifiedTitleId} color={ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#efd69b'} style={s.celestialTitle}/>
    <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
    <PlayerBadgeShowcase identity={badges.identity} size={13} variant="bare"/>
   </View>}/>;

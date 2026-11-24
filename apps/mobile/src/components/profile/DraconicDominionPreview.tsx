@@ -1,3 +1,4 @@
+import {UltraLuxeIdentityMotionProvider} from './UltraLuxeIdentityMotion';
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
@@ -58,8 +59,10 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
   <View style={[box(B.plate),s.plate]}/>
   <View style={[box(B.portrait),s.portrait]}>{portrait}</View>
+  <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet}>
   <View style={[box(B.identity),s.protected]}>{identity}</View>
   {badges?<View style={[box(B.badges),s.badges]}>{badges}</View>:null}
+  </UltraLuxeIdentityMotionProvider>
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.border} resizeMode="stretch" style={s.fill}/>

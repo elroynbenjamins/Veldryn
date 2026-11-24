@@ -1,5 +1,7 @@
+import {useUltraLuxeIdentityMotion} from './profile/UltraLuxeIdentityMotion';
+import {isUltraLuxeBadge} from '../core/ultra-luxe-cosmetics';
 import {useEffect,useState} from 'react';
-import {Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
+import {Animated,Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadgeIds,type PlayerBadgeIdentity,type PlayerBadgeId} from '../core/player-badges';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -16,8 +18,16 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const detail=recentScreenText(language,PLAYER_BADGE_DESCRIPTIONS[id]);
  const {width:screenWidth,height:screenHeight}=useWindowDimensions(),insets=useSafeAreaInsets();
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
- const art=(artSize:number)=><Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
- const content=<>{art(size)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
+ const motion=useUltraLuxeIdentityMotion();
+ const art=(artSize:number,animate=false)=>{
+  if(animate&&motion&&isUltraLuxeBadge(id)){
+   const opacity=motion.clock.interpolate({inputRange:[0,.125,.25,.375,.5,14/24,16/24,19/24,.875,1],outputRange:[.85,1,.85,1,.85,.93,1,.92,1,.85]});
+   const scale=motion.clock.interpolate({inputRange:[0,14/24,16/24,19/24,1],outputRange:[1,1,motion.fullSet?1.1:1.04,1,1]});
+   return <Animated.Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
+  }
+  return <Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
+ };
+ const content=<>{art(size,true)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;
  const open=(pageX:number,pageY:number)=>{
   const bubbleWidth=Math.min(248,Math.max(180,screenWidth-24));

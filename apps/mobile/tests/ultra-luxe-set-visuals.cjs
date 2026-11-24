@@ -10,4 +10,10 @@ assert.equal(ultraLuxeVisualTier(set,{...matching,displayedBadges:[]}),'awakened
 assert.equal(ultraLuxeVisualTier(set,{...matching,pet:'other'}),'paired');
 assert.equal(ultraLuxeVisualTier(set,{...matching,border:'other'}),'individual');
 assert.equal(ultraLuxeVisualTier(set,{...matching,background:'other'}),'individual');
+const root=path.join(__dirname,'../src/components');
+const read=f=>fs.readFileSync(path.join(root,f),'utf8');
+assert(read('profile/UltraLuxeIdentityMotion.tsx').includes('if(!verified||!motion)'));
+assert(read('PlayerBadges.tsx').includes('animate&&motion&&isUltraLuxeBadge(id)'));
+for(const name of ['CelestialSovereignPreview','DraconicDominionPreview'])assert(read('profile/'+name+'.tsx').includes('<UltraLuxeIdentityMotionProvider'));
+for(const name of ['PublicProfileScene','ProfileScenePreview'])assert((read(name+'.tsx').match(/<UltraLuxeTitleText/g)||[]).length===2);
 console.log('Full-set visual tier, mixed pieces and verified identity gating passed.');

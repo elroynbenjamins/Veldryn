@@ -50,7 +50,7 @@ export interface PartyV2RunBindingResult{
 const validId=(x:unknown):x is string=>typeof x==='string'&&/^[A-Za-z0-9:_-]{1,128}$/.test(x);
 const reverseClass=new Map<string,ClassIdV2>(
  (Object.entries(CLASS_NAMES_V2) as [ClassIdV2,string][]).flatMap(([id,name])=>[
-   [id,id] as const,[name.toUpperCase().replaceAll(' ','_'),id] as const,
+   [id,id] as const,[name.toUpperCase().replace(/ /g,'_'),id] as const,
  ]));
 const classId=(value:string):ClassIdV2|undefined=>
  reverseClass.get(value.trim().toUpperCase().replaceAll(' ','_'));
@@ -66,9 +66,11 @@ export function reviewPartyV2RunBinding(input:{
  readonly seed:string;
  readonly readyCheck:ReadyCheckRecord;
  readonly frozenRoster:readonly FrozenLoadoutSnapshot[];
+ /** Server-derived from the verified Equipment runtime, never client input. */
+ readonly actorCharacterIds:Readonly<Record<string,string>>;
  readonly combatInput:CombatInput;
 }):PartyV2RunBindingResult{
- const {readyCheck:check,frozenRoster,combatInput}=input;
+ const {readyCheck:check,frozenRoster,actorCharacterIds,combatInput}=input;
  if(!validId(input.runId)||!validId(input.nodeId)||
    !Number.isSafeInteger(input.encounterRevision)||input.encounterRevision<1||
    !Number.isSafeInteger(input.stateRevision)||input.stateRevision<1||
@@ -78,24 +80,28 @@ export function reviewPartyV2RunBinding(input:{
    !Number.isSafeInteger(check.rosterRevision)||check.rosterRevision<1||
    check.status!=='committed'||check.roster.length!==4||
    !check.roster.every(member=>check.accepts[member.accountId]===true)||
-   frozenRoster.length!==4||combatInput.seed!==input.seed||
+   frozenRoster.length!==4||!actorCharacterIds||combatInput.seed!==input.seed||
    combatInput.players.length!==4||!combatInput.enemies.length||
    combatInput.enemyDamageProfile!==undefined)
   fail('invalid_scope');
  const accounts=new Set<string>(),characters=new Set<string>(),actors=new Set<string>();
  const byCharacter=new Map(frozenRoster.map(row=>[row.characterId,row]));
- if(byCharacter.size!==4)fail('duplicate_frozen_character');
+ const readyByCharacter=new Map(check.roster.map(row=>[row.characterId,row]));
+ if(byCharacter.size!==4||readyByCharacter.size!==4||
+   Object.keys(actorCharacterIds).length!==4)fail('duplicate_or_incomplete_character_mapping');
  const members:PartyV2RunBindingMember[]=[];
- for(let i=0;i<check.roster.length;i++){
-  const ready=check.roster[i],frozen=byCharacter.get(ready.characterId),actor=combatInput.players[i];
-  if(!frozen||ready.accountId!==frozen.accountId||
+ for(const actor of combatInput.players){
+  const characterId=actorCharacterIds[actor.id];
+  const ready=characterId?readyByCharacter.get(characterId):undefined;
+  const frozen=characterId?byCharacter.get(characterId):undefined;
+  if(!ready||!frozen||ready.accountId!==frozen.accountId||
     ready.loadoutId!==frozen.loadoutId||ready.loadoutRevision!==frozen.revision||
     ready.loadoutSnapshotHash!==frozen.snapshotHash||
     !validId(ready.accountId)||!validId(ready.characterId)||
     !validId(ready.loadoutId)||!validId(ready.loadoutSnapshotHash)||
     accounts.has(ready.accountId)||characters.has(ready.characterId)||
-    !actor||!validId(actor.id)||actors.has(actor.id)||actor.team!=='players'||
-    actor.combatV2?.version!==2)
+    !validId(actor.id)||actors.has(actor.id)||actor.team!=='players'||
+    actor.combatV2?.version!==2||ready.role!==actor.role)
    fail('roster_snapshot_mismatch');
   const canonical=classId(frozen.classId);
   if(!canonical||actor.classId!==CLASS_NAMES_V2[canonical]||
@@ -106,6 +112,9 @@ export function reviewPartyV2RunBinding(input:{
     actorId:actor.id,classId:canonical,loadoutId:ready.loadoutId,
     loadoutRevision:ready.loadoutRevision,loadoutSnapshotHash:ready.loadoutSnapshotHash});
  }
+ if(Object.entries(actorCharacterIds).some(([actorId,characterId])=>
+   !actors.has(actorId)||!characters.has(characterId)))
+  fail('foreign_actor_character_mapping');
  const roles=members.map(m=>CLASS_ROLES_V2[m.classId]);
  if(roles.filter(r=>r==='tank').length!==1||roles.filter(r=>r==='damage').length!==2||
    roles.filter(r=>r==='support').length!==1||

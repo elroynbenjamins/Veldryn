@@ -849,3 +849,28 @@ assert.ok(dotSeqRun.events.some(e=>e.type==='damage'&&e.abilityId===dotAltId&&e.
 assert.ok(dotSeqRun.events.some(e=>e.type==='status_apply'&&e.abilityId===dotSeqId&&e.statusKind==='dot'&&e.atMs===200),
  'fallback refresh when other action unavailable');
 console.log('PASS: bounded resource sequencing and exact-source DoT refresh avoidance');
+
+// Active party vulnerability overrides low-resource diversion.
+const seqMarkAlly:CombatantDefinition={...chipper,id:'SEQ_MARK_ALLY',abilities:[{
+ id:'SEQ_MARK_TEST',name:'Test vulnerability',target:'current_target',castTimeMs:0,
+ cooldownMs:999999,priority:100,effects:[{kind:'debuff',tag:'damage_taken',value:.05,durationMs:5000}]}]};
+assert.ok(simulateCombat({...seqInput,players:[seqMarkAlly,seqActor]}).events.some(e=>
+ e.type==='damage'&&e.abilityId===seqBurst&&e.actorId===seqActor.id&&e.atMs===0),
+ 'real active vulnerability takes precedence over low-resource diversion');
+// Own debuff refresh avoidance, with a non-vulnerability authored debuff
+// so earlier vulnerability tactics cannot obscure the ordinary sequence.
+const debuffSeqActor={...seqActor,abilities:seqActor.abilities.map(a=>({...a,
+ priority:a.id===seqBuilder?200:100,cooldownMs:a.id===seqBuilder?100:a.cooldownMs}))};
+// A no-cost alternative from the same compiled class.
+const debuffAltSkill=SKILL_IDENTITIES_V2.find(s=>s.classId==='WAYFINDER'&&s.name==='Hunter Mark')!;
+const debuffAltBuild=compileServerSkillBuildV2(true,{...seqBuild,selected:{...seqBuild.selected,
+ activeSkills:[{skillId:debuffAltSkill.id,variantId:debuffAltSkill.variants[0].id}]}});
+const debuffSeq={...debuffSeqActor,abilities:[
+ debuffSeqActor.abilities.find(a=>a.id===seqBuilder)!,
+ ...debuffAltBuild.abilities.map(a=>({...a,priority:100}))]};
+const debuffAltId=debuffAltBuild.abilities[0].id;
+const debuffSeqRun=simulateCombat({...seqInput,players:[debuffSeq],maxDurationMs:200});
+assert.ok(debuffSeqRun.events.some(e=>e.type==='status_apply'&&e.abilityId===seqBuilder&&e.statusKind==='debuff'&&e.atMs===0));
+assert.ok(debuffSeqRun.events.some(e=>e.type==='damage'&&e.abilityId===debuffAltId&&e.atMs===100),
+ 'identical active own debuff favors another ready action');
+console.log('PASS: active burst window and exact-source debuff sequencing');

@@ -26,9 +26,11 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
  const st=useSocialText(),ui=useDungeonDynamicUiText(),language=useGameLanguage(),canChoose=Boolean(onChoose)&&phase==='awaiting_choice'&&!busy;
  const action=mode==='qmode'?ui('Choose room'):ui('Vote');
  const live=mode==='live',totalVotes=live?options.reduce((total,option)=>total+(option.votes??0),0):0;
- const stepKey=options.map(option=>option.nodeId).join('|');
+ // Presentation-only priority: keep each server-owned node ID, vote and relative non-boss order intact.
+ const orderedOptions=useMemo(()=>[...options].sort((a,b)=>Number(b.kind==='boss')-Number(a.kind==='boss')),[options]);
+ const stepKey=orderedOptions.map(option=>option.nodeId).join('|');
  const [reduceMotion,setReduceMotion]=useState(false);
- const anims=useMemo(()=>options.map(()=>new Animated.Value(0)),[stepKey]);
+ const anims=useMemo(()=>orderedOptions.map(()=>new Animated.Value(0)),[stepKey]);
  useEffect(()=>{
   let mounted=true;
   void AccessibilityInfo.isReduceMotionEnabled().then(enabled=>{if(mounted)setReduceMotion(enabled);}).catch(()=>{});
@@ -42,12 +44,12 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
   animation.start();
   return ()=>animation.stop();
  },[anims,reduceMotion]);
+ const bossAvailable=orderedOptions.length>1&&orderedOptions.some(option=>option.kind==='boss');
  return <View style={s.list}>
-  {options.map((option,optionIndex)=>{
+  {orderedOptions.map((option,optionIndex)=>{
    const enter=anims[optionIndex]??new Animated.Value(1);
    const enterStyle={opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[10,0]})}]};
    const canPress=canChoose&&!option.hidden;
-   const bossAvailable=options.length>1&&options.some(candidate=>candidate.kind==='boss');
    const bossExit=option.kind==='boss'&&bossAvailable;
    const continueChoice=bossAvailable&&option.kind!=='boss';
    const routeAction=bossExit?(live?dungeonUxText(language,'bossVote'):dungeonUxText(language,'bossFinish')):continueChoice?dungeonUxText(language,live?'continueVote':'continueDeeper'):option.kind==='boss'&&!live?dungeonUxText(language,'bossFinal'):action;
@@ -83,8 +85,9 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
        <Text style={s.votes}>{ui('{votes}/4 votes',{votes:option.votes??0})}</Text>
        {votedHere&&selfVoter?<View style={s.myVote}><IdentityArtwork name={selfVoter.name} profileIconId={selfVoter.profileIconId} className={selfVoter.className} size={18}/></View>:null}
       </View>:null}
-      <Text style={[s.actionCue,bossExit&&s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>
+      {option.kind!=='boss'?<Text style={s.actionCue}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>:null}
      </View>
+     {option.kind==='boss'?<Text style={[s.actionCue,s.bossAction]}>{votedHere?ui('Your vote'):routeAction} <Text style={s.chevron}>{'›'}</Text></Text>:null}
      {preview?<Text numberOfLines={2} style={s.preview}>{displayPreview}</Text>:null}
      {bossExit?<Text numberOfLines={2} style={s.bossHint}>{dungeonUxText(language,'bossHint')}</Text>:null}
      {(!riskBaseline||!redundantReward||modifier||roomMarks>0)?<View style={s.tags}>
@@ -101,7 +104,7 @@ export function DungeonRouteChoices({options,mode,phase,busy=false,onChoose,myVo
 function makeStyles(C:CoopColors){return StyleSheet.create({
  list:{gap:6},
  card:{minHeight:70,flexDirection:'row',alignItems:'center',gap:9,paddingHorizontal:10,paddingVertical:7,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.surface,overflow:'hidden'},
- bossCard:{borderColor:C.gold,backgroundColor:C.surfaceRaised},continueCard:{borderColor:C.cyan,backgroundColor:C.surface},bossAction:{color:C.gold},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
+ bossCard:{borderColor:C.gold,borderWidth:2,backgroundColor:C.surfaceRaised},continueCard:{borderColor:C.cyan,backgroundColor:C.surface},bossAction:{color:C.gold,fontSize:13,lineHeight:18,maxWidth:'100%',textAlign:'left'},bossHint:{fontSize:10,lineHeight:14,fontWeight:'700',color:C.gold},myChoice:{borderColor:C.cyan,borderWidth:2,backgroundColor:C.selection},
  hiddenCard:{opacity:.6},
  pressed:{backgroundColor:C.surfaceRaised},
  content:{flex:1,minWidth:0,justifyContent:'center',gap:2},

@@ -50,3 +50,16 @@ for(const cycles of [.75,.9,1,1.25,1.4,3.75,5]){
  }
 }
 console.log('PASS: particle and glow loop endpoints match across all collections and viewport sizes');
+
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const motionSource=fs.readFileSync('src/components/ProfileCosmeticMotion.tsx','utf8');
+const stageSource=fs.readFileSync('src/components/profile/ProfileStage.tsx','utf8');
+const audienceSource=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
+const publicSource=fs.readFileSync('src/components/PublicProfileScene.tsx','utf8');
+ok(motionSource.includes("if(!enabled)return;setForeground"),'inactive and static layers skip AppState subscriptions');
+ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()=>!enabled?[]:runtime.tracks.map'),'static effects skip native interpolation graphs');
+ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
+const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
+ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
+ok(audienceSource.includes('cosmeticsActive={visible}')&&publicSource.includes('active={cosmeticsActive&&(review?.active??true)}'),'hidden audience preview stops cosmetics');
+console.log('PASS: cosmetic idle and static rendering contract');

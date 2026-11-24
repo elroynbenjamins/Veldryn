@@ -16,7 +16,7 @@ const ULTRA_LUXE_PET_IDS=new Set<string>([
  'ascendant-celestial-aetherion','ascendant-draconic-vharaxis',
 ]);
 const ULTRA_LUXE_BADGE_IDS=new Set<string>([
- 'ascendant_celestial_sovereign','ascendant_draconic_sovereign',
+ 'ascendant_sovereign_of_stars','ascendant_dragon_sovereign','ascendant_monarch_of_deep','ascendant_beyond_existence',
 ]);
 
 export type UltraLuxeProfileKind='background'|'border'|'pet';

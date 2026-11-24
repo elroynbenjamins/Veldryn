@@ -26,7 +26,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
    const scale=motion.clock.interpolate({inputRange:[0,14/24,16/24,19/24,1],outputRange:[1,1,motion.fullSet?1.1:1.04,1,1]});
    return <Animated.Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
   }
-  return <Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
+  const fallback=PLAYER_BADGE_FALLBACK_GLYPHS[id];return source?<Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize}}/>:<View accessible={false} style={{width:artSize,height:artSize,borderRadius:Math.max(4,artSize*.22),alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:fallback?.accent??C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.8)'}}><Text style={{fontSize:Math.round(artSize*.58),lineHeight:Math.round(artSize*.68),fontWeight:'900',color:fallback?.accent??C.accent}}>{fallback?.glyph??'◇'}</Text></View>;
  };
  const content=<>{art(size,true)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;

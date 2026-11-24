@@ -4,7 +4,7 @@ export const DRACONIC_IDS={
  border:'ascendant-draconic-throne-of-embers',
  pet:'ascendant-draconic-vharaxis',
  showcase:'ascendant-draconic-awakening-of-the-dragon',
- badge:'ascendant_draconic_sovereign',
+ badge:'ascendant_dragon_sovereign',
 } as const;
 export const DRACONIC_COLLECTION={
  id:'ascendant-draconic-dominion',

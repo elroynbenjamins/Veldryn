@@ -12,7 +12,7 @@ const ids={
  background:'ascendant-celestial-astral-sanctum',
  border:'ascendant-celestial-crown-of-the-cosmos',
  pet:'ascendant-celestial-aetherion',
- badge:'ascendant_celestial_sovereign',
+ badge:'ascendant_sovereign_of_stars',
 };
 const unowned={account:{unlockedProfileBackgroundIds:[],unlockedProfileBorderIds:[],unlockedCosmeticPetIds:[]}};
 const owned={account:{

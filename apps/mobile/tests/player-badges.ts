@@ -12,11 +12,11 @@ ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','legacy Suppo
 ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
-ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===6,'five released earned badges plus the hidden Celestial candidate exist');
-ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_celestial_sovereign'),'unowned ultra-luxe badge is absent from player-facing badge settings');
-ok(visibleCollectiblePlayerBadgeIds(['ascendant_celestial_sovereign']).includes('ascendant_celestial_sovereign'),'granted ultra-luxe badge becomes visible only to its owner');
-ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_celestial_sovereign',extras:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).join(',')==='ascendant_celestial_sovereign','verified granted Celestial badge renders publicly when equipped');
-ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).join(',')==='ascendant_celestial_sovereign','verified granted Celestial badge renders on its owner profile');
+ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===9,'five ordinary and four private earned badge IDs exist');
+ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_sovereign_of_stars'),'unowned ultra-luxe badge is absent from player-facing badge settings');
+ok(visibleCollectiblePlayerBadgeIds(['ascendant_sovereign_of_stars']).includes('ascendant_sovereign_of_stars'),'granted ultra-luxe badge becomes visible only to its owner');
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_sovereign_of_stars',extras:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders publicly when equipped');
+ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders on its owner profile');
 ok(!COLLECTIBLE_PLAYER_BADGE_IDS.some(id=>String(id)==='beta_tester'),'retired Beta Tester badge is not available');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'beta_tester',validUntilMs:2000}),now).length===0,'stale equipped Beta Tester badge does not render');
 ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['beta_tester','founder'],validUntilMs:2000}),now).join(',')==='founder','stale Beta Tester badge is removed from profile showcase');
@@ -106,7 +106,7 @@ ok(settings.includes('<PlayerBadgeShowcase identity={badges.identity}'),'the pro
 // Every destination (store, chat, guilds, parties, profiles and rankings) shares
 // the same asset mapping, so no membership can fall back to a text chip.
 const art=read('src/components/player-badge-artwork.ts');
-for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id!=='ascendant_celestial_sovereign')])
+for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>!id.startsWith('ascendant_'))])
  ok(art.includes(`player-badges-v1/${id}.webp`),'approved badge artwork bundled '+id);
 ok(art.includes("assets/ascendant/celestial/sovereign_badge_64.webp"),'hidden Celestial badge uses its dedicated Ascendant artwork');
 ok(art.includes('store-membership-badges-v1/vip.png')&&art.includes('store-membership-badges-v1/vip-plus.png'),'VIP badges use the same approved icons as Store');

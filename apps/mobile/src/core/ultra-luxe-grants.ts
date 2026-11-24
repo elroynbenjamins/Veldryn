@@ -2,8 +2,8 @@ import type {GameState,CharacterState} from './types';
 
 /** Server-owned collection grants. Never use the mutable save's ownership lists as proof. */
 export const ULTRA_LUXE_GRANT_COLLECTIONS=[
- {id:'ascendant-celestial-sovereign',background:'ascendant-celestial-astral-sanctum',border:'ascendant-celestial-crown-of-the-cosmos',pet:'ascendant-celestial-aetherion',icon:'ascendant-celestial-crown-icon',title:'ascendant-celestial-title',titleName:'Sovereign of the Stars',badge:'ascendant_celestial_sovereign',nameStyle:'ascendant-celestial-name'},
- {id:'ascendant-draconic-dominion',background:'ascendant-draconic-dominion-of-ash',border:'ascendant-draconic-throne-of-embers',pet:'ascendant-draconic-vharaxis',icon:'ascendant-draconic-ruby-icon',title:'ascendant-draconic-title',titleName:'Dragon Sovereign',badge:'ascendant_draconic_sovereign',nameStyle:'ascendant-draconic-name'},
+ {id:'ascendant-celestial-sovereign',background:'ascendant-celestial-astral-sanctum',border:'ascendant-celestial-crown-of-the-cosmos',pet:'ascendant-celestial-aetherion',icon:'ascendant-celestial-crown-icon',title:'ascendant-celestial-title',titleName:'Sovereign of the Stars',badge:'ascendant_sovereign_of_stars',nameStyle:'ascendant-celestial-name'},
+ {id:'ascendant-draconic-dominion',background:'ascendant-draconic-dominion-of-ash',border:'ascendant-draconic-throne-of-embers',pet:'ascendant-draconic-vharaxis',icon:'ascendant-draconic-ruby-icon',title:'ascendant-draconic-title',titleName:'Dragon Sovereign',badge:'ascendant_dragon_sovereign',nameStyle:'ascendant-draconic-name'},
 ] as const;
 export function ultraLuxeGrantProjection(raw:unknown){
  const ids=new Set(Array.isArray(raw)?raw.filter((id):id is string=>typeof id==='string'):[]);

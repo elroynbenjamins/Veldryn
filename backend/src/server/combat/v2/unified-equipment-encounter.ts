@@ -24,8 +24,13 @@ import {serverBuildCatalogV2} from './skill-catalog';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
-import {verifyPersistedEnemyKitsV2,type PersistedEnemyKitV2} from './enemy-kit-composer';
-import {issueEnemyV2EngineAuthority} from './enemy-engine-authority';
+import {
+ verifyPersistedEnemyKitsV2,verifyPersistedPartyEnemyKitsV2,
+ type PersistedEnemyKitV2,
+} from './enemy-kit-composer';
+import {
+ issueEnemyV2EngineAuthority,issuePersistedPartyEnemyV2EngineAuthority,
+} from './enemy-engine-authority';
 import {resolveVerifiedEquipmentBaseV2,
   type StoredEquipmentInstanceV2,type EquipmentBaseDefinitionV2,
   type ApprovedEquipmentBasePolicyV2,type BaseEquipmentSourceV2} from './equipment-base-stats';
@@ -281,6 +286,7 @@ export interface TrustedPersistedPartyExecutionV2{
  readonly readyCheck:ReadyCheckRecord;
  readonly frozenRoster:readonly FrozenLoadoutSnapshot[];
  readonly traitPorts:readonly TrustedEquipmentTraitReceiptPortV2[];
+ readonly enemyKit?:TrustedPersistedEnemyKitV2;
  readonly verifyPersisted:(binding:PartyV2RunBindingResult['binding'],
   sources:readonly VerifiedV2EquipmentEffectSource[],combatInputDigest:string)=>boolean;
 }
@@ -321,8 +327,27 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   evidence.push(compiled.evidence);
   return compiled.actor;
  });
- const enemies=compileEnemiesForCombatV2(input.enemies,true);
- const finalInput:CombatInput={...input,players,enemies:[...enemies.enemies]};
+ const sources=builds.map((build,i)=>
+  compileExactEquipmentTraitSourceV2(build,runtime[i],party.traitPorts[i]));
+ let finalEnemies:readonly CombatantDefinition[];
+ let enemyMechanicLabels:readonly string[];
+ let partyEnemySnapshot:PersistedEnemyKitV2|undefined;
+ if(party.enemyKit){
+  partyEnemySnapshot=party.enemyKit.snapshot;
+  const proof=verifyPersistedPartyEnemyKitsV2(input.enemies,partyEnemySnapshot);
+  if(partyEnemySnapshot.seed!==input.seed)
+   throw Error('combat_v2_party_enemy_kit_seed_mismatch');
+  finalEnemies=proof.enemies;
+  enemyMechanicLabels=proof.preview.flatMap(p=>[
+   ...p.abilityNames.map(name=>p.enemyId+': '+name),
+   ...p.phaseNames.map(name=>p.enemyId+': '+name),
+   ...p.traitIds.map(id=>p.enemyId+': '+id),
+  ]);
+ }else{
+  const enemies=compileEnemiesForCombatV2(input.enemies,true);
+  finalEnemies=enemies.enemies;enemyMechanicLabels=enemies.mechanicLabels;
+ }
+ const finalInput:CombatInput={...input,players,enemies:[...finalEnemies]};
  const persistence=reviewPartyV2RunBinding({
   runId:party.runId,nodeId:party.nodeId,encounterRevision:party.encounterRevision,
   stateRevision:party.stateRevision,contentVersion:party.contentVersion,
@@ -330,16 +355,18 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   readyCheck:party.readyCheck,frozenRoster:party.frozenRoster,combatInput:finalInput,
  });
  const scope=partySyncScopeFromRunBindingV2(persistence);
- const sources=builds.map((build,i)=>
-  compileExactEquipmentTraitSourceV2(build,runtime[i],party.traitPorts[i]));
  const verified=(digest:string)=>party.verifyPersisted(persistence.binding,sources,digest);
  const traitAuthority=issuePersistedPartyEquipmentV2TraitAuthority(
   finalInput,sources,persistence.binding,(_binding,_sources,digest)=>verified(digest));
  const syncAuthority=issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>verified(digest));
+ const enemyAuthority=partyEnemySnapshot?issuePersistedPartyEnemyV2EngineAuthority(
+  finalInput,persistence.binding,partyEnemySnapshot.enemyIds,partyEnemySnapshot.bossIds,
+  (_binding,digest)=>verified(digest)&&
+   party.enemyKit!.verifyPersisted(partyEnemySnapshot!,digest)):undefined;
  const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
  return {
-  combat:simulateCombat(finalInput,undefined,traitAuthority,syncAuthority),
-  enemyMechanicLabels:enemies.mechanicLabels,
+  combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority),
+  enemyMechanicLabels,
   equipmentEvidence:evidence,
   synchronizationReview,
   synchronizationRehearsal:{releaseEnabled:false,unsupported:[]},

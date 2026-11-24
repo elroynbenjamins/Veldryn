@@ -3,6 +3,7 @@
  * Strictly QA mock custody verification; NOT real authenticated DB or live.
  */
 import {strict as assert} from 'node:assert';
+import {writeFileSync} from 'node:fs';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatantDefinition,CombatInput,CombatStats} from '../../types';
 import {
@@ -1221,6 +1222,7 @@ const exactBossProfiles=[
  {id:'BOSS_EXP_BELLBEAST',region:'frostmarch',tier:4,forgeTier:4,level:60},
  {id:'BOSS_EXP_CANTOR',region:'frostmarch',tier:4,forgeTier:4,level:60},
 ] as const;
+const v18TraceRows: {bossId:string;classId:string;specIndex:number;strategy:string;actorId:string;events:unknown[];victory:boolean;durationMs:number}[]=[];
 let realForgeAuthoredBossRuns=0,realForgeAuthoredBossThreats=0;
 let realOriginalBossThreewayComparisons=0,comparableThreewayTactics=0;
 const originalThreewayOutcomes=new Map<string,number>();
@@ -1290,6 +1292,7 @@ for(const profile of exactBossProfiles){
     assert.ok(!first.bossMechanicLabels.some(label=>label.includes('V2_BOSS_PRESSURE')),
      'No generic boss pressure script may replace the authored kit');
     threeWay.push({choice:chosen,result:first});
+    if(process.env.EQ2_V18_TRACE_PATH)v18TraceRows.push({bossId:profile.id,classId,specIndex,strategy,actorId:qa.actor.id,events:first.combat.events,victory:first.combat.victory,durationMs:first.combat.durationMs});
     const freezing=JSON.stringify({
      items:first.equipmentEvidence.items,
      stages:first.equipmentEvidence.stages.afterFrozenBase,
@@ -1428,6 +1431,10 @@ console.log('PASS: 1620 reviewed 15-original-Forge-set × six-authored-boss × '
 assert.equal(realOriginalBossThreewayComparisons,108);
 assert.equal([...originalThreewayOutcomes.values()].reduce((a,b)=>a+b,0),108);
 assert.equal(realForgeAuthoredBossRuns,324);
+if(process.env.EQ2_V18_TRACE_PATH){
+ assert.equal(v18TraceRows.length,324);
+ writeFileSync(process.env.EQ2_V18_TRACE_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_BASELINE_TRACE_ONLY',effectApplied:false,rows:v18TraceRows}));
+}
 assert.equal(sourceThreewayGuards>=18,true);
 console.log('PASS: 108 genuine original Forge + persisted six regional boss '+
  'equal-source stat three-way Skills comparisons, '+comparableThreewayTactics+

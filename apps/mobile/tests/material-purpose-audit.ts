@@ -33,6 +33,7 @@ const retiredNoSource=rows.filter(row=>row.id==='ECHO_BAT_WING');
 if(retiredNoSource.length!==1)throw Error('Retired Echo Bat Wing catalog identity missing');
 const retiredWing=retiredNoSource[0];
 if(retiredWing.recipeConsumers!==0||retiredWing.recipeProducers!==0||retiredWing.monsterSources.length!==0||retiredWing.gatheringSources!==0||retiredWing.companionUses.length!==0||retiredWing.specialUses.length!==0||retiredWing.plannedGuildUses.length!==0)throw Error('Retired Echo Bat Wing still has a resolved producer or consumer');
+if(retiredWing.value!==80)throw Error('Echo Bat Wing authored sell value changed; re-price compensation before release');
 const candidates=rows.filter(row=>row.recipeConsumers===0&&row.companionUses.length===0&&(row.monsterSources.length>0||row.gatheringSources>0||row.recipeProducers>0));
 const protectedSpecial=candidates.filter(row=>row.specialUses.length>0||row.plannedGuildUses.length>0);
 const unresolved=candidates.filter(row=>row.specialUses.length===0&&row.plannedGuildUses.length===0);

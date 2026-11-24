@@ -1,5 +1,11 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount} from '../src/core/profile-equipped-gear';
+import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount,profileGearItemStats} from '../src/core/profile-equipped-gear';
+
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {itemDef} from '../src/content/items';
+import {rollWeaponBonuses,WEAPON_BONUS_ROLL_VERSION} from '../src/core/weapon-bonus-rolls';
+import {rollEquipmentBonuses,EQUIPMENT_BONUS_ROLL_VERSION} from '../src/core/equipment-bonus-rolls';
+import {enhancedGearStatsAtRank} from '../src/core/equipment-enhancement';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){
@@ -56,6 +62,25 @@ equal(otherGear[0].slot,'ring','selected inactive character does not leak active
 equal(otherGear[0].rarity,undefined,'no other character instance rarity inherited');
 equal(localProfileGear(state,'unknown-character').length,0,'unknown selected character cannot fall back to active one');
 
+// Real catalog copies: public stat display must match the private exact-copy inspector.
+for(const slot of ['weapon','chest'] as const){
+ const itemId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.classId==='IRONWARDEN'&&itemDef(row.output.itemId).slot===slot)!.output.itemId;
+ const rarity='epic' as const;
+ const rolls=slot==='weapon'?rollWeaponBonuses(itemId,rarity,'public-profile-fixture',.43)!:rollEquipmentBonuses(itemId,rarity,'public-profile-fixture',.43)!;
+ ok(rolls.length,'Fixture must mint valid bonus rolls');
+ const bonusFields=slot==='weapon'?{weaponBonuses:rolls,weaponBonusRollVersion:WEAPON_BONUS_ROLL_VERSION}:{equipmentBonuses:rolls,equipmentBonusRollVersion:EQUIPMENT_BONUS_ROLL_VERSION};
+ const receipt={...state.account.craftedGearInstances[0],id:'verified-'+slot,itemId,rarity,quality:82,...bonusFields};
+ const copyState={...state,character:{...state.character,equipment:{[slot]:itemId},equipmentInstanceIds:{[slot]:receipt.id}},account:{...state.account,craftedGearInstances:[receipt]}};
+ const publicRow=normalizeProfileGear([{slot,itemId,rarity,quality:82,rank:2,...bonusFields,instanceId:'private',ownerCharacterId:'private'}])![0];
+ equal(JSON.stringify(publicRow.bonusRolls),JSON.stringify(rolls),'Valid rolled stats are preserved');
+ equal(JSON.stringify(localProfileGear(copyState)[0].bonusRolls),JSON.stringify(rolls),'Self preview preserves the same exact rolls');
+ ok(!('instanceId' in publicRow)&&!('ownerCharacterId' in publicRow),'Private receipt identifiers must not be projected');
+ const stats=profileGearItemStats(publicRow)!;
+ const expected=enhancedGearStatsAtRank(copyState,itemId,2,receipt.id);
+ for(const stat of ['attack','defense','hp'] as const)ok(Math.abs(stats[stat]-expected[stat])<1e-8,'Public item stat must match private inspector '+stat);
+ const invalid=normalizeProfileGear([{slot,itemId,rarity,quality:82,rank:2,...bonusFields,...(slot==='weapon'?{weaponBonuses:[{stat:'critRate',basisPoints:999999}]}:{equipmentBonuses:[{stat:'critRate',basisPoints:999999}]})}])![0];
+ equal(invalid.bonusRolls,undefined,'Malformed rolls fail closed');
+}
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 for(const file of ['src/screens/ProfileScreen.tsx','src/components/ChatPlayerSheet.tsx']){
  const source=fs.readFileSync(file,'utf8');

@@ -12,3 +12,10 @@ assert.equal(b.camp.xpSlotBusy,true);assert.equal(b.camp.capacity,2);assert.equa
 assert.equal(b.missions.find(m=>m.id==='MISSION_IRONWOOD_TRACK_4H')?.requirement,'discover_route_first');
 assert.ok(!b.routes.some(r=>r.region==='ASHLANDS'));
 console.log('PASS unified scouting board: retained access, mission requirements, account isolation, reports');
+
+import {ACCOUNT_EXPLORATION_VERSION} from '../src/core/exploration-account-review';
+const account={version:ACCOUNT_EXPLORATION_VERSION,accountId:'a',xp:20000,level:20,retainedSlots:1,sourceCharacterIds:['c'],creditedDiscoveryIds:['SCOUT_GREENFIELDS','SCOUT_SILVERBROOK']};
+const collection=scoutingBoardReview(state,authority,[],2,200,account).collection;
+assert.equal(collection?.count,2);
+assert.equal(collection?.regions[0].count,2);
+assert.equal(scoutingBoardReview(state,authority,[],2,200,{...account,accountId:'other'}).collection,undefined);

@@ -676,3 +676,55 @@ const executeRun=simulateCombat({...tacticInput,players:[chipper,tacticActor],en
 assert.ok(executeRun.events.some(e=>e.type==='damage'&&e.abilityId===executeId&&e.targetId===executeTarget.id&&e.atMs===0),
  'eligible execute before ordinary burst');
 console.log('PASS: damage setup, burst window, execute, cooldown and legacy priority');
+
+// Remaining DPS classes: authored setups and party-applied vulnerability
+// promote ready spenders without changing their selected variant.
+for(const [classId,setup,finisher,routine] of [
+ ['RAVAGER','Sunder Blow','Overpower','Titan Swing'],
+ ['HEXWEAVER','Curse of Frailty','Hex Detonation','Black Thread'],
+ ['KNIFE_DANCER','Twin Fang','Final Dance','Scarlet Loop'],
+] as const){
+ const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
+ const loadout:VerifiedSkillBuildV2={actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId===classId)!.id,equipment:{},
+    activeSkills:[setup,finisher,routine].map(name=>{
+      const s=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===name)!;
+      return {skillId:s.id,variantId:s.variants[name==='Curse of Frailty'?1:0].id};}),
+    talentRanks:{},signaturePassiveIds:[],capstoneId:null},ownedItemsById:{},setsById:{}};
+ const compiled=compileServerSkillBuildV2(true,loadout);
+ const dps={...compiled,id:'DPS_REMAINING',stats:{...compiled.stats,attackPower:100,accuracy:100000},
+  abilities:compiled.abilities.map(a=>({...a,priority:a.name===routine?200:a.name===finisher?150:100})),
+  basicAttackCoeff:0};
+ const finishId=dps.abilities.find(a=>a.name===finisher)!.id;
+ const setupId=dps.abilities.find(a=>a.name===setup)!.id;
+ const routineId=dps.abilities.find(a=>a.name===routine)!.id;
+ const preMark:CombatantDefinition={...chipper,id:'DPS_PARTY_MARK',abilities:[{
+  id:'DPS_PARTY_MARK_TEST',name:'Party vulnerability',target:'current_target',castTimeMs:0,
+  cooldownMs:999999,priority:100,effects:[{kind:'debuff',tag:'damage_taken',value:.05,durationMs:5000}]}]};
+ const active=simulateCombat({...tacticInput,players:[preMark,dps],maxDurationMs:100});
+ assert.ok(active.events.some(e=>e.type==='damage'&&e.actorId===dps.id&&e.abilityId===finishId&&e.atMs===0),
+  classId+' uses existing party vulnerability');
+ const alone=simulateCombat({...tacticInput,players:[dps],maxDurationMs:100});
+ assert.ok(alone.events.some(e=>e.actorId===dps.id&&e.abilityId===(classId==='KNIFE_DANCER'?routineId:setupId)&&
+  e.atMs===0&&e.type==='damage'),classId+' uses setup if authored, otherwise ordinary rotation');
+ const blocked=simulateCombat({...tacticInput,players:[preMark,dps],maxDurationMs:100,
+  initialPlayerState:{[dps.id]:triageCarry(dps.stats.maxHp,false,{[finishId]:10000})}});
+ assert.ok(!blocked.events.some(e=>e.actorId===dps.id&&e.abilityId===finishId),'no burst cooldown bypass');
+}
+const interruptBase=launchPlayer('Hexweaver',50);
+const interruptLoadout:VerifiedSkillBuildV2={actor:interruptBase,
+ verified:{classId:'HEXWEAVER',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='HEXWEAVER')!.id,equipment:{},
+ activeSkills:['Null Script','Black Thread'].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='HEXWEAVER'&&s.name===name)!;
+ return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{}};
+const interruptDps0=compileServerSkillBuildV2(true,interruptLoadout);
+const interruptDps={...interruptDps0,id:'DPS_INTERRUPT',stats:{...interruptDps0.stats,maxHp:1000},
+ abilities:interruptDps0.abilities.map(a=>({...a,priority:a.name==='Black Thread'?200:100,cooldownMs:a.name==='Black Thread'?100:a.cooldownMs}))};
+const interruptBoss=forecastBoss('all_enemies',500);
+const interruptDpsRun=simulateCombat({seed:'dps-interrupt',players:[interruptDps],enemies:[{
+ ...interruptBoss,abilities:interruptBoss.abilities.map(a=>({...a,interruptible:true}))}],
+ maxDurationMs:200,tickMs:100});
+assert.ok(interruptDpsRun.events.some(e=>e.type==='interrupt'&&e.actorId===interruptDps.id&&e.atMs===100),
+ 'damage role interrupts visible dangerous cast before ordinary rotation');
+console.log('PASS: all four DPS classes, party vulnerability and dangerous interrupt coverage');

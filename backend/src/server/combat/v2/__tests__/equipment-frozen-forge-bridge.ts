@@ -1605,7 +1605,8 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
       // between class tactics within a region. Real authored boss scripts.
       const hp=(band==='accessible'?20000:60000)*(profile.region==='asterfall'?1:profile.region==='sunscar'?2:3);
       const ap=(band==='accessible'?100:200)*(profile.region==='asterfall'?1:profile.region==='sunscar'?2:3);
-      const enemy:CombatantDefinition={...boss,id:profile.id,level:profile.level,abilities:[],phases:undefined,
+      const names:Readonly<Record<typeof profile.id,string>>={BOSS_EXP_ROOT:'Asterfall Root',BOSS_EXP_BELL:'Asterfall Bell',BOSS_EXP_SOLAR:'The Buried Heliarch',BOSS_EXP_SPHINX:'The Veiled Sphinx',BOSS_EXP_BELLBEAST:'The Bellbeast of Shiverlake',BOSS_EXP_CANTOR:'The Frozen Cantor'};
+      const enemy:CombatantDefinition={...boss,id:profile.id,name:names[profile.id],level:profile.level,abilities:[],phases:undefined,
        stats:{...boss.stats,maxHp:hp,attackPower:ap}};
       const seed=['V21',profile.id,classId,specIndex,band].join('_');
       const proposed=prepareSoloEnemyKitsV2([enemy],{ruleset:ENEMY_V2_RULESET,region:profile.region,

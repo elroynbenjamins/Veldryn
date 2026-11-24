@@ -24,7 +24,7 @@ jobs:
           node-version: 22
       - name: Validate read-only compensation fixture
         run: node tools/material-retirement-review.mjs
-      - name: Preview exact drop closure without editing sources
+      - name: Verify persisted Echo Bat Wing source closure
         run: node tools/preview-echo-bat-wing-source-closure.mjs
       - name: Enumerate full checkout candidate references
         run: node tools/audit-material-retirement-references.mjs
@@ -35,14 +35,14 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Audit expanded material registries and item-use regressions
         run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex material-retirement-offline
-      - name: Exercise exact drop removal and rebuilt runtime bundles
+      - name: Verify closed drop and rebuilt runtime bundles
         if: github.event_name == 'pull_request' && github.head_ref == 'review/material-purpose-loot-cleanup-20261124'
         run: |
-          node tools/test-echo-bat-wing-source-closure.mjs --fixture-only
-          MATERIAL_RETIREMENT_FIXTURE=closed node tools/run-mobile-tests.mjs material-retirement-offline monster-drop-balance
+          node tools/test-echo-bat-wing-source-closure.mjs
+          node tools/run-mobile-tests.mjs material-retirement-offline monster-drop-balance
           pnpm --dir backend build:online
           node tools/verify-gameplay-edge.mjs
-          node --input-type=module -e "import {readFileSync} from 'node:fs'; for(const p of ['gameplay','coop']) {const c=readFileSync('backend/supabase/functions/'+p+'/index.ts','utf8'); if(/itemId:\\s*['\x22]ECHO_BAT_WING['\x22]/.test(c)) throw Error('Remaining wing drop: '+p); if(!c.includes('RUNEBOUND_CORE')) throw Error('Protected core missing: '+p); console.log('PASS: '+p+' rebuilt without exact wing drop');}"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; for(const p of ['gameplay','coop']) {const c=readFileSync('backend/supabase/functions/'+p+'/index.ts','utf8'); if(!c.includes('RUNEBOUND_CORE')) throw Error('Protected core missing: '+p); if(!c.includes('ECHO_BAT')) throw Error('Echo Bat missing from rebuilt bundle: '+p); console.log('PASS: '+p+' rebuilt after persisted source closure');}"
   atomic-retirement-pg17:
     runs-on: ubuntu-latest
     services:

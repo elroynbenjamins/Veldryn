@@ -4,6 +4,7 @@ import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} fr
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
+import {authorizeEq2PrivateHitQaV22,type Eq2PrivateHitAuthorityV22} from './v2/equipment-private-hit-qa-v22';
 import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
  type DungeonRewardProcActionV2} from './v2/dungeon-reward-engine-v2';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
@@ -94,7 +95,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, eq2PrivateHitAuthority?:Eq2PrivateHitAuthorityV22): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -103,6 +104,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const equipmentTraitRuntime=equipmentTraitAuthority
     ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
   const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority);
+  if(eq2PrivateHitAuthority!==undefined&&(equipmentTraitAuthority!==undefined||dungeonRewardAuthority!==undefined))throw Error('eq2_private_hit_v22_mixed_authority');
+  const eq2PrivateHit=authorizeEq2PrivateHitQaV22(input,eq2PrivateHitAuthority);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -293,6 +296,19 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         actorId:source.definition.id,targetId:target.definition.id,
         abilityId:'V2_EQUIPMENT_TRAIT:'+adjusted.trigger.traitId,
         amount:Math.round(adjusted.trigger.amount*100)/100,detail:'original_direct_hit_only'});
+    }
+    // V22 private QA only: confirmed original hit before shield/HP resolution.
+    if(eq2PrivateHit&&source.definition.team==='players'&&target.definition.team==='enemies'){
+      const adjusted=eq2PrivateHit.beforeDirectHit({now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+        originalClassAbility:source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='damage')),
+        direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
+        sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield,raw});
+      if(adjusted.activated.length){
+        const extra=Math.max(0,Math.min(target.hp,adjusted.raw-target.shield)-Math.min(target.hp,raw-target.shield));
+        raw=adjusted.raw;
+        events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+          abilityId:'V2_QA_HIT:'+adjusted.activated.join('+'),amount:Number(extra.toFixed(2)),detail:'private_qa_current_hit_only'});
+      }
     }
     // Poison applied as a true-damage DoT attacks HP directly, regardless of shields.
     // Direct true damage retains its legacy shield interaction.

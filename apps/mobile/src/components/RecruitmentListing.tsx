@@ -18,7 +18,8 @@ export function RecruitmentListing({card,nowMs,onPress}:{card:RecruitmentCardVie
  const statusTone:CompactIdentityStatusTone=presentation.tone==='good'?'good':presentation.tone==='info'?'info':'accent';
  const context=recruitmentContextLabels(card);
  const metaContext=context;
- const translatedFocus=language==='de'?socialLabel(language,recruitmentMainInterest(card)):recruitmentMainInterest(card);
+ const interest=recruitmentMainInterest(card);
+ const translatedFocus=socialLabel(language,interest.charAt(0).toUpperCase()+interest.slice(1));
  const translatedType=language==='de'?socialLabel(language,presentation.label):presentation.label;
  const tags=[...new Set([...recruitmentVisibleTags(card.activityTags),...recruitmentVisibleTags(card.playstyleTags),...recruitmentVisibleTags(card.availabilityTags),...card.guildInterestTags])].slice(0,2);
  return <Pressable accessibilityRole="button" accessibilityLabel={`${card.title}, ${translatedType}, ${display('posted by')} ${identityName}, ${time.text}`} onPress={onPress} style={({pressed})=>[s.card,pressed&&s.pressed]}>

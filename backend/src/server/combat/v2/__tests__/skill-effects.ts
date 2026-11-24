@@ -593,3 +593,44 @@ for(const [classId,defensive,interrupt,offensive] of [
    'legacy priority unchanged');
 }
 console.log('PASS: three tank classes, visible interruptible threats, critical defense and cooldown isolation');
+
+// Ally-directed shield stays ally-directed; do not gate emergency protection
+// on the healthy tank's own HP. Then verify sequential tank/support decisions
+// observe existing protection, not a cached pre-action forecast.
+const coverBase=launchPlayer('Bastion',50);
+const coverSkills=SKILL_IDENTITIES_V2.filter(s=>s.classId==='BASTION');
+const coverBuild:VerifiedSkillBuildV2={actor:coverBase,
+ verified:{classId:'BASTION',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='BASTION')!.id,equipment:{},
+  activeSkills:['Layered Fortress','Fortress Rebuff','Bastion Challenge'].map(name=>{
+   const s=coverSkills.find(s=>s.name===name)!;
+   return {skillId:s.id,variantId:s.variants[name==='Layered Fortress'?1:0].id};}),
+  talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{}};
+const coverCompiled=compileServerSkillBuildV2(true,coverBuild);
+const coverTank={...coverCompiled,id:'COVER_TANK',stats:{...coverCompiled.stats,maxHp:1000,healingPower:1000},
+ abilities:coverCompiled.abilities.map(a=>({...a,priority:a.name==='Bastion Challenge'?200:100})),
+ basicAttackCoeff:0};
+const coverId=coverTank.abilities.find(a=>a.name==='Layered Fortress')!.id;
+const coverInterrupt=coverTank.abilities.find(a=>a.name==='Fortress Rebuff')!.id;
+const coverAlly={...triageAlly('COVER_ALLY'),role:'damage' as const};
+const coverInput={seed:'tank-ally-protection',players:[coverTank,coverAlly],enemies:[enemy],
+ maxDurationMs:100,tickMs:100,initialPlayerState:{
+  [coverTank.id]:triageCarry(1000),[coverAlly.id]:triageCarry(200)}};
+assert.ok(simulateCombat(coverInput).events.some(e=>e.type==='shield'&&e.abilityId===coverId&&
+ e.targetId===coverAlly.id&&e.atMs===0),'healthy tank can shield a critical ally with authored ally-target variant');
+const coordinationBoss=forecastBoss('current_target',500);
+const coordination={seed:'tank-support-shared-pressure',players:[coverTank,continuousOffense,coverAlly],
+ enemies:[coordinationBoss],maxDurationMs:300,tickMs:100,initialPlayerState:{
+ [coverTank.id]:triageCarry(1000,false,{[coverInterrupt]:10000}),
+ [continuousOffense.id]:triageCarry(1000),[coverAlly.id]:triageCarry(1000)}};
+const coordinated=simulateCombat(coordination);
+assert.ok(coordinated.events.some(e=>e.type==='shield'&&e.abilityId===coverId&&
+ e.targetId===coverTank.id&&e.atMs===100),'tank protective variant covers visible boss pressure');
+assert.equal(firstShield(coordinated),undefined,'later support decision sees sufficient tank shielding');
+const cancelBoss={...coordinationBoss,abilities:coordinationBoss.abilities.map(a=>({...a,interruptible:true}))};
+const cancelled=simulateCombat({...coordination,enemies:[cancelBoss],initialPlayerState:{
+ ...coordination.initialPlayerState,[coverTank.id]:triageCarry(1000)}});
+assert.ok(cancelled.events.some(e=>e.type==='interrupt'&&e.abilityId===coverInterrupt&&e.atMs===100));
+assert.equal(firstShield(cancelled),undefined,'later support does not pre-shield a cancelled cast');
+console.log('PASS: tank ally protection and sequential support forecast coordination');

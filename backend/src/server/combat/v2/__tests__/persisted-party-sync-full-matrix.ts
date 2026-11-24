@@ -92,7 +92,7 @@ for(const specIndex of [0,1] as const)
 
     const candidate=preparePartyEnemyKitsV2(input.enemies,{
       ruleset:ENEMY_V2_RULESET,serverSeed:input.seed,
-      encounterId:'KIT_'+caseId,region:boss.region,equipmentTier:boss.tier,eliteEnemyIds:[],
+      encounterId:'RUN_'+cases+':NODE_'+boss.id,region:boss.region,equipmentTier:boss.tier,eliteEnemyIds:[],
     });
     const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:1};
     const party:TrustedPersistedPartyExecutionV2={

@@ -60,3 +60,12 @@ for(const track of ['logs','lights'] as const){const preset=track==='logs'?250:5
 for(const bad of ['','0','-1','1.5','1e2',' 1','2501','NaN'])ok(!winterHearthValidQuantity(bad,2500),'Reject invalid/over-cap quantity');
 ok(winterHearthValidQuantity('250',2500)&&winterHearthValidQuantity('50',250),'Approved quantities valid');
 console.log('PASS Winter Hearth quantity presets and boundary validation');
+
+import {winterHearthReceiptMatches} from '../src/core/winter-hearth-donations';
+const request={guildId:'qa-guild',itemId:WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID,quantity:50,weekStartUtc:'2026-12-07'};
+const donationReceipt={...request,track:'lights',alreadyProcessed:false,logs:12500,lights:1250,newMilestones:[50],newGuildGold:20000,newPermanentColor:false};
+ok(winterHearthReceiptMatches(donationReceipt,request),'Confirmed donation and exact milestone gold');
+ok(winterHearthReceiptMatches({...donationReceipt,alreadyProcessed:true},request),'Lost ACK replay retains original immutable receipt');
+for(const invalid of [{...donationReceipt,guildId:'another-guild'},{...donationReceipt,quantity:51},{...donationReceipt,weekStartUtc:'2026-12-14'},{...donationReceipt,lights:1249},{...donationReceipt,logs:12501.5},{...donationReceipt,newMilestones:[50,50],newGuildGold:40000},{...donationReceipt,newGuildGold:20001},{...donationReceipt,newPermanentColor:true},{...donationReceipt,alreadyProcessed:'false'}])ok(!winterHearthReceiptMatches(invalid,request),'Malformed or mismatched receipt retains saved request');
+ok(winterHearthReceiptMatches({...donationReceipt,logs:25000,lights:2500,newMilestones:[100],newGuildGold:50000,newPermanentColor:true},request),'Final threshold includes permanent name color');
+console.log('PASS donation receipt, replay and exact milestone entitlement validation');

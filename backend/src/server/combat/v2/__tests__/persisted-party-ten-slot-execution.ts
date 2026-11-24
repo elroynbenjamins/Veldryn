@@ -58,6 +58,12 @@ const baseline=simulateUnifiedEquipmentCombatV2(input,builds,runtime,true);
 const first=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 const repeat=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 assert.deepEqual(first,repeat);
+const shuffled=simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,[builds[2],builds[0],builds[3],builds[1]],
+ [runtime[3],runtime[1],runtime[0],runtime[2]],
+ {...party,traitPorts:[traitPorts[1],traitPorts[3],traitPorts[0],traitPorts[2]]},true);
+assert.deepEqual(shuffled,first,
+ 'persisted party execution must bind builds, gear and trait receipts by identity rather than array order');
 assert.deepEqual(first.equipmentEvidence,baseline.equipmentEvidence);
 assert.equal(first.equipmentEvidence.length,4);
 assert.ok(first.equipmentEvidence.every(e=>

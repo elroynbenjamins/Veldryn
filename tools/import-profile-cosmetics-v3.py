@@ -47,9 +47,8 @@ def main():
             target = root / name
             if not target.resolve().is_relative_to(root):
                 fail('Unsafe destination: ' + name)
-            if target.exists() and target.read_bytes() != data:
-                if name != REGISTRY or 'PROFILE_COSMETIC_ART:readonly CosmeticArt[]=[];' not in target.read_text(encoding='utf-8'):
-                    fail('Refusing to overwrite a different existing file: ' + name)
+            if name != REGISTRY and target.exists() and target.read_bytes() != data:
+                fail('Refusing to overwrite a different existing file: ' + name)
             payload[name] = data
         if counts != COUNTS or REGISTRY not in payload:
             fail('Unexpected V3 asset counts or missing registry.')
@@ -68,6 +67,11 @@ def main():
                 fail('Approved registry is missing expected visual-base id: ' + old)
             registry = registry.replace(old, new)
         payload[REGISTRY] = registry.encode('utf-8')
+        registry_target = root / REGISTRY
+        if registry_target.exists() and registry_target.read_bytes() != payload[REGISTRY]:
+            current = registry_target.read_text(encoding='utf-8')
+            if 'PROFILE_COSMETIC_ART:readonly CosmeticArt[]=[];' not in current:
+                fail('Refusing to overwrite a different existing artwork registry.')
         if not args.check:
             # Write artwork first, registry last. The empty registry remains safe if a write fails.
             for name in [n for n in payload if n != REGISTRY] + [REGISTRY]:

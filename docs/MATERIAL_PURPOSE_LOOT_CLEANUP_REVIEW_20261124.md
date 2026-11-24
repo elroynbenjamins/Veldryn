@@ -70,3 +70,16 @@ Inspected PR #1713 branch `review/eq2-authored-boss-threeway-mint-gates-20261124
 6. Review source-backed item-purpose UI separately and gate unreleased entries. Release approval required before any production mutation.
 
 No gameplay source, database, live loot table or player inventory was modified by this review.
+
+## Production dry run and staging projection — 2026-11-24
+
+Read-only Supabase aggregate checks on production (nyjwigipamnvpdvpauuv), candidate ECHO_BAT_WING:
+- 143 in inventory (1 stack/account), 707 in bank (4 stacks/accounts), 850 total in 5 distinct accounts and 5 distinct character states. No affected account has multiple saved character rows in this snapshot. No matching relational item_instances or account_bank_items rows found.
+- Provisional compensation: 850 × 80 = 68,000 gold (11,440 inventory; 56,560 bank). Mobile itemVendorSellGold returns the authored value unchanged for materials. Deployed authoritative sell/grant path remains unverified.
+- All 5 affected states have a character ID, character gold and bank gold fields, and matching characters and character_wallets records. All three character gold representations agree for all 5. This does not determine whether bank retirement should credit bank gold or character gold; verify actual authoritative bank sell semantics before choosing the destination.
+- No matching guild bank stock, guild construction requirement, guild skill cost, equipment resource binding, unclaimed reward inbox/coop/party entitlement, or literal reference in public/private database function bodies was found. This is a limited dependency check, not proof of absence in edge code, generated content or future aliases.
+- Protected RUNEBOUND_CORE snapshot: 29 inventory + 530 bank = 559 copies; no retirement or payout.
+
+Staging (iqfmmpvwanvvmxcftfxw): read-only synthetic CTE projection exercised empty stock (0 credit), bank-only stock (1 × 80), mixed locked/favorited stock (3 inventory + 7 bank = 800 credit), preservation of unrelated Copper Ore and zero eligible stacks after projected removal. Three fixture cases passed. This is not an implemented migration, durable receipt, real state write, concurrent retry or transaction rollback test.
+
+Still blocked: large authoritative gameplay source returned empty again, so exact server drop and sell semantics, all issuance paths, storage ownership and appropriate gold destination, final material dependency clearance and durable atomic receipt migration remain unresolved. No production mutations or staging writes were made. Do not release or execute based on the provisional total; repeat live counts under the authoritative transaction and complete the missing checks.

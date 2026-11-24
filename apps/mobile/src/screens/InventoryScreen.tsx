@@ -100,6 +100,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null),[previewInstanceId,setPreviewInstanceId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null),[selectedInstanceId,setSelectedInstanceId]=useState<string|null>(null),[inspectQuantity,setInspectQuantity]=useState(1);
+  const [toolCompareId,setToolCompareId]=useState<string|null>(null);
+  useEffect(()=>{setToolCompareId(null)},[inspectId,selectedInstanceId,location]);
   const [gridPage,setGridPage]=useState(0),[showGoldTransfer,setShowGoldTransfer]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
   const [protectionMode,setProtectionMode]=useState<'lock'|'favorite'|null>(null),[protectionFeedback,setProtectionFeedback]=useState<string|null>(null);
@@ -392,9 +394,6 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       {exactToolCopies.length>1?<Text style={s.quantityTitle}>{gt('GATHERING TOOLS')} · {exactToolCopies.length}</Text>:null}
       {exactToolCopies.map((copy,index)=>{
         const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
-        const activeTool=inspectedToolDef?equippedGatheringTools(state,inspectedToolDef.skillId).find(tool=>tool.tier===inspectedToolDef.tier):undefined;
-        const activeCopy=activeTool?equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier):undefined;
-        const activeContribution=activeTool?gatheringToolContribution(activeTool,activeCopy):undefined;
         return <View key={copy.id} style={s.toolCopyCard}>
           {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:null}
           <View style={s.toolStatRow}>
@@ -412,12 +411,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             </View>
             <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
-          {carried&&activeTool&&activeContribution&&contribution?<View style={s.toolStatDescription}>
-            <Text style={s.toolStatEyebrow}>{gt('CURRENTLY EQUIPPED')} · T{activeTool.tier}</Text>
-            <Text style={s.toolStatLabel}>{localizedItemName(language,activeTool.id)}{activeCopy?' · '+rarityMeta(activeCopy.rarity).label+' · Q'+activeCopy.quality:''}</Text>
-            <Text style={s.toolStatLabel}>{gt('Gathering Speed')}: +{gatheringToolPercent(activeContribution.adjustedBasePercent)}% → +{gatheringToolPercent(contribution.adjustedBasePercent)}%</Text>
-            <Text style={s.toolStatLabel}>{activeCopy?gatheringToolBonusLabel(activeCopy):gt('Legacy tool · No bonus stat roll')} → {gatheringToolBonusLabel(copy)}</Text>
-          </View>:null}
+
 
         </View>;
       })}
@@ -431,14 +425,26 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>:null}
   </View>:undefined;
   const inspectActions=inspected?<View style={s.inspectActions}>
-    {inspected.type==='tool'&&exactToolCopies.map((copy,index)=><View key={copy.id} style={s.toolCopyCard}>
+    {inspected.type==='tool'&&exactToolCopies.map((copy,index)=>{
+        const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
+        const activeTool=inspectedToolDef?equippedGatheringTools(state,inspectedToolDef.skillId).find(tool=>tool.tier===inspectedToolDef.tier):undefined;
+        const activeCopy=activeTool?equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier):undefined;
+        const activeContribution=activeTool?gatheringToolContribution(activeTool,activeCopy):undefined;
+        return <View key={copy.id} style={s.toolCopyCard}>
       {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:null}
+          {carried&&activeTool&&activeContribution&&contribution?<GameButton compact title={toolCompareId===copy.id?gt('Close'):gt('Compare')} tone="secondary" onPress={()=>setToolCompareId(value=>value===copy.id?null:copy.id)}/>:null}
+          {carried&&toolCompareId===copy.id&&activeTool&&activeContribution&&contribution?<View style={s.toolStatDescription}>
+            <Text style={s.toolStatEyebrow}>{gt('CURRENTLY EQUIPPED')} · T{activeTool.tier}</Text>
+            <Text style={s.toolStatLabel}>{localizedItemName(language,activeTool.id)}{activeCopy?' · '+rarityMeta(activeCopy.rarity).label+' · Q'+activeCopy.quality:''}</Text>
+            <Text style={s.toolStatLabel}>{gt('Gathering Speed')}: +{gatheringToolPercent(activeContribution.adjustedBasePercent)}% → +{gatheringToolPercent(contribution.adjustedBasePercent)}%</Text>
+            <Text style={s.toolStatLabel}>{activeCopy?gatheringToolBonusLabel(activeCopy):gt('Legacy tool · No bonus stat roll')} → {gatheringToolBonusLabel(copy)}</Text>
+          </View>:null}
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
             <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
             {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
             <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('Sell')} tone="danger" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null||lockedSet.has(copy.itemId)||favoriteSet.has(copy.itemId)||goalProtection.has(copy.itemId)} onPress={()=>{setToolSalePending({instanceId:copy.id,itemId:copy.itemId});closeInspect()}}/></View>
           </View>
-    </View>)}
+    </View>;})}
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
       <Text style={[s.sub,{color:C.good}]}>{mealBonusDef(inspected.id)!.label} · {mealBonusDef(inspected.id)!.durationHours}h · {gt('Only one meal buff can be active.')}</Text>

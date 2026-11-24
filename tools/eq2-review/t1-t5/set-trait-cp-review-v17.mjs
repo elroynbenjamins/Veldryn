@@ -1,6 +1,6 @@
 import {readFileSync} from 'node:fs';
 import {inspectPower} from './equipment-power-contract-review-v15.mjs';
-import {profiles} from './profile-premium-review-v16.mjs';
+import {profiles,basePreview} from './profile-premium-review-v16.mjs';
 import {capChannel} from './universal-affix-overlap-review-v4.mjs';
 const load=p=>JSON.parse(readFileSync(new URL('../../../docs/2-0/'+p,import.meta.url),'utf8'));
 export const authoring=load('eq2-set-trait-authoring-review-v17.json');
@@ -73,10 +73,18 @@ export function reachedMilestones(pieceIds){
 }
 // Candidate static index includes only exact or explicitly modeled proposed permanent channels.
 // Conditional effects require measured marginal encounter outcomes; never price duration alone as damage.
-export function permanentCandidate({classId,tier,grade='rare',quality=50,pieceIds=[],includeProposedSemantics=false}){
+export function permanentCandidate({classId,tier,grade='rare',quality=50,pieceIds=null,includeProposedSemantics=false}){
  const f=inspectPower({classId,tier,grade,quality});
  const raw=new Map(f.channels.map(x=>[x.channel,x.rawCentipercent]));
- const reached=reachedMilestones(pieceIds),unpriced=[];
+ const l=d.loadouts.find(x=>x.classId===classId&&x.tier===tier),byId=new Map(profiles().map(x=>[x.itemId,x]));
+ const chosen=pieceIds??l.itemIds,original=l.itemIds.map(id=>byId.get(id));
+ if(!Array.isArray(chosen)||chosen.length!==original.length||new Set(chosen).size!==chosen.length)fail('fixture_slots');
+ const selected=chosen.map(id=>byId.get(id));
+ if(selected.some(x=>!x||x.tier!==tier||(x.classId&&x.classId!==classId))||new Set(selected.map(x=>x.slot)).size!==selected.length)fail('fixture_items');
+ let base=f.base;
+ for(const x of selected){const prior=original.find(z=>z.slot===x.slot);if(!prior||x.slot==='weapon'&&x.hands!==prior.hands)fail('fixture_hands');base+=basePreview(x,grade,quality).base-basePreview(prior,grade,quality).base;}
+ const reached=reachedMilestones(chosen),unpriced=[];
+ for(const i of innateResolution().filter(x=>chosen.includes(x.itemId))){if(i.status!=='EXACT_SHARED_SOURCE_CHANNEL'&&!includeProposedSemantics){unpriced.push(i.itemId+':'+i.sourceStat);continue;}raw.set(i.candidateChannel,(raw.get(i.candidateChannel)??0)+i.candidateCentipercent);}
  for(const e of reached){
   if(e.kind==='permanent_stat'){
    if((e.channel==='attack_pct'||e.channel==='evasion_pp')&&!includeProposedSemantics){unpriced.push(e.setId+':'+e.pieces);continue;}
@@ -84,8 +92,8 @@ export function permanentCandidate({classId,tier,grade='rare',quality=50,pieceId
   }else unpriced.push(e.setId+':'+e.pieces);
  }
  const channels=[...raw].map(([channel,value])=>({channel,rawCentipercent:value,effectiveCentipercent:cap(channel,value)}));
- const partial=round(f.base*(1+channels.reduce((n,c)=>n+c.effectiveCentipercent/10000*weights[c.channel],0)));
- return {classId,tier,base:f.base,baseline:f.partialPower,partialPermanentIndex:partial,channels,reachedCount:reached.length,
+ const partial=round(base*(1+channels.reduce((n,c)=>n+c.effectiveCentipercent/10000*weights[c.channel],0)));
+ return {classId,tier,base:round(base),baseline:f.partialPower,partialPermanentIndex:partial,channels,reachedCount:reached.length,
   unpricedEffects:unpriced,unpricedDomains:['conditional_sets','signature_traits','gems','skills','companions','class_progression','temporary_effects','actual_item_custody'],completePlayerCp:null,...deny};
 }
 // Proposed experiment matrix, not engine results. Real matched source receipts required.

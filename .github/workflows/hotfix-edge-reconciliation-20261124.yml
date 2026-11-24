@@ -1,3 +1,4 @@
+# Reconciled with main at 7278ce638e787f80b4757132a9ed346b50a676c0; regenerate from this source, not the previous artifact.
 name: Hotfix Edge bundle reconciliation (isolated)
 on:
   push:

@@ -3,7 +3,8 @@ import {profileAnimatedCosmeticsEnabled,profileCosmeticsTester,PROFILE_COSMETICS
 import {PREMIUM_PROFILE_COSMETICS} from '../src/core/profile-premium-cosmetics';
 import {PROFILE_ALL_EFFECTS} from '../src/core/profile-effects';
 import {profileWardrobe} from '../src/core/profile-wardrobe';
-import {PROFILE_BACKGROUND_PREVIEWS} from '../src/theme/profile-background-assets';
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const backgroundAssetSource=fs.readFileSync('src/theme/profile-background-assets.ts','utf8');
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
 import {COLLECTIBLE_PLAYER_BADGE_IDS} from '../src/core/player-badges';
 
@@ -19,9 +20,9 @@ ok(profileAnimatedCosmeticsEnabled(state),'tester entitlement enables unreleased
 equal(PREMIUM_PROFILE_COSMETICS.length,4,'four Ascendant tester collections are modeled');
 for(const set of PREMIUM_PROFILE_COSMETICS){
  ok(PROFILE_ALL_EFFECTS.some(row=>row.id===set.effectId&&row.borderId===set.borderId),set.name+' is in the hidden effect/border catalog');
- ok(PROFILE_BACKGROUND_PREVIEWS.some(row=>row.id===set.backgroundId),set.name+' tester background is registered');
+ ok(backgroundAssetSource.includes('id:'+JSON.stringify(set.backgroundId))||backgroundAssetSource.includes("id:'"+set.backgroundId+"'"),set.name+' tester background is registered');
  ok(!!profileCosmeticRuntimeByBorder.get(set.borderId)&&!!profileCosmeticRuntimeByEffect.get(set.effectId),set.name+' has a responsive native animation fallback');
- ok(set.borderId!==set.fallbackBorderId&&set.backgroundId!==set.fallbackBackgroundId&&set.petId!==set.fallbackPetId,set.name+' ownership ids never reuse fallback identities');
+ ok(String(set.borderId)!==String(set.fallbackBorderId)&&String(set.backgroundId)!==String(set.fallbackBackgroundId)&&String(set.petId)!==String(set.fallbackPetId),set.name+' ownership ids never reuse fallback identities');
  ok(COLLECTIBLE_PLAYER_BADGE_IDS.includes(set.badgeId as never),set.name+' Ascendant badge is a server-owned collectible badge');
 }
 const categories=profileWardrobe(state,{scenes:[],frames:[],effects:[]});

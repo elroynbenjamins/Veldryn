@@ -10,7 +10,7 @@ import {resolveVerifiedEquipmentBaseV2} from '../equipment-base-stats';
 import {applyVerifiedSetBonusesV2} from '../equipment-set-effects';
 import {compileTrustedEquipmentAffixesV2} from '../equipment-affixes';
 import {validateBuildV2} from '../build-contract';
-import {evaluatePowerCompositionV2} from '../power-composition';
+import {evaluatePowerCompositionV2,reviewPowerAttributionV2} from '../power-composition';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {serverBuildCatalogV2} from '../skill-catalog';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
@@ -150,6 +150,23 @@ const good=evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,policy);
 assert.equal(good.classShare,.16);
 assert.equal(good.withinTarget,true);
 assert.equal(good.otherShare,.84);
+const attribution=reviewPowerAttributionV2(evidence.statStages,evidence.baseSources.length,policy);
+assert.equal(attribution.rows.length,5);
+assert.ok(Math.abs(attribution.rows.reduce((n,r)=>n+r.value,0)-attribution.partialWeightedTotal)<1e-6);
+assert.equal(attribution.partialWeightedTotal,attribution.composition.totalWeighted);
+assert.equal(attribution.composition.classLevelWeighted,evidence.statStages.afterSkills.attackPower);
+assert.equal(attribution.canCompareEqualCP,false);
+assert.ok(attribution.unpricedDomains.includes('companions'));
+assert.ok(attribution.unpricedDomains.includes('gems'));
+assert.throws(()=>reviewPowerAttributionV2({...evidence.statStages,afterSets:{...evidence.statStages.afterSets,defense:NaN}},2,policy),/invalid_attribution_stat/);
+const tradeoff=reviewPowerAttributionV2({
+ classOnly:{...syntheticClass,attackPower:20},afterSkills:syntheticClass,
+ afterItemBase:{...syntheticClass,attackPower:80},afterSets:{...syntheticClass,attackPower:90},
+ afterAffixes:syntheticFull,
+},10,policy);
+assert.equal(tradeoff.rows[1].value,-4,'Specialization tradeoffs remain visible');
+assert.equal(tradeoff.rows.reduce((n,r)=>n+r.value,0),100);
+
 assert.equal(evaluatePowerCompositionV2(syntheticClass,syntheticFull,9,policy).withinTarget,null,
  'Partly equipped characters must not be judged against full-gear targets');
 assert.equal(evaluatePowerCompositionV2(syntheticClass,

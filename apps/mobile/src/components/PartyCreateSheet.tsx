@@ -36,9 +36,9 @@ function PreferencePixelIcon({kind,colors}:{kind:PreferenceIconKind;colors:Theme
    <View key={x+'-'+y} style={{position:'absolute',left:x*2,top:y*2,width:2,height:2,backgroundColor:pixel==='a'?colors.text:pixel==='b'?colors.accent:colors.muted}}/>) )}
  </View>;
 }
-export function PartyCreateSheet({visible,busy,activityLevel,language,minimumLevel,editing=false,error,onActivityLevel,onLanguage,onMinimumLevel,onClose,onCreate}:{
- visible:boolean;busy:boolean;editing?:boolean;activityLevel:PartyActivityLevel;language:PartyLanguage;minimumLevel:number;error?:string;
- onActivityLevel:(value:PartyActivityLevel)=>void;onLanguage:(value:PartyLanguage)=>void;onMinimumLevel:(value:number)=>void;onClose:()=>void;onCreate:()=>void;
+export function PartyCreateSheet({visible,busy,activityLevel,language,minimumLevel,shortName,editing=false,error,onActivityLevel,onLanguage,onMinimumLevel,onShortName,onClose,onCreate}:{
+ visible:boolean;busy:boolean;editing?:boolean;activityLevel:PartyActivityLevel;language:PartyLanguage;minimumLevel:number;shortName:string;error?:string;
+ onActivityLevel:(value:PartyActivityLevel)=>void;onLanguage:(value:PartyLanguage)=>void;onMinimumLevel:(value:number)=>void;onShortName:(value:string)=>void;onClose:()=>void;onCreate:()=>void;
 }){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),st=useSocialText();
  const [languageExpanded,setLanguageExpanded]=useState(false);
@@ -47,6 +47,11 @@ export function PartyCreateSheet({visible,busy,activityLevel,language,minimumLev
   <GameModalHeader eyebrow={editing?st('PARTY SETTINGS'):st('NEW PARTY')} title={editing?st('Party preferences'):st('Create a Party')} onClose={onClose} closeDisabled={busy}/>
   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.content}>
    <Text style={s.subtitle}>{editing?st('Change how other players discover your Party. Existing members stay.'):st('Choose the kind of teammates you want to play with.')}</Text>
+   {!editing?<View style={s.section}>
+    <Text style={s.label}>{st('Party name')}</Text>
+    <GameTextInput accessibilityLabel={st('Party name')} autoCapitalize="characters" autoCorrect={false} maxLength={5} value={shortName} placeholder="FROST" onChangeText={value=>onShortName(value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5))} editable={!busy}/>
+    <Text style={s.hint}>{st('3–5 letters, unique across active Parties. The name can only be changed once every six months.')} · {shortName.length}/5</Text>
+   </View>:null}
    <View style={s.section}>
     <Text style={s.label}>{st('Activity level')}</Text>
     <View accessibilityRole="radiogroup" style={s.options}>
@@ -76,7 +81,7 @@ export function PartyCreateSheet({visible,busy,activityLevel,language,minimumLev
    </View>
    <View style={s.footer}><Text style={s.footerNote}>{st('Up to 4 players · All classes welcome')}</Text></View>
    {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
-   <GameButton title={editing?st('Save preferences'):st('Create Party')} loading={busy} disabled={busy} onPress={onCreate}/>
+   <GameButton title={editing?st('Save preferences'):st('Create Party')} loading={busy} disabled={busy||(!editing&&!/^[A-Z]{3,5}$/.test(shortName))} onPress={onCreate}/>
   </ScrollView>
  </GameModalSurface>;
 }

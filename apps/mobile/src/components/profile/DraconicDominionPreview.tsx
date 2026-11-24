@@ -47,8 +47,8 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
    {mode==='matching'?<>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:float}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
-     <Image source={assets.dragon} resizeMode="contain" style={box(B.dragon)}/>
-     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse}]}/>
+     <Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:[{scaleX:-1}]}]}/>
+     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse,transform:[{scaleX:-1}]}]}/>
     </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Image source={assets.fallbackGlow} resizeMode="contain" style={box(B.glow)}/><Image source={alternatePetSource} resizeMode="contain" style={box(B.alternate)}/></>:null}
   </View>
@@ -82,7 +82,7 @@ const s=StyleSheet.create({
  plate:{backgroundColor:'#200e17',borderColor:'#b16a34',borderWidth:1,borderRadius:6},
  portrait:{backgroundColor:'#200e17',borderColor:'#c78c46',borderWidth:1,borderRadius:5},
  protected:{overflow:'hidden'},
- badges:{justifyContent:'center',alignItems:'center'},
+ badges:{justifyContent:'center',alignItems:'flex-start'},
  guild:{backgroundColor:'#41151a',borderColor:'#b16a34',borderWidth:1,borderRadius:4,alignItems:'center',justifyContent:'center'},
  ember:{position:'absolute',width:12,height:12},
 });

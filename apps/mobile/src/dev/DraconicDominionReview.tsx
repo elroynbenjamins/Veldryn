@@ -20,7 +20,7 @@ function Review(){
   {cases.map(({label,pet})=><View key={label} style={s.section}>
    <Text style={s.label}>{label}</Text>
    <DraconicDominionPreview assets={bundle.scene} equippedPetId={pet} alternatePetSource={pet===alternate?petArtSource(alternate):undefined} active
-    portrait={<ProfileIcon classId="BASTION" size={32} style={{width:'100%',height:'100%'}}/>}
+    portrait={<ProfileIcon classId="BASTION" size={54} style={{width:'100%',height:'100%'}}/>}
     identity={<View><Text numberOfLines={1} style={s.name}>Aster Nightfall</Text><Text style={s.meta}>Dragon Sovereign</Text><Text numberOfLines={1} style={s.meta}>Lv. 50 · Knife Dancer</Text><Text style={s.meta}>142,580 CP</Text></View>}
     badges={<PlayerBadgeShowcase identity={{staff:null,supporter:false,featured:['founder','veteran','ascendant_celestial_sovereign'],validUntilMs:Date.now()+3600000}} size={12}/>}
     guild={<Text style={s.meta}>Sovereign</Text>} fallback={<Text style={s.label}>Standard layout fallback</Text>}/>

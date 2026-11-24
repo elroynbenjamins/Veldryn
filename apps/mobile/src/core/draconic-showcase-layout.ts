@@ -15,18 +15,18 @@ export const DRACONIC_COLLECTION={
  showcaseName:'Awakening of the Dragon',
  badgeName:'Dragon Sovereign',
 } as const;
-export const DRACONIC_STAGE={width:340,height:205,minWidth:300,maxWidth:480,maxFontScale:1.05} as const;
+export const DRACONIC_STAGE={width:340,height:205,minWidth:320,maxWidth:480,maxFontScale:1.05} as const;
 export const DRACONIC_BOXES={
- dragon:{x:24,y:50,w:125,h:106},
- ring:{x:28,y:141,w:116,h:21},
- alternate:{x:63,y:79,w:46,h:46},
- glow:{x:65,y:122,w:42,h:10},
- flames:{x:22,y:49,w:128,h:116},
- portrait:{x:182,y:61,w:32,h:32},
- badges:{x:220,y:65,w:83,h:27},
- identity:{x:182,y:96,w:122,h:48},
- plate:{x:175,y:59,w:133,h:86},
- guild:{x:188,y:146,w:113,h:19},
+ dragon:{x:222,y:66,w:88,h:91},
+ ring:{x:224,y:143,w:84,h:14},
+ alternate:{x:243,y:87,w:46,h:46},
+ glow:{x:246,y:130,w:40,h:9},
+ flames:{x:222,y:66,w:88,h:91},
+ portrait:{x:40,y:76,w:54,h:54},
+ badges:{x:100,y:119,w:110,h:21},
+ identity:{x:100,y:74,w:112,h:45},
+ plate:{x:35,y:69,w:183,h:72},
+ guild:{x:42,y:143,w:169,h:16},
 } as const;
 export function draconicPair(background:string|null|undefined,border:string|null|undefined){
  return background===DRACONIC_IDS.background&&border===DRACONIC_IDS.border;
@@ -35,5 +35,5 @@ export function draconicPetMode(pet:string|null|undefined,alternateArt:boolean){
  return pet===DRACONIC_IDS.pet?'matching':pet&&alternateArt?'alternate':'none';
 }
 export function draconicStageSupported(width:number,fontScale:number){
- return Number.isFinite(width)&&width>=300&&width<=480&&Number.isFinite(fontScale)&&fontScale>0&&fontScale<=DRACONIC_STAGE.maxFontScale;
+ return Number.isFinite(width)&&width>=DRACONIC_STAGE.minWidth&&width<=DRACONIC_STAGE.maxWidth&&Number.isFinite(fontScale)&&fontScale>0&&fontScale<=DRACONIC_STAGE.maxFontScale;
 }

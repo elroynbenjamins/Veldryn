@@ -22,7 +22,7 @@ const bonus=section.indexOf("gt('BONUS STAT ROLL')");
 const actionsStart=inventory.indexOf("const inspectActions=inspected?");
 const actions=inventory.slice(actionsStart,inventory.indexOf("inspected.type==='food'",actionsStart));
 assert.ok(speed>=0&&bonus>speed,'Tier speed must appear above the separate bonus roll');
-assert.ok(section.includes('equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier)')&&section.includes('tool.tier===inspectedToolDef.tier'),'Compare only the exact active copy in the same skill and tier');
+assert.ok(actions.includes('equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier)')&&actions.includes('tool.tier===inspectedToolDef.tier')&&actions.includes('toolCompareId===copy.id'),'Compare only the exact active copy in the same skill and tier');
 assert.ok(sheet.indexOf('{overview}')<sheet.indexOf('accessibilityState={{expanded:detailsOpen}}')&&sheet.indexOf('{actions?')>sheet.indexOf('detailsOpen&&<>'),'Tool stats then Details & sources then actions');
 assert.ok(inventory.includes('overview={toolOverview}'),'Tool overview must be passed separately from actions');
 assert.ok(actions.includes("gt('Equip')")&&actions.includes("gt('To Bank')")&&actions.includes("gt('Sell')"),'Tool actions must stay visible');

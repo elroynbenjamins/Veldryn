@@ -8,6 +8,7 @@
  * PRODUCTION OFF: no router imports this module.
  */
 import {simulateCombat} from '../engine';
+import {planPartySynchronizationV2,type SyncPlanV2,type SyncModeV2} from './party-synchronization';
 import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
 import {
  compileExactEquipmentTraitSourceV2,type TrustedEquipmentTraitReceiptPortV2,
@@ -77,6 +78,8 @@ export interface UnifiedEquipmentEncounterResultV2 {
  readonly combat:CombatResult;
  readonly enemyMechanicLabels:readonly string[];
  readonly equipmentEvidence:readonly EquipmentEncounterEvidenceV2[];
+ /** Explicit review opt-in: composition evidence only, never a combat buff. */
+ readonly synchronizationReview?:SyncPlanV2;
 }
 function compileEquippedActor(
  actor:CombatantDefinition,
@@ -153,8 +156,10 @@ export function simulateUnifiedEquipmentCombatV2(
  serverEnabled=false,
  authoredEnemyKit?:TrustedPersistedEnemyKitV2,
  traitPort?:TrustedEquipmentTraitReceiptPortV2,
+ synchronizationReviewMode?:SyncModeV2,
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled){
+  if(synchronizationReviewMode!==undefined)throw Error('combat_v2_sync_requires_complete_v2');
   if(traitPort)throw Error('combat_v2_trait_port_requires_complete_v2');
   if(authoredEnemyKit)throw Error('combat_v2_enemy_kit_requires_complete_v2');
   return {combat:simulateCombat(input),enemyMechanicLabels:[],equipmentEvidence:[]};
@@ -194,6 +199,14 @@ export function simulateUnifiedEquipmentCombatV2(
   evidence.push(compiled.evidence);
   return compiled.actor;
  });
+ // Use only the class identity and character ID that survived the complete
+ // private build/equipment compilation. This is a review snapshot, not proof
+ // of real party membership, and does not touch combat stats or CP.
+ const synchronizationReview=synchronizationReviewMode===undefined?undefined:
+  planPartySynchronizationV2(synchronizationReviewMode,input.players.map(actor=>({
+   classId:byId.get(actor.id)!.verified.classId,
+   characterId:gearById.get(actor.id)!.characterId,
+  })));
  if(authoredEnemyKit){
   const snapshot=authoredEnemyKit.snapshot;
   const proof=verifyPersistedEnemyKitsV2(input.enemies,snapshot);
@@ -217,6 +230,7 @@ export function simulateUnifiedEquipmentCombatV2(
       ...p.traitIds.map(id=>p.enemyId+': '+id),
     ]),
     equipmentEvidence:evidence,
+    ...(synchronizationReview?{synchronizationReview}:{}),
   };
  }
  const enemies=compileEnemiesForCombatV2(input.enemies,true);
@@ -224,5 +238,6 @@ export function simulateUnifiedEquipmentCombatV2(
   combat:simulateCombat({...input,players,enemies:[...enemies.enemies]}),
   enemyMechanicLabels:enemies.mechanicLabels,
   equipmentEvidence:evidence,
+  ...(synchronizationReview?{synchronizationReview}:{}),
  };
 }

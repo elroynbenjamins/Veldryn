@@ -48,9 +48,12 @@ begin
   update public.character_wallets set gold=w+iq*80,updated_at=now() where character_id=g.character_id;
   update public.characters set gold=c.gold+iq*80,updated_at=now() where id=g.character_id and account_id=a;
   insert into public.server_action_receipts(account_id,action,idempotency_key,response) values(a,'material_retirement_v1',receipt_id,jsonb_build_object('itemId','ECHO_BAT_WING','characterId',g.character_id,'inventoryQuantity',iq,'bankQuantity',bq,'unitSellGold',80,'carriedCredit',iq*80,'bankCredit',bq*80,'version',1));
-  -- Notification integration deliberately not invented: source_kind currently
-  -- permits party/guild/dungeon/gift only. Add a verified informational message
-  -- path and test visibility/claim behavior before a production migration.
+  -- Existing gift/history schema: already delivered informational system mail,
+  -- no attachments, no claim action, no second payout. Same atomic transaction.
+  insert into private.reward_inbox_v1(account_id,source_key,source_kind,source_id,title,body,attachments,claimed_at)
+  values(a,'material-retirement:'||receipt_id,'gift',gen_random_uuid(),'Material retirement compensation',
+   format('We removed %s Echo Bat Wings at their full sell value of 80 Gold each. %s Gold was added to your character and %s Gold to your shared Bank. Your compensation has already been credited; no claim is needed.',iq+bq,iq*80,bq*80),
+   '[]'::jsonb,now());
  end loop;
 end $$;
 rollback;

@@ -1,0 +1,58 @@
+name: 1.0.12 release branch generated bundle repair
+
+# One-shot branch-only integration task. Remove before merging to main.
+on:
+  push:
+    branches:
+      - release/1-0-11-consolidation-20261124
+    paths:
+      - .github/workflows/release-1012-generated-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-1012-generated-repair
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/release/1-0-11-consolidation-20261124'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Build canonical Edge entrypoints and verify exact parity
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated artifacts to integration branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=release/1-0-11-consolidation-20261124
+          test "$GITHUB_REF" = "refs/heads/$branch"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git fetch origin "refs/heads/$branch"
+          test "$(git rev-parse FETCH_HEAD)" = "$GITHUB_SHA"
+          git diff --exit-code -- . ':!backend/supabase/functions/gameplay/index.ts' ':!backend/supabase/functions/coop/index.ts'
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo "Generated artifacts already match."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "1.0.12: regenerate canonical gameplay and co-op Edge bundles"
+          git push origin "HEAD:refs/heads/$branch"

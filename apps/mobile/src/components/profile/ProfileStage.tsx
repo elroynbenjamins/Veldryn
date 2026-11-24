@@ -47,7 +47,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
@@ -59,7 +59,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
 
  return <View style={s.root}>
   <View style={[s.surface,!!frame&&s.surfaceFramed]}>
-   <ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={8}>
+   <ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
    {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}

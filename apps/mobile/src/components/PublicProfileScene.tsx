@@ -35,7 +35,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
- const animated=PROFILE_ANIMATED_COSMETICS_RELEASED||allowUnreleasedCosmetics;
+ const animated=PROFILE_ANIMATED_COSMETICS_RELEASED||allowUnreleasedCosmetics||profile.cosmeticsPreview===true;
  const equippedBorderArt=!review&&animated&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
  const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&animated&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
  const borderRuntime=review?.borderRuntime??(!review&&animated&&profile.borderId?profileCosmeticRuntimeByBorder.get(profile.borderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);

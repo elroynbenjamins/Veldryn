@@ -27,6 +27,7 @@ export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [
  {id:'starter:dune-warden',name:'Dune Warden',group:'Starter',source:'Available from the start.'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
  {id:'guild:stormwatch-crest',name:'Stormwatch Crest',group:'Guild',source:'Guild Token Shop · Guild Level 4'},
+ ...PROFILE_COSMETIC_PORTRAITS.map(row=>({id:row.id,name:row.name,group:'Cosmetics',source:'Cosmetics set · Tester access',artworkReady:row.artworkReady})),
  ...DUNGEON_SHOP_PROFILE_ICONS_V1.map(row=>({id:row.id,name:row.name,group:'Dungeon',source:'Dungeon Marks Shop · '+row.region})),
 ];
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}

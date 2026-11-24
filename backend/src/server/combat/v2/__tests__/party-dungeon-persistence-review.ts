@@ -5,7 +5,8 @@ import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-check
 import {CLASS_NAMES_V2,} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {RESOURCE_BY_CLASS_V2} from '../resource-runtime';
-import {reviewPartyV2RunBinding} from '../party-dungeon-persistence-review';
+import {reviewPartyV2RunBinding,partySyncScopeFromRunBindingV2} from '../party-dungeon-persistence-review';
+import {issuePartySyncAuthorityV2,authorizePartySyncV2} from '../party-sync-authority';
 
 const ids:ClassIdV2[]=['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'];
 const actors=ids.map((classId,i):CombatantDefinition=>({
@@ -64,9 +65,25 @@ assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,enemyDa
 const carried=Object.fromEntries(actors.map(a=>[a.id,{
  hp:a.stats.maxHp-100,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0,
 } satisfies PersistentActorState]));
-const persisted=reviewPartyV2RunBinding({...args,combatInput:{...input,initialPlayerState:carried}});
+const persistedInput={...input,initialPlayerState:carried};
+const persisted=reviewPartyV2RunBinding({...args,combatInput:persistedInput});
 assert.notEqual(persisted.binding.combatInputDigest,first.binding.combatInputDigest,
  'persisted HP/cooldown state must be part of the immutable encounter digest');
+const persistedScope=partySyncScopeFromRunBindingV2(persisted);
+assert.deepEqual(persistedScope.persistedRun,{
+ runId:'RUN_1',nodeId:'NODE_1',readyCheckId:'READY_1',rosterRevision:4,stateRevision:3,
+});
+const persistedToken=issuePartySyncAuthorityV2(persistedScope,persistedInput,
+ (scope,digest)=>scope.persistedRun?.runId===persisted.binding.runId&&
+  scope.persistedRun?.nodeId===persisted.binding.nodeId&&
+  scope.persistedRun?.stateRevision===persisted.binding.stateRevision&&
+  digest===persisted.binding.combatInputDigest);
+assert.equal(authorizePartySyncV2(persistedInput,persistedToken).size,4);
+assert.throws(()=>issuePartySyncAuthorityV2({...persistedScope,persistedRun:undefined},
+ persistedInput,()=>true),/input_mismatch/);
+assert.throws(()=>issuePartySyncAuthorityV2({...persistedScope,persistedRun:{
+  ...persistedScope.persistedRun!,stateRevision:0}},persistedInput,()=>true),
+ /invalid_persisted_scope/);
 assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,initialPlayerState:{
  ...carried,FOREIGN:{hp:1,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0},
 }}}),/persistent_state_roster_mismatch/);

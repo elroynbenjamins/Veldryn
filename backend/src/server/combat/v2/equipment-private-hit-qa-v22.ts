@@ -47,19 +47,31 @@ const shieldSpecs=Object.freeze({
  'eq2_t4_bastionmail:6':{pct:5,threshold:.35,window:6000,cd:35000,trigger:'cross_below',family:'hold_the_line'},
  'eq2_t5_rimewatch:4':{pct:4,threshold:.50,window:6000,cd:24000,trigger:'below_before',family:'rimeguard'},
 } as const);
+const supportSpecs=Object.freeze({
+ 'eq2_t1_brightweave:4':{channel:'shield',pct:2.4,window:6000,cd:20000,family:'brightweave'},
+ 'eq2_t2_brightweave:4':{channel:'shield',pct:2.7,window:6000,cd:20000,family:'brightweave'},
+ 'eq2_t3_brightweave:4':{channel:'shield',pct:3,window:6000,cd:20000,family:'brightweave'},
+ 'eq2_t4_brightweave:4':{channel:'shield',pct:3.3,window:6000,cd:20000,family:'brightweave'},
+ 'eq2_rare_t5_dawnspire:4':{channel:'shield',pct:5,window:6000,cd:20000,family:'sanctuary_thread'},
+ 'eq2_t5_dawnweave:4':{channel:'shield',pct:3,window:6000,cd:18000,family:'soft_refuge'},
+ 'eq2_dungeon_rootbound_t2_lifebloom:4':{channel:'defense',pct:3,window:6000,cd:20000,family:'lifebloom'},
+ 'eq2_combo_t5_dawnmender_chain:2':{channel:'defense',pct:3,window:6000,cd:18000,family:'comforting_thread'},
+} as const);
+type SupportId=keyof typeof supportSpecs;
 type ShieldId=keyof typeof shieldSpecs;
 type TimedId=keyof typeof timedSpecs;
 type DefensiveId=keyof typeof defensiveSpecs;
 type CurrentId=keyof typeof specs;
 type ChargeId=keyof typeof chargeSpecs;
-export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId|ShieldId;
+export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId|ShieldId|SupportId;
 const isCurrent=(id:unknown):id is CurrentId=>typeof id==='string'&&Object.hasOwn(specs,id);
 const isCharge=(id:unknown):id is ChargeId=>typeof id==='string'&&Object.hasOwn(chargeSpecs,id);
 const isDefensive=(id:unknown):id is DefensiveId=>typeof id==='string'&&Object.hasOwn(defensiveSpecs,id);
 const isTimed=(id:unknown):id is TimedId=>typeof id==='string'&&Object.hasOwn(timedSpecs,id);
 const isShield=(id:unknown):id is ShieldId=>typeof id==='string'&&Object.hasOwn(shieldSpecs,id);
-const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:isTimed(id)?timedSpecs[id].family:shieldSpecs[id as ShieldId].family;
-type Scope={digest:string;actorId:string;ids:readonly Eq2PrivateHitIdV22[]};
+const isSupport=(id:unknown):id is SupportId=>typeof id==='string'&&Object.hasOwn(supportSpecs,id);
+const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:isTimed(id)?timedSpecs[id].family:isShield(id)?shieldSpecs[id].family:supportSpecs[id as SupportId].family;
+type Scope={digest:string;actorId:string;ids:readonly Eq2PrivateHitIdV22[];supportOnly:boolean;playerMaxHp:ReadonlyMap<string,number>};
 const issued=new WeakMap<object,Scope>();
 const fail=(x:string):never=>{throw Error('eq2_private_hit_v22_'+x);};
 export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:readonly Eq2PrivateHitIdV22[],verifyFixture:(digest:string)=>boolean):Eq2PrivateHitAuthorityV22{
@@ -68,21 +80,28 @@ export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:rea
  const supplied:unknown=ids;
  if(!Array.isArray(supplied))return fail('fixture_scope');
  const rawIds:readonly unknown[]=supplied;
- const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id)||isShield(id);
+ const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id)||isShield(id)||isSupport(id);
  const exactIds=rawIds.filter(allowedId);
  if(exactIds.length!==rawIds.length||exactIds.length<1||exactIds.length>4||
     new Set(exactIds.map(family)).size!==exactIds.length||
     (exactIds.includes('eq2_t5_rimewatch:6')&&!exactIds.includes('eq2_t5_rimewatch:4')))return fail('fixture_scope');
  const actor=input.players.find(x=>x.id===actorId);
+ const supportOnly=exactIds.every(isSupport);
+ const playerMaxHp=new Map(input.players.map(p=>[p.id,p.stats.maxHp]));
  if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||
- !((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||
+ input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined)return fail('fixture_scope');
+ if(supportOnly){
+  if(actor.role!=='support'||!['DAWNKEEPER','STONECALLER'].includes(actor.classId??'')||
+   !actor.id.startsWith('QA_EQ2_'+actor.classId+'_')||input.players.length<1||input.players.length>4||
+   playerMaxHp.size!==input.players.length||input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2||
+   !p.id.startsWith('QA_EQ2_')||!Number.isFinite(p.stats.maxHp)||p.stats.maxHp<=0))return fail('fixture_scope');
+ }else if(input.players.length!==1||!((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||
  (actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&exactIds.every(id=>isDefensive(id)||isTimed(id)||isShield(id)))||
- (actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&exactIds.every(id=>id==='eq2_combo_t5_runeforge_link:2')))||
- input.players.length!==1||input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined)return fail('fixture_scope');
+ (actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&exactIds.every(id=>id==='eq2_combo_t5_runeforge_link:2'))))return fail('fixture_scope');
  const digest=enemyV2SnapshotDigest(input);
  if(typeof verifyFixture!=='function'||verifyFixture(digest)!==true)fail('fixture_unverified');
  const token=Object.freeze({[brand]:true}) as Eq2PrivateHitAuthorityV22;
- issued.set(token,{digest,actorId,ids:Object.freeze(exactIds)});
+ issued.set(token,{digest,actorId,ids:Object.freeze(exactIds),supportOnly,playerMaxHp});
  return token;
 }
 export interface Eq2PrivateHitEventV22{
@@ -91,6 +110,15 @@ export interface Eq2PrivateHitEventV22{
  targetHp:number;targetMaxHp:number;shield:number;raw:number;
 }
 export type Eq2PrivateIncomingEventV24=Omit<Eq2PrivateHitEventV22,'originalClassAbility'>&{originalEnemyAbility:boolean;mitigated?:boolean};
+export interface Eq2PrivateSupportHealEventV28{
+ now:number;actorId:string;targetId:string;abilityId:string;originalClassHeal:boolean;direct:boolean;
+ sourceAlive:boolean;targetAlive:boolean;targetHpBefore:number;targetMaxHp:number;actualHeal:number;
+}
+type SupportShieldState={id:SupportId;ownerId:string;earnedAt:number;expiresAt:number;remaining:number};
+type SupportDefenseState={id:SupportId;earnedAt:number;expiresAt:number;pct:number};
+export type Eq2PrivateSupportGrantV28=
+ {channel:'shield';id:SupportId;amount:number;expiresAt:number;replaced?:{id:SupportId;remaining:number}}|
+ {channel:'defense';id:SupportId;pct:number;expiresAt:number};
 export interface Eq2PrivateIncomingResultV24{raw:number;activated:readonly DefensiveId[];reductionPct:number}
 export interface Eq2PrivateHitResultV22{raw:number;activated:readonly Eq2PrivateHitIdV22[];bonusPct:number}
 export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2PrivateHitAuthorityV22){
@@ -99,10 +127,14 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
  if(!scope||scope.digest!==enemyV2SnapshotDigest(input))return fail('invalid_authority');
  const cooldown=new Map<string,number>();
  let shieldState:{id:ShieldId;ownerId:string;earnedAt:number;expiresAt:number;remaining:number}|undefined;
+ const supportShields=new Map<string,SupportShieldState>();
+ const supportDefense=new Map<string,SupportDefenseState>();
+ const supportHealReceipts=new WeakSet<Eq2PrivateSupportHealEventV28>();
  const shieldAbsorbed=new WeakSet<Eq2PrivateIncomingEventV24>();
  const shieldGranted=new WeakSet<Eq2PrivateIncomingEventV24>();
  const namedDirectBreaks=new WeakSet<Eq2PrivateIncomingEventV24>();
- const shieldAvailable=(ownerId:string,now:number)=>shieldState&&shieldState.ownerId===ownerId&&now>shieldState.earnedAt&&now<shieldState.expiresAt?shieldState.remaining:0;
+ const shieldFor=(ownerId:string)=>scope.supportOnly?supportShields.get(ownerId):shieldState?.ownerId===ownerId?shieldState:undefined;
+ const shieldAvailable=(ownerId:string,now:number)=>{const state=shieldFor(ownerId);return state&&now>state.earnedAt&&now<state.expiresAt?state.remaining:0;};
  const timedState=new Map<TimedId,{earnedAt:number;expiresAt:number}>();
  const healReceipts=new WeakSet<object>();
  const earnTimed=(id:TimedId,now:number)=>{
@@ -111,7 +143,12 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
   cooldown.set(s.family,now+s.cd);timedState.set(id,{earnedAt:now,expiresAt:now+s.window});return true;
  };
  const timedValue=(actorId:string,now:number,channel:'defense'|'haste')=>{
-  if(actorId!==scope.actorId||!Number.isSafeInteger(now)||now<0)return {pct:0,ids:[] as TimedId[]};
+  if(!Number.isSafeInteger(now)||now<0)return {pct:0,ids:[] as (TimedId|SupportId)[]};
+  if(scope.supportOnly){
+   const state=channel==='defense'?supportDefense.get(actorId):undefined;
+   return state&&now>state.earnedAt&&now<state.expiresAt?{pct:state.pct,ids:[state.id]}:{pct:0,ids:[] as SupportId[]};
+  }
+  if(actorId!==scope.actorId)return {pct:0,ids:[] as TimedId[]};
   const active=scope.ids.filter(isTimed).filter(id=>{
    const s=timedSpecs[id],state=timedState.get(id);
    return s.channel===channel&&state!==undefined&&now>state.earnedAt&&now<state.expiresAt;
@@ -121,7 +158,7 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
  const defensiveState=new Map<DefensiveId,{earnedAt:number;expiresAt:number}>();
  const incomingBefore=new WeakSet<Eq2PrivateIncomingEventV24>();
  const incomingAfter=new WeakSet<Eq2PrivateIncomingEventV24>();
- const eligibleIncoming=(e:Eq2PrivateIncomingEventV24)=>e.targetId===scope.actorId&&e.actorId!==e.targetId&&
+ const eligibleIncoming=(e:Eq2PrivateIncomingEventV24)=>(scope.supportOnly?scope.playerMaxHp.get(e.targetId)===e.targetMaxHp:e.targetId===scope.actorId)&&e.actorId!==e.targetId&&
   e.originalEnemyAbility&&e.nontrue&&e.sourceAlive&&e.targetAlive&&
   !/^(V2_|GEM_|COMPANION_)/.test(e.abilityId)&&Number.isSafeInteger(e.now)&&e.now>=0&&
   [e.targetHp,e.targetMaxHp,e.shield,e.raw].every(n=>Number.isFinite(n)&&n>=0)&&
@@ -142,23 +179,25 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
   shieldAvailable,
   expireShield(now:number){
    if(shieldState&&now>=shieldState.expiresAt){const expired={...shieldState};shieldState=undefined;return expired;}
+   for(const [ownerId,state] of supportShields)if(now>=state.expiresAt){supportShields.delete(ownerId);return {...state};}
    return undefined;
   },
   absorbShield(e:Eq2PrivateIncomingEventV24,unabsorbed:number){
    if(!incomingBefore.has(e)||shieldAbsorbed.has(e)||!eligibleIncoming(e)||!Number.isFinite(unabsorbed)||unabsorbed<0)return undefined;
    shieldAbsorbed.add(e);
-   if(unabsorbed===0||!shieldState||!shieldAvailable(e.targetId,e.now))return undefined;
-   const amount=Math.min(unabsorbed,shieldState.remaining),id=shieldState.id;
-   shieldState.remaining-=amount;
-   const broken=shieldState.remaining<=0;
+   const state=shieldFor(e.targetId);
+   if(unabsorbed===0||!state||!shieldAvailable(e.targetId,e.now))return undefined;
+   const amount=Math.min(unabsorbed,state.remaining),id=state.id;
+   state.remaining-=amount;
+   const broken=state.remaining<=0;
    if(broken){
     if(id==='eq2_t5_rimewatch:4'&&e.direct)namedDirectBreaks.add(e);
-    shieldState=undefined;
+    if(scope.supportOnly)supportShields.delete(e.targetId);else shieldState=undefined;
    }
    return {id,amount,broken};
   },
   afterShieldHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number){
-   if(!incomingAfter.has(e)||!shieldAbsorbed.has(e)||shieldGranted.has(e))return undefined;
+   if(scope.supportOnly||!incomingAfter.has(e)||!shieldAbsorbed.has(e)||shieldGranted.has(e))return undefined;
    shieldGranted.add(e);
    if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>=e.targetHp)return undefined;
    if(shieldState&&e.now>=shieldState.expiresAt)shieldState=undefined;
@@ -183,6 +222,39 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    return {id,amount,expiresAt:shieldState.expiresAt,replaced};
   },
   timedStat(actorId:string,now:number,channel:'defense'|'haste'){return timedValue(actorId,now,channel);},
+  afterSupportHeal(e:Eq2PrivateSupportHealEventV28):readonly Eq2PrivateSupportGrantV28[]{
+   if(!scope.supportOnly||supportHealReceipts.has(e)||e.actorId!==scope.actorId||
+     !e.direct||!e.originalClassHeal||!e.sourceAlive||!e.targetAlive||
+     /^(V2_|GEM_|COMPANION_)/.test(e.abilityId)||!e.abilityId||
+     !Number.isSafeInteger(e.now)||e.now<0||scope.playerMaxHp.get(e.targetId)!==e.targetMaxHp||
+     ![e.targetHpBefore,e.targetMaxHp,e.actualHeal].every(Number.isFinite)||
+     e.targetHpBefore<=0||e.targetHpBefore>=e.targetMaxHp||e.actualHeal<=0||
+     e.actualHeal>e.targetMaxHp-e.targetHpBefore+1e-9)return [];
+   supportHealReceipts.add(e);
+   const grants:Eq2PrivateSupportGrantV28[]=[];
+   const eligible=scope.ids.filter(isSupport).filter(id=>e.now>=(cooldown.get(supportSpecs[id].family)??0))
+    .sort((a,b)=>supportSpecs[b].pct-supportSpecs[a].pct||a.localeCompare(b));
+   for(const channel of ['shield','defense'] as const){
+    const id=eligible.find(id=>supportSpecs[id].channel===channel);if(!id)continue;
+    const s=supportSpecs[id],expiresAt=e.now+s.window;
+    if(channel==='shield'){
+     let old=supportShields.get(e.targetId);
+     if(old&&e.now>=old.expiresAt){supportShields.delete(e.targetId);old=undefined;}
+     const amount=e.targetMaxHp*s.pct/100;
+     if(old&&(old.id===id||amount<=old.remaining))continue;
+     const replaced=old?{id:old.id,remaining:old.remaining}:undefined;
+     supportShields.set(e.targetId,{id,ownerId:e.targetId,earnedAt:e.now,expiresAt,remaining:amount});
+     grants.push({channel,id,amount,expiresAt,...(replaced?{replaced}:{})});
+    }else{
+     const old=supportDefense.get(e.targetId);
+     if(old&&e.now<old.expiresAt&&s.pct<=old.pct)continue;
+     supportDefense.set(e.targetId,{id,earnedAt:e.now,expiresAt,pct:s.pct});
+     grants.push({channel,id,pct:s.pct,expiresAt});
+    }
+    cooldown.set(s.family,e.now+s.cd);
+   }
+   return grants;
+  },
   afterEffectiveHeal(e:{now:number;actorId:string;targetId:string;abilityId:string;originalClassHeal:boolean;actualHeal:number}):readonly TimedId[]{
    if(healReceipts.has(e)||e.actorId!==scope.actorId||!e.originalClassHeal||/^(V2_|GEM_|COMPANION_)/.test(e.abilityId)||
     !Number.isSafeInteger(e.now)||e.now<0||!Number.isFinite(e.actualHeal)||e.actualHeal<=0)return [];

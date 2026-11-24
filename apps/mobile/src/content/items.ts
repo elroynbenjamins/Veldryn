@@ -159,7 +159,6 @@ const BASE_ITEMS:ItemDef[]=[
 ];
 export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33,
  ...(WINTER_HEARTH_GUILD_RELEASED?[
-  {id:'FROSTFALL_WISP_GLOW_2026',name:'Wisp Glow',type:'material',value:0,rarity:'uncommon',passive:'Frostfall-only glowing material for guild Christmas Lights.'},
   {id:'FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Christmas Lights',type:'material',value:0,rarity:'rare',passive:'Seasonal lights donated to your guild Winter Hearth Christmas Market.'},
  ] as ItemDef[]:[])];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));

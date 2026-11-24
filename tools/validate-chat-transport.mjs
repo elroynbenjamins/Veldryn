@@ -91,6 +91,8 @@ const identityCache=load('apps/mobile/src/online/player-identity-cache.ts',{
 const socialListProjection=load('apps/mobile/src/core/social-list-projection.ts',{});
 const releaseFlags=load('apps/mobile/src/core/release-flags.ts',{});
 const guildCustomization=load('apps/mobile/src/core/guild-customization.ts',{'./release-flags':releaseFlags});
+const releaseFlags=load('apps/mobile/src/core/release-flags.ts',{});
+const guildCustomization=load('apps/mobile/src/core/guild-customization.ts',{'./release-flags':releaseFlags});
 const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave,'../core/guild-customization':guildCustomization});
 const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{},'../core/feature-unlocks':{PARTY_UNLOCK_LEVEL:10}});
 

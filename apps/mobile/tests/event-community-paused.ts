@@ -10,7 +10,9 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`);}
 function rejects(operation:()=>unknown,message:string){let rejected=false;try{operation()}catch(error){rejected=error instanceof Error&&error.message.includes('temporarily unavailable');}ok(rejected,message);}
 
-const event=FROSTFALL_EVENT,now=Date.UTC(2026,11,10);
+equal(FROSTFALL_EVENT.communityEnabled,false,'Frostfall global community track is replaced by guild Winter Hearth');
+ok(FROSTFALL_EVENT.communityMilestones.length>0,'Keep historical authored definitions without enabling rewards');
+const event={...FROSTFALL_EVENT,communityEnabled:true},now=Date.UTC(2026,11,10);
 ok(event.communityEnabled===false,'Winter Hearth replaces the global Frostfall community track');
 ok(event.communityMilestones.length>0,'Keep authored historic community reward definitions');
 // A separate synthetic event proves the global pause still blocks even authored-enabled tracks.

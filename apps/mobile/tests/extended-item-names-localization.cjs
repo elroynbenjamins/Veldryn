@@ -24,7 +24,13 @@ assert.equal(Object.keys(baseNames).length,110,'complete authored base item disp
 assert.ok(Object.keys(allItemNames).length>=110,'combined registry retains all base items');
 const content=fs.readFileSync(path.join(__dirname,'../src/content/items.ts'),'utf8');
 const base=[...content.matchAll(/\{id:'([^']+)',name:'([^']+)',type:'([^']+)'/g)];
-const names=new Map(base.map(x=>[x[1],x[2]]));
+const seasonalId='FROSTFALL_CHRISTMAS_LIGHTS_2026';
+const allSourceNames=new Map(base.map(x=>[x[1],x[2]]));
+assert.equal(allSourceNames.get(seasonalId),'Christmas Lights');
+assert.deepEqual(Object.keys(allItemNames[seasonalId]).sort(),langs.slice().sort());
+for(const lang of langs)assert.ok(allItemNames[seasonalId][lang].trim());
+assert.equal(ITEMS.some(row=>row.id===seasonalId),WINTER_HEARTH_GUILD_RELEASED,'Seasonal item stays release gated');
+const names=new Map([...allSourceNames].filter(([id])=>id!==seasonalId));
 const seasonalId='FROSTFALL_CHRISTMAS_LIGHTS_2026';
 assert.equal(names.size,111,'base and authored seasonal catalog layout changed: update localization coverage');
 assert.deepEqual(Object.keys(seasonalItemNames),[seasonalId]);

@@ -133,6 +133,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
       - name: Capture deterministic 18-spec balance baseline
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
+      - name: Validate allocation-free state queries and per-decision memoization
+        run: node backend/dist/server/combat/v2/__tests__/combat-state-query.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
       - name: Review 18-specialization equal-CP generic, targeted and alternative ability counters

@@ -171,6 +171,45 @@ function compileEquippedActor(
     }:{}),},
  };
 }
+/** One assembly path for fresh and persisted encounters. Array order of
+ * independent server snapshots is never an identity or custody proof. */
+function compileEquippedEncounterActors(
+ input:CombatInput,builds:readonly VerifiedSkillBuildV2[],
+ runtime:readonly TrustedEquipmentRuntimeV2[],
+){
+ if(builds.length!==input.players.length||runtime.length!==input.players.length)
+  throw Error('combat_v2_complete_build_and_gear_snapshots_required');
+ const byId=new Map<string,VerifiedSkillBuildV2>();
+ const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
+ const characters=new Set<string>(),actors=new Set<string>(),copies=new Set<string>();
+ for(const build of builds){
+  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
+  byId.set(build.actor.id,build);
+ }
+ for(const gear of runtime){
+  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
+  if(!gear.characterId||characters.has(gear.characterId))
+   throw Error('combat_v2_duplicate_or_missing_equipment_character');
+  characters.add(gear.characterId);
+  gearById.set(gear.actorId,gear);
+ }
+ const evidence:EquipmentEncounterEvidenceV2[]=[];
+ const players=input.players.map(actor=>{
+  if(actors.has(actor.id))throw Error('combat_v2_duplicate_encounter_actor');
+  actors.add(actor.id);
+  const build=byId.get(actor.id),gear=gearById.get(actor.id);
+  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
+  const compiled=compileEquippedActor(actor,build,gear);
+  for(const copy of Object.values(build.selected.equipment)){
+   if(typeof copy!=='string')continue;
+   if(copies.has(copy))throw Error('combat_v2_duplicate_encounter_equipment_copy');
+   copies.add(copy);
+  }
+  evidence.push(compiled.evidence);
+  return compiled.actor;
+ });
+ return {byId,gearById,evidence,players};
+}
 export function simulateUnifiedEquipmentCombatV2(
  input:CombatInput,
  builds:readonly VerifiedSkillBuildV2[],
@@ -204,26 +243,7 @@ export function simulateUnifiedEquipmentCombatV2(
  // verified, versioned state-conversion adapter.
  if(input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0)
    throw Error('combat_v2_persistent_state_adapter_required');
- if(builds.length!==input.players.length||runtime.length!==input.players.length)
-   throw Error('combat_v2_complete_build_and_gear_snapshots_required');
- const byId=new Map<string,VerifiedSkillBuildV2>();
- const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
- for(const build of builds){
-  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
-  byId.set(build.actor.id,build);
- }
- for(const gear of runtime){
-  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
-  gearById.set(gear.actorId,gear);
- }
- const evidence:EquipmentEncounterEvidenceV2[]=[];
- const players=input.players.map(actor=>{
-  const build=byId.get(actor.id),gear=gearById.get(actor.id);
-  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
-  const compiled=compileEquippedActor(actor,build,gear);
-  evidence.push(compiled.evidence);
-  return compiled.actor;
- });
+ const {byId,gearById,evidence,players}=compileEquippedEncounterActors(input,builds,runtime);
  // Use only the class identity and character ID that survived the complete
  // private build/equipment compilation. This is a review snapshot, not proof
  // of real party membership, and does not touch combat stats or CP.
@@ -294,8 +314,8 @@ export interface TrustedPersistedPartyExecutionV2{
 /**
  * Hidden persisted four-player execution rehearsal.
  * Uses the current co-op ready-check/loadout provenance plus exact-copy EQ2
- * receipts. Enemy/Boss 2.0 persisted party-kit authority is NOT implemented:
- * enemies still pass through the generic private Enemy bridge.
+ * receipts. When provided, a verified party-mode authored enemy kit is bound
+ * to the same finalized digest; otherwise the generic private bridge is used.
  */
 export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  input:CombatInput,
@@ -310,26 +330,20 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
    builds.length!==4||runtime.length!==4||party.traitPorts.length!==4||
    input.enemyDamageProfile!==undefined)
   throw Error('combat_v2_invalid_persisted_party_scope');
- const byId=new Map<string,VerifiedSkillBuildV2>();
- const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
- for(const build of builds){
-  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
-  byId.set(build.actor.id,build);
+ const {byId,gearById,evidence,players}=compileEquippedEncounterActors(input,builds,runtime);
+ const portsByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>();
+ for(const port of party.traitPorts){
+  if(!port?.characterId||portsByCharacter.has(port.characterId))
+   throw Error('combat_v2_duplicate_or_missing_party_trait_character');
+  portsByCharacter.set(port.characterId,port);
  }
- for(const gear of runtime){
-  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
-  gearById.set(gear.actorId,gear);
- }
- const evidence:EquipmentEncounterEvidenceV2[]=[];
- const players=input.players.map(actor=>{
-  const build=byId.get(actor.id),gear=gearById.get(actor.id);
-  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
-  const compiled=compileEquippedActor(actor,build,gear);
-  evidence.push(compiled.evidence);
-  return compiled.actor;
+ // Compile in finalized combat actor order, not build/ledger arrival order.
+ const sources=players.map(actor=>{
+  const gear=gearById.get(actor.id)!;
+  const port=portsByCharacter.get(gear.characterId);
+  if(!port)throw Error('combat_v2_missing_party_trait_character');
+  return compileExactEquipmentTraitSourceV2(byId.get(actor.id)!,gear,port);
  });
- const sources=builds.map((build,i)=>
-  compileExactEquipmentTraitSourceV2(build,runtime[i],party.traitPorts[i]));
  let finalEnemies:readonly CombatantDefinition[];
  let enemyMechanicLabels:readonly string[];
  let partyEnemySnapshot:PersistedEnemyKitV2|undefined;

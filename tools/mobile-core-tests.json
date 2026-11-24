@@ -323,6 +323,7 @@
   ".core-build/apps/mobile/tests/profile-social-identity.js",
   ".core-build/apps/mobile/tests/profile-customization-polish.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-runtime.js",
+  ".core-build/apps/mobile/tests/profile-cosmetic-responsive.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-store.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-commerce-grants.js",
   ".core-build/apps/mobile/tests/profile-cosmetic-grant-store.js",

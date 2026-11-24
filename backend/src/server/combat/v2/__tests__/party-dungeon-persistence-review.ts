@@ -1,3 +1,5 @@
+import type {CoopRuntimeState} from '../../../coop/repositories/supabase-runtime';
+import {preparePartyRecoverySnapshotV2,reviewStoredPartyRecoveryV2,loadPartyRecoverySnapshotV2} from '../party-encounter-recovery';
 import {strict as assert} from 'node:assert';
 import type {CombatInput,CombatantDefinition,PersistentActorState} from '../../types';
 import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
@@ -168,3 +170,47 @@ assert.throws(()=>reviewPartyV2RunBinding({...args,frozenRoster:badDpsFrozen,
  combatInput:{...input,players:badDpsActors}}),/invalid_dungeon_roles/);
 
 console.log('PASS: committed ready roster + frozen loadout + persistent party run binding review');
+
+async function reviewRecovery(){
+ const snapshot=preparePartyRecoverySnapshotV2(args);
+ const identity={runId:args.runId,accountId:roster[0].accountId,characterId:roster[0].characterId};
+ const runtime:CoopRuntimeState={runId:args.runId,mode:'live',phase:'resolving_node',
+  currentNodeId:args.nodeId,stateVersion:args.stateRevision,clearedPreBossCount:0,
+  privateState:{combatV2EncounterReview:snapshot},clientProjection:{},eventCursor:1};
+ assert.deepEqual(reviewStoredPartyRecoveryV2(runtime,identity),snapshot);
+ assert.notEqual(reviewStoredPartyRecoveryV2(runtime,identity),snapshot);
+ const detached=structuredClone(args);
+ const prepared=preparePartyRecoverySnapshotV2(detached);
+ detached.combatInput.players[0].stats.maxHp++;
+ assert.equal(prepared.reviewInput.combatInput.players[0].stats.maxHp,actors[0].stats.maxHp);
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,mode:'qmode'},identity),/invalid_runtime_scope/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,phase:'completed'},identity),/invalid_runtime_scope/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,stateVersion:runtime.stateVersion+1},identity),/stale_snapshot/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,currentNodeId:'OTHER'},identity),/stale_snapshot/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,privateState:{}},identity),/snapshot_missing/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2(runtime,{...identity,accountId:'OUTSIDER'}),/not_frozen_participant/);
+ assert.throws(()=>reviewStoredPartyRecoveryV2(runtime,{...identity,characterId:'OTHER_CHAR'}),/not_frozen_participant/);
+ const modified={...snapshot,reviewInput:{...snapshot.reviewInput,combatInput:{
+  ...snapshot.reviewInput.combatInput,seed:'MODIFIED',
+ }}};
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,privateState:{combatV2EncounterReview:modified}},identity),/snapshot_digest_mismatch/);
+ const forgedBinding={...snapshot.binding,members:snapshot.binding.members.map((m,i)=>i?m:{...m,loadoutRevision:m.loadoutRevision+1})};
+ const {snapshotDigest:_,...originalPayload}=snapshot;
+ const forgedPayload={...originalPayload,binding:forgedBinding};
+ const forged={...forgedPayload,snapshotDigest:enemyV2SnapshotDigest(forgedPayload)};
+ assert.throws(()=>reviewStoredPartyRecoveryV2({...runtime,privateState:{combatV2EncounterReview:forged}},identity),/binding_mismatch/);
+ let calls=0;
+ const repository={load:async(runId:string,accountId:string)=>{
+  calls++;assert.equal(runId,identity.runId);assert.equal(accountId,identity.accountId);
+  return runtime;
+ }};
+ await assert.rejects(()=>loadPartyRecoverySnapshotV2(repository,identity),/disabled/);
+ assert.equal(calls,0);
+ assert.deepEqual(await loadPartyRecoverySnapshotV2(repository,identity,true),snapshot);
+ assert.equal(calls,1);
+ await assert.rejects(()=>loadPartyRecoverySnapshotV2({
+  load:async()=>{throw Error('NOT_PARTICIPANT');},
+ },identity,true),/NOT_PARTICIPANT/);
+ console.log('PASS: private party recovery snapshot review and participant-authorized read contract');
+}
+void reviewRecovery();

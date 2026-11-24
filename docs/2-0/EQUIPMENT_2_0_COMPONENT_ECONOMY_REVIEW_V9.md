@@ -1,0 +1,10 @@
+# Equipment 2.0 — V9 lower Gold, greater component demand
+
+Hidden review only. Owner asked whether equipment can cost less Gold and instead require more components. This is a proposed implementation, not final recipe approval or release authorization.
+
+- Gold: 30% reduction from current source draft fee, rounded to nearest 100, minimum 100 and never above original. This deliberately does NOT implement V8's higher combined-weapon Gold targets.
+- Refined materials: +20%, rounded up per line. Advanced processed components: +25%, rounded up. Existing binder/resin line +1 from T2 onward; T1 unchanged. Classifications use explicit source keys, not a blanket resource multiplier. Preserve every other source input, including rare signatures and combat drops, exactly.
+- Same recipe IDs are references only; no production registrations. All 746 current T1–T4 review routes plus 182 T5 craft routes covered; retired T4 identities, 79 boss-only drops and 6 unresolved blueprint candidates excluded. T5 XP remains unset. Ordinary gathering/processing/training costs and XP untouched. No secondary profession leveling gate; components can be traded or commissioned after approved launch.
+- Increased components make resource acquisition and player trade more important; they do not guarantee cheaper total economic cost. Benchmark processing supply and opportunity cost before approval. The 29-material exact identity/source gate remains closed; no invented extra component IDs. T5 source keys are draft names, not registered stacks.
+- V8 hand-budget economy remains open: combined weapons need fair total acquisition budgets, preferably through additional component demand rather than higher Gold fees. Do not claim two-lane mint or material parity solved by this global discount. Future independent lane component recipe costs require source-authoring, custody, quality/rarity and assembly approvals.
+- V8 isolated catalogue and expansion checks passed at f2dfad1; broader mobile and regression failed. V9 tests pending.

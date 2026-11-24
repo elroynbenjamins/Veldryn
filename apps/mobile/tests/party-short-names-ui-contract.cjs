@@ -36,4 +36,7 @@ assert.match(hub,/Next name change:/,'Party Hub explains the cooldown');
 assert.match(hub,/That Party name is already taken/,'Party Hub explains duplicate-name errors');
 assert.match(screen,/onRenameParty=/,'rename is wired in the live Party views');
 assert.match(screen,/shortName=\{shortName\}/,'both Party creation surfaces pass the name');
+const scripts=JSON.parse(read('package.json')).scripts;
+assert.match(scripts['test:v16'],/party-preferences-icons-ui\\.cjs/,'preserve existing Party setting icon coverage');
+assert.match(scripts['test:v16'],/party-short-names-ui-contract\\.cjs/,'include naming regressions alongside icon checks');
 console.log('Party short-name contract checks passed.');

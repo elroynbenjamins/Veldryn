@@ -1,8 +1,9 @@
 import {strict as assert} from 'node:assert';
+import type {ClassIdV2} from '../build-contract';
 import {projectPartySynchronizationCatalogueV2,projectPartySynchronizationLobbyV2,
  previewPartySynchronizationCandidateV2} from '../party-synchronization-projection';
 
-const p=(characterId:string,classId:any)=>({characterId,classId});
+const p=(characterId:string,classId:ClassIdV2)=>({characterId,classId});
 const radiant=projectPartySynchronizationLobbyV2('dungeon',[
  p('b','BASTION'),p('d','DAWNKEEPER'),
 ]);

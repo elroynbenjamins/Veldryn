@@ -47,3 +47,36 @@ const shield=(r:typeof base)=>r.events.find(e=>e.type==='shield'&&e.abilityId===
 assert.equal(shield(simulateCombat(shieldInput)),1000);
 assert.equal(shield(simulateCombat(shieldInput,undefined,undefined,shieldToken)),1040);
 console.log('Party Synchronization private authority, replay, damage reduction and shield hooks');
+
+/** Exercise direct issuer (not only the higher-level binding review). */
+const dungeonClasses:ClassIdV2[]=['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'];
+const dungeonInput:CombatInput={...input,seed:'SYNC_NODE_1',players:dungeonClasses.map(player)};
+const dungeonScope:PartySyncScopeV2={...scope,mode:'dungeon',encounterId:'RUN_QA',
+ seed:dungeonInput.seed,members:dungeonClasses.map((classId,i)=>({
+  actorId:classId,characterId:'QA_CHAR_'+i,classId,
+ })),persistedRun:{runId:'RUN_QA',nodeId:'NODE_1',readyCheckId:'READY_QA',
+  rosterRevision:1,stateRevision:1}};
+const dungeonToken=issuePartySyncAuthorityV2(dungeonScope,dungeonInput,()=>true);
+assert.deepEqual(authorizePartySyncV2(structuredClone(dungeonInput),dungeonToken),
+ authorizePartySyncV2(dungeonInput,dungeonToken));
+const carried=Object.fromEntries(dungeonInput.players.map(actor=>[actor.id,{
+ hp:actor.stats.maxHp/2,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:500,
+}]));
+const nextInput:CombatInput={...dungeonInput,seed:'SYNC_NODE_2',initialPlayerState:carried};
+const nextScope:PartySyncScopeV2={...dungeonScope,revision:2,seed:nextInput.seed,
+ persistedRun:{...dungeonScope.persistedRun!,nodeId:'NODE_2',stateRevision:2}};
+assert.equal(authorizePartySyncV2(nextInput,issuePartySyncAuthorityV2(nextScope,nextInput,()=>true)).size,4);
+assert.throws(()=>authorizePartySyncV2(nextInput,dungeonToken),/input_mismatch/);
+const original=carried.IRONWARDEN;
+for(const bad of [
+ {...original,hp:stats.maxHp+1},
+ {...original,downed:true},
+ {...original,hp:0},
+ {...original,cooldownRemainingMs:{FOREIGN_SKILL:100}},
+ {...original,basicAttackRemainingMs:-1},
+]){
+ assert.throws(()=>issuePartySyncAuthorityV2(nextScope,{
+  ...nextInput,initialPlayerState:{...carried,IRONWARDEN:bad},
+ },()=>true),/invalid_persistent_state/);
+}
+console.log('PASS: direct Synchronization authority rejects malformed carried state');

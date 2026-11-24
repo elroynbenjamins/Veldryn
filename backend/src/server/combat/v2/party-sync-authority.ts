@@ -40,6 +40,7 @@ export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInp
   !modes.includes(scope.mode)||typeof scope.seed!=='string'||!scope.seed.length||scope.seed.length>256||
   !Array.isArray(scope.members)||scope.members.length<2||scope.members.length>4||
   typeof verify!=='function')reject('invalid_scope');
+ const members:PartySyncScopeV2['members']=scope.members;
  const persisted=scope.persistedRun;
  if(persisted!==undefined&&(
    scope.mode!=='dungeon'||!validId(persisted.runId)||!validId(persisted.nodeId)||
@@ -53,7 +54,7 @@ export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInp
   new Set([...input.players,...input.enemies].map(p=>p.id)).size!==input.players.length+input.enemies.length)
   reject('input_mismatch');
  const actors=new Set<string>(),characters=new Set<string>();
- for(const [i,m] of scope.members.entries()){
+ for(const [i,m] of members.entries()){
   const a=input.players[i];
   if(!m||!validId(m.actorId)||!validId(m.characterId)||actors.has(m.actorId)||characters.has(m.characterId)||
    !Object.prototype.hasOwnProperty.call(CLASS_ROLES_V2,m.classId)||
@@ -68,9 +69,14 @@ export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInp
    reject('persistent_state_roster_mismatch');
   for(const id of carriedIds){
    const state=input.initialPlayerState![id];
-   if(!state||!Number.isFinite(state.hp)||state.hp<0||typeof state.downed!=='boolean'||
+   const actor=input.players.find(a=>a.id===id)!;
+   if(!state||!Number.isFinite(state.hp)||state.hp<0||state.hp>actor.stats.maxHp||
+     typeof state.downed!=='boolean'||state.downed!==(state.hp===0)||
      !Number.isFinite(state.basicAttackRemainingMs)||state.basicAttackRemainingMs<0||
-     !state.cooldownRemainingMs||Object.values(state.cooldownRemainingMs).some(v=>!Number.isFinite(v)||v<0))
+     !state.cooldownRemainingMs||typeof state.cooldownRemainingMs!=='object'||
+     Array.isArray(state.cooldownRemainingMs)||
+     Object.entries(state.cooldownRemainingMs).some(([key,v])=>
+      !actor.abilities.some(ability=>ability.id===key)||!Number.isFinite(v)||v<0))
     reject('invalid_persistent_state');
   }
  }
@@ -78,14 +84,14 @@ export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInp
   const roles=input.players.map(a=>a.role);
   if(roles.length!==4||roles.filter(r=>r==='tank').length!==1||roles.filter(r=>r==='damage').length!==2||
    roles.filter(r=>r==='support').length!==1||
-   new Set(scope.members.filter(m=>CLASS_ROLES_V2[m.classId]==='damage').map(m=>m.classId)).size!==2)
+   new Set(members.filter(m=>CLASS_ROLES_V2[m.classId]==='damage').map(m=>m.classId)).size!==2)
    reject('dungeon_roles');
  }
- const plan=planPartySynchronizationV2(scope.mode,scope.members);
+ const plan=planPartySynchronizationV2(scope.mode,members);
  const digest=enemyV2SnapshotDigest(input);
  const frozen=Object.freeze({...scope,
   ...(persisted?{persistedRun:Object.freeze({...persisted})}:{}),
-  members:Object.freeze(scope.members.map(m=>Object.freeze({...m})))});
+  members:Object.freeze(members.map(m=>Object.freeze({...m})))});
 
  let accepted=false;
  try{accepted=verify(frozen,digest)===true;}catch{accepted=false;}

@@ -13,12 +13,14 @@ for(const path of paths){
  const file=ts.createSourceFile(path,read(path),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.deepEqual(file.parseDiagnostics.map(x=>ts.flattenDiagnosticMessageText(x.messageText,' ')),[],path+' should parse');
 }
+const cosmeticCatalog=read('src/components/StoreCosmeticsCatalog.tsx'),flags=read('src/core/release-flags.ts');
 const store=read(paths[0]),collections=read(paths[1]),billing=read(paths[2]),catalog=read(paths[3]),cards=read(paths[4]);
-assert.ok(store.includes('const STORE_COLLECTIONS_VISIBLE=false;'),'Unreleased store collections are disabled');
-assert.ok(store.includes('STORE_COLLECTIONS_VISIBLE?<BoardTabs')&&store.includes("STORE_COLLECTIONS_VISIBLE&&section==='Collections'"),'Collections tab and preview are both hidden behind the release flag');
-assert.ok(store.includes("type StoreSection='Memberships'|'Collections'"),'The concept can be restored without recreating its UI');
+assert.ok(store.includes('const STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED;')&&flags.includes('PROFILE_COSMETICS_STORE_RELEASED=false'),'Unreleased store collections are disabled');
+assert.ok(store.includes('STORE_COSMETICS_VISIBLE?<BoardTabs')&&store.includes("STORE_COSMETICS_VISIBLE&&section==='Cosmetics'"),'Collections tab and preview are both hidden behind the release flag');
+assert.ok(store.includes("type StoreSection='Memberships'|'Cosmetics'"),'The concept can be restored without recreating its UI');
 assert.ok(store.includes("s.hidden")&&store.includes("<GooglePlayCommercePanel state={state}"),'Switching tabs retains mounted billing listeners');
 assert.ok(store.includes('onRedeemCode(normalized)')&&store.includes('redeemFlight.current'),'Promo redemptions retain server authority and prevent double submit');
+assert.ok(cosmeticCatalog.includes('CHECKOUT OFF')&&!cosmeticCatalog.includes('onBuy(')&&cosmeticCatalog.includes('no purchase, grant, restore or entitlement write'),'Active preview remains grant and checkout free');
 assert.ok(collections.includes('CONCEPT ONLY')&&collections.includes('Nothing on this page can be purchased')&&!collections.includes('onBuy('),'Unreleased cosmetics never masquerade as active commerce');
 assert.ok(collections.includes("id:'Bloomwake'")&&collections.includes("id:'Suncrest'")&&collections.includes("id:'Harvestwake'")&&collections.includes("id:'Frostfall'"),'Four seasonal concepts are available to preview');
 assert.ok(catalog.includes('premiumProductRows(owned,checking)')&&catalog.includes('visible={selected!==null}'),'Product details use actual account entitlements');

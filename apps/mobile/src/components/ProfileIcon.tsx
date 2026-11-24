@@ -8,7 +8,7 @@ export function profileIconSource(id:string|undefined,classId:ClassId){
 }
 export function ProfileIcon({id,classId,size=80,style}:{id?:string;classId:ClassId;size?:number;style?:StyleProp<ViewStyle>}){
  const cell=profileCosmeticPortraitAtlasCell(id);
- if(cell)return <View accessibilityLabel="Profile icon" style={[{width:size,height:size,backgroundColor:'transparent',overflow:'hidden'},style]}>
+ if(cell)return <View accessibilityLabel="Profile icon" style={[{width:size,height:size,backgroundColor:'transparent'},style,{overflow:'hidden'}]}>
   <Image source={profileCosmeticPortraitAtlas} resizeMode="stretch" style={{position:'absolute',width:size*4,height:size*2,left:-cell.column*size,top:-cell.row*size}}/>
  </View>;
  return <View accessibilityLabel="Profile icon" style={[{width:size,height:size,backgroundColor:'transparent'},style]}><Image source={profileIconSource(id,classId)} resizeMode="contain" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/></View>;

@@ -16,6 +16,8 @@ const App=Platform.OS==='web'&&process.env.EXPO_PUBLIC_BROWSER_REVIEW==='1'
     ?require('./src/dev/GloamwardProfileReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics'
     ?require('./src/dev/ProfileCosmeticsReview').default
+    :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics-store'
+    ?require('./src/dev/ProfileCosmeticsStoreReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='companions'
     ?require('./src/dev/CompanionScreenReview').default
     :process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN==='crafting'

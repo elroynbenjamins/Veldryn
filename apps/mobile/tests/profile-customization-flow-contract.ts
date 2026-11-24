@@ -18,6 +18,9 @@ const socialClientGate=fs.readFileSync('src/online/social-identity-client-gate.t
 const preview=fs.readFileSync('src/components/ProfileAudiencePreviewModal.tsx','utf8');
 const cosmeticRuntime=fs.readFileSync('src/theme/profile-cosmetic-runtime-v1.ts','utf8');
 const cosmeticMotion=fs.readFileSync('src/components/ProfileCosmeticMotion.tsx','utf8');
+const appIndex=fs.readFileSync('index.js','utf8');
+const cosmeticsStore=fs.readFileSync('src/screens/StoreScreen.tsx','utf8');
+const cosmeticsCatalog=fs.readFileSync('src/content/profile-cosmetic-store.ts','utf8');
 
 ok(app.includes('profileCustomizeDirty'),'App must track profile customization dirty state');
 ok(app.includes('<ProfileDiscardChangesModal')&&discard.includes('Discard profile changes?')&&discard.includes('Keep editing')&&discard.includes('Discard changes'),'Leaving customization must require an explicit discard choice');
@@ -49,6 +52,9 @@ ok(look.includes("chip==='effect'?live.effect")&&look.includes('cosmeticArtByEff
 ok(stage.includes('character.profileEffectId')&&(stage.includes('<ProfileSceneEffect')||stage.includes('<ProceduralProfileSceneEffect')),'The pinned stage must preview the selected showcase effect independently from the border');
 ok(cosmeticRuntime.includes("particle:'snowflake'")&&cosmeticRuntime.includes("particle:'leaf'")&&cosmeticRuntime.includes("particle:'ember'")&&cosmeticRuntime.includes("particle:'arcane'"),'Native cosmetics fallback must keep distinct themed particle silhouettes');
 ok(cosmeticMotion.includes('ProceduralProfileSceneEffect')&&cosmeticMotion.includes('ProceduralProfileBorderGlows'),'Native review must not depend on binary V3 imports');
+ok(appIndex.includes("EXPO_PUBLIC_VISUAL_QA_SCREEN==='profile-cosmetics-store'")&&appIndex.includes("require('./src/dev/ProfileCosmeticsStoreReview').default"),'Hidden Cosmetics catalog must have a developer-only native review route');
+ok(cosmeticsStore.includes("type StoreSection='Memberships'|'Cosmetics'")&&cosmeticsStore.includes('STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED'),'The Store models Cosmetics as its second category but keeps it release-gated');
+ok(cosmeticsCatalog.includes('checkoutEnabled:false')&&cosmeticsCatalog.includes("kind:'bundle'"),'Cosmetics catalog must define bundles without an active checkout path');
 const pager=fs.readFileSync('src/components/OptionPager.tsx','utf8');
 ok(chips.includes('<OptionPager')&&chips.includes("{key:'badge'"),'Every cosmetic category, Badges included, must stay reachable from the pinned header');
 ok(pager.includes('onPanResponderRelease')&&pager.includes('accessibilityRole="adjustable"')&&pager.includes('s.dotTarget'),'A category must be reachable by arrow, by drag and by its own dot, and the control must announce itself as adjustable');

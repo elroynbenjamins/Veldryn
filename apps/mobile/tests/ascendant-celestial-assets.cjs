@@ -1,0 +1,36 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+
+const root=path.join(__dirname,'../assets/ascendant/celestial');
+const files=[
+ 'celestial_background_wide.webp',
+ 'celestial_border.webp',
+ 'celestial_pet_showcase.webp',
+ 'celestial_orrery.webp',
+ 'celestial_star.webp',
+ 'celestial_corona.webp',
+ 'celestial_fallback_glow.webp',
+ 'aetherion_runtime.webp',
+ 'sovereign_badge_32.webp',
+ 'sovereign_badge_64.webp',
+];
+let total=0;
+for(const name of files){
+ const file=path.join(root,name);
+ assert(fs.existsSync(file),`Missing Celestial asset: ${name}`);
+ const bytes=fs.readFileSync(file);
+ assert(bytes.length>64,`Empty or truncated Celestial asset: ${name}`);
+ assert.equal(bytes.subarray(0,4).toString('ascii'),'RIFF',`Not a RIFF WebP: ${name}`);
+ assert.equal(bytes.subarray(8,12).toString('ascii'),'WEBP',`Not a WebP: ${name}`);
+ assert(bytes.length<128*1024,`Runtime asset exceeds 128 KiB budget: ${name}`);
+ total+=bytes.length;
+}
+assert(total<256*1024,`Celestial runtime pack exceeds 256 KiB budget: ${total} bytes`);
+const registry=fs.readFileSync(path.join(__dirname,'../src/theme/celestial-integration-assets.ts'),'utf8');
+for(const name of files.filter(name=>!name.endsWith('_32.webp'))){
+ assert(registry.includes(name),`Runtime asset is not statically referenced: ${name}`);
+}
+const flags=fs.readFileSync(path.join(__dirname,'../src/core/release-flags.ts'),'utf8');
+assert.match(flags,/ASCENDANT_CELESTIAL_VISUALS_RELEASED=false/,'Celestial release flag must remain closed in this integration PR');
+console.log(`Celestial assets: ${files.length} WebPs, ${total} bytes, release gate closed.`);

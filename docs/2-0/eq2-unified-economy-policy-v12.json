@@ -532,7 +532,7 @@
       "kind": "combat",
       "level": 3,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "WOLF_PELT",
@@ -540,7 +540,7 @@
       "kind": "combat",
       "level": 6,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "IRONWOOD_FANG",
@@ -548,7 +548,7 @@
       "kind": "combat",
       "level": 6,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "WISP_DUST",
@@ -556,7 +556,7 @@
       "kind": "combat",
       "level": 2,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "ASTERFALL_BOTANICAL_ESSENCE",
@@ -573,7 +573,7 @@
       "kind": "combat",
       "level": 26,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "ASTRAL_SCRIPT",
@@ -581,7 +581,7 @@
       "kind": "combat",
       "level": 31,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "GLASSBOUND_CORE",
@@ -589,7 +589,7 @@
       "kind": "combat",
       "level": 38,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "RIMEGLASS",
@@ -597,7 +597,7 @@
       "kind": "combat",
       "level": 46,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     },
     {
       "id": "RIME_RESIN",
@@ -605,13 +605,26 @@
       "kind": "combat",
       "level": 46,
       "sourceGrantVerified": false,
-      "levelEvidence": "reviewed legacy authored/rebased candidate; Enemy V2 recheck"
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "MOSS_FIBER",
+      "source": "MOSS_RAT",
+      "kind": "combat",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "THORN_SAP",
+      "source": "VENOM_WEAVER",
+      "kind": "combat",
+      "level": 8,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
     }
   ],
-  "unresolvedRaw": [
-    "MOSS_FIBER",
-    "THORN_SAP"
-  ],
+  "unresolvedRaw": [],
   "specialCases": [
     {
       "id": "EQ2_BOAR_TUSK",
@@ -633,7 +646,7 @@
   "accessPolicy": {
     "combatLevelRequiredToCraft": 0,
     "secondaryProfessionRequired": false,
-    "sourceSkillLevelIsNotEquipmentTier": false,
+    "sourceSkillLevelIsNotEquipmentTier": true,
     "skillOnlyTravelNeedsImplementation": true,
     "marketSupplyUnverified": true,
     "earlyDropRule": "New source grants remain disabled until exact registered recipe consumer, source skill/combat reachability, relevant progression and trade access are proved; existing drops untouched."

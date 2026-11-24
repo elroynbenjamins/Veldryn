@@ -7,6 +7,7 @@ on:
       - 'tools/eq2-review/t1-t5/*v21*'
       - 'tools/eq2-review/t1-t5/*v22*'
       - 'tools/eq2-review/t1-t5/*v23*'
+      - 'tools/eq2-review/t1-t5/*v24*'
       - 'backend/src/server/combat/v2/equipment-private-hit-qa-v22.ts'
       - 'docs/2-0/eq2-normalized-effects-review-v18.json'
       - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
@@ -100,6 +101,7 @@ jobs:
           EQ2_V21_PARTY_PATH: /tmp/eq2-v21-party.json
           EQ2_V22_CONDITIONAL_PATH: /tmp/eq2-v22-current-hit.json
           EQ2_V23_CHARGE_PATH: /tmp/eq2-v23-charge.json
+          EQ2_V24_DEFENSE_PATH: /tmp/eq2-v24-defense.json
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Classify V18 baseline and shadow opportunities without applying equipment effects
         run: node tools/eq2-review/t1-t5/effect-trace-review-v18.mjs /tmp/eq2-v18-trace.json
@@ -111,6 +113,8 @@ jobs:
         run: node tools/eq2-review/t1-t5/current-hit-review-v22.mjs /tmp/eq2-v22-current-hit.json
       - name: Validate 96 private one-use charge counterfactual pairs
         run: node tools/eq2-review/t1-t5/one-use-charge-review-v23.mjs /tmp/eq2-v23-charge.json
+      - name: Validate 96 private incoming damage counterfactual pairs
+        run: node tools/eq2-review/t1-t5/incoming-defense-review-v24.mjs /tmp/eq2-v24-defense.json
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-launch-registry.js
       - name: Enforce exact source-gapped 204 member plan and no legacy set hijacking

@@ -1,5 +1,5 @@
 import {StyleSheet,Text,View} from 'react-native';
-import type {CoopSynchronizationView} from '../../core/coop-synchronization';
+import {formatCoopSynchronizationValue,type CoopSynchronizationView} from '../../core/coop-synchronization';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel,StateChip} from './CoopVisualKit';
@@ -37,7 +37,7 @@ export function CoopSynchronizationPanel({view,labels}:{
   {view.cappedStats.length?<View style={s.capBox}>
    <StateChip label={labels.combinedCap} tone="warning"/>
    {view.cappedStats.map(row=><Text key={row.statKey} style={s.capText}>
-    {labels.capLine(row.label,row.rawValue,row.effectiveValue)}
+    {labels.capLine(row.label,formatCoopSynchronizationValue(row.rawBps,row.valueKind),formatCoopSynchronizationValue(row.effectiveBps,row.valueKind))}
    </Text>)}
   </View>:null}
     <View style={s.links}>
@@ -47,7 +47,7 @@ export function CoopSynchronizationPanel({view,labels}:{
      <Text style={s.classes}>{link.classNames.join(' + ')}</Text>
     </View>
     <View style={s.bonuses}>{link.bonuses.map((bonus,index)=>
-     <Text key={bonus.statKey+index} style={s.bonus}>• {bonus.value} {bonus.label}</Text>)}
+     <Text key={bonus.statKey+index} style={s.bonus}>• {formatCoopSynchronizationValue(bonus.bps,bonus.valueKind)} {bonus.label}</Text>)}
     </View>
    </View>)}
   </View>

@@ -93,7 +93,7 @@ export function reviewPowerAttributionV2(
    if(!finite(value)||value<0)throw Error('combat_v2_invalid_attribution_stat:'+key);
    total+=value*policy.weights[key];
   }
-  if(!finite(total)||total<=0)throw Error('combat_v2_invalid_attribution_score');
+  if(!finite(total)||total<0)throw Error('combat_v2_invalid_attribution_score');
   return total;
  };
  const classOnly=score(stages.classOnly),afterSkills=score(stages.afterSkills),

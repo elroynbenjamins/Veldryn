@@ -3,16 +3,6 @@ import type {Language} from './languages';
 /** Additional base catalog item names, part A. All eight UI languages;
  * English source checks happen inside localizedItemName, not in game state. */
 export const expandedItemNamesA={
-  "CROWNWOOD_FISHERMANS_PIE": {
-    "en": "Crownwood Fisherman's Pie",
-    "de": "Kronholz-Fischerpastete",
-    "es": "Pastel de pescador de Bosquecorona",
-    "nl": "Kroonhoutse visserspastei",
-    "it": "Torta del pescatore di Legnocorona",
-    "fr": "Tourte du pêcheur de Bois-Couronne",
-    "ru": "Рыбацкий пирог Кронвуда",
-    "tr": "Taçorman Balıkçı Böreği"
-  },
   "SUNSCAR_SPICED_PLATTER": {
     "en": "Sunscar Spiced Platter",
     "de": "Gewürzte Sunscar-Platte",

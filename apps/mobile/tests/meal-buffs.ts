@@ -1,7 +1,7 @@
 import {createCharacter,newGame,claimActivity,offlineCapSeconds} from '../src/core/game';
 import {transitionActivity} from '../src/core/playability';
 import {executeGameCommand} from '../src/core/game-commands';
-import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
+import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime,MAX_MEAL_BUFF_SECONDS,projectedMealDuration} from '../src/core/meal-buffs';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {processingRecipeDef,processingRunCapacity,startProcessingBatch} from '../src/core/processing';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -22,16 +22,14 @@ const fresh=()=>{
 };
 const expected=[
  ['IRONWOOD_STEW',4,3,'gathering_speed'],
- ['CROWNWOOD_FISHERMANS_PIE',4,3,'crafting_speed'],
  ['SUNSCAR_SPICED_PLATTER',6,3,'combat_xp'],
  ['GLASSFIN_FEAST',6,4,'gathering_speed'],
  ['FROSTED_ICEFIN',6,4,'crafting_speed'],
  ['CHARRED_EMBERFIN',8,4,'combat_xp'],
  ['ASHLANDS_EMBER_STEW',10,4,'noncombat_speed'],
 ] as const;
-ok(MEAL_BONUSES.length===7,'exactly seven special meal buffs');
+ok(MEAL_BONUSES.length===6,'exactly six special meal buffs');
 for(const [recipeId,itemId,level,gold] of [
- ['COOK_CROWNWOOD_FISHERMANS_PIE','CROWNWOOD_FISHERMANS_PIE',23,240],
  ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,384],
 ] as const){
  const recipe=recipeDef(recipeId);
@@ -66,6 +64,32 @@ for(const [id,percent,hours,kind] of expected){
  const restored=normalizeSave(structuredClone(after));
  ok(restored.character?.activeMealBuff?.remainingSeconds===hours*3600,'active meal persists through save normalization');
 }
+// All bonus meals can accumulate duration, but not strength, to 24 hours.
+for(const def of MEAL_BONUSES){
+ let stacked=fresh();
+ const stock=stacked.inventory.stacks.find(row=>row.itemId===def.itemId)!;
+ stock.quantity=12;
+ const portions=24/def.durationHours;
+ for(let i=1;i<=portions;i++){
+  stacked=executeGameCommand(stacked,{type:'meal_bonus',args:{id:def.itemId}},now).state;
+  ok(stacked.character?.activeMealBuff?.remainingSeconds===i*def.durationHours*3600,'same meal extends time by one portion');
+ }
+ ok(stacked.inventory.stacks.find(row=>row.itemId===def.itemId)?.quantity===12-portions,'one portion per activation');
+ const before=JSON.stringify(stacked);
+ throws(()=>eatMealForBonus(stacked,def.itemId),'full cap rejects extra food');
+ ok(JSON.stringify(stacked)===before,'rejected activation does not consume food');
+ ok(normalizeSave(structuredClone(stacked)).character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,'24h duration survives save normalization');
+ const one=eatMealForBonus(fresh(),def.itemId);
+ ok(JSON.stringify(characterPermanentMultipliers(one))===JSON.stringify(characterPermanentMultipliers(stacked)),'duration stacking cannot stack bonus strength');
+ const partial={...stacked,character:{...stacked.character!,activeMealBuff:{itemId:def.itemId,remainingSeconds:MAX_MEAL_BUFF_SECONDS-60}}};
+ ok(projectedMealDuration(partial.character,def.itemId)===MAX_MEAL_BUFF_SECONDS,'partial top-up clamps to cap');
+ ok(eatMealForBonus(partial,def.itemId).character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS,'partial top-up never exceeds cap');
+ throws(()=>normalizeMealBuff({itemId:def.itemId,remainingSeconds:MAX_MEAL_BUFF_SECONDS+1}),'save cannot exceed cap');
+ const offline=commitMealActivityTime(stacked,{kind:'combat',targetId:'test',startedAtMs:now,lastClaimAtMs:now},{xp:0,gold:0,items:[],kills:0,elapsedSeconds:3600});
+ ok(offline.character?.activeMealBuff?.remainingSeconds===MAX_MEAL_BUFF_SECONDS-3600,'active time drains stacked duration');
+}
+const resourceCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,3],COOK_SUNSCAR_SPICED_PLATTER:[12,4,3],COOK_GLASSFIN_FEAST:[9,3,3],COOK_ICEFISH:[9,3,3],COOK_EMBERFIN:[9,3,3],COOK_ASHLANDS_EMBER_STEW:[6,3,3]};
+for(const [id,quantities] of Object.entries(resourceCosts))ok(JSON.stringify(recipeDef(id)?.inputs.map(row=>row.quantity))===JSON.stringify(quantities),id+' increased bonus meal material costs');
 let state=fresh();
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'GLASSFIN_FEAST'}},now).state;
 state=executeGameCommand(state,{type:'meal_bonus',args:{id:'FROSTED_ICEFIN'}},now).state;

@@ -10,7 +10,7 @@ import {processingRunCapacity} from '../core/processing';
 import {offlineCapSeconds} from '../core/game';
 import {professionActionPace} from '../core/profession-action-pace';
 import {potionDef,POTION_TIER_UNLOCK_LEVELS} from '../content/alchemy';
-import {mealBonusDef} from '../core/meal-buffs';
+import {mealBonusDef,MAX_MEAL_BUFF_HOURS} from '../core/meal-buffs';
 import {cookingRecipeXpPreview} from '../core/cooking-xp-preview';
 import {craftingDetailText,cookingMealEffectText,type craftingDetailRows} from '../i18n/crafting-details';
 import {formatGameNumber} from '../core/number-format';
@@ -231,7 +231,7 @@ export function ConsumableWorkshop({state,skillId,preferredRecipeId,onStart}:Pro
         <View style={s.line}><ItemArtwork itemId={detail.output.itemId} size={52}/><Text style={[s.caption,{color:C.good,flex:1}]}>{benefit(detail)}</Text></View>
         {detail.skillId==='cooking'?<Text style={[s.xp,{color:C.good}]}>{cookingXpLabel(detail)}</Text>:null}
         {detailXp?.usingReservedRate?<Text style={[s.caption,{color:C.muted}]}>{ct('Current cooking run uses the XP rate reserved when it started.')}</Text>:null}
-        {detailMeal?<><Text style={[s.buff,{color:C.info}]}>{cookingMealEffectText(language,detailMeal)} · {detailMeal.durationHours}h</Text><Text style={[s.caption,{color:C.muted}]}>{ct('Activate meal buffs from Inventory. Auto-eat only restores HP.')}</Text></>:null}
+        {detailMeal?<><Text style={[s.buff,{color:C.info}]}>{cookingMealEffectText(language,detailMeal)} · {detailMeal.durationHours}h</Text><Text style={[s.caption,{color:C.muted}]}>{ct('Activate meal buffs from Inventory. Auto-eat only restores HP.')} {ct('Same meal extends duration up to {hours}h.',{hours:MAX_MEAL_BUFF_HOURS})}</Text></>:null}
         <Text style={[s.caption,{color:C.muted}]}>{gt('Per batch')}: {detail.output.quantity} {gt('items')} · {detail.gold} {gt('Gold')} · {timeLabel(professionActionPace(state,detail,'batch').cycleSeconds)}</Text>
         {count(detail)>0?<CraftQuantitySelector key={detail.id} value={chosen(detail)} max={count(detail)} onChange={value=>setSelectedBatches(prev=>({...prev,[detail.id]:value}))} disabled={busy||activeId===detail.id} unit={gt('batches')} limitLabel={gt('Maximum production')+': '+count(detail)}/>:null}
          {count(detail)>0?<Text style={[s.caption,{color:C.text}]}>{gt('Selected')}: {chosen(detail)*detail.output.quantity} {gt('items')} · {chosen(detail)*detail.gold} {gt('Gold')} · {timeLabel(chosen(detail)*professionActionPace(state,detail,'batch').cycleSeconds)}</Text>:<Text style={[s.caption,{color:C.warning}]}>{activity?gt('Stop the current activity to release reserved materials before starting another recipe.'):missingReason(detail)}</Text>}

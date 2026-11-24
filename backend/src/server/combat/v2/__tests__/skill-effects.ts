@@ -456,3 +456,56 @@ for(const classId of ['STONECALLER','DAWNKEEPER'] as const){
    e.actorId===legacy.id&&e.abilityId===damageId&&e.atMs===0),'legacy priority unchanged');
 }
 console.log('PASS: V2 emergency triage, stable ties, boundaries, cooldowns and legacy priority');
+
+// Predictive support: actual compiled shield techniques with a visible
+// synthetic boss cast. No pre-cast clairvoyance or cooldown bypass.
+const predictiveBase=launchPlayer('Stonecaller',50);
+const predictiveNames=['Resonant Armor','Seismic Shelter','Earthen Grasp'];
+const predictiveBuild:VerifiedSkillBuildV2={actor:predictiveBase,
+ verified:{classId:'STONECALLER',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='STONECALLER')!.id,equipment:{},
+   activeSkills:predictiveNames.map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='STONECALLER'&&s.name===name)!;
+     return {skillId:s.id,variantId:s.variants[name==='Seismic Shelter'?1:0].id};}),
+   talentRanks:{},signaturePassiveIds:[],capstoneId:null},ownedItemsById:{},setsById:{}};
+const predictiveCompiled=compileServerSkillBuildV2(true,predictiveBuild);
+const predictiveActor={...predictiveCompiled,id:'PR_SUPPORT',stats:{...predictiveCompiled.stats,maxHp:1000,healingPower:100},
+ abilities:predictiveCompiled.abilities.map(a=>({...a,priority:a.name==='Earthen Grasp'?200:a.name==='Resonant Armor'?100:90})),
+ basicAttackCoeff:0};
+const singleShield=predictiveActor.abilities.find(a=>a.name==='Resonant Armor')!.id;
+const groupShield=predictiveActor.abilities.find(a=>a.name==='Seismic Shelter')!.id;
+const offense=predictiveActor.abilities.find(a=>a.name==='Earthen Grasp')!.id;
+const forecastTank=triageAlly('PR_TANK'),forecastOther=triageAlly('PR_OTHER');
+const forecastBoss=(target:'current_target'|'all_enemies'|'random_enemy',flat:number,castTimeMs=1000):CombatantDefinition=>({
+ ...enemy,boss:true,stats:{...enemy.stats,attackPower:0,accuracy:100000,critChance:0},
+ abilities:[{id:'PR_TELEGRAPH',name:'Telegraphed strike',target,castTimeMs,cooldownMs:999999,
+   priority:100,effects:[{kind:'damage',flat,damageType:'true'}]}]});
+const forecastInput={seed:'predictive-support',players:[predictiveActor,forecastTank,forecastOther],
+ enemies:[forecastBoss('current_target',500)],maxDurationMs:1100,tickMs:100,
+ initialPlayerState:{[predictiveActor.id]:triageCarry(1000,false,{[offense]:0}),
+   [forecastTank.id]:triageCarry(1000),[forecastOther.id]:triageCarry(1000)}};
+const singleForecast=simulateCombat(forecastInput);
+const firstShield=(r:typeof singleForecast)=>r.events.find(e=>e.type==='shield'&&e.actorId===predictiveActor.id);
+assert.equal(firstShield(singleForecast)?.abilityId,singleShield);
+assert.equal(firstShield(singleForecast)?.targetId,forecastTank.id);
+assert.equal(firstShield(singleForecast)?.atMs,100,'respond only after visible cast begins');
+const aoeForecast=simulateCombat({...forecastInput,enemies:[forecastBoss('all_enemies',500)]});
+assert.equal(firstShield(aoeForecast)?.abilityId,groupShield,'group shield covers multiple threatened allies');
+assert.equal(aoeForecast.events.filter(e=>e.type==='shield'&&e.abilityId===groupShield&&e.atMs===100).length,3);
+assert.deepEqual(aoeForecast,simulateCombat({...forecastInput,enemies:[forecastBoss('all_enemies',500)]}));
+// Group shield is an ordinary always-eligible skill in the source catalogue;
+// suppress it until later in these controls to isolate predictive promotion.
+const forecastControl=(boss:CombatantDefinition,lockShield=false)=>{
+ const actor={...predictiveActor,abilities:predictiveActor.abilities.map(a=>({...a,
+   // Keep an always-ready higher-priority offensive rotation.
+   cooldownMs:a.id===offense?100:a.cooldownMs}))};
+ return simulateCombat({...forecastInput,players:[actor,forecastTank,forecastOther],enemies:[boss],
+   maxDurationMs:300,initialPlayerState:{...forecastInput.initialPlayerState,
+     [actor.id]:triageCarry(1000,false,lockShield?{[singleShield]:10000,[groupShield]:10000}:{})}});
+};
+assert.equal(firstShield(forecastControl(forecastBoss('current_target',20))),undefined,'minor hits do not trigger forecast');
+assert.equal(firstShield(forecastControl(forecastBoss('random_enemy',500))),undefined,'unknown target is not predicted');
+assert.equal(firstShield(forecastControl(forecastBoss('current_target',500,5000))),undefined,'long lead time is ignored');
+assert.equal(firstShield(forecastControl(forecastBoss('all_enemies',500),true)),undefined,'no cooldown bypass');
+const nonBoss={...forecastBoss('all_enemies',500),boss:false};
+assert.equal(firstShield(forecastControl(nonBoss)),undefined,'nonboss attacks do not activate predictive policy');
+console.log('PASS: visible boss forecast, group protection, target certainty and cooldown guards');

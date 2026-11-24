@@ -12,6 +12,9 @@ on:
       - 'docs/2-0/eq2-normalized-effects-review-v18.json'
       - '.github/workflows/equipment-v2-private-conditional-boundaries.yml'
   workflow_dispatch:
+concurrency:
+  group: eq2-private-conditional-boundaries-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

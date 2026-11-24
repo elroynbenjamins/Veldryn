@@ -8,8 +8,8 @@ import type {UiThemeId} from '../theme/theme';
 import type {PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
 import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../theme/profile-cosmetic-runtime-v1';
-const LABELS:Record<string,string>={gloamward:'Gloamward',frostbound:'Frostbound Chime',amberglass:'Amberglass Loop',briarbound:'Briarbound'};
-const EFFECTS:Record<string,string>={gloamward:'Arcane Wisps',frostbound:'Winter Veil',amberglass:'Ember Motes',briarbound:'Verdant Whispers'};
+const LABELS:Record<string,string>={gloamward:'Gloamward',frostbound:'Frostbound Chime',amberglass:'Amberglass Loop',briarbound:'Briarbound',celestial:'Celestial Sovereign',draconic:'Draconic Dominion',abyssal:'Abyssal Majesty',paradox:'Paradox Eternal'};
+const EFFECTS:Record<string,string>={gloamward:'Arcane Wisps',frostbound:'Winter Veil',amberglass:'Ember Motes',briarbound:'Verdant Whispers',celestial:'Celestial Alignment',draconic:'Awakening of the Dragon',abyssal:'Call of the Deep',paradox:'Reality Rewritten'};
 const fixture:PublicPlayerProfileV43={accountId:'cosmetic-review-local',displayName:'Aster Nightfall',visibility:'public',character:{id:'cosmetic-review-hero',name:'Aster Nightfall',classId:'IRONWARDEN',level:38,bodyPresentation:'female',profileIconId:'class:IRONWARDEN'},title:'Veil Watcher',backgroundId:'bg_forest_sanctum',petId:'EVT_PET_013',guild:{tag:'QA'},combatPower:6992,bio:'',achievementShowcaseIds:[],collectionShowcase:[],recordShowcaseIds:[],masteryShowcaseActionIds:[],revision:0};
 function Preview({theme,setTheme}:{theme:UiThemeId;setTheme:(id:UiThemeId)=>void}){
  const C=useGameTheme(),{width}=useWindowDimensions();
@@ -19,7 +19,7 @@ function Preview({theme,setTheme}:{theme:UiThemeId;setTheme:(id:UiThemeId)=>void
  const heading=(label:string)=><Text style={{color:C.text,fontSize:14,fontWeight:'800'}}>{label}</Text>;
  const profile={...fixture,character:{...fixture.character,name:longName?'AsterNightfallLongName':fixture.character.name},petId:pet?fixture.petId:null};
  return <SafeAreaView style={[s.root,{backgroundColor:C.bg}]}><ScrollView contentContainerStyle={s.content}>
- {heading('PROFILE COSMETICS · V3 QA')}
+ {heading('PROFILE COSMETICS · STANDARD + ASCENDANT QA')}
  <Text style={{color:C.muted}}>Local review only. No account writes, grants, purchases or publication.</Text>
  <Text style={{color:C.muted}}>Native runtime fallback uses the existing border art and themed pixel particles; imported V3 PNGs override it automatically.</Text>
  <View style={{width:Math.min(size,Math.max(0,width-24)),alignSelf:'center'}}>

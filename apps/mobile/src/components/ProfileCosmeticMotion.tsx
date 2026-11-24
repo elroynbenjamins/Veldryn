@@ -1,7 +1,7 @@
-import {memo,useEffect,useMemo,useState} from 'react';
-import {Animated,AppState,Easing,Image,StyleSheet,View,type ImageSourcePropType} from 'react-native';
-import {profileFrameSegments,profileSceneFrameSegments} from '../core/profile-frame-layout';
-import {sampleCosmeticTrack,cosmeticGlowOpacity,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
+import {memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Animated,AppState,Easing,Image,StyleSheet,View,type ImageSourcePropType,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
+import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds} from '../core/profile-frame-layout';
+import {sampleCosmeticTrack,cosmeticGlowOpacity,cosmeticViewportVisible,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
 import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
 import type {ProfileCosmeticRuntime,ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
 const SW=768,SH=432;
@@ -14,6 +14,27 @@ export function mapCosmeticSprite(p:Segment,[sx,sy,sw,sh]:Rect){
  const left=Math.max(x,p.x),top=Math.max(y,p.y),right=Math.min(x+width,p.x+p.width),bottom=Math.min(y+height,p.y+p.height);
  if(right<=left||bottom<=top)return null;
  return {left,top,width:right-left,height:bottom-top,imageLeft:x-left,imageTop:y-top,imageWidth:width,imageHeight:height};
+}
+/** Scroll handlers update React state only when the card enters/leaves the viewport.
+ * No polling, measurement bridge calls, or per-frame React animation work. */
+export function useCosmeticScrollVisibility(){
+ const geometry=useRef({sceneTop:0,sceneHeight:0,scrollTop:0,viewportHeight:0});
+ const [visible,setVisible]=useState(false);
+ const last=useRef(false);
+ const refresh=useCallback(()=>{
+  const g=geometry.current,next=cosmeticViewportVisible(g.sceneTop,g.sceneHeight,g.scrollTop,g.viewportHeight);
+  if(next!==last.current){last.current=next;setVisible(next);}
+ },[]);
+ const onSceneLayout=useCallback((event:LayoutChangeEvent)=>{
+  const {y,height}=event.nativeEvent.layout;geometry.current.sceneTop=y;geometry.current.sceneHeight=height;refresh();
+ },[refresh]);
+ const onViewportLayout=useCallback((event:LayoutChangeEvent)=>{
+  geometry.current.viewportHeight=event.nativeEvent.layout.height;refresh();
+ },[refresh]);
+ const onScroll=useCallback((event:NativeSyntheticEvent<NativeScrollEvent>)=>{
+  geometry.current.scrollTop=event.nativeEvent.contentOffset.y;geometry.current.viewportHeight=event.nativeEvent.layoutMeasurement.height;refresh();
+ },[refresh]);
+ return {visible,onSceneLayout,onViewportLayout,onScroll};
 }
 function useClock(enabled:boolean,period:number){
  const [clock]=useState(()=>new Animated.Value(0));
@@ -64,10 +85,10 @@ const ParticleShape=memo(function ParticleShape({kind,accent,soft,size}:{kind:Pr
 });
 export function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0}),clock=useClock(active&&!reduceMotion&&size.width>0&&size.height>0,12000);
- const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),d:Math.min(g.size,Math.max(4,size.width*.035))})),[active,reduceMotion,clock,runtime,size.width,size.height]);
+ const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:profileSceneGlowBounds(size.width,size.height,g.x,g.y,Math.min(g.size,Math.max(4,size.width*.035)))})),[active,reduceMotion,clock,runtime,size.width,size.height]);
  if(!active)return null;
  return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
-  {glows.map(({g,opacity,d},i)=>{return <Animated.View key={i} style={{position:'absolute',left:g.x*size.width-d/2,top:g.y*size.height-d/2,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
+  {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
  </View>;
 }
 export function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){

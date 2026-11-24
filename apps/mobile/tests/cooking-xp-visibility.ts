@@ -14,6 +14,10 @@ import type {GameState} from '../src/core/types';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': '+String(actual)+' !== '+String(expected))}
 const cooking=RECIPES.filter(recipe=>recipe.skillId==='cooking');
+const boostedMeals=cooking.filter(recipe=>!!mealBonusDef(recipe.output.itemId));
+equal(boostedMeals.length,6,'all six bonus meals have a Cooking recipe');
+const expectedCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,3],COOK_SUNSCAR_SPICED_PLATTER:[12,4,3],COOK_GLASSFIN_FEAST:[9,3,3],COOK_ICEFISH:[9,3,3],COOK_ASHLANDS_EMBER_STEW:[6,3,3],COOK_EMBERFIN:[9,3,3]};
+for(const recipe of boostedMeals)equal(JSON.stringify(recipe.inputs.map(input=>input.quantity)),JSON.stringify(expectedCosts[recipe.id]),recipe.id+' uses increased meal materials');
 ok(cooking.length>=5,'Cooking browser should include multiple dish recipes');
 const now=Date.UTC(2026,10,19,12);
 let tested=0;
@@ -25,7 +29,9 @@ for(const recipe of cooking.filter(recipe=>!!processingRecipeDef(recipe.id)).sli
   inventory:{...original.inventory,capacity:100,stacks:recipe.inputs.map(row=>({itemId:row.itemId,quantity:row.quantity*5}))},
   bank:{...original.bank,capacity:100,stacks:[]},
  };
- const displayedXp=Math.floor(professionActionPace(state,recipe,'batch').xpPerAction+1e-9);
+ const displayedXp=professionActionPace(state,recipe,'batch').xpPerAction;
+ equal(recipe.xp%10,0,recipe.id+' base Cooking XP is rounded to tens');
+ equal(displayedXp%10,0,recipe.id+' effective Cooking XP is rounded after modifiers');
  const preview=cookingRecipeXpPreview(state,recipe);
  equal(preview?.estimatedXp,displayedXp,recipe.id+' cooking UI preview matches the prospective batch');
  const reserved=startProcessingBatch(state,recipe.id,1,now).activity?.processing;
@@ -70,6 +76,8 @@ for(const language of ['en','de','es','nl','it','fr','ru','tr'] as const satisfi
 const component=readFileSync(join(process.cwd(),'src/components/RecipeCard.tsx'),'utf8');
 const translations=readFileSync(join(process.cwd(),'src/i18n/crafting-details.ts'),'utf8');
 const workshop=readFileSync(join(process.cwd(),'src/components/ConsumableWorkshop.tsx'),'utf8');
+ok(workshop.includes("cooking:['Fish','Meals']")&&!workshop.includes("return 'Special'"),'Cooking exposes only Fish and Meals');
+ok(workshop.includes("return mealBonusDef(recipe.output.itemId)?'Meals':'Fish'"),'all registered bonus meals automatically route to the Meals tab');
 ok(component.includes("recipe.skillId==='cooking'?<Text style={s.cookingXp}"),
  'Collapsed Cooking cards must show XP without opening recipe details');
 ok(component.includes("ct('+{xp} Cooking XP per batch'"),

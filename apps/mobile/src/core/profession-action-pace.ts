@@ -18,7 +18,9 @@ export function professionActionPace(state:GameState,recipe:ProfessionActionDefi
  // Faith Experience blessing explicitly covers all professions including timed forging.
  const faith=selectedFaithBlessing(state);
  const forgeXp=faith?.family==='xp'?1+faith.bonus:1;
- const xpPerAction=recipe.xp*mastery.xp*(mode==='forge'?forgeXp:permanent.skillXpMultiplier)*affinity.xpMultiplier;
+ const rawXpPerAction=recipe.xp*mastery.xp*(mode==='forge'?forgeXp:permanent.skillXpMultiplier)*affinity.xpMultiplier;
+ // Round new Cooking batch rewards after all XP modifiers. Existing reservations retain their saved rate.
+ const xpPerAction=recipe.skillId==='cooking'&&mode==='batch'?Math.round(rawXpPerAction/10)*10:rawXpPerAction;
  const speed=mastery.speed*(mode==='instant'?1:permanent.craftingSpeedMultiplier)*affinity.speedMultiplier*(mode==='forge'?1+forgeSpeedBonus(forgeLevel(state)):1);
  const rawSeconds=recipe.seconds/Math.max(.1,speed);
  const cycleSeconds=mode==='instant'?0:mode==='forge'?Math.max(1,Math.ceil(rawSeconds)):Math.max(1,rawSeconds);

@@ -111,7 +111,7 @@ export function RecipeCard({state,recipe,status,onCraft,craftFeedback,onNavigate
     {!detailsOnly?<View style={s.craftSummary} accessible accessibilityLabel={gt('Crafting summary')}>
       <Text style={s.craftSummaryTitle}>{gt('Crafting summary')} · {f(quantity*recipe.output.quantity)} × {localizedItemName(language,output.id)}</Text>
       <Text style={s.craftSummaryText}>{gt('Total cost')}: {f(quantity*recipe.gold)} {gt('Gold')} · {f(totalMaterialUnits)} {gt('Materials')} ({quantityInputs.length} {gt('types')})</Text>
-      <Text style={s.craftSummaryText}>+{f(quantity*effectiveXp)} {gt('XP')}{workTimeLabel?' · '+gt('Crafting time')+': '+workTimeLabel:''}</Text>
+      <Text style={s.craftSummaryText}>+{f(recipe.skillId==='cooking'&&cookingXpPreview?Math.min(cookingXpPreview.remainingToCap,Math.floor(quantity*cookingXpPreview.rawXpPerBatch+1e-9)):quantity*effectiveXp)} {gt('XP')}{workTimeLabel?' · '+gt('Crafting time')+': '+workTimeLabel:''}</Text>
      </View>:null}
     {detailTab==='materials'?<><Text style={s.ingredientsSummary}>{gt('Materials')} · {(externalQuantity!==undefined||quantityMax>0?quantityInputs:effectiveStatus.inputs).filter(input=>input.inventory+input.bank>=input.quantity).length}/{effectiveStatus.inputs.length} {gt('Ready')}</Text><IngredientList inputs={externalQuantity!==undefined?quantityInputs:quantityMax>0?quantityInputs:effectiveStatus.inputs} numberMode={state.settings.numberMode} compact/>
     {missingMaterials&&(firstAvailableSource||canQuickTrack||canQuickPrereq)?<View style={s.materialActions}>

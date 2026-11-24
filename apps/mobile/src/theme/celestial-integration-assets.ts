@@ -1,15 +1,8 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {CelestialPreviewAssets} from '../components/profile/CelestialSovereignPreview';
 import {ASCENDANT_CELESTIAL_VISUALS_RELEASED} from '../core/release-flags';
-
-/** Candidate identifiers remain unregistered until authoritative catalogue/entitlement work lands. */
-export const CELESTIAL_IDS={
- background:'ascendant-celestial-astral-sanctum',
- border:'ascendant-celestial-crown-of-the-cosmos',
- pet:'ascendant-celestial-aetherion',
- showcase:'ascendant-celestial-alignment',
- badge:'ascendant-celestial-sovereign-of-the-stars',
-} as const;
+import {CELESTIAL_IDS} from '../core/ascendant-cosmetics';
+export {CELESTIAL_IDS} from '../core/ascendant-cosmetics';
 
 const background=require('../../assets/ascendant/celestial/celestial_background_wide.webp') as ImageSourcePropType;
 const petRegular=require('../../assets/ascendant/celestial/aetherion_runtime.webp') as ImageSourcePropType;

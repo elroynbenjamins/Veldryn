@@ -1,0 +1,51 @@
+name: Hotfix Edge bundle reconciliation (isolated)
+on:
+  push:
+    branches: ['hotfix/edge-bundle-reconciliation-20261124']
+    paths: ['.github/workflows/hotfix-edge-reconciliation-20261124.yml']
+permissions:
+  contents: write
+concurrency:
+  group: hotfix-edge-reconciliation-20261124
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: hotfix/edge-bundle-reconciliation-20261124
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify canonical generated bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit only generated bundles to isolated branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=hotfix/edge-bundle-reconciliation-20261124
+          test "$(git branch --show-current)" = "$branch"
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          test -z "$unexpected" || { printf 'Unexpected tracked changes:\n%s\n' "$unexpected"; exit 1; }
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'build(edge): reconcile generated bundles on isolated hotfix branch'
+          git fetch origin "$branch"
+          test "$(git rev-parse HEAD^)" = "$(git rev-parse "origin/$branch")"
+          git push origin "HEAD:$branch"

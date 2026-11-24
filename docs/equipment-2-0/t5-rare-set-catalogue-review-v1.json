@@ -1,0 +1,238 @@
+{
+  "contractVersion": "eq2-t5-rare-set-catalogue-review-v1",
+  "status": "REVIEW_ONLY_NOT_RUNTIME_AUTHORITY",
+  "releaseActivation": false,
+  "scope": "Two owner-approved rare T5 tank sets promoted from over-strength T4 art; no registration, minting, crafting, drops, market listing or live combat activation.",
+  "tier": 5,
+  "regionTheme": "Frostmarch",
+  "wearLevelCandidate": 56,
+  "professionCraftLevelCandidate": 48,
+  "catalogueScarcity": "rare_set",
+  "rarityPolicy": {
+    "setScarcityIsNotItemRarity": true,
+    "craftedItemRarityAndQualityRollsRemainIndependent": true,
+    "innateStatsAreAuthoredNotRandom": true,
+    "innateStatsStackWithLegalRandomAffixes": true,
+    "innateStatRule": "Sum verified innate values within their named channel, then apply the existing channel engine once. Do not duplicate an innate stat through rarity scaling.",
+    "randomAffixCount": "INHERIT_FUTURE_APPROVED_T5_TABLE",
+    "normalRarityBordersRemainRuntimeDriven": true
+  },
+  "craftingPolicy": {
+    "profession": "smithing",
+    "combatLevelRequiredToCraft": 0,
+    "wearGateSeparateFromCraftGate": true,
+    "recipeFailureChance": 0,
+    "masterBlueprintRequiredPerSet": true,
+    "blueprintsAndSignatureComponentsTradeable": true,
+    "playerMarketAndCommissionAccessRequired": true,
+    "ordinaryT5PremiumCandidate": {
+      "refinedAndCommonMaterialsPct": 35,
+      "goldPct": 45,
+      "queueTimePct": 35
+    },
+    "alternateRouteMayBypassSignatureComponents": false,
+    "sourceWarning": "All T5 material identities and quantities below are review candidates pending owned IDs, source registration, effective drop-rate telemetry and economy approval."
+  },
+  "supersession": {
+    "retiredDraftSetIds": [
+      "eq2_t4_citadel",
+      "eq2_t4_bloodsteel"
+    ],
+    "replacementSetIds": [
+      "eq2_rare_t5_citadel",
+      "eq2_rare_t5_bloodsteel"
+    ],
+    "rule": "Do not register, mint or assign art to the retired T4 draft identities. Existing live items are unaffected because these drafts were nonissuable."
+  },
+  "materials": [
+    {
+      "id": "EQ2_T5_FROSTSTEEL_INGOT",
+      "kind": "refined_primary",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_FROSTMAIL_LINKS",
+      "kind": "refined_armor_component",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_FROSTWEAVE_CLOTH",
+      "kind": "refined_secondary",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_HARDENED_FROSTLEATHER",
+      "kind": "refined_secondary",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_SMOKEGLASS_PLATE",
+      "kind": "rare_refined_component",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_BINDING_RESIN",
+      "kind": "alchemy_binder",
+      "registration": "REQUIRED_NO_FREE_BYPASS"
+    },
+    {
+      "id": "EQ2_T5_FORTRESS_CORE",
+      "kind": "rare_combat_signature",
+      "registration": "REQUIRED",
+      "tradeable": true
+    },
+    {
+      "id": "EQ2_T5_BLOODTEMPERED_STEEL",
+      "kind": "rare_refined_primary",
+      "registration": "REQUIRED"
+    },
+    {
+      "id": "EQ2_T5_TEMPERED_HEART",
+      "kind": "rare_combat_signature",
+      "registration": "REQUIRED",
+      "tradeable": true
+    }
+  ],
+  "sets": [
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "name": "Frostmarch Citadel",
+      "role": "tank",
+      "pieceCount": 6,
+      "masterBlueprintId": "EQ2_BP_RARE_T5_CITADEL",
+      "artDirectory": "accepted_art/equipment-2-0/style4/t5-frostmarch-citadel",
+      "identity": "Rare fortress tank set focused on durable maximum-health, defense, tenacity and ward channels.",
+      "members": [
+        {
+          "id": "EQ2_RARE_T5_CITADEL_HELMET",
+          "name": "Frostmarch Citadel Helm",
+          "slot": "helmet",
+          "innate": {"stat": "max_hp_pct", "unit": "relative_percent", "value": 3.0},
+          "recipe": {"froststeelIngots": 30, "frostmailLinks": 12, "smokeglassPlates": 8, "bindingResin": 5, "fortressCores": 2, "gold": 16000, "queueSeconds": 1200}
+        },
+        {
+          "id": "EQ2_RARE_T5_CITADEL_CHEST",
+          "name": "Frostmarch Citadel Chestpiece",
+          "slot": "chest",
+          "innate": {"stat": "defense_pct", "unit": "relative_percent", "value": 3.5},
+          "recipe": {"froststeelIngots": 44, "frostmailLinks": 18, "smokeglassPlates": 12, "bindingResin": 7, "fortressCores": 3, "gold": 24000, "queueSeconds": 1800}
+        },
+        {
+          "id": "EQ2_RARE_T5_CITADEL_LEGS",
+          "name": "Frostmarch Citadel Legguards",
+          "slot": "legs",
+          "innate": {"stat": "tenacity_pp", "unit": "percentage_points", "value": 3.0},
+          "recipe": {"froststeelIngots": 40, "frostmailLinks": 16, "smokeglassPlates": 10, "bindingResin": 6, "fortressCores": 3, "gold": 22000, "queueSeconds": 1680}
+        },
+        {
+          "id": "EQ2_RARE_T5_CITADEL_BOOTS",
+          "name": "Frostmarch Citadel Boots",
+          "slot": "boots",
+          "innate": {"stat": "defense_pct", "unit": "relative_percent", "value": 2.5},
+          "recipe": {"froststeelIngots": 28, "frostmailLinks": 10, "smokeglassPlates": 8, "bindingResin": 5, "fortressCores": 2, "gold": 15000, "queueSeconds": 1100}
+        },
+        {
+          "id": "EQ2_RARE_T5_CITADEL_CAPE",
+          "name": "Frostmarch Citadel Mantle",
+          "slot": "cape",
+          "innate": {"stat": "ward_pp", "unit": "percentage_points", "value": 1.5},
+          "recipe": {"froststeelIngots": 18, "frostweaveCloth": 22, "smokeglassPlates": 8, "bindingResin": 5, "fortressCores": 2, "gold": 17000, "queueSeconds": 1300}
+        },
+        {
+          "id": "EQ2_RARE_T5_CITADEL_RING",
+          "name": "Frostmarch Citadel Ring",
+          "slot": "ring",
+          "innate": {"stat": "max_hp_pct", "unit": "relative_percent", "value": 2.5},
+          "recipe": {"froststeelIngots": 12, "smokeglassPlates": 6, "bindingResin": 4, "fortressCores": 2, "gold": 14000, "queueSeconds": 900}
+        }
+      ],
+      "setBonuses": [
+        {
+          "pieces": 2,
+          "id": "citadel_foundation",
+          "name": "Citadel Foundation",
+          "effect": [{"stat": "max_hp_pct", "value": 4.0}, {"stat": "defense_pct", "value": 3.0}]
+        },
+        {
+          "pieces": 4,
+          "id": "tower_guard",
+          "name": "Tower Guard",
+          "effect": "After one eligible hit deals at least 8% of maximum HP as post-mitigation damage, gain a shield equal to 6% of maximum HP for 6 seconds.",
+          "internalCooldownSeconds": 18,
+          "exclusions": ["true damage", "self damage", "already absorbed damage", "duplicate simultaneous triggers"]
+        },
+        {
+          "pieces": 6,
+          "id": "citadel_unbroken",
+          "name": "Citadel Unbroken",
+          "effect": "When falling below 35% HP, gain 10% incoming damage reduction and 20% increased healing received for 8 seconds.",
+          "internalCooldownSeconds": 35,
+          "activationRule": "Crossing the threshold only; remaining below it cannot retrigger."
+        }
+      ]
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "name": "Frostmarch Bloodsteel",
+      "role": "tank",
+      "pieceCount": 4,
+      "masterBlueprintId": "EQ2_BP_RARE_T5_BLOODSTEEL",
+      "artDirectory": "accepted_art/equipment-2-0/style4/t5-frostmarch-bloodsteel",
+      "identity": "Rare aggressive tank set trading part of Citadel's sustain for attack pressure and controlled retaliation.",
+      "members": [
+        {
+          "id": "EQ2_RARE_T5_BLOODSTEEL_GLOVES",
+          "name": "Frostmarch Bloodsteel Gloves",
+          "slot": "gloves",
+          "innate": {"stat": "attack_pct", "unit": "relative_percent", "value": 3.0},
+          "recipe": {"bloodtemperedSteel": 26, "hardenedFrostleather": 10, "smokeglassPlates": 6, "bindingResin": 5, "temperedHearts": 2, "gold": 16000, "queueSeconds": 1200}
+        },
+        {
+          "id": "EQ2_RARE_T5_BLOODSTEEL_BOOTS",
+          "name": "Frostmarch Bloodsteel Boots",
+          "slot": "boots",
+          "innate": {"stat": "defense_pct", "unit": "relative_percent", "value": 2.8},
+          "recipe": {"bloodtemperedSteel": 32, "hardenedFrostleather": 12, "smokeglassPlates": 6, "bindingResin": 5, "temperedHearts": 2, "gold": 17000, "queueSeconds": 1250}
+        },
+        {
+          "id": "EQ2_RARE_T5_BLOODSTEEL_AMULET",
+          "name": "Frostmarch Bloodsteel Pendant",
+          "slot": "amulet",
+          "innate": {"stat": "ability_damage_pct", "unit": "relative_percent", "value": 3.0},
+          "recipe": {"bloodtemperedSteel": 14, "smokeglassPlates": 8, "bindingResin": 4, "temperedHearts": 2, "gold": 14500, "queueSeconds": 950}
+        },
+        {
+          "id": "EQ2_RARE_T5_BLOODSTEEL_RING",
+          "name": "Frostmarch Bloodsteel Ring",
+          "slot": "ring",
+          "innate": {"stat": "max_hp_pct", "unit": "relative_percent", "value": 2.5},
+          "recipe": {"bloodtemperedSteel": 12, "smokeglassPlates": 6, "bindingResin": 4, "temperedHearts": 2, "gold": 14000, "queueSeconds": 900}
+        }
+      ],
+      "setBonuses": [
+        {
+          "pieces": 2,
+          "id": "tempered_guard",
+          "name": "Tempered Guard",
+          "effect": [{"stat": "defense_pct", "value": 3.0}, {"stat": "attack_pct", "value": 3.0}]
+        },
+        {
+          "pieces": 4,
+          "id": "red_reprisal",
+          "name": "Red Reprisal",
+          "effect": "After taking eligible post-mitigation HP damage, the next basic attack within 5 seconds deals 18% increased damage and heals 1.5% of maximum HP.",
+          "internalCooldownSeconds": 8,
+          "exclusions": ["self damage", "damage over time ticks", "reflect loops", "proc damage", "missed or avoided attacks"]
+        }
+      ]
+    }
+  ],
+  "releaseGates": [
+    "Approve T5 stat budgets and future random-affix table without double-scaling authored innate stats.",
+    "Register all material, blueprint, item and set IDs in trusted server catalogues.",
+    "Verify effective rare-source payouts and specialist gathering throughput before approving quantities.",
+    "Implement authenticated reservations, cancellation refunds, duplicate protection, commissions, escrow and immutable item provenance.",
+    "Validate set trigger ordering, internal cooldowns, shield caps, threshold crossings, reflection exclusions and reconnect/offline combat determinism.",
+    "Keep both sets hidden until the coordinated Equipment, Skills and Combat 2.0 release gate."
+  ]
+}

@@ -1867,3 +1867,41 @@ if(process.env.EQ2_V21_PARTY_PATH){
  assert.throws(()=>issueEq2PrivateHitQaV22(input,compiled.actor.id,['eq2_t5_avalanche:4'],()=>true),/fixture_scope/);
  console.log('PASS: V24 actual HP thresholds, incoming pre/post receipts, strongest-only mitigation, one-use versus timed, expiry and unauthorized damage exclusions');
 }
+
+
+ // V25: timed Defense/Haste is an encounter-local overlay, not frozen gear mutation.
+ {
+ const fixture=make('IRONWARDEN',0,'supported',4);
+ const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
+ const input:CombatInput={seed:'QA_V25_TIMED_BOUNDARY',players:[compiled.actor],enemies:[boss]};
+ const oath='eq2_t4_oathplate:4' as const, riposte='EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN' as const, brace='eq2_t4_bastionmail:4' as const, haste='eq2_combo_t5_runeforge_link:2' as const;
+ const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,compiled.actor.id,ids,()=>true))!;
+ const hit=(now:number)=>({now,actorId:boss.id,targetId:compiled.actor.id,abilityId:'BASIC',originalEnemyAbility:true,mitigated:true,
+ direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100});
+ const r=runtime([oath,riposte,brace]),start=hit(1000);
+ r.beforeIncomingHit(start);assert.deepEqual(r.afterIncomingHit(start,50),[oath,riposte,brace]);
+ assert.deepEqual(r.afterIncomingHit(start,50),[]);
+ assert.equal(r.timedStat(compiled.actor.id,1000,'defense').pct,0);
+ assert.equal(r.timedStat(compiled.actor.id,1001,'defense').pct,4.4);
+ assert.equal(r.timedStat('OTHER',1001,'defense').pct,0);
+ assert.equal(r.timedStat(compiled.actor.id,6999,'defense').pct,4.4);
+ assert.equal(r.timedStat(compiled.actor.id,7000,'defense').pct,0);
+ const early=hit(8000);r.beforeIncomingHit(early);assert.deepEqual(r.afterIncomingHit(early,100),[]);
+ const ready=hit(19000);r.beforeIncomingHit(ready);assert.deepEqual(r.afterIncomingHit(ready,50),[oath,brace]);
+ const h=runtime([haste]);
+ const heal={now:1000,actorId:compiled.actor.id,targetId:compiled.actor.id,abilityId:'AUTHORED_HEAL',originalClassHeal:true,actualHeal:50};
+ assert.deepEqual(h.afterEffectiveHeal({...heal,actualHeal:0}),[]);
+ assert.deepEqual(h.afterEffectiveHeal({...heal,originalClassHeal:false}),[]);
+ assert.deepEqual(h.afterEffectiveHeal(heal),[haste]);
+ assert.deepEqual(h.afterEffectiveHeal(heal),[]);
+ assert.equal(h.timedStat(compiled.actor.id,1000,'haste').pct,0);
+ assert.equal(h.timedStat(compiled.actor.id,1001,'haste').pct,2);
+ assert.equal(h.timedStat(compiled.actor.id,7000,'haste').pct,0);
+ const outgoing={now:19000,actorId:compiled.actor.id,targetId:boss.id,abilityId:'AUTHORED_SKILL',originalClassAbility:true,
+ direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100};
+ h.beforeDirectHit(outgoing);assert.deepEqual(h.afterDirectHit(outgoing,100),[haste]);
+ assert.equal(h.timedStat(compiled.actor.id,19001,'haste').pct,2);
+ assert.throws(()=>runtime(['eq2_t1_oathplate:4',oath]),/fixture_scope/);
+ assert.throws(()=>runtime(['EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN',riposte]),/fixture_scope/);
+ console.log('PASS: V25 timed defense and haste boundary, strongest stat, source family cooldown, exact expiry, no duplicate or same-tick benefit');
+ }

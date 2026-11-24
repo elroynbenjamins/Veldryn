@@ -1,4 +1,4 @@
--- Candidate for CLI-generated migration; do not apply outside release review.
+-- Current-version public equipment inspection. Staging migration version verified.
 begin;
 create or replace function public.profile_equipped_gear_v1(p_target_account_id uuid)
 returns jsonb

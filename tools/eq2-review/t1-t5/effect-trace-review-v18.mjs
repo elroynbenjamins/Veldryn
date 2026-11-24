@@ -1,6 +1,7 @@
 // Read-only baseline engine trace opportunity audit. Never mutates CombatInput,
 // never reconstructs missing event semantics, and never applies a candidate.
 import {readFileSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
 import {conditionalCandidates} from './normalized-effect-review-v18.mjs';
 const deny={reviewOnly:true,mayApply:false,mayMint:false,mayTrade:false,cpApproved:false,releaseApproved:false};
 const fail=x=>{throw Error('eq2_trace_v18_'+x);};
@@ -42,7 +43,7 @@ export function compareTrace(trace){
   hintRows:rows.filter(x=>x.opportunities.some(y=>y.hintCount>0)).length,unresolvedRows:rows.filter(x=>x.opportunities.some(y=>y.hintCount===null)).length,
   executedCandidateCombatRuns:0,rows,...deny};
 }
-if(process.argv[2]){
+if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url&&process.argv[2]){
  const r=compareTrace(JSON.parse(readFileSync(process.argv[2],'utf8')));
  const {rows,...summary}=r;
  console.log('EQ2_V18_TRACE '+JSON.stringify(summary));

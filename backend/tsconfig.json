@@ -22,6 +22,7 @@
     "src/server/equipment/__tests__/equipment-crafting-v2-game-state.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-gem-sidecar.test.ts",
     "src/server/equipment/__tests__/equipment-crafting-v2-virtual-custody.test.ts",
-    "src/server/equipment/__tests__/equipment-crafting-v2-physical-delivery-staging.test.ts"
+    "src/server/equipment/__tests__/equipment-crafting-v2-physical-delivery-staging.test.ts",
+    "src/server/equipment/__tests__/equipment-crafting-v2-effect-gem-policy.test.ts"
   ]
 }

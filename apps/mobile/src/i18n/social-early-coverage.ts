@@ -2,6 +2,22 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  // Short Party identity, six-month name cooldown and ranking-ready labels.
+  "Party name": ["Название группы","Parti adı"],
+  "Choose Party name": ["Выбрать название группы","Parti adı seç"],
+  "PARTY IDENTITY": ["НАЗВАНИЕ ГРУППЫ","PARTİ KİMLİĞİ"],
+  "3–5 letters, unique across active Parties. The name can only be changed once every six months.": ["3–5 букв, уникально среди активных групп. Менять можно лишь раз в шесть месяцев.","3–5 harf, etkin partiler arasında benzersiz. Altı ayda bir değiştirilebilir."],
+  "Choose a unique Party name in Party options.": ["Выберите уникальное название в настройках группы.","Parti seçeneklerinden benzersiz bir ad seç."],
+  "Choose 3–5 letters (A–Z). Names must be unique across active Parties. Your Party keeps the same members and ranking history.": ["Выберите 3–5 букв (A–Z). Название должно быть уникальным. Участники и история рейтинга сохраняются.","3–5 harf seç (A–Z). Ad, etkin partiler arasında benzersiz olmalı. Üyeler ve sıralama geçmişi korunur."],
+  "Letters only": ["Только буквы","Yalnızca harfler"],
+  "After saving, this name is locked for six months.": ["После сохранения название нельзя менять шесть месяцев.","Kaydedildikten sonra bu ad altı ay kilitlenir."],
+  "Existing Parties can claim their first name now. It is then locked for six months.": ["Существующие группы могут выбрать первое название сейчас. Затем оно блокируется на шесть месяцев.","Mevcut partiler ilk adını şimdi seçebilir. Ardından altı ay kilitlenir."],
+  "Next name change:": ["Следующая смена названия:","Sonraki ad değişikliği:"],
+  "That Party name is already taken.": ["Это название группы уже занято.","Bu parti adı zaten alınmış."],
+  "This Party name cannot be changed yet.": ["Название группы пока нельзя изменить.","Bu parti adı henüz değiştirilemez."],
+  "Use 3–5 letters and choose a different name.": ["Используйте 3–5 букв и выберите другое название.","3–5 harf kullan ve başka bir ad seç."],
+  "Save new name": ["Сохранить новое название","Yeni adı kaydet"],
+  "Claim Party name": ["Закрепить название группы","Parti adını al"],
   // Compact victory receipt labels (Russian and Turkish).
   "To claim": ["К получению","Alınacak"],
   "Already earned": ["Уже начислено","Zaten kazanıldı"],

@@ -39,6 +39,8 @@ import {simulateOriginalForgeAuthoredBossReviewV2}
  from '../equipment-original-forge-authored-boss';
 import {prepareSoloEnemyKitsV2} from '../enemy-kit-composer';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
+import {reviewOriginalForgeSetBossOpportunitiesV2}
+ from '../equipment-forge-set-boss-opportunity-review';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
@@ -1164,6 +1166,9 @@ const exactBossProfiles=[
  {id:'BOSS_EXP_CANTOR',region:'frostmarch',tier:4,forgeTier:4,level:60},
 ] as const;
 let realForgeAuthoredBossRuns=0,realForgeAuthoredBossThreats=0;
+let originalForgeSetBossMatrixCount=0,sourceSetBossOpportunities=0;
+let authoredButUnseen=0,sourceSetBossMechanicAbsent=0;
+const bossSetOpportunityProfiles=new Set<string>();
 let forgedRegionalChecks=0;
 const sameForgeBossGroups=new Set<string>();
 for(const profile of exactBossProfiles){
@@ -1232,6 +1237,40 @@ for(const profile of exactBossProfiles){
     if(strategy==='generic')originalFreeze=freezing;
     else assert.equal(freezing,originalFreeze,
      'Targeted skills must not replace genuine original Forge copies');
+    if(strategy==='targeted'){
+     // Original Forge's 15 proposed set bonuses are NOT equipped or applied.
+     // This compares their authored counterplay intents to the six canonical
+     // persisted regional boss scripts AND genuine combat-engine events.
+     const setStudy=reviewOriginalForgeSetBossOpportunitiesV2(
+      bossBase,persisted,first.combat);
+     assert.equal(setStudy.bossId,profile.id);
+     assert.equal(setStudy.rows.length,15);
+     assert.equal(setStudy.actualSetEffectsApplied,0);
+     assert.equal(setStudy.canAuthorizeCombat,false);
+     assert.equal(setStudy.canGrantRewards,false);
+     assert.equal(setStudy.releaseApproved,false);
+     assert.ok(setStudy.rows.every(row=>
+      row.appliesInCombat===false&&
+      row.effectImplementationVerified===false&&
+      row.approvedForBalance===false));
+     assert.equal(
+      setStudy.mechanicNotAuthoredCount+
+      setStudy.authoredNotObservedCount+
+      setStudy.opportunityObservedCount,15);
+     originalForgeSetBossMatrixCount+=setStudy.rows.length;
+     sourceSetBossOpportunities+=setStudy.opportunityObservedCount;
+     authoredButUnseen+=setStudy.authoredNotObservedCount;
+     sourceSetBossMechanicAbsent+=setStudy.mechanicNotAuthoredCount;
+     bossSetOpportunityProfiles.add(profile.id);
+     if(classId==='IRONWARDEN'&&specIndex===0){
+      assert.throws(()=>reviewOriginalForgeSetBossOpportunitiesV2(
+       bossBase,{...persisted,preparedEnemyDigest:'a'.repeat(64)},
+       first.combat),/stored_kit_digest_mismatch/);
+      assert.throws(()=>reviewOriginalForgeSetBossOpportunitiesV2(
+       {...bossBase,id:'FAKE_BOSS'},persisted,first.combat),
+       /must_be_single_verified_authored_boss/);
+     }
+    }
     realForgeAuthoredBossThreats+=first.combat.events.filter(e=>
      e.actorId===profile.id&&
       (e.type==='cast_start'||e.type==='status_apply'||e.type==='phase')).length;
@@ -1263,6 +1302,17 @@ for(const profile of exactBossProfiles){
   }
  }
 }
+assert.equal(originalForgeSetBossMatrixCount,108*15);
+assert.equal(bossSetOpportunityProfiles.size,6);
+assert.ok(sourceSetBossOpportunities>0,
+ 'At least some reviewed original Forge set concepts match observed boss windows');
+assert.ok(sourceSetBossMechanicAbsent>0,
+ 'Unsupported or unmatched original sets must be clearly reported');
+console.log('PASS: 1620 reviewed 15-original-Forge-set × six-authored-boss × '+
+ '18-class/spec opportunity classifications; observed '+sourceSetBossOpportunities+
+ ', authored but unseen '+authoredButUnseen+
+ ', mechanic absent '+sourceSetBossMechanicAbsent+
+ '; ZERO set modifiers, boss kit grants, CP approvals or market actions');
 assert.equal(realForgeAuthoredBossRuns,216);
 assert.equal(sameForgeBossGroups.size,108);
 assert.equal(forgedRegionalChecks,30);

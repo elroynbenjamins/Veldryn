@@ -145,7 +145,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             {visibleStatDeltas.length>0?<Text style={s.gearSummaryNote}>{visibleStatDeltas.map(([label,delta])=>label+' '+signedPreviewStat(delta)).join(' · ')}</Text>:null}
             <Text style={s.gearSummaryNote}>{gearDecision.alreadyEquipped?gt('Currently equipped · loadout change is zero.'):gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
           </View>:null}
-          {item.type==='gear'&&model.craftedCopies>0&&!instanceId?<Text style={s.gearSummaryHint}>{gt('Choose a specific equipment copy to compare')}</Text>:null}
+          {item.type==='gear'&&source==='bank'?<Text style={s.gearSummaryNote}>{ui('Withdraw to compare & equip.')}</Text>:item.type==='gear'&&model.craftedCopies>0&&!instanceId?<Text style={s.gearSummaryHint}>{gt('Choose a specific equipment copy to compare')}</Text>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
           <Pressable accessibilityRole="button" accessibilityLabel={ui('Details & sources')} accessibilityState={{expanded:detailsOpen}} onPress={()=>setDetailsOpen(value=>!value)} style={({pressed})=>[s.disclosure,pressed&&s.pressed]}>
             <Text style={s.disclosureText}>{ui('Details & sources')}</Text><Text style={s.disclosureMark}>{detailsOpen?'−':'+'}</Text>

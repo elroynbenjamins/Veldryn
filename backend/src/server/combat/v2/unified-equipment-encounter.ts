@@ -353,7 +353,9 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   runId:party.runId,nodeId:party.nodeId,encounterRevision:party.encounterRevision,
   stateRevision:party.stateRevision,contentVersion:party.contentVersion,
   balanceVersion:party.balanceVersion,seed:finalInput.seed,
-  readyCheck:party.readyCheck,frozenRoster:party.frozenRoster,combatInput:finalInput,
+  readyCheck:party.readyCheck,frozenRoster:party.frozenRoster,
+  actorCharacterIds:Object.fromEntries(runtime.map(row=>[row.actorId,row.characterId])),
+  combatInput:finalInput,
  });
  const scope=partySyncScopeFromRunBindingV2(persistence);
  const verified=(digest:string)=>party.verifyPersisted(persistence.binding,sources,digest);

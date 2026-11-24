@@ -1735,7 +1735,7 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  const r=runtime([heart,tower]);
  const first=hit(1000);
  assert.equal(r.afterShieldHit(first,60),undefined);
- r.beforeIncomingHit(first);r.afterIncomingHit(first,60);
+ r.beforeIncomingHit(first);r.absorbShield(first,60);r.afterIncomingHit(first,60);
  const grant=r.afterShieldHit(first,60);
  assert.equal(grant?.id,heart);assert.equal(grant?.amount,40);assert.equal(grant?.expiresAt,7000);
  assert.equal(r.afterShieldHit(first,60),undefined);
@@ -1753,21 +1753,22 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  assert.equal(r.shieldAvailable(compiled.actor.id,2200),25);
  // A stronger pool may replace the old remainder, but expiry/replacement
  // is not a break; cooldown belongs to actual grant only.
- const stronger=hit(2300);r.beforeIncomingHit(stronger);r.afterIncomingHit(stronger,80);
- assert.deepEqual(r.afterShieldHit(stronger,80),{id:tower,amount:60,expiresAt:8300,replaced:{id:heart,remaining:25}});
- const consume=hit(2400);r.beforeIncomingHit(consume);
- assert.deepEqual(r.absorbShield(consume,100),{id:tower,amount:60,broken:true});
- assert.equal(r.expireShield(8300),undefined);
- const e=runtime([heart]),start=hit(1000);e.beforeIncomingHit(start);e.afterIncomingHit(start,60);e.afterShieldHit(start,60);
+ const consume=hit(2300);r.beforeIncomingHit(consume);
+ assert.deepEqual(r.absorbShield(consume,100),{id:heart,amount:25,broken:true});
+ assert.equal(r.expireShield(7000),undefined);
+ const replace=runtime([heart,tower]),small=hit(1000);replace.beforeIncomingHit(small);replace.absorbShield(small,60);replace.afterIncomingHit(small,60);replace.afterShieldHit(small,60);
+ const stronger=hit(1000);replace.beforeIncomingHit(stronger);replace.absorbShield(stronger,80);replace.afterIncomingHit(stronger,80);
+ assert.deepEqual(replace.afterShieldHit(stronger,80),{id:tower,amount:60,expiresAt:7000,replaced:{id:heart,remaining:40}});
+ const e=runtime([heart]),start=hit(1000);e.beforeIncomingHit(start);e.absorbShield(start,60);e.afterIncomingHit(start,60);e.afterShieldHit(start,60);
  assert.equal(e.shieldAvailable(compiled.actor.id,6999),40);
  assert.equal(e.shieldAvailable(compiled.actor.id,7000),0);
  assert.deepEqual(e.expireShield(7000),{id:heart,ownerId:compiled.actor.id,earnedAt:1000,expiresAt:7000,remaining:40});
  assert.equal(e.expireShield(7001),undefined);
- const x=runtime([line]);const below=hit(1000,340);x.beforeIncomingHit(below);x.afterIncomingHit(below,20);assert.equal(x.afterShieldHit(below,20),undefined);
- const crossing=hit(2000,350);x.beforeIncomingHit(crossing);x.afterIncomingHit(crossing,1);assert.equal(x.afterShieldHit(crossing,1)?.amount,50);
- const z=runtime([rime]);const at=hit(1000,500);z.beforeIncomingHit(at);z.afterIncomingHit(at,60);assert.equal(z.afterShieldHit(at,60),undefined);
- const already=hit(2000,499);z.beforeIncomingHit(already);z.afterIncomingHit(already,1);assert.equal(z.afterShieldHit(already,1)?.amount,40);
- const fatal=runtime([heart]);const dead=hit(1000,60);fatal.beforeIncomingHit(dead);fatal.afterIncomingHit(dead,60);assert.equal(fatal.afterShieldHit(dead,60),undefined);
+ const x=runtime([line]);const below=hit(1000,340);x.beforeIncomingHit(below);x.absorbShield(below,20);x.afterIncomingHit(below,20);assert.equal(x.afterShieldHit(below,20),undefined);
+ const crossing=hit(2000,350);x.beforeIncomingHit(crossing);x.absorbShield(crossing,1);x.afterIncomingHit(crossing,1);assert.equal(x.afterShieldHit(crossing,1)?.amount,50);
+ const z=runtime([rime]);const at=hit(1000,500);z.beforeIncomingHit(at);z.absorbShield(at,60);z.afterIncomingHit(at,60);assert.equal(z.afterShieldHit(at,60),undefined);
+ const already=hit(2000,499);z.beforeIncomingHit(already);z.absorbShield(already,1);z.afterIncomingHit(already,1);assert.equal(z.afterShieldHit(already,1)?.amount,40);
+ const fatal=runtime([heart]);const dead=hit(1000,60);fatal.beforeIncomingHit(dead);fatal.absorbShield(dead,100);fatal.afterIncomingHit(dead,60);assert.equal(fatal.afterShieldHit(dead,60),undefined);
  assert.throws(()=>runtime(['eq2_t1_citadel:4',tower]),/fixture_scope/);
  console.log('PASS: V26 independent shield grant, exact HP threshold, named depletion, legacy residual, true damage, same-tick, replacement, expiry, threshold crossing and fatal-hit guards');
 }

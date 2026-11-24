@@ -15,6 +15,7 @@ const ALLOWED=new Set([
  './v2/enemy-engine-authority',
  './v2/equipment-trait-engine-authority',
  './v2/equipment-trait-engine-runtime',
+ './v2/equipment-private-hit-qa-v22',
  './v2/dungeon-reward-engine-v2',
  './enemy-v2-status-rules',
 ]);
@@ -52,6 +53,12 @@ export function authorizeEnemyV2EngineExecution(input,authority){
 export function authorizeEquipmentV2TraitEngine(input,authority){
  if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
  return new Map();
+}
+`,
+ './v2/equipment-private-hit-qa-v22':`
+export function authorizeEq2PrivateHitQaV22(input,authority){
+ if(authority!==undefined||input?.players?.some(player=>player.combatV2)) ${DISABLED}
+ return undefined;
 }
 `,
  './v2/equipment-trait-engine-runtime':`
@@ -103,6 +110,7 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'prepareSoloEnemyKitsV2','SoloEncounterPersistenceServiceV2',
   'issueEquipmentV2TraitAuthority','eq2-traits-hidden-engine-pass1',
   'issueDungeonRewardEngineAuthorityV2','dungeon-reward-reactive-hidden-v1',
+  'issueEq2PrivateHitQaV22','eq2-v22-private-current-hit-qa',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

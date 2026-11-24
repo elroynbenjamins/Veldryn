@@ -162,6 +162,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js
       - name: Validate committed ready roster and persistent party run binding provenance
         run: node backend/dist/server/combat/v2/__tests__/party-dungeon-persistence-review.js
+      - name: Execute persisted four-player ten-slot traits and Synchronization rehearsal
+        run: node backend/dist/server/combat/v2/__tests__/persisted-party-ten-slot-execution.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

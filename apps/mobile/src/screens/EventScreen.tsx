@@ -47,7 +47,7 @@ export function EventScreen(props:Props){
  const base=useGameTheme(),[now,setNow]=useState(Date.now());
  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
  const event=eventLifecycle(props.state,now),colors=useMemo(()=>eventTheme(base,event?.definition),[base,event?.definition.accent,event?.definition.visualKey]);
- return <GameThemeScope colors={colors}><EventContent {...props} now={now}/></GameThemeScope>;
+ return <GameThemeScope colors={colors}><View style={{flex:1,minHeight:0,backgroundColor:colors.bg}}><EventContent {...props} now={now}/></View></GameThemeScope>;
 }
 function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenGuildEventBoss,onOpenEventActivity,authoritativeGuildPve=false,now}:Props&{now:number}){
  const language=useGameLanguage();

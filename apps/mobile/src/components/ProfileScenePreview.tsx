@@ -20,6 +20,7 @@ import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {AnimatedProfileBorderGlows,ProfileSceneEffect} from './ProfileCosmeticMotion';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
+import {PROFILE_ANIMATED_COSMETICS_RELEASED} from '../core/release-flags';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
@@ -35,7 +36,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderArt=cosmeticArtByBorder.get(character.profileBorderId??''),effectArt=cosmeticArtByEffect.get(character.profileEffectId??''),borderSource=borderArt?.border??profileBorderSourceById.get(character.profileBorderId??'');
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderArt=PROFILE_ANIMATED_COSMETICS_RELEASED?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=PROFILE_ANIMATED_COSMETICS_RELEASED?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderSource=borderArt?.border??profileBorderSourceById.get(character.profileBorderId??'');
  const anchors=profileSceneContentAnchors(borderSource?8:0);
  return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>

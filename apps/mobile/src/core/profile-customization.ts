@@ -4,6 +4,7 @@ import {PROFILE_TITLES,profileTitleUnlocked,profileBackgroundUnlocked} from './p
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {DUNGEON_SHOP_COLLECTIBLES_V1} from '../content/dungeon-shop-collectibles-v1';
 import {PROFILE_EFFECTS,profileEffectDefinition} from './profile-effects';
+import {PROFILE_ANIMATED_COSMETICS_RELEASED} from './release-flags';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections'|'Store';
 export type ProfileRewardKind='background'|'border'|'effect'|'title';
@@ -149,7 +150,7 @@ export function newlyUnlockedProfileRewards(before:GameState,after:GameState):Pr
  for(const id of addedIds(before.account.unlockedProfileBorderIds,after.account.unlockedProfileBorderIds)){
   notices.push({kind:'border',id,name:eventRewardName(after,'border',id),source:profileRewardSource(after,'border',id)});
  }
- for(const id of addedIds(before.account.unlockedProfileEffectIds,after.account.unlockedProfileEffectIds)){
+ if(PROFILE_ANIMATED_COSMETICS_RELEASED)for(const id of addedIds(before.account.unlockedProfileEffectIds,after.account.unlockedProfileEffectIds)){
   const effect=PROFILE_EFFECTS.find(row=>row.id===id);
   notices.push({kind:'effect',id,name:effect?.name??humanize(id),source:profileRewardSource(after,'effect',id)});
  }

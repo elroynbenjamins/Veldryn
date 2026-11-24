@@ -7,6 +7,7 @@ import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {canUseProfileEffect} from './profile-effects';
+import {PROFILE_ANIMATED_COSMETICS_RELEASED} from './release-flags';
 
 /** One flat wardrobe model so the Look tab renders every cosmetic family the same way:
  * a chip with an owned/total count and a grid of tiles that carry their own unlock source. */
@@ -88,9 +89,10 @@ function titleRows(state:GameState):WardrobeRow[]{
  return [...journal,...base,...events];
 }
 
-export function profileWardrobe(state:GameState,assets:WardrobeAssets):WardrobeCategory[]{
+export function profileWardrobe(state:GameState,assets:WardrobeAssets,options?:{includeUnreleasedEffects?:boolean}):WardrobeCategory[]{
  const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),effect:effectRows(state,assets),pet:petRows(state),title:titleRows(state)};
- return WARDROBE_KINDS.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
+ const kinds=PROFILE_ANIMATED_COSMETICS_RELEASED||options?.includeUnreleasedEffects?WARDROBE_KINDS:WARDROBE_KINDS.filter(kind=>kind!=='effect');
+ return kinds.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
   return {kind,label:WARDROBE_LABELS[kind],rows,owned:counted.filter(row=>row.unlocked).length,total:counted.length};});
 }
 

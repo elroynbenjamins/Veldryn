@@ -42,6 +42,7 @@ ok(look.includes('profileWardrobe(state,WARDROBE_ASSETS)')&&screen.includes('pro
 ok(chips.includes('row.owned')&&chips.includes('row.total'),'Category chips must carry their owned/total unlock counts');
 const wardrobe=fs.readFileSync('src/core/profile-wardrobe.ts','utf8');
 ok(wardrobe.includes("['icon','scene','frame','effect','pet','title']")&&wardrobe.includes("effect:'Effects'"),'Effects must be a first-class wardrobe family between Frames and Pets');
+ok(releaseFlags.includes('PROFILE_ANIMATED_COSMETICS_RELEASED=false')&&wardrobe.includes("kind=>kind!=='effect'"),'Animated profile effects must remain hidden from the player wardrobe until the release gate is approved');
 ok(look.includes("chip==='effect'?live.effect")&&look.includes('cosmeticArtByEffect'),'Effect selection must use its own equipped slot and themed static artwork');
 ok(stage.includes('character.profileEffectId')&&stage.includes('<ProfileSceneEffect'),'The pinned stage must preview the selected showcase effect independently from the border');
 const pager=fs.readFileSync('src/components/OptionPager.tsx','utf8');

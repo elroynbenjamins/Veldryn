@@ -17,7 +17,9 @@ const assets:WardrobeAssets={
 };
 let state=createCharacter(newGame(0),'IRONWARDEN','Wardrobe Test');
 
-const categories=profileWardrobe(state,assets);
+const releasedCategories=profileWardrobe(state,assets);
+ok(!releasedCategories.some(row=>row.kind==='effect'),'unreleased animated effects stay out of the player wardrobe');
+const categories=profileWardrobe(state,assets,{includeUnreleasedEffects:true});
 equal(categories.length,WARDROBE_KINDS.length,'every cosmetic family becomes one chip');
 equal(categories.map(row=>row.kind).join(','),WARDROBE_KINDS.join(','),'chips keep their authored order');
 for(const category of categories){
@@ -76,7 +78,7 @@ const applied=applyWardrobeEquipped(state,next);
 equal(applied.character!.profileBackgroundId,'bg_veilbreak','applying writes the character record');
 equal(applied.character!.profileBorderId,undefined,'an empty frame clears rather than stores an empty id');
 const effectOwned={...state,account:{...state.account,unlockedProfileEffectIds:['effect_gloamward_wisps']}};
-const ownedEffects=profileWardrobe(effectOwned,assets).find(row=>row.kind==='effect')!;
+const ownedEffects=profileWardrobe(effectOwned,assets,{includeUnreleasedEffects:true}).find(row=>row.kind==='effect')!;
 ok(ownedEffects.rows.find(row=>row.id==='effect_gloamward_wisps')?.unlocked,'effect ownership is account-wide');
 const effectApplied=applyWardrobeEquipped(effectOwned,effectSelected);
 equal(effectApplied.character!.profileEffectId,'effect_gloamward_wisps','equipped effect is stored on this character');

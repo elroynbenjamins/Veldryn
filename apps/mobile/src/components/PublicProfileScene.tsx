@@ -19,6 +19,7 @@ import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {AnimatedProfileBorderGlows,ProfileCosmeticExteriorMatte,ProfileSceneEffect} from './ProfileCosmeticMotion';
 import {cosmeticArtByBorder,cosmeticArtByEffect,type CosmeticArt} from '../theme/profile-cosmetic-art-v1';
+import {PROFILE_ANIMATED_COSMETICS_RELEASED} from '../core/release-flags';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
@@ -33,8 +34,8 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
- const equippedBorderArt=!review&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
- const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
+ const equippedBorderArt=!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
+ const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&PROFILE_ANIMATED_COSMETICS_RELEASED&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
  const border=review?borderArt?.border:borderArt?.border??(profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;

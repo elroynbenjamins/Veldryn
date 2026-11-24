@@ -12,12 +12,12 @@ function rejects(operation:()=>unknown,message:string){let rejected=false;try{op
 
 equal(FROSTFALL_EVENT.communityEnabled,false,'Frostfall global community track is replaced by guild Winter Hearth');
 ok(FROSTFALL_EVENT.communityMilestones.length>0,'Keep historical authored definitions without enabling rewards');
-const event={...FROSTFALL_EVENT,communityEnabled:true},now=Date.UTC(2026,11,10);
+const event=FROSTFALL_EVENT,now=Date.UTC(2026,11,10);
 ok(event.communityEnabled===false,'Winter Hearth replaces the global Frostfall community track');
 ok(event.communityMilestones.length>0,'Keep authored historic community reward definitions');
 // A separate synthetic event proves the global pause still blocks even authored-enabled tracks.
 const legacyEvent={...event,id:'QA_PAUSED_COMMUNITY',communityEnabled:true};
-LIVE_EVENT_CATALOG.push(legacyEvent);
+LIVE_EVENT_CATALOG.push(event,legacyEvent);
 equal(EVENT_COMMUNITY_ENABLED,false,'Event-wide community goals are paused');
 let state:GameState=createCharacter(newGame(now),'IRONWARDEN','PausedCommunity');
 state={...state,account:{...state.account,

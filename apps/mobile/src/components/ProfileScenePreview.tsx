@@ -1,3 +1,6 @@
+import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
+import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from '../theme/draconic-integration-assets';
 import {profileT} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo,useState} from 'react';
@@ -38,11 +41,15 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const celestialAssets=getEnabledCelestialAssets();
  const celestialBackground=!!celestialAssets&&backgroundId===CELESTIAL_IDS.background;
  const celestialBorder=!!celestialAssets&&character.profileBorderId===CELESTIAL_IDS.border;
+ const draconic=getDraconicAssets();
+ const draconicBackground=!!draconic&&backgroundId===DRACONIC_IDS.background;
+ const draconicBorder=!!draconic&&character.profileBorderId===DRACONIC_IDS.border;
  const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
    <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
+   {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
    {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}<View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
@@ -55,9 +62,20 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   </View>
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}
+  {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
  const celestial=celestialBackground&&celestialBorder?celestialAssets:undefined;
+ if(draconic&&draconicBackground&&draconicBorder){
+ return <DraconicDominionPreview assets={draconic.scene} equippedPetId={character.selectedCosmeticPetId} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+  portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.celestialIdentity}>
+   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
+   <Text numberOfLines={1} style={s.celestialTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+   <PlayerBadgeShowcase identity={badges.identity} size={11}/>
+  </View>}/>;
+ }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}

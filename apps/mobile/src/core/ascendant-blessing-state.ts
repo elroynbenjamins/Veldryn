@@ -1,5 +1,5 @@
+import {isUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
 import type {GameState} from './types';
-import {CELESTIAL_IDS} from './ascendant-cosmetics';
 import {
  activeAscendantBlessingTotals,isAscendantBlessing,previewAscendantBlessingTotals,
  type AscendantBlessing,type AscendantBlessingInput,
@@ -16,7 +16,7 @@ function owned(state:GameState,slot:AscendantBlessingEquipSlot,id:string){
   :(state.account.unlockedProfileBackgroundIds??[]).includes(id);
 }
 function eligible(slot:AscendantBlessingEquipSlot,id:string|undefined){
- return slot==='pet'?id===CELESTIAL_IDS.pet:id===CELESTIAL_IDS.background;
+ return !!id&&isUltraLuxeProfileCosmetic(slot,id);
 }
 function selected(state:GameState,slot:AscendantBlessingEquipSlot){
  return slot==='pet'?state.character?.ascendantPetBlessing:state.character?.ascendantBackgroundBlessing;

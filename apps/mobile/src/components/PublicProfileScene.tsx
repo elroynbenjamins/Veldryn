@@ -1,3 +1,6 @@
+import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
+import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from '../theme/draconic-integration-assets';
 import {accountText} from '../i18n/account';
 import {profileT} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -36,11 +39,15 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const celestialAssets=getEnabledCelestialAssets();
  const celestialBackground=!!celestialAssets&&profile.backgroundId===CELESTIAL_IDS.background;
  const celestialBorder=!!celestialAssets&&profile.borderId===CELESTIAL_IDS.border;
+ const draconic=getDraconicAssets();
+ const draconicBackground=!!draconic&&profile.backgroundId===DRACONIC_IDS.background;
+ const draconicBorder=!!draconic&&profile.borderId===DRACONIC_IDS.border;
  const standard=<View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
+   {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={reduceMotion}/>:null}
    {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
@@ -58,9 +65,21 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border}/>:null}
+  {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
  const celestial=height>=205&&celestialBackground&&celestialBorder?celestialAssets:undefined;
+ if(draconic&&draconicBackground&&draconicBorder&&height>=205){
+ return <DraconicDominionPreview assets={draconic.scene} equippedPetId={profile.petId} alternatePetSource={pet} petAccessibilityLabel={profile.petId===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
+  portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.celestialIdentity}>
+   <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>
+   <Text numberOfLines={1} style={s.celestialTitle}>{profile.title}</Text>
+   <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
+   <PlayerBadgeShowcase identity={profile.playerBadges} size={11}/>
+  </View>}
+  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild}/>:undefined}/>;
+ }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}

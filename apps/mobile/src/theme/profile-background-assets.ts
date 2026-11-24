@@ -1,3 +1,6 @@
+import {DRACONIC_IDS,DRACONIC_COLLECTION} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from './draconic-integration-assets';
+const draconic=getDraconicAssets();
 import {ImageSourcePropType} from 'react-native';
 import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
 const celestial=getEnabledCelestialAssets();
@@ -22,6 +25,7 @@ export const PROFILE_BACKGROUND_PREVIEWS:readonly ProfileBackgroundPreview[]=[
   {id:'dungeon:sunscar:buried-observatory',name:'Buried Observatory',source:require('../../assets/profile-backgrounds/dungeon-sunscar-buried-observatory.webp'),status:'export_prepared',unlockBinding:null},
   {id:'dungeon:frostmarch:shiverlake-reflections',name:'Shiverlake Reflections',source:require('../../assets/profile-backgrounds/dungeon-frostmarch-shiverlake-reflections.webp'),status:'export_prepared',unlockBinding:null},
   ...(celestial?[{id:CELESTIAL_IDS.background,name:'Astral Sanctum',source:celestial.scene.background,status:'export_prepared' as const,unlockBinding:null}]:[]),
+  ...(draconic?[{id:DRACONIC_IDS.background,name:DRACONIC_COLLECTION.backgroundName,source:draconic.scene.background,status:'export_prepared' as const,unlockBinding:null}]:[]),
 ] as const;
 
 export const profileBackgroundPreviewById=new Map(PROFILE_BACKGROUND_PREVIEWS.map(background=>[background.id,background]));

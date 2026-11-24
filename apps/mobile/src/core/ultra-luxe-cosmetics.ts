@@ -7,16 +7,16 @@ import type {GameState} from './types';
  * Add future ultra-luxe collections here as their IDs are authored.
  */
 const ULTRA_LUXE_PROFILE_BACKGROUND_IDS=new Set<string>([
- 'ascendant-celestial-astral-sanctum',
+ 'ascendant-celestial-astral-sanctum','ascendant-draconic-dominion-of-ash',
 ]);
 const ULTRA_LUXE_PROFILE_BORDER_IDS=new Set<string>([
- 'ascendant-celestial-crown-of-the-cosmos',
+ 'ascendant-celestial-crown-of-the-cosmos','ascendant-draconic-throne-of-embers',
 ]);
 const ULTRA_LUXE_PET_IDS=new Set<string>([
- 'ascendant-celestial-aetherion',
+ 'ascendant-celestial-aetherion','ascendant-draconic-vharaxis',
 ]);
 const ULTRA_LUXE_BADGE_IDS=new Set<string>([
- 'ascendant_celestial_sovereign',
+ 'ascendant_celestial_sovereign','ascendant_draconic_sovereign',
 ]);
 
 export type UltraLuxeProfileKind='background'|'border'|'pet';

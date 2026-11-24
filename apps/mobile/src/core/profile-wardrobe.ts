@@ -1,3 +1,5 @@
+import {DRACONIC_IDS,DRACONIC_COLLECTION} from './draconic-showcase-layout';
+import {ownsUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
 import type {GameState} from './types';
 import {profileIconCollection} from './profile-icons';
 import {BASE_PROFILE_BACKGROUNDS,canUseProfileCosmetic,profileCosmeticReleased} from './profile-cosmetics';
@@ -48,7 +50,7 @@ function sceneRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const base=BASE_PROFILE_BACKGROUNDS.map(item=>({kind:'scene' as const,id:item.id,name:item.name,group:'Starter',unlocked:true,equipped:equipped===item.id}));
  const released=assets.scenes.filter(item=>!BASE_PROFILE_BACKGROUNDS.some(row=>row.id===item.id)&&profileCosmeticReleased(state,'background',item.id));
  return [...base,...released.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id);
-  return {kind:'scene' as const,id:item.id,name:item.name,group:isCelestialBackground(item.id)?'Ascendant':item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
+  return {kind:'scene' as const,id:item.id,name:item.name,group:(isCelestialBackground(item.id)||item.id===DRACONIC_IDS.background)?'Ascendant':item.id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'background',item.id))};})];
 }
 
 function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
@@ -56,15 +58,17 @@ function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const released=assets.frames.filter(id=>profileCosmeticReleased(state,'border',id));
  return [{kind:'frame' as const,id:'',name:'No frame',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
   ...released.map(id=>{const unlocked=canUseProfileCosmetic(state,'border',id),source=profileRewardSource(state,'border',id);
-   return {kind:'frame' as const,id,name:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:isCelestialBorder(id)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
+   return {kind:'frame' as const,id,name:id===DRACONIC_IDS.border?DRACONIC_COLLECTION.borderName:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:(isCelestialBorder(id)||id===DRACONIC_IDS.border)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
-function petRows(state:GameState):WardrobeRow[]{
+function petRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const equipped=state.character?.selectedCosmeticPetId??'';
  const rows=collectibleJournal(state).filter(row=>row.kind==='pet'&&(row.owned||row.collectionGroup==='event'))
   .sort((a,b)=>Number(b.owned)-Number(a.owned)||a.name.localeCompare(b.name));
  const celestial=releasedCelestialPetWardrobeDefinition(state);
+ const draconic=assets.scenes.some(s=>s.id===DRACONIC_IDS.background)&&assets.frames.includes(DRACONIC_IDS.border)&&ownsUltraLuxeProfileCosmetic(state,'pet',DRACONIC_IDS.pet);
  return [{kind:'pet' as const,id:'',name:'No Pet',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
+  ...(draconic?[{kind:'pet' as const,id:DRACONIC_IDS.pet,name:DRACONIC_COLLECTION.petName,group:'Ascendant',unlocked:true,equipped:equipped===DRACONIC_IDS.pet}]:[]),
   ...(celestial?[{kind:'pet' as const,id:CELESTIAL_IDS.pet,name:celestial.name,group:celestial.group,unlocked:true,equipped:equipped===CELESTIAL_IDS.pet}]:[]),
   ...rows.map(row=>({kind:'pet' as const,id:row.id,name:row.name,group:row.collectionGroup==='event'?'Event':'Collection',unlocked:row.owned,equipped:equipped===row.id,
    ...(row.owned?{}:{lockTag:'COLLECTION',sourceLabel:'Collections',sourceDetail:'Unlock this Pet through its collection source.',destination:'Collections' as ProfileCustomizationDestination,actionLabel:'Open Collections'})}))];
@@ -85,7 +89,7 @@ function titleRows(state:GameState):WardrobeRow[]{
 }
 
 export function profileWardrobe(state:GameState,assets:WardrobeAssets):WardrobeCategory[]{
- const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),pet:petRows(state),title:titleRows(state)};
+ const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),pet:petRows(state,assets),title:titleRows(state)};
  return WARDROBE_KINDS.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
   return {kind,label:WARDROBE_LABELS[kind],rows,owned:counted.filter(row=>row.unlocked).length,total:counted.length};});
 }

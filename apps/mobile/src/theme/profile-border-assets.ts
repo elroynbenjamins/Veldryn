@@ -1,3 +1,6 @@
+import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from './draconic-integration-assets';
+const draconic=getDraconicAssets();
 import type {ImageSourcePropType} from 'react-native';
 import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
 const celestial=getEnabledCelestialAssets();
@@ -14,5 +17,6 @@ export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['dungeon:sunscar:amberglass-loop',require('../../assets/profile-borders/dungeon-sunscar-amberglass-loop.webp')],
   ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
   ...(celestial?[[CELESTIAL_IDS.border,require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
+  ...(draconic?[[DRACONIC_IDS.border,draconic.standardBorder] as [string,ImageSourcePropType]]:[]),
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);

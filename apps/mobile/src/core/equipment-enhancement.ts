@@ -201,9 +201,12 @@ export function enhancedGearStatsAtRank(state:GameState,itemId:string,rank:numbe
     ?craftedGearInstances(state).find(row=>row.id===instanceId&&row.itemId===itemId)
     :equippedCraftedInstance(state,itemId);
   if(instanceId&&!instance)throw new Error('Unknown equipment copy');
+  return gearStatsForCopy(itemId,rank,instance?.rarity??effectiveOwnedGearRarity(state,itemId),instance?.quality);
+}
+/** Item-only stats, excluding gem, random affix, set and loadout effects. */
+export function gearStatsForCopy(itemId:string,rank:number,rarity:ItemRarity,qualityRoll?:number){
   const stats=gearStatsAtRank(itemId,rank);
-  const rarity=instance?.rarity??effectiveOwnedGearRarity(state,itemId);
-  const quality=instance?.quality===undefined?1:craftedGearQualityMultiplier(instance.quality);
+  const quality=qualityRoll===undefined?1:craftedGearQualityMultiplier(qualityRoll);
   const m=craftedRarityStatMultiplier(itemId,rarity)*quality,scale=(value:number)=>value*m;
   return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};
 }

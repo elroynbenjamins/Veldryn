@@ -1,5 +1,11 @@
 import type {CharacterState,GameState,GearSlot} from './types';
-import type {ItemRarity} from './item-rarity';
+import {itemRarity,type ItemRarity} from './item-rarity';
+import {itemDef} from '../content/items';
+import {normalizeGemRollPercentV1,gemRolledValueV1} from '../content/gems-v1';
+import {gearStatsForCopy,gemEffectDescription,legacyGemBonusValue,normalizeEnhancementGemSlots} from './equipment-enhancement';
+import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
+import {normalizeWeaponBonuses,type WeaponBonusRoll,type WeaponBonusRollVersion} from './weapon-bonus-rolls';
+import {normalizeEquipmentBonuses} from './equipment-bonus-rolls';
 
 /** Stable ten-slot order used by the public profile and local audience preview. */
 export const PROFILE_GEAR_SLOTS:readonly GearSlot[]=[
@@ -11,6 +17,11 @@ export interface ProfileEquippedGear{
  rarity?:ItemRarity;
  quality?:number;
  rank?:number;
+ /** True only when the server resolved the selected character and its exact equipped copy. */
+ inspectionKnown?:boolean;
+ bonuses?:WeaponBonusRoll[];
+ statGemRollPercent?:number;
+ effectGemRollPercent?:number;
  statGemId?:string;
  effectGemId?:string;
  /** Legacy saves used a single array for both gem socket types. */
@@ -30,6 +41,49 @@ const cleanRank=(value:unknown)=>typeof value==='number'&&Number.isInteger(value
 const cleanQuality=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=100?value:undefined;
 const cleanGems=(value:unknown)=>Array.isArray(value)?Array.from(new Set(value.map(cleanId).filter((id):id is string=>!!id))).slice(0,2):[];
 
+function copyBonuses(itemId:string,rarity:ItemRarity|undefined,row:Record<string,unknown>):WeaponBonusRoll[]|undefined{
+ if(!rarity)return undefined;
+ try{
+  const item=itemDef(itemId);
+  if(item.type!=='gear')return undefined;
+  if(item.slot==='weapon'){
+   const rawVersion=row.weaponBonusRollVersion;
+   const version=rawVersion===undefined||rawVersion===null?1:rawVersion;
+   if(typeof version!=='number'||![1,2,3,4,5,6,7].includes(version))return undefined;
+   return normalizeWeaponBonuses(itemId,rarity,row.weaponBonuses,version as WeaponBonusRollVersion);
+  }
+  return normalizeEquipmentBonuses(itemId,rarity,row.equipmentBonuses,row.equipmentBonusRollVersion);
+ }catch{return undefined}
+}
+
+/** No viewer loadout, set bonuses, or speculative values are included. */
+export function profileItemStats(gear:ProfileEquippedGear){
+ try{
+  const item=itemDef(gear.itemId);
+  if(item.type!=='gear'||gear.inspectionKnown!==true)return undefined;
+  return gearStatsForCopy(item.id,gear.rank??0,gear.rarity??itemRarity(item),gear.quality);
+ }catch{return undefined}
+}
+
+export function profileItemSockets(gear:ProfileEquippedGear){
+ const slots=normalizeEnhancementGemSlots(gear);
+ return (['stat','effect'] as const).map(kind=>{
+  const id=kind==='stat'?slots.statGemId:slots.effectGemId;
+  const roll=kind==='stat'?slots.statGemRollPercent:slots.effectGemRollPercent;
+  if(!id)return {kind,id:undefined,detail:undefined};
+  // An old RPC did not include roll strength. Do not imply a neutral roll is verified.
+  if(gear.inspectionKnown!==true)return {kind,id,detail:undefined};
+  try{
+   const gem=itemDef(id),meta=canonicalGemMetaV1(id);
+   const value=meta?gemRolledValueV1(meta.familyId,meta.grade,roll):legacyGemBonusValue(id,roll);
+   const detail=kind==='stat'
+    ?meta?formatGemValueV1(meta.familyId,meta.grade,roll):`+${Number((value*100).toFixed(3))}% ${gem.gemStat??'stat'}`
+    :meta?`${Number((value*100).toFixed(3))}% · ${gemEffectDescription(id)}`:gemEffectDescription(id,roll);
+   return {kind,id,detail};
+  }catch{return {kind,id,detail:undefined}}
+ });
+}
+
 /** Validate untrusted RPC JSON and never repeat or invent equipment slots. */
 export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefined{
  if(!Array.isArray(rows))return undefined;
@@ -44,6 +98,10 @@ export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefin
   bySlot.set(row.slot as GearSlot,{
    slot:row.slot as GearSlot,itemId,rarity,
    quality:cleanQuality(row.quality),rank:cleanRank(row.rank),
+   inspectionKnown:row.inspectionKnown===true,
+   bonuses:row.inspectionKnown===true?copyBonuses(itemId,rarity,row):undefined,
+   statGemRollPercent:normalizeGemRollPercentV1(row.statGemRollPercent),
+   effectGemRollPercent:normalizeGemRollPercentV1(row.effectGemRollPercent),
    statGemId:cleanId(row.statGemId),effectGemId:cleanId(row.effectGemId),
    gemIds:cleanGems(row.gemIds),
   });
@@ -68,6 +126,10 @@ export function localProfileGear(state:GameState,selectedCharacterId?:string|nul
   const enhancement=instance?.enhancement??character.gearEnhancements?.[itemId];
   return [{
    slot,itemId,rarity:instance?.rarity,
+   inspectionKnown:!instanceId||!!instance,
+   bonuses:instance?copyBonuses(itemId,instance.rarity,{...instance}):undefined,
+   statGemRollPercent:normalizeGemRollPercentV1(enhancement?.statGemRollPercent),
+   effectGemRollPercent:normalizeGemRollPercentV1(enhancement?.effectGemRollPercent),
    quality:cleanQuality(instance?.quality),
    rank:cleanRank(enhancement?.rank),
    statGemId:cleanId(enhancement?.statGemId),

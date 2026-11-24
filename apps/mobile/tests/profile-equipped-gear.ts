@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount} from '../src/core/profile-equipped-gear';
+import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets} from '../src/core/profile-equipped-gear';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){
@@ -50,6 +50,11 @@ equal(activeGear[0].rarity,'rare','exact crafted copy rarity shown');
 equal(activeGear[0].quality,75,'exact crafted copy quality shown');
 equal(activeGear[0].rank,2,'exact crafted copy upgrade shown');
 equal(activeGear[0].gemIds?.join(','),'EMBER_SHARD','local legacy sockets remain visible');
+const effective=profileItemStats(activeGear[0]);
+ok(effective&&effective.attack>0,'known exact copy gets modified item stats');
+equal(profileItemStats({...activeGear[0],inspectionKnown:false}),undefined,'old or unresolved payload never invents stats');
+equal(profileItemSockets(activeGear[0])[0].id,'EMBER_SHARD','actual socket is shown');
+equal(profileItemSockets({...activeGear[0],inspectionKnown:false})[0].detail,undefined,'old payload cannot invent gem effect');
 const otherGear=localProfileGear(state,otherId);
 equal(otherGear.length,1,'selected inactive character gets own loadout');
 equal(otherGear[0].slot,'ring','selected inactive character does not leak active gear');

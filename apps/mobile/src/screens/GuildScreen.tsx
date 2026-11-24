@@ -103,6 +103,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
     onlineSection==='Manage'||onlineSection==='Appearance'||onlineSection==='Chat'?'Home':onlineSection;
    onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
   },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
+  const [raidGuildId,setRaidGuildId]=useState<string|null>(null);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
   const [guildTourJustJoined,setGuildTourJustJoined]=useState(false);
   const [weeklyVotePending,setWeeklyVotePending]=useState(false);
@@ -119,16 +120,17 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    const headerGuide=online&&(['Activities','Progress','PvE','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={localizedGuildDetailedGuide(language,guideSection)??guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
-   void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
+   void myGuild().then(membership=>{setRaidGuildId(membership?.guild_id??null);setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
     .catch(reason=>{setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')});
   };
   useEffect(()=>{
    if(!online)return;
    let mounted=true;
-   void myGuild().then(membership=>{if(mounted){setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
+   setGuildMembership('loading');setRaidGuildId(null);
+   void myGuild().then(membership=>{if(mounted){setRaidGuildId(membership?.guild_id??null);setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
     .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
    return()=>{mounted=false};
-  },[online,membershipRevision]);
+  },[online,membershipRevision,session?.user.id]);
   // Warm only the authenticated member's board after Home has painted. No polling from Home.
   const raidCharacterId=state.character?.id;
   useEffect(()=>{if(!online||guildMembership!=='member'||onlineSection!=='Home'||!session?.user.id||!raidCharacterId)return;const timer=setTimeout(()=>{if(AppState.currentState==='active')void prefetchGuildPveBoard(raidCharacterId).catch(()=>{})},700);return()=>clearTimeout(timer)},[online,guildMembership,onlineSection,session?.user.id,raidCharacterId,membershipRevision]);
@@ -178,7 +180,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
       {activityView==='Muster'?<><GuildSectionHeader label={st("DAILY & WEEKLY")} title={st("Muster & Rally")} copy={guildTutorialText(language,'Track your daily effort and weekly Guild Rally progress.')}/><OnlineGuildMusterPanel/></>:null}
     </View>:null}
     {onlineSection==='Progress'?<GuildProgressPanel headerHelp={headerGuide} tab={progressTab} onChange={setProgressTab} projects={onlineProjects} onViewBank={()=>{setHallSection('Bank');setOnlineSection('Hall');guildScroll.current?.scrollTo({y:0,animated:false})}}/>:null}
-    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide,key:`${session?.user.id??''}:${raidCharacterId??''}:${membershipRevision}`}):onlinePve):null}
+    {onlineSection==='PvE'?(isValidElement<{headerHelp?:ReactNode;raidScope?:string}>(onlinePve)?cloneElement(onlinePve,{headerHelp:headerGuide,raidScope:JSON.stringify([session?.user.id??'',raidGuildId??'',raidCharacterId??'']),key:`${session?.user.id??''}:${raidGuildId??''}:${raidCharacterId??''}:${membershipRevision}`}):onlinePve):null}
     {onlineSection==='Hall'?<View style={s.sectionStack}>
       {isValidElement<{playerState?:GameState;activeSection?:'Overview'|'Construction'|'Bank'|'Skills'|'Legacy'|'Shop';onSectionChange?:(section:GuildNavigationState['hallSection'])=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;headerHelp?:ReactNode}>(onlineHall)
        ?cloneElement(onlineHall,{activeSection:hallSection,playerState:state,onTokenRewardsChanged,headerHelp:headerGuide,onSectionChange:next=>{if(next==='Skills'){setProgressTab('Skills');setOnlineSection('Progress')}else setHallSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}})

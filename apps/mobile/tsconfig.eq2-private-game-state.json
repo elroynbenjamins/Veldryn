@@ -8,7 +8,8 @@
     "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-game-state.test.ts",
     "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-gem-sidecar.test.ts",
     "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-virtual-custody.test.ts",
-    "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-physical-delivery-staging.test.ts"
+    "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-physical-delivery-staging.test.ts",
+    "../../backend/src/server/equipment/__tests__/equipment-crafting-v2-effect-gem-policy.test.ts"
   ],
   "exclude": []
 }

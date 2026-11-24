@@ -142,9 +142,9 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    return undefined;
   },
   absorbShield(e:Eq2PrivateIncomingEventV24,unabsorbed:number){
-   if(!incomingBefore.has(e)||shieldAbsorbed.has(e)||!eligibleIncoming(e)||!Number.isFinite(unabsorbed)||unabsorbed<=0)return undefined;
+   if(!incomingBefore.has(e)||shieldAbsorbed.has(e)||!eligibleIncoming(e)||!Number.isFinite(unabsorbed)||unabsorbed<0)return undefined;
    shieldAbsorbed.add(e);
-   if(!shieldState||!shieldAvailable(e.targetId,e.now))return undefined;
+   if(unabsorbed===0||!shieldState||!shieldAvailable(e.targetId,e.now))return undefined;
    const amount=Math.min(unabsorbed,shieldState.remaining),id=shieldState.id;
    shieldState.remaining-=amount;
    const broken=shieldState.remaining<=0;
@@ -152,7 +152,7 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    return {id,amount,broken};
   },
   afterShieldHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number){
-   if(!incomingAfter.has(e)||shieldGranted.has(e))return undefined;
+   if(!incomingAfter.has(e)||!shieldAbsorbed.has(e)||shieldGranted.has(e))return undefined;
    shieldGranted.add(e);
    if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>=e.targetHp)return undefined;
    if(shieldState&&e.now>=shieldState.expiresAt)shieldState=undefined;

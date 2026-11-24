@@ -103,7 +103,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
   claimGraceDays:2,
   visualKey:'frostfall',
-  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Build your Guild Christmas Market',description:'Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn the permanent Frostfall Aurora 2026 Guild name color. Personal festival rewards and Aurora Hollow remain separate.',highlights:['Guild Christmas Market construction','Two winter supply tracks and Guild milestones','Aurora Hollow seasonal expedition']},
+  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Build your Guild Christmas Market',description:'Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.',highlights:['Guild Christmas Market construction','Two winter supply tracks and Guild milestones','Aurora Hollow seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Frostfall',
     dailyGiftTitle:'Today’s Frostfall Gift',

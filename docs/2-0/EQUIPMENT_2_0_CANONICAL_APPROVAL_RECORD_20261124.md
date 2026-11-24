@@ -2,7 +2,8 @@
 
 **Status date:** 24 November 2026  
 **Scope:** source-backed Equipment 2.0 decisions through PRs [#1706](https://github.com/elroynbenjamins/Veldryn/pull/1706), [#1711](https://github.com/elroynbenjamins/Veldryn/pull/1711), and [#1713](https://github.com/elroynbenjamins/Veldryn/pull/1713)  
-**Authority:** design approval record only  
+**Authority:** design approval record only
+**Current consolidated review index:** `docs/2-0/eq2-consolidated-review-index-v14.json` (supersedes V8 index, preserves historical source pins)  
 **Release state:** **REVIEW-ONLY, NON-ISSUABLE, NON-TRADEABLE, NON-EXECUTABLE**
 
 This is the canonical status record for the current Equipment 2.0 tranche. It supersedes any inference that a source test, preview, proposed coefficient, successful simulation, or review-branch implementation is owner approval.
@@ -64,6 +65,24 @@ These facts describe what the current private branches verify. They do not appro
 | EQ2-P06 | **PROPOSAL** | Use authored boss opportunities and three-way Skills tactics to tune sets and counterplay. | Final benchmark protocol, target advantage bands, encounter sample size, equal-CP method, class tolerance, and acceptance thresholds. |
 | EQ2-P07 | **PROPOSAL** | Introduce a new universal-affix rules version rather than mutating original Forge `draft-1`. | Final version ID, schema, migration/non-migration policy, secure RNG implementation, and production transaction contract. |
 | EQ2-P08 | **PROPOSAL** | Preserve class-specific authored innate percentages on selected equipment while keeping random bonuses universal. | Which items receive innate percentages, their values/caps, their CP cost, and their market/economy effect. |
+
+## 3A. Consolidated economy decisions (V14)
+
+Owner requested V9–V13 consolidation before proceeding. C14 remains confirmed direction; subsequent candidate numerical details are **not** independently approved for gameplay.
+
+| Domain | Current review authority | Status / unresolved choice |
+|---|---|---|
+| Membership and source scope | V2 exact roster, V14 classification | 554 items / 95 sets; 469 craft-review items / 928 routes; 79 boss-only; six missing blueprint recipes; ten T5 single-route items. No launch roster approval. |
+| Finished crafting | V9 C14 | Preserve fee reduction and increased manufactured requirements; no V8 combined fee reversal. |
+| Material identity | V12 | 75 candidate identities including dormant Verdant Essence; prefer existing Copper/Aster-Iron Ingot, no automatic conversion or final quantity approval. |
+| Processing | V13 | 29 outputs; 21 new candidates, eight existing references. Batch 3 for new basic recipes, 1.2x speed for new processing, zero new processing fee are proposals. Existing recipes retained; separate pending #1693 source variant not merged. |
+| Sources and access | V12 source identities and V13 rate/XP/duration candidate | No actual grant, area access, rate or commission verification. V13 Frostflax effective action replaces V11 illustrative timing/yield. |
+| Hand acquisition | V11 50 alternate bills, V13 full bill calculation | Separate alternative, never extra recipe consumption or fee. Independent receipt, actual parity, XP and custody open. |
+| Recycling | V11 refined-only 20% proposal, V14 normalized preview | Never recover based on preview as authority. Actual paid immutable bill and one-time destruction required; boss/legacy/receipt policy open. |
+| Market/economy | V14 current raw baskets from V13; V4 rarity candidate | V10 prices/profile and V11 raw baskets historical only, not current estimates. Raw value, supply, fees, demand and rarity rates remain open. |
+| Combat dependency | D1–D10 | No numerical power, CP, set, equip, source or Market decision accepted merely by consolidating this economy. |
+
+V14 index records 21 original/current source pins, contract precedence and denial flags. It does not replace the historical source files or create runtime authority. See `docs/2-0/EQUIPMENT_2_0_CONSOLIDATED_REVIEW_V14.md`.
 
 ## 4. Open launch gates
 

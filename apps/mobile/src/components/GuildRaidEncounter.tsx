@@ -23,12 +23,13 @@ const forestStage=require('../../assets/card-backgrounds/forest_sanctum_wide_v2.
 const ruinsStage=require('../../assets/card-backgrounds/veilbreak_wide_v2.webp');
 const harvestStage=require('../../assets/card-backgrounds/harvestwake_wide_v2.webp');
 const caravanStage=require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp');
-const frostfallStage=require('../../assets/profile-backgrounds/bg_frostfall.webp');
+const frostfallStage=require('../../assets/card-backgrounds/frostfall_wide_v2.webp');
 
 function RaidCountdown({resolvesAt}:{resolvesAt?:string|null}){
  const st=useSocialText();const [now,setNow]=useState(Date.now());
  useEffect(()=>{const tick=()=>{if(AppState.currentState==='active')setNow(Date.now())};tick();const timer=setInterval(tick,1000);const sub=AppState.addEventListener('change',tick);return()=>{clearInterval(timer);sub.remove()}},[resolvesAt]);
- const remaining=resolvesAt?Math.max(0,Math.ceil((Date.parse(resolvesAt)-now)/1000)):0;
+ const deadline=resolvesAt?Date.parse(resolvesAt):NaN;
+ const remaining=Number.isFinite(deadline)?Math.max(0,Math.ceil((deadline-now)/1000)):0;
  return <>{remaining>0?st('Raid in progress · {time}',{time:`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`}):st('Resolving attempt…')}</>;
 }
 export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abbreviated',busy=false,onClaim,onAttempt,onCombat,onRefresh}:{row:GuildPveEncounter;state?:GameState;guildRewards?:EventReward[];numberMode?:'abbreviated'|'exact';busy?:boolean;onClaim:(percent:number)=>unknown;onAttempt?:()=>unknown;onCombat?:()=>unknown;onRefresh?:()=>unknown}){
@@ -52,9 +53,9 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
  const openTheater=()=>{watchAfterStart.current=false;setSummaryOpen(true);};
  const actionLabel=busy?st('Please wait…'):pending?st('Watch'):locked?st('Requires Guild Level {level}',{level:view.requiredGuildLevel}):characterLocked?st('Requires level {level}',{level:10}):!row.eligible?st('Next encounter'):!view.open?st(view.status):view.attemptsRemaining===0&&view.attemptCap>0?st('No attempts remaining'):st('Begin 3-minute attempt');
  return <View style={[s.encounter,{backgroundColor:C.panel,borderColor:C.line}]}>
-  <ImageBackground source={stage} resizeMode="cover" style={s.hero} imageStyle={s.backdrop}>
+  <ImageBackground source={stage} fadeDuration={0} resizeMode="cover" style={s.hero} imageStyle={s.backdrop}>
    <View style={s.heroShade}/><View style={s.heroTop}><Text style={[s.kicker,{color:'#e7dfce'}]}>{st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')}</Text><View style={s.duration}><Text style={s.durationText}>{st('3-minute attempt')}</Text></View></View>
-   <Image accessible={false} source={bossArt[presentation.visualKey]} resizeMode="contain" style={s.bossArt}/>
+   <Image accessible={false} source={bossArt[presentation.visualKey]} fadeDuration={0} resizeMode="contain" style={s.bossArt}/>
    <View style={s.heroCopy}><Text style={s.bossTitle}>{presentation.bossTitle}</Text><Text accessibilityRole="header" style={s.bossName}>{presentation.bossName}</Text></View>
   </ImageBackground>
   <View style={s.body}>
@@ -69,7 +70,7 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
     <Text style={[s.kicker,{color:accent}]}>{st('MILESTONE REWARDS')}</Text>
     <Text accessibilityLiveRegion="polite" style={[s.meta,{color:view.milestones.some(m=>m.ready)?C.good:C.muted}]}>{st(view.milestones.some(m=>m.ready)?'Reward unlocked':view.milestones.every(m=>m.claimed)?'Claimed':'Guild progress needed')}</Text>
    </View>
-   <View style={s.milestoneStrip}>{view.milestones.map(m=><View key={m.percent} accessible accessibilityLabel={`${m.percent}% · ${st(m.claimed?'Claimed':m.ready?'Reward unlocked':'Guild progress needed')}`} style={[s.milestoneChip,{backgroundColor:C.panel2,borderColor:m.claimed?C.muted:m.ready?C.good:C.line}]}><Text style={[s.partyName,{color:m.claimed?C.muted:m.ready?C.good:accent}]}>{m.claimed?'✓ ':''}{m.percent}%</Text><Text style={[s.meta,{color:C.muted}]}>{st(m.claimed?'Claimed':m.ready?'Reward unlocked':'Guild progress needed')}</Text></View>)}</View>
+   <View style={s.milestoneStrip}>{view.milestones.map(m=><View key={m.percent} accessible accessibilityLabel={`${m.percent}% · ${st(m.claimed?'Claimed':m.ready?'Reward unlocked':view.percent>=m.percent?'Contribution needed':'Guild progress needed')}`} style={[s.milestoneChip,{backgroundColor:C.panel2,borderColor:m.claimed?C.muted:m.ready?C.good:C.line}]}><Text style={[s.partyName,{color:m.claimed?C.muted:m.ready?C.good:accent}]}>{m.claimed?'✓ ':''}{m.percent}%</Text><Text style={[s.meta,{color:C.muted}]}>{st(m.claimed?'Claimed':m.ready?'Reward unlocked':view.percent>=m.percent?'Contribution needed':'Guild progress needed')}</Text></View>)}</View>
    {view.milestones.filter(m=>m.ready||showAllMilestones).map(m=><View key={m.percent} style={[s.reward,compact&&s.stack,{borderColor:C.line}]}><View style={[s.medal,{backgroundColor:C.panel2}]}><Text style={[s.partyName,{color:m.claimed?C.muted:accent}]}>{m.claimed?'✓':`${m.percent}%`}</Text></View><View style={s.flex}><Text style={[s.partyName,{color:C.text}]}>Guild Bank · {n(m.bank.gold)} {st('Gold')} · {n(m.bank.xp)} Guild XP</Text><Text style={[s.meta,{color:C.info}]}>{Object.entries(m.bank.materials).map(([id,quantity])=>`${quantity} ${itemDef(id).name}`).join(' · ')}</Text>{m.gold>0?<Text style={[s.meta,{color:C.special}]}>Personal · {n(m.gold)} {st('Gold')} · {n(m.eventCurrency)} {st('Event currency')} · {m.candy} {st(m.candyKind)} {st('Candy')}</Text>:null}<Text style={[s.meta,{color:C.muted}]}>{m.claimed?st('Claimed'):view.percent<m.percent?st('Guild progress needed'):row.personalDamage<1000?st('Contribution needed'):!m.ready?st(view.status):st('Reward unlocked')}</Text></View><GameButton compact title={m.claimed?st('Claimed'):st('Claim')} loading={busy&&m.ready} disabled={busy||!m.ready} onPress={()=>onClaim(m.percent)}/></View>)}
    {view.milestones.some(m=>!m.ready)?<Pressable accessibilityRole="button" accessibilityState={{expanded:showAllMilestones}} onPress={()=>setShowAllMilestones(value=>!value)} style={[s.disclosure,{borderColor:C.line}]}>
     <Text style={[s.sectionTitle,{color:accent}]}>{st(showAllMilestones?'Hide other milestone rewards':'View all milestone rewards')}</Text>

@@ -208,13 +208,16 @@ export async function guildAppearanceEntitlements(){
  if(constructed.error&&constructed.error.code!=='PGRST202'&&constructed.error.code!=='42883')
   throw constructed.error;
  const row=base.data?.[0];
+ const eventCosmeticIds=(row?.event_cosmetic_ids??[]) as string[];
+ const seasonal=eventCosmeticIds.some(isFrostfallGuildCosmetic)?await client.rpc('guild_frostfall_cosmetic_releases_v1'):null;
+ const releasedEventCosmeticIds=seasonal&&!seasonal.error&&Array.isArray(seasonal.data)?seasonal.data.filter((id:unknown):id is string=>typeof id==='string'&&isFrostfallGuildCosmetic(id)):[];
  const rewardRows=(Array.isArray(constructed.data)?constructed.data:[]) as
   Array<{unlock_id:string;cosmetic_kind:string;owned:boolean;released:boolean}>;
  return {
   guildLevel:Number(row?.guild_level??1),
   bannerGalleryTier:Number(row?.banner_gallery_tier??0),
   pveAchievementIds:(row?.pve_achievement_ids??[]) as string[],
-  eventCosmeticIds:(row?.event_cosmetic_ids??[]) as string[],
+  eventCosmeticIds,releasedEventCosmeticIds,
   revealedEventColorIds:(row?.revealed_event_color_ids??[]) as string[],
   constructionUnlockIds:rewardRows.filter(reward=>reward.owned).map(reward=>reward.unlock_id),
   constructionReleasedIds:rewardRows.filter(reward=>reward.released).map(reward=>reward.unlock_id),

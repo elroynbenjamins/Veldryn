@@ -96,6 +96,19 @@ const triggers=(input:ReturnType<typeof simulateCombat>,type:string)=>
  assert.throws(()=>issueEquipmentV2TraitAuthority(input,[{...verified,
   traits:[{instanceId:'OTHER',traitId:'sword_dance'}]}],()=>true),/trait_not_owned_selected_or_supported/);
  assert.throws(()=>issueEquipmentV2TraitAuthority(input,[{...verified,reflectDamagePct:1000}],()=>true),/invalid_persisted_source/);
+ // Deliberately model the divergent Forge branch's fractional channel.
+ const originalForgeEffects={accuracyPp:0,evasionPp:0,penetrationPp:0,
+  wardPp:0,shieldStrengthPct:0,hexPotencyPct:0,abilityDamagePct:.05};
+ const overlapping={...input,players:[{...p,combatV2:{...p.combatV2!,
+  equipmentEffects:originalForgeEffects}}]};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(overlapping,
+  [{...verified,abilityDamagePct:5}],()=>true),/unreconciled_ability_damage_channels/);
+ assert.doesNotThrow(()=>issueEquipmentV2TraitAuthority(overlapping,[verified],()=>true),
+  'A zero sidecar ability bonus does not duplicate the Forge channel');
+ const zeroForge={...input,players:[{...p,combatV2:{...p.combatV2!,
+  equipmentEffects:{...originalForgeEffects,abilityDamagePct:0}}}]};
+ assert.doesNotThrow(()=>issueEquipmentV2TraitAuthority(zeroForge,
+  [{...verified,abilityDamagePct:5}],()=>true));
  const token=issueEquipmentV2TraitAuthority(input,[verified],()=>true);
  assert.equal(authorizeEquipmentV2TraitEngine(input,token).size,1);
  assert.throws(()=>simulateCombat({...input,seed:'TAMPER'},undefined,token),/not_matching_compiled_encounter/);

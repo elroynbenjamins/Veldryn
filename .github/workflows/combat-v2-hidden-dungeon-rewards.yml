@@ -15,6 +15,13 @@ on:
       - 'backend/src/server/combat/v2/__tests__/dungeon-rewards-and-combat-matrix.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.ts'
       - 'backend/src/server/combat/v2/unified-equipment-encounter.ts'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
+      - 'tools/build-online.mjs'
+      - 'backend/online/**'
+      - 'backend/supabase/functions/**'
+      - 'apps/mobile/src/**'
       - '.github/workflows/combat-v2-hidden-dungeon-rewards.yml'
   workflow_dispatch:
 permissions:
@@ -50,7 +57,14 @@ jobs:
         run: node backend/dist/server/combat/__tests__/combat-smoke.js
       - name: Reject hidden reward path imports in public runtime
         run: |
-          if grep -R -E 'dungeon-rewards-v2|dungeon-reward-offers-v2|dungeon-reward-engine-v2|dungeon-reward-party-v2|reactive-reflection-budget|compileDraftDungeonRewardCombatV2|simulateDraftDungeonRewardCombatV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
-            echo 'Hidden Dungeon 2.0 reward implementation leaked into public routes'
+          # The two checked-in generated bundles legitimately contain deny-only shim names.
+          # Require exact reproducible bytes, the private-source metafile fence, and
+          # adversarial shim tests before excluding ONLY those two generated paths.
+          node tools/tests/combat-v2-edge-isolation.test.mjs
+          node tools/verify-gameplay-edge.mjs
+          status=0
+          git grep -n -E 'dungeon-rewards-v2|dungeon-reward-offers-v2|dungeon-reward-engine-v2|dungeon-reward-party-v2|reactive-reflection-budget|compileDraftDungeonRewardCombatV2|simulateDraftDungeonRewardCombatV2' -- ':(glob)backend/online/**/*.ts' ':(glob)backend/online/**/*.tsx' ':(glob)apps/mobile/src/**/*.ts' ':(glob)apps/mobile/src/**/*.tsx' ':(glob)backend/supabase/functions/**/*.ts' ':(glob)backend/supabase/functions/**/*.tsx' ':(exclude)backend/supabase/functions/gameplay/index.ts' ':(exclude)backend/supabase/functions/coop/index.ts' || status=$?
+          if [ "$status" -ne 1 ]; then
+            echo 'Hidden Dungeon 2.0 reward implementation leaked into public routes (or source scan failed)'
             exit 1
           fi

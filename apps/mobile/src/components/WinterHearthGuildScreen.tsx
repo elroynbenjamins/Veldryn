@@ -4,7 +4,7 @@ import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import type {GameState} from '../core/types';
-import {WINTER_HEARTH_DONATION_IDS,winterHearthDonationTrack,winterHearthUnlockedStock,winterHearthMaxDonation,type WinterHearthTrack} from '../core/winter-hearth-donations';
+import {WINTER_HEARTH_DONATION_IDS,winterHearthDonationTrack,winterHearthUnlockedStock,winterHearthMaxDonation,winterHearthQuickDonation,winterHearthValidQuantity,type WinterHearthTrack} from '../core/winter-hearth-donations';
 import {readPendingWinterHearthDonation,submitWinterHearthDonation,type PendingWinterHearthDonation} from '../online/winter-hearth-pending-donation';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {BoardTabs} from './BoardTabs';
@@ -61,7 +61,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  const available=(id:string)=>winterHearthUnlockedStock(state,id);
  const maxFor=(id:string)=>{const track=winterHearthDonationTrack(id);return track?winterHearthMaxDonation(available(id),track==='logs'?(snapshot?.memberLogsRemaining??0):(snapshot?.memberLightsRemaining??0),track==='logs'?25000-logs:2500-lights):0;};
  const disabled=loading||!!error||busy||gameplayBusy||!pendingReady||!!pending||inventoryStale||!snapshot?.active||!snapshot.weekStartUtc||now>=endsAtMs||!state.character;
- const max=maxFor(selected),amount=Number(quantity),valid=/^[1-9][0-9]*$/.test(quantity)&&Number.isSafeInteger(amount)&&amount<=max;
+ const max=maxFor(selected),amount=Number(quantity),valid=winterHearthValidQuantity(quantity,max);
  const itemName=(id:string)=>localizedItemName(language,id);
  const openDonation=(track:WinterHearthTrack)=>{if(disabled)return;const first=WINTER_HEARTH_DONATION_IDS.find(id=>winterHearthDonationTrack(id)===track&&maxFor(id)>0)??'';setSelected(first);setQuantity('1');setDonationTrack(track);setFeedback('');};
  const refreshInventory=async()=>{try{await onRefreshInventory();if(mounted.current)setInventoryStale(false);}catch{if(mounted.current){setInventoryStale(true);setFeedback('Inventory refresh unavailable. Refresh before donating again.');}}};
@@ -117,7 +117,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
     {WINTER_HEARTH_DONATION_IDS.filter(id=>winterHearthDonationTrack(id)===donationTrack).map(id=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected:id===selected,disabled:maxFor(id)===0||busy}} disabled={maxFor(id)===0||busy} onPress={()=>{setSelected(id);setQuantity('1')}} style={[s.recipe,{backgroundColor:id===selected?C.selection:C.panel2,borderColor:id===selected?C.accent:C.line,opacity:maxFor(id)===0?.5:1}]}><View style={s.row}><Text style={[titleStyle,{flex:1}]}>{itemName(id)}</Text><Text style={smallStyle}>{fmt(available(id))} {gl('available')}</Text></View></Pressable>)}
     <View style={s.row}><Text style={titleStyle}>{gl('Quantity')}</Text><Text style={smallStyle}>{gl('Maximum')}: {fmt(max)}</Text></View>
     <TextInput accessibilityLabel={gl('Donation quantity')} keyboardType="number-pad" maxLength={4} selectTextOnFocus editable={!busy&&max>0} value={quantity} onChangeText={value=>setQuantity(value.replace(/[^0-9]/g,'').slice(0,4))} style={[s.input,{color:C.text,borderColor:C.lineStrong,backgroundColor:C.panel}]}/>
-    <View style={s.donationRow}>{[donationTrack==='logs'?250:50,'Half','Max'].map(p=><GameButton key={String(p)} style={s.flex} compact tone="secondary" title={gl(String(p))} disabled={busy||max<1} onPress={()=>setQuantity(String(p==='Max'?max:p==='Half'?Math.max(1,Math.floor(max/2)):Math.min(max,Number(p))))}/>)}</View>
+    <View style={s.donationRow}>{[donationTrack==='logs'?250:50,'Half','Max'].map(p=><GameButton key={String(p)} style={s.flex} compact tone="secondary" title={gl(String(p))} disabled={busy||max<1} onPress={()=>setQuantity(String(winterHearthQuickDonation(donationTrack??'logs',p==='Max'?'Max':p==='Half'?'Half':'preset',max)))}/>)}</View>
     <Text style={smallStyle}>{gl('The server checks your inventory, guild goal and weekly allowance. Donated items cannot be withdrawn.')}</Text>
     <GameButton title={gl('Confirm donation')} disabled={disabled||!valid} loading={busy} onPress={()=>send()}/>
    </ScrollView>

@@ -217,7 +217,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
     const eq2TimedDefense=eq2PrivateHit&&effect.damageType!==undefined&&effect.damageType!=='true'
       ?eq2PrivateHit.timedStat(target.definition.id,now,'defense'):undefined;
-    const effectiveDefense=gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration);
+    const effectiveDefense=effect.damageType==='true'?0:gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration);
     const mit=effect.damageType==='true'?0:defenseMitigation(effectiveDefense*(1+(eq2TimedDefense?.pct??0)/100),mitigationConstant);
     if(eq2TimedDefense?.pct&&mit>defenseMitigation(effectiveDefense,mitigationConstant))
       events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,

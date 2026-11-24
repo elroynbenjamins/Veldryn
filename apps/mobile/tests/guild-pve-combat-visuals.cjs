@@ -7,6 +7,8 @@ const screen = read('src/components/GuildRaidEncounter.tsx');
 const theater = read('src/components/GuildRaidTheater.tsx');
 const board = read('src/components/OnlineGuildPve.tsx');
 const app = read('App.tsx');
+const reader = read('src/online/guild-pve-read.ts');
+const guild = read('src/screens/GuildScreen.tsx');
 const classFx = read('src/core/dungeon-combat-fx.ts');
 const timeline = read('src/core/guild-pve-attempt-timeline.ts');
 const sql = read('../../backend/supabase/migrations/20261104000001_guild_pve_attempt_timeline_v1.sql');
@@ -25,7 +27,7 @@ assert.ok(theater.includes('guildPveView(row,now)') && theater.includes('100-vie
 assert.ok(fx.includes('width:fill.interpolate('), 'Boss HP fill must be based on the server-confirmed percentage');
 assert.ok(fx.includes('previousDamage.current!==damage'), 'Confirmed server damage must produce visual confirmation');
 assert.ok(!fx.includes('setDamage(') && !fx.includes('row.damage='), 'Visual attacks must never fake or mutate boss damage');
-assert.ok(theater.includes('pending&&remaining===0') && theater.includes('setInterval(refresh,12000)'), 'Overdue theater attempts should refresh without high-frequency polling');
+assert.ok(theater.includes('pending&&remaining===0') && theater.includes('if(currentRefresh.current)void currentRefresh.current()') && !theater.includes('setInterval(refresh,12000)'), 'Overdue theater attempts should refresh without high-frequency polling');
 assert.ok(board.includes('nextResolution-Date.now()') && board.includes('setInterval(refresh,12000)') && board.includes('onRefresh={()=>load(true)}'), 'Board must recover settlement even with theater closed');
 assert.ok(board.includes('const receipt=await attemptGuildPve(id,key)') && board.includes('confirmedStarts.current[id]=receipt') && board.includes('confirmedClaims.current[id]'), 'Only server-confirmed writes may update pending attempt and claim display');
 assert.ok(board.includes('expected===revision.current') && board.includes('reading.current'), 'Stale background reads must not overwrite confirmed writes');
@@ -54,4 +56,8 @@ for(const total of [0,1,2,29,30,31,399,1000000,987654321]){
   assert.equal(partition(total,count).reduce((a,b)=>a+b,0),total);
  }
 }
+assert.ok(reader.includes("membership.account_id+':'+membership.guild_id+':'+(characterId??'unknown')") && reader.includes('await myGuild()'), 'Prefetch cache must remain membership-verified and character-scoped');
+assert.ok(guild.includes('prefetchGuildPveBoard(raidCharacterId)') && guild.includes("onlineSection!=='Home'"), 'Warm raid data only on Guild Home');
+assert.ok(board.includes('treasuryLastRead.current<60000') && board.includes('treasuryRead.current'), 'Treasury requests must be throttled and singleflight');
+assert.ok(theater.includes('arenaHeight=Math.max') && theater.includes('fontScale>=1.4') && screen.includes('frostfall_wide_v2.webp'), 'Responsive arena and seasonal asset');
 console.log('PASS Guild PvE receipt recovery, cosmetic theater, timeline helpers and authoritative shared HP contracts');

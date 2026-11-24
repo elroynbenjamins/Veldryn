@@ -5,3 +5,12 @@ Next: import and validate exact V3 asset bytes, native screenshots and profiling
 
 ## Verified V3 import
 The exact asset-only ZIP is pinned by SHA-256. From the repository root run `python tools/import-profile-cosmetics-v3.py /path/to/Veldryn_V3_Native_Review_Asset_Import.zip --check`, then omit `--check` to install 117 approved PNGs and the populated four-set registry. The importer validates PNG signatures, expected per-set counts, all 110 distinct referenced PNGs, and prevents overwriting different existing files (except the initial empty registry). Stage only the imported asset directory and registry; do not commit the ZIP. The importer is idempotent. Static reduced-motion preview uses the approved static effect image instead of moving sprites. No effect ownership or commerce mutation is introduced.
+
+## Current branch review gate — standard portraits and Ascendant extras
+The four standard Store SKUs now contain one border, one effect and two independently equippable portraits (eight portraits in one shared atlas). The Ascendant sets are tester-only, not Store SKUs. The review screen selects a matching collection, with independent portrait, border, effect and Ascendant scene-extra controls; the latter uses reserved background/pet/badge IDs, never ownership grants. Temporary premium fallback art is explicitly labeled. This supersedes the earlier two-piece and art-registry-only review scope; checkout remains disabled.
+
+Native acceptance checklist (not yet device-verified):
+- For each of the eight portraits, check the 64dp compact icon and the public scene's 96dp styled viewport: no adjacent atlas cell, stretching, blank edge or clipping of the intended subject. Check Android/iOS and font scaling.
+- Review all eight collections at 260/340/480dp, plus real device narrow and tablet widths; toggle long name, pet, guild, badge, reduced motion and animation pause. Confirm independent selections and the fixed content anchors.
+- For each Ascendant collection, check matching background, pet and badge together with the border/effect; check mismatched combinations and the default scene. Temporary artwork does not satisfy final art approval.
+- Check background/resume and low-end Android animation performance. Capture screenshots and device measurements before approval. No Store visibility, checkout, global flag or entitlement change is part of this review pass.

@@ -438,6 +438,19 @@ for(const classId of ['STONECALLER','DAWNKEEPER'] as const){
    e.abilityId===routineId&&e.targetId===low.id&&e.atMs===0),'ready protective shield before damage');
  else assert.ok(fallback.events.some(e=>e.actorId===healer.id&&e.abilityId===damageId&&e.atMs===0),
    'HoT-only routine is not promoted as immediate healing');
+ if(classId==='DAWNKEEPER'){
+   // The first target is downed during a 500ms Dawn Mend cast. The
+   // surviving critical ally can receive that already-paid cast.
+   const killer:CombatantDefinition={...enemy,stats:{...enemy.stats,accuracy:100000},
+     abilities:[{id:'TR_LETHAL',name:'Triage test strike',priority:100,
+       target:'current_target',cooldownMs:100000,castTimeMs:100,
+       effects:[{kind:'damage',damageType:'true',flat:100000}]}]};
+   const lost=simulateCombat({...input,players:[healer,low,tie,down],enemies:[killer]});
+   assert.ok(lost.events.some(e=>e.type==='down'&&e.targetId===low.id&&e.atMs<500));
+   assert.ok(lost.events.some(e=>e.type==='cast_complete'&&e.abilityId===healId&&e.targetId===tie.id));
+   assert.ok(lost.events.some(e=>e.type==='heal'&&e.abilityId===healId&&e.targetId===tie.id));
+   assert.equal(lost.events.filter(e=>e.type==='cast_start'&&e.abilityId===healId).length,1);
+ }
  const legacy={...healer,combatV2:undefined,tags:[]};
  assert.ok(simulateCombat({...input,players:[legacy,tie,low,down]}).events.some(e=>
    e.actorId===legacy.id&&e.abilityId===damageId&&e.atMs===0),'legacy priority unchanged');

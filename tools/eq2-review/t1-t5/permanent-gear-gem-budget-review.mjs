@@ -8,12 +8,24 @@ const mapping=Object.freeze({
  stat_vitality:['maxHp','percent','max_hp_pct','relative_percent'],
  stat_iron:['armor','percent','defense_pct','relative_percent'],
  stat_keen:['critRate','percentage_point','crit_rate_pp','percentage_points'],
- stat_savage:['critDamage','percent','crit_damage_pct','relative_percent'],
+ stat_precision:['accuracy','percentage_point','accuracy_pp','percentage_points'],
 });
 const fail=x=>{throw Error('eq2_gear_gem_budget_'+x);};
-/** Explicitly exploratory: no conversion of relative Ward/Haste/Tenacity to
- * points, generic Power/Potency to a class-specific effect, or hit rating to
- * probability. Penetration and evasion semantics also need reconciliation. */
+// Source audit: effectiveStats() applies canonical Accuracy as points, but
+// critMultiplier = 1.5 + setStats.critDamage; Savage must NOT be interpreted
+// as the V4 relative critical multiplier. Keep exact magnitude unpriced.
+const unresolvedReasons=Object.freeze({
+ stat_savage:'ADDITIVE_CRIT_MULTIPLIER_VS_RELATIVE_MULTIPLIER',
+ stat_might:'GENERIC_POWER_VS_ATTACK_OR_SKILL_CHANNEL',
+ stat_ward:'RELATIVE_WARD_VS_DAMAGE_REDUCTION_POINTS',
+ stat_piercing:'LEGACY_PENETRATION_SCOPE_VS_AUTHORED_HIT_SCOPE',
+ stat_swift:'RELATIVE_HASTE_VS_HASTE_POINTS',
+ stat_potent:'GENERIC_POTENCY_VS_CLASS_EFFECT',
+ stat_elusive:'NO_APPROVED_V4_EVASION_CHANNEL',
+ stat_resolute:'RELATIVE_TENACITY_VS_STATUS_DURATION_POINTS',
+});
+/** Source-owned units only. Candidate compatible channels do not grant
+ * gameplay conversion or approval of cap scope. */
 export function inspectPermanentGearGemBudgetV2(rows,sockets){
  const gear=inspectInnateAndRandomLoadoutV2(rows);
  if(!Array.isArray(sockets)||sockets.length>2*rows.length)fail('socket_count');
@@ -39,7 +51,7 @@ export function inspectPermanentGearGemBudgetV2(rows,sockets){
   const m=mapping[family];
   const row={...s,stat:stat.stat,unit:stat.unit,fractionMicros,channel:m?.[2]??null};
   sources.push(row);
-  if(!m){unresolved.push(row);continue;}
+  if(!m){unresolved.push({...row,reason:unresolvedReasons[family]??'UNRECONCILED_SOURCE'});continue;}
   const target=gear.channels.find(c=>c.channel===m[2]);
   if(stat.stat!==m[0]||stat.unit!==m[1]||target?.unit!==m[3])fail('source_contract_changed');
   totals.set(m[2],totals.get(m[2])+fractionMicros);

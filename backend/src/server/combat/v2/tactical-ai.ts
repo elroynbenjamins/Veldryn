@@ -1,7 +1,7 @@
 import {defenseMitigation,damageAfterMitigation} from '../calculations';
 import type {CombatRng} from '../deterministic-rng';
 import type {AbilityDefinition,AbilityEffect,CombatantState,TargetRule} from '../types';
-import {living,hpPct,modifier,threatenedAlly,targetsFor,conditionOk} from '../combat-state-query';
+import {living,hpPct,modifier,threatenedAlly,targetsFor,conditionOk,memoizeCombatQuery} from '../combat-state-query';
 
 // Emergency triage changes only selected support-class V2 abilities. Preserve
 // ordinary threatened-target shielding, cleanse targeting and legacy order.
@@ -138,9 +138,10 @@ export const tankV2=(actor:CombatantState)=>Boolean(actor.combatV2&&
   actor.definition.team==='players'&&actor.definition.role==='tank');
 type TankDecisionV2={ability:AbilityDefinition;targets:CombatantState[];rank:number;coverage:number};
 export function tankProtectionDecisionV2(actor:CombatantState,ordered:AbilityDefinition[],
-  allies:CombatantState[],foes:CombatantState[],now:number,mitigationConstant:number):TankDecisionV2|undefined{
+  allies:CombatantState[],foes:CombatantState[],now:number,mitigationConstant:number,
+  pressureFor=()=>incomingBossPressureV2(now,allies,foes,mitigationConstant)):TankDecisionV2|undefined{
   if(!tankV2(actor))return;
-  const pressure=incomingBossPressureV2(now,allies,foes,mitigationConstant);
+  const pressure=pressureFor();
   const critical=living(allies).filter(a=>hpPct(a)<CRITICAL_SUPPORT_HP_V2);
   if(!pressure.length&&!critical.length)return;
   const dangerous=foes.filter(b=>b.alive&&b.definition.boss&&b.casting&&
@@ -202,11 +203,11 @@ export function damageTacticsV2(actor:CombatantState,ordered:AbilityDefinition[]
     if(!best||rank>best.rank||(rank===best.rank&&score>best.coverage))
       best={ability,targets:[target],rank,coverage:score};
   };
-  const direct=(a:AbilityDefinition)=>a.effects.filter(e=>e.kind==='damage'&&
-    (!e.target||e.target===a.target)&&((e.coeff??0)>0||(e.flat??0)>0));
+  const direct=memoizeCombatQuery((a:AbilityDefinition)=>a.effects.filter(e=>e.kind==='damage'&&
+    (!e.target||e.target===a.target)&&((e.coeff??0)>0||(e.flat??0)>0)));
   const current=ready.filter(a=>a.target==='current_target'&&direct(a).length);
-  const strength=(a:AbilityDefinition)=>direct(a).reduce((n,e)=>
-    n+Math.max(0,actor.definition.stats.attackPower*(e.coeff??0)+(e.flat??0)),0);
+  const strength=memoizeCombatQuery((a:AbilityDefinition)=>direct(a).reduce((n,e)=>
+    n+Math.max(0,actor.definition.stats.attackPower*(e.coeff??0)+(e.flat??0)),0));
   const burst=(a:AbilityDefinition)=>a.combatV2?.spend==='all'||
     Number(a.combatV2?.spend??0)>=3;
   const activeVulnerability=(target:CombatantState)=>modifier(target,'damage_taken',now)>0;
@@ -275,7 +276,8 @@ function pendingNominalHealV2(actor:CombatantState,target:CombatantState,allies:
   return total;
 }
 export function coordinatedHealV2(actor:CombatantState,a:AbilityDefinition,allies:CombatantState[],
-  foes:CombatantState[],now:number,mitigationConstant:number):{target?:CombatantState}|undefined{
+  foes:CombatantState[],now:number,mitigationConstant:number,
+  pressureFor=()=>incomingBossPressureV2(now,allies,foes,mitigationConstant)):{target?:CombatantState}|undefined{
   if(!pureSingleHealV2(actor,a))return;
   const sorted=living(allies).sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id));
   const target=sorted[0];
@@ -283,7 +285,7 @@ export function coordinatedHealV2(actor:CombatantState,a:AbilityDefinition,allie
   const pending=pendingNominalHealV2(actor,target,allies,now);
   if(pending<=0)return {target};
   const projected=(target.hp+pending)/Math.max(1,target.definition.stats.maxHp);
-  const pressure=incomingBossPressureV2(now,allies,foes,mitigationConstant);
+  const pressure=pressureFor();
   if(pressure.includes(target)||projected<.50)return {target};
   const alternate=sorted.find(t=>t!==target&&hpPct(t)<(hpPct(target)<CRITICAL_SUPPORT_HP_V2?CRITICAL_SUPPORT_HP_V2:.50)&&
     !pressure.includes(target)&&
@@ -294,7 +296,8 @@ export function coordinatedHealV2(actor:CombatantState,a:AbilityDefinition,allie
   return {target};
 }
 export function redundantPureShieldV2(actor:CombatantState,a:AbilityDefinition,allies:CombatantState[],
-  foes:CombatantState[],now:number,mitigationConstant:number):boolean{
+  foes:CombatantState[],now:number,mitigationConstant:number,
+  pressureFor=()=>incomingBossPressureV2(now,allies,foes,mitigationConstant)):boolean{
   if(!(supportV2(actor)||tankV2(actor))||!a.id.includes(':v2:')||a.castTimeMs!==0||
     !a.effects.length||!a.effects.every(e=>e.kind==='shield'&&!e.shieldReflectPct&&
       (!e.target||e.target===a.target)))return false;
@@ -302,7 +305,7 @@ export function redundantPureShieldV2(actor:CombatantState,a:AbilityDefinition,a
   const targets=a.target==='self'?[actor]:a.target==='all_allies'?live:
     a.target==='threatened_ally'?[threatenedAlly(allies,foes)??[...live].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id))[0]].filter((t):t is CombatantState=>Boolean(t)):[];
   if(!targets.length||!targets.every(t=>hpPct(t)>=CRITICAL_SUPPORT_HP_V2&&t.shield>=t.definition.stats.maxHp*.20))return false;
-  const pressure=incomingBossPressureV2(now,allies,foes,mitigationConstant);
+  const pressure=pressureFor();
   return !targets.some(t=>pressure.includes(t));
 }
 

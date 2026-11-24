@@ -6,7 +6,9 @@ export function living(xs: CombatantState[]) { return xs.filter(x=>x.alive); }
 export function hpPct(x: CombatantState) { return x.hp / Math.max(1, x.definition.stats.maxHp); }
 
 export function modifier(state: CombatantState, tag: string, now: number): number {
-  return state.modifiers.filter(m=>m.tag===tag && m.expiresAt>now).reduce((s,m)=>s+m.value,0);
+  let total=0;
+  for(const m of state.modifiers)if(m.tag===tag&&m.expiresAt>now)total+=m.value;
+  return total;
 }
 
 export function chooseEnemy(actor: CombatantState, enemies: CombatantState[], rng: CombatRng, label: string): CombatantState | undefined {
@@ -21,16 +23,21 @@ export function chooseEnemy(actor: CombatantState, enemies: CombatantState[], rn
 
 export function threatenedAlly(allies:CombatantState[],enemies:CombatantState[]):CombatantState|undefined{
   const liveAllies=new Map(living(allies).map(ally=>[ally.definition.id,ally]));
-  const candidates=living(enemies).flatMap(enemy=>{
-    if(!enemy.casting)return[];
+  let best:{enemy:CombatantState;target:CombatantState;completesAt:number}|undefined;
+  for(const enemy of enemies){
+    if(!enemy.alive||!enemy.casting)continue;
     const ability=enemy.definition.abilities.find(item=>item.id===enemy.casting!.abilityId);
-    if(!ability||ability.target==='all_enemies'||ability.target==='all_allies'||ability.target==='self')return[];
-    const target=liveAllies.get(enemy.casting.targetId);if(!target)return[];
-    if(!ability.effects.some(effect=>effect.kind==='damage'||effect.kind==='dot'))return[];
-    return[{enemy,target,completesAt:enemy.casting.completesAt}];
-  });
-  candidates.sort((a,b)=>a.completesAt-b.completesAt||Number(Boolean(b.enemy.definition.boss))-Number(Boolean(a.enemy.definition.boss))||a.enemy.definition.id.localeCompare(b.enemy.definition.id));
-  return candidates[0]?.target;
+    if(!ability||ability.target==='all_enemies'||ability.target==='all_allies'||ability.target==='self')continue;
+    const target=liveAllies.get(enemy.casting.targetId);if(!target)continue;
+    if(!ability.effects.some(effect=>effect.kind==='damage'||effect.kind==='dot'))continue;
+    const completesAt=enemy.casting.completesAt;
+    // Same stable ordering as the original sort; keep the first exact tie.
+    if(!best||(completesAt-best.completesAt||
+      Number(Boolean(best.enemy.definition.boss))-Number(Boolean(enemy.definition.boss))||
+      enemy.definition.id.localeCompare(best.enemy.definition.id))<0)
+      best={enemy,target,completesAt};
+  }
+  return best?.target;
 }
 
 export function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantState[], enemies: CombatantState[], rng: CombatRng, label: string): CombatantState[] {
@@ -71,3 +78,12 @@ export function conditionOk(a: AbilityDefinition, actor: CombatantState, allies:
   }
 }
 
+// Use only within a read-only decision, never across effect execution or actors.
+// Map.has is necessary because undefined is a valid cached answer.
+export function memoizeCombatQuery<K,V>(query:(key:K)=>V):(key:K)=>V{
+  const cache=new Map<K,V>();
+  return key=>{
+    if(cache.has(key))return cache.get(key) as V;
+    const value=query(key);cache.set(key,value);return value;
+  };
+}

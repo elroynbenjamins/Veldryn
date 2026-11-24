@@ -7,6 +7,9 @@ const gate='release_cleared constant boolean := false;';
 if(!draft.includes(gate)||!draft.trimEnd().endsWith('rollback;'))throw Error('Review safety guard missing');
 const body=draft.slice(draft.indexOf('do $$'),draft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
 if(body.includes(gate))throw Error('Fixture gate replacement failed');
+const giftDraft=readFileSync('backend/supabase/review/material-retirement-gift-closure-v1.sql','utf8');
+if(!giftDraft.includes(gate)||!giftDraft.trimEnd().endsWith('rollback;'))throw Error('Gift closure guard missing');
+const giftBody=giftDraft.slice(giftDraft.indexOf('do $'),giftDraft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
 console.log(`
 begin;
 do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;
@@ -15,7 +18,9 @@ create table public.online_game_states(account_id uuid primary key,character_id 
 create table public.characters(id uuid primary key,account_id uuid not null,gold bigint not null,updated_at timestamptz);
 create table public.character_wallets(character_id uuid primary key,gold bigint not null,updated_at timestamptz);
 create table public.server_action_receipts(account_id uuid,action text,idempotency_key text,response jsonb,primary key(account_id,action,idempotency_key));
-create table private.reward_gift_catalog_v1(resource_id text);
+create table private.reward_gift_catalog_v1(id text primary key,resource_id text);
+create table private.reward_gift_campaigns_v1(sent_at timestamptz,attachments jsonb);
+insert into private.reward_gift_catalog_v1 values('ECHO_BAT_WING','ECHO_BAT_WING'),('RUNEBOUND_CORE','RUNEBOUND_CORE');
 create table private.reward_inbox_v1(id uuid primary key default gen_random_uuid(),account_id uuid not null,source_key text not null,source_kind text not null check(source_kind in ('party','guild','dungeon','gift')),source_id uuid not null,title text not null,body text not null,attachments jsonb not null,claimed_at timestamptz,unique(account_id,source_key));
 create table public.coop_reward_entitlements(claimed_at timestamptz,reward_json jsonb);
 create table public.party_contract_reward_entitlements_v16(claimed_at timestamptz,reward_json jsonb);
@@ -26,6 +31,8 @@ insert into public.online_game_states values('00000000-0000-0000-0000-0000000000
 insert into public.characters values('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001',100,now());
 insert into public.character_wallets values('00000000-0000-0000-0000-000000000002',100,now());
 `);
+console.log(giftBody);
+console.log(giftBody); // Repeated closure is harmless.
 console.log(body);
 console.log(body); // Retry against the committed-in-transaction receipt.
 console.log(`
@@ -34,6 +41,7 @@ do $$ declare s jsonb; begin
  if (select revision from public.online_game_states)<>8 or (select gold from public.character_wallets)<>11540 or (select gold from public.characters)<>11540 or (s#>>'{bank,gold}')::bigint<>56760 or (s#>>'{character,gold}')::bigint<>11540 then raise exception 'incorrect_balance_or_replay'; end if;
  if s#>'{inventory,stacks}'<>'[{"itemId":"RUNEBOUND_CORE","quantity":7}]'::jsonb or s#>'{bank,stacks}'<>'[]'::jsonb or s#>'{otherCharacters,0,inventory,stacks}'<>'[{"itemId":"RUNEBOUND_CORE","quantity":3}]'::jsonb or s#>'{settings,seenItemIds}'<>'["ECHO_BAT_WING"]'::jsonb or s#>'{settings,lockedItemIds}'<>'["RUNEBOUND_CORE"]'::jsonb then raise exception 'unrelated_data_changed'; end if;
  if (select count(*) from public.server_action_receipts)<>1 or (select (response->>'carriedCredit')::bigint+(response->>'bankCredit')::bigint from public.server_action_receipts)<>68000 then raise exception 'receipt_mismatch'; end if;
+ if (select count(*) from private.reward_gift_catalog_v1)<>1 or not exists(select 1 from private.reward_gift_catalog_v1 where id='RUNEBOUND_CORE') then raise exception 'gift_closure_mismatch'; end if;
  if (select count(*) from private.reward_inbox_v1)<>1 or not exists(select 1 from private.reward_inbox_v1 where source_kind='gift' and source_key='material-retirement:echo-bat-wing-retirement-v1' and claimed_at is not null and attachments='[]'::jsonb and body like '%850 Echo Bat Wings%' and body like '%11440 Gold%' and body like '%56560 Gold%') then raise exception 'notice_mismatch'; end if;
  if exists(select 1 from private.reward_inbox_v1 where claimed_at is null) then raise exception 'notice_must_not_be_claimable'; end if;
  raise notice 'PASS: production-shaped storage fixture, shared bank, inactive roster preservation, authoritative wallet, receipt replay and already-credited history notice';

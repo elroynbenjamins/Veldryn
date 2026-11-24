@@ -1,45 +1,15 @@
--- REVIEW CANDIDATE ONLY. Promote to a new migration after isolated QA.
--- This script never enables the event or releases a cosmetic.
+-- REVIEW CANDIDATE: appearance only; requires existing baseline appearance RPCs
+-- and 20261124081820_winter_hearth_2026_cosmetic_milestone_catalog_v1.
+-- Do not apply against a staging database with missing baseline appearance dependencies.
 BEGIN;
-CREATE TABLE IF NOT EXISTS private.guild_event_cosmetic_catalog (
- cosmetic_id text PRIMARY KEY,
- event_id text NOT NULL,
- cosmetic_kind text NOT NULL CHECK (cosmetic_kind IN ('background','banner','border','name_color')),
- milestone_percent integer NOT NULL CHECK (milestone_percent IN (25,50,75,100)),
- released boolean NOT NULL DEFAULT false
-);
-ALTER TABLE private.guild_event_cosmetic_catalog ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON private.guild_event_cosmetic_catalog FROM PUBLIC,anon,authenticated;
-INSERT INTO private.guild_event_cosmetic_catalog(cosmetic_id,event_id,cosmetic_kind,milestone_percent)
-VALUES
- ('background_frostfall_winter_aurora_2026','EVT_ANNUAL_012_2026','background',50),
- ('banner_frostfall_standard_2026','EVT_ANNUAL_012_2026','banner',75),
- ('border_frostfall_frozen_majesty_2026','EVT_ANNUAL_012_2026','border',100),
- ('name_frostfall_aurora_2026','EVT_ANNUAL_012_2026','name_color',100)
-ON CONFLICT(cosmetic_id) DO NOTHING;
-
--- Ownership originates only in the committed joint-track milestone receipt.
-CREATE OR REPLACE FUNCTION private.frostfall_2026_milestone_cosmetics_review()
-RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+DO $preflight$
 BEGIN
- INSERT INTO public.guild_cosmetic_unlocks(guild_id,unlock_id,source_kind,source_ref)
- SELECT NEW.guild_id,c.cosmetic_id,'event',c.event_id
- FROM private.guild_event_cosmetic_catalog c
- WHERE c.event_id='EVT_ANNUAL_012_2026' AND c.milestone_percent=NEW.percent
- ON CONFLICT(guild_id,unlock_id) DO NOTHING;
- RETURN NEW;
-END $$;
-REVOKE ALL ON FUNCTION private.frostfall_2026_milestone_cosmetics_review() FROM PUBLIC,anon,authenticated;
-DROP TRIGGER IF EXISTS frostfall_2026_milestone_cosmetics_review ON public.guild_winter_hearth_2026_milestones;
-CREATE TRIGGER frostfall_2026_milestone_cosmetics_review
- AFTER INSERT ON public.guild_winter_hearth_2026_milestones
- FOR EACH ROW EXECUTE FUNCTION private.frostfall_2026_milestone_cosmetics_review();
-INSERT INTO public.guild_cosmetic_unlocks(guild_id,unlock_id,source_kind,source_ref)
-SELECT m.guild_id,c.cosmetic_id,'event',c.event_id
-FROM public.guild_winter_hearth_2026_milestones m
-JOIN private.guild_event_cosmetic_catalog c ON c.event_id='EVT_ANNUAL_012_2026' AND c.milestone_percent=m.percent
-ON CONFLICT(guild_id,unlock_id) DO NOTHING;
-
+ IF to_regclass('private.guild_event_cosmetic_catalog') IS NULL
+ OR to_regprocedure('public.update_guild_appearance_with_background_v3(text,text,text,text,text,text,text)') IS NULL
+ OR to_regprocedure('public.guild_appearance_entitlements_v4()') IS NULL
+ OR to_regprocedure('public.guild_event_name_color_guard_v3()') IS NULL
+ THEN RAISE EXCEPTION 'WINTER_HEARTH_APPEARANCE_BASELINE_MISSING';END IF;
+END $preflight$;
 -- Extend only the five verified CHECK constraints. Preserve every existing
 -- allowed value, including construction and prior event cosmetics.
 DO $constraints$
@@ -59,6 +29,25 @@ BEGIN
   END IF;
  END LOOP;
 END $constraints$;
+
+-- Extend the existing name-color guard; the CHECK constraint alone is insufficient.
+-- Keep the original Halloween entitlement rule and all Guild Hall color rules.
+CREATE OR REPLACE FUNCTION public.guild_event_name_color_guard_v3()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $guard$
+BEGIN
+ IF NEW.name_color_id='name_ivory' THEN RETURN NEW;END IF;
+ IF NEW.name_color_id='name_halloween_orange' THEN
+  IF NOT EXISTS(SELECT 1 FROM public.guild_cosmetic_unlocks u WHERE u.guild_id=NEW.id AND u.unlock_id=NEW.name_color_id AND u.source_kind='event') THEN RAISE EXCEPTION 'GUILD_NAME_COLOR_LOCKED';END IF;
+  RETURN NEW;
+ END IF;
+ IF NEW.name_color_id='name_frostfall_aurora_2026' AND EXISTS(
+  SELECT 1 FROM private.guild_event_cosmetic_catalog c
+  JOIN public.guild_cosmetic_unlocks u ON u.unlock_id=c.cosmetic_id AND u.source_kind='event' AND u.source_ref=c.event_id
+  WHERE c.cosmetic_id=NEW.name_color_id AND c.cosmetic_kind='name_color' AND c.released AND u.guild_id=NEW.id
+ ) THEN RETURN NEW;END IF;
+ RAISE EXCEPTION 'GUILD_NAME_COLOR_LOCKED';
+END $guard$;
+REVOKE ALL ON FUNCTION public.guild_event_name_color_guard_v3() FROM PUBLIC,anon,authenticated;
 
 -- Read release metadata without exposing the private catalogue. A release is
 -- permanent across season expiry; no check of the current live event window.

@@ -13,9 +13,10 @@ ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no b
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
 ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===6,'five released earned badges plus the hidden Celestial candidate exist');
-ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_celestial_sovereign'),'unreleased Ascendant badge stays out of player-facing badge settings');
-ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_celestial_sovereign',extras:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).length===0,'early Celestial entitlement projection is display-fenced before release');
-ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).length===0,'early Celestial profile badge is display-fenced before release');
+ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_celestial_sovereign'),'unowned ultra-luxe badge is absent from player-facing badge settings');
+ok(visibleCollectiblePlayerBadgeIds(['ascendant_celestial_sovereign']).includes('ascendant_celestial_sovereign'),'granted ultra-luxe badge becomes visible only to its owner');
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_celestial_sovereign',extras:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).join(',')==='ascendant_celestial_sovereign','verified granted Celestial badge renders publicly when equipped');
+ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_celestial_sovereign'],validUntilMs:2000}),now).join(',')==='ascendant_celestial_sovereign','verified granted Celestial badge renders on its owner profile');
 ok(!COLLECTIBLE_PLAYER_BADGE_IDS.some(id=>String(id)==='beta_tester'),'retired Beta Tester badge is not available');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'beta_tester',validUntilMs:2000}),now).length===0,'stale equipped Beta Tester badge does not render');
 ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['beta_tester','founder'],validUntilMs:2000}),now).join(',')==='founder','stale Beta Tester badge is removed from profile showcase');
@@ -92,7 +93,7 @@ ok(profile.includes("'Badges'|'Name Style'")&&profile.includes("tab==='Badges'&&
 ok(!profile.includes("<PlayerBadgeSettings/>\n   <PlayerNameStyleEditor"),'badge chooser was removed from Name Style');
 const chips=read('src/components/profile/ProfileWardrobeChips.tsx'),look=read('src/components/profile/ProfileLookPanel.tsx');
 ok(chips.includes("profileT(language,\"Badges\")")&&look.includes('<PlayerBadgeSettings/>'),'Customize Profile reaches the badge chooser from its own category chips');
-ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('visibleCollectiblePlayerBadgeIds()')&&settings.includes('collectibleIds.map'),'badge gallery lists only released collectibles plus four supporter tiers');
+ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('visibleCollectiblePlayerBadgeIds(ownedExtras)')&&settings.includes('collectibleIds.map'),'badge gallery lists only released collectibles plus four supporter tiers');
 ok(settings.includes('badges.setEquipped(equipped===id?null:id)'),'single tap replaces or unequips badge');
 ok(settings.includes("Staff badges appear automatically"),'staff identity is explained');
 // One gallery, two destinations: the name row takes one badge, the profile takes three.

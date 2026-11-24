@@ -1,0 +1,2504 @@
+{
+  "schema": "eq2-normalized-effects-review-v18",
+  "sourceHead": "9c79bc453c7e189150b6b6cc83cda48ba009244f",
+  "sourcePolicy": "V17 source text preserved verbatim; structured candidates not runtime definitions. Source ambiguities flagged; 6s Sphinxclaw expiry proposed. All source healing stat wording requires scope decision.",
+  "sets": [
+    {
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Rootbound Heartward Foundation",
+        "effect": "+3% Defense",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Rootbound Heartward Signature",
+        "effect": "After eligible direct non-true HP loss of >=6% own Max HP, gain a 4%-Max-HP shield for 6s",
+        "internalCooldownSeconds": 22,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "minActualHpLossPct": 6,
+      "internalCooldownSeconds": 22,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Rootbound Lifebloom Foundation",
+        "effect": "+3% Healing Power",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "healingScopeApprovalRequired": true,
+          "sourceValue": 3
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Rootbound Lifebloom Signature",
+        "effect": "An effective direct class heal grants its target +3% Defense for 6s",
+        "internalCooldownSeconds": 20,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Rootbound Thornstrider Foundation",
+        "effect": "+3% Attack",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Rootbound Thornstrider Signature",
+        "effect": "After two direct class ability hits against the same enemy, the next direct class ability hit within 6s deals +6% damage",
+        "internalCooldownSeconds": 18,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "consecutive_direct_ability_hits",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_class_ability_hit",
+      "count": 2,
+      "sameTarget": true,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Heliarch Guard Foundation",
+        "effect": "+3.5% Defense",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3.5,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Heliarch Guard Signature",
+        "effect": "After an eligible direct hit removes >=6% Max HP, gain 5% non-true damage reduction against the next direct hit within 6s",
+        "internalCooldownSeconds": 20,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 5,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_nontrue_hp_loss",
+      "minActualHpLossPct": 6,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Mirageveil Oracle Foundation",
+        "effect": "+3.5% Healing Power",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 3.5,
+          "unit": "relative_percent",
+          "healingScopeApprovalRequired": true,
+          "sourceValue": 3.5
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Mirageveil Oracle Signature",
+        "effect": "A successful authored cleanse grants the cleansed target a shield for 4% of Max HP for 6s",
+        "internalCooldownSeconds": 22,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "successful_authored_cleanse",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 22,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Sphinxclaw Pursuit Foundation",
+        "effect": "+3.5% direct ability damage",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 3.5,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Sphinxclaw Pursuit Signature",
+        "effect": "A direct class ability hit on a target with a verified authored vulnerability or debuff empowers the next direct class ability hit by +7%",
+        "internalCooldownSeconds": 18,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "direct_ability_hit_on_debuffed_target",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 7,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_class_ability_hit",
+      "candidateExpiryAdded": true,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_ashguard",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "ashen_grip",
+        "name": "Ashen Grip",
+        "effect": [
+          {
+            "stat": "defense_pct",
+            "value": 2
+          },
+          {
+            "stat": "attack_pct",
+            "value": 2
+          }
+        ]
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_ashguard",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "id": "guarded_return",
+        "name": "Guarded Return",
+        "effect": "After eligible direct HP damage, the next basic attack within 5 seconds deals 10% increased damage.",
+        "internalCooldownSeconds": 10,
+        "exclusions": [
+          "self damage",
+          "damage over time ticks",
+          "reflection",
+          "proc damage",
+          "missed or avoided attacks"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 10,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 5,
+      "consumeOn": "basic_direct_weapon_hit",
+      "internalCooldownSeconds": 10,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_bastionmail",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "steady_links",
+        "name": "Steady Links",
+        "effect": [
+          {
+            "stat": "defense_pct",
+            "value": 3
+          }
+        ]
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_bastionmail",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "id": "braced_formation",
+        "name": "Braced Formation",
+        "effect": "After blocking or mitigating an eligible direct hit, gain 4% Defense for 5 seconds.",
+        "internalCooldownSeconds": 14,
+        "stacking": "refresh_duration_only"
+      },
+      "kind": "conditional",
+      "trigger": "blocked_or_mitigated_direct_hit",
+      "outputs": [
+        {
+          "channel": "defense_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 14,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t4_bastionmail",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "id": "hold_the_line",
+        "name": "Hold the Line",
+        "effect": "When crossing below 35% HP, gain a shield equal to 5% maximum HP for 6 seconds.",
+        "internalCooldownSeconds": 35,
+        "activationRule": "Threshold crossing only; remaining below it cannot retrigger."
+      },
+      "kind": "conditional",
+      "trigger": "cross_below_hp",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 5,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "thresholdHpPct": 35,
+      "internalCooldownSeconds": 35,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_astral_rime",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "astral_rime_2p",
+        "name": "Echoing Spellglass",
+        "effect": "After a successful direct spell hit, the next direct class spell hit within 6 seconds deals +5% damage; exclude DoT/reflection/procs",
+        "internalCooldownSeconds": 16,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_class_spell_hit",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 5,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_class_spell_hit",
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_dawnmender_chain",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "dawnmender_chain_2p",
+        "name": "Comforting Thread",
+        "effect": "An effective direct class heal restoring missing HP grants the target +3% Defense for 6 seconds (self-heal eligible)",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_frostclasp_aegis",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "frostclasp_aegis_2p",
+        "name": "Ward Against the Deep",
+        "effect": "On successful hostile debuff application, gain +3 percentage points Tenacity for 6 seconds; never retroactively shorten the triggering debuff",
+        "internalCooldownSeconds": 20,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "hostile_debuff_applied",
+      "outputs": [
+        {
+          "channel": "tenacity_pp",
+          "value": 3,
+          "unit": "percentage_points",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "prospectiveOnly": true,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_glacier_talons",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "glacier_talons_2p",
+        "name": "Talonstrike",
+        "effect": "After a successful direct physical class-ability hit, the next basic direct weapon hit within 5 seconds deals +6% damage; no free Bleed/Stagger/Piercing",
+        "internalCooldownSeconds": 14,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_physical_ability_hit",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 5,
+      "consumeOn": "basic_direct_weapon_hit",
+      "internalCooldownSeconds": 14,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_runeforge_link",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "runeforge_link_2p",
+        "name": "Frostworked Momentum",
+        "effect": "After a successful direct class-ability hit OR effective direct class heal, gain +2% Haste for 6 seconds, once per source event",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_ability_hit_or_effective_heal",
+      "outputs": [
+        {
+          "channel": "haste_pp",
+          "value": 2,
+          "unit": "percentage_points",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "candidateUnitReauthor": true,
+      "sourceUnit": "relative_percent",
+      "candidateUnit": "percentage_points",
+      "sourceValue": 2,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_combo_t5_stonewinter_frame",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "stonewinter_frame_2p",
+        "name": "Unyielding Frame",
+        "effect": "After eligible direct non-true damage removes at least 6% max HP, reduce damage from the next eligible direct non-true hit within 6 seconds by 4%",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT ticks",
+          "reflect",
+          "proc recursion",
+          "self damage",
+          "misses",
+          "absorption-only hits",
+          "duplicated event receipts"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 4,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_nontrue_hp_loss",
+      "minActualHpLossPct": 6,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Shiverlake Cantorshard Foundation",
+        "effect": "+4% Attack",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 4,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Shiverlake Cantorshard Signature",
+        "effect": "After two successful direct physical weapon hits, the next direct physical ability hit within 6s deals +8% damage",
+        "internalCooldownSeconds": 18,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "consecutive_direct_physical_weapon_hits",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 8,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_physical_ability_hit",
+      "count": 2,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Shiverlake Frosthymn Foundation",
+        "effect": "+4% Healing Power",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "healingScopeApprovalRequired": true,
+          "sourceValue": 4
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Shiverlake Frosthymn Signature",
+        "effect": "An effective direct class heal on an ally below 50% HP creates a 4%-Max-HP shield on that ally for 6s",
+        "internalCooldownSeconds": 20,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "targetBelowHpPct": 50,
+      "allyOnly": true,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Shiverlake Rimevanguard Foundation",
+        "effect": "+4% maximum HP",
+        "bonusSource": "verified_set_ownership_only",
+        "status": "PROPOSED_BUDGET"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 4,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Shiverlake Rimevanguard Signature",
+        "effect": "After eligible direct non-true HP loss >=7% Max HP, reduce incoming non-true damage by 6% for 5s",
+        "internalCooldownSeconds": 22,
+        "excludedTriggers": [
+          "DoT",
+          "reflected",
+          "proc-recursive",
+          "self-inflicted",
+          "absorbed-only",
+          "missed",
+          "non-authorized skills",
+          "expired state"
+        ],
+        "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "minActualHpLossPct": 7,
+      "internalCooldownSeconds": 22,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "bellward",
+        "name": "Bellward",
+        "effect": "+2% maximum HP and +2 percentage points Tenacity",
+        "bonusStats": [
+          {
+            "stat": "max_hp_pct",
+            "value": 2,
+            "unit": "relative_percent"
+          },
+          {
+            "stat": "tenacity_pp",
+            "value": 2,
+            "unit": "percentage_points"
+          }
+        ]
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "tenacity_pp",
+          "value": 2,
+          "unit": "percentage_points"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "id": "answer_the_toll",
+        "name": "Answer the Toll",
+        "effect": "After eligible direct non-true damage removes at least 7% of own maximum HP post-mitigation, receive one shield of 5% maximum HP for 6 seconds and one Resonant Answer charge. Within 6 seconds, the next authenticated direct class-ability damage hit OR effective direct class heal consumes that one charge for +5% potency (not both).",
+        "internalCooldownSeconds": 28,
+        "shieldPctMaxHp": 5,
+        "shieldSeconds": 6,
+        "thresholdActualHpLossPctMax": 7,
+        "chargeExpirySeconds": 6,
+        "chargeOneUsePotencyPct": 5,
+        "prohibitedSources": [
+          "true damage",
+          "DoT ticks",
+          "self damage",
+          "reflection",
+          "procs",
+          "absorbed-only damage",
+          "missed hits",
+          "echo NPCs",
+          "simultaneous duplicate events"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 5,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_ability_hit_or_effective_heal",
+      "minActualHpLossPct": 7,
+      "chargeOutputs": [
+        {
+          "channel": "one_use_direct_damage_or_heal_bonus",
+          "value": 5,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "oneUseAcrossBranches": true,
+      "internalCooldownSeconds": 28,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "tempered_guard",
+        "name": "Tempered Guard",
+        "effect": [
+          {
+            "stat": "defense_pct",
+            "value": 3
+          },
+          {
+            "stat": "attack_pct",
+            "value": 3
+          }
+        ]
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "id": "red_reprisal",
+        "name": "Red Reprisal",
+        "effect": "After taking eligible post-mitigation HP damage, the next basic attack within 5 seconds deals 18% increased damage and heals 1.5% of maximum HP.",
+        "internalCooldownSeconds": 8,
+        "exclusions": [
+          "self damage",
+          "damage over time ticks",
+          "reflect loops",
+          "proc damage",
+          "missed or avoided attacks"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 18,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        },
+        {
+          "channel": "self_heal",
+          "value": 1.5,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 5,
+      "consumeOn": "basic_direct_weapon_hit",
+      "internalCooldownSeconds": 8,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "id": "citadel_foundation",
+        "name": "Citadel Foundation",
+        "effect": [
+          {
+            "stat": "max_hp_pct",
+            "value": 4
+          },
+          {
+            "stat": "defense_pct",
+            "value": 3
+          }
+        ]
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 4,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "id": "tower_guard",
+        "name": "Tower Guard",
+        "effect": "After one eligible hit deals at least 8% of maximum HP as post-mitigation damage, gain a shield equal to 6% of maximum HP for 6 seconds.",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "true damage",
+          "self damage",
+          "already absorbed damage",
+          "duplicate simultaneous triggers"
+        ]
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 6,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "minActualHpLossPct": 8,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "id": "citadel_unbroken",
+        "name": "Citadel Unbroken",
+        "effect": "When falling below 35% HP, gain 10% incoming damage reduction and 20% increased healing received for 8 seconds.",
+        "internalCooldownSeconds": 35,
+        "activationRule": "Crossing the threshold only; remaining below it cannot retrigger."
+      },
+      "kind": "conditional",
+      "trigger": "cross_below_hp",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 10,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 8
+        },
+        {
+          "channel": "healing_received_pct",
+          "value": 20,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 8
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "thresholdHpPct": 35,
+      "internalCooldownSeconds": 35,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "First Light",
+        "effect": "+4% Healing Power and +2% Defense"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "healingScopeApprovalRequired": true,
+          "sourceValue": 4
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Sanctuary Thread",
+        "effect": "After an eligible effective direct heal, shield that target for 5% of target maximum HP for 6 seconds",
+        "icdSeconds": 20
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 5,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "name": "Dawnspire Rally",
+        "effect": "When an ally crosses below 35% maximum HP, the next effective direct heal on that ally within 6 seconds gains +14% Healing Power and grants 6% incoming non-true damage reduction for 5 seconds",
+        "icdSeconds": 35
+      },
+      "kind": "conditional",
+      "trigger": "ally_cross_below_hp",
+      "outputs": [
+        {
+          "channel": "effective_heal_bonus",
+          "value": 14,
+          "unit": "relative_percent",
+          "target": "trigger_target",
+          "durationSeconds": 0
+        },
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "trigger_target",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "effective_direct_heal_same_target",
+      "thresholdHpPct": 35,
+      "internalCooldownSeconds": 35,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_shardrunner",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Frozen Pursuit",
+        "effect": "+3% Attack and +2 percentage points Evasion"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 2,
+          "unit": "percentage_points"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_rare_t5_shardrunner",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Shatterstep",
+        "effect": "After successfully evading an eligible direct attack, the next direct physical class-ability hit within 6 seconds deals +12% damage",
+        "icdSeconds": 16
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 12,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_physical_ability_hit",
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Weight of Winter",
+        "effect": "+3% Attack"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Follow-Through",
+        "effect": "After a direct physical class-ability hit, the next basic attack within 6 seconds deals +6% damage",
+        "icdSeconds": 16
+      },
+      "kind": "conditional",
+      "trigger": "direct_physical_ability_hit",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "basic_direct_weapon_hit",
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "name": "Crushing Finish",
+        "effect": "A direct physical class-ability hit against a target below 30% HP deals +8% damage",
+        "icdSeconds": 20
+      },
+      "kind": "conditional",
+      "trigger": "direct_physical_ability_hit",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 8,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "targetBelowHpPct": 30,
+      "currentHit": true,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_dawnweave",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Gentle Radiance",
+        "effect": "+3% Healing Power"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "forge_healing_power_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "healingScopeApprovalRequired": true,
+          "sourceValue": 3
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_dawnweave",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Soft Refuge",
+        "effect": "After an eligible direct heal that restores missing HP, grant that target a shield for 3% of their maximum HP for 6 seconds",
+        "icdSeconds": 18
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 3,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_echohide",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Winter Echo",
+        "effect": "+3% Defense"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_echohide",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Answering Care",
+        "effect": "After an ally takes eligible direct HP damage, the next effective direct heal on that ally within 6 seconds gains +7% Healing Power",
+        "icdSeconds": 16
+      },
+      "kind": "conditional",
+      "trigger": "ally_direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "effective_heal_bonus",
+          "value": 7,
+          "unit": "relative_percent",
+          "target": "trigger_target",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "effective_direct_heal_same_target",
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_farwind",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Clear Sight",
+        "effect": "+3% Attack"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_farwind",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Patient Volley",
+        "effect": "After three consecutive successful direct weapon hits on the same target, the next direct weapon hit within 6 seconds deals +8% damage",
+        "icdSeconds": 14
+      },
+      "kind": "conditional",
+      "trigger": "consecutive_direct_weapon_hits",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 8,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_weapon_hit",
+      "count": 3,
+      "sameTarget": true,
+      "internalCooldownSeconds": 14,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_nightglass",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Arcane Etching",
+        "effect": "+3% direct class-ability damage"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "ability_damage_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_nightglass",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Fractured Tempo",
+        "effect": "After an eligible direct spell hit, gain +4% Haste for 6 seconds",
+        "icdSeconds": 18
+      },
+      "kind": "conditional",
+      "trigger": "direct_class_spell_hit",
+      "outputs": [
+        {
+          "channel": "haste_pp",
+          "value": 4,
+          "unit": "percentage_points",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "candidateUnitReauthor": true,
+      "sourceUnit": "relative_percent",
+      "candidateUnit": "percentage_points",
+      "sourceValue": 4,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_oathplate",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Oathbound Guard",
+        "effect": "+3% Defense"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_oathplate",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Oathplate Resolve",
+        "effect": "After a qualifying direct hit removes at least 5% maximum HP after mitigation, gain +4% Defense for 6 seconds",
+        "icdSeconds": 16
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "defense_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "minActualHpLossPct": 5,
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimebrand",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Tempered Edge",
+        "effect": "+2% Attack and +2% Defense"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "attack_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        },
+        {
+          "kind": "permanent_stat",
+          "channel": "defense_pct",
+          "value": 2,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimebrand",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Measured Reprisal",
+        "effect": "After taking eligible direct HP damage, the next direct class-ability hit within 6 seconds deals +9% damage",
+        "icdSeconds": 16
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 9,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_class_ability_hit",
+      "internalCooldownSeconds": 16,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Winterwall",
+        "effect": "+3% maximum HP"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Rimeguard",
+        "effect": "When a qualifying direct hit is received while below 50% HP, create a shield for 4% maximum HP lasting 6 seconds",
+        "icdSeconds": 24
+      },
+      "kind": "conditional",
+      "trigger": "direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "target": "self",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "selfBelowHpPct": 50,
+      "internalCooldownSeconds": 24,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "name": "Weather the Break",
+        "effect": "When Rimeguard's shield is fully broken by a direct hit, reduce incoming non-true damage by 6% for 4 seconds",
+        "icdSeconds": 30
+      },
+      "kind": "conditional",
+      "trigger": "own_named_shield_broken_by_direct_hit",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 4
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "requiredShieldEffect": "eq2_t5_rimewatch:4",
+      "internalCooldownSeconds": 30,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_snowveil",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Cold Footing",
+        "effect": "+2 percentage points Evasion"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "evasion_pp",
+          "value": 2,
+          "unit": "percentage_points"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_snowveil",
+      "pieces": 3,
+      "source": {
+        "pieces": 3,
+        "name": "Slip and Brace",
+        "effect": "After successfully evading a qualifying direct attack, gain +4% Defense for 5 seconds",
+        "icdSeconds": 18
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "outputs": [
+        {
+          "channel": "defense_pct",
+          "value": 4,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 18,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_stormthread",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Gathering Wind",
+        "effect": "+3% Haste"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 3,
+          "unit": "percentage_points",
+          "candidateUnitReauthor": true,
+          "sourceUnit": "relative_percent",
+          "candidateUnit": "percentage_points",
+          "sourceValue": 3
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_stormthread",
+      "pieces": 3,
+      "source": {
+        "pieces": 3,
+        "name": "Storm's Cover",
+        "effect": "After granting an authenticated class ally-buff, grant that ally 3% reduction to incoming non-true damage for 5 seconds",
+        "icdSeconds": 20
+      },
+      "kind": "conditional",
+      "trigger": "authenticated_class_ally_buff",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 3,
+          "unit": "relative_percent",
+          "target": "event_target",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "allyOnly": true,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_whitefang",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Swift Pursuit",
+        "effect": "+3% Haste"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "haste_pp",
+          "value": 3,
+          "unit": "percentage_points",
+          "candidateUnitReauthor": true,
+          "sourceUnit": "relative_percent",
+          "candidateUnit": "percentage_points",
+          "sourceValue": 3
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_whitefang",
+      "pieces": 3,
+      "source": {
+        "pieces": 3,
+        "name": "Snowstep Opening",
+        "effect": "After successfully evading a direct enemy attack, the next direct class-ability hit within 5 seconds deals +8% damage",
+        "icdSeconds": 14
+      },
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "outputs": [
+        {
+          "channel": "direct_damage_bonus",
+          "value": 8,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 5,
+      "consumeOn": "direct_class_ability_hit",
+      "internalCooldownSeconds": 14,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "pieces": 2,
+      "source": {
+        "pieces": 2,
+        "name": "Rooted Hope",
+        "effect": "+3% maximum HP"
+      },
+      "kind": "permanent",
+      "stats": [
+        {
+          "kind": "permanent_stat",
+          "channel": "max_hp_pct",
+          "value": 3,
+          "unit": "relative_percent"
+        }
+      ],
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "pieces": 4,
+      "source": {
+        "pieces": 4,
+        "name": "Shelter Bloom",
+        "effect": "An effective direct heal on an ally below 50% HP grants a shield for 4% of target maximum HP for 6 seconds",
+        "icdSeconds": 20
+      },
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 4,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 6
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "targetBelowHpPct": 50,
+      "allyOnly": true,
+      "internalCooldownSeconds": 20,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "pieces": 6,
+      "source": {
+        "pieces": 6,
+        "name": "Purifying Shelter",
+        "effect": "A successful authored cleanse grants its target 6% reduction to incoming non-true damage for 5 seconds",
+        "icdSeconds": 30
+      },
+      "kind": "conditional",
+      "trigger": "successful_authored_cleanse",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "event_target",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 30,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "blueprintTraits": [
+    {
+      "itemId": "EQ2_RARE_T2_IRONROOT_GUARD",
+      "traitId": "ironroot_guard",
+      "tier": 2,
+      "source": {
+        "id": "ironroot_guard",
+        "description": "After repeated damage, briefly reduce next incoming hit; cooldown and stacking cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T2_IRONROOT_GUARD",
+      "kind": "conditional",
+      "trigger": "repeated_direct_nontrue_hp_loss",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 5,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 6,
+      "consumeOn": "direct_nontrue_hp_loss",
+      "count": 3,
+      "countWindowSeconds": 10,
+      "internalCooldownSeconds": 22,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_RARE_T2_WOODLAND_MENDING",
+      "traitId": "woodland_mending",
+      "tier": 2,
+      "source": {
+        "id": "woodland_mending",
+        "description": "After healing another character, grant a small conditional absorb; cooldown and stacking cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T2_WOODLAND_MENDING",
+      "kind": "conditional",
+      "trigger": "effective_direct_class_heal",
+      "outputs": [
+        {
+          "channel": "shield",
+          "value": 2.5,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 5
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "allyOnly": true,
+      "internalCooldownSeconds": 20,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_RARE_T3_MIRAGE_PRECISION",
+      "traitId": "mirage_precision",
+      "tier": 3,
+      "source": {
+        "id": "mirage_precision",
+        "description": "After a successful dodge, briefly improve next ability accuracy; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T3_MIRAGE_PRECISION",
+      "kind": "conditional",
+      "trigger": "successful_direct_attack_evade",
+      "outputs": [
+        {
+          "channel": "accuracy_pp",
+          "value": 3,
+          "unit": "percentage_points",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 5,
+      "consumeOn": "direct_class_ability_attempt",
+      "internalCooldownSeconds": 18,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_RARE_T3_AMBERGLASS_WARD",
+      "traitId": "amberglass_ward",
+      "tier": 3,
+      "source": {
+        "id": "amberglass_ward",
+        "description": "After granting a shield, restore a very small amount of ally health; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T3_AMBERGLASS_WARD",
+      "kind": "conditional",
+      "trigger": "authenticated_class_shield_granted",
+      "outputs": [
+        {
+          "channel": "direct_heal",
+          "value": 1.5,
+          "unit": "percent_target_max_hp",
+          "target": "event_target",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "internalCooldownSeconds": 22,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_RARE_T4_STEADFAST_ANCHOR",
+      "traitId": "steadfast_anchor",
+      "tier": 4,
+      "source": {
+        "id": "steadfast_anchor",
+        "description": "The first elite heavy strike gets a small damage reduction; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T4_STEADFAST_ANCHOR",
+      "kind": "conditional",
+      "trigger": "first_elite_heavy_direct_hit",
+      "outputs": [
+        {
+          "channel": "incoming_nontrue_reduction",
+          "value": 6,
+          "unit": "relative_percent",
+          "target": "self",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "currentHit": true,
+      "oncePerEncounter": true,
+      "internalCooldownSeconds": 40,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "itemId": "EQ2_RARE_T4_SPELLTHREAD_ECHO",
+      "traitId": "spellthread_echo",
+      "tier": 4,
+      "source": {
+        "id": "spellthread_echo",
+        "description": "A successful ability has a small capped cooldown refund opportunity; cooldown and cap required",
+        "implementationStatus": "design_only_requires_server_owned_proc_and_cooldown_review",
+        "maxCopiesEquippedWithTrait": 1
+      },
+      "sourceBlueprintId": "EQ2_BP_T4_SPELLTHREAD_ECHO",
+      "kind": "conditional",
+      "trigger": "direct_class_ability_hit",
+      "outputs": [
+        {
+          "channel": "cooldown_refund",
+          "value": 0.5,
+          "unit": "seconds",
+          "target": "trigger_ability",
+          "durationSeconds": 0
+        }
+      ],
+      "windowSeconds": 0,
+      "consumeOn": null,
+      "excludeBasic": true,
+      "minRemainingCooldownSeconds": 1,
+      "internalCooldownSeconds": 20,
+      "maxCopiesEquipped": 1,
+      "mayCraft": false,
+      "reviewOnly": true,
+      "mayApply": false,
+      "mayMint": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "stackingCandidate": {
+    "sameEffect": "owner+effect family cooldown; target-specific shield replacement only when stronger",
+    "crossEffectDamage": "additive same-event damage bonus cap 20%; no recursive secondary triggers",
+    "crossEffectMitigation": "strongest eligible temporary equipment reduction, max 15%; true damage excluded",
+    "crossEffectShield": "strongest active equipment-origin shield on target, no additive stacking; class shields separate pending approval",
+    "permanent": "sum by canonical channel then apply cap once",
+    "maxSingleCooldownRefundSeconds": 0.5,
+    "chargeRule": "one charge, expires, trigger cannot consume its own charge; one charge across Bellwake damage/heal branches"
+  },
+  "reviewOnly": true,
+  "mayApply": false,
+  "mayMint": false,
+  "mayEquip": false,
+  "mayTrade": false,
+  "releaseApproved": false
+}

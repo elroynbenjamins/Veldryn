@@ -1,5 +1,5 @@
 export type MotionTrack={points:readonly (readonly [number,number])[];phase:number;width:number;maxDp:number;opacity:number;rotation:number;cycles:number};
-export type MotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound';
+export type MotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound'|'celestial'|'draconic'|'abyssal'|'paradox';
 export const MOTION_STEPS=Array.from({length:121},(_,i)=>i/120);
 const clamp=(v:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,v));
 export function sampleCosmeticTrack(t:MotionTrack,clock:number,width:number,height:number){
@@ -15,5 +15,5 @@ export function cosmeticGlowOpacity(profile:MotionProfile,clock:number,periodMs:
  const f=((clock*12000+phaseMs)%periodMs)/periodMs;
  if(lantern)return peak*(.35+.30*Math.sin(Math.PI*f)**2+.20*Math.sin(5*Math.PI*f)**2);
  const pulse=Math.sin(Math.PI*f)**2;
- switch(profile){case 'gloamward':return peak*pulse**4;case 'frostbound':return peak*pulse**6;case 'amberglass':return peak*pulse**2;case 'briarbound':return peak*pulse;}
+ switch(profile){case 'gloamward':return peak*pulse**4;case 'frostbound':return peak*pulse**6;case 'amberglass':return peak*pulse**2;case 'briarbound':return peak*pulse;case 'celestial':return peak*(.2+.8*pulse**3);case 'draconic':return peak*(.25+.75*pulse**2);case 'abyssal':return peak*(.18+.82*pulse);case 'paradox':return peak*(.15+.85*Math.abs(Math.sin(3*Math.PI*f)));}
 }

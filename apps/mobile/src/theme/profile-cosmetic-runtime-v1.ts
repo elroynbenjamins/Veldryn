@@ -1,5 +1,5 @@
 export type ProfileParticleKind='arcane'|'snowflake'|'ember'|'leaf'|'firefly';
-export type ProfileMotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound';
+export type ProfileMotionProfile='gloamward'|'frostbound'|'amberglass'|'briarbound'|'celestial'|'draconic'|'abyssal'|'paradox';
 export interface ProfileProceduralTrack{
  particle:ProfileParticleKind;points:readonly (readonly [number,number])[];phase:number;width:number;maxDp:number;opacity:number;rotation:number;cycles:number;
 }
@@ -47,6 +47,18 @@ export const PROFILE_COSMETIC_RUNTIME:readonly ProfileCosmeticRuntime[]=[
    T('firefly',[[.18,.72],[.31,.58],[.48,.47],[.66,.38]],70,.018,8,.42,0,1),
    T('firefly',[[.62,.82],[.72,.64],[.84,.43],[.93,.24]],92,.016,7,.36,0,1.15),
   ]},
+ {borderId:'premium:celestial-sovereign:crown-of-cosmos',fallbackBorderId:'guild-border-royal',effectId:'premium:celestial-sovereign:celestial-alignment',collection:'Celestial Sovereign',effectName:'Celestial Alignment',motionProfile:'celestial',accent:'#F5D982',softAccent:'#7181C8',effectPeriodMs:15000,
+  glows:[G(.10,.12,9,3200,0),G(.30,.05,7,4000,700),G(.50,.04,10,3600,1400),G(.70,.05,7,4200,2100),G(.90,.13,9,3400,2800),G(.88,.88,8,3800,3500),G(.50,.95,9,4500,4200),G(.12,.86,8,3700,4800)],
+  tracks:[T('arcane',[[.12,.72],[.28,.52],[.48,.34],[.70,.18]],5,.028,13,.58,170,1),T('firefly',[[.38,.82],[.52,.58],[.68,.34],[.86,.16]],28,.020,10,.48,0,1.2),T('arcane',[[.82,.68],[.88,.46],[.91,.28],[.88,.10]],52,.024,11,.48,-150,.9),T('firefly',[[.18,.34],[.34,.26],[.54,.22],[.76,.30]],78,.016,8,.38,0,.75),T('arcane',[[.62,.76],[.70,.58],[.78,.42],[.90,.30]],96,.018,9,.36,220,1.1)]},
+ {borderId:'premium:draconic-dominion:throne-of-embers',fallbackBorderId:'dungeon:sunscar:amberglass-loop',effectId:'premium:draconic-dominion:awakening-of-the-dragon',collection:'Draconic Dominion',effectName:'Awakening of the Dragon',motionProfile:'draconic',accent:'#FF8A45',softAccent:'#9E332D',effectPeriodMs:9800,
+  glows:[G(.08,.20,9,2400,0),G(.18,.88,8,3000,500),G(.42,.95,10,2200,1100),G(.70,.92,9,2800,1700),G(.92,.76,10,2500,2300),G(.94,.38,8,3200,2900),G(.85,.10,8,2600,3500)],
+  tracks:[T('ember',[[.12,1.02],[.22,.76],[.34,.48],[.46,.18]],4,.032,15,.66,-180,1.3),T('ember',[[.38,1.04],[.48,.74],[.60,.44],[.74,.12]],22,.026,13,.56,210,1.1),T('ember',[[.68,1.02],[.76,.70],[.84,.40],[.92,.14]],44,.030,14,.60,-230,1.25),T('arcane',[[.20,.74],[.42,.60],[.66,.50],[.88,.34]],70,.018,9,.34,120,.8),T('ember',[[.78,.88],[.84,.68],[.90,.45],[.94,.22]],91,.020,10,.40,160,1.4)]},
+ {borderId:'premium:abyssal-majesty:crown-of-the-depths',fallbackBorderId:'frame_gloamward',effectId:'premium:abyssal-majesty:call-of-the-deep',collection:'Abyssal Majesty',effectName:'Call of the Deep',motionProfile:'abyssal',accent:'#6CF2EB',softAccent:'#176F83',effectPeriodMs:14200,
+  glows:[G(.07,.16,8,4200,0),G(.14,.82,9,3600,700),G(.38,.94,7,4500,1500),G(.66,.93,8,3900,2200),G(.91,.78,9,4300,3000),G(.93,.30,8,3700,3800),G(.76,.08,7,4600,4500)],
+  tracks:[T('firefly',[[.14,.20],[.24,.38],[.38,.58],[.54,.76]],8,.024,12,.52,0,.7),T('arcane',[[.82,.14],[.72,.32],[.66,.52],[.58,.78]],31,.022,11,.44,200,.8),T('firefly',[[.20,.72],[.36,.60],[.54,.50],[.74,.42]],55,.018,9,.38,0,1),T('arcane',[[.70,.82],[.78,.62],[.86,.42],[.92,.18]],77,.020,10,.42,-190,.75),T('firefly',[[.36,.18],[.50,.26],[.64,.34],[.80,.30]],100,.016,8,.32,0,.65)]},
+ {borderId:'premium:paradox-eternal:fractured-eternity',fallbackBorderId:'guild-border-silver',effectId:'premium:paradox-eternal:reality-rewritten',collection:'Paradox Eternal',effectName:'Reality Rewritten',motionProfile:'paradox',accent:'#EDEBFF',softAccent:'#8E71C9',effectPeriodMs:12000,
+  glows:[G(.06,.12,8,2800,0),G(.30,.05,7,3500,700),G(.56,.08,9,2400,1500),G(.90,.14,8,3200,2200),G(.94,.64,9,2600,3000),G(.72,.93,7,3700,3700),G(.38,.95,8,2900,4400),G(.10,.78,9,3300,5000)],
+  tracks:[T('arcane',[[.08,.28],[.32,.36],[.58,.24],[.88,.34]],3,.025,12,.54,300,1.4),T('snowflake',[[.86,.08],[.72,.30],[.78,.54],[.60,.78]],26,.022,11,.42,-280,1.1),T('arcane',[[.18,.82],[.40,.64],[.58,.46],[.82,.22]],49,.020,10,.44,260,1.25),T('snowflake',[[.36,.12],[.52,.32],[.44,.56],[.64,.82]],72,.018,9,.32,-220,.95),T('firefly',[[.68,.78],[.82,.60],[.74,.38],[.90,.18]],96,.016,8,.36,0,1.5)]},
 ] as const;
 export const profileCosmeticRuntimeByBorder=new Map(PROFILE_COSMETIC_RUNTIME.map(row=>[row.borderId,row]));
 export const profileCosmeticRuntimeByEffect=new Map(PROFILE_COSMETIC_RUNTIME.map(row=>[row.effectId,row]));

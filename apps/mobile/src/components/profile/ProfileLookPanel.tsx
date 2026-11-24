@@ -23,7 +23,7 @@ import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
-import {PROFILE_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
+import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
 import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
 import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
@@ -31,8 +31,8 @@ import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
  scenes:[...BASE_PROFILE_BACKGROUNDS.map(row=>({id:row.id,name:row.name})),...PROFILE_BACKGROUND_PREVIEWS.map(row=>({id:row.id,name:row.name}))],
- frames:[...profileBorderSourceById.keys(),...PROFILE_EFFECTS.map(row=>row.borderId)],
- effects:PROFILE_EFFECTS.map(row=>({id:row.id,name:row.name})),
+ frames:[...profileBorderSourceById.keys(),...PROFILE_ALL_EFFECTS.map(row=>row.borderId)],
+ effects:PROFILE_ALL_EFFECTS.map(row=>({id:row.id,name:row.name})),
 };
 /** Badges have their own owned-state provider, so they ride beside the wardrobe chips. */
 export type ChipKind=WardrobeKind|'badge';

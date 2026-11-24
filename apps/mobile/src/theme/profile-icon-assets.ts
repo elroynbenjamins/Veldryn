@@ -35,6 +35,14 @@ export const profilePortraitIcons:Record<string,ImageSourcePropType>={
  'dungeon:asterfall:wardens-lantern':require('../../assets/profile-icons-v1/dungeon-asterfall-wardens-lantern.webp'),
  'dungeon:sunscar:solar-vault-key':require('../../assets/profile-icons-v1/dungeon-sunscar-solar-vault-key.webp'),
  'dungeon:frostmarch:resonant-bell':require('../../assets/profile-icons-v1/dungeon-frostmarch-resonant-bell.webp'),
+ 'cosmetic:gloamward:portrait-seer':require('../../assets/profile-icons-v1/masked-spellcaster.webp'),
+ 'cosmetic:gloamward:portrait-magus':require('../../assets/profile-icons-v1/runic-scholar.webp'),
+ 'cosmetic:frostbound:portrait-oracle':require('../../assets/profile-icons-v1/dawn-priestess.webp'),
+ 'cosmetic:frostbound:portrait-warden':require('../../assets/profile-icons-v1/stonebound-explorer.webp'),
+ 'cosmetic:amberglass:portrait-duelist':require('../../assets/profile-icons-v1/gilded-duelist.webp'),
+ 'cosmetic:amberglass:portrait-vanguard':require('../../assets/profile-icons-v1/traveling-alchemist.webp'),
+ 'cosmetic:briarbound:portrait-ranger':require('../../assets/profile-icons-v1/hooded-ranger.webp'),
+ 'cosmetic:briarbound:portrait-warden':require('../../assets/profile-icons-v1/dune-warden.webp'),
 };
 export function profileIconArtwork(id:string|undefined):ImageSourcePropType|undefined{
  return id?.startsWith('class:')?showcaseClassIcons[id.slice(6) as ClassId]:id?profilePortraitIcons[id]:undefined;

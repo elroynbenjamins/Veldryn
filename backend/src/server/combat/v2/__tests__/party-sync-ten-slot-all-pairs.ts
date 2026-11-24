@@ -1,8 +1,8 @@
 /**
  * Direct real-build coverage for every one of the 18 Synchronization pairs.
  *
- * Uses [A,B,A,B] in flexible Party Event mode so each case has exactly one
- * distinct class link at 100% strength. This intentionally covers same-role
+ * Uses a two-player [A,B] flexible Party Event party so each case has exactly
+ * one distinct class link at 100% strength. This intentionally covers same-role
  * links such as Dawnkeeper + Stonecaller that cannot coexist in a strict
  * 1 Tank / 2 Damage / 1 Support dungeon roster.
  */
@@ -22,7 +22,7 @@ const ratiosByPair=new Map<string,number[]>();
 for(const specIndex of [0,1] as const)
  for(const link of links)
   for(const boss of bosses){
-   const ids=[link.classes[0],link.classes[1],link.classes[0],link.classes[1]] as const;
+   const ids=[link.classes[0],link.classes[1]] as const;
    const fixtures=ids.map(classId=>setup(classId,specIndex,boss,profiles[1]));
    const builds=fixtures.map(x=>x.build);
    const runtime=fixtures.map(x=>x.runtime);

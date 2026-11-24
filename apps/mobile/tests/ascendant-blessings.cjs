@@ -3,9 +3,18 @@ const fs=require('node:fs');
 const path=require('node:path');
 const ts=require('typescript');
 
-const source=fs.readFileSync(path.join(__dirname,'../src/core/ascendant-blessings.ts'),'utf8');
-const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
-const mod={exports:{}};new Function('exports','module','require',js)(mod.exports,mod,require);
+const root=path.join(__dirname,'../src/core');
+const cache=new Map();
+function load(file){
+ const abs=path.resolve(root,file.endsWith('.ts')?file:file+'.ts');
+ if(cache.has(abs))return cache.get(abs).exports;
+ const source=fs.readFileSync(abs,'utf8');
+ const js=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+ const mod={exports:{}};cache.set(abs,mod);
+ const localRequire=request=>request.startsWith('.')?load(path.relative(root,path.resolve(path.dirname(abs),request)).replace(/\\\\/g,'/')):require(request);
+ new Function('exports','module','require',js)(mod.exports,mod,localRequire);
+ return mod.exports;
+}
 const {
  ASCENDANT_BLESSING_CHOICES,
  ASCENDANT_PET_BLESSING_BPS,
@@ -14,7 +23,7 @@ const {
  isAscendantBlessing,
  previewAscendantBlessingTotals,
  activeAscendantBlessingTotals,
-}=mod.exports;
+}=load('ascendant-blessings');
 
 assert.deepEqual(ASCENDANT_BLESSING_CHOICES,['gathering_speed','skill_xp','combat_xp']);
 assert.equal(ASCENDANT_PET_BLESSING_BPS,500);

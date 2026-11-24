@@ -59,6 +59,11 @@ const catalogue=projectPartySynchronizationCatalogueV2();
 assert.equal(catalogue.length,18);
 const predator=catalogue.find(x=>x.id==='predators_instinct')!;
 assert.equal(predator.baseBonuses.find(x=>x.stat==='crit_chance_pp')?.valueKind,'percentage_points');
+for(const stat of ['armor_penetration_pct','penetration_pct']){
+ const rows=catalogue.flatMap(link=>link.baseBonuses).filter(bonus=>bonus.stat===stat);
+ assert.ok(rows.length>0);
+ assert.ok(rows.every(bonus=>bonus.valueKind==='percentage_points'));
+}
 assert.equal(new Set(catalogue.map(x=>x.id)).size,18);
 assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&
  x.visibleOnRecruitmentBoard===false&&x.canRankCandidates===false&&

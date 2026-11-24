@@ -1,0 +1,68 @@
+// Only outputs SQL for the disposable CI database; no credentials or network.
+// The checked-in transaction remains disabled and rolls back by default.
+import {readFileSync} from 'node:fs';
+const path='backend/supabase/review/material-retirement-schema-transaction-v1.sql';
+const draft=readFileSync(path,'utf8');
+const gate='release_cleared constant boolean := false;';
+if(!draft.includes(gate)||!draft.trimEnd().endsWith('rollback;'))throw Error('Review safety guard missing');
+const body=draft.slice(draft.indexOf('do $$'),draft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
+if(body.includes(gate))throw Error('Fixture gate replacement failed');
+const giftDraft=readFileSync('backend/supabase/review/material-retirement-gift-closure-v1.sql','utf8');
+if(!giftDraft.includes(gate)||!giftDraft.trimEnd().endsWith('rollback;'))throw Error('Gift closure guard missing');
+const giftBody=giftDraft.slice(giftDraft.indexOf('do $$'),giftDraft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
+const setup=`
+begin;
+do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;
+create schema private;
+create table public.online_game_states(account_id uuid primary key,character_id uuid not null,state jsonb not null,revision bigint not null,updated_at timestamptz);
+create table public.characters(id uuid primary key,account_id uuid not null,gold bigint not null,updated_at timestamptz);
+create table public.character_wallets(character_id uuid primary key,gold bigint not null,updated_at timestamptz);
+create table public.server_action_receipts(account_id uuid,action text,idempotency_key text,response jsonb,primary key(account_id,action,idempotency_key));
+create table private.reward_gift_catalog_v1(id text primary key,resource_id text);
+create table private.reward_gift_campaigns_v1(sent_at timestamptz,attachments jsonb);
+insert into private.reward_gift_catalog_v1 values('ECHO_BAT_WING','ECHO_BAT_WING'),('RUNEBOUND_CORE','RUNEBOUND_CORE');
+create table private.reward_inbox_v1(id uuid primary key default gen_random_uuid(),account_id uuid not null,source_key text not null,source_kind text not null check(source_kind in ('party','guild','dungeon','gift')),source_id uuid not null,title text not null,body text not null,attachments jsonb not null,claimed_at timestamptz,unique(account_id,source_key));
+create table public.coop_reward_entitlements(claimed_at timestamptz,reward_json jsonb);
+create table public.party_contract_reward_entitlements_v16(claimed_at timestamptz,reward_json jsonb);
+create table public.party_contract_definitions_v16(active boolean,reward_json jsonb);
+create table public.dungeon_shop_catalogue_v1(enabled boolean,item_id text,name text,reward_id text,reward_field text);
+create table public.guild_shop_reward_catalogue(enabled boolean,item_id text,reward_id text,reward_ids jsonb);
+create table public.guild_project_supply_catalogue_v1(item_id text,item_name text);
+create table public.liveops_event_definitions(event_id text,definition_json jsonb);
+create table public.liveops_event_drafts(status text,name text,definition_json jsonb,schedule_json jsonb,published_event_id text);
+create table public.liveops_event_instances(status text,event_id text,definition_snapshot jsonb);
+create table public.ops_admin_content_catalog(enabled boolean,entity_type text,entity_key text,label text,description text,metadata_json jsonb,source_version text);
+create table public.liveops_admin_reward_catalog(enabled boolean,validated boolean,bundle_id text,label text,tier text,notes text);
+create table public.ops_remote_config(enabled boolean,config_key text,category text,label text,description text,default_value jsonb,current_value jsonb,constraints_json jsonb,notes text);
+create table public.expedition_reward_claims(claimed_at timestamptz,reward_json jsonb);
+create table public.squad_arena_reward_claims(claimed_at timestamptz,reward_payload jsonb);
+create table public.equipment_craft_queue_steps(inventory_key text,depends_on jsonb,state text);
+create table public.equipment_craft_queues(state text,blocker_keys jsonb);
+insert into public.dungeon_shop_catalogue_v1 values(true,'RUNEBOUND_CORE','Runebound Core','RUNEBOUND_CORE','item');
+create table public.item_instances(item_id text);
+create table public.account_bank_items(item_id text);
+create table public.guild_bank_balances(resource_id text,amount bigint);
+insert into public.online_game_states values('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','{"character":{"id":"00000000-0000-0000-0000-000000000002","gold":100},"inventory":{"stacks":[{"itemId":"ECHO_BAT_WING","quantity":143},{"itemId":"RUNEBOUND_CORE","quantity":7}]},"bank":{"gold":200,"stacks":[{"itemId":"ECHO_BAT_WING","quantity":707}]},"overflow":{"stacks":[]},"otherCharacters":[{"character":{"id":"00000000-0000-0000-0000-000000000003","gold":123},"inventory":{"stacks":[{"itemId":"RUNEBOUND_CORE","quantity":3}]},"overflow":{"stacks":[]}}],"settings":{"seenItemIds":["ECHO_BAT_WING"],"lockedItemIds":["ECHO_BAT_WING","RUNEBOUND_CORE"]}}',7,now());
+insert into public.characters values('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001',100,now());
+insert into public.character_wallets values('00000000-0000-0000-0000-000000000002',100,now());
+`;
+const assertions=`
+do $$ declare s jsonb; begin
+ select state into s from public.online_game_states;
+ if (select revision from public.online_game_states)<>8 or (select gold from public.character_wallets)<>11540 or (select gold from public.characters)<>11540 or (s#>>'{bank,gold}')::bigint<>56760 or (s#>>'{character,gold}')::bigint<>11540 then raise exception 'incorrect_balance_or_replay'; end if;
+ if s#>'{inventory,stacks}'<>'[{"itemId":"RUNEBOUND_CORE","quantity":7}]'::jsonb or s#>'{bank,stacks}'<>'[]'::jsonb or s#>'{otherCharacters,0,inventory,stacks}'<>'[{"itemId":"RUNEBOUND_CORE","quantity":3}]'::jsonb or s#>'{settings,seenItemIds}'<>'["ECHO_BAT_WING"]'::jsonb or s#>'{settings,lockedItemIds}'<>'["RUNEBOUND_CORE"]'::jsonb then raise exception 'unrelated_data_changed'; end if;
+ if (select count(*) from public.server_action_receipts)<>1 or (select (response->>'carriedCredit')::bigint+(response->>'bankCredit')::bigint from public.server_action_receipts)<>68000 then raise exception 'receipt_mismatch'; end if;
+ if (select count(*) from private.reward_gift_catalog_v1)<>1 or not exists(select 1 from private.reward_gift_catalog_v1 where id='RUNEBOUND_CORE') then raise exception 'gift_closure_mismatch'; end if;
+ if (select count(*) from private.reward_inbox_v1)<>1 or not exists(select 1 from private.reward_inbox_v1 where source_kind='gift' and source_key='material-retirement:echo-bat-wing-retirement-v1' and claimed_at is not null and attachments='[]'::jsonb and body like '%850 Echo Bat Wings%' and body like '%11440 Gold%' and body like '%56560 Gold%') then raise exception 'notice_mismatch'; end if;
+ if exists(select 1 from private.reward_inbox_v1 where claimed_at is null) then raise exception 'notice_must_not_be_claimable'; end if;
+ raise notice 'PASS: production-shaped storage fixture, shared bank, inactive roster preservation, authoritative wallet, receipt replay and already-credited history notice';
+end $$;
+`;
+const guard="do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;";
+const mode=process.argv[2]??'all';
+if(mode==='all')console.log([setup,giftBody,giftBody,body,body,assertions,'rollback;'].join('\n'));
+else if(mode==='setup')console.log([setup,giftBody,'commit;'].join('\n'));
+else if(mode==='convert')console.log(['begin;',guard,body,'commit;'].join('\n'));
+else if(mode==='convert-hold')console.log(['begin;',guard,"select pg_advisory_xact_lock(hashtextextended('party-account:00000000-0000-0000-0000-000000000001',0));",'select pg_sleep(2);',body,'commit;'].join('\n'));
+else if(mode==='assert')console.log(['begin;',guard,assertions,'rollback;'].join('\n'));
+else throw Error('Unknown fixture mode');

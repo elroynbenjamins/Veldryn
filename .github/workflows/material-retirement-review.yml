@@ -1,0 +1,112 @@
+name: Material retirement review
+on:
+  pull_request:
+    paths:
+      - 'backend/supabase/review/material-retirement-*.sql'
+      - 'tools/test-material-retirement-schema-fixture.mjs'
+      - 'tools/test-echo-bat-wing-source-closure.mjs'
+      - 'apps/mobile/tests/material-purpose-audit.ts'
+      - 'apps/mobile/tests/material-retirement-offline.ts'
+      - 'backend/src/server/equipment/equipment-recipe-materials-v33.ts'
+      - 'backend/src/server/equipment/equipment-v33-recipe-materials.test.ts'
+      - 'tools/preview-echo-bat-wing-source-closure.mjs'
+      - 'tools/material-retirement-review.mjs'
+      - 'tools/audit-material-retirement-references.mjs'
+      - '.github/workflows/material-retirement-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate read-only compensation fixture
+        run: node tools/material-retirement-review.mjs
+      - name: Enforce source-first retirement cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${GITHUB_BASE_REF}"
+            if git diff --name-only "origin/${GITHUB_BASE_REF}...HEAD" | grep -E '^backend/supabase/migrations/.*(material|echo[_-]?bat).*retir'; then
+              echo "::error::Do not ship the executable stock-retirement migration in the source-closure PR. Production migrations run before Edge deployment."
+              exit 1
+            fi
+          fi
+          echo 'PASS: source-closure review contains no executable retirement migration.'
+      - name: Verify persisted Echo Bat Wing source closure
+        run: node tools/preview-echo-bat-wing-source-closure.mjs
+      - name: Enumerate full checkout candidate references
+        run: node tools/audit-material-retirement-references.mjs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Audit expanded material registries and item-use regressions
+        run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex material-retirement-offline
+      - name: Verify V33 cannot revive retired material aliases
+        run: |
+          pnpm --dir backend exec esbuild src/server/equipment/equipment-v33-recipe-materials.test.ts --bundle --platform=node --format=esm --outfile=/tmp/equipment-v33-retirement-test.mjs
+          node /tmp/equipment-v33-retirement-test.mjs
+      - name: Verify closed drop and rebuilt runtime bundles
+        if: github.event_name == 'pull_request' && github.head_ref == 'review/material-purpose-loot-cleanup-20261124'
+        run: |
+          node tools/test-echo-bat-wing-source-closure.mjs
+          node tools/run-mobile-tests.mjs material-retirement-offline monster-drop-balance
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; for(const p of ['gameplay','coop']) {const c=readFileSync('backend/supabase/functions/'+p+'/index.ts','utf8'); if(!c.includes('RUNEBOUND_CORE')) throw Error('Protected core missing: '+p); if(!c.includes('ECHO_BAT')) throw Error('Echo Bat missing from rebuilt bundle: '+p); console.log('PASS: '+p+' rebuilt after persisted source closure');}"
+  atomic-retirement-pg17:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: retirement_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d retirement_fixture"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test transaction and rollback on disposable database
+        env:
+          PGPASSWORD: fixture-only
+        run: psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1 -f backend/supabase/review/material-retirement-atomic-pg17.sql
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate production-shaped transaction in disposable database
+        env:
+          PGPASSWORD: fixture-only
+        run: |
+          set -o pipefail
+          node tools/test-material-retirement-schema-fixture.mjs | psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1
+      - name: Verify simultaneous retirement requests in two PostgreSQL sessions
+        env:
+          PGPASSWORD: fixture-only
+        run: |
+          set -euo pipefail
+          fixture=tools/test-material-retirement-schema-fixture.mjs
+          db=(psql -h 127.0.0.1 -U postgres -d retirement_fixture -v ON_ERROR_STOP=1)
+          node "$fixture" setup | "${db[@]}"
+          node "$fixture" convert-hold > /tmp/retirement-a.sql
+          node "$fixture" convert > /tmp/retirement-b.sql
+          "${db[@]}" -f /tmp/retirement-a.sql &
+          first=$!
+          sleep 0.3
+          "${db[@]}" -f /tmp/retirement-b.sql &
+          second=$!
+          wait "$first"
+          wait "$second"
+          node "$fixture" assert | "${db[@]}"
+          echo 'PASS: two simultaneous conversion requests, one receipt and one notice'

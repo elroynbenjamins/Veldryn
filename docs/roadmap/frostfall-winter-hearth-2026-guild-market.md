@@ -41,14 +41,14 @@ Weekly cap resets **Monday at 00:00 UTC**. Counters are **per account, across ch
 
 ## Event crafting proposal — Christmas Lights ×5
 
-The seasonal Smithing recipe is gated by **Smithing skill level 4**, with no combat-level prerequisite. Recipe `CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026`:
-- Inputs per batch: **4 Copper Ore** (`COPPER_ORE`), **2 Greenwood Logs** (`GREENWOOD_LOG`), **1 Wisp Glow** (`FROSTFALL_WISP_GLOW_2026`, new event drop).
-- Output: **5 Christmas Lights** (`FROSTFALL_CHRISTMAS_LIGHTS_2026`).
-- Proposed base processing: **40 seconds**, **30 Gold**, **35 Smithing XP** per five-light batch (seasonal rate, subject to economy simulation and any global crafting surcharge).
-- To craft all **2,500 lights**, requires **500 batches, 2,000 Copper Ore, 1,000 Greenwood Logs, 500 Wisp Glow, 15,000 Gold** in total. This is **in addition to** the guild's 25,000-log donation goal.
-- Proposed Wisp Glow acquisition: server-verified, event-window-only drop: **5% per eligible successful Fishing catch** or **2% per eligible Woodcutting cycle**, using canonical server settlement with receipt anti-duplication. These are initial design drop chances to simulate, **not live drop rates**. Give it to the account's normal inventory/bank via audited, capacity-safe grant. No paid/required combat source.
-- Only lights, not raw Wisp Glow, count toward the lighting donation goal; lights have no combat stat and no permanent power. After event end, stop new Wisp Glow drops/crafting and permit leftover lights to be sold/salvaged at a conservative, separately reviewed value if desired. They cannot boost another event.
-- Never grant forging XP for attempted, cancelled or double-settled crafts. Use existing Smithing recipe provenance and authoritative resource consumption. Cross-account trade, if supported, cannot bypass donor's account weekly cap.
+Seasonal Christmas Lights can be crafted through **Smithing 4 or Tailoring 4**, without a combat-level prerequisite. Both routes produce the same five lights, with base 40 seconds, 30 Gold and 35 XP in the chosen profession (normal global modifiers apply).
+- Smithing: 8 Copper Ore + 4 Dewleaf + 1 existing Wisp Dust.
+- Tailoring: 8 Moss Fiber + 4 Dewleaf + 1 existing Wisp Dust.
+- Production online inventory snapshot (2026-11-24, inventory stacks only): Copper Ore 30,745; Moss Fiber 28,761; Dewleaf 28,268; Wisp Dust 7,224. All are among the top 20 stockpiles by quantity. No seasonal gathering drop or new Wisp Glow item.
+- A full guild goal takes 500 base batches: an even split consumes 2,000 ore, 2,000 fiber, 2,000 Dewleaf and 500 Wisp Dust, in addition to 25,000 donated logs; 15,000 base Gold, 20,000 base seconds. Actual profession modifiers may change cost, time, XP or output.
+- Only Christmas Lights count toward the light donation track. Both professions share the same weekly account cap. No crafting starts outside the active seasonal window.
+
+- Never grant forging XP for attempted, cancelled or double-settled crafts. Use existing profession recipe provenance and authoritative resource consumption. Cross-account trade, if supported, cannot bypass donor's account weekly cap.
 
 ## Authoritative persistence and security (first staging implementation complete; release QA pending)
 

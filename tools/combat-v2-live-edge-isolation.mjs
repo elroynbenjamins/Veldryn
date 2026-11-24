@@ -16,6 +16,7 @@ const ALLOWED=new Set([
  './v2/equipment-trait-engine-authority',
  './v2/equipment-trait-engine-runtime',
  './v2/party-sync-authority',
+ './v2/tactical-ai',
  './enemy-v2-status-rules',
 ]);
 const DISABLED='throw Error("combat_v2_not_available_in_live_edge_bundle");';
@@ -64,6 +65,23 @@ export function authorizePartySyncV2(_input,authority){
 export class EquipmentTraitRuntimeV2 {
  constructor(){ ${DISABLED} }
 }
+`,
+ './v2/tactical-ai':`
+export const CRITICAL_SUPPORT_HP_V2=.30;
+export function supportV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function tankV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function damageV2(actor){if(actor?.combatV2) ${DISABLED} return false;}
+export function emergencySupportRankV2(){ ${DISABLED} }
+export function supportTargetsV2(){ ${DISABLED} }
+export function incomingBossPressureV2(){ ${DISABLED} }
+export function predictiveShieldTargetsV2(){ ${DISABLED} }
+export function ordinaryHealSufficientV2(){ ${DISABLED} }
+export function tankProtectionDecisionV2(){ ${DISABLED} }
+export function damageTacticsV2(){ ${DISABLED} }
+export function pureSingleHealV2(){ ${DISABLED} }
+export function coordinatedHealV2(){ ${DISABLED} }
+export function redundantPureShieldV2(){ ${DISABLED} }
+export function sequenceDamageActionV2(){ ${DISABLED} }
 `,
  './enemy-v2-status-rules':`
 export function applyEnemyV2Periodic(){ ${DISABLED} }

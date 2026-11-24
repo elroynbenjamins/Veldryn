@@ -29,7 +29,7 @@ for(let depth=1;depth<=43;depth++){
 assert.ok(bossAt(36).hp<2.15&&bossAt(36).defense<1.24,'final boss durability bounded');
 assert.throws(()=>bossAt(44));
 const checkpoints=[8,15,22,29,36,43];
-assert.deepEqual(checkpoints.map(depth=>dungeonBossTimeLimitMs(depth,true,true,bossV)),[180_000,210_000,240_000,260_000,280_000,300_000]);
+assert.deepEqual(checkpoints.map(depth=>dungeonBossTimeLimitMs(depth,true,true,bossV)),[180_000,210_000,240_000,280_000,320_000,360_000]);
 for(let depth=1;depth<=43;depth++){
  assert.equal(dungeonBossTimeLimitMs(depth,true,false,bossV),undefined,'regular rooms keep default limit');
  assert.equal(dungeonBossTimeLimitMs(depth,true,true),undefined,'saved runs keep default limit');

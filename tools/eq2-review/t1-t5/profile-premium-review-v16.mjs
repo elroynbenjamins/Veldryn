@@ -1,4 +1,5 @@
 import {readFileSync} from 'node:fs';
+import {inspectPower} from './equipment-power-contract-review-v15.mjs';
 import {capChannel} from './universal-affix-overlap-review-v4.mjs';
 const read=p=>JSON.parse(readFileSync(new URL('../../../docs/2-0/'+p,import.meta.url),'utf8'));
 const d=read('eq2-equipment-power-review-v5.json'),a=read('eq2-universal-affix-overlap-review-v4.json'),p=read('eq2-innate-and-set-budget-review-v7.json'),m=read('eq2-t1-t5-canonical-membership-reconciliation-v2.json'),ext=read('eq2-profile-extension-review-v16.json');
@@ -46,6 +47,32 @@ export function premiumComparisons(){
     totalPremiumApproved:false,affixReplacementPolicy:'OPEN_NO_EXTRA_ROLL_BUDGET_APPROVED',...deny};
  });
 }
+// One exact same-tier, same-slot replacement in a signature-class fixture.
+// No claim of legally owned/wearable copies or actual Skills/Combat execution.
+export function mixedPremiumFixtures(){
+ const all=new Map(profiles().map(x=>[x.itemId,x])),out=[];
+ for(const x of premiumComparisons()){
+  const target=all.get(x.itemId);
+  for(const l of d.loadouts.filter(l=>l.tier===target.tier&&(!target.classId||target.classId===l.classId)&&
+   (!target.role||target.role===l.role||target.role==='all_roles_defensive_counterplay'))){
+   const old=l.itemIds.map(id=>all.get(id)).find(y=>y.slot===target.slot);
+   if(!old||target.slot==='weapon'&&target.hands!==old.hands)continue;
+   const baseline=inspectPower({classId:l.classId,tier:l.tier,grade:'rare',quality:50});
+   const before=basePreview(old),after=basePreview(target);
+   const raw=new Map(baseline.channels.map(z=>[z.channel,z.rawCentipercent]));
+   const innate=premium.get(target.itemId);
+   for(const i of innate?.innates??[])if(i.mapping==='EXACT_SHARED_CHANNEL'&&stats.has(i.canonicalChannel))raw.set(i.canonicalChannel,raw.get(i.canonicalChannel)+i.centipercent);
+   const base=baseline.base+after.base-before.base;
+   const partial=base*(1+[...raw].reduce((n,[k,v])=>n+capChannel(k,v)/10000*d.scorePolicy.weights[k],0));
+   out.push({itemId:target.itemId,replaces:old.itemId,classId:l.classId,tier:l.tier,baseBefore:baseline.base,baseAfter:round(base),
+    attackAfter:round(baseline.baseStats.attack-before.attack+after.attack),defenseAfter:round(baseline.baseStats.defense-before.defense+after.defense),hpAfter:round(baseline.baseStats.hp-before.hp+after.hp),
+    partialBefore:baseline.partialPower,partialAfter:round(partial),partialDeltaPct:round((partial/baseline.partialPower-1)*100),
+    rollPolicy:'MATCHED_RANDOM_ROLLS_FOR_SENSITIVITY_NOT_APPROVED_ADDITIVE_PREMIUM',unpriced:x.unpriced,traitUnpriced:x.traitUnpriced,
+    setEffectsUnpriced:true,skillEffectsUnpriced:true,...deny});
+  }
+ }
+ return out;
+}
 export function setCoverage(){
  const audited=new Map(p.sets.map(s=>[s.setId,s]));
  return m.sets.map(s=>({setId:s.setId,tier:s.tier,members:s.memberIds.length,
@@ -58,5 +85,5 @@ export function summary(){
   basis:Object.fromEntries(Object.entries(Object.groupBy(x,v=>v.profileBasis)).map(([k,v])=>[k,v.length])),
   bossOnly:x.filter(v=>v.bossOnly).length,blueprintUnresolved:x.filter(v=>v.blueprintUnresolved).length,
   premiumComparisons:p.length,premiumBaseBoosts:p.filter(v=>v.basePremiumPct>0).length,
-  sets:sets.length,setsWithNumericSource:sets.filter(v=>v.hasNumericSource).length,semanticCandidates:semanticCandidates.length,...deny};
+  mixedPremiumFixtures:mixedPremiumFixtures().length,sets:sets.length,setsWithNumericSource:sets.filter(v=>v.hasNumericSource).length,semanticCandidates:semanticCandidates.length,...deny};
 }

@@ -147,6 +147,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/ability-full-ten-slot-boss-matrix.js
       - name: Review observed counterplay opportunity, cast and effect reasons
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-opportunity-review.js
+      - name: Validate candidate power ordering and tie accounting
+        run: node backend/dist/server/combat/v2/__tests__/candidate-power-calibration.js
       - name: Run 324 ten-slot boss counterplay scenarios with verified equipment evidence
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-ten-slot-matrix.js
       - name: Review pre-scaled Forge once-only handoff and reject synthetic ownership

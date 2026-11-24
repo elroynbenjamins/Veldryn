@@ -109,7 +109,23 @@ const triggers=(input:ReturnType<typeof simulateCombat>,type:string)=>
   equipmentEffects:{...originalForgeEffects,abilityDamagePct:0}}}]};
  assert.doesNotThrow(()=>issueEquipmentV2TraitAuthority(zeroForge,
   [{...verified,abilityDamagePct:5}],()=>true));
- const token=issueEquipmentV2TraitAuthority(input,[verified],()=>true);
+ // The approved receipt must be the same immutable receipt that reaches combat.
+ const mutable={...verified};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(input,[mutable],()=>{
+  mutable.basicAttackDamagePct=999;return true;
+ }),/persisted_ledger_not_verified/);
+ const nested={...verified,traits:verified.traits.map(trait=>({...trait}))};
+ assert.throws(()=>issueEquipmentV2TraitAuthority(input,[nested],()=>{
+  nested.traits[0].traitId='mending_echo';return true;
+ }),/persisted_ledger_not_verified/);
+ const changedInput=structuredClone(input);
+ assert.throws(()=>issueEquipmentV2TraitAuthority(changedInput,[verified],()=>{
+  changedInput.seed='CHANGED';return true;
+ }),/persisted_ledger_not_verified/);
+ const token=issueEquipmentV2TraitAuthority(input,[verified],rows=>
+  Object.isFrozen(rows)&&Object.isFrozen(rows[0])&&
+  Object.isFrozen(rows[0].ownedEquippedInstanceIds)&&Object.isFrozen(rows[0].traits)&&
+  Object.isFrozen(rows[0].traits[0]));
  assert.equal(authorizeEquipmentV2TraitEngine(input,token).size,1);
  assert.throws(()=>simulateCombat({...input,seed:'TAMPER'},undefined,token),/not_matching_compiled_encounter/);
  assert.throws(()=>simulateCombat(input,undefined,{} as typeof token),/not_server_issued/);

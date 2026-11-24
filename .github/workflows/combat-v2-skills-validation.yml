@@ -150,6 +150,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
       - name: Guard Synchronization diminishing scale and nominal link budget
         run: node backend/dist/server/combat/v2/__tests__/party-sync-scale-policy.js
+      - name: Audit Synchronization stat concentration and cap pressure
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-stat-pressure-audit.js
       - name: Validate informational Synchronization lobby and recruitment projection
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization-projection.js
       - name: Validate synchronization authority and real private engine modifiers

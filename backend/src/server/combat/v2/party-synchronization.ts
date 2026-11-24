@@ -24,7 +24,8 @@ export type SyncStatV2=
 type Bonus=readonly [SyncStatV2,number]; // 100 bps = 1%; pp keys are absolute points.
 export type SyncValueKindV2='percent'|'percentage_points';
 export function partySynchronizationStatValueKindV2(stat:SyncStatV2):SyncValueKindV2{
- return stat==='crit_chance_pp'?'percentage_points':'percent';
+ // Penetration is additive to the bypass fraction in the combat engine.
+ return stat==='crit_chance_pp'||stat==='armor_penetration_pct'||stat==='penetration_pct'?'percentage_points':'percent';
 }
 interface Pair {
  readonly id:string;readonly name:string;

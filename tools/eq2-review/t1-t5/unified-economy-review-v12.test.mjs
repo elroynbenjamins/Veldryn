@@ -31,8 +31,8 @@ test('all 928 source bills and exact identity consumers, no missing quantities o
  const c=materialCatalogue(),index=new Map(c.map(x=>[x.id,x]));
  assert.equal(new Set(c.map(x=>x.id)).size,c.length);
  assert.equal(index.get('EQ2_VERDANT_ESSENCE').status,'DORMANT_NO_RECIPE_CONSUMER');
- assert.equal(index.get('MOSS_FIBER').status,'SOURCE_GAP');
- assert.equal(index.get('THORN_SAP').status,'SOURCE_GAP');
+ assert(index.get('MOSS_FIBER').sourceEvidence.some(x=>x.source==='MOSS_RAT'));
+ assert(index.get('THORN_SAP').sourceEvidence.some(x=>x.source==='VENOM_WEAVER'));
  assert(index.get('WINTERMINT').sourceEvidence.some(x=>x.source==='WINTERMINT_PATCH'&&x.level===48));
  assert(index.get('EQ2_SUNSCAR_HIDE').sourceEvidence.some(x=>x.sourceId==='EQ2_DUNE_HARE'&&x.newEnemyConcept));
  for(const r of rows){

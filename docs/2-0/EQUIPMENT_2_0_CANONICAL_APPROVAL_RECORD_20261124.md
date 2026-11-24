@@ -124,6 +124,10 @@ V21 backend typecheck/release economy, dungeon mechanics, isolated core and cata
 
 V22/V23 focused CI remains queued. V24 corrects a non-exported V17 source import in the V22 audit and adds three private defensive source definitions: Heliarch Guard, Unyielding Frame, Rimevanguard. Actual post-hit HP-loss threshold, next-hit/timed reduction, strongest-only overlap and expiry; conservative QA semantics, no ownership or release authority. 96 matched Ironwarden pairs prepared, execution unconfirmed. Ten source definitions/eight mechanics supported, 132 remaining. CP and D1–D10, previous mobile/Edge blockers remain open. See `docs/2-0/EQUIPMENT_2_0_INCOMING_DEFENSE_REVIEW_V24.md`.
 
+## 3L. V25 temporary stat overlays
+
+V22–V24 focused CI remains queued; no new measured outcomes. V25 adds ten source-exact timed records: Oathplate T1–T5, Ironwarden Riposte T2/T4/T5, Bastionmail and Runeforge Momentum. Readback matched all ten magnitudes, durations and cooldowns. Strongest-only Defense overlay and future-only Haste scheduling, conservative actual HP/mitigation/effective-heal triggers. Boundary tests before long matrices; no execution pass confirmed, no new matched matrix yet. Twenty source definitions/twelve distinct mechanics supported, 122 remaining. CP, D1–D10 and broader blockers open. See `docs/2-0/EQUIPMENT_2_0_TIMED_STAT_REVIEW_V25.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

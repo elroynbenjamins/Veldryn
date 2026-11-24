@@ -67,8 +67,9 @@ export const SUPPORTER_BADGE_UNLOCK_HINTS:Record<SupporterBadgeId,string>={
  supporter_6m:'Unlock after 6 total verified months of Supporter.',
  supporter_12m:'Unlock after 12 total verified months of Supporter.',
 };
+export function playerBadgeReleased(id:EquippablePlayerBadgeId){return id!=='ascendant_celestial_sovereign'||ASCENDANT_CELESTIAL_VISUALS_RELEASED;}
 export function visibleCollectiblePlayerBadgeIds():readonly CollectiblePlayerBadgeId[]{
- return ASCENDANT_CELESTIAL_VISUALS_RELEASED?COLLECTIBLE_PLAYER_BADGE_IDS:COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id!=='ascendant_celestial_sovereign');
+ return COLLECTIBLE_PLAYER_BADGE_IDS.filter(playerBadgeReleased);
 }
 /** One elective earned or Supporter badge beside the name, in chat and every name row.
  * Staff role is shown independently and never costs the player a slot. */
@@ -134,8 +135,8 @@ export function playerBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date
  identity=normalizePlayerBadges(identity);
  if(!identity||!Number.isFinite(nowMs)||identity.validUntilMs<=nowMs)return [];
  const featured=identity.equippedBadgeId===undefined
-  ?identity.extras?.[0]??(identity.supporter?'supporter':undefined)
-  :identity.equippedBadgeId??undefined;
+  ?identity.extras?.find(playerBadgeReleased)??(identity.supporter?'supporter':undefined)
+  :identity.equippedBadgeId&&playerBadgeReleased(identity.equippedBadgeId)?identity.equippedBadgeId:undefined;
  return [...(identity.staff?[identity.staff]:[]),...(featured?[featured]:[])].slice(0,MAX_DISPLAYED_PLAYER_BADGES);
 }
 /** The profile shelf: only what the player deliberately featured. The name row beside it
@@ -144,7 +145,7 @@ export function playerBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date
 export function profileBadgeIds(identity:PlayerBadgeIdentity|undefined,nowMs=Date.now()):PlayerBadgeId[]{
  const normalized=normalizePlayerBadges(identity);
  if(!normalized||!Number.isFinite(nowMs)||normalized.validUntilMs<=nowMs)return [];
- return (normalized.featured??[]).slice(0,MAX_FEATURED_PLAYER_BADGES);
+ return (normalized.featured??[]).filter(playerBadgeReleased).slice(0,MAX_FEATURED_PLAYER_BADGES);
 }
 /** Validate a showcase selection against what the account actually owns.
  * The server re-validates on write and on read; this keeps the picker honest. */

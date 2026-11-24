@@ -935,7 +935,7 @@ for(const tier of [1,2,3,4] as const){
  assert.equal(gate.requiresNewClaimAndCustodyVersion,true);
  universalGatePositive++;
  assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
-  actual.mint,{...draft,canMint:true} as typeof draft),
+  actual.mint,{...draft,canMint:true} as unknown as typeof draft),
   /unissued_proposal_attests_false_mint_authority/);universalGateNegative++;
  assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
   actual.mint,{...draft,originalRecipeId:'FAKE_RECIPE'} as typeof draft),

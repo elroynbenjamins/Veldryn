@@ -25,6 +25,7 @@ export function weeklyRaidReplayFrame(source:WeeklyRaidReplaySource|null,elapsed
 }
 
 export interface WeeklyRaidPresentation extends WeeklyRaidReplaySource{
+ classId?:string;
  presentation:{
   hero:{id:string;name:string;maxHp:number;finalHp:number};
   boss:{id:string;name:string;maxHp:number;finalHp:number};
@@ -36,6 +37,8 @@ export interface WeeklyRaidPresentation extends WeeklyRaidReplaySource{
 }
 export interface WeeklyRaidSettledReceipt{
  nonce:string;replay:WeeklyRaidPresentation|null;sharedHpCredit?:number;performanceScore?:number;
+ startedMs?:number;resolvesMs?:number;settledMs?:number;
+ identity?:{heroName:string;classId:string;bossName:string};
 }
 export const WEEKLY_RAID_SCREEN_RELEASED=false as const;
 const clamp=(n:number,max:number)=>Math.max(0,Math.min(max,n));
@@ -71,7 +74,7 @@ export function weeklyRaidPresentationFrame(source:WeeklyRaidPresentation,elapse
  };
  const visibleTypes=['damage','dot_tick','heal','hot_tick','shield','interrupt','status_remove','cast_start','phase','miss'];
  return {...frame,heroHp:complete?hero.finalHp:hp.get(hero.id)!,bossHp:complete?boss.finalHp:hp.get(boss.id)!,
-  approximateHp:!complete,cast,phase,log:frame.events.filter(e=>visibleTypes.includes(e.type)).slice(-5).reverse().map(display),
+  approximateHp:!complete,cast,phase,log:frame.events.filter(e=>visibleTypes.includes(e.type)).slice(-3).reverse().map(display),
   cue:frame.effects.length?display(frame.effects[frame.effects.length-1]):null};
 }
 export function weeklyRaidBattleSummary(receipt:WeeklyRaidSettledReceipt){
@@ -81,3 +84,17 @@ export function weeklyRaidBattleSummary(receipt:WeeklyRaidSettledReceipt){
   companionDirectDamage:replay.companionDirectDamage,companionEffectiveHealing:replay.companionEffectiveHealing,companionShieldGranted:replay.companionShieldGranted,
   sharedHpCredit:receipt.sharedHpCredit??null,performanceScore:receipt.performanceScore??null,claimable:false as const};
 }
+
+/** Same entitlement policy as dungeon theater; speed never enters a command. */
+export function weeklyRaidPlaybackSpeed(vipPlus:boolean,requested:unknown):1|2{return vipPlus&&requested===2?2:1}
+/** Presentation only: no browser timer may settle a server attempt. */
+export function weeklyRaidPendingState(receipt:WeeklyRaidSettledReceipt,serverAlignedNowMs:number){
+ if(receipt.replay)return {status:'settled' as const,remainingMs:0};
+ const end=receipt.resolvesMs;
+ if(end===undefined||!Number.isFinite(end)||!Number.isFinite(serverAlignedNowMs))return {status:'pending' as const,remainingMs:null};
+ const remainingMs=Math.min(180000,Math.max(0,end-serverAlignedNowMs));
+ return {status:remainingMs===0?'resolving' as const:'pending' as const,remainingMs};
+}
+/** An opened settled receipt starts on its summary, not a second 3-minute wait.
+ * Players may explicitly replay. Leaving or reconnecting never creates a new attempt. */
+export function weeklyRaidOpenCursor(receipt:WeeklyRaidSettledReceipt){return receipt.replay?.durationMs??0}

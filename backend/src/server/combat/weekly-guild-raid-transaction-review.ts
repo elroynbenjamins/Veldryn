@@ -28,7 +28,7 @@ export interface WeeklyReviewAuthority{
 interface Receipt{
  version:string;accountId:string;characterId:string;actorRevision:number;nonce:string;
  attemptNumber:number;startedMs:number;resolvesMs:number;actorDigest:string;encounterDigest:string;
- guildSkills:ReturnType<typeof freezeWeeklyGuildSkills>;seed:string;replay:ReturnType<typeof previewWeeklyGuildCombat>;
+ identity:{heroName:string;classId:string;bossName:string};guildSkills:ReturnType<typeof freezeWeeklyGuildSkills>;seed:string;replay:ReturnType<typeof previewWeeklyGuildCombat>;
  settledMs?:number;sharedHpCredit?:number;performanceScore?:number;
 }
 export class WeeklyRaidReviewStore{
@@ -83,7 +83,7 @@ export class WeeklyRaidReviewStore{
    const guildSkills=freezeWeeklyGuildSkills(this.encounter.guildId,actor.guildSkills);
    const prepared=applyWeeklyGuildSkills(actor.player,guildSkills);
    const replay=previewWeeklyGuildCombat({boss:this.encounter.boss,reference:this.encounter.reference,player:prepared,seed,tuning:'candidate'});
-   const row:Receipt={version:VERSION,accountId:p.accountId,characterId:cmd.characterId,nonce:cmd.nonce,actorRevision:actor.revision,actorDigest:digest(actor),encounterDigest:this.encounterDigest,attemptNumber,startedMs:now,resolvesMs:now+WEEKLY_GUILD_ATTEMPT_MS,guildSkills,seed,replay};
+   const row:Receipt={version:VERSION,accountId:p.accountId,characterId:cmd.characterId,nonce:cmd.nonce,actorRevision:actor.revision,actorDigest:digest(actor),encounterDigest:this.encounterDigest,attemptNumber,startedMs:now,resolvesMs:now+WEEKLY_GUILD_ATTEMPT_MS,identity:{heroName:prepared.name,classId:prepared.classId??'',bossName:this.encounter.boss},guildSkills,seed,replay};
    this.attempts.push(row);this.revision++;
    return this.view(row);
   });

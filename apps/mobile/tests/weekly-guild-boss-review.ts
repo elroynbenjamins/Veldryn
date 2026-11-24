@@ -313,3 +313,27 @@ assert.equal(seekFrame.cue,null);
 assert.equal(weeklyRaidBattleSummary({...settled,sharedHpCredit:0})!.sharedHpCredit,0);
 assert.equal(weeklyRaidBattleSummary({nonce:'missing',replay:settledReplay})!.sharedHpCredit,null);
 console.log('PASS review UI presentation: exact terminal HP, event log, separate contribution and seek safety');
+
+import {weeklyRaidPlaybackSpeed,weeklyRaidPendingState,weeklyRaidOpenCursor} from '../src/core/weekly-guild-raid-replay-review';
+for(const value of [undefined,0,1,2,4,100,'2'])assert.equal(weeklyRaidPlaybackSpeed(false,value),1);
+assert.equal(weeklyRaidPlaybackSpeed(true,2),2);
+for(const value of [undefined,0,1,4,100,'2'])assert.equal(weeklyRaidPlaybackSpeed(true,value),1);
+assert.equal(weeklyRaidOpenCursor(first),0);
+assert.equal(weeklyRaidPendingState(first,first.startedMs).remainingMs,180000);
+assert.equal(weeklyRaidPendingState(first,first.resolvesMs-1000).remainingMs,1000);
+assert.equal(weeklyRaidPendingState(first,first.resolvesMs).status,'resolving');
+assert.equal(weeklyRaidPendingState(settled,settled.resolvesMs).status,'settled');
+assert.equal(weeklyRaidOpenCursor(settled),settled.replay!.durationMs);
+assert.equal(first.identity.bossName,encounter.boss);
+assert.equal(first.identity.classId,player.classId??'');
+const leaveRaid=make();
+const leaveReceipt=leaveRaid.start(principal(0),cmd,week+1);
+// No presentation instance or client poll is necessary for the server worker.
+leaveRaid.settleDue(leaveReceipt.resolvesMs+60000);
+const reopened=leaveRaid.read(principal(0),cmd.nonce)!;
+assert.equal(reopened.attemptNumber,1);
+assert.equal(weeklyRaidPendingState(reopened,leaveReceipt.resolvesMs+60000).status,'settled');
+assert.equal(weeklyRaidOpenCursor(reopened),reopened.replay!.durationMs);
+assert.equal(leaveRaid.snapshot().reservedAttempts,1);
+assert.ok(weeklyRaidPresentationFrame(reopened.replay!,180000,null,false).log.length<=3);
+console.log('PASS dungeon-style raid review: VIP+ speed only, no 4x, leave and settle independently, summary on reopen');

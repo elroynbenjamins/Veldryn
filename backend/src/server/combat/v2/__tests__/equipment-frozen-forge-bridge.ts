@@ -41,6 +41,7 @@ import {simulateOriginalForgeAuthoredBossReviewV2}
 import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2} from '../enemy-kit-composer';
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {simulateCombat} from '../../engine';
+import {issueEq2PrivateHitQaV22,authorizeEq2PrivateHitQaV22,type Eq2PrivateHitIdV22} from '../equipment-private-hit-qa-v22';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {reviewOriginalForgeSetBossOpportunitiesV2}
  from '../equipment-forge-set-boss-opportunity-review';
@@ -1581,6 +1582,7 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
 
 if(process.env.EQ2_V21_MULTISLOT_PATH){
  const rows:unknown[]=[];
+ const v22Rows:unknown[]=[];
  const cache=new Map<string,ReturnType<typeof makeV21Loadout>>();
  const qa=(classId:ClassIdV2,specIndex:0|1,tier:1|2|3|4,level:number)=>{
   const key=[classId,specIndex,tier,level].join(':');
@@ -1624,6 +1626,24 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
       const metrics=(r:typeof before)=>({victory:r.victory,reason:r.reason,durationMs:r.durationMs,damage:r.players[0].damageDone,
        healing:r.players[0].healingDone,damageTaken:r.players[0].damageTaken,hp:r.players[0].hp,maxHp:r.players[0].definition.stats.maxHp,
        interrupts:r.players[0].interrupts,enemyHp:r.enemies[0].hp,enemyMaxHp:r.enemies[0].definition.stats.maxHp});
+      if(process.env.EQ2_V22_CONDITIONAL_PATH&&classId==='RAVAGER'){
+       const winter:Eq2PrivateHitIdV22=profile.region==='asterfall'?'EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER':
+        profile.region==='sunscar'?'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER':'EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER';
+       const scenarios:readonly (readonly Eq2PrivateHitIdV22[])[]=profile.region==='frostmarch'?[[winter],['eq2_t5_avalanche:6'],[winter,'eq2_t5_avalanche:6']]:[[winter]];
+       for(const ids of scenarios){
+        const token=issueEq2PrivateHitQaV22(baselineInput,compiled.actor.id,ids,d=>/^[0-9a-f]{64}$/.test(d));
+        const runCandidate=()=>simulateCombat(baselineInput,issueEnemyV2EngineAuthority(scope,baselineInput,
+         (_s,d)=>/^[0-9a-f]{64}$/.test(d)),undefined,undefined,token);
+        const changed=runCandidate();
+        assert.deepEqual(changed,runCandidate(),'V22 conditional replay must recreate cooldown state');
+        const activations=changed.events.filter(e=>e.type==='equipment_trait_trigger'&&e.detail==='private_qa_current_hit_only');
+        assert.ok(activations.every(e=>e.actorId===compiled.actor.id&&e.targetId===profile.id&&e.amount!==undefined&&e.amount>=0));
+        assert.deepEqual(run(baselineInput),before,'V22 must not mutate the source fixture');
+        v22Rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,ids,
+         equippedCopies:loadout.ids.length,baseline:metrics(before),candidate:metrics(changed),activations:activations.length,
+         extraHpDamage:activations.reduce((n,e)=>n+(e.amount??0),0)});
+       }
+      }
       rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,seed,targetTier:profile.forgeTier,
        targetLevel:profile.level,equippedCopies:loadout.ids.length,missing:loadout.missing,tiers:loadout.tiers,downgraded:loadout.downgraded,
        channel:effect.channel,pct:effect.pct,baseline:metrics(before),candidate:metrics(after)});
@@ -1635,8 +1655,12 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
  assert.equal(rows.length,648);
  writeFileSync(process.env.EQ2_V21_MULTISLOT_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_MULTISLOT_FIXED_DIFFICULTY',actualOwnedCandidateCopies:false,
   conditionalEffectsApplied:false,releaseApproved:false,rows}));
+ if(process.env.EQ2_V22_CONDITIONAL_PATH){
+  assert.equal(v22Rows.length,120);
+  writeFileSync(process.env.EQ2_V22_CONDITIONAL_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_CURRENT_HIT_COUNTERFACTUAL',
+   actualOwnedCandidateCopies:false,releaseApproved:false,rows:v22Rows}));
+ }
 }
-
 
 if(process.env.EQ2_V21_PARTY_PATH){
  const rows:unknown[]=[];
@@ -1686,4 +1710,33 @@ if(process.env.EQ2_V21_PARTY_PATH){
  assert.equal(rows.length,108);
  writeFileSync(process.env.EQ2_V21_PARTY_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_PARTY_CONTROLLED_PRESSURE',
   actualOwnedCandidateCopies:false,conditionalEffectsApplied:false,releaseApproved:false,rows}));
+}
+
+// V22 isolated event boundary tests (not reported as full combat runs).
+{
+ const fixture=make('RAVAGER',0,'supported',4);
+ const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
+ const i:CombatInput={seed:'QA_V22_BOUNDARY',players:[compiled.actor],enemies:[boss]};
+ const winter='EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER' as const;
+ const avalanche='eq2_t5_avalanche:6' as const;
+ const token=issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter,avalanche],()=>true);
+ const runtime=authorizeEq2PrivateHitQaV22(i,token)!;
+ const event={now:1000,actorId:compiled.actor.id,targetId:boss.id,abilityId:'AUTHORED_SKILL',
+  originalClassAbility:true,direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,
+  targetHp:290,targetMaxHp:1000,shield:0,raw:100};
+ for(const change of [{direct:false},{originalClassAbility:false},{nontrue:false},{sourceAlive:false},{targetAlive:false},
+  {abilityId:'BASIC'},{abilityId:'GEM_X'},{targetHp:350},{shield:100},{actorId:'OTHER'}]){
+  assert.equal(runtime.beforeDirectHit({...event,...change}).raw,100);
+ }
+ const active=runtime.beforeDirectHit(event);
+ assert.equal(active.bonusPct,15);assert.equal(active.activated.length,2);
+ assert.ok(Math.abs(active.raw-115)<.000001);
+ assert.equal(runtime.beforeDirectHit({...event,now:20999}).raw,100);
+ assert.equal(runtime.beforeDirectHit({...event,now:21000,physical:false}).bonusPct,7);
+ assert.equal(authorizeEq2PrivateHitQaV22(i),undefined);
+ assert.throws(()=>authorizeEq2PrivateHitQaV22({...i,seed:'CHANGED'},token),/invalid_authority/);
+ assert.throws(()=>authorizeEq2PrivateHitQaV22(i,{} as typeof token),/invalid_authority/);
+ assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter],()=>false),/fixture_unverified/);
+ assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter,'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER'],()=>true),/fixture_scope/);
+ console.log('PASS: V22 private current-hit phase, HP threshold, physical scope, shared family, shield exclusion and exact-input token tests');
 }

@@ -60,7 +60,9 @@ export function partySynchronizationEquivalentLinkBudgetV2(activeLinks:number):n
 }
 // Provisional Synchronization-only ceilings; final global stat caps remain a
 // separate combat engine responsibility. No extra flat lifesteal is granted.
-const cap=(stat:SyncStatV2)=>stat==='crit_chance_pp'?400:stat==='damage_reduction_pct'?600:1000;
+export function partySynchronizationCapBpsV2(stat:SyncStatV2):number{
+ return stat==='crit_chance_pp'?400:stat==='damage_reduction_pct'?600:1000;
+}
 const MODES:readonly SyncModeV2[]=['dungeon','party_contract','party_event','guild_pve','solo','individual_world_boss'];
 export interface SyncPlanV2 {
  readonly ruleset:typeof PARTY_SYNCHRONIZATION_RULESET_V2;
@@ -71,6 +73,9 @@ export interface SyncPlanV2 {
  readonly scalePercent:number;
  readonly active:readonly {id:string;name:string;classes:readonly ClassIdV2[];bonuses:readonly Bonus[]}[];
  readonly totalsBps:Readonly<Partial<Record<SyncStatV2,number>>>;
+ readonly cappedStats:readonly {
+  stat:SyncStatV2;rawBps:number;cappedBps:number;discardedBps:number;
+ }[];
 }
 export function listPartySynchronizationsV2():readonly Pair[]{
  return CATALOG.map(p=>({...p,classes:[...p.classes],bonuses:p.bonuses.map(([k,v])=>[k,v])}));
@@ -91,15 +96,24 @@ export function planPartySynchronizationV2(mode:SyncModeV2,roster:readonly SyncP
  const matches=eligible?CATALOG.filter(p=>p.classes.every(c=>classes.has(c))):[];
  const scalePercent=partySynchronizationScalePercentV2(matches.length);
  const totalsBps:Partial<Record<SyncStatV2,number>>={};
+ const rawTotalsBps:Partial<Record<SyncStatV2,number>>={};
  const active=matches.map(p=>{
   const bonuses:Bonus[]=p.bonuses.map(([stat,bps])=>{
    const scaled=Math.floor(bps*scalePercent/100);
-   totalsBps[stat]=Math.min(cap(stat),(totalsBps[stat]??0)+scaled);
+   rawTotalsBps[stat]=(rawTotalsBps[stat]??0)+scaled;
+   totalsBps[stat]=Math.min(partySynchronizationCapBpsV2(stat),rawTotalsBps[stat]!);
    return [stat,scaled];
   });
   return {id:p.id,name:p.name,classes:[...p.classes],bonuses};
  });
+ const cappedStats=(Object.entries(rawTotalsBps) as [SyncStatV2,number][])
+  .filter(([stat,rawBps])=>rawBps>partySynchronizationCapBpsV2(stat))
+  .sort(([a],[b])=>a.localeCompare(b))
+  .map(([stat,rawBps])=>{
+   const cappedBps=partySynchronizationCapBpsV2(stat);
+   return {stat,rawBps,cappedBps,discardedBps:rawBps-cappedBps};
+  });
  return {ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,mode,releaseEnabled:false,
   canAuthorizeCombat:false,recipientIds:active.length?[...ids].sort():[],
-  scalePercent,active,totalsBps};
+  scalePercent,active,totalsBps,cappedStats};
 }

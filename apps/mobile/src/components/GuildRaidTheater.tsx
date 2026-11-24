@@ -74,7 +74,7 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
  const bossSize=Math.min(218,arenaHeight-24);
  const arenaTint=present.visualKey==='frostfall'?'#a5dfff':present.visualKey==='guild_granite_moss_troll'?'#a5c887':present.visualKey==='guild_veilbound_revenant'||present.visualKey==='veilbreak'?'#c5a5ff':present.visualKey==='guild_fallen_oathbreaker'?'#e2b477':accent;
  const countDown=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
- return <CombatTheaterModal visible onClose={onClose} eyebrow={st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')} title={present.bossName} subtitle={st('3-minute attempt')} compactHeader tone={row.kind==='event'?'event':'guild'} reduceMotion={reduceMotion||!foreground}>
+ return <CombatTheaterModal visible onClose={onClose} eyebrow={st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')} title={present.bossName} subtitle={st('3-minute attempt')} compactHeader closeLabel={st('Minimize battle')} tone={row.kind==='event'?'event':'guild'} reduceMotion={reduceMotion||!foreground}>
   <View style={s.content}>
    <ImageBackground source={stageArt} fadeDuration={0} resizeMode="cover" style={[s.arena,{height:arenaHeight,borderColor:arenaTint}]} imageStyle={s.arenaArt}>
     <View style={s.shade}/>

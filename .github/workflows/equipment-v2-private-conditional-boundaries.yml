@@ -39,7 +39,7 @@ jobs:
       - name: Check all conditional source audits and synthetic report guards
         if: ${{ !cancelled() }}
         run: |
-          node --test tools/eq2-review/t1-t5/current-hit-review-v22.test.mjs tools/eq2-review/t1-t5/one-use-charge-review-v23.test.mjs tools/eq2-review/t1-t5/incoming-defense-review-v24.test.mjs tools/eq2-review/t1-t5/timed-stat-review-v25.test.mjs tools/eq2-review/t1-t5/independent-shield-review-v26.test.mjs
+          node --test tools/eq2-review/t1-t5/current-hit-review-v22.test.mjs tools/eq2-review/t1-t5/one-use-charge-review-v23.test.mjs tools/eq2-review/t1-t5/incoming-defense-review-v24.test.mjs tools/eq2-review/t1-t5/timed-stat-review-v25.test.mjs tools/eq2-review/t1-t5/independent-shield-review-v26.test.mjs tools/eq2-review/t1-t5/named-shield-break-review-v27.test.mjs
       - name: Verify Edge private-import isolation tests (not generated bundle parity)
         if: ${{ !cancelled() }}
         run: node --test tools/tests/combat-v2-edge-isolation.test.mjs

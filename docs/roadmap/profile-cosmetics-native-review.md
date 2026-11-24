@@ -14,3 +14,11 @@ Native acceptance checklist (not yet device-verified):
 - Review all eight collections at 260/340/480dp, plus real device narrow and tablet widths; toggle long name, pet, guild, badge, reduced motion and animation pause. Confirm independent selections and the fixed content anchors.
 - For each Ascendant collection, check matching background, pet and badge together with the border/effect; check mismatched combinations and the default scene. Temporary artwork does not satisfy final art approval.
 - Check background/resume and low-end Android animation performance. Capture screenshots and device measurements before approval. No Store visibility, checkout, global flag or entitlement change is part of this review pass.
+
+## Standard-set polish and performance pass
+Scope: Gloamward, Frostbound Chime, Amberglass Loop and Briarbound. No redesign or change to ownership/checkout/release flags. The shared motion engine also benefits tester-only Ascendant renderers without changing their art or catalog.
+- Periodic clock phase closes particle and glow endpoints exactly; fractional authored tempo now varies smoothly within an integer number of laps rather than resetting at a different phase.
+- Clocks start after nonzero layout only; inactive and reduced-motion layers skip AppState subscriptions and native interpolation graphs. Glow interpolation and particle shapes are memoized.
+- Reduced Motion uses stable representative art/particles and low-opacity border glows; collapsed customization strip uses a static effect regardless of setting. Audience preview explicitly suspends when hidden. Other callers may use the public scene visibility prop; full scroll-viewport virtualization is not yet implemented.
+- Added endpoint, forward-tempo and source-level static/visibility regression checks. Existing responsive geometry tests remain required.
+- Native acceptance remains mandatory: screen-record multiple full loops for all four sets (including resume), compare reduced-motion and collapsed-strip behavior, measure frame pacing, memory and CPU on a low-end Android device, verify no native animation runs after closing the preview. No measured FPS or memory claim until device profiling. Exact approved V3 art registry remains empty until the pinned asset archive is imported.

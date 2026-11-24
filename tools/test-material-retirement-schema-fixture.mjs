@@ -10,7 +10,7 @@ if(body.includes(gate))throw Error('Fixture gate replacement failed');
 const giftDraft=readFileSync('backend/supabase/review/material-retirement-gift-closure-v1.sql','utf8');
 if(!giftDraft.includes(gate)||!giftDraft.trimEnd().endsWith('rollback;'))throw Error('Gift closure guard missing');
 const giftBody=giftDraft.slice(giftDraft.indexOf('do $'),giftDraft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
-console.log(`
+const setup=`
 begin;
 do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;
 create schema private;
@@ -30,12 +30,8 @@ create table public.guild_bank_balances(resource_id text,amount bigint);
 insert into public.online_game_states values('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','{"character":{"id":"00000000-0000-0000-0000-000000000002","gold":100},"inventory":{"stacks":[{"itemId":"ECHO_BAT_WING","quantity":143},{"itemId":"RUNEBOUND_CORE","quantity":7}]},"bank":{"gold":200,"stacks":[{"itemId":"ECHO_BAT_WING","quantity":707}]},"overflow":{"stacks":[]},"otherCharacters":[{"character":{"id":"00000000-0000-0000-0000-000000000003","gold":123},"inventory":{"stacks":[{"itemId":"RUNEBOUND_CORE","quantity":3}]},"overflow":{"stacks":[]}}],"settings":{"seenItemIds":["ECHO_BAT_WING"],"lockedItemIds":["ECHO_BAT_WING","RUNEBOUND_CORE"]}}',7,now());
 insert into public.characters values('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001',100,now());
 insert into public.character_wallets values('00000000-0000-0000-0000-000000000002',100,now());
-`);
-console.log(giftBody);
-console.log(giftBody); // Repeated closure is harmless.
-console.log(body);
-console.log(body); // Retry against the committed-in-transaction receipt.
-console.log(`
+`;
+const assertions=`
 do $$ declare s jsonb; begin
  select state into s from public.online_game_states;
  if (select revision from public.online_game_states)<>8 or (select gold from public.character_wallets)<>11540 or (select gold from public.characters)<>11540 or (s#>>'{bank,gold}')::bigint<>56760 or (s#>>'{character,gold}')::bigint<>11540 then raise exception 'incorrect_balance_or_replay'; end if;
@@ -46,5 +42,12 @@ do $$ declare s jsonb; begin
  if exists(select 1 from private.reward_inbox_v1 where claimed_at is null) then raise exception 'notice_must_not_be_claimable'; end if;
  raise notice 'PASS: production-shaped storage fixture, shared bank, inactive roster preservation, authoritative wallet, receipt replay and already-credited history notice';
 end $$;
-rollback;
-`);
+`;
+const guard="do $ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $;";
+const mode=process.argv[2]??'all';
+if(mode==='all')console.log([setup,giftBody,giftBody,body,body,assertions,'rollback;'].join('\n'));
+else if(mode==='setup')console.log([setup,giftBody,'commit;'].join('\n'));
+else if(mode==='convert')console.log(['begin;',guard,body,'commit;'].join('\n'));
+else if(mode==='convert-hold')console.log(['begin;',guard,"select pg_advisory_xact_lock(hashtextextended('party-account:00000000-0000-0000-0000-000000000001',0));",'select pg_sleep(2);',body,'commit;'].join('\n'));
+else if(mode==='assert')console.log(['begin;',guard,assertions,'rollback;'].join('\n'));
+else throw Error('Unknown fixture mode');

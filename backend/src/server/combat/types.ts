@@ -1,6 +1,8 @@
 export type CombatTeam = 'players' | 'enemies';
 export type CombatRole = 'tank' | 'damage' | 'support' | 'enemy';
 export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'nature' | 'true';
+/** Combat 2.0 only: physical subtypes never replace the main DamageType channel. */
+export type PhysicalDamageSubtypeV2='slashing'|'piercing'|'blunt';
 export type TargetRule = 'self' | 'current_target' | 'lowest_hp_ally' | 'lowest_hp_ally_with_dot' | 'two_lowest_hp_allies' | 'all_allies' | 'all_enemies' | 'random_enemy' | 'interruptible_casting_enemy' | 'threatened_ally';
 export type EffectKind = 'damage' | 'heal' | 'shield' | 'dot' | 'hot' | 'interrupt' | 'taunt' | 'buff' | 'debuff' | 'cleanse';
 
@@ -227,6 +229,8 @@ export interface CombatEvent {
   expiresAtMs?: number;
   gemStates?: CombatGemStateSnapshot[];
   detail?: string;
+  /** Verified hidden Forge V2 direct-hit telemetry only; no legacy event changes. */
+  physicalSubtypes?:readonly {type:PhysicalDamageSubtypeV2;basisPoints:number}[];
 }
 
 export interface CombatInput {

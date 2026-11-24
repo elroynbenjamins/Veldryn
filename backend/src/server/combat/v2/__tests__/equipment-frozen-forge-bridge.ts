@@ -6,6 +6,8 @@ import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../../engine';
 import {prepareAsterfallBossV2} from '../../boss-v2-asterfall-prototype';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
+import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
+import {ENEMY_PHYSICAL_RESISTANCE_RULES_V2} from '../enemy-physical-resistance-authority';
 import {projectBossCombatReplaySignalsV2}
  from '../boss-telegraph-projection';
 import {launchPlayer} from '../../content/launch-combat';
@@ -125,12 +127,13 @@ const tierItems:Readonly<Record<1|2|3|4,Readonly<Record<'tank'|'damage'|'support
 };
 const minByTier:Readonly<Record<1|2|3|4,number>>={1:2,2:12,3:26,4:40};
 function make(classId:ClassIdV2,specIndex:0|1,
- kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1){
+ kind:'supported'|'unsupported'|'offslot'|'set'='supported',tier:1|2|3|4=1,
+ pieceIdOverride?:string){
  const role=CLASS_ROLES_V2[classId];
  const pieceId=kind==='set'?
   (specIndex===0?'EQ2_FIELDBORN_GUARD_HELMET':'EQ2_FIELDBORN_GUARD_CHEST'):
-  tierItems[tier][role];
- const selection=generated(pieceId,kind==='supported'?eligible(pieceId):
+  (pieceIdOverride??tierItems[tier][role]);
+ const selection=generated(pieceId,kind==='supported'||kind==='set'?eligible(pieceId):
   kind==='unsupported'?roll=>roll.affixes.length>0&&!EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat]:
   kind==='offslot'?roll=>roll.affixes.length>0&&
    Boolean(EQ2_COMBAT_FROZEN_AFFIX_MAP_V2[roll.affixes[0].stat])&&
@@ -194,7 +197,8 @@ function make(classId:ClassIdV2,specIndex:0|1,
    activeSkills:skill.map(s=>({skillId:s.id,variantId:s.variants[0].id})),
    talentRanks:{},signaturePassiveIds:[],capstoneId:null},
   ownedItemsById:{[copyId]:{instanceId:copyId,slot:exact.slot,
-   tier:'T'+exact.tier,requiredLevel:minByTier[tier],eligibleRoles:[role]}},
+   tier:'T'+exact.tier,requiredLevel:minByTier[tier],eligibleRoles:[role],
+   ...(exact.setId?{setFamilyId:exact.setId}:{})}},
   setsById:{},
  };
  const classStats={...actor.stats};
@@ -365,10 +369,20 @@ assert.ok(originalEq2Actors.every(x=>
  'all four Boss V2 actors use genuine original EQ2 forged copies');
 const bossSignals=projectBossCombatReplaySignalsV2(authoredReplay);
 assert.equal(bossSignals.scope,'HIDDEN_COMPILED_BOSS_V2_REPLAY_ONLY');
-assert.ok(bossSignals.casts.some(c=>
- c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE'&&
- c.castDurationMs===1400&&c.state==='completed'),
- 'real authored Boss V2 cast window survives original EQ2 gear compilation');
+const bellCast=bossSignals.casts.find(c=>
+ c.bossId==='BOSS_EXP_BELL'&&c.abilityId==='BELL_V2_SOUL_CURSE');
+assert.ok(bellCast&&bellCast.castDurationMs===1400&&
+ (bellCast.state==='completed'||bellCast.state==='interrupted'),
+ 'real authored Boss V2 cast or genuine interrupt survives original EQ2 gear compilation');
+if(bellCast.state==='interrupted'){
+ assert.ok(authoredReplay.events.some(e=>e.type==='interrupt'&&
+  e.targetId==='BOSS_EXP_BELL'&&e.interruptedAbilityId==='BELL_V2_SOUL_CURSE'),
+  'a countered Bell cast must have its actual authored interrupt event');
+}else{
+ assert.ok(authoredReplay.events.some(e=>e.type==='cast_complete'&&
+  e.actorId==='BOSS_EXP_BELL'&&e.abilityId==='BELL_V2_SOUL_CURSE'),
+  'an uninterrupted Bell cast must have its actual completion event');
+}
 assert.deepEqual(projectBossCombatReplaySignalsV2(authoredReplay),bossSignals);
 const baselineFight=simulateRealFrozenForgeCombatV2(counterInput,
  qaTeam.map(q=>q.build),qaTeam.map(q=>q.source),true);
@@ -725,9 +739,38 @@ assert.throws(()=>simulateRealFrozenForgeCombatV2(input,[
  qaTeam[0].build,copiedGear,...qaTeam.slice(2).map(x=>x.build)],
  qaTeam.map(x=>x.source),true),/cross_character_worn_copy/);
 const setItem=make('IRONWARDEN',0,'set');
+const acceptedBaseOnlySet=compileRealFrozenForgeActorV2(
+ setItem.actor,setItem.build,setItem.source);
+assert.equal(acceptedBaseOnlySet.evidence.verifiedBaseOnlySetPieces.length,1);
+assert.deepEqual(acceptedBaseOnlySet.evidence.verifiedBaseOnlySetPieces[0],{
+ instanceId:setItem.mint.id,pieceId:setItem.exact.pieceId,
+ setId:'EQ2_SET_FIELDBORN_GUARD',
+},'real single-piece Forge source identity must survive frozen copy validation');
+assert.equal(acceptedBaseOnlySet.evidence.setBonuses,
+ 'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION');
+for(const [key,forgeKey] of [
+ ['attackPower','attack'],['defense','defense'],['maxHp','hp'],
+] as const)
+ assert.ok(Math.abs(
+  acceptedBaseOnlySet.evidence.stages.afterFrozenBase[key]-
+  acceptedBaseOnlySet.evidence.stages.afterSkills[key]-
+  setItem.exact.baseStats[forgeKey])<.00001,
+  'single-piece set frozen stats apply once with no set bonus');
+const copiedSet={...setItem.build,
+ ownedItemsById:{...setItem.build.ownedItemsById,
+  [setItem.mint.id]:{...setItem.build.ownedItemsById[setItem.mint.id],
+   setFamilyId:'EQ2_SET_FABRICATED'}}};
 assert.throws(()=>compileRealFrozenForgeActorV2(
- setItem.actor,setItem.build,setItem.source),/set_source_bonus_unreconciled/,
- 'never invent 48-set or preapproved Forge set bonuses');
+ setItem.actor,copiedSet,setItem.source),
+ /skill_or_equipment_build_invalid|forge_set_member_source_mismatch/,
+ 'invented catalog identity cannot grant a set milestone');
+const removedSet={...setItem.build,
+ ownedItemsById:{...setItem.build.ownedItemsById,
+  [setItem.mint.id]:{...setItem.build.ownedItemsById[setItem.mint.id],
+   setFamilyId:undefined}}};
+assert.throws(()=>compileRealFrozenForgeActorV2(
+ setItem.actor,removedSet,setItem.source),/forge_set_member_source_mismatch/,
+ 'source-labeled set copy must not become ordinary untagged gear');
 // The source-owned two-piece review is allowed to COUNT milestones but NEVER
 // issue bonuses. Merge two independently minted source-confirmed pieces into
 // one same-account, same-character Forge ledger with ordered virtual receipts.
@@ -820,6 +863,7 @@ const twoSetBuild={...setItem.build,
   [setSecond.mint.id]:{
    instanceId:setSecond.mint.id,slot:'chest' as const,tier:'T1',
    requiredLevel:2,eligibleRoles:['tank' as const],
+   setFamilyId:'EQ2_SET_FIELDBORN_GUARD',
   }},
  selected:{...setItem.build.selected,
   equipment:{helmet:setItem.mint.id,chest:setSecond.mint.id},
@@ -838,6 +882,125 @@ const unsupported=make('HEXWEAVER',1,'unsupported');
 assert.throws(()=>compileRealFrozenForgeActorV2(
  unsupported.actor,unsupported.build,unsupported.source),
  /forge_affix_effect_unimplemented/,'ambiguous original Forge Potency must not be silently mapped');
+// Source-bound integration: one actual frozen Forge WEAPON and one persisted
+// Enemy V2 boss kit can now share an encounter, but the *candidate* resistance
+// profile must be explicitly opted into the hidden review separately.
+const physicalWayfinder=make('WAYFINDER',0,'supported',1,
+ 'EQ2_WEAPON_T1_WAYFINDER');
+const physicalBoss:CombatantDefinition={
+ id:'BOSS_EXP_ROOT',name:'Rootbound Heart',team:'enemies',role:'enemy',level:35,
+ boss:true,stats:{maxHp:1000000,attackPower:1,healingPower:0,defense:180,
+ accuracy:0,evasion:0,critChance:0,critMultiplier:1.5,haste:0},
+ basicAttackMs:999999,basicAttackCoeff:0,abilities:[],phases:[],
+ tags:['pve:archetype:guardian'],
+};
+const physicalInput:CombatInput={
+ seed:'QA_AUTHENTIC_FORGE_SIGNED_ENEMY_V2_ROOT',
+ players:[physicalWayfinder.actor],enemies:[physicalBoss],
+ maxDurationMs:9500,tickMs:100,
+};
+const kitCandidate=prepareSoloEnemyKitsV2([physicalBoss],{
+ ruleset:ENEMY_V2_RULESET,serverSeed:physicalInput.seed,
+ encounterId:'QA_FORGE_ROOT_PERSISTED_KIT',region:'asterfall',
+ equipmentTier:2,eliteEnemyIds:[],
+});
+const savedKit:PersistedEnemyKitV2={
+ ...kitCandidate,source:'server-persisted-v2',revision:3,
+};
+const kitVerifier=(_snapshot:PersistedEnemyKitV2,digest:string)=>
+ _snapshot===savedKit&&/^[0-9a-f]{64}$/.test(digest);
+const atomicEnemyForgeVerifier=(
+ snapshot:PersistedEnemyKitV2,digest:string,
+ evidence:readonly {accountId:string;characterId:string;actorId:string;
+  ledgerRevision:number;receiptDigest:string;equippedInstanceIds:readonly string[]}[],
+)=>snapshot===savedKit&&/^[0-9a-f]{64}$/.test(digest)&&
+ evidence.length===1&&
+ evidence[0].accountId===physicalWayfinder.source.accountId&&
+ evidence[0].characterId===physicalWayfinder.source.characterId&&
+ evidence[0].actorId===physicalWayfinder.actor.id&&
+ evidence[0].ledgerRevision===physicalWayfinder.source.ledgerRevision&&
+ /^[0-9a-f]{64}$/.test(evidence[0].receiptDigest)&&
+ evidence[0].equippedInstanceIds.length===1&&
+ evidence[0].equippedInstanceIds[0]===physicalWayfinder.mint.id;
+const trustedEnemy={snapshot:savedKit,verifyPersisted:kitVerifier,
+ verifyAtomicEncounter:atomicEnemyForgeVerifier};
+const neutralBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,trustedEnemy);
+const typedBossRun=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+});
+assert.deepEqual(typedBossRun,simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+}),'frozen Forge + persisted boss complete deterministic replay');
+assert.ok(typedBossRun.enemyMechanicLabels.some(x=>
+ x.includes('Living Bark')),'real saved Enemy 2.0 authored boss kit is executed');
+assert.ok(typedBossRun.equipmentEvidence[0].items.some(x=>
+ x.pieceId==='EQ2_WEAPON_T1_WAYFINDER'),
+ 'real source-authoritative T1 Wayfinder weapon must be equipped');
+assert.ok(typedBossRun.combat.events.some(x=>x.type==='damage'&&
+ x.actorId===physicalWayfinder.actor.id&&
+ x.physicalSubtypes?.some(w=>w.type==='piercing')),
+ 'signed persisted kit should preserve source-authored Piercing hit evidence');
+assert.deepEqual(typedBossRun.combat.events.filter(e=>e.type==='miss'),
+ neutralBossRun.combat.events.filter(e=>e.type==='miss'),
+ 'candidate type resistance does not change accuracy RNG');
+assert.ok(typedBossRun.combat.players[0].damageDone<
+ neutralBossRun.combat.players[0].damageDone,
+ 'explicit review-only +10% Root piercing resistance must reduce direct damage');
+const noKitDefault=simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true);
+assert.ok(!noKitDefault.enemyMechanicLabels.some(x=>
+ x.includes('Living Bark')),
+ 'legacy/generic branch must never implicitly inject persisted boss mechanics');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyPersisted:()=>false,
+}),/unverified_persisted_scope/,
+ 'unverified Enemy V2 stored kit cannot claim a signed authority');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:()=>false,
+}),/signed_enemy_forge_atomic_recheck_required/,
+ 'separately valid Forge and Enemy snapshots without one atomic read must fail');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:()=>{throw Error('stale_read');},
+}),/signed_enemy_forge_atomic_recheck_required/,
+ 'failed database transaction must be rejected, not interpreted as an approval');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,verifyAtomicEncounter:undefined as unknown as typeof atomicEnemyForgeVerifier,
+}),/signed_enemy_kit_snapshot_required/,
+ 'an absent database readback verifier is never silently optional');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,snapshot:{...savedKit,preparedEnemyDigest:'c'.repeat(64)},
+}),/stored_kit_digest_mismatch/,
+ 'tampered stored Enemy V2 prepared kit must fail before simulation');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,snapshot:{...savedKit,source:'unpersisted-candidate-v2'} as unknown as PersistedEnemyKitV2,
+}),/invalid_stored_kit/,
+ 'unpersisted candidate Enemy V2 kits cannot run with real Forge sources');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],true,{
+ ...trustedEnemy,physicalBalanceReview:'client_bonus' as typeof ENEMY_PHYSICAL_RESISTANCE_RULES_V2,
+}),/unapproved_physical_review_policy/,
+ 'client-supplied balance version cannot activate candidate boss bonuses');
+assert.throws(()=>simulateRealFrozenForgeCombatV2({...physicalInput,seed:'STALE_SEED'},
+ [physicalWayfinder.build],[physicalWayfinder.source],true,trustedEnemy),
+ /signed_enemy_kit_snapshot_required/,
+ 'persisted boss kit is bound to exact frozen combat seed');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(input,
+ qaTeam.map(x=>x.build),qaTeam.map(x=>x.source),true,trustedEnemy),
+ /signed_enemy_kit_solo_only/,
+ 'solo Enemy 2.0 kit cannot be reused for a four-player dungeon');
+assert.throws(()=>simulateRealFrozenForgeCombatV2(physicalInput,
+ [physicalWayfinder.build],[physicalWayfinder.source],false,trustedEnemy),
+ /release_gate_off/,'failed release gate must prevent mixed signed encounter');
+
 console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  frozenExactCopySpecs:checked+extendedTiers,sourceItems:V2_SERVER_PIECES.length,originalForgeSetPieces:existingSetCopies.length,
  proposedUnissuableMembers:PLANNED_T1_T4_MEMBERS_V2.length,

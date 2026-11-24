@@ -1,5 +1,6 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance, roleAdjustedAttackPower } from './calculations';
 import { CombatRng } from './deterministic-rng';
+import {authorizePhysicalSubtypeEngineV2,type PhysicalDamageAuthorityV2} from './v2/physical-damage-engine-authority';
 import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} from './enemy-v2-status-rules';
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
@@ -105,7 +106,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2, physicalDamageAuthority?:PhysicalDamageAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
@@ -114,6 +115,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const equipmentTraitRuntime=equipmentTraitAuthority
     ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
   const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority);
+  // No source-issued, encounter-bound token -> no subtype effects or event fields.
+  // Legacy V1, Live/Q-mode and unrelated V2 builds remain byte-compatible.
+  const physicalSubtypeHit=authorizePhysicalSubtypeEngineV2(input,physicalDamageAuthority);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -267,6 +271,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         raw=Math.max(0,raw-reactiveDamageFlatReductionV2(target,raw));
       }
     }
+    // Consume subtype weight ONCE on the already-mitigated original direct
+    // physical hit. Never include Rupture/DoT/echo damage or re-roll hit/crit.
+    const subtypeResult=v2Encounter&&physicalSubtypeHit?
+      physicalSubtypeHit(source.definition,target.definition,abilityId,
+       effect.damageType,raw,eventType==='damage'):undefined;
+    if(subtypeResult)raw=subtypeResult.damage;
     // V2 Rupture consumes one own applied DoT and converts a bounded portion of
     // its remaining strength to this direct hit. The consumed effect cannot
     // tick again, and a boss has an additional cap.
@@ -340,7 +350,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
-    addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
+    addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{}),...(subtypeResult?{physicalSubtypes:subtypeResult.weights.map(w=>({...w}))}:{})});
     // Hidden runtime is gated by an exact signed reward token and original
     // ability provenance. Secondary effects never call this path recursively.
     if(dungeonRewards&&eventType==='damage'&&dealt>0&&source.alive&&target.alive&&

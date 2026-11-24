@@ -38,7 +38,7 @@ function authored(boss:CombatantDefinition):AuthoredBoss|undefined{
     case 'BOSS_EXP_SPHINX':return{
       id:boss.id,name:'The Veiled Sphinx',
       abilities:[
-        cast('SPHINX_V2_MIRAGE','Mirage Veil',23000,650,74,'self',[{kind:'shield',flat:ward(boss,.035)}]),
+        cast('SPHINX_V2_MIRAGE','Mirage Veil',23000,1300,74,'self',[{kind:'shield',flat:ward(boss,.035)}],true),
       ],
       phases:[
         v2Phase('SPHINX_V2_PHASE_70','Three Reflections',.70,'self',[{kind:'shield',flat:ward(boss,.03)}]),

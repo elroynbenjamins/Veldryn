@@ -12,11 +12,21 @@
  */
 import type {CombatInput,CombatantDefinition,CombatStats} from '../types';
 import {simulateCombat} from '../engine';
-import {enemyV2SnapshotDigest} from './enemy-engine-authority';
+import {issueFrozenForgePhysicalAuthorityV2} from './physical-damage-engine-authority';
+import {
+ enemyV2SnapshotDigest,issueEnemyV2EngineAuthority,
+} from './enemy-engine-authority';
+import {
+ verifyPersistedEnemyKitsV2,type PersistedEnemyKitV2,
+} from './enemy-kit-composer';
+import {
+ ENEMY_PHYSICAL_RESISTANCE_RULES_V2,issueAuthoredEnemyPhysicalResistancesV2,
+} from './enemy-physical-resistance-authority';
 import {compileEnemiesForCombatV2} from './enemy-bridge';
 import {issueClassOnlyActorV2,type ApprovedClassBaselinePolicyV2} from './class-baseline';
 import {compileServerSkillBuildV2,type VerifiedSkillBuildV2} from './skill-effects';
 import {CLASS_NAMES_V2,serverBuildCatalogV2} from './skill-catalog';
+import {auditRealForgeSetIdentityV2} from './equipment-forge-set-identity-review';
 import {CLASS_ROLES_V2,validateBuildV2,type ClassIdV2,type GearSlotV2} from './build-contract';
 import {
  compileTrustedEquipmentAffixesV2,EQUIPMENT_AFFIXES_V2,
@@ -88,8 +98,38 @@ export interface FrozenForgeEvidenceV2{
  readonly stages:Readonly<{afterSkills:CombatStats;afterFrozenBase:CombatStats;
   afterForgeAffixes:CombatStats}>;
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
+ /** Real single worn set-members whose BASE stats are verified; no threshold
+  * reached and NO set effect granted. Combat still rejects 2+ same-family
+  * pieces until explicitly approved signed set mechanics exist. */
+ readonly verifiedBaseOnlySetPieces:readonly {instanceId:string;pieceId:string;setId:string}[];
  readonly setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION';
  readonly unsupportedForgeAffixes:'REJECTED_NOT_IGNORED';
+}
+/** A single privileged read/lock must attest that the stored encounter and
+ * every equipped Forge ownership revision were checked in the SAME atomic
+ * snapshot (not two individually fresh but mutually inconsistent reads). */
+export interface FrozenForgeEnemyAtomicWitnessV2{
+ readonly accountId:string;
+ readonly characterId:string;
+ readonly actorId:string;
+ readonly ledgerRevision:number;
+ readonly receiptDigest:string;
+ readonly equippedInstanceIds:readonly string[];
+}
+/** This adapter must be provided by a privileged, authenticated persistence
+ * transaction. The test-only callbacks MUST NEVER be mounted in live routes.
+ * The physical boss numbers are unapproved; they activate only in a separate
+ * explicitly named hidden balance review, never by simply supplying a kit. */
+export interface TrustedFrozenForgeEnemyKitPortV2 {
+ readonly snapshot:PersistedEnemyKitV2;
+ readonly verifyPersisted:(snapshot:PersistedEnemyKitV2,combatInputDigest:string)=>boolean;
+ /** Required, independent privileged check of SAME atomic Enemy+Forge read.
+  * No client JSON or test callback may serve this function in production. */
+ readonly verifyAtomicEncounter:(
+  snapshot:PersistedEnemyKitV2,combatDigest:string,
+  equipped:readonly FrozenForgeEnemyAtomicWitnessV2[],
+ )=>boolean;
+ readonly physicalBalanceReview?:typeof ENEMY_PHYSICAL_RESISTANCE_RULES_V2;
 }
 export interface FrozenForgeCombatResultV2{
  readonly combat:ReturnType<typeof simulateCombat>;
@@ -129,7 +169,18 @@ export function compileRealFrozenForgeActorV2(
     (c.classId===build.verified.classId||
      c.classId===CLASS_NAMES_V2[build.verified.classId])))
   reject('current_character_identity_mismatch');
- const catalog=serverBuildCatalogV2(build.ownedItemsById,build.setsById);
+ // Never accept a client- or caller-invented set catalogue. The set family
+ // and its legal slot membership come exclusively from the pinned 169-piece
+ // Forge catalogue. Their proposed effects remain unapproved.
+ const realForgeSets=auditRealForgeSetIdentityV2().forgeSetEvidence;
+ const canonicalSetCatalog=Object.fromEntries(realForgeSets.map(set=>[
+  set.forgeSetId,{
+   id:set.forgeSetId,role:set.role,
+   slots:set.members.map(m=>m.slot),
+   thresholds:set.members.length>=4?[2,4]:[2],
+  },
+ ]));
+ const catalog=serverBuildCatalogV2(build.ownedItemsById,canonicalSetCatalog);
  const checked=validateBuildV2(build.verified,build.selected,catalog);
  if(!checked.valid)reject('skill_or_equipment_build_invalid:'+checked.issues.map(i=>i.code).join(','));
  const selected=Object.entries(build.selected.equipment) as [GearSlotV2,string][];
@@ -221,17 +272,37 @@ export function compileRealFrozenForgeActorV2(
     reject('forge_equipment_role_or_level_locked');
   const owned=build.ownedItemsById[id];
   if(!owned||owned.slot!==slot||owned.instanceId!==id||
-     owned.tier!=='T'+item.tier||owned.setFamilyId||
+     owned.tier!=='T'+item.tier||
      owned.requiredLevel!==requiredLevel||
      !owned.eligibleRoles?.includes(CLASS_ROLES_V2[build.verified.classId]))
     reject('source_build_catalog_mismatch');
-  // Forge's 15 real set IDs and the draft 48 Combat sets are NOT yet one
-  // authoritative effect catalogue. Never issue an imaginary bonus.
-  if(item.setId)reject('set_source_bonus_unreconciled');
+  // A lone pinned Forge set member CAN provide its original frozen base and
+  // existing legal rolls. That is distinct from authorizing a set bonus.
+  if(item.setId){
+   const family=realForgeSets.find(f=>f.forgeSetId===item.setId);
+   if(!family||!family.members.some(m=>m.pieceId===piece.id&&
+       m.slot===slot&&m.role===piece.role&&m.tier===piece.tier)||
+      owned.setFamilyId!==item.setId)
+    reject('forge_set_member_source_mismatch');
+  }else if(owned.setFamilyId){
+   reject('forge_set_member_source_mismatch');
+  }
   if(item.gemSlots.length||item.enhancementRank!==0)
     reject('socket_or_enhancement_not_ready');
   resolved.push({copy,mint});
  }
+ // Two worn pieces of the same verified set reach an UNAPPROVED threshold.
+ // Fail rather than silently ignore a milestone a player expects to earn.
+ const wornSetCounts=new Map<string,number>();
+ for(const {mint} of resolved){
+  const family=mint.exactItem.setId;
+  if(!family)continue;
+  const count=(wornSetCounts.get(family)??0)+1;
+  if(count>=2)reject('set_source_bonus_unreconciled');
+  wornSetCounts.set(family,count);
+ }
+ if(checked.resolvedSets.some(x=>x.activeThresholds.length>0))
+  reject('set_source_bonus_unreconciled');
  // The verifier must be attached to a real locked account snapshot in a
  // future privileged adapter, not to input JSON. No such adapter is mounted.
  const digest=enemyV2SnapshotDigest({
@@ -254,7 +325,12 @@ export function compileRealFrozenForgeActorV2(
  if(!source.verifyPersisted(digest,source.ledgerRevision))
   reject('persisted_custody_not_verified');
  const classOnly=issueClassOnlyActorV2(actor,build.verified,source.classBaselinePolicy);
- const skilled=compileServerSkillBuildV2(true,{...build,actor:classOnly});
+ // The Skills compiler performs a SECOND build validation internally. Pass
+ // the exact same canonical real-Forge set catalogue we already checked;
+ // never fall back to the caller's empty/forged set map in that stage.
+ const skilled=compileServerSkillBuildV2(true,{
+  ...build,actor:classOnly,setsById:canonicalSetCatalog,
+ });
  const sum={attack:0,defense:0,hp:0};
  for(const {mint} of resolved){
   const s=mint.exactItem.baseStats;
@@ -305,6 +381,11 @@ export function compileRealFrozenForgeActorV2(
   stages:{afterSkills:{...skilled.stats},afterFrozenBase:{...baseStats},
    afterForgeAffixes:{...affixes.actor.stats}},
   affixSources:affixes.sources,
+  verifiedBaseOnlySetPieces:resolved.filter(x=>Boolean(x.mint.exactItem.setId))
+   .map(x=>({
+    instanceId:x.mint.id,pieceId:x.mint.exactItem.pieceId,
+    setId:x.mint.exactItem.setId!,
+   })),
   setBonuses:'BLOCKED_PENDING_EXACT_EQ2_SET_RECONCILIATION',
   unsupportedForgeAffixes:'REJECTED_NOT_IGNORED',
  };
@@ -315,6 +396,7 @@ export function simulateRealFrozenForgeCombatV2(
  input:CombatInput,builds:readonly VerifiedSkillBuildV2[],
  sources:readonly TrustedFrozenForgeCombatSourceV2[],
  serverEnabled=false,
+ authoredEnemyKit?:TrustedFrozenForgeEnemyKitPortV2,
 ):FrozenForgeCombatResultV2{
  if(!serverEnabled)reject('release_gate_off');
  if(!Array.isArray(input.players)||!input.players.length||
@@ -338,10 +420,73 @@ export function simulateRealFrozenForgeCombatV2(
   }
   return compileRealFrozenForgeActorV2(actor,matches[0],source);
  });
+ // Persisted Enemy 2.0 is a new-run SOLO authority. Do not imply that its
+ // scope already supports party/dungeon persistent-state or 4-player replays.
+ if(authoredEnemyKit){
+  if(input.players.length!==1||input.enemyDamageProfile!==undefined)
+   reject('signed_enemy_kit_solo_only');
+  if(typeof authoredEnemyKit.verifyPersisted!=='function'||
+     typeof authoredEnemyKit.verifyAtomicEncounter!=='function'||
+     !authoredEnemyKit.snapshot||
+     authoredEnemyKit.snapshot.seed!==input.seed)
+   reject('signed_enemy_kit_snapshot_required');
+  if(authoredEnemyKit.physicalBalanceReview!==undefined&&
+     authoredEnemyKit.physicalBalanceReview!==ENEMY_PHYSICAL_RESISTANCE_RULES_V2)
+   reject('unapproved_physical_review_policy');
+  // Verify that the PREPARED kit is exactly the saved, server-authored version;
+  // unpersisted candidates and client-supplied enemy tags cannot be accepted.
+  const proof=verifyPersistedEnemyKitsV2(input.enemies,authoredEnemyKit.snapshot);
+  const prepared:CombatInput={
+   ...input,players:compiled.map(x=>x.actor),enemies:[...proof.enemies],
+  };
+  const snapshot=authoredEnemyKit.snapshot;
+  // The independent single-read CAS check ties both authenticated data
+  // families to THIS final compiled combat digest. A forged or stale witness
+  // must not issue either new engine authority.
+  const digest=enemyV2SnapshotDigest(prepared);
+  const atomicWitnesses:readonly FrozenForgeEnemyAtomicWitnessV2[]=compiled.map(
+   (c,i)=>Object.freeze({
+    actorId:c.actor.id,accountId:sources[i].accountId,
+    characterId:sources[i].characterId,
+    ledgerRevision:sources[i].ledgerRevision,
+    receiptDigest:c.evidence.receiptDigest,
+    equippedInstanceIds:Object.freeze([...c.evidence.equippedInstanceIds]),
+   }));
+  let atomicAccepted=false;
+  try{atomicAccepted=authoredEnemyKit.verifyAtomicEncounter(
+   snapshot,digest,atomicWitnesses)===true;}catch{atomicAccepted=false;}
+  if(!atomicAccepted)reject('signed_enemy_forge_atomic_recheck_required');
+  const enemyAuthority=issueEnemyV2EngineAuthority({
+   source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,
+   mode:'solo',encounterId:snapshot.encounterId,revision:snapshot.revision,
+   seed:snapshot.seed,playerIds:prepared.players.map(x=>x.id),
+   enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
+  },prepared,(_scope,digest)=>authoredEnemyKit.verifyPersisted(snapshot,digest));
+  // PROVISIONAL balance is NOT implicitly granted by the persisted kit.
+  const physicalReview=authoredEnemyKit.physicalBalanceReview===
+   ENEMY_PHYSICAL_RESISTANCE_RULES_V2?
+    issueAuthoredEnemyPhysicalResistancesV2(prepared,enemyAuthority):undefined;
+  const physical=issueFrozenForgePhysicalAuthorityV2(prepared,
+   compiled.map(x=>x.evidence),physicalReview);
+  return {
+   combat:simulateCombat(prepared,enemyAuthority,undefined,undefined,physical),
+   equipmentEvidence:compiled.map(x=>x.evidence),
+   enemyMechanicLabels:proof.preview.flatMap(p=>[
+    ...p.abilityNames.map(n=>p.enemyId+': '+n),
+    ...p.phaseNames.map(n=>p.enemyId+': '+n),
+    ...p.traitIds.map(n=>p.enemyId+': '+n),
+   ]),
+  };
+ }
  const enemies=compileEnemiesForCombatV2(input.enemies,true);
+ const prepared:CombatInput={...input,players:compiled.map(x=>x.actor),
+  enemies:[...enemies.enemies]};
+ // Full Forge compiler above must validate exact claim/receipt/custody for
+ // every selected piece before this disabled-by-default V2 authority is issued.
+ const physical=issueFrozenForgePhysicalAuthorityV2(prepared,
+  compiled.map(x=>x.evidence));
  return {
-  combat:simulateCombat({...input,players:compiled.map(x=>x.actor),
-   enemies:[...enemies.enemies]}),
+  combat:simulateCombat(prepared,undefined,undefined,undefined,physical),
   equipmentEvidence:compiled.map(x=>x.evidence),
   enemyMechanicLabels:enemies.mechanicLabels,
  };

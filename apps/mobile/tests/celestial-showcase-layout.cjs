@@ -5,7 +5,7 @@ const ts=require('typescript');
 const modulePath=path.join(__dirname,'../src/core/celestial-showcase-layout.ts');
 const compiled=ts.transpileModule(fs.readFileSync(modulePath,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
 const mod={exports:{}};new Function('exports','module',compiled)(mod.exports,mod);
-const {celestialPetMode,celestialStageSupported,CELESTIAL_STAGE:S,CELESTIAL_PET_BOX:B}=mod.exports;
+const {celestialPetMode,celestialStageSupported,CELESTIAL_STAGE:S,CELESTIAL_PET_BOX:B,CELESTIAL_IDENTITY_BOX:I}=mod.exports;
 assert.equal(celestialPetMode('aetherion','aetherion',false),'matching');
 assert.equal(celestialPetMode('aetherion','aetherion',true),'matching');
 assert.equal(celestialPetMode('another','aetherion',true),'alternate');
@@ -23,4 +23,8 @@ for(const box of Object.values(B)){
 assert.equal(B.alternate.y,101);
 assert.equal(B.alternate.width,46);
 assert(B.alternate.y+B.alternate.height<=B.glow.y+B.glow.height);
+assert.equal(I.guild.x,I.plate.x);
+assert.equal(I.guild.width,I.plate.width);
+assert(I.guild.y>=I.plate.y+I.plate.height);
+assert(I.guild.y+I.guild.height<=S.height-24);
 console.log('Celestial pet selection, safe geometry and responsive fallback assertions passed.');

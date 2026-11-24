@@ -1,5 +1,10 @@
 /** Geometry contract for the reviewed Celestial showcase. No entitlement or stat logic. */
 export const CELESTIAL_STAGE={width:340,height:205,minWidth:300,maxWidth:480,maxFontScale:1.2} as const;
+const identityPlate={x:36,y:74,width:198,height:70} as const;
+export const CELESTIAL_IDENTITY_BOX={
+ plate:identityPlate,
+ guild:{x:identityPlate.x,y:151,width:identityPlate.width,height:18},
+} as const;
 export const CELESTIAL_PET_BOX={
  matching:{x:244,y:76,width:70,height:99},
  alternate:{x:261,y:101,width:46,height:46},

@@ -20,6 +20,8 @@ assert(B.portrait.x+B.portrait.w<B.identity.x);
 assert(B.identity.y+B.identity.h<=B.badges.y);
 assert(B.badges.y+B.badges.h<=B.plate.y+B.plate.h);
 assert(B.plate.y+B.plate.h<B.guild.y);
+assert.equal(B.guild.x,B.plate.x);
+assert.equal(B.guild.w,B.plate.w);
 assert(B.guild.y+B.guild.h<=159);
 assert(B.plate.x+B.plate.w<B.ring.x);
 assert(!('altar' in B));

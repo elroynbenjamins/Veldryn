@@ -79,7 +79,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
   </View>}
   badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12} variant="bare"/>}
-  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} compact/>:undefined}/>;
+  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} showcase/>:undefined}/>;
  }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
@@ -90,7 +90,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
    <PlayerBadgeShowcase identity={profile.playerBadges} size={13} variant="bare"/>
   </View>}
-  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild}/>:undefined}/>;
+  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} showcase/>:undefined}/>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  ...profileShowcaseStyles(C),

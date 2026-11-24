@@ -2,7 +2,7 @@ import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
-import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
+import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,CELESTIAL_IDENTITY_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
 
 /** Preview-only stage. No catalogue IDs, entitlement, equip or bonus changes.
  * Caller must explicitly supply the preview artwork, protected identity slots,
@@ -82,11 +82,11 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     </>:null}
    </View>
    {petMode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(CELESTIAL_PET_BOX[petMode])}/>:null}
-   <View style={[pos(36,74,198,70),styles.identityPlate]}>
+   <View style={[box(CELESTIAL_IDENTITY_BOX.plate),styles.identityPlate]}>
     <View style={pos(4,5,56,56)}>{portrait}</View>
     <View style={pos(66,5,126,60)}>{identity}</View>
    </View>
-   {guild!=null?<View style={[pos(42,151,188,18),styles.guildPlate]}>{guild}</View>:null}
+   {guild!=null?<View style={[box(CELESTIAL_IDENTITY_BOX.guild),styles.guildPlate]}>{guild}</View>:null}
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>
     <UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
@@ -99,5 +99,5 @@ const styles=StyleSheet.create({
  card:{width:'100%',overflow:'hidden',backgroundColor:'#091225',position:'relative'},
  fillImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
  identityPlate:{borderRadius:6,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228'},
- guildPlate:{borderRadius:4,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228',justifyContent:'center',alignItems:'center'},
+ guildPlate:{borderRadius:4,borderWidth:1,borderColor:'#a48b55',backgroundColor:'#0a1228',justifyContent:'center',alignItems:'stretch'},
 });

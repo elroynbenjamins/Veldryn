@@ -82,6 +82,6 @@ const s=StyleSheet.create({
  portrait:{backgroundColor:'#200e17',borderColor:'#c78c46',borderWidth:1,borderRadius:5},
  protected:{overflow:'hidden'},
  badges:{justifyContent:'center',alignItems:'flex-start'},
- guild:{backgroundColor:'#41151a',borderColor:'#b16a34',borderWidth:1,borderRadius:4,alignItems:'center',justifyContent:'center'},
+ guild:{backgroundColor:'#41151a',borderColor:'#b16a34',borderWidth:1,borderRadius:4,alignItems:'stretch',justifyContent:'center'},
  ember:{position:'absolute',width:12,height:12},
 });

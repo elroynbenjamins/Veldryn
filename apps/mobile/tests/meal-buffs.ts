@@ -26,7 +26,7 @@ const expected=[
  ['GLASSFIN_FEAST',6,4,'gathering_speed'],
  ['FROSTED_ICEFIN',6,4,'crafting_speed'],
  ['CHARRED_EMBERFIN',8,4,'combat_xp'],
- ['ASHLANDS_EMBER_STEW',10,4,'noncombat_speed'],
+ ['ASHLANDS_EMBER_STEW',8,4,'crafting_speed'],
 ] as const;
 ok(MEAL_BONUSES.length===6,'exactly six special meal buffs');
 for(const [recipeId,itemId,level,gold] of [
@@ -54,8 +54,8 @@ for(const [id,percent,hours,kind] of expected){
  const before=fresh(),after=executeGameCommand(before,{type:'meal_bonus',args:{id}},now).state,stats=characterPermanentMultipliers(after);
  ok(after.inventory.stacks.find(row=>row.itemId===id)?.quantity===3,'explicit meal consumes one inventory item');
  ok(after.character?.activeMealBuff?.itemId===id&&after.character.activeMealBuff.remainingSeconds===hours*3600,'meal grants exact duration');
- ok((kind==='gathering_speed'||kind==='noncombat_speed')?stats.gatheringSpeedMultiplier>characterPermanentMultipliers(before).gatheringSpeedMultiplier:true,id+' gathering benefit');
- ok((kind==='crafting_speed'||kind==='noncombat_speed')?stats.craftingSpeedMultiplier>characterPermanentMultipliers(before).craftingSpeedMultiplier:true,id+' crafting benefit');
+ ok((kind==='gathering_speed')?stats.gatheringSpeedMultiplier>characterPermanentMultipliers(before).gatheringSpeedMultiplier:true,id+' gathering benefit');
+ ok((kind==='crafting_speed')?stats.craftingSpeedMultiplier>characterPermanentMultipliers(before).craftingSpeedMultiplier:true,id+' crafting benefit');
  ok(kind==='combat_xp'?stats.characterXpMultiplier>characterPermanentMultipliers(before).characterXpMultiplier:true,id+' combat XP benefit');
  const baseline=characterPermanentMultipliers(before),epsilon=.00001;
  const multiplier=kind==='gathering_speed'?stats.gatheringSpeedMultiplier/baseline.gatheringSpeedMultiplier:kind==='crafting_speed'?stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier:kind==='combat_xp'?stats.characterXpMultiplier/baseline.characterXpMultiplier:stats.craftingSpeedMultiplier/baseline.craftingSpeedMultiplier;
@@ -137,13 +137,19 @@ ok(oneShot.state.skills.find(row=>row.skillId==='cooking')?.xp===manual.state.sk
 ok((oneShot.reward.craftingActions??0)===(a.reward.craftingActions??0)+(manual.reward.craftingActions??0),'claim summary includes actions from both sides of expiry');
 ok(claimActivity(oneShot.state,now+135000).reward.craftingActions===0,'repeat settlement at the same timestamp is idempotent');
 
-// All noncombat skills include the class-skill drill loop; speed stops at expiry.
+// Crafting meals must not speed class drills; active time still drains normally.
 const noBuffTraining=executeGameCommand(fresh(),{type:'class_training'},now).state;
 const boostedTraining=executeGameCommand(executeGameCommand(fresh(),{type:'meal_bonus',args:{id:'ASHLANDS_EMBER_STEW'}},now).state,{type:'class_training'},now).state;
 const baseline59=claimActivity(noBuffTraining,now+59000);
 const boosted59=claimActivity(boostedTraining,now+59000);
 ok((baseline59.reward.trainingActions??0)===0,'baseline class drills need 60 seconds');
-ok((boosted59.reward.trainingActions??0)>=1,'Ashlands meal increases class drill speed by 10%');
+ok((boosted59.reward.trainingActions??0)===(baseline59.reward.trainingActions??0),'Ashlands crafting meal must not speed class drills');
+const ashlands=executeGameCommand(fresh(),{type:'meal_bonus',args:{id:'ASHLANDS_EMBER_STEW'}},now).state;
+const ashStats=characterPermanentMultipliers(ashlands),baseStats=characterPermanentMultipliers(fresh());
+ok(Math.abs(ashStats.craftingSpeedMultiplier/baseStats.craftingSpeedMultiplier-1.08)<.00001,'Ashlands grants exactly 8% crafting speed');
+ok(ashStats.gatheringSpeedMultiplier===baseStats.gatheringSpeedMultiplier,'Ashlands does not boost gathering');
+ok(ashStats.characterXpMultiplier===baseStats.characterXpMultiplier,'Ashlands does not boost combat XP');
+ok(MEAL_BONUSES.every(meal=>meal.kind!=='noncombat_speed'),'no broad noncombat speed meal remains');
 const shortTraining={...boostedTraining,character:{...boostedTraining.character!,activeMealBuff:{itemId:'ASHLANDS_EMBER_STEW',remainingSeconds:60}}} as GameState;
 const drillOne=claimActivity(shortTraining,now+120000);
 const drillPart=claimActivity(shortTraining,now+60000);

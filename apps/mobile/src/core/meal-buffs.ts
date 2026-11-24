@@ -12,7 +12,7 @@ export const MEAL_BONUSES:readonly MealBonusDefinition[]=[
  {itemId:'GLASSFIN_FEAST',kind:'gathering_speed',percent:6,durationHours:4,label:'+6% Gathering speed'},
  {itemId:'FROSTED_ICEFIN',kind:'crafting_speed',percent:6,durationHours:4,label:'+6% Crafting speed'},
  {itemId:'CHARRED_EMBERFIN',kind:'combat_xp',percent:8,durationHours:4,label:'+8% Combat XP'},
- {itemId:'ASHLANDS_EMBER_STEW',kind:'noncombat_speed',percent:10,durationHours:4,label:'+10% Non-combat skill speed'},
+ {itemId:'ASHLANDS_EMBER_STEW',kind:'crafting_speed',percent:8,durationHours:4,label:'+8% Crafting speed'},
 ];
 export function mealBonusDef(itemId:string|undefined){return MEAL_BONUSES.find(row=>row.itemId===itemId);}
 export function normalizeMealBuff(value:unknown):ActiveMealBuff|undefined{

@@ -7,7 +7,7 @@ import {deriveOnlineCoopLoadout} from '../../../backend/online/coop-loadout';
 import {verifyPartyEventEquippedCopyOwnershipV4} from '../../../backend/online/party-event-loadout-v4';
 import {deriveRole} from '../../../backend/src/server/coop/role-readiness';
 import {combatantFromVerifiedSnapshot} from '../../../backend/src/server/combat/snapshot-adapter';
-import {previewWeeklyGuildCombat,previewLegacyWeeklyScore,weeklyGuildBossProfile,WEEKLY_GUILD_BOSSES,WEEKLY_GUILD_ENGINE_RELEASED,WEEKLY_GUILD_ATTEMPT_MS} from '../../../backend/src/server/combat/weekly-guild-boss-review';
+import {previewWeeklyGuildCombat,previewLegacyWeeklyScore,reviewWeeklyContribution,weeklyGuildBossProfile,WEEKLY_GUILD_BOSSES,WEEKLY_GUILD_ENGINE_RELEASED,WEEKLY_GUILD_ATTEMPT_MS} from '../../../backend/src/server/combat/weekly-guild-boss-review';
 assert.equal(WEEKLY_GUILD_ENGINE_RELEASED,false);
 const get=(id:string)=>REGIONAL_COMBAT_FIXTURES.find(r=>r.regionId===id)!;
 const tiers=[{...get('GREENFIELDS'),tier:'T1',level:8},{...get('IRONWOOD'),tier:'T2',level:15},{...get('SUNSCAR'),tier:'T3',level:30},{...get('SUNSCAR'),tier:'T4',level:45},{...get('FROSTMARCH'),tier:'T5',level:66}];
@@ -81,3 +81,41 @@ const capped=previewLegacyWeeklyScore({boss:WEEKLY_GUILD_BOSSES[0],role:'tank',a
 assert.equal(capped.capReached,true);assert.equal(capped.capped,0);
 let rejected=false;try{weeklyGuildBossProfile(WEEKLY_GUILD_BOSSES[0],{...reference,attack:0})}catch{rejected=true}assert.ok(rejected);
 console.log('PASS 1215 synthetic weekly guild battles; no settlement');
+
+ // Matched baseline vs tuning: same seed, class, gear, companion and reference.
+ // The following diagnostics intentionally do not certify final role fairness.
+ let paired=0;
+ for(const cohort of cohorts)for(const boss of WEEKLY_GUILD_BOSSES){
+  const pairs=cohort.actors.flatMap(a=>[0,1].map(seed=>{
+   const input={boss,reference:cohort.reference,player:a.player,seed:'WG_'+a.player.classId+'_'+seed};
+   const baseline=previewWeeklyGuildCombat({...input,tuning:'baseline'});
+   const candidate=previewWeeklyGuildCombat({...input,tuning:'candidate'});
+   const score=reviewWeeklyContribution({result:candidate,reference:cohort.reference,sharedMaxHp:1000000,sharedRemainingHp:500000,personalAlready:0});
+   assert.ok(score.sharedHpCredit<=candidate.actualBossHpRemoved&&score.sharedHpCredit<=110000);
+   assert.ok(score.utility<=score.attackWork*.50&&score.utility<=cohort.reference.attack*20);
+   assert.equal(score.rewardGranted,false);assert.equal(score.payableScore,null);
+   return {baseline,candidate,score,variant:a.variant};
+  }));
+  paired+=pairs.length;
+  for(const role of ['tank','damage','support']){
+   const group=pairs.filter(p=>p.candidate.role===role&&p.variant==='none');
+   console.log('WEEKLY_GUILD_TUNING '+JSON.stringify({tier:cohort.tier,boss,role,runs:group.length,
+    baselineHp:mean(group.map(p=>p.baseline.actualBossHpRemoved)),candidateHp:mean(group.map(p=>p.candidate.actualBossHpRemoved)),
+    baselineDuration:mean(group.map(p=>p.baseline.durationMs)),candidateDuration:mean(group.map(p=>p.candidate.durationMs)),
+    baselineWipes:group.filter(p=>p.baseline.reason==='wipe').length,candidateWipes:group.filter(p=>p.candidate.reason==='wipe').length,
+    candidateScore:mean(group.map(p=>p.score.score)),candidateUtility:mean(group.map(p=>p.score.utility))}));
+  }
+ }
+ assert.equal(paired,1080);
+ const example=previewWeeklyGuildCombat(input);
+ const budget={reference,sharedMaxHp:1000000,sharedRemainingHp:1,personalAlready:0};
+ assert.ok(reviewWeeklyContribution({...budget,result:example}).sharedHpCredit<=1);
+ assert.equal(reviewWeeklyContribution({...budget,sharedRemainingHp:0,result:example}).sharedHpCredit,0);
+ assert.equal(reviewWeeklyContribution({...budget,personalAlready:280000,result:example}).sharedHpCredit,0);
+ const zero={...example,actualBossHpRemoved:0,bossShieldAbsorbed:0,effectiveHealing:1e7,shieldAbsorbed:1e7,interrupts:1000,cleanses:1000};
+ assert.equal(reviewWeeklyContribution({...budget,result:zero}).score,0);
+ const utility={...zero,actualBossHpRemoved:1000};
+ const bounded=reviewWeeklyContribution({...budget,result:utility});
+ assert.ok(bounded.utility<=500&&bounded.score<=1500);assert.equal(bounded.sharedHpCredit,1);
+ let bad=false;try{reviewWeeklyContribution({...budget,result:{...example,effectiveHealing:NaN}})}catch{bad=true}assert.ok(bad);
+ console.log('PASS 1080 matched baseline/candidate pairs and bounded contribution invariants');

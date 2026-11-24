@@ -11,7 +11,10 @@ export const WEEKLY_GUILD_BOSSES=['Fallen Oathbreaker','Granite Moss Troll','Vei
 export type WeeklyGuildBoss=typeof WEEKLY_GUILD_BOSSES[number];
 export interface WeeklyGuildReference {attack:number;defense:number;maxHp:number}
 const valid=(n:number)=>Number.isFinite(n)&&n>0&&n<=1e8;
-export function weeklyGuildBossProfile(name:WeeklyGuildBoss,ref:WeeklyGuildReference):CombatantDefinition {
+export type WeeklyGuildTuning='baseline'|'candidate';
+export function weeklyGuildBossProfile(name:WeeklyGuildBoss,ref:WeeklyGuildReference,tuning:WeeklyGuildTuning='candidate'):CombatantDefinition {
+ if(tuning!=='baseline'&&tuning!=='candidate')throw Error('invalid_weekly_guild_tuning');
+ const tuned=tuning==='candidate';
  if(!WEEKLY_GUILD_BOSSES.includes(name)||!valid(ref.attack)||!valid(ref.maxHp)||!Number.isFinite(ref.defense)||ref.defense<0||ref.defense>1e8)throw Error('invalid_weekly_guild_reference');
  // One fixed cohort reference per review bracket, never scale to the attacking hero.
  // Numbers are provisional; shared guild HP and contribution caps are not modelled.
@@ -26,24 +29,24 @@ export function weeklyGuildBossProfile(name:WeeklyGuildBoss,ref:WeeklyGuildRefer
   cast('WG_OATH_MARK','Shattered Oath',12500,[physical(.65),{kind:'debuff',tag:'damage_taken',value:.12,durationMs:7000}]),
  ]:troll?[
   cast('WG_TROLL_QUAKE','Seismic Swing',9000,[physical(1.25)],'all_enemies'),
-  cast('WG_TROLL_BARK','Stonehide',14500,[{kind:'shield',flat:ref.attack*3}], 'self'),
+  cast('WG_TROLL_BARK','Stonehide',tuned?22000:14500,[{kind:'shield',flat:ref.attack*(tuned?.9:3)}], 'self'),
  ]:[
   cast('WG_VEIL_CURSE','Veil Curse',9200,[shadow(.70),{kind:'dot',coeff:.16,damageType:'shadow',durationMs:8000,tickMs:2000,tag:'weekly_veil_curse'}]),
   cast('WG_VEIL_PULSE','Soul Pulse',12000,[shadow(1.1)],'all_enemies'),
  ];
  return {id:oath?'WG_OATH':troll?'WG_TROLL':'WG_VEIL',name,team:'enemies',role:'enemy',level:25,boss:true,
   basicAttackMs:3000,basicAttackCoeff:.48,
-  stats:{maxHp:Math.max(2500,ref.attack*105),attackPower:ref.attack*(oath?1.05:troll?.95:.88),healingPower:0,defense:ref.defense*(troll?1.05:.8),accuracy:700,evasion:130,critChance:.03,critMultiplier:1.5,haste:0},
+  stats:{maxHp:Math.max(2500,ref.attack*105),attackPower:ref.attack*(oath?1.05:troll?.95:.88)*(tuned?.70:1),healingPower:0,defense:ref.defense*(troll?1.05:.8),accuracy:700,evasion:130,critChance:.03,critMultiplier:1.5,haste:0},
   abilities,
   phases:[{id:'WG_PHASE_60',name:'Escalation',hpPct:.60,target:'self',effects:[{kind:'buff',tag:'damage_done',value:.12,durationMs:20000}]},
    {id:'WG_PHASE_30',name:'Final Stand',hpPct:.30,target:'all_enemies',effects:[oath||troll?physical(.95):shadow(.95)]}],
   tags:['weekly-guild-review-only'],
  };
 }
-export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:WeeklyGuildReference;player:CombatantDefinition;seed:string}){
+export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:WeeklyGuildReference;player:CombatantDefinition;seed:string;tuning?:WeeklyGuildTuning}){
  const {player,seed}=input;
  if(typeof seed!=='string'||seed.length<4||seed.length>160||player.team!=='players'||!['tank','damage','support'].includes(player.role)||!valid(player.stats.maxHp)||!valid(player.stats.attackPower))throw Error('invalid_weekly_guild_actor');
- const boss=weeklyGuildBossProfile(input.boss,input.reference);
+ const boss=weeklyGuildBossProfile(input.boss,input.reference,input.tuning);
  if(player.id===boss.id)throw Error('weekly_guild_actor_collision');
  const result=simulateCombat({seed,players:[player],enemies:[boss],maxDurationMs:WEEKLY_GUILD_ATTEMPT_MS,tickMs:100});
  const hero=result.players[0],enemy=result.enemies[0];
@@ -57,6 +60,7 @@ export function previewWeeklyGuildCombat(input:{boss:WeeklyGuildBoss;reference:W
   rawDamage:hero.damageDone,damageTaken:hero.damageTaken,effectiveHealing:hero.healingDone,
   shieldAbsorbed:sum(e=>e.targetId===player.id&&(e.type==='damage'||e.type==='dot_tick'),'absorbed'),
   interrupts:hero.interrupts,cleanses:count('status_remove',player.id),
+  bossShieldAbsorbed:sum(e=>e.actorId===player.id&&e.targetId===boss.id&&(e.type==='damage'||e.type==='dot_tick'),'absorbed'),
   // Companion assists are abilities of the owner, NOT extra combatants.
   // Only directly attributable events are reported; indirect buffs/reflect and
   // effective absorbed shield ownership cannot be inferred from these totals.
@@ -91,4 +95,34 @@ export function previewLegacyWeeklyScore(input:{boss:WeeklyGuildBoss;role:'tank'
  const remaining=Math.max(0,personalCap-personalAlready);
  return {factor,uncapped:character+companion,perAttempt,personalCap,capReached:remaining===0,
   capped:Math.min(character+companion,perAttempt,remaining),liveEnabled:false as const};
+}
+
+/** Nonpaying score candidate. Only private simulation output may enter here.
+ * Shared HP credit is a separate upper bound on actual engine HP loss; utility
+ * can never be treated as damage. No minimum participation or time-only points.
+ * The caps are provisional and independent of class label or companion role. */
+export function reviewWeeklyContribution(input:{
+ result:ReturnType<typeof previewWeeklyGuildCombat>;reference:WeeklyGuildReference;
+ sharedMaxHp:number;sharedRemainingHp:number;personalAlready:number;
+}){
+ const {result:r,reference:ref,sharedMaxHp:max,sharedRemainingHp:remaining,personalAlready:personal}=input;
+ if(!valid(ref.attack)||!valid(ref.maxHp)||!Number.isSafeInteger(max)||max<=0||
+ !Number.isSafeInteger(remaining)||remaining<0||remaining>max||!Number.isSafeInteger(personal)||personal<0)
+  throw Error('invalid_weekly_contribution_budget');
+ const metrics=[r.actualBossHpRemoved,r.bossShieldAbsorbed,r.effectiveHealing,r.shieldAbsorbed,r.interrupts,r.cleanses];
+ if(metrics.some(v=>!Number.isFinite(v)||v<0)||!Number.isSafeInteger(r.interrupts)||!Number.isSafeInteger(r.cleanses))throw Error('invalid_weekly_contribution_metrics');
+ // All points are test units. Fixed reference, not the actor's max HP or attack.
+ const attackWork=r.actualBossHpRemoved+Math.min(r.bossShieldAbsorbed*.25,ref.attack*6);
+ const healing=Math.min(r.effectiveHealing*.18,ref.attack*9);
+ const shielding=Math.min(r.shieldAbsorbed*.25,ref.attack*9);
+ const interrupts=Math.min(r.interrupts,8)*ref.attack*.25;
+ const cleanses=Math.min(r.cleanses,8)*ref.attack*.15;
+ const supportCandidate=healing+shielding+interrupts+cleanses;
+ // Utility cannot be farmed by stalling without any offensive work.
+ const utility=Math.min(supportCandidate,attackWork*.50,ref.attack*20);
+ const score=Math.floor(attackWork+utility);
+ const sharedHpCredit=Math.max(0,Math.min(Math.floor(r.actualBossHpRemoved),remaining,Math.ceil(max*.11),Math.max(0,Math.ceil(max*.28)-personal)));
+ return {score,attackWork,utility,healing,shielding,interrupts,cleanses,sharedHpCredit,
+  rewardGranted:false as const,sharedHpWritten:false as const,attemptConsumed:false as const,
+  payableScore:null,liveEnabled:false as const};
 }

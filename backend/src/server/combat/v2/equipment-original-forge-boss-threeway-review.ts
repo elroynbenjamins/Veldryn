@@ -108,7 +108,8 @@ export function reviewOriginalForgeBossThreeWayV2(
  const bossId=boss.definition.id;
  const originalBoss=enemyV2SnapshotDigest(boss.definition);
  const originalStats=enemyV2SnapshotDigest(player.definition.stats);
- const all=new Set<string>();
+ const buildByDigest=new Map<string,string>();
+ const digestByBuild=new Map<string,string>();
  const metrics=cases.map(({choice,result})=>{
   const row=result.equipmentEvidence;
   const actor=result.combat.players[0],enemy=result.combat.enemies[0];
@@ -127,11 +128,15 @@ export function reviewOriginalForgeBossThreeWayV2(
    !/^[0-9a-f]{64}$/.test(row.receiptDigest)||
    !result.bossMechanicLabels.length)
     fail('changed_gear_base_enemy_or_invalid_ledger_digest');
-  if(all.has(row.receiptDigest)&&
-   JSON.stringify(choice.activeSkills)!==
-    JSON.stringify(cases[0].choice.activeSkills))
+  const selection=JSON.stringify(choice.activeSkills);
+  const priorBuild=buildByDigest.get(row.receiptDigest);
+  if(priorBuild!==undefined&&priorBuild!==selection)
    fail('changed_skill_using_stale_receipt_digest');
-  all.add(row.receiptDigest);
+  const priorDigest=digestByBuild.get(selection);
+  if(priorDigest!==undefined&&priorDigest!==row.receiptDigest)
+   fail('same_skill_changed_receipt_digest');
+  buildByDigest.set(row.receiptDigest,selection);
+  digestByBuild.set(selection,row.receiptDigest);
   const active=choice.activeSkills;
   const identities=active.map(x=>x.skillId+':'+x.variantId);
   const authoredIds=new Set(actor.definition.abilities.filter(x=>

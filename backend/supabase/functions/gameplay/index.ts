@@ -310,6 +310,8 @@ var FROSTFALL_REWARDS_RELEASED = false;
 var EVENT_COMMUNITY_ENABLED = false;
 var DUNGEON_MARKS_SHOP_RELEASED = false;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
+var PROFILE_ANIMATED_COSMETICS_RELEASED = false;
+var PROFILE_COSMETICS_STORE_RELEASED = false;
 
 // ../apps/mobile/src/content/crafting-gold-cost.ts
 function increasedCraftingGoldCost(baseGold) {
@@ -52745,6 +52747,27 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
 init_faith2();
 init_faith();
 
+// ../apps/mobile/src/core/profile-cosmetic-icons.ts
+var PROFILE_COSMETIC_PORTRAITS = [
+  { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
+  { id: "cosmetic:gloamward:portrait-magus", name: "Gloamward Magus", collectionId: "gloamward", presentation: "male", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-oracle", name: "Frostbound Oracle", collectionId: "frostbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-warden", name: "Frostbound Warden", collectionId: "frostbound", presentation: "male", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+];
+
+// ../apps/mobile/src/core/profile-cosmetic-access.ts
+var PROFILE_COSMETICS_TESTER_ENTITLEMENT = "profile_cosmetics_tester_v1";
+function profileCosmeticsTester(state) {
+  return state.account.entitlements?.[PROFILE_COSMETICS_TESTER_ENTITLEMENT] === true;
+}
+function profileAnimatedCosmeticsEnabled(state) {
+  return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
+}
+
 // ../apps/mobile/src/core/profile-icons.ts
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
   "event:veilbreak-2026-lantern-warden",
@@ -52763,6 +52786,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 function profileIconCollection(state) {
@@ -52771,7 +52795,11 @@ function profileIconCollection(state) {
   const base = CLASSES.filter((row) => row.id === activeClass).map((row) => ({ id: `class:${row.id}`, name: row.name, group: "Class", source: "Your active character class.", unlocked: true, artworkReady: true, selected: selected2 === `class:${row.id}` }));
   const owned = new Set(state.account.unlockedProfileIconIds ?? []);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)];
-  const portraits = PROFILE_ICON_CATALOG.filter((row) => row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)).map((row) => ({ ...row, artworkReady: true, selected: selected2 === row.id, unlocked: row.group === "Starter" || owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) }));
+  const tester = profileCosmeticsTester(state);
+  const portraits = PROFILE_ICON_CATALOG.filter((row) => (row.group !== "Dungeon" || DUNGEON_MARKS_SHOP_RELEASED || owned.has(row.id)) && (row.group !== "Cosmetics" || PROFILE_COSMETICS_STORE_RELEASED || tester || owned.has(row.id))).map((row) => {
+    const artworkReady = row.group === "Cosmetics" && tester ? true : row.artworkReady ?? true;
+    return { ...row, artworkReady, selected: selected2 === row.id, unlocked: row.group === "Starter" || artworkReady && owned.has(row.id) || row.monsterId !== void 0 && characters.some((c) => (c?.monsterMasteryPoints?.[row.monsterId] ?? 0) >= 10) || row.bossId !== void 0 && state.defeatedBossIds.includes(row.bossId) };
+  });
   const known2 = new Set(portraits.map((row) => row.id));
   const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
   const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];
@@ -56304,6 +56332,31 @@ function migrateRetiredStoryRewards(input, nowMs) {
   return { ...cleaned, ...routed, account };
 }
 
+// ../apps/mobile/src/core/profile-premium-cosmetics.ts
+var PREMIUM_PROFILE_COSMETICS = [
+  { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
+  { id: "draconic-dominion", name: "Draconic Dominion", tier: "ascendant", borderId: "premium:draconic-dominion:throne-of-embers", borderName: "Throne of Embers", fallbackBorderId: "dungeon:sunscar:amberglass-loop", effectId: "premium:draconic-dominion:awakening-of-the-dragon", effectName: "Awakening of the Dragon", backgroundId: "premium:draconic-dominion:dominion-of-ash", backgroundName: "Dominion of Ash", fallbackBackgroundId: "dungeon:sunscar:buried-observatory", petId: "premium:draconic-dominion:vharaxis-eternal-flame", petName: "Vharaxis, the Eternal Flame", fallbackPetId: "PET_036", badgeId: "ascendant_dragon_sovereign", badgeName: "Dragon Sovereign", accent: "#FF8A45", softAccent: "#9E332D" },
+  { id: "abyssal-majesty", name: "Abyssal Majesty", tier: "ascendant", borderId: "premium:abyssal-majesty:crown-of-the-depths", borderName: "Crown of the Depths", fallbackBorderId: "frame_gloamward", effectId: "premium:abyssal-majesty:call-of-the-deep", effectName: "Call of the Deep", backgroundId: "premium:abyssal-majesty:forgotten-abyss", backgroundName: "The Forgotten Abyss", fallbackBackgroundId: "bg_veilbreak", petId: "premium:abyssal-majesty:nhalzuun-abyssborn", petName: "Nhal'Zuun, the Abyssborn", fallbackPetId: "PET_039", badgeId: "ascendant_monarch_of_deep", badgeName: "Monarch of the Deep", accent: "#6CF2EB", softAccent: "#176F83" },
+  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "dungeon:frostmarch:shiverlake-reflections", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
+];
+var premiumProfileByBorder = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.borderId, row]));
+var premiumProfileByEffect = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.effectId, row]));
+var premiumProfileByPet = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.petId, row]));
+var PREMIUM_PROFILE_BADGE_IDS = PREMIUM_PROFILE_COSMETICS.map((row) => row.badgeId);
+
+// ../apps/mobile/src/core/profile-effects.ts
+var PROFILE_EFFECTS = [
+  { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
+  { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
+  { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+];
+var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
+function canUseProfileEffect(state, id) {
+  if (!id) return true;
+  return state.account.unlockedProfileEffectIds?.includes(id) ?? false;
+}
+
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 
@@ -59772,7 +59825,7 @@ var fields = {
   inventory_preference: ["id", "kind", "enabled"],
   inventory_preference_bulk: ["ids", "kind", "enabled"],
   inventory_seen_all: [],
-  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "selectedCosmeticPetId"],
+  profile: ["profileIconId", "profileTitle", "profileBackgroundId", "profileBorderId", "profileEffectId", "selectedCosmeticPetId"],
   event_daily: [],
   event_cache: [],
   event_milestones: [],
@@ -60552,6 +60605,8 @@ function executeGameCommand(previous, value, now, options = {}) {
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
+      if (patch.profileEffectId && !profileAnimatedCosmeticsEnabled(state) && patch.profileEffectId !== state.character.profileEffectId) throw new Error("feature_not_released");
+      if (patch.profileEffectId && !canUseProfileEffect(state, patch.profileEffectId)) throw new Error("cosmetic_not_owned");
       if (patch.selectedCosmeticPetId && !state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId)) throw new Error("cosmetic_not_owned");
       state = { ...state, character: { ...state.character, ...patch } };
       break;

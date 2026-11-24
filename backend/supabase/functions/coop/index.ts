@@ -47219,6 +47219,18 @@ function activeEquipmentBuildStats(state) {
 init_faith2();
 init_faith();
 
+// ../apps/mobile/src/core/profile-cosmetic-icons.ts
+var PROFILE_COSMETIC_PORTRAITS = [
+  { id: "cosmetic:gloamward:portrait-seer", name: "Gloamward Seer", collectionId: "gloamward", presentation: "female", artworkReady: true },
+  { id: "cosmetic:gloamward:portrait-magus", name: "Gloamward Magus", collectionId: "gloamward", presentation: "male", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-oracle", name: "Frostbound Oracle", collectionId: "frostbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:frostbound:portrait-warden", name: "Frostbound Warden", collectionId: "frostbound", presentation: "male", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-duelist", name: "Amberglass Duelist", collectionId: "amberglass", presentation: "female", artworkReady: true },
+  { id: "cosmetic:amberglass:portrait-vanguard", name: "Amberglass Vanguard", collectionId: "amberglass", presentation: "male", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-ranger", name: "Briarbound Ranger", collectionId: "briarbound", presentation: "female", artworkReady: true },
+  { id: "cosmetic:briarbound:portrait-warden", name: "Briarbound Warden", collectionId: "briarbound", presentation: "male", artworkReady: true }
+];
+
 // ../apps/mobile/src/core/profile-icons.ts
 var PROFILE_ICON_CATALOG = [
   { id: "starter:hooded-ranger", name: "Hooded Ranger", group: "Starter", source: "Available from the start." },
@@ -47232,6 +47244,7 @@ var PROFILE_ICON_CATALOG = [
   { id: "starter:dune-warden", name: "Dune Warden", group: "Starter", source: "Available from the start." },
   { id: "creature:FALLEN_KNIGHT", name: "Fallen Knight", group: "Combat", source: "Defeat the Fallen Knight.", bossId: "FALLEN_KNIGHT" },
   { id: "guild:stormwatch-crest", name: "Stormwatch Crest", group: "Guild", source: "Guild Token Shop \xB7 Guild Level 4" },
+  ...PROFILE_COSMETIC_PORTRAITS.map((row) => ({ id: row.id, name: row.name, group: "Cosmetics", source: "Cosmetics set \xB7 Tester access", artworkReady: row.artworkReady })),
   ...DUNGEON_SHOP_PROFILE_ICONS_V1.map((row) => ({ id: row.id, name: row.name, group: "Dungeon", source: "Dungeon Marks Shop \xB7 " + row.region }))
 ];
 
@@ -47980,22 +47993,30 @@ var COOP_NORMALIZATION_V1 = Object.freeze({
   flatEffectHardRatio: 0.35,
   coefficientHardCap: 3
 });
+var COOP_HOST_LEVEL_NORMALIZATION_VERSION = "coop-host-level-v1";
 var ROOTBOUND_ROLE_REFERENCES = Object.freeze({
   tank: { level: 25, maxHp: 5200, attackPower: 420, healingPower: 180, defense: 1500, accuracy: 680, evasion: 180 },
   damage: { level: 25, maxHp: 3400, attackPower: 625, healingPower: 120, defense: 750, accuracy: 780, evasion: 250 },
   support: { level: 25, maxHp: 3800, attackPower: 330, healingPower: 650, defense: 900, accuracy: 700, evasion: 210 }
 });
-function compress(value, reference, retention, hardRatio, softThreshold) {
+function compress(value, reference, retention, hardRatio, softThreshold, retainGearTail = false) {
   const safe = Math.max(0, value);
   const soft = softThreshold * reference;
-  return safe <= soft ? safe : Math.min(hardRatio * reference, soft + (safe - soft) * retention);
+  if (safe <= soft) return safe;
+  const compressed = soft + (safe - soft) * retention;
+  const cap = hardRatio * reference;
+  if (!retainGearTail || compressed <= cap || reference <= 0) return Math.min(cap, compressed);
+  const excess = compressed - cap;
+  return cap + reference * 0.5 * (excess / (reference + excess));
 }
-function normalizeCombatInput(source, abilities, syncLevel, reference, config = COOP_NORMALIZATION_V1) {
+function normalizeCombatInput(source, abilities, syncLevel, reference, config = COOP_NORMALIZATION_V1, visibleLevel) {
   if (!Number.isInteger(source.level) || source.level < 1 || source.level > 100 || !Number.isInteger(syncLevel) || syncLevel < 1 || syncLevel > 100) throw new Error("invalid_snapshot_level");
   const sourceStats = [source.maxHp, source.attackPower, source.healingPower, source.defense, source.accuracy, source.evasion, source.critChance, source.haste];
   if (sourceStats.some((value) => !Number.isFinite(value)) || source.maxHp <= 0 || [source.attackPower, source.healingPower, source.defense, source.accuracy, source.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
-  const effectiveLevel = Math.min(source.level, syncLevel);
-  const levelRatio = source.level > effectiveLevel ? effectiveLevel / source.level : 1;
+  if (visibleLevel !== void 0 && (!Number.isInteger(visibleLevel) || visibleLevel < 1 || visibleLevel > 100)) throw new Error("invalid_snapshot_level");
+  const effectiveLevel = Math.min(visibleLevel ?? source.level, syncLevel);
+  const levelRatio = visibleLevel !== void 0 ? effectiveLevel / source.level : source.level > effectiveLevel ? effectiveLevel / source.level : 1;
+  const retainGearTail = visibleLevel !== void 0;
   const refScale = effectiveLevel / reference.level;
   const ref = {
     maxHp: reference.maxHp * refScale,
@@ -48016,12 +48037,12 @@ function normalizeCombatInput(source, abilities, syncLevel, reference, config = 
   const snapshot = {
     ...source,
     level: effectiveLevel,
-    maxHp: compress(scaled.maxHp, ref.maxHp, config.hpRetention, config.hpHardRatio, config.softThreshold),
-    attackPower: compress(scaled.attackPower, ref.attackPower, config.primaryRetention, config.primaryHardRatio, config.softThreshold),
-    healingPower: compress(scaled.healingPower, ref.healingPower, config.primaryRetention, config.primaryHardRatio, config.softThreshold),
-    defense: compress(scaled.defense, ref.defense, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold),
-    accuracy: compress(scaled.accuracy, ref.accuracy, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold),
-    evasion: compress(scaled.evasion, ref.evasion, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold)
+    maxHp: compress(scaled.maxHp, ref.maxHp, config.hpRetention, config.hpHardRatio, config.softThreshold, retainGearTail),
+    attackPower: compress(scaled.attackPower, ref.attackPower, config.primaryRetention, config.primaryHardRatio, config.softThreshold, retainGearTail),
+    healingPower: compress(scaled.healingPower, ref.healingPower, config.primaryRetention, config.primaryHardRatio, config.softThreshold, retainGearTail),
+    defense: compress(scaled.defense, ref.defense, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold, retainGearTail),
+    accuracy: compress(scaled.accuracy, ref.accuracy, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold, retainGearTail),
+    evasion: compress(scaled.evasion, ref.evasion, config.secondaryRetention, config.secondaryHardRatio, config.softThreshold, retainGearTail)
   };
   const flatCap = Math.max(ref.attackPower, ref.healingPower, ref.maxHp) * config.flatEffectHardRatio;
   const normalizedAbilities = abilities.map((ability3) => ({
@@ -48037,7 +48058,7 @@ function normalizeCombatInput(source, abilities, syncLevel, reference, config = 
     snapshot,
     abilities: normalizedAbilities,
     effectiveLevel,
-    normalizationVersion: config.version,
+    normalizationVersion: retainGearTail ? COOP_HOST_LEVEL_NORMALIZATION_VERSION : config.version,
     before: { level: source.level, maxHp: source.maxHp, attackPower: source.attackPower, healingPower: source.healingPower, defense: source.defense }
   };
 }
@@ -48823,6 +48844,27 @@ function possibleDungeonCompanionCounters(dungeonId) {
   }
   return [...result];
 }
+
+// ../apps/mobile/src/core/profile-premium-cosmetics.ts
+var PREMIUM_PROFILE_COSMETICS = [
+  { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
+  { id: "draconic-dominion", name: "Draconic Dominion", tier: "ascendant", borderId: "premium:draconic-dominion:throne-of-embers", borderName: "Throne of Embers", fallbackBorderId: "dungeon:sunscar:amberglass-loop", effectId: "premium:draconic-dominion:awakening-of-the-dragon", effectName: "Awakening of the Dragon", backgroundId: "premium:draconic-dominion:dominion-of-ash", backgroundName: "Dominion of Ash", fallbackBackgroundId: "dungeon:sunscar:buried-observatory", petId: "premium:draconic-dominion:vharaxis-eternal-flame", petName: "Vharaxis, the Eternal Flame", fallbackPetId: "PET_036", badgeId: "ascendant_dragon_sovereign", badgeName: "Dragon Sovereign", accent: "#FF8A45", softAccent: "#9E332D" },
+  { id: "abyssal-majesty", name: "Abyssal Majesty", tier: "ascendant", borderId: "premium:abyssal-majesty:crown-of-the-depths", borderName: "Crown of the Depths", fallbackBorderId: "frame_gloamward", effectId: "premium:abyssal-majesty:call-of-the-deep", effectName: "Call of the Deep", backgroundId: "premium:abyssal-majesty:forgotten-abyss", backgroundName: "The Forgotten Abyss", fallbackBackgroundId: "bg_veilbreak", petId: "premium:abyssal-majesty:nhalzuun-abyssborn", petName: "Nhal'Zuun, the Abyssborn", fallbackPetId: "PET_039", badgeId: "ascendant_monarch_of_deep", badgeName: "Monarch of the Deep", accent: "#6CF2EB", softAccent: "#176F83" },
+  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "dungeon:frostmarch:shiverlake-reflections", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
+];
+var premiumProfileByBorder = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.borderId, row]));
+var premiumProfileByEffect = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.effectId, row]));
+var premiumProfileByPet = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.petId, row]));
+var PREMIUM_PROFILE_BADGE_IDS = PREMIUM_PROFILE_COSMETICS.map((row) => row.badgeId);
+
+// ../apps/mobile/src/core/profile-effects.ts
+var PROFILE_EFFECTS = [
+  { id: "effect_gloamward_wisps", name: "Arcane Wisps", collection: "Gloamward", borderId: "cosmetic:gloamward:arcane-frame", borderName: "Gloamward Arcane Frame", fallbackBorderId: "frame_gloamward" },
+  { id: "effect_frostbound_winter_veil", name: "Winter Veil", collection: "Frostbound Chime", borderId: "cosmetic:frostbound:chime-frame", borderName: "Frostbound Chime Frame", fallbackBorderId: "dungeon:frostmarch:frostbound-chime" },
+  { id: "effect_amberglass_ember_motes", name: "Ember Motes", collection: "Amberglass Loop", borderId: "cosmetic:amberglass:loop-frame", borderName: "Amberglass Loop Frame", fallbackBorderId: "dungeon:sunscar:amberglass-loop" },
+  { id: "effect_briarbound_verdant_whispers", name: "Verdant Whispers", collection: "Briarbound", borderId: "cosmetic:briarbound:verdant-frame", borderName: "Briarbound Verdant Frame", fallbackBorderId: "dungeon:asterfall:briarbound-frame" }
+];
+var PROFILE_ALL_EFFECTS = [...PROFILE_EFFECTS, ...PREMIUM_PROFILE_COSMETICS.map((row) => ({ id: row.effectId, name: row.effectName, collection: row.name, borderId: row.borderId, borderName: row.borderName, fallbackBorderId: row.fallbackBorderId }))];
 
 // ../apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
@@ -50641,7 +50683,7 @@ function resolveCoopNode(input) {
     });
     const depthMultiplier = input.node.depth >= balance.lateDepthStart ? balance.lateDepthAttackMultiplier : 1;
     const tierScale = input.tier ? coopTierEnemyMultipliers(input.tier) : { attack: 1, hp: 1, defense: 1 };
-    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
+    const combat = resolveExpeditionCombat({ runId: input.runId, nodeIndex: input.node.depth, encounterId: input.node.contentId, serverSeed: input.serverSecret, players, initialPlayerState: state.actors, safetyAiPlayerIds: input.safetyAiPlayerIds, enemyAttackMultiplier: (rootbound ? balance.enemyAttackMultiplier * depthMultiplier : 1) * tierScale.attack * (input.enemyAttackMultiplier ?? 1), enemyHpMultiplier: tierScale.hp * (input.enemyHpMultiplier ?? 1), enemyDefenseMultiplier: tierScale.defense * (input.enemyDefenseMultiplier ?? 1), enemyDamageProfile: input.enemyDamageProfile, enemyLevel: input.enemyLevel, bossTuning: input.bossTuning, maxDurationMs: input.maxDurationMs, roomModifierId: input.node.kind === "elite" ? input.node.modifierId : void 0, roomModifierElite: input.node.kind === "elite" });
     state = { ...state, actors: combat.endingPlayerState };
     return { success: combat.success, state, summary: { kind: "combat", ...combat.resultJson, ...input.bossTuning ? { bossTuningProfile: input.bossTuning.profileId } : {} } };
   }
@@ -51103,6 +51145,18 @@ function dungeonDepthMultipliers(roomDepth, enabled) {
     defense: Math.pow(DUNGEON_ENDURANCE_DIFFICULTY.defensePerRoom, steps)
   };
 }
+var DUNGEON_BOSS_ENDURANCE_VERSION = 2;
+function dungeonEncounterDepthMultipliers(roomDepth, enabled, isBoss, bossVersion) {
+  const original = dungeonDepthMultipliers(roomDepth, enabled);
+  if (!enabled || !isBoss || bossVersion !== DUNGEON_BOSS_ENDURANCE_VERSION) return original;
+  const steps = roomDepth - 1;
+  return { hp: Math.pow(1.022, steps), attack: original.attack, defense: Math.pow(1.006, steps) };
+}
+var ENDURANCE_BOSS_LIMIT_MS = Object.freeze({ 8: 18e4, 15: 21e4, 22: 24e4, 29: 28e4, 36: 32e4, 43: 36e4 });
+function dungeonBossTimeLimitMs(nodeDepth, enabled, isBoss, bossVersion) {
+  if (!enabled || !isBoss || bossVersion !== DUNGEON_BOSS_ENDURANCE_VERSION) return void 0;
+  return ENDURANCE_BOSS_LIMIT_MS[nodeDepth];
+}
 
 // src/server/coop/room-artifact-choices.ts
 var CHOICE_KINDS = /* @__PURE__ */ new Set(["treasure", "secret"]);
@@ -51182,7 +51236,7 @@ var QModeService = class {
     const hostBoost = regionalCombatPowerBoost(input.expeditionId, input.controllerSnapshot.combatPower, regionalEnabled);
     const players = [player2, ...allies.map((ally) => {
       const base = regionalCombatant(ally.snapshot, input.expeditionId, input.balanceVersion);
-      if (!ally.echo || !preferred.has(ally.echo.profileId)) return base;
+      if (input.controllerSnapshot.normalized.normalizationVersion === COOP_HOST_LEVEL_NORMALIZATION_VERSION || !ally.echo || !preferred.has(ally.echo.profileId)) return base;
       const donorBoost = regionalCombatPowerBoost(input.expeditionId, ally.snapshot.combatPower, regionalEnabled);
       return scaleSocialEchoToHost(base, input.controllerSnapshot.combatPower, ally.snapshot.combatPower, hostBoost, donorBoost);
     })];
@@ -51229,9 +51283,10 @@ var QModeService = class {
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
     const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId);
     const encounterDepth = run.enduranceRouteVersion === 1 && selected2.kind === "boss" ? Math.max(1, selected2.depth - DUNGEON_ENDURANCE.checkpointInterval) : selected2.depth;
-    const depth = dungeonDepthMultipliers(encounterDepth, run.enduranceRouteVersion === 1);
+    const depth = dungeonEncounterDepthMultipliers(encounterDepth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
+    const maxDurationMs = dungeonBossTimeLimitMs(selected2.depth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
     const bossTuning = run.regionalBalanceVersion === 1 && run.tier === 1 && selected2.contentId === "BOSS_EXP_SOLAR" ? { profileId: "sunscar-regional-solar-ward-cadence-v1", abilityCooldownMultipliers: { BOSS_EXP_SOLAR_WARD: 3 } } : void 0;
-    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1) * depth.attack, enemyHpMultiplier: (regional2?.hp ?? 1) * depth.hp, enemyDefenseMultiplier: (regional2?.defense ?? 1) * depth.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, enduranceLootVersion: run.enduranceRouteVersion, campfireBalanceVersion: run.graph.generatorVersion?.endsWith("-endurance-v2") ? 2 : void 0, deferArtifactChoice: run.enduranceRouteVersion === 1 && run.qmodePressureVersion === 1, bossTuning, safetyAiPlayerIds: input.safetyAiPlayerIds });
+    const result = resolveCoopNode({ runId: run.id, serverSecret: this.serverSecret, node: selected2, players: isCombat ? preparedCoopCombatants(run.players, run.persistentState.preparedAlchemyPotionIdsByActor) : run.players, state: run.persistentState, tier: run.tierScalingVersion === 2 ? run.tier : void 0, enemyAttackMultiplier: (run.qmodePressureVersion === 1 ? 1.005 : 1) * (regional2?.attack ?? 1) * depth.attack, enemyHpMultiplier: (regional2?.hp ?? 1) * depth.hp, enemyDefenseMultiplier: (regional2?.defense ?? 1) * depth.defense, enemyLevel: regional2?.enemyLevel, enemyDamageProfile: run.qmodePressureVersion === 1 ? "qmode-v1" : void 0, enduranceLootVersion: run.enduranceRouteVersion, campfireBalanceVersion: run.graph.generatorVersion?.endsWith("-endurance-v2") ? 2 : void 0, deferArtifactChoice: run.enduranceRouteVersion === 1 && run.qmodePressureVersion === 1, bossTuning, maxDurationMs, safetyAiPlayerIds: input.safetyAiPlayerIds });
     run.lastResolution = { nodeId: selected2.nodeId, result: structuredClone(result) };
     run.persistentState = result.state;
     run.currentNodeId = selected2.nodeId;
@@ -51257,7 +51312,7 @@ var QModeService = class {
   createRun(input) {
     const endurance = input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION;
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion, endurance ? "endurance" : "legacy");
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1 } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1, bossEnduranceVersion: DUNGEON_BOSS_ENDURANCE_VERSION } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }
@@ -51467,7 +51522,7 @@ function resolveAndFreezeLoadout(input) {
   if (!record.legalEquipment) throw new Error("illegal_equipment");
   const role2 = deriveRole(record.classId);
   const source = { ...record.stats, role: role2, classId: record.classId, characterId: record.characterId, level: record.combatScalingLevel ?? record.characterLevel };
-  const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role2]);
+  const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role2], void 0, input.hostLevelSync ? record.characterLevel : void 0);
   const reference = ROOTBOUND_ROLE_REFERENCES[role2];
   const referenceScale = normalized.effectiveLevel / reference.level;
   const primary = (role2 === "tank" ? normalized.snapshot.defense / reference.defense : role2 === "support" ? Math.max(normalized.snapshot.healingPower / reference.healingPower, normalized.snapshot.defense / reference.defense) : normalized.snapshot.attackPower / reference.attackPower) / referenceScale;
@@ -51693,8 +51748,8 @@ var OnlineQModeRuntime = class {
     const record = deriveOnlineCoopLoadout(accountId, game.state, game.version);
     const entryError = regularDungeonEntryError(definition, game.state, record.characterLevel, record.combatPower, request.tier, "qmode");
     if (entryError) throw new GameplayError(entryError);
-    const minimum = regularDungeonTierRequiredLevel(definition, request.tier), sync = definition.recommendedLevel;
-    const freeze = (source) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: minimum, syncLevel: sync, repository: { getOwnedLoadout: () => source } });
+    const minimum = regularDungeonTierRequiredLevel(definition, request.tier), sync = record.characterLevel;
+    const freeze = (source) => resolveAndFreezeLoadout({ accountId: source.accountId, characterId: source.characterId, loadoutId: source.loadoutId, expectedRevision: source.revision, minLevel: minimum, syncLevel: sync, hostLevelSync: true, repository: { getOwnedLoadout: () => source } });
     if (record.characterId !== request.characterId || request.loadoutId !== "current") throw new GameplayError("loadout_not_owned");
     if (request.loadoutRevision > record.revision) {
       const replay = await this.receipt(accountId, "qmode_start_v1", accountId, request.requestId, hash);
@@ -51745,7 +51800,7 @@ var OnlineQModeRuntime = class {
     }
     const preferredProfileIds = publishedSelections;
     if (preferredProfileIds.some((id2) => !profiles.some((profile) => profile.profileId === id2))) throw new GameplayError("social_echo_unavailable", 409);
-    const npcSnapshots = createQModeNpcAllies({ minimumLevel: minimum, syncLevel: sync, controllerLevel: record.characterLevel });
+    const npcSnapshots = createQModeNpcAllies({ minimumLevel: minimum, syncLevel: Math.min(sync, definition.recommendedLevel), controllerLevel: record.characterLevel });
     const seed = this.services.randomId() + this.services.randomId(), id = this.services.randomId();
     const domain = new QModeService(new MemoryQModeRunRepository(), seed);
     const run = domain.create({ requestId: request.requestId, runId: id, controllerAccountId: accountId, controllerSnapshot: controller, expeditionId: definition.id, tier: request.tier, contentVersion: content, balanceVersion: REGIONAL_DUNGEON_BALANCE_VERSION, nowMs: game.serverNow, profiles, npcSnapshots, preferredProfileIds });

@@ -34,6 +34,8 @@ This is the canonical status record for the current Equipment 2.0 tranche. It su
 | EQ2-C11 | **CONFIRMED** | Until every affected gate below is approved, Equipment 2.0 review code must not mint, equip, grant, modify combat, award loot/XP/gold, write production state, expose player-facing release UI, or authorize market actions. |
 | EQ2-C12 | **CONFIRMED — 24 Nov 2026** | **ALL Equipment 2.0 across T1–T5, including original Forge, expanded-set concepts, rare blueprints, crafted and boss-only equipment, weapons/offhands, item icons, collections, tooltips, loot, crafting, inventory, shops, player search and Player Market, must remain hidden/unavailable throughout 1.0.x and every pre-2.0 build.** Public equipment discovery, minting, crafting, drops, equipping, set effects and trading may be enabled only as part of the one coordinated, owner-approved Veldryn 2.0 launch after server/client/version/custody/UI gates pass. Merely recording T5 in a catalogue does **not** approve T5 for the 2.0 release. |
 
+| EQ2-C13 | **CONFIRMED DESIGN DIRECTION — 24 Nov 2026** | Use overlapping adjacent-tier random bonus-stat ranges with increasing lower and upper bounds so exceptional lower-tier rolls remain valuable. Owner accepts the proposed universal roll and diminishing-returns direction, with Critical Damage examples T1 1–3.5%, T2 2.5–5.5%, T3 3.5–6.5%. The V4 candidate table extends this principle to all eleven channels through T5; exact remaining numeric values, integrated caps and final D1–D10 runtime/release approval remain open. Original Forge copies and rules are not rewritten. |
+
 ## 2. Source facts and review evidence
 
 These facts describe what the current private branches verify. They do not approve the proposed gameplay rules.

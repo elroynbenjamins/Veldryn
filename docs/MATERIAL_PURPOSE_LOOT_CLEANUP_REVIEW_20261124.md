@@ -165,3 +165,20 @@ Added `material-retirement-grant-surface-audit-v1.sql`. On both staging and prod
 Expanded the production-shaped transaction to fail closed if any of those wider live surfaces acquires an Echo Bat Wing / ITEM_0077 reference before compensation. The disposable schema fixture now declares those surfaces and includes an unrelated Runebound Core dungeon-shop row, ensuring protected unrelated content does not trip the guard. Re-ran the expanded gift closure + transaction + postflight against staging inside an explicit rollback: reconciliation reached ready=true; after rollback the one wing gift row remained and retirement receipts/notices remained zero.
 
 Deployment-order review found that `.github/workflows/supabase-deploy.yml` applies migrations before deploying Edge Functions when migrations are enabled. Consequently an executable stock-retirement migration must **not** ship in this source-closure PR. Added CI enforcement for that rule. Production cutover must first merge/rebuild/deploy functions-only, verify the new deployed bundle, re-run live gates, and only then ship compensation in a separate migration release. No production database writes or compensation have occurred.
+
+## Production retirement completed — Echo Bat Wing
+
+Production cutover completed after explicit approval.
+
+- Source closure merged to main in PR #1721; Echo Bat retains Gold 10, Wisp Dust and Oathglass Shard.
+- Generated gameplay/co-op Edge bundles were synchronized on main and deployed directly from the verified closed blobs.
+- Production Edge versions after deploy: gameplay v73, coop v41.
+- Final production preflight immediately before mutation: 5 affected accounts, 143 carried Wings, 707 bank Wings, 850 total, 0 blocked accounts, 68,000 Gold liability; only the admin gift catalogue remained as an issuance source.
+- First live transaction attempt correctly rolled back on an unexpected saved-state reference. Investigation identified fractional `masteryMaterialRemainders.ECHO_BAT_WING` values (all below 1 item) on four active characters and one inactive character. These internal fractional carries are not owned items and received no Gold compensation.
+- Retirement transaction was updated to remove only the retired mastery remainder keys from active/inactive characters while preserving all other mastery remainders. Postflight now also requires zero non-historical saved-state references.
+- Exact production dry-run under ROLLBACK then passed: 850 Wings, 68,000 Gold, 5 receipts, 5 already-credited notices, zero wallet mismatches, zero unexpected references.
+- Production transaction then committed atomically: gift catalogue closure + stock retirement + carried/Bank Gold credits + durable receipt + claimed-history notice.
+- Final production postflight: remaining_quantity=0, open_gift_catalog_rows=0, pending_inbox_rewards=0, receipt_count=5, retired_quantity=850, credited_gold=68,000, notice_count=5, unexpected_state_references=0, claimable_notice_count=0, wallet_mismatches=0, database_reconciliation_ready=true.
+- Compensation split: 143 inventory Wings -> 11,440 carried Gold; 707 bank Wings -> 56,560 Bank Gold.
+- Final live grant-surface audit returned no Echo Bat Wing / ITEM_0077 references.
+- Historical item catalogue identity and seen-item history remain intentionally readable. Durable `material_retirement_v1` receipts prevent accidental double compensation or silent reissuance.

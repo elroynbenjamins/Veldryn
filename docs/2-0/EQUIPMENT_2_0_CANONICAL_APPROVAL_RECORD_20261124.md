@@ -116,6 +116,10 @@ V20 focused catalogue, isolated core and private integration passed; the broader
 
 V21 focused CI remains queued at readback; no new benchmark outcomes confirmed. V22 adds a private exact-input QA authority and actual current-hit engine hook for Winterbreaker (+7%, below 35% HP) and Avalanche Crushing Finish (+8%, physical below 30% HP), four source IDs / two mechanics, shared family 20s cooldown. No source custody or live authority; explicit legacy Edge denial. 120 new matched QA pairs prepared, not yet verified executed. Other 138 conditional records not supported by this adapter. Source coefficients preserved; no CP/release approval, no deployment. See `docs/2-0/EQUIPMENT_2_0_PRIVATE_CURRENT_HIT_REVIEW_V22.md`. D1–D10 remain open.
 
+## 3J. V23 one-use charge mechanics and fixture recovery
+
+V21 backend typecheck/release economy, dungeon mechanics, isolated core and catalogue passed; private GameState stopped at an underfunded second-character QA fixture and expanded combat stopped at wrong generic boss name. Both exact fixture causes corrected; no new result claims. V23 adds three phase-separated one-use charge candidates (Follow-Through, Talonstrike, Thornstrider), seven source IDs/five mechanics including V22. Post-effective-HP-loss earning, later pre-hit consumption, exact expiry, receipt and same-tick guards; conservative same-target and timing policy. 96 matched QA pairs prepared, CI unconfirmed. Remaining 135 conditional records, CP, D1–D10, Expo, mobile regression and Edge parity remain open. See `docs/2-0/EQUIPMENT_2_0_ONE_USE_CHARGE_REVIEW_V23.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

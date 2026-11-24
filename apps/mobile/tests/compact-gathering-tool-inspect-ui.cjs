@@ -19,12 +19,16 @@ const section=inventory.slice(start,inventory.indexOf("inspected.type==='tool'&&
 assert.ok(start>0,'Exact tool card must be displayed');
 const speed=section.indexOf("gt('GATHERING SPEED')");
 const bonus=section.indexOf("gt('BONUS STAT ROLL')");
-const equip=section.indexOf("gt('Equip')");
-assert.ok(speed>=0&&bonus>speed&&equip>bonus,'Tier speed must appear above the separate bonus roll and actions');
-assert.ok(section.includes("gt('To Bank')")&&section.includes("gt('Sell')"),'Tool actions must stay visible');
-assert.ok(!section.includes('Equip copy')&&!section.includes('Sell copy'),'No copy jargon on tool action buttons');
-assert.ok(section.includes('copy.id')&&section.includes('instanceId:copy.id'),'Each action must target a specific physical tool');
-assert.ok(section.includes('goalProtection.has(copy.itemId)'),'Do not sell protected target resources');
+const actionsStart=inventory.indexOf("const inspectActions=inspected?");
+const actions=inventory.slice(actionsStart,inventory.indexOf("inspected.type==='food'",actionsStart));
+assert.ok(speed>=0&&bonus>speed,'Tier speed must appear above the separate bonus roll');
+assert.ok(section.includes('equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier)')&&section.includes('tool.tier===inspectedToolDef.tier'),'Compare only the exact active copy in the same skill and tier');
+assert.ok(sheet.indexOf('{overview}')<sheet.indexOf('accessibilityState={{expanded:detailsOpen}}')&&sheet.indexOf('{actions?')>sheet.indexOf('detailsOpen&&<>'),'Tool stats then Details & sources then actions');
+assert.ok(inventory.includes('overview={toolOverview}'),'Tool overview must be passed separately from actions');
+assert.ok(actions.includes("gt('Equip')")&&actions.includes("gt('To Bank')")&&actions.includes("gt('Sell')"),'Tool actions must stay visible');
+assert.ok(!actions.includes('Equip copy')&&!actions.includes('Sell copy'),'No copy jargon on tool action buttons');
+assert.ok(actions.includes('copy.id')&&actions.includes('instanceId:copy.id'),'Each action must target a specific physical tool');
+assert.ok(actions.includes('goalProtection.has(copy.itemId)'),'Do not sell protected target resources');
 assert.ok(inventory.includes('stackInspectorActions&&s.toolActionRowStacked')&&inventory.includes('toolActionButtonStacked:{flex:0,width:'),'Large text/narrow screens need full-width touch targets');
 assert.ok(inventory.includes('hasLegacyStack&&inspectedToolDef')&&inventory.includes("gt('Tier base · No bonus roll')"),'Legacy tools retain tier speed without fabricating a roll');
 

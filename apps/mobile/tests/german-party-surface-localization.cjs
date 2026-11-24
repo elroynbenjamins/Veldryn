@@ -41,11 +41,26 @@ for(const token of [
  'contract.targetPoints.toLocaleString(language)',
 ])assert.ok(source.includes(token),'Party UI lost German guidance or localized control: '+token);
 
+// Compact quick-post delegates minimum-level/language editing to Party settings.
+ // Preserve locale-aware copy, server preferences, expiry and submission safety.
 for(const token of [
- 'locale=useGameLanguage()',
- 'partyMinimumLevelLabel(locale,prefs.minimumLevel)',
- 'onPublish({...draft,durationDays:1,roles:[],requiredRoleCounts:{}',
+ 'st=useSocialText()',
+ "st('Party language and minimum level follow your Party settings.')",
+ "st('Recruitment title')",
+ "st('Recruitment description')",
+ "st('Automatically expires after 24 hours')",
+ 'if(busy||draft.title.trim().length<3)return;',
+ 'onPublish({...draft,title:draft.title.trim(),durationDays:1,',
+ 'roles:[],requiredRoleCounts:{},flexibleRoles:true,',
+ "language:recruiting?(prefs.language==='any'?undefined:prefs.language):draft.language",
+ 'minCombatLevel:recruiting?(prefs.minimumLevel||undefined):undefined',
+ 'disabled={busy||draft.title.trim().length<3}',
 ])assert.ok(composer.includes(token),'Party recruitment editor lost localization or submission guard: '+token);
+const social=fs.readFileSync(path.join(__dirname,'../src/i18n/social.ts'),'utf8');
+const choices=fs.readFileSync(path.join(__dirname,'../src/components/RecruitmentQuickPostChoices.tsx'),'utf8');
+assert.ok(social.includes('contextLanguage=useGameLanguage()'),'Quick-post copy must follow game locale');
+for(const token of ['st=useSocialText()', "st('Main interest')","st('Expected activity')",'st(activityHint[activityLevel])'])
+ assert.ok(choices.includes(token),'Quick-post choices lost localized copy: '+token);
 for(const token of [
  'state.dailyPoints.toLocaleString(language)',
  'state.personalWeeklyPoints.toLocaleString(language)',

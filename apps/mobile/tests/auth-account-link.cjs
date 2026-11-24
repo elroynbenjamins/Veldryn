@@ -11,9 +11,10 @@ const verified=()=>({...guest(),email:'aster@example.test',is_anonymous:false,em
 const token=user=>`header.${Buffer.from(JSON.stringify({is_anonymous:Boolean(user.is_anonymous),email:user.email||''})).toString('base64url')}.signature`;
 const sessionFor=user=>({access_token:token(user),refresh_token:'test-refresh',user:copy(user)});
 function fixture(initial=guest()){
- const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googleTokenSignIns:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null};
+ const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googleTokenSignIns:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null,sessionReadFailure:null,guestSignIns:0};
  const auth={
-  getSession:async()=>({data:{session:f.session},error:null}),
+  getSession:async()=>({data:{session:f.session},error:f.sessionReadFailure}),
+  signInAnonymously:async()=>{f.guestSignIns++;f.session=sessionFor(guest());return {data:{user:f.session.user},error:null};},
   getUser:async()=>({data:{user:copy(f.server)},error:f.readFailure}),
   updateUser:async(attributes,options)=>{
    f.writes.push(copy({attributes,options}));
@@ -42,6 +43,36 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  assert.equal(link.accountLinkStep({...guest(),user_metadata:{email_verified:true}}),'guest','editable metadata cannot verify a guest');
  assert.equal(link.accountLinkStep(verified()),'linked','accounts linked by older builds stay linked');
  assert.equal(link.accountLinkStep({...verified(),user_metadata:{[flag]:'true'}}),'linked','only a boolean flag requests password setup');checks++;
+
+ // SecureStore: a missing chunk is a restore error, never a clean signed-out state.
+ const stored=new Map();
+ let failRemove=false;
+ const storage=callback.chunkedAuthStorage({
+  getItem:async key=>stored.get(key)??null,
+  setItem:async(key,value)=>{stored.set(key,value);},
+  removeItem:async key=>{if(failRemove&&key!=='session')throw Error('cleanup failed');stored.delete(key);},
+ });
+ assert.equal(await storage.getItem('session'),null);
+ await storage.setItem('session','a'.repeat(3500));
+ assert.equal(await storage.getItem('session'),'a'.repeat(3500));
+ failRemove=true;
+ await storage.setItem('session','b'.repeat(3500));
+ assert.equal(await storage.getItem('session'),'b'.repeat(3500),'post-commit cleanup failure does not invalidate the new session');
+ const manifest=JSON.parse(stored.get('session'));
+ stored.delete('session.'+manifest.generation+'.1');
+ await assert.rejects(()=>storage.getItem('session'),/Unable to restore your account/);
+ await storage.removeItem('session');
+ assert.equal(await storage.getItem('session'),null);checks++;
+
+ const guestEntry=fixture();
+ assert.equal((await guestEntry.api.signInAsGuest()).id,'guest-a');
+ assert.equal(guestEntry.guestSignIns,0,'existing guest reused');
+ guestEntry.session=null;guestEntry.sessionReadFailure=Error('storage unavailable');
+ await assert.rejects(()=>guestEntry.api.signInAsGuest(),/storage unavailable/);
+ assert.equal(guestEntry.guestSignIns,0,'a session read error must not create an account');
+ guestEntry.sessionReadFailure=null;
+ await Promise.all([guestEntry.api.signInAsGuest(),guestEntry.api.signInAsGuest()]);
+ assert.equal(guestEntry.guestSignIns,1,'concurrent explicit guest requests create at most one session');checks++;
 
  const f=fixture();
  await f.api.upgradeGuestAccount(' Aster@Example.Test ',' Aster ','guest-a');

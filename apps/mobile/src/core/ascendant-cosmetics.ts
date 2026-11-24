@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import {ASCENDANT_CELESTIAL_VISUALS_RELEASED} from './release-flags';
+import {ownsUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
 
 export const CELESTIAL_IDS={
  background:'ascendant-celestial-astral-sanctum',
@@ -21,10 +21,10 @@ export const CELESTIAL_COLLECTION={
 
 /** Ascendant cosmetics deliberately do not enter the legacy COLLECTIBLES bonus catalogue. */
 export function ownsCelestialPet(state:GameState){
- return (state.account.unlockedCosmeticPetIds??[]).includes(CELESTIAL_IDS.pet);
+ return ownsUltraLuxeProfileCosmetic(state,'pet',CELESTIAL_IDS.pet);
 }
 export function releasedCelestialPetWardrobeDefinition(state:GameState){
- if(!ASCENDANT_CELESTIAL_VISUALS_RELEASED||!ownsCelestialPet(state))return null;
+ if(!ownsCelestialPet(state))return null;
  return {id:CELESTIAL_IDS.pet,name:CELESTIAL_COLLECTION.petName,group:'Ascendant'} as const;
 }
 export function isCelestialBackground(id:string){return id===CELESTIAL_IDS.background;}

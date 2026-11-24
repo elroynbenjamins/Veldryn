@@ -32,6 +32,7 @@ This is the canonical status record for the current Equipment 2.0 tranche. It su
 | EQ2-C09 | **CONFIRMED** | Equipment counterplay should create meaningful advantages against particular enemies and bosses without making one class, companion, set, or mechanic mandatory. Multiple viable counter-build routes must remain possible. |
 | EQ2-C10 | **CONFIRMED** | Observed boss results are evidence, not approval. Equal source inputs, deterministic replay, or a targeted tactic outperforming another does not certify final CP, class balance, set balance, economy, or release readiness. |
 | EQ2-C11 | **CONFIRMED** | Until every affected gate below is approved, Equipment 2.0 review code must not mint, equip, grant, modify combat, award loot/XP/gold, write production state, expose player-facing release UI, or authorize market actions. |
+| EQ2-C12 | **CONFIRMED — 24 Nov 2026** | **ALL Equipment 2.0 across T1–T5, including original Forge, expanded-set concepts, rare blueprints, crafted and boss-only equipment, weapons/offhands, item icons, collections, tooltips, loot, crafting, inventory, shops, player search and Player Market, must remain hidden/unavailable throughout 1.0.x and every pre-2.0 build.** Public equipment discovery, minting, crafting, drops, equipping, set effects and trading may be enabled only as part of the one coordinated, owner-approved Veldryn 2.0 launch after server/client/version/custody/UI gates pass. Merely recording T5 in a catalogue does **not** approve T5 for the 2.0 release. |
 
 ## 2. Source facts and review evidence
 
@@ -122,6 +123,10 @@ These facts describe what the current private branches verify. They do not appro
 - Validate that profession-only progression and trade can access required materials without forcing combat progression, while keeping finished gear meaningfully scarce.
 
 ### H. Release and operations
+
+**Mandatory EQ2-C12 visibility gate:** all T1–T5 2.0 item families stay completely hidden from pre-2.0 players even if a hidden test, source template, icon or reward definition exists. Implementation previews in private development tools are not live app disclosure. No individual tier, blueprint, dungeon source, set or Player Market integration receives an early release exception.
+
+
 
 - Complete security/threat review, migrations, backfill/non-migration plan, observability, audit logs, admin recovery, and rollback.
 - Pass exact-head Equipment + Skills + Combat integration CI and production-like transaction tests.

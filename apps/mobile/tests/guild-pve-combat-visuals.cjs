@@ -29,7 +29,7 @@ assert.ok(fx.includes('previousDamage.current!==damage'), 'Confirmed server dama
 assert.ok(!fx.includes('setDamage(') && !fx.includes('row.damage='), 'Visual attacks must never fake or mutate boss damage');
 assert.ok(theater.includes('pending&&remaining===0') && theater.includes('if(currentRefresh.current)void currentRefresh.current()') && !theater.includes('setInterval(refresh,12000)'), 'Overdue theater attempts should refresh without high-frequency polling');
 assert.ok(board.includes('nextResolution-Date.now()') && board.includes('setInterval(refresh,12000)') && board.includes('onRefresh={()=>load(true)}'), 'Board must recover settlement even with theater closed');
-assert.ok(board.includes('const receipt=await attemptGuildPve(id,key)') && board.includes('confirmedStarts.current[id]=receipt') && board.includes('confirmedClaims.current[id]'), 'Only server-confirmed writes may update pending attempt and claim display');
+assert.ok(board.includes('const receipt=await attemptGuildPve(id,key)') && board.includes('validRaidStartReceipt(receipt)') && board.includes('confirmedStarts.current[id]=receipt') && board.includes('retryKeys.confirm(scope,id,key)') && board.includes('confirmedClaims.current[id]'), 'Only server-confirmed writes may update pending attempt and claim display');
 assert.ok(board.includes('expected===revision.current') && board.includes('reading.current'), 'Stale background reads must not overwrite confirmed writes');
 assert.ok(screen.includes('function RaidCountdown') && screen.includes('setInterval(tick,30000)'), 'Second ticks must not invalidate the whole card');
 assert.ok(app.includes("tab==='Guild'&&(guildInitialPve||guildRaidVisible)"), 'Raid Gate must hide activity bar');
@@ -60,4 +60,5 @@ assert.ok(reader.includes("membership.account_id+':'+membership.guild_id+':'+(ch
 assert.ok(guild.includes('prefetchGuildPveBoard(raidCharacterId)') && guild.includes("onlineSection!=='Home'"), 'Warm raid data only on Guild Home');
 assert.ok(board.includes('treasuryLastRead.current<60000') && board.includes('treasuryRead.current'), 'Treasury requests must be throttled and singleflight');
 assert.ok(theater.includes('arenaHeight=Math.max') && theater.includes('fontScale>=1.4') && screen.includes('frostfall_wide_v2.webp'), 'Responsive arena and seasonal asset');
+assert.ok(board.includes('queuedForce.current=true') && board.includes('if(confirmed||queuedForce.current)void load(true)'), 'Forced read must not disappear behind a mutation or existing read');
 console.log('PASS Guild PvE receipt recovery, cosmetic theater, timeline helpers and authoritative shared HP contracts');

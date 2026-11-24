@@ -7,6 +7,11 @@ import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {RESOURCE_BY_CLASS_V2} from '../resource-runtime';
 import {reviewPartyV2RunBinding,partySyncScopeFromRunBindingV2} from '../party-dungeon-persistence-review';
 import {issuePartySyncAuthorityV2,authorizePartySyncV2} from '../party-sync-authority';
+import {
+ EQUIPMENT_V2_TRAIT_ENGINE_POLICY,authorizeEquipmentV2TraitEngine,
+ issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
+ type VerifiedV2EquipmentEffectSource,
+} from '../equipment-trait-engine-authority';
 
 const ids:ClassIdV2[]=['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'];
 const actors=ids.map((classId,i):CombatantDefinition=>({
@@ -79,6 +84,22 @@ const persistedToken=issuePartySyncAuthorityV2(persistedScope,persistedInput,
   scope.persistedRun?.stateRevision===persisted.binding.stateRevision&&
   digest===persisted.binding.combatInputDigest);
 assert.equal(authorizePartySyncV2(persistedInput,persistedToken).size,4);
+const sources:VerifiedV2EquipmentEffectSource[]=ids.map((_,i)=>({
+ source:'server-persisted-equipment-v2',policy:EQUIPMENT_V2_TRAIT_ENGINE_POLICY,
+ revision:1,accountId:'ACCOUNT_'+i,characterId:'CHAR_'+i,actorId:'ACTOR_'+i,
+ ownedEquippedInstanceIds:[],equipmentReceiptDigest:'b'.repeat(63)+i,
+ basicAttackDamagePct:0,abilityDamagePct:0,reflectDamagePct:0,traits:[],
+}));
+const partyTraitToken=issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,sources,persisted.binding,
+ (binding,rows,digest)=>binding.runId==='RUN_1'&&rows.length===4&&
+  digest===persisted.binding.combatInputDigest);
+assert.equal(authorizeEquipmentV2TraitEngine(persistedInput,partyTraitToken).size,4);
+assert.throws(()=>issueEquipmentV2TraitAuthority(persistedInput,sources,()=>true),
+ /no_legacy_or_inflight_encounter/);
+assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,sources.map((row,i)=>i?row:{...row,characterId:'CHAR_1'}),
+ persisted.binding,()=>true),/party_source_binding_mismatch/);
 assert.throws(()=>issuePartySyncAuthorityV2({...persistedScope,persistedRun:undefined},
  persistedInput,()=>true),/input_mismatch/);
 assert.throws(()=>issuePartySyncAuthorityV2({...persistedScope,persistedRun:{

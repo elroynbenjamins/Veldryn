@@ -15,6 +15,7 @@ import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
 import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
 import {CLASS_NAMES_V2} from '../skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
+import {listPartySynchronizationsV2} from '../party-synchronization';
 import {
  simulateUnifiedEquipmentPersistedPartyCombatV2,
  type TrustedPersistedPartyExecutionV2,
@@ -149,7 +150,14 @@ assert.ok([...byBoss.values()].every(x=>x.cases===72));
 assert.ok(maxLinks<=6);
 assert.equal(overall.victoryLosses,0,
  'Synchronization must not turn a matched baseline victory into a loss in this fixture');
-assert.ok([...pairCounts.values()].every(n=>n>0),'every authored pair should appear in the matrix');
+const authored=listPartySynchronizationsV2();
+const dungeonEligible=authored.filter(link=>{
+ const roles=link.classes.map(c=>CLASS_ROLES_V2[c]);
+ return roles[0]!==roles[1]||roles[0]==='damage';
+});
+for(const link of dungeonEligible)
+ assert.ok((pairCounts.get(link.id)??0)>0,'dungeon-eligible pair missing: '+link.id);
+const absentPairs=authored.filter(link=>(pairCounts.get(link.id)??0)===0).map(link=>link.id);
 
 const summarize=(x:Bucket)=>({
  cases:x.cases,
@@ -169,5 +177,6 @@ console.log(JSON.stringify({
  byBoss:Object.fromEntries([...byBoss.entries()].sort(([a],[b])=>a.localeCompare(b))
   .map(([id,row])=>[id,summarize(row)])),
  pairCounts:Object.fromEntries([...pairCounts.entries()].sort(([a],[b])=>a.localeCompare(b))),
+ absentPairsInStrictDungeonRoleMatrix:absentPairs,
  caveat:'same-build relative uplift; synthetic review gear budgets are not final equal-CP certification',
 }));

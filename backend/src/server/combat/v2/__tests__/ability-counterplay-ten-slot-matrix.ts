@@ -8,6 +8,8 @@
 import {strict as assert} from 'node:assert';
 import type {CombatEvent,CombatStats,AbilityDefinition,CombatantDefinition,CombatInput} from '../../types';
 import {simulateCombat} from '../../engine';
+import {launchPlayer} from '../../content/launch-combat';
+import {reviewCandidatePowerV1,type CandidatePowerReferenceV1} from '../candidate-power-review';
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {reviewCompanionContributionV2} from '../companion-contribution-review';
 import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -30,6 +32,8 @@ const evidenceByScenario=new Map<string,string>();
 let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
 const traitSensitivity:unknown[]=[];
+const candidatePowerRows:unknown[]=[];
+const candidateReference:CandidatePowerReferenceV1={version:'QA_L25_LAUNCH_REFERENCE_V1',anchor:1000,enemyAccuracy:1600,enemyEvasion:100,accuracyScale:1400,mitigationConstant:1200,roles:{tank:launchPlayer('Ironwarden',25).stats,damage:launchPlayer('Ravager',25).stats,support:launchPlayer('Dawnkeeper',25).stats}};
 const companionSensitivity:unknown[]=[];
 const companionIds=['UNIT_001','UNIT_002','UNIT_003','UNIT_005'] as const;
 const number=(n:number)=>Math.round(n*100)/100;
@@ -154,6 +158,16 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       specializationId:spec.id,actorId};
      const off=observeRoleCalibrationV2(without.combat,identity);
      const on=observeRoleCalibrationV2(first.combat,identity);
+     const stages=first.equipmentEvidence[0].statStages;
+     const role=CLASS_ROLES_V2[classId];
+     const baselinePower=reviewCandidatePowerV1(stages.afterSkills,role,candidateReference);
+     const equippedPower=reviewCandidatePowerV1(stages.afterAffixes,role,candidateReference);
+     assert.equal(equippedPower.cpApproved,false);
+     candidatePowerRows.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,role,
+      level:boss.level,baseline:baselinePower.partialScore,equipped:equippedPower.partialScore,
+      axes:equippedPower.rows,observedSidecarOff:off.values,
+      observedSidecarOn:on.values});
+
      // QA-only counterfactuals from the same fully compiled, sidecar-OFF
      // character and verified authored enemy definitions. Never issue a
      // companion effect authority to a public runtime.
@@ -271,4 +285,11 @@ console.log('COMPANION_PASSIVE_AND_ASSIST_MARGINAL_REVIEW_NOT_CP '+JSON.stringif
  scope:'SOLO_SAME_COMPILED_ACTOR_ENEMY_AND_SEED_SIDECAR_OFF',
  testedCompanionIds:companionIds,companionLevel:10,
  rosterComplete:false,partySupportCalibration:false,cpApproved:false,releaseEnabled:false,
+}));
+
+assert.equal(candidatePowerRows.length,108);
+console.log('STATIC_ROLE_CANDIDATE_POWER_V1_NOT_FINAL_CP '+JSON.stringify({
+ cases:candidatePowerRows.length,rows:candidatePowerRows,
+ referenceVersion:candidateReference.version,scope:'SYNTHETIC_GEAR_CANDIDATE_NOT_EQUAL_CP',
+ cpApproved:false,releaseEnabled:false,
 }));

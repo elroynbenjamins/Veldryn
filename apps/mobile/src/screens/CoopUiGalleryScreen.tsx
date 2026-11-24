@@ -65,6 +65,9 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
         note:'Does not change Combat Power, queue eligibility or matchmaking priority.',
         combinedCap:'Combined stat cap',
         capLine:(label,raw,effective)=>`${label}: ${raw} → ${effective}`,
+        combinedBonuses:'Effective party bonuses',
+        showDetails:'View class links',hideDetails:'Hide class links',
+        moreBonuses:count=>`+ ${count} more bonuses`,
       }}
     />
 

@@ -1,0 +1,51 @@
+# Ascendant Collection — design record and Celestial Sovereign production brief
+2026-11-24 | Review only | No store activation, gameplay changes, entitlements, migrations or grants.
+
+## Owner direction
+Four distinct ultra-premium, very limited, account-wide collections, substantially more refined and animated than existing premium cosmetics. Include matching pet and background. Showcase composition and item positioning may differ by set. One selectable equipped pet blessing at +5%, one equipped background blessing at +3%, each from Gathering Speed, Skill XP, Combat XP. Must not be pay-to-win. Animated badge, synchronized complete-set visual sequence, exact names, edition caps, timings and geometry below are design proposals, not final launch settings.
+
+## Collection design catalog
+| Set | Border | Showcase | Background | Pet | Proposed badge | Proposed worldwide cap |
+|---|---|---|---|---|---|---|
+| Celestial Sovereign | Crown of the Cosmos | Celestial Alignment | Astral Sanctum | Aetherion, the Starborn | Sovereign of the Stars | 25 |
+| Draconic Dominion | Throne of Embers | Awakening of the Dragon | Dominion of Ash | Vharaxis, the Eternal Flame | Dragon Sovereign | 20 |
+| Abyssal Majesty | Crown of the Depths | Call of the Deep | The Forgotten Abyss | Nhal'Zuun, the Abyssborn | Monarch of the Deep | 15 |
+| Paradox Eternal | Fractured Eternity | Reality Rewritten | Beyond the Veil | Aeon, the Timeless | Beyond Existence | 10 |
+
+- Celestial: midnight blue, platinum and warm gold; top-center orrery, tiny orbiting stars, constellation traces; floating temples, eclipse and cloud layers. Stag with constellation antlers, tiny gold ornaments and stardust. Signature: eclipse/alignment, corona around perimeter, stag antlers pulse. Proposed signature every 24s. Composition: celestial crown/top-center focal point; portrait and identity left, stag elevated right, guild lower left.
+- Draconic: obsidian, crimson, molten gold; sculpted dragon heads, glowing eyes, flowing magma, scale movement; volcanic fortress, ash and distant dragons. Small obsidian dragon with molten scales and articulated wings. Signature: wings unfold behind protected content, ember wave along rails. Proposed 20s. Composition: opposing dragon heads, portrait/identity center-left, dragon low right, guild low left.
+- Abyssal: ink blue, black pearl, cyan and turquoise; living coral, moving tentacles, pearls and currents; sunken kingdom, drifting jellyfish, refraction and colossal silhouettes. Floating leviathan pet with translucent fins. Signature: distant eye opens, slow outward ripple; proposed 28s. Composition: asymmetric current, identity upper-left, pet floating mid-right, guild bottom-left.
+- Paradox: onyx, silver, violet and prismatic highlights; floating crystalline shards and reality seams, fragmented dimension with inverted waterfalls. Crystalline fox with articulated floating fragments and tails. Signature: decorative frame disassembles, background reverses, fragments reconstruct; proposed 30s. Composition: offset portal, identity left in stable island, pet right amid shards; guild bottom-left. No actual text/UI shattering.
+- All pieces independently equippable; optional full-set synchronized visual sequence only, no statistical set bonus. Proposed account-wide numbered nontradeable ownership; exact pricing, limits, resale policy, allocation and permanent edition rules await approval.
+
+## Celestial Sovereign: implementation specification candidate
+### Art exports (candidate names, not registered IDs)
+| Asset | Candidate dimensions | Contract |
+|---|---|---|
+| celestial_border.png | 768x432 RGBA | Clear transparent center; ornate but stretch-safe rails, no text, no baked portrait, no avatar frame; reference renderer segments |
+| celestial_background_wide.png | 768x432 | Deep blue temple landscape with gold eclipse, dark low-detail identity region |
+| celestial_background_square.png | 512x512 | Separately composed crop, same art direction |
+| celestial_pet_idle.png | 128x128 RGBA per frame | Readable at 58dp, floating gold star-stag, all limbs/antlers within cell; static first-frame fallback |
+| celestial_badge.png | 64x64 RGBA | Legible at existing badge sizes; compact star crown, no lettering |
+| celestial_orrery.png | 128x64 RGBA | Isolated gold rings and center sun; top ornament within mask |
+| celestial_fx.png | 256x256 RGBA atlas | Star, glint, corona arc, constellation nodes; no baked UI |
+| celestial_store_preview.png | 768x432 | Composition preview, not runtime artwork |
+
+Author detailed coherent pixel art, no gradients that break pixel style, no checkerboard baked into alpha. Candidate art must be sliced, alpha-checked, crop-tested and imported as actual assets before calling it implementation-ready. Background/FX separate from text and avatar. Existing standard has 768x432 borders and reference 340x205dp; no changes to shared legacy anchors.
+
+### Composition and animation candidate
+Reference 340x205 dp: reserve outer rails max 18dp sides / 24dp top and bottom, top corners 30x30, bottom corners 40x40. Center crown within top rail. Proposed portrait x46 y56 size62; identity x116 y59 width124, wrapping/truncating safely; badge shelf below identity; pet x236 y101 size58; guild x46 y149, width <=174; all foreground remains fixed during signatures. These are candidate placements, not validated and must adapt to long names, badges and font scale; do not force overlapping content. At narrow 260x190, large fonts, missing pet/guild, and collapsed 58dp/expanded 168dp customization, fall back to standard shared anchors until separate responsive layout passes. At 480x286 maintain safe bounds. Use profile-level opt-in layout preset independent of border ID, only on equipped owned Ascendant showcase (preview can simulate). Default and mixed-set layouts retain legacy geometry unless explicitly selected. No avatar frame.
+Layers back to front: base backdrop; clipped parallax cloud/star layer; eclipse; clipped showcase stars/constellations; protective scrim; stable portrait, name, title, level/CP, badges and guild; pet; perimeter border/orrery; interactive tools above decoration. Do not animate text, hit targets, or foreground positions.
+Idle: slow orrery rotation (12s loop), 2 cloud layers (18/24s), 4-8 bounded stars, stag breathing/antler glint (3s loop). Signature at proposed 24s, 2.4s: align rings, eclipse corona blooms, stars trace rails and antlers glow, then ease into idle phase. No flashes, no full-screen brightness jumps, no text obstruction. Deterministic shared clock for synchronized complete set; each equipped piece still has standalone idle. Pause offscreen/background, honor reduced motion/static fallback and low-performance mode; no audio or haptics. Do not play independent per-badge loops in list/chat. Test frame timing on actual Android; particle budget and timings are proposed.
+
+### Blessing contract (launch blocked pending parity)
+Selectable one per equipped slot: gathering_speed, skill_xp, combat_xp. Pet +500 basis points; background +300 basis points; no ownership-only bonus. Proposed additive same-choice maximum +800 bps across these slots, no multiple owned set stacking, no extra passive or duplicate legacy pet benefit, no direct CP/HP/damage/defense. Gathering speed = actions per hour, not reduction in duration (duration / 1.05 for +5% before other approved modifiers); Skill XP = noncombat skills, Combat XP = ordinary character combat XP, no companion XP. Scope exclusions and rounding to be confirmed. Server-authoritative equip, ownership and allowlist validation, server timestamped selection, time-segmented online/offline settlement, no retroactive bonus, character/account switch parity and replay safety. Free gameplay-earned equivalent bonuses and comparable availability/flexibility must be designed and approved before paid progression blessings activate; otherwise launch cosmetic-only or hold. Exact free path, old pet passive policy, stacking with tools/guild/VIP/event and offline modifier order require separate approval.
+
+### Integration dependency and launch gates
+Current source reviewed: PR #1720 at 2716ba170738694cbd0bee427060b89d2a455400, docs/roadmap/profile-cosmetics-refresh.md, apps/mobile/src/core/profile-frame-layout.ts, apps/mobile/src/components/profile/ProfileStage.tsx. Existing design explicitly fixes pet/guild anchors across border choices and preserves no separate avatar frame. Ascendant opt-in layout is a proposed extension, not an override; coordinate with concurrent premium work rather than editing its branch. Current standalone effect/commerce/storage not assumed implemented. Keep ordinary premium design and all existing IDs unchanged.
+1. Owner review of generated actual artwork and per-set layout; alpha/aperture/segment QA.
+2. Shared isolated animation/layout renderer behind hidden flag; own/public/customize parity, all widths/themes, long names, screen reader/reduced motion and Android profiling.
+3. Confirm pet/background equip projection, account-wide entitlement, per-character equip and server authorization; no preview grants.
+4. Resolve blessing parity, stacking, economy simulation and server-authoritative progression tests.
+5. Limited supply/commerce approval, transaction concurrency/idempotency and no duplicate ownership; pricing and edition caps unapproved.
+6. Exact-head CI, localization, native screenshots, staging and separate owner activation approval. No production writes or releases from this design record.

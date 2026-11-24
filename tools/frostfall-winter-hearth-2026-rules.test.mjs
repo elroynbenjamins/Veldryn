@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   WINTER_HEARTH_LOG_IDS, WINTER_HEARTH_GOALS, WINTER_HEARTH_LIGHT_ID,
-  WINTER_HEARTH_LIGHT_RECIPE, WINTER_HEARTH_MILESTONES,
+  WINTER_HEARTH_LIGHT_RECIPE, WINTER_HEARTH_LIGHT_RECIPES, WINTER_HEARTH_MILESTONES,
   winterHearthWeekStartUtc, winterHearthActive, winterHearthTrackForItem,
   winterHearthMilestoneStatus, winterHearthDonationQuote, winterHearthCurrentBuffs,
 } from './frostfall-winter-hearth-2026-rules.mjs';
@@ -24,10 +24,10 @@ test('accept only the six existing authored woodcutting item IDs and crafted lig
   for (const id of ['COPPER_ORE','FROSTIRON','FAKE_LOG','COPPER_INGOT','FROSTFALL_WISP_GLOW_2026'])
     assert.equal(winterHearthTrackForItem(id), null);
 });
-test('recipe is 5 lights from authentic T1 ore, two Greenwood logs, Wisp Glow', () => {
+test('both professions craft the same five lights using existing resources', () => {
   assert.equal(WINTER_HEARTH_LIGHT_RECIPE.level, 4);
   assert.equal(WINTER_HEARTH_LIGHT_RECIPE.output.quantity, 5);
-  assert.deepEqual(WINTER_HEARTH_LIGHT_RECIPE.inputs.map(row => row.quantity), [4,2,1]);
+  for(const [skill,primary] of [['smithing','COPPER_ORE'],['tailoring','MOSS_FIBER']]) { const r=WINTER_HEARTH_LIGHT_RECIPES[skill]; assert.deepEqual(r.inputs,[{itemId:primary,quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}]); assert.deepEqual(r.output,WINTER_HEARTH_LIGHT_RECIPE.output); assert.equal(r.level,4); assert.equal(r.gold,30); assert.equal(r.xp,35); }
   assert.equal(500 * WINTER_HEARTH_LIGHT_RECIPE.output.quantity, WINTER_HEARTH_GOALS.lights);
 });
 test('Monday 00:00 UTC resets account-wide weekly donation allowance', () => {

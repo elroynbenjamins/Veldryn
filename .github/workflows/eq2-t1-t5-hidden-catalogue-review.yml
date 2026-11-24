@@ -57,7 +57,7 @@ jobs:
         run: node --test tools/eq2-review/t1-t5/*.test.mjs
       - name: Refuse public-app or online-server imports of hidden source registry
         run: |
-          if git grep -n -E 'eq2-t1-t5-(unified-hidden-review-catalogue-v1|canonical-membership-reconciliation-v2)\.json|eq2-t4-replacement-recipe-review-v2\.json|eq2-universal-affix-cap-review-v3\.json|universal-affix-cap-review-v3\.mjs|eq2-universal-affix-overlap-review-v4\.json|universal-affix-overlap-review-v4\.mjs|eq2-equipment-power-review-v5\.json|equipment-power-review-v5\.mjs|set-combination-review-v5\.mjs|hand-budget-review-v6\.mjs|eq2-innate-and-set-budget-review-v7\.json|eq2-consolidated-review-index-v8\.json|hand-economy-review-v8\.mjs|component-economy-review-v9\.mjs' -- apps/mobile/src backend/src; then
+          if git grep -n -E 'eq2-t1-t5-(unified-hidden-review-catalogue-v1|canonical-membership-reconciliation-v2)\.json|eq2-t4-replacement-recipe-review-v2\.json|eq2-universal-affix-cap-review-v3\.json|universal-affix-cap-review-v3\.mjs|eq2-universal-affix-overlap-review-v4\.json|universal-affix-overlap-review-v4\.mjs|eq2-equipment-power-review-v5\.json|equipment-power-review-v5\.mjs|set-combination-review-v5\.mjs|hand-budget-review-v6\.mjs|eq2-innate-and-set-budget-review-v7\.json|eq2-consolidated-review-index-v8\.json|hand-economy-review-v8\.mjs|component-economy-review-v9\.mjs|economy-simulation-review-v10\.mjs' -- apps/mobile/src backend/src; then
             echo 'Hidden Equipment 2.0 registry leaked into player-facing source' >&2
             exit 1
           fi

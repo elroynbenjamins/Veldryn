@@ -7,8 +7,9 @@ import {cookingRecipeXpPreview} from '../src/core/cooking-xp-preview';
 import {totalXpAtLevel} from '../src/core/progression';
 import {craftingDetailText} from '../src/i18n/crafting-details';
 import type {Language} from '../src/i18n/languages';
-import {startProcessingBatch,processingRecipeDef,previewProcessingReward} from '../src/core/processing';
+import {startProcessingBatch,processingRecipeDef,previewProcessingReward,normalizeProcessingBatch} from '../src/core/processing';
 import {mealBonusDef} from '../src/core/meal-buffs';
+import {masteryPointsForRank} from '../src/core/profession-mastery-v40';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -18,6 +19,7 @@ const boostedMeals=cooking.filter(recipe=>!!mealBonusDef(recipe.output.itemId));
 equal(boostedMeals.length,6,'all six bonus meals have a Cooking recipe');
 const expectedCosts:Record<string,number[]>={COOK_IRONWOOD_STEW:[6,3,3],COOK_SUNSCAR_SPICED_PLATTER:[12,4,3],COOK_GLASSFIN_FEAST:[9,3,3],COOK_ICEFISH:[9,3,3],COOK_ASHLANDS_EMBER_STEW:[6,3,3],COOK_EMBERFIN:[9,3,3]};
 for(const recipe of boostedMeals)equal(JSON.stringify(recipe.inputs.map(input=>input.quantity)),JSON.stringify(expectedCosts[recipe.id]),recipe.id+' uses increased meal materials');
+for(const recipe of boostedMeals)equal(recipe.output.quantity,1,recipe.id+' one portion per batch');
 ok(cooking.length>=5,'Cooking browser should include multiple dish recipes');
 const now=Date.UTC(2026,10,19,12);
 let tested=0;
@@ -38,6 +40,13 @@ for(const recipe of cooking.filter(recipe=>!!processingRecipeDef(recipe.id)).sli
  ok(!!reserved,'Cooking recipe '+recipe.id+' should reserve one processing batch');
  equal(Math.floor((reserved?.xpPerBatch??0)+1e-9),displayedXp,recipe.id+' shown XP should use the same effective pace as the gameplay batch');
  const earned=previewProcessingReward(startProcessingBatch(state,recipe.id,1,now),reserved!.cycleSeconds).xp;
+ if(mealBonusDef(recipe.output.itemId)){
+  const mastered:GameState={...state,account:{...state.account,professionMasteryByAction:{...state.account.professionMasteryByAction,[recipe.id]:{actionId:recipe.id,points:masteryPointsForRank(50),updatedAtMs:now}}},inventory:{...state.inventory,stacks:recipe.inputs.map(input=>({...input,quantity:input.quantity*25}))},rewardRemainders:{...state.rewardRemainders,[`mastery:processing:${recipe.id}:yield`]:.99}};
+  const run=startProcessingBatch(mastered,recipe.id,25,now);
+  const p=run.activity!.processing!;
+  equal(normalizeProcessingBatch(p,recipe.id).fixedMealOutput,true,recipe.id+' fixed output survives normalization');
+  equal(previewProcessingReward(run,p.cycleSeconds*25).items.find(item=>item.itemId===recipe.output.itemId)?.quantity,25,recipe.id+' max mastery and existing yield remainder cannot exceed one portion per completed batch');
+ }
  equal(earned,displayedXp,recipe.id+' displayed Cooking XP must equal the actual one-batch XP settlement');
  // An already-reserved cooking run keeps its earlier XP rate even if the
  // current recipe projection would change after a progression update.

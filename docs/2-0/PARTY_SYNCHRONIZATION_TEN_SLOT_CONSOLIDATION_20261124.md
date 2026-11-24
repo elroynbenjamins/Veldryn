@@ -20,13 +20,31 @@ Hidden review-only child of Class Synchronization PR #1726. This branch copies t
 Each synchronized run is compared with the exact same unsynchronized compiled party. The matrix requires deterministic replay, immutable original input/gear/build snapshots, identical Equipment compiler evidence, identical compiled personal stat snapshots, finite outcomes, and a broad 0.90–1.50 integration-only damage-ratio safety envelope. It records per-boss damage/survival changes rather than claiming approved balance.
 
 ## Explicit limitations
-The ten-slot fixture remains synthetic review data. Signed Equipment 2.0 traits are intentionally not supplied to a four-player encounter because the existing trait authority remains persisted-solo-only. Persisted authored Enemy/Boss 2.0 kit authority also remains solo-only, so this matrix uses the shared private Enemy bridge for the six boss identities rather than claiming signed authored party-boss custody.
+The ten-slot fixture remains synthetic review data. The initial 432-case matrix still intentionally omits signed party traits and persisted authored boss custody so it can isolate Skills + ten-slot Equipment + Synchronization behavior. A later hidden persisted-party rehearsal on this same branch now adds both under a stricter shared run binding:
+- committed ready-check `partyId` / `rosterRevision`
+- all four frozen loadout `snapshotHash` values
+- run / node / encounter / state revisions
+- exact compiled combat input digest
+- four exact-copy Equipment trait sources
+- party-mode Enemy/Boss kit receipt
+- the same Synchronization roster
+- optional carried HP/cooldown state bound into the digest
 
-This is therefore the first genuine Skills + ten-slot Equipment + Party Synchronization compiler integration, but it is still NOT equal-CP final tuning and does not authorize a release.
+The original solo/fresh trait issuer and solo Enemy issuer remain unchanged and continue to reject carried party state. Separate persisted-party issuers require the reviewed run binding; a solo-mode Enemy kit is rejected on the party path. The hidden wrapper can therefore execute ten-slot party traits + Synchronization + authored regional boss mechanics together without making those capabilities public or live.
+
+This is now a genuine Skills + ten-slot Equipment + Party Synchronization + persisted authored boss integration rehearsal, but it is still NOT equal-CP final tuning and does not authorize a release.
 
 ## Next gates
 1. Exact-head consolidated CI must pass.
-2. Add authenticated persisted party/dungeon encounter roster and enemy-kit authority rather than QA callbacks.
-3. Extend exact-copy Equipment trait authority to persisted party encounters without weakening its current solo provenance rules.
-4. Repeat the 36 × 6 party matrix with signed party gear traits, authored persisted boss kits and matched CP/loadout budgets.
+2. Replace the current QA persistence callbacks with a real service-authenticated persisted party/dungeon run-binding store and atomic readback.
+3. Persist party-mode Enemy/Boss kit receipts and exact-copy party Equipment trait receipts through that same transaction/revision boundary.
+4. Repeat the full 36 × 6 matrix with the persisted-party wrapper, signed traits, authored boss kits and matched CP/loadout budgets rather than only the single end-to-end rehearsal fixture.
 5. Tune Synchronization percentages only after that evidence; keep no-level/no-XP/random-party parity and no personal CP rules.
+
+
+## Persisted-party authority follow-up
+The branch now contains a review-only `PartyV2RunBindingReview` that bridges existing co-op committed ready checks and frozen loadout snapshots to Combat 2.0 without changing the current live run schema. It records run/node IDs, encounter/state revision, party/ready-check/roster revision, content/balance version, four actor/account/character/loadout identities, frozen snapshot hashes and the full finalized combat digest.
+
+A derived persisted Synchronization scope may accept carried HP/cooldowns only when that run provenance exists. Separate persisted-party Equipment trait and Enemy engine issuers bind their sources to the exact same final digest. The original fresh/solo issuers still reject carried state. The party Enemy kit composer/verification API is explicitly `mode:'party'`; it does not reuse or relabel a solo receipt.
+
+The end-to-end persisted party test currently exercises 40 equipped copies, 12 set thresholds, 36 ordinary affix sources, four exact-copy trait sources, active class Synchronizations, carried-state binding, and an authored Sunscar boss kit in one deterministic hidden encounter. All public route/release flags remain off and live Edge bundle fences explicitly reject the new authority symbols.

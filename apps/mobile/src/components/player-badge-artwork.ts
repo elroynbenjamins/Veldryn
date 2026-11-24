@@ -8,7 +8,7 @@ import type {PlayerBadgeId} from '../core/player-badges';
  *
  * Keep static require paths so the artwork is available offline.
  */
-export const PLAYER_BADGE_ARTWORK:Partial<Record<PlayerBadgeId,ImageSourcePropType>>={
+export const PLAYER_BADGE_ARTWORK:Record<Exclude<PlayerBadgeId,`ascendant_${string}`>,ImageSourcePropType>&Partial<Record<Extract<PlayerBadgeId,`ascendant_${string}`>,ImageSourcePropType>>={
  admin:require('../../assets/player-badges-v1/admin.webp'),
  moderator:require('../../assets/player-badges-v1/moderator.webp'),
  supporter:require('../../assets/player-badges-v1/supporter.webp'),

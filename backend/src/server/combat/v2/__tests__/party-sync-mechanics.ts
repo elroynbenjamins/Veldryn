@@ -44,6 +44,44 @@ assert.equal(resourceBase.events.filter(e=>e.detail==='party_sync_bonus').length
 assert.ok(resourceSync.events.filter(e=>e.detail==='party_sync_bonus').length>=1);
 assert.deepEqual(resourceSync,simulateCombat(resourceInput,undefined,undefined,resourceToken));
 
+// A bonus due on the tenth eligible gain must be discarded when the
+// ordinary gain already filled the fifth stack. It cannot fire after a spend.
+const cappedSpender:AbilityDefinition={...spender,id:'QA_CAPPED_SPEND',cooldownMs:1000};
+const cappedShield:AbilityDefinition={...spender,id:'QA_CAPPED_SHIELD',priority:50,combatV2:undefined};
+const capInput:CombatInput={seed:'SYNC_RESOURCE_CAP',players:[
+ actor('DAWNKEEPER',0),actor('STONECALLER',1,[cappedSpender,cappedShield])],
+ enemies:[foe()],maxDurationMs:2100,tickMs:100};
+const capBase=simulateCombat(capInput);
+const capSync=simulateCombat(capInput,undefined,undefined,tokenFor(capInput,resourceClasses));
+assert.ok(capBase.events.filter(e=>e.type==='resource_gain'&&e.actorId===capInput.players[1].id).length>=10);
+assert.equal(capSync.events.filter(e=>e.detail==='party_sync_bonus').length,0);
+assert.ok((capSync.players[1].combatV2?.procCounters.party_sync_resource_credit_bps??0)<10000);
+assert.deepEqual(capSync.events.filter(e=>e.type==='resource_spend'),capBase.events.filter(e=>e.type==='resource_spend'));
+
+// A derived Renewal HoT snapshots actual healing; it receives the boost
+// from the original heal once, rather than again on each periodic tick.
+const heal:AbilityDefinition={id:'QA_RENEWAL_HEAL',name:'QA Renewal heal',cooldownMs:99999,
+ castTimeMs:0,target:'self',priority:100,aiCondition:'ally_below_80',
+ effects:[{kind:'heal',coeff:1}]};
+const wound:AbilityDefinition={id:'QA_WOUND',name:'QA Wound',cooldownMs:99999,castTimeMs:0,
+ target:'all_enemies',priority:100,effects:[{kind:'damage',flat:40000,damageType:'true'}]};
+const healer={...actor('DAWNKEEPER',0,[heal]),effectGems:[
+ {familyId:'effect_renewal',copies:1,resonance:1 as const,totalValue:.20},
+]};
+const renewalInput:CombatInput={seed:'SYNC_RENEWAL_ONCE',players:[
+ healer,actor('STONECALLER',1)],enemies:[foe([wound])],maxDurationMs:2500,tickMs:100};
+const renewalBase=simulateCombat(renewalInput);
+const renewalSync=simulateCombat(renewalInput,undefined,undefined,tokenFor(renewalInput,resourceClasses));
+const healed=(r:CombatResult,type:'heal'|'hot_tick',abilityId:string)=>
+ r.events.find(e=>e.type===type&&e.abilityId===abilityId)?.amount??0;
+assert.ok(healed(renewalBase,'heal','QA_RENEWAL_HEAL')>0);
+assert.ok(healed(renewalBase,'hot_tick','GEM_RENEWAL')>0);
+assert.ok(Math.abs(healed(renewalSync,'heal','QA_RENEWAL_HEAL')/
+ healed(renewalBase,'heal','QA_RENEWAL_HEAL')-1.05)<.001);
+assert.ok(Math.abs(healed(renewalSync,'hot_tick','GEM_RENEWAL')/
+ healed(renewalBase,'hot_tick','GEM_RENEWAL')-1.05)<.001,
+ 'derived healing must inherit the original multiplier exactly once');
+
 // Harmful-effect resistance reduces potency, not duration. This avoids a 5%
 // duration change accidentally deleting a whole 1-second DoT tick.
 const pressure:AbilityDefinition={id:'QA_HARM',name:'QA Harm',cooldownMs:99999,castTimeMs:0,

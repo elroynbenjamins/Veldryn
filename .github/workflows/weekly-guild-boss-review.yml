@@ -5,6 +5,8 @@ on:
       - 'backend/src/server/combat/weekly-guild-boss-review.ts'
       - 'backend/src/server/combat/weekly-guild-raid-transaction-review.ts'
       - 'backend/src/server/combat/weekly-guild-survival-review.ts'
+      - 'backend/src/server/combat/weekly-guild-skills-review.ts'
+      - 'backend/src/server/combat/weekly-guild-command-review.ts'
       - 'apps/mobile/src/core/weekly-guild-raid-replay-review.ts'
       - 'apps/mobile/tests/weekly-guild-boss-review.ts'
       - 'apps/mobile/tsconfig.weekly-guild-boss-review.json'

@@ -5,10 +5,11 @@
  */
 import {createHash,createHmac} from 'node:crypto';
 import type {CombatantDefinition} from './types';
+import {freezeWeeklyGuildSkills,applyWeeklyGuildSkills,type WeeklyGuildSkillProjection} from './weekly-guild-skills-review';
 import {previewWeeklyGuildCombat,reviewWeeklyContribution,weeklyGuildBossProfile,WEEKLY_GUILD_ATTEMPT_MS,type WeeklyGuildBoss,type WeeklyGuildReference} from './weekly-guild-boss-review';
 
 export const WEEKLY_RAID_TRANSACTION_RELEASED=false as const;
-const VERSION='weekly-shared-review-v1';
+const VERSION='weekly-shared-review-v2';
 const WEEK=7*24*60*60*1000,MONDAY=Date.UTC(2026,10,2);
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const key=(s:string)=>typeof s==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(s);
@@ -18,7 +19,7 @@ export interface WeeklyReviewEncounter{
  maxHp:number;reference:WeeklyGuildReference;roster:string[];
 }
 export interface WeeklyReviewPrincipal{accountId:string;guildId:string}
-export interface WeeklyReviewActor{accountId:string;characterId:string;revision:number;player:CombatantDefinition}
+export interface WeeklyReviewActor{accountId:string;characterId:string;revision:number;player:CombatantDefinition;guildSkills?:WeeklyGuildSkillProjection}
 export interface WeeklyReviewAuthority{
  // Injected test trust boundary, not an authenticated production principal.
  currentMember(principal:WeeklyReviewPrincipal):boolean;
@@ -27,7 +28,7 @@ export interface WeeklyReviewAuthority{
 interface Receipt{
  version:string;accountId:string;characterId:string;actorRevision:number;nonce:string;
  attemptNumber:number;startedMs:number;resolvesMs:number;actorDigest:string;encounterDigest:string;
- seed:string;replay:ReturnType<typeof previewWeeklyGuildCombat>;
+ guildSkills:ReturnType<typeof freezeWeeklyGuildSkills>;seed:string;replay:ReturnType<typeof previewWeeklyGuildCombat>;
  settledMs?:number;sharedHpCredit?:number;performanceScore?:number;
 }
 export class WeeklyRaidReviewStore{
@@ -79,8 +80,10 @@ export class WeeklyRaidReviewStore{
    const attemptNumber=owned.length+1;
    // Nonce is deliberately excluded from seed, to avoid nonce reroll fishing.
    const seed=createHmac('sha256',this.seedKey).update(JSON.stringify([VERSION,this.encounterDigest,p.accountId,attemptNumber])).digest('hex');
-   const replay=previewWeeklyGuildCombat({boss:this.encounter.boss,reference:this.encounter.reference,player:actor.player,seed,tuning:'candidate'});
-   const row:Receipt={version:VERSION,accountId:p.accountId,characterId:cmd.characterId,nonce:cmd.nonce,actorRevision:actor.revision,actorDigest:digest(actor),encounterDigest:this.encounterDigest,attemptNumber,startedMs:now,resolvesMs:now+WEEKLY_GUILD_ATTEMPT_MS,seed,replay};
+   const guildSkills=freezeWeeklyGuildSkills(this.encounter.guildId,actor.guildSkills);
+   const prepared=applyWeeklyGuildSkills(actor.player,guildSkills);
+   const replay=previewWeeklyGuildCombat({boss:this.encounter.boss,reference:this.encounter.reference,player:prepared,seed,tuning:'candidate'});
+   const row:Receipt={version:VERSION,accountId:p.accountId,characterId:cmd.characterId,nonce:cmd.nonce,actorRevision:actor.revision,actorDigest:digest(actor),encounterDigest:this.encounterDigest,attemptNumber,startedMs:now,resolvesMs:now+WEEKLY_GUILD_ATTEMPT_MS,guildSkills,seed,replay};
    this.attempts.push(row);this.revision++;
    return this.view(row);
   });

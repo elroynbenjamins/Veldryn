@@ -200,3 +200,89 @@ const cue=replaySource.events.find(e=>e.atMs>0&&['damage','cast_start'].includes
 assert.ok(weeklyRaidReplayFrame(replaySource,cue.atMs,Math.max(0,cue.atMs-100),false).effects.some(e=>e===cue));
 expectReject(()=>weeklyRaidReplayFrame({...replaySource,events:[{type:'damage',atMs:10},{type:'damage',atMs:5}]},1000,0,false),'invalid_raid_replay_order');
 console.log('PASS 360 survival trade-off scenarios and settled-only replay seek contracts');
+
+import {freezeWeeklyGuildSkills,applyWeeklyGuildSkills} from '../../../backend/src/server/combat/weekly-guild-skills-review';
+import {weeklyGuildReviewCommand,WEEKLY_GUILD_COMMAND_RELEASED} from '../../../backend/src/server/combat/weekly-guild-command-review';
+const maxProjection={schemaVersion:1,guildId:'guild_review',guildBossDamageBps:600,guildDefenceBps:600,guildSupportBps:600};
+const bonuses=freezeWeeklyGuildSkills('guild_review',maxProjection);
+assert.deepEqual(bonuses,{damageBps:600,defenceBps:600,supportBps:600});
+assert.deepEqual(freezeWeeklyGuildSkills('other',maxProjection),{damageBps:0,defenceBps:0,supportBps:0});
+assert.deepEqual(freezeWeeklyGuildSkills('guild_review',{...maxProjection,schemaVersion:2}),{damageBps:0,defenceBps:0,supportBps:0});
+assert.deepEqual(freezeWeeklyGuildSkills('guild_review',{...maxProjection,guildBossDamageBps:99999,guildDefenceBps:-1,guildSupportBps:NaN}),{damageBps:600,defenceBps:0,supportBps:0});
+const assisted=cohorts[1].actors.find(a=>a.variant==='UNIT_001')!.player;
+const original=JSON.stringify(assisted),buffed=applyWeeklyGuildSkills(assisted,bonuses);
+assert.equal(JSON.stringify(assisted),original);
+assert.equal(buffed.stats.attackPower,assisted.stats.attackPower*1.06);
+assert.equal(buffed.stats.defense,assisted.stats.defense*1.06);
+for(const a of assisted.abilities){
+ const b=buffed.abilities.find(x=>x.id===a.id)!;
+ if(!a.tags?.includes('combat_companion'))assert.deepEqual(b,a);
+ else for(let i=0;i<a.effects.length;i++){
+  if(a.effects[i].kind==='damage'&&a.effects[i].coeff!==undefined)assert.equal(b.effects[i].coeff,a.effects[i].coeff!*1.06);
+ }
+}
+expectReject(()=>applyWeeklyGuildSkills(buffed,bonuses),'already_applied');
+let skillProjection=maxProjection;
+const frozenSkillRaid=new WeeklyRaidReviewStore(encounter,{...authority,loadActor:(p,characterId)=>({...authority.loadActor(p,characterId),guildSkills:skillProjection})},'private-synthetic-test-seed-key-0000002');
+const skillStart=frozenSkillRaid.start(principal(0),cmd,week+1);
+skillProjection={...maxProjection,guildSupportBps:0};
+assert.deepEqual(frozenSkillRaid.start(principal(0),cmd,week+2).guildSkills,bonuses);
+frozenSkillRaid.settleDue(skillStart.resolvesMs);
+assert.deepEqual(frozenSkillRaid.read(principal(0),cmd.nonce)!.guildSkills,bonuses);
+let skillRuns=0;
+for(const cohort of cohorts)for(const boss of WEEKLY_GUILD_BOSSES){
+ const pair=cohort.actors.map(a=>{
+  const seed='WG_skill_'+a.player.classId;
+  const baseline=previewWeeklyGuildCombat({boss,reference:cohort.reference,player:a.player,seed});
+  const candidate=previewWeeklyGuildCombat({boss,reference:cohort.reference,player:applyWeeklyGuildSkills(a.player,bonuses),seed});
+  return {baseline,candidate,variant:a.variant};
+ });
+ skillRuns+=pair.length*2;
+ console.log('WEEKLY_GUILD_SKILLS '+JSON.stringify({tier:cohort.tier,boss,runs:pair.length,meanBaseHp:mean(pair.map(p=>p.baseline.actualBossHpRemoved)),meanBuffedHp:mean(pair.map(p=>p.candidate.actualBossHpRemoved)),meanBaseDuration:mean(pair.map(p=>p.baseline.durationMs)),meanBuffedDuration:mean(pair.map(p=>p.candidate.durationMs))}));
+}
+assert.equal(skillRuns,1080);
+// Canonical disruptor and cleanser companions, not synthetic extra abilities.
+let counterRuns=0,totalInterrupts=0,totalCleanses=0;
+for(const cohort of cohorts){
+ const def=tiers.find(x=>x.tier===cohort.tier)!;
+ for(const cls of CLASSES){
+  for(const variant of ['UNIT_005','UNIT_008'] as const){
+   const state=regionalCombatFixture(def,'prepared',cls.id);
+   state.character={...state.character!,id:'WG_COUNTER_'+def.tier+'_'+cls.id,equippedCombatCompanionId:variant};
+   state.account={...state.account,unlockedCombatCompanionIds:[variant],combatCompanionProgress:{[variant]:{level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false}}};
+   verifyPartyEventEquippedCopyOwnershipV4(state);
+   const loadout=deriveOnlineCoopLoadout('WG_COUNTER_'+cls.id,state,1);
+   const actor=combatantFromVerifiedSnapshot({...loadout.stats,role:deriveRole(cls.id),level:loadout.combatScalingLevel??loadout.characterLevel},loadout.abilities);
+   for(const boss of WEEKLY_GUILD_BOSSES){
+    const seed='WG_counter_'+cls.id;
+    const result=previewWeeklyGuildCombat({boss,reference:cohort.reference,player:actor,seed});
+    const bare=cohort.actors.find(a=>a.variant==='none'&&a.player.classId===cls.id)!.player;
+    const baseline=previewWeeklyGuildCombat({boss,reference:cohort.reference,player:{...bare,id:actor.id},seed});
+    counterRuns+=2;totalInterrupts+=result.companionInterrupts;totalCleanses+=result.companionCleanses;
+    console.log('WEEKLY_GUILD_COUNTER '+JSON.stringify({tier:cohort.tier,boss,classId:cls.id,variant,baseHp:baseline.actualBossHpRemoved,assistedHp:result.actualBossHpRemoved,baseDuration:baseline.durationMs,assistedDuration:result.durationMs,interrupts:result.companionInterrupts,cleanses:result.companionCleanses}));
+   }
+  }
+ }
+}
+assert.equal(counterRuns,540);
+console.log('WEEKLY_GUILD_COUNTER_TOTAL '+JSON.stringify({totalInterrupts,totalCleanses,counterRuns}));
+assert.equal(WEEKLY_GUILD_COMMAND_RELEASED,false);
+async function commandChecks(){
+ const privateRaid=make();
+ const services={authenticate:async(token:string)=>token==='valid'?'account_0':null,resolveGuild:async()=>encounter.guildId,resolveStore:async()=>privateRaid,now:()=>week+1};
+ const request={action:'start',encounterId:encounter.id,characterId:'hero_a',nonce:'nonce_auth'};
+ const reject=async(fn:()=>Promise<unknown>,needle:string)=>{let error=false;try{await fn()}catch(e){error=String(e).includes(needle)}assert.ok(error,needle)};
+ await reject(()=>weeklyGuildReviewCommand(services,undefined,request),'auth_required');
+ await reject(()=>weeklyGuildReviewCommand(services,'Bearer invalid',request),'invalid_session');
+ await reject(()=>weeklyGuildReviewCommand(services,'Bearer valid',{...request,accountId:'account_1'}),'invalid_weekly_review_command');
+ await reject(()=>weeklyGuildReviewCommand(services,'Bearer valid',{...request,now:week+100}),'invalid_weekly_review_command');
+ await reject(()=>weeklyGuildReviewCommand(services,'Bearer valid',{...request,damage:9999}),'invalid_weekly_review_command');
+ await reject(()=>weeklyGuildReviewCommand(services,'Bearer valid',{...request,encounterId:'wrong'}),'encounter_unavailable');
+ assert.equal(privateRaid.snapshot().reservedAttempts,0);
+ const started=await weeklyGuildReviewCommand(services,'Bearer valid',request);
+ assert.ok(started!==null&&started.accountId==='account_0'&&started.replay===null);
+ assert.deepEqual(await weeklyGuildReviewCommand(services,'Bearer valid',request),started);
+ assert.deepEqual(await weeklyGuildReviewCommand(services,'Bearer valid',{action:'read',encounterId:encounter.id,nonce:request.nonce}),started);
+ console.log('PASS private bearer-auth command contract, trusted clock, ownership and rejected extra fields');
+}
+void commandChecks().catch(error=>{console.error(error);process.exitCode=1});

@@ -1,4 +1,5 @@
-import type {GameState,ItemStack,InventoryState} from '../../../../apps/mobile/src/core/types';
+import type {V2PrivateGameState as GameState} from './equipment-crafting-v2-private-game-state-type';
+import type {ItemStack,InventoryState} from '../../../../apps/mobile/src/core/types';
 import type {
  V2GemSocketKind,V2GemInstalled,V2GemCopySockets,V2GemReceipt,V2GemSidecarState,
 } from './equipment-crafting-v2-gem-sidecar-types';

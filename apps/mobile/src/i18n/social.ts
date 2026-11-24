@@ -7,6 +7,10 @@ import {socialEarlyText} from './social-early-coverage';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+  "Guild Bank": ["Gildenbank","Banco del gremio","Gildebank","Banca di gilda","Banque de guilde"],
+  "Guild XP": ["Gilden-EP","EXP del gremio","Gilde-XP","PE di gilda","XP de guilde"],
+  "Materials": ["Materialien","Materiales","Materialen","Materiali","Matériaux"],
+  "Minimize battle": ["Kampf minimieren","Minimizar combate","Gevecht minimaliseren","Riduci battaglia","Réduire le combat"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Gruppenname","Nombre del grupo","Partynaam","Nome del gruppo","Nom du groupe"],
   "Choose Party name": ["Gruppennamen wählen","Elegir nombre del grupo","Partynaam kiezen","Scegli il nome del gruppo","Choisir un nom de groupe"],

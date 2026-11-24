@@ -1,0 +1,39 @@
+name: Combat 2.0 Forge crosswalk audit (hidden review only)
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2/equipment-forge-crosswalk-review.ts'
+      - 'backend/src/server/combat/v2/equipment-set-catalogue-reconciliation-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-set-catalogue-reconciliation-review.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-forge-crosswalk-review.ts'
+      - '.github/workflows/combat-v2-forge-crosswalk-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit-no-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Strict Combat backend TypeScript
+        run: pnpm --dir backend build
+      - name: Forge 12-to-13 stat and slot compatibility audit
+        run: node backend/dist/server/combat/v2/__tests__/equipment-forge-crosswalk-review.js
+      - name: Reconcile 60 Combat set concepts against 15 actual Forge sets
+        run: node backend/dist/server/combat/v2/__tests__/equipment-set-catalogue-reconciliation-review.js
+      - name: Legacy Combat unaffected and crosswalk not public
+        run: |
+          node backend/dist/server/combat/__tests__/combat-smoke.js
+          if grep -R -E 'auditUntrustedForgeRollCrosswalkV2|findForgeCombatSlotConflictsV2|FORGE_DRAFT_ROLE_ROLLS_V2|auditForgeAndCombatSetsV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+            echo 'Review-only Forge crosswalk leaked into public handler'; exit 1
+          fi

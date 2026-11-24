@@ -44,6 +44,8 @@ export interface PartySyncCandidatePreviewV2{
  readonly informationalOnly:true;
  readonly canGateEntry:false;
  readonly canFilterRecruitment:false;
+ readonly visibleOnRecruitmentBoard:false;
+ readonly canRankCandidates:false;
  readonly queueEligibilityIndependentOfSynchronization:true;
  readonly personalCpDelta:0;
  readonly beforeActiveCount:number;
@@ -91,7 +93,8 @@ export function previewPartySynchronizationCandidateV2(
  const beforeIds=new Set(before.links.map(link=>link.id));
  return {
   releaseEnabled:false,informationalOnly:true,canGateEntry:false,
-  canFilterRecruitment:false,queueEligibilityIndependentOfSynchronization:true,
+  canFilterRecruitment:false,visibleOnRecruitmentBoard:false,canRankCandidates:false,
+  queueEligibilityIndependentOfSynchronization:true,
   personalCpDelta:0,beforeActiveCount:before.activeCount,
   afterActiveCount:resulting.activeCount,beforeScalePercent:before.scalePercent,
   afterScalePercent:resulting.scalePercent,
@@ -101,11 +104,13 @@ export function previewPartySynchronizationCandidateV2(
  };
 }
 
-/** Static catalogue for the client info sheet. This is not a recruitment index. */
+/** Static catalogue for a general info sheet. It must not be attached to
+ * candidate cards, recruitment sorting, LFG filters or queue priority. */
 export function projectPartySynchronizationCatalogueV2(){
  return listPartySynchronizationsV2().map(link=>({
   id:link.id,name:link.name,nameKey:nameKey(link.id),classes:[...link.classes],
   baseBonuses:link.bonuses.map(([stat,bps])=>({stat,statKey:statKey(stat),bps})),
-  canFilterRecruitment:false as const,requiresProgression:false as const,
+  canFilterRecruitment:false as const,visibleOnRecruitmentBoard:false as const,
+  canRankCandidates:false as const,requiresProgression:false as const,
  }));
 }

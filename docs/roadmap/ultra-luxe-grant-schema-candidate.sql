@@ -34,6 +34,14 @@ $$;
 revoke all on function public.ultra_luxe_grants_server_v1(uuid) from public,anon,authenticated;
 grant execute on function public.ultra_luxe_grants_server_v1(uuid) to service_role;
 
+-- Narrow account existence check; no broad auth.users read grant.
+create function private.ultra_luxe_account_exists_v1(p_account_id uuid)
+returns boolean language sql stable security definer set search_path='' as $exists$
+ select exists(select 1 from auth.users where id=p_account_id)
+$exists$;
+revoke all on function private.ultra_luxe_account_exists_v1(uuid) from public,anon,authenticated;
+grant execute on function private.ultra_luxe_account_exists_v1(uuid) to service_role;
+
 create function public.set_ultra_luxe_grant_server_v1(p_account_id uuid,p_collection_id text,p_granted boolean,p_reason text)
 returns jsonb language plpgsql security invoker set search_path='' as $$
 declare changed integer;
@@ -42,9 +50,9 @@ begin
   raise exception 'INVALID_ULTRA_LUXE_GRANT';
  end if;
  -- The account must exist even for a no-op revoke.
- if not exists(select 1 from auth.users where id=p_account_id) then raise exception 'ACCOUNT_NOT_FOUND';end if;
- -- Serialize grant/revoke operations for the same pair, including an absent row.
- perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_account_id::text||':'||p_collection_id,0));
+ if not private.ultra_luxe_account_exists_v1(p_account_id) then raise exception 'ACCOUNT_NOT_FOUND';end if;
+ -- Serialize grants and gameplay commits for the same account.
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ultra-luxe-account:'||p_account_id::text,0));
  if p_granted then
   insert into private.ultra_luxe_collection_grants_v1(account_id,collection_id)
   values(p_account_id,p_collection_id)
@@ -63,6 +71,102 @@ begin
 end $$;
 revoke all on function public.set_ultra_luxe_grant_server_v1(uuid,text,boolean,text) from public,anon,authenticated;
 grant execute on function public.set_ultra_luxe_grant_server_v1(uuid,text,boolean,text) to service_role;
+-- Helpers operate exclusively on trusted grant lists; no client grant RPC.
+create function private.ultra_luxe_project_hero_v1(hero jsonb, grants jsonb)
+returns jsonb language plpgsql immutable security invoker set search_path='' as $hero$
+declare
+ c boolean:=grants ? 'ascendant-celestial-sovereign';
+ d boolean:=grants ? 'ascendant-draconic-dominion';
+ field text; val text;
+begin
+ if jsonb_typeof(hero) is distinct from 'object' then return hero;end if;
+ foreach field in array array['profileBackgroundId','profileBorderId','selectedCosmeticPetId','profileIconId'] loop
+  val:=hero->>field;
+  if left(val,10)='ascendant-' or left(val,10)='ascendant_' then
+   if not ((c and val=case field when 'profileBackgroundId' then 'ascendant-celestial-astral-sanctum' when 'profileBorderId' then 'ascendant-celestial-crown-of-the-cosmos' when 'selectedCosmeticPetId' then 'ascendant-celestial-aetherion' else 'ascendant-celestial-crown-icon' end) or
+           (d and val=case field when 'profileBackgroundId' then 'ascendant-draconic-dominion-of-ash' when 'profileBorderId' then 'ascendant-draconic-throne-of-embers' when 'selectedCosmeticPetId' then 'ascendant-draconic-vharaxis' else 'ascendant-draconic-ruby-icon' end)) then
+    if field='profileBackgroundId' then hero:=jsonb_set(hero,array[field],to_jsonb('asterfall-night'::text));
+    elsif field='profileIconId' then hero:=jsonb_set(hero,array[field],to_jsonb('class:'||coalesce(hero->>'classId','IRONWARDEN')));
+    else hero:=hero-field;end if;
+   end if;
+  end if;
+ end loop;
+ val:=lower(trim(hero->>'profileTitle'));
+ if (val='sovereign of the stars' and not c) or (val='dragon sovereign' and not d) then
+  hero:=jsonb_set(hero,'{profileTitle}',to_jsonb('New Adventurer'::text));
+ end if;
+ return hero;
+end $hero$;
+
+create function private.ultra_luxe_project_state_v1(s jsonb, grants jsonb)
+returns jsonb language plpgsql immutable security invoker set search_path='' as $state$
+declare
+ a jsonb; field text; item text; celestial text; draconic text; clean jsonb; roster jsonb;
+begin
+ if jsonb_typeof(s) is distinct from 'object' then return s;end if;
+ a:=case when jsonb_typeof(s->'account')='object' then s->'account' else '{}'::jsonb end;
+ foreach field in array array['unlockedProfileBackgroundIds','unlockedProfileBorderIds','unlockedCosmeticPetIds','unlockedProfileIconIds','unlockedTitleIds'] loop
+  select coalesce(jsonb_agg(value order by ord),'[]'::jsonb) into clean
+  from jsonb_array_elements(case when jsonb_typeof(a->field)='array' then a->field else '[]'::jsonb end) with ordinality t(value,ord)
+  where jsonb_typeof(value)='string' and left(value#>>'{}',10) not in ('ascendant-','ascendant_');
+  celestial:=case field when 'unlockedProfileBackgroundIds' then 'ascendant-celestial-astral-sanctum' when 'unlockedProfileBorderIds' then 'ascendant-celestial-crown-of-the-cosmos' when 'unlockedCosmeticPetIds' then 'ascendant-celestial-aetherion' when 'unlockedProfileIconIds' then 'ascendant-celestial-crown-icon' else 'ascendant-celestial-title' end;
+  draconic:=case field when 'unlockedProfileBackgroundIds' then 'ascendant-draconic-dominion-of-ash' when 'unlockedProfileBorderIds' then 'ascendant-draconic-throne-of-embers' when 'unlockedCosmeticPetIds' then 'ascendant-draconic-vharaxis' when 'unlockedProfileIconIds' then 'ascendant-draconic-ruby-icon' else 'ascendant-draconic-title' end;
+  if grants ? 'ascendant-celestial-sovereign' then clean:=clean||jsonb_build_array(celestial);end if;
+  if grants ? 'ascendant-draconic-dominion' then clean:=clean||jsonb_build_array(draconic);end if;
+  a:=jsonb_set(a,array[field],clean);
+ end loop;
+ s:=jsonb_set(s,'{account}',a);
+ if jsonb_typeof(s->'character')='object' then s:=jsonb_set(s,'{character}',private.ultra_luxe_project_hero_v1(s->'character',grants));end if;
+ if jsonb_typeof(s->'otherCharacters')='array' then
+  select coalesce(jsonb_agg(case when jsonb_typeof(value->'character')='object' then jsonb_set(value,'{character}',private.ultra_luxe_project_hero_v1(value->'character',grants)) else value end order by ord),'[]'::jsonb)
+   into roster from jsonb_array_elements(s->'otherCharacters') with ordinality t(value,ord);
+  s:=jsonb_set(s,'{otherCharacters}',roster);
+ end if;
+ return s;
+end $state$;
+
+create function private.ultra_luxe_project_response_v1(r jsonb, grants jsonb)
+returns jsonb language sql immutable security invoker set search_path='' as $response$
+ select case when jsonb_typeof(r->'state')='object' then jsonb_set(r,'{state}',private.ultra_luxe_project_state_v1(r->'state',grants)) else r end
+$response$;
+
+create function public.load_online_game_ultra_luxe_v1(p_account_id uuid)
+returns jsonb language plpgsql security invoker set search_path='' as $load$
+declare grants jsonb; result jsonb;
+begin
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ultra-luxe-account:'||p_account_id::text,0));
+ grants:=public.ultra_luxe_grants_server_v1(p_account_id);
+ result:=public.load_online_game_server_v1(p_account_id);
+ return private.ultra_luxe_project_response_v1(result,grants)||jsonb_build_object('ultraLuxeCollectionIds',grants);
+end $load$;
+
+create function public.read_online_game_receipt_ultra_luxe_v1(p_account_id uuid,p_request_id text)
+returns jsonb language plpgsql security invoker set search_path='' as $receipt$
+declare r jsonb; grants jsonb;
+begin
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ultra-luxe-account:'||p_account_id::text,0));
+ grants:=public.ultra_luxe_grants_server_v1(p_account_id);
+ r:=public.read_online_game_receipt_server_v1(p_account_id,p_request_id);
+ if r is null then return null;end if;
+ return jsonb_set(r,'{response}',private.ultra_luxe_project_response_v1(r->'response',grants));
+end $receipt$;
+
+create function public.commit_online_game_ultra_luxe_v1(p_account_id uuid,p_expected_version bigint,p_expected_gold bigint,p_request_id text,p_request_hash text,p_response jsonb,p_contributions jsonb,p_expected_grants jsonb,p_deleted_character_id uuid default null)
+returns jsonb language plpgsql security invoker set search_path='' as $commit$
+declare grants jsonb; r jsonb;
+begin
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ultra-luxe-account:'||p_account_id::text,0));
+ grants:=public.ultra_luxe_grants_server_v1(p_account_id);
+ if grants is distinct from p_expected_grants then raise exception 'stale_state_ultra_luxe_grants';end if;
+ r:=public.commit_online_game_guild_pve_v1(p_account_id,p_expected_version,p_expected_gold,p_request_id,p_request_hash,private.ultra_luxe_project_response_v1(p_response,grants),p_contributions,p_deleted_character_id);
+ return private.ultra_luxe_project_response_v1(r,grants);
+end $commit$;
+
+revoke all on function private.ultra_luxe_project_hero_v1(jsonb,jsonb),private.ultra_luxe_project_state_v1(jsonb,jsonb),private.ultra_luxe_project_response_v1(jsonb,jsonb) from public,anon,authenticated;
+grant execute on function private.ultra_luxe_project_hero_v1(jsonb,jsonb),private.ultra_luxe_project_state_v1(jsonb,jsonb),private.ultra_luxe_project_response_v1(jsonb,jsonb) to service_role;
+revoke all on function public.load_online_game_ultra_luxe_v1(uuid),public.read_online_game_receipt_ultra_luxe_v1(uuid,text),public.commit_online_game_ultra_luxe_v1(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid) from public,anon,authenticated;
+grant execute on function public.load_online_game_ultra_luxe_v1(uuid),public.read_online_game_receipt_ultra_luxe_v1(uuid,text),public.commit_online_game_ultra_luxe_v1(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid) to service_role;
+
 commit;
 -- Before migration: verify service_role permissions (including auth.users read),
 -- RLS/execute privileges, no-op audit behavior, pair serialization, revocation,

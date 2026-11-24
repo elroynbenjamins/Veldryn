@@ -2,6 +2,10 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Guild Bank": ["Банк гильдии","Lonca bankası"],
+  "Guild XP": ["Опыт гильдии","Lonca XP"],
+  "Materials": ["Материалы","Malzemeler"],
+  "Minimize battle": ["Свернуть бой","Savaşı küçült"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Название группы","Parti adı"],
   "Choose Party name": ["Выбрать название группы","Parti adı seç"],

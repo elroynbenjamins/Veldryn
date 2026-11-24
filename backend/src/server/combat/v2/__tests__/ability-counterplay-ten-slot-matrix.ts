@@ -22,6 +22,7 @@ import {reviewObservedCounterOpportunityV2,
 import {simulateUnifiedEquipmentCombatV2} from '../unified-equipment-encounter';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
 import {observeRoleCalibrationV2} from '../role-power-calibration-review';
+import {summarizeMatchedEffectsV2,type MatchedEffectSampleV2} from '../matched-effect-calibration';
 import {CLASS_ROLES_V2} from '../build-contract';
 
 const scenarios:AbilityCounterplaySampleV2[]=[];
@@ -31,6 +32,7 @@ const evidenceByScenario=new Map<string,string>();
 let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
 const traitSensitivity:unknown[]=[];
+const matchedEffects:MatchedEffectSampleV2[]=[];
 const candidatePowerRows:unknown[]=[];
 const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
 const companionSensitivity:unknown[]=[];
@@ -206,6 +208,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       assert.equal(full.players.length,1,'An assist must not create another player slot');
       assert.deepEqual(full.players[0].definition.stats,passiveOnly.players[0].definition.stats);
       const passive=observeRoleCalibrationV2(passiveOnly,identity),combined=observeRoleCalibrationV2(full,identity);
+      matchedEffects.push({caseId:scenarioId,bossId:boss.id,role,effectId:'active_assist:'+companionId,
+       before:passive.values,after:combined.values,beforeVictory:passive.victory,afterVictory:combined.victory,
+       beforeDowned:passive.downed,afterDowned:combined.downed,
+       observedEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});
       companionSensitivity.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,
        companionId,off:off.values,passive:passive.values,full:combined.values,
        candidatePower:{base:power.base.partialScore,hitPointContribution:power.hitPointContribution,
@@ -215,6 +221,10 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
        assistEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});
      }
 
+     matchedEffects.push({caseId:scenarioId,bossId:boss.id,role,effectId:'exact_copy_sidecar_combined',
+      before:off.values,after:on.values,beforeVictory:off.victory,afterVictory:on.victory,
+      beforeDowned:off.downed,afterDowned:on.downed,
+      observedEvents:events.filter(e=>e.type==='equipment_trait_trigger').length});
      traitSensitivity.push({scenarioId,classId,role:CLASS_ROLES_V2[classId],
       specializationId:spec.id,bossId:boss.id,off:off.values,on:on.values,
       offVictory:off.victory,onVictory:on.victory,
@@ -300,3 +310,11 @@ console.log('STATIC_ROLE_CANDIDATE_POWER_V1_NOT_FINAL_CP '+JSON.stringify({
  referenceVersion:candidateReference.version,scope:'SYNTHETIC_GEAR_CANDIDATE_NOT_EQUAL_CP',
  cpApproved:false,releaseEnabled:false,
 }));
+
+const matchedReport=summarizeMatchedEffectsV2(matchedEffects);
+assert.equal(matchedReport.samples,540);
+assert.equal(matchedReport.cells.length,5*3*6);
+assert.equal(matchedReport.cells.reduce((n,x)=>n+x.cases,0),540);
+assert.deepEqual(matchedReport,summarizeMatchedEffectsV2([...matchedEffects].reverse()));
+assert.throws(()=>summarizeMatchedEffectsV2([...matchedEffects,matchedEffects[0]]),/invalid_sample/);
+console.log('MATCHED_CONDITIONAL_EFFECT_CALIBRATION_NOT_CP '+JSON.stringify(matchedReport));

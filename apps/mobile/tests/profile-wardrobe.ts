@@ -13,6 +13,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 const assets:WardrobeAssets={
  scenes:[{id:'asterfall-night',name:'Asterfall Night'},{id:'bg_veilbreak',name:'Veilbreak Gothic Moonruins'}],
  frames:['frame_gloamward','guild-border-silver'],
+ effects:[{id:'effect_gloamward_wisps',name:'Arcane Wisps'},{id:'effect_frostbound_winter_veil',name:'Winter Veil'},{id:'effect_amberglass_ember_motes',name:'Ember Motes'},{id:'effect_briarbound_verdant_whispers',name:'Verdant Whispers'}],
 };
 let state=createCharacter(newGame(0),'IRONWARDEN','Wardrobe Test');
 
@@ -49,6 +50,10 @@ const frames=categories.find(row=>row.kind==='frame')!;
 const clear=frames.rows.find(row=>row.clear)!;
 ok(clear.unlocked&&clear.equipped,'no-frame is the equipped default');
 equal(frames.total,assets.frames.length,'the clear choice is excluded from the frame total');
+const effects=categories.find(row=>row.kind==='effect')!;
+equal(effects.total,assets.effects.length,'the clear choice is excluded from the effect total');
+ok(effects.rows.find(row=>row.clear)?.equipped,'no-effect is the equipped default');
+ok(effects.rows.filter(row=>!row.clear).every(row=>!row.unlocked),'effects start locked until account ownership is granted');
 const progress=wardrobeProgress(categories);
 equal(progress.owned,categories.reduce((sum,row)=>sum+row.owned,0),'collection progress sums every family');
 ok(progress.percent>0&&progress.percent<100,'a fresh account is partway through its collection');
@@ -60,12 +65,22 @@ const next=wardrobeSelection(equipped,{kind:'scene',id:'bg_veilbreak',name:'Veil
 equal(next.scene,'bg_veilbreak','selecting a scene replaces the scene');
 equal(next.icon,equipped.icon,'selecting a scene must not disturb the icon');
 equal(next.title,equipped.title,'selecting a scene must not disturb the title');
+equal(next.effect,equipped.effect,'selecting a scene must not disturb the showcase effect');
+const effectSelected=wardrobeSelection(equipped,{kind:'effect',id:'effect_gloamward_wisps',name:'Arcane Wisps'});
+equal(effectSelected.effect,'effect_gloamward_wisps','selecting an effect changes only the effect slot');
+equal(effectSelected.frame,equipped.frame,'effect selection is independent from the border');
 const titled=wardrobeSelection(equipped,{kind:'title',id:'pathfinder',name:'Pathfinder'});
 equal(titled.title,'Pathfinder','titles are stored by their display name');
 
 const applied=applyWardrobeEquipped(state,next);
 equal(applied.character!.profileBackgroundId,'bg_veilbreak','applying writes the character record');
 equal(applied.character!.profileBorderId,undefined,'an empty frame clears rather than stores an empty id');
+const effectOwned={...state,account:{...state.account,unlockedProfileEffectIds:['effect_gloamward_wisps']}};
+const ownedEffects=profileWardrobe(effectOwned,assets).find(row=>row.kind==='effect')!;
+ok(ownedEffects.rows.find(row=>row.id==='effect_gloamward_wisps')?.unlocked,'effect ownership is account-wide');
+const effectApplied=applyWardrobeEquipped(effectOwned,effectSelected);
+equal(effectApplied.character!.profileEffectId,'effect_gloamward_wisps','equipped effect is stored on this character');
+equal(effectApplied.account.unlockedProfileEffectIds?.[0],'effect_gloamward_wisps','equipping never mutates account ownership');
 equal(JSON.stringify(wardrobeEquipped(applied)),JSON.stringify(next),'applying then reading round-trips the selection');
 
 // Undo restores the whole previous look in one write.

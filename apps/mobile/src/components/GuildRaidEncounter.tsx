@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {ActivityIndicator,Image,ImageBackground,Pressable,StyleSheet,Text,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
+import {ActivityIndicator,AppState,Image,ImageBackground,Pressable,StyleSheet,Text,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {useSocialText,socialLabel} from '../i18n/social';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -25,19 +25,23 @@ const harvestStage=require('../../assets/card-backgrounds/harvestwake_wide_v2.we
 const caravanStage=require('../../assets/card-backgrounds/guild_plaza_wide_v2.webp');
 const frostfallStage=require('../../assets/profile-backgrounds/bg_frostfall.webp');
 
+function RaidCountdown({resolvesAt}:{resolvesAt?:string|null}){
+ const st=useSocialText();const [now,setNow]=useState(Date.now());
+ useEffect(()=>{const tick=()=>{if(AppState.currentState==='active')setNow(Date.now())};tick();const timer=setInterval(tick,1000);const sub=AppState.addEventListener('change',tick);return()=>{clearInterval(timer);sub.remove()}},[resolvesAt]);
+ const remaining=resolvesAt?Math.max(0,Math.ceil((Date.parse(resolvesAt)-now)/1000)):0;
+ return <>{remaining>0?st('Raid in progress · {time}',{time:`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`}):st('Resolving attempt…')}</>;
+}
 export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abbreviated',busy=false,onClaim,onAttempt,onCombat,onRefresh}:{row:GuildPveEncounter;state?:GameState;guildRewards?:EventReward[];numberMode?:'abbreviated'|'exact';busy?:boolean;onClaim:(percent:number)=>unknown;onAttempt?:()=>unknown;onCombat?:()=>unknown;onRefresh?:()=>unknown}){
  const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),{width,fontScale}=useWindowDimensions();
  const [now,setNow]=useState(Date.now()),[summaryOpen,setSummaryOpen]=useState(false),[detailsOpen,setDetailsOpen]=useState(false),[showAllMilestones,setShowAllMilestones]=useState(false);
  const watchAfterStart=useRef(false),previousPending=useRef(false);
- // Only a live attempt needs second-by-second paint; server polling remains with the board.
- useEffect(()=>{setNow(Date.now());const timer=setInterval(()=>setNow(Date.now()),row.pendingAttempts?1000:30000);return()=>clearInterval(timer)},[row.pendingAttempts,row.nextAttemptResolvesAt,row.damage,row.endsAt]);
+ // Keep the board clock coarse; only RaidCountdown paints every second.
+ useEffect(()=>{const tick=()=>{if(AppState.currentState==='active')setNow(Date.now())};tick();const timer=setInterval(tick,30000);const sub=AppState.addEventListener('change',tick);return()=>{clearInterval(timer);sub.remove()}},[row.pendingAttempts,row.nextAttemptResolvesAt,row.damage,row.endsAt]);
  const view=guildPveView(row,now),presentation=guildPvePresentation(row),accent=row.kind==='event'?C.special:C.accent;
  const stage=presentation.visualKey==='treant'||presentation.visualKey==='forest_troll'||presentation.visualKey==='guild_granite_moss_troll'?forestStage:presentation.visualKey==='harvestwake'?harvestStage:presentation.visualKey==='merchant_guild'?caravanStage:presentation.visualKey==='frostfall'?frostfallStage:ruinsStage;
  const compact=width<360||fontScale>=1.3,n=(value:number)=>formatGameNumber(value,numberMode,language);
  const endDate=new Date(view.open?row.endsAt:row.claimEndsAt).toLocaleDateString(language,{day:'numeric',month:'short'});
  const companionId=state?.character?.equippedCombatCompanionId,companion=companionId?combatCompanionDef(companionId):undefined,companionArt=companionId?companionArtSource(companionId):undefined;
- const remainingSeconds=row.nextAttemptResolvesAt?Math.max(0,Math.ceil((Date.parse(row.nextAttemptResolvesAt)-now)/1000)):0;
- const countdown=`${Math.floor(remainingSeconds/60)}:${String(remainingSeconds%60).padStart(2,'0')}`;
  const pending=view.pendingAttempts>0,locked=view.guildLevel<view.requiredGuildLevel;
  const characterLocked=row.kind==='event'&&(state?.character?.level??view.characterLevel)<10;
  useEffect(()=>{
@@ -46,7 +50,7 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
  },[pending]);
  const beginAttempt=()=>{watchAfterStart.current=true;return onAttempt?.();};
  const openTheater=()=>{watchAfterStart.current=false;setSummaryOpen(true);};
- const actionLabel=busy?st('Please wait…'):pending?(remainingSeconds>0?st('Raid in progress · {time}',{time:countdown}):st('Resolving attempt…')):locked?st('Requires Guild Level {level}',{level:view.requiredGuildLevel}):characterLocked?st('Requires level {level}',{level:10}):!row.eligible?st('Next encounter'):!view.open?st(view.status):view.attemptsRemaining===0&&view.attemptCap>0?st('No attempts remaining'):st('Begin 3-minute attempt');
+ const actionLabel=busy?st('Please wait…'):pending?st('Watch'):locked?st('Requires Guild Level {level}',{level:view.requiredGuildLevel}):characterLocked?st('Requires level {level}',{level:10}):!row.eligible?st('Next encounter'):!view.open?st(view.status):view.attemptsRemaining===0&&view.attemptCap>0?st('No attempts remaining'):st('Begin 3-minute attempt');
  return <View style={[s.encounter,{backgroundColor:C.panel,borderColor:C.line}]}>
   <ImageBackground source={stage} resizeMode="cover" style={s.hero} imageStyle={s.backdrop}>
    <View style={s.heroShade}/><View style={s.heroTop}><Text style={[s.kicker,{color:'#e7dfce'}]}>{st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')}</Text><View style={s.duration}><Text style={s.durationText}>{st('3-minute attempt')}</Text></View></View>
@@ -58,8 +62,8 @@ export function GuildPveEncounterCard({row,state,guildRewards=[],numberMode='abb
    <View accessibilityRole="progressbar" accessibilityLabel={st('Boss health')} accessibilityValue={{min:0,max:100,now:Math.round(100-view.percent),text:`${n(view.remaining)} / ${n(row.maxHp)} HP`}} style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:'100%',width:`${100-view.percent}%`,backgroundColor:accent}}/></View>
    <View style={[s.row,compact&&s.stack]}><Text style={[s.meta,{color:C.text}]}>{n(view.remaining)} / {n(row.maxHp)} HP</Text><Text style={[s.meta,{color:C.muted}]}>{st('{count} contributors',{count:n(row.contributors)})} · {st(row.kind==='weekly'?'Guild progress: {percent}%':'Guild damage: {percent}%',{percent:Math.round(view.percent)})}</Text></View>
    <View style={[s.personal,{borderColor:C.line}]}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{st('Your contribution')}</Text><Text style={[s.value,{color:C.text}]}>{n(row.personalDamage)} <Text style={s.unit}>{st(row.kind==='weekly'?'Contribution':'Damage')}</Text></Text></View><View style={s.attempts}><Text style={[s.meta,{color:C.muted}]}>{st('Attempts remaining')}</Text><Text style={[s.value,{color:accent}]}>{view.attemptsRemaining} <Text style={[s.unit,{color:C.muted}]}>/ {view.attemptCap}</Text></Text></View></View>
-   {pending?<View style={[s.pending,{backgroundColor:C.panel2}]}><ActivityIndicator size="small" color={accent}/><Text accessibilityLiveRegion="polite" style={[s.detail,s.flex,{color:C.text}]}>{remainingSeconds>0?st('Raid in progress · {time}',{time:countdown}):st('Resolving attempt…')}</Text><GameButton compact tone="secondary" title={st('Watch')} onPress={openTheater}/></View>:null}
-   <GameButton title={actionLabel} loading={busy} disabled={busy||characterLocked||!view.canContribute||!onAttempt} onPress={beginAttempt}/>
+   {pending?<View style={[s.pending,{backgroundColor:C.panel2}]}><ActivityIndicator size="small" color={accent}/><Text style={[s.detail,s.flex,{color:C.text}]}><RaidCountdown resolvesAt={row.nextAttemptResolvesAt}/></Text><GameButton compact tone="secondary" title={st('Watch')} onPress={openTheater}/></View>:null}
+   {!pending?<GameButton title={actionLabel} loading={busy} disabled={busy||characterLocked||!view.canContribute||!onAttempt} onPress={beginAttempt}/>:null}
    <View style={s.row}>
     <Text style={[s.kicker,{color:accent}]}>{st('MILESTONE REWARDS')}</Text>
     <Text accessibilityLiveRegion="polite" style={[s.meta,{color:view.milestones.some(m=>m.ready)?C.good:C.muted}]}>{st(view.milestones.some(m=>m.ready)?'Reward unlocked':view.milestones.every(m=>m.claimed)?'Claimed':'Guild progress needed')}</Text>

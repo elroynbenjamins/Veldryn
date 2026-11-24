@@ -24,5 +24,5 @@ export function useOwnChatSocialName(accountId:string|null|undefined,active:bool
   refresh();
   return()=>{mounted=false;requestVersion++;unsubscribe()};
  },[accountId,active]);
- return active&&resolved?.accountId===accountId?resolved.name:null;
+ return active&&resolved&&resolved.accountId===accountId?resolved.name:null;
 }

@@ -41,6 +41,18 @@ begin
   select coalesce(sum((x->>'quantity')::bigint) filter(where x->>'itemId'='ECHO_BAT_WING'),0),coalesce(jsonb_agg(x order by ord) filter(where x->>'itemId' is distinct from 'ECHO_BAT_WING'),'[]'::jsonb) into iq,i from jsonb_array_elements(g.state#>'{inventory,stacks}') with ordinality t(x,ord);
   select coalesce(sum((x->>'quantity')::bigint) filter(where x->>'itemId'='ECHO_BAT_WING'),0),coalesce(jsonb_agg(x order by ord) filter(where x->>'itemId' is distinct from 'ECHO_BAT_WING'),'[]'::jsonb) into bq,k from jsonb_array_elements(g.state#>'{bank,stacks}') with ordinality t(x,ord);
   s:=jsonb_set(jsonb_set(g.state,'{inventory,stacks}',i),'{bank,stacks}',k);
+  -- Fractional mastery carry is not owned inventory and has no standalone sell value.
+  -- Clear only retired material keys so a historical remainder can never reissue stock.
+  s:=s#-'{character,masteryMaterialRemainders,ECHO_BAT_WING}'#-'{character,masteryMaterialRemainders,ITEM_0077}';
+  if jsonb_typeof(s->'otherCharacters')='array' then
+   s:=jsonb_set(s,'{otherCharacters}',coalesce((
+    select jsonb_agg(
+      (o#-'{character,masteryMaterialRemainders,ECHO_BAT_WING}'#-'{character,masteryMaterialRemainders,ITEM_0077}')
+      order by ord
+    )
+    from jsonb_array_elements(s->'otherCharacters') with ordinality t(o,ord)
+   ),'[]'::jsonb));
+  end if;
   if jsonb_typeof(s#>'{settings,favoriteItemIds}')='array' then s:=jsonb_set(s,'{settings,favoriteItemIds}',(s#>'{settings,favoriteItemIds}')-'ECHO_BAT_WING'); end if;
   if jsonb_typeof(s#>'{settings,lockedItemIds}')='array' then s:=jsonb_set(s,'{settings,lockedItemIds}',(s#>'{settings,lockedItemIds}')-'ECHO_BAT_WING'); end if;
   check_state:=s#-'{settings,seenItemIds}';

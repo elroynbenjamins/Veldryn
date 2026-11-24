@@ -6,6 +6,8 @@ on:
       - 'review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124'
     paths:
       - 'docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json'
+      - 'docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json'
+      - 'docs/2-0/eq2-t4-replacement-recipe-review-v2.json'
       - 'docs/2-0/EQUIPMENT_2_0_CANONICAL_APPROVAL_RECORD_20261124.md'
       - 'tools/eq2-review/t1-t5/**'
       - 'backend/src/server/equipment/equipment-crafting-v2-gate.ts'
@@ -16,6 +18,8 @@ on:
   pull_request:
     paths:
       - 'docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json'
+      - 'docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json'
+      - 'docs/2-0/eq2-t4-replacement-recipe-review-v2.json'
       - 'tools/eq2-review/t1-t5/**'
       - 'backend/src/server/equipment/equipment-crafting-v2-gate.ts'
       - '.github/workflows/eq2-t1-t5-hidden-catalogue-review.yml'
@@ -38,10 +42,10 @@ jobs:
         with:
           node-version: '24'
       - name: Audit 554 exact item IDs, 95 sets and fail-closed visibility
-        run: node --test tools/eq2-review/t1-t5/hidden-catalogue-policy-v1.test.mjs
+        run: node --test tools/eq2-review/t1-t5/*.test.mjs
       - name: Refuse public-app or online-server imports of hidden source registry
         run: |
-          if git grep -n -F 'eq2-t1-t5-unified-hidden-review-catalogue-v1.json' -- apps/mobile/src backend/src; then
+          if git grep -n -E 'eq2-t1-t5-(unified-hidden-review-catalogue-v1|canonical-membership-reconciliation-v2)\.json|eq2-t4-replacement-recipe-review-v2\.json' -- apps/mobile/src backend/src; then
             echo 'Hidden Equipment 2.0 registry leaked into player-facing source' >&2
             exit 1
           fi

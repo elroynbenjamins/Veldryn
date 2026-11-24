@@ -18,6 +18,7 @@ import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';
+import {profileBorderContentOffsets} from '../../core/profile-frame-layout';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 
@@ -33,6 +34,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  const backgroundId=character.profileBackgroundId??'asterfall-night';
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
  const frame=profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const offsets=profileBorderContentOffsets(frame?character.profileBorderId:undefined);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
@@ -54,7 +56,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    {art}
    <View style={s.scrim}/>
    </ProfileBorderBackdrop>
-   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,!!frame&&s.petFramed]}/>:null}
+   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,!!frame&&s.petFramed,offsets.petRightOffset>0&&{right:26+offsets.petRightOffset}]}/>:null}
    <View style={[s.identity,!!frame&&s.identityFramed]}>
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>

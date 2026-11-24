@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {newlyUnlockedProfileRewards,profileAudienceCanView,profileRewardSource} from '../src/core/profile-customization';
 
-import {profileBackdropTopInset} from '../src/core/profile-frame-layout';
+import {profileBackdropTopInset,profileBorderContentOffsets} from '../src/core/profile-frame-layout';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -75,3 +75,12 @@ for(const [width,height] of [[320,168],[350,221],[480,270],[350,58]]){
 ok(profileBackdropTopInset('frame_gloamward',350,221)>0,'reported public profile size needs additional top clipping');
 ok(profileBackdropTopInset('frame_gloamward',480,270)>=profileBackdropTopInset('frame_gloamward',350,221),'large scene scales the calibrated aperture');
 equal(profileBackdropTopInset('frame_gloamward',0,0),0,'unmeasured scene has no calculated crop');
+
+const gloamwardOffsets=profileBorderContentOffsets('frame_gloamward');
+equal(gloamwardOffsets.petRightOffset,16,'Gloamward pet moves left by 16dp');
+equal(gloamwardOffsets.guildLeftOffset,8,'Gloamward guild tag moves right by 8dp');
+for(const id of [undefined,null,'','frame_wheat_crown','guild-border-royal']){
+ const offsets=profileBorderContentOffsets(id);
+ equal(offsets.petRightOffset,0,'other borders preserve pet horizontal position');
+ equal(offsets.guildLeftOffset,0,'other borders preserve guild horizontal position');
+}

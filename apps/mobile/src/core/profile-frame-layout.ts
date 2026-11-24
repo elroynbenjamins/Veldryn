@@ -36,3 +36,11 @@ export function profileBackdropTopInset(borderId:string|undefined,width:number,h
  if(!rail)return 0;
  return Math.max(0,Math.min(height/4,Math.ceil(rail.imageHeight*.10)-existingInset));
 }
+
+/** Horizontal clearance for ornate corner art. Vertical anchors and sizes
+ * deliberately remain unchanged. Unreviewed/no-border profiles keep defaults. */
+export function profileBorderContentOffsets(borderId?:string|null){
+ return borderId==='frame_gloamward'
+  ?{petRightOffset:16,guildLeftOffset:8}
+  :{petRightOffset:0,guildLeftOffset:0};
+}

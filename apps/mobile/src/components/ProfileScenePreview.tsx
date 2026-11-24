@@ -19,6 +19,7 @@ import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
+import {profileBorderContentOffsets} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
@@ -33,6 +34,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
  const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
+ const offsets=profileBorderContentOffsets(borderSource?character.profileBorderId:undefined);
  return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
@@ -47,7 +49,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
     {compact?null:<PlayerBadgeShowcase identity={badges.identity} size={15}/>}
    </View>
    <CharacterPortrait state={state} style={[s.character,compact&&s.compactCharacter]}/>
-   {petSource&&<View style={s.petBadge}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}
+   {petSource&&<View style={[s.petBadge,offsets.petRightOffset>0&&{right:22+offsets.petRightOffset}]}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}
   </View>
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}

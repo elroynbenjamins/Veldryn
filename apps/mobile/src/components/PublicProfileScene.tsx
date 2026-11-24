@@ -17,6 +17,7 @@ import {profileShowcaseStyles} from '../theme/profile-showcase-styles';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
+import {profileBorderContentOffsets} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
@@ -28,6 +29,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const border=profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
+ const offsets=profileBorderContentOffsets(border?profile.borderId:undefined);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
  const guild=profile.guild===undefined?(profile.guildTag?{tag:profile.guildTag,tagColorId:profile.guildTagColorId}:null):profile.guild;
@@ -48,9 +50,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <View style={s.identityFill}/>
    <PlayerBadgeShowcase identity={profile.playerBadges}/>
   </View>
-  {showGuild&&guild?<View style={s.guildAnchor}><ProfileGuildAffiliation guild={guild}/></View>:null}
+  {showGuild&&guild?<View style={[s.guildAnchor,offsets.guildLeftOffset>0&&{left:22+offsets.guildLeftOffset}]}><ProfileGuildAffiliation guild={guild}/></View>:null}
   <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={s.character}/>
-  {pet?<Image source={pet} resizeMode="contain" style={s.pet}/>:null}
+  {pet?<Image source={pet} resizeMode="contain" style={[s.pet,offsets.petRightOffset>0&&{right:22+offsets.petRightOffset}]}/>:null}
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border}/>:null}

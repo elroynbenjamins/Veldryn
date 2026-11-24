@@ -8,7 +8,7 @@ import {usePlayerBadges,type BadgeState} from '../online/PlayerBadgeProvider';
 import {PlayerBadge,PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {
  SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_FEATURED_PLAYER_BADGES,
- PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,VIP_BADGE_UNLOCK_HINTS,visibleCollectiblePlayerBadgeIds,
+ PLAYER_BADGE_LABELS,PLAYER_BADGE_UNLOCK_HINTS,VIP_BADGE_UNLOCK_HINTS,visibleCollectiblePlayerBadgeIds,playerBadgeReleased,
  SUPPORTER_BADGE_UNLOCK_HINTS,canEquipSupporterBadge,type EquippablePlayerBadgeId,
  type SupporterBadgeId,
 } from '../core/player-badges';
@@ -32,10 +32,11 @@ export function PlayerBadgeSettingsView({language:languageOverride,badges}:{lang
  const [slot,setSlot]=useState<Slot>('name');
  const collectibleIds=visibleCollectiblePlayerBadgeIds();
  const owned=(badges.ownedExtras??[]).filter(id=>collectibleIds.includes(id));
- const showcase=badges.featuredExtras??[];
- const equipped:EquippablePlayerBadgeId|null=badges.identity?.equippedBadgeId!==undefined
+ const showcase=(badges.featuredExtras??[]).filter(playerBadgeReleased);
+ const projectedEquipped:EquippablePlayerBadgeId|null=badges.identity?.equippedBadgeId!==undefined
   ?badges.identity.equippedBadgeId
   :badges.equippedBadgeId??(badges.showSupporter&&badges.supporterAvailable?'supporter':null);
+ const equipped:EquippablePlayerBadgeId|null=projectedEquipped&&playerBadgeReleased(projectedEquipped)?projectedEquipped:null;
  const disabled=badges.loading||badges.busy||!!badges.error;
  const full=showcase.length>=MAX_FEATURED_PLAYER_BADGES;
  const choose=(id:EquippablePlayerBadgeId)=>{

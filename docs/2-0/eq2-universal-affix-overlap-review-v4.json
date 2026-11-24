@@ -1,0 +1,554 @@
+{
+  "schema": "eq2-universal-affix-overlap-review-v4",
+  "authority": "REVIEW_ONLY_NON_ISSUABLE",
+  "releaseActivation": false,
+  "hideAllUntilCoordinatedV2": true,
+  "statContractApproved": false,
+  "cpApproved": false,
+  "sources": [
+    {
+      "path": "backend/src/server/equipment/equipment-crafting-v2-rolls.ts",
+      "blobSha": "8a18ded7d3f3dfce2f557f55be836cccdac884c6"
+    },
+    {
+      "path": "backend/src/server/equipment/equipment-crafting-v2-universal-affix-preview.ts",
+      "blobSha": "0239af5940ffe4ce216db5c6c1dd42fecc0f50e6"
+    },
+    {
+      "path": "backend/src/server/combat/v2/equipment-affixes.ts",
+      "blobSha": "6913df8c6adb104367dbfeb0a6421b07802c5248"
+    },
+    {
+      "path": "backend/src/server/combat/engine.ts",
+      "blobSha": "66dd6ae543e1e76a541968aec296921aed3f8c46"
+    }
+  ],
+  "policy": {
+    "newRulesVersionCandidate": "eq2-universal-affix-overlap-proposal-v4",
+    "originalForgeVersion": "equipment-crafting-v2-draft-1",
+    "selection": "uniform_without_replacement",
+    "slotRoleClassIndependent": true,
+    "excluded": [
+      "potency"
+    ],
+    "tier6To9": "UNDEFINED_NO_EXTRAPOLATION",
+    "quality": "Original Q0-100 distribution floor(U^1.25*101), base multiplier .75+Q*.005; quality never scales affixes",
+    "baseRarityMultiplier": {
+      "common": 1,
+      "uncommon": 1.1,
+      "rare": 1.25,
+      "epic": 1.42,
+      "legendary": 1.65,
+      "mythic": 1.85
+    },
+    "capScope": "Aggregate permanent gear random and innate contributions to same exact canonical channel; set/gem/skill/companion/buff channels excluded until integrated cap and stacking approvals. No silent truncation of persisted rolls.",
+    "capFormula": "raw<=knee ? raw : min(hardCap,knee+floor((raw-knee)/2)); centipercent integer; retain raw and effective totals separately",
+    "finalCombatCaps": {
+      "critChanceExistingEngineClamp": 0.75,
+      "haste": "OPEN",
+      "critMultiplier": "OPEN",
+      "combinedPenetrationAndHit": "OPEN",
+      "temporaryEffects": "OPEN"
+    },
+    "unknownInnateChannelPolicy": "REJECT_NOT_MAP_OR_IGNORE",
+    "snapshotTiming": "PROPOSAL: freeze equipped source and equipment totals at encounter start; no mid-encounter recompile without approved combat rules",
+    "cpPolicy": "OPEN_D3_USE_RAW_AND_EFFECTIVE_FOR_LATER_BENCHMARKS_NOT_FINAL_CP",
+    "rngPolicy": "TEST_INPUTS_ONLY_NO_MINT_AUTHORITY",
+    "engineWarning": "Existing engine comment documents legacy RNG output [0,.5). Validate actual Combat2 RNG paths and probability semantics before equal-CP conclusions; no RNG rewrite here.",
+    "progression": "Strictly increasing min and max at each tier; lower-tier maximum exceeds next-tier minimum, with overlap possible between actual rarity bands. No guaranteed lower-tier overall item superiority. Base stat progression independent. No extrapolation T6-T9."
+  },
+  "rarityBands": [
+    {
+      "rarity": "mythic",
+      "buckets": 1000,
+      "lowBp": 8500,
+      "highBp": 10000,
+      "counts": [
+        2,
+        2,
+        3,
+        3,
+        3
+      ]
+    },
+    {
+      "rarity": "legendary",
+      "buckets": 4000,
+      "lowBp": 7000,
+      "highBp": 9500,
+      "counts": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "rarity": "epic",
+      "buckets": 15000,
+      "lowBp": 5500,
+      "highBp": 8500,
+      "counts": [
+        1,
+        1,
+        2,
+        2,
+        2
+      ]
+    },
+    {
+      "rarity": "rare",
+      "buckets": 50000,
+      "lowBp": 4000,
+      "highBp": 7000,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "rarity": "uncommon",
+      "buckets": 130000,
+      "lowBp": 2000,
+      "highBp": 4500,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "rarity": "common",
+      "buckets": 800000,
+      "lowBp": 0,
+      "highBp": 2500,
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "stats": [
+    {
+      "id": "armor",
+      "channel": "defense_pct",
+      "unit": "relative_percent",
+      "rangeCentipercent": [
+        [
+          60,
+          160
+        ],
+        [
+          120,
+          230
+        ],
+        [
+          180,
+          310
+        ],
+        [
+          240,
+          380
+        ],
+        [
+          300,
+          450
+        ]
+      ],
+      "softKneeCentipercent": 2500,
+      "hardCapCentipercent": 4500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Multiply authoritative base+gear defense once; not direct damage reduction.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "maxHp",
+      "channel": "max_hp_pct",
+      "unit": "relative_percent",
+      "rangeCentipercent": [
+        [
+          80,
+          200
+        ],
+        [
+          150,
+          300
+        ],
+        [
+          220,
+          400
+        ],
+        [
+          300,
+          480
+        ],
+        [
+          380,
+          560
+        ]
+      ],
+      "softKneeCentipercent": 3000,
+      "hardCapCentipercent": 5500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Multiply authoritative base+gear maximum HP once.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "ward",
+      "channel": "ward_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          20,
+          80
+        ],
+        [
+          50,
+          110
+        ],
+        [
+          80,
+          150
+        ],
+        [
+          110,
+          190
+        ],
+        [
+          150,
+          230
+        ]
+      ],
+      "softKneeCentipercent": 800,
+      "hardCapCentipercent": 1800,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Reduce nonphysical, nontrue damage including eligible periodic damage.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "tenacity",
+      "channel": "tenacity_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          80,
+          200
+        ],
+        [
+          150,
+          300
+        ],
+        [
+          230,
+          400
+        ],
+        [
+          300,
+          500
+        ],
+        [
+          380,
+          600
+        ]
+      ],
+      "softKneeCentipercent": 2000,
+      "hardCapCentipercent": 4000,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Shorten eligible ordinary hostile nonboss status duration; boss locks and phases unaffected.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "critRate",
+      "channel": "crit_rate_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          20,
+          80
+        ],
+        [
+          50,
+          110
+        ],
+        [
+          80,
+          150
+        ],
+        [
+          110,
+          190
+        ],
+        [
+          150,
+          230
+        ]
+      ],
+      "softKneeCentipercent": 800,
+      "hardCapCentipercent": 1800,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Add to critical chance; final engine chance clamp is 75%.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "critDamage",
+      "channel": "crit_damage_pct",
+      "unit": "relative_percent",
+      "rangeCentipercent": [
+        [
+          100,
+          350
+        ],
+        [
+          250,
+          550
+        ],
+        [
+          350,
+          650
+        ],
+        [
+          450,
+          750
+        ],
+        [
+          550,
+          850
+        ]
+      ],
+      "softKneeCentipercent": 3500,
+      "hardCapCentipercent": 6500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Multiply base critical multiplier once; not percentage points.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "haste",
+      "channel": "haste_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          30,
+          100
+        ],
+        [
+          70,
+          150
+        ],
+        [
+          110,
+          200
+        ],
+        [
+          160,
+          250
+        ],
+        [
+          200,
+          300
+        ]
+      ],
+      "softKneeCentipercent": 1200,
+      "hardCapCentipercent": 2500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Add to haste; source engine cooldown/basic interval semantics; final timing cap pending.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "penetration",
+      "channel": "penetration_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          40,
+          130
+        ],
+        [
+          90,
+          190
+        ],
+        [
+          140,
+          250
+        ],
+        [
+          200,
+          320
+        ],
+        [
+          260,
+          390
+        ]
+      ],
+      "softKneeCentipercent": 1200,
+      "hardCapCentipercent": 2500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Add to eligible ability armor penetration, not true damage.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "accuracy",
+      "channel": "accuracy_pp",
+      "unit": "percentage_points",
+      "rangeCentipercent": [
+        [
+          20,
+          80
+        ],
+        [
+          50,
+          110
+        ],
+        [
+          80,
+          150
+        ],
+        [
+          110,
+          190
+        ],
+        [
+          150,
+          230
+        ]
+      ],
+      "softKneeCentipercent": 800,
+      "hardCapCentipercent": 1800,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Add to hit probability, not accuracy rating.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "abilityDamage",
+      "channel": "ability_damage_pct",
+      "unit": "relative_percent",
+      "rangeCentipercent": [
+        [
+          80,
+          220
+        ],
+        [
+          160,
+          320
+        ],
+        [
+          250,
+          430
+        ],
+        [
+          340,
+          540
+        ],
+        [
+          440,
+          650
+        ]
+      ],
+      "softKneeCentipercent": 2500,
+      "hardCapCentipercent": 4500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Original direct authored class abilities only; no basic, DoT, trait or secondary effects.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    },
+    {
+      "id": "healingPower",
+      "channel": "forge_healing_power_pct",
+      "unit": "relative_percent",
+      "rangeCentipercent": [
+        [
+          80,
+          220
+        ],
+        [
+          160,
+          320
+        ],
+        [
+          250,
+          430
+        ],
+        [
+          340,
+          540
+        ],
+        [
+          440,
+          650
+        ]
+      ],
+      "softKneeCentipercent": 2500,
+      "hardCapCentipercent": 4500,
+      "postKneeSlope": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "mechanic": "Authored class heals/HoTs only; not shields, potions or secondary effects.",
+      "approval": "REVISED_PROPOSAL_PENDING_NUMERICAL_BALANCE"
+    }
+  ],
+  "supersedes": {
+    "path": "docs/2-0/eq2-universal-affix-cap-review-v3.json",
+    "blobSha": "98895c366b5f2c4a902d16918c76958c4cc34b2e",
+    "scope": "FUTURE_UNIVERSAL_ROLL_PROPOSAL_ONLY"
+  },
+  "ownerDirection": {
+    "date": "2026-11-24",
+    "status": "CONFIRMED_DESIGN_DIRECTION",
+    "universalPoolAndCapRecommendationAccepted": true,
+    "adjacentTierOverlap": true,
+    "critDamageExample": [
+      [
+        100,
+        350
+      ],
+      [
+        250,
+        550
+      ],
+      [
+        350,
+        650
+      ]
+    ],
+    "exactOtherRanges": "PROPOSED_FOR_BALANCE_REVIEW",
+    "notFinalStatContractOrReleaseApproval": true
+  }
+}

@@ -7,6 +7,8 @@ on:
       - 'tools/test-echo-bat-wing-source-closure.mjs'
       - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'apps/mobile/tests/material-retirement-offline.ts'
+      - 'backend/src/server/equipment/equipment-recipe-materials-v33.ts'
+      - 'backend/src/server/equipment/equipment-v33-recipe-materials.test.ts'
       - 'tools/preview-echo-bat-wing-source-closure.mjs'
       - 'tools/material-retirement-review.mjs'
       - 'tools/audit-material-retirement-references.mjs'
@@ -47,6 +49,10 @@ jobs:
       - run: pnpm --dir backend install --frozen-lockfile
       - name: Audit expanded material registries and item-use regressions
         run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex material-retirement-offline
+      - name: Verify V33 cannot revive retired material aliases
+        run: |
+          pnpm --dir backend exec esbuild src/server/equipment/equipment-v33-recipe-materials.test.ts --bundle --platform=node --format=esm --outfile=/tmp/equipment-v33-retirement-test.mjs
+          node /tmp/equipment-v33-retirement-test.mjs
       - name: Verify closed drop and rebuilt runtime bundles
         if: github.event_name == 'pull_request' && github.head_ref == 'review/material-purpose-loot-cleanup-20261124'
         run: |

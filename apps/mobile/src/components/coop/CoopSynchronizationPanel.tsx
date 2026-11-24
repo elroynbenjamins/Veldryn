@@ -13,6 +13,8 @@ export interface CoopSynchronizationLabels{
  scaledStrength:(scalePercent:number)=>string;
  empty:string;
  note:string;
+ combinedCap:string;
+ capLine:(label:string,rawValue:string,effectiveValue:string)=>string;
 }
 export function CoopSynchronizationPanel({view,labels}:{
  view:CoopSynchronizationView;
@@ -32,7 +34,13 @@ export function CoopSynchronizationPanel({view,labels}:{
    </View>
   </View>
   {view.activeCount?<Text style={s.scale}>{scale}</Text>:<Text style={s.empty}>{labels.empty}</Text>}
-  <View style={s.links}>
+  {view.cappedStats.length?<View style={s.capBox}>
+   <StateChip label={labels.combinedCap} tone="warning"/>
+   {view.cappedStats.map(row=><Text key={row.statKey} style={s.capText}>
+    {labels.capLine(row.label,row.rawValue,row.effectiveValue)}
+   </Text>)}
+  </View>:null}
+    <View style={s.links}>
    {view.links.map(link=><View key={link.id} style={s.link}>
     <View style={s.linkHeader}>
      <Text style={s.linkName}>{link.name}</Text>
@@ -54,6 +62,8 @@ const makeStyles=(C:CoopColors)=>StyleSheet.create({
  chips:{alignItems:'flex-end',gap:4},
  scale:{fontSize:12,lineHeight:17,fontWeight:'700',color:C.cyan},
  empty:{...coopTypography.meta,color:C.textMuted},
+ capBox:{gap:3,padding:coopSpacing.sm,borderWidth:StyleSheet.hairlineWidth,borderColor:C.warning,borderRadius:10},
+ capText:{fontSize:11,lineHeight:16,color:C.textSecondary},
  links:{gap:coopSpacing.sm},
  link:{paddingTop:coopSpacing.sm,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,gap:4},
  linkHeader:{gap:1},

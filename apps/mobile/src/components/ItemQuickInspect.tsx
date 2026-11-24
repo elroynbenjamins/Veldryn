@@ -143,7 +143,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
             </View>
             {gearDecision.set?<Text numberOfLines={2} style={s.gearSummaryNote}>{gearDecision.set.name}</Text>:null}
             {visibleStatDeltas.length>0?<Text style={s.gearSummaryNote}>{visibleStatDeltas.map(([label,delta])=>label+' '+signedPreviewStat(delta)).join(' · ')}</Text>:null}
-            <Text style={s.gearSummaryNote}>{gearDecision.alreadyEquipped?gt('Currently equipped · loadout change is zero.'):gt('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
+            <Text style={s.gearSummaryNote}>{gearDecision.alreadyEquipped?gt('Currently equipped · loadout change is zero.'):gl('Includes upgrades, socketed gems and set bonuses. Equip to apply.')}</Text>
           </View>:null}
           {item.type==='gear'&&model.craftedCopies>0&&!instanceId?<Text style={s.gearSummaryHint}>{gt('Choose a specific equipment copy to compare')}</Text>:null}
           <View style={s.footerRow}><Text style={s.sell}>{it('Sell value · {gold} gold each',{gold:formatGameNumber(itemVendorSellGold(item),state.settings.numberMode,language)})}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>

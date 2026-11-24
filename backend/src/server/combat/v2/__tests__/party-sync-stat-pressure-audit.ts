@@ -15,6 +15,7 @@ const roster=(ids:readonly ClassIdV2[])=>ids.map((classId,i)=>({
 const maxRaw=new Map<SyncStatV2,{rawBps:number;classes:ClassIdV2[];links:string[]}>();
 const flexibleCapCases:Array<{classes:ClassIdV2[];capped:ReturnType<typeof planPartySynchronizationV2>['cappedStats']}>=[];
 let flexibleCases=0,dungeonCases=0,dungeonCapCases=0;
+const flexibleLinkHistogram:Record<number,number>={};
 
 for(let a=0;a<classes.length;a++)
  for(let b=a;b<classes.length;b++)
@@ -23,6 +24,7 @@ for(let a=0;a<classes.length;a++)
     const ids=[classes[a],classes[b],classes[c],classes[d]];
     const plan=planPartySynchronizationV2('party_event',roster(ids));
     flexibleCases++;
+    flexibleLinkHistogram[plan.active.length]=(flexibleLinkHistogram[plan.active.length]??0)+1;
     if(plan.cappedStats.length)flexibleCapCases.push({classes:[...ids],capped:plan.cappedStats});
     const raw:Partial<Record<SyncStatV2,number>>={};
     for(const link of plan.active)for(const [stat,bps] of link.bonuses)
@@ -47,6 +49,9 @@ for(const tank of tanks)for(const support of supports)
  }
 
 assert.equal(flexibleCases,495);
+assert.deepEqual(flexibleLinkHistogram,{0:78,1:173,2:133,3:78,4:28,5:5});
+// Six links are a theoretical four-character maximum, not achievable in this catalogue.
+assert.equal(flexibleLinkHistogram[6]??0,0);
 assert.equal(dungeonCases,36);
 assert.equal(dungeonCapCases,0);
 assert.equal(flexibleCapCases.length,1,
@@ -62,7 +67,7 @@ const catalogue=listPartySynchronizationsV2();
 assert.equal(catalogue.length,18);
 console.log(JSON.stringify({
  kind:'PARTY_SYNC_STAT_PRESSURE_AUDIT',
- flexibleCases,dungeonCases,dungeonCapCases,
+ flexibleCases,dungeonCases,dungeonCapCases,flexibleLinkHistogram,
  flexibleCapCases:flexibleCapCases.map(x=>({classes:x.classes,capped:x.capped})),
  maxRawByStat:Object.fromEntries([...maxRaw.entries()].sort(([a],[b])=>a.localeCompare(b))
   .map(([stat,row])=>[stat,{...row,capBps:partySynchronizationCapBpsV2(stat)}])),

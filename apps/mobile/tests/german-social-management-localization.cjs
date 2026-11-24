@@ -64,6 +64,7 @@ for(const marker of [
  '{card.title}',
  '{card.body}',
  '{tag}',
- 'card.focus',
+ 'const interest=recruitmentMainInterest(card);',
+ 'socialLabel(language,interest.charAt(0).toUpperCase()+interest.slice(1))',
 ])assert.ok(listing.includes(marker),'Recruitment listing lost display safety or locale handling: '+marker);
 console.log('PASS: 40 German social-management/recruitment strings, locale fallback, safe dynamic values and UI wiring');

@@ -18,7 +18,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {AnimatedProfileBorderGlows,ProfileCosmeticExteriorMatte,ProfileSceneEffect} from './ProfileCosmeticMotion';
-import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
+import {cosmeticArtByBorder,cosmeticArtByEffect,type CosmeticArt} from '../theme/profile-cosmetic-art-v1';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
@@ -33,8 +33,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
- const borderArt=review?.borderArt,effectArt=review?.effectArt;
- const border=review?borderArt?.border:profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
+ const equippedBorderArt=!review&&profile.borderId?cosmeticArtByBorder.get(profile.borderId):undefined;
+ const borderArt=review?.borderArt??equippedBorderArt,effectArt=review?.effectArt??(!review&&profile.effectId?cosmeticArtByEffect.get(profile.effectId):undefined);
+ const border=review?borderArt?.border:borderArt?.border??(profile.borderId?profileBorderSourceById.get(profile.borderId):undefined),pet=profile.petId?petArtSource(profile.petId):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
@@ -45,9 +46,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <ProfileBorderBackdrop borderId={review?undefined:profile.borderId} source={border} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
-   {effectArt&&review?<ProfileSceneEffect art={effectArt} active={review.active} reduceMotion={reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={review?.active??true} reduceMotion={reduceMotion}/>:null}
    </ProfileBorderBackdrop>
-   {borderArt&&review?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review.surroundColor}/></View>:null}
+   {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review.surroundColor}/></View>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>
@@ -64,7 +65,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border} sceneSafe/>:null}
-  {borderArt&&review?<AnimatedProfileBorderGlows art={borderArt} active={review.active} reduceMotion={reduceMotion}/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={review?.active??true} reduceMotion={reduceMotion}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

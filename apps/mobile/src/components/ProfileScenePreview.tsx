@@ -18,6 +18,8 @@ import {COLLECTIBLES} from '../content/collectibles';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
+import {AnimatedProfileBorderGlows,ProfileSceneEffect} from './ProfileCosmeticMotion';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
@@ -33,7 +35,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderArt=cosmeticArtByBorder.get(character.profileBorderId??''),effectArt=cosmeticArtByEffect.get(character.profileEffectId??''),borderSource=borderArt?.border??profileBorderSourceById.get(character.profileBorderId??'');
  const anchors=profileSceneContentAnchors(borderSource?8:0);
  return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
@@ -41,6 +43,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
    <ProfileBorderBackdrop borderId={character.profileBorderId} source={borderSource} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
    <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
+   {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:null}
    </ProfileBorderBackdrop><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
@@ -53,6 +56,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
   </View>
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource} sceneSafe/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

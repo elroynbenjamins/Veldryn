@@ -17,6 +17,8 @@ import {CardBackground} from '../CardBackground';
 import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {AnimatedProfileBorderGlows,ProfileSceneEffect} from '../ProfileCosmeticMotion';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
 import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';
 import {profileSceneContentAnchors} from '../../core/profile-frame-layout';
 import {ProfileIcon} from '../ProfileIcon';
@@ -33,14 +35,15 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  if(!character)return null;
  const backgroundId=character.profileBackgroundId??'asterfall-night';
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
- const frame=profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const borderArt=cosmeticArtByBorder.get(character.profileBorderId??''),effectArt=cosmeticArtByEffect.get(character.profileEffectId??'');
+ const frame=borderArt?.border??profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
  const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/></ProfileBorderBackdrop></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
@@ -55,6 +58,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    <ProfileBorderBackdrop borderId={character.profileBorderId} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
+   {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:null}
    </ProfileBorderBackdrop>
    {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,{right:anchors.side,bottom:anchors.bottom}]}/>:null}
    <View style={[s.identity,!!frame&&s.identityFramed,!!pet&&{right:anchors.guildRightWithPet}]}>
@@ -71,6 +75,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
    </View>
   </View>
   {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active reduceMotion={state.settings.reduceMotion}/>:null}
   <View style={[s.tools,!!frame&&s.toolsFramed]}>
    {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>

@@ -50,6 +50,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   title:character.profileTitle??'New Adventurer',
   backgroundId:character.profileBackgroundId??'asterfall-night',
   borderId:character.profileBorderId??null,
+  effectId:character.profileEffectId??null,
   petId:character.selectedCosmeticPetId??null,
   bio:identityDraft?.bio??'',
   favoriteSkillId:identityDraft?.favoriteSkillId??null,

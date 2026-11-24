@@ -1,6 +1,6 @@
 import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
-import {ultraLuxeVisualTier} from '../core/ultra-luxe-set-visuals';
+import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
@@ -29,7 +29,7 @@ import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileSceneEffect} from './ProfileCosmeticMotion';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../theme/profile-cosmetic-runtime-v1';
-import {profileAnimatedCosmeticsEnabled} from '../core/profile-cosmetic-access';
+import {profileAnimatedCosmeticsEnabled,profileCosmeticsTester} from '../core/profile-cosmetic-access';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
@@ -49,7 +49,12 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const badgeNow=useBadgeClock(badges.identity);
  const displayedBadges=[...playerBadgeIds(badges.identity,badgeNow),...profileBadgeIds(badges.identity,badgeNow)];
  const verifiedTitleId=ownedUltraLuxeTitles(state).find(t=>t.name===character.profileTitle)?.id;
- const visualSelection={background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId,verifiedTitleId,displayedBadges};
+ const tester=profileCosmeticsTester(state);
+ const visualSelection=resolveTesterUltraLuxeVisuals({background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId,verifiedTitleId,displayedBadges},{
+  background:tester&&(state.account.unlockedProfileBackgroundIds?.includes(backgroundId)??false),
+  border:tester&&(state.account.unlockedProfileBorderIds?.includes(character.profileBorderId??'')??false),
+  pet:tester&&(state.account.unlockedCosmeticPetIds?.includes(character.selectedCosmeticPetId??'')??false),
+ });
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
@@ -86,9 +91,9 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
- const celestial=celestialBackground&&celestialBorder?celestialAssets:undefined;
- if(draconic&&draconicBackground&&draconicBorder){
- return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={character.selectedCosmeticPetId} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+ const celestial=visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
+ if(draconic&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border){
+ return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
@@ -97,7 +102,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12} variant="bare"/>}/>;
  }
  if(!celestial)return standard;
- return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+ return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={visualSelection.pet} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>

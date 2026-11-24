@@ -1,5 +1,5 @@
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
-import {ultraLuxeVisualTier} from '../core/ultra-luxe-set-visuals';
+import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {verifiedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
@@ -46,7 +46,10 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const badgeNow=useBadgeClock(profile.playerBadges);
  const displayedBadges=[...playerBadgeIds(profile.playerBadges,badgeNow),...profileBadgeIds(profile.playerBadges,badgeNow)];
  const verifiedTitleId=verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId)?profile.ultraLuxeTitleId:undefined;
- const visualSelection={background:profile.backgroundId,border:profile.borderId,pet:profile.petId,verifiedTitleId,displayedBadges};
+ const testerPreview=profile.cosmeticsPreview===true;
+ const visualSelection=resolveTesterUltraLuxeVisuals({background:profile.backgroundId,border:profile.borderId,pet:profile.petId,verifiedTitleId,displayedBadges},{
+  background:testerPreview,border:testerPreview,pet:testerPreview,
+ });
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const review=__DEV__?reviewCosmetics:undefined;
  const active=cosmeticsActive&&(stageActive??true)&&(review?.active??true);
@@ -98,9 +101,9 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
- const celestial=!review&&height>=205&&celestialBackground&&celestialBorder?celestialAssets:undefined;
- if(!review&&draconic&&draconicBackground&&draconicBorder&&height>=205){
- return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={profile.petId} alternatePetSource={pet} petAccessibilityLabel={profile.petId===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
+ const celestial=!review&&height>=205&&visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
+ if(!review&&draconic&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border&&height>=205){
+ return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={pet} petAccessibilityLabel={visualSelection.pet===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
@@ -111,7 +114,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} showcase/>:undefined}/>;
  }
  if(!celestial)return standard;
- return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
+ return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={visualSelection.pet} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>

@@ -18,6 +18,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {useGameplayText} from '../i18n/gameplay';
 import {equipmentPouchText} from '../i18n/equipment-pouch-ui';
 import {EquipmentArtwork} from './EquipmentArtwork';
+import {ItemInspectIdentity} from './ItemInspectIdentity';
 import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {GameButton} from './GameButton';
 import {EquipmentDisposalStatus} from './EquipmentDisposalStatus';
@@ -144,14 +145,12 @@ export function EquipmentPreview({state,itemId,instanceId,source='inventory',onC
     <View style={s.gearCard}>
      <Text style={s.kicker}>{gl('CURRENTLY EQUIPPED')}</Text>
      {old?<EquipmentArtwork item={old} rarity={oldRarity?.id} size={gearSize} framed={false}/>:<View style={[s.emptyArt,{height:gearSize,width:gearSize}]}><Text style={s.emptyMark}>+</Text></View>}
-     <Text numberOfLines={2} style={[s.gearName,oldRarity&&{color:rarityNameColor(oldRarity.id,C.dark,C.text)}]}>{old?.name??gl('Empty slot')}{oldRank?' +'+oldRank:''}</Text>
-     <Text style={s.meta}>{oldRarity?.label??gl(slot)}{oldRecord?' · Q'+craftedGearDisplayQuality(oldRecord):''}</Text>
+     <ItemInspectIdentity centered name={(old?.name??gl('Empty slot'))+(oldRank?' +'+oldRank:'')} metadata={(oldRarity?gl(oldRarity.label):gl(slot))+(oldRecord?' · Q'+craftedGearDisplayQuality(oldRecord):'')} nameColor={oldRarity?rarityNameColor(oldRarity.id,C.dark,C.text):undefined}/>
     </View>
     <View style={[s.gearCard,s.newGearCard]}>
      <Text style={[s.kicker,{color:E.goldSoft}]}>{gl('NEW EQUIPMENT')}</Text>
      <EquipmentArtwork item={item} rarity={rarity.id} size={gearSize} framed={false}/>
-     <Text numberOfLines={2} style={[s.gearName,{color:rarityNameColor(rarity.id,C.dark,C.text)}]}>{item.name}{enhancement.rank?' +'+enhancement.rank:''}</Text>
-     <Text style={s.meta}>{rarity.label}{instance?' · Q'+craftedGearDisplayQuality(instance):''}</Text>
+     <ItemInspectIdentity centered name={item.name+(enhancement.rank?' +'+enhancement.rank:'')} metadata={gl(rarity.label)+(instance?' · Q'+craftedGearDisplayQuality(instance):'')} nameColor={rarityNameColor(rarity.id,C.dark,C.text)}/>
     </View>
    </View>
    <View style={[s.impact,trade.grade==='improvement'?s.impactGood:trade.grade==='downgrade'?s.impactBad:trade.grade==='tradeoff'?s.impactWarn:null]}>

@@ -43,6 +43,26 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  assert.equal(link.accountLinkStep(verified()),'linked','accounts linked by older builds stay linked');
  assert.equal(link.accountLinkStep({...verified(),user_metadata:{[flag]:'true'}}),'linked','only a boolean flag requests password setup');checks++;
 
+ // SecureStore: a missing chunk is a restore error, never a clean signed-out state.
+ const stored=new Map();
+ let failRemove=false;
+ const storage=callback.chunkedAuthStorage({
+  getItem:async key=>stored.get(key)??null,
+  setItem:async(key,value)=>{stored.set(key,value);},
+  removeItem:async key=>{if(failRemove&&key!=='session')throw Error('cleanup failed');stored.delete(key);},
+ });
+ assert.equal(await storage.getItem('session'),null);
+ await storage.setItem('session','a'.repeat(3500));
+ assert.equal(await storage.getItem('session'),'a'.repeat(3500));
+ failRemove=true;
+ await storage.setItem('session','b'.repeat(3500));
+ assert.equal(await storage.getItem('session'),'b'.repeat(3500),'post-commit cleanup failure does not invalidate the new session');
+ const manifest=JSON.parse(stored.get('session'));
+ stored.delete('session.'+manifest.generation+'.1');
+ await assert.rejects(()=>storage.getItem('session'),/Unable to restore your account/);
+ await storage.removeItem('session');
+ assert.equal(await storage.getItem('session'),null);checks++;
+
  const f=fixture();
  await f.api.upgradeGuestAccount(' Aster@Example.Test ',' Aster ','guest-a');
  assert.equal(f.writes.length,1);assert.equal(f.writes[0].attributes.email,'aster@example.test');

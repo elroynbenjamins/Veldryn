@@ -42,7 +42,7 @@ const issued=new WeakMap<object,ImmutableScope>();
 const validId=(x:unknown):x is string=>
  typeof x==='string'&&x.length>0&&x.length<=128&&/^[A-Za-z0-9:_-]+$/.test(x);
 const unique=(xs:readonly string[])=>new Set(xs).size===xs.length;
-const invalid=(suffix:string):never=>{throw Error('combat_v2_enemy_authority_'+suffix);};
+function invalid(suffix:string):never{throw Error('combat_v2_enemy_authority_'+suffix);}
 /** Shared-engine-compatible UTF-8. Hermes does not always expose TextEncoder. */
 const utf8=(value:string):Uint8Array=>{
  const bytes:number[]=[];

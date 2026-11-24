@@ -328,8 +328,18 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   evidence.push(compiled.evidence);
   return compiled.actor;
  });
- const sources=builds.map((build,i)=>
-  compileExactEquipmentTraitSourceV2(build,runtime[i],party.traitPorts[i]));
+ const portByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>();
+ for(const port of party.traitPorts){
+  if(!port||!port.characterId||portByCharacter.has(port.characterId))
+   throw Error('combat_v2_duplicate_or_invalid_trait_port_character');
+  portByCharacter.set(port.characterId,port);
+ }
+ const sources=players.map(actor=>{
+  const build=byId.get(actor.id)!,gear=gearById.get(actor.id)!;
+  const port=portByCharacter.get(gear.characterId);
+  if(!port)throw Error('combat_v2_missing_trait_port_for_character');
+  return compileExactEquipmentTraitSourceV2(build,gear,port);
+ });
  let finalEnemies:readonly CombatantDefinition[];
  let enemyMechanicLabels:readonly string[];
  let partyEnemySnapshot:PersistedEnemyKitV2|undefined;

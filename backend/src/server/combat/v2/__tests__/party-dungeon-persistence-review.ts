@@ -1,4 +1,5 @@
-import type {CoopRuntimeState} from '../../../coop/repositories/supabase-runtime';
+import {reserveStagedPartyEncounterV2} from '../party-encounter-reservation-review';
+import type {CoopRuntimeState,CoopRuntimeCommit} from '../../../coop/repositories/supabase-runtime';
 import {preparePartyRecoverySnapshotV2,reviewStoredPartyRecoveryV2,loadPartyRecoverySnapshotV2} from '../party-encounter-recovery';
 import {strict as assert} from 'node:assert';
 import type {CombatInput,CombatantDefinition,PersistentActorState} from '../../types';
@@ -213,4 +214,57 @@ async function reviewRecovery(){
  },identity,true),/NOT_PARTICIPANT/);
  console.log('PASS: private party recovery snapshot review and participant-authorized read contract');
 }
-void reviewRecovery();
+async function reviewReservation(){
+ const snapshot=preparePartyRecoverySnapshotV2({...args,stateRevision:args.stateRevision+1});
+ const identity={runId:args.runId,accountId:roster[0].accountId,characterId:roster[0].characterId};
+ const initial:CoopRuntimeState={runId:args.runId,mode:'live',phase:'resolving_node',
+  currentNodeId:args.nodeId,stateVersion:args.stateRevision,clearedPreBossCount:0,
+  privateState:{combatV2PendingEncounterReview:snapshot,other:'preserve'},
+  clientProjection:{safe:true},eventCursor:1};
+ let row=structuredClone(initial),writes=0,reads=0;
+ const events:CoopRuntimeCommit[]=[];
+ const repository={
+  load:async(runId:string,accountId:string)=>{
+   reads++;assert.equal(runId,identity.runId);assert.equal(accountId,identity.accountId);
+   return structuredClone(row);
+  },
+  compareAndSet:async(input:CoopRuntimeCommit)=>{
+   writes++;
+   if(row.stateVersion!==input.expectedStateVersion)
+    throw Object.assign(Error('STALE_STATE'),{code:'stale_state'});
+   row={...row,stateVersion:input.expectedStateVersion+1,privateState:structuredClone(input.privateState),
+    eventCursor:input.eventCursor};
+   events.push(input);
+   return {runId:row.runId,stateVersion:row.stateVersion,eventCursor:row.eventCursor};
+  },
+ };
+ await assert.rejects(()=>reserveStagedPartyEncounterV2(repository,identity),/disabled/);
+ assert.equal(reads,0);assert.equal(writes,0);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2(repository,{...identity,characterId:'OTHER'},true),/not_frozen_participant/);
+ assert.equal(writes,0);
+ const both=await Promise.all([reserveStagedPartyEncounterV2(repository,identity,true),
+  reserveStagedPartyEncounterV2(repository,identity,true)]);
+ assert.deepEqual(both,[snapshot,snapshot]);
+ assert.equal(writes,2);assert.equal(events.length,1);
+ assert.equal(row.stateVersion,args.stateRevision+1);
+ assert.deepEqual(row.privateState,{combatV2EncounterReview:snapshot,other:'preserve'});
+ assert.deepEqual(events[0].clientProjection,initial.clientProjection);
+ assert.deepEqual(events[0].eventPayload,{nodeId:args.nodeId});
+ assert.deepEqual(await reserveStagedPartyEncounterV2(repository,identity,true),snapshot);
+ assert.equal(writes,2);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>({...initial,mode:'qmode' as const}),
+ },identity,true),/invalid_runtime_scope/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>({...initial,stateVersion:initial.stateVersion+1}),
+ },identity,true),/stale_snapshot/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>({...initial,privateState:{}}),
+ },identity,true),/pending_snapshot_missing/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>initial,
+  compareAndSet:async()=>({runId:identity.runId,stateVersion:99,eventCursor:2}),
+ },identity,true),/invalid_commit_receipt/);
+ console.log('PASS: private staged encounter reservation review, mock CAS race and idempotent retry');
+}
+void reviewRecovery().then(reviewReservation);

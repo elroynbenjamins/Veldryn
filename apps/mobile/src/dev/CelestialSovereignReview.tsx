@@ -12,7 +12,6 @@ const alternatePetId='DUNGEON_PET_ASTERFALL_001';
 const alternatePet=petArtSource(alternatePetId);
 
 function Identity(){
- const C=useGameTheme();
  return <View style={s.identity}>
   <Text numberOfLines={1} style={s.name}>Aster Nightfall</Text>
   <Text numberOfLines={1} style={s.title}>Sovereign of the Stars</Text>

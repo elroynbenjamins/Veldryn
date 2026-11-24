@@ -1,3 +1,4 @@
+import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
@@ -13,6 +14,7 @@ export type CelestialPreviewAssets={
  background:ImageSourcePropType;
  border:ImageSourcePropType;
  petShowcase:ImageSourcePropType;
+ poseAtlas?:ImageSourcePropType;
  orrery:ImageSourcePropType;
  star:ImageSourcePropType;
  corona:ImageSourcePropType;
@@ -72,7 +74,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     <Animated.Image source={assets.corona} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
     {petMode==='matching'?<>
      <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
-      <Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>
+      {assets.poseAtlas?<Animated.View style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}><UltraLuxePetPoseSprite source={assets.poseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
       <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
       <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(idle.glow,Animated.multiply(pulse,.35))}]}/>
      </Animated.View>

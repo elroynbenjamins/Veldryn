@@ -1,3 +1,4 @@
+import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
 import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
@@ -5,7 +6,8 @@ import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWind
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
 
 export type DraconicSceneAssets={
- background:ImageSourcePropType;border:ImageSourcePropType;dragon:ImageSourcePropType;flames:ImageSourcePropType;ember:ImageSourcePropType;fallbackGlow:ImageSourcePropType;
+ background:ImageSourcePropType;border:ImageSourcePropType;dragon:ImageSourcePropType;
+ poseAtlas?:ImageSourcePropType;flames:ImageSourcePropType;ember:ImageSourcePropType;fallbackGlow:ImageSourcePropType;
 };
 type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;active?:boolean;reduceMotion?:boolean};
 
@@ -47,7 +49,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
    {mode==='matching'?<>
     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
      <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
-     <Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>
+     {assets.poseAtlas?<Animated.View style={[box(B.dragon),{transform:mirroredBody}]}><UltraLuxePetPoseSprite source={assets.poseAtlas} clock={clock} theme="draconic" width={B.dragon.w*k} height={B.dragon.h*k}/></Animated.View>:<Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:mirroredBody}]}/>}
      <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:Animated.add(Animated.multiply(idle.glow,.18),Animated.multiply(pulse,.85)),transform:mirroredBody}]}/>
      <UltraLuxePetAura clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
     </Animated.View>

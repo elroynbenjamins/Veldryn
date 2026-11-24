@@ -21,6 +21,23 @@ function pulse(clock:Clock,index:number){
 function Decorative({children}:{children:ReactNode}){
  return <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>{children}</View>;
 }
+/** Theme-specific awakening layers. No full-screen flash; identities render above these. */
+function SignatureAwakening({clock,scale:k,theme,particle}:Common){
+ const celestial=theme==='celestial',energy=signatureEnergy(clock);
+ const haloScale=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.72,.72,1,1.38,1.15,.72]});
+ const ascent=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,-5*k,-35*k,-12*k,0]});
+ if(celestial)return <Decorative>
+  <Animated.View style={[StyleSheet.absoluteFill,{backgroundColor:'#03071d',opacity:Animated.multiply(energy,.35)}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,116,18,108,64),{tintColor:'#ffe1a0',opacity:Animated.multiply(energy,.8),transform:[{scale:haloScale}]}]}/>
+  {[[119,42],[220,42],[151,22],[188,22]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,9,9),{opacity:energy,transform:[{scale:haloScale}]}]}/>)}
+ </Decorative>;
+ return <Decorative>
+  <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,244,35,68,107),{tintColor:'#ff6b29',opacity:Animated.multiply(energy,.85),transform:[{translateY:ascent},{scale:haloScale}]}]}/>
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,221,122,91,55),{tintColor:'#ffb347',opacity:Animated.multiply(energy,.8),transform:[{scale:haloScale}]}]}/>
+  {[[243,79],[263,65],[287,86],[303,105]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,8,8),{opacity:energy,transform:[{translateY:ascent}]}]}/>)}
+ </Decorative>;
+}
+
 /** Environment is mounted behind the identity plates, in all pet modes. */
 export function UltraLuxeEnvironment({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',energy=signatureEnergy(clock);
@@ -28,6 +45,7 @@ export function UltraLuxeEnvironment({clock,scale:k,theme,particle}:Common){
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
  const glow=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.12,.12,.33,.65,.25,.12]});
  return <Decorative>
+  <SignatureAwakening clock={clock} scale={k} theme={theme} particle={particle}/>
   {celestial?<CelestialAlignmentLines clock={clock} scale={k}/>:<DraconicHeatChannels clock={clock} scale={k}/>}
   <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,112,9,118,75),{tintColor:celestial?'#a9b8ff':'#a95c48',opacity:glow,transform:[{scale:swell},{translateX:drift}]}]}/>
   <Animated.Image source={HAZE} resizeMode="stretch" style={[pos(k,237,46,77,112),{tintColor:light(theme),opacity:Animated.multiply(energy,.65),transform:[{scale:swell}]}]}/>

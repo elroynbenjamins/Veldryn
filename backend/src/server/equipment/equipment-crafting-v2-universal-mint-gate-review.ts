@@ -67,7 +67,7 @@ export function reviewOriginalForgeToUniversalBonusGateV2(
  if(!linked||linked.piece.id!==outcome.pieceId||
   linked.piece.id!==exactItem.pieceId||
   !same(v2ServerCreateExactTemplate(linked.piece,outcome),exactItem))
-  fail('frozen_original_recipe_or_roll_changed');
+  throw Error('eq2_universal_source_gate_frozen_original_recipe_or_roll_changed');
  if(preview.scope!=='NON_MINTABLE_CLASS_INDEPENDENT_AFFIX_PREVIEW'||
   preview.proposalVersion!==UNIVERSAL_FORGE_AFFIX_REVIEW_VERSION||
   preview.originalManifestPieceId!==linked.piece.id||
@@ -89,7 +89,7 @@ export function reviewOriginalForgeToUniversalBonusGateV2(
   Math.abs(preview.baseStatMultiplier-
    V2_SERVER_RARITY_BASE_MULTIPLIER[preview.rarity]*
     (.75+preview.quality*.005))>1e-9)
-  fail('proposal_rarity_or_quality_tampered');
+  throw Error('eq2_universal_source_gate_proposal_rarity_or_quality_tampered');
  if(!Array.isArray(preview.bonusStats)||
   preview.bonusStats.length!==
    (preview.tier>=3?rarity.affixesHighTier:rarity.affixesLowTier))

@@ -58,6 +58,29 @@ const baseline=simulateUnifiedEquipmentCombatV2(input,builds,runtime,true);
 const first=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 const repeat=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 assert.deepEqual(first,repeat);
+ // Arrival order of independent trusted snapshots must not change the combat digest,
+ // source ordering, equipment evidence, or output. Combat actor order remains fixed.
+ const permute=<T>(xs:readonly T[],order:readonly number[])=>order.map(i=>xs[i]);
+ const shuffledBuilds=permute(builds,[2,0,3,1]);
+ const shuffledGear=permute(runtime,[1,3,0,2]);
+ const shuffledPorts=permute(traitPorts,[3,2,1,0]);
+ assert.deepEqual(baseline,simulateUnifiedEquipmentCombatV2(
+  input,shuffledBuilds,shuffledGear,true));
+ assert.deepEqual(first,simulateUnifiedEquipmentPersistedPartyCombatV2(
+  input,shuffledBuilds,shuffledGear,{...party,traitPorts:shuffledPorts},true));
+ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+  input,builds,runtime,{...party,traitPorts:[traitPorts[0],traitPorts[0],...traitPorts.slice(2)]},true),
+  /duplicate_or_missing_party_trait_character/);
+ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+  input,builds,runtime,{...party,traitPorts:[{...traitPorts[0],characterId:'FOREIGN_CHARACTER'},...traitPorts.slice(1)]},true),
+  /missing_party_trait_character/);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+  {...input,players:[players[0],players[0],...players.slice(2)]},builds,runtime,true),
+  /duplicate_encounter_actor/);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(
+  input,builds,[runtime[0],{...runtime[1],characterId:runtime[0].characterId},...runtime.slice(2)],true),
+  /duplicate_or_missing_equipment_character/);
+
 assert.deepEqual(first.equipmentEvidence,baseline.equipmentEvidence);
 assert.equal(first.equipmentEvidence.length,4);
 assert.ok(first.equipmentEvidence.every(e=>

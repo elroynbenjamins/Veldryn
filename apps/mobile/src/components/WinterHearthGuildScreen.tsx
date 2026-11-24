@@ -7,7 +7,6 @@ import type {GameState} from '../core/types';
 import {WINTER_HEARTH_DONATION_IDS,winterHearthDonationTrack,winterHearthUnlockedStock,winterHearthMaxDonation,type WinterHearthTrack} from '../core/winter-hearth-donations';
 import {readPendingWinterHearthDonation,submitWinterHearthDonation,type PendingWinterHearthDonation} from '../online/winter-hearth-pending-donation';
 import {localizedItemName} from '../i18n/starter-item-names';
-import {itemDef} from '../content/items';
 import {BoardTabs} from './BoardTabs';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
 import {eventTheme} from '../theme/event-palette';
@@ -59,7 +58,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  const maxFor=(id:string)=>{const track=winterHearthDonationTrack(id);return track?winterHearthMaxDonation(available(id),track==='logs'?(snapshot?.memberLogsRemaining??0):(snapshot?.memberLightsRemaining??0),track==='logs'?25000-logs:2500-lights):0;};
  const disabled=busy||gameplayBusy||!pendingReady||!!pending||inventoryStale||!snapshot?.active||!snapshot.weekStartUtc||now>=endsAtMs||!state.character;
  const max=maxFor(selected),amount=Number(quantity),valid=/^[1-9][0-9]*$/.test(quantity)&&Number.isSafeInteger(amount)&&amount<=max;
- const itemName=(id:string)=>localizedItemName(language,id,itemDef(id)?.name??id);
+ const itemName=(id:string)=>localizedItemName(language,id);
  const openDonation=(track:WinterHearthTrack)=>{if(disabled)return;const first=WINTER_HEARTH_DONATION_IDS.find(id=>winterHearthDonationTrack(id)===track&&maxFor(id)>0)??'';setSelected(first);setQuantity('1');setDonationTrack(track);setFeedback('');};
  const refreshInventory=async()=>{try{await onRefreshInventory();if(mounted.current)setInventoryStale(false);}catch{if(mounted.current){setInventoryStale(true);setFeedback('Inventory refresh unavailable. Refresh before donating again.');}}};
  const send=async(retry?:PendingWinterHearthDonation)=>{

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {reviewPermanentGemSourcesV2,type PermanentGemReviewSourceV2} from '../../combat/v2/permanent-gem-source-review';
 import type {V2PrivateGameState} from '../equipment-crafting-v2-private-game-state-type';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
@@ -169,5 +170,41 @@ assert.equal(switched.character?.id,'gem-other-hero');
 assert.throws(()=>simulateEquipmentV2GemInGameState(input(switched,
  command('gem-not-owner-01',13,firstGem),13,100)),/v2_socket_copy_not_in_character_custody/,
  'Other account characters may share gems but not mutate an unreleased copy owned by the original crafter');
+// Read only the equipped exact-copy socket ledger, never historical/banked copies.
+const gemReviewSource=(s:typeof state,version:number,worn:readonly string[]):PermanentGemReviewSourceV2=>{
+ const ledger=s.account.equipmentV2Hidden as unknown as {
+  items:PermanentGemReviewSourceV2['items'];jobs:PermanentGemReviewSourceV2['jobs'];
+  receipts:PermanentGemReviewSourceV2['claims'];skillAwards:PermanentGemReviewSourceV2['awards'];
+  storageReservations:PermanentGemReviewSourceV2['reservations'];
+  custodyReceipts?:PermanentGemReviewSourceV2['custodyReceipts'];
+ };
+ return {accountId,characterId:owner,ledgerRevision:version,items:ledger.items,
+  jobs:ledger.jobs,claims:ledger.receipts,awards:ledger.skillAwards,
+  reservations:ledger.storageReservations,custodyReceipts:ledger.custodyReceipts??[],
+  sidecar:getSidecar(s),equippedInstanceIds:worn,verifyPersisted:(digest,rev)=>
+   /^[0-9a-f]{64}$/.test(digest)&&rev===version};
+};
+assert.deepEqual(reviewPermanentGemSourcesV2(gemReviewSource(replaced.state,15,[])).totals,{});
+const wornStat=simulateEquipmentV2VirtualCustody({
+ state:replaced.state,accountId,onlineVersion:15,onlineCharacterId:owner,
+ authoritativeWalletGold:replaced.state.character!.gold,
+ command:{kind:'equip',instanceId:itemId,requestId:'gem-review-equip-01',expectedVersion:15},
+});
+const reviewSource=gemReviewSource(wornStat.state,16,[itemId]);
+const projection=reviewPermanentGemSourcesV2(reviewSource);
+assert.deepEqual(projection.totals,{'critRate:percentage_point':.0022});
+assert.equal(projection.statSources.length,1,'Replaced gem contributes only the latest socket');
+assert.equal(projection.statSources[0].gemId,replacementGem);
+assert.equal(projection.canApplyStats,false);
+assert.equal(projection.canContributeCP,false);
+assert.deepEqual(projection,reviewPermanentGemSourcesV2(reviewSource));
+assert.throws(()=>reviewPermanentGemSourcesV2({...reviewSource,equippedInstanceIds:[]}),/worn_copy_set_mismatch/);
+assert.throws(()=>reviewPermanentGemSourcesV2({...reviewSource,ledgerRevision:12}),/foreign_or_stale_ledger/);
+assert.throws(()=>reviewPermanentGemSourcesV2({...reviewSource,verifyPersisted:()=>false}),/unverified_persisted_snapshot/);
+assert.throws(()=>reviewPermanentGemSourcesV2({...reviewSource,characterId:'foreign-hero'}),/worn_copy_set_mismatch/);
+const effectProjection=reviewPermanentGemSourcesV2(gemReviewSource(installedEffect.state,14,[itemId]));
+assert.deepEqual(effectProjection.totals,{});
+assert.equal(effectProjection.effectSources.length,1);
+assert.equal(effectProjection.effectSources[0].runtimeEnabled,false);
 assert.equal(owner,state.character!.id);
 console.log('PASS: hidden Equipment 2.0 permanent Stat Gem one-time consumption, owner receipts, reroll, replacement, deferred effect caps and disabled runtime');

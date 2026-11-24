@@ -6,6 +6,7 @@ import {gearStatsForCopy,gemEffectDescription,legacyGemBonusValue,normalizeEnhan
 import {canonicalGemMetaV1,formatGemValueV1} from './gem-progression-v1';
 import {normalizeWeaponBonuses,type WeaponBonusRoll,type WeaponBonusRollVersion} from './weapon-bonus-rolls';
 import {normalizeEquipmentBonuses} from './equipment-bonus-rolls';
+import {normalizeProfileV2Snapshot,type ProfileV2Snapshot} from './profile-gear-v2-snapshot';
 
 /** Stable ten-slot order used by the public profile and local audience preview. */
 export const PROFILE_GEAR_SLOTS:readonly GearSlot[]=[
@@ -20,6 +21,8 @@ export interface ProfileEquippedGear{
  /** True only when the server resolved the selected character and its exact equipped copy. */
  inspectionKnown?:boolean;
  bonuses?:WeaponBonusRoll[];
+ generation?:2;
+ snapshot?:ProfileV2Snapshot;
  statGemRollPercent?:number;
  effectGemRollPercent?:number;
  statGemId?:string;
@@ -59,8 +62,10 @@ function copyBonuses(itemId:string,rarity:ItemRarity|undefined,row:Record<string
 /** No viewer loadout, set bonuses, or speculative values are included. */
 export function profileItemStats(gear:ProfileEquippedGear){
  try{
+  if(gear.inspectionKnown!==true)return undefined;
+  if(gear.generation===2)return gear.snapshot?.baseStats;
   const item=itemDef(gear.itemId);
-  if(item.type!=='gear'||gear.inspectionKnown!==true)return undefined;
+  if(item.type!=='gear'||item.slot!==gear.slot)return undefined;
   return gearStatsForCopy(item.id,gear.rank??0,gear.rarity??itemRarity(item),gear.quality);
  }catch{return undefined}
 }
@@ -72,7 +77,7 @@ export function profileItemSockets(gear:ProfileEquippedGear){
   const roll=kind==='stat'?slots.statGemRollPercent:slots.effectGemRollPercent;
   if(!id)return {kind,id:undefined,detail:undefined};
   // An old RPC did not include roll strength. Do not imply a neutral roll is verified.
-  if(gear.inspectionKnown!==true)return {kind,id,detail:undefined};
+  if(gear.inspectionKnown!==true||gear.generation===2)return {kind,id,detail:undefined};
   try{
    const gem=itemDef(id),meta=canonicalGemMetaV1(id);
    const value=meta?gemRolledValueV1(meta.familyId,meta.grade,roll):legacyGemBonusValue(id,roll);
@@ -95,11 +100,16 @@ export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefin
   const itemId=cleanId(row.itemId);
   if(!itemId)continue;
   const rarity=typeof row.rarity==='string'&&rarities.includes(row.rarity)?row.rarity as ItemRarity:undefined;
+  const generation=row.generation===2?2:undefined;
+  const snapshot=generation===2?normalizeProfileV2Snapshot(row.snapshot):undefined;
+  const validOptional=(value:unknown,cleaned:unknown)=>value===null||value===undefined||cleaned!==undefined;
+  const known=row.inspectionKnown===true&&validOptional(row.rank,cleanRank(row.rank))&&validOptional(row.quality,cleanQuality(row.quality))&&validOptional(row.rarity,rarity)
+   &&(generation!==2||!!snapshot&&!!rarity&&cleanQuality(row.quality)!==undefined&&cleanRank(row.rank)!==undefined);
   bySlot.set(row.slot as GearSlot,{
    slot:row.slot as GearSlot,itemId,rarity,
    quality:cleanQuality(row.quality),rank:cleanRank(row.rank),
-   inspectionKnown:row.inspectionKnown===true,
-   bonuses:row.inspectionKnown===true?copyBonuses(itemId,rarity,row):undefined,
+   inspectionKnown:known,generation,snapshot:known?snapshot:undefined,
+   bonuses:known&&generation!==2?copyBonuses(itemId,rarity,row):undefined,
    statGemRollPercent:normalizeGemRollPercentV1(row.statGemRollPercent),
    effectGemRollPercent:normalizeGemRollPercentV1(row.effectGemRollPercent),
    statGemId:cleanId(row.statGemId),effectGemId:cleanId(row.effectGemId),
@@ -121,12 +131,13 @@ export function localProfileGear(state:GameState,selectedCharacterId?:string|nul
   const itemId=character.equipment?.[slot];
   if(!itemId)return [];
   const instanceId=character.equipmentInstanceIds?.[slot];
-  const instance=instanceId?state.account.craftedGearInstances?.find(row=>
-    row.id===instanceId&&row.itemId===itemId&&row.ownerCharacterId===character.id):undefined;
-  const enhancement=instance?.enhancement??character.gearEnhancements?.[itemId];
+  const matches=instanceId?(state.account.craftedGearInstances??[]).filter(row=>row.id===instanceId):[];
+  const candidate=matches.length===1?matches[0]:undefined;
+  const instance=candidate?.itemId===itemId&&candidate.ownerCharacterId===character.id?candidate:undefined;
+  const enhancement=instanceId?instance?.enhancement:character.gearEnhancements?.[itemId];
   return [{
    slot,itemId,rarity:instance?.rarity,
-   inspectionKnown:!instanceId||!!instance,
+   inspectionKnown:!instanceId||!!instance&&!!instance.enhancement,
    bonuses:instance?copyBonuses(itemId,instance.rarity,{...instance}):undefined,
    statGemRollPercent:normalizeGemRollPercentV1(enhancement?.statGemRollPercent),
    effectGemRollPercent:normalizeGemRollPercentV1(enhancement?.effectGemRollPercent),

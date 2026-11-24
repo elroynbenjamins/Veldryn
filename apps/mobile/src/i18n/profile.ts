@@ -10,6 +10,9 @@ export const profileTranslationRows = {
   "Largest craft result": ["Größtes Herstellungsergebnis","Mayor resultado de fabricación","Grootste vervaardigingsresultaat","Maggior risultato di creazione","Plus grand résultat de fabrication"],
   "Complete Beyond the Green and break the Fallen Knight’s oath.": ["Schließe Beyond the Green ab und brich den Eid des Gefallenen Ritters.","Completa Beyond the Green y rompe el juramento del Caballero Caído.","Voltooi Beyond the Green en verbreek de eed van de Gevallen Ridder.","Completa Beyond the Green e infrangi il giuramento del Cavaliere Caduto.","Terminez Beyond the Green et brisez le serment du Chevalier déchu."],
   // Equipped gear detail viewer.
+  "Equipment details unavailable": ["Ausrüstungsdetails nicht verfügbar","Detalles del equipo no disponibles","Uitrustingsdetails niet beschikbaar","Dettagli equipaggiamento non disponibili","Détails de l'équipement indisponibles"],
+  "INNATE BONUSES": ["ANGEBORENE BONI","BONIFICACIONES INNATAS","INGEBOREN BONUSSEN","BONUS INNATI","BONUS INNÉS"],
+  "Tier {tier}": ["Stufe {tier}","Nivel {tier}","Niveau {tier}","Livello {tier}","Palier {tier}"],
   "BASE ITEM STATS": ["BASISWERTE DES GEGENSTANDS","ATRIBUTOS BASE DEL OBJETO","BASISSTATISTIEKEN ITEM","STATISTICHE BASE OGGETTO","STATS DE BASE DE L'OBJET"],
   "Rarity, quality, enhancements and gems can improve these stats.": ["Seltenheit, Qualität, Verbesserungen und Edelsteine können diese Werte erhöhen.","Rareza, calidad, mejoras y gemas pueden aumentar estos atributos.","Zeldzaamheid, kwaliteit, verbeteringen en edelstenen kunnen deze waarden verhogen.","Rarità, qualità, potenziamenti e gemme possono aumentare queste statistiche.","Rareté, qualité, améliorations et gemmes peuvent augmenter ces stats."],
   "SOCKETED GEMS": ["EINGESETZTE EDELSTEINE","GEMAS ENGARZADAS","INGEZETTE EDELSTENEN","GEMME INCASTONATE","GEMMES SERTIES"],

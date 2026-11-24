@@ -61,22 +61,24 @@ begin
       where entry.value->>'id'=v_instance_id and entry.value->>'itemId'=v_item_id
         and entry.value->>'ownerCharacterId'=v_profile#>>'{character,id}'
       limit 1;
+      if (select count(*) from jsonb_array_elements(case when jsonb_typeof(v_game#>'{account,craftedGearInstances}')='array' then v_game#>'{account,craftedGearInstances}' else '[]'::jsonb end) e where e->>'id'=v_instance_id)<>1 then v_instance:=null;end if;
     end if;
-    v_enhancement:=coalesce(v_instance->'enhancement',v_character->'gearEnhancements'->v_item_id,'{}'::jsonb);
+    v_enhancement:=case when v_instance_id is not null then coalesce(v_instance->'enhancement','{}'::jsonb)
+      else coalesce(v_character->'gearEnhancements'->v_item_id,'{}'::jsonb) end;
     v_rows:=v_rows||jsonb_build_array(jsonb_build_object(
       'slot',v_slot,'itemId',v_item_id,
-      'rarity',v_instance->>'rarity','quality',v_instance->'quality',
-    'inspectionKnown',v_character ? 'id' and (v_instance_id is null or v_instance is not null),
-    'weaponBonusRollVersion',v_instance->'weaponBonusRollVersion',
-    'equipmentBonusRollVersion',v_instance->'equipmentBonusRollVersion',
+      'rarity',v_instance->>'rarity','quality',case when jsonb_typeof(v_instance->'quality')='number' then v_instance->'quality' end,
+    'inspectionKnown',v_character ? 'id' and (v_instance_id is null or (v_instance is not null and jsonb_typeof(v_instance->'enhancement')='object')),
+    'weaponBonusRollVersion',case when jsonb_typeof(v_instance->'weaponBonusRollVersion')='number' then v_instance->'weaponBonusRollVersion' end,
+    'equipmentBonusRollVersion',case when jsonb_typeof(v_instance->'equipmentBonusRollVersion')='number' then v_instance->'equipmentBonusRollVersion' end,
     'weaponBonuses',(select coalesce(jsonb_agg(jsonb_build_object('stat',r->'stat','basisPoints',r->'basisPoints')),'[]'::jsonb) from (select value as r from jsonb_array_elements(case when jsonb_typeof(v_instance->'weaponBonuses')='array' then v_instance->'weaponBonuses' else '[]'::jsonb end) limit 2) b where jsonb_typeof(r->'stat')='string' and jsonb_typeof(r->'basisPoints')='number'),
     'equipmentBonuses',(select coalesce(jsonb_agg(jsonb_build_object('stat',r->'stat','basisPoints',r->'basisPoints')),'[]'::jsonb) from (select value as r from jsonb_array_elements(case when jsonb_typeof(v_instance->'equipmentBonuses')='array' then v_instance->'equipmentBonuses' else '[]'::jsonb end) limit 2) b where jsonb_typeof(r->'stat')='string' and jsonb_typeof(r->'basisPoints')='number'),
-    'statGemRollPercent',v_enhancement->'statGemRollPercent',
-    'effectGemRollPercent',v_enhancement->'effectGemRollPercent',
-      'rank',v_enhancement->'rank',
+    'statGemRollPercent',case when jsonb_typeof(v_enhancement->'statGemRollPercent')='number' then v_enhancement->'statGemRollPercent' end,
+    'effectGemRollPercent',case when jsonb_typeof(v_enhancement->'effectGemRollPercent')='number' then v_enhancement->'effectGemRollPercent' end,
+      'rank',case when jsonb_typeof(v_enhancement->'rank')='number' then v_enhancement->'rank' end,
       'statGemId',v_enhancement->>'statGemId',
       'effectGemId',v_enhancement->>'effectGemId',
-      'gemIds',case when jsonb_typeof(v_enhancement->'gemIds')='array' then v_enhancement->'gemIds' else '[]'::jsonb end
+      'gemIds',(select coalesce(jsonb_agg(g),'[]'::jsonb) from (select value as g from jsonb_array_elements(case when jsonb_typeof(v_enhancement->'gemIds')='array' then v_enhancement->'gemIds' else '[]'::jsonb end) with ordinality as e(value,ord) where jsonb_typeof(value)='string' order by ord limit 2) bounded)
     ));
   end loop;
   return jsonb_build_object('characterId',v_profile#>>'{character,id}','items',v_rows);
@@ -138,24 +140,24 @@ begin
       then v_game#>'{account,craftedGearInstances}' else '[]'::jsonb end) as entry(value)
    where entry.value->>'id'=v_instance_id and entry.value->>'itemId'=v_item_id
     and entry.value->>'ownerCharacterId'=v_id limit 1;
+   if (select count(*) from jsonb_array_elements(case when jsonb_typeof(v_game#>'{account,craftedGearInstances}')='array' then v_game#>'{account,craftedGearInstances}' else '[]'::jsonb end) e where e->>'id'=v_instance_id)<>1 then v_instance:=null;end if;
   end if;
-  v_enhancement:=coalesce(v_instance->'enhancement',
-     v_character->'gearEnhancements'->v_item_id,'{}'::jsonb);
+  v_enhancement:=case when v_instance_id is not null then coalesce(v_instance->'enhancement','{}'::jsonb)
+      else coalesce(v_character->'gearEnhancements'->v_item_id,'{}'::jsonb) end;
   v_rows:=v_rows||jsonb_build_array(jsonb_build_object(
     'slot',v_slot,'itemId',v_item_id,
-    'rarity',v_instance->>'rarity','quality',v_instance->'quality',
-    'inspectionKnown',v_character ? 'id' and (v_instance_id is null or v_instance is not null),
-    'weaponBonusRollVersion',v_instance->'weaponBonusRollVersion',
-    'equipmentBonusRollVersion',v_instance->'equipmentBonusRollVersion',
+    'rarity',v_instance->>'rarity','quality',case when jsonb_typeof(v_instance->'quality')='number' then v_instance->'quality' end,
+    'inspectionKnown',v_character ? 'id' and (v_instance_id is null or (v_instance is not null and jsonb_typeof(v_instance->'enhancement')='object')),
+    'weaponBonusRollVersion',case when jsonb_typeof(v_instance->'weaponBonusRollVersion')='number' then v_instance->'weaponBonusRollVersion' end,
+    'equipmentBonusRollVersion',case when jsonb_typeof(v_instance->'equipmentBonusRollVersion')='number' then v_instance->'equipmentBonusRollVersion' end,
     'weaponBonuses',(select coalesce(jsonb_agg(jsonb_build_object('stat',r->'stat','basisPoints',r->'basisPoints')),'[]'::jsonb) from (select value as r from jsonb_array_elements(case when jsonb_typeof(v_instance->'weaponBonuses')='array' then v_instance->'weaponBonuses' else '[]'::jsonb end) limit 2) b where jsonb_typeof(r->'stat')='string' and jsonb_typeof(r->'basisPoints')='number'),
     'equipmentBonuses',(select coalesce(jsonb_agg(jsonb_build_object('stat',r->'stat','basisPoints',r->'basisPoints')),'[]'::jsonb) from (select value as r from jsonb_array_elements(case when jsonb_typeof(v_instance->'equipmentBonuses')='array' then v_instance->'equipmentBonuses' else '[]'::jsonb end) limit 2) b where jsonb_typeof(r->'stat')='string' and jsonb_typeof(r->'basisPoints')='number'),
-    'statGemRollPercent',v_enhancement->'statGemRollPercent',
-    'effectGemRollPercent',v_enhancement->'effectGemRollPercent',
-    'rank',v_enhancement->'rank',
+    'statGemRollPercent',case when jsonb_typeof(v_enhancement->'statGemRollPercent')='number' then v_enhancement->'statGemRollPercent' end,
+    'effectGemRollPercent',case when jsonb_typeof(v_enhancement->'effectGemRollPercent')='number' then v_enhancement->'effectGemRollPercent' end,
+    'rank',case when jsonb_typeof(v_enhancement->'rank')='number' then v_enhancement->'rank' end,
     'statGemId',v_enhancement->>'statGemId',
     'effectGemId',v_enhancement->>'effectGemId',
-    'gemIds',case when jsonb_typeof(v_enhancement->'gemIds')='array'
-      then v_enhancement->'gemIds' else '[]'::jsonb end));
+    'gemIds',(select coalesce(jsonb_agg(g),'[]'::jsonb) from (select value as g from jsonb_array_elements(case when jsonb_typeof(v_enhancement->'gemIds')='array' then v_enhancement->'gemIds' else '[]'::jsonb end) with ordinality as e(value,ord) where jsonb_typeof(value)='string' order by ord limit 2) bounded)));
  end loop;
  return jsonb_build_object('characterId',v_id,'items',v_rows);
 end $$;

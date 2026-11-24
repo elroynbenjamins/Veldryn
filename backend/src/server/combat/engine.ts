@@ -215,7 +215,13 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       ?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
     const authoredPenetration=v2Encounter&&source.definition.combatV2?
       clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
-    const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
+    const eq2TimedDefense=eq2PrivateHit&&effect.damageType!==undefined&&effect.damageType!=='true'
+      ?eq2PrivateHit.timedStat(target.definition.id,now,'defense'):undefined;
+    const effectiveDefense=gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration);
+    const mit=effect.damageType==='true'?0:defenseMitigation(effectiveDefense*(1+(eq2TimedDefense?.pct??0)/100),mitigationConstant);
+    if(eq2TimedDefense?.pct&&mit>defenseMitigation(effectiveDefense,mitigationConstant))
+      events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
+        abilityId:'V2_QA_TIMED:'+eq2TimedDefense.ids.join('+'),amount:eq2TimedDefense.pct,detail:'private_qa_timed_defense_used'});
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now)+modifier(target,'crit_taken',now),0,.75);
     const qmodeStrike=input.enemyDamageProfile==='qmode-v1'&&source.definition.team==='enemies'&&target.definition.team==='players'&&eventType==='damage';
     // Preserve all legacy RNG draws for Live, ordinary hunts and in-flight runs.
@@ -316,6 +322,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
     const eq2Incoming=eq2PrivateHit&&source.definition.team==='enemies'&&target.definition.team==='players'?{
       now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+      mitigated:mit>0,
       originalEnemyAbility:abilityId==='BASIC'||(source.definition.abilities.some(a=>a.id===abilityId)&&
         !(source.definition.phases??[]).some(p=>p.id===abilityId)),
       direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
@@ -479,6 +486,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
       forgeHealMultiplier); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+    if(eq2PrivateHit&&direct&&actual>0&&source.definition.team==='players'&&target.definition.team==='players'){
+      const earned=eq2PrivateHit.afterEffectiveHeal({now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+        originalClassHeal:authoredClassHeal&&source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='heal')),actualHeal:actual});
+      for(const id of earned)events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+        abilityId:'V2_QA_TIMED_EARN:'+id,detail:'private_qa_timed_heal_earned'});
+    }
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
       if(!abilityId.startsWith('V2_'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});
@@ -638,6 +651,13 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
   };
 
+  const eq2Haste=(actor:CombatantState,now:number)=>{
+    const active=eq2PrivateHit?.timedStat(actor.definition.id,now,'haste');
+    if(!active?.pct)return 0;
+    events.push({atMs:now,type:'equipment_trait_trigger',actorId:actor.definition.id,
+      abilityId:'V2_QA_TIMED:'+active.ids.join('+'),amount:active.pct,detail:'private_qa_timed_haste_used'});
+    return active.pct/100;
+  };
   for(let now=0; now<=maxMs; now+=tick){
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
@@ -697,8 +717,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
       const ab=abilitiesByActor.get(actor)?.find(a=>(actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
-      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
-      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0)));} }
+      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/Math.max(.25,1+gemEffectiveHasteV1(actor,now)+eq2Haste(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0)));} }
     }
   }
   events.push({atMs:maxMs,type:'combat_end',detail:'timeout'}); return {victory:false,durationMs:maxMs,reason:'timeout',events,players,enemies};

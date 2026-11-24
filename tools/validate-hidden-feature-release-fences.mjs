@@ -20,6 +20,7 @@ const paths={
   routes:'apps/mobile/src/core/feature-hub-routes.ts',
   app:'apps/mobile/App.tsx',
   store:'apps/mobile/src/screens/StoreScreen.tsx',
+  cosmeticGrant:'backend/src/server/control-center/profile-cosmetic-grant-service-v1.ts',
   worldRead:'backend/online/world-boss-current-read-route-v52.ts',
   worldErasure:'backend/online/world-boss-account-erasure-v56.ts',
   partyRead:'backend/online/party-event-read-route-v39.ts',
@@ -47,6 +48,7 @@ function check(read,migrations){
   requireExportFalse('flags','ACCOUNT_SOCIAL_IDENTITY_RELEASED');
   requireExportFalse('flags','PROFILE_ANIMATED_COSMETICS_RELEASED');
   requireExportFalse('flags','PROFILE_COSMETICS_STORE_RELEASED');
+  requireExportFalse('cosmeticGrant','PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE');
   const store=source('store');
   if(!/const\s+STORE_COSMETICS_VISIBLE\s*=\s*PROFILE_COSMETICS_STORE_RELEASED\s*;/.test(store))
     failures.push('Cosmetics Store tab must remain bound to its explicit release flag');
@@ -118,6 +120,7 @@ function selfTest(){
     ['profile-cosmetics-render-release',paths.flags,'PROFILE_ANIMATED_COSMETICS_RELEASED=false','PROFILE_ANIMATED_COSMETICS_RELEASED=true'],
     ['profile-cosmetics-store-release',paths.flags,'PROFILE_COSMETICS_STORE_RELEASED=false','PROFILE_COSMETICS_STORE_RELEASED=true'],
     ['profile-cosmetics-store-bypass',paths.store,'const STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED;','const STORE_COSMETICS_VISIBLE=true;'],
+    ['profile-cosmetics-grant-release',paths.cosmeticGrant,'PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=false','PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=true'],
     ['social-name-production-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_RELEASE_CHANNEL==='staging'","true"],
     ['social-name-project-bypass',paths.socialGate,"process.env.EXPO_PUBLIC_SUPABASE_URL==='https://iqfmmpvwanvvmxcftfxw.supabase.co'","true"],
     ['social-name-eas-prod-bypass',paths.eas,'"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "false"','"EXPO_PUBLIC_SOCIAL_NAMES_STAGING_PREVIEW": "true"'],

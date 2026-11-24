@@ -20,17 +20,20 @@ const stages=[
 ] as const;
 const stageTitle=(p:number)=>stages.find(row=>row.percent===p)?.name??'Snow-covered grounds';
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
-type Props={onClose:()=>void;onOpenCrafting?:(skill:'smithing'|'tailoring')=>void;scope:string};
+type Props={onClose:()=>void;onOpenCrafting?:(skill:'smithing'|'tailoring')=>void;scope:string;endsAtMs:number};
 
 /** Seasonal scope only: never changes account theme or Guild Home. */
 export function WinterHearthGuildScreen(props:Props){
  const base=useGameTheme(),colors=useMemo(()=>eventTheme(base,FROSTFALL_EVENT),[base]);
  return <GameThemeScope colors={colors}><WinterHearthContent {...props}/></GameThemeScope>;
 }
-function WinterHearthContent({onClose,onOpenCrafting,scope}:Props){
+function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs}:Props){
  const C=useGameTheme(),{gl}=useGameplayText(),language=useGameLanguage();
  const [page,setPage]=useState<Page>('Market'),[snapshot,setSnapshot]=useState<WinterHearthGuildSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[craftOpen,setCraftOpen]=useState(false),[expanded,setExpanded]=useState<number|null>(null);
- const generation=useRef(0);
+ const generation=useRef(0),[now,setNow]=useState(Date.now());
+ useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
+ const remainingHours=Math.max(0,Math.ceil((endsAtMs-now)/3600000));
+ const remainingLabel=remainingHours>=24?Math.floor(remainingHours/24)+'d '+remainingHours%24+'h':remainingHours+'h';
  const reload=useCallback(async()=>{
   const key=++generation.current;setLoading(true);setError('');setSnapshot(null);
   try{const next=await getWinterHearthGuildSnapshot();if(generation.current===key)setSnapshot(next);}
@@ -48,17 +51,17 @@ function WinterHearthContent({onClose,onOpenCrafting,scope}:Props){
  return <View style={[s.screen,{backgroundColor:C.bg}]}>
   <View style={[s.header,{borderBottomColor:C.line,backgroundColor:C.panel}]}><GameButton compact tone="secondary" title={gl('← Guild Home')} onPress={onClose}/><Text style={[s.headerText,{color:C.accent}]}>{gl('Frostfall 2026')}</Text></View>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-   <ImageBackground source={liveEventVisuals('frostfall').heroBackground} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text></View></ImageBackground>
+   <ImageBackground source={liveEventVisuals('frostfall').heroBackground} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text><Text style={s.heroCopy}>{snapshot?.active&&remainingHours>0?remainingLabel+' · '+gl('remaining'):snapshot?.enabled&&!snapshot.active?gl('Donations closed'):gl('December 3–26')}</Text></View></ImageBackground>
    {loading?<Panel><ActivityIndicator color={C.accent}/><Text style={smallStyle}>{gl('Loading guild progress…')}</Text></Panel>:error?<Panel><Text style={smallStyle}>{gl(error)}</Text><GameButton compact title={gl('Retry')} onPress={reload}/></Panel>:!snapshot?.inGuild||!snapshot.enabled?<Panel><Text style={titleStyle}>{gl('Winter Hearth is not available.')}</Text><GameButton tone="secondary" compact title={gl('Refresh')} onPress={reload}/></Panel>:<>
     <BoardTabs compact label={gl('Guild event sections')} items={[{id:'Market',label:gl('Market')},{id:'Rewards',label:gl('Rewards')}] as const} value={page} onChange={setPage}/>
     {page==='Market'?<>
      <Panel accentColor={C.lineStrong}><View style={s.row}><View style={s.flex}><Text style={smallStyle}>{gl('Market construction')}</Text><Text style={[titleStyle,{fontSize:19}]}>{gl(stageTitle(stage))}</Text></View><Text style={{fontSize:27,fontWeight:'900',color:C.accent,fontVariant:['tabular-nums']}}>{progress}%</Text></View>
      <View style={s.stageRow}>{[0,25,50,75,100].map(p=><View key={p} style={s.stageCell}><View style={[s.stageDot,{backgroundColor:p<=stage?C.accent:C.panel2,borderColor:p<=stage?C.accent:C.lineStrong}]}/><Text style={{fontSize:10,fontWeight:'700',color:p<=stage?C.accent:C.muted}}>{p}%</Text></View>)}</View>
      {renderTrack('Logs',logs,25000,C.accent)}{renderTrack('Christmas Lights',lights,2500,C.warning)}
-     <Text style={smallStyle}>{next?gl('Both tracks must reach the next milestone.'):gl('Your guild completed the market!')}</Text></Panel>
+     <Text style={smallStyle}>{next?gl('Both tracks must reach the next milestone.'):gl('Your guild completed the market!')}</Text>{next?<View style={[s.recipe,{borderColor:C.line,backgroundColor:C.panel2}]}><Text style={titleStyle}>{gl('Next milestone')} · {next.percent}%</Text><Text style={smallStyle}>{fmt(Math.max(0,next.percent*250-logs))} {gl('Logs')} · {fmt(Math.max(0,next.percent*25-lights))} {gl('Christmas Lights')} {gl('remaining')}</Text></View>:null}</Panel>
      <Panel><Text style={titleStyle}>{gl('Your weekly contributions')}</Text>{renderTrack('Logs',snapshot.memberLogsThisWeek??0,2500,C.accent)}{renderTrack('Christmas Lights',snapshot.memberLightsThisWeek??0,250,C.warning)}
       <Text style={smallStyle}>{gl('Donations are shared across characters and reset Monday at 00:00 UTC.')}</Text>
-      <Text style={smallStyle}>{gl(snapshot.active?'Donation controls are awaiting server integration review.':'The donation window is closed.')}</Text>
+      <View style={s.donationRow}><GameButton style={s.flex} title={gl('Donate Logs')} disabled onPress={()=>undefined}/><GameButton style={s.flex} title={gl('Donate Lights')} disabled onPress={()=>undefined}/></View><Text style={smallStyle}>{gl(snapshot.active?'Donation controls are awaiting server integration review.':'The donation window is closed.')}</Text>
       <GameButton compact tone="secondary" title={gl(craftOpen?'Hide light recipes':'How to craft lights')} onPress={()=>setCraftOpen(v=>!v)}/>
       {craftOpen&&(['smithing','tailoring'] as const).map(skill=><View key={skill} style={[s.recipe,{borderColor:C.line,backgroundColor:C.panel2}]}><Text style={titleStyle}>{gl(skill==='smithing'?'Smithing · Level 4':'Tailoring · Level 4')}</Text><Text style={smallStyle}>{gl(skill==='smithing'?'8 Copper Ore':'8 Moss Fiber')} · {gl('4 Dewleaf')} · {gl('1 Wisp Dust')}</Text><Text style={{color:C.accent,fontSize:12,fontWeight:'700'}}>{gl('5 Christmas Lights · 35 base XP · 40s · 30 base Gold')}</Text>{onOpenCrafting&&snapshot.active?<GameButton compact tone="secondary" title={gl('Open crafting')} onPress={()=>onOpenCrafting(skill)}/>:null}</View>)}
      </Panel>
@@ -71,4 +74,4 @@ function WinterHearthContent({onClose,onOpenCrafting,scope}:Props){
   </ScrollView>
  </View>;
 }
-const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{minHeight:150,borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(8,23,43,.48)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},flex:{flex:1,minWidth:0},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});
+const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{minHeight:150,borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(8,23,43,.48)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9},flex:{flex:1,minWidth:0},donationRow:{flexDirection:'row',gap:7},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});

@@ -6,8 +6,8 @@ import {v2ServerCreateExactTemplate} from '../equipment-crafting-v2-instances';
 import {validateEquipmentV2EffectGemInstall} from '../equipment-crafting-v2-effect-gem-policy';
 import type {V2DraftItem} from '../equipment-crafting-v2-transaction';
 import type {V2HiddenStorageReservation} from '../equipment-crafting-v2-storage-reservations';
-import type {V2VirtualMoveReceipt} from '../equipment-crafting-v2-virtual-custody';
-import type {V2GemSidecarState} from '../equipment-crafting-v2-gem-sidecar';
+import type {V2VirtualMoveReceipt} from '../equipment-crafting-v2-virtual-history';
+import type {V2GemSidecarState} from '../equipment-crafting-v2-gem-sidecar-types';
 
 const game=createCharacter(newGame(2_000_000_000_000),'IRONWARDEN');
 assert.ok(game.character);

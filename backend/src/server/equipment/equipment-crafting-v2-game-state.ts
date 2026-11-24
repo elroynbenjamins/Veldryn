@@ -1,4 +1,5 @@
-import type {GameState,ItemStack} from '../../../../apps/mobile/src/core/types';
+import type {V2PrivateGameState as GameState} from './equipment-crafting-v2-private-game-state-type';
+import type {ItemStack} from '../../../../apps/mobile/src/core/types';
 import {v2ServerSkillLevelFromXp,v2ServerSkillTotalXpAtLevel} from './equipment-crafting-v2-skill-xp';
 import {equipmentV2AuthoritativeReadiness} from '../../../../apps/mobile/src/core/equipment-crafting-v2-authoritative-readiness';
 import {assertEquipmentCraftingV2Released} from './equipment-crafting-v2-gate';

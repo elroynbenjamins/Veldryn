@@ -1,0 +1,1822 @@
+{
+  "schema": "eq2-dungeon-boss-drop-source-and-market-readiness-review-v5",
+  "status": "REVIEW_ONLY_NO_LIVE_CATALOGUE_SOURCE_OR_LOOT_MARKET_AUTHORITY",
+  "created": "2026-11-23",
+  "inheritsFrom": "regional-dungeon-boss-tradeable-premium-gear-review-v4.json",
+  "published": false,
+  "serverRegistration": false,
+  "dropServiceRegistered": false,
+  "marketRegistered": false,
+  "purpose": "Finalize specific boss/category candidate pools and distinct *any* gear vs per-item rarity with verified read-only production context, define authenticated mint and market purchase/resale contracts, without touching published loot.",
+  "frozenSources": {
+    "dungeons": [
+      "EXP_001",
+      "EXP_003",
+      "EXP_005",
+      "EXP_007"
+    ],
+    "retiredIdsForbidden": [
+      "EXP_002",
+      "EXP_004",
+      "EXP_006",
+      "EXP_008"
+    ],
+    "bossSource": "PR #1184, immutable 50/50 per created run",
+    "endurance": "PR #1438, boss victory terminates run, newer flow not necessarily live",
+    "marketFence": "Market #1651 V30 denies old equipment even with spoofed EQ2 prefixes; complete positive EQ2 mint+custody path missing"
+  },
+  "bossPools": [
+    {
+      "dungeonId": "EXP_001",
+      "region": "Asterfall",
+      "dungeonName": "Rootbound Vault",
+      "publication": "PUBLISHED_REGIONAL_DUNGEON_EXCLUSIVE_GEAR_NOT_LIVE",
+      "bosses": [
+        {
+          "bossName": "Rootbound Heart",
+          "poolItemCount": 13,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_HELMET",
+                "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_LEGS",
+                "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_BOOTS",
+                "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_AMULET",
+                "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_HELMET",
+                "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CAPE"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DREADGUARD",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_KNIFE_DANCER",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_STONECALLER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+                "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_LEGS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_BOOTS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_AMULET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DREADGUARD",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_KNIFE_DANCER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_STONECALLER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        },
+        {
+          "bossName": "Bell-Warden",
+          "poolItemCount": 12,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_CHEST",
+                "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_RING",
+                "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_GLOVES",
+                "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_CAPE",
+                "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CHEST",
+                "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_RING"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_BASTION",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_WAYFINDER",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_HEXWEAVER",
+                "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DAWNKEEPER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+                "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_GLOVES",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_BASTION",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_WAYFINDER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_HEXWEAVER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DAWNKEEPER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        }
+      ],
+      "expectedSourceItemIds": 25,
+      "successWindowInterpretation": "production statuses completed, participant/final claimed; future authenticated 2.0 premium eligibility and actual boss victory still need persisted proof, not automatically equivalent",
+      "scenarioOutcomes": [
+        {
+          "bossGearRatePct": 3,
+          "per100SuccessfulEligibleClaims": 3,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 5,
+          "per100SuccessfulEligibleClaims": 5,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 8,
+          "per100SuccessfulEligibleClaims": 8,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 10,
+          "per100SuccessfulEligibleClaims": 10,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        }
+      ],
+      "registered": false,
+      "returnableByRuntime": false,
+      "marketEnabled": false
+    },
+    {
+      "dungeonId": "EXP_003",
+      "region": "Sunscar",
+      "dungeonName": "Buried Observatory",
+      "publication": "PUBLISHED_REGIONAL_DUNGEON_EXCLUSIVE_GEAR_NOT_LIVE",
+      "bosses": [
+        {
+          "bossName": "Buried Heliarch",
+          "poolItemCount": 13,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_HELMET",
+                "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_LEGS",
+                "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_BOOTS",
+                "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_AMULET",
+                "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_HELMET",
+                "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CAPE"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DREADGUARD",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_KNIFE_DANCER",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_STONECALLER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+                "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_LEGS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_BOOTS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_AMULET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DREADGUARD",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_KNIFE_DANCER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_STONECALLER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        },
+        {
+          "bossName": "Veiled Sphinx",
+          "poolItemCount": 12,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_CHEST",
+                "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_RING",
+                "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_GLOVES",
+                "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_CAPE",
+                "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CHEST",
+                "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_RING"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_BASTION",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_WAYFINDER",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_HEXWEAVER",
+                "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DAWNKEEPER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+                "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_GLOVES",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_BASTION",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_WAYFINDER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_HEXWEAVER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DAWNKEEPER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        }
+      ],
+      "expectedSourceItemIds": 25,
+      "successWindowInterpretation": "production statuses completed, participant/final claimed; future authenticated 2.0 premium eligibility and actual boss victory still need persisted proof, not automatically equivalent",
+      "scenarioOutcomes": [
+        {
+          "bossGearRatePct": 3,
+          "per100SuccessfulEligibleClaims": 3,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 5,
+          "per100SuccessfulEligibleClaims": 5,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 8,
+          "per100SuccessfulEligibleClaims": 8,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 10,
+          "per100SuccessfulEligibleClaims": 10,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        }
+      ],
+      "registered": false,
+      "returnableByRuntime": false,
+      "marketEnabled": false
+    },
+    {
+      "dungeonId": "EXP_005",
+      "region": "Frostmarch",
+      "dungeonName": "Shiverlake Descent",
+      "publication": "UNPUBLISHED_FROSTMARCH_DUNGEON",
+      "bosses": [
+        {
+          "bossName": "Bellbeast",
+          "poolItemCount": 15,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 50,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_HELMET",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_LEGS",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_BOOTS",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_AMULET",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_HELMET",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CAPE"
+              ]
+            },
+            {
+              "type": "signature_armor",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_HELMET",
+                "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_RING"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 30,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DREADGUARD",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_KNIFE_DANCER",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_STONECALLER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_LEGS",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_BOOTS",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_AMULET",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_HELMET",
+              "category": "signature_armor",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_RING",
+              "category": "signature_armor",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 6,
+              "perEligibleRunPctAt8": 0.24
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DREADGUARD",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 6,
+              "perEligibleRunPctAt8": 0.24
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 6,
+              "perEligibleRunPctAt8": 0.24
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_KNIFE_DANCER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 6,
+              "perEligibleRunPctAt8": 0.24
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_STONECALLER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 6,
+              "perEligibleRunPctAt8": 0.24
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        },
+        {
+          "bossName": "Frozen Cantor",
+          "poolItemCount": 14,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 50,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_CHEST",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_RING",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_GLOVES",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_CAPE",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CHEST",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_RING"
+              ]
+            },
+            {
+              "type": "signature_armor",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CHEST",
+                "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CAPE"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 30,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_BASTION",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_WAYFINDER",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_HEXWEAVER",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DAWNKEEPER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+                "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_RING",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_GLOVES",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_RING",
+              "category": "role_armor",
+              "categoryChancePct": 50,
+              "chanceConditionalOnAnyDropPct": 8.333333,
+              "perEligibleRunPctAt8": 0.333333
+            },
+            {
+              "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CHEST",
+              "category": "signature_armor",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CAPE",
+              "category": "signature_armor",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_BASTION",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 7.5,
+              "perEligibleRunPctAt8": 0.3
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_WAYFINDER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 7.5,
+              "perEligibleRunPctAt8": 0.3
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_HEXWEAVER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 7.5,
+              "perEligibleRunPctAt8": 0.3
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DAWNKEEPER",
+              "category": "class_weapon",
+              "categoryChancePct": 30,
+              "chanceConditionalOnAnyDropPct": 7.5,
+              "perEligibleRunPctAt8": 0.3
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        }
+      ],
+      "expectedSourceItemIds": 29,
+      "successWindowInterpretation": "production statuses completed, participant/final claimed; future authenticated 2.0 premium eligibility and actual boss victory still need persisted proof, not automatically equivalent",
+      "scenarioOutcomes": [
+        {
+          "bossGearRatePct": 3,
+          "per100SuccessfulEligibleClaims": 3,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 5,
+          "per100SuccessfulEligibleClaims": 5,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 8,
+          "per100SuccessfulEligibleClaims": 8,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 10,
+          "per100SuccessfulEligibleClaims": 10,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        }
+      ],
+      "registered": false,
+      "returnableByRuntime": false,
+      "marketEnabled": false
+    },
+    {
+      "dungeonId": "EXP_007",
+      "region": "Ashlands",
+      "dungeonName": "Blackglass Fen",
+      "publication": "FUTURE_UNPUBLISHED_REGION_AND_DUNGEON",
+      "bosses": [
+        {
+          "bossName": "Blackglass Fen Prime",
+          "poolItemCount": 13,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_HELMET",
+                "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_LEGS",
+                "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_BOOTS",
+                "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_AMULET",
+                "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_HELMET",
+                "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_CAPE"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_IRONWARDEN",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_DREADGUARD",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_RAVAGER",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_KNIFE_DANCER",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_STONECALLER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_BASTION",
+                "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_DAWNKEEPER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_LEGS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_BOOTS",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_AMULET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_HELMET",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_IRONWARDEN",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_DREADGUARD",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_RAVAGER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_KNIFE_DANCER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_STONECALLER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 7,
+              "perEligibleRunPctAt8": 0.28
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_BASTION",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_DAWNKEEPER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        },
+        {
+          "bossName": "Crucible Prime",
+          "poolItemCount": 12,
+          "categoryWeights": [
+            {
+              "type": "role_armor",
+              "weightPct": 55,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_CHEST",
+                "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_RING",
+                "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_GLOVES",
+                "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_CAPE",
+                "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_CHEST",
+                "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_RING"
+              ]
+            },
+            {
+              "type": "class_weapon",
+              "weightPct": 35,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_BASTION",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_WAYFINDER",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_HEXWEAVER",
+                "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_DAWNKEEPER"
+              ]
+            },
+            {
+              "type": "class_offhand",
+              "weightPct": 10,
+              "itemIds": [
+                "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_IRONWARDEN",
+                "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_HEXWEAVER"
+              ]
+            }
+          ],
+          "previewItems": [
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_CRUCIBLEGUARD_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_GLOVES",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_FENREAVER_CAPE",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_CHEST",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_SEERTHREAD_RING",
+              "category": "role_armor",
+              "categoryChancePct": 55,
+              "chanceConditionalOnAnyDropPct": 9.166667,
+              "perEligibleRunPctAt8": 0.366667
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_BASTION",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_WAYFINDER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_HEXWEAVER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_WEAPON_DAWNKEEPER",
+              "category": "class_weapon",
+              "categoryChancePct": 35,
+              "chanceConditionalOnAnyDropPct": 8.75,
+              "perEligibleRunPctAt8": 0.35
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_IRONWARDEN",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            },
+            {
+              "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_HEXWEAVER",
+              "category": "class_offhand",
+              "categoryChancePct": 10,
+              "chanceConditionalOnAnyDropPct": 5,
+              "perEligibleRunPctAt8": 0.2
+            }
+          ],
+          "noCrossBossLoot": true
+        }
+      ],
+      "expectedSourceItemIds": 25,
+      "successWindowInterpretation": "production statuses completed, participant/final claimed; future authenticated 2.0 premium eligibility and actual boss victory still need persisted proof, not automatically equivalent",
+      "scenarioOutcomes": [
+        {
+          "bossGearRatePct": 3,
+          "per100SuccessfulEligibleClaims": 3,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 5,
+          "per100SuccessfulEligibleClaims": 5,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 8,
+          "per100SuccessfulEligibleClaims": 8,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        },
+        {
+          "bossGearRatePct": 10,
+          "per100SuccessfulEligibleClaims": 10,
+          "mode": "hypothetical each eligible participant final claim gets one premium roll; no guaranteed item"
+        }
+      ],
+      "registered": false,
+      "returnableByRuntime": false,
+      "marketEnabled": false
+    }
+  ],
+  "rarityBalance": {
+    "priorAnyBossItemRateCandidatePct": [
+      3,
+      5
+    ],
+    "proposedLaunchReviewRatePct": [
+      8,
+      10
+    ],
+    "recommendedFirstSimulationPct": 8,
+    "finalAllowedLiveRatePct": null,
+    "claimProbability": "one premium-gear decision per server-authorized genuine human participant final boss claim, after authentic boss victory source and eligible premium-reward entitlement; no extra rate per room, role, VIP, charge replay, party member or checkpoint",
+    "bossVariantProbability": "frozen 50/50 run selection from server authoritative source; 0.5 for the selected named source at new-run creation, never client rolled during receipt settlement",
+    "categoryStage": "once success any gear, select one of frozen boss's category weights, then choose one distinct item uniformly within that category; no reroll for player class/role, and no promised ownership duplicate protection",
+    "perItemChanceFormula": "(ratePct/100) × 0.5 × (categoryWeightPct/100) × (1 / countOfItemsInCategory) × 100 = unconditional % of eligible runs for that named source item, assuming honest 50/50 boss variant",
+    "categoryWeights": {
+      "default": {
+        "roleArmorPct": 55,
+        "classWeaponPct": 35,
+        "offhandPct": 10
+      },
+      "shiverlake": {
+        "roleArmorPct": 50,
+        "signatureBellwakePct": 10,
+        "classWeaponPct": 30,
+        "offhandPct": 10
+      }
+    },
+    "itemOddsPreviewAt8PctRange": {
+      "minPct": 0.2,
+      "maxPct": 0.3667
+    },
+    "rolloutDecision": "8–10% chance for any premium gear (per-item fractions of 1%) is an explicit RECOMMENDATION only; do not activate without sample demand, price and future actual reward eligibility review. Old 3–5% candidate retained as comparison but superseded as v5 working model.",
+    "pityAndDuplicatePolicy": "none in this pass; any source-weighted duplicate protection could distort cross-class Market supply, requires separate owner approval",
+    "damageAndStatBudget": "one authored tier-appropriate innate %/pp per drop; unchanged rarity/quality RNG and approved affix count; never free proc or affix budget, original subtype verified",
+    "simulationCaveat": "expected drops = eligible boss victories × overall rate; historical successful claims are upper bound candidates, not confirmed future eligible source"
+  },
+  "productionObservation": {
+    "windowUtc": "2026-10-26T00:00:00Z to 2026-11-24T00:00:00Z (query bounded, observed as of 2026-11-23)",
+    "sourceTables": [
+      "public.expedition_runs",
+      "public.coop_reward_entitlements"
+    ],
+    "definitions": "count e.entitlement_kind='participant' AND e.reward_stage='final' AND e.claimed_at in window AND r.status='completed'; distinct account count; original acquisition of EQ2 premium gear currently not implemented",
+    "observations": [
+      {
+        "dungeonId": "EXP_001",
+        "successfulClaimRecords": 313,
+        "uniqueAccounts": 7,
+        "topSingleAccountClaimRecords": 231,
+        "topSharePct": 73.8,
+        "claimMode": "qmode",
+        "perClaimAt3Pct": 9.39,
+        "perClaimAt5Pct": 15.65,
+        "perClaimAt8Pct": 25.04,
+        "perClaimAt10Pct": 31.3
+      },
+      {
+        "dungeonId": "EXP_003",
+        "successfulClaimRecords": 4,
+        "uniqueAccounts": 2,
+        "topSingleAccountClaimRecords": 2,
+        "topSharePct": 50,
+        "claimMode": "qmode",
+        "perClaimAt3Pct": 0.12,
+        "perClaimAt5Pct": 0.2,
+        "perClaimAt8Pct": 0.32,
+        "perClaimAt10Pct": 0.4
+      }
+    ],
+    "weeklyConcentrationRootbound": {
+      "weekCommencing": "2026-11-16",
+      "claims": 272,
+      "totalObserved": 313,
+      "sharePct": 86.9
+    },
+    "caveat": "Historical successful dungeon reward participant claims (not proof of a boss defeat or proof of future premium loot eligibility). Expected items are arithmetic scenarios only. Early population is highly concentrated; no revenue or supply forecast is represented."
+  },
+  "authoritativeGrantContract": {
+    "releaseState": "UNMOUNTED_PROPOSAL_NOT_TRUSTED_SERVER_CODE",
+    "necessaryNotSufficientSourceFields": [
+      "public.expedition_runs.id, expedition_id, status, route frozen boss",
+      "public.coop_reward_entitlements.id, run_id, recipient_account_id, character_id, entitlement_kind='participant', reward_stage='final', claimed_at"
+    ],
+    "requireExtraEvidence": [
+      "privileged boss terminal victory node or verified battle receipt for EXACT EXP_00X and frozen boss",
+      "actual account-and-character participation in server run, no NPC donor",
+      "reward charge/entitlement kind approved for permanent boss EQ2 drop, cannot infer from status completed",
+      "per-account-per-run final claim unique reward leg, no prior minted loot for same entitlement",
+      "randomness from privileged server-owned seed or secure roll, not client roll, frozen to unique proof ID"
+    ],
+    "atomicClaimSteps": [
+      "lock claim+participant+run+premium reward leg in one serialized server transaction",
+      "verify final boss victory and exactly matched frozen variant",
+      "validate source pool and category and item minted from signed EQ2 v2 manifest",
+      "one category and one item at most; append minted physical copy/owner/rarity/quality/affixes and immutable boss origin into same atomic commit",
+      "return unchanged previous result on idempotent retry, never new roll",
+      "do not alter Marks, gems, catalysts, ordinary rewards, weekly quests or temporary dungeon boons"
+    ],
+    "denied": [
+      "no uncleared checkpoint rolls",
+      "no room/elite/shop/Marks/boon/effect-recipe source",
+      "no NPC Echo donor claims",
+      "no prior failed/abandoned/disconnected pending run",
+      "no ineligible uncharged or non-final reward",
+      "no duplicate account participant per run",
+      "no retired EXP_002/004/006/008 even via historical replays"
+    ],
+    "noAccountWeeklyCapAdded": true,
+    "noDepthMultiplierAdded": true,
+    "noNewVipOddsAdded": true
+  },
+  "marketPositiveBridgeContract": {
+    "releaseState": "UNMOUNTED_PROPOSAL_NOT_TRUSTED_SQL",
+    "primarySource": "Market V30 negative EQ2 generation fence retained untouched; implement new physically verifiable EQ2-positive path separately",
+    "allowed": "first listing, buy, claim, resale, cancel/expiry restore and cross-character movement of source-approved newly minted boss EQ2 exact copy",
+    "proof": [
+      "immutable generation 2.0 recorded by trusted mint, not client",
+      "original server-authorized boss victory claim ID permanently mapped to exact physical item instance and original 2.0 template",
+      "original EXP ID and exact frozen defeated boss match item source record (including Bellwake)",
+      "one item serial and trusted original rolled rarity/quality/affixes/innate stat and equipment slot",
+      "present owner, character custody and revision and copy not equipped, banked without valid location, party-locked, favorited/locked or already escrowed",
+      "market listing and every resale require current snapshot and custody revision; atomic Gold, existing fees and item transfer; no reroll on sale",
+      "do not let old V33 acquisition receipts bypass V30 by display name/JSON 'eq2' generation tag"
+    ],
+    "deny": [
+      "legacy / V33 originally minted before EQ2",
+      "forged EQ2 prefix / client arbitrary metadata",
+      "disallowed source: craft/shop/Marks/account grant/event unless explicitly approved different category",
+      "missing original boss claim, wrong EXP, wrong boss variant",
+      "wrong original item ID even if appearance identical",
+      "duplicate listing, sale without physical custody, concurrent purchase, stale market listing",
+      "wrong class or level requirement on recipient use/claim",
+      "gift via direct-trade route without verified item handoff policy"
+    ],
+    "existingMarketGates": {
+      "tier2OldRequirement": 18,
+      "tier4OldRequirement": 52,
+      "tier5AvailableInOldMarket": false,
+      "warning": "V4 Sunscar T4 dungeon candidate wear Level42 conflicts with V17 hidden Market T4 minimum acquisition Level52. Do NOT auto-harden wear to52 (Sunscar ends50) or relax market. Author an EQ2-specific level policy with owner signoff before activation; T5+ not yet supported in old market."
+    },
+    "purchaseRestrictionCandidate": "server authoritative EQ2 dungeon template equip level+class, no arbitrary legacy tier minimum; tune along with Combat 2.0 and region-level progression. Seller level not required to list legitimately owned item, buyer may hold but equip gate authoritative; whether buy is also level-gated is pending explicit policy.",
+    "originalBossProvenanceSurvivesResale": true,
+    "currentMarketFlagsReleased": false
+  },
+  "releaseChecklist": [
+    "Get owner numeric rarity, class/role sets, premium innate and level gating approval",
+    "Read-only production update near launch with authentic eligible boss-reward receipts, not completed-run proxy",
+    "Confirm immutable frozen boss variant, terminal boss source events and exactly once player rewards in currently active dungeon vs planned Endurance",
+    "Secure EQ2 physical item mint in same atomic committed transaction as boss entitlement and reward ledger; independent Postgres test against retries and concurrency",
+    "Integrate positive boss EQ2 market reservation and true resale without opening V30 legacy fence or old V33 escrow",
+    "Reconcile Sunscar T4 actual wear42 versus market T4 min52 and T5+ market unavailability; protect all professions from combat craft gates",
+    "Evaluate full-rare builds vs crafting and Combat/Skills/Enemy/Boss 2.0 proc stacking, hard source verification and mixed class/role counterplay",
+    "Owner reviews actual premium gear icons, dungeon drop/chest/Market UI and themes before implementation; style4 art pending",
+    "GitHub CI source data and hypothetical QA only, then actual server regression/PG17 integration in disposable database and staging, no prod writes",
+    "No release before coordinated 2.0 launch gate and explicit owner GO"
+  ],
+  "classAndSpecReconciliation": {
+    "designRule": "All 9 classes have exactly one source-authored class-specific weapon per dungeon. Role armor set families are affinities, not hard class locks; if a class can equip same item slot it can use relevant set, while meaningful 2p/4p effect requires valid corresponding damage, healing, debuff or defensive event. Hybrid and cross-role builds remain possible.",
+    "sourceClassesByPrimaryAffinity": {
+      "tank": [
+        "IRONWARDEN",
+        "BASTION",
+        "DREADGUARD"
+      ],
+      "damage": [
+        "WAYFINDER",
+        "RAVAGER",
+        "HEXWEAVER",
+        "KNIFE_DANCER"
+      ],
+      "support": [
+        "DAWNKEEPER",
+        "STONECALLER"
+      ]
+    },
+    "expectedSpecializations": 18,
+    "dangerFound": "V4 damage-set wording for Shiverlake Cantorshard and future Ashlands Fenreaver referred to physical class ability hits and would make four-piece damage sets unusable for Hexweaver direct spells. V5 supersedes those TWO bonus descriptions for the eventual Combat 2.0 implementation; original V4 file retained for historical comparison.",
+    "damageSetCorrections": [
+      {
+        "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+        "originalVersion": "V4 proposed physical-only or physical-primed",
+        "newVersion": "V5 direct class ability damage including real direct spell hit",
+        "effect": "After two successful authenticated direct class-ability damage hits, the next successful direct class-ability damage hit within 6s deals +8% damage. Both spell and physical direct hits qualify, but no unrelated weapon subtype/status is inherited.",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT",
+          "reflected",
+          "proc",
+          "gem damage",
+          "companion ability",
+          "environmental"
+        ]
+      },
+      {
+        "setId": "eq2_dungeon_blackglass_t7_fenreaver",
+        "originalVersion": "V4 proposed physical-only or physical-primed",
+        "newVersion": "V5 direct class ability damage including real direct spell hit",
+        "effect": "After an authenticated successful direct class-ability damage hit, the next successful direct class-ability damage hit within 6s deals +9% damage. Both direct spells and physical abilities qualify; no DoT, reflected or proc recursion.",
+        "internalCooldownSeconds": 18,
+        "exclusions": [
+          "DoT",
+          "reflected",
+          "proc",
+          "gem damage",
+          "companion ability",
+          "environmental"
+        ]
+      }
+    ],
+    "classSpecificWeaponSource": "Original V4 weapon templates and subtype weights unchanged; valid class ID required at equip time and market purchase/claim where approved.",
+    "noMandatoryClass": "Bosses allow multiple counterbuilds, not one mandatory class, weapon trait or pet; no equipment may automatically apply Blunt/Slash/Pierce penetration/bleed/stagger.",
+    "proofOnly": "combat effectiveness requires authenticated DirectAbilityDamage / EffectiveDirectHeal / Debuff/Cleanse / PostMitigationDamage event, class/specialization and hit target identity; source not client claimed",
+    "sourceStatus": "UNMOUNTED_REVIEW_ONLY"
+  },
+  "offhandSignatureReview": [
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+      "dungeonId": "EXP_001",
+      "bossName": "Rootbound Heart",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_001",
+      "bossName": "Rootbound Heart",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_001",
+      "bossName": "Bell-Warden",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_001",
+      "bossName": "Bell-Warden",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.2,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+      "dungeonId": "EXP_003",
+      "bossName": "Buried Heliarch",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_003",
+      "bossName": "Buried Heliarch",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_003",
+      "bossName": "Veiled Sphinx",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 2.7,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_003",
+      "bossName": "Veiled Sphinx",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.6,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+      "dungeonId": "EXP_005",
+      "bossName": "Bellbeast",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_005",
+      "bossName": "Bellbeast",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_005",
+      "bossName": "Frozen Cantor",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_005",
+      "bossName": "Frozen Cantor",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_BASTION",
+      "dungeonId": "EXP_007",
+      "bossName": "Blackglass Fen Prime",
+      "classId": "BASTION",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Bastion's Oathplate",
+      "effect": "After an authored Shield Bash hits, gain +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_DAWNKEEPER",
+      "dungeonId": "EXP_007",
+      "bossName": "Blackglass Fen Prime",
+      "classId": "DAWNKEEPER",
+      "sourceEvent": "effective_direct_class_heal",
+      "name": "Merciful Guard",
+      "effect": "An effective direct class heal restoring missing HP grants that healed target +3% Defense for 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_IRONWARDEN",
+      "dungeonId": "EXP_007",
+      "bossName": "Crucible Prime",
+      "classId": "IRONWARDEN",
+      "sourceEvent": "verified_shield_bash_direct_hit",
+      "name": "Ward of Reversal",
+      "effect": "After an authored Shield Bash lands directly on a target, take 3% less damage from the next eligible direct non-true hit within 6s",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 3.3,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    },
+    {
+      "itemId": "EQ2_DUNGEON_BLACKGLASS_T7_OFFHAND_HEXWEAVER",
+      "dungeonId": "EXP_007",
+      "bossName": "Crucible Prime",
+      "classId": "HEXWEAVER",
+      "sourceEvent": "direct_class_spell_hit",
+      "name": "Resonant Focus",
+      "effect": "Following a successful direct class spell hit, the next direct class spell hit within 6s deals +4% damage",
+      "internalCooldownSeconds": 22,
+      "potencyPct": 4.4,
+      "potencyUnit": "relative_percent",
+      "status": "PROPOSED_NOT_COMBAT_2_0_REGISTERED",
+      "sharedSafety": "If a weapon and offhand next-direct-hit signature attempt the same original source event, resolve one authored proc through the shared per-original-hit proc budget; prefer actually eligible higher-priority authored effect and never duplicate.",
+      "exclusions": [
+        "no auto Blunt from shield/focus",
+        "no DoT",
+        "no reflection",
+        "no proc recursion",
+        "no self-damage",
+        "no missed attacks",
+        "no empty phantom offhand"
+      ]
+    }
+  ],
+  "sourceBalanceAndV2Gates": {
+    "marketMinLevelConflict": "Hidden Market PR #1055 has older V17 T4 market acquisition level52 and no T5+ gear; V4 dungeon T4 Sunscar wear level candidate42 is below existing Market T4 min52 and Sunscar region ends50. No inherited old-market level policy may silently block Sunscar dungeon equipment or auto-drop its wear level. Separate versioned EQ2 purchase+wear policy must be approved.",
+    "intendedResolution": "Keep Sunscar T4 proposed combat wear42 while review is pending; future EQ2 equipment-specific Market acquisition rule should use approved exact template and source-bound equip minimum, not blindly reuse original tier gate. The market must still reject buying if class/level gating is enforced by final policy, and allow sellers to list valid loot without meeting buyer wear level. Do not activate until reconciled.",
+    "liveMarketState": "V30 negative legacy fence exists on separate unmerged market branch but has NO positive EQ2 mint/ownership/market bridge. Current market item approval and all flags remain OFF.",
+    "specialStatLimit": "Innate only once; cannot double rarity- or quality-scale or appear as a free additional affix. T5 fixed innates generally about +2.5–3.1% or 1.5 percentage points before gear-specific slot/counterplay audit. Offhand signature procs share one original-hit proc budget with weapon where events collide.",
+    "noServerGameplayCodeTouched": true
+  }
+}

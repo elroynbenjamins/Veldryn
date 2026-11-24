@@ -1,0 +1,3010 @@
+{
+  "schema": "eq2-innate-and-set-budget-review-v7",
+  "authority": "HIDDEN_REVIEW_ONLY",
+  "releaseActivation": false,
+  "cpApproved": false,
+  "policy": {
+    "sameChannelPermanentInnateAndRandom": "sum first then apply V4 cap once",
+    "qualityRarityScaleInnate": false,
+    "setEffects": "separate conditional channel and attribution; no automatic mapping from prose or unauthorized application",
+    "unmapped": "report explicitly, never reinterpret or price at zero",
+    "retiredSource": "excluded",
+    "handLanePolicy": "V6 candidate only; not approved mint rules"
+  },
+  "sources": [
+    {
+      "id": "t5",
+      "path": "docs/equipment-2-0/t5-catalogue-expansion-review-v4.json",
+      "ref": "design/eq2-t5-catalogue-expansion-review-20261123",
+      "blobSha": "38defcd1b31b348e0a27d38b83b5421f1b4e5e52"
+    },
+    {
+      "id": "dungeons",
+      "path": "docs/equipment-2-0/regional-dungeon-boss-tradeable-premium-gear-review-v4.json",
+      "ref": "design/eq2-t5-catalogue-expansion-review-20261123",
+      "blobSha": "b464e55c28f6007578c465e01d26e67db415e77a"
+    },
+    {
+      "id": "rare",
+      "path": "docs/equipment-2-0/t5-rare-set-catalogue-review-v1.json",
+      "ref": "design/eq2-48-set-crafting-reconciliation-20261122",
+      "blobSha": "d918a45319405903e9f9e74d2c0809dbaebf8a8f"
+    },
+    {
+      "id": "replacements",
+      "path": "docs/equipment-2-0/t4-replacement-set-catalogue-review-v1.json",
+      "ref": "design/eq2-48-set-crafting-reconciliation-20261122",
+      "blobSha": "7d431245fe07549fb29802b2e7f7117c600308b9"
+    },
+    {
+      "id": "catalog",
+      "path": "docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json",
+      "ref": "review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124",
+      "blobSha": "66efd96d8659207362939fc5805dd07c80eb497e"
+    },
+    {
+      "id": "affix",
+      "path": "docs/2-0/eq2-universal-affix-overlap-review-v4.json",
+      "ref": "review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124",
+      "blobSha": "f82cb4fa27379965dde22994430d3bd58465bc80"
+    }
+  ],
+  "summary": {
+    "auditedSourceTemplates": 185,
+    "premiumEntries": 99,
+    "innateRolls": 99,
+    "exactMapped": 71,
+    "unresolved": 28,
+    "traits": 27,
+    "sourceSets": 34,
+    "sourceThresholds": 68,
+    "setsStillOutsideThisNumericSourceAudit": 61
+  },
+  "entries": [
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_GLOVES",
+      "tier": 5,
+      "slot": "gloves",
+      "setId": "eq2_rare_t5_shardrunner",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "attack_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "centipercent": 300,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_BOOTS",
+      "tier": 5,
+      "slot": "boots",
+      "setId": "eq2_rare_t5_shardrunner",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "evasion_pp",
+          "value": 2,
+          "unit": "percentage_points",
+          "centipercent": 200,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_rare_t5_shardrunner",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_SHARDRUNNER_AMULET",
+      "tier": 5,
+      "slot": "amulet",
+      "setId": "eq2_rare_t5_shardrunner",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "centipercent": 300,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_HELMET",
+      "tier": 5,
+      "slot": "helmet",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "centipercent": 300,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_CHEST",
+      "tier": 5,
+      "slot": "chest",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 3.2,
+          "unit": "relative_percent",
+          "centipercent": 320,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_GLOVES",
+      "tier": 5,
+      "slot": "gloves",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "centipercent": 300,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_BOOTS",
+      "tier": 5,
+      "slot": "boots",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "value": 1.5,
+          "unit": "percentage_points",
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_DAWNSPIRE_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 3,
+          "unit": "relative_percent",
+          "centipercent": 300,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_HELMET",
+      "tier": 5,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "tenacity_pp",
+          "value": 1.5,
+          "unit": "percentage_points",
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "tenacity_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CHEST",
+      "tier": 5,
+      "slot": "chest",
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_T5_SHIVERLAKE_BELLWAKE_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "source": "t5",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "value": 1.5,
+          "unit": "percentage_points",
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_HELMET",
+      "tier": 5,
+      "slot": "helmet",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 3,
+          "centipercent": 300,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_CHEST",
+      "tier": 5,
+      "slot": "chest",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 3.5,
+          "centipercent": 350,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_LEGS",
+      "tier": 5,
+      "slot": "legs",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "tenacity_pp",
+          "unit": "percentage_points",
+          "value": 3,
+          "centipercent": 300,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "tenacity_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_BOOTS",
+      "tier": 5,
+      "slot": "boots",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.5,
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_CITADEL_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_GLOVES",
+      "tier": 5,
+      "slot": "gloves",
+      "setId": "eq2_rare_t5_bloodsteel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "attack_pct",
+          "unit": "relative_percent",
+          "value": 3,
+          "centipercent": 300,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_BOOTS",
+      "tier": 5,
+      "slot": "boots",
+      "setId": "eq2_rare_t5_bloodsteel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.8,
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_AMULET",
+      "tier": 5,
+      "slot": "amulet",
+      "setId": "eq2_rare_t5_bloodsteel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "unit": "relative_percent",
+          "value": 3,
+          "centipercent": 300,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_RARE_T5_BLOODSTEEL_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_rare_t5_bloodsteel",
+      "source": "rare",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_HELMET",
+      "tier": 2,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 2,
+          "centipercent": 200,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_CHEST",
+      "tier": 2,
+      "slot": "chest",
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.1,
+          "centipercent": 210,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_LEGS",
+      "tier": 2,
+      "slot": "legs",
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "tenacity_pp",
+          "unit": "percentage_points",
+          "value": 1.1,
+          "centipercent": 110,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "tenacity_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_HEARTWARD_RING",
+      "tier": 2,
+      "slot": "ring",
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.1,
+          "centipercent": 110,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_GLOVES",
+      "tier": 2,
+      "slot": "gloves",
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "attack_pct",
+          "unit": "relative_percent",
+          "value": 2.3,
+          "centipercent": 230,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_BOOTS",
+      "tier": 2,
+      "slot": "boots",
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "unit": "relative_percent",
+          "value": 2,
+          "centipercent": 200,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_CAPE",
+      "tier": 2,
+      "slot": "cape",
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 1.9,
+          "centipercent": 190,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_THORNSTRIDER_AMULET",
+      "tier": 2,
+      "slot": "amulet",
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "crit_chance_pp",
+          "unit": "percentage_points",
+          "value": 0.9,
+          "centipercent": 90,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_HELMET",
+      "tier": 2,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "unit": "relative_percent",
+          "value": 2.1,
+          "centipercent": 210,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CHEST",
+      "tier": 2,
+      "slot": "chest",
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2,
+          "centipercent": 200,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_CAPE",
+      "tier": 2,
+      "slot": "cape",
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 1.8,
+          "centipercent": 180,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_LIFEBLOOM_RING",
+      "tier": 2,
+      "slot": "ring",
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.1,
+          "centipercent": 110,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_BASTION",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DREADGUARD",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_WAYFINDER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_HEXWEAVER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_KNIFE_DANCER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_DAWNKEEPER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_STONECALLER",
+      "tier": 2,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 2.3,
+          "unit": "relative_percent",
+          "centipercent": 230,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_IRONWARDEN",
+      "tier": 2,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.1,
+          "unit": "relative_percent",
+          "centipercent": 210,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_BASTION",
+      "tier": 2,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.1,
+          "unit": "relative_percent",
+          "centipercent": 210,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_HEXWEAVER",
+      "tier": 2,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.1,
+          "unit": "relative_percent",
+          "centipercent": 210,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_ROOTBOUND_T2_OFFHAND_DAWNKEEPER",
+      "tier": 2,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.1,
+          "unit": "relative_percent",
+          "centipercent": 210,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_HELMET",
+      "tier": 4,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 2.3,
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_CHEST",
+      "tier": 4,
+      "slot": "chest",
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_LEGS",
+      "tier": 4,
+      "slot": "legs",
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "tenacity_pp",
+          "unit": "percentage_points",
+          "value": 1.4,
+          "centipercent": 140,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "tenacity_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_HELIOGUARD_RING",
+      "tier": 4,
+      "slot": "ring",
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.4,
+          "centipercent": 140,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_GLOVES",
+      "tier": 4,
+      "slot": "gloves",
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "attack_pct",
+          "unit": "relative_percent",
+          "value": 2.7,
+          "centipercent": 270,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_BOOTS",
+      "tier": 4,
+      "slot": "boots",
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "unit": "relative_percent",
+          "value": 2.4,
+          "centipercent": 240,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_CAPE",
+      "tier": 4,
+      "slot": "cape",
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 2.3,
+          "centipercent": 230,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_SPHINXCLAW_AMULET",
+      "tier": 4,
+      "slot": "amulet",
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "crit_chance_pp",
+          "unit": "percentage_points",
+          "value": 1.1,
+          "centipercent": 110,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_HELMET",
+      "tier": 4,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CHEST",
+      "tier": 4,
+      "slot": "chest",
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.3,
+          "centipercent": 230,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_CAPE",
+      "tier": 4,
+      "slot": "cape",
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 2.2,
+          "centipercent": 220,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_MIRAGEVEIL_RING",
+      "tier": 4,
+      "slot": "ring",
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.4,
+          "centipercent": 140,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_BASTION",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DREADGUARD",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_WAYFINDER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_HEXWEAVER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_KNIFE_DANCER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_DAWNKEEPER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_STONECALLER",
+      "tier": 4,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_IRONWARDEN",
+      "tier": 4,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_BASTION",
+      "tier": 4,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_HEXWEAVER",
+      "tier": 4,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_OBSERVATORY_T4_OFFHAND_DAWNKEEPER",
+      "tier": 4,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.5,
+          "unit": "relative_percent",
+          "centipercent": 250,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_HELMET",
+      "tier": 5,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "max_hp_pct",
+          "unit": "relative_percent",
+          "value": 2.6,
+          "centipercent": 260,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "max_hp_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_CHEST",
+      "tier": 5,
+      "slot": "chest",
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.8,
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_LEGS",
+      "tier": 5,
+      "slot": "legs",
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "tenacity_pp",
+          "unit": "percentage_points",
+          "value": 1.5,
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "tenacity_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_RIMEVANGUARD_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.5,
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_GLOVES",
+      "tier": 5,
+      "slot": "gloves",
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "attack_pct",
+          "unit": "relative_percent",
+          "value": 3,
+          "centipercent": 300,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_BOOTS",
+      "tier": 5,
+      "slot": "boots",
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "unit": "relative_percent",
+          "value": 2.7,
+          "centipercent": 270,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 2.5,
+          "centipercent": 250,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_CANTORSHARD_AMULET",
+      "tier": 5,
+      "slot": "amulet",
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "crit_chance_pp",
+          "unit": "percentage_points",
+          "value": 1.2,
+          "centipercent": 120,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_HELMET",
+      "tier": 5,
+      "slot": "helmet",
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "unit": "relative_percent",
+          "value": 2.8,
+          "centipercent": 280,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CHEST",
+      "tier": 5,
+      "slot": "chest",
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "unit": "relative_percent",
+          "value": 2.6,
+          "centipercent": 260,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_CAPE",
+      "tier": 5,
+      "slot": "cape",
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "haste_pct",
+          "unit": "relative_percent",
+          "value": 2.4,
+          "centipercent": 240,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_FROSTHYM_RING",
+      "tier": 5,
+      "slot": "ring",
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ward_pp",
+          "unit": "percentage_points",
+          "value": 1.5,
+          "centipercent": 150,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ward_pp"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Oathguard's Riposte",
+        "text": "Following a successfully mitigated direct hit, gain 4% Defense for 5s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_BASTION",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Tower's Response",
+        "text": "After a verified direct Shield Bash, gain a 4%-Max-HP shield for 5s",
+        "cd": 22,
+        "condition": "Requires authenticated equipped shield + actual skill effect",
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DREADGUARD",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": {
+        "name": "Scourge Reprisal",
+        "text": "After eligible direct HP damage, next basic chained-scourge hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_WAYFINDER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Farshot Resolve",
+        "text": "After three successful direct bow hits on one target, next direct class ability hit within 6s deals +7% damage",
+        "cd": 18,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Winterbreaker",
+        "text": "Next direct class ability hit against a target below 35% HP deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_HEXWEAVER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Echo Sigil",
+        "text": "After successful direct non-DoT class spell damage, next direct class spell hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_KNIFE_DANCER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": {
+        "name": "Froststep Blade",
+        "text": "After evading an eligible direct attack, next direct physical class ability hit within 6s deals +7% damage",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_DAWNKEEPER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Aegis Light",
+        "text": "After a genuinely effective direct class heal, grant the healed target a 3%-Max-HP shield for 6s",
+        "cd": 20,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_STONECALLER",
+      "tier": 5,
+      "slot": "weapon",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "healing_power_pct",
+          "value": 3.1,
+          "unit": "relative_percent",
+          "centipercent": 310,
+          "mapping": "UNRESOLVED_SEMANTIC_OR_SEPARATE_CHANNEL",
+          "canonicalChannel": null
+        }
+      ],
+      "trait": {
+        "name": "Spirit's Shelter",
+        "text": "After successful authored cleanse or effective direct class heal, grant target +4% Defense for 6s",
+        "cd": 22,
+        "scaling": "Proposed tier-specific normalized ability budget; conditional effect values are review maxima, not automatic new proc roll"
+      },
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_IRONWARDEN",
+      "tier": 5,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_BASTION",
+      "tier": 5,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_HEXWEAVER",
+      "tier": 5,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "ability_damage_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "ability_damage_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    },
+    {
+      "itemId": "EQ2_DUNGEON_SHIVERLAKE_T5_OFFHAND_DAWNKEEPER",
+      "tier": 5,
+      "slot": "offhand",
+      "setId": null,
+      "source": "dungeons",
+      "innates": [
+        {
+          "stat": "defense_pct",
+          "value": 2.8,
+          "unit": "relative_percent",
+          "centipercent": 280,
+          "mapping": "EXACT_SHARED_CHANNEL",
+          "canonicalChannel": "defense_pct"
+        }
+      ],
+      "trait": null,
+      "mayApply": false
+    }
+  ],
+  "sets": [
+    {
+      "setId": "eq2_t5_oathplate",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Oathbound Guard",
+          "effect": "+3% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Oathplate Resolve",
+          "effect": "After a qualifying direct hit removes at least 5% maximum HP after mitigation, gain +4% Defense for 6 seconds",
+          "icdSeconds": 16
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_rimewatch",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Winterwall",
+          "effect": "+3% maximum HP"
+        },
+        {
+          "pieces": 4,
+          "name": "Rimeguard",
+          "effect": "When a qualifying direct hit is received while below 50% HP, create a shield for 4% maximum HP lasting 6 seconds",
+          "icdSeconds": 24
+        },
+        {
+          "pieces": 6,
+          "name": "Weather the Break",
+          "effect": "When Rimeguard's shield is fully broken by a direct hit, reduce incoming non-true damage by 6% for 4 seconds",
+          "icdSeconds": 30
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_rimebrand",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Tempered Edge",
+          "effect": "+2% Attack and +2% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Measured Reprisal",
+          "effect": "After taking eligible direct HP damage, the next direct class-ability hit within 6 seconds deals +9% damage",
+          "icdSeconds": 16
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_snowveil",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Cold Footing",
+          "effect": "+2 percentage points Evasion"
+        },
+        {
+          "pieces": 3,
+          "name": "Slip and Brace",
+          "effect": "After successfully evading a qualifying direct attack, gain +4% Defense for 5 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_whitefang",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Swift Pursuit",
+          "effect": "+3% Haste"
+        },
+        {
+          "pieces": 3,
+          "name": "Snowstep Opening",
+          "effect": "After successfully evading a direct enemy attack, the next direct class-ability hit within 5 seconds deals +8% damage",
+          "icdSeconds": 14
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_farwind",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Clear Sight",
+          "effect": "+3% Attack"
+        },
+        {
+          "pieces": 4,
+          "name": "Patient Volley",
+          "effect": "After three consecutive successful direct weapon hits on the same target, the next direct weapon hit within 6 seconds deals +8% damage",
+          "icdSeconds": 14
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_nightglass",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Arcane Etching",
+          "effect": "+3% direct class-ability damage"
+        },
+        {
+          "pieces": 4,
+          "name": "Fractured Tempo",
+          "effect": "After an eligible direct spell hit, gain +4% Haste for 6 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_avalanche",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Weight of Winter",
+          "effect": "+3% Attack"
+        },
+        {
+          "pieces": 4,
+          "name": "Follow-Through",
+          "effect": "After a direct physical class-ability hit, the next basic attack within 6 seconds deals +6% damage",
+          "icdSeconds": 16
+        },
+        {
+          "pieces": 6,
+          "name": "Crushing Finish",
+          "effect": "A direct physical class-ability hit against a target below 30% HP deals +8% damage",
+          "icdSeconds": 20
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_dawnweave",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Gentle Radiance",
+          "effect": "+3% Healing Power"
+        },
+        {
+          "pieces": 4,
+          "name": "Soft Refuge",
+          "effect": "After an eligible direct heal that restores missing HP, grant that target a shield for 3% of their maximum HP for 6 seconds",
+          "icdSeconds": 18
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_stormthread",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Gathering Wind",
+          "effect": "+3% Haste"
+        },
+        {
+          "pieces": 3,
+          "name": "Storm's Cover",
+          "effect": "After granting an authenticated class ally-buff, grant that ally 3% reduction to incoming non-true damage for 5 seconds",
+          "icdSeconds": 20
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_winterroot",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Rooted Hope",
+          "effect": "+3% maximum HP"
+        },
+        {
+          "pieces": 4,
+          "name": "Shelter Bloom",
+          "effect": "An effective direct heal on an ally below 50% HP grants a shield for 4% of target maximum HP for 6 seconds",
+          "icdSeconds": 20
+        },
+        {
+          "pieces": 6,
+          "name": "Purifying Shelter",
+          "effect": "A successful authored cleanse grants its target 6% reduction to incoming non-true damage for 5 seconds",
+          "icdSeconds": 30
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t5_echohide",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Winter Echo",
+          "effect": "+3% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Answering Care",
+          "effect": "After an ally takes eligible direct HP damage, the next effective direct heal on that ally within 6 seconds gains +7% Healing Power",
+          "icdSeconds": 16
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_rare_t5_shardrunner",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Frozen Pursuit",
+          "effect": "+3% Attack and +2 percentage points Evasion"
+        },
+        {
+          "pieces": 4,
+          "name": "Shatterstep",
+          "effect": "After successfully evading an eligible direct attack, the next direct physical class-ability hit within 6 seconds deals +12% damage",
+          "icdSeconds": 16
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_rare_t5_dawnspire",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "First Light",
+          "effect": "+4% Healing Power and +2% Defense"
+        },
+        {
+          "pieces": 4,
+          "name": "Sanctuary Thread",
+          "effect": "After an eligible effective direct heal, shield that target for 5% of target maximum HP for 6 seconds",
+          "icdSeconds": 20
+        },
+        {
+          "pieces": 6,
+          "name": "Dawnspire Rally",
+          "effect": "When an ally crosses below 35% maximum HP, the next effective direct heal on that ally within 6 seconds gains +14% Healing Power and grants 6% incoming non-true damage reduction for 5 seconds",
+          "icdSeconds": 35
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_frostclasp_aegis",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "frostclasp_aegis_2p",
+          "name": "Ward Against the Deep",
+          "effect": "On successful hostile debuff application, gain +3 percentage points Tenacity for 6 seconds; never retroactively shorten the triggering debuff",
+          "internalCooldownSeconds": 20,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_stonewinter_frame",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "stonewinter_frame_2p",
+          "name": "Unyielding Frame",
+          "effect": "After eligible direct non-true damage removes at least 6% max HP, reduce damage from the next eligible direct non-true hit within 6 seconds by 4%",
+          "internalCooldownSeconds": 18,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_glacier_talons",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "glacier_talons_2p",
+          "name": "Talonstrike",
+          "effect": "After a successful direct physical class-ability hit, the next basic direct weapon hit within 5 seconds deals +6% damage; no free Bleed/Stagger/Piercing",
+          "internalCooldownSeconds": 14,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_astral_rime",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "astral_rime_2p",
+          "name": "Echoing Spellglass",
+          "effect": "After a successful direct spell hit, the next direct class spell hit within 6 seconds deals +5% damage; exclude DoT/reflection/procs",
+          "internalCooldownSeconds": 16,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_dawnmender_chain",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "dawnmender_chain_2p",
+          "name": "Comforting Thread",
+          "effect": "An effective direct class heal restoring missing HP grants the target +3% Defense for 6 seconds (self-heal eligible)",
+          "internalCooldownSeconds": 18,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_combo_t5_runeforge_link",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "runeforge_link_2p",
+          "name": "Frostworked Momentum",
+          "effect": "After a successful direct class-ability hit OR effective direct class heal, gain +2% Haste for 6 seconds, once per source event",
+          "internalCooldownSeconds": 18,
+          "exclusions": [
+            "DoT ticks",
+            "reflect",
+            "proc recursion",
+            "self damage",
+            "misses",
+            "absorption-only hits",
+            "duplicated event receipts"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_t5_shiverlake_bellwake",
+      "source": "t5",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "bellward",
+          "name": "Bellward",
+          "effect": "+2% maximum HP and +2 percentage points Tenacity",
+          "bonusStats": [
+            {
+              "stat": "max_hp_pct",
+              "value": 2,
+              "unit": "relative_percent"
+            },
+            {
+              "stat": "tenacity_pp",
+              "value": 2,
+              "unit": "percentage_points"
+            }
+          ]
+        },
+        {
+          "pieces": 4,
+          "id": "answer_the_toll",
+          "name": "Answer the Toll",
+          "effect": "After eligible direct non-true damage removes at least 7% of own maximum HP post-mitigation, receive one shield of 5% maximum HP for 6 seconds and one Resonant Answer charge. Within 6 seconds, the next authenticated direct class-ability damage hit OR effective direct class heal consumes that one charge for +5% potency (not both).",
+          "internalCooldownSeconds": 28,
+          "shieldPctMaxHp": 5,
+          "shieldSeconds": 6,
+          "thresholdActualHpLossPctMax": 7,
+          "chargeExpirySeconds": 6,
+          "chargeOneUsePotencyPct": 5,
+          "prohibitedSources": [
+            "true damage",
+            "DoT ticks",
+            "self damage",
+            "reflection",
+            "procs",
+            "absorbed-only damage",
+            "missed hits",
+            "echo NPCs",
+            "simultaneous duplicate events"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_rare_t5_citadel",
+      "source": "rare",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "citadel_foundation",
+          "name": "Citadel Foundation",
+          "effect": [
+            {
+              "stat": "max_hp_pct",
+              "value": 4
+            },
+            {
+              "stat": "defense_pct",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "pieces": 4,
+          "id": "tower_guard",
+          "name": "Tower Guard",
+          "effect": "After one eligible hit deals at least 8% of maximum HP as post-mitigation damage, gain a shield equal to 6% of maximum HP for 6 seconds.",
+          "internalCooldownSeconds": 18,
+          "exclusions": [
+            "true damage",
+            "self damage",
+            "already absorbed damage",
+            "duplicate simultaneous triggers"
+          ]
+        },
+        {
+          "pieces": 6,
+          "id": "citadel_unbroken",
+          "name": "Citadel Unbroken",
+          "effect": "When falling below 35% HP, gain 10% incoming damage reduction and 20% increased healing received for 8 seconds.",
+          "internalCooldownSeconds": 35,
+          "activationRule": "Crossing the threshold only; remaining below it cannot retrigger."
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_rare_t5_bloodsteel",
+      "source": "rare",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "tempered_guard",
+          "name": "Tempered Guard",
+          "effect": [
+            {
+              "stat": "defense_pct",
+              "value": 3
+            },
+            {
+              "stat": "attack_pct",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "pieces": 4,
+          "id": "red_reprisal",
+          "name": "Red Reprisal",
+          "effect": "After taking eligible post-mitigation HP damage, the next basic attack within 5 seconds deals 18% increased damage and heals 1.5% of maximum HP.",
+          "internalCooldownSeconds": 8,
+          "exclusions": [
+            "self damage",
+            "damage over time ticks",
+            "reflect loops",
+            "proc damage",
+            "missed or avoided attacks"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t4_bastionmail",
+      "source": "replacements",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "steady_links",
+          "name": "Steady Links",
+          "effect": [
+            {
+              "stat": "defense_pct",
+              "value": 3
+            }
+          ]
+        },
+        {
+          "pieces": 4,
+          "id": "braced_formation",
+          "name": "Braced Formation",
+          "effect": "After blocking or mitigating an eligible direct hit, gain 4% Defense for 5 seconds.",
+          "internalCooldownSeconds": 14,
+          "stacking": "refresh_duration_only"
+        },
+        {
+          "pieces": 6,
+          "id": "hold_the_line",
+          "name": "Hold the Line",
+          "effect": "When crossing below 35% HP, gain a shield equal to 5% maximum HP for 6 seconds.",
+          "internalCooldownSeconds": 35,
+          "activationRule": "Threshold crossing only; remaining below it cannot retrigger."
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_t4_ashguard",
+      "source": "replacements",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "id": "ashen_grip",
+          "name": "Ashen Grip",
+          "effect": [
+            {
+              "stat": "defense_pct",
+              "value": 2
+            },
+            {
+              "stat": "attack_pct",
+              "value": 2
+            }
+          ]
+        },
+        {
+          "pieces": 4,
+          "id": "guarded_return",
+          "name": "Guarded Return",
+          "effect": "After eligible direct HP damage, the next basic attack within 5 seconds deals 10% increased damage.",
+          "internalCooldownSeconds": 10,
+          "exclusions": [
+            "self damage",
+            "damage over time ticks",
+            "reflection",
+            "proc damage",
+            "missed or avoided attacks"
+          ]
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_heartward",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Rootbound Heartward Foundation",
+          "effect": "+3% Defense",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Rootbound Heartward Signature",
+          "effect": "After eligible direct non-true HP loss of >=6% own Max HP, gain a 4%-Max-HP shield for 6s",
+          "internalCooldownSeconds": 22,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_thornstrider",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Rootbound Thornstrider Foundation",
+          "effect": "+3% Attack",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Rootbound Thornstrider Signature",
+          "effect": "After two direct class ability hits against the same enemy, the next direct class ability hit within 6s deals +6% damage",
+          "internalCooldownSeconds": 18,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_rootbound_t2_lifebloom",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Rootbound Lifebloom Foundation",
+          "effect": "+3% Healing Power",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Rootbound Lifebloom Signature",
+          "effect": "An effective direct class heal grants its target +3% Defense for 6s",
+          "internalCooldownSeconds": 20,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_helioguard",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Heliarch Guard Foundation",
+          "effect": "+3.5% Defense",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Heliarch Guard Signature",
+          "effect": "After an eligible direct hit removes >=6% Max HP, gain 5% non-true damage reduction against the next direct hit within 6s",
+          "internalCooldownSeconds": 20,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_sphinxclaw",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Sphinxclaw Pursuit Foundation",
+          "effect": "+3.5% direct ability damage",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Sphinxclaw Pursuit Signature",
+          "effect": "A direct class ability hit on a target with a verified authored vulnerability or debuff empowers the next direct class ability hit by +7%",
+          "internalCooldownSeconds": 18,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_observatory_t4_mirageveil",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Mirageveil Oracle Foundation",
+          "effect": "+3.5% Healing Power",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Mirageveil Oracle Signature",
+          "effect": "A successful authored cleanse grants the cleansed target a shield for 4% of Max HP for 6s",
+          "internalCooldownSeconds": 22,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_rimevanguard",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Shiverlake Rimevanguard Foundation",
+          "effect": "+4% maximum HP",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Shiverlake Rimevanguard Signature",
+          "effect": "After eligible direct non-true HP loss >=7% Max HP, reduce incoming non-true damage by 6% for 5s",
+          "internalCooldownSeconds": 22,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_cantorshard",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Shiverlake Cantorshard Foundation",
+          "effect": "+4% Attack",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Shiverlake Cantorshard Signature",
+          "effect": "After two successful direct physical weapon hits, the next direct physical ability hit within 6s deals +8% damage",
+          "internalCooldownSeconds": 18,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    },
+    {
+      "setId": "eq2_dungeon_shiverlake_t5_frosthym",
+      "source": "dungeons",
+      "bonuses": [
+        {
+          "pieces": 2,
+          "name": "Shiverlake Frosthymn Foundation",
+          "effect": "+4% Healing Power",
+          "bonusSource": "verified_set_ownership_only",
+          "status": "PROPOSED_BUDGET"
+        },
+        {
+          "pieces": 4,
+          "name": "Shiverlake Frosthymn Signature",
+          "effect": "An effective direct class heal on an ally below 50% HP creates a 4%-Max-HP shield on that ally for 6s",
+          "internalCooldownSeconds": 20,
+          "excludedTriggers": [
+            "DoT",
+            "reflected",
+            "proc-recursive",
+            "self-inflicted",
+            "absorbed-only",
+            "missed",
+            "non-authorized skills",
+            "expired state"
+          ],
+          "status": "PROPOSED_COMBAT_2_0_AUTHORING"
+        }
+      ],
+      "effectsApproved": false,
+      "mayApply": false
+    }
+  ]
+}

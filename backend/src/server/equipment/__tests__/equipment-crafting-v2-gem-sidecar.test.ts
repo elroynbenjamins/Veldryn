@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type {V2PrivateGameState} from '../equipment-crafting-v2-private-game-state-type';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
@@ -12,7 +13,7 @@ import {
 const now=2_000_000_000_000,accountId='gem-sidecar-account';
 const recipe=V2_SERVER_RECIPES.find(row=>row.id==='EQ2_FIELDBORN_GUARD_HELMET_FOUNDATION');
 assert.ok(recipe);
-const state=createCharacter(newGame(now),'IRONWARDEN');
+const state:V2PrivateGameState=createCharacter(newGame(now),'IRONWARDEN');
 assert.ok(state.character);
 state.character.level=20;state.character.gold=25000;
 state.inventory.stacks=recipe.inputs.map(row=>({itemId:row.itemId,quantity:row.quantity}));

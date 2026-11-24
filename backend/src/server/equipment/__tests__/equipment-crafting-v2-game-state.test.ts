@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type {V2PrivateGameState} from '../equipment-crafting-v2-private-game-state-type';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {switchAccountCharacter} from '../../../../../apps/mobile/src/core/account-actions';
 import {ITEMS} from '../../../../../apps/mobile/src/content/items';
@@ -14,7 +15,7 @@ const recipe=(()=>{
 const now=2_000_000_000_000;
 const accountId='account-hidden-2';
 function stateFixture(){
- const s=createCharacter(newGame(now),'IRONWARDEN');
+ const s:V2PrivateGameState=createCharacter(newGame(now),'IRONWARDEN');
  assert.ok(s.character);
  s.character.level=20;
  s.character.gold=15_000;

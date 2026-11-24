@@ -1,0 +1,159 @@
+{
+  "schema": "eq2-consolidated-review-index-v14",
+  "status": "HIDDEN_REVIEW_ONLY",
+  "releaseActivation": false,
+  "canonicalApproval": "docs/2-0/EQUIPMENT_2_0_CANONICAL_APPROVAL_RECORD_20261124.md",
+  "supersedesIndex": "docs/2-0/eq2-consolidated-review-index-v8.json",
+  "historicalSourcePins": "docs/2-0/eq2-consolidated-review-index-v8.json",
+  "sourceHead": "819c7dbceca09b1df3f39dd214305f34bb31db72",
+  "contracts": [
+    {
+      "domain": "membership",
+      "path": "docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json",
+      "blobSha": "66efd96d8659207362939fc5805dd07c80eb497e",
+      "status": "SOURCE_FACT"
+    },
+    {
+      "domain": "universalAffixes",
+      "path": "docs/2-0/eq2-universal-affix-overlap-review-v4.json",
+      "blobSha": "f82cb4fa27379965dde22994430d3bd58465bc80",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "power",
+      "path": "docs/2-0/eq2-equipment-power-review-v5.json",
+      "blobSha": "c6e3ae5afb3af344991079f31d871712fd3c3449",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "handStats",
+      "path": "tools/eq2-review/t1-t5/hand-budget-review-v6.mjs",
+      "blobSha": "bcf42ac5a2330acf80b6af6fc8acf609ebee0737",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "premiumAndSets",
+      "path": "docs/2-0/eq2-innate-and-set-budget-review-v7.json",
+      "blobSha": "7457f5023173ca2a9ba22286e8f4c4539bbadaab",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "finishedRecipeBaseline",
+      "path": "tools/eq2-review/t1-t5/component-economy-review-v9.mjs",
+      "blobSha": "2fe860037c368fad8b7ffe6a9ce8685d141d7d92",
+      "status": "CONFIRMED_DIRECTION_ONLY"
+    },
+    {
+      "domain": "t5MaterialDefinitions",
+      "path": "docs/2-0/eq2-t5-material-production-review-v11.json",
+      "blobSha": "f8b61d08cf9b09f7dc3faae11d6c4151b3e6d2ec",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "handBills",
+      "path": "tools/eq2-review/t1-t5/economy-production-review-v11.mjs",
+      "blobSha": "640189601fcefd4a910f7cef6a2c1be7b6a7d234",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "materialIdentityAndAccessPolicy",
+      "path": "docs/2-0/eq2-unified-economy-policy-v12.json",
+      "blobSha": "336c18553594e0373c277b8358cece774112f61f",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "materialRegistry",
+      "path": "tools/eq2-review/t1-t5/unified-economy-review-v12.mjs",
+      "blobSha": "016ffebaffad85aacfe8a652541a43f7665d9e8d",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "processingAndCashScenario",
+      "path": "tools/eq2-review/t1-t5/economy-balance-review-v13.mjs",
+      "blobSha": "08b25af8647c2aaf8a21d4377e7ff992c5b378a0",
+      "status": "PROPOSAL"
+    },
+    {
+      "domain": "historicalHandComparison",
+      "path": "tools/eq2-review/t1-t5/hand-economy-review-v8.mjs",
+      "blobSha": "a1a2fbac71b645b9c6027d1d4714de56ba59679b",
+      "status": "HISTORICAL_EVIDENCE"
+    },
+    {
+      "domain": "historicalMarketSimulation",
+      "path": "tools/eq2-review/t1-t5/economy-simulation-review-v10.mjs",
+      "blobSha": "cd260873534e5ff57ef60bf3db48c08b7b137cc1",
+      "status": "HISTORICAL_EVIDENCE"
+    }
+  ],
+  "precedence": [
+    {
+      "domain": "finished equipment",
+      "current": "V9 C14",
+      "retired": "V8 increased combined direct fee",
+      "limit": "V11 additional manufactured inputs only as separate candidate"
+    },
+    {
+      "domain": "refining",
+      "current": "V13 candidate",
+      "retired": "V11 proposed processing fees and earlier V10 uniform speed assumption",
+      "limit": "existing smelt and binder time/yield retained; pending1693 remains separate unmerged scenario"
+    },
+    {
+      "domain": "material identity",
+      "current": "V12 reuse candidate",
+      "retired": "duplicate Copper/Iron Bar proposals in candidate view",
+      "limit": "no alias or migration; V9 historic inputs intact"
+    },
+    {
+      "domain": "gathering",
+      "current": "V13 effective candidate duration/rate",
+      "retired": "V11 Frostflax base seconds and yield",
+      "limit": "V11 source identity/area retained; no runtime registration"
+    },
+    {
+      "domain": "market",
+      "current": "V14 raw basket using V13 candidate",
+      "retired": "V11 raw basket, V10 illustrative opportunity prices/profile medians as current estimates",
+      "limit": "historical assumptions remain available, actual market pricing/supply unverified"
+    },
+    {
+      "domain": "salvage",
+      "current": "V11 refined-only candidate 20% on immutable consumed bill",
+      "retired": "V10 value recovery sensitivity as actual salvage",
+      "limit": "no salvage runtime; legacy/boss/receipt policies unresolved"
+    }
+  ],
+  "expected": {
+    "items": 554,
+    "sets": 95,
+    "bossOnly": 79,
+    "craftItems": 469,
+    "craftRoutes": 928,
+    "unresolvedBlueprints": 6,
+    "t5SingleRouteItems": 10,
+    "materialIdentities": 75,
+    "processingOutputs": 29,
+    "combinedAlternatives": 50
+  },
+  "open": [
+    "D1-D10",
+    "six blueprint recipes",
+    "ten T5 alternate methods",
+    "actual source receipts and enemy rates",
+    "skill-only region access and commissions",
+    "reconcile #1693 exact source and final ingot quantities",
+    "T5 total acquisition and XP pacing",
+    "combined-hand acquisition parity under real costs",
+    "salvage provenance and market pricing",
+    "exact-head CI and broader regressions"
+  ],
+  "noAuthority": {
+    "mayCraft": false,
+    "mayMint": false,
+    "mayDrop": false,
+    "mayEquip": false,
+    "mayTrade": false,
+    "mayRenderInLiveUI": false
+  }
+}

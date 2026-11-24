@@ -1,0 +1,404 @@
+{
+  "schema": "eq2-t5-material-production-review-v11",
+  "status": "HIDDEN_CANDIDATE_ONLY",
+  "releaseActivation": false,
+  "mayCraft": false,
+  "mayMint": false,
+  "mayTrade": false,
+  "sourceRefs": {
+    "skills": "b6c7308a6791e014447d8762e4caad968a458dfe",
+    "items": "81360d0db7827f4eaf0632ddc3cafc8cf61b4d4a",
+    "monsters": "bf07ee053bdb07356804e1d92cb99a2758b0b7ef",
+    "alchemy": "e8d6f0bdf840acd63beb870bb861a58584d6c8ad"
+  },
+  "policy": {
+    "craftCombatLevelRequired": 0,
+    "secondaryProfessionRequired": false,
+    "tradeOrCommissionRequiredForCrossProfession": true,
+    "proposedFrostmarchProfessionAccessAt46": true,
+    "existingGatheringCombatAreaGateUnresolved": true,
+    "existingSmeltingConflictPR1693": true,
+    "sourceGrantVerified": false,
+    "allDropRatesAreFinalEffectiveCandidatesNotAuthoredRaw": true,
+    "sourceRatesDoNotActivateLoot": true
+  },
+  "existingRaw": [
+    {
+      "id": "FROSTIRON",
+      "source": [
+        "FROSTIRON_VEIN",
+        "SHIVERLAKE_FROSTIRON_SEAM",
+        "WYRMSPINE_FROSTIRON_VEIN"
+      ],
+      "kind": "mining",
+      "skillLevel": 46
+    },
+    {
+      "id": "WHITEPINE_LOG",
+      "source": [
+        "WHITEPINE_TREE",
+        "WHITEPINE_THICKET"
+      ],
+      "kind": "woodcutting",
+      "skillLevel": 46
+    },
+    {
+      "id": "RIMEGLASS",
+      "source": [
+        "BELLWRAITH",
+        "RIME_STALKER",
+        "LAKEBOUND_SPECTER"
+      ],
+      "kind": "existing_combat_material"
+    },
+    {
+      "id": "RIME_RESIN",
+      "source": [
+        "FROSTWOLF",
+        "ICEBOUND_RAIDER",
+        "SNOW_TREANT"
+      ],
+      "kind": "existing_combat_material"
+    },
+    {
+      "id": "WINTERMINT",
+      "source": [],
+      "kind": "existing_item_herbalism_source_unverified"
+    }
+  ],
+  "newRaw": [
+    {
+      "id": "EQ2_T5_FROSTFLAX",
+      "name": "Frostflax Fibre",
+      "kind": "herbalism",
+      "nodeId": "EQ2_T5_FROSTFLAX_PATCH",
+      "skillLevel": 46,
+      "zone": "FROSTMARCH",
+      "area": "ZONE_011",
+      "seconds": 65,
+      "yieldMin": 1,
+      "yieldMax": 2,
+      "xp": 180,
+      "sourceRegistered": false
+    },
+    {
+      "id": "EQ2_T5_FROSTWOLF_PELT",
+      "name": "Frostwolf Pelt",
+      "kind": "combat",
+      "sources": [
+        {
+          "enemy": "FROSTWOLF",
+          "effectiveChance": 0.18,
+          "quantity": 1
+        }
+      ],
+      "sourceRegistered": false
+    }
+  ],
+  "combat": [
+    {
+      "key": "rimeboneShards",
+      "id": "EQ2_T5_RIMEBONE_SHARD",
+      "kind": "common_combat",
+      "sources": [
+        {
+          "enemy": "FROSTWOLF",
+          "effectiveChance": 0.16,
+          "quantity": 1
+        },
+        {
+          "enemy": "ICEBOUND_RAIDER",
+          "effectiveChance": 0.18,
+          "quantity": 1
+        },
+        {
+          "enemy": "SNOW_TREANT",
+          "effectiveChance": 0.16,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "key": "iceveinSigils",
+      "id": "EQ2_T5_ICEVEIN_SIGIL",
+      "kind": "scarce_combat",
+      "sources": [
+        {
+          "enemy": "ICEBOUND_RAIDER",
+          "effectiveChance": 0.008,
+          "quantity": 1
+        },
+        {
+          "enemy": "BELLWRAITH",
+          "effectiveChance": 0.01,
+          "quantity": 1
+        },
+        {
+          "enemy": "RIME_STALKER",
+          "effectiveChance": 0.012,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "key": "fortressCores",
+      "id": "EQ2_T5_FORTRESS_CORE",
+      "kind": "rare_signature",
+      "sources": [
+        {
+          "enemy": "RIME_BERSERKER",
+          "effectiveChance": 0.005,
+          "quantity": 1
+        },
+        {
+          "enemy": "WYRMSPINE_GUARDIAN",
+          "effectiveChance": 0.008,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "key": "temperedHearts",
+      "id": "EQ2_T5_TEMPERED_HEART",
+      "kind": "rare_signature",
+      "sources": [
+        {
+          "enemy": "RIME_BERSERKER",
+          "effectiveChance": 0.005,
+          "quantity": 1
+        },
+        {
+          "enemy": "CHOIR_HUNTER",
+          "effectiveChance": 0.007,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "key": "shardhearts",
+      "id": "EQ2_T5_SHARDHEART",
+      "kind": "rare_signature",
+      "sources": [
+        {
+          "enemy": "RIME_STALKER",
+          "effectiveChance": 0.005,
+          "quantity": 1
+        },
+        {
+          "enemy": "FROSTNEEDLE_BROOD",
+          "effectiveChance": 0.007,
+          "quantity": 1
+        }
+      ]
+    },
+    {
+      "key": "dawnspireCores",
+      "id": "EQ2_T5_DAWNSPIRE_CORE",
+      "kind": "rare_signature",
+      "sources": [
+        {
+          "enemy": "BELLWRAITH",
+          "effectiveChance": 0.005,
+          "quantity": 1
+        },
+        {
+          "enemy": "CHOIR_DEFILER",
+          "effectiveChance": 0.008,
+          "quantity": 1
+        }
+      ]
+    }
+  ],
+  "processing": [
+    {
+      "id": "SMELT_FROSTIRON_INGOT",
+      "output": "FROSTIRON_INGOT",
+      "quantity": 3,
+      "inputs": {
+        "FROSTIRON": 6,
+        "WHITEPINE_LOG": 4
+      },
+      "skill": "smithing",
+      "level": 46,
+      "seconds": 420,
+      "xp": 980,
+      "gold": 720,
+      "referenceOnly": true,
+      "conflict": "PR1693 pending separate proposed input and XP change; use snapshot only",
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_FROSTSTEEL",
+      "output": "EQ2_T5_FROSTSTEEL_INGOT",
+      "quantity": 3,
+      "inputs": {
+        "FROSTIRON_INGOT": 3,
+        "WHITEPINE_LOG": 1
+      },
+      "skill": "smithing",
+      "level": 46,
+      "seconds": 100,
+      "xp": 250,
+      "gold": 160,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_FROSTWOOD",
+      "output": "EQ2_T5_FROSTWOOD_PLANK",
+      "quantity": 3,
+      "inputs": {
+        "WHITEPINE_LOG": 6
+      },
+      "skill": "woodcutting",
+      "level": 46,
+      "seconds": 100,
+      "xp": 240,
+      "gold": 100,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_FROSTWEAVE",
+      "output": "EQ2_T5_FROSTWEAVE_CLOTH",
+      "quantity": 3,
+      "inputs": {
+        "EQ2_T5_FROSTFLAX": 6
+      },
+      "skill": "tailoring",
+      "level": 42,
+      "seconds": 100,
+      "xp": 250,
+      "gold": 120,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_FROSTLEATHER",
+      "output": "EQ2_T5_HARDENED_FROSTLEATHER",
+      "quantity": 3,
+      "inputs": {
+        "EQ2_T5_FROSTWOLF_PELT": 3,
+        "RIME_RESIN": 1
+      },
+      "skill": "tailoring",
+      "level": 42,
+      "seconds": 110,
+      "xp": 270,
+      "gold": 140,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_FROSTMAIL",
+      "output": "EQ2_T5_FROSTMAIL_LINKS",
+      "quantity": 3,
+      "inputs": {
+        "EQ2_T5_FROSTSTEEL_INGOT": 3,
+        "EQ2_T5_FROSTWEAVE_CLOTH": 1
+      },
+      "skill": "smithing",
+      "level": 48,
+      "seconds": 125,
+      "xp": 325,
+      "gold": 200,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_SMOKEGLASS",
+      "output": "EQ2_T5_SMOKEGLASS_PLATE",
+      "quantity": 3,
+      "inputs": {
+        "RIMEGLASS": 3,
+        "EQ2_T5_FROSTSTEEL_INGOT": 1
+      },
+      "skill": "smithing",
+      "level": 46,
+      "seconds": 120,
+      "xp": 310,
+      "gold": 180,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_BINDER",
+      "output": "EQ2_T5_BINDING_RESIN",
+      "quantity": 3,
+      "inputs": {
+        "RIME_RESIN": 2,
+        "WINTERMINT": 3,
+        "WHITEPINE_LOG": 1
+      },
+      "skill": "alchemy",
+      "level": 42,
+      "seconds": 110,
+      "xp": 285,
+      "gold": 150,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    },
+    {
+      "id": "EQ2_REVIEW_T5_BLOODTEMPERED",
+      "output": "EQ2_T5_BLOODTEMPERED_STEEL",
+      "quantity": 3,
+      "inputs": {
+        "EQ2_T5_FROSTSTEEL_INGOT": 3,
+        "RIME_RESIN": 2
+      },
+      "skill": "smithing",
+      "level": 48,
+      "seconds": 140,
+      "xp": 360,
+      "gold": 230,
+      "reviewOnly": true,
+      "sourceRegistered": false,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayTrade": false,
+      "craftCombatLevelRequired": 0,
+      "secondaryProfessionRequired": false
+    }
+  ]
+}

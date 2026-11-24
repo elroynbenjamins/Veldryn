@@ -1,0 +1,654 @@
+{
+  "schema": "eq2-unified-economy-policy-v12",
+  "status": "HIDDEN_SOURCE_RECONCILIATION_ONLY",
+  "reviewOnly": true,
+  "mayCraft": false,
+  "mayMint": false,
+  "mayDrop": false,
+  "mayTrade": false,
+  "releaseApproved": false,
+  "sourceRefs": {
+    "base": "768ba616b1fe97356ae59dff8ee82ff10762044c",
+    "items": "81360d0db7827f4eaf0632ddc3cafc8cf61b4d4a",
+    "skills": "b6c7308a6791e014447d8762e4caad968a458dfe",
+    "herbalism": "4ca3f66641df13229b1e28834347a6f3285f8364",
+    "monsters": "bf07ee053bdb07356804e1d92cb99a2758b0b7ef",
+    "alchemy": "e8d6f0bdf840acd63beb870bb861a58584d6c8ad",
+    "v3": "0c8b9f0c0209ea3bf075664e37d864b64cc9a792",
+    "v11": "f8b61d08cf9b09f7dc3faae11d6c4151b3e6d2ec",
+    "pending1693": "1b28c529ae9098c879f49b46040160d755e5aad8"
+  },
+  "tierProfessionTargets": [
+    {
+      "tier": 1,
+      "level": 1,
+      "meaning": "candidate basic component training floor; existing references retain actual source gate"
+    },
+    {
+      "tier": 2,
+      "level": 8,
+      "meaning": "candidate basic component training floor; existing references retain actual source gate"
+    },
+    {
+      "tier": 3,
+      "level": 20,
+      "meaning": "candidate basic component training floor; existing references retain actual source gate"
+    },
+    {
+      "tier": 4,
+      "level": 34,
+      "meaning": "candidate basic component training floor; existing references retain actual source gate"
+    },
+    {
+      "tier": 5,
+      "level": 42,
+      "meaning": "candidate basic component training floor; existing references retain actual source gate"
+    }
+  ],
+  "identityReconciliation": [
+    {
+      "from": "EQ2_COPPER_BAR",
+      "to": "COPPER_INGOT",
+      "policy": "RECOMMENDED_REVIEW_ONLY_REAUTHOR_NO_ALIAS_NO_LIVE_CONVERSION",
+      "quantityParity": "UNAPPROVED_RECALCULATE"
+    },
+    {
+      "from": "EQ2_IRON_BAR",
+      "to": "ASTER_IRON_INGOT",
+      "policy": "RECOMMENDED_REVIEW_ONLY_REAUTHOR_NO_ALIAS_NO_LIVE_CONVERSION",
+      "quantityParity": "UNAPPROVED_RECALCULATE"
+    }
+  ],
+  "smelts": [
+    {
+      "output": "COPPER_INGOT",
+      "id": "SMELT_COPPER_INGOT",
+      "tier": 1,
+      "level": 1,
+      "quantity": 5,
+      "inputs": {
+        "COPPER_ORE": 10,
+        "GREENWOOD_LOG": 2
+      },
+      "xp": 100,
+      "seconds": 36,
+      "gold": 30,
+      "skill": "smithing",
+      "referenceOnly": true,
+      "feeType": "authored_before_global_modifiers",
+      "pending1693": {
+        "inputs": {
+          "COPPER_ORE": 15,
+          "GREENWOOD_LOG": 5
+        },
+        "xp": 135,
+        "gold": 25
+      },
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "ASTER_IRON_INGOT",
+      "id": "SMELT_ASTER_IRON_INGOT",
+      "tier": 2,
+      "level": 8,
+      "quantity": 4,
+      "inputs": {
+        "ASTER_IRON_ORE": 8,
+        "IRONWOOD_LOG": 2
+      },
+      "xp": 165,
+      "seconds": 42,
+      "gold": 50,
+      "skill": "smithing",
+      "referenceOnly": true,
+      "feeType": "authored_before_global_modifiers",
+      "pending1693": {
+        "inputs": {
+          "ASTER_IRON_ORE": 13,
+          "IRONWOOD_LOG": 5
+        },
+        "xp": 195,
+        "gold": 50
+      },
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "SUNSTONE_INGOT",
+      "id": "SMELT_SUNSTONE_INGOT",
+      "tier": 3,
+      "level": 26,
+      "quantity": 3,
+      "inputs": {
+        "SUNSTONE_ORE": 6,
+        "DUNEWOOD": 4
+      },
+      "xp": 520,
+      "seconds": 180,
+      "gold": 280,
+      "skill": "smithing",
+      "referenceOnly": true,
+      "feeType": "authored_before_global_modifiers",
+      "pending1693": {
+        "inputs": {
+          "SUNSTONE_ORE": 11,
+          "DUNEWOOD": 7
+        },
+        "xp": 550,
+        "gold": 280
+      },
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "FROSTIRON_INGOT",
+      "id": "SMELT_FROSTIRON_INGOT",
+      "tier": 5,
+      "level": 46,
+      "quantity": 3,
+      "inputs": {
+        "FROSTIRON": 6,
+        "WHITEPINE_LOG": 4
+      },
+      "xp": 980,
+      "seconds": 420,
+      "gold": 720,
+      "skill": "smithing",
+      "referenceOnly": true,
+      "feeType": "authored_before_global_modifiers",
+      "pending1693": {
+        "inputs": {
+          "FROSTIRON": 11,
+          "WHITEPINE_LOG": 7
+        },
+        "xp": 1010,
+        "gold": 720
+      },
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "binders": [
+    {
+      "output": "VERDANT_BINDING_RESIN",
+      "id": "BREW_VERDANT_BINDING_RESIN",
+      "tier": 1,
+      "level": 1,
+      "seconds": 90,
+      "xp": 95,
+      "gold": 18,
+      "inputs": {
+        "DEWLEAF": 5,
+        "MOSS_FIBER": 12,
+        "WISP_DUST": 3,
+        "ASTERFALL_BOTANICAL_ESSENCE": 1
+      },
+      "quantity": 1,
+      "skill": "alchemy",
+      "referenceOnly": true,
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "IRONWOOD_BINDING_RESIN",
+      "id": "BREW_IRONWOOD_BINDING_RESIN",
+      "tier": 2,
+      "level": 8,
+      "seconds": 115,
+      "xp": 200,
+      "gold": 35,
+      "inputs": {
+        "IRONWOOD_LOG": 6,
+        "THORN_SAP": 6,
+        "IRONWOOD_FANG": 2
+      },
+      "quantity": 1,
+      "skill": "alchemy",
+      "referenceOnly": true,
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "SUNSCAR_DUNE_BINDER",
+      "id": "BREW_SUNSCAR_DUNE_BINDER",
+      "tier": 3,
+      "level": 20,
+      "seconds": 135,
+      "xp": 360,
+      "gold": 60,
+      "inputs": {
+        "DUNEWOOD": 4,
+        "SUNSCALE": 2,
+        "SUNSTONE_ORE": 3
+      },
+      "quantity": 1,
+      "skill": "alchemy",
+      "referenceOnly": true,
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "output": "GLASSBOUND_BINDER",
+      "id": "BREW_GLASSBOUND_BINDER",
+      "tier": 4,
+      "level": 34,
+      "seconds": 160,
+      "xp": 700,
+      "gold": 95,
+      "inputs": {
+        "SUNSTONE_ORE": 4,
+        "ASTRAL_SCRIPT": 1,
+        "GLASSBOUND_CORE": 1
+      },
+      "quantity": 1,
+      "skill": "alchemy",
+      "referenceOnly": true,
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "candidates": [
+    {
+      "id": "EQ2_THORN_FIBRE",
+      "kind": "gathering",
+      "sourceId": "EQ2_THORN_FIBRE_PATCH",
+      "skill": "herbalism",
+      "level": 8,
+      "zone": "IRONWOOD",
+      "area": null,
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_DUNE_FIBRE",
+      "kind": "gathering",
+      "sourceId": "EQ2_DUNE_FIBRE_PATCH",
+      "skill": "herbalism",
+      "level": 26,
+      "zone": "SUNSCAR",
+      "area": "ZONE_006",
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_SOUL_FIBRE",
+      "kind": "gathering",
+      "sourceId": "EQ2_SOUL_FIBRE_PATCH",
+      "skill": "herbalism",
+      "level": 34,
+      "zone": "SUNSCAR",
+      "area": "ZONE_007",
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_GLASSBOUND_DUST",
+      "kind": "gathering",
+      "sourceId": "EQ2_GLASSBOUND_DUST_SEAM",
+      "skill": "mining",
+      "level": 34,
+      "zone": "SUNSCAR",
+      "area": "ZONE_007",
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_GLASSBOUND_SHARD",
+      "kind": "gathering",
+      "sourceId": "EQ2_GLASSBOUND_SHARD_SEAM",
+      "skill": "mining",
+      "level": 34,
+      "zone": "SUNSCAR",
+      "area": "ZONE_007",
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_RIVERSTONE",
+      "kind": "gathering",
+      "sourceId": "EQ2_RIVERSTONE_FIND",
+      "skill": "fishing",
+      "level": 1,
+      "zone": "GREENFIELDS",
+      "area": null,
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_THORNSTONE",
+      "kind": "gathering",
+      "sourceId": "EQ2_THORNSTONE_FIND",
+      "skill": "mining",
+      "level": 8,
+      "zone": "IRONWOOD",
+      "area": null,
+      "sourceRegistered": false,
+      "skillOnlyAccessCandidate": true,
+      "rate": "UNSET",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    },
+    {
+      "id": "EQ2_SUNSCAR_HIDE",
+      "kind": "combat",
+      "sourceId": "EQ2_DUNE_HARE",
+      "name": "Dune Hare",
+      "level": 26,
+      "zone": "SUNSCAR",
+      "area": "ZONE_006",
+      "sourceRegistered": false,
+      "newEnemyConcept": true,
+      "rate": "UNSET_ENEMIES_V2_REVIEW",
+      "reviewOnly": true,
+      "mayCraft": false,
+      "mayMint": false,
+      "mayDrop": false,
+      "mayTrade": false,
+      "releaseApproved": false
+    }
+  ],
+  "existingSources": [
+    {
+      "id": "COPPER_ORE",
+      "source": "GREENFIELDS_COPPER_OUTCROP",
+      "kind": "gathering",
+      "skill": "mining",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "GREENWOOD_LOG",
+      "source": "GREENWOOD_TREE",
+      "kind": "gathering",
+      "skill": "woodcutting",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "ASTER_IRON_ORE",
+      "source": "ASTER_IRON_VEIN",
+      "kind": "gathering",
+      "skill": "mining",
+      "level": 8,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "IRONWOOD_LOG",
+      "source": "IRONWOOD_TREE",
+      "kind": "gathering",
+      "skill": "woodcutting",
+      "level": 7,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "SUNSTONE_ORE",
+      "source": "SUNSTONE_OUTCROP",
+      "kind": "gathering",
+      "skill": "mining",
+      "level": 26,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "DUNEWOOD",
+      "source": "DUNEWOOD_TREE",
+      "kind": "gathering",
+      "skill": "woodcutting",
+      "level": 26,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "DEWLEAF",
+      "source": "DEWLEAF_PATCH",
+      "kind": "gathering",
+      "skill": "herbalism",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "SUNSCALE",
+      "source": "SUNSCALE_BLOOM",
+      "kind": "gathering",
+      "skill": "herbalism",
+      "level": 26,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "WINTERMINT",
+      "source": "WINTERMINT_PATCH",
+      "kind": "gathering",
+      "skill": "herbalism",
+      "level": 48,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "FROSTIRON",
+      "source": "FROSTIRON_VEIN",
+      "kind": "gathering",
+      "skill": "mining",
+      "level": 46,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "WHITEPINE_LOG",
+      "source": "WHITEPINE_TREE",
+      "kind": "gathering",
+      "skill": "woodcutting",
+      "level": 46,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "BOAR_HIDE",
+      "source": "ROADSIDE_BOAR",
+      "kind": "combat",
+      "level": 3,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "WOLF_PELT",
+      "source": "IRONWOOD_WOLF",
+      "kind": "combat",
+      "level": 6,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "IRONWOOD_FANG",
+      "source": "IRONWOOD_WOLF",
+      "kind": "combat",
+      "level": 6,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "WISP_DUST",
+      "source": "FIELD_WISP",
+      "kind": "combat",
+      "level": 2,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "ASTERFALL_BOTANICAL_ESSENCE",
+      "source": "HERBALISM_ESSENCE_BY_ZONE:GREENFIELDS",
+      "kind": "gathering_rare",
+      "skill": "herbalism",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "inspected authored gathering requirement"
+    },
+    {
+      "id": "AMBERGLASS",
+      "source": "SUNSCAR_SCORPION",
+      "kind": "combat",
+      "level": 26,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "ASTRAL_SCRIPT",
+      "source": "DUNE_ORACLE",
+      "kind": "combat",
+      "level": 31,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "GLASSBOUND_CORE",
+      "source": "SANDPLATE_JUGGERNAUT",
+      "kind": "combat",
+      "level": 38,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "RIMEGLASS",
+      "source": "FROSTWOLF",
+      "kind": "combat",
+      "level": 46,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "RIME_RESIN",
+      "source": "FROSTWOLF",
+      "kind": "combat",
+      "level": 46,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "MOSS_FIBER",
+      "source": "MOSS_RAT",
+      "kind": "combat",
+      "level": 1,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    },
+    {
+      "id": "THORN_SAP",
+      "source": "VENOM_WEAVER",
+      "kind": "combat",
+      "level": 8,
+      "sourceGrantVerified": false,
+      "levelEvidence": "legacy source candidate only; authored/rebased level is not an Enemy V2 gate"
+    }
+  ],
+  "unresolvedRaw": [],
+  "specialCases": [
+    {
+      "id": "EQ2_BOAR_TUSK",
+      "issue": "First T1 equip level 2 vs boar unlock 3; propose starter supply bridge or trade, no forced combat gate"
+    },
+    {
+      "id": "GLASSBOUND_BINDER",
+      "issue": "Craft 34 but core source 38; procurement gap, trade/commission or earlier source bridge review"
+    },
+    {
+      "id": "EQ2_T5_BINDING_RESIN",
+      "issue": "Alchemy 42 but Wintermint 48; recommend profession-accessible trade/commission or align T5 binder level after XP review"
+    },
+    {
+      "id": "EQ2_VERDANT_ESSENCE",
+      "issue": "Optional unused source candidate; keep dormant unless actual consumer assigned"
+    }
+  ],
+  "accessPolicy": {
+    "combatLevelRequiredToCraft": 0,
+    "secondaryProfessionRequired": false,
+    "sourceSkillLevelIsNotEquipmentTier": true,
+    "skillOnlyTravelNeedsImplementation": true,
+    "marketSupplyUnverified": true,
+    "earlyDropRule": "New source grants remain disabled until exact registered recipe consumer, source skill/combat reachability, relevant progression and trade access are proved; existing drops untouched."
+  }
+}

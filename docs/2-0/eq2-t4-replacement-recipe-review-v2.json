@@ -1,0 +1,1307 @@
+{
+  "schema": "eq2-t4-replacement-recipe-review-v2",
+  "authority": "REVIEW_ONLY",
+  "releaseActivation": false,
+  "sourceRefs": [
+    {
+      "branch": "design/eq2-48-set-crafting-reconciliation-20261122",
+      "path": "docs/equipment-2-0/t4-replacement-set-catalogue-review-v1.json",
+      "blobSha": "7d431245fe07549fb29802b2e7f7117c600308b9"
+    },
+    {
+      "branch": "design/eq2-48-set-crafting-reconciliation-20261122",
+      "path": "docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json",
+      "blobSha": "0c8b9f0c0209ea3bf075664e37d864b64cc9a792"
+    },
+    {
+      "branch": "design/eq2-48-set-crafting-reconciliation-20261122",
+      "path": "docs/equipment-2-0/eq2-expanded-48-set-member-authoring-v1.json",
+      "blobSha": "561ee4af93935b6f9dac3b5a0243dbea678e4d6a"
+    }
+  ],
+  "policy": "New distinct item/recipe proposals; historical same-slot standard T4 costs copied only as review benchmarks, no alias, no remint or automatic old source link. Material registration and economics not approved.",
+  "templates": [
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET",
+      "name": "Glassbound Bastionmail Helm",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "helmet",
+      "material": "steel",
+      "baseStatsProfileCandidate": "defense_health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_HELMET",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST",
+      "name": "Glassbound Bastionmail Chestpiece",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "chest",
+      "material": "mail",
+      "baseStatsProfileCandidate": "defense_health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_CHEST",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS",
+      "name": "Glassbound Bastionmail Legguards",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "legs",
+      "material": "mail",
+      "baseStatsProfileCandidate": "defense_health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_LEGS",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS",
+      "name": "Glassbound Bastionmail Boots",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "mail",
+      "baseStatsProfileCandidate": "defense_health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_BOOTS",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE",
+      "name": "Glassbound Bastionmail Mantle",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "cape",
+      "material": "mail",
+      "baseStatsProfileCandidate": "health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_CAPE",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_BASTIONMAIL_RING",
+      "name": "Glassbound Bastionmail Ring",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "baseStatsProfileCandidate": "defense_health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_BASTIONMAIL_RING_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_BASTIONMAIL_RING_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_CITADEL_RING",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES",
+      "name": "Glassbound Ashguard Gloves",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "gloves",
+      "material": "steel",
+      "baseStatsProfileCandidate": "attack_defense",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_BLOODSTEEL_GLOVES",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS",
+      "name": "Glassbound Ashguard Boots",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "steel",
+      "baseStatsProfileCandidate": "attack_defense",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_BLOODSTEEL_BOOTS",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ASHGUARD_AMULET",
+      "name": "Glassbound Ashguard Amulet",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "amulet",
+      "material": "jewelry",
+      "baseStatsProfileCandidate": "health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_ASHGUARD_AMULET_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_ASHGUARD_AMULET_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_BLOODSTEEL_AMULET",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    },
+    {
+      "itemId": "EQ2_LAUNCH_T4_ASHGUARD_RING",
+      "name": "Glassbound Ashguard Ring",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "baseStatsProfileCandidate": "health",
+      "fixedInnatePercentageStats": [],
+      "profession": "smithing",
+      "wearLevelCandidate": 40,
+      "recipeIds": [
+        "EQ2_LAUNCH_T4_ASHGUARD_RING_FOUNDATION_REVIEW_V2",
+        "EQ2_LAUNCH_T4_ASHGUARD_RING_ALTERNATE_REVIEW_V2"
+      ],
+      "oldIdHistoricalReference": "EQ2_LAUNCH_T4_BLOODSTEEL_RING",
+      "sourceCandidate": null,
+      "registered": false,
+      "mayMint": false,
+      "craftable": false,
+      "mayEquip": false,
+      "mayTrade": false,
+      "artApproved": false,
+      "ownerApprovalRequired": true
+    }
+  ],
+  "routes": [
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "helmet",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 41
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 12
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 14
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 10000,
+      "xp": 988,
+      "seconds": 618,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_HELMET_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_HELMET",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "helmet",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 33
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 17
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 14
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 10000,
+      "xp": 988,
+      "seconds": 618,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_HELMET_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "chest",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 41
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 42
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 19
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 2
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 14200,
+      "xp": 1464,
+      "seconds": 872,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_CHEST_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_CHEST",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "chest",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 33
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 56
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 19
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 2
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 14200,
+      "xp": 1464,
+      "seconds": 872,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_CHEST_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "legs",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 34
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 34
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 16
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 2
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 11800,
+      "xp": 1220,
+      "seconds": 727,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_LEGS_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_LEGS",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "legs",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 27
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 46
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 16
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 2
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 11800,
+      "xp": 1220,
+      "seconds": 727,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_LEGS_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 26
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 26
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 12
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8900,
+      "xp": 915,
+      "seconds": 545,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_BOOTS_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_BOOTS",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 21
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 35
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 12
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8900,
+      "xp": 915,
+      "seconds": 545,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_BOOTS_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "cape",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 27
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 27
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 13
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 10000,
+      "xp": 988,
+      "seconds": 618,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_CAPE_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_CAPE",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "cape",
+      "material": "mail",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 22
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 37
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 13
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 10000,
+      "xp": 988,
+      "seconds": 618,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_CAPE_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_RING_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_RING",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 5
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 6500,
+      "xp": 639,
+      "seconds": 400,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_RING_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_BASTIONMAIL_RING_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_BASTIONMAIL_RING",
+      "setId": "eq2_t4_bastionmail",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 6500,
+      "xp": 639,
+      "seconds": 400,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_CITADEL_RING_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "gloves",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 32
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 10
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 11
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8300,
+      "xp": 814,
+      "seconds": 509,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_GLOVES_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_GLOVES",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "gloves",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 26
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 13
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 11
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8300,
+      "xp": 814,
+      "seconds": 509,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_GLOVES_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 36
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 11
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 12
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8900,
+      "xp": 915,
+      "seconds": 545,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_BOOTS_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_BOOTS",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "boots",
+      "material": "steel",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 29
+        },
+        {
+          "itemId": "EQ2_REINFORCED_DUNEWOOD",
+          "quantity": 15
+        },
+        {
+          "itemId": "EQ2_HARDENED_SUNSCAR_LEATHER",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 12
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 8900,
+      "xp": 915,
+      "seconds": 545,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_BOOTS_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_AMULET_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_AMULET",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "amulet",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 5
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 7700,
+      "xp": 755,
+      "seconds": 472,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_AMULET_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_AMULET_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_AMULET",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "amulet",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 9
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 7700,
+      "xp": 755,
+      "seconds": 472,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_AMULET_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_RING_FOUNDATION_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_RING",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "foundation",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 5
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 6500,
+      "xp": 639,
+      "seconds": 400,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_RING_FOUNDATION_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    },
+    {
+      "id": "EQ2_LAUNCH_T4_ASHGUARD_RING_ALTERNATE_REVIEW_V2",
+      "pieceId": "EQ2_LAUNCH_T4_ASHGUARD_RING",
+      "setId": "eq2_t4_ashguard",
+      "tier": 4,
+      "role": "tank",
+      "slot": "ring",
+      "material": "jewelry",
+      "profession": "smithing",
+      "route": "alternate",
+      "inputs": [
+        {
+          "itemId": "EQ2_GLASSBOUND_ALLOY_BAR",
+          "quantity": 7
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_SHARD",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_SOULWEAVE_CLOTH",
+          "quantity": 6
+        },
+        {
+          "itemId": "EQ2_GLASSBOUND_PLATE",
+          "quantity": 8
+        },
+        {
+          "itemId": "EQ2_GLASSHEART_FRAGMENT",
+          "quantity": 1
+        },
+        {
+          "itemId": "GLASSBOUND_BINDER",
+          "quantity": 1
+        }
+      ],
+      "gold": 6500,
+      "xp": 639,
+      "seconds": 400,
+      "professionLevel": 34,
+      "craftCombatLevelRequired": 0,
+      "equipCombatLevelCandidate": 40,
+      "recipeFailureChance": 0,
+      "referenceCostRecipeId": "EQ2_LAUNCH_T4_BLOODSTEEL_RING_ALTERNATE_REVIEW",
+      "referenceIsHistoricalOnly": true,
+      "sourcePolicy": "SAME_SLOT_STANDARD_T4_COST_CANDIDATE_NOT_APPROVED",
+      "reviewOnly": true,
+      "craftable": false,
+      "mayMint": false,
+      "mayTrade": false
+    }
+  ]
+}

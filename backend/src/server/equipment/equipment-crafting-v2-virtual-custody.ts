@@ -1,4 +1,5 @@
-import type {GameState,CharacterState,InventoryState,GearSlot} from '../../../../apps/mobile/src/core/types';
+import type {V2PrivateGameState as GameState} from './equipment-crafting-v2-private-game-state-type';
+import type {CharacterState,InventoryState,GearSlot} from '../../../../apps/mobile/src/core/types';
 import {v2ServerLegacyPouchSnapshot} from './equipment-crafting-v2-pouch-snapshot';
 import {
  readEquipmentV2VirtualCustody,v2VirtualAllowedTransition,v2VirtualFingerprint,

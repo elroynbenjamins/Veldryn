@@ -41,11 +41,26 @@ for(const token of [
  'contract.targetPoints.toLocaleString(language)',
 ])assert.ok(source.includes(token),'Party UI lost German guidance or localized control: '+token);
 
+const quickChoices=fs.readFileSync(path.join(__dirname,'../src/components/RecruitmentQuickPostChoices.tsx'),'utf8');
+const socialCatalog=fs.readFileSync(path.join(__dirname,'../src/i18n/social.ts'),'utf8');
 for(const token of [
- 'locale=useGameLanguage()',
- 'partyMinimumLevelLabel(locale,prefs.minimumLevel)',
- 'onPublish({...draft,durationDays:1,roles:[],requiredRoleCounts:{}',
+ 'st=useSocialText()',
+ "st('Party language and minimum level follow your Party settings.')",
+ "st('Automatically expires after 24 hours')",
+ 'if(busy||draft.title.trim().length<3)return;',
+ 'onPublish({...draft,title:draft.title.trim(),durationDays:1,',
+ 'roles:[],requiredRoleCounts:{},flexibleRoles:true',
+ "language:recruiting?(prefs.language==='any'?undefined:prefs.language):draft.language",
+ 'minCombatLevel:recruiting?(prefs.minimumLevel||undefined):undefined',
 ])assert.ok(composer.includes(token),'Party recruitment editor lost localization or submission guard: '+token);
+for(const key of ['Party language and minimum level follow your Party settings.','Automatically expires after 24 hours','Main interest','Expected activity','Occasional play, no pressure.','Plays several times a week.','Plays most days.','Very dedicated, frequent play.']){
+ const row=socialCatalog.split('\n').find(line=>line.trim().startsWith(JSON.stringify(key)+':'));
+ assert.ok(row,'Missing recruitment translation: '+key);
+ const values=JSON.parse(row.slice(row.indexOf('['),row.lastIndexOf(']')+1));
+ assert.equal(values.length,5);
+ assert.ok(values[0]&&values[0]!==key,'Missing German recruitment copy: '+key);
+}
+for(const key of ['Main interest','Expected activity'])assert.ok(quickChoices.includes("st('"+key+"')"),'Quick-post choice must use localized labels: '+key);
 for(const token of [
  'state.dailyPoints.toLocaleString(language)',
  'state.personalWeeklyPoints.toLocaleString(language)',

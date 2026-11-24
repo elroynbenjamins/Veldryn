@@ -13,7 +13,6 @@ export type CelestialPreviewAssets={
  petShowcase:ImageSourcePropType;
  orrery:ImageSourcePropType;
  star:ImageSourcePropType;
- clouds:ImageSourcePropType;
  corona:ImageSourcePropType;
  fallbackGlow:ImageSourcePropType;
 };
@@ -59,7 +58,6 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const interp=(outputRange:number[])=>clock.interpolate({inputRange:PHASE,outputRange});
  const pulse=clock.interpolate({inputRange:[0,.72,.83,.90,1],outputRange:[0,0,1,.35,0]});
  const bob=interp([0,-3,0,-3,0,-5,0]);
- const drift=interp([-8,-2,4,8,2,-4,-8]);
  const glint=interp([.25,.8,.25,.7,.25,1,.25]);
  const railTravel=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,280*scale,0]});
  const orbit=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']});
@@ -67,7 +65,6 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.background} resizeMode="cover" style={styles.fillImage}/>
-    <Animated.Image source={assets.clouds} resizeMode="stretch" style={[pos(-12,139,364,52),{opacity:.65,transform:[{translateX:Animated.multiply(drift,scale)}]}]}/>
     <Image source={assets.orrery} resizeMode="contain" style={pos(119,26,102,48)}/>
     <Animated.View style={[pos(129,24,82,55),{transform:[{rotate:orbit}]}]}>
      <Image source={assets.star} resizeMode="contain" style={{position:'absolute',left:0,top:21*scale,width:7*scale,height:7*scale}}/>

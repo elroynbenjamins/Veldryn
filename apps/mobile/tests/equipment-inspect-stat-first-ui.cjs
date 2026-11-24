@@ -28,7 +28,7 @@ assert(sheet.includes("item.type==='gear'?ui('INNATE TRAIT'):gt(\"TRAIT\")"),
 // Exact-copy status and comparison must never guess which receipt owns an affix.
 assert(sheet.includes("isExactEquippedGear=item.type==='gear'&&source!=='bank'&&!!gearDecision?.alreadyEquipped"),
   'Equipped badge requires a real matching active copy; Bank-only stock never claims equipped');
-assert(sheet.includes('!!gearDecision?.previewAvailable')&&sheet.includes('(!!instanceId||model.craftedCopies===0)'),
+assert(sheet.includes('!!gearDecision.previewAvailable')&&sheet.includes('(!!instanceId||model.craftedCopies===0)'),
   'A forged item without a selected receipt cannot present a fabricated power delta');
 assert(sheet.includes("model.craftedCopies>0&&!instanceId?<Text style={s.warningText}"),
   'Expanded Gear Check must also fail closed for unspecified physical copies');

@@ -18,7 +18,11 @@ assert.match(screen,/categoryPickerOpen/,'category selector opens a compact shee
 assert.match(screen,/<GameModalSurface visible=\{categoryPickerOpen\} presentation="sheet"/,'filter list opens only on demand');
 assert.match(screen,/categoryOptions\.map\(option=>/,'one picker replaces multi-row category chips');
 assert.doesNotMatch(screen,/TRAINING FOCUS · RECOMMENDED|skillTrainingFocus\(state\)|Recommended Next/i,'no recommended training card');
-assert.match(screen,/navigatorRow:\{minHeight:72/,'compact skill rows remain touch-friendly');
+assert.match(screen,/navigatorRow:\{width:'48%',minWidth:138,minHeight:122/,'skill cards restore the compact two-column layout');
+assert.match(screen,/cardGrid:\{flexDirection:'row',flexWrap:'wrap'/,'skill groups display cards in a wrapping grid');
+assert.match(screen,/stackCards=width<350\|\|fontScale>=1\.25\|\|state\.settings\.textScale>=1\.25/,'small screens and larger text stack full-width skill cards');
+assert.match(screen,/<Text style=\{hubStyles\.navigatorTotal\}>\{gt\('SKILL TOTAL'\)\}/,'existing Skills header and total remain unchanged');
+assert.doesNotMatch(screen,/<View style=\{hubStyles\.summary\}>/,'do not introduce extra summary content');
 assert.match(screen,/accessibilityRole="button"/,'rows and filters use accessible button roles');
 assert.match(screen,/accessibilityState=\{\{selected:category===option.id\}\}/,'filter choice has accessible selection state');
 assert.match(screen,/setCategory\('all'\);setSearchQuery\(''\)/,'clear filters clears both category and search');
@@ -43,4 +47,4 @@ for(const label of ['Filter','Other','No matching skills','Account-wide companio
  const row=copy.slice(start,copy.indexOf('}',start)+1);
  for(const language of ['en','de','es','nl','it','fr','ru','tr'])assert.ok(row.includes(language+':'),'Missing '+language+' for '+label);
 }
-console.log('PASS: Skills Navigator has one-row controls, no recommendation card, preserved progress and distinct 2.0 boundaries');
+console.log('PASS: Skills restores compact two-column cards only; existing header, toolbar, routes and 2.0 boundaries preserved');

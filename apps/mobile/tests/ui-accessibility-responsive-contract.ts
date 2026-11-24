@@ -107,7 +107,7 @@ ok(guildHall.includes('Future Guild Legacy will preserve major trophies and seas
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes('useWindowDimensions')&&skills.includes('narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3'),'Skills filter must adapt on narrow phones or large text');
-ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes('navigatorRow:{minHeight:72'),'Skills must preserve readable full-width skill rows and accessible search at larger text sizes');
+ok(skills.includes('narrowNavigator&&searchExpanded?<SearchField')&&skills.includes("stackCards=width<350||fontScale>=1.25||state.settings.textScale>=1.25")&&skills.includes('stackCards&&hubStyles.skillCardWide'),'Skills must stack cards for narrow phones and large text while preserving accessible search');
 ok(skills.includes('accessibilityHint'),'Skill cards must expose an action hint');
 ok(skills.includes('modeChip:{minHeight:44'),'Skill mode controls must retain a 44px touch target');
 ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow must dismiss the keyboard on drag');

@@ -187,7 +187,7 @@ function SkillHero({state,skillId,kind}:{state:GameState;skillId:string;kind:str
 }
 
 function makeHubStyles(C:ThemeColors){return StyleSheet.create({
- hub:{padding:spacing.md,gap:10,paddingBottom:spacing.xl,maxWidth:660,width:'100%',alignSelf:'center'},hubTitle:{...typography.hero,color:C.text},hubSub:{...typography.body,color:C.muted},sectionHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:4},sectionLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},sectionCount:{...typography.caption,color:C.info,fontWeight:'800'},skillIcon:{width:36,height:36},cardPressed:{opacity:.72},skillName:{...typography.bodyStrong,color:C.text},skillKind:{...typography.caption,color:C.info},skillLevel:{...typography.bodyStrong,color:C.accent},openMark:{fontSize:20,lineHeight:20,color:C.muted,fontWeight:'700'},modalBody:{gap:6,paddingTop:0,paddingBottom:2},modalTheme:{...typography.bodyStrong,color:C.accent},modalCopy:{...typography.body,color:C.muted,lineHeight:18},modalStat:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:2},modalLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},modalValue:{...typography.title,color:C.text},modalProgressTrack:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2},modalProgressFill:{height:'100%',backgroundColor:C.accent},modalProgressText:{...typography.caption,color:C.muted,lineHeight:15},skillNext:{fontSize:9,color:C.info,fontWeight:'800',letterSpacing:.25},
+ hub:{padding:spacing.md,gap:10,paddingBottom:spacing.xl,maxWidth:660,width:'100%',alignSelf:'center'},hubTitle:{...typography.hero,color:C.text},hubSub:{...typography.body,color:C.muted},sectionHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:4},sectionLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},sectionCount:{...typography.caption,color:C.info,fontWeight:'800'},cardGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},skillCardWide:{width:'100%',minWidth:0},navigatorLevelRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},skillIcon:{width:36,height:36},cardPressed:{opacity:.72},skillName:{...typography.bodyStrong,color:C.text},skillKind:{...typography.caption,color:C.info},skillLevel:{...typography.bodyStrong,color:C.accent},openMark:{fontSize:20,lineHeight:20,color:C.muted,fontWeight:'700'},modalBody:{gap:6,paddingTop:0,paddingBottom:2},modalTheme:{...typography.bodyStrong,color:C.accent},modalCopy:{...typography.body,color:C.muted,lineHeight:18},modalStat:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingTop:2},modalLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8},modalValue:{...typography.title,color:C.text},modalProgressTrack:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2},modalProgressFill:{height:'100%',backgroundColor:C.accent},modalProgressText:{...typography.caption,color:C.muted,lineHeight:15},skillNext:{fontSize:9,color:C.info,fontWeight:'800',letterSpacing:.25},
  navigatorHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  navigatorTotal:{...typography.caption,color:C.accent,fontWeight:'900'},
  navigatorToolbar:{flexDirection:'row',alignItems:'center',gap:8},
@@ -197,12 +197,12 @@ function makeHubStyles(C:ThemeColors){return StyleSheet.create({
  navigatorSearch:{flex:1,minWidth:0},
  navigatorSearchToggle:{minHeight:48,minWidth:48,justifyContent:'center',alignItems:'center',borderRadius:10,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.panel},
  navigatorSearchWide:{width:'100%',flex:undefined},
- navigatorRow:{minHeight:72,padding:10,gap:7,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+ navigatorRow:{width:'48%',minWidth:138,minHeight:122,padding:10,gap:6,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel,justifyContent:'space-between'},
  navigatorTop:{flexDirection:'row',alignItems:'center',gap:9},
  navigatorCopy:{flex:1,minWidth:0,gap:2},
  navigatorTrailing:{alignItems:'flex-end',gap:3},
- navigatorProgress:{flexDirection:'row',alignItems:'center',gap:8,flexWrap:'wrap'},
- navigatorTrack:{height:5,flex:1,minWidth:80,backgroundColor:C.panel2,borderRadius:4,overflow:'hidden'},
+ navigatorProgress:{gap:4,alignItems:'stretch'},
+ navigatorTrack:{height:6,width:'100%',backgroundColor:C.panel2,borderRadius:4,overflow:'hidden'},
  navigatorFill:{height:'100%',backgroundColor:C.good},
  navigatorHint:{...typography.caption,color:C.muted,fontSize:10,flexShrink:1},
  navigatorSection:{gap:7},
@@ -221,6 +221,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
  const C=useGameTheme(),hubStyles=useMemo(()=>makeHubStyles(C),[C]);
  const {width,fontScale}=useWindowDimensions();
  const narrowNavigator=width<380||fontScale>=1.3||state.settings.textScale>=1.3;
+ const stackCards=width<350||fontScale>=1.25||state.settings.textScale>=1.25;
  const [searchExpanded,setSearchExpanded]=useState(false);
  const [classSkillId,setClassSkillId]=useState<string>();
  const [overviewSkillId,setOverviewSkillId]=useState<string|null>(null);
@@ -295,21 +296,21 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
    accessibilityLabel={entry.route==='combat'?gt('Open Combat'):gt('{name}, {kind}, level {level}',{name:entry.name,kind:entry.subtitle,level})}
    accessibilityHint={entry.route==='combat'?gt('Choose an enemy and set your combat skill XP split'):gt('Open {name} information',{name:entry.name})}
    accessibilityState={{disabled}} disabled={disabled} onPress={()=>openEntry(entry)}
-   style={({pressed})=>[hubStyles.navigatorRow,pressed&&hubStyles.cardPressed,disabled&&{opacity:.45}]}>
+   style={({pressed})=>[hubStyles.navigatorRow,stackCards&&hubStyles.skillCardWide,pressed&&hubStyles.cardPressed,disabled&&{opacity:.45}]}>
     <View style={hubStyles.navigatorTop}>
      {icon?<Image source={icon} resizeMode="contain" style={hubStyles.skillIcon}/>:<ActivityArtwork id={entry.id as any} size={36}/>}
      <View style={hubStyles.navigatorCopy}>
-      <Text numberOfLines={narrowNavigator?2:1} style={hubStyles.skillName}>{entry.name}</Text>
-      <Text numberOfLines={narrowNavigator?2:1} style={hubStyles.skillKind}>{entry.subtitle}</Text>
+      <Text numberOfLines={stackCards?2:1} style={hubStyles.skillName}>{entry.name}</Text>
+      <Text numberOfLines={stackCards?2:1} style={hubStyles.skillKind}>{entry.subtitle}</Text>
      </View>
-     <View style={hubStyles.navigatorTrailing}>
-      {entry.route!=='combat'?<Text style={hubStyles.skillLevel}>{isSanctuary?gt('Facility Lv {level}/3',{level}):gt('Level {value}',{value:level})}</Text>:null}
-     </View>
+    </View>
+    <View style={hubStyles.navigatorLevelRow}>
+     {entry.route!=='combat'?<Text style={hubStyles.skillLevel}>{isSanctuary?gt('Facility Lv {level}/3',{level}):gt('Level {value}',{value:level})}</Text>:<Text style={hubStyles.skillLevel}>{gt('Combat')}</Text>}
      <Text style={hubStyles.openMark}>›</Text>
     </View>
     {entry.route!=='combat'?<View style={hubStyles.navigatorProgress}>
      <View style={hubStyles.navigatorTrack}><View style={[hubStyles.navigatorFill,{width:(Math.max(isSanctuary?0:level>=100?100:3,ratio*100))+'%'}]}/></View>
-     <Text style={hubStyles.navigatorHint}>{isSanctuary?gt('{xp} XP/day per idle companion',{xp:facilityXpPerDay}):level>=100?gt('Mastered'):p?anticipation?.band==='urgent'?gt('{xp} XP left',{xp:Math.ceil(anticipation.remaining).toLocaleString(language)}):gt('{percent}% to next',{percent:Math.min(99,Math.floor(ratio*100))}):''}</Text>
+     <Text numberOfLines={1} style={hubStyles.navigatorHint}>{isSanctuary?gt('{xp} XP/day per idle companion',{xp:facilityXpPerDay}):level>=100?gt('Mastered'):p?anticipation?.band==='urgent'?gt('{xp} XP left',{xp:Math.ceil(anticipation.remaining).toLocaleString(language)}):gt('{percent}% to next',{percent:Math.min(99,Math.floor(ratio*100))}):''}</Text>
     </View>:null}
     {milestone?.nextLevel&&milestone.next[0]?<Text numberOfLines={1} style={hubStyles.skillNext}>{gt('NEXT LV {level} · {title}',{level:milestone.nextLevel,title:gl(milestone.next[0].title)})}</Text>:null}
    </Pressable>;
@@ -338,7 +339,7 @@ function SkillHub({state,now,onSelect,onCombat,onCommand,initialMasteryInfoOpen=
   {visibleCount?<View style={hubStyles.navigatorSection}>
    {groups.map(group=><View key={group.id} style={hubStyles.navigatorSection}>
     <View style={hubStyles.sectionHeading}><Text style={hubStyles.sectionLabel}>{group.label.toLocaleUpperCase(language)}</Text><Text style={hubStyles.sectionCount}>{group.rows.length}</Text></View>
-    {group.rows.map(renderEntry)}
+    <View style={hubStyles.cardGrid}>{group.rows.map(renderEntry)}</View>
    </View>)}
   </View>:<View style={hubStyles.navigatorEmpty}><Text style={hubStyles.hubSub}>{n('No matching skills')}</Text>
    <GameButton compact title={gt('Clear filters')} tone="secondary" onPress={()=>{setCategory('all');setSearchQuery('');}}/>

@@ -33,7 +33,7 @@ export function wardrobeLockTag(destination:ProfileCustomizationDestination|unde
 /** Scene and frame names/ids live in the art registry; core stays image-free and testable. */
 export interface WardrobeAssets{scenes:readonly {id:string;name:string}[];frames:readonly string[];effects:readonly {id:string;name:string}[]}
 
-function lockFields(state:GameState,kind:'background'|'border'|'title',id:string):Partial<WardrobeRow>{
+function lockFields(state:GameState,kind:'background'|'border'|'effect'|'title',id:string):Partial<WardrobeRow>{
  const source=profileRewardSource(state,kind,id);
  return {lockTag:wardrobeLockTag(source.destination),sourceLabel:source.label,sourceDetail:source.detail,destination:source.destination,actionLabel:source.actionLabel};
 }

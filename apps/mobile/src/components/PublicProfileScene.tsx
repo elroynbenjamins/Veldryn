@@ -49,7 +49,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <View style={s.shade}/>
    {effectArt?<ProfileSceneEffect art={effectArt} active={review?.active??true} reduceMotion={reduceMotion}/>:null}
    </ProfileBorderBackdrop>
-   {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review.surroundColor}/></View>:null}
+   {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review?.surroundColor??C.bg}/></View>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>{profile.title}</Text>

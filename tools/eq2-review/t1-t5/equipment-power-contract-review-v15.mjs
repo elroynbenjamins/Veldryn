@@ -30,17 +30,19 @@ function laneRoll(tier,slot,grade,quality,focus,endpoint){
  return {grade,quality,rolls:selected,baseMultiplier:a.policy.baseRarityMultiplier[grade]*(.75+quality*.005)};
 }
 // All inputs are hypothetical fixtures, never actual copies, receipts, RNG or gameplay values.
-export function inspectPower({classId,tier,grade='rare',quality=50,focus='uniform_mid',endpoint='mid',secondaryGrade=grade,secondaryQuality=quality,slotOverrides={}}){
+export function inspectPower({classId,tier,grade='rare',quality=50,focus='uniform_mid',endpoint='mid',secondaryGrade=grade,secondaryQuality=quality}){
  const l=d.loadouts.find(x=>x.classId===classId&&x.tier===tier);
  if(!l)fail('loadout');
  const pieces=l.itemIds.map(id=>items.get(id));
- if(!pieces.every(Boolean)||Object.keys(slotOverrides).some(s=>!pieces.some(x=>x.slot===s)))fail('slot');
+ if(!pieces.every(Boolean)||new Set(pieces.map(x=>x.slot)).size!==pieces.length||pieces.some(x=>x.tier!==tier||(x.classId&&x.classId!==classId)))fail('slot');
+ const weapon=pieces.find(x=>x.slot==='weapon'),offhand=pieces.find(x=>x.slot==='offhand');
+ if(!weapon||weapon.hands!==l.hands||(l.hands==='one'?offhand?.classId!==classId:!!offhand))fail('hand_contract');
  const raw=new Map(a.stats.map(s=>[s.channel,0])),baseStats={attack:0,defense:0,hp:0},lanes=[],unpriced=[];
  for(const item of pieces){
-  const ov=slotOverrides[item.slot]??{},combined=item.slot==='weapon'&&l.hands!=='one';
+  const combined=item.slot==='weapon'&&l.hands!=='one';
   for(const laneSlot of combined?['weapon','offhand']:[item.slot]){
    const secondary=laneSlot==='offhand';
-   const lane=laneRoll(tier,laneSlot,secondary?secondaryGrade:ov.grade??grade,secondary?secondaryQuality:ov.quality??quality,focus,endpoint);
+   const lane=laneRoll(tier,laneSlot,secondary?secondaryGrade:grade,secondary?secondaryQuality:quality,focus,endpoint);
    const budget=contract.slotBudget[laneSlot]*tier*contract.tierFactor*lane.baseMultiplier;
    const split=d.basePolicy.profileSplits[item.profile];if(!split)fail('profile');
    baseStats.attack+=budget*split[0];baseStats.defense+=budget*split[1];baseStats.hp+=budget*split[2]*contract.hpPerPoint;
@@ -76,9 +78,12 @@ export function mixedHands(){
  rows.push(inspectPower({classId:l.classId,tier:l.tier,grade:primary.rarity,secondaryGrade:secondary.rarity,quality,secondaryQuality}));
  return rows;
 }
+export function premiumChannelAudit(){
+ return p.entries.map(e=>({itemId:e.itemId,tier:e.tier,profiled:items.has(e.itemId),mapped:e.innates.filter(x=>x.mapping==='EXACT_SHARED_CHANNEL'&&stats.has(x.canonicalChannel)).map(x=>({channel:x.canonicalChannel,centipercent:x.centipercent})),unpriced:e.innates.filter(x=>x.mapping!=='EXACT_SHARED_CHANNEL'||!stats.has(x.canonicalChannel)).map(x=>x.stat),traitUnpriced:!!e.trait,...deny}));
+}
 export function scopeAudit(){
  const all=reviewCatalog(),profiled=all.filter(x=>items.has(x.itemId));
- return {catalogue:all.length,profiled:profiled.length,unprofiled:all.filter(x=>!items.has(x.itemId)).map(x=>x.itemId),premiumAudited:p.entries.length,
+ return {catalogue:all.length,profiled:profiled.length,unprofiled:all.filter(x=>!items.has(x.itemId)).map(x=>x.itemId),premiumAudited:p.entries.length,premiumInBenchmarkFixtures:new Set(d.loadouts.flatMap(l=>l.itemIds).filter(id=>premium.has(id))).size,
   mappedInnates:p.summary.exactMapped,unresolvedInnates:p.summary.unresolved,traits:p.summary.traits,setsAudited:p.sets.length,
   setsOutsideAudit:index.expected.sets-p.sets.length,...deny};
 }

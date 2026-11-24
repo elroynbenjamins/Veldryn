@@ -53,7 +53,7 @@ const reverseClass=new Map<string,ClassIdV2>(
    [id,id] as const,[name.toUpperCase().replace(/ /g,'_'),id] as const,
  ]));
 const classId=(value:string):ClassIdV2|undefined=>
- reverseClass.get(value.trim().toUpperCase().replaceAll(' ','_'));
+ reverseClass.get(value.trim().toUpperCase().replace(/ /g,'_'));
 const fail=(why:string):never=>{throw Error('party_v2_run_binding_'+why);};
 
 export function reviewPartyV2RunBinding(input:{

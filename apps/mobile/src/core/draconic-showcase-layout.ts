@@ -17,11 +17,11 @@ export const DRACONIC_COLLECTION={
 } as const;
 export const DRACONIC_STAGE={width:340,height:205,minWidth:320,maxWidth:480,maxFontScale:1.05} as const;
 export const DRACONIC_BOXES={
- dragon:{x:222,y:66,w:88,h:91},
- ring:{x:224,y:143,w:84,h:14},
+ dragon:{x:229,y:75,w:74,h:76},
+ ring:{x:229,y:143,w:74,h:12},
  alternate:{x:243,y:87,w:46,h:46},
  glow:{x:246,y:130,w:40,h:9},
- flames:{x:222,y:66,w:88,h:91},
+ flames:{x:229,y:75,w:74,h:76},
  portrait:{x:40,y:76,w:54,h:54},
  badges:{x:100,y:119,w:110,h:21},
  identity:{x:100,y:74,w:112,h:45},

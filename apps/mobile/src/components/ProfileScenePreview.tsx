@@ -1,3 +1,4 @@
+import {ownedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
 import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
 import {getDraconicAssets} from '../theme/draconic-integration-assets';
@@ -52,7 +53,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
    {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
    {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}<View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
-    <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
+    <Text numberOfLines={1} style={[s.title,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,C.dark)??(C.dark?C.accentSoft:C.text)}]}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
     <View style={s.identityFill}/>
     {compact?null:<PlayerBadgeShowcase identity={badges.identity} size={15}/>}
@@ -71,7 +72,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
-   <Text numberOfLines={1} style={s.draconicTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <Text numberOfLines={1} style={[s.draconicTitle,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#ffb76b'}]}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
   </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12} variant="bare"/>}/>;
  }
@@ -80,7 +81,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
-   <Text numberOfLines={1} style={s.celestialTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <Text numberOfLines={1} style={[s.celestialTitle,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#efd69b'}]}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
    <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
    <PlayerBadgeShowcase identity={badges.identity} size={13} variant="bare"/>
   </View>}/>;

@@ -1,3 +1,4 @@
+import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
 import {profileT} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
@@ -41,7 +42,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
-   <Text numberOfLines={1} style={s.stripMeta}>{title}</Text>
+   <Text numberOfLines={1} style={[s.stripMeta,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
   {frame?<ProfileFrameOverlay source={frame}/>:null}
@@ -59,7 +60,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
       <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
       <PlayerBadges identity={badges.identity}/>
      </View>
-     <Text numberOfLines={1} style={s.title}>{title}</Text>
+     <Text numberOfLines={1} style={[s.title,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
      <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}{trailing?' · '+trailing:''}</Text>
      <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
     </View>

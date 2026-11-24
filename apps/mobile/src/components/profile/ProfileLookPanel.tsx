@@ -1,3 +1,4 @@
+import {ownedUltraLuxeTitleColor} from '../../core/ultra-luxe-titles';
 import {profileT,profileText,profileSourceText} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {memo,useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
@@ -138,7 +139,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       accessibilityHint={row.unlocked?profileT(language,"Use this earned title"):profileT(language,"Open the unlock source")} onPress={()=>equip(row)}
       style={({pressed})=>[s.titleRow,live.title===row.name&&s.titleRowOn,pressed&&s.pressed]}>
      <View style={s.flex}>
-      <Text style={[s.rowName,!row.unlocked&&s.lockedText]}>{row.name}</Text>
+      <Text style={[s.rowName,!row.unlocked&&s.lockedText,row.unlocked&&ownedUltraLuxeTitleColor(state,row.name,C.dark)?{color:ownedUltraLuxeTitleColor(state,row.name,C.dark)}:undefined]}>{row.name}</Text>
       <Text numberOfLines={2} style={s.rowMeta}>{row.unlocked?profileText(language,row.group):profileSourceText(language,row.sourceLabel??'')+' · '+profileSourceText(language,row.sourceDetail??'')}</Text>
      </View>
      {live.title===row.name?<Text style={s.equippedMark}>{profileT(language,"EQUIPPED")}</Text>

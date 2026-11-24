@@ -1,3 +1,4 @@
+import {verifiedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
 import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
 import {getDraconicAssets} from '../theme/draconic-integration-assets';
@@ -51,7 +52,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={reduceMotion}/>:null}
   <View style={[s.identityPlate,s.identityStack]}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
-   <Text numberOfLines={1} style={s.title}>{profile.title}</Text>
+   <Text numberOfLines={1} style={[s.title,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,C.dark)??(C.dark?C.accentSoft:C.text)}]}>{profile.title}</Text>
    <View style={s.metaRow}>
     <Text numberOfLines={1} style={[s.meta,s.metaInRow]}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>
     {profile.combatPower!==undefined?<Text numberOfLines={1} style={s.power}>{accountText(language,'COMBAT POWER')} {profile.combatPower.toLocaleString()}</Text>:null}
@@ -74,7 +75,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
-   <Text numberOfLines={1} style={s.draconicTitle}>{profile.title}</Text>
+   <Text numberOfLines={1} style={[s.draconicTitle,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#ffb76b'}]}>{profile.title}</Text>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
   </View>}
   badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12} variant="bare"/>}
@@ -85,7 +86,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>
-   <Text numberOfLines={1} style={s.celestialTitle}>{profile.title}</Text>
+   <Text numberOfLines={1} style={[s.celestialTitle,{color:verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId,true)??'#efd69b'}]}>{profile.title}</Text>
    <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
    <PlayerBadgeShowcase identity={profile.playerBadges} size={13} variant="bare"/>
   </View>}

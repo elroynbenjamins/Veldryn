@@ -1,3 +1,4 @@
+import {ownedUltraLuxeTitles} from './ultra-luxe-titles';
 import {DRACONIC_IDS,DRACONIC_COLLECTION} from './draconic-showcase-layout';
 import {ownsUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
 import type {GameState} from './types';
@@ -85,7 +86,8 @@ function titleRows(state:GameState):WardrobeRow[]{
   .filter(reward=>reward.kind==='title').map(reward=>[reward.id,reward])).values()];
  const events=eventRewards.map(reward=>{const unlocked=owned.has(reward.id);
   return {kind:'title' as const,id:reward.id,name:reward.name,group:'Event',unlocked,equipped:equipped===reward.name,...(unlocked?{}:lockFields(state,'title',reward.id))};});
- return [...journal,...base,...events];
+ const privateTitles=ownedUltraLuxeTitles(state).map(def=>({kind:'title' as const,id:def.id,name:def.name,group:'Ascendant',unlocked:true,equipped:equipped===def.name}));
+ return [...privateTitles,...journal,...base,...events];
 }
 
 export function profileWardrobe(state:GameState,assets:WardrobeAssets):WardrobeCategory[]{

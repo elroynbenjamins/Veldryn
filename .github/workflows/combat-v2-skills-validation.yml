@@ -142,8 +142,6 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-opportunity-review.js
       - name: Run 324 ten-slot boss counterplay scenarios with verified equipment evidence
         run: node backend/dist/server/combat/v2/__tests__/ability-counterplay-ten-slot-matrix.js
-      - name: Compare tactical and standard AI in 864 matched ten-slot encounters
-        run: node backend/dist/server/combat/v2/__tests__/tactical-ai-matched-matrix.js
       - name: Review pre-scaled Forge once-only handoff and reject synthetic ownership
         run: node backend/dist/server/combat/v2/__tests__/equipment-frozen-forge-handoff-audit.js
       - name: Measure six equal-stat real-engine curse and interrupt counterplay pairs
@@ -316,3 +314,40 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
       - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
         run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
+
+  tactical_ai_diagnostics:
+    name: Matched tactical AI and persisted-party pressure diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile hidden combat diagnostics
+        id: compile
+        run: pnpm --dir backend build
+      - name: Compare tactical and standard AI in 864 matched ten-slot encounters
+        run: |
+          set -o pipefail
+          mkdir -p tactical-ai-diagnostics
+          node backend/dist/server/combat/v2/__tests__/tactical-ai-matched-matrix.js | tee tactical-ai-diagnostics/matched.jsonl
+      - name: Rehearse 216 persisted-party pressure scenarios
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          mkdir -p tactical-ai-diagnostics
+          node backend/dist/server/combat/v2/__tests__/tactical-ai-pressure-matrix.js | tee tactical-ai-diagnostics/pressure.jsonl
+      - name: Retain tactical AI diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactical-ai-diagnostics
+          path: tactical-ai-diagnostics/
+          if-no-files-found: ignore
+          retention-days: 14

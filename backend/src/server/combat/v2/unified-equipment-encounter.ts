@@ -372,6 +372,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  party:TrustedPersistedPartyExecutionV2,
  serverEnabled=false,
  synchronizationEnabled=true,
+ reviewAiPolicy:'tactical'|'authored-priority'='tactical',
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled)throw Error('combat_v2_persisted_party_disabled');
  if(!party||typeof party.verifyPersisted!=='function'||input.players.length!==4||
@@ -447,7 +448,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
    enemyV2SnapshotDigest(kit.snapshot)===kitDigest);
  const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
  return {
-  combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority),
+  combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority,reviewAiPolicy),
   enemyMechanicLabels,
   equipmentEvidence:evidence,
   synchronizationReview,

@@ -1,0 +1,4 @@
+# Ultra Luxe II — Draconic Dominion
+Private account grants only. Throne of Embers, Dominion of Ash, Awakening of the Dragon, Vharaxis the Eternal Flame, Dragon Sovereign. Candidate uses the left-side altar and right-side identity rather than Celestial's composition.
+The RN renderer, public/self scene routing, standard frame/background effects, wardrobe/art resolvers and generic blessing eligibility are committed. The registry returns undefined until the verified 16-file binary overlay is imported. No catalogue/SKU/automatic grants, no progression activation. Ownership filters apply per item. Developer QA screen: EXPO_PUBLIC_VISUAL_QA_SCREEN=draconic-dominion.
+Remaining: import and verify actual WebP files, refine provisional landscape swatch, confirm geometry on native screens, register server-verified badge and grant/equip path, validate CI before granting. Pet motion uses transforms, not articulated frames. No production changes.

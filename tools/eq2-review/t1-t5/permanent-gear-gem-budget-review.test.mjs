@@ -42,3 +42,14 @@ test('aggregate fractional gems once before rounding and applying cap',()=>{
  assert.equal(c.gemFractionMicros,3400);assert.equal(c.gemCentipercent,34);
  assert.equal(c.effectiveCentipercent,capChannel(c.channel,c.rawCentipercent));
 });
+
+test('Precision is a hit probability point source; Savage is not a relative multiplier',()=>{
+ const socket=gemId=>[{itemId:row.itemId,gemId,rollPercent:120}];
+ const precision=inspectPermanentGearGemBudgetV2([row],socket('gem:stat_precision:g5'));
+ assert.equal(precision.gemSources[0].channel,'accuracy_pp');
+ assert.equal(precision.channels.find(x=>x.channel==='accuracy_pp').gemCentipercent,96);
+ const savage=inspectPermanentGearGemBudgetV2([row],socket('gem:stat_savage:g5'));
+ assert.equal(savage.gemSources[0].channel,null);
+ assert.equal(savage.unresolvedGemSources[0].reason,'ADDITIVE_CRIT_MULTIPLIER_VS_RELATIVE_MULTIPLIER');
+ assert.equal(savage.channels.find(x=>x.channel==='crit_damage_pct').gemCentipercent,0);
+});

@@ -11,11 +11,17 @@ const known=new Map((emoteData as Array<{id:string;label:string}>).map(row=>[row
 export function ChatMessageText({body,mentionName,compact=false,numberOfLines,style}:{body:string;mentionName?:string;compact?:boolean;numberOfLines?:number;style?:StyleProp<TextStyle>}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const parts=body.split(/(:[a-z0-9_]+:)/g);
- return <Text numberOfLines={numberOfLines} style={[s.body,compact&&s.compact,style]}>{parts.map((part,index)=>{
+ const preview=numberOfLines!==undefined;
+ let hasArtwork=false;
+ const content=parts.map((part,index)=>{
   const match=/^:([a-z0-9_]+):$/.exec(part),label=match?known.get(match[1]):undefined,art=match?chatEmoteArtwork(match[1]):undefined;
-  if(label&&art)return <Image key={index} accessible accessibilityLabel={label} source={art} style={compact?s.emoteImageCompact:s.emoteImage} resizeMode="contain"/>;
+  if(label&&art){
+   hasArtwork=true;
+   return <Image key={index} accessible accessibilityLabel={label} source={art} style={preview?(compact?s.previewEmoteImageCompact:s.previewEmoteImage):(compact?s.emoteImageCompact:s.emoteImage)} resizeMode="contain"/>;
+  }
   if(label)return <Text key={index} style={s.emoteFallback}>☺ {label.replace(/\s+—\s+.*/, '')}</Text>;
   return chatMentionSegments(part,mentionName).map((segment,segmentIndex)=><Text key={index+':'+segmentIndex} style={segment.kind==='self_mention'?s.selfMention:segment.kind==='mention'?s.mention:undefined}>{segment.text}</Text>);
- })}</Text>
+ });
+ return <Text numberOfLines={numberOfLines} style={[s.body,compact&&s.compact,style,hasArtwork&&!preview&&(compact?s.emoteLineCompact:s.emoteLine)]}>{content}</Text>
 }
-function makeStyles(C:ThemeColors){return StyleSheet.create({body:{...typography.body,color:C.text,fontSize:14,lineHeight:26},compact:{fontSize:13,lineHeight:23},emoteImage:{width:24,height:24},emoteImageCompact:{width:21,height:21},emoteFallback:{...typography.caption,color:C.accent,fontWeight:'900',backgroundColor:C.infoSurface,borderRadius:radii.sm,paddingHorizontal:4},mention:{color:C.info,fontWeight:'900'},selfMention:{color:C.warning,fontWeight:'900',backgroundColor:C.warningSurface}});}
+function makeStyles(C:ThemeColors){return StyleSheet.create({body:{...typography.body,color:C.text,fontSize:14,lineHeight:26},compact:{fontSize:13,lineHeight:23},emoteImage:{width:36,height:36},emoteImageCompact:{width:32,height:32},emoteLine:{lineHeight:40},emoteLineCompact:{lineHeight:36},previewEmoteImage:{width:24,height:24},previewEmoteImageCompact:{width:21,height:21},emoteFallback:{...typography.caption,color:C.accent,fontWeight:'900',backgroundColor:C.infoSurface,borderRadius:radii.sm,paddingHorizontal:4},mention:{color:C.info,fontWeight:'900'},selfMention:{color:C.warning,fontWeight:'900',backgroundColor:C.warningSurface}});}

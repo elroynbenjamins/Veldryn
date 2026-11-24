@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import {supabase} from './supabase';
 import {WINTER_HEARTH_GUILD_RELEASED} from '../core/release-flags';
-import {winterHearthDonationTrack} from '../core/winter-hearth-donations';
+import {winterHearthDonationTrack,winterHearthReceiptMatches} from '../core/winter-hearth-donations';
 import type {WinterHearthDonationReceipt} from './winter-hearth-guild';
 
 export type DonationContext={accountId:string;guildId:string;characterId:string;weekStartUtc:string};
@@ -50,7 +50,7 @@ export async function submitWinterHearthDonation(context:DonationContext,itemId:
    throw new Error('Donation confirmation unavailable. Retry the saved donation.');
   }
   const receipt=data as WinterHearthDonationReceipt;
-  if(!receipt||typeof receipt.alreadyProcessed!=='boolean'||receipt.itemId!==request.itemId||receipt.quantity!==request.quantity||receipt.guildId!==request.guildId||receipt.weekStartUtc!==request.weekStartUtc||receipt.track!==winterHearthDonationTrack(request.itemId)||!Array.isArray(receipt.newMilestones)||!receipt.newMilestones.every(n=>[25,50,75,100].includes(n))||!Number.isSafeInteger(receipt.newGuildGold)||receipt.newGuildGold<0||receipt.newGuildGold>110000)throw new Error('Donation receipt incomplete. Retry the saved donation.');
+  if(!winterHearthReceiptMatches(receipt,request))throw new Error('Donation receipt incomplete. Retry the saved donation.');
   await AsyncStorage.removeItem(key);
   return receipt;
  }finally{inFlight=false;}

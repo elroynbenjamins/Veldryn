@@ -1,4 +1,4 @@
-import {SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {GameLanguageProvider} from '../i18n/GameLanguageProvider';
 import {GameThemeProvider,useGameTheme} from '../theme/ThemeContext';
@@ -45,6 +45,10 @@ function Review(){
    <Text style={[s.kicker,{color:C.warning}]}>NATIVE QA · ASCENDANT I</Text>
    <Text accessibilityRole="header" style={[s.heading,{color:C.text}]}>Celestial Sovereign</Text>
    <Text style={[s.copy,{color:C.muted}]}>Real committed runtime artwork. Global release gate remains disabled.</Text>
+   <View style={[s.assetRow,{borderColor:C.line,backgroundColor:C.panel}]}>
+    <View style={s.assetCell}><Image source={assets.petRegular} resizeMode="contain" style={s.petIcon}/><Text style={[s.assetLabel,{color:C.muted}]}>Aetherion · regular pet art</Text></View>
+    <View style={s.assetCell}><Image source={assets.badge} resizeMode="contain" style={s.badgeIcon}/><Text style={[s.assetLabel,{color:C.muted}]}>Sovereign of the Stars</Text></View>
+   </View>
    <Card label="MATCHING PET · AETHERION" petId={CELESTIAL_IDS.pet}/>
    <Card label="ALTERNATE PET · OATHROOT SEEDLING" petId={alternatePetId} petSource={alternatePet}/>
    <Card label="NO PET" />
@@ -66,4 +70,7 @@ const s=StyleSheet.create({
  meta:{fontSize:8,lineHeight:11,color:'#d6e0f4',fontWeight:'700'},
  guild:{fontSize:9,lineHeight:12,color:'#f4ddb0',fontWeight:'900'},
  fallback:{height:205,borderWidth:1,borderRadius:10,alignItems:'center',justifyContent:'center'},
+ assetRow:{flexDirection:'row',gap:10,padding:10,borderWidth:1,borderRadius:10},
+ assetCell:{flex:1,minWidth:0,alignItems:'center',gap:5},petIcon:{width:84,height:84},badgeIcon:{width:64,height:64,marginVertical:10},
+ assetLabel:{fontSize:9,lineHeight:12,fontWeight:'700',textAlign:'center'},
 });

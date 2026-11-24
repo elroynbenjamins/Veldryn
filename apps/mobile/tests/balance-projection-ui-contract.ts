@@ -5,7 +5,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const gathering=read('src/components/GatheringActivityList.tsx');
 ok(gathering.includes('gatheringBalanceProjection'),'Gathering UI must use the shared balance projection instead of duplicating rate math');
-ok(gathering.includes("gt('Have: {count} {resource} · {seconds}s'")&&gathering.includes('formatGameNumber(available')&&gathering.includes('Math.ceil(view.cycleSeconds)'),'Simple gathering rows must show resource count and current rounded action duration');
+ok(gathering.includes("gt('Have: {count} {resource} · {seconds}s'")&&gathering.includes('count:formatGameNumber(stock(activity.itemId),state.settings.numberMode,language)')&&gathering.includes('seconds:cycleSeconds')&&gathering.includes('cycleSeconds:entry.readyHere&&!entry.active?Math.ceil(gatheringBalanceProjection(state,entry.activity,0).cycleSeconds):0')&&gathering.includes('[state,skillId,skillLevel,currentRegionOnly,region.id,areaId,preferredActionId]'),'Simple gathering rows must show resource count and current rounded action duration');
 ok(gathering.includes('onPress={start}')&&gathering.includes('onGather(activity.id)'),'Gathering rows must start the selected resource directly');
 
 const activity=read('src/components/ActivityCard.tsx');

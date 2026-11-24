@@ -49,11 +49,11 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
         visibleOnRecruitmentBoard:false,canRankCandidates:false,
         links:[
           {id:'runebound_pact',name:'Runebound Pact',classNames:['Ironwarden','Stonecaller'],
-           bonuses:[{statKey:'armor_pct',label:'Armor',value:'+4%'},{statKey:'ward_strength_pct',label:'Ward effectiveness',value:'+4%'},{statKey:'shield_strength_pct',label:'Shield effectiveness',value:'+2.4%'}]},
+           bonuses:[{statKey:'armor_pct',label:'Armor',bps:400,valueKind:'percent'},{statKey:'ward_strength_pct',label:'Ward effectiveness',bps:400,valueKind:'percent'},{statKey:'shield_strength_pct',label:'Shield effectiveness',bps:240,valueKind:'percent'}]},
           {id:'guardians_vigil',name:"Guardian's Vigil",classNames:['Ironwarden','Wayfinder'],
-           bonuses:[{statKey:'accuracy_pct',label:'Accuracy',value:'+3.2%'},{statKey:'damage_reduction_pct',label:'Damage reduction',value:'+2.4%'}]},
+           bonuses:[{statKey:'accuracy_pct',label:'Accuracy',bps:320,valueKind:'percent'},{statKey:'damage_reduction_pct',label:'Damage reduction',bps:240,valueKind:'percent'}]},
           {id:'marked_for_death',name:'Marked for Death',classNames:['Wayfinder','Hexweaver'],
-           bonuses:[{statKey:'damage_vs_debuffed_pct',label:'Damage vs debuffed enemies',value:'+3.2%'},{statKey:'accuracy_pct',label:'Accuracy',value:'+2.4%'}]},
+           bonuses:[{statKey:'damage_vs_debuffed_pct',label:'Damage vs debuffed enemies',bps:320,valueKind:'percent'},{statKey:'accuracy_pct',label:'Accuracy',bps:240,valueKind:'percent'}]},
         ],
       })}
       labels={{

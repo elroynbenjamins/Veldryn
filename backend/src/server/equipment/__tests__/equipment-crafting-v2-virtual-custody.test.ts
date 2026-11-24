@@ -63,6 +63,9 @@ assert.throws(()=>simulateEquipmentV2VirtualCustody(input(banked.state,
 const other=createCharacter(newGame(now),'WAYFINDER');
 assert.ok(other.character);other.character.id='virtual-other';other.character.level=35;
 other.character.equipment.helmet=undefined;
+// This actor deliberately starts another recipe after receiving a Bank copy.
+// Fund only the fixture's own wallet; do not relax the real gold debit.
+other.character.gold=recipe.gold+1000;
 const withOther=structuredClone(banked.state);
 withOther.otherCharacters=[{
  character:other.character,inventory:other.inventory,overflow:other.overflow,
@@ -104,9 +107,11 @@ const materialsRestored=structuredClone(removed.state);
 materialsRestored.inventory.stacks.push(...recipe.inputs.map(row=>({
  itemId:row.itemId,quantity:row.quantity,
 })));
+assert.equal(materialsRestored.character!.gold,recipe.gold+1000);
 const anotherForge=simulateEquipmentV2InGameState(forge(materialsRestored,{
  kind:'start',requestId:'virtual-next-forge-01',expectedVersion:16,recipeId:recipe.id,
 },16));
+assert.equal(anotherForge.state.character!.gold,1000,'Recipient pays exactly from their own wallet');
 assert.deepEqual((anotherForge.state.account.equipmentV2Hidden as V2VirtualLedger).custodyReceipts,
  (removed.state.account.equipmentV2Hidden as V2VirtualLedger).custodyReceipts,
  'Later Forge commands must not destroy earlier Bank custody receipts');

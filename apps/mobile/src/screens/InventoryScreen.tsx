@@ -41,6 +41,7 @@ import {craftedGearInstances,craftedGearDisplayQuality} from '../core/crafted-ge
 import {validateGatheringToolRoll,gatheringToolBonusLabel} from '../core/gathering-tool-rolls';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {gatheringToolContribution,gatheringToolPercent} from '../core/gathering-tool-presentation';
+import {equippedGatheringTools,equippedGatheringToolRoll} from '../core/gathering-tools';
 import {indexInventoryGearCopies} from '../core/inventory-gear-lookup';
 import {auditCraftedGearOwnership,craftedGearCopiesAt,disposeCraftedGearInstance} from '../core/crafted-gear-ownership';
 import {canDisposeLegacyEquipment} from '../core/equipment-enhancement';
@@ -386,11 +387,14 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     </View>
     {selectedCopy?<EquipmentDisposalStatus compact sellAllowed={!!inspectedCopySell?.allowed} salvageAllowed={!!inspectedCopySalvage?.allowed} sellReason={inspectedCopySell?.reason} salvageReason={inspectedCopySalvage?.reason}/>:null}
   </View>:undefined;
-  const inspectActions=inspected?<View style={s.inspectActions}>
+  const toolOverview=inspected?.type==='tool'?<View style={s.inspectActions}>
     {inspected.type==='tool'&&exactToolCopies.length>0?<View style={s.toolCopies}>
       {exactToolCopies.length>1?<Text style={s.quantityTitle}>{gt('GATHERING TOOLS')} · {exactToolCopies.length}</Text>:null}
       {exactToolCopies.map((copy,index)=>{
         const contribution=inspectedToolDef?gatheringToolContribution(inspectedToolDef,copy):undefined;
+        const activeTool=inspectedToolDef?equippedGatheringTools(state,inspectedToolDef.skillId).find(tool=>tool.tier===inspectedToolDef.tier):undefined;
+        const activeCopy=activeTool?equippedGatheringToolRoll(state,activeTool.skillId,activeTool.tier):undefined;
+        const activeContribution=activeTool?gatheringToolContribution(activeTool,activeCopy):undefined;
         return <View key={copy.id} style={s.toolCopyCard}>
           {exactToolCopies.length>1?<Text style={[s.toolCopyCaption,{color:rarityMeta(copy.rarity).color}]}>{gt('Tool {number}',{number:index+1})} · {rarityMeta(copy.rarity).label} · Q{copy.quality}</Text>:null}
           <View style={s.toolStatRow}>
@@ -408,6 +412,12 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
             </View>
             <Text style={s.toolBonusValue}>+{gatheringToolPercent(copy.bonus.basisPoints/100)}%</Text>
           </View>
+          {carried&&activeTool&&activeContribution&&contribution?<View style={s.toolStatDescription}>
+            <Text style={s.toolStatEyebrow}>{gt('CURRENTLY EQUIPPED')} · T{activeTool.tier}</Text>
+            <Text style={s.toolStatLabel}>{localizedItemName(language,activeTool.id)}{activeCopy?' · '+rarityMeta(activeCopy.rarity).label+' · Q'+activeCopy.quality:''}</Text>
+            <Text style={s.toolStatLabel}>{gt('Gathering Speed')}: +{gatheringToolPercent(activeContribution.adjustedBasePercent)}% → +{gatheringToolPercent(contribution.adjustedBasePercent)}%</Text>
+            <Text style={s.toolStatLabel}>{activeCopy?gatheringToolBonusLabel(activeCopy):gt('Legacy tool · No bonus stat roll')} → {gatheringToolBonusLabel(copy)}</Text>
+          </View>:null}
           <View style={[s.toolActionRow,stackInspectorActions&&s.toolActionRowStacked]}>
             <View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={carried?gt('Equip'):gt('Withdraw')} loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Updating gathering tool…',async()=>{const result=await onCommand!({type:carried?'equip_tool':'tool_move',args:carried?{id:copy.itemId,instanceId:copy.id}:{instanceId:copy.id,to:'inventory'}});if(result===false)throw new Error('Tool action was not confirmed.');closeInspect()})}/></View>
             {carried?<View style={[s.toolActionButton,stackInspectorActions&&s.toolActionButtonStacked]}><GameButton compact title={gt('To Bank')} tone="secondary" loading={inventoryBusyLabel!==null} disabled={!onCommand||inventoryBusyLabel!==null} onPress={()=>void beginInventorySubmission('Moving tool to Bank…',async()=>{const result=await onCommand!({type:'tool_move',args:{instanceId:copy.id,to:'bank'}});if(result===false)throw new Error('Tool transfer was not confirmed.');closeInspect()})}/></View>:null}
@@ -423,6 +433,8 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
       </View>
       <Text style={s.toolSpeedValue}>+{gatheringToolPercent(gatheringToolContribution(inspectedToolDef).adjustedBasePercent)}%</Text>
     </View>:null}
+  </View>:undefined;
+  const inspectActions=inspected?<View style={s.inspectActions}>
     {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?gt("Auto-eat selected"):gt("Use for auto-eat")} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
     {carried&&inspected.type==='food'&&mealBonusDef(inspected.id)?<>
       <Text style={[s.sub,{color:C.good}]}>{mealBonusDef(inspected.id)!.label} · {mealBonusDef(inspected.id)!.durationHours}h · {gt('Only one meal buff can be active.')}</Text>
@@ -524,7 +536,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   favorite={inspectFavorite} locked={inspectLocked}
   onToggleFavorite={inspected?()=>beginInventorySubmission('Updating favorite…',()=>onToggleFavorite(inspected.id)):undefined}
   onToggleLock={inspected?changeInspectLock:undefined}
-  onNavigate={destination=>{if(destination.kind==='inventory'&&destination.section==='gem_pouch'){closeInspect();openPouch();return;}closeInspect();onNavigateInspect(destination)}} actions={inspected?.type==='material'?undefined:inspectActions} quickActions={inspectQuickActions} disposalActions={inspectDisposalActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
+  onNavigate={destination=>{if(destination.kind==='inventory'&&destination.section==='gem_pouch'){closeInspect();openPouch();return;}closeInspect();onNavigateInspect(destination)}} overview={toolOverview} actions={inspected?.type==='material'?undefined:inspectActions} quickActions={inspectQuickActions} disposalActions={inspectDisposalActions}/><FlatList key={gridColumns} data={gridEntries} numColumns={gridColumns} keyExtractor={(stack,index)=>stack?`${location}:${stack.itemId}:${stack.instanceId??'legacy'}`:`${location}:empty:${shownGridPage*STORAGE_PAGE_SIZE+index}`} renderItem={({item})=>item?renderStack(item):<View accessible={false} style={[s.itemTile,s.emptySlot,{width:tileSize,height:tileSize}]}><Text style={s.emptySlotMark}>·</Text></View>} columnWrapperStyle={s.itemGrid} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={3} removeClippedSubviews onLayout={event=>setGridWidth(Math.max(1,Math.min(960,event.nativeEvent.layout.width)-32))} ref={scrollRef} onContentSizeChange={()=>{if(restored.current!==gridColumns){restored.current=gridColumns;scrollRef.current?.scrollToOffset({offset:scrollY.current,animated:false});}}} onScroll={event=>{scrollY.current=event.nativeEvent.contentOffset.y;memory.scrollY=scrollY.current;}} scrollEventThrottle={100} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} ListHeaderComponent={<View style={s.listSection}>
     <Text accessibilityRole="header" style={s.h}>{gt(location==='inventory'?'Inventory':'Bank')}</Text>
     <Text style={s.sub}>{gt('{used}/{capacity} slots · {scope}',{used:activeCapacity.used,capacity:activeCapacity.capacity,scope:location==='bank'?gt('Shared across characters'):gt('Character storage')})}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={!pouchOpen&&!equipmentPouchOpen&&location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}<StorageChip label={accountText(language,'Gems')} selected={pouchOpen} status={storageCapacityStatus(gemPouch(state).stacks,gemPouch(state).capacity)} onPress={openPouch}/><StorageChip label="Gear" selected={equipmentPouchOpen} status={storageCapacityStatus(equipmentPouch(state).stacks,equipmentPouch(state).capacity)} onPress={openEquipmentPouch}/></View>

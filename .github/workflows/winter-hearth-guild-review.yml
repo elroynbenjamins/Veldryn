@@ -90,3 +90,26 @@ jobs:
           test "$PGDATABASE" = 'winter_hearth_review_2026'
           createdb winter_hearth_rpc_review_2026
           PGDATABASE=winter_hearth_rpc_review_2026 psql -X -v ON_ERROR_STOP=1 -f tools/winter-hearth-review/v2/03_actual_rpc_fixture.sql
+
+  crafting-runtime:
+    name: Christmas Lights actual shared-engine processing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install locked backend and mobile dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Execute actual crafting with test-only in-memory flag
+        run: node tools/winter-hearth-review/v2/run-crafting-runtime.mjs
+      - name: Confirm no tracked source or generated bundle changed
+        run: git diff --exit-code

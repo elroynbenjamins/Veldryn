@@ -11,7 +11,7 @@ export type ScoutKind='route'|'survey';
 export type ScoutRoute={id:string;legacyId:string;zoneId:string;name:string;requiredExplorationLevel:number;legacyCharacterLevel:number;prerequisite?:string;targetRegion?:string;monsterId?:string;seconds:number;xp:number;released:boolean};
 export const SCOUT_ROUTES:readonly ScoutRoute[]=EXPLORATION_ROUTES.map(r=>({
  id:'scout2:'+r.id,legacyId:r.id,zoneId:r.zoneId,name:r.name,requiredExplorationLevel:r.requiredExplorationLevel,legacyCharacterLevel:r.requiredLevel,
- prerequisite:r.prerequisiteRouteId??({SCOUT_OLD_MINES:'SCOUT_IRONWOOD',SCOUT_KINGS_ROAD:'SCOUT_OLD_MINES',SCOUT_SUNSCAR:'SCOUT_KINGS_ROAD',SCOUT_FROSTMARCH:'SCOUT_SUNSCAR'} as Record<string,string>)[r.id],
+ prerequisite:r.prerequisiteRouteId??({SCOUT_SILVERBROOK:'SCOUT_GREENFIELDS',SCOUT_IRONWOOD:'SCOUT_SILVERBROOK',SCOUT_OLD_MINES:'SCOUT_IRONWOOD',SCOUT_KINGS_ROAD:'SCOUT_OLD_MINES',SCOUT_SUNSCAR:'SCOUT_KINGS_ROAD',SCOUT_FROSTMARCH:'SCOUT_SUNSCAR'} as Record<string,string>)[r.id],
  targetRegion:r.unlockZoneId,monsterId:r.unlockMonsterId,seconds:r.seconds,xp:r.xp,
  released:WORLD_ZONES.some(z=>z.id===r.zoneId&&!worldZoneInDevelopment(z))
 }));
@@ -39,7 +39,7 @@ export function scoutingAvailability(state:ScoutState,route:ScoutRoute,kind:Scou
 }
 export function scoutingTeamBonus(route:ScoutRoute,ids:readonly string[],authority:ScoutAuthority){
  let affinity=0;
- for(const id of ids){const owned=authority.owned[id],d=companionServerDefinition(id);if(!owned||!d)fail('not_owned');
+ for(const id of ids){const owned=authority.owned[id],d=companionServerDefinition(id);if(!owned||!d)return fail('not_owned');
   affinity+=Math.min(.04,owned.level*.001)+Math.min(.02,owned.bondLevel*.002)+(d.originId===regionOrigin(route.zoneId)?.04:0);}
  return Math.min(.20,affinity);
 }
@@ -75,7 +75,7 @@ export function scoutClaimPreview(receipt:ScoutReceipt,state:ScoutState,now:numb
  if(receipt.policyVersion!==SCOUT_POLICY_VERSION||!Number.isSafeInteger(now)||now<receipt.endsAt)return fail('not_ready');
  const route=SCOUT_ROUTES.find(r=>r.id===receipt.routeId);if(!route?.released)return fail('route_unavailable');
  const newlyDiscovered=receipt.discovery&&!state.discoveredRouteIds.includes(route.legacyId);
- return {receipt:{...receipt,status:'claimed' as const},explorationXp:receipt.xp,newDiscovery:newlyDiscovered?route.legacyId:null,
+ return {receipt:{...receipt,status:'claimed' as const},explorationXp:receipt.discovery&&!newlyDiscovered?0:receipt.xp,newDiscovery:newlyDiscovered?route.legacyId:null,
   discoveredRouteIds:[...new Set([...state.discoveredRouteIds,...(newlyDiscovered?[route.legacyId]:[])])],
   // Deliberately no travel, monster, resource, companion or wallet grant.
   travelUnlocked:false as const,rewardsGranted:false as const,releaseEnabled:EXPLORATION_2_RELEASED};

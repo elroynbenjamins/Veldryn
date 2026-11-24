@@ -33,3 +33,8 @@ assert.equal(scoutingAvailability({...state,explorationLevel:100},next,'route'),
 const migrated=scoutingMigrationPreview({...state,explorationLevel:50,discoveredRouteIds:['SCOUT_SUNSCAR','SCOUT_SUNSCAR']});
 assert.equal(migrated.explorationXp,123);assert.equal(migrated.gatheringBonus,.05);assert.deepEqual(migrated.discoveredRouteIds,['SCOUT_SUNSCAR']);
 console.log('PASS hidden scouting: legacy routes, ownership, shared account slot, guide, repeat surveys, migration, no grants');
+
+assert.equal(scoutClaimPreview(a,known,a.endsAt).explorationXp,0);
+const iron=SCOUT_ROUTES.find(r=>r.legacyId==='SCOUT_IRONWOOD')!;
+assert.equal(scoutingAvailability({...state,explorationLevel:3},iron,'route'),'prerequisite');
+assert.equal(scoutingAvailability({...state,explorationLevel:3,discoveredRouteIds:['SCOUT_SILVERBROOK']},iron,'route'),'available');

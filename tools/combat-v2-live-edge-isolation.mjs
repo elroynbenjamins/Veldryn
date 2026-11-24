@@ -107,6 +107,7 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'issuePartySyncAuthorityV2','party_sync_authority_',
   'issuePersistedPartyEquipmentV2TraitAuthority','party-v2-run-binding-review-1',
   'issuePersistedPartyEnemyV2EngineAuthority','preparePartyEnemyKitsV2',
+  'projectPartySynchronizationLobbyV2','previewPartySynchronizationCandidateV2',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

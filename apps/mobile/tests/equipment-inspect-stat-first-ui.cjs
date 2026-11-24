@@ -41,6 +41,14 @@ assert(sheet.includes('gearDecision.set.currentPieces')&&sheet.includes('gearDec
 assert(sheet.includes('gearDecision.alreadyEquipped?gt(\'Currently equipped · loadout change is zero.\')'),
   'Already-equipped items cannot say the effect requires equipping');
 assert(sheet.includes('visibleStatDeltas.map('),'Show nonzero ATK/DEF/HP tradeoffs, not only power');
+assert(inventory.includes("const inspectedGearReceiptId=inspected?.type==='gear'"),'Bind exact receipts only for real gear');
+assert(inventory.includes("exactCopies.some(row=>row.id===selectedInstanceId)?selectedInstanceId:exactCopies.length===1?exactCopies[0].id:null"),
+  'A sole verified copy must preview immediately; multiple copies require an explicit receipt');
+assert(inventory.includes('instanceId={inspectedGearReceiptId} source={location}'),
+  'Inventory passes the resolved unique receipt to the authoritative inspector');
+assert(sheet.includes("item.type==='gear'&&source==='bank'?<Text style={s.gearSummaryNote}>{ui('Withdraw to compare & equip.')}</Text>"),
+  'Bank inspection explains why equip deltas cannot be shown');
+
 assert(sheet.includes('gearSummaryMetrics:{flexDirection:')&&sheet.includes('flexWrap:\'wrap\''),
   'Keep comparison metrics responsive on narrow phones');
 

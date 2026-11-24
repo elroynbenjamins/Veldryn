@@ -2,6 +2,7 @@ name: Material retirement review
 on:
   pull_request:
     paths:
+      - 'apps/mobile/tests/material-purpose-audit.ts'
       - 'tools/material-retirement-review.mjs'
       - 'tools/audit-material-retirement-references.mjs'
       - '.github/workflows/material-retirement-review.yml'
@@ -20,3 +21,10 @@ jobs:
         run: node tools/material-retirement-review.mjs
       - name: Enumerate full checkout candidate references
         run: node tools/audit-material-retirement-references.mjs
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Audit expanded material registries and item-use regressions
+        run: node tools/run-mobile-tests.mjs material-purpose-audit resource-codex

@@ -11,7 +11,7 @@ import {regionalHuntPlan,usesDamageDrivenHunts} from './ordinary-hunt';
 import {characterCombatXpScale} from './combat-progression-pacing';
 import {eventCandyWindow} from './live-events';
 import {WINTER_HEARTH_GUILD_RELEASED} from './release-flags';
-import {frostfallWispDrops,WINTER_HEARTH_WISP_ITEM_ID} from './winter-hearth-2026';
+import {winterHearthLightRecipeAvailable,isWinterHearthLightRecipe} from './winter-hearth-2026';
 import {winterHearthGatheringTimeline,winterHearthXpFactorForActionTimes} from './winter-hearth-bonus-windows';
 import {professionActionPace} from './profession-action-pace';
 import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
@@ -93,6 +93,7 @@ export function beginAlchemyBatch(state:GameState,recipeId:string,nowMs:number,b
 }
 export function beginProcessingBatch(state:GameState,recipeId:string,nowMs:number,batches?:number){
  const ready=finishClassDrills(state,nowMs);
+ if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(ready,nowMs))throw new Error('Winter Hearth crafting is closed.');
  if(batches===undefined)return startProcessingUntilLimited(ready,recipeId,nowMs,offlineCapSeconds(ready));
  const capacity=processingRunCapacity(ready,recipeId,offlineCapSeconds(ready));
  if(!Number.isSafeInteger(batches)||batches<1||batches>capacity.availableBatches)throw new Error('Selected processing count exceeds available materials, Gold or AFK time.');
@@ -941,21 +942,6 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier*candyXpMultiplier*gatheringToolSkillXpMultiplier(state,g.skillId)*(WINTER_HEARTH_GUILD_RELEASED?winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows??[],timeline.encounters.map(row=>row.atMs),'skill'):1),state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
     const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
-    // Event-only Wisp Glow: one deterministic independent roll per verified
-    // gathering action, not per multiplied resource, and never on retired events.
-    const winterEvent=state.account.liveEvent;
-    const winterGlow=frostfallWispDrops({
-      released:WINTER_HEARTH_GUILD_RELEASED,
-      guildMember:state.account.guildMember===true,
-      eventEnabled:winterEvent?.enabled===true,
-      eventId:winterEvent?.eventId,
-      eventStartsAtMs:winterEvent?.startsAtMs??0,
-      eventEndsAtMs:winterEvent?.endsAtMs??0,
-      skillId:g.skillId,
-      seed:`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:winter-hearth-2026-wisp`,
-      actionTimesMs:timeline.encounters.map(encounter=>encounter.atMs),
-    });
-    if(winterGlow>0)items.push({itemId:WINTER_HEARTH_WISP_ITEM_ID,quantity:winterGlow});
     if(g.skillId==='mining'){
       const essence=MINING_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){
@@ -1781,6 +1767,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),seq
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=recipeDef(recipeId);if(!r)throw new Error('Unknown recipe');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   if(r.classId&&r.classId!==state.character.classId&&!r.v33SetId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);

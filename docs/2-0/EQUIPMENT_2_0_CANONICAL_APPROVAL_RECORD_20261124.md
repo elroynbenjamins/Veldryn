@@ -136,6 +136,10 @@ V22 exact-head CI failed TS7053 readonly ID indexing and non-exported V17 import
 
 V23–V26 focused runs remained queued at readback. Extracted shared V22–V26 boundaries, retained real Forge actor suite, added minimal typed independent strict compile and boundary/source/Edge-isolation workflow. No successful current-head execution yet. V27 adds Rimewatch Weather the Break: exact named Rimeguard direct depletion, +6% incoming nontrue reduction for 4s, 30s cooldown, both milestone IDs required, no expiry/replacement/DoT/fatal/duplicate trigger. Source readback verified; no candidate ownership, CP or release authority. Twenty-nine definitions supported, 113 remaining. D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_NAMED_SHIELD_BREAK_REVIEW_V27.md`.
 
+## 3O. V28 support recipient effects and independent smoke evidence
+
+V27 144 and V28 186 boundary assertions passed in isolated type-erased JS runtime with canonical serialization substituted for imported digest; no strict compile/actual digest/engine or full benchmark pass claimed. Eight source-exact heal-recipient records (Brightweave T1–4, Sanctuary Thread, Soft Refuge, Lifebloom, Comforting Thread) matched on readback. Private support-only 1–4 QA player roster, exact owner and target, per-healer cooldown, per-recipient independent shield/Defense, actual effective class heal required; conservative stacking and source scope. Thirty-seven definitions supported, 105 remaining. Full party and CI verification, D1–D10 open. See `docs/2-0/EQUIPMENT_2_0_SUPPORT_RECIPIENT_REVIEW_V28.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

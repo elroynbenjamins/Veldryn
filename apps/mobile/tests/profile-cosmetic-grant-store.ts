@@ -14,8 +14,9 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
  equal(blockedCalls,0,'disabled grant service never reaches the database adapter');
 
  const calls:{fn:string;args:Record<string,unknown>}[]=[];
- const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async<T=unknown>(fn:string,args:Record<string,unknown>)=>{calls.push({fn,args});return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_set_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',addedIconIds:['cosmetic:gloamward:portrait-seer','cosmetic:gloamward:portrait-magus'],revision:42} as T,error:null}}});
+ const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async<T>(fn:string,args:Record<string,unknown>)=>{calls.push({fn,args});return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_set_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',addedIconIds:['cosmetic:gloamward:portrait-seer','cosmetic:gloamward:portrait-magus'],revision:42} as unknown as T,error:null}}});
  const result=await repo.grantVerified({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_set_v1',idempotencyKey:'receipt-12345678',source:'verified_google_play'});
+ equal(calls.length,1,'one atomic RPC invocation');
  const call=calls[0];
  equal(call?.fn,'profile_cosmetic_grant_server_v1','repository calls the atomic profile cosmetic grant RPC');
  equal(call?.args.p_account_id,'00000000-0000-0000-0000-000000000001','account id is server supplied');

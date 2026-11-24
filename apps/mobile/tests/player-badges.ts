@@ -109,6 +109,7 @@ ok(settings.includes('<PlayerBadgeShowcase identity={badges.identity}'),'the pro
 const art=read('src/components/player-badge-artwork.ts');
 for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>!id.startsWith('ascendant_'))])
  ok(art.includes(`player-badges-v1/${id}.webp`),'approved badge artwork bundled '+id);
+for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_')))ok(art.includes(id+':{glyph:'),'Ascendant fallback is registered '+id);
 ok(art.includes("assets/ascendant/celestial/sovereign_badge_64.webp"),'hidden Celestial badge uses its dedicated Ascendant artwork');
 ok(art.includes('store-membership-badges-v1/vip.png')&&art.includes('store-membership-badges-v1/vip-plus.png'),'VIP badges use the same approved icons as Store');
 const badgeArt=read('src/components/PlayerBadges.tsx'),storeArt=read('src/components/CommerceProductBadge.tsx');

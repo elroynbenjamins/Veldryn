@@ -41,3 +41,7 @@ equal(unlockInboxDisplayName({kind:'pet',key:'pet:PET_022',name:'PET 022'}),'Tin
 equal(unlockInboxDisplayName({kind:'pet',key:'pet:custom-pet',name:'Event Pet'}),'Event Pet','unknown or event pets preserve their recorded name');
 equal(unlockInboxDisplayName({kind:'title',key:'title:pathfinder',name:'Pathfinder'}),'Pathfinder','other unlock kinds are unchanged');
 console.log('PASS account unlock inbox dedupe, persistence normalization, read state, canonical pet names and cap');
+
+const effectEntries=newUnlockInboxEntries([{key:'effect:effect_gloamward_wisps',kind:'effect',name:'Arcane Wisps'}],4000);
+equal(effectEntries.length,1,'animated effect unlock is persisted');
+equal(normalizeUnlockInbox(effectEntries)[0]?.kind,'effect','animated effect unlock survives normalization');

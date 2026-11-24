@@ -1,3 +1,4 @@
+import {summarizeCandidatePowerCalibrationV2,type CandidatePowerCalibrationRowV2} from '../candidate-power-calibration';
 /**
  * Skills/Abilities × Equipment 2.0 — 324 FULL TEN SLOT encounters.
  *
@@ -33,7 +34,7 @@ let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
 const traitSensitivity:unknown[]=[];
 const matchedEffects:MatchedEffectSampleV2[]=[];
-const candidatePowerRows:unknown[]=[];
+const candidatePowerRows:(CandidatePowerCalibrationRowV2 & {classId:string;specializationId:string;level:number;baseline:number;stageRows:unknown;axes:unknown;observedSidecarOn:unknown})[]=[];
 const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
 const companionSensitivity:unknown[]=[];
 const companionIds=['UNIT_001','UNIT_002','UNIT_003','UNIT_005'] as const;
@@ -305,6 +306,15 @@ console.log('COMPANION_PASSIVE_AND_ASSIST_MARGINAL_REVIEW_NOT_CP '+JSON.stringif
 }));
 
 assert.equal(candidatePowerRows.length,108);
+const ordering=summarizeCandidatePowerCalibrationV2(candidatePowerRows);
+assert.equal(ordering.strata.length,18);
+assert.equal(ordering.strata.reduce((n,x)=>n+x.cases,0),108);
+assert.deepEqual(ordering,summarizeCandidatePowerCalibrationV2([...candidatePowerRows].reverse()));
+for(const stratum of ordering.strata)for(const m of stratum.metrics)
+ assert.equal(m.concordant+m.discordant+m.scoreTies+m.outcomeTies+m.bothTies,stratum.cases*(stratum.cases-1)/2);
+assert.throws(()=>summarizeCandidatePowerCalibrationV2([...candidatePowerRows,candidatePowerRows[0]]),/invalid_row/);
+console.log('STATIC_POWER_ORDERING_CALIBRATION_NOT_CP '+JSON.stringify(ordering));
+
 console.log('STATIC_ROLE_CANDIDATE_POWER_V1_NOT_FINAL_CP '+JSON.stringify({
  cases:candidatePowerRows.length,rows:candidatePowerRows,
  referenceVersion:candidateReference.version,scope:'SYNTHETIC_GEAR_CANDIDATE_NOT_EQUAL_CP',

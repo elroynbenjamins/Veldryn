@@ -1,7 +1,6 @@
-import {normalizeProfileV2Snapshot,profileBonusPercent} from '../src/core/profile-gear-v2-snapshot';
 import {enhancedGearStatsAtRank} from '../src/core/equipment-enhancement';
 import {createCharacter,newGame} from '../src/core/game';
-import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets} from '../src/core/profile-equipped-gear';
+import {localProfileGear,normalizeProfileGear,PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets,profileBonusPercent} from '../src/core/profile-equipped-gear';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){
@@ -66,15 +65,11 @@ const duplicate=localProfileGear({...state,account:{...state.account,craftedGear
 equal(duplicate.inspectionKnown,false,'ambiguous exact ID fails closed');
 const malformed=normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',inspectionKnown:true,rarity:'mythic',quality:200}])![0];
 equal(profileItemStats(malformed),undefined,'invalid quality does not become neutral quality');
-const v2={name:'Test item',tier:3,baseStats:{attack:21,defense:0,hp:8},innateBonuses:[{stat:'armor',percent:1.25}],randomBonuses:[{stat:'armor',percent:2.75}]};
-ok(normalizeProfileV2Snapshot(v2),'valid V2 snapshot accepts separate innate and rolled bonuses');
-equal(normalizeProfileV2Snapshot({...v2,randomBonuses:[...v2.randomBonuses,...v2.randomBonuses]}),undefined,'duplicate random affix rejected');
-equal(normalizeProfileV2Snapshot({...v2,baseStats:{attack:21,defense:1,hp:8}}),undefined,'three-attribute V2 snapshot rejected');
-equal(normalizeProfileV2Snapshot({...v2,randomBonuses:[{stat:'__proto__',percent:3}]}),undefined,'unknown stat rejected');
 equal(profileBonusPercent(1.25),'+1.25%','two decimal precision preserved');
-const future=normalizeProfileGear([{slot:'weapon',itemId:'v2_example',generation:2,inspectionKnown:true,rarity:'epic',quality:75,rank:3,snapshot:v2}])![0];
-equal(profileItemStats(future)?.attack,21,'already-modified snapshot never rescaled');
-equal(future.snapshot?.innateBonuses[0].percent,1.25,'innate bonuses separate from random rolls');
+const old=normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',rarity:'rare',quality:75,rank:2,statGemId:'EMBER_SHARD'}])![0];
+equal(profileItemStats(old)?.attack,effective!.attack,'old RPC can retain exact-copy item-only stats');
+equal(profileItemSockets(old)[0].detail,undefined,'old RPC cannot invent gem effects');
+equal(profileItemStats(normalizeProfileGear([{slot:'weapon',itemId:'basic_sword',rarity:'rare',quality:75,rank:2,inspectionKnown:false}])![0]),undefined,'explicit unresolved status never falls back');
 const otherGear=localProfileGear(state,otherId);
 equal(otherGear.length,1,'selected inactive character gets own loadout');
 equal(otherGear[0].slot,'ring','selected inactive character does not leak active gear');

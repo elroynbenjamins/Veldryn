@@ -7,12 +7,11 @@ import {ITEMS,type ItemDef} from '../content/items';
 import {displayStatPrecise} from '../core/stat-display';
 import {useGameplayText} from '../i18n/gameplay';
 import {itemDetailContent,itemDetailText} from '../i18n/item-details';
-import {profileBonusPercent} from '../core/profile-gear-v2-snapshot';
 import {hasGemArtworkV1} from '../theme/gem-assets';
 import {weaponBonusStatText} from '../i18n/weapon-bonus-ux';
 import {GemArtwork} from './GemArtwork';
 import type {GearSlot} from '../core/types';
-import {PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets,type ProfileEquippedGear} from '../core/profile-equipped-gear';
+import {PROFILE_GEAR_SLOTS,profileGearColumnCount,profileItemStats,profileItemSockets,profileBonusPercent,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
 import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -62,9 +61,8 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
  const item=selected?byItemId.get(selected.itemId):undefined;
  const rarityId=selected?.rarity??(item?itemRarity(item):undefined);
  const rarity=rarityId?rarityMeta(rarityId):undefined;
- const snapshot=selected?.snapshot;
- const randomBonuses=snapshot?.randomBonuses??selected?.bonuses?.map(roll=>({stat:roll.stat,percent:roll.basisPoints/100}))??[];
- const trait=snapshot?.trait??item?.passive;
+ const randomBonuses=selected?.bonuses?.map(roll=>({stat:roll.stat,percent:roll.basisPoints/100}))??[];
+ const trait=item?.passive;
  const stats=selected?profileItemStats(selected):undefined;
  const baseStats=stats?[{label:'ATK',value:stats.attack},{label:'DEF',value:stats.defense},{label:'HP',value:stats.hp}].filter(row=>row.value!==0):[];
  const sockets=selected?profileItemSockets(selected):[];
@@ -96,12 +94,12 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
   </View>
   {!gear.length?<Text style={s.emptyText}>{profileT(language,'No equipment equipped yet')}</Text>:null}
   <GameModalSurface visible={!!selected} reduceMotion={reduceMotion} onClose={()=>setSelectedSlot(null)} presentation="dialog" surfaceStyle={s.detail}>
-   <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={(snapshot?.name??(item?localizedItemName(language,item.id):profileT(language,'Equipment')))+(selected?.rank?' +'+selected.rank:'')} titleColor={rarityId?rarityNameColor(rarityId,C.dark,C.text):C.text} onClose={()=>setSelectedSlot(null)}/>
+   <GameModalHeader eyebrow={profileT(language,'EQUIPPED GEAR')} title={(item?localizedItemName(language,item.id):profileT(language,'Equipment'))+(selected?.rank?' +'+selected.rank:'')} titleColor={rarityId?rarityNameColor(rarityId,C.dark,C.text):C.text} onClose={()=>setSelectedSlot(null)}/>
    {selected?<ScrollView style={s.scroll} contentContainerStyle={s.inspect} showsVerticalScrollIndicator={true}>
     <View style={s.inspectHead}>
      {item?<EquipmentArtwork item={item} rarity={selected.rarity??itemRarity(item)} size={62} framed/>:<GearIcon unknown/>}
      <View style={s.inspectCopy}>
-      <Text style={s.detailSlot}>{profileText(language,slotLabels[selected.slot])}{snapshot?' · '+profileT(language,'Tier {tier}',{tier:snapshot.tier}):''}</Text>
+      <Text style={s.detailSlot}>{profileText(language,slotLabels[selected.slot])}</Text>
       {rarity?<Text style={[s.rarity,{color:rarity.color}]}>{profileText(language,rarity.label)}</Text>:null}
       {selected.quality!==undefined?<><Text style={s.tag}>{profileT(language,'Quality {quality}',{quality:selected.quality})} / 100</Text><View style={s.qualityTrack} accessible={false}><View style={[s.qualityFill,{width:`${selected.quality}%`}]}/></View></>:null}
      </View>
@@ -111,12 +109,6 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
      <View style={s.statRow}>{baseStats.map(row=><DetailStat key={row.label} label={row.label} value={row.value}/>)}</View>
     </View>:null}
     {!stats?<Text style={s.help}>{profileT(language,'Equipment details unavailable')}</Text>:null}
-    {!!snapshot?.innateBonuses.length&&<View style={s.statBlock}>
-     <Text style={s.detailCaption}>{profileT(language,'INNATE BONUSES')}</Text>
-     <View style={[s.bonusPanel,s.innatePanel]}>{snapshot.innateBonuses.map(roll=><View key={roll.stat} style={s.bonusRow}>
-      <Text style={s.bonusLabel}>{weaponBonusStatText(language,roll.stat)}</Text><Text style={[s.bonusValue,s.innateValue]}>{profileBonusPercent(roll.percent)}</Text>
-     </View>)}</View>
-    </View>}
     {randomBonuses.length>0?<View style={s.statBlock}>
      <Text style={s.detailCaption}>{gt('BONUS STATS')}</Text>
      <View style={s.bonusPanel}>{randomBonuses.map(roll=><View key={roll.stat} style={s.bonusRow}>
@@ -124,12 +116,12 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
      </View>)}</View>
     </View>:null}
     {trait?<View style={s.statBlock}><Text style={s.detailCaption}>{gt('TRAIT')}</Text><Text style={s.gemLine}>{contentText(trait)}</Text></View>:null}
-    {snapshot||item?.type==='gear'||sockets.some(socket=>socket.id)||unknownGemIds.length>0?<View style={s.gemBlock}>
-     <View style={s.socketHeading}><Text style={s.detailCaption}>{gt('SOCKETS')}</Text>{selected.inspectionKnown&&selected.generation!==2&&!unknownGemIds.length?<Text style={s.detailSlot}>{sockets.filter(socket=>socket.id).length}/2</Text>:null}</View>
+    {item?.type==='gear'||sockets.some(socket=>socket.id)||unknownGemIds.length>0?<View style={s.gemBlock}>
+     <View style={s.socketHeading}><Text style={s.detailCaption}>{gt('SOCKETS')}</Text>{selected.inspectionKnown&&!unknownGemIds.length?<Text style={s.detailSlot}>{sockets.filter(socket=>socket.id).length}/2</Text>:null}</View>
      {sockets.map(socket=><View key={socket.kind} style={s.socketRow}>
       {socket.id&&hasGemArtworkV1(socket.id)?<GemArtwork itemId={socket.id} size={34} framed={false}/>:<View style={s.emptySocket}><Text style={s.detailSlot}>◇</Text></View>}
       <View style={s.flex}><Text style={s.detailSlot}>{profileT(language,socket.kind==='stat'?'Stat gem':'Effect gem')}</Text>
-       <Text style={s.gemLine}>{socket.id?localizedItemName(language,socket.id):profileT(language,selected.inspectionKnown&&selected.generation!==2&&!unknownGemIds.length?'Empty':'Unavailable')}</Text>
+       <Text style={s.gemLine}>{socket.id?localizedItemName(language,socket.id):profileT(language,selected.inspectionKnown&&!unknownGemIds.length?'Empty':'Unavailable')}</Text>
        {socket.detail?<Text style={s.bonusValue}>{contentText(socket.detail)}</Text>:null}</View>
      </View>)}
      {unknownGemIds.map(id=><Text key={id} style={s.gemLine}>{byItemId.has(id)?localizedItemName(language,id):id.replace(/_/g,' ')}</Text>)}
@@ -173,7 +165,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  bonusRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,minHeight:24},
  bonusLabel:{flex:1,minWidth:0,fontSize:12,color:C.text,fontWeight:'700'},
  bonusValue:{fontSize:12,color:C.good,fontWeight:'900',fontVariant:['tabular-nums']},
- innatePanel:{borderColor:C.accent},innateValue:{color:C.accent},socketHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
+ socketHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  socketRow:{flexDirection:'row',alignItems:'center',gap:9,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
  emptySocket:{width:34,height:34,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm},
  statRow:{flexDirection:'row',flexWrap:'wrap',gap:6},

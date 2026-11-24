@@ -1583,6 +1583,7 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
 if(process.env.EQ2_V21_MULTISLOT_PATH){
  const rows:unknown[]=[];
  const v22Rows:unknown[]=[];
+ const v23Rows:unknown[]=[];
  const cache=new Map<string,ReturnType<typeof makeV21Loadout>>();
  const qa=(classId:ClassIdV2,specIndex:0|1,tier:1|2|3|4,level:number)=>{
   const key=[classId,specIndex,tier,level].join(':');
@@ -1645,6 +1646,26 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
          extraHpDamage:activations.reduce((n,e)=>n+(e.amount??0),0)});
        }
       }
+      if(process.env.EQ2_V23_CHARGE_PATH&&classId==='RAVAGER'&&(profile.region==='asterfall'||profile.region==='frostmarch')){
+       const idsList:readonly (readonly Eq2PrivateHitIdV22[])[]=profile.region==='asterfall'?
+        [['eq2_dungeon_rootbound_t2_thornstrider:4']]:
+        [['eq2_t5_avalanche:4'],['eq2_combo_t5_glacier_talons:2'],['eq2_t5_avalanche:4','eq2_combo_t5_glacier_talons:2']];
+       for(const ids of idsList){
+        const token=issueEq2PrivateHitQaV22(baselineInput,compiled.actor.id,ids,d=>/^[0-9a-f]{64}$/.test(d));
+        const runCandidate=()=>simulateCombat(baselineInput,issueEnemyV2EngineAuthority(scope,baselineInput,
+         (_s,d)=>/^[0-9a-f]{64}$/.test(d)),undefined,undefined,token);
+        const changed=runCandidate();
+        assert.deepEqual(changed,runCandidate(),'V23 charge state must reset on replay');
+        const earned=changed.events.filter(e=>e.type==='equipment_trait_trigger'&&e.detail==='private_qa_charge_earned');
+        const consumed=changed.events.filter(e=>e.type==='equipment_trait_trigger'&&e.detail==='private_qa_current_hit_only');
+        const perId=ids.map(id=>({id,earned:earned.filter(e=>e.abilityId==='V2_QA_CHARGE:'+id).length,
+         consumed:consumed.filter(e=>e.abilityId?.slice('V2_QA_HIT:'.length).split('+').includes(id)).length}));
+        assert.ok(perId.every(x=>x.earned>=x.consumed));
+        assert.deepEqual(run(baselineInput),before,'V23 charge state cannot mutate the original fixture');
+        v23Rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,ids,equippedCopies:loadout.ids.length,
+         baseline:metrics(before),candidate:metrics(changed),perId,extraHpDamage:consumed.reduce((n,e)=>n+(e.amount??0),0)});
+       }
+      }
       rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,seed,targetTier:profile.forgeTier,
        targetLevel:profile.level,equippedCopies:loadout.ids.length,missing:loadout.missing,tiers:loadout.tiers,downgraded:loadout.downgraded,
        channel:effect.channel,pct:effect.pct,baseline:metrics(before),candidate:metrics(after)});
@@ -1660,6 +1681,11 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
   assert.equal(v22Rows.length,120);
   writeFileSync(process.env.EQ2_V22_CONDITIONAL_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_CURRENT_HIT_COUNTERFACTUAL',
    actualOwnedCandidateCopies:false,releaseApproved:false,rows:v22Rows}));
+ }
+ if(process.env.EQ2_V23_CHARGE_PATH){
+  assert.equal(v23Rows.length,96);
+  writeFileSync(process.env.EQ2_V23_CHARGE_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_ONE_USE_CHARGE_COUNTERFACTUAL',
+   actualOwnedCandidateCopies:false,releaseApproved:false,rows:v23Rows}));
  }
 }
 
@@ -1740,4 +1766,45 @@ if(process.env.EQ2_V21_PARTY_PATH){
  assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter],()=>false),/fixture_unverified/);
  assert.throws(()=>issueEq2PrivateHitQaV22(i,compiled.actor.id,[winter,'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER'],()=>true),/fixture_scope/);
  console.log('PASS: V22 private current-hit phase, HP threshold, physical scope, shared family, shield exclusion and exact-input token tests');
+}
+
+// V23 event-phase tests: exercise the exact engine receipt contract.
+{
+ const fixture=make('RAVAGER',0,'supported',4);
+ const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
+ const input:CombatInput={seed:'QA_V23_CHARGE_BOUNDARY',players:[compiled.actor],enemies:[boss]};
+ const follow='eq2_t5_avalanche:4' as const, talons='eq2_combo_t5_glacier_talons:2' as const, thorn='eq2_dungeon_rootbound_t2_thornstrider:4' as const;
+ const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,compiled.actor.id,ids,()=>true))!;
+ const hit=(now:number,abilityId='AUTHORED_SKILL',targetId=boss.id)=>({now,actorId:compiled.actor.id,targetId,abilityId,
+  originalClassAbility:abilityId!=='BASIC',direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100});
+ const r=runtime([follow,talons]);const event=hit(1000);
+ assert.deepEqual(r.afterDirectHit(event,100),[],'unpaired post receipt cannot generate charge');
+ assert.equal(r.beforeDirectHit(event).bonusPct,0);
+ assert.deepEqual(r.afterDirectHit(event,100),[follow,talons]);
+ assert.deepEqual(r.afterDirectHit(event,100),[],'duplicate post denied');
+ assert.equal(r.beforeDirectHit(hit(1000,'BASIC')).bonusPct,0,'same tick cannot consume');
+ assert.equal(r.beforeDirectHit({...hit(2000,'BASIC'),shield:100}).bonusPct,0);
+ assert.equal(r.beforeDirectHit(hit(2000)).bonusPct,0,'wrong ability does not consume');
+ const consume=hit(2001,'BASIC');
+ assert.equal(r.beforeDirectHit(consume).bonusPct,12);assert.equal(r.beforeDirectHit(consume).bonusPct,0);
+ assert.deepEqual(r.afterDirectHit(consume,112),[]);assert.equal(r.beforeDirectHit(hit(2002,'BASIC')).bonusPct,0);
+ const early=hit(3000);r.beforeDirectHit(early);assert.deepEqual(r.afterDirectHit(early,100),[]);
+ const expired=runtime([follow,talons]);const start=hit(1000);expired.beforeDirectHit(start);expired.afterDirectHit(start,100);
+ assert.equal(expired.beforeDirectHit(hit(6000,'BASIC')).bonusPct,6,'Talonstrike expires at 5 seconds; Follow-Through at 6');
+ assert.equal(expired.beforeDirectHit(hit(7000,'BASIC')).bonusPct,0);
+ const seq=runtime([thorn]);
+ const record=(e:ReturnType<typeof hit>)=>{seq.beforeDirectHit(e);return seq.afterDirectHit(e,100);};
+ assert.deepEqual(record(hit(1000)),[]);
+ seq.miss(compiled.actor.id,'AUTHORED_SKILL');
+ assert.deepEqual(record(hit(2000)),[]);
+ assert.deepEqual(record(hit(3000,'AUTHORED_SKILL','OTHER')),[]);
+ assert.deepEqual(record(hit(4000)),[]);
+ assert.deepEqual(record(hit(5000)),[thorn]);
+ assert.equal(seq.beforeDirectHit(hit(5000)).bonusPct,0);
+ assert.equal(seq.beforeDirectHit(hit(5100,'AUTHORED_SKILL','OTHER')).bonusPct,0);
+ assert.equal(seq.beforeDirectHit(hit(5200)).bonusPct,6);
+ assert.equal(seq.beforeDirectHit(hit(5300)).bonusPct,0);
+ const noLoss=runtime([follow]);const blocked=hit(1000);noLoss.beforeDirectHit(blocked);assert.deepEqual(noLoss.afterDirectHit(blocked,0),[]);
+ assert.equal(noLoss.beforeDirectHit(hit(2000,'BASIC')).bonusPct,0);
+ console.log('PASS: V23 one-use charge earning, expiry, same-tick exclusion, cooldown, target streak, missed-hit reset and duplicate receipt negatives');
 }

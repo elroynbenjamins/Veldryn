@@ -98,6 +98,8 @@ jobs:
         run: pnpm test:companions
       - name: Validate Account New Unlocks inbox and social notification efficiency
         run: node tests/account-unlock-inbox-ui.cjs && node tests/social-notification-efficiency.cjs
+      - name: Validate shared decorative motion lifecycle
+        run: node tests/shared-motion-efficiency.cjs
       - name: Validate compact Character Roster, eight-language copy and 800-skill UX
         run: pnpm test:character-roster
       - name: Validate single-row Skill Navigator and existing XP routes

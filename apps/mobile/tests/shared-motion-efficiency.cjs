@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const read=p=>fs.readFileSync('src/components/'+p,'utf8');
+const motion=read('anim/motion.ts'),theater=read('CombatTheaterModal.tsx'),name=read('PlayerStyledName.tsx'),art=read('GatheringToolArtwork.tsx');
+assert.match(motion,/generation===subscriptionGeneration&&!reduceEventSeen/);
+assert.match(motion,/if\(generation!==subscriptionGeneration\)return/);
+assert.match(motion,/function stop\(\)\{\s*subscriptionGeneration\+\+/);
+assert.match(motion,/active&&!reduceMotion\?subscribe:subscribeInactive/);
+assert.match(motion,/listeners.add\(listener\);start\(\)/);
+assert.match(theater,/useMotionEnabled\(reduceMotion,visible\)/);
+assert.match(theater,/if\(!animate\)return/);
+assert.match(theater,/loop.stop\(\);pulse.stopAnimation\(\)/);
+assert.match(theater,/useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false/);
+assert.match(theater,/const \[pulse\]=useState\(\(\)=>new Animated.Value\(0\)\)/);
+assert.match(name,/useMotionEnabled\(reduceMotion,normalized.mode==='gradient'/);
+assert.match(name,/const normalized=nameStyle\?\?DEFAULT_NAME_STYLE/);
+assert.match(art,/memo\(function GatheringToolArtwork/);
+console.log('PASS: shared motion lifecycle and static artwork render contracts');

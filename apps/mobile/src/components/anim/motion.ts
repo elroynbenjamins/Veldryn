@@ -14,31 +14,42 @@ const listeners=new Set<()=>void>();
 let appActive=AppState.currentState!=='background'&&AppState.currentState!=='inactive';
 let systemReduceMotion=false;
 let subscriptions:{remove():void}[]=[];
+let subscriptionGeneration=0;
 const emit=()=>{for(const listener of listeners)listener();};
 const setReduced=(value:boolean)=>{if(value!==systemReduceMotion){systemReduceMotion=value;emit();}};
 /** System listeners exist only while something is animating, and are released with the last subscriber. */
 function start(){
   if(subscriptions.length)return;
+  const generation=++subscriptionGeneration;
+  let reduceEventSeen=false;
   appActive=AppState.currentState!=='background'&&AppState.currentState!=='inactive';
   subscriptions=[
     AppState.addEventListener('change',status=>{
       const next=status==='active';
       if(next!==appActive){appActive=next;emit();}
     }),
-    AccessibilityInfo.addEventListener('reduceMotionChanged',setReduced),
+    AccessibilityInfo.addEventListener('reduceMotionChanged',value=>{
+      if(generation!==subscriptionGeneration)return;
+      reduceEventSeen=true;setReduced(value);
+    }),
   ];
-  void AccessibilityInfo.isReduceMotionEnabled().then(setReduced).catch(()=>{});
+  void AccessibilityInfo.isReduceMotionEnabled().then(value=>{
+    // A late initial read must not overwrite a newer OS event or a new subscription.
+    if(generation===subscriptionGeneration&&!reduceEventSeen)setReduced(value);
+  }).catch(()=>{});
 }
 function stop(){
+  subscriptionGeneration++;
   for(const subscription of subscriptions)subscription.remove();
   subscriptions=[];
 }
 function subscribe(listener:()=>void){
-  start();listeners.add(listener);
+  listeners.add(listener);start();
   return()=>{listeners.delete(listener);if(!listeners.size)stop();};
 }
 const snapshot=()=>(appActive?1:0)|(systemReduceMotion?2:0);
 const serverSnapshot=()=>1;
+const subscribeInactive=(_listener:()=>void)=>()=>{};
 
 /**
  * Loops must run on the native driver on devices. react-native-web has no native driver and
@@ -60,7 +71,7 @@ export function useAppActive():boolean{
 
 /** Whether decorative motion should run right now. */
 export function useMotionEnabled(reduceMotion=false,active=true):boolean{
-  const state=useSyncExternalStore(subscribe,snapshot,serverSnapshot);
+  const state=useSyncExternalStore(active&&!reduceMotion?subscribe:subscribeInactive,snapshot,serverSnapshot);
   return active&&!reduceMotion&&(state&1)===1&&(state&2)===0;
 }
 

@@ -1,11 +1,13 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Text,type StyleProp,type TextStyle} from 'react-native';
 import {playerNameCharacterColors,type PlayerNameStylePreference} from '../core/player-name-style';
-import {subscribeSharedTicker} from './anim/motion';
+import {subscribeSharedTicker,useMotionEnabled} from './anim/motion';
+
+const DEFAULT_NAME_STYLE:PlayerNameStylePreference={mode:'default',animation:'none'};
 
 export function PlayerStyledName({name,nameStyle,reduceMotion=false,style,numberOfLines=1}:{name:string;nameStyle?:PlayerNameStylePreference;reduceMotion?:boolean;style?:StyleProp<TextStyle>;numberOfLines?:number}){
- const normalized=nameStyle??{mode:'default',animation:'none'} as PlayerNameStylePreference;
- const animated=normalized.mode==='gradient'&&normalized.animation!=='none'&&!reduceMotion;
+ const normalized=nameStyle??DEFAULT_NAME_STYLE;
+ const animated=useMotionEnabled(reduceMotion,normalized.mode==='gradient'&&normalized.animation!=='none');
  const [phase,setPhase]=useState(0);
  useEffect(()=>{
   if(!animated){setPhase(0);return;}

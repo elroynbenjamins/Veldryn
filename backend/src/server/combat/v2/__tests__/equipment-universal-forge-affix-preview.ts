@@ -18,7 +18,7 @@ const rng=(seed:number)=>(max:number)=>{
  return seed%max;
 };
 const sourceCases=V2_SERVER_PIECES.filter(p=>
- p.tier>=1&&p.tier<=4&&(!p.classRestriction||p.slot==='weapon'));
+ p.tier>=1&&p.tier<=4);
 const byId=new Map(V2_SERVER_RECIPES.map(r=>[r.pieceId,r]));
 let snapshots=0,sourceVariants=0;
 const uniqueStats=new Set<string>();

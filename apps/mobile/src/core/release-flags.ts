@@ -30,3 +30,9 @@ export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
 
 /** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
 export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
+
+/** Animated profile collections are implemented for QA but stay hidden until binary art, public projection and native approval are complete. */
+export const PROFILE_ANIMATED_COSMETICS_RELEASED=false;
+
+/** Cosmetics catalog is authored but checkout/tab exposure stays hidden until commerce products, server grants, migration and native QA are approved. */
+export const PROFILE_COSMETICS_STORE_RELEASED=false;

@@ -74,7 +74,7 @@ export function gatheringPlan(){
   const find=x.id==='EQ2_RIVERSTONE'||x.id==='EQ2_THORNSTONE';
   return {id:x.id,node:x.node,skill:x.skill,level:x.level,seconds,xp,quantity:1,
     acquisition:find?'SECONDARY_FIND_ON_ELIGIBLE_EXISTING_ACTION':'DEDICATED_RESOURCE_ACTION',
-    effectiveChance:find?.10:1,expectedUnitsPerHour:3600/seconds*(find?.10:1),
+    effectiveChance:find ? 0.10 : 1,expectedUnitsPerHour:3600/seconds*(find ? 0.10 : 1),
     // A secondary find must NOT pay a second full action XP award.
     xpPerHour:find?null:xp*3600/seconds,secondaryFindExtraXp:find?0:null,
     requiresSkillOnlyTravel:true,sourceRegistered:false,...deny};

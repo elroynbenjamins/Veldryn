@@ -99,3 +99,21 @@ test('at least three accounts needed to satisfy both fixed tracks in four UTC we
   assert.equal(3 * windows * 2500 >= WINTER_HEARTH_GOALS.logs, true);
   assert.equal(3 * windows * 250 >= WINTER_HEARTH_GOALS.lights, true);
 });
+
+test('Frostfall cosmetic unlocks follow BOTH tracks and never replace previously earned cosmetics',()=>{
+ const ids=(logs,lights)=>winterHearthMilestoneStatus({logs,lights}).earnedCosmeticIds;
+ assert.deepEqual(ids(12500,1249),[]);
+ assert.deepEqual(ids(12500,1250),['background_frostfall_winter_aurora_2026']);
+ assert.deepEqual(ids(18750,1875),['background_frostfall_winter_aurora_2026','banner_frostfall_standard_2026']);
+ assert.deepEqual(ids(25000,2500),['background_frostfall_winter_aurora_2026','banner_frostfall_standard_2026','border_frostfall_frozen_majesty_2026','name_frostfall_aurora_2026']);
+ const q=quote({guildProgress:{logs:24999,lights:2500},quantity:1});
+ assert.deepEqual(q.newCosmeticIds,['border_frostfall_frozen_majesty_2026','name_frostfall_aurora_2026']);
+});
+test('another annual event uses its own collection and rejects duplicate cosmetic IDs',async()=>{
+ const {FROSTFALL_2026_GUILD_COSMETICS,guildEventCosmeticsAtMilestones}=await import('./guild-event-cosmetic-review.mjs');
+ const future={id:'background_heartbond_2027',kind:'background',milestone:50,eventId:'heartbond_2027'};
+ const catalog=[...FROSTFALL_2026_GUILD_COSMETICS,future];
+ assert.deepEqual(guildEventCosmeticsAtMilestones(catalog,'heartbond_2027',[25,50,75,100]),[future.id]);
+ assert.deepEqual(guildEventCosmeticsAtMilestones(catalog,'heartbond_2027',[25]),[]);
+ assert.throws(()=>guildEventCosmeticsAtMilestones([...catalog,future],'heartbond_2027',[50]),TypeError);
+});

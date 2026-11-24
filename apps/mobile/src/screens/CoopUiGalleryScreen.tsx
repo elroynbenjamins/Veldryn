@@ -44,7 +44,7 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
     <Text style={s.section}>Class Synchronization · 2.0 review</Text>
     <CoopSynchronizationPanel
       view={assertCoopSynchronizationPresentation({
-        activeCount:3,scalePercent:80,partyWide:true,personalCpDelta:0,
+        activeCount:3,scalePercent:80,partyWide:true,cappedStats:[],personalCpDelta:0,
         requiresProgression:false,canGateEntry:false,canFilterRecruitment:false,
         visibleOnRecruitmentBoard:false,canRankCandidates:false,
         links:[
@@ -63,6 +63,8 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
         scaledStrength:scale=>`${scale}% strength per link`,
         empty:'No active class links in this party.',
         note:'Does not change Combat Power, queue eligibility or matchmaking priority.',
+        combinedCap:'Combined stat cap',
+        capLine:(label,raw,effective)=>`${label}: ${raw} → ${effective}`,
       }}
     />
 

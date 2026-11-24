@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,type ComponentRef} from 'react';
 import {AppState,Image,ImageBackground,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameCommand} from '../core/game-commands';
 import type {GameState} from '../core/types';
@@ -51,7 +51,7 @@ export function EventScreen(props:Props){
 }
 function EventContent({state,onChange,onCommand,onOpenSeasonalExpedition,onOpenGuildEventBoss,onOpenEventActivity,authoritativeGuildPve=false,now}:Props&{now:number}){
  const language=useGameLanguage();
- const scroll=useRef<ScrollView>(null);
+ const scroll=useRef<ComponentRef<typeof ScrollView>>(null);
  const C=useGameTheme(),[tab,setTab]=useState<Tab>('Overview'),[notice,setNotice]=useState(''),[pendingAction,setPendingAction]=useState<string|null>(null),[tone,setTone]=useState<FeedbackTone>('success'),[guildBoss,setGuildBoss]=useState<GuildPveEncounter|null>(),[guildBossLoading,setGuildBossLoading]=useState(false),[guildBossError,setGuildBossError]=useState(false),busy=useRef(false);
  const event=eventLifecycle(state,now);
  const changeTab=(next:Tab)=>{setTab(next);scroll.current?.scrollTo({y:0,animated:false})};

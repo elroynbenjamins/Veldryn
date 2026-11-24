@@ -39,25 +39,34 @@ type DefensiveId=keyof typeof defensiveSpecs;
 type CurrentId=keyof typeof specs;
 type ChargeId=keyof typeof chargeSpecs;
 export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId;
-const isCurrent=(id:Eq2PrivateHitIdV22):id is CurrentId=>Object.hasOwn(specs,id);
-const isCharge=(id:Eq2PrivateHitIdV22):id is ChargeId=>Object.hasOwn(chargeSpecs,id);
-const isDefensive=(id:Eq2PrivateHitIdV22):id is DefensiveId=>Object.hasOwn(defensiveSpecs,id);
-const isTimed=(id:Eq2PrivateHitIdV22):id is TimedId=>Object.hasOwn(timedSpecs,id);
+const isCurrent=(id:unknown):id is CurrentId=>typeof id==='string'&&Object.hasOwn(specs,id);
+const isCharge=(id:unknown):id is ChargeId=>typeof id==='string'&&Object.hasOwn(chargeSpecs,id);
+const isDefensive=(id:unknown):id is DefensiveId=>typeof id==='string'&&Object.hasOwn(defensiveSpecs,id);
+const isTimed=(id:unknown):id is TimedId=>typeof id==='string'&&Object.hasOwn(timedSpecs,id);
 const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:timedSpecs[id as TimedId].family;
 type Scope={digest:string;actorId:string;ids:readonly Eq2PrivateHitIdV22[]};
 const issued=new WeakMap<object,Scope>();
 const fail=(x:string):never=>{throw Error('eq2_private_hit_v22_'+x);};
 export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:readonly Eq2PrivateHitIdV22[],verifyFixture:(digest:string)=>boolean):Eq2PrivateHitAuthorityV22{
- if(!Array.isArray(ids))fail('fixture_scope');
+ // Array.isArray narrows to any[] in TypeScript; revalidate every unknown
+ // element and retain a typed readonly copy before indexing any source table.
+ const supplied:unknown=ids;
+ if(!Array.isArray(supplied))return fail('fixture_scope');
+ const rawIds:readonly unknown[]=supplied;
+ const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id);
+ const exactIds=rawIds.filter(allowedId);
+ if(exactIds.length!==rawIds.length||exactIds.length<1||exactIds.length>4||
+    new Set(exactIds.map(family)).size!==exactIds.length)return fail('fixture_scope');
  const actor=input.players.find(x=>x.id===actorId);
- if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||!((actor.id.startsWith('QA_EQ2_RAVAGER_')&&ids.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||(actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&ids.every(id=>isDefensive(id)||isTimed(id)))||(actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&ids.every(id=>id==='eq2_combo_t5_runeforge_link:2')))||
- input.players.length!==1||input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined||
- !Array.isArray(ids)||ids.length<1||ids.length>4||ids.some(id=>!isCurrent(id)&&!isCharge(id)&&!isDefensive(id)&&!isTimed(id))||
- new Set(ids.map(family)).size!==ids.length)fail('fixture_scope');
+ if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||
+ !((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||
+ (actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&exactIds.every(id=>isDefensive(id)||isTimed(id)))||
+ (actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&exactIds.every(id=>id==='eq2_combo_t5_runeforge_link:2')))||
+ input.players.length!==1||input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined)return fail('fixture_scope');
  const digest=enemyV2SnapshotDigest(input);
  if(typeof verifyFixture!=='function'||verifyFixture(digest)!==true)fail('fixture_unverified');
  const token=Object.freeze({[brand]:true}) as Eq2PrivateHitAuthorityV22;
- issued.set(token,{digest,actorId,ids:Object.freeze([...ids])});
+ issued.set(token,{digest,actorId,ids:Object.freeze(exactIds)});
  return token;
 }
 export interface Eq2PrivateHitEventV22{

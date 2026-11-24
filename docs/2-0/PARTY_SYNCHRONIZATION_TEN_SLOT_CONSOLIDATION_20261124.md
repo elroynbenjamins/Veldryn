@@ -100,3 +100,10 @@ Candidate-specific Synchronization remains forbidden from recruitment candidate 
 
 ### Identity binding hardening
 The persisted four-player wrapper no longer relies on array ordering for builds, Equipment runtime or exact-copy trait receipt ports. Builds/gear are joined by actor ID and trait receipt ports by verified character ID. Regression coverage shuffles all three input arrays and requires an identical deterministic encounter result.
+
+
+## Compact mobile polish and independent catalogue verification
+- Independent enumeration of the current 18-edge catalogue confirms strict dungeon counts 10/19/7 for 2/3/4 links and a class-level average nominal budget spread of approximately 0.05556 (2.30000–2.35556). Flexible four-class multiset counts for 0/1/2/3/4/5/6 links are 78/173/133/78/28/5/0. Six links are a theoretical maximum reserved for future catalogues, not reachable today. The only capped composition remains the previously documented 10.4% to 10.0% healing-received case.
+- Gallery-only compact panel now shows link names, current strength and up to three combined effective bonus rows by default. Accessible expansion shows all effective totals and per-link detail; cap explanations remain visible even when collapsed. Empty state has no misleading full-strength bonus. No live lobby/recruitment mount, no release change.
+- Presentation validation rejects duplicate links/stats/caps, invalid numeric basis points, mismatched cap totals, inconsistent value kinds, and invalid empty-state scale. Aggregation replaces the raw combined value with its capped value exactly once. These derived values are display-only and must never authorize combat or modify CP.
+- Isolated strict TypeScript compile and representative presentation assertions passed on a local copy of the pure mobile contract. Full mobile/React Native build, gallery visual inspection, real persistence and combat matrices still require CI and review. No percentages or scale values changed.

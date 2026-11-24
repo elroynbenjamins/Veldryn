@@ -110,6 +110,22 @@ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,enemyKit:fixtures[0].trustedKit},true),
  /invalid_stored_kit/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,enemyKit:undefined},true),/party_enemy_kit_required/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,traitPorts:traitPorts.map((port,i)=>i?port:
+  {...port,verifyPersisted:()=>false})},true),/party_persisted_ledger_not_verified/);
+let verificationCount=0;
+const once=simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,verifyPersisted:(binding,rows,digest)=>{
+  verificationCount++;
+  return party.verifyPersisted(binding,rows,digest);
+ }},true);
+assert.equal(verificationCount,1);
+assert.deepEqual(once,first);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,enemyKit:{...party.enemyKit,
+  verifyPersisted:()=>false}},true),/unverified_party_persisted_scope/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,verifyPersisted:()=>false},true),
  /party_persisted_ledger_not_verified|unverified_scope/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(

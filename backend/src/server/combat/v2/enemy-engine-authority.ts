@@ -196,9 +196,16 @@ export function issuePersistedPartyEnemyV2EngineAuthority(
    invalid('party_persistent_state_mismatch');
  }
  const inputDigest=fingerprint(input);
+ const bindingDigest=enemyV2SnapshotDigest(binding);
+ const enemyIdsDigest=enemyV2SnapshotDigest(enemyIds);
+ const bossIdsDigest=enemyV2SnapshotDigest(bossIds);
  let accepted=false;
  try{accepted=verifyPersisted(binding,inputDigest)===true;}catch{accepted=false;}
- if(!accepted)invalid('unverified_party_persisted_scope');
+ if(!accepted||fingerprint(input)!==inputDigest||
+    enemyV2SnapshotDigest(binding)!==bindingDigest||
+    enemyV2SnapshotDigest(enemyIds)!==enemyIdsDigest||
+    enemyV2SnapshotDigest(bossIds)!==bossIdsDigest)
+  invalid('unverified_party_persisted_scope');
  const token=Object.freeze({[brand]:true}) as EnemyV2EngineAuthority;
  issued.set(token,Object.freeze({
   encounterId:binding.runId+':'+binding.nodeId,

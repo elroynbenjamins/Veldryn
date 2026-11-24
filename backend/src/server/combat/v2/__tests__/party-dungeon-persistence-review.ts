@@ -216,7 +216,8 @@ async function reviewRecovery(){
 }
 async function reviewReservation(){
  const snapshot=preparePartyRecoverySnapshotV2({...args,stateRevision:args.stateRevision+1});
- const identity={runId:args.runId,accountId:roster[0].accountId,characterId:roster[0].characterId};
+ const identity={runId:args.runId,accountId:roster[0].accountId,characterId:roster[0].characterId,
+  nodeId:args.nodeId,encounterRevision:args.encounterRevision,snapshotDigest:snapshot.snapshotDigest};
  const initial:CoopRuntimeState={runId:args.runId,mode:'live',phase:'resolving_node',
   currentNodeId:args.nodeId,stateVersion:args.stateRevision,clearedPreBossCount:0,
   privateState:{combatV2PendingEncounterReview:snapshot,other:'preserve'},
@@ -265,6 +266,30 @@ async function reviewReservation(){
   load:async()=>initial,
   compareAndSet:async()=>({runId:identity.runId,stateVersion:99,eventCursor:2}),
  },identity,true),/invalid_commit_receipt/);
- console.log('PASS: private staged encounter reservation review, mock CAS race and idempotent retry');
+ // A delayed request from the previous room may not reserve or recover the
+ // next room, even for the same authenticated participant.
+ const next=preparePartyRecoverySnapshotV2({...args,nodeId:'NEXT_NODE',
+  encounterRevision:args.encounterRevision+1,stateRevision:args.stateRevision+3});
+ const nextPending:CoopRuntimeState={...initial,currentNodeId:'NEXT_NODE',
+  stateVersion:args.stateRevision+2,privateState:{combatV2PendingEncounterReview:next}};
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>nextPending,
+ },identity,true),/encounter_intent_mismatch/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>({...nextPending,stateVersion:nextPending.stateVersion+1,
+   privateState:{combatV2EncounterReview:next}}),
+ },identity,true),/encounter_intent_mismatch/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>initial,
+ },{...identity,snapshotDigest:'f'.repeat(64)},true),/encounter_intent_mismatch/);
+ await assert.rejects(()=>reserveStagedPartyEncounterV2({...repository,
+  load:async()=>initial,
+ },{...identity,encounterRevision:identity.encounterRevision+1},true),/encounter_intent_mismatch/);
+ const priorReads=reads;
+ await assert.rejects(()=>reserveStagedPartyEncounterV2(repository,
+  {...identity,snapshotDigest:'invalid'},true),/invalid_encounter_intent/);
+ assert.equal(reads,priorReads);
+ assert.equal(writes,2);
+ console.log('PASS: private staged encounter reservation review, mock CAS race and intent-bound retry');
 }
 void reviewRecovery().then(reviewReservation);

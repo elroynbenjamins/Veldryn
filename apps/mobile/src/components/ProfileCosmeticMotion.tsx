@@ -48,6 +48,7 @@ export function ProfileSceneEffect({art,active,reduceMotion=false}:{art:Cosmetic
   return {i,source:t.source,width:samples[0].width,height:samples[0].height,opacity:interp('opacity'),x:interp('x'),y:interp('y'),rotation};
  }),[art,clock,size.width,size.height]);
  if(!enabled)return reduceMotion&&active?<View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{overflow:'hidden'}]}><Image source={art.staticEffect} fadeDuration={0} resizeMode="stretch" style={[StyleSheet.absoluteFill,{width:'100%',height:'100%',opacity:.55}]}/></View>:null;
+ if(!active)return null;
  return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{overflow:'hidden'}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
  {size.width>0&&size.height>0&&items.map(p=><Animated.Image key={p.i} source={p.source} fadeDuration={0} resizeMode="contain" style={{position:'absolute',left:0,top:0,width:p.width,height:p.height,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}/>)}
  </View>;
@@ -63,6 +64,7 @@ function ParticleShape({kind,accent,soft,size}:{kind:ProfileParticleKind;accent:
 }
 export function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0}),clock=useClock(active&&!reduceMotion,12000);
+ if(!active)return null;
  return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
   {size.width>0&&runtime.glows.map((g,i)=>{const opacity=reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))});const d=Math.min(g.size,Math.max(4,size.width*.035));return <Animated.View key={i} style={{position:'absolute',left:g.x*size.width-d/2,top:g.y*size.height-d/2,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
  </View>;

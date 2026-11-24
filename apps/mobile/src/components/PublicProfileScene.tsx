@@ -47,7 +47,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  return <View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
-   <ProfileBorderBackdrop borderId={review?undefined:profile.borderId} source={border} existingInset={8}>
+   <ProfileBorderBackdrop borderId={review?reviewBorderId:profile.borderId} source={border} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
    {effectArt?<ProfileSceneEffect art={effectArt} active={review?.active??true} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={review?.active??true} reduceMotion={reduceMotion}/>:null}

@@ -13,7 +13,7 @@ import {regularDungeonTierRequiredLevel,regularDungeonTierRequiredPower} from '.
 import {REGIONAL_DUNGEON_BALANCE_VERSION,regionalPowerMultipliers,regionalCombatPowerBoost} from './regional-power-balance';
 import {preparedCoopCombatants} from './potion-modifiers';
 import {scaleSocialEchoToHost} from './social-echo-balance';
-import {dungeonEncounterDepthMultipliers,DUNGEON_BOSS_ENDURANCE_VERSION} from './dungeon-depth-scaling';
+import {dungeonEncounterDepthMultipliers,dungeonBossTimeLimitMs,DUNGEON_BOSS_ENDURANCE_VERSION} from './dungeon-depth-scaling';
 import {roomBoonOffers,applyRoomBoon,type RoomBoonId} from './room-boon-choices';
 import {roomArtifactOffers,applyRoomArtifact} from './room-artifact-choices';
 import type {DungeonArtifactId} from './dungeon-artifacts';
@@ -105,6 +105,7 @@ export class QModeService{
   const encounterDepth=run.enduranceRouteVersion===1&&selected.kind==='boss'
    ?Math.max(1,selected.depth-DUNGEON_ENDURANCE.checkpointInterval):selected.depth;
   const depth=dungeonEncounterDepthMultipliers(encounterDepth,run.enduranceRouteVersion===1,selected.kind==='boss',run.bossEnduranceVersion);
+  const maxDurationMs=dungeonBossTimeLimitMs(selected.depth,run.enduranceRouteVersion===1,selected.kind==='boss',run.bossEnduranceVersion);
   // Solar's repeated 5,200-HP Ward disproportionately blocks the Hexweaver/
   // Knife Dancer pairing despite verified entry CP. Slow only that ability on
   // newly versioned regional Tier I runs; keep opening Ward, boss phases and all
@@ -113,7 +114,7 @@ export class QModeService{
   const bossTuning=run.regionalBalanceVersion===1&&run.tier===1&&selected.contentId==='BOSS_EXP_SOLAR'
    ?{profileId:'sunscar-regional-solar-ward-cadence-v1',abilityCooldownMultipliers:{BOSS_EXP_SOLAR_WARD:3}}
    :undefined;
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,campfireBalanceVersion:run.graph.generatorVersion?.endsWith('-endurance-v2')?2:undefined,deferArtifactChoice:run.enduranceRouteVersion===1&&run.qmodePressureVersion===1,bossTuning,safetyAiPlayerIds:input.safetyAiPlayerIds});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:isCombat?preparedCoopCombatants(run.players,run.persistentState.preparedAlchemyPotionIdsByActor):run.players,state:run.persistentState,tier:run.tierScalingVersion===2?run.tier:undefined,enemyAttackMultiplier:(run.qmodePressureVersion===1?1.005:1)*(regional?.attack??1)*depth.attack,enemyHpMultiplier:(regional?.hp??1)*depth.hp,enemyDefenseMultiplier:(regional?.defense??1)*depth.defense,enemyLevel:regional?.enemyLevel,enemyDamageProfile:run.qmodePressureVersion===1?'qmode-v1':undefined,enduranceLootVersion:run.enduranceRouteVersion,campfireBalanceVersion:run.graph.generatorVersion?.endsWith('-endurance-v2')?2:undefined,deferArtifactChoice:run.enduranceRouteVersion===1&&run.qmodePressureVersion===1,bossTuning,maxDurationMs,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';

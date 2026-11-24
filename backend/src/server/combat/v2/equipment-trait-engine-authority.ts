@@ -44,7 +44,7 @@ const scoped=new WeakMap<object,FrozenScope>();
 const validId=(x:unknown):x is string=>typeof x==='string'&&x.length>0&&x.length<=128&&
  /^[A-Za-z0-9:_-]+$/.test(x);
 const validPct=(x:unknown,max:number)=>typeof x==='number'&&Number.isFinite(x)&&x>=0&&x<=max;
-const fail=(why:string):never=>{throw Error('combat_v2_equipment_trait_'+why);};
+function fail(why:string):never{throw Error('combat_v2_equipment_trait_'+why);}
 const allowed=new Set<string>(EXECUTABLE_EQUIPMENT_TRAITS_V2);
 const frozen=<T>(x:T):T=>JSON.parse(JSON.stringify(x)) as T;
 function validate(source:VerifiedV2EquipmentEffectSource){

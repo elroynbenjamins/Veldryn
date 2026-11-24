@@ -348,6 +348,9 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   const proof=verifyPersistedPartyEnemyKitsV2(input.enemies,partyEnemySnapshot);
   if(partyEnemySnapshot.seed!==input.seed)
    throw Error('combat_v2_party_enemy_kit_seed_mismatch');
+  if(partyEnemySnapshot.encounterId!==party.runId+':'+party.nodeId||
+     partyEnemySnapshot.revision!==party.encounterRevision)
+   throw Error('combat_v2_party_enemy_kit_revision_mismatch');
   finalEnemies=proof.enemies;
   enemyMechanicLabels=proof.preview.flatMap(p=>[
    ...p.abilityNames.map(name=>p.enemyId+': '+name),

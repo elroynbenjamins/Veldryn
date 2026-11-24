@@ -75,6 +75,23 @@ const carried=Object.fromEntries(actors.map(a=>[a.id,{
  hp:a.stats.maxHp-100,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0,
 } satisfies PersistentActorState]));
 const persistedInput={...input,initialPlayerState:carried};
+for(const invalidState of [
+ {hp:actors[0].stats.maxHp+1,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:1,downed:true,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:0,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:100,downed:false,cooldownRemainingMs:{FOREIGN_SKILL:100},basicAttackRemainingMs:0},
+ {hp:100,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:-1},
+]){
+ assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,
+  initialPlayerState:{...carried,ACTOR_0:invalidState}}}),/invalid_persistent_state/);
+}
+assert.throws(()=>reviewPartyV2RunBinding({...args,
+ readyCheck:{...check,roster:roster.map((r,i)=>i?r:{...r,loadoutRevision:0})},
+ frozenRoster:frozen.map((r,i)=>i?r:{...r,revision:0})}),/roster_snapshot_mismatch/);
+assert.throws(()=>reviewPartyV2RunBinding({...args,
+ readyCheck:{...check,roster:roster.map((r,i)=>i?r:{...r,loadoutSnapshotHash:'invalid'})},
+ frozenRoster:frozen.map((r,i)=>i?r:{...r,snapshotHash:'invalid'})}),/roster_snapshot_mismatch/);
+
 const persisted=reviewPartyV2RunBinding({...args,combatInput:persistedInput});
 assert.notEqual(persisted.binding.combatInputDigest,first.binding.combatInputDigest,
  'persisted HP/cooldown state must be part of the immutable encounter digest');

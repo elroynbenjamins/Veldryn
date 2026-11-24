@@ -47,6 +47,6 @@ test('profession access audit distinguishes self-production gaps from combat req
  for(const r of a){deny(r);assert.equal(r.craftCombatLevelRequired,0);assert.equal(r.secondaryProfessionRequired,false);}
  assert(a.some(x=>x.tier===3&&x.laterProcessingRequirements.some(g=>g.id==='SUNSTONE_INGOT')));
  assert(a.some(x=>x.tier===5&&x.laterGatheringRequirements.some(g=>g.id==='WINTERMINT')));
- const s=summary();deny(s);assert.equal(s.routes,928);assert.equal(s.processingReferences,29);
+ const s=summary();deny(s);assert.equal(s.routes,928);assert.equal(s.processingReferences,29);assert.equal(s.materialCount,75);assert.deepEqual(s.sourceGapIds,[]);assert.deepEqual(s.dormant,['EQ2_VERDANT_ESSENCE']);assert(s.byTier.every(x=>x.unknownCraftGate===0));
  console.log('EQ2_UNIFIED_V12 '+JSON.stringify(s));
 });

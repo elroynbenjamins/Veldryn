@@ -17,6 +17,8 @@ import {reviewObservedCounterOpportunityV2,
  type ObservedCounterAttemptV2} from '../ability-counterplay-opportunity-review';
 import {simulateUnifiedEquipmentCombatV2} from '../unified-equipment-encounter';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
+import {observeRoleCalibrationV2} from '../role-power-calibration-review';
+import {CLASS_ROLES_V2} from '../build-contract';
 
 const scenarios:AbilityCounterplaySampleV2[]=[];
 const opportunities:ObservedCounterAttemptV2[]=[];
@@ -24,6 +26,7 @@ const strategies=['generic','targeted','alternative'] as const;
 const evidenceByScenario=new Map<string,string>();
 let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
+const traitSensitivity:unknown[]=[];
 const number=(n:number)=>Math.round(n*100)/100;
 function fraction(hp:number,maxHp:number){
  return number(Math.max(0,Math.min(100,(hp/maxHp)*100)));
@@ -130,6 +133,28 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       e.type==='damage'&&e.targetId===actorId&&e.actorId===enemyId:
      e.type==='combat_start'&&enemy.definition.stats.maxHp>0).length;
     bossOpportunityEvents+=exposure;
+    if(strategy==='generic'){
+     // Exact same compiled gear, authored kit, seed and skill variants.
+     // Only the signed trait/three new affix sidecar authority is omitted.
+     // This measures their combined marginal effect, not a per-trait price.
+     const without=simulateUnifiedEquipmentCombatV2(
+      input,[build],[x.runtime],true,x.trustedKit);
+     assert.deepEqual(without.equipmentEvidence,first.equipmentEvidence);
+     assert.deepEqual(without.combat.players.map(p=>p.definition.stats),
+      first.combat.players.map(p=>p.definition.stats));
+     assert.deepEqual(without.combat.enemies.map(e=>e.definition),
+      first.combat.enemies.map(e=>e.definition));
+     assert.ok(!without.combat.events.some(e=>e.type==='equipment_trait_trigger'));
+     const identity={caseId:scenarioId,bossId:boss.id,classId,
+      specializationId:spec.id,actorId};
+     const off=observeRoleCalibrationV2(without.combat,identity);
+     const on=observeRoleCalibrationV2(first.combat,identity);
+     traitSensitivity.push({scenarioId,classId,role:CLASS_ROLES_V2[classId],
+      specializationId:spec.id,bossId:boss.id,off:off.values,on:on.values,
+      offVictory:off.victory,onVictory:on.victory,
+      offDowned:off.downed,onDowned:on.downed,
+      traitEvents:events.filter(e=>e.type==='equipment_trait_trigger').length});
+    }
     const equivalentStat=first.equipmentEvidence[0].statStages.afterAffixes;
     const provisionalIndex=Math.max(1,Math.round(
      (Object.keys(equivalentStat) as (keyof CombatStats)[])
@@ -187,3 +212,10 @@ console.log('FULL GEAR counterplay review flags (not final balance): '+JSON.stri
   r[f.type]=(r[f.type]??0)+1;return r;
  },{})));
 console.log('FULL GEAR observed counterplay reasons: '+JSON.stringify(opportunity.counts));
+
+assert.equal(traitSensitivity.length,108);
+console.log('EXACT_COPY_TRAIT_AND_NEW_AFFIX_MARGINAL_REVIEW_NOT_CP '+JSON.stringify({
+ pairs:traitSensitivity.length,rows:traitSensitivity,
+ scope:'SOLO_SAME_BUILD_SIDE_CAR_OFF_ON_SYNTHETIC_GEAR',
+ independentPerTraitWeight:false,companionWeightApproved:false,cpApproved:false,releaseEnabled:false,
+}));

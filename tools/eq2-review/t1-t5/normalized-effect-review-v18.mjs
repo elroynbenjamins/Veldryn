@@ -78,7 +78,7 @@ export function reviewLedger(){
    return {accepted:true,immediate:c.consumeOn?(c.chargeOutputs?c.outputs:[]):c.outputs??[],charge:!!c.consumeOn,...deny};
   },
   consume(c,e){
-   if(!validEvent(e))return {accepted:false,...deny};
+   if(!validEvent(e)||e.trueDamage&&e.kind==='direct_nontrue_hp_loss')return {accepted:false,...deny};
    const k=cooldownKey(c,e),ch=charges.get(k);
    if(!ch||ch.triggerReceipt===e.id||e.at>=ch.expiresAt||e.at<ch.expiresAt-c.windowSeconds*1000)return {accepted:false,...deny};
    if(ch.kind==='direct_ability_hit_or_effective_heal'){
@@ -87,7 +87,9 @@ export function reviewLedger(){
    if(ch.kind==='effective_direct_heal_same_target'&&e.effectiveHeal!==true)return {accepted:false,...deny};
    if(ch.kind==='direct_ability_hit_or_effective_heal'&&e.kind==='effective_direct_class_heal'&&e.effectiveHeal!==true)return {accepted:false,...deny};
    if(ch.kind.includes('same_target')&&(!ch.target||ch.target!==e.target))return {accepted:false,...deny};
-   charges.delete(k);return {accepted:true,outputs:ch.outputs,...deny};
+   const receipt=k+':'+e.id;
+   if(seen.has(receipt))return {accepted:false,...deny};
+   seen.add(receipt);charges.delete(k);return {accepted:true,outputs:ch.outputs,...deny};
   }
  };
 }

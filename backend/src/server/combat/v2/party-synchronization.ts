@@ -22,6 +22,11 @@ export type SyncStatV2=
  'armor_penetration_pct'|'haste_pct'|'evasion_rating_pct'|
  'damage_vs_shielded_pct'|'low_hp_damage_pct'|'interrupt_recovery_pct'|'penetration_pct';
 type Bonus=readonly [SyncStatV2,number]; // 100 bps = 1%; pp keys are absolute points.
+export type SyncValueKindV2='percent'|'percentage_points';
+export function partySynchronizationStatValueKindV2(stat:SyncStatV2):SyncValueKindV2{
+ // Penetration is additive to the bypass fraction in the combat engine.
+ return stat==='crit_chance_pp'||stat==='armor_penetration_pct'||stat==='penetration_pct'?'percentage_points':'percent';
+}
 interface Pair {
  readonly id:string;readonly name:string;
  readonly classes:readonly [ClassIdV2,ClassIdV2];
@@ -49,10 +54,20 @@ const CATALOG:readonly Pair[]=[
  pair('ruinous_assault','Ruinous Assault','RAVAGER','HEXWEAVER',['penetration_pct',400],['damage_vs_debuffed_pct',300]),
  pair('phantom_curse','Phantom Curse','HEXWEAVER','KNIFE_DANCER',['dot_strength_pct',400],['haste_pct',300]),
 ];
-const SCALES=[0,100,100,80,65,55,50] as const;
+export const PARTY_SYNCHRONIZATION_SCALES_V2=[0,100,100,80,65,55,50] as const;
+export function partySynchronizationScalePercentV2(activeLinks:number):number{
+ if(!Number.isInteger(activeLinks)||activeLinks<0||activeLinks>=PARTY_SYNCHRONIZATION_SCALES_V2.length)
+  throw Error('party_sync_invalid_pair_count');
+ return PARTY_SYNCHRONIZATION_SCALES_V2[activeLinks];
+}
+export function partySynchronizationEquivalentLinkBudgetV2(activeLinks:number):number{
+ return activeLinks*partySynchronizationScalePercentV2(activeLinks)/100;
+}
 // Provisional Synchronization-only ceilings; final global stat caps remain a
 // separate combat engine responsibility. No extra flat lifesteal is granted.
-const cap=(stat:SyncStatV2)=>stat==='crit_chance_pp'?400:stat==='damage_reduction_pct'?600:1000;
+export function partySynchronizationCapBpsV2(stat:SyncStatV2):number{
+ return stat==='crit_chance_pp'?400:stat==='damage_reduction_pct'?600:1000;
+}
 const MODES:readonly SyncModeV2[]=['dungeon','party_contract','party_event','guild_pve','solo','individual_world_boss'];
 export interface SyncPlanV2 {
  readonly ruleset:typeof PARTY_SYNCHRONIZATION_RULESET_V2;
@@ -63,6 +78,9 @@ export interface SyncPlanV2 {
  readonly scalePercent:number;
  readonly active:readonly {id:string;name:string;classes:readonly ClassIdV2[];bonuses:readonly Bonus[]}[];
  readonly totalsBps:Readonly<Partial<Record<SyncStatV2,number>>>;
+ readonly cappedStats:readonly {
+  stat:SyncStatV2;rawBps:number;cappedBps:number;discardedBps:number;
+ }[];
 }
 export function listPartySynchronizationsV2():readonly Pair[]{
  return CATALOG.map(p=>({...p,classes:[...p.classes],bonuses:p.bonuses.map(([k,v])=>[k,v])}));
@@ -81,18 +99,26 @@ export function planPartySynchronizationV2(mode:SyncModeV2,roster:readonly SyncP
   throw Error('party_sync_invalid_solo_roster');
  const eligible=mode!=='solo'&&mode!=='individual_world_boss'&&roster.length>=2;
  const matches=eligible?CATALOG.filter(p=>p.classes.every(c=>classes.has(c))):[];
- const scalePercent=SCALES[matches.length];
- if(scalePercent===undefined)throw Error('party_sync_invalid_pair_count');
+ const scalePercent=partySynchronizationScalePercentV2(matches.length);
  const totalsBps:Partial<Record<SyncStatV2,number>>={};
+ const rawTotalsBps:Partial<Record<SyncStatV2,number>>={};
  const active=matches.map(p=>{
   const bonuses:Bonus[]=p.bonuses.map(([stat,bps])=>{
    const scaled=Math.floor(bps*scalePercent/100);
-   totalsBps[stat]=Math.min(cap(stat),(totalsBps[stat]??0)+scaled);
+   rawTotalsBps[stat]=(rawTotalsBps[stat]??0)+scaled;
+   totalsBps[stat]=Math.min(partySynchronizationCapBpsV2(stat),rawTotalsBps[stat]!);
    return [stat,scaled];
   });
   return {id:p.id,name:p.name,classes:[...p.classes],bonuses};
  });
+ const cappedStats=(Object.entries(rawTotalsBps) as [SyncStatV2,number][])
+  .filter(([stat,rawBps])=>rawBps>partySynchronizationCapBpsV2(stat))
+  .sort(([a],[b])=>a.localeCompare(b))
+  .map(([stat,rawBps])=>{
+   const cappedBps=partySynchronizationCapBpsV2(stat);
+   return {stat,rawBps,cappedBps,discardedBps:rawBps-cappedBps};
+  });
  return {ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,mode,releaseEnabled:false,
   canAuthorizeCombat:false,recipientIds:active.length?[...ids].sort():[],
-  scalePercent,active,totalsBps};
+  scalePercent,active,totalsBps,cappedStats};
 }

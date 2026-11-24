@@ -457,7 +457,7 @@ function sequenceDamageActionV2(actor:CombatantState,selected:AbilityDefinition,
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2, reviewAiPolicy:'tactical'|'authored-priority'='tactical'): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // The equipment trait runtime is activated solely by a scoped server-issued
@@ -470,6 +470,8 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
+  // Internal review argument only; never read from CombatInput or a client.
+  const tacticalAi=reviewAiPolicy!=='authored-priority';
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
   let runCapstone:(actor:CombatantState,kind:CapstoneTriggerV2,now:number,target?:CombatantState,ctx?:CapstoneContextV2)=>void=()=>{};
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
@@ -483,10 +485,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const bonusBps=Math.round(sync(actor,'resource_generation_pct')*10000);
       if(bonusBps>0&&actor.combatV2){
         const key='party_sync_resource_credit_bps';
-        actor.combatV2.procCounters[key]=(actor.combatV2.procCounters[key]??0)+bonusBps;
-        if(actor.combatV2.procCounters[key]>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
+        const credit=(actor.combatV2.procCounters[key]??0)+bonusBps;
+        // A whole bonus that cannot fit is lost, not banked for a later spend.
+        // Preserve only the fractional remainder. No capstone/reactive recursion.
+        actor.combatV2.procCounters[key]=credit%10000;
+        if(credit>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
           const before=actor.combatV2.stacks;
-          actor.combatV2.procCounters[key]-=10000;
           actor.combatV2.stacks++;
           events.push({atMs:now,type:'resource_gain',actorId:actor.definition.id,abilityId:id,
             resource:actor.combatV2.resource,resourceBefore:before,resourceAfter:actor.combatV2.stacks,
@@ -781,7 +785,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const direct=eventType==='heal',sourceMult=direct?gemHealingMultiplierV1(source,now):1,receivedMult=Math.max(0,1+modifier(target,'healing_received',now)); const v2HealBonus=direct?thresholdSupportMultiplier(source,target,abilityId,effect.healBelowHpPct,effect.healBonus):1;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
-      (1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct'))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
+      // Renewal and Restorative Bloom snapshot the originating boosted heal.
+      // Do not apply the same party-wide multipliers again on their ticks.
+      (eventType==='hot_tick'&&(abilityId==='GEM_RENEWAL'||abilityId==='V2_EQUIPMENT_TRAIT:restorative_bloom')
+        ?1:(1+sync(source,'healing_done_pct'))*(1+sync(target,'healing_received_pct')))); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
       if(!abilityId.startsWith('V2_'))runCapstone(source,'heal',now,target,{amount:actual,healedAlly:source!==target});
@@ -1004,12 +1011,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
 
     for(const actor of all){ if(!actor.alive)continue; const allies=actor.definition.team==='players'?players:enemies, foes=actor.definition.team==='players'?enemies:players;
-      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; const emergencyReplacement=ab&&!target?.alive&&emergencySupportRankV2(ab,actor,allies,foes)>0
+      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; const emergencyReplacement=tacticalAi&&ab&&!target?.alive&&emergencySupportRankV2(ab,actor,allies,foes)>0
         ?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:emergency_retarget`,ab)[0]:undefined;
         const resolvedTarget=target?.alive?target:emergencyReplacement;
-        if(ab&&resolvedTarget?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:resolvedTarget.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of (pureSingleHealV2(actor,ab)&&resolvedTarget.hp<resolvedTarget.definition.stats.maxHp&&
+        if(ab&&resolvedTarget?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:resolvedTarget.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of (tacticalAi&&pureSingleHealV2(actor,ab)&&resolvedTarget.hp<resolvedTarget.definition.stats.maxHp&&
           (hpPct(resolvedTarget)<CRITICAL_SUPPORT_HP_V2||!allies.some(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2))
-          ?[resolvedTarget]:supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx)))applyEffect(now,actor,t,fx,ab.id); }} }
+          ?[resolvedTarget]:tacticalAi?supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx):targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`)))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
       // A summoned V2 Thunder Totem must finish its 2/4/6s pulse train.
       // Otherwise base haste shortens its 6s cooldown to ~5.6s, AI
@@ -1017,11 +1024,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       // Manual/other source recasts still use the existing refresh-not-stack rule.
       const available=(a:AbilityDefinition)=>{
         if((actor.cooldownReadyAt[a.id]??0)>now||!conditionOk(a,actor,allies,foes))return false;
-        const healPlan=coordinatedHealV2(actor,a,allies,foes,now,mitigationConstant);
-        return !(actor.combatV2&&a.id.includes(':v2:')&&a.target==='interruptible_casting_enemy'&&
+        const healPlan=tacticalAi?coordinatedHealV2(actor,a,allies,foes,now,mitigationConstant):undefined;
+        return !(tacticalAi&&actor.combatV2&&a.id.includes(':v2:')&&a.target==='interruptible_casting_enemy'&&
           !foes.some(e=>e.alive&&e.casting&&e.definition.abilities.some(b=>b.id===e.casting!.abilityId&&b.interruptible)))&&
         !(healPlan&&!healPlan.target)&&
-        !redundantPureShieldV2(actor,a,allies,foes,now,mitigationConstant)&&
+        (!tacticalAi||!redundantPureShieldV2(actor,a,allies,foes,now,mitigationConstant))&&
         !(actor.combatV2?.activeTotem&&
           actor.definition.combatV2?.resource==='resonance'&&
           a.name==='Thunder Totem'&&a.id.includes(':v2:'));
@@ -1030,7 +1037,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       let ab=ordered.find(available);
       let emergencyRank=0;
       let predictiveTargets:CombatantState[]|undefined;
-      if(supportV2(actor)){
+      if(tacticalAi&&supportV2(actor)){
         const critical=allies.filter(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2);
         if(critical.length){
           // Already sorted by authored priority: ties preserve that order.
@@ -1061,17 +1068,17 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           }
         }
       }
-      if(tankV2(actor)){
+      if(tacticalAi&&tankV2(actor)){
         const decision=tankProtectionDecisionV2(actor,ordered,allies,foes,now,mitigationConstant);
         if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
       }
-      if(damageV2(actor)){
+      if(tacticalAi&&damageV2(actor)){
         const decision=damageTacticsV2(actor,ordered,allies,foes,now,mitigationConstant);
         if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
         else if(ab)ab=sequenceDamageActionV2(actor,ab,ordered,foes,now,available,sequenceHoldsV2);
       }
-      if(ab){ const coordinated=coordinatedHealV2(actor,ab,allies,foes,now,mitigationConstant);
-        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tankV2(actor)||damageV2(actor))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(ab){ const coordinated=tacticalAi?coordinatedHealV2(actor,ab,allies,foes,now,mitigationConstant):undefined;
+        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:tacticalAi?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab):targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tankV2(actor)||damageV2(actor))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?(tacticalAi?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`)):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }

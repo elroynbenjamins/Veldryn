@@ -29,7 +29,7 @@ import {
  type PersistedEnemyKitV2,
 } from './enemy-kit-composer';
 import {
- issueEnemyV2EngineAuthority,issuePersistedPartyEnemyV2EngineAuthority,
+ enemyV2SnapshotDigest,issueEnemyV2EngineAuthority,issuePersistedPartyEnemyV2EngineAuthority,
 } from './enemy-engine-authority';
 import {resolveVerifiedEquipmentBaseV2,
   type StoredEquipmentInstanceV2,type EquipmentBaseDefinitionV2,
@@ -266,6 +266,7 @@ export function simulateUnifiedEquipmentCombatV2(
  traitPort?:TrustedEquipmentTraitReceiptPortV2,
  synchronizationReviewMode?:SyncModeV2,
  syncRehearsal?:TrustedPartySyncRehearsalV2,
+ reviewAiPolicy:'tactical'|'authored-priority'='tactical',
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled){
   if(syncRehearsal||synchronizationReviewMode!==undefined)throw Error('combat_v2_sync_requires_complete_v2');
@@ -315,7 +316,7 @@ export function simulateUnifiedEquipmentCombatV2(
     compileExactEquipmentTraitSourceV2(builds[0],runtime[0],traitPort),
    ],traitPort.verifyPersisted):undefined;
   return {
-    combat:simulateCombat(finalInput,authority,traitAuthority),
+    combat:simulateCombat(finalInput,authority,traitAuthority,undefined,reviewAiPolicy),
     enemyMechanicLabels:proof.preview.flatMap(p=>[
       ...p.abilityNames.map(name=>p.enemyId+': '+name),
       ...p.phaseNames.map(name=>p.enemyId+': '+name),
@@ -333,7 +334,7 @@ export function simulateUnifiedEquipmentCombatV2(
   throw Error('combat_v2_sync_rehearsal_roster_mismatch');
  const syncAuthority=syncRehearsal?issuePartySyncAuthorityV2(syncRehearsal.scope,finalInput,syncRehearsal.verifyPersisted):undefined;
  return {
-  combat:simulateCombat(finalInput,undefined,undefined,syncAuthority),
+  combat:simulateCombat(finalInput,undefined,undefined,syncAuthority,reviewAiPolicy),
   ...(syncRehearsal?{synchronizationRehearsal:{releaseEnabled:false as const,
     unsupported:[]}}:{}),
   enemyMechanicLabels:enemies.mechanicLabels,
@@ -361,8 +362,8 @@ export interface TrustedPersistedPartyExecutionV2{
 /**
  * Hidden persisted four-player execution rehearsal.
  * Uses the current co-op ready-check/loadout provenance plus exact-copy EQ2
- * receipts. When provided, a verified party-mode authored enemy kit is bound
- * to the same finalized digest; otherwise the generic private bridge is used.
+ * receipts. Required party-mode Enemy/Boss 2.0 receipts are verified
+ * against the same finalized run digest as traits and Synchronization.
  */
 export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  input:CombatInput,
@@ -378,36 +379,39 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
    input.enemyDamageProfile!==undefined)
   throw Error('combat_v2_invalid_persisted_party_scope');
  const {byId,gearById,evidence,players}=compileEquippedEncounterActors(input,builds,runtime);
- const portsByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>();
+ const portByCharacter=new Map<string,TrustedEquipmentTraitReceiptPortV2>();
  for(const port of party.traitPorts){
-  if(!port?.characterId||portsByCharacter.has(port.characterId))
-   throw Error('combat_v2_duplicate_or_missing_party_trait_character');
-  portsByCharacter.set(port.characterId,port);
+  if(!port||!port.characterId||portByCharacter.has(port.characterId))
+   throw Error('combat_v2_duplicate_or_invalid_trait_port_character');
+  portByCharacter.set(port.characterId,port);
  }
- // Compile in finalized combat actor order, not build/ledger arrival order.
  const sources=players.map(actor=>{
-  const gear=gearById.get(actor.id)!;
-  const port=portsByCharacter.get(gear.characterId);
-  if(!port)throw Error('combat_v2_missing_party_trait_character');
-  return compileExactEquipmentTraitSourceV2(byId.get(actor.id)!,gear,port);
+  const build=byId.get(actor.id)!,gear=gearById.get(actor.id)!;
+  const port=portByCharacter.get(gear.characterId);
+  if(!port)throw Error('combat_v2_missing_trait_port_for_character');
+  return compileExactEquipmentTraitSourceV2(build,gear,port);
  });
+ const kit=party.enemyKit;
+ if(!kit||typeof kit.verifyPersisted!=='function')
+  throw Error('combat_v2_party_enemy_kit_required');
+ const partyEnemySnapshot=structuredClone(kit.snapshot);
+ const kitDigest=enemyV2SnapshotDigest(partyEnemySnapshot);
+ const verifyKit=kit.verifyPersisted;
  let finalEnemies:readonly CombatantDefinition[];
  let enemyMechanicLabels:readonly string[];
- let partyEnemySnapshot:PersistedEnemyKitV2|undefined;
- if(party.enemyKit){
-  partyEnemySnapshot=party.enemyKit.snapshot;
+ {
   const proof=verifyPersistedPartyEnemyKitsV2(input.enemies,partyEnemySnapshot);
   if(partyEnemySnapshot.seed!==input.seed)
    throw Error('combat_v2_party_enemy_kit_seed_mismatch');
+  if(partyEnemySnapshot.encounterId!==party.runId+':'+party.nodeId||
+     partyEnemySnapshot.revision!==party.encounterRevision)
+   throw Error('combat_v2_party_enemy_kit_revision_mismatch');
   finalEnemies=proof.enemies;
   enemyMechanicLabels=proof.preview.flatMap(p=>[
    ...p.abilityNames.map(name=>p.enemyId+': '+name),
    ...p.phaseNames.map(name=>p.enemyId+': '+name),
    ...p.traitIds.map(id=>p.enemyId+': '+id),
   ]);
- }else{
-  const enemies=compileEnemiesForCombatV2(input.enemies,true);
-  finalEnemies=enemies.enemies;enemyMechanicLabels=enemies.mechanicLabels;
  }
  const finalInput:CombatInput={...input,players,enemies:[...finalEnemies]};
  const persistence=reviewPartyV2RunBinding({
@@ -419,15 +423,28 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
   combatInput:finalInput,
  });
  const scope=partySyncScopeFromRunBindingV2(persistence);
- const verified=(digest:string)=>party.verifyPersisted(persistence.binding,sources,digest);
+ // Verify the exact immutable receipt set once. A per-character verifier must
+ // also approve its own source; the combined callback alone is insufficient.
+ const verifyRun=party.verifyPersisted;
+ const verifyPorts=players.map(actor=>portByCharacter.get(gearById.get(actor.id)!.characterId)!.verifyPersisted);
+ let verifiedDigest:string|undefined;
  const traitAuthority=issuePersistedPartyEquipmentV2TraitAuthority(
-  finalInput,sources,persistence.binding,(_binding,_sources,digest)=>verified(digest));
+  finalInput,sources,persistence.binding,(binding,verifiedSources,digest)=>{
+   if(!verifiedSources.every((row,i)=>verifyPorts[i]([row],digest)===true)||
+      verifyRun(binding,verifiedSources,digest)!==true)return false;
+   verifiedDigest=digest;
+   return true;
+  });
  const syncAuthority=synchronizationEnabled?
-  issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>verified(digest)):undefined;
- const enemyAuthority=partyEnemySnapshot?issuePersistedPartyEnemyV2EngineAuthority(
+  issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>digest===verifiedDigest):undefined;
+ const enemyAuthority=issuePersistedPartyEnemyV2EngineAuthority(
   finalInput,persistence.binding,partyEnemySnapshot.enemyIds,partyEnemySnapshot.bossIds,
-  (_binding,digest)=>verified(digest)&&
-   party.enemyKit!.verifyPersisted(partyEnemySnapshot!,digest)):undefined;
+  (_binding,digest)=>digest===verifiedDigest&&
+   enemyV2SnapshotDigest(partyEnemySnapshot)===kitDigest&&
+   enemyV2SnapshotDigest(kit.snapshot)===kitDigest&&
+   verifyKit(partyEnemySnapshot,digest)===true&&
+   enemyV2SnapshotDigest(partyEnemySnapshot)===kitDigest&&
+   enemyV2SnapshotDigest(kit.snapshot)===kitDigest);
  const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
  return {
   combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority),

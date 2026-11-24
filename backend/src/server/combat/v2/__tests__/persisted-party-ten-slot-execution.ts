@@ -24,10 +24,10 @@ const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],max
 const enemyKitFor=(kitSeed:string)=>{
  const candidate=preparePartyEnemyKitsV2(input.enemies,{
   ruleset:ENEMY_V2_RULESET,serverSeed:kitSeed,
-  encounterId:'QA_PARTY_KIT_'+kitSeed,region:boss.region,
+  encounterId:'RUN_10S:NODE_10S',region:boss.region,
   equipmentTier:boss.tier,eliteEnemyIds:[],
  });
- const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:1};
+ const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:3};
  return {snapshot,verifyPersisted:(_row:PersistedEnemyKitV2,digest:string)=>
   /^[0-9a-f]{64}$/.test(digest)};
 };
@@ -58,6 +58,12 @@ const baseline=simulateUnifiedEquipmentCombatV2(input,builds,runtime,true);
 const first=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 const repeat=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
 assert.deepEqual(first,repeat);
+const shuffled=simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,[builds[2],builds[0],builds[3],builds[1]],
+ [runtime[3],runtime[1],runtime[0],runtime[2]],
+ {...party,traitPorts:[traitPorts[1],traitPorts[3],traitPorts[0],traitPorts[2]]},true);
+assert.deepEqual(shuffled,first,
+ 'persisted party execution must bind builds, gear and trait receipts by identity rather than array order');
  // Arrival order of independent trusted snapshots must not change the combat digest,
  // source ordering, equipment evidence, or output. Combat actor order remains fixed.
  const permute=<T>(xs:readonly T[],order:readonly number[])=>order.map(i=>xs[i]);
@@ -70,10 +76,10 @@ assert.deepEqual(first,repeat);
   input,shuffledBuilds,shuffledGear,{...party,traitPorts:shuffledPorts},true));
  assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
   input,builds,runtime,{...party,traitPorts:[traitPorts[0],traitPorts[0],...traitPorts.slice(2)]},true),
-  /duplicate_or_missing_party_trait_character/);
+  /duplicate_or_invalid_trait_port_character/);
  assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
   input,builds,runtime,{...party,traitPorts:[{...traitPorts[0],characterId:'FOREIGN_CHARACTER'},...traitPorts.slice(1)]},true),
-  /missing_party_trait_character/);
+  /missing_trait_port_for_character/);
  assert.throws(()=>simulateUnifiedEquipmentCombatV2(
   {...input,players:[players[0],players[0],...players.slice(2)]},builds,runtime,true),
   /duplicate_encounter_actor/);
@@ -120,8 +126,28 @@ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
   ({...x,accountId:traitPorts[1].accountId}))},true),
  /party_source_binding_mismatch/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,encounterRevision:4},true),/party_enemy_kit_revision_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,nodeId:'OTHER_NODE'},true),/party_enemy_kit_revision_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,enemyKit:fixtures[0].trustedKit},true),
  /invalid_stored_kit/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,enemyKit:undefined},true),/party_enemy_kit_required/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,traitPorts:traitPorts.map((port,i)=>i?port:
+  {...port,verifyPersisted:()=>false})},true),/party_persisted_ledger_not_verified/);
+let verificationCount=0;
+const once=simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,verifyPersisted:(binding,rows,digest)=>{
+  verificationCount++;
+  return party.verifyPersisted(binding,rows,digest);
+ }},true);
+assert.equal(verificationCount,1);
+assert.deepEqual(once,first);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,enemyKit:{...party.enemyKit,
+  verifyPersisted:()=>false}},true),/unverified_party_persisted_scope/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,verifyPersisted:()=>false},true),
  /party_persisted_ledger_not_verified|unverified_scope/);

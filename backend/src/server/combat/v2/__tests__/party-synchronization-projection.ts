@@ -11,11 +11,13 @@ assert.equal(radiant.activeCount,1);
 assert.equal(radiant.scalePercent,100);
 assert.equal(radiant.links[0].id,'radiant_covenant');
 assert.equal(radiant.links[0].nameKey,'party_sync.radiant_covenant.name');
+assert.equal(radiant.links[0].bonuses[0].valueKind,'percent');
 assert.equal(radiant.personalCpDelta,0);
 assert.equal(radiant.requiresProgression,false);
 assert.equal(radiant.canGateEntry,false);
 assert.equal(radiant.canFilterRecruitment,false);
 assert.ok(radiant.totals.some(x=>x.stat==='damage_reduction_pct'&&x.bps===300));
+assert.deepEqual(radiant.cappedStats,[]);
 
 const before=[
  p('iron','IRONWARDEN'),p('way','WAYFINDER'),p('stone','STONECALLER'),
@@ -30,6 +32,8 @@ assert.deepEqual(preview.newlyActivatedLinkIds,['marked_for_death']);
 assert.equal(preview.queueEligibilityIndependentOfSynchronization,true);
 assert.equal(preview.canGateEntry,false);
 assert.equal(preview.canFilterRecruitment,false);
+assert.equal(preview.visibleOnRecruitmentBoard,false);
+assert.equal(preview.canRankCandidates,false);
 assert.equal(preview.personalCpDelta,0);
 
 const random=projectPartySynchronizationLobbyV2('party_event',[
@@ -44,10 +48,26 @@ assert.deepEqual(
  'relationship history must not affect projected Synchronization',
 );
 
+const capped=projectPartySynchronizationLobbyV2('party_event',[
+ p('b','BASTION'),p('d','DAWNKEEPER'),p('x','DREADGUARD'),p('i','IRONWARDEN'),
+]);
+assert.deepEqual(capped.cappedStats,[{
+ stat:'healing_received_pct',statKey:'party_sync.stat.healing_received_pct',
+ rawBps:1040,effectiveBps:1000,discardedBps:40,valueKind:'percent',
+}]);
 const catalogue=projectPartySynchronizationCatalogueV2();
 assert.equal(catalogue.length,18);
+const predator=catalogue.find(x=>x.id==='predators_instinct')!;
+assert.equal(predator.baseBonuses.find(x=>x.stat==='crit_chance_pp')?.valueKind,'percentage_points');
+for(const stat of ['armor_penetration_pct','penetration_pct']){
+ const rows=catalogue.flatMap(link=>link.baseBonuses).filter(bonus=>bonus.stat===stat);
+ assert.ok(rows.length>0);
+ assert.ok(rows.every(bonus=>bonus.valueKind==='percentage_points'));
+}
 assert.equal(new Set(catalogue.map(x=>x.id)).size,18);
-assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&x.requiresProgression===false));
+assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&
+ x.visibleOnRecruitmentBoard===false&&x.canRankCandidates===false&&
+ x.requiresProgression===false));
 assert.throws(()=>previewPartySynchronizationCandidateV2('dungeon',[
  p('1','BASTION'),p('2','DAWNKEEPER'),p('3','WAYFINDER'),p('4','HEXWEAVER'),
 ],p('5','RAVAGER')),/party_full/);

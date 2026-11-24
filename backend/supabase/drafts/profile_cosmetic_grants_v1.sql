@@ -53,6 +53,7 @@ declare
   v_added_effect text;
   v_added_icons text[]:=array[]::text[];
   v_revision bigint;
+  i integer;
 begin
   if p_account_id is null or nullif(trim(p_idempotency_key),'') is null
      or length(p_idempotency_key) not between 8 and 160 then

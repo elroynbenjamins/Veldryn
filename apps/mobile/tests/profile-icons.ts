@@ -15,6 +15,10 @@ check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'a
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
 check(profileIconCollection(state).length===15,'catalog includes a locked guild icon alongside class, starters, boss and three event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
+check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
+const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};
+check(profileIconCollection(cosmeticPortraitOwned).some(row=>row.id==='cosmetic:gloamward:portrait-seer'),'owned unreleased portrait may be represented for migration/ops visibility');
+check(!canUseProfileIcon(cosmeticPortraitOwned,'cosmetic:gloamward:portrait-seer'),'portrait cannot be selected until its approved artwork is installed');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 check(!canUseProfileIcon(state,'guild:stormwatch-crest'),'guild icon is locked until purchased');
 check(canUseProfileIcon({...state,account:{...state.account,unlockedProfileIconIds:['guild:stormwatch-crest']}},'guild:stormwatch-crest'),'purchased guild icon becomes usable');

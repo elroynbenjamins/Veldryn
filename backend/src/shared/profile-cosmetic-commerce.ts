@@ -25,9 +25,16 @@ function appendUnique(values:readonly string[]|undefined,id:string){return value
 export function applyProfileCosmeticGrant(state:ProfileCosmeticGrantState,sku:string){
  const definition=assertProfileCosmeticGrantDefinition(sku);let next={...state};const added:ProfileCosmeticGrantItem[]=[];
  for(const grant of definition.grants){
-  const key=grant.kind==='border'?'unlockedProfileBorderIds':grant.kind==='effect'?'unlockedProfileEffectIds':'unlockedProfileIconIds';
-  if(!next[key]?.includes(grant.id))added.push(grant);
-  next={...next,[key]:appendUnique(next[key],grant.id)};
+  if(grant.kind==='border'){
+   if(!next.unlockedProfileBorderIds?.includes(grant.id))added.push(grant);
+   next.unlockedProfileBorderIds=appendUnique(next.unlockedProfileBorderIds,grant.id);
+  }else if(grant.kind==='effect'){
+   if(!next.unlockedProfileEffectIds?.includes(grant.id))added.push(grant);
+   next.unlockedProfileEffectIds=appendUnique(next.unlockedProfileEffectIds,grant.id);
+  }else{
+   if(!next.unlockedProfileIconIds?.includes(grant.id))added.push(grant);
+   next.unlockedProfileIconIds=appendUnique(next.unlockedProfileIconIds,grant.id);
+  }
  }
  return {state:next,definition,added,alreadyOwned:added.length===0};
 }

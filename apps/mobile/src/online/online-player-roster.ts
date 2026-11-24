@@ -7,6 +7,8 @@ export type OnlinePlayer={
  account_id:string;
  sender_name:string;
  level:number;
+ /** Sum of combat levels of all characters on the account; null until server support is available. */
+ total_character_level:number|null;
  class_id:string;
  is_friend:boolean;
  is_guildmate:boolean;
@@ -25,7 +27,7 @@ export function parseOnlineRoster(value:unknown):OnlineRoster{
   if(!entry||typeof entry!=='object')return [];
   const row=entry as Record<string,unknown>;
   if(typeof row.account_id!=='string'||typeof row.sender_name!=='string'||!row.sender_name.trim())return [];
-  return [{account_id:row.account_id,sender_name:row.sender_name,level:typeof row.level==='number'?Math.max(1,Math.floor(row.level)):1,class_id:typeof row.class_id==='string'?row.class_id:'',is_friend:row.is_friend===true,is_guildmate:row.is_guildmate===true}];
+  return [{account_id:row.account_id,sender_name:row.sender_name,level:typeof row.level==='number'?Math.max(1,Math.floor(row.level)):1,total_character_level:typeof row.total_character_level==='number'&&Number.isSafeInteger(row.total_character_level)&&row.total_character_level>=1?row.total_character_level:null,class_id:typeof row.class_id==='string'?row.class_id:'',is_friend:row.is_friend===true,is_guildmate:row.is_guildmate===true}];
  });
  return {count:Math.max(0,Math.floor(payload.count)),players};
 }

@@ -6,6 +6,8 @@
 import type {CombatStats} from '../types';
 import {clamp,defenseMitigation,hitChance,roleAdjustedAttackPower} from '../calculations';
 import type {RoleV2} from './build-contract';
+import type {PowerAttributionStagesV2} from './power-composition';
+import {launchPlayer} from '../content/launch-combat';
 export const CANDIDATE_POWER_WEIGHTS_V1=Object.freeze({
  tank:Object.freeze({offense:.25,survival:.60,support:.15}),
  damage:Object.freeze({offense:.70,survival:.20,support:.10}),
@@ -65,4 +67,38 @@ export function reviewCandidatePowerV1(stats:CombatStats,role:RoleV2,ref:Candida
   missingDomains:['advanced_effects','skill_coefficients_and_utility','gems_and_innates',
    'companion_passive_and_assist','actual_rng_calibration'] as const,
   cpApproved:false as const,canGateContent:false as const,equalCPVerified:false as const,releaseEnabled:false as const};
+}
+
+/** A single frozen QA reference for every candidate comparison. Its version
+ * must change if the source baseline or normalization changes. This is not
+ * an approved level-25 progression target. */
+export const QA_CANDIDATE_POWER_REFERENCE_V1:CandidatePowerReferenceV1=Object.freeze({
+ version:'QA_L25_LAUNCH_REFERENCE_V1',anchor:1000,enemyAccuracy:1600,enemyEvasion:100,
+ accuracyScale:1400,mitigationConstant:1200,roles:Object.freeze({
+  tank:Object.freeze({...launchPlayer('Ironwarden',25).stats}),
+  damage:Object.freeze({...launchPlayer('Ravager',25).stats}),
+  support:Object.freeze({...launchPlayer('Dawnkeeper',25).stats}),
+ }),
+});
+/** Nonlinear candidate attribution: recompute the SAME power function at
+ * each verified stat stage and take marginal differences. Do not add raw
+ * stat weights to the nonlinear score or apply a bonus a second time.
+ * Round each cumulative score before subtraction for exact integer totals. */
+export function reviewCandidatePowerStagesV1(stages:PowerAttributionStagesV2,role:RoleV2,ref:CandidatePowerReferenceV1){
+ const sequence=[
+  ['class_only',stages.classOnly],['skills',stages.afterSkills],
+  ['item_base',stages.afterItemBase],['set_stats',stages.afterSets],
+  ['random_affix_stats',stages.afterAffixes],
+ ] as const;
+ let previous=0;
+ const rows=sequence.map(([source,stats])=>{
+  const score=reviewCandidatePowerV1(stats,role,ref);
+  const value=score.partialScore-previous;
+  previous=score.partialScore;
+  return {source,value,cumulative:score.partialScore,axes:score.rows};
+ });
+ const final=reviewCandidatePowerV1(stages.afterAffixes,role,ref);
+ return {...final,stageRows:rows,trainedBaseline:rows[1].cumulative,
+  gearContribution:final.partialScore-rows[1].cumulative,
+  attributionScope:'NONLINEAR_MARGINAL_STATIC_CANDIDATE' as const};
 }

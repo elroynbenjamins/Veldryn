@@ -634,3 +634,45 @@ const cancelled=simulateCombat({...coordination,enemies:[cancelBoss],initialPlay
 assert.ok(cancelled.events.some(e=>e.type==='interrupt'&&e.abilityId===coverInterrupt&&e.atMs===100));
 assert.equal(firstShield(cancelled),undefined,'later support does not pre-shield a cancelled cast');
 console.log('PASS: tank ally protection and sequential support forecast coordination');
+
+// Damage tactics: use compiled authored Wayfinder setup, burst and execute.
+// Synthetic durable boss isolates timing and selected target, not balance.
+const tacticBase=launchPlayer('Wayfinder',50);
+const tacticBuild:VerifiedSkillBuildV2={actor:tacticBase,
+ verified:{classId:'WAYFINDER',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='WAYFINDER')!.id,equipment:{},
+ activeSkills:['Hunter Mark','Heartseeker','Perfect Quarry'].map(name=>{
+  const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='WAYFINDER'&&s.name===name)!;
+  return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{}};
+const tacticCompiled=compileServerSkillBuildV2(true,tacticBuild);
+const tacticActor={...tacticCompiled,id:'DPS_TACTIC',stats:{...tacticCompiled.stats,attackPower:100,accuracy:100000},
+ abilities:tacticCompiled.abilities.map(a=>({...a,priority:a.name==='Perfect Quarry'?200:a.name==='Heartseeker'?150:100})),
+ basicAttackCoeff:0};
+const markId=tacticActor.abilities.find(a=>a.name==='Hunter Mark')!.id;
+const burstId=tacticActor.abilities.find(a=>a.name==='Perfect Quarry')!.id;
+const executeId=tacticActor.abilities.find(a=>a.name==='Heartseeker')!.id;
+const tacticBoss={...enemy,id:'DPS_BOSS',boss:true,stats:{...enemy.stats,maxHp:10000}};
+const tacticInput={seed:'dps-tactics',players:[tacticActor],enemies:[tacticBoss],maxDurationMs:200,tickMs:100};
+const tacticRun=simulateCombat(tacticInput);
+assert.ok(tacticRun.events.some(e=>e.type==='status_apply'&&e.abilityId===markId&&e.atMs===0));
+assert.ok(tacticRun.events.some(e=>e.type==='damage'&&e.abilityId===burstId&&e.atMs===100),
+ 'burst follows actual applied vulnerability');
+assert.deepEqual(tacticRun,simulateCombat(tacticInput));
+const noMark=simulateCombat({...tacticInput,initialPlayerState:{[tacticActor.id]:
+ triageCarry(tacticActor.stats.maxHp,false,{[markId]:10000})}});
+assert.ok(noMark.events.some(e=>e.type==='damage'&&e.abilityId===burstId&&e.atMs===0),
+ 'no idle waiting for unavailable setup');
+const legacyTactic={...tacticActor,combatV2:undefined,tags:[]};
+assert.ok(simulateCombat({...tacticInput,players:[legacyTactic]}).events.some(e=>
+ e.type==='damage'&&e.abilityId===burstId&&e.atMs===0),'legacy authored priority');
+// Use an earlier allied direct attack to create a genuine low-health add.
+const chipper:CombatantDefinition={...triageAlly('DPS_CHIP'),role:'damage',
+ abilities:[{id:'DPS_CHIP_HIT',name:'Chip test',target:'all_enemies',castTimeMs:0,cooldownMs:999999,
+ priority:100,effects:[{kind:'damage',flat:90,damageType:'true'}]}],stats:{...enemy.stats,accuracy:100000}};
+const executeTarget={...enemy,id:'DPS_EXEC_TARGET',stats:{...enemy.stats,maxHp:125}};
+const executeRun=simulateCombat({...tacticInput,players:[chipper,tacticActor],enemies:[executeTarget],
+ initialPlayerState:{[tacticActor.id]:triageCarry(tacticActor.stats.maxHp,false,{[markId]:10000})}});
+assert.ok(executeRun.events.some(e=>e.type==='damage'&&e.abilityId===executeId&&e.targetId===executeTarget.id&&e.atMs===0),
+ 'eligible execute before ordinary burst');
+console.log('PASS: damage setup, burst window, execute, cooldown and legacy priority');

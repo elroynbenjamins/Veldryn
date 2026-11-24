@@ -279,6 +279,72 @@ function tankProtectionDecisionV2(actor:CombatantState,ordered:AbilityDefinition
   return best;
 }
 
+// Tactical damage decisions are restricted to instant, selected V2 damage
+// techniques. Inspect current statuses/casts, never future RNG or HP phases.
+const damageV2=(actor:CombatantState)=>Boolean(actor.combatV2&&
+  actor.definition.team==='players'&&actor.definition.role==='damage');
+function damageTacticsV2(actor:CombatantState,ordered:AbilityDefinition[],
+  allies:CombatantState[],foes:CombatantState[],now:number,mitigationConstant:number):TankDecisionV2|undefined{
+  if(!damageV2(actor))return;
+  const ready=ordered.filter(a=>a.id.includes(':v2:')&&a.castTimeMs===0&&
+    (actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes));
+  const live=living(foes);
+  if(!ready.length||!live.length)return;
+  let best:TankDecisionV2|undefined;
+  const offer=(ability:AbilityDefinition,target:CombatantState,rank:number,score:number)=>{
+    if(!best||rank>best.rank||(rank===best.rank&&score>best.coverage))
+      best={ability,targets:[target],rank,coverage:score};
+  };
+  const direct=(a:AbilityDefinition)=>a.effects.filter(e=>e.kind==='damage'&&
+    (!e.target||e.target===a.target)&&((e.coeff??0)>0||(e.flat??0)>0));
+  const current=ready.filter(a=>a.target==='current_target'&&direct(a).length);
+  const strength=(a:AbilityDefinition)=>direct(a).reduce((n,e)=>
+    n+Math.max(0,actor.definition.stats.attackPower*(e.coeff??0)+(e.flat??0)),0);
+  const burst=(a:AbilityDefinition)=>a.combatV2?.spend==='all'||
+    Number(a.combatV2?.spend??0)>=3;
+  const activeVulnerability=(target:CombatantState)=>modifier(target,'damage_taken',now)>0;
+  const activeOffense=modifier(actor,'damage_done',now)>0||modifier(actor,'crit',now)>0;
+  const opensVulnerability=(a:AbilityDefinition)=>a.effects.some(e=>e.kind==='debuff'&&
+    (!e.target||e.target===a.target)&&e.tag==='damage_taken'&&(e.value??0)>0&&
+    (e.durationMs??5000)>=1000);
+  const dangerous=live.filter(e=>e.definition.boss&&e.casting&&e.casting.completesAt>now&&
+    e.definition.abilities.some(a=>a.id===e.casting!.abilityId&&a.interruptible)&&
+    incomingBossPressureV2(now,allies,[e],mitigationConstant).length>0)
+    .sort((a,b)=>a.casting!.completesAt-b.casting!.completesAt||a.definition.id.localeCompare(b.definition.id));
+  if(dangerous.length){
+    const interrupt=ready.find(a=>a.target==='interruptible_casting_enemy'&&
+      a.effects.some(e=>e.kind==='interrupt'&&(!e.target||e.target===a.target)));
+    if(interrupt)return {ability:interrupt,targets:[dangerous[0]],rank:5,coverage:1};
+  }
+  // Nominal estimates only, used to prefer an inexpensive finish over a
+  // spender when a nonboss target is already almost defeated. Never assume
+  // a kill or bypass actual damage, crit, shields, mitigation or cooldowns.
+  for(const target of [...live].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id))){
+    if(!target.definition.boss&&hpPct(target)<.15){
+      for(const a of current){
+        if(burst(a))continue;
+        const nominal=direct(a).reduce((n,e)=>n+damageAfterMitigation(
+          actor.definition.stats.attackPower,e.coeff??0,e.damageType==='true'?0:
+            defenseMitigation(target.definition.stats.defense,mitigationConstant),1)+(e.flat??0),0);
+        if(nominal>=target.hp+target.shield)offer(a,target,4,-strength(a));
+      }
+    }
+    for(const a of current){
+      const execute=direct(a).some(e=>
+        ((e.executeBonus??0)>0&&hpPct(target)<(e.executeBelowHpPct??0))||
+        ((e.additionalExecuteBonus??0)>0&&hpPct(target)<(e.additionalExecuteBelowHpPct??0)));
+      if(execute)offer(a,target,3,strength(a));
+      // Set up only if a distinct ready burst can use the opening.
+      if(target.definition.boss&&!activeVulnerability(target)&&opensVulnerability(a)&&
+        current.some(other=>other!==a&&burst(other)&&strength(other)>0))
+        offer(a,target,2,strength(a));
+      if(burst(a)&&(activeVulnerability(target)||activeOffense)&&target.definition.boss)
+        offer(a,target,1,strength(a));
+    }
+  }
+  return best;
+}
+
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
 export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
@@ -879,7 +945,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         const decision=tankProtectionDecisionV2(actor,ordered,allies,foes,now,mitigationConstant);
         if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
       }
-      if(ab){ const ts=predictiveTargets??supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(tankV2(actor)&&predictiveTargets&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(damageV2(actor)){
+        const decision=damageTacticsV2(actor,ordered,allies,foes,now,mitigationConstant);
+        if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
+      }
+      if(ab){ const ts=predictiveTargets??supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!((tankV2(actor)||damageV2(actor))&&predictiveTargets&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }

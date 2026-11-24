@@ -45,3 +45,10 @@ export function verifiedUltraLuxeTitleId(title:string|undefined,raw:unknown){
  const grants=ultraLuxeGrantProjection(raw);
  return ULTRA_LUXE_GRANT_COLLECTIONS.find(row=>row.titleName===title&&grants.titles.includes(row.title))?.title;
 }
+
+/** Reserve exact canonical title names, including whitespace/case variants.
+ * The ordinary custom-title route cannot bypass private ownership. */
+export function canUsePrivateTitleText(state:GameState,title:string|undefined){
+ const reserved=ULTRA_LUXE_GRANT_COLLECTIONS.find(row=>row.titleName.toLowerCase()===title?.trim().toLowerCase());
+ return !reserved||(state.account.unlockedTitleIds?.includes(reserved.title)??false);
+}

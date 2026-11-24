@@ -1,3 +1,4 @@
+import {canUsePrivateTitleText} from './ultra-luxe-grants';
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
 import {migrateRetiredStoryRewards} from './retired-story-rewards';

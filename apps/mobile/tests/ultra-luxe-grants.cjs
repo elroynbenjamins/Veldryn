@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
 const src=fs.readFileSync(path.join(__dirname,'../src/core/ultra-luxe-grants.ts'),'utf8');
 const mod={exports:{}};new Function('exports','module',ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod.exports,mod);
-const {ULTRA_LUXE_GRANT_COLLECTIONS:C,ultraLuxeGrantProjection,withVerifiedUltraLuxeGrants,verifiedUltraLuxeTitleId}=mod.exports;
+const {ULTRA_LUXE_GRANT_COLLECTIONS:C,ultraLuxeGrantProjection,withVerifiedUltraLuxeGrants,verifiedUltraLuxeTitleId,canUsePrivateTitleText}=mod.exports;
 const [a,b]=C;
 const hero={classId:'BASTION',profileBackgroundId:a.background,profileBorderId:a.border,selectedCosmeticPetId:a.pet,profileIconId:a.icon,profileTitle:a.titleName,gold:123};
 const base={character:hero,otherCharacters:[{character:{...hero,classId:'DAWNKEEPER'},inventory:{}}],account:{unlockedProfileBackgroundIds:['event:bg',a.background],unlockedProfileBorderIds:[a.border],unlockedCosmeticPetIds:['PET_001',a.pet,'ascendant-unknown'],unlockedProfileIconIds:[a.icon],unlockedTitleIds:[a.title],entitlements:{supporter:true}}};
@@ -21,4 +21,12 @@ assert.deepEqual(both.account.unlockedProfileIconIds,[a.icon,b.icon]);assert.equ
 assert.deepEqual(ultraLuxeGrantProjection([b.id]).badges,[b.badge]);assert.deepEqual(ultraLuxeGrantProjection([b.id]).nameStyles,[b.nameStyle]);
 assert.equal(verifiedUltraLuxeTitleId(a.titleName,[]),undefined);assert.equal(verifiedUltraLuxeTitleId(a.titleName,[a.id]),a.title);
 assert.equal(verifiedUltraLuxeTitleId(a.titleName,[b.id]),undefined);
+assert(!canUsePrivateTitleText(none,'  SOVEREIGN OF THE STARS  '));
+assert(!canUsePrivateTitleText(none,b.titleName));
+assert(canUsePrivateTitleText(owned,a.titleName));
+assert(!canUsePrivateTitleText(owned,b.titleName));
+assert(canUsePrivateTitleText(none,'Custom Adventurer'));
+assert(canUsePrivateTitleText(none,undefined));
+const commands=fs.readFileSync(path.join(__dirname,'../src/core/game-commands.ts'),'utf8');
+assert(commands.includes('!canUsePrivateTitleText(state,patch.profileTitle)'));
 console.log('Ultra Luxe grant projection: spoofed ownership, revocation, roster cleanup, idempotency and unrelated cosmetics passed.');

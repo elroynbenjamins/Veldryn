@@ -74,6 +74,8 @@ jobs:
           pnpm exec tsc -p tsconfig.core.json --outDir .core-build
           node .core-build/apps/mobile/tests/party-social-v16.js
           node .core-build/apps/mobile/tests/social-recruitment-ui-contract.js
+      - name: Validate compact gathering tool rows and vault safety
+        run: node tests/compact-gathering-tools-redesign-ui.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety

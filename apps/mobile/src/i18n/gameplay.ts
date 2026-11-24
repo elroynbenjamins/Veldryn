@@ -9,6 +9,13 @@ import {useMemo} from 'react';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+ "ACTION TIME":["ACTION TIME","AKTIONSZEIT","TIEMPO DE ACCIÓN","ACTIETIJD","TEMPO AZIONE","TEMPS D’ACTION"],
+ "RARE FINDS":["RARE FINDS","SELTENE FUNDE","HALLAZGOS RAROS","ZELDZAME VONDSTEN","RITROVAMENTI RARI","TROUVAILLES RARES"],
+ "Shorter gathering actions":["Shorter gathering actions","Kürzere Sammelaktionen","Recolección más rápida","Kortere verzamelacties","Raccolta più rapida","Actions de récolte plus courtes"],
+ "Slower without tools":["Slower without tools","Langsamer ohne Werkzeuge","Más lento sin herramientas","Langzamer zonder gereedschap","Più lento senza attrezzi","Plus lent sans outils"],
+ "How tool bonuses work":["How tool bonuses work","So wirken Werkzeugboni","Cómo funcionan los bonos","Hoe gereedschapsbonussen werken","Come funzionano i bonus","Comment fonctionnent les bonus"],
+ "Not equipped":["Not equipped","Nicht ausgerüstet","Sin equipar","Niet uitgerust","Non equipaggiato","Non équipé"],
+ "tier time":["tier time","Stufenzeit","tiempo de nivel","rangtijd","tempo del livello","temps du palier"],
  // Isolated release: gathering tool vault, retaining latest main inspection strings.
  "TOOL TIERS · SELECT TO INSPECT":["TOOL TIERS · SELECT TO INSPECT","WERKZEUGSTUFEN · ZUM ANSEHEN WÄHLEN","NIVELES DE HERRAMIENTA · TOCA PARA VER","GEREEDSCHAPSNIVEAUS · KIES OM TE BEKIJKEN","LIVELLI ATTREZZI · SELEZIONA","PALIERS D’OUTILS · SÉLECTIONNER"],
  "saved copies":["saved copies","gespeicherte Exemplare","copias guardadas","opgeslagen exemplaren","copie salvate","copies enregistrées"],

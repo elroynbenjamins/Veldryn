@@ -24,7 +24,7 @@ assert.match(skills,/<GatheringToolLoadoutPanel state=\{state\} skillId=\{gather
  'Gathering skills must use the reviewed tier-first tool panel');
 assert.match(toolPanel,/small=width<360\|\|fontScale>=1\.3/,
  'Tool tiers must scale for narrow phones and large text');
-assert.match(toolPanel,/tier:\{flex:1,minWidth:0,minHeight:102/,
+assert.match(toolPanel,/tier:\{minWidth:0,minHeight:72/,
  'Tier buttons need full-size touch targets without overflowing narrow screens');
 assert.match(toolPanel,/const \[opened,setOpened\]=useState<Tier\|null>\(null\)/,
  'Only the four tier selectors should be visible before a player inspects a tier');

@@ -31,3 +31,20 @@ assert.throws(()=>claimLegacyScoutingReport(fixture,'missing',end),/legacy_assig
 const already={...fixture,account:{...fixture.account,companionAssignments:[expected.assignment]}};
 assert.equal(claimLegacyScoutingReport(already,'legacy1',end+1000),already);
 console.log('PASS canonical mission reward parity, weekly rare cap, progression adapter, legacy claim guards');
+
+import {executeCompanionActivity} from '../src/core/companion-runtime';
+import type {GameState} from '../src/core/types';
+const ready:GameState={...game,character:{...game.character!,level:20,gold:1000},quests:game.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed' as const}:q),account:{...game.account,unlockedCombatCompanionIds:['UNIT_001'],combatCompanionProgress:{UNIT_001:{...owned.UNIT_001}},companionAssignments:[assignment],companionEssence:0}};
+const original=executeCompanionActivity(ready,'companion_assignment_claim',{id:'legacy1'},end);
+const drained=claimLegacyScoutingReport(ready,'legacy1',end);
+assert.deepEqual(drained,original);
+assert.equal(drained.account.companionAssignments?.[0].status,'claimed');
+assert.ok((drained.account.companionEssence??0)>0);
+assert.ok((drained.account.companionMasteryXp??0)>0);
+assert.equal(drained.skills.find(s=>s.skillId==='exploration')?.xp,ready.skills.find(s=>s.skillId==='exploration')?.xp);
+assert.equal(claimLegacyScoutingReport(drained,'legacy1',end+1),drained);
+assert.equal(ready.account.companionAssignments?.[0].status,'active');
+const shared={week:drained.account.companionAssignmentBondstoneWeek!,used:drained.account.companionAssignmentBondstones??0};
+const next=settleScoutRareReward(eligible,{...shared,used:1},end);
+assert.equal(next.reward.bondstones,0);
+console.log('PASS full legacy claim parity, original state unchanged, retry and shared counter adapter');

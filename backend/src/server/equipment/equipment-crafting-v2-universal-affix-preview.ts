@@ -70,7 +70,7 @@ export function previewClassIndependentOriginalForgeAffixesV2(
  if(!piece||!recipe||piece.id!==pieceId||
   !Number.isSafeInteger(piece.tier)||piece.tier<1||piece.tier>4||
   recipe.pieceId!==pieceId||recipe.tier!==piece.tier)
-  fail('unknown_or_mismatched_original_forge_recipe');
+  throw Error('eq2_universal_bonus_unknown_or_mismatched_original_forge_recipe');
  if(UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.length!==11||
   new Set(UNIVERSAL_FORGE_BONUS_STAT_POOL_V2).size!==11||
   UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.includes('potency'))
@@ -80,7 +80,7 @@ export function previewClassIndependentOriginalForgeAffixesV2(
  const band=V2_SERVER_RARITY_BANDS.find(b=>{
   cumulative+=b.buckets;return rarityRoll<cumulative;
  });
- if(!band)fail('missing_original_rarity_band');
+ if(!band)throw Error('eq2_universal_bonus_missing_original_rarity_band');
  // Keep the original Forge distribution and Q0-Q100 curve as-is.
  const qualityUnit=take(drawInt,1000000)/1000000;
  const quality=Math.min(100,Math.floor(Math.pow(qualityUnit,1.25)*101));

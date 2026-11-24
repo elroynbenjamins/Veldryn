@@ -60621,7 +60621,10 @@ function canonical(value) {
   if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
   return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + canonical(value[key])).join(",") + "}";
 }
-function gameplayHandler(services2) {
+function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
+  const accountId = await services2.authenticate(token);
+  return accountId ? { accountId, adminQa: false } : null;
+}) {
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (!["GET", "POST"].includes(request.method)) return json({ error: "method_not_allowed" }, 405);
@@ -60635,9 +60638,9 @@ function gameplayHandler(services2) {
     try {
       const bearer = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
       if (!bearer) return json({ error: "auth_required" }, 401);
-      const accountId = await services2.authenticate(bearer);
-      if (!accountId) return json({ error: "invalid_session" }, 401);
-      const adminQa = await services2.adminQa?.(bearer) ?? false;
+      const player = await authenticatePlayer2(bearer);
+      if (!player) return json({ error: "invalid_session" }, 401);
+      const { accountId, adminQa } = player;
       if (request.method === "GET") {
         try {
           await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: "foreground" });
@@ -62096,20 +62099,16 @@ var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 if (!url || !serviceKey || !anonKey) throw new Error("server_configuration_missing");
+async function authenticatePlayer(token) {
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) return null;
+  const user = await response.json();
+  if (typeof user?.id !== "string" || !user.id) return null;
+  const meta = user.app_metadata;
+  return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };
+}
 var services = {
-  authenticate: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return null;
-    const user = await response.json();
-    return typeof user.id === "string" ? user.id : null;
-  },
-  adminQa: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return false;
-    const user = await response.json();
-    const meta = user?.app_metadata ?? {};
-    return meta.admin_qa === true || Array.isArray(meta.roles) && meta.roles.includes("admin_qa");
-  },
+  authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
     const body = await response.json();
@@ -62123,7 +62122,7 @@ var services = {
   randomId: () => crypto.randomUUID(),
   randomRoll: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
 };
-var gameplay = gameplayHandler(services);
+var gameplay = gameplayHandler(services, authenticatePlayer);
 var regionalCombat = regionalCombatHandlerV1(services);
 var guildShopServices = {
   authenticate: services.authenticate,

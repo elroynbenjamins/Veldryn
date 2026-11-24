@@ -5,7 +5,7 @@ import {RecipeCard} from '../components/RecipeCard';
 import {SearchField} from '../components/SearchField';
 import {UiIcon} from '../components/UiIcon';
 import {ActivityArtwork} from '../components/ActivityArtwork';
-import {useMemo,useState} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameState,GatheringSkillId,SkillId} from '../core/types';
 import {GATHERING,RECIPES} from '../content/skills';
@@ -57,9 +57,18 @@ import {skillNavigatorText} from '../i18n/skill-navigator';
 import {ActiveGatheringScene} from '../components/ActiveGatheringScene';
 import {GatheringToolLoadoutPanel} from '../components/GatheringToolLoadoutPanel';
 
-export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onWithdrawTool,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialAreaId,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string,quantity?:number)=>void|CraftActionOutcome|Promise<void|CraftActionOutcome>;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onWithdrawTool?:(id:string)=>void|Promise<void>;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialAreaId?:string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
+export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onWithdrawTool,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialAreaId,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void|Promise<void>;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string,quantity?:number)=>void|CraftActionOutcome|Promise<void|CraftActionOutcome>;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onWithdrawTool?:(id:string)=>void|Promise<void>;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialAreaId?:string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
  const {gt,gl,language}=useGameplayText();
  const {feedback:craftFeedback,run:runCraftAction}=useCraftActionFeedback();
+ const gatherInFlight=useRef(false);
+ const [startingGatherId,setStartingGatherId]=useState<string|null>(null);
+ async function startGather(id:string){
+  if(gatherInFlight.current)return;
+  gatherInFlight.current=true;
+  setStartingGatherId(id);
+  try{await onGather(id);}
+  finally{gatherInFlight.current=false;setStartingGatherId(null);}
+ }
  const onCraftWithFeedback=(id:string,quantity=1)=>{void runCraftAction(id,quantity,()=>onCraft(id,quantity));};
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const baseGatheringDefs=[...GATHERING,...HERB_NODES],gatheringDefs=initialActionId?[...baseGatheringDefs].sort((a,b)=>a.id===initialActionId?-1:b.id===initialActionId?1:0):baseGatheringDefs;
@@ -98,7 +107,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
         if(!skill)return null;
         return <View key={skillId} style={s.group}>
           <View style={s.sectionHeading}><ActivityArtwork id={skillId} size={32}/><View style={s.flex}><Text style={s.name}>{gl(skillId)}</Text><Text style={s.sub}>{gt('Level {value}',{value:skill.level})}</Text></View></View>
-          <GatheringActivityList state={state} skillId={skillId} skillLevel={skill.level} onGather={onGather} onNavigate={onNavigateCraftingSource} currentRegionOnly areaId={selectedArea?.id} showInstruction={false}/>
+          <GatheringActivityList state={state} skillId={skillId} skillLevel={skill.level} startingGatherId={startingGatherId} onGather={startGather} onNavigate={onNavigateCraftingSource} currentRegionOnly areaId={selectedArea?.id} showInstruction={false}/>
         </View>;
       })}
       {!gatheringSkillIds.length?<Text style={s.unavailable}>{gl("No gathering activities are available in this region yet.")}</Text>:null}
@@ -138,7 +147,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
             onNavigateCraftingSource={onNavigateCraftingSource}/>
          </Panel>:null}
         {mode==='gathering'&&<ActiveGatheringScene state={state} nowMs={now} skillId={gatheringSkill}/>}
-        {mode==='gathering'&&<GatheringActivityList state={state} skillId={gatheringSkill} skillLevel={sk.level} preferredActionId={initialActionId} onGather={onGather} onNavigate={onNavigateCraftingSource}/>}
+        {mode==='gathering'&&<GatheringActivityList state={state} skillId={gatheringSkill} skillLevel={sk.level} preferredActionId={initialActionId} startingGatherId={startingGatherId} onGather={startGather} onNavigate={onNavigateCraftingSource}/>}
         {mode==='crafting'&&<CraftingRecipeBrowser state={state} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraftWithFeedback} craftFeedback={craftFeedback} onAlchemyStart={(id,batches)=>onCommand({type:'alchemy_start',args:{id,batches,batchMode:'selected'}})} onProcessingStart={(id,batches)=>onCommand({type:'processing_start',args:{id,batches,batchMode:'selected'}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites}/>}
       </View>;
     })}

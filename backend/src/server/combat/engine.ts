@@ -500,6 +500,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       source.definition.abilities.some(a=>a.id===abilityId);
     const forgeHealMultiplier=authoredClassHeal?
       1+clamp(source.definition.combatV2?.equipmentEffects?.forgeHealingPowerPct??0,0,1):1;
+    const hpBeforeHeal=target.hp;
     const amount=Math.max(0,(source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0))*sourceMult*receivedMult*(source.definition.alchemyModifiers?.healing??1)*v2HealBonus*
       (direct&&source.combatV2?reactiveHealingMultiplierV2(source,target,now):1)*
       forgeHealMultiplier); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual;
@@ -508,6 +509,18 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         originalClassHeal:authoredClassHeal&&source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='heal')),actualHeal:actual});
       for(const id of earned)events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
         abilityId:'V2_QA_TIMED_EARN:'+id,detail:'private_qa_timed_heal_earned'});
+      const supportGrants=eq2PrivateHit.afterSupportHeal({now,actorId:source.definition.id,targetId:target.definition.id,abilityId,
+        originalClassHeal:authoredClassHeal&&source.definition.abilities.some(a=>a.id===abilityId&&a.effects.some(e=>e.kind==='heal')),
+        direct,sourceAlive:source.alive,targetAlive:target.alive,targetHpBefore:hpBeforeHeal,targetMaxHp:target.definition.stats.maxHp,actualHeal:actual});
+      for(const grant of supportGrants){
+        if(grant.channel==='shield'){
+          if(grant.replaced)events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+            abilityId:'V2_QA_SHIELD:'+grant.replaced.id,amount:grant.replaced.remaining,detail:'private_qa_shield_replaced'});
+          events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+            abilityId:'V2_QA_SHIELD:'+grant.id,amount:grant.amount,expiresAtMs:grant.expiresAt,detail:'private_qa_shield_granted'});
+        }else events.push({atMs:now,type:'equipment_trait_trigger',actorId:source.definition.id,targetId:target.definition.id,
+          abilityId:'V2_QA_TIMED_EARN:'+grant.id,amount:grant.pct,expiresAtMs:grant.expiresAt,detail:'private_qa_support_defense_earned'});
+      }
     }
     if(actual>0&&direct&&source.definition.team==='players'){
       resource(source,'effective_heal',now,abilityId);
@@ -676,9 +689,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     return active.pct/100;
   };
   for(let now=0; now<=maxMs; now+=tick){
-    const expiredEq2Shield=eq2PrivateHit?.expireShield(now);
-    if(expiredEq2Shield)events.push({atMs:now,type:'equipment_trait_trigger',actorId:expiredEq2Shield.ownerId,
-      abilityId:'V2_QA_SHIELD:'+expiredEq2Shield.id,amount:expiredEq2Shield.remaining,detail:'private_qa_shield_expired'});
+    for(let expired=eq2PrivateHit?.expireShield(now);expired;expired=eq2PrivateHit?.expireShield(now))
+      events.push({atMs:now,type:'equipment_trait_trigger',actorId:expired.ownerId,
+        abilityId:'V2_QA_SHIELD:'+expired.id,amount:expired.remaining,detail:'private_qa_shield_expired'});
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
       const due=v2.scheduledTotemAt.filter(at=>at<=now);

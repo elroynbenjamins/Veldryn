@@ -30,6 +30,7 @@ export const WINTER_HEARTH_LIGHT_RECIPES=Object.freeze({
  tailoring:lightRecipe('tailoring','MOSS_FIBER','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026'),
 });
 export const WINTER_HEARTH_LIGHT_RECIPE=WINTER_HEARTH_LIGHT_RECIPES.smithing;
+import {FROSTFALL_2026_GUILD_COSMETICS,guildEventCosmeticsAtMilestones} from './guild-event-cosmetic-review.mjs';
 export const WINTER_HEARTH_MILESTONES = Object.freeze([
   Object.freeze({ percent: 25, logs: 6250, lights: 625, guildGold: 10000, gatheringSpeedBps: 400, skillXpBps: 0, combatXpBps: 0, permanentColor: false }),
   Object.freeze({ percent: 50, logs: 12500, lights: 1250, guildGold: 20000, gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 0, permanentColor: false }),
@@ -66,6 +67,7 @@ export function winterHearthMilestoneStatus(progress) {
     earnedMilestones: Object.freeze(current.map(row => row.percent)),
     totalGuildGold: current.reduce((sum, row) => sum + row.guildGold, 0),
     permanentColorEarned: stage?.permanentColor ?? false,
+    earnedCosmeticIds:guildEventCosmeticsAtMilestones(FROSTFALL_2026_GUILD_COSMETICS,WINTER_HEARTH_EVENT_ID,current.map(row=>row.percent)),
     buffs: Object.freeze({
       gatheringSpeedBps: stage?.gatheringSpeedBps ?? 0,
       skillXpBps: stage?.skillXpBps ?? 0,
@@ -102,6 +104,7 @@ export function winterHearthDonationQuote({
     newlyReachedMilestones: Object.freeze(after.earnedMilestones.filter(percent => !before.earnedMilestones.includes(percent))),
     newMilestoneTotalGuildGold: after.totalGuildGold - before.totalGuildGold,
     newPermanentColor: !before.permanentColorEarned && after.permanentColorEarned,
+    newCosmeticIds:Object.freeze(after.earnedCosmeticIds.filter(id=>!before.earnedCosmeticIds.includes(id))),
     after,
   });
 }

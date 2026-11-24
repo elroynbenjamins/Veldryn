@@ -224,6 +224,61 @@ function ordinaryHealSufficientV2(a:AbilityDefinition,actor:CombatantState,
   return Number.isFinite(nominal)&&target.hp+nominal>=target.definition.stats.maxHp*.45;
 }
 
+// Tank AI consumes only existing authored actions. Interception means
+// cancelling a visible interruptible cast, not transferring damage or
+// changing boss targeting rules. No RNG reads and no additional effects.
+const tankV2=(actor:CombatantState)=>Boolean(actor.combatV2&&
+  actor.definition.team==='players'&&actor.definition.role==='tank');
+type TankDecisionV2={ability:AbilityDefinition;targets:CombatantState[];rank:number;coverage:number};
+function tankProtectionDecisionV2(actor:CombatantState,ordered:AbilityDefinition[],
+  allies:CombatantState[],foes:CombatantState[],now:number,mitigationConstant:number):TankDecisionV2|undefined{
+  if(!tankV2(actor))return;
+  const pressure=incomingBossPressureV2(now,allies,foes,mitigationConstant);
+  const critical=living(allies).filter(a=>hpPct(a)<CRITICAL_SUPPORT_HP_V2);
+  if(!pressure.length&&!critical.length)return;
+  const dangerous=foes.filter(b=>b.alive&&b.definition.boss&&b.casting&&
+    b.casting.completesAt>now&&b.definition.abilities.some(a=>a.id===b.casting!.abilityId&&a.interruptible)&&
+    incomingBossPressureV2(now,allies,[b],mitigationConstant).length>0)
+    .sort((a,b)=>a.casting!.completesAt-b.casting!.completesAt||a.definition.id.localeCompare(b.definition.id));
+  let best:TankDecisionV2|undefined;
+  const consider=(ability:AbilityDefinition,targets:CombatantState[],rank:number,coverage:number)=>{
+    if(!targets.length||coverage<=0)return;
+    if(!best||rank>best.rank||(rank===best.rank&&coverage>best.coverage))
+      best={ability,targets,rank,coverage};
+  };
+  for(const a of ordered){
+    if(!a.id.includes(':v2:')||a.castTimeMs!==0||(actor.cooldownReadyAt[a.id]??0)>now)continue;
+    const eligible=conditionOk(a,actor,allies,foes);
+    if(eligible&&a.target==='interruptible_casting_enemy'&&
+      a.effects.some(e=>e.kind==='interrupt'&&(!e.target||e.target===a.target))&&dangerous.length)
+      consider(a,[dangerous[0]],4,1);
+    // Conservative scope: only direct protection whose primary target
+    // actually receives the effect. Explicit self/other overrides keep
+    // their authored meaning and cannot masquerade as party protection.
+    if(!eligible&&a.aiCondition!=='self_below_50'&&a.aiCondition!=='ally_below_80_or_targeted')continue;
+    const effects=a.effects.filter(e=>!e.target||e.target===a.target);
+    const heal=effects.some(e=>e.kind==='heal'&&((e.coeff??0)>0||(e.flat??0)>0));
+    const shield=effects.some(e=>e.kind==='shield'&&((e.coeff??0)>0||(e.flat??0)>0));
+    const ward=effects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'&&(e.value??0)<0&&
+      (e.durationMs??5000)>=SUPPORT_FORECAST_WINDOW_MS_V2);
+    if(!heal&&!shield&&!ward)continue;
+    // Do not refresh an already active damage-taken ward; shields reduce
+    // forecast pressure through the same nominal estimator used by support.
+    const canProtect=(t:CombatantState)=>shield||ward&&modifier(t,'damage_taken',now)>=0;
+    const emergency=(t:CombatantState)=>critical.includes(t)&&
+      (heal&&eligible||shield&&t.shield<=0||ward&&modifier(t,'damage_taken',now)>=0);
+    const predicted=(t:CombatantState)=>pressure.includes(t)&&canProtect(t);
+    const orderedCritical=[...critical].sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id));
+    const pool=a.target==='self'?[actor]:a.target==='all_allies'?living(allies):
+      a.target==='threatened_ally'?[...new Set([...orderedCritical,...pressure])]:[];
+    const urgent=pool.filter(emergency),forecast=pool.filter(predicted);
+    const targets=a.target==='threatened_ally'?(urgent.length?urgent:forecast).slice(0,1):pool;
+    if(urgent.length)consider(a,targets,heal&&eligible?3:2,a.target==='threatened_ally'?1:urgent.length);
+    else if(forecast.length)consider(a,targets,1,a.target==='threatened_ally'?1:forecast.length);
+  }
+  return best;
+}
+
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
 export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
@@ -820,7 +875,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           }
         }
       }
-      if(ab){ const ts=predictiveTargets??supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+      if(tankV2(actor)){
+        const decision=tankProtectionDecisionV2(actor,ordered,allies,foes,now,mitigationConstant);
+        if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
+      }
+      if(ab){ const ts=predictiveTargets??supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(tankV2(actor)&&predictiveTargets&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }

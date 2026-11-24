@@ -546,3 +546,50 @@ assert.equal(firstRecovery(simulateCombat({...conserveInput,initialPlayerState:{
  [conserveActor.id]:triageCarry(1000,false,{[ordinaryId]:10000})}}))?.abilityId,
  groupHealId,'ordinary cooldown: retain group recovery');
 console.log('PASS: existing shield coverage and nominal single-target healing conservation');
+
+// Tank AI: compiled class techniques, visible dangerous casts, and existing
+// authored protection only. Enemy fixture is synthetic, not boss tuning.
+for(const [classId,defensive,interrupt,offensive] of [
+ ['IRONWARDEN','Oathwall','Rune Bash','Rune Challenge'],
+ ['BASTION','Layered Fortress','Fortress Rebuff','Bastion Challenge'],
+ ['DREADGUARD','Grim Resolve','Binding Chain','Dread Challenge'],
+] as const){
+ const base=launchPlayer(CLASS_NAMES_V2[classId],50);
+ const data:VerifiedSkillBuildV2={actor:base,verified:{classId,level:50,ownedInstanceIds:new Set()},
+   selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId===classId)!.id,equipment:{},
+     activeSkills:[defensive,interrupt,offensive].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===name)!;
+       return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+   ownedItemsById:{},setsById:{}};
+ const compiled=compileServerSkillBuildV2(true,data);
+ const tank={...compiled,id:'TK_SELF',stats:{...compiled.stats,maxHp:1000,healingPower:100},
+   abilities:compiled.abilities.map(a=>({...a,priority:a.name===offensive?200:a.name===defensive?100:50})),
+   basicAttackCoeff:0};
+ const defenseId=tank.abilities.find(a=>a.name===defensive)!.id;
+ const interruptId=tank.abilities.find(a=>a.name===interrupt)!.id;
+ const offenseId=tank.abilities.find(a=>a.name===offensive)!.id;
+ const ally={...triageAlly('TK_ALLY'),role:'damage' as const};
+ const boss=forecastBoss('current_target',500);
+ const interruptible={...boss,abilities:boss.abilities.map(a=>({...a,interruptible:true}))};
+ const input={seed:'tank-protection-'+classId,players:[tank,ally],enemies:[interruptible],
+   maxDurationMs:300,tickMs:100,initialPlayerState:{[tank.id]:triageCarry(1000),[ally.id]:triageCarry(1000)}};
+ const result=simulateCombat(input);
+ assert.ok(result.events.some(e=>e.type==='interrupt'&&e.abilityId===interruptId&&e.atMs===100),
+   classId+' interrupts a dangerous visible boss cast');
+ assert.deepEqual(result,simulateCombat(input));
+ const blocked=simulateCombat({...input,initialPlayerState:{...input.initialPlayerState,
+   [tank.id]:triageCarry(1000,false,{[interruptId]:10000})}});
+ assert.ok(!blocked.events.some(e=>e.type==='interrupt'&&e.abilityId===interruptId),'no interrupt cooldown bypass');
+ const uninterruptible=simulateCombat({...input,enemies:[boss]});
+ assert.ok(!uninterruptible.events.some(e=>e.type==='interrupt'),'uninterruptible cast remains intact');
+ if(classId!=='DREADGUARD')assert.ok(uninterruptible.events.some(e=>e.type==='shield'&&
+   e.abilityId===defenseId&&e.targetId===tank.id&&e.atMs===100),'ready self shield before heavy hit');
+ const injured={...input,enemies:[enemy],initialPlayerState:{...input.initialPlayerState,[tank.id]:triageCarry(200)}};
+ const recovery=simulateCombat(injured);
+ assert.ok(recovery.events.some(e=>e.abilityId===defenseId&&e.targetId===tank.id&&
+   (e.type==='shield'||e.type==='heal')&&e.atMs===0),'critical tank prioritizes own defense');
+ assert.ok(!recovery.events.some(e=>e.abilityId===offenseId&&e.atMs===0));
+ const legacy={...tank,combatV2:undefined,tags:[]};
+ assert.ok(simulateCombat({...injured,players:[legacy,ally]}).events.some(e=>e.abilityId===offenseId&&e.atMs===0),
+   'legacy priority unchanged');
+}
+console.log('PASS: three tank classes, visible interruptible threats, critical defense and cooldown isolation');

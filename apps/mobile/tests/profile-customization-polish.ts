@@ -34,8 +34,7 @@ equal(guildBorder.name,'Fellowship Silver','guild border keeps its player-facing
 
 const effectUnlockState={...state,account:{...state.account,unlockedProfileEffectIds:['effect_gloamward_wisps']}};
 const effectUnlocks=newlyUnlockedProfileRewards(state,effectUnlockState);
-equal(effectUnlocks.length,1,'new account-wide profile effect ownership creates one unlock notice');
-ok(effectUnlocks[0].kind==='effect'&&effectUnlocks[0].name==='Arcane Wisps','effect unlock notice preserves its approved identity');
+equal(effectUnlocks.length,0,'unreleased animated effects do not generate player-facing unlock notices');
 
 const eventUnlockState={...state,account:{...state.account,
  unlockedTitleIds:['title_veil_watcher'],

@@ -113,6 +113,27 @@ function fight(tactic:PartyTactic){
  const frozen=JSON.stringify(input);
  const first=simulateUnifiedEquipmentCombatV2(input,builds,gear,true);
  const replay=simulateUnifiedEquipmentCombatV2(input,builds,gear,true);
+ const review=simulateUnifiedEquipmentCombatV2(input,builds,gear,true,undefined,undefined,'dungeon');
+ assert.deepEqual(review.combat,first.combat,'review cannot change combat outcomes');
+ assert.deepEqual(review.equipmentEvidence,first.equipmentEvidence,'review cannot change personal gear/CP evidence');
+ assert.equal(review.synchronizationReview?.active.length,3);
+ assert.equal(review.synchronizationReview?.scalePercent,80);
+ assert.equal(review.synchronizationReview?.recipientIds.length,4);
+ assert.equal(review.synchronizationReview?.canAuthorizeCombat,false);
+ const scope={ruleset:'party-sync-v2-draft-1' as const,encounterId:'QA_GROUP_ENCOUNTER',
+  partyId:'QA_GROUP',revision:1,seed:input.seed,mode:'dungeon' as const,
+  members:builds.map((b,i)=>({actorId:b.actor.id,classId:b.verified.classId,characterId:gear[i].characterId}))};
+ const rehearsal={scope,verifyPersisted:()=>true}; // isolated QA only
+ const boosted=simulateUnifiedEquipmentCombatV2(input,builds,gear,true,undefined,undefined,'dungeon',rehearsal);
+ assert.deepEqual(boosted.equipmentEvidence,first.equipmentEvidence);
+ assert.deepEqual(boosted.synchronizationReview,review.synchronizationReview);
+ assert.equal(boosted.synchronizationRehearsal?.releaseEnabled,false);
+ assert.deepEqual(boosted,simulateUnifiedEquipmentCombatV2(input,builds,gear,true,undefined,undefined,'dungeon',rehearsal));
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,builds,gear,true,undefined,undefined,'dungeon',
+  {...rehearsal,scope:{...scope,members:scope.members.map((m,i)=>i?m:{...m,characterId:'QA_FORGED'})}}),/sync_rehearsal_roster_mismatch/);
+
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,builds,gear,false,undefined,undefined,'dungeon'),/sync_requires_complete_v2/);
+
  assert.deepEqual(first,replay,'identical private sources must produce exact replay');
  assert.equal(JSON.stringify(input),frozen,'input must not mutate');
  assert.equal(first.equipmentEvidence.length,4);

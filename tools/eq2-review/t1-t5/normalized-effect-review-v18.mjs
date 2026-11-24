@@ -19,15 +19,34 @@ export function audit(){
  for(const b of bs){const x=contract.blueprintTraits.find(x=>x.itemId===b.id);if(!x||JSON.stringify(x.source)!==JSON.stringify(b.trait)||x.sourceBlueprintId!==b.blueprintId||x.maxCopiesEquipped!==1||x.mayCraft!==false)fail('blueprint_source');}
  return {sets:95,milestones:195,typedNew:127,typedPreserved:68,permanentPreserved:contract.sets.filter(x=>x.kind==='permanent').length,conditionalPreserved:contract.sets.filter(x=>x.kind==='conditional').length,signatureTraits:27,blueprintTraits:6,...deny};
 }
+function adaptV17(x,id){
+ const trigger=x.trigger,extra={};
+ let t=trigger;
+ const loss=trigger.match(/^direct_nontrue_hp_loss_at_least_(\d+)pct$/),below=trigger.match(/^(effective_direct_class_heal|direct_physical_ability_hit|direct_class_ability_hit)_target_below_(\d+)$/),cross=trigger.match(/^cross_below_(\d+)pct_hp$/);
+ if(loss){t='direct_nontrue_hp_loss';extra.minActualHpLossPct=Number(loss[1]);}
+ if(below){t=below[1];extra.targetBelowHpPct=Number(below[2]);}
+ if(cross){t='cross_below_hp';extra.thresholdHpPct=Number(cross[1]);}
+ if(trigger.startsWith('three_consecutive_direct_')){t=trigger.includes('bow')?'consecutive_direct_bow_hits':'consecutive_direct_weapon_hits';extra.count=3;extra.sameTarget=true;}
+ const consume={next_direct_spell_damage:'direct_class_spell_hit',next_basic_damage:'basic_direct_weapon_hit',next_effective_heal_on_same_ally:'effective_direct_heal_same_target',next_direct_weapon_damage:'direct_weapon_hit',next_direct_physical_ability_damage:'direct_physical_ability_hit',next_direct_nontrue_reduction:'direct_nontrue_hp_loss',next_direct_class_ability_damage:'direct_class_ability_hit',next_basic_hit_self_heal:'basic_direct_weapon_hit',next_basic_chained_scourge_damage:'basic_chained_scourge_hit'}[x.effect]??null;
+ if(x.charges===1&&!consume)fail('unmapped_charge');
+ return {...x,id,trigger:t,...extra,consumeOn:consume,windowSeconds:consume?x.durationSeconds:0,outputs:[{channel:x.effect,value:x.value,unit:x.unit,target:x.target,durationSeconds:consume?0:x.durationSeconds}]};
+}
 export function conditionalCandidates(){
- const existing=v17.sets.flatMap(s=>s.milestones.filter(x=>x.kind==='conditional').map(x=>({id:s.setId+':'+x.pieces,...x,origin:'v17_typed_set'})));
+ const existing=v17.sets.flatMap(s=>s.milestones.filter(x=>x.kind==='conditional').map(x=>adaptV17({...x,origin:'v17_typed_set'},s.setId+':'+x.pieces)));
  const normalize=x=>({id:idFor(x),...x});
- return [...existing,...contract.sets.filter(x=>x.kind==='conditional').map(normalize),...v17.traits.map(x=>({...x,id:x.itemId})),...contract.blueprintTraits.map(normalize)];
+ return [...existing,...contract.sets.filter(x=>x.kind==='conditional').map(normalize),...v17.traits.map(x=>adaptV17(x,x.itemId)),...contract.blueprintTraits.map(normalize)];
 }
 const validEvent=e=>e&&typeof e.id==='string'&&e.id.length>0&&typeof e.owner==='string'&&Number.isFinite(e.at)&&e.at>=0&&e.authenticated===true&&!e.recursive&&!e.reflected&&!e.selfDamage&&!e.duplicate&&!e.miss&&!e.overheal&&!e.absorbedOnly;
 // An abstract, explicitly classified QA event, NOT a conversion from a raw engine log.
 export function matches(c,e){
  if(!validEvent(e)||e.kind!==c.trigger)return false;
+ if(/effective.*heal/.test(c.trigger)&&!c.trigger.includes('_or_')&&e.effectiveHeal!==true)return false;
+ if(c.trigger==='direct_ability_hit_or_effective_heal'&&!e.directAbilityHit&&!e.effectiveHeal)return false;
+ if(c.trigger==='successful_authored_cleanse_or_effective_direct_heal'&&!e.removedHostileStatus&&!e.effectiveHeal)return false;
+ if(/cleanse/.test(c.trigger)&&!c.trigger.includes('_or_')&&e.removedHostileStatus!==true)return false;
+ if(/evade/.test(c.trigger)&&e.verifiedEvade!==true)return false;
+ if(c.trigger.includes('marked_target')&&e.authoredMark!==true||c.trigger.includes('armored_target')&&e.armoredTarget!==true||c.trigger.includes('warded_enemy')&&e.wardedTarget!==true||c.trigger.includes('debuffed_target')&&e.authoredDebuff!==true||c.trigger.includes('hostile_dot')&&e.hostileDot!==true)return false;
+ if(c.trigger==='ally_direct_nontrue_hp_loss'||c.trigger==='ally_cross_below_hp'||c.trigger.includes('on_ally')){if(!e.target||e.target===e.owner)return false;}
  if(e.trueDamage&&(/nontrue|hp_loss|mitigat|heavy_direct_hit/.test(c.trigger)))return false;
  if(c.minActualHpLossPct!==undefined&&!(e.actualHpLossPct>=c.minActualHpLossPct))return false;
  if(c.selfBelowHpPct!==undefined&&!(e.selfHpPct<c.selfBelowHpPct))return false;
@@ -61,10 +80,12 @@ export function reviewLedger(){
   consume(c,e){
    if(!validEvent(e))return {accepted:false,...deny};
    const k=cooldownKey(c,e),ch=charges.get(k);
-   if(!ch||ch.triggerReceipt===e.id||e.at>=ch.expiresAt)return {accepted:false,...deny};
+   if(!ch||ch.triggerReceipt===e.id||e.at>=ch.expiresAt||e.at<ch.expiresAt-c.windowSeconds*1000)return {accepted:false,...deny};
    if(ch.kind==='direct_ability_hit_or_effective_heal'){
     if(!['direct_class_ability_hit','effective_direct_class_heal'].includes(e.kind))return {accepted:false,...deny};
    }else if(e.kind!==ch.kind)return {accepted:false,...deny};
+   if(ch.kind==='effective_direct_heal_same_target'&&e.effectiveHeal!==true)return {accepted:false,...deny};
+   if(ch.kind==='direct_ability_hit_or_effective_heal'&&e.kind==='effective_direct_class_heal'&&e.effectiveHeal!==true)return {accepted:false,...deny};
    if(ch.kind.includes('same_target')&&(!ch.target||ch.target!==e.target))return {accepted:false,...deny};
    charges.delete(k);return {accepted:true,outputs:ch.outputs,...deny};
   }
@@ -78,7 +99,7 @@ export function stackingPreview({damage=[],mitigation=[],shields=[],trueDamage=f
 export function eligibleFixture(c,extra={}){
  return {id:'QA-1',owner:'QA-actor',target:'QA-target',encounter:'QA-fight',at:1000,authenticated:true,kind:c.trigger,
   actualHpLossPct:10,selfHpPct:25,targetHpPct:25,beforeHpPct:60,afterHpPct:20,verifiedHitCount:5,countWindowSeconds:5,
-  sameTarget:true,equippedShield:true,shieldEffect:c.requiredShieldEffect,remainingCooldownSeconds:4,...extra};
+  sameTarget:true,effectiveHeal:true,removedHostileStatus:true,verifiedEvade:true,authoredMark:true,armoredTarget:true,wardedTarget:true,authoredDebuff:true,hostileDot:true,directAbilityHit:true,equippedShield:true,shieldEffect:c.requiredShieldEffect,remainingCooldownSeconds:4,...extra};
 }
 export function summary(){
  const c=conditionalCandidates();

@@ -798,3 +798,54 @@ assert.ok(simulateCombat({seed:'coordination-shields',players:[firstProtector,le
  maxDurationMs:100,tickMs:100}).events.some(e=>e.type==='shield'&&e.actorId===legacyProtector.id),
  'legacy protection rotation unchanged');
 console.log('PASS: duplicate interrupt avoidance and redundant pure shield conservation');
+
+// Sequencing: real authored Wayfinder spender plus instant no-cost
+// damage technique, with no available mark or execute opportunity.
+const seqBase=launchPlayer('Wayfinder',50);
+const seqBuild:VerifiedSkillBuildV2={actor:seqBase,verified:{classId:'WAYFINDER',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='WAYFINDER')!.id,equipment:{},
+ activeSkills:['Perfect Quarry','Snare Shot'].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='WAYFINDER'&&s.name===name)!;
+ return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{}};
+const seqCompiled=compileServerSkillBuildV2(true,seqBuild);
+const seqActor={...seqCompiled,id:'SEQ_DPS',stats:{...seqCompiled.stats,attackPower:100,accuracy:100000},
+ abilities:seqCompiled.abilities.map(a=>({...a,priority:a.name==='Perfect Quarry'?200:100})),basicAttackCoeff:0};
+const seqBurst=seqActor.abilities.find(a=>a.name==='Perfect Quarry')!.id;
+const seqBuilder=seqActor.abilities.find(a=>a.name==='Snare Shot')!.id;
+const seqInput={seed:'advanced-sequence',players:[seqActor],enemies:[tacticBoss],maxDurationMs:300,tickMs:100};
+const seqRun=simulateCombat(seqInput);
+assert.ok(seqRun.events.some(e=>e.type==='damage'&&e.abilityId===seqBuilder&&e.atMs===0),'low resource opens with ready no-cost builder');
+assert.ok(seqRun.events.some(e=>e.type==='resource_spend'&&e.abilityId===seqBurst&&e.atMs===100),
+ 'no idle delay when builder is unavailable');
+assert.deepEqual(seqRun,simulateCombat(seqInput));
+const seqBlocked=simulateCombat({...seqInput,initialPlayerState:{[seqActor.id]:
+ triageCarry(seqActor.stats.maxHp,false,{[seqBuilder]:10000})}});
+assert.ok(seqBlocked.events.some(e=>e.type==='damage'&&e.abilityId===seqBurst&&e.atMs===0),'no resource gate without available alternate');
+const seqRapid={...seqActor,abilities:seqActor.abilities.map(a=>({...a,cooldownMs:a.id===seqBuilder?100:a.cooldownMs}))};
+const seqRapidRun=simulateCombat({...seqInput,players:[seqRapid],maxDurationMs:2000});
+assert.ok(seqRapidRun.events.some(e=>e.type==='damage'&&e.abilityId===seqBurst&&e.atMs<=1500),'bounded hold');
+const seqLegacy={...seqActor,combatV2:undefined,tags:[]};
+assert.ok(simulateCombat({...seqInput,players:[seqLegacy]}).events.some(e=>e.type==='damage'&&e.abilityId===seqBurst&&e.atMs===0),
+ 'legacy action order retained');
+
+// Exact-source periodic refresh guard: use compiled Black Thread with
+// accelerated test-only cooldown and instant cast to isolate selection.
+const dotSeqBase=launchPlayer('Hexweaver',50);
+const dotSeqBuild:VerifiedSkillBuildV2={actor:dotSeqBase,verified:{classId:'HEXWEAVER',level:50,ownedInstanceIds:new Set()},
+ selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='HEXWEAVER')!.id,equipment:{},
+ activeSkills:['Black Thread','Curse of Frailty'].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='HEXWEAVER'&&s.name===name)!;
+ return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+ ownedItemsById:{},setsById:{}};
+const dotSeqCompiled=compileServerSkillBuildV2(true,dotSeqBuild);
+const dotSeqActor={...dotSeqCompiled,id:'SEQ_HEX',stats:{...dotSeqCompiled.stats,attackPower:100,accuracy:100000},
+ abilities:dotSeqCompiled.abilities.map(a=>({...a,castTimeMs:0,priority:a.name==='Black Thread'?200:100,
+ cooldownMs:a.name==='Black Thread'?100:a.cooldownMs})),basicAttackCoeff:0};
+const dotSeqId=dotSeqActor.abilities.find(a=>a.name==='Black Thread')!.id;
+const dotAltId=dotSeqActor.abilities.find(a=>a.name==='Curse of Frailty')!.id;
+const dotSeqInput={...seqInput,players:[dotSeqActor],maxDurationMs:300};
+const dotSeqRun=simulateCombat(dotSeqInput);
+assert.ok(dotSeqRun.events.some(e=>e.type==='status_apply'&&e.abilityId===dotSeqId&&e.statusKind==='dot'&&e.atMs===0));
+assert.ok(dotSeqRun.events.some(e=>e.type==='damage'&&e.abilityId===dotAltId&&e.atMs===100),'avoid clipping own active DoT while other skill is ready');
+assert.ok(dotSeqRun.events.some(e=>e.type==='status_apply'&&e.abilityId===dotSeqId&&e.statusKind==='dot'&&e.atMs===200),
+ 'fallback refresh when other action unavailable');
+console.log('PASS: bounded resource sequencing and exact-source DoT refresh avoidance');

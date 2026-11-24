@@ -399,6 +399,63 @@ function redundantPureShieldV2(actor:CombatantState,a:AbilityDefinition,allies:C
   return !targets.some(t=>pressure.includes(t));
 }
 
+// Sequencing is a bounded alternative to an ordinary damage action, never
+// a hard resource requirement or a delay to an emergency/tactical action.
+const SEQUENCE_HOLD_MS_V2=1500;
+function majorSpenderV2(a:AbilityDefinition):boolean{
+  return a.combatV2?.spend==='all'||Number(a.combatV2?.spend??0)>=3;
+}
+function redundantOwnDamageStatusV2(actor:CombatantState,a:AbilityDefinition,target:CombatantState,now:number):boolean{
+  if(a.target!=='current_target'||a.effects.some(e=>e.kind==='interrupt'||
+    (e.consumeOwnedDotFraction??0)>0||(e.lifestealPct??0)>0||
+    (e.executeBonus??0)>0||(e.additionalExecuteBonus??0)>0||
+    (e.kind!=='damage'&&e.kind!=='dot'&&e.kind!=='debuff')||
+    (e.target&&e.target!==a.target)))return false;
+  const status=a.effects.filter(e=>e.kind==='dot'||e.kind==='debuff');
+  if(!status.length)return false;
+  // An identical authored periodic source with at least one future tick
+  // left, or an identical own debuff with time remaining. Different skills,
+  // tags, sources and compound utility must never be treated as duplicates.
+  return status.every(e=>e.kind==='dot'?
+    target.periodic.some(p=>p.kind==='dot'&&p.sourceId===actor.definition.id&&
+      p.effectId===a.id&&p.tag===(e.tag??e.damageType??e.kind)&&
+      p.expiresAt-now>1000&&p.nextTickAt>now&&p.nextTickAt<=p.expiresAt):
+    target.modifiers.some(m=>m.kind==='debuff'&&m.sourceId===actor.definition.id&&
+      m.v2SourceAbilityId===a.id&&m.tag===(e.tag??'generic')&&
+      m.value===(e.value??0)&&m.expiresAt-now>1000));
+}
+function sequenceDamageActionV2(actor:CombatantState,selected:AbilityDefinition,
+  ordered:AbilityDefinition[],foes:CombatantState[],now:number,
+  available:(a:AbilityDefinition)=>boolean,holds:Map<string,number>):AbilityDefinition{
+  if(!damageV2(actor)||!actor.combatV2||!selected.id.includes(':v2:')||
+    selected.target!=='current_target')return selected;
+  const live=living(foes);
+  // Only a single, known target. Never predict or change random/multi-target
+  // resolution; ordinary tactics retain their explicit target choices.
+  if(live.length!==1)return selected;
+  const target=live[0],v2=actor.combatV2;
+  const window=modifier(target,'damage_taken',now)>0||modifier(actor,'damage_done',now)>0||
+    modifier(actor,'crit',now)>0||v2.pendingDamageBonus>0||v2.pendingCritMultiplierBonus>0;
+  if(window||hpPct(target)<.35)return selected;
+  const lowResource=target.definition.boss&&majorSpenderV2(selected)&&
+    v2.stacks<Math.ceil(v2.maxStacks/2);
+  const refresh=redundantOwnDamageStatusV2(actor,selected,target,now);
+  if(!lowResource&&!refresh)return selected;
+  const key=actor.definition.id+':'+selected.id;
+  if(now-(holds.get(key)??now)>=SEQUENCE_HOLD_MS_V2)return selected;
+  const alternatives=ordered.filter(a=>a!==selected&&a.id.includes(':v2:')&&a.castTimeMs===0&&
+    a.target==='current_target'&&available(a)&&!majorSpenderV2(a)&&
+    !redundantOwnDamageStatusV2(actor,a,target,now)&&
+    a.effects.some(e=>(e.kind==='damage'||e.kind==='dot')&&((e.coeff??0)>0||(e.flat??0)>0))&&
+    (!lowResource||!a.combatV2?.spend));
+  // No idle waiting or artificial resource generation. If a meaningful
+  // alternate action is unavailable, use the originally selected ability.
+  const alternative=alternatives[0];
+  if(!alternative)return selected;
+  if(!holds.has(key))holds.set(key,now);
+  return alternative;
+}
+
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
 export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
@@ -461,6 +518,7 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   // Stable priority and phase ordering are immutable within one fight.
   // Build them once rather than sorting at every 100ms simulation tick.
   const abilitiesByActor=new Map(all.map(actor=>[actor,[...actor.definition.abilities].sort((a,b)=>b.priority-a.priority)] as const));
+  const sequenceHoldsV2=new Map<string,number>();
   const bosses=enemies.filter(actor=>actor.definition.boss);
   const phasesByBoss=new Map(bosses.map(boss=>[boss,[...(boss.definition.phases??[])].sort((a,b)=>b.hpPct-a.hpPct)] as const));
 
@@ -1010,9 +1068,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(damageV2(actor)){
         const decision=damageTacticsV2(actor,ordered,allies,foes,now,mitigationConstant);
         if(decision){ab=decision.ability;predictiveTargets=decision.targets;}
+        else if(ab)ab=sequenceDamageActionV2(actor,ab,ordered,foes,now,available,sequenceHoldsV2);
       }
       if(ab){ const coordinated=coordinatedHealV2(actor,ab,allies,foes,now,mitigationConstant);
-        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab)); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tankV2(actor)||damageV2(actor))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+        const ts=predictiveTargets??(coordinated?.target?[coordinated.target]:supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab)); const t=ts[0]; if(t){ sequenceHoldsV2.delete(actor.definition.id+':'+ab.id); actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target&&!(((tankV2(actor)||damageV2(actor))&&predictiveTargets||coordinated?.target)&&fx.target===ab.target)?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }

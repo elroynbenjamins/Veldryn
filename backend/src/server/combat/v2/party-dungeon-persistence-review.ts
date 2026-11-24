@@ -54,7 +54,7 @@ const reverseClass=new Map<string,ClassIdV2>(
  ]));
 const classId=(value:string):ClassIdV2|undefined=>
  reverseClass.get(value.trim().toUpperCase().replace(/ /g,'_'));
-const fail=(why:string):never=>{throw Error('party_v2_run_binding_'+why);};
+function fail(why:string):never{throw Error('party_v2_run_binding_'+why);}
 
 export function reviewPartyV2RunBinding(input:{
  readonly runId:string;

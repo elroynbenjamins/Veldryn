@@ -7,6 +7,7 @@
  * No secondary damage/healing event is fed into a trigger.
  */
 import type {VerifiedV2EquipmentEffectSource} from './equipment-trait-engine-authority';
+import {ReactiveReflectionBudgetV2} from './reactive-reflection-budget';
 export type ExecutedTraitId='sword_dance'|'echoing_strike'|'thornbound_riposte'|'mending_echo'|'restorative_bloom';
 const round=(v:number)=>Math.round(v*1e6)/1e6;
 const positive=(v:number)=>Number.isFinite(v)&&v>=0;
@@ -15,8 +16,7 @@ const snapshotTrait=(s:VerifiedV2EquipmentEffectSource,id:ExecutedTraitId)=>
 interface RunnerState {
  streak:number;targetId:string|null;swordProcAt:number;
  echoProcAt:number;thornProcAt:number;
- mendingProcAt:number;bloomProcAt:number;
- history:Array<{atMs:number;attackerId:string;amount:number}>;
+ mendingProcAt:number;bloomProcAt:number;lastGlobalTraitProcAt:number;
 }
 export interface EquipmentTraitTriggerV2{
  readonly traitId:ExecutedTraitId|'reflect_damage_affix';
@@ -28,10 +28,13 @@ export interface EquipmentTraitTriggerV2{
 }
 export class EquipmentTraitRuntimeV2{
  private readonly states=new Map<string,RunnerState>();
- constructor(private readonly sources:ReadonlyMap<string,VerifiedV2EquipmentEffectSource>){
+ /** One allocator also used by a signed Dungeon 2.0 relic if provided.
+  * A standalone equipment-only simulation still gets its own budget. */
+ constructor(private readonly sources:ReadonlyMap<string,VerifiedV2EquipmentEffectSource>,
+  private readonly reflectionBudget=new ReactiveReflectionBudgetV2()){
   for(const id of sources.keys())this.states.set(id,{
    streak:0,targetId:null,swordProcAt:-Infinity,echoProcAt:-Infinity,
-   thornProcAt:-Infinity,mendingProcAt:-Infinity,bloomProcAt:-Infinity,history:[],
+   thornProcAt:-Infinity,mendingProcAt:-Infinity,bloomProcAt:-Infinity,lastGlobalTraitProcAt:-Infinity,
   });
  }
  private get(id:string){return this.states.get(id);}
@@ -54,8 +57,8 @@ export class EquipmentTraitRuntimeV2{
    state.streak++;
    if(snapshotTrait(source,'sword_dance')&&state.streak>=3){
     state.streak=0;
-    if(atMs-state.swordProcAt>=9000){
-     state.swordProcAt=atMs;
+    if(atMs-state.swordProcAt>=9000&&atMs-state.lastGlobalTraitProcAt>=1000){
+     state.swordProcAt=atMs;state.lastGlobalTraitProcAt=atMs;
      const extra=adjusted*.05;
      adjusted+=extra;
      return {damage:round(adjusted),trigger:{traitId:'sword_dance',actorId,targetId,atMs,
@@ -75,10 +78,11 @@ export class EquipmentTraitRuntimeV2{
   if(!source||!state||!snapshotTrait(source,'echoing_strike')||
      abilityId==='BASIC'||abilityId.startsWith('V2_')||
      abilityId.startsWith('GEM_')||!positive(hpDamage)||hpDamage===0||
-     !positive(attackPower)||atMs-state.echoProcAt<30000)return;
+     !positive(attackPower)||atMs-state.echoProcAt<30000||
+     atMs-state.lastGlobalTraitProcAt<1000)return;
   const amount=round(Math.min(hpDamage*.08,attackPower*.20));
   if(amount<=0)return;
-  state.echoProcAt=atMs;
+  state.echoProcAt=atMs;state.lastGlobalTraitProcAt=atMs;
   return {traitId:'echoing_strike',actorId,targetId,atMs,effect:'bonus_direct_damage',amount};
  }
  /** Rolling shared enemy-specific 5s budget for affix and Thornbound Riposte. */
@@ -90,19 +94,17 @@ export class EquipmentTraitRuntimeV2{
      !positive(actualHpLost)||actualHpLost===0||
      !positive(defenderMaxHp)||!positive(attackerMaxHp)||
      !defenderMaxHp||!attackerMaxHp)return;
-  state.history=state.history.filter(entry=>atMs-entry.atMs<5000);
-  const thornReady=snapshotTrait(source,'thornbound_riposte')&&atMs-state.thornProcAt>=15000;
+  const thornReady=snapshotTrait(source,'thornbound_riposte')&&
+    atMs-state.thornProcAt>=15000&&atMs-state.lastGlobalTraitProcAt>=1000;
   const reflect=actualHpLost*source.reflectDamagePct/100;
   const thorn=thornReady?Math.min(actualHpLost*.08,defenderMaxHp*.015):0;
-  const budget=attackerMaxHp*(isRegionalBoss?0.001:0.002);
-  const spent=state.history.filter(entry=>entry.attackerId===attackerId)
-   .reduce((n,entry)=>n+entry.amount,0);
-  const amount=Math.max(0,Math.min(reflect+thorn,defenderMaxHp*.015,budget-spent));
+  const requested=Math.min(reflect+thorn,defenderMaxHp*.015);
+  const amount=this.reflectionBudget.reserve({atMs,attackerId,attackerMaxHp,
+   regionalBoss:isRegionalBoss,requested});
   if(amount<=0)return;
   const reflectPart=Math.min(reflect,amount);
   const thornPart=amount-reflectPart;
-  if(thornPart>0)state.thornProcAt=atMs;
-  state.history.push({atMs,attackerId,amount});
+  if(thornPart>0){state.thornProcAt=atMs;state.lastGlobalTraitProcAt=atMs;}
   return {traitId:thornPart>0?'thornbound_riposte':'reflect_damage_affix',
    actorId:defenderId,targetId:attackerId,atMs,effect:'retaliation_damage',amount:round(amount)};
  }
@@ -115,16 +117,18 @@ export class EquipmentTraitRuntimeV2{
     otherId===sourceId||!positive(actualHeal)||actualHeal===0||
     !positive(otherMissingHp)||otherMissingHp===0)return [];
   const result:EquipmentTraitTriggerV2[]=[];
-  if(snapshotTrait(source,'mending_echo')&&atMs-state.mendingProcAt>=24000){
+  if(snapshotTrait(source,'mending_echo')&&atMs-state.mendingProcAt>=24000&&
+     atMs-state.lastGlobalTraitProcAt>=1000){
    const amount=round(Math.min(otherMissingHp,actualHeal*.08));
-   if(amount>0){state.mendingProcAt=atMs;result.push({
+   if(amount>0){state.mendingProcAt=atMs;state.lastGlobalTraitProcAt=atMs;result.push({
     traitId:'mending_echo',actorId:sourceId,targetId:otherId,atMs,
     effect:'secondary_heal',amount,
    });}
   }
-  if(snapshotTrait(source,'restorative_bloom')&&atMs-state.bloomProcAt>=26000){
+  if(snapshotTrait(source,'restorative_bloom')&&atMs-state.bloomProcAt>=26000&&
+     atMs-state.lastGlobalTraitProcAt>=1000){
    const amount=round(Math.min(otherMissingHp,actualHeal*.05));
-   if(amount>0){state.bloomProcAt=atMs;result.push({
+   if(amount>0){state.bloomProcAt=atMs;state.lastGlobalTraitProcAt=atMs;result.push({
     traitId:'restorative_bloom',actorId:sourceId,targetId:otherId,atMs,
     effect:'secondary_hot',amount,
    });}

@@ -4,6 +4,9 @@ import {applyEnemyV2Periodic,applyEnemyV2Modifier,enemyV2AllowedShieldAmount} fr
 import {authorizeEnemyV2EngineExecution,type EnemyV2EngineAuthority} from './v2/enemy-engine-authority';
 import {authorizeEquipmentV2TraitEngine,type EquipmentV2TraitEngineAuthority} from './v2/equipment-trait-engine-authority';
 import {EquipmentTraitRuntimeV2} from './v2/equipment-trait-engine-runtime';
+import {authorizeDungeonRewardEngineV2,type DungeonRewardEngineAuthorityV2,
+ type DungeonRewardProcActionV2} from './v2/dungeon-reward-engine-v2';
+import {ReactiveReflectionBudgetV2} from './v2/reactive-reflection-budget';
 import {initCombatResourceV2,awardCombatResourceV2,spendCombatResourceV2,consumeQueuedCombatBonusV2} from './v2/resource-runtime';
 import {triggerCapstoneV2,type CapstoneContextV2,type CapstoneTriggerV2} from './v2/capstone-runtime';
 import {
@@ -92,14 +95,17 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 }
 
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
-export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority): CombatResult {
+export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, dungeonRewardAuthority?:DungeonRewardEngineAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const enemyV2Effects=authorizeEnemyV2EngineExecution(input,enemyV2Authority);
   // No token -> no equipment trait runtime actions, preserving every legacy
   // and previously compiled V2 run. Exact-token validation is server-owned.
   const equipmentSources=authorizeEquipmentV2TraitEngine(input,equipmentTraitAuthority);
+  const reflectionBudget=new ReactiveReflectionBudgetV2();
   const equipmentTraitRuntime=equipmentTraitAuthority
-    ?new EquipmentTraitRuntimeV2(equipmentSources):undefined;
+    ?new EquipmentTraitRuntimeV2(equipmentSources,reflectionBudget):undefined;
+  const dungeonRewards=authorizeDungeonRewardEngineV2(input,dungeonRewardAuthority,
+    reflectionBudget);
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const v2Encounter=players.some(player=>Boolean(player.definition.combatV2));
@@ -146,6 +152,83 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   };
 
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
+  // Hidden reward actions never re-enter direct damage, gem, passive or
+  // equipment pipelines; they cannot generate another reward trigger.
+  const applyDungeonRewardAction=(now:number,source:CombatantState,
+    enemy:CombatantState,action:DungeonRewardProcActionV2)=>{
+    const target=action.target==='self'?source:
+      action.target==='ally'?players.find(p=>p.definition.id===action.recipientId):enemy;
+    if(!target?.alive)return;
+    const id='V2_DUNGEON_REWARD:'+action.rewardId;
+    if(action.kind==='secondary_damage'||action.kind==='retaliation_damage'){
+      if(target.definition.team!=='enemies'||source.definition.team!=='players')return;
+      const bonus=Math.min(target.hp,Math.max(0,action.amount));
+      if(bonus<=0)return;
+      target.hp-=bonus;target.damageTaken+=bonus;source.damageDone+=bonus;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(bonus.toFixed(2)),
+        detail:action.kind==='retaliation_damage'?
+         'shared_reflect_budget_no_recursive_trigger':'secondary_damage_no_recursive_trigger'});
+      if(target.hp<=0&&target.alive){
+        // Secondary finishers must settle the enemy's actual death; do not
+        // invoke normal kill/resource/gem hooks from generated damage.
+        target.alive=false;
+        events.push({atMs:now,type:'death',actorId:source.definition.id,
+          targetId:target.definition.id,abilityId:id,
+          detail:'secondary_finisher_no_recursive_kill'});
+      }
+      return;
+    }
+    if(action.kind==='secondary_heal'){
+      if(target.definition.team!=='players'||source.definition.team!=='players'||
+         !dungeonRewards?.hasMember(target.definition.id)||
+         target===source)return;
+      const actual=Math.min(Math.max(0,action.amount),target.definition.stats.maxHp-target.hp);
+      if(actual<=0)return;
+      target.hp+=actual;source.healingDone+=actual;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(actual.toFixed(2)),
+        detail:'third_party_secondary_heal_no_recursive_trigger'});
+      return;
+    }
+    if(action.kind==='secondary_shield'){
+      if(target.definition.team!=='players'||source.definition.team!=='players'||
+         !dungeonRewards?.hasMember(target.definition.id)||
+         target===source)return;
+      const actual=Math.min(Math.max(0,action.amount),
+        Math.max(0,target.definition.stats.maxHp*.10-target.shield));
+      if(actual<=0)return;
+      target.shield+=actual;
+      events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,amount:Number(actual.toFixed(2)),
+        detail:'third_party_secondary_barrier_no_recursive_trigger'});
+      return;
+    }
+    if(action.kind==='bleed'){
+      if(target.definition.team!=='enemies'||source.definition.team!=='players'||action.amount<=0)return;
+      target.periodic=target.periodic.filter(p=>!(
+        p.effectId===id&&p.sourceId===source.definition.id));
+      target.periodic.push({sourceId:source.definition.id,effectId:id,kind:'dot',
+        coeff:0,flat:action.amount,damageType:'physical',tag:'bleed',
+        nextTickAt:now+(action.tickMs??1000),expiresAt:now+(action.durationMs??3000),
+        tickMs:action.tickMs??1000});
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,statusKind:'dot',statusTag:'bleed',
+        expiresAtMs:now+(action.durationMs??3000)});
+    }else{
+      if(!action.tag||!action.durationMs)return;
+      target.modifiers=target.modifiers.filter(m=>m.v2CapstoneId!==id||m.tag!==action.tag);
+      target.modifiers.push({sourceId:source.definition.id,tag:action.tag,
+        value:action.amount,kind:action.kind==='buff'?'buff':'debuff',
+        createdAt:now,expiresAt:now+action.durationMs,v2CapstoneId:id});
+      events.push({atMs:now,type:'status_apply',actorId:source.definition.id,
+        targetId:target.definition.id,abilityId:id,
+        statusKind:action.kind==='buff'?'buff':'debuff',statusTag:action.tag,
+        expiresAtMs:now+action.durationMs});
+    }
+    events.push({atMs:now,type:'dungeon_reward_trigger',actorId:source.definition.id,
+      targetId:target.definition.id,abilityId:id,detail:'original_event_only'});
+  };
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{
     if(!target.alive)return;
     // Tactical mark is a percentage-point accuracy window, not a raw accuracy-rating increase.
@@ -159,7 +242,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       if(!abilityId.startsWith('V2_')){
         runCapstone(target,'evade',now,source);runReactive(target,'evade',now,source);
       }}}return;}
-    const v2Defense=v2Encounter?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
+    // Authored Enemy/Boss 2.0 kits need not advertise the player-only
+    // combat-v2 tag. A signed dungeon reward may still weaken their defense.
+    const v2Defense=v2Encounter&&(
+      target.definition.tags?.includes('combat-v2')||
+      (Boolean(dungeonRewards)&&target.definition.team==='enemies'))
+      ?Math.max(.7,Math.min(1.30,1+modifier(target,'defense_pct',now))):1;
     const authoredPenetration=v2Encounter&&source.definition.combatV2?
       clamp((effect.penetrationPct??0)+(sourceGear?.penetrationPp??0),0,1):0;
     const mit=effect.damageType==='true'?0:defenseMitigation(gemEffectiveDefenseV1(target,now)*v2Defense*(1-authoredPenetration),mitigationConstant);
@@ -273,6 +361,30 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     gemOnDamageTakenV1(now,target,dealt);emitGemState(now);
     if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);emitGemState(now);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(heavyHit?{detail:'heavy_hit'}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
+    // Hidden runtime is gated by an exact signed reward token and original
+    // ability provenance. Secondary effects never call this path recursively.
+    if(dungeonRewards&&eventType==='damage'&&dealt>0&&source.alive&&target.alive&&
+      source.definition.team==='players'&&target.definition.team==='enemies'&&
+      target.hp>0&&(abilityId==='BASIC'||source.definition.abilities.some(a=>a.id===abilityId))&&
+      !abilityId.startsWith('V2_')){
+      for(const action of dungeonRewards.afterOriginalDirectHit({now,
+        sourceId:source.definition.id,targetId:target.definition.id,abilityId,
+        critical:crit,actualHpDamage:dealt,attackPower:source.definition.stats.attackPower,
+        targetMaxHp:target.definition.stats.maxHp,boss:Boolean(target.definition.boss)}))
+        applyDungeonRewardAction(now,source,target,action);
+    }
+    if(dungeonRewards&&eventType==='damage'&&dealt>0&&target.alive&&target.hp>0&&
+      source.definition.team==='enemies'&&target.definition.team==='players'&&
+      (abilityId==='BASIC'||source.definition.abilities.some(a=>a.id===abilityId))&&
+      !(source.definition.phases??[]).some(p=>p.id===abilityId)&&
+      !abilityId.startsWith('V2_')){
+      for(const action of dungeonRewards.afterOriginalEnemyHit({now,
+        sourceId:source.definition.id,targetId:target.definition.id,abilityId,
+        hpBeforePct:hpBeforeReactive,hpAfterPct:hpPct(target),actualHpDamage:dealt,
+        boss:Boolean(source.definition.boss),attackerMaxHp:source.definition.stats.maxHp,
+        defenderMaxHp:target.definition.stats.maxHp}))
+        applyDungeonRewardAction(now,target,source,action);
+    }
     if(dealt>0){
       if(source.definition.team==='players'){
         resource(source,eventType==='dot_tick'?'periodic_hit':'direct_hit',now,abilityId);
@@ -306,6 +418,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       source.definition.team==='enemies'&&target.definition.team==='players'&&
       source.alive&&target.alive&&target.hp>0&&dealt>0&&
       !(source.definition.phases??[]).some(phase=>phase.id===abilityId)&&
+      // Until every boss cast carries a signed avoidable-hit tag, only boss
+      // basic attacks may generate equipment reflection. Never cheese telegraphs.
+      (!source.definition.boss||abilityId==='BASIC')&&
       !abilityId.startsWith('V2_')&&!abilityId.startsWith('COMPANION_REFLECT')){
       const outcome=equipmentTraitRuntime.retaliation(now,target.definition.id,
         source.definition.id,dealt,target.definition.stats.maxHp,
@@ -381,6 +496,22 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         }
       }
     }
+    if(dungeonRewards&&direct&&actual>0&&source!==target&&
+      source.definition.team==='players'&&target.definition.team==='players'&&
+      source.definition.abilities.some(a=>a.id===abilityId)&&!abilityId.startsWith('V2_')){
+      const recipient=players.filter(x=>x.alive&&x!==source&&x!==target&&
+       x.hp<x.definition.stats.maxHp)
+       .sort((a,b)=>a.hp/a.definition.stats.maxHp-b.hp/b.definition.stats.maxHp||
+        a.definition.id.localeCompare(b.definition.id))[0];
+      if(recipient){
+        for(const action of dungeonRewards.afterOriginalAllyHeal({now,
+         sourceId:source.definition.id,healedId:target.definition.id,
+         recipientId:recipient.definition.id,abilityId,actualHeal:actual,
+         recipientMissingHp:recipient.definition.stats.maxHp-recipient.hp,
+         recipientMaxHp:recipient.definition.stats.maxHp}))
+          applyDungeonRewardAction(now,source,target,action);
+      }
+    }
     if(direct){const post=gemOnDirectHealV1(now,source,target,amount,actual);if(post.mercyBarrier>0){target.shield+=post.mercyBarrier;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId:'GEM_MERCY',amount:Number(post.mercyBarrier.toFixed(2))});}if(post.renewalTotal>0){const existing=target.periodic.filter(p=>p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id).sort((a,b)=>a.expiresAt-b.expiresAt);while(existing.length>=post.renewalMax){const remove=existing.shift();if(remove)target.periodic=target.periodic.filter(p=>p!==remove);}const tickMs=2000,ticks=Math.max(1,Math.floor(post.renewalDuration/tickMs));target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat:post.renewalTotal/ticks,nextTickAt:now+tickMs,expiresAt:now+post.renewalDuration,tickMs});}gemConsumeSupportChargeV1(now,source);emitGemState(now);}
     enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
@@ -398,7 +529,28 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         const isPartyShield=effect.target==='all_allies'||ability?.target==='all_allies';
         runCapstone(source,'shield',now,target,{amount:amt,isPartyShield});
       }
-    }return;}
+    }
+    if(dungeonRewards&&amt>0&&source.definition.team==='players'&&
+       target.definition.team==='players'&&
+       source.definition.abilities.some(a=>a.id===abilityId)&&
+       !abilityId.startsWith('V2_')){
+      // Never copy a generated shield. Pick the most vulnerable other
+      // participant, not the direct recipient or shield caster.
+      const recipient=players.filter(x=>x.alive&&x!==source&&x!==target&&
+       x.shield<x.definition.stats.maxHp*.10)
+       .sort((a,b)=>(a.hp+a.shield)/a.definition.stats.maxHp-
+         (b.hp+b.shield)/b.definition.stats.maxHp||
+         a.definition.id.localeCompare(b.definition.id))[0];
+      if(recipient){
+        for(const action of dungeonRewards.afterOriginalShield({now,
+         sourceId:source.definition.id,originalTargetId:target.definition.id,
+         recipientId:recipient.definition.id,abilityId,actualShield:amt,
+         recipientMaxHp:recipient.definition.stats.maxHp,
+         recipientShield:recipient.shield}))
+          applyDungeonRewardAction(now,source,target,action);
+      }
+    }
+    return;}
     if(effect.kind==='dot'||effect.kind==='hot'){
       const isHex=effect.kind==='dot'&&
         (effect.damageType==='shadow'||effect.damageType==='arcane'||effect.damageType==='nature');
@@ -492,7 +644,37 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       for(const at of due)runCapstone(actor,'totem_expires',now);
     }
     for(const state of all){ if(!state.alive)continue; state.modifiers=state.modifiers.filter(m=>m.expiresAt>now);
-      for(const p of [...state.periodic]){ if(p.nextTickAt<=now&&p.expiresAt>=now){ const src=all.find(x=>x.definition.id===p.sourceId); if(src?.alive){ const fx:AbilityEffect={kind:p.kind,coeff:p.coeff,flat:p.flat,damageType:p.damageType,tag:p.tag}; p.kind==='dot'?applyDamage(now,src,state,fx,p.effectId,'dot_tick'):applyHeal(now,src,state,fx,p.effectId,'hot_tick'); } p.nextTickAt+=p.tickMs; } }
+      for(const p of [...state.periodic]){
+        if(!state.alive)break;
+        if(p.nextTickAt<=now&&p.expiresAt>=now){
+          const src=all.find(x=>x.definition.id===p.sourceId);
+          if(src?.alive){
+            if(dungeonRewards&&p.effectId.startsWith('V2_DUNGEON_REWARD:')&&
+               dungeonRewards.hasMember(p.sourceId)&&p.kind==='dot'){
+              // Authorized Bleed is an HP tick, not a second direct hit.
+              // No new accuracy/crit RNG, ward, gem, class resource or trait proc.
+              const actual=Math.min(state.hp,Math.max(0,p.flat));
+              if(actual>0){
+                state.hp-=actual;state.damageTaken+=actual;src.damageDone+=actual;
+                events.push({atMs:now,type:'dot_tick',actorId:src.definition.id,
+                  targetId:state.definition.id,abilityId:p.effectId,
+                  amount:Number(actual.toFixed(2)),detail:'no_recursive_reward_trigger'});
+                if(state.hp<=0){
+                  state.alive=false;state.downed=state.definition.team==='players';
+                  events.push({atMs:now,type:state.downed?'down':'death',
+                    actorId:src.definition.id,targetId:state.definition.id,abilityId:p.effectId});
+                }
+              }
+            }else{
+              const fx:AbilityEffect={kind:p.kind,coeff:p.coeff,flat:p.flat,
+                damageType:p.damageType,tag:p.tag};
+              p.kind==='dot'?applyDamage(now,src,state,fx,p.effectId,'dot_tick'):
+                applyHeal(now,src,state,fx,p.effectId,'hot_tick');
+            }
+          }
+          p.nextTickAt+=p.tickMs;
+        }
+      }
       state.periodic=state.periodic.filter(p=>p.expiresAt>now);
     }
     if(!living(enemies).length){events.push({atMs:now,type:'combat_end',detail:'victory'});return{victory:true,durationMs:now,reason:'victory',events,players,enemies};}

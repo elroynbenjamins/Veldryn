@@ -1,0 +1,265 @@
+/**
+ * HIDDEN, opt-in Dungeon 2.0 reactive effect runtime.
+ * No 1.0.x route, no public CombatInput JSON field, no unverified source.
+ *
+ * Secondary damage / bleed ticks do not re-enter direct-hit, gem, equipment,
+ * class passives, resource, lifesteal or other reward-proc pipelines.
+ */
+import type {CombatInput} from '../types';
+import {enemyV2SnapshotDigest} from './enemy-engine-authority';
+import {assertVerifiedDungeonRewardSnapshotV2,type VerifiedDungeonRewardSnapshotV2} from './dungeon-rewards-v2';
+import {assertVerifiedDungeonPartyRewardSnapshotV2,
+ type VerifiedDungeonPartyRewardSnapshotV2} from './dungeon-reward-party-v2';
+import {ReactiveReflectionBudgetV2} from './reactive-reflection-budget';
+
+export const EXECUTABLE_DUNGEON_REWARDS_V2=Object.freeze([
+ 'ROOM_BOON_BLOODTHIRST','ROOM_BOON_LAST_STAND','ROOM_BOON_CRIPPLING_BLOWS',
+ 'ROOM_BOON_BURST_WINDOW','RELIC_TEMPORAL_ECHO','RELIC_GLACIAL_CROWN',
+ 'ROOM_BOON_WARDWEAVE','RELIC_THORNBOUND_AEGIS','RELIC_SOUL_LANTERN',
+] as const);
+export type ExecutableDungeonRewardIdV2=(typeof EXECUTABLE_DUNGEON_REWARDS_V2)[number];
+export const DUNGEON_REWARD_ENGINE_VERSION_V2='dungeon-reward-reactive-hidden-v1' as const;
+const recognized=new Set<string>(EXECUTABLE_DUNGEON_REWARDS_V2);
+const fail=(what:string):never=>{throw Error('dungeon_v2_engine_'+what);};
+const brand:unique symbol=Symbol('dungeon-v2-engine-authority');
+export type DungeonRewardEngineAuthorityV2=Readonly<{readonly [brand]:true}>;
+interface FrozenRewardScope {
+ readonly inputDigest:string; readonly seed:string;
+ readonly members:readonly {actorId:string;
+  counts:Readonly<Partial<Record<ExecutableDungeonRewardIdV2,number>>>}[];
+}
+const scopes=new WeakMap<object,FrozenRewardScope>();
+const eligible=(abilityId:string)=>abilityId==='BASIC'||(
+ !abilityId.startsWith('V2_')&&!abilityId.startsWith('GEM_')&&
+ !abilityId.startsWith('COMPANION_'));
+const legal=(n:number)=>Number.isFinite(n)&&n>=0;
+const round=(n:number)=>Math.round(n*1e6)/1e6;
+
+/** A ledger verifier must independently assert the stored run, owner, actor,
+ * revision and room receipts. A fake callback in unit tests is NOT DB proof. */
+export function issueDungeonRewardEngineAuthorityV2(
+ input:CombatInput,snapshot:VerifiedDungeonRewardSnapshotV2,
+ verifyPersisted:(snapshot:VerifiedDungeonRewardSnapshotV2,inputDigest:string)=>boolean,
+):DungeonRewardEngineAuthorityV2{
+ assertVerifiedDungeonRewardSnapshotV2(input,snapshot,verifyPersisted);
+ const counts={} as Record<ExecutableDungeonRewardIdV2,number>;
+ for(const receipt of snapshot.receipts){
+  const id=receipt.id;
+  if(recognized.has(id))
+   counts[id as ExecutableDungeonRewardIdV2]=(counts[id as ExecutableDungeonRewardIdV2]??0)+1;
+  else if(id.startsWith('ROOM_BOON_')||id.startsWith('RELIC_')){
+   // Stat-only and utility rewards are validated by the snapshot compiler;
+   // unsupported reactive rewards are specifically rejected there.
+  }
+ }
+ const token=Object.freeze({[brand]:true}) as DungeonRewardEngineAuthorityV2;
+ scopes.set(token,Object.freeze({inputDigest:enemyV2SnapshotDigest(input),
+  seed:input.seed,members:Object.freeze([{actorId:snapshot.actorId,
+   counts:Object.freeze({...counts})}])}));
+ return token;
+}
+/** Party authority remains private to a trusted caller that has already
+ * committed the room ledger, four member grants and immutable encounter.
+ * No public Live/Q-mode routes issue this token. */
+export function issueDungeonRewardPartyEngineAuthorityV2(
+ input:CombatInput,snapshot:VerifiedDungeonPartyRewardSnapshotV2,
+ verifyPersisted:(snapshot:VerifiedDungeonPartyRewardSnapshotV2,digest:string)=>boolean,
+):DungeonRewardEngineAuthorityV2{
+ assertVerifiedDungeonPartyRewardSnapshotV2(input,snapshot,verifyPersisted);
+ const members=snapshot.grants.map(grant=>{
+  const counts={} as Partial<Record<ExecutableDungeonRewardIdV2,number>>;
+  for(const receipt of grant.receipts){
+   if(recognized.has(receipt.id)){
+    const id=receipt.id as ExecutableDungeonRewardIdV2;
+    counts[id]=(counts[id]??0)+1;
+   }
+  }
+  return Object.freeze({actorId:grant.actorId,counts:Object.freeze(counts)});
+ });
+ const token=Object.freeze({[brand]:true}) as DungeonRewardEngineAuthorityV2;
+ scopes.set(token,Object.freeze({inputDigest:enemyV2SnapshotDigest(input),
+  seed:input.seed,members:Object.freeze(members)}));
+ return token;
+}
+export function authorizeDungeonRewardEngineV2(
+ input:CombatInput,token?:DungeonRewardEngineAuthorityV2,
+ reflectionBudget=new ReactiveReflectionBudgetV2(),
+):DungeonRewardRuntimeV2|undefined{
+ if(token===undefined)return undefined;
+ if(typeof token!=='object'||!scopes.has(token))fail('not_server_issued');
+ const scope=scopes.get(token)!;
+ if(scope.inputDigest!==enemyV2SnapshotDigest(input)||scope.seed!==input.seed||
+  input.players.length!==scope.members.length||
+  input.players.some((p,i)=>p.id!==scope.members[i].actorId||
+   p.combatV2?.version!==2)||
+  (input.initialPlayerState&&Object.keys(input.initialPlayerState).length>0)||
+  input.enemyDamageProfile!==undefined)fail('compiled_encounter_mismatch');
+ const first=scope.members[0];
+ return new DungeonRewardRuntimeV2(first.actorId,first.counts,
+  new Map(scope.members.map(m=>[m.actorId,m.counts])),reflectionBudget);
+}
+export interface DungeonRewardProcActionV2{
+ readonly rewardId:ExecutableDungeonRewardIdV2;
+ readonly kind:'bleed'|'buff'|'debuff'|'secondary_damage'|
+  'secondary_heal'|'secondary_shield'|'retaliation_damage';
+ readonly target:'self'|'enemy'|'ally';
+ /** Required for party-generated shielding and healing, never client-supplied. */
+ readonly recipientId?:string;
+ readonly tag?:'defense_pct'|'healing_received'|'damage_done'|'haste';
+ readonly amount:number;
+ readonly durationMs?:number;
+ readonly tickMs?:number;
+}
+export class DungeonRewardRuntimeV2{
+ private readonly cooldown=new Map<string,number>();
+ private readonly lastStandUsed=new Set<string>();
+ constructor(readonly actorId:string,
+  private readonly counts:Readonly<Partial<Record<ExecutableDungeonRewardIdV2,number>>>,
+  private readonly memberCounts:ReadonlyMap<string,
+   Readonly<Partial<Record<ExecutableDungeonRewardIdV2,number>>>>=
+    new Map([[actorId,counts]]),
+  private readonly reflectionBudget=new ReactiveReflectionBudgetV2()){}
+ hasMember(actorId:string){return this.memberCounts.has(actorId);}
+ private stacks(id:ExecutableDungeonRewardIdV2,actorId:string){
+  return this.memberCounts.get(actorId)?.[id]??0;
+ }
+ private has(id:ExecutableDungeonRewardIdV2,actorId:string){
+  return this.stacks(id,actorId)>0;
+ }
+ private ready(id:ExecutableDungeonRewardIdV2,now:number,ms:number,
+  actorId:string,target?:string):boolean{
+  const key=actorId+':'+id+':'+(target??actorId),
+   previous=this.cooldown.get(key)??-Infinity;
+  if(now-previous<ms)return false;
+  this.cooldown.set(key,now);return true;
+ }
+ /** ORIGINAL effective direct player damage to a living enemy ONLY.
+  * The caller must attest original ability provenance and exclude generated
+  * trait, gem, passive, reflect, DoT or reward events. */
+ afterOriginalDirectHit(args:{
+  now:number;sourceId:string;targetId:string;abilityId:string;critical:boolean;
+  actualHpDamage:number;attackPower:number;targetMaxHp:number;boss:boolean;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,targetId,abilityId,critical,actualHpDamage,attackPower,targetMaxHp,boss}=args;
+  if(!this.hasMember(sourceId)||!Number.isSafeInteger(now)||now<0||
+   !legal(actualHpDamage)||actualHpDamage===0||!legal(attackPower)||
+   !legal(targetMaxHp)||targetMaxHp===0||!eligible(abilityId))return [];
+  const acts:DungeonRewardProcActionV2[]=[];
+  const skill=abilityId!=='BASIC';
+  if(critical&&this.has('ROOM_BOON_BLOODTHIRST',sourceId)&&
+    this.ready('ROOM_BOON_BLOODTHIRST',now,12000,sourceId,targetId)){
+   const tick=round(Math.min(attackPower*.04,targetMaxHp*(boss?.0003:.001)));
+   if(tick>0)acts.push({rewardId:'ROOM_BOON_BLOODTHIRST',kind:'bleed',
+    target:'enemy',amount:tick,durationMs:3000,tickMs:1000});
+  }
+  if(this.has('ROOM_BOON_CRIPPLING_BLOWS',sourceId)&&
+    this.ready('ROOM_BOON_CRIPPLING_BLOWS',now,18000,sourceId,targetId))
+   acts.push({rewardId:'ROOM_BOON_CRIPPLING_BLOWS',kind:'debuff',
+    target:'enemy',tag:'defense_pct',amount:boss?-.025:-.04,durationMs:5000});
+  if(this.has('RELIC_GLACIAL_CROWN',sourceId)&&
+    this.ready('RELIC_GLACIAL_CROWN',now,20000,sourceId,targetId))
+   acts.push({rewardId:'RELIC_GLACIAL_CROWN',kind:'debuff',target:'enemy',
+    tag:'haste',amount:boss?-.02:-.04,durationMs:4000});
+  if(skill&&this.has('ROOM_BOON_BURST_WINDOW',sourceId)&&
+    this.ready('ROOM_BOON_BURST_WINDOW',now,25000,sourceId))
+   acts.push({rewardId:'ROOM_BOON_BURST_WINDOW',kind:'buff',target:'self',
+    tag:'damage_done',amount:.05,durationMs:5000});
+  if(skill&&this.has('RELIC_TEMPORAL_ECHO',sourceId)&&
+    this.ready('RELIC_TEMPORAL_ECHO',now,30000,sourceId)){
+   const stacks=this.stacks('RELIC_TEMPORAL_ECHO',sourceId);
+   const bonus=round(Math.min(actualHpDamage*(stacks===2?.06:.04),
+     attackPower*.12,targetMaxHp*(boss?.0005:.002)));
+   if(bonus>0)acts.push({rewardId:'RELIC_TEMPORAL_ECHO',
+    kind:'secondary_damage',target:'enemy',amount:bonus});
+  }
+  return acts;
+ }
+ /** An ORIGINAL effective class shield may copy a small share to one
+  * OTHER party member. Generated shields never trigger this method again. */
+ afterOriginalShield(args:{
+  now:number;sourceId:string;originalTargetId:string;recipientId:string;
+  abilityId:string;actualShield:number;recipientMaxHp:number;recipientShield:number;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,originalTargetId,recipientId,abilityId,actualShield,
+   recipientMaxHp,recipientShield}=args;
+  if(!this.has('ROOM_BOON_WARDWEAVE',sourceId)||
+   !this.hasMember(originalTargetId)||!this.hasMember(recipientId)||
+   recipientId===sourceId||recipientId===originalTargetId||
+   abilityId==='BASIC'||!eligible(abilityId)||
+   !Number.isSafeInteger(now)||now<0||!legal(actualShield)||
+   actualShield===0||!legal(recipientMaxHp)||recipientMaxHp===0||
+   !legal(recipientShield))return [];
+  const amount=round(Math.min(actualShield*.12,recipientMaxHp*.02,
+   Math.max(0,recipientMaxHp*.10-recipientShield)));
+  if(amount<=0||
+   !this.ready('ROOM_BOON_WARDWEAVE',now,20000,sourceId))return [];
+  return [{rewardId:'ROOM_BOON_WARDWEAVE',kind:'secondary_shield',
+   target:'ally',recipientId,amount}];
+ }
+ /** An ORIGINAL direct, effective ALLY heal (not self/HoT/trait/gem heal)
+  * sends one bounded separate heal to a third party member. */
+ afterOriginalAllyHeal(args:{
+  now:number;sourceId:string;healedId:string;recipientId:string;
+  abilityId:string;actualHeal:number;recipientMissingHp:number;recipientMaxHp:number;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,healedId,recipientId,abilityId,actualHeal,
+   recipientMissingHp,recipientMaxHp}=args;
+  if(!this.has('RELIC_SOUL_LANTERN',sourceId)||
+   !this.hasMember(healedId)||!this.hasMember(recipientId)||
+   healedId===sourceId||recipientId===sourceId||recipientId===healedId||
+   !eligible(abilityId)||abilityId==='BASIC'||
+   !Number.isSafeInteger(now)||now<0||!legal(actualHeal)||
+   actualHeal===0||!legal(recipientMissingHp)||recipientMissingHp===0||
+   !legal(recipientMaxHp)||recipientMaxHp===0)return [];
+  const amount=round(Math.min(actualHeal*(this.stacks('RELIC_SOUL_LANTERN',sourceId)===2?.15:.10),
+   recipientMaxHp*.015,recipientMissingHp));
+  if(amount<=0||!this.ready('RELIC_SOUL_LANTERN',now,24000,sourceId))return [];
+  return [{rewardId:'RELIC_SOUL_LANTERN',kind:'secondary_heal',
+   target:'ally',recipientId,amount}];
+ }
+ /** After original direct enemy HP damage: once-per-fight Last Stand and
+  * a limited Thornbound Aegis reflection. Equipment affixes & Thornbound
+  * Riposte reserve from the SAME attacker-specific rolling five-second cap. */
+ afterOriginalEnemyHit(args:{
+  now:number;sourceId:string;targetId:string;abilityId:string;
+  hpBeforePct:number;hpAfterPct:number;actualHpDamage:number;boss:boolean;
+  attackerMaxHp?:number;defenderMaxHp?:number;
+ }):readonly DungeonRewardProcActionV2[]{
+  const {now,sourceId,targetId,abilityId,hpBeforePct,hpAfterPct,
+   actualHpDamage,boss,attackerMaxHp,defenderMaxHp}=args;
+  if(!this.hasMember(targetId)||sourceId===targetId||
+   !Number.isSafeInteger(now)||now<0||!legal(actualHpDamage)||
+   actualHpDamage===0||!legal(hpBeforePct)||!legal(hpAfterPct)||
+   hpAfterPct<=0||!eligible(abilityId)||(boss&&abilityId!=='BASIC'))return [];
+  const actions:DungeonRewardProcActionV2[]=[];
+  if(this.has('ROOM_BOON_LAST_STAND',targetId)&&
+     !this.lastStandUsed.has(targetId)&&
+     hpBeforePct>.30&&hpAfterPct<=.30){
+   this.lastStandUsed.add(targetId);
+   actions.push(
+    {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
+     tag:'defense_pct',amount:.10,durationMs:6000},
+    {rewardId:'ROOM_BOON_LAST_STAND',kind:'buff',target:'self',
+     tag:'healing_received',amount:.10,durationMs:6000});
+  }
+  if(this.has('RELIC_THORNBOUND_AEGIS',targetId)&&
+     attackerMaxHp!==undefined&&defenderMaxHp!==undefined&&
+     legal(attackerMaxHp)&&attackerMaxHp>0&&
+     legal(defenderMaxHp)&&defenderMaxHp>0){
+   const key=targetId+':RELIC_THORNBOUND_AEGIS',last=this.cooldown.get(key)??-Infinity;
+   if(now-last>=15000){
+    const stacks=this.stacks('RELIC_THORNBOUND_AEGIS',targetId);
+    const requested=Math.min(actualHpDamage*(stacks===2?.12:.08),
+      defenderMaxHp*.015);
+    const amount=this.reflectionBudget.reserve({
+     atMs:now,attackerId:sourceId,attackerMaxHp,regionalBoss:boss,requested});
+    if(amount>0){
+     this.cooldown.set(key,now);
+     actions.push({rewardId:'RELIC_THORNBOUND_AEGIS',
+      kind:'retaliation_damage',target:'enemy',amount});
+    }
+   }
+  }
+  return actions;
+ }
+}

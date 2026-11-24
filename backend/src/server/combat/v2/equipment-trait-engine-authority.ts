@@ -26,6 +26,8 @@ export interface VerifiedV2EquipmentEffectSource {
  readonly characterId:string;
  readonly actorId:string;
  readonly ownedEquippedInstanceIds:readonly string[];
+ /** Canonical digest of the separately verified exact-item receipt set. */
+ readonly equipmentReceiptDigest:string;
  readonly basicAttackDamagePct:number;
  readonly abilityDamagePct:number;
  readonly reflectDamagePct:number;
@@ -48,6 +50,7 @@ function validate(source:VerifiedV2EquipmentEffectSource){
   source.policy!==EQUIPMENT_V2_TRAIT_ENGINE_POLICY||
   !Number.isSafeInteger(source.revision)||source.revision<1||
   !validId(source.accountId)||!validId(source.characterId)||!validId(source.actorId)||
+  !/^[0-9a-f]{64}$/.test(source.equipmentReceiptDigest)||
   !Array.isArray(source.ownedEquippedInstanceIds)||
   source.ownedEquippedInstanceIds.length>10||
   source.ownedEquippedInstanceIds.some(id=>!validId(id))||

@@ -313,7 +313,7 @@ export function SkillsV2PreviewScreen({
   </Panel>
  </View>;
  return <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.root}
-  showsVerticalScrollIndicator={false}>
+  showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.topRow}>
    <View style={s.flex}><Text accessibilityRole="header" style={s.title}>Skills 2.0</Text>
     <Text style={s.subtitle}>{characterLabel??data.name} · {data.name} ({data.role}) · Lv {level}</Text></View>

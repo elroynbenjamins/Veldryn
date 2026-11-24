@@ -16,7 +16,12 @@ assert.throws(()=>resolve({path:'./v2/unexpected-new-runtime',importer:engine}),
  /unexpected_combat_v2_legacy_shim/,'A new experimental hook must fail closed');
 for(const path of [
  './v2/resource-runtime','./v2/capstone-runtime','./v2/reactive-passive-runtime',
- './v2/enemy-engine-authority','./enemy-v2-status-rules',
+ './v2/enemy-engine-authority',
+ './v2/equipment-trait-engine-authority',
+ './v2/equipment-trait-engine-runtime',
+ './v2/dungeon-reward-engine-v2',
+ './v2/reactive-reflection-budget',
+ './enemy-v2-status-rules',
 ]){
  const redirected=resolve({path,importer:engine});
  assert.equal(redirected?.namespace,'live-edge-v2-disabled');
@@ -39,6 +44,29 @@ for(const path of [
    players:[{combatV2:{version:2}}],
   }),/not_available_in_live/);
  }
+ if(path==='./v2/equipment-trait-engine-authority'){
+  assert.equal(m.authorizeEquipmentV2TraitEngine({players:[{}]}).size,0);
+  assert.throws(()=>m.authorizeEquipmentV2TraitEngine({players:[{}]},{}),
+   /not_available_in_live/);
+  assert.throws(()=>m.authorizeEquipmentV2TraitEngine({
+   players:[{combatV2:{version:2}}],
+  }),/not_available_in_live/);
+ }
+ if(path==='./v2/dungeon-reward-engine-v2'){
+  assert.equal(m.authorizeDungeonRewardEngineV2({players:[{}]}),undefined);
+  assert.throws(()=>m.authorizeDungeonRewardEngineV2({players:[{}]},{}),
+   /not_available_in_live/);
+  assert.throws(()=>m.authorizeDungeonRewardEngineV2({
+   players:[{combatV2:{version:2}}],
+  }),/not_available_in_live/);
+ }
+ if(path==='./v2/equipment-trait-engine-runtime')
+  assert.throws(()=>new m.EquipmentTraitRuntimeV2(),/not_available_in_live/);
+ if(path==='./v2/reactive-reflection-budget'){
+  const budget=new m.ReactiveReflectionBudgetV2();
+  assert.throws(()=>budget.reserve({atMs:0,requested:100}),
+   /not_available_in_live/);
+ }
  if(path==='./v2/reactive-passive-runtime')
   assert.throws(()=>m.triggerReactivePassiveV2(),/not_available_in_live/);
  if(path==='./v2/capstone-runtime')
@@ -55,11 +83,14 @@ for(const secret of [
  'backend/src/server/combat/v2/resource-runtime.ts',
  'backend/src/server/combat/v2/solo-encounter-persistence.ts',
  'backend/src/server/combat/enemy-v2-status-rules.ts',
+ 'backend/src/server/combat/v2/dungeon-reward-engine-v2.ts',
+ 'backend/src/server/combat/v2/reactive-reflection-budget.ts',
 ]){
  assert.throws(()=>assertLegacyEdgeIsolation(fake(secret),'gameplay'),
   /private_runtime_in_bundle/);
 }
 for(const leak of ['issueEnemyV2EngineAuthority','combat_v2_solo_test',
+ 'DungeonRewardRuntimeV2','issueEquipmentV2TraitAuthority',
  'enemy-v2-prototype-1','SoloEncounterPersistenceServiceV2']){
  assert.throws(()=>assertLegacyEdgeIsolation(fake('backend/online/edge.ts',leak),'gameplay'),
  /private_token_in_bundle/);

@@ -1,5 +1,6 @@
 import {strict as assert} from 'node:assert';
 import {simulateCombat} from '../../engine';
+import {EquipmentTraitRuntimeV2} from '../equipment-trait-engine-runtime';
 import type {CombatInput,CombatantDefinition,CombatV2Resource} from '../../types';
 import {
  issueEquipmentV2TraitAuthority,authorizeEquipmentV2TraitEngine,
@@ -30,6 +31,7 @@ const source=(actor:CombatantDefinition,options:{
  source:'server-persisted-equipment-v2',policy:EQUIPMENT_V2_TRAIT_ENGINE_POLICY,
  revision:1,accountId:'ACCOUNT_'+actor.id,characterId:'CHAR_'+actor.id,actorId:actor.id,
  ownedEquippedInstanceIds:['INSTANCE_A_'+actor.id,'INSTANCE_B_'+actor.id],
+ equipmentReceiptDigest:'a'.repeat(64), // mock pinned ledger digest; never an actual DB proof
  basicAttackDamagePct:options.basic??0,abilityDamagePct:options.ability??0,
  reflectDamagePct:options.reflect??0,
  traits:(options.traits??[]).map((id,i)=>({traitId:id,instanceId:'INSTANCE_'+(i===0?'A':'B')+'_'+actor.id})),
@@ -127,4 +129,46 @@ const triggers=(input:ReturnType<typeof simulateCombat>,type:string)=>
  assert.ok(withTraits.events.filter(e=>e.abilityId?.startsWith('V2_EQUIPMENT_TRAIT:')).length<100,
   'No recursive trait healing storm');
 }
+{
+ // One shared 5-second boss retaliation window across TWO different tanks.
+ const a=player('TANK_A','guard'),b=player('TANK_B','guard');
+ const runtime=new EquipmentTraitRuntimeV2(new Map([
+  [a.id,source(a,{reflect:8,traits:['thornbound_riposte']})],
+  [b.id,source(b,{reflect:8,traits:['thornbound_riposte']})],
+ ]));
+ const first=runtime.retaliation(1000,a.id,'BOSS',200,1000,10000,true);
+ const second=runtime.retaliation(1500,b.id,'BOSS',200,1000,10000,true);
+ assert.ok(first&&first.amount<=10);
+ assert.equal(second,undefined,'Two tanks must not each get a full boss damage window');
+}
+{
+ // A separate actor-global 1s cooldown prevents simultaneous proc storms,
+ // while the second selected support trait remains eligible on later heals.
+ const p=player('SUPPORT_2','radiance');
+ const runtime=new EquipmentTraitRuntimeV2(new Map([
+  [p.id,source(p,{traits:['mending_echo','restorative_bloom']})],
+ ]));
+ assert.equal(runtime.afterDirectAllyHeal(1000,p.id,'A','B',100,100).length,1);
+ assert.equal(runtime.afterDirectAllyHeal(1500,p.id,'A','B',100,100).length,0);
+ const later=runtime.afterDirectAllyHeal(2000,p.id,'A','B',100,100);
+ assert.equal(later.length,1);
+ assert.equal(later[0].traitId,'restorative_bloom');
+}
+{
+ // Boss skill casts are excluded until an authenticated combat-avoidable tag
+ // contract exists. Basic attacks can still be reflected.
+ const p=player('TANK_CAST','guard'),boss=foe({
+  boss:true,basicAttackCoeff:0,basicAttackMs:100000,
+  abilities:[{id:'QA_BOSS_CAST',name:'Boss area telegraph',priority:100,
+   cooldownMs:1200,castTimeMs:200,target:'all_enemies',
+   effects:[{kind:'damage',coeff:1,damageType:'physical'}]}],
+ });
+ const input:CombatInput={seed:'QA_BOSS_CAST_UNREFLECTABLE',players:[p],
+  enemies:[boss],maxDurationMs:4000};
+ const result=run(input,[source(p,{reflect:8,traits:['thornbound_riposte']})]);
+ assert.ok(result.events.some(e=>e.abilityId==='QA_BOSS_CAST'&&e.type==='damage'));
+ assert.ok(result.events.filter(e=>e.type==='equipment_trait_trigger').length<=1,
+  'Only the one opening boss BASIC hit can reflect; later boss casts cannot');
+}
+
 console.log('PASS: real Combat 2.0 engine hidden trait authority, basic/skill/reflect and support source hooks');

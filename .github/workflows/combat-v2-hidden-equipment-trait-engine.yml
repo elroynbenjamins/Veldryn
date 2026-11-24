@@ -5,7 +5,16 @@ on:
       - 'backend/src/server/combat/engine.ts'
       - 'backend/src/server/combat/types.ts'
       - 'backend/src/server/combat/v2/equipment-trait-engine-*.ts'
+      - 'backend/src/server/combat/v2/equipment-trait-exact-copy-adapter.ts'
+      - 'backend/src/server/combat/v2/unified-equipment-encounter.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-trait-*.ts'
+      - 'tools/combat-v2-live-edge-isolation.mjs'
+      - 'tools/tests/combat-v2-edge-isolation.test.mjs'
+      - 'tools/verify-gameplay-edge.mjs'
+      - 'tools/build-online.mjs'
+      - 'backend/online/**'
+      - 'backend/supabase/functions/**'
+      - 'apps/mobile/src/**'
       - '.github/workflows/combat-v2-hidden-equipment-trait-engine.yml'
   workflow_dispatch:
 permissions:
@@ -29,13 +38,22 @@ jobs:
         run: pnpm --dir backend build
       - name: Token, hit, reflection, heal and replay safety
         run: node backend/dist/server/combat/v2/__tests__/equipment-trait-engine.js
+      - name: Six regional bosses x nine classes x two real specialization paths with exact item receipts
+        run: node backend/dist/server/combat/v2/__tests__/equipment-trait-exact-copy-boss-matrix.js
       - name: Baseline legacy engine parity and Enemy V2 token coexistence
         run: |
           node backend/dist/server/combat/v2/__tests__/enemy-engine-coexistence.js
           node backend/dist/server/combat/__tests__/combat-smoke.js
       - name: Reject new trait engine authority in live/public mobile or online code
         run: |
-          if grep -R -E 'issueEquipmentV2TraitAuthority|authorizeEquipmentV2TraitEngine|EquipmentTraitRuntimeV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
-            echo 'Hidden Equipment 2.0 trait engine leaked into public routes'
+          # The two checked-in generated bundles legitimately contain deny-only shim names.
+          # Require exact reproducible bytes, the private-source metafile fence, and
+          # adversarial shim tests before excluding ONLY those two generated paths.
+          node tools/tests/combat-v2-edge-isolation.test.mjs
+          node tools/verify-gameplay-edge.mjs
+          status=0
+          git grep -n -E 'issueEquipmentV2TraitAuthority|authorizeEquipmentV2TraitEngine|EquipmentTraitRuntimeV2' -- ':(glob)backend/online/**/*.ts' ':(glob)backend/online/**/*.tsx' ':(glob)apps/mobile/src/**/*.ts' ':(glob)apps/mobile/src/**/*.tsx' ':(glob)backend/supabase/functions/**/*.ts' ':(glob)backend/supabase/functions/**/*.tsx' ':(exclude)backend/supabase/functions/gameplay/index.ts' ':(exclude)backend/supabase/functions/coop/index.ts' || status=$?
+          if [ "$status" -ne 1 ]; then
+            echo 'Hidden Equipment 2.0 trait engine leaked into public routes (or source scan failed)'
             exit 1
           fi

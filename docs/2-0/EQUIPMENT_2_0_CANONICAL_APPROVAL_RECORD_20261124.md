@@ -96,6 +96,10 @@ V16 extends V15 without altering the V14 canonical catalogue or existing V5 prof
 
 All 95 exact families /195 attainable milestones have numerical proposals: 68 V7 source effects preserved verbatim (typed event/unit work open) and 127 new typed candidate effects. 27 dungeon signature traits normalized with existing coefficients/cooldowns, six separate blueprint trait concepts remain unresolved. The candidate stat decision packet covers all 99 innate lines (71 exact, 28 proposed changes), including explicit haste reauthoring rather than silent unit conversion. Partial permanent power extension does not return full CP. 972 planned integration cases not executed; V16 exact-head private integration passed, including prior engine rehearsal, not V17 effects. No D1–D10 or runtime/release approval. See `docs/2-0/EQUIPMENT_2_0_SET_TRAIT_CP_REVIEW_V17.md`.
 
+## 3E. V18 normalized effect and trigger review
+
+V18 preserves V14/V17 authority boundaries: 68 remaining source milestones normalized, all 195 candidate milestones structured, 27 dungeon and six blueprint trait candidates. 142 conditional records have isolated classified-event QA tests and proposed cross-effect limits, not runtime implementation. Private baseline engine trace export/audit prepares 324 baseline plus 648 shadow rows; no candidate effects applied or candidate outcomes measured. V17 focused workflows passed but six broad workflows failed; V18 exact-head CI unconfirmed. D1–D10, actual trigger evidence, effect compiler, final CP and all release approvals remain open. See `docs/2-0/EQUIPMENT_2_0_NORMALIZED_EFFECTS_REVIEW_V18.md`.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type {V2PrivateGameState} from '../equipment-crafting-v2-private-game-state-type';
 import {newGame,createCharacter} from '../../../../../apps/mobile/src/core/game';
 import {V2_SERVER_RECIPES} from '../equipment-crafting-v2-manifest';
 import {simulateEquipmentV2InGameState,type V2HiddenGameInput,type V2HiddenGameMetadata} from '../equipment-crafting-v2-game-state';
@@ -15,7 +16,7 @@ const recipe=(()=>{
  return selected;
 })();
 function initial(){
- const state=createCharacter(newGame(now),'IRONWARDEN');
+ const state:V2PrivateGameState=createCharacter(newGame(now),'IRONWARDEN');
  assert.ok(state.character);
  state.character.level=35;state.character.gold=50000;
  state.account.equipmentCraftingQueue=[];state.account.craftedGearInstances=[];

@@ -5,7 +5,7 @@ function throws(work:()=>unknown,needle:string){
  if(!error.includes(needle))throw new Error('Expected '+needle+', got '+error);
 }
 const good=assertCoopSynchronizationPresentation({
- activeCount:2,scalePercent:100,partyWide:true,personalCpDelta:0,
+ activeCount:2,scalePercent:100,partyWide:true,cappedStats:[],personalCpDelta:0,
  requiresProgression:false,canGateEntry:false,canFilterRecruitment:false,
  visibleOnRecruitmentBoard:false,canRankCandidates:false,
  links:[
@@ -30,5 +30,7 @@ throws(()=>assertCoopSynchronizationPresentation({...good,visibleOnRecruitmentBo
 throws(()=>assertCoopSynchronizationPresentation({...good,canRankCandidates:true as false}),
  'invalid_coop_synchronization_view');
 throws(()=>assertCoopSynchronizationPresentation({...good,activeCount:3}),
+ 'invalid_coop_synchronization_view');
+throws(()=>assertCoopSynchronizationPresentation({...good,cappedStats:null as never}),
  'invalid_coop_synchronization_view');
 console.log('PASS mobile Synchronization view is presentation-only, no CP/progression/queue gating');

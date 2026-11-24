@@ -22,23 +22,37 @@ const defensiveSpecs=Object.freeze({
  'eq2_combo_t5_stonewinter_frame:2':{pct:4,threshold:.06,window:6000,cd:18000,mode:'next_hit',family:'stonewinter'},
  'eq2_dungeon_shiverlake_t5_rimevanguard:4':{pct:6,threshold:.07,window:5000,cd:22000,mode:'timed',family:'rimevanguard'},
 } as const);
+const timedSpecs=Object.freeze({
+ 'eq2_t1_oathplate:4':{channel:'defense',pct:3.2,window:6000,cd:18000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
+ 'eq2_t2_oathplate:4':{channel:'defense',pct:3.6,window:6000,cd:18000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
+ 'eq2_t3_oathplate:4':{channel:'defense',pct:4,window:6000,cd:18000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
+ 'eq2_t4_oathplate:4':{channel:'defense',pct:4.4,window:6000,cd:18000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
+ 'eq2_t5_oathplate:4':{channel:'defense',pct:4,window:6000,cd:16000,trigger:'hp_loss',threshold:.05,family:'oathplate'},
+ 'EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_IRONWARDEN':{channel:'defense',pct:4,window:5000,cd:20000,trigger:'mitigated',threshold:0,family:'oathguard_riposte'},
+ 'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_IRONWARDEN':{channel:'defense',pct:4,window:5000,cd:20000,trigger:'mitigated',threshold:0,family:'oathguard_riposte'},
+ 'EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_IRONWARDEN':{channel:'defense',pct:4,window:5000,cd:20000,trigger:'mitigated',threshold:0,family:'oathguard_riposte'},
+ 'eq2_t4_bastionmail:4':{channel:'defense',pct:4,window:5000,cd:14000,trigger:'mitigated',threshold:0,family:'braced_formation'},
+ 'eq2_combo_t5_runeforge_link:2':{channel:'haste',pct:2,window:6000,cd:18000,trigger:'hit_or_heal',threshold:0,family:'runeforge_momentum'},
+} as const);
+type TimedId=keyof typeof timedSpecs;
 type DefensiveId=keyof typeof defensiveSpecs;
 type CurrentId=keyof typeof specs;
 type ChargeId=keyof typeof chargeSpecs;
-export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId;
+export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId;
 const isCurrent=(id:Eq2PrivateHitIdV22):id is CurrentId=>Object.hasOwn(specs,id);
 const isCharge=(id:Eq2PrivateHitIdV22):id is ChargeId=>Object.hasOwn(chargeSpecs,id);
 const isDefensive=(id:Eq2PrivateHitIdV22):id is DefensiveId=>Object.hasOwn(defensiveSpecs,id);
-const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:defensiveSpecs[id as DefensiveId].family;
+const isTimed=(id:Eq2PrivateHitIdV22):id is TimedId=>Object.hasOwn(timedSpecs,id);
+const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:timedSpecs[id as TimedId].family;
 type Scope={digest:string;actorId:string;ids:readonly Eq2PrivateHitIdV22[]};
 const issued=new WeakMap<object,Scope>();
 const fail=(x:string):never=>{throw Error('eq2_private_hit_v22_'+x);};
 export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:readonly Eq2PrivateHitIdV22[],verifyFixture:(digest:string)=>boolean):Eq2PrivateHitAuthorityV22{
  if(!Array.isArray(ids))fail('fixture_scope');
  const actor=input.players.find(x=>x.id===actorId);
- if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||!((actor.id.startsWith('QA_EQ2_RAVAGER_')&&ids.every(id=>!isDefensive(id)))||(actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&ids.every(isDefensive)))||
+ if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||!((actor.id.startsWith('QA_EQ2_RAVAGER_')&&ids.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||(actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&ids.every(id=>isDefensive(id)||isTimed(id)))||(actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&ids.every(id=>id==='eq2_combo_t5_runeforge_link:2')))||
  input.players.length!==1||input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined||
- !Array.isArray(ids)||ids.length<1||ids.length>4||ids.some(id=>!isCurrent(id)&&!isCharge(id)&&!isDefensive(id))||
+ !Array.isArray(ids)||ids.length<1||ids.length>4||ids.some(id=>!isCurrent(id)&&!isCharge(id)&&!isDefensive(id)&&!isTimed(id))||
  new Set(ids.map(family)).size!==ids.length)fail('fixture_scope');
  const digest=enemyV2SnapshotDigest(input);
  if(typeof verifyFixture!=='function'||verifyFixture(digest)!==true)fail('fixture_unverified');
@@ -51,7 +65,7 @@ export interface Eq2PrivateHitEventV22{
  direct:boolean;physical:boolean;nontrue:boolean;sourceAlive:boolean;targetAlive:boolean;
  targetHp:number;targetMaxHp:number;shield:number;raw:number;
 }
-export type Eq2PrivateIncomingEventV24=Omit<Eq2PrivateHitEventV22,'originalClassAbility'>&{originalEnemyAbility:boolean};
+export type Eq2PrivateIncomingEventV24=Omit<Eq2PrivateHitEventV22,'originalClassAbility'>&{originalEnemyAbility:boolean;mitigated?:boolean};
 export interface Eq2PrivateIncomingResultV24{raw:number;activated:readonly DefensiveId[];reductionPct:number}
 export interface Eq2PrivateHitResultV22{raw:number;activated:readonly Eq2PrivateHitIdV22[];bonusPct:number}
 export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2PrivateHitAuthorityV22){
@@ -59,6 +73,21 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
  const scope=typeof authority==='object'&&authority!==null?issued.get(authority):undefined;
  if(!scope||scope.digest!==enemyV2SnapshotDigest(input))return fail('invalid_authority');
  const cooldown=new Map<string,number>();
+ const timedState=new Map<TimedId,{earnedAt:number;expiresAt:number}>();
+ const healReceipts=new WeakSet<object>();
+ const earnTimed=(id:TimedId,now:number)=>{
+  const s=timedSpecs[id],state=timedState.get(id);
+  if(now<(cooldown.get(s.family)??0)||(state&&now<state.expiresAt))return false;
+  cooldown.set(s.family,now+s.cd);timedState.set(id,{earnedAt:now,expiresAt:now+s.window});return true;
+ };
+ const timedValue=(actorId:string,now:number,channel:'defense'|'haste')=>{
+  if(actorId!==scope.actorId||!Number.isSafeInteger(now)||now<0)return {pct:0,ids:[] as TimedId[]};
+  const active=scope.ids.filter(isTimed).filter(id=>{
+   const s=timedSpecs[id],state=timedState.get(id);
+   return s.channel===channel&&state!==undefined&&now>state.earnedAt&&now<state.expiresAt;
+  }).sort((a,b)=>timedSpecs[b].pct-timedSpecs[a].pct||a.localeCompare(b));
+  return active.length?{pct:timedSpecs[active[0]].pct,ids:[active[0]]}:{pct:0,ids:[] as TimedId[]};
+ };
  const defensiveState=new Map<DefensiveId,{earnedAt:number;expiresAt:number}>();
  const incomingBefore=new WeakSet<Eq2PrivateIncomingEventV24>();
  const incomingAfter=new WeakSet<Eq2PrivateIncomingEventV24>();
@@ -80,6 +109,13 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
   e.targetMaxHp>0&&e.targetHp>0&&e.targetHp<=e.targetMaxHp&&e.raw>e.shield;
  const classHit=(e:Eq2PrivateHitEventV22)=>e.originalClassAbility&&e.abilityId!=='BASIC';
  return {
+  timedStat(actorId:string,now:number,channel:'defense'|'haste'){return timedValue(actorId,now,channel);},
+  afterEffectiveHeal(e:{now:number;actorId:string;targetId:string;abilityId:string;originalClassHeal:boolean;actualHeal:number}):readonly TimedId[]{
+   if(healReceipts.has(e)||e.actorId!==scope.actorId||!e.originalClassHeal||/^(V2_|GEM_|COMPANION_)/.test(e.abilityId)||
+    !Number.isSafeInteger(e.now)||e.now<0||!Number.isFinite(e.actualHeal)||e.actualHeal<=0)return [];
+   healReceipts.add(e);
+   return scope.ids.filter(isTimed).filter(id=>timedSpecs[id].trigger==='hit_or_heal'&&earnTimed(id,e.now));
+  },
   beforeIncomingHit(e:Eq2PrivateIncomingEventV24):Eq2PrivateIncomingResultV24{
    const unchanged={raw:e.raw,activated:[],reductionPct:0};
    if(!eligibleIncoming(e)||incomingBefore.has(e))return unchanged;
@@ -96,11 +132,11 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    if(s.mode==='next_hit')defensiveState.delete(chosen);
    return {raw:e.raw*(1-reductionPct/100),activated:[chosen],reductionPct};
   },
-  afterIncomingHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number):readonly DefensiveId[]{
+  afterIncomingHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number):readonly (DefensiveId|TimedId)[]{
    if(!incomingBefore.has(e)||incomingAfter.has(e))return [];
    incomingAfter.add(e);
    if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>=e.targetHp)return [];
-   const earned:DefensiveId[]=[];
+   const earned:(DefensiveId|TimedId)[]=[];
    for(const id of scope.ids.filter(isDefensive)){
     const s=defensiveSpecs[id],state=defensiveState.get(id);
     if(state&&e.now>=state.expiresAt)defensiveState.delete(id);
@@ -108,6 +144,10 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
     defensiveState.set(id,{earnedAt:e.now,expiresAt:e.now+s.window});
     cooldown.set(s.family,e.now+s.cd);
     earned.push(id);
+   }
+   for(const id of scope.ids.filter(isTimed)){
+    const s=timedSpecs[id];
+    if((s.trigger==='hp_loss'&&actualHpLoss/e.targetMaxHp>=s.threshold||s.trigger==='mitigated'&&e.mitigated===true)&&earnTimed(id,e.now))earned.push(id);
    }
    return earned;
   },
@@ -134,11 +174,11 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
    for(const id of consumed)charges.delete(id);
    return {raw:e.raw*(1+bonusPct/100),activated:active,bonusPct};
   },
-  afterDirectHit(e:Eq2PrivateHitEventV22,actualHpLoss:number):readonly ChargeId[]{
+  afterDirectHit(e:Eq2PrivateHitEventV22,actualHpLoss:number):readonly (ChargeId|TimedId)[]{
    if(!beforeReceipts.has(e)||afterReceipts.has(e))return [];
    afterReceipts.add(e);
    if(!eligible(e)||!classHit(e)||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>e.targetHp)return [];
-   const earned:ChargeId[]=[];
+   const earned:(ChargeId|TimedId)[]=[];
    for(const id of scope.ids.filter(isCharge)){
     const s=chargeSpecs[id],ch=charges.get(id);
     if(ch&&e.now>=ch.expiresAt)charges.delete(id);
@@ -155,6 +195,7 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
     charges.set(id,{earnedAt:e.now,expiresAt:e.now+s.window,targetId:e.targetId});
     earned.push(id);
    }
+   for(const id of scope.ids.filter(isTimed))if(timedSpecs[id].trigger==='hit_or_heal'&&earnTimed(id,e.now))earned.push(id);
    return earned;
   },
  };

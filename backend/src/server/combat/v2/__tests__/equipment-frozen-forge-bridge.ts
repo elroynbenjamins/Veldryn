@@ -1246,6 +1246,68 @@ function v19ApplyPermanentSensitivity(actor:CombatantDefinition,effect:V19Effect
  }
  return result;
 }
+
+// V21: original Forge QA receipts only, no new catalogue items or grants.
+// Prefer the highest source-compatible tier at or below the intended tier;
+// gaps and downgrades are reported, not filled by invented pieces.
+function makeV21Loadout(classId:ClassIdV2,specIndex:0|1,targetTier:1|2|3|4,targetLevel:number){
+ const role=CLASS_ROLES_V2[classId];
+ const pinned:ReturnType<typeof make>[]=[];
+ const missing:string[]=[];
+ const slots=['weapon','offhand','helmet','chest','gloves','legs','boots','cape','amulet','ring'] as const;
+ for(const slot of slots){
+  if(slot==='offhand'&&pinned.some(p=>p.exact.slot==='weapon'&&p.exact.hands!=='one'))continue;
+  const choices=V2_SERVER_PIECES.filter(p=>p.role===role&&p.slot===slot&&!p.setId&&p.tier<=targetTier&&(!p.classRestriction||p.classRestriction===classId))
+   .sort((a,b)=>b.tier-a.tier||a.id.localeCompare(b.id));
+  let picked:ReturnType<typeof make>|undefined;
+  for(const piece of choices){
+   try{picked=make(classId,specIndex,'supported',piece.tier as 1|2|3|4,piece.id,'V21_'+slot,targetLevel);break;}
+   catch(e){if(!String(e).includes('Could not locate a deterministic Forge QA roll'))throw e;}
+  }
+  if(picked)pinned.push(picked);else missing.push(slot);
+ }
+ if(!pinned.length)throw Error('v21_no_source_compatible_copies');
+ if(!pinned.some(p=>p.exact.slot==='weapon'))throw Error('v21_missing_weapon');
+  const first=pinned[0],accountId=first.source.accountId,
+   characterId=first.source.characterId;
+  const revision=6+3*(pinned.length-1);
+  const originalActor=first.actor;
+  const composedSource:TrustedFrozenForgeCombatSourceV2={
+   ...first.source,actorId:originalActor.id,accountId,characterId,
+   items:pinned.map(p=>({...p.mint,accountId,ownerCharacterId:characterId})),
+   jobs:pinned.map(p=>({...p.job,accountId,ownerCharacterId:characterId})),
+   awards:pinned.map(p=>({...p.award,characterId})),
+   claims:pinned.flatMap((p,i)=>[
+    {...p.start,response:{...p.start.response,version:4+3*i}},
+    {...p.claim,response:{...p.claim.response,version:5+3*i}},
+   ]),
+   reservations:pinned.map(p=>({...p.reservation,ownerCharacterId:characterId})),
+   custodyReceipts:pinned.map((p,i)=>({...p.equipReceipt,
+    actorCharacterId:characterId,oldHolder:characterId,
+    newHolder:characterId,version:6+3*i})),
+   custody:{accountId,characters:[{id:characterId,classId,level:targetLevel}],
+    copies:pinned.map(p=>({...p.custody,accountId,
+     ownerCharacterId:characterId}))},
+   ledgerRevision:revision,
+   verifyPersisted:(digest:string,version:number)=>
+    version===revision&&/^[a-f0-9]{64}$/.test(digest),
+  };
+  const ids=pinned.map(x=>x.mint.id);
+  const allSelections=Object.fromEntries(pinned.map(p=>[
+   p.exact.slot,p.mint.id])) as VerifiedSkillBuildV2['selected']['equipment'];
+  const build:VerifiedSkillBuildV2={
+   ...first.build,actor:originalActor,
+   verified:{...first.build.verified,level:targetLevel,
+    ownedInstanceIds:new Set(ids)},
+   selected:{...first.build.selected,equipment:allSelections},
+   ownedItemsById:Object.assign({},...pinned.map(p=>p.build.ownedItemsById)),
+  };
+
+ return {actor:originalActor,build,source:composedSource,ids,missing,
+  tiers:pinned.map(p=>({slot:p.exact.slot,tier:p.exact.tier,pieceId:p.exact.pieceId,instanceId:p.mint.id})),
+  downgraded:pinned.filter(p=>p.exact.tier<targetTier).length};
+}
+
 const v19SensitivityRows: {bossId:string;classId:string;specIndex:number;strategy:string;channel:string;pct:number;
  baseline:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number};
  candidate:{victory:boolean;reason:string;durationMs:number;damage:number;healing:number;hp:number}}[]=[];
@@ -1516,3 +1578,61 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
  inventoryLedger:'QA_VERIFIER_ONLY',liveReleased:false,
  unresolved:['unmapped_affixes','set_bonus_reconciliation','approved_caps',
   'privileged_DB_custody','persistent_party_state','final_CP_weights','full_10_slot_source_reconciliation']}));
+
+if(process.env.EQ2_V21_MULTISLOT_PATH){
+ const rows:unknown[]=[];
+ const cache=new Map<string,ReturnType<typeof makeV21Loadout>>();
+ const qa=(classId:ClassIdV2,specIndex:0|1,tier:1|2|3|4,level:number)=>{
+  const key=[classId,specIndex,tier,level].join(':');
+  let row=cache.get(key);
+  if(!row){row=makeV21Loadout(classId,specIndex,tier,level);cache.set(key,row);}
+  return row;
+ };
+ for(const profile of exactBossProfiles){
+  for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
+   for(const specIndex of [0,1] as const){
+    const loadout=qa(classId,specIndex,profile.forgeTier,profile.level);
+    const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+    for(const strategy of ['generic','targeted','alternative'] as const){
+     const choice=selectReviewSkillLoadoutV2(classId,spec.id,loadout.actor,profile.id,strategy);
+     const build:VerifiedSkillBuildV2={...loadout.build,selected:{...loadout.build.selected,activeSkills:choice.activeSkills}};
+     const compiled=compileRealFrozenForgeActorV2(loadout.actor,build,loadout.source);
+     assert.deepEqual(new Set(compiled.evidence.equippedInstanceIds),new Set(loadout.ids));
+     for(const band of ['accessible','pressure'] as const){
+      // Fixed explicit QA stat bands, not actual dungeon balance, identical
+      // between class tactics within a region. Real authored boss scripts.
+      const hp=(band==='accessible'?20000:60000)*(profile.region==='asterfall'?1:profile.region==='sunscar'?2:3);
+      const ap=(band==='accessible'?100:200)*(profile.region==='asterfall'?1:profile.region==='sunscar'?2:3);
+      const enemy:CombatantDefinition={...boss,id:profile.id,level:profile.level,abilities:[],phases:undefined,
+       stats:{...boss.stats,maxHp:hp,attackPower:ap}};
+      const seed=['V21',profile.id,classId,specIndex,band].join('_');
+      const proposed=prepareSoloEnemyKitsV2([enemy],{ruleset:ENEMY_V2_RULESET,region:profile.region,
+       equipmentTier:profile.tier,encounterId:seed,serverSeed:seed});
+      const persisted={...proposed,source:'server-persisted-v2' as const,revision:6};
+      const verified=verifyPersistedEnemyKitsV2([enemy],persisted);
+      const baselineInput:CombatInput={seed,players:[compiled.actor],enemies:[...verified.enemies],maxDurationMs:120000};
+      const scope={source:'server-persisted-v2' as const,version:2 as const,ruleset:persisted.ruleset,
+       mode:'solo' as const,encounterId:persisted.encounterId,revision:persisted.revision,seed:persisted.seed,
+       playerIds:[compiled.actor.id],enemyIds:persisted.enemyIds,bossIds:persisted.bossIds};
+      const run=(i:CombatInput)=>simulateCombat(i,issueEnemyV2EngineAuthority(scope,i,
+       (_s,d)=>/^[0-9a-f]{64}$/.test(d)));
+      const before=run(baselineInput);
+      const effect=v19PermanentEffects[profile.region][CLASS_ROLES_V2[classId]];
+      const after=run({...baselineInput,players:[v19ApplyPermanentSensitivity(compiled.actor,effect)]});
+      assert.deepEqual(run(baselineInput),before,'V21 candidate never mutates original compiled source');
+      if(strategy==='targeted')assert.deepEqual(run({...baselineInput,players:[v19ApplyPermanentSensitivity(compiled.actor,effect)]}),after);
+      const metrics=(r:typeof before)=>({victory:r.victory,reason:r.reason,durationMs:r.durationMs,damage:r.players[0].damageDone,
+       healing:r.players[0].healingDone,damageTaken:r.players[0].damageTaken,hp:r.players[0].hp,maxHp:r.players[0].definition.stats.maxHp,
+       interrupts:r.players[0].interrupts,enemyHp:r.enemies[0].hp,enemyMaxHp:r.enemies[0].definition.stats.maxHp});
+      rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,seed,targetTier:profile.forgeTier,
+       targetLevel:profile.level,equippedCopies:loadout.ids.length,missing:loadout.missing,tiers:loadout.tiers,downgraded:loadout.downgraded,
+       channel:effect.channel,pct:effect.pct,baseline:metrics(before),candidate:metrics(after)});
+     }
+    }
+   }
+  }
+ }
+ assert.equal(rows.length,648);
+ writeFileSync(process.env.EQ2_V21_MULTISLOT_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_MULTISLOT_FIXED_DIFFICULTY',actualOwnedCandidateCopies:false,
+  conditionalEffectsApplied:false,releaseApproved:false,rows}));
+}

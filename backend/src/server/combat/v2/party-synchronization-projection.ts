@@ -38,6 +38,13 @@ export interface PartySyncLobbyProjectionV2{
   readonly statKey:string;
   readonly bps:number;
  }[];
+ readonly cappedStats:readonly {
+  readonly stat:SyncStatV2;
+  readonly statKey:string;
+  readonly rawBps:number;
+  readonly effectiveBps:number;
+  readonly discardedBps:number;
+ }[];
 }
 export interface PartySyncCandidatePreviewV2{
  readonly releaseEnabled:false;
@@ -77,6 +84,10 @@ export function projectPartySynchronizationLobbyV2(
    .filter((entry):entry is [SyncStatV2,number]=>typeof entry[1]==='number')
    .sort(([a],[b])=>a.localeCompare(b))
    .map(([stat,bps])=>({stat,statKey:statKey(stat),bps})),
+  cappedStats:plan.cappedStats.map(row=>({
+   stat:row.stat,statKey:statKey(row.stat),rawBps:row.rawBps,
+   effectiveBps:row.cappedBps,discardedBps:row.discardedBps,
+  })),
  };
 }
 

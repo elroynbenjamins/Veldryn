@@ -8,12 +8,22 @@ const rare=read('equipment-2-0/t5-rare-set-catalogue-review-v1.json');
 const items=new Map(catalogue.entries.map(x=>[x.itemId,x]));
 const retired=new Set(catalogue.retired.items.flatMap(x=>x.retiredRecipeIds));
 const refined=new Set([...old.processingReview.map(x=>x.output),'froststeelIngots','frostwoodPlanks','frostweaveCloth','hardenedFrostleather']);
-const advanced=new Set(['EQ2_GLASSBOUND_PLATE','frostmailLinks','smokeglassPlates','bloodtemperedSteel']);
+const advanced=new Set(['frostmailLinks','smokeglassPlates','bloodtemperedSteel']);
 const binders=new Set(['VERDANT_BINDING_RESIN','IRONWOOD_BINDING_RESIN','SUNSCAR_DUNE_BINDER','GLASSBOUND_BINDER','bindingResin']);
-const combat=new Set(['AMBERGLASS','EQ2_BOAR_TUSK','EQ2_GLASSBOUND_SHARD','EQ2_GLASSHEART_FRAGMENT','EQ2_MIRAGEFANG_CORE','EQ2_RIVERSTONE','EQ2_SUNSCAR_SCALE','EQ2_THORNSTONE','EQ2_TROLL_SINEW','IRONWOOD_FANG','rimeboneShards','iceveinSigils','shardhearts','dawnspireCores','fortressCores','temperedHearts']);
+const combat=new Set(['EQ2_GLASSBOUND_PLATE','AMBERGLASS','EQ2_BOAR_TUSK','EQ2_GLASSBOUND_SHARD','EQ2_GLASSHEART_FRAGMENT','EQ2_MIRAGEFANG_CORE','EQ2_RIVERSTONE','EQ2_SUNSCAR_SCALE','EQ2_THORNSTONE','EQ2_TROLL_SINEW','IRONWOOD_FANG','rimeboneShards','iceveinSigils','shardhearts','dawnspireCores','fortressCores','temperedHearts']);
 const noAuthority={reviewOnly:true,mayCraft:false,mayMint:false,mayTrade:false,releaseApproved:false};
 function classify(id){if(refined.has(id))return 'refined';if(advanced.has(id))return 'advanced';if(binders.has(id))return 'binder';if(combat.has(id))return 'preserved_source';throw Error('eq2_component_economy_unknown_input:'+id);}
-function normalizeT5(item,route,r){return {id:item.itemId+':'+route,pieceId:item.itemId,tier:5,route,gold:r.gold,seconds:r.queueSeconds,xp:null,inputs:Object.entries(r).filter(([key])=>!['gold','queueSeconds','recipeFailureChance'].includes(key)).map(([itemId,quantity])=>({itemId,quantity}))};}
+function normalizeT5(item,route,r){
+ const pieceId=item.itemId??item.id;
+ if(typeof pieceId!=='string'||!pieceId)throw Error('eq2_component_economy_missing_piece_id');
+ const inputs=Object.entries(r).filter(([key])=>!['gold','queueSeconds','recipeFailureChance'].includes(key)).flatMap(([itemId,quantity])=>{
+  classify(itemId);
+  if(quantity===0&&itemId==='frostwoodPlanks')return []; // explicit optional wood on source accessories
+  if(!Number.isSafeInteger(quantity)||quantity<1)throw Error('eq2_component_economy_invalid_quantity:'+itemId);
+  return [{itemId,quantity}];
+ });
+ return {id:pieceId+':'+route,pieceId,tier:5,route,gold:r.gold,seconds:r.queueSeconds,xp:null,inputs};
+}
 export function sourceRoutes(){
  const current=[...old.recipes.filter(x=>!retired.has(x.id)),...replacement.routes];
  for(const item of [...t5.standardSets,...t5.proposedRareSets,...t5.twoPieceComboSets].flatMap(s=>s.members).concat(t5.armaments.weapons,t5.armaments.offhands)){

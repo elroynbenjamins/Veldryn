@@ -8,8 +8,7 @@
 import {strict as assert} from 'node:assert';
 import type {CombatEvent,CombatStats,AbilityDefinition,CombatantDefinition,CombatInput} from '../../types';
 import {simulateCombat} from '../../engine';
-import {launchPlayer} from '../../content/launch-combat';
-import {reviewCandidatePowerV1,type CandidatePowerReferenceV1} from '../candidate-power-review';
+import {reviewCandidatePowerStagesV1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {reviewCompanionContributionV2} from '../companion-contribution-review';
 import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -33,7 +32,7 @@ let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
 const traitSensitivity:unknown[]=[];
 const candidatePowerRows:unknown[]=[];
-const candidateReference:CandidatePowerReferenceV1={version:'QA_L25_LAUNCH_REFERENCE_V1',anchor:1000,enemyAccuracy:1600,enemyEvasion:100,accuracyScale:1400,mitigationConstant:1200,roles:{tank:launchPlayer('Ironwarden',25).stats,damage:launchPlayer('Ravager',25).stats,support:launchPlayer('Dawnkeeper',25).stats}};
+const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
 const companionSensitivity:unknown[]=[];
 const companionIds=['UNIT_001','UNIT_002','UNIT_003','UNIT_005'] as const;
 const number=(n:number)=>Math.round(n*100)/100;
@@ -160,11 +159,11 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
      const on=observeRoleCalibrationV2(first.combat,identity);
      const stages=first.equipmentEvidence[0].statStages;
      const role=CLASS_ROLES_V2[classId];
-     const baselinePower=reviewCandidatePowerV1(stages.afterSkills,role,candidateReference);
-     const equippedPower=reviewCandidatePowerV1(stages.afterAffixes,role,candidateReference);
+     const equippedPower=reviewCandidatePowerStagesV1(stages,role,candidateReference);
+     assert.equal(equippedPower.stageRows.reduce((n,r)=>n+r.value,0),equippedPower.partialScore);
      assert.equal(equippedPower.cpApproved,false);
      candidatePowerRows.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,role,
-      level:boss.level,baseline:baselinePower.partialScore,equipped:equippedPower.partialScore,
+      level:boss.level,baseline:equippedPower.trainedBaseline,equipped:equippedPower.partialScore,stageRows:equippedPower.stageRows,
       axes:equippedPower.rows,observedSidecarOff:off.values,
       observedSidecarOn:on.values});
 

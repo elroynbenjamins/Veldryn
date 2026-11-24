@@ -46,15 +46,17 @@ export function useSocialNotificationCounts(){
         socialChatAttention().catch(()=>null),
         myGuild().catch(()=>null),
       ]);
-      const guildProjectRewards=mine?await claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):0;
+      if(inFlight.current!==request||activeAccount.current!==accountId)return;
+      // These reads depend on the same guild snapshot, not on each other.
+      const [guildProjectRewards,guildApplicationsCount]=await Promise.all([
+        mine?claimableOnlineGuildProjectRewardCount(mine).catch(()=>0):Promise.resolve(0),
+        mine&&(mine.role==='leader'||mine.role==='officer')?guildApplications(mine.guild_id).then(rows=>rows.length).catch(()=>0):Promise.resolve(0),
+      ]);
       const incoming=requests.filter(request=>request.direction==='incoming').length;
-      let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
+      let guildInvites=0,partyInvites=0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}
       if(chat)chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
-      try{
-        if(mine&&(mine.role==='leader'||mine.role==='officer'))guildApplicationsCount=(await guildApplications(mine.guild_id)).length;
-      }catch{/* Guild application attention must not suppress other social counts. */}
       if(inFlight.current!==request||activeAccount.current!==accountId)return;
       countsAccount.current=accountId;
       setCounts(current=>{
@@ -65,7 +67,9 @@ export function useSocialNotificationCounts(){
         const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
         const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:guildApplicationsCount,guildInvites,guildProjectRewards,party,partyInvites};
-        return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
+        const complete={...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
+        // Preserve referential identity when a poll changes no visible badge.
+        return (Object.keys(complete) as (keyof SocialNotificationCounts)[]).every(k=>Object.is(complete[k],current[k]))?current:complete;
       });
     }catch{
       // Notification polling must never interrupt gameplay or sign-in.
@@ -77,11 +81,20 @@ export function useSocialNotificationCounts(){
     request.promise=promise;return promise;
   },[accountId]);
   useEffect(()=>{
-    inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);void refresh(false);
+    inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);
     let previous=AppState.currentState;
-    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);
-    const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(resumed)void refresh();});
-    return()=>{inFlight.current=null;clearInterval(id);sub.remove();};
+    let id:ReturnType<typeof setInterval>|undefined;
+    const stop=()=>{if(id!==undefined){clearInterval(id);id=undefined;}};
+    const start=()=>{if(accountId&&id===undefined)id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);};
+    // Keep the initial authenticated refresh even when native state is unknown.
+    if(accountId&&previous!=='background'&&previous!=='inactive')void refresh(false);
+    if(previous==='active')start();
+    const sub=AppState.addEventListener('change',status=>{
+      const resumed=previous!=='active'&&status==='active';previous=status;
+      if(status==='active'){start();if(resumed&&accountId)void refresh();}
+      else stop();
+    });
+    return()=>{inFlight.current=null;stop();sub.remove();};
   },[accountId,refresh]);
   return {counts:countsAccount.current===accountId?counts:ZERO,refresh};
 }

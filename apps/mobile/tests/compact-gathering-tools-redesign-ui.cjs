@@ -15,7 +15,7 @@ assert.match(panel,/totals\.rarityChanceRelativePercent/);
 assert.match(panel,/totals\.skillXpRelativePercent/);
 assert.match(panel,/tier:\{minWidth:0,minHeight:72/);
 assert.match(panel,/setOpened\(current=>current===tier\?null:tier\)/);
-assert.match(panel,/accessibilityState=\{\{expanded:opened===tool\.tier\}\}/);
+assert.match(panel,/expanded=\{opened===tool\.tier\}/);
 assert.match(panel,/accessibilityState=\{\{expanded:totalsOpen\}\}/);
 assert.match(panel,/gatheringToolContribution\(tool,copy\)/);
 assert.match(panel,/gatheringToolBonusLabel\(copy\)/);

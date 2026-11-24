@@ -16,7 +16,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {GatheringToolArtwork} from './GatheringToolArtwork';
 import {GameButton} from './GameButton';
-import {DisclosureMark} from './DisclosureControl';
+import {DisclosureMark,DisclosureRow} from './DisclosureControl';
 import {ToolRecipeInlinePanel} from './ToolRecipeInlinePanel';
 
 type Tab='saved'|'bonuses'|'recipe';
@@ -152,18 +152,18 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
     const count=Number(isActive)+Number(hasReserve);
     const copy=isActive?equippedGatheringToolRoll(state,skillId,tool.tier):undefined;
     const contribution=isActive?gatheringToolContribution(tool,copy):undefined;
-    return <Pressable key={tool.id} accessibilityRole="button"
-      accessibilityLabel={'Tier '+tool.tier+' · '+localizedItemName(language,tool.id)+' · '+count+' of 2 '+gt('saved copies')}
-      accessibilityState={{expanded:opened===tool.tier}}
+    return <DisclosureRow key={tool.id}
+      label={'Tier '+tool.tier+' · '+localizedItemName(language,tool.id)+' · '+count+' of 2 '+gt('saved copies')}
+      expanded={opened===tool.tier}
       onPress={()=>selectTier(tool.tier)}
-      style={({pressed})=>[s.tier,opened===tool.tier&&s.tierSelected,pressed&&{opacity:.75}]}>
+      style={[s.tier,opened===tool.tier&&s.tierSelected]} pressedStyle={{opacity:.75}}>
       <GatheringToolArtwork itemId={tool.id} size={small?38:42}/>
       <View style={s.tierCopy}>
        <Text style={s.tierLabel}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
        <Text style={[s.tierCount,isActive&&s.tierActive]}>{count}/2 {gt('saved')} · {isActive?gt('ACTIVE'):gt('Not equipped')}</Text>
        {contribution?<Text style={s.tierSummary}>{'−'+gatheringToolPercent(contribution.adjustedBasePercent)+'% '+gt('tier time')}{copy?' · '+gatheringToolBonusLabel(copy):''}</Text>:null}
       </View><DisclosureMark expanded={opened===tool.tier}/>
-     </Pressable>;
+     </DisclosureRow>;
    })}
   </View>
   {selected?<View style={s.details}>

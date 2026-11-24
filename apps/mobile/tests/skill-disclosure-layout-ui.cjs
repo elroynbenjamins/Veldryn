@@ -28,7 +28,7 @@ assert.match(toolPanel,/tier:\{minWidth:0,minHeight:72/,
  'Tier buttons need full-size touch targets without overflowing narrow screens');
 assert.match(toolPanel,/const \[opened,setOpened\]=useState<Tier\|null>\(null\)/,
  'Only the four tier selectors should be visible before a player inspects a tier');
-assert.match(toolPanel,/accessibilityState=\{\{expanded:opened===tool\.tier\}\}/,
+assert.match(toolPanel,/expanded=\{opened===tool\.tier\}/,
  'Each tier must announce expanded/collapsed state');
 assert.match(toolPanel,/minHeight:44/,
  'Tier details and tabs must preserve minimum 44px touch targets');

@@ -32,7 +32,8 @@ assert(screen.includes('filtered.slice(0,20)')&&screen.includes('Show older unlo
 assert(screen.includes("onCustomize"),'Unlock list links to existing profile customization');
 assert(screen.includes("const detail=row.detail?.trim()?profileSourceText(language,row.detail).trim():''")&&screen.includes('const canExpand=detail.length>0'),'Missing, blank or empty translated details never enable expansion');
 assert(screen.includes('const isExpanded=canExpand&&expanded===row.key')&&screen.includes('{isExpanded?<Text style={s.detail}>{detail}</Text>:null}'),'Only rows with actual detail may show expanded content');
-assert(screen.includes('{canExpand?<Text style={s.chevron}')&&screen.includes('return canExpand?<Pressable')&&screen.includes(':<View key={row.key} style={s.entry}>{content}</View>'),'Chevron, press action and button accessibility belong only to expandable rows');
+const disclosure=read('src/components/DisclosureControl.tsx');
+assert(screen.includes('{canExpand?<Text style={s.chevron}')&&screen.includes('return <DisclosureRow')&&screen.includes('onPress={canExpand?')&&disclosure.includes('if(!onPress)return <View style={style}>{children}</View>')&&disclosure.includes('accessibilityState={{expanded}}'),'Chevron, press action and button accessibility belong only to expandable rows');
 assert(screen.includes('numberOfLines={canExpand&&!isExpanded?2:undefined}'),'Static rows never hide long names behind unavailable expansion');
 
 assert(!screen.includes("pet:'COSMETIC PET'")&&screen.includes("row.kind!=='pet'?<Text style={s.kind}")&&screen.includes('unlockInboxDisplayName(row)'),'Pet cards show the canonical pet name without the redundant cosmetic pet label');

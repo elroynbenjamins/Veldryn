@@ -1,0 +1,45 @@
+name: Equipment 2.0 T1-T5 Hidden Catalogue Review
+
+on:
+  push:
+    branches:
+      - 'review/eq2-t1-t5-canonical-catalog-hidden-gate-20261124'
+    paths:
+      - 'docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json'
+      - 'docs/2-0/EQUIPMENT_2_0_CANONICAL_APPROVAL_RECORD_20261124.md'
+      - 'tools/eq2-review/t1-t5/**'
+      - 'backend/src/server/equipment/equipment-crafting-v2-gate.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-manifest.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-armament-manifest.ts'
+      - 'backend/src/server/equipment/equipment-crafting-v2-expansion-manifest.ts'
+      - '.github/workflows/eq2-t1-t5-hidden-catalogue-review.yml'
+  pull_request:
+    paths:
+      - 'docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json'
+      - 'tools/eq2-review/t1-t5/**'
+      - 'backend/src/server/equipment/equipment-crafting-v2-gate.ts'
+      - '.github/workflows/eq2-t1-t5-hidden-catalogue-review.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-reconciliation:
+    name: All T1-T5 sources, duplicate proofs, 2.0 no-release gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout review branch without persisted credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 24 for review-only JSON integrity tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Audit 554 exact item IDs, 95 sets and fail-closed visibility
+        run: node --test tools/eq2-review/t1-t5/hidden-catalogue-policy-v1.test.mjs
+      - name: Prohibit enabled equipment server gate
+        run: |
+          grep -Eq 'export const EQUIPMENT_CRAFTING_V2_SERVER_RELEASED=false;' backend/src/server/equipment/equipment-crafting-v2-gate.ts
+          ! grep -Eq '"releaseActivation": true|"mayMint": true|"mayEquip": true|"mayTrade": true|"mayCraft": true|"mayDrop": true|"mayRenderInLiveUI": true' docs/2-0/eq2-t1-t5-unified-hidden-review-catalogue-v1.json

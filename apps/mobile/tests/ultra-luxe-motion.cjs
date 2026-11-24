@@ -22,7 +22,9 @@ for(const kind of ['celestial','draconic','alternate']){
  const frames=PET_IDLE_POSES[kind];
  assert.equal(frames.length,PET_IDLE_PHASE.length);
  assert.deepEqual(frames[0],frames.at(-1));
- assert(frames.some(p=>p.lift<-1)&&frames.some(p=>p.scaleY>1.01)&&frames.some(p=>Math.abs(p.tilt)>1));
+ assert(frames.some(p=>p.lift<-.8)&&frames.some(p=>p.scaleY>1.01));
+ if(kind==='draconic')assert(frames.every(p=>Math.abs(p.tilt)<=.5&&p.scaleX<=1.006&&p.scaleY<=1.014&&p.lift>=-1.3));
+ else assert(frames.some(p=>Math.abs(p.tilt)>1));
  for(const p of frames){
   assert(p.lift>=-5&&p.lift<=0);
   assert(p.scaleX>=1&&p.scaleX<=1.03&&p.scaleY>=1&&p.scaleY<=1.04);

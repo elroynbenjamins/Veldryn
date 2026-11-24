@@ -26,10 +26,10 @@ export function petIdlePose(kind:PetIdleKind,t:number){
  const alert=Math.pow(Math.max(0,Math.sin(t*Math.PI*4)),8);
  const dragon=kind==='draconic',alternate=kind==='alternate';
  return {
-  lift:-(alternate?1.8:dragon?2.6:1.6)*breath-(alternate?1:dragon?2:1.2)*alert,
-  scaleX:1+(alternate?.018:dragon?.024:.012)*breath,
-  scaleY:1+(alternate?.025:dragon?.036:.022)*breath,
-  tilt:(alternate?1.4:dragon?2.4:1.25)*sway+(dragon?-1.6:1)*alert,
+  lift:-(alternate?1.8:dragon?1.0:1.6)*breath-(alternate?1:dragon?.3:1.2)*alert,
+  scaleX:1+(alternate?.018:dragon?.006:.012)*breath,
+  scaleY:1+(alternate?.025:dragon?.014:.022)*breath,
+  tilt:(alternate?1.4:dragon?.35:1.25)*sway+(dragon?-.15:1)*alert,
   glow:.22+.4*breath,
  };
 }

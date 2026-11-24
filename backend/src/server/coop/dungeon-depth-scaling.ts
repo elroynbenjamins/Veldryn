@@ -36,7 +36,7 @@ export function dungeonEncounterDepthMultipliers(roomDepth:number,enabled:boolea
 /** Authoritative combat time budget for Endurance boss checkpoints only.
  * Indexed by actual graph depth, not the shifted difficulty depth. Existing
  * runs and ordinary rooms retain the engine's default three-minute limit. */
-const ENDURANCE_BOSS_LIMIT_MS:Readonly<Record<number,number>>=Object.freeze({8:180_000,15:210_000,22:240_000,29:260_000,36:280_000,43:300_000});
+const ENDURANCE_BOSS_LIMIT_MS:Readonly<Record<number,number>>=Object.freeze({8:180_000,15:210_000,22:240_000,29:280_000,36:320_000,43:360_000});
 export function dungeonBossTimeLimitMs(nodeDepth:number,enabled:boolean,isBoss:boolean,bossVersion?:typeof DUNGEON_BOSS_ENDURANCE_VERSION):number|undefined{
  if(!enabled||!isBoss||bossVersion!==DUNGEON_BOSS_ENDURANCE_VERSION)return undefined;
  return ENDURANCE_BOSS_LIMIT_MS[nodeDepth];

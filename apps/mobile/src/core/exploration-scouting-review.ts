@@ -51,11 +51,25 @@ export function scoutingAvailability(state:ScoutState,route:ScoutRoute,kind:Scou
  // Independent gathering/crafting access and combat story gates are separate policy.
  return 'available';
 }
+/** Candidate affinity identity: every affinity has a niche; no rarity gate. */
+export function scoutingPreferredAffinities(route:ScoutRoute):readonly string[]{
+ if(route.zoneId==='SUNSCAR')return ['primal','radiant'];
+ if(route.zoneId==='FROSTMARCH')return ['arcane','construct'];
+ if(route.zoneId==='OLD_MINES')return ['construct','umbral'];
+ if(route.zoneId==='KINGS_ROAD')return ['radiant','umbral'];
+ if(route.zoneId==='SILVERBROOK')return ['arcane','primal'];
+ return ['wild','primal'];
+}
+export function scoutingTeamBreakdown(route:ScoutRoute,ids:readonly string[],authority:ScoutAuthority){
+ if(ids.length>3||new Set(ids).size!==ids.length)return fail('invalid_team');
+ const affinityList=scoutingPreferredAffinities(route);
+ const scouts=ids.map(id=>{const owned=authority.owned[id],d=companionServerDefinition(id);if(!owned||!d)return fail('not_owned');
+  return {id,levelBonus:Math.min(.04,Math.max(0,owned.level)*.001),bondBonus:Math.min(.02,Math.max(0,owned.bondLevel)*.002),originBonus:d.originId===regionOrigin(route.zoneId)?.04:0,affinityBonus:affinityList.includes(d.affinity)?.03:0};});
+ const raw=scouts.reduce((sum,s)=>sum+s.levelBonus+s.bondBonus+s.originBonus+s.affinityBonus,0);
+ return {scouts,raw,total:Math.min(.20,raw),cap:.20,preferredAffinities:affinityList};
+}
 export function scoutingTeamBonus(route:ScoutRoute,ids:readonly string[],authority:ScoutAuthority){
- let affinity=0;
- for(const id of ids){const owned=authority.owned[id],d=companionServerDefinition(id);if(!owned||!d)return fail('not_owned');
-  affinity+=Math.min(.04,owned.level*.001)+Math.min(.02,owned.bondLevel*.002)+(d.originId===regionOrigin(route.zoneId)?.04:0);}
- return Math.min(.20,affinity);
+ return scoutingTeamBreakdown(route,ids,authority).total;
 }
 /** Immutable account-scoped reservation. Production needs transactional custody
  * shared with existing expeditions/trials/equip, and a trusted server clock. */

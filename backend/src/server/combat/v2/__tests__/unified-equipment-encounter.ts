@@ -1,4 +1,5 @@
 import {strict as assert} from 'node:assert';
+import {reviewCompanionContributionV2,type CompanionContributionSourceV2} from '../companion-contribution-review';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatStats} from '../../types';
 import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
@@ -116,6 +117,29 @@ assert.equal(evidence.statStages.afterSets.defense,
 assert.equal(evidence.statStages.classOnly.attackPower,fixtureClassStats.attackPower);
 
 assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
+ const companionSource:CompanionContributionSourceV2={
+  accountId:'QA_ACCOUNT',characterId:runtime.characterId,actorId:resolved.id,revision:1,
+  selectedCompanionId:'UNIT_005',ownedCompanionIds:['UNIT_005'],busyCompanionIds:[],
+  progress:{companionId:'UNIT_005',level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false},
+  verifyPersisted:(digest,revision)=>/^[0-9a-f]{64}$/.test(digest)&&revision===1,
+ };
+ const beforeCompanion=JSON.stringify(resolved);
+ const companionReview=reviewCompanionContributionV2(resolved,companionSource);
+ assert.equal(companionReview.activeAssists.length,1);
+ assert.equal(companionReview.activeAssists[0].target,'interruptible_casting_enemy');
+ assert.ok(companionReview.permanentStatDelta.haste>0);
+ assert.equal(companionReview.additionalCombatants,0);
+ assert.equal(companionReview.canContributeCP,false);
+ assert.equal(JSON.stringify(resolved),beforeCompanion);
+ assert.deepEqual(companionReview,reviewCompanionContributionV2(resolved,companionSource));
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,busyCompanionIds:['UNIT_005']}),/companion_busy/);
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,ownedCompanionIds:[]}),/companion_not_owned/);
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,verifyPersisted:()=>false}),/unverified_snapshot/);
+ assert.throws(()=>reviewCompanionContributionV2({...resolved,abilities:[...resolved.abilities,...companionReview.activeAssists]},companionSource),/already_assisted_owner/);
+ const noCompanion=reviewCompanionContributionV2(resolved,{...companionSource,selectedCompanionId:null,progress:null});
+ assert.equal(noCompanion.activeAssists.length,0);
+ assert.ok(Object.values(noCompanion.permanentStatDelta).every(v=>v===0));
+
 const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
 const policy={
  targetClassShare:{min:.15,max:.18},weights,requiredEquipmentSlots:10,

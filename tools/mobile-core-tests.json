@@ -215,6 +215,7 @@
   ".core-build/apps/mobile/tests/dungeon-combat-profile-card-ui-contract.js",
   "../../tools/validate-dungeon-combat-lifecycle.cjs",
   ".core-build/apps/mobile/tests/coop-ui-contract.js",
+  ".core-build/apps/mobile/tests/coop-synchronization.js",
   ".core-build/apps/mobile/tests/coop-dungeon-browsing.js",
   ".core-build/apps/mobile/tests/coop-dungeon-browse-cache.js",
   "tests/coop-dungeon-entry-cache.cjs",

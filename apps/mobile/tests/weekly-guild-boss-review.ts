@@ -337,3 +337,34 @@ assert.equal(weeklyRaidOpenCursor(reopened),reopened.replay!.durationMs);
 assert.equal(leaveRaid.snapshot().reservedAttempts,1);
 assert.ok(weeklyRaidPresentationFrame(reopened.replay!,180000,null,false).log.length<=3);
 console.log('PASS dungeon-style raid review: VIP+ speed only, no 4x, leave and settle independently, summary on reopen');
+
+import {weeklyRaidVisualEffects,type WeeklyRaidReplayEvent} from '../src/core/weekly-guild-raid-replay-review';
+const fxEvent=(type:string,actorId:string,targetId?:string,extra:Partial<WeeklyRaidReplayEvent>={}):WeeklyRaidReplayEvent=>({type,actorId,targetId,atMs:100,...extra});
+const routeFx=(e:WeeklyRaidReplayEvent)=>weeklyRaidVisualEffects([e],'hero','boss')[0];
+for(const [event,anchor,kind] of [
+ [fxEvent('cast_start','boss','hero'),'boss','cast'],
+ [fxEvent('cast_start','hero','boss'),'hero','cast'],
+ [fxEvent('damage','hero','boss'),'boss','damage'],
+ [fxEvent('damage','boss','hero'),'hero','damage'],
+ [fxEvent('damage','hero','boss',{critical:true}),'boss','critical'],
+ [fxEvent('dot_tick','boss','hero'),'hero','damage'],
+ [fxEvent('heal','hero','hero'),'hero','heal'],
+ [fxEvent('shield','boss','boss'),'boss','shield'],
+ [fxEvent('shield','hero','hero',{abilityId:'hero:companion:assist'}),'hero','shield'],
+ [fxEvent('status_remove','hero','hero'),'hero','cleanse'],
+ [fxEvent('interrupt','hero','boss'),'boss','interrupt'],
+ [fxEvent('phase','boss'),'boss','phase'],
+ [fxEvent('down','boss','hero'),'hero','down'],
+ [fxEvent('death','hero','boss'),'boss','down'],
+ [fxEvent('miss','boss','hero'),'hero','miss']
+] as const){
+ const visual=routeFx(event);assert.equal(visual.anchor,anchor);assert.equal(visual.kind,kind);
+}
+assert.equal(weeklyRaidVisualEffects([fxEvent('damage','hero','unknown'),fxEvent('cast_start','unknown','hero')],'hero','boss').length,0);
+const simultaneous=weeklyRaidVisualEffects([fxEvent('damage','hero','boss'),fxEvent('damage','boss','hero'),fxEvent('interrupt','hero','boss'),fxEvent('heal','hero','hero')],'hero','boss');
+assert.equal(simultaneous.length,2);
+assert.equal(simultaneous.find(e=>e.anchor==='boss')!.kind,'interrupt');
+assert.equal(simultaneous.find(e=>e.anchor==='hero')!.kind,'heal');
+assert.deepEqual(weeklyRaidVisualEffects([], 'hero','boss'),[]);
+assert.equal(weeklyRaidVisualEffects([fxEvent('damage','hero','boss')],'hero','hero').length,0);
+console.log('PASS weekly raid FX: caster/target anchors, simultaneous cues, cleanse/miss, unknown actor suppression');

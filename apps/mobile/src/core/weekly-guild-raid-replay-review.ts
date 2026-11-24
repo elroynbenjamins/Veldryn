@@ -20,7 +20,7 @@ export function weeklyRaidReplayFrame(source:WeeklyRaidReplaySource|null,elapsed
  const elapsed=Math.min(source.durationMs,Math.max(0,elapsedMs));
  const history=source.events.filter(e=>e.atMs<=elapsed);
  const fresh=previousMs!==null&&previousMs>=0&&previousMs<=elapsed&&elapsed-previousMs<=1500;
- const effects=!reduceMotion&&fresh?history.filter(e=>e.atMs>previousMs!&&['damage','dot_tick','heal','hot_tick','shield','interrupt','status_remove','cast_start','phase'].includes(e.type)):[];
+ const effects=!reduceMotion&&fresh?history.filter(e=>e.atMs>previousMs!&&['damage','dot_tick','heal','hot_tick','shield','interrupt','status_remove','cast_start','phase','down','death','miss'].includes(e.type)):[];
  return {state:elapsed>=source.durationMs?'complete' as const:'replay' as const,elapsedMs:elapsed,events:history,effects};
 }
 
@@ -98,3 +98,31 @@ export function weeklyRaidPendingState(receipt:WeeklyRaidSettledReceipt,serverAl
 /** An opened settled receipt starts on its summary, not a second 3-minute wait.
  * Players may explicitly replay. Leaving or reconnecting never creates a new attempt. */
 export function weeklyRaidOpenCursor(receipt:WeeklyRaidSettledReceipt){return receipt.replay?.durationMs??0}
+
+export type WeeklyRaidEffectKind='damage'|'critical'|'heal'|'shield'|'interrupt'|'phase'|'cast'|'down'|'cleanse'|'miss';
+export type WeeklyRaidEffectAnchor='boss'|'hero';
+export interface WeeklyRaidVisualEffect{
+ anchor:WeeklyRaidEffectAnchor;kind:WeeklyRaidEffectKind;event:WeeklyRaidReplayEvent;key:string;
+}
+const priority:Record<WeeklyRaidEffectKind,number>={down:100,interrupt:90,phase:80,cleanse:75,critical:65,shield:60,heal:55,damage:50,cast:40,miss:30};
+/** A cast belongs to the caster, impacts to the recipient. Unknown IDs fail
+ * closed. One prioritized burst per portrait per display interval avoids
+ * stacking multiple sprites, while independent opposing hits are retained. */
+export function weeklyRaidVisualEffects(events:readonly WeeklyRaidReplayEvent[],heroId:string,bossId:string):WeeklyRaidVisualEffect[]{
+ if(!heroId||!bossId||heroId===bossId)return [];
+ const chosen=new Map<WeeklyRaidEffectAnchor,WeeklyRaidVisualEffect>();
+ for(let index=0;index<events.length;index++){
+  const e=events[index];
+  const kind:WeeklyRaidEffectKind|undefined=e.type==='damage'||e.type==='dot_tick'?(e.critical?'critical':'damage'):
+   e.type==='heal'||e.type==='hot_tick'?'heal':e.type==='shield'?'shield':e.type==='interrupt'?'interrupt':
+   e.type==='phase'?'phase':e.type==='cast_start'?'cast':e.type==='down'||e.type==='death'?'down':
+   e.type==='status_remove'?'cleanse':e.type==='miss'?'miss':undefined;
+  if(!kind)continue;
+  const id=kind==='cast'||kind==='phase'?e.actorId:e.targetId;
+  const anchor=id===heroId?'hero':id===bossId?'boss':undefined;
+  if(!anchor)continue;
+  const prior=chosen.get(anchor);
+  if(!prior||priority[kind]>=priority[prior.kind])chosen.set(anchor,{anchor,kind,event:e,key:[e.atMs,e.type,e.actorId,e.targetId,e.abilityId,e.statusTag,index].join(':')});
+ }
+ return Array.from(chosen.values());
+}

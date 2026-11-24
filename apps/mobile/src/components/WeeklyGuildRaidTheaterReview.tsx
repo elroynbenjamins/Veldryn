@@ -6,8 +6,8 @@ import {dungeonCombatPortraitSource} from '../theme/dungeon-combat-art';
 import {accountEntitlementBenefits} from '../core/account-entitlements';
 import type {GameState} from '../core/types';
 import {CombatTheaterModal} from './CombatTheaterModal';
-import {CombatImpactBurst,type CombatImpactKind} from './CombatImpactBurst';
-import {weeklyRaidBattleSummary,weeklyRaidPresentationFrame,weeklyRaidPlaybackSpeed,weeklyRaidPendingState,weeklyRaidOpenCursor,type WeeklyRaidSettledReceipt} from '../core/weekly-guild-raid-replay-review';
+import {CombatImpactBurst} from './CombatImpactBurst';
+import {weeklyRaidBattleSummary,weeklyRaidPresentationFrame,weeklyRaidPlaybackSpeed,weeklyRaidPendingState,weeklyRaidOpenCursor,weeklyRaidVisualEffects,type WeeklyRaidSettledReceipt} from '../core/weekly-guild-raid-replay-review';
 const number=(n:number)=>Math.round(n).toLocaleString();
 const time=(ms:number)=>Math.floor(ms/60000)+':'+String(Math.floor(ms/1000)%60).padStart(2,'0');
 export function WeeklyGuildRaidTheaterReview(props:{visible:boolean;onClose:()=>void;receipt:WeeklyRaidSettledReceipt;
@@ -40,10 +40,16 @@ export function WeeklyGuildRaidTheaterReview(props:{visible:boolean;onClose:()=>
  const summary=useMemo(()=>weeklyRaidBattleSummary(receipt),[receipt]);
  const seek=(elapsed:number)=>{setPlaying(false);setClock({elapsed:Math.min(duration,Math.max(0,elapsed)),previous:null})};
  const cue=frame?.cue;
- const impact:CombatImpactKind|undefined=cue?.type==='damage'||cue?.type==='dot_tick'?(cue.critical?'critical':'damage'):cue?.type==='heal'||cue?.type==='hot_tick'?'heal':cue?.type==='shield'?'shield':cue?.type==='interrupt'?'interrupt':cue?.type==='phase'?'phase':cue?.type==='cast_start'?'cast':undefined;
- const showImpact=Boolean(impact&&cue&&visible&&active&&playing&&!reduceMotion);
- const heroImpact=Boolean(cue&&source&&cue.targetId===source.presentation.hero.id);
- const impactNode=(target:'hero'|'boss')=>showImpact&&cue&&impact&&(target==='hero'?heroImpact:!heroImpact)?<CombatImpactBurst eventId={receipt.nonce+':'+cue.atMs+':'+cue.type+':'+(cue.abilityId??'')} kind={impact} size={target==='hero'?38:58}/>:null;
+ const effects=useMemo(()=>source&&frame?weeklyRaidVisualEffects(frame.effects,source.presentation.hero.id,source.presentation.boss.id):[],[source,frame]);
+ const showEffects=visible&&active&&playing&&!reduceMotion;
+ const impactNode=(target:'hero'|'boss')=>{
+  if(!showEffects)return null;
+  const effect=effects.find(e=>e.anchor===target);
+  if(!effect)return null;
+  const eventId=receipt.nonce+':'+effect.key;
+  if(effect.kind==='cleanse'||effect.kind==='miss')return <View pointerEvents="none" accessible={false} style={[s.effectLabel,{backgroundColor:C.panel,borderColor:C.line}]}><Text style={[s.small,{color:effect.kind==='cleanse'?C.good:C.muted,fontWeight:'800'}]}>{effect.kind==='cleanse'?'Cleansed':'Miss'}</Text></View>;
+  return <CombatImpactBurst key={eventId} eventId={eventId} kind={effect.kind} size={target==='hero'?38:58}/>;
+ };
  const bar=(name:string,hp:number,max:number,color:string,approx:boolean)=><View style={s.barBlock}>
   <View style={s.row}><Text style={[s.label,{color:C.text}]}>{name}</Text><Text style={[s.small,{color:C.muted}]}>{approx?'~':''}{number(hp)} / {number(max)}</Text></View>
   <View accessibilityRole="progressbar" accessibilityLabel={name} accessibilityValue={{min:0,max:100,now:Math.round(hp/max*100)}} style={[s.track,{backgroundColor:C.panel2}]}><View style={{width:`${hp/max*100}%` as `${number}%`,height:'100%',backgroundColor:color}}/></View>
@@ -81,7 +87,7 @@ const s=StyleSheet.create({
  row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  barBlock:{gap:5},track:{height:10,borderRadius:5,overflow:'hidden'},label:{fontSize:12,fontWeight:'800'},small:{fontSize:11,lineHeight:16},
  arena:{height:208,borderRadius:14,overflow:'hidden',justifyContent:'center',alignItems:'center',padding:8},
- shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,8,13,.35)'},bossSide:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},boss:{width:'82%',maxWidth:216,height:'100%'},bossStatus:{minHeight:42,justifyContent:'center',alignItems:'center',gap:2},heroPortrait:{width:48,height:48,alignItems:'center',justifyContent:'center'},cast:{paddingHorizontal:7,paddingVertical:3,borderRadius:4,fontSize:11,fontWeight:'800'},phase:{fontSize:11,fontWeight:'800'},
+ shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,8,13,.35)'},bossSide:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},boss:{width:'82%',maxWidth:216,height:'100%'},bossStatus:{minHeight:42,justifyContent:'center',alignItems:'center',gap:2},heroPortrait:{width:48,height:48,alignItems:'center',justifyContent:'center'},effectLabel:{position:'absolute',zIndex:7,top:0,alignSelf:'center',borderWidth:1,borderRadius:5,paddingHorizontal:5,paddingVertical:2},cast:{paddingHorizontal:7,paddingVertical:3,borderRadius:4,fontSize:11,fontWeight:'800'},phase:{fontSize:11,fontWeight:'800'},
  heroSide:{flexDirection:'row',alignItems:'center',alignSelf:'stretch',borderWidth:1,borderRadius:10,padding:6,gap:8},hero:{width:48,height:48},companion:{width:26,height:26},
  controls:{flexDirection:'row',flexWrap:'wrap',gap:6},button:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  panel:{borderWidth:1,borderRadius:12,padding:12,gap:8},metric:{paddingTop:6,borderTopWidth:1},total:{fontSize:26,fontWeight:'900'},

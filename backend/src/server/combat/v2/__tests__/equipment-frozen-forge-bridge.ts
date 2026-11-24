@@ -41,6 +41,9 @@ import {prepareSoloEnemyKitsV2} from '../enemy-kit-composer';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {reviewOriginalForgeSetBossOpportunitiesV2}
  from '../equipment-forge-set-boss-opportunity-review';
+import {reviewOriginalForgeBossThreeWayV2,
+ type OriginalForgeBossThreewayInputV2}
+ from '../equipment-original-forge-boss-threeway-review';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
@@ -1166,6 +1169,9 @@ const exactBossProfiles=[
  {id:'BOSS_EXP_CANTOR',region:'frostmarch',tier:4,forgeTier:4,level:60},
 ] as const;
 let realForgeAuthoredBossRuns=0,realForgeAuthoredBossThreats=0;
+let realOriginalBossThreewayComparisons=0,comparableThreewayTactics=0;
+const originalThreewayOutcomes=new Map<string,number>();
+let sourceThreewayGuards=0;
 let originalForgeSetBossMatrixCount=0,sourceSetBossOpportunities=0;
 let authoredButUnseen=0,sourceSetBossMechanicAbsent=0;
 const bossSetOpportunityProfiles=new Set<string>();
@@ -1206,7 +1212,8 @@ for(const profile of exactBossProfiles){
    const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
    const group=profile.id+'|'+classId+'|'+specIndex;
    let originalFreeze='';
-   for(const strategy of ['generic','targeted'] as const){
+   const threeWay:OriginalForgeBossThreewayInputV2[]=[];
+   for(const strategy of ['generic','targeted','alternative'] as const){
     const chosen=selectReviewSkillLoadoutV2(
      classId,spec.id,qa.actor,profile.id,strategy);
     const build:VerifiedSkillBuildV2={...qa.build,selected:{
@@ -1229,6 +1236,7 @@ for(const profile of exactBossProfiles){
     assert.ok(first.combat.events.some(e=>e.type==='combat_start'));
     assert.ok(!first.bossMechanicLabels.some(label=>label.includes('V2_BOSS_PRESSURE')),
      'No generic boss pressure script may replace the authored kit');
+    threeWay.push({choice:chosen,result:first});
     const freezing=JSON.stringify({
      items:first.equipmentEvidence.items,
      stages:first.equipmentEvidence.stages.afterFrozenBase,
@@ -1276,6 +1284,57 @@ for(const profile of exactBossProfiles){
       (e.type==='cast_start'||e.type==='status_apply'||e.type==='phase')).length;
     realForgeAuthoredBossRuns++;
    }
+   const actualThreeway=reviewOriginalForgeBossThreeWayV2(threeWay);
+   assert.equal(actualThreeway.bossId,profile.id);
+   assert.equal(actualThreeway.playerId,qa.actor.id);
+   assert.equal(actualThreeway.originalEquippedCopies,1);
+   assert.equal(actualThreeway.frozenStatsIdentical,true);
+   assert.equal(actualThreeway.metrics.length,3);
+   assert.equal(actualThreeway.balancePassApproved,false);
+   assert.equal(actualThreeway.sourceIsLiveAuthenticated,false);
+   assert.equal(actualThreeway.canAuthorizeCombat,false);
+   assert.equal(actualThreeway.canGrantRewards,false);
+   assert.equal(actualThreeway.releaseApproved,false);
+   assert.deepEqual(actualThreeway.metrics.map(row=>row.strategy),
+    ['generic','targeted','alternative']);
+   assert.ok(actualThreeway.metrics.every(row=>
+    row.durationMs>=0&&row.playerDamageDone>=0&&row.bossFinalHp>=0));
+   realOriginalBossThreewayComparisons++;
+   comparableThreewayTactics+=actualThreeway.metrics.filter(
+    row=>row.skillSelectionDiffersFromGeneric).length;
+   originalThreewayOutcomes.set(actualThreeway.outcome,
+    (originalThreewayOutcomes.get(actualThreeway.outcome)??0)+1);
+   if(classId==='IRONWARDEN'&&specIndex===0){
+    assert.throws(()=>reviewOriginalForgeBossThreeWayV2(
+     threeWay.slice(0,2)),/exactly_three_authored_strategies/);
+    sourceThreewayGuards++;
+    assert.throws(()=>reviewOriginalForgeBossThreeWayV2([
+     threeWay[1],threeWay[0],threeWay[2],
+    ]),/unknown_or_unauthorized_source/);
+    sourceThreewayGuards++;
+    const swapped={...threeWay[2],result:{...threeWay[2].result,
+     equipmentEvidence:{...threeWay[2].result.equipmentEvidence,
+      items:[{...threeWay[2].result.equipmentEvidence.items[0],
+       pieceId:'EQ2_FORGED_LEGACY_COPY'}],
+     },
+    }};
+    assert.throws(()=>reviewOriginalForgeBossThreeWayV2([
+     threeWay[0],threeWay[1],swapped,
+    ]),/changed_gear_base_enemy_or_invalid_ledger_digest/);
+    sourceThreewayGuards++;
+    const stale={...threeWay[1],result:{...threeWay[1].result,
+     equipmentEvidence:{...threeWay[1].result.equipmentEvidence,
+      receiptDigest:threeWay[0].result.equipmentEvidence.receiptDigest,
+     },
+    }};
+    if(JSON.stringify(threeWay[0].choice.activeSkills)!==
+       JSON.stringify(threeWay[1].choice.activeSkills)){
+     assert.throws(()=>reviewOriginalForgeBossThreeWayV2([
+      threeWay[0],stale,threeWay[2],
+     ]),/changed_skill_using_stale_receipt_digest/);
+     sourceThreewayGuards++;
+    }
+   }
    sameForgeBossGroups.add(group);
    if(classId==='IRONWARDEN'&&specIndex===0){
     assert.throws(()=>simulateOriginalForgeAuthoredBossReviewV2(
@@ -1313,13 +1372,22 @@ console.log('PASS: 1620 reviewed 15-original-Forge-set × six-authored-boss × '
  ', authored but unseen '+authoredButUnseen+
  ', mechanic absent '+sourceSetBossMechanicAbsent+
  '; ZERO set modifiers, boss kit grants, CP approvals or market actions');
-assert.equal(realForgeAuthoredBossRuns,216);
+assert.equal(realOriginalBossThreewayComparisons,108);
+assert.equal([...originalThreewayOutcomes.values()].reduce((a,b)=>a+b,0),108);
+assert.equal(realForgeAuthoredBossRuns,324);
+assert.equal(sourceThreewayGuards>=18,true);
+console.log('PASS: 108 genuine original Forge + persisted six regional boss '+
+ 'equal-source stat three-way Skills comparisons, '+comparableThreewayTactics+
+ ' non-generic skill choices, '+sourceThreewayGuards+
+ ' stale receipt/forged gear/strategy guard tests; outcomes '+
+ JSON.stringify(Object.fromEntries(originalThreewayOutcomes))+
+ '; NO final CP or class/boss balance approval');
 assert.equal(sameForgeBossGroups.size,108);
 assert.equal(forgedRegionalChecks,30);
 assert.ok(realForgeAuthoredBossThreats>0,
  'Actual regional boss casts/status/phase events must occur');
-console.log('PASS: 216 original minted Forge Skills × 6 authentic persisted regional '+
- 'Enemy V2 boss engine runs (108 generic/targeted pairs); '+
+console.log('PASS: 324 original minted Forge Skills × 6 authentic persisted regional '+
+ 'Enemy V2 boss engine runs (108 generic/targeted/alternative triplets); '+
  realForgeAuthoredBossThreats+' boss mechanics and '+forgedRegionalChecks+
  ' invalid-source tests, zero grants; NOT approved final balance');
 // --------------------------------------------------------------

@@ -11,7 +11,9 @@
     "tests/exploration-account-settlement-review.ts",
     "tests/exploration-scouting-balance-review.ts",
     "tests/exploration-scouting-duration-review.ts",
-    "tests/exploration-scouting-companion-reward-review.ts"
+    "tests/exploration-scouting-companion-reward-review.ts",
+    "tests/exploration-scouting-ui-content-review.ts",
+    "src/components/ExplorationScoutingAssignmentReview.tsx"
   ],
   "exclude": []
 }

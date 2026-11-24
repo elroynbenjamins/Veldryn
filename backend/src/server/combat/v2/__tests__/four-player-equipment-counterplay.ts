@@ -113,6 +113,15 @@ function fight(tactic:PartyTactic){
  const frozen=JSON.stringify(input);
  const first=simulateUnifiedEquipmentCombatV2(input,builds,gear,true);
  const replay=simulateUnifiedEquipmentCombatV2(input,builds,gear,true);
+ const review=simulateUnifiedEquipmentCombatV2(input,builds,gear,true,undefined,undefined,'dungeon');
+ assert.deepEqual(review.combat,first.combat,'review cannot change combat outcomes');
+ assert.deepEqual(review.equipmentEvidence,first.equipmentEvidence,'review cannot change personal gear/CP evidence');
+ assert.equal(review.synchronizationReview?.active.length,3);
+ assert.equal(review.synchronizationReview?.scalePercent,80);
+ assert.equal(review.synchronizationReview?.recipientIds.length,4);
+ assert.equal(review.synchronizationReview?.canAuthorizeCombat,false);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,builds,gear,false,undefined,undefined,'dungeon'),/sync_requires_complete_v2/);
+
  assert.deepEqual(first,replay,'identical private sources must produce exact replay');
  assert.equal(JSON.stringify(input),frozen,'input must not mutate');
  assert.equal(first.equipmentEvidence.length,4);

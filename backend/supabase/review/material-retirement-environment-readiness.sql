@@ -19,3 +19,5 @@ select
    and to_regclass('private.reward_gift_catalog_v1') is not null
    and to_regclass('private.reward_gift_campaigns_v1') is not null
  ) as retirement_schema_ready;
+
+-- Staging parity synchronized and rollback-verified on 2026-11-24; this query remains read-only.

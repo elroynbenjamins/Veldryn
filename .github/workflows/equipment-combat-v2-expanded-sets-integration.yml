@@ -5,6 +5,8 @@ on:
       - 'tools/eq2-review/t1-t5/*v18*'
       - 'tools/eq2-review/t1-t5/*v19*'
       - 'tools/eq2-review/t1-t5/*v21*'
+      - 'tools/eq2-review/t1-t5/*v22*'
+      - 'backend/src/server/combat/v2/equipment-private-hit-qa-v22.ts'
       - 'docs/2-0/eq2-normalized-effects-review-v18.json'
       - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts'
@@ -95,6 +97,7 @@ jobs:
           EQ2_V19_PERMANENT_SENSITIVITY_PATH: /tmp/eq2-v19-static.json
           EQ2_V21_MULTISLOT_PATH: /tmp/eq2-v21-solo.json
           EQ2_V21_PARTY_PATH: /tmp/eq2-v21-party.json
+          EQ2_V22_CONDITIONAL_PATH: /tmp/eq2-v22-current-hit.json
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
       - name: Classify V18 baseline and shadow opportunities without applying equipment effects
         run: node tools/eq2-review/t1-t5/effect-trace-review-v18.mjs /tmp/eq2-v18-trace.json
@@ -102,6 +105,8 @@ jobs:
         run: node tools/eq2-review/t1-t5/permanent-sensitivity-review-v19.mjs /tmp/eq2-v19-static.json
       - name: Validate 648 multi-slot solo and 108 controlled party permanent-stat pairs
         run: node tools/eq2-review/t1-t5/multislot-sensitivity-review-v21.mjs /tmp/eq2-v21-solo.json /tmp/eq2-v21-party.json
+      - name: Validate 120 private current-hit conditional counterfactuals
+        run: node tools/eq2-review/t1-t5/current-hit-review-v22.mjs /tmp/eq2-v22-current-hit.json
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-launch-registry.js
       - name: Enforce exact source-gapped 204 member plan and no legacy set hijacking
@@ -122,6 +127,6 @@ jobs:
         run: node tools/test-eq2-material-origin-atomic-v6-v7.mjs
       - name: Forbid staging-only set authorizer in public entrypoints
         run: |
-          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2|reviewWornRealForgeSetsV2|prepareForgeCombatRevisionPreflightV2|recheckForgeCombatPartyRevisionsV2|inspectFrozenForgeCombatHandoffV2|selectReviewSkillLoadoutV2|simulateOriginalForgeAuthoredBossReviewV2|compileOriginalFrozenForgeAffixesV2|reviewOriginalForgeSetBalanceDraftV2|previewClassIndependentOriginalForgeAffixesV2|reviewOriginalForgeSetBossOpportunitiesV2|reviewOriginalForgeBossThreeWayV2|reviewOriginalForgeToUniversalBonusGateV2' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'PLANNED_T1_T4_SETS_V2|PLANNED_T1_T4_MEMBERS_V2|auditUnifiedSetLaunchV2|EXPANDED_SET_FAMILY_SYNERGIES_V2|auditRealExpandedSetSourceGapsV2|reviewExpandedSetSourceCoverageV2|EQ2_REVIEW_MATERIAL_IDENTITIES|reviewEq2MaterialStack|reviewEq2PendingStackBalances|EQ2_V6_DRAFT_PROCESSES|reviewEq2V6MaterialOrigin|previewEq2V7AtomicCraftHandoff|auditEq2V7ReviewLots|compileRealFrozenForgeActorV2|simulateRealFrozenForgeCombatV2|auditRealForgeSetIdentityV2|reviewWornForgeSetSourcesV2|reviewForgeSetEffectAuthoringV2|inspectOnlineGameStateForgeCombatV2|reviewWornRealForgeSetsV2|prepareForgeCombatRevisionPreflightV2|recheckForgeCombatPartyRevisionsV2|inspectFrozenForgeCombatHandoffV2|selectReviewSkillLoadoutV2|simulateOriginalForgeAuthoredBossReviewV2|compileOriginalFrozenForgeAffixesV2|reviewOriginalForgeSetBalanceDraftV2|previewClassIndependentOriginalForgeAffixesV2|reviewOriginalForgeSetBossOpportunitiesV2|reviewOriginalForgeBossThreeWayV2|reviewOriginalForgeToUniversalBonusGateV2|issueEq2PrivateHitQaV22|equipment-private-hit-qa-v22' backend/online apps/mobile/src backend/supabase/functions --include='*.ts' --include='*.tsx'; then
             echo 'Unissued 2.0 set draft leaked into live routes'; exit 1
           fi

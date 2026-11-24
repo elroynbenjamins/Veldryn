@@ -25,8 +25,8 @@ BEGIN
   SELECT coalesce(sum(least(3*least(hit,ceil(hp*c.attempt_fraction)),ceil(hp*c.personal_fraction))),0) INTO cap
    FROM jsonb_to_recordset(p_hits) AS h(hit numeric,focus numeric)
    CROSS JOIN LATERAL private.guild_weekly_boss_cap_review_v1(n,h.focus) c;
-  EXIT WHEN hp<=cap*.85 OR hp<=100;
-  hp:=greatest(100,least(hp-step,(floor(cap*.85/step)*step)::bigint));
+  EXIT WHEN hp<=cap OR hp<=100;
+  hp:=greatest(100,least(hp-step,(floor(cap/step)*step)::bigint));
   loops:=loops+1;
   IF loops>128 THEN RETURN 100; END IF;
  END LOOP;

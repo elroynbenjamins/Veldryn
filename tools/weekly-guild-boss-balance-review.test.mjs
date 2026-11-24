@@ -15,4 +15,6 @@ assert.ok(capacity(skew,target(skew))>=target(skew));
 assert.equal(rewards.reduce((n,r)=>n+r.gold,0),2000);
 assert.equal(rewards.reduce((n,r)=>n+r.tokens,0),30);
 assert.deepEqual(caps(1,.82),[.34,1]);
+assert.equal(target([{hit:15000,focus:.82}]),34000);
+assert.ok(target(skew)>100);
 console.log('PASS weekly scaling review: sizes 1–20, strongest-roster calibration, skew and reward totals');

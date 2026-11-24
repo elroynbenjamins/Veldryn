@@ -10,8 +10,8 @@ export function target(rows){
  const total=rows.reduce((s,r)=>s+r.hit,0),step=total*2.25>=100000?10000:total*2.25>=10000?1000:100;
  let hp=Math.max(100,Math.min(1e9,Math.round(total*2.25/step)*step));
  for(let i=0;i<=128;i++){
-  const cap=capacity(rows,hp);if(hp<=cap*.85||hp<=100)return hp;
-  hp=Math.max(100,Math.min(hp-step,Math.floor(cap*.85/step)*step));
+  const cap=capacity(rows,hp);if(hp<=cap||hp<=100)return hp;
+  hp=Math.max(100,Math.min(hp-step,Math.floor(cap/step)*step));
  }
  return 100;
 }

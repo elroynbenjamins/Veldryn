@@ -1,6 +1,6 @@
-# Material purpose and gold-only loot cleanup — first audit (2026-11-24)
+# Material purpose and unused loot cleanup — first audit (2026-11-24)
 
-Status: **review only, no live removals authorized by this record**. Do not deploy, modify existing inventories, enable Equipment 2.0 or interpret the absence of a text reference as proof of disuse. User direction: materials must have a genuine gameplay use; truly obsolete drops should become gold rather than inventory clutter. Preserve old inventory IDs and sellability.
+Status: **review only, no live removals authorized by this record**. Do not deploy, modify existing inventories, enable Equipment 2.0 or interpret the absence of a text reference as proof of disuse. User direction: materials must have a genuine gameplay use; truly obsolete drops should be removed outright rather than replaced with separate gold drops; review ordinary base gold separately only if necessary. Preserve old inventory IDs and sellability.
 
 ## Findings and scope
 
@@ -32,7 +32,7 @@ First group: `content/skills.ts`, `content/equipment-recipes-v33.ts`, `content/a
 | EVENT_BONDBLOOM | Hold | explicitly companion-related in resource-codex.ts; exact active sink not verified |
 | ECHO_BAT_WING | Candidate only | monster drop and item definition; no exact consumer in inspected recipe, upgrade, companion, guild, quest, event or 2.0 manifest files; not cleared for removal |
 
-Totals: 9 protected by specific definitions, 9 held pending further dependency checks, 1 candidate, 0 approved replacements. Protected includes definitions that must be reconciled with server runtime before any UI claim that an activity is currently available.
+Totals: 9 protected by specific definitions, 9 held pending further dependency checks, 1 candidate, 0 approved removals. Protected includes definitions that must be reconciled with server runtime before any UI claim that an activity is currently available.
 
 ## Runebound Core — correct the inspector, not the loot
 
@@ -40,9 +40,9 @@ Totals: 9 protected by specific definitions, 9 held pending further dependency c
 
 `core/resource-codex.ts` already builds companion use labels from definitions (around lines 78–104), but `core/item-inspect.ts` only builds recipe-based `usedIn` navigation, and `components/ItemQuickInspect.tsx` uses that model. Add structured, availability-aware material consumers shared by both screens rather than the Codex's generic fallback or duplicated strings. Display Used for above How to get, with exact quantities and valid destination where implemented. Do not surface unreleased content. If no verified consumer exists, distinguish unresolved from confirmed obsolete. Preserve inventory actions and existing translation conventions.
 
-## Echo Bat Wing candidate
+## Echo Bat Wing candidate — removal only
 
-`items.ts` assigns 80 gold vendor value. `monsters.ts` lists Echo Bat with raw 0.28 chance, quantity 1–2. Do NOT use the raw client chance as the live rate; effective runtime rates and bonuses may differ. If and only if confirmed unused, replace the existing authoritative loot roll with 80 gold times its actual rolled quantity, with no separate gold roll, no double grant and no second multiplier. A successful quantity-1 drop would award 80 gold, quantity-2 would award 160 gold. No item is minted for that roll. Preserve historical stacks, item identity and ordinary sell action. If an existing inventory cap or economy rule affects realizable sales, reconcile actual gold faucet impact before approving.
+`items.ts` assigns 80 gold vendor value. `monsters.ts` lists Echo Bat with raw 0.28 chance, quantity 1–2. Do NOT use the raw client chance as the live rate; effective runtime rates and bonuses may differ. If and only if confirmed unused, remove the authoritative loot entry outright and remove it from all corresponding client loot previews and source indexes. Do not add a replacement gold entry, hidden bonus roll, or automatic compensation. Keep the monster's ordinary gold reward unchanged by default; if actual economy impact warrants a base-gold adjustment, review it separately. Preserve historical stacks, item identity and ordinary sell action.
 
 ## 2.0 boundary
 
@@ -53,8 +53,8 @@ Inspected PR #1713 branch `review/eq2-authored-boss-threeway-mint-gates-20261124
 1. Enumerate the entire resolved active catalogue, not just literal base rows; identify all currently obtainable monster, boss, dungeon, gathering, quest, shop, expedition, event and salvage sources with server release gates.
 2. Reverse-index active recipe inputs, enhancement/merging, companions, guild construction/projects/supplies, donations, faith, unlocks, exchanges, quests and event costs. Separate producers, consumers, metadata and tests. Include hidden 2.0 manifests and their material aliases as a separate protected/planned layer. Never equate reward references, localization or artwork with a sink.
 3. Inspect authoritative `backend/supabase/functions/gameplay/index.ts` and generated recipe catalogues. Connector returned empty/unsupported content for the large gameplay source and 1.5 MB mobile equipment JSON; production Edge Function retrieval also failed. These are blocking gaps, not evidence of absence.
-4. Reconcile server drop chance, quantities, modifiers, caps, online/offline/AFK reward paths and current production balances. Only approve a gold replacement where all consumers and dependencies are excluded and the economy impact is bounded.
-5. Use one versioned server-authoritative replacement policy across all grant paths; client source preview/loot history and Codex must match. Preserve current ownership; no auto-sell migration and no account balance changes. Tests: deterministic roll parity, qty ranges, failed roll, gold receipt/idempotency, duplicate retry, online/offline parity, inventory-full behavior, unchanged ordinary loot and historical inventory reads.
+4. Reconcile server drop chance, quantities, modifiers, caps, online/offline/AFK reward paths and current production balances. Only approve removal where all consumers and dependencies are excluded and the economy impact is understood.
+5. Remove approved obsolete entries consistently across server grant paths; client source preview and Codex must match. No separate gold loot entries or hidden compensation rolls. Preserve current ownership; no auto-sell migration and no account balance changes. Tests: absence of removed drops, unchanged remaining item probabilities and quantities, unchanged ordinary gold, duplicate retry, online/offline parity, inventory-full behavior and historical inventory reads.
 6. Review source-backed item-purpose UI separately and gate unreleased entries. Release approval required before any production mutation.
 
 No gameplay source, database, live loot table or player inventory was modified by this review.

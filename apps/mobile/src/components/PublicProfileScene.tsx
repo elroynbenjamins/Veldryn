@@ -30,7 +30,7 @@ import {ProfileGuildAffiliation} from './ProfileGuildAffiliation';
 
 /** Local-only QA overrides. Never derive effects from a border or grant ownership. */
 export type ProfileCosmeticReviewSelection={borderArt?:CosmeticArt;effectArt?:CosmeticArt;borderRuntime?:ProfileCosmeticRuntime;effectRuntime?:ProfileCosmeticRuntime;active:boolean;surroundColor:string};
-export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,reviewCosmetics,allowUnreleasedCosmetics=false}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;reviewCosmetics?:ProfileCosmeticReviewSelection;allowUnreleasedCosmetics?:boolean}){
+export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,reviewCosmetics,allowUnreleasedCosmetics=false,cosmeticsActive=true}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;reviewCosmetics?:ProfileCosmeticReviewSelection;allowUnreleasedCosmetics?:boolean;cosmeticsActive?:boolean}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
@@ -52,7 +52,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <ProfileBorderBackdrop borderId={review?reviewBorderId:profile.borderId} source={border} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
-   {effectArt?<ProfileSceneEffect art={effectArt} active={review?.active??true} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={review?.active??true} reduceMotion={reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:null}
    </ProfileBorderBackdrop>
    {borderArt?<View pointerEvents="none" style={{position:'absolute',top:-8,left:-8,right:-8,bottom:-8}}><ProfileCosmeticExteriorMatte source={borderArt.matte} color={review?.surroundColor??C.bg}/></View>:null}
   <View style={[s.identityPlate,s.identityStack]}>
@@ -71,7 +71,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   </View>
   </View>
   {border?<ProfileFrameOverlay source={border} sceneSafe/>:null}
-  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={review?.active??true} reduceMotion={reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={review?.active??true} reduceMotion={reduceMotion}/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={cosmeticsActive&&(review?.active??true)} reduceMotion={reduceMotion}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

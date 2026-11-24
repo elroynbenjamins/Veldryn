@@ -4,11 +4,13 @@ import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {profileT,profileText} from '../i18n/profile';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {ITEMS,type ItemDef} from '../content/items';
-import {displayStat} from '../core/stat-display';
+import {displayStatPrecise} from '../core/stat-display';
+import {WEAPON_BONUS_LABELS} from '../core/weapon-bonus-rolls';
+import {useGameplayText} from '../i18n/gameplay';
 import type {GearSlot} from '../core/types';
-import {PROFILE_GEAR_SLOTS,profileGearColumnCount,type ProfileEquippedGear} from '../core/profile-equipped-gear';
+import {PROFILE_GEAR_SLOTS,profileGearColumnCount,profileGearItemStats,type ProfileEquippedGear} from '../core/profile-equipped-gear';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
-import {radii,type ThemeColors} from '../theme/theme';
+import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork} from './EquipmentArtwork';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -33,12 +35,13 @@ const icon=StyleSheet.create({
 
 function DetailStat({label,value}:{label:string;value:number}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- return <View style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{displayStat(value).toLocaleString()}</Text></View>;
+ return <View style={s.stat}><Text style={s.statLabel}>{label}</Text><Text style={s.statValue}>{displayStatPrecise(value)}</Text></View>;
 }
 
 /** Read-only equipment inspection. Never exposes inventory, ownership identifiers or gear actions. */
 export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:ProfileEquippedGear[];reduceMotion?:boolean}){
  const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const {gt,gl}=useGameplayText();
  const {width,fontScale}=useWindowDimensions();
  const [panelWidth,setPanelWidth]=useState(0);
  const [selectedSlot,setSelectedSlot]=useState<GearSlot|null>(null);
@@ -48,7 +51,7 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
  const tileWidth=columns===5?'18.5%':columns===4?'23.8%':'31.5%';
  const equipped=useMemo(()=>new Map(gear.map(row=>[row.slot,row])),[gear]);
  // Close stale inspection if the viewed player's gear or equipped copy changes.
- const signature=gear.map(row=>[row.slot,row.itemId,row.rarity,row.quality,row.rank,row.statGemId,row.effectGemId].join(':')).join('|');
+ const signature=gear.map(row=>[row.slot,row.itemId,row.rarity,row.quality,row.rank,row.statGemId,row.effectGemId,JSON.stringify(row.bonusRolls)].join(':')).join('|');
  useEffect(()=>{setSelectedSlot(null)},[signature]);
  const selected=selectedSlot?equipped.get(selectedSlot):undefined;
  const item=selected?byItemId.get(selected.itemId):undefined;
@@ -57,7 +60,8 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
  const effectGem=selected?.effectGemId?byItemId.get(selected.effectGemId):undefined;
  const extraGemIds=(selected?.gemIds??[]).filter(id=>id!==selected?.statGemId&&id!==selected?.effectGemId);
  const hasGemDetails=!!(selected?.statGemId||selected?.effectGemId||extraGemIds.length);
- const baseStats=item?[{label:'ATK',value:item.attack??0},{label:'DEF',value:item.defense??0},{label:'HP',value:item.hp??0}].filter(row=>row.value!==0):[];
+ const itemStats=selected?profileGearItemStats(selected):undefined;
+ const baseStats=itemStats?[{label:'ATK',value:itemStats.attack},{label:'DEF',value:itemStats.defense},{label:'HP',value:itemStats.hp}].filter(row=>row.value!==0):[];
  return <View style={s.block}>
   <View style={s.heading}>
    <View style={s.flex}><Text style={s.title}>{profileT(language,'EQUIPPED GEAR')}</Text><Text style={s.caption}>{profileT(language,'Tap an equipped item to inspect')}</Text></View>
@@ -99,10 +103,15 @@ export function ProfileEquippedGearShowcase({gear,reduceMotion=false}:{gear:Prof
      </View>
     </View>
     {baseStats.length>0?<View style={s.statBlock}>
-     <Text style={s.detailCaption}>{profileT(language,'BASE ITEM STATS')}</Text>
+     <Text style={s.detailCaption}>{itemStats?.adjusted?gt('BASE STATS'):profileT(language,'BASE ITEM STATS')}</Text>
      <View style={s.statRow}>{baseStats.map(row=><DetailStat key={row.label} label={row.label} value={row.value}/>)}</View>
-     <Text style={s.help}>{profileT(language,'Rarity, quality, enhancements and gems can improve these stats.')}</Text>
+     {!itemStats?.adjusted?<Text style={s.help}>{profileT(language,'Rarity, quality, enhancements and gems can improve these stats.')}</Text>:null}
     </View>:null}
+    {selected.bonusRolls?.length?<View style={s.statBlock}>
+     <Text style={s.detailCaption}>{gt('BONUS STATS')}</Text>
+     <View style={s.bonusPanel}>{selected.bonusRolls.map(roll=><View key={roll.stat} style={s.bonusRow}><Text style={s.bonusLabel}>{gl(WEAPON_BONUS_LABELS[roll.stat])}</Text><Text style={s.bonusValue}>+{(roll.basisPoints/100).toFixed(1)}%</Text></View>)}</View>
+    </View>:null}
+    {item?.passive?.trim()?<View style={s.statBlock}><Text style={s.detailCaption}>{gt('TRAIT')}</Text><Text style={s.traitText}>{gl(item.passive)}</Text></View>:null}
     {hasGemDetails?<View style={s.gemBlock}>
      <Text style={s.detailCaption}>{profileT(language,'SOCKETED GEMS')}</Text>
      {selected.statGemId?<Text style={s.gemLine}>{profileT(language,'Stat gem')}: {statGem?localizedItemName(language,statGem.id):selected.statGemId.replace(/_/g,' ')}</Text>:null}
@@ -142,10 +151,12 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tag:{fontSize:9,color:C.accent,fontWeight:'900',paddingHorizontal:6,paddingVertical:3,borderRadius:5,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
  statBlock:{gap:5,borderTopWidth:1,borderTopColor:C.line,paddingTop:9},
  detailCaption:{fontSize:9,fontWeight:'900',letterSpacing:.6,color:C.muted},
- statRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
- stat:{minWidth:72,flex:1,padding:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,gap:3,alignItems:'center'},
- statLabel:{fontSize:9,color:C.muted,fontWeight:'900'},
- statValue:{fontSize:13,color:C.text,fontWeight:'900'},
+ statRow:{gap:3,padding:8,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ bonusPanel:{gap:3,padding:8,borderRadius:radii.md,borderWidth:1,borderColor:C.good,backgroundColor:C.panel2},
+ bonusRow:{minHeight:24,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},bonusLabel:{...typography.bodyStrong,color:C.text,flex:1},bonusValue:{...typography.bodyStrong,color:C.good,fontWeight:'900'},traitText:{...typography.bodyStrong,color:C.text,padding:8,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ stat:{minHeight:24,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
+ statLabel:{...typography.bodyStrong,color:C.text,flex:1},
+ statValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
  help:{fontSize:10,lineHeight:15,color:C.muted},
  gemBlock:{gap:5,borderTopWidth:1,borderTopColor:C.line,paddingTop:9},
  gemLine:{fontSize:11,lineHeight:17,color:C.text},

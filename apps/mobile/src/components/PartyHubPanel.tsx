@@ -5,6 +5,7 @@ import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {RecruitmentListing} from './RecruitmentListing';
 import {GameButton} from './GameButton';
 import {GameModalSurface,GameModalHeader} from './GameModalSurface';
+import {GameTextInput} from './GameTextInput';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import React from 'react';
@@ -41,6 +42,7 @@ export interface PartyHubPanelProps {
   nowMs: number;
   onCreateParty?: () => void;
   onEditPreferences?: () => void;
+  onRenameParty?: (shortName:string)=>Promise<void>;
   onLeaveParty?: () => void;
   onDisbandParty?: () => void;
   onOpenMemberProfile?: (member:PersistentPartySummary['members'][number]) => void;
@@ -84,10 +86,14 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const [localFilters,setLocalFilters]=React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
  const [section,setSection]=React.useState<'party'|'find'>(props.party?'party':'find');
  const [showSettings,setShowSettings]=React.useState(false);
+ const [showRename,setShowRename]=React.useState(false);
+ const [nameDraft,setNameDraft]=React.useState('');
+ const [nameBusy,setNameBusy]=React.useState(false);
+ const [nameError,setNameError]=React.useState('');
  const [selectedMember,setSelectedMember]=React.useState<PersistentPartySummary['members'][number]|null>(null);
  const [expandedContracts,setExpandedContracts]=React.useState<string[]>([]);
  const [browseMode,setBrowseMode]=React.useState<'parties'|'players'>(props.recruitmentMode==='looking_for_party'?'players':'parties');
- React.useEffect(()=>{setSection(props.party?'party':'find');setShowSettings(false);setSelectedMember(null);setExpandedContracts([]);},[props.party?.id,props.accountId]);
+ React.useEffect(()=>{setSection(props.party?'party':'find');setShowSettings(false);setShowRename(false);setNameDraft('');setNameError('');setSelectedMember(null);setExpandedContracts([]);},[props.party?.id,props.accountId]);
  React.useEffect(()=>{if(selectedMember&&!props.party?.members.some(member=>member.accountId===selectedMember.accountId))setSelectedMember(null);},[props.party?.members,selectedMember]);
  const filters=props.filters??localFilters;
  const setFilters=(next:React.SetStateAction<RecruitmentClientFilters>)=>{
@@ -102,6 +108,23 @@ export function PartyHubPanel(props: PartyHubPanelProps){
  const permissions=focusedMember?partyMemberManagement(canManageParty,props.accountId,focusedMember.accountId):null;
  const title=props.party?st('My Party'):st('Find or Create a Party');
  const preferences=normalizedPartyPreferences(props.party),languageLabel=PARTY_LANGUAGES.find(row=>row.id===preferences.language)?.label??st('Any language');
+ const namedParty=props.party?.shortName??null;
+ const nextNameChangeMs=props.party?.nameNextChangeAt?Date.parse(props.party.nameNextChangeAt):0;
+ const nameCanChange=!props.party?.nameChangedAt||(!Number.isNaN(nextNameChangeMs)&&props.nowMs>=nextNameChangeMs);
+ const nextNameChangeLabel=nextNameChangeMs?new Date(nextNameChangeMs).toLocaleDateString(language,{day:'numeric',month:'long',year:'numeric'}):'';
+ const validName=/^[A-Z]{3,5}$/.test(nameDraft)&&!['ADMIN','STAFF','OWNER'].includes(nameDraft);
+ const submitName=async()=>{
+  if(!props.onRenameParty||!validName||!nameCanChange||nameBusy||nameDraft===namedParty)return;
+  setNameBusy(true);setNameError('');
+  try{await props.onRenameParty(nameDraft);setShowRename(false);}
+  catch(error){
+   const message=error instanceof Error?error.message:'';
+   setNameError(message.includes('party_name_taken')?st('That Party name is already taken.'):
+    message.includes('party_name_cooldown')?st('This Party name cannot be changed yet.'):
+    message.includes('party_name_invalid')?st('Use 3–5 letters and choose a different name.'):
+    message||st('Please try again.'));
+  }finally{setNameBusy(false);}
+ };
  if(!inParty&&props.partyUnlocked===false)return <View style={s.content}><PartyLockedNotice level={props.partyUnlockLevel}/></View>;
  return <View style={s.content}>
   <View style={s.heading}>
@@ -117,7 +140,7 @@ export function PartyHubPanel(props: PartyHubPanelProps){
      {title:'Find or create a Party',body:'Create or find a Party.',detail:'Create a Party or post in Recruitment.'}} header={inParty&&!props.dedicated?<View accessibilityRole="tablist" style={s.browseTabs}><BrowseChip label={st('My Party')} selected={section==='party'} onPress={()=>setSection('party')}/><BrowseChip label={st('Recruitment')} selected={section==='find'} onPress={()=>setSection('find')}/></View>:undefined} showReplay={false}/>
   {inParty&&section==='party'?<>
    {(!props.dedicated||props.activeView!=='Contracts')?<View style={s.summaryCard}>
-    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{socialLabel(language,partyActivityLabel(preferences.activityLevel))} {st('Party')}</Text></View>
+    <View style={s.between}><View style={s.flex}><Text style={s.eyebrow}>{st('ACTIVE PARTY')}</Text><Text style={s.sectionTitle}>{namedParty??(socialLabel(language,partyActivityLabel(preferences.activityLevel))+' '+st('Party'))}</Text>{!namedParty&&canManageParty?<Text style={s.muted}>{st('Choose a unique Party name in Party options.')}</Text>:null}</View>
       <Text style={[s.statusPill,openSpots===0?s.fullPill:s.openPill]}>{openSpots>0?st('{count} open spots',{count:openSpots}):st('Full')}</Text></View>
     <View style={[s.actions,narrow&&s.actionsStack]}>{canManageParty&&openSpots>0?<View style={[s.actionFlex,narrow&&s.actionFlexNarrow]}><GameButton compact title={st('Find members')} onPress={()=>props.dedicated?props.onOpenRecruitment?.():(setBrowseMode('players'),setSection('find'))}/></View>:null}
       <View style={[s.actionFlex,narrow&&s.actionFlexNarrow]}><GameButton compact tone="secondary" title={props.invitationCount?st('Party options · {count}',{count:props.invitationCount}):st('Party options')} onPress={()=>setShowSettings(true)}/></View></View>
@@ -176,15 +199,29 @@ export function PartyHubPanel(props: PartyHubPanelProps){
   <GameModalSurface visible={showSettings&&inParty} presentation="sheet" onClose={()=>setShowSettings(false)} surfaceStyle={{maxHeight:windowHeight*.90}}>
    <GameModalHeader eyebrow={st('ACTIVE PARTY')} title={st('Party options')} onClose={()=>setShowSettings(false)}/>
    <ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody}>
-    <View style={s.optionSummary}><Text style={s.sectionTitle}>{socialLabel(language,props.party?.focus??'mixed')} {st('Party')}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{socialLabel(language,partyActivityLabel(preferences.activityLevel))} · {languageLabel}{preferences.minimumLevel?' · '+partyMinimumLevelLabel(language,preferences.minimumLevel):''}</Text></View>
+    <View style={s.optionSummary}><Text style={s.sectionTitle}>{namedParty??(socialLabel(language,props.party?.focus??'mixed')+' '+st('Party'))}</Text><Text style={s.muted}>{props.party?.members.length??0}/4 {st('Members')} · {openSpots} {st('open spots')}</Text><Text style={s.muted}>{socialLabel(language,partyActivityLabel(preferences.activityLevel))} · {languageLabel}{preferences.minimumLevel?' · '+partyMinimumLevelLabel(language,preferences.minimumLevel):''}</Text></View>
     {(props.invitationCount??0)>0?props.partyInvitations:<Text style={s.muted}>{st('No pending invitations.')}</Text>}
     {canManageParty&&openSpots>0?<GameButton compact tone="secondary" title={st('Find members')} onPress={()=>{setShowSettings(false);if(props.dedicated)props.onOpenRecruitment?.();else{setBrowseMode('players');setSection('find');}}}/>:null}
 
+    {canManageParty&&props.onRenameParty?<GameButton compact tone="secondary" title={namedParty?st('Party name'):st('Choose Party name')} onPress={()=>{setShowSettings(false);setNameDraft(namedParty??'');setNameError('');setShowRename(true);}}/>:null}
     {canManageParty&&props.onEditPreferences?<GameButton compact tone="secondary" title={germanPartySurfaceText(language,"Edit Party preferences")} onPress={()=>{setShowSettings(false);props.onEditPreferences?.()}}/>:null}
     <View style={s.divider}/><Text style={s.eyebrow}>{st('PARTY MANAGEMENT')}</Text>
     <GameButton tone="secondary" title={st('Leave Party')} disabled={!props.onLeaveParty} onPress={()=>{setShowSettings(false);props.onLeaveParty?.();}}/>
     {canManageParty&&props.party!.members.length>1?<GameButton tone="danger" title={st('Disband Party')} disabled={!props.onDisbandParty} onPress={()=>{setShowSettings(false);props.onDisbandParty?.();}}/>:null}
     <Text style={s.muted}>{st('Leaving or disbanding requires confirmation.')}</Text>
+   </ScrollView>
+  </GameModalSurface>
+  <GameModalSurface visible={showRename&&inParty} presentation="sheet" onClose={()=>{if(!nameBusy)setShowRename(false)}} dismissOnBackdrop={!nameBusy}>
+   <GameModalHeader eyebrow={st('PARTY IDENTITY')} title={namedParty?st('Party name'):st('Choose Party name')} onClose={()=>setShowRename(false)} closeDisabled={nameBusy}/>
+   <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.modalBody} style={{maxHeight:windowHeight*.74}}>
+    <Text style={s.muted}>{st('Choose 3–5 letters (A–Z). Names must be unique across active Parties. Your Party keeps the same members and ranking history.')}</Text>
+    <GameTextInput accessibilityLabel={st('Party name')} value={nameDraft} onChangeText={value=>{setNameDraft(value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,5));setNameError('')}} maxLength={5} autoCapitalize="characters" autoCorrect={false} editable={!nameBusy&&nameCanChange} placeholder="FROST"/>
+    <Text style={s.muted}>{nameDraft.length}/5 · {st('Letters only')}</Text>
+    {namedParty?<Text style={s.warning}>{st('After saving, this name is locked for six months.')}</Text>:<Text style={s.muted}>{st('Existing Parties can claim their first name now. It is then locked for six months.')}</Text>}
+    {!nameCanChange?<Text style={s.warning}>{st('Next name change:')} {nextNameChangeLabel}</Text>:null}
+    {nameError?<Text accessibilityRole="alert" style={s.warning}>{nameError}</Text>:null}
+    <GameButton title={namedParty?st('Save new name'):st('Claim Party name')} loading={nameBusy} disabled={!validName||!nameCanChange||nameBusy||nameDraft===namedParty} onPress={()=>void submitName()}/>
+    <GameButton compact tone="secondary" title={st('Cancel')} disabled={nameBusy} onPress={()=>setShowRename(false)}/>
    </ScrollView>
   </GameModalSurface>
   <GameModalSurface visible={!!focusedMember&&inParty} presentation="dialog" onClose={()=>setSelectedMember(null)}>

@@ -1,5 +1,11 @@
 import type {CharacterState,GameState,GearSlot} from './types';
 import type {ItemRarity} from './item-rarity';
+import {ITEMS} from '../content/items';
+import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
+import {craftedGearQualityMultiplier} from './crafted-gear-instances';
+import {gearStatsAtRank} from './equipment-enhancement';
+import {normalizeEquipmentBonuses} from './equipment-bonus-rolls';
+import {normalizeWeaponBonuses,type WeaponBonusRoll,type WeaponBonusRollVersion} from './weapon-bonus-rolls';
 
 /** Stable ten-slot order used by the public profile and local audience preview. */
 export const PROFILE_GEAR_SLOTS:readonly GearSlot[]=[
@@ -11,6 +17,7 @@ export interface ProfileEquippedGear{
  rarity?:ItemRarity;
  quality?:number;
  rank?:number;
+ bonusRolls?:WeaponBonusRoll[];
  statGemId?:string;
  effectGemId?:string;
  /** Legacy saves used a single array for both gem socket types. */
@@ -28,6 +35,22 @@ export function profileGearColumnCount(width:number,fontScale:number):3|4|5{
 const cleanId=(value:unknown)=>typeof value==='string'&&value.length>0&&value.length<=160?value:undefined;
 const cleanRank=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=4?value:undefined;
 const cleanQuality=(value:unknown)=>typeof value==='number'&&Number.isInteger(value)&&value>=0&&value<=100?value:undefined;
+const cleanBonusRolls=(itemId:string,rarity:ItemRarity|undefined,row:Record<string,unknown>):WeaponBonusRoll[]|undefined=>{
+ if(!rarity||!ITEMS.some(item=>item.id===itemId&&item.type==='gear'))return undefined;
+ const equipment=normalizeEquipmentBonuses(itemId,rarity,row.equipmentBonuses,row.equipmentBonusRollVersion);
+ const version=row.weaponBonusRollVersion;
+ const weapon=typeof version==='number'&&Number.isInteger(version)&&version>=1&&version<=7
+  ?normalizeWeaponBonuses(itemId,rarity,row.weaponBonuses,version as WeaponBonusRollVersion):undefined;
+ return equipment??weapon;
+};
+/** Same rank/rarity/quality scaling as the own-item inspector; gems and percentage rolls remain separate. */
+export function profileGearItemStats(row:ProfileEquippedGear){
+ const item=ITEMS.find(item=>item.id===row.itemId&&item.type==='gear');
+ if(!item)return undefined;
+ const stats=gearStatsAtRank(item.id,row.rank??0);
+ const multiplier=(row.rarity?craftedRarityStatMultiplier(item.id,row.rarity):1)*(row.quality===undefined?1:craftedGearQualityMultiplier(row.quality));
+ return {attack:stats.attack*multiplier,defense:stats.defense*multiplier,hp:stats.hp*multiplier,adjusted:row.rarity!==undefined||row.rank!==undefined};
+}
 const cleanGems=(value:unknown)=>Array.isArray(value)?Array.from(new Set(value.map(cleanId).filter((id):id is string=>!!id))).slice(0,2):[];
 
 /** Validate untrusted RPC JSON and never repeat or invent equipment slots. */
@@ -44,6 +67,7 @@ export function normalizeProfileGear(rows:unknown):ProfileEquippedGear[]|undefin
   bySlot.set(row.slot as GearSlot,{
    slot:row.slot as GearSlot,itemId,rarity,
    quality:cleanQuality(row.quality),rank:cleanRank(row.rank),
+   bonusRolls:cleanBonusRolls(itemId,rarity,row),
    statGemId:cleanId(row.statGemId),effectGemId:cleanId(row.effectGemId),
    gemIds:cleanGems(row.gemIds),
   });
@@ -69,6 +93,7 @@ export function localProfileGear(state:GameState,selectedCharacterId?:string|nul
   return [{
    slot,itemId,rarity:instance?.rarity,
    quality:cleanQuality(instance?.quality),
+   bonusRolls:instance?cleanBonusRolls(itemId,instance.rarity,{equipmentBonuses:instance.equipmentBonuses,equipmentBonusRollVersion:instance.equipmentBonusRollVersion,weaponBonuses:instance.weaponBonuses,weaponBonusRollVersion:instance.weaponBonusRollVersion}):undefined,
    rank:cleanRank(enhancement?.rank),
    statGemId:cleanId(enhancement?.statGemId),
    effectGemId:cleanId(enhancement?.effectGemId),

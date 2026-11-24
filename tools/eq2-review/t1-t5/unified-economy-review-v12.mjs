@@ -5,6 +5,11 @@ export const policy=load('2-0/eq2-unified-economy-policy-v12.json');
 const old=load('equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json');
 const t5=load('equipment-2-0/t5-catalogue-expansion-review-v4.json');
 const production=load('2-0/eq2-t5-material-production-review-v11.json');
+const rare=load('equipment-2-0/t5-rare-set-catalogue-review-v1.json');
+const t5Gates=new Map();
+for(const s of [...t5.standardSets,...t5.proposedRareSets,...t5.twoPieceComboSets])for(const x of s.members)t5Gates.set(x.itemId,{level:x.craftLevelCandidate??s.craftLevelCandidate??null,profession:x.profession??s.profession??null});
+for(const x of [...t5.armaments.weapons,...t5.armaments.offhands])t5Gates.set(x.itemId,{level:x.craftLevelCandidate??null,profession:x.profession??null});
+for(const s of rare.sets)for(const x of s.members)t5Gates.set(x.id,{level:rare.professionCraftLevelCandidate??null,profession:rare.craftingPolicy.profession??null});
 const deny=Object.freeze({reviewOnly:true,mayCraft:false,mayMint:false,mayDrop:false,mayTrade:false,releaseApproved:false});
 const fail=x=>{throw Error('eq2_unified_economy_v12_'+x);};
 const add=(o,k,v)=>{o[k]=(o[k]??0)+v;};
@@ -50,7 +55,7 @@ export function materialCatalogue(mode='reuse_candidate'){
  all.add('EQ2_VERDANT_ESSENCE');
  return [...all].sort().map(id=>{
   const tiers=[...(tierUses.get(id)??[])].sort((a,b)=>a-b),p=process.get(id),s=sources.get(id)??[];
-  const supported=s.some(x=>x.status==='INSPECTED_SOURCE_NOT_GRANT_VERIFIED'||x.status==='NEW_SOURCE_CANDIDATE_NOT_REGISTERED'||(x.status==='V11_SOURCE_REVIEW'&&(x.sources?.length||x.source?.length||x.nodeId)));
+  const supported=s.some(x=>x.status==='INSPECTED_SOURCE_NOT_GRANT_VERIFIED'||(x.status==='INHERITED_SOURCE_REVIEW'&&x.sourceIds.length>0)||x.status==='NEW_SOURCE_CANDIDATE_NOT_REGISTERED'||(x.status==='V11_SOURCE_REVIEW'&&(x.sources?.length||x.source?.length||x.nodeId)));
   return {id,tiers,firstTier:tiers[0]??null,directRecipeCount:direct.get(id)?.size??0,processingConsumers:[...(processingConsumers.get(id)??[])].sort(),
    processingRecipe:p?.id??null,profession:p?.skill??null,professionLevel:p?.level??null,sourceEvidence:s,
    status:!tiers.length?'DORMANT_NO_RECIPE_CONSUMER':p?'PROCESSING_REVIEW_ONLY':supported?'SOURCE_REVIEW_ONLY':'SOURCE_GAP',
@@ -80,12 +85,13 @@ export function accessAudit(){
  const result=[];
  for(const r of rows){const candidate=lookup.get(r.id);if(!candidate)fail('route');
   const bill=fullBill(candidate),levels=Object.keys(bill.batches).map(id=>catalog.get(id)).filter(Boolean);
-  // T5 source route normalization has not pinned a numeric gate; don't invent it.
-  const craftLevel=Number.isSafeInteger(r.professionLevel)?r.professionLevel:null;
+  const t5Gate=r.tier===5?t5Gates.get(r.pieceId):null;
+  const craftLevel=Number.isSafeInteger(r.professionLevel)?r.professionLevel:Number.isSafeInteger(t5Gate?.level)?t5Gate.level:null;
   const gaps=levels.filter(x=>craftLevel!==null&&x.professionLevel>craftLevel).map(x=>({id:x.id,level:x.professionLevel,skill:x.profession}));
   const sourceGaps=Object.keys(bill.raw).filter(id=>catalog.get(id)?.status==='SOURCE_GAP');
-  result.push({sourceId:r.id,tier:r.tier,profession:r.profession??null,craftLevel,craftCombatLevelRequired:0,secondaryProfessionRequired:false,
-   laterProcessingRequirements:gaps,sourceGaps,procurement:'TRADE_OR_COMMISSION_REQUIRED_WHERE_NEEDED_NOT_VERIFIED',...deny});
+  const laterGatheringRequirements=Object.keys(bill.raw).flatMap(id=>{const s=catalog.get(id)?.sourceEvidence??[];const gates=s.filter(x=>x.kind==='gathering'&&Number.isSafeInteger(x.level??x.skillLevel));const first=gates.length?Math.min(...gates.map(x=>x.level??x.skillLevel)):null;return craftLevel!==null&&first!==null&&first>craftLevel?[{id,level:first}]:[];});
+  result.push({sourceId:r.id,tier:r.tier,profession:r.profession??t5Gate?.profession??null,craftLevel,craftCombatLevelRequired:0,secondaryProfessionRequired:false,
+   laterProcessingRequirements:gaps,laterGatheringRequirements,sourceGaps,procurement:'TRADE_OR_COMMISSION_REQUIRED_WHERE_NEEDED_NOT_VERIFIED',...deny});
  }
  return result;
 }

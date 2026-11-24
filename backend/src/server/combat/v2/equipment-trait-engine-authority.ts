@@ -75,6 +75,17 @@ function validate(source:VerifiedV2EquipmentEffectSource){
   selected.add(trait.instanceId);traits.add(trait.traitId);
  }
 }
+/** The divergent original-Forge compiler has a fractional abilityDamagePct
+ * channel; this sidecar has a percent-valued channel of the same meaning.
+ * Do not multiply them together or silently discard an earned roll. Until a
+ * versioned combined source/cap policy exists, mixed nonzero channels fail
+ * closed. This also guards any later branch reconciliation of those types. */
+function rejectUnreconciledAbilityDamage(input:CombatInput,source:VerifiedV2EquipmentEffectSource){
+ const effects=input.players.find(p=>p.id===source.actorId)?.combatV2?.equipmentEffects;
+ if(source.abilityDamagePct>0&&effects&&'abilityDamagePct' in effects&&
+    effects.abilityDamagePct!==undefined&&effects.abilityDamagePct!==0)
+  fail('unreconciled_ability_damage_channels');
+}
 /** In the hidden server adapter, verifyPersisted MUST read actual ownership,
  * equipped item receipts, revision, selected trait IDs and a frozen digest.
  * Issuing a token is never proof the DB implementation is present in production. */
@@ -95,6 +106,7 @@ export function issueEquipmentV2TraitAuthority(
  const ids=new Set<string>(),characters=new Set<string>();
  for(const source of sources){
   validate(source);
+  rejectUnreconciledAbilityDamage(input,source);
   if(ids.has(source.actorId)||!input.players.some(p=>p.id===source.actorId)||
     characters.has(source.characterId))
     fail('source_actor_or_owner_mismatch');
@@ -153,6 +165,7 @@ export function issuePersistedPartyEquipmentV2TraitAuthority(
  const ids=new Set<string>(),characters=new Set<string>(),accounts=new Set<string>(),copies=new Set<string>();
  for(const [i,source] of sources.entries()){
   validate(source);
+  rejectUnreconciledAbilityDamage(input,source);
   const member=binding.members[i],actor=input.players[i];
   if(!member||!actor||source.actorId!==member.actorId||
     source.characterId!==member.characterId||source.accountId!==member.accountId||

@@ -1,3 +1,4 @@
+import {summarizeCandidatePowerCalibrationV2,type CandidatePowerCalibrationRowV2} from '../candidate-power-calibration';
 /**
  * Skills/Abilities × Equipment 2.0 — 324 FULL TEN SLOT encounters.
  *
@@ -6,7 +7,11 @@
  * authorizes items, production persistence, rewards or market circulation.
  */
 import {strict as assert} from 'node:assert';
-import type {CombatEvent,CombatStats,AbilityDefinition} from '../../types';
+import type {CombatEvent,CombatStats,AbilityDefinition,CombatantDefinition,CombatInput} from '../../types';
+import {simulateCombat} from '../../engine';
+import {reviewCandidatePowerStagesV1,reviewCandidatePowerExtensionsV2,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
+import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
+import {reviewCompanionContributionV2} from '../companion-contribution-review';
 import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
 import type {ClassIdV2} from '../build-contract';
 import {selectReviewSkillLoadoutV2,
@@ -17,6 +22,9 @@ import {reviewObservedCounterOpportunityV2,
  type ObservedCounterAttemptV2} from '../ability-counterplay-opportunity-review';
 import {simulateUnifiedEquipmentCombatV2} from '../unified-equipment-encounter';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
+import {observeRoleCalibrationV2} from '../role-power-calibration-review';
+import {summarizeMatchedEffectsV2,type MatchedEffectSampleV2} from '../matched-effect-calibration';
+import {CLASS_ROLES_V2} from '../build-contract';
 
 const scenarios:AbilityCounterplaySampleV2[]=[];
 const opportunities:ObservedCounterAttemptV2[]=[];
@@ -24,6 +32,12 @@ const strategies=['generic','targeted','alternative'] as const;
 const evidenceByScenario=new Map<string,string>();
 let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
+const traitSensitivity:unknown[]=[];
+const matchedEffects:MatchedEffectSampleV2[]=[];
+const candidatePowerRows:(CandidatePowerCalibrationRowV2 & {classId:string;specializationId:string;level:number;baseline:number;stageRows:unknown;axes:unknown;observedSidecarOn:unknown})[]=[];
+const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
+const companionSensitivity:unknown[]=[];
+const companionIds=['UNIT_001','UNIT_002','UNIT_003','UNIT_005'] as const;
 const number=(n:number)=>Math.round(n*100)/100;
 function fraction(hp:number,maxHp:number){
  return number(Math.max(0,Math.min(100,(hp/maxHp)*100)));
@@ -130,6 +144,94 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       e.type==='damage'&&e.targetId===actorId&&e.actorId===enemyId:
      e.type==='combat_start'&&enemy.definition.stats.maxHp>0).length;
     bossOpportunityEvents+=exposure;
+    if(strategy==='generic'){
+     // Exact same compiled gear, authored kit, seed and skill variants.
+     // Only the signed trait/three new affix sidecar authority is omitted.
+     // This measures their combined marginal effect, not a per-trait price.
+     const without=simulateUnifiedEquipmentCombatV2(
+      input,[build],[x.runtime],true,x.trustedKit);
+     assert.deepEqual(without.equipmentEvidence,first.equipmentEvidence);
+     assert.deepEqual(without.combat.players.map(p=>p.definition.stats),
+      first.combat.players.map(p=>p.definition.stats));
+     assert.deepEqual(without.combat.enemies.map(e=>e.definition),
+      first.combat.enemies.map(e=>e.definition));
+     assert.ok(!without.combat.events.some(e=>e.type==='equipment_trait_trigger'));
+     const identity={caseId:scenarioId,bossId:boss.id,classId,
+      specializationId:spec.id,actorId};
+     const off=observeRoleCalibrationV2(without.combat,identity);
+     const on=observeRoleCalibrationV2(first.combat,identity);
+     const stages=first.equipmentEvidence[0].statStages;
+     const role=CLASS_ROLES_V2[classId];
+     const equippedPower=reviewCandidatePowerStagesV1(stages,role,candidateReference);
+     assert.equal(equippedPower.stageRows.reduce((n,r)=>n+r.value,0),equippedPower.partialScore);
+     assert.equal(equippedPower.cpApproved,false);
+     candidatePowerRows.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,role,
+      level:boss.level,baseline:equippedPower.trainedBaseline,equipped:equippedPower.partialScore,stageRows:equippedPower.stageRows,
+      axes:equippedPower.rows,observedSidecarOff:off.values,
+      observedSidecarOn:on.values});
+
+     // QA-only counterfactuals from the same fully compiled, sidecar-OFF
+     // character and verified authored enemy definitions. Never issue a
+     // companion effect authority to a public runtime.
+     const owner=without.combat.players[0].definition;
+     const snapshot=x.trustedKit.snapshot;
+     const preparedEnemies=without.combat.enemies.map(e=>e.definition);
+     const replay=(candidate:CombatantDefinition)=>{
+      const replayInput:CombatInput={...input,players:[candidate],enemies:preparedEnemies};
+      const authority=issueEnemyV2EngineAuthority({
+       source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,mode:'solo',
+       encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
+       playerIds:[owner.id],enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
+      },replayInput,(_scope,digest)=>x.trustedKit.verifyPersisted(snapshot,digest));
+      return simulateCombat(replayInput,authority);
+     };
+     assert.deepEqual(replay(owner),without.combat,'Companion calibration baseline must replay exactly');
+     for(const companionId of companionIds){
+      const projection=reviewCompanionContributionV2(owner,{
+       accountId:x.signedPort.accountId,characterId:x.runtime.characterId,actorId:owner.id,
+       revision:1,selectedCompanionId:companionId,ownedCompanionIds:[companionId],busyCompanionIds:[],
+       progress:{companionId,level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false},
+       verifyPersisted:(digest,rev)=>/^[a-f0-9]{64}$/.test(digest)&&rev===1,
+      });
+      assert.equal(projection.activeAssists.length,1);
+      const stats={...owner.stats};
+      for(const key of Object.keys(stats) as (keyof CombatStats)[])
+       stats[key]+=projection.permanentStatDelta[key];
+      const effects=owner.combatV2?.equipmentEffects;
+      assert.ok(effects,'Compiled gear must expose its advanced effect channels');
+      const power=reviewCandidatePowerExtensionsV2(stages,role,candidateReference,
+       {accuracyPp:effects.accuracyPp,evasionPp:effects.evasionPp},stats);
+      assert.equal(power.base.partialScore+power.hitPointContribution+power.companionPassiveContribution,power.total);
+      assert.equal(power.activeAssistPriced,false);
+      const passiveOnly=replay({...owner,stats});
+      const fullActor={...owner,stats,abilities:[...owner.abilities,...projection.activeAssists]};
+      const full=replay(fullActor);
+      assert.equal(full.players.length,1,'An assist must not create another player slot');
+      assert.deepEqual(full.players[0].definition.stats,passiveOnly.players[0].definition.stats);
+      const passive=observeRoleCalibrationV2(passiveOnly,identity),combined=observeRoleCalibrationV2(full,identity);
+      matchedEffects.push({caseId:scenarioId,bossId:boss.id,role,effectId:'active_assist:'+companionId,
+       before:passive.values,after:combined.values,beforeVictory:passive.victory,afterVictory:combined.victory,
+       beforeDowned:passive.downed,afterDowned:combined.downed,
+       observedEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});
+      companionSensitivity.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,
+       companionId,off:off.values,passive:passive.values,full:combined.values,
+       candidatePower:{base:power.base.partialScore,hitPointContribution:power.hitPointContribution,
+        companionPassiveContribution:power.companionPassiveContribution,total:power.total,cpApproved:false},
+       offVictory:off.victory,passiveVictory:passive.victory,fullVictory:combined.victory,
+       offDowned:off.downed,fullDowned:combined.downed,
+       assistEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});
+     }
+
+     matchedEffects.push({caseId:scenarioId,bossId:boss.id,role,effectId:'exact_copy_sidecar_combined',
+      before:off.values,after:on.values,beforeVictory:off.victory,afterVictory:on.victory,
+      beforeDowned:off.downed,afterDowned:on.downed,
+      observedEvents:events.filter(e=>e.type==='equipment_trait_trigger').length});
+     traitSensitivity.push({scenarioId,classId,role:CLASS_ROLES_V2[classId],
+      specializationId:spec.id,bossId:boss.id,off:off.values,on:on.values,
+      offVictory:off.victory,onVictory:on.victory,
+      offDowned:off.downed,onDowned:on.downed,
+      traitEvents:events.filter(e=>e.type==='equipment_trait_trigger').length});
+    }
     const equivalentStat=first.equipmentEvidence[0].statStages.afterAffixes;
     const provisionalIndex=Math.max(1,Math.round(
      (Object.keys(equivalentStat) as (keyof CombatStats)[])
@@ -187,3 +289,42 @@ console.log('FULL GEAR counterplay review flags (not final balance): '+JSON.stri
   r[f.type]=(r[f.type]??0)+1;return r;
  },{})));
 console.log('FULL GEAR observed counterplay reasons: '+JSON.stringify(opportunity.counts));
+
+assert.equal(traitSensitivity.length,108);
+console.log('EXACT_COPY_TRAIT_AND_NEW_AFFIX_MARGINAL_REVIEW_NOT_CP '+JSON.stringify({
+ pairs:traitSensitivity.length,rows:traitSensitivity,
+ scope:'SOLO_SAME_BUILD_SIDE_CAR_OFF_ON_SYNTHETIC_GEAR',
+ independentPerTraitWeight:false,companionWeightApproved:false,cpApproved:false,releaseEnabled:false,
+}));
+
+assert.equal(companionSensitivity.length,108*4);
+console.log('COMPANION_PASSIVE_AND_ASSIST_MARGINAL_REVIEW_NOT_CP '+JSON.stringify({
+ triplets:companionSensitivity.length,rows:companionSensitivity,
+ scope:'SOLO_SAME_COMPILED_ACTOR_ENEMY_AND_SEED_SIDECAR_OFF',
+ testedCompanionIds:companionIds,companionLevel:10,
+ rosterComplete:false,partySupportCalibration:false,cpApproved:false,releaseEnabled:false,
+}));
+
+assert.equal(candidatePowerRows.length,108);
+const ordering=summarizeCandidatePowerCalibrationV2(candidatePowerRows);
+assert.equal(ordering.strata.length,18);
+assert.equal(ordering.strata.reduce((n,x)=>n+x.cases,0),108);
+assert.deepEqual(ordering,summarizeCandidatePowerCalibrationV2([...candidatePowerRows].reverse()));
+for(const stratum of ordering.strata)for(const m of stratum.metrics)
+ assert.equal(m.concordant+m.discordant+m.scoreTies+m.outcomeTies+m.bothTies,stratum.cases*(stratum.cases-1)/2);
+assert.throws(()=>summarizeCandidatePowerCalibrationV2([...candidatePowerRows,candidatePowerRows[0]]),/invalid_row/);
+console.log('STATIC_POWER_ORDERING_CALIBRATION_NOT_CP '+JSON.stringify(ordering));
+
+console.log('STATIC_ROLE_CANDIDATE_POWER_V1_NOT_FINAL_CP '+JSON.stringify({
+ cases:candidatePowerRows.length,rows:candidatePowerRows,
+ referenceVersion:candidateReference.version,scope:'SYNTHETIC_GEAR_CANDIDATE_NOT_EQUAL_CP',
+ cpApproved:false,releaseEnabled:false,
+}));
+
+const matchedReport=summarizeMatchedEffectsV2(matchedEffects);
+assert.equal(matchedReport.samples,540);
+assert.equal(matchedReport.cells.length,5*3*6);
+assert.equal(matchedReport.cells.reduce((n,x)=>n+x.cases,0),540);
+assert.deepEqual(matchedReport,summarizeMatchedEffectsV2([...matchedEffects].reverse()));
+assert.throws(()=>summarizeMatchedEffectsV2([...matchedEffects,matchedEffects[0]]),/invalid_sample/);
+console.log('MATCHED_CONDITIONAL_EFFECT_CALIBRATION_NOT_CP '+JSON.stringify(matchedReport));

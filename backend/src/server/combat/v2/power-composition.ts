@@ -70,3 +70,48 @@ export function evaluatePowerCompositionV2(
   differenceFromTarget:targetApplicable?round(difference):null,
  };
 }
+
+/** Stage-aware candidate rating attribution. Uses exactly one explicit
+ * policy across all stages; never equates class or spec comparisons to
+ * final equal CP. Conditional and unpriced sources cannot authorize entry. */
+export interface PowerAttributionStagesV2{
+ readonly classOnly:CombatStats;
+ readonly afterSkills:CombatStats;
+ readonly afterItemBase:CombatStats;
+ readonly afterSets:CombatStats;
+ readonly afterAffixes:CombatStats;
+}
+export function reviewPowerAttributionV2(
+ stages:PowerAttributionStagesV2,equippedSlots:number,policy:ApprovedPowerCompositionPolicyV2,
+){
+ // The existing composition target is trained class+skill baseline.
+ const composition=evaluatePowerCompositionV2(stages.afterSkills,stages.afterAffixes,equippedSlots,policy);
+ const score=(stats:CombatStats)=>{
+  let total=0;
+  for(const key of statKeys){
+   const value=stats[key];
+   if(!finite(value)||value<0)throw Error('combat_v2_invalid_attribution_stat:'+key);
+   total+=value*policy.weights[key];
+  }
+  if(!finite(total)||total<0)throw Error('combat_v2_invalid_attribution_score');
+  return total;
+ };
+ const classOnly=score(stages.classOnly),afterSkills=score(stages.afterSkills),
+  afterBase=score(stages.afterItemBase),afterSets=score(stages.afterSets),
+  afterAffixes=score(stages.afterAffixes);
+ // Marginal differences may be negative for genuine specialization tradeoffs.
+ // Round stages before subtraction so the displayed breakdown telescopes.
+ const rows=[
+  {source:'class_only',value:round(classOnly)},
+  {source:'skills',value:round(round(afterSkills)-round(classOnly))},
+  {source:'item_base',value:round(round(afterBase)-round(afterSkills))},
+  {source:'set_stats',value:round(round(afterSets)-round(afterBase))},
+  {source:'random_affix_stats',value:round(round(afterAffixes)-round(afterSets))},
+ ];
+ return {rows,partialWeightedTotal:round(afterAffixes),composition,
+  scope:'WEIGHTED_PERSONAL_STAT_REVIEW_ONLY' as const,
+  unpricedDomains:['advanced_affix_effects','unreconciled_innates','gems','companions',
+   'conditional_traits','skill_utility','encounter_and_party_modifiers'] as const,
+  cpApproved:false as const,canGateContent:false as const,canCompareEqualCP:false as const,
+  releaseEnabled:false as const};
+}

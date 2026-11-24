@@ -1,5 +1,7 @@
 import {strict as assert} from 'node:assert';
+import {reviewCompanionContributionV2,type CompanionContributionSourceV2} from '../companion-contribution-review';
 import {launchPlayer} from '../../content/launch-combat';
+import {reviewCandidatePowerV1,reviewCandidatePowerStagesV1,reviewCandidatePowerWithHitPointsV2,reviewCandidatePowerExtensionsV2,CANDIDATE_POWER_WEIGHTS_V1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
 import type {CombatStats} from '../../types';
 import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -9,7 +11,7 @@ import {resolveVerifiedEquipmentBaseV2} from '../equipment-base-stats';
 import {applyVerifiedSetBonusesV2} from '../equipment-set-effects';
 import {compileTrustedEquipmentAffixesV2} from '../equipment-affixes';
 import {validateBuildV2} from '../build-contract';
-import {evaluatePowerCompositionV2} from '../power-composition';
+import {evaluatePowerCompositionV2,reviewPowerAttributionV2} from '../power-composition';
 import {equipmentQualityMultiplierV2} from '../equipment-scaling-policy';
 import {serverBuildCatalogV2} from '../skill-catalog';
 import {prepareSoloEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
@@ -116,6 +118,29 @@ assert.equal(evidence.statStages.afterSets.defense,
 assert.equal(evidence.statStages.classOnly.attackPower,fixtureClassStats.attackPower);
 
 assert.equal(evidence.composition,undefined,'No unapproved CP weighting may be assumed');
+ const companionSource:CompanionContributionSourceV2={
+  accountId:'QA_ACCOUNT',characterId:runtime.characterId,actorId:resolved.id,revision:1,
+  selectedCompanionId:'UNIT_005',ownedCompanionIds:['UNIT_005'],busyCompanionIds:[],
+  progress:{companionId:'UNIT_005',level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false},
+  verifyPersisted:(digest,revision)=>/^[0-9a-f]{64}$/.test(digest)&&revision===1,
+ };
+ const beforeCompanion=JSON.stringify(resolved);
+ const companionReview=reviewCompanionContributionV2(resolved,companionSource);
+ assert.equal(companionReview.activeAssists.length,1);
+ assert.equal(companionReview.activeAssists[0].target,'interruptible_casting_enemy');
+ assert.ok(companionReview.permanentStatDelta.haste>0);
+ assert.equal(companionReview.additionalCombatants,0);
+ assert.equal(companionReview.canContributeCP,false);
+ assert.equal(JSON.stringify(resolved),beforeCompanion);
+ assert.deepEqual(companionReview,reviewCompanionContributionV2(resolved,companionSource));
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,busyCompanionIds:['UNIT_005']}),/companion_busy/);
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,ownedCompanionIds:[]}),/companion_not_owned/);
+ assert.throws(()=>reviewCompanionContributionV2(resolved,{...companionSource,verifyPersisted:()=>false}),/unverified_snapshot/);
+ assert.throws(()=>reviewCompanionContributionV2({...resolved,abilities:[...resolved.abilities,...companionReview.activeAssists]},companionSource),/already_assisted_owner/);
+ const noCompanion=reviewCompanionContributionV2(resolved,{...companionSource,selectedCompanionId:null,progress:null});
+ assert.equal(noCompanion.activeAssists.length,0);
+ assert.ok(Object.values(noCompanion.permanentStatDelta).every(v=>v===0));
+
 const weights=Object.fromEntries(keys.map(x=>[x,x==='attackPower'?1:0])) as Record<keyof CombatStats,number>;
 const policy={
  targetClassShare:{min:.15,max:.18},weights,requiredEquipmentSlots:10,
@@ -126,6 +151,28 @@ const good=evaluatePowerCompositionV2(syntheticClass,syntheticFull,10,policy);
 assert.equal(good.classShare,.16);
 assert.equal(good.withinTarget,true);
 assert.equal(good.otherShare,.84);
+const attribution=reviewPowerAttributionV2(evidence.statStages,evidence.baseSources.length,policy);
+assert.equal(attribution.rows.length,5);
+assert.ok(Math.abs(attribution.rows.reduce((n,r)=>n+r.value,0)-attribution.partialWeightedTotal)<1e-6);
+assert.equal(attribution.partialWeightedTotal,attribution.composition.totalWeighted);
+assert.equal(attribution.composition.classLevelWeighted,Math.round(evidence.statStages.afterSkills.attackPower*1e6)/1e6);
+assert.equal(attribution.canCompareEqualCP,false);
+const rated=simulateUnifiedEquipmentCombatV2(input,[build],[{...runtime,compositionPolicy:policy}],true);
+assert.deepEqual(rated.equipmentEvidence[0].powerAttribution,attribution);
+assert.deepEqual(rated.combat,enabled.combat,'Partial power diagnostic must not affect gameplay');
+assert.equal(evidence.powerAttribution,undefined);
+
+assert.ok(attribution.unpricedDomains.includes('companions'));
+assert.ok(attribution.unpricedDomains.includes('gems'));
+assert.throws(()=>reviewPowerAttributionV2({...evidence.statStages,afterSets:{...evidence.statStages.afterSets,defense:NaN}},2,policy),/invalid_attribution_stat/);
+const tradeoff=reviewPowerAttributionV2({
+ classOnly:{...syntheticClass,attackPower:20},afterSkills:syntheticClass,
+ afterItemBase:{...syntheticClass,attackPower:80},afterSets:{...syntheticClass,attackPower:90},
+ afterAffixes:syntheticFull,
+},10,policy);
+assert.equal(tradeoff.rows[1].value,-4,'Specialization tradeoffs remain visible');
+assert.equal(tradeoff.rows.reduce((n,r)=>n+r.value,0),100);
+
 assert.equal(evaluatePowerCompositionV2(syntheticClass,syntheticFull,9,policy).withinTarget,null,
  'Partly equipped characters must not be judged against full-gear targets');
 assert.equal(evaluatePowerCompositionV2(syntheticClass,
@@ -154,6 +201,33 @@ const expectedWithSet=round6(expectedDefenseBase*1.02);
 const expectedWithAffix=round5(expectedWithSet*1.03);
 // Class/spec first, then quality/rarity, set, and finally the random roll.
 assert.equal(resolved.stats.defense,expectedWithAffix);
+ // Marginal accounting must reconstruct every personal stat. It must not
+ // reapply percentages to an already resolved total or price temporary effects.
+ const contributions=evidence.statContributions;
+ for(const key of keys){
+  const reconstructed=contributions.classOnly[key]+contributions.skills[key]+
+   contributions.itemBase[key]+contributions.sets[key]+contributions.affixes[key];
+  assert.ok(Math.abs(reconstructed-resolved.stats[key])<1e-8,'contribution mismatch '+key);
+ }
+ assert.equal(contributions.itemBase.defense,
+  evidence.statStages.afterItemBase.defense-evidence.statStages.afterSkills.defense);
+ assert.equal(contributions.sets.defense,expectedWithSet-expectedDefenseBase);
+ assert.equal(contributions.affixes.defense,expectedWithAffix-expectedWithSet);
+ // Neither upstream final ceiling can be bypassed by the last affix stage.
+ const midCeiling=(expectedWithSet+expectedWithAffix)/2;
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ assert.throws(()=>simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:midCeiling}}},
+ ],true),/final_personal_stat_exceeds_ceiling:defense/);
+ // Exact boundary stays eligible and retains the old numerical result.
+ const exactCap=simulateUnifiedEquipmentCombatV2(input,[build],[
+  {...runtime,basePolicy:{...basePolicy,ceilings:{...ceilings,defense:expectedWithAffix}},
+   setsPolicy:{...setPolicy,ceilings:{...ceilings,defense:expectedWithAffix}}},
+ ],true);
+ assert.deepEqual(exactCap.combat,enabled.combat);
+
 
 assert.ok(resolved.tags?.includes('combat-v2-class-base-only'));
 assert.notEqual(resolved.stats,actor.stats,'Output must use a separately issued stat object');
@@ -324,4 +398,48 @@ assert.deepEqual(
  simulateUnifiedEquipmentCombatV2(input,[build],[explicitRaw],true),
  enabled,'Explicit authored raw bases must retain exactly-once scaling');
 
+
+const candidateReference=QA_CANDIDATE_POWER_REFERENCE_V1;
+for(const role of ['tank','damage','support'] as const){
+ const stats=candidateReference.roles[role],base=reviewCandidatePowerV1(stats,role,candidateReference);
+ assert.equal(base.partialScore,1000);
+ assert.ok(Math.abs(Object.values(CANDIDATE_POWER_WEIGHTS_V1[role]).reduce((n,x)=>n+x,0)-1)<1e-9);
+ for(const key of keys){
+  const upgraded=reviewCandidatePowerV1({...stats,[key]:stats[key]*1.1},role,candidateReference);
+  assert.ok(upgraded.unroundedScore>=base.unroundedScore,'monotonic '+role+':'+key);
+ }
+ assert.equal(base.cpApproved,false);
+ assert.equal(base.canGateContent,false);
+ assert.equal(base.equalCPVerified,false);
+}
+const fullCandidate=reviewCandidatePowerV1(resolved.stats,'tank',candidateReference);
+const classCandidate=reviewCandidatePowerV1(evidence.statStages.classOnly,'tank',candidateReference);
+assert.ok(fullCandidate.unroundedScore>classCandidate.unroundedScore);
+const stagesCandidate=reviewCandidatePowerStagesV1(evidence.statStages,'tank',candidateReference);
+assert.equal(stagesCandidate.partialScore,fullCandidate.partialScore);
+assert.equal(stagesCandidate.stageRows.reduce((n,r)=>n+r.value,0),fullCandidate.partialScore);
+assert.equal(stagesCandidate.stageRows[0].cumulative,classCandidate.partialScore);
+assert.equal(stagesCandidate.trainedBaseline+stagesCandidate.gearContribution,fullCandidate.partialScore);
+assert.deepEqual(stagesCandidate,reviewCandidatePowerStagesV1(evidence.statStages,'tank',candidateReference));
+assert.ok(Object.isFrozen(candidateReference.roles.tank));
+assert.equal(stagesCandidate.canGateContent,false);
+const noPoints={accuracyPp:0,evasionPp:0};
+assert.equal(reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,noPoints).partialScore,fullCandidate.partialScore);
+const points={accuracyPp:.02,evasionPp:.03};
+const withHit=reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,points);
+assert.ok(withHit.unroundedScore>=fullCandidate.unroundedScore);
+const companionStats={...resolved.stats};
+for(const key of keys)companionStats[key]+=companionReview.permanentStatDelta[key];
+const extended=reviewCandidatePowerExtensionsV2(evidence.statStages,'tank',candidateReference,points,companionStats);
+assert.equal(extended.total,extended.base.partialScore+extended.hitPointContribution+extended.companionPassiveContribution);
+assert.equal(extended.activeAssistPriced,false);
+assert.equal(extended.gemInnateRuntimeIntegrated,false);
+assert.equal(reviewCandidatePowerExtensionsV2(evidence.statStages,'tank',candidateReference,noPoints,resolved.stats).companionPassiveContribution,0);
+assert.throws(()=>reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,{...points,accuracyPp:NaN}),/invalid_hit_points/);
+assert.throws(()=>reviewCandidatePowerWithHitPointsV2(resolved.stats,'tank',candidateReference,{...points,evasionPp:1}),/unbounded_survival_proxy/);
+
+
+assert.deepEqual(fullCandidate,reviewCandidatePowerV1(resolved.stats,'tank',candidateReference));
+assert.throws(()=>reviewCandidatePowerV1({...resolved.stats,critChance:NaN},'tank',candidateReference),/invalid_stats/);
+assert.throws(()=>reviewCandidatePowerV1(resolved.stats,'tank',{...candidateReference,accuracyScale:0}),/invalid_reference/);
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

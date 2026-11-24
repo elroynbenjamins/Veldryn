@@ -421,7 +421,8 @@ export const starterItemNames={
 } as const satisfies Record<string,Record<Language,string>>;
 
 /** Consolidated presentation registry; the original 41-row export is retained for compatibility. */
-export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB,...alchemyItemNames} as const;
+export const seasonalItemNames={FROSTFALL_CHRISTMAS_LIGHTS_2026:{en:'Christmas Lights',de:'Weihnachtslichter',es:'Luces navideñas',nl:'Kerstverlichting',it:'Luci di Natale',fr:'Guirlandes lumineuses de Noël',ru:'Рождественские огни',tr:'Noel Işıkları'}} as const satisfies Record<string,Record<Language,string>>;
+export const allItemNames={...starterItemNames,...expandedItemNamesA,...expandedItemNamesB,...alchemyItemNames,...seasonalItemNames} as const;
 
 export function localizedItemName(language:Language,itemId:string):string{
  // A reward from a newer server may not yet exist in this client's catalog.

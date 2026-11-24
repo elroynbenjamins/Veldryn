@@ -162,6 +162,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-sync-regional-boss-matrix.js
       - name: Run 432 ten-slot Skills Equipment party Synchronization integration cases
         run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-matrix.js
+      - name: Exercise all 18 Synchronization pairs with ten-slot flexible parties
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-ten-slot-all-pairs.js
       - name: Validate committed ready roster and persistent party run binding provenance
         run: node backend/dist/server/combat/v2/__tests__/party-dungeon-persistence-review.js
       - name: Execute persisted four-player ten-slot traits and Synchronization rehearsal

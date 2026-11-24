@@ -53,23 +53,31 @@ function useClock(enabled:boolean,period:number){
  },[clock,entryOpacity,enabled,foreground,period]);
  return {clock,entryOpacity};
 }
-export function AnimatedProfileBorderGlows({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+export const AnimatedProfileBorderGlows=memo(function AnimatedProfileBorderGlows({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(enabled,12000);
  const segments=useMemo(()=>profileSceneFrameSegments(size.width,size.height,16/9),[size.width,size.height]);
- const layers=useMemo(()=>!active||!size.width||!size.height?[]:art.glows.map((g,index)=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(art.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity,index>=12))}),pieces:segments.map(p=>({key:p.key,box:mapCosmeticSprite(p,g.sourceRect)})).filter(p=>p.box!==null)})),[active,reduceMotion,art,clock,segments,size.width,size.height]);
+ const layers=useMemo(()=>!active||!size.width||!size.height?[]:art.glows.flatMap((g,index)=>{
+  const pieces=segments.flatMap(p=>{const box=mapCosmeticSprite(p,g.sourceRect);return box?[{key:p.key,box}]:[];});
+  if(!pieces.length)return [];
+  // Composite only the sprite's clipped footprint, never a full card per glow.
+  const left=Math.min(...pieces.map(p=>p.box.left)),top=Math.min(...pieces.map(p=>p.box.top));
+  const right=Math.max(...pieces.map(p=>p.box.left+p.box.width)),bottom=Math.max(...pieces.map(p=>p.box.top+p.box.height));
+  const opacity=reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(art.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity,index>=12))});
+  return [{g,index,opacity,pieces,left,top,width:right-left,height:bottom-top}];
+ }),[active,reduceMotion,art,clock,segments,size.width,size.height]);
  if(!active)return null;
  return <Animated.View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11,opacity:reduceMotion?1:entryOpacity}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
-  {layers.map(({g,opacity,pieces},i)=><Animated.View key={i} style={[StyleSheet.absoluteFill,{opacity}]}>{pieces.map(({key,box})=>box&&<View key={key} style={{position:'absolute',left:box.left,top:box.top,width:box.width,height:box.height,overflow:'hidden'}}><Image source={g.source} fadeDuration={0} resizeMode="stretch" style={{position:'absolute',left:box.imageLeft,top:box.imageTop,width:box.imageWidth,height:box.imageHeight}}/></View>)}</Animated.View>)}
+  {layers.map(({g,index,opacity,pieces,left,top,width,height})=><Animated.View key={index} style={{position:'absolute',left,top,width,height,opacity}}>{pieces.map(({key,box})=><View key={key} style={{position:'absolute',left:box.left-left,top:box.top-top,width:box.width,height:box.height,overflow:'hidden'}}><Image source={g.source} fadeDuration={0} resizeMode="stretch" style={{position:'absolute',left:box.imageLeft,top:box.imageTop,width:box.imageWidth,height:box.imageHeight}}/></View>)}</Animated.View>)}
  </Animated.View>;
-}
-export function ProfileCosmeticExteriorMatte({source,color}:{source:ImageSourcePropType;color:string}){
+});
+export const ProfileCosmeticExteriorMatte=memo(function ProfileCosmeticExteriorMatte({source,color}:{source:ImageSourcePropType;color:string}){
  const [size,setSize]=useState({width:0,height:0});
  const segments=useMemo(()=>profileFrameSegments(size.width,size.height,16/9),[size.width,size.height]);
  return <View pointerEvents="none" accessible={false} style={StyleSheet.absoluteFill} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
  {segments.map(p=><View key={p.key} style={{position:'absolute',left:p.x,top:p.y,width:p.width,height:p.height,overflow:'hidden'}}><Image source={source} fadeDuration={0} resizeMode="stretch" style={{position:'absolute',left:p.imageLeft,top:p.imageTop,width:p.imageWidth,height:p.imageHeight,tintColor:color}}/></View>)}
  </View>;
-}
-export function ProfileSceneEffect({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
+});
+export const ProfileSceneEffect=memo(function ProfileSceneEffect({art,active,reduceMotion=false}:{art:CosmeticArt;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0});const enabled=active&&!reduceMotion&&size.width>0&&size.height>0;const {clock,entryOpacity}=useClock(enabled,art.effectPeriodMs);
  const items=useMemo(()=>!enabled?[]:art.tracks.map((t,i)=>{
   const samples=steps.map(f=>sampleCosmeticTrack(t,f,size.width,size.height));
@@ -82,7 +90,7 @@ export function ProfileSceneEffect({art,active,reduceMotion=false}:{art:Cosmetic
  return <Animated.View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{overflow:'hidden',opacity:reduceMotion?1:entryOpacity}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
  {size.width>0&&size.height>0&&items.map(p=><Animated.Image key={p.i} source={p.source} fadeDuration={0} resizeMode="contain" style={{position:'absolute',left:0,top:0,width:p.width,height:p.height,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}/>)}
  </Animated.View>;
-}
+});
 
 const ParticleShape=memo(function ParticleShape({kind,accent,soft,size}:{kind:ProfileParticleKind;accent:string;soft:string;size:number}){
  const bar={position:'absolute' as const,left:'46%' as const,top:'6%' as const,width:'8%' as const,height:'88%' as const,borderRadius:99,backgroundColor:accent};
@@ -92,15 +100,15 @@ const ParticleShape=memo(function ParticleShape({kind,accent,soft,size}:{kind:Pr
  if(kind==='firefly')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size,height:size,borderRadius:99,backgroundColor:soft,opacity:.20}}/><View style={{width:size*.34,height:size*.34,borderRadius:99,backgroundColor:accent}}/></View>;
  return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size*.78,height:size*.12,borderRadius:99,backgroundColor:soft}}/><View style={{position:'absolute',width:size*.12,height:size*.78,borderRadius:99,backgroundColor:soft}}/><View style={{width:size*.42,height:size*.42,backgroundColor:accent,transform:[{rotate:'45deg'}]}}/></View>;
 });
-export function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+export const ProceduralProfileBorderGlows=memo(function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0}),{clock,entryOpacity}=useClock(active&&!reduceMotion&&size.width>0&&size.height>0,12000);
  const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:profileSceneGlowBounds(size.width,size.height,g.x,g.y,Math.min(g.size,Math.max(4,size.width*.035)))})),[active,reduceMotion,clock,runtime,size.width,size.height]);
  if(!active)return null;
  return <Animated.View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11,opacity:reduceMotion?1:entryOpacity}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
   {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
  </Animated.View>;
-}
-export function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+});
+export const ProceduralProfileSceneEffect=memo(function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0}),enabled=active&&!reduceMotion&&size.width>0&&size.height>0,{clock,entryOpacity}=useClock(enabled,runtime.effectPeriodMs);
  const staticItems=useMemo(()=>!active||!reduceMotion||!size.width||!size.height?[]:runtime.tracks.map((t,i)=>({i,t,p:sampleCosmeticTrack(t,.38,size.width,size.height)})),[active,reduceMotion,runtime,size.width,size.height]);
  const items=useMemo(()=>!enabled?[]:runtime.tracks.map((t,i)=>{const samples=steps.map(f=>sampleCosmeticTrack(t,f,size.width,size.height));const interp=(key:'x'|'y'|'opacity')=>clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p[key])});const rotation=clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p.rotation+'deg')});return {i,t,width:samples[0].width,opacity:interp('opacity'),x:interp('x'),y:interp('y'),rotation};}),[enabled,clock,runtime,size.width,size.height]);
@@ -109,7 +117,7 @@ export function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}
   {staticItems.map(({i,t,p})=><View key={i} style={{position:'absolute',left:p.x,top:p.y,opacity:p.opacity*.55}}><ParticleShape kind={t.particle} accent={runtime.accent} soft={runtime.softAccent} size={p.width}/></View>)}
   {items.map(p=><Animated.View key={p.i} style={{position:'absolute',left:0,top:0,width:p.width,height:p.width,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}><ParticleShape kind={p.t.particle} accent={runtime.accent} soft={runtime.softAccent} size={p.width}/></Animated.View>)}
  </Animated.View>;
-}
+});
 export const ProfileEffectThumbnail=memo(function ProfileEffectThumbnail({runtime,size=64}:{runtime:ProfileCosmeticRuntime;size?:number}){
  const [measured,setMeasured]=useState<{width:number;height:number}|null>(null);
  const width=measured?.width??size,height=measured?.height??size;

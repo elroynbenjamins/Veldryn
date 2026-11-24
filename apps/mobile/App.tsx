@@ -1055,6 +1055,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command,false).then(Boolean):undefined} authoritativeGuildPve={serverGameplayEnabled} onOpenEventActivity={source=>{if(source==='combat'){setTab('Combat');return;}setSelectedSkill(undefined);setSkillsMode(source==='gathering'?'gathering':'crafting');setTab('Skills')}} onOpenGuildEventBoss={()=>{setGuildInitialPve(true);setTab('Guild')}} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen
       onEventPageChange={setGuildEventPageOpen}
+      eventGameplayBusy={online.busy||online.pending} onRefreshEventInventory={online.refreshAfterExternalWrite}
       onOpenEventCrafting={skill=>{setSelectedSkill(skill);setSkillsMode('crafting');setTab('Skills')}}
       initialNavigation={!guildInitialPve&&guildNavigationMemory.current?.scope===(auth.session?.user.id??state.character.id)+':'+guildMembershipRevision?guildNavigationMemory.current.context:undefined}
       onNavigationChange={context=>{guildNavigationMemory.current={scope:(auth.session?.user.id??state.character?.id??'')+':'+guildMembershipRevision,context};}}

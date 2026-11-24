@@ -1,5 +1,6 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {CelestialPreviewAssets} from '../components/profile/CelestialSovereignPreview';
+import {ASCENDANT_CELESTIAL_VISUALS_RELEASED} from '../core/release-flags';
 
 /** Candidate identifiers remain unregistered until authoritative catalogue/entitlement work lands. */
 export const CELESTIAL_IDS={
@@ -44,7 +45,7 @@ const BUNDLE:CelestialAssetBundle={
 export function getCelestialAssetBundle():CelestialAssetBundle{return BUNDLE;}
 
 /** Release gate only. Asset presence never grants ownership, equip rights, commerce, or blessings. */
-export function celestialVisualsEnabled():boolean{return false;}
+export function celestialVisualsEnabled():boolean{return ASCENDANT_CELESTIAL_VISUALS_RELEASED;}
 
 export function celestialVisualSelection(backgroundId:string|undefined|null,borderId:string|undefined|null){
  return backgroundId===CELESTIAL_IDS.background&&borderId===CELESTIAL_IDS.border;

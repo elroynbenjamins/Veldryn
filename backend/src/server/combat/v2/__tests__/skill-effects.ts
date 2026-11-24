@@ -389,3 +389,57 @@ for(const [classId,skillName,variant,kind,threshold,bonus] of [
    'legacy source must not gain threshold bonus from another V2 party member');
 }
 console.log('PASS: authored critical-support variants, recipient boundaries, downed exclusion and mixed-mode parity');
+
+// Emergency triage regression: compile actual Stonecaller and Dawnkeeper
+// abilities and isolate their first decision using carried HP and cooldowns.
+const triageCarry=(hp:number,downed=false,cooldownRemainingMs:Record<string,number>={})=>
+ ({hp,downed,cooldownRemainingMs,basicAttackRemainingMs:999999});
+const triageAlly=(id:string):CombatantDefinition=>{
+ const base=launchPlayer('Ironwarden',50);
+ return {...base,id,stats:{...base.stats,maxHp:1000},abilities:[],basicAttackCoeff:0,basicAttackMs:999999};
+};
+for(const classId of ['STONECALLER','DAWNKEEPER'] as const){
+ const base=launchPlayer(CLASS_NAMES_V2[classId],50);
+ const names=classId==='STONECALLER'?['Resonant Armor','River Stone','Thunder Totem']:['Sunthread','Dawn Mend','Sun Smite'];
+ const data:VerifiedSkillBuildV2={actor:base,verified:{classId,level:50,ownedInstanceIds:new Set()},
+   selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId===classId)!.id,equipment:{},
+     activeSkills:names.map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===name)!;
+       return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+   ownedItemsById:{},setsById:{}};
+ const compiled=compileServerSkillBuildV2(true,data);
+ const healer={...compiled,id:'TR_SUPPORT',stats:{...compiled.stats,maxHp:1000,healingPower:100},
+   basicAttackCoeff:0,abilities:compiled.abilities.map(a=>({...a,
+     // Force authored priority conflict to exercise selection rather than
+     // accidentally passing because the heal already has highest priority.
+     priority:a.name===names[2]?200:a.name===names[0]?150:100}))};
+ const healId=healer.abilities.find(a=>a.name===names[1])!.id;
+ const routineId=healer.abilities.find(a=>a.name===names[0])!.id;
+ const damageId=healer.abilities.find(a=>a.name===names[2])!.id;
+ const low=triageAlly('TR_A'),tie=triageAlly('TR_B'),down=triageAlly('TR_DOWN');
+ const input={seed:'emergency-triage-'+classId,players:[healer,tie,low,down],enemies:[enemy],
+   maxDurationMs:500,tickMs:100,initialPlayerState:{
+     [healer.id]:triageCarry(1000),[low.id]:triageCarry(200),[tie.id]:triageCarry(200),[down.id]:triageCarry(0,true)}};
+ const fight=simulateCombat(input);
+ const relevant=fight.events.find(e=>e.actorId===healer.id&&[healId,routineId,damageId].includes(e.abilityId??'')&&
+   ['cast_start','heal','shield','damage','miss','status_apply'].includes(e.type));
+ assert.equal(relevant?.abilityId,healId,'ready emergency heal beats higher-priority routine skill and damage');
+ assert.equal(relevant?.targetId,low.id,'equal critical HP resolves by stable actor ID');
+ assert.deepEqual(fight,simulateCombat(input));
+ const reordered=simulateCombat({...input,players:[healer,low,tie,down]});
+ assert.equal(reordered.events.find(e=>e.actorId===healer.id&&e.abilityId===healId&&
+   (e.type==='heal'||e.type==='cast_start'))?.targetId,low.id);
+ const boundary={...input,initialPlayerState:{...input.initialPlayerState,[low.id]:triageCarry(300),[tie.id]:triageCarry(300)}};
+ assert.ok(simulateCombat(boundary).events.some(e=>e.actorId===healer.id&&e.abilityId===damageId&&e.atMs===0),
+   'exactly 30% retains ordinary priority');
+ const blocked={...input,initialPlayerState:{...input.initialPlayerState,[healer.id]:triageCarry(1000,false,{[healId]:10000})}};
+ const fallback=simulateCombat(blocked);
+ assert.ok(!fallback.events.some(e=>e.actorId===healer.id&&e.abilityId===healId),'no cooldown bypass');
+ if(classId==='STONECALLER')assert.ok(fallback.events.some(e=>e.type==='shield'&&e.actorId===healer.id&&
+   e.abilityId===routineId&&e.targetId===low.id&&e.atMs===0),'ready protective shield before damage');
+ else assert.ok(fallback.events.some(e=>e.actorId===healer.id&&e.abilityId===damageId&&e.atMs===0),
+   'HoT-only routine is not promoted as immediate healing');
+ const legacy={...healer,combatV2:undefined,tags:[]};
+ assert.ok(simulateCombat({...input,players:[legacy,tie,low,down]}).events.some(e=>
+   e.actorId===legacy.id&&e.abilityId===damageId&&e.atMs===0),'legacy priority unchanged');
+}
+console.log('PASS: V2 emergency triage, stable ties, boundaries, cooldowns and legacy priority');

@@ -98,6 +98,66 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
   }
 }
 
+// Emergency triage changes only selected support-class V2 abilities. Preserve
+// ordinary threatened-target shielding, cleanse targeting and legacy order.
+const CRITICAL_SUPPORT_HP_V2=.30;
+const supportV2=(actor:CombatantState)=>Boolean(actor.combatV2&&
+  actor.definition.team==='players'&&actor.definition.role==='support');
+const supportAbilityV2=(actor:CombatantState,a:AbilityDefinition)=>supportV2(actor)&&a.id.includes(':v2:');
+const allyRuleV2=(rule:TargetRule)=>rule==='self'||rule==='lowest_hp_ally'||
+  rule==='lowest_hp_ally_with_dot'||rule==='two_lowest_hp_allies'||rule==='all_allies'||rule==='threatened_ally';
+function criticalSupportTargetsV2(rule:TargetRule,actor:CombatantState,
+  allies:CombatantState[],foes:CombatantState[],kind:'heal'|'shield'):CombatantState[]{
+  if(!allyRuleV2(rule))return [];
+  let candidates=living(allies);
+  if(rule==='self')candidates=candidates.filter(a=>a===actor);
+  if(rule==='lowest_hp_ally_with_dot'){
+    const affected=candidates.filter(a=>a.periodic.some(p=>p.kind==='dot')||
+      a.modifiers.some(m=>m.kind==='debuff'));
+    if(affected.length)candidates=affected;
+  }
+  // Do not divert a shield to a target already protected by a shield.
+  // A heal remains valuable regardless of the recipient's existing shield.
+  const sorted=candidates.sort((a,b)=>hpPct(a)-hpPct(b)||a.definition.id.localeCompare(b.definition.id));
+  // Only threatened-ally shielding can skip a shielded low-HP target.
+  // Other single-target rules must actually reach the eligible recipient.
+  if(rule==='lowest_hp_ally'||rule==='lowest_hp_ally_with_dot')candidates=sorted.slice(0,1);
+  else if(rule==='two_lowest_hp_allies')candidates=sorted.slice(0,2);
+  else candidates=sorted;
+  const critical=candidates.filter(a=>hpPct(a)<CRITICAL_SUPPORT_HP_V2&&(kind==='heal'||a.shield<=0));
+  if(rule==='threatened_ally'){
+    const threatened=threatenedAlly(allies,foes);
+    return threatened&&critical.includes(threatened)?[threatened]:critical.slice(0,1);
+  }
+  return critical;
+}
+function emergencySupportRankV2(a:AbilityDefinition,actor:CombatantState,
+  allies:CombatantState[],foes:CombatantState[]):number{
+  if(!supportAbilityV2(actor,a)||!allyRuleV2(a.target))return 0;
+  let rank=0;
+  for(const fx of a.effects){
+    if(fx.kind!=='heal'&&fx.kind!=='shield')continue;
+    if((fx.coeff??0)<=0&&(fx.flat??0)<=0)continue;
+    if(criticalSupportTargetsV2(fx.target??a.target,actor,allies,foes,fx.kind).length)
+      rank=Math.max(rank,fx.kind==='heal'?2:1);
+  }
+  return rank;
+}
+function supportTargetsV2(rule:TargetRule,actor:CombatantState,allies:CombatantState[],
+  foes:CombatantState[],rng:CombatRng,label:string,a:AbilityDefinition,fx?:AbilityEffect):CombatantState[]{
+  if(supportAbilityV2(actor,a)&&(rule==='threatened_ally'||rule==='lowest_hp_ally'||
+    rule==='lowest_hp_ally_with_dot')){
+    const effects=fx?[fx]:a.effects.filter(e=>(e.target??a.target)===rule);
+    // Prefer heal targeting if this shared target has both kinds.
+    const kind=effects.some(e=>e.kind==='heal')?'heal':effects.some(e=>e.kind==='shield')?'shield':undefined;
+    if(kind){
+      const urgent=criticalSupportTargetsV2(rule,actor,allies,foes,kind);
+      if(urgent.length)return urgent;
+    }
+  }
+  return targetsFor(rule,actor,allies,foes,rng,label);
+}
+
 /** Optional server-issued second parameter is never parsed from CombatInput JSON. */
 export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2EngineAuthority, equipmentTraitAuthority?:EquipmentV2TraitEngineAuthority, partySyncAuthority?:PartySyncAuthorityV2): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
@@ -645,18 +705,33 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     }
 
     for(const actor of all){ if(!actor.alive)continue; const allies=actor.definition.team==='players'?players:enemies, foes=actor.definition.team==='players'?enemies:players;
-      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; if(ab&&target?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:target.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of targetsFor(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`))applyEffect(now,actor,t,fx,ab.id); }} }
+      if(actor.casting && actor.casting.completesAt<=now){ const ab=actor.definition.abilities.find(a=>a.id===actor.casting!.abilityId); const target=all.find(x=>x.definition.id===actor.casting!.targetId); actor.casting=undefined; const emergencyReplacement=ab&&!target?.alive&&emergencySupportRankV2(ab,actor,allies,foes)>0
+        ?supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:emergency_retarget`,ab)[0]:undefined;
+        const resolvedTarget=target?.alive?target:emergencyReplacement;
+        if(ab&&resolvedTarget?.alive){events.push({atMs:now,type:'cast_complete',actorId:actor.definition.id,targetId:resolvedTarget.definition.id,abilityId:ab.id});gemOnAbilityUsedV1(now,actor,ab);emitGemState(now); const executed=spend(actor,ab,now);for(const fx of executed.effects){ for(const t of supportTargetsV2(fx.target??ab.target,actor,allies,foes,rng,`${now}:${ab.id}:target`,ab,fx))applyEffect(now,actor,t,fx,ab.id); }} }
       if(actor.casting)continue;
       // A summoned V2 Thunder Totem must finish its 2/4/6s pulse train.
       // Otherwise base haste shortens its 6s cooldown to ~5.6s, AI
       // recasts at ~5.7s and silently erases the third scheduled pulse.
       // Manual/other source recasts still use the existing refresh-not-stack rule.
-      const ab=abilitiesByActor.get(actor)?.find(a=>
+      const available=(a:AbilityDefinition)=>
         (actor.cooldownReadyAt[a.id]??0)<=now&&conditionOk(a,actor,allies,foes)&&
         !(actor.combatV2?.activeTotem&&
           actor.definition.combatV2?.resource==='resonance'&&
-          a.name==='Thunder Totem'&&a.id.includes(':v2:')));
-      if(ab){ const ts=targetsFor(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?targetsFor(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
+          a.name==='Thunder Totem'&&a.id.includes(':v2:'));
+      const ordered=abilitiesByActor.get(actor)??[];
+      let ab=ordered.find(available);
+      if(supportV2(actor)&&allies.some(a=>a.alive&&hpPct(a)<CRITICAL_SUPPORT_HP_V2)){
+        let bestRank=0;
+        // Already sorted by authored priority: ties preserve that order.
+        for(const candidate of ordered){
+          if(!available(candidate))continue;
+          const rank=emergencySupportRankV2(candidate,actor,allies,foes);
+          if(rank>bestRank){bestRank=rank;ab=candidate;}
+          if(bestRank===2)break;
+        }
+      }
+      if(ab){ const ts=supportTargetsV2(ab.target,actor,allies,foes,rng,`${now}:${ab.id}:select`,ab); const t=ts[0]; if(t){ actor.cooldownReadyAt[ab.id]=now+Math.round(ab.cooldownMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now)+reactiveHasteV2(actor))):0))*(1+sync(actor,'haste_pct')))); if(ab.castTimeMs>0){actor.casting={abilityId:ab.id,completesAt:now+ab.castTimeMs,targetId:t.definition.id};events.push({atMs:now,type:'cast_start',actorId:actor.definition.id,targetId:t.definition.id,abilityId:ab.id});}else{gemOnAbilityUsedV1(now,actor,ab);emitGemState(now);const executed=spend(actor,ab,now);for(const fx of executed.effects){for(const x of (fx.target?supportTargetsV2(fx.target,actor,allies,foes,rng,`${now}:${ab.id}:effect`,ab,fx):ts)){if(x.alive)applyEffect(now,actor,x,fx,ab.id);}}} continue; } }
       if(actor.nextBasicAt<=now){ const t=chooseEnemy(actor,foes,rng,`${now}:${actor.definition.id}:basic`); if(t){applyDamage(now,actor,t,{kind:'damage',coeff:actor.definition.basicAttackCoeff,damageType:'physical',threatMultiplier:actor.definition.role==='tank'?2.5:1},'BASIC');actor.nextBasicAt=now+Math.round(actor.definition.basicAttackMs/(Math.max(.25,1+gemEffectiveHasteV1(actor,now)+(v2Encounter?Math.max(-.2,Math.min(.2,modifier(actor,'haste',now))):0))*(1+sync(actor,'haste_pct'))));} }
     }
   }

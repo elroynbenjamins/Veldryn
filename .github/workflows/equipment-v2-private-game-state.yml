@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/tsconfig*.json'
       - 'backend/src/server/equipment/**'
+      - 'backend/src/server/combat/v2/permanent-gem-source-review.ts'
       - 'apps/mobile/src/core/**'
       - 'apps/mobile/src/content/**'
       - 'apps/mobile/tsconfig.eq2-private-game-state.json'
@@ -52,6 +53,12 @@ jobs:
         run: |
           if git grep -n -E 'equipment-crafting-v2-(game-state|gem-sidecar|virtual-custody|private-game-state-type|authoritative-readiness|legacy-audit)' -- backend/online backend/supabase/functions apps/mobile/App.tsx apps/mobile/src/screens apps/mobile/src/navigation; then
             echo 'Private Equipment 2.0 GameState path imported by public code'
+            exit 1
+          fi
+          status=0
+          git grep -n -E 'permanent-gem-source-review|reviewPermanentGemSourcesV2' -- backend/online backend/supabase/functions apps/mobile/src apps/mobile/App.tsx || status=$?
+          if [ "$status" -ne 1 ]; then
+            echo 'Private gem contribution projection reached public runtime or scan failed'
             exit 1
           fi
           grep -Eq 'export const EQUIPMENT_CRAFTING_V2_SERVER_RELEASED=false;' backend/src/server/equipment/equipment-crafting-v2-gate.ts

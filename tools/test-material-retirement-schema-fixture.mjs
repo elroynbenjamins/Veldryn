@@ -9,7 +9,7 @@ const body=draft.slice(draft.indexOf('do $$'),draft.lastIndexOf('rollback;')).re
 if(body.includes(gate))throw Error('Fixture gate replacement failed');
 const giftDraft=readFileSync('backend/supabase/review/material-retirement-gift-closure-v1.sql','utf8');
 if(!giftDraft.includes(gate)||!giftDraft.trimEnd().endsWith('rollback;'))throw Error('Gift closure guard missing');
-const giftBody=giftDraft.slice(giftDraft.indexOf('do $'),giftDraft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
+const giftBody=giftDraft.slice(giftDraft.indexOf('do $$'),giftDraft.lastIndexOf('rollback;')).replace(gate,'release_cleared constant boolean := true;');
 const setup=`
 begin;
 do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;
@@ -43,7 +43,7 @@ do $$ declare s jsonb; begin
  raise notice 'PASS: production-shaped storage fixture, shared bank, inactive roster preservation, authoritative wallet, receipt replay and already-credited history notice';
 end $$;
 `;
-const guard="do $ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $;";
+const guard="do $$ begin if current_database()<>'retirement_fixture' then raise exception 'disposable_database_required'; end if; end $$;";
 const mode=process.argv[2]??'all';
 if(mode==='all')console.log([setup,giftBody,giftBody,body,body,assertions,'rollback;'].join('\n'));
 else if(mode==='setup')console.log([setup,giftBody,'commit;'].join('\n'));

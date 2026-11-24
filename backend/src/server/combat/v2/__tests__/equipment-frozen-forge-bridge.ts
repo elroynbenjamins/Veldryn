@@ -42,7 +42,7 @@ import {prepareSoloEnemyKitsV2,verifyPersistedEnemyKitsV2} from '../enemy-kit-co
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {simulateCombat} from '../../engine';
 import {issueEq2PrivateHitQaV22,type Eq2PrivateHitIdV22} from '../equipment-private-hit-qa-v22';
-import {runPrivateConditionalBoundaries} from './equipment-private-conditional-boundaries';
+import {runPrivateConditionalBoundaries,runPrivateSupportBoundaries} from './equipment-private-conditional-boundaries';
 import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 import {reviewOriginalForgeSetBossOpportunitiesV2}
  from '../equipment-forge-set-boss-opportunity-review';
@@ -1584,8 +1584,12 @@ console.log(JSON.stringify({scope:'PINNED_EQ2_FORGE_DRAFT_ONLY_NOT_REAL_DB',
 // Run the same independent adapter tests using verified original Forge actors.
 {
  const rv=make('RAVAGER',0,'supported',4),iw=make('IRONWARDEN',0,'supported',4);
- runPrivateConditionalBoundaries(compileRealFrozenForgeActorV2(rv.actor,rv.build,rv.source).actor,
-  compileRealFrozenForgeActorV2(iw.actor,iw.build,iw.source).actor,boss);
+ const ravager=compileRealFrozenForgeActorV2(rv.actor,rv.build,rv.source).actor;
+ const ironwarden=compileRealFrozenForgeActorV2(iw.actor,iw.build,iw.source).actor;
+ runPrivateConditionalBoundaries(ravager,ironwarden,boss);
+ const dk=make('DAWNKEEPER',0,'supported',4),sc=make('STONECALLER',0,'supported',4);
+ runPrivateSupportBoundaries(compileRealFrozenForgeActorV2(dk.actor,dk.build,dk.source).actor,
+  compileRealFrozenForgeActorV2(sc.actor,sc.build,sc.source).actor,ironwarden,ravager,boss);
 }
 
 if(process.env.EQ2_V21_MULTISLOT_PATH){

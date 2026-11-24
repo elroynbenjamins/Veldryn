@@ -8,7 +8,6 @@ const processing=new Map(old.processingReview.map(x=>[x.output,x]));
 const deny=Object.freeze({reviewOnly:true,mayCraft:false,mayMint:false,mayTrade:false,mayEquip:false,releaseApproved:false});
 const fail=x=>{throw Error('eq2_economy_v10_'+x);};
 const add=(m,k,n)=>{m[k]=(m[k]??0)+n;};
-const entries=m=>Object.entries(m).sort(([a],[b])=>a.localeCompare(b));
 const sum=xs=>xs.reduce((a,b)=>a+b,0);
 const round=x=>Math.round(x*100)/100;
 const rare=new Set(['EQ2_TROLL_SINEW','EQ2_MIRAGEFANG_CORE','EQ2_GLASSHEART_FRAGMENT','iceveinSigils','shardhearts','dawnspireCores','fortressCores','temperedHearts']);
@@ -29,7 +28,7 @@ export const assumptions=Object.freeze({
     Object.freeze({id:'combat_focused',hours:4,goldIncomePerHour:[0,800,2000,6000,13000,26000],buyRefined:1,buyCombat:0})
   ]),
   // Only illustrative throughput for unexpanded inputs. Rare inputs remain a stochastic expectation, not guaranteed.
-  rawPerHour:120,commonPerHour:20,rarePerHour:2,processedUnknownPerHour:30,
+  commonPerHour:20,rarePerHour:2,processedUnknownPerHour:30,
   processingSpeedFactors:Object.freeze([1,1.2])
 });
 export function preparation(row,version='candidate',copies=1,speed=1){
@@ -125,12 +124,16 @@ export function summarizeEconomy(){
   const byTier=[1,2,3,4,5].map(tier=>{
     const r=rows.filter(x=>x.tier===tier),p=r.map(x=>[preparation(x,'previous'),preparation(x),preparation(x,'candidate',1,1.2)]);
     const before=r.map(x=>economics(x,'previous')),after=r.map(x=>economics(x));
+    const marketStress=assumptions.priceStress.flatMap(stress=>assumptions.feeRates.flatMap(fee=>assumptions.salvageMaterialValueFractions.map(salvage=>{
+      const outcomes=r.map(x=>economics(x,'candidate',stress,fee,salvage));
+      return {stress,fee,salvage,cases:outcomes.length,profitableRoutes:outcomes.filter(x=>x.profit>=0).length,medianMarginOnCost:median(outcomes.map(x=>x.marginOnCost)),medianBreakEvenScale:median(outcomes.map(x=>x.breakEvenUniformAskScale))};
+    })));
     return {tier,routes:r.length,medianOldCost:median(before.map(x=>x.cost)),medianNewCost:median(after.map(x=>x.cost)),
       medianKnownPrepSecondsBefore:median(p.map(x=>x[0].knownProcessingSeconds)),
       medianKnownPrepSecondsAfter:median(p.map(x=>x[1].knownProcessingSeconds)),
       medianKnownPrepSecondsFaster:median(p.map(x=>x[2].knownProcessingSeconds)),
       incompletePrepRoutes:p.filter(x=>!x[1].completePreparation).length,
-      medianBreakEvenScale:median(after.map(x=>x.breakEvenUniformAskScale)),
+      medianBreakEvenScale:median(after.map(x=>x.breakEvenUniformAskScale)),marketStress,
       profiles:assumptions.profiles.map(profile=>({id:profile.id,
         medianDaysBefore:round(median(r.map(x=>simulateProfile(x,profile,1,'previous').activeDayEquivalents))),
         medianDaysAfter:round(median(r.map(x=>simulateProfile(x,profile).activeDayEquivalents))),
@@ -139,6 +142,6 @@ export function summarizeEconomy(){
   });
   const hands=handComparisons(rows);
   return {routes:rows.length,byTier,handComparisons:hands.length,handRatioRange:[Math.min(...hands.map(x=>x.costRatio)),Math.max(...hands.map(x=>x.costRatio))],
-    scenarioCount:rows.length*assumptions.profiles.length*assumptions.priceStress.length,marketStressCases:rows.length*assumptions.priceStress.length*assumptions.feeRates.length*assumptions.salvageMaterialValueFractions.length,
+    scenarioCount:rows.length*assumptions.profiles.length*assumptions.priceStress.length,marketStressCases:sum(byTier.flatMap(t=>t.marketStress.map(s=>s.cases))),
     ...deny};
 }

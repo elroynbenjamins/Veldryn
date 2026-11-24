@@ -16,10 +16,10 @@ create table if not exists private.profile_cosmetic_grant_receipts_v1(
   check (length(idempotency_key) between 8 and 160),
   check (source in ('verified_google_play','ops_comp')),
   check (sku in (
-    'profile_cosmetic_gloamward_border_v1','profile_cosmetic_gloamward_effect_v1','profile_cosmetic_gloamward_bundle_v1',
-    'profile_cosmetic_frostbound_border_v1','profile_cosmetic_frostbound_effect_v1','profile_cosmetic_frostbound_bundle_v1',
-    'profile_cosmetic_amberglass_border_v1','profile_cosmetic_amberglass_effect_v1','profile_cosmetic_amberglass_bundle_v1',
-    'profile_cosmetic_briarbound_border_v1','profile_cosmetic_briarbound_effect_v1','profile_cosmetic_briarbound_bundle_v1'
+    'profile_cosmetic_gloamward_set_v1',
+    'profile_cosmetic_frostbound_set_v1',
+    'profile_cosmetic_amberglass_set_v1',
+    'profile_cosmetic_briarbound_set_v1'
   ))
 );
 alter table private.profile_cosmetic_grant_receipts_v1 enable row level security;
@@ -59,18 +59,10 @@ begin
   end if;
 
   case p_sku
-    when 'profile_cosmetic_gloamward_border_v1' then v_border_id:='cosmetic:gloamward:arcane-frame';
-    when 'profile_cosmetic_gloamward_effect_v1' then v_effect_id:='effect_gloamward_wisps';
-    when 'profile_cosmetic_gloamward_bundle_v1' then v_border_id:='cosmetic:gloamward:arcane-frame';v_effect_id:='effect_gloamward_wisps';
-    when 'profile_cosmetic_frostbound_border_v1' then v_border_id:='cosmetic:frostbound:chime-frame';
-    when 'profile_cosmetic_frostbound_effect_v1' then v_effect_id:='effect_frostbound_winter_veil';
-    when 'profile_cosmetic_frostbound_bundle_v1' then v_border_id:='cosmetic:frostbound:chime-frame';v_effect_id:='effect_frostbound_winter_veil';
-    when 'profile_cosmetic_amberglass_border_v1' then v_border_id:='cosmetic:amberglass:loop-frame';
-    when 'profile_cosmetic_amberglass_effect_v1' then v_effect_id:='effect_amberglass_ember_motes';
-    when 'profile_cosmetic_amberglass_bundle_v1' then v_border_id:='cosmetic:amberglass:loop-frame';v_effect_id:='effect_amberglass_ember_motes';
-    when 'profile_cosmetic_briarbound_border_v1' then v_border_id:='cosmetic:briarbound:verdant-frame';
-    when 'profile_cosmetic_briarbound_effect_v1' then v_effect_id:='effect_briarbound_verdant_whispers';
-    when 'profile_cosmetic_briarbound_bundle_v1' then v_border_id:='cosmetic:briarbound:verdant-frame';v_effect_id:='effect_briarbound_verdant_whispers';
+    when 'profile_cosmetic_gloamward_set_v1' then v_border_id:='cosmetic:gloamward:arcane-frame';v_effect_id:='effect_gloamward_wisps';
+    when 'profile_cosmetic_frostbound_set_v1' then v_border_id:='cosmetic:frostbound:chime-frame';v_effect_id:='effect_frostbound_winter_veil';
+    when 'profile_cosmetic_amberglass_set_v1' then v_border_id:='cosmetic:amberglass:loop-frame';v_effect_id:='effect_amberglass_ember_motes';
+    when 'profile_cosmetic_briarbound_set_v1' then v_border_id:='cosmetic:briarbound:verdant-frame';v_effect_id:='effect_briarbound_verdant_whispers';
     else raise exception 'UNKNOWN_PROFILE_COSMETIC_SKU';
   end case;
 
@@ -150,6 +142,6 @@ revoke all on function public.profile_cosmetic_grant_server_v1(uuid,text,text,te
 grant execute on function public.profile_cosmetic_grant_server_v1(uuid,text,text,text) to service_role;
 
 comment on table private.profile_cosmetic_grant_receipts_v1 is
-  'Service-only idempotency ledger for account-wide profile cosmetic commerce/ops grants.';
+  'Service-only idempotency ledger for account-wide set-only profile cosmetic commerce/ops grants.';
 comment on function public.profile_cosmetic_grant_server_v1(uuid,text,text,text) is
-  'Service-role-only exact SKU grant. Atomically updates account cosmetic arrays and never grants exclusive fallback reward IDs.';
+  'Service-role-only exact set SKU grant. Atomically unlocks both independently equipable set contents and never grants exclusive fallback reward IDs.';

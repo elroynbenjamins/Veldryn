@@ -9,16 +9,16 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
  let blockedCalls=0;
  const blocked=new ProfileCosmeticGrantService({grantVerified:async()=>{blockedCalls++;throw new Error('should_not_run')}});
  let blockedError='';
- try{await blocked.grant({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_bundle_v1',idempotencyKey:'receipt-disabled-1',source:'ops_comp'})}catch(error){blockedError=error instanceof Error?error.message:String(error)}
+ try{await blocked.grant({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_set_v1',idempotencyKey:'receipt-disabled-1',source:'ops_comp'})}catch(error){blockedError=error instanceof Error?error.message:String(error)}
  equal(blockedError,'PROFILE_COSMETIC_COMMERCE_DISABLED','server grant service fails closed while unreleased');
  equal(blockedCalls,0,'disabled grant service never reaches the database adapter');
 
  let call:{fn:string;args:Record<string,unknown>}|null=null;
- const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async(fn,args)=>{call={fn,args};return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_bundle_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',revision:42},error:null}}});
- const result=await repo.grantVerified({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_bundle_v1',idempotencyKey:'receipt-12345678',source:'verified_google_play'});
+ const repo=new SupabaseProfileCosmeticGrantRepository({rpc:async(fn,args)=>{call={fn,args};return {data:{applied:true,replayed:false,sku:'profile_cosmetic_gloamward_set_v1',addedBorderId:'cosmetic:gloamward:arcane-frame',addedEffectId:'effect_gloamward_wisps',revision:42},error:null}}});
+ const result=await repo.grantVerified({accountId:'00000000-0000-0000-0000-000000000001',sku:'profile_cosmetic_gloamward_set_v1',idempotencyKey:'receipt-12345678',source:'verified_google_play'});
  equal(call?.fn,'profile_cosmetic_grant_server_v1','repository calls the atomic profile cosmetic grant RPC');
  equal(call?.args.p_account_id,'00000000-0000-0000-0000-000000000001','account id is server supplied');
- equal(call?.args.p_sku,'profile_cosmetic_gloamward_bundle_v1','exact verified SKU is forwarded');
+ equal(call?.args.p_sku,'profile_cosmetic_gloamward_set_v1','exact verified SKU is forwarded');
  equal(call?.args.p_idempotency_key,'receipt-12345678','idempotency key is forwarded unchanged');
  equal(call?.args.p_source,'verified_google_play','verified source is forwarded');
  ok(result.applied&&!result.replayed,'valid RPC response is normalized');

@@ -2,18 +2,18 @@ import type {GameState} from '../core/types';
 import {PROFILE_EFFECTS} from '../core/profile-effects';
 
 export type ProfileCosmeticCollectionId='gloamward'|'frostbound'|'amberglass'|'briarbound';
-export type ProfileCosmeticStoreProductKind='border'|'effect'|'bundle';
+export type ProfileCosmeticStoreProductKind='set';
 
-export interface ProfileCosmeticStorePiece{
- sku:string;kind:'border'|'effect';itemId:string;name:string;
+export interface ProfileCosmeticSetPiece{
+ kind:'border'|'effect';itemId:string;name:string;
 }
-export interface ProfileCosmeticStoreBundle{
- sku:string;kind:'bundle';name:string;borderId:string;effectId:string;
+export interface ProfileCosmeticStoreSet{
+ sku:string;kind:'set';name:string;borderId:string;effectId:string;
 }
 export interface ProfileCosmeticStoreCollection{
  id:ProfileCosmeticCollectionId;name:string;tagline:string;description:string;accent:string;
- border:ProfileCosmeticStorePiece;effect:ProfileCosmeticStorePiece;bundle:ProfileCosmeticStoreBundle;
- fallbackBorderId:string;checkoutEnabled:false;billing:'one_time';
+ border:ProfileCosmeticSetPiece;effect:ProfileCosmeticSetPiece;set:ProfileCosmeticStoreSet;
+ fallbackBorderId:string;checkoutEnabled:false;billing:'one_time';tier:'standard';
 }
 
 const META:Record<ProfileCosmeticCollectionId,{name:string;tagline:string;description:string;accent:string;slug:string}> = {
@@ -31,21 +31,20 @@ export const PROFILE_COSMETIC_STORE_COLLECTIONS:readonly ProfileCosmeticStoreCol
  if(!id||!meta)throw new Error('profile_cosmetic_store_catalog_mismatch');
  return {
   id,name:meta.name,tagline:meta.tagline,description:meta.description,accent:meta.accent,
-  fallbackBorderId:base.fallbackBorderId,checkoutEnabled:false as const,billing:'one_time' as const,
-  border:{sku:`profile_cosmetic_${meta.slug}_border_v1`,kind:'border' as const,itemId:base.borderId,name:base.borderName},
-  effect:{sku:`profile_cosmetic_${meta.slug}_effect_v1`,kind:'effect' as const,itemId:base.id,name:base.name},
-  bundle:{sku:`profile_cosmetic_${meta.slug}_bundle_v1`,kind:'bundle' as const,name:base.collection+' Collection',borderId:base.borderId,effectId:base.id},
+  fallbackBorderId:base.fallbackBorderId,checkoutEnabled:false as const,billing:'one_time' as const,tier:'standard' as const,
+  border:{kind:'border' as const,itemId:base.borderId,name:base.borderName},
+  effect:{kind:'effect' as const,itemId:base.id,name:base.name},
+  set:{sku:`profile_cosmetic_${meta.slug}_set_v1`,kind:'set' as const,name:base.collection+' Set',borderId:base.borderId,effectId:base.id},
  };
 });
 
-export const PROFILE_COSMETIC_STORE_PRODUCTS=PROFILE_COSMETIC_STORE_COLLECTIONS.flatMap(collection=>[
- {...collection.border,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const},
- {...collection.effect,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const},
- {...collection.bundle,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const},
-]);
+/** These smaller standard collections are sold only as complete sets. */
+export const PROFILE_COSMETIC_STORE_PRODUCTS=PROFILE_COSMETIC_STORE_COLLECTIONS.map(collection=>({
+ ...collection.set,collectionId:collection.id,checkoutEnabled:false as const,billing:'one_time' as const,tier:'standard' as const,
+}));
 
 export function profileCosmeticCollectionOwnership(state:GameState,collection:ProfileCosmeticStoreCollection){
  const borderOwned=state.account.unlockedProfileBorderIds?.includes(collection.border.itemId)??false;
  const effectOwned=state.account.unlockedProfileEffectIds?.includes(collection.effect.itemId)??false;
- return {borderOwned,effectOwned,bundleOwned:borderOwned&&effectOwned,ownedPieces:Number(borderOwned)+Number(effectOwned)};
+ return {borderOwned,effectOwned,setOwned:borderOwned&&effectOwned,ownedPieces:Number(borderOwned)+Number(effectOwned)};
 }

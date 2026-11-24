@@ -57,7 +57,10 @@ export function coopSynchronizationEffectiveTotals(view:CoopSynchronizationView)
 }
 
 /** Presentation contract only. Never derive queue eligibility from this view. */
-export function assertCoopSynchronizationPresentation(view:CoopSynchronizationView):CoopSynchronizationView{
+export function prepareCoopSynchronizationPresentation(view:CoopSynchronizationView):{
+ view:CoopSynchronizationView;totals:CoopSynchronizationBonusView[];
+}{
+
  if(!view||!Number.isInteger(view.activeCount)||view.activeCount<0||view.activeCount>6||
   !Number.isInteger(view.scalePercent)||view.scalePercent<0||view.scalePercent>100||
   (view.activeCount===0)!==(view.scalePercent===0)||view.partyWide!==true||
@@ -86,8 +89,10 @@ export function assertCoopSynchronizationPresentation(view:CoopSynchronizationVi
    !validBps(cap.rawBps)||!validBps(cap.effectiveBps)||!validKind(cap.valueKind))invalid();
   capIds.add(cap.statKey);
  }
- coopSynchronizationEffectiveTotals(view);
- return view;
+ return {view,totals:coopSynchronizationEffectiveTotals(view)};
+}
+export function assertCoopSynchronizationPresentation(view:CoopSynchronizationView):CoopSynchronizationView{
+ return prepareCoopSynchronizationPresentation(view).view;
 }
 
 

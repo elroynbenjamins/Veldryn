@@ -1,0 +1,55 @@
+name: 1.0.12 isolated Asterfall T3 calibration probe
+
+on:
+  pull_request:
+    branches:
+      - release/1-0-11-consolidation-20261124
+    paths:
+      - '.github/workflows/review-1012-asterfall-calibration.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  calibration:
+    if: github.event.pull_request.head.repo.full_name == 'elroynbenjamins/Veldryn' && github.head_ref == 'review/1012-asterfall-t3-calibration-20261124'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        correction: ['0.95', '0.975', '1.00', '1.025', '1.05']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Apply disposable candidate coefficient (never commit)
+        env:
+          CORRECTION: ${{ matrix.correction }}
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const path = 'backend/src/server/coop/regional-power-balance.ts';
+          const source = fs.readFileSync(path,'utf8');
+          const correction = process.env.CORRECTION;
+          assert.ok(['0.95','0.975','1.00','1.025','1.05'].includes(correction));
+          const anchor = "encounterId==='BOSS_EXP_ROOT'?(tier===3 ? .95 : tier===2 ? .98 : 1)";
+          assert.equal(source.split(anchor).length,2,'Exact baseline source is required');
+          const updated = source.replace(anchor,"encounterId==='BOSS_EXP_ROOT'?(tier===3 ? "+correction+" : tier===2 ? .98 : 1)");
+          fs.writeFileSync(path,updated);
+          JS
+          git diff -- backend/src/server/coop/regional-power-balance.ts
+      - name: Compile and run all six original clear-rate and boss-lottery guards
+        run: |
+          pnpm --dir backend exec tsc -p tsconfig.online.json
+          node backend/dist/online/backend/online/tests/regional-dungeon-clear-rates.js

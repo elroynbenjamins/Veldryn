@@ -108,6 +108,10 @@ V18 exact-head focused checks succeeded; 324 baseline traces, 648 shadow rows, 4
 
 V19 exact-head catalogue (99 tests, zero failures) and private engine integration passed. The 324 matched static-stat counterfactuals actually ran; zero wins in either condition, raw damage delta +430.0902 averaged across heterogeneous channels, healing delta zero. Single-item 35s QA boss fixtures cannot calibrate final CP. V20 restores two exact historical readiness dependencies, confines opaque metadata to the private cross-project rehearsal type, moves exact cross-project files to a dedicated strict build with all five original tests retained, and adds fail-closed legacy-build replacements for three equipment/dungeon hooks. Edge generated bundles remain stale until verified regeneration; Expo mismatch and all new V20 CI remain outstanding. No live runtime or gate change. See `docs/2-0/EQUIPMENT_2_0_INTEGRATION_RECOVERY_V20.md`. D1–D10 remain open.
 
+## 3H. V21 multi-slot and controlled-party benchmarks
+
+V20 focused catalogue, isolated core and private integration passed; the broader backend/private-state check failed through a sixth cross-project effect-gem test. V21 retains all six tests in the dedicated strict harness, fixes pure type imports, and runs private compilation independently. Expo, tool economy/blueprint/scroll regressions and both stale generated Edge bundles remain open. New 648 solo and 108 controlled-party matched permanent-stat pairs are authored and wired to private CI, NOT confirmed executed. Tier-bounded original Forge QA copies only, exact source coefficient, explicit hypothetical boss stat bands, 120s limit and missing/downgraded slots recorded. Party workloads are generic, not authored solo authority. No conditional effects, CP or release approval; see `docs/2-0/EQUIPMENT_2_0_MULTISLOT_BENCHMARK_REVIEW_V21.md`. D1–D10 remain open.
+
 ## 4. Open launch gates
 
 ### A. Item identity, mint provenance, and custody

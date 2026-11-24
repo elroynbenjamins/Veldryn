@@ -29,6 +29,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
 import {GemArtwork} from './GemArtwork';
 import {ItemArtwork} from './ItemArtwork';
+import {ItemInspectIdentity,ItemInspectStatRow} from './ItemInspectIdentity';
 import {InventoryItemHeaderControls} from './InventoryItemHeaderControls';
 import {hasGemArtworkV1,hasRawGemArtworkV1} from '../theme/gem-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
@@ -86,9 +87,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
         <View style={[s.hero,compactHeader&&s.heroCompact]}>
           <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt itemId={itemId} model={model}/></View>
           <View style={[s.heroCopy,compactHeader&&s.heroCopyCompact]}>
-            <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)}</Text>
-            <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>
-            <Text numberOfLines={2} style={s.owned}>{item.type==='gear'?(source==='bank'?gt('Bank'):gl('Gear'))+' '+formatGameNumber(source==='bank'?model.bankQuantity:source==='equipment_pouch'?storedGearCount:model.inventoryQuantity,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)}</Text>
+            <ItemInspectIdentity name={localizedItemName(language,item.id)+(upgrade?.rank?' +'+upgrade.rank:'')} metadata={rarity.symbol+' '+contentText(rarity.label).toLocaleUpperCase(language)+(model.selectedQuality!==undefined?' · Q'+model.selectedQuality:'')+' · '+contentText(item.type).toLocaleUpperCase(language)} detail={item.type==='gear'?(source==='bank'?gt('Bank'):gl('Gear'))+' '+formatGameNumber(source==='bank'?model.bankQuantity:source==='equipment_pouch'?storedGearCount:model.inventoryQuantity,state.settings.numberMode,language)+' · '+(state.character?.name??gl('Character')):gl('Carried')+' '+formatGameNumber(model.inventoryQuantity,state.settings.numberMode,language)+' · '+gt('Bank')+' '+formatGameNumber(model.bankQuantity,state.settings.numberMode,language)} nameColor={nameColor} metadataColor={rarity.color}/>
           </View>
           <View style={[s.heroControls,compactHeader&&s.heroControlsCompact]}><InventoryItemHeaderControls favorite={favorite} locked={locked} onFavorite={onToggleFavorite} onLock={onToggleLock} onClose={onClose}/></View>
         </View>
@@ -105,10 +104,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
           {item.type==='gear'&&bonusRows.length>0?<View style={s.statGroup}>
             <Text style={s.statHeading}>{gt("BONUS STATS")}</Text>
             <View style={s.bonusPanel}>
-              {bonusRows.map(roll=><View key={roll.id} style={s.bonusRow}>
-                <Text style={s.bonusLabel}>{contentText(roll.label)}</Text>
-                <Text style={s.bonusValue}>{roll.value}</Text>
-              </View>)}
+              {bonusRows.map(roll=><ItemInspectStatRow key={roll.id} label={contentText(roll.label)} value={roll.value} bonus/>)}
             </View>
           </View>:null}
           {traitLine?<View style={s.statGroup}>
@@ -186,7 +182,7 @@ export function ItemQuickInspect({state,itemId,instanceId,source='inventory',onC
   </GameModalSurface>;
 }
 function Section({title,children}:{title:string;children:ReactNode}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text>{children}</View>}
-function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.bonusRow}><Text style={s.bonusLabel}>{itemDetailText(language,label)}</Text><Text style={s.baseValue}>{displayStatPrecise(value)}</Text></View>}
+function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();return <ItemInspectStatRow label={itemDetailText(language,label)} value={displayStatPrecise(value)}/>}
 function DeltaStat({label,value,potential=false}:{label:string;value:number;potential?:boolean}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scaled=displayStat(value),tone=scaled>0?C.good:scaled<0?C.bad:C.muted;return <View style={[s.deltaStat,potential&&s.deltaPotential]}><Text style={s.statLabel}>{itemDetailText(language,label)}</Text><Text style={[s.deltaValue,{color:tone}]}>{scaled===0?'—':(scaled>0?'+':'')+scaled}</Text></View>}
 function SourceRow({source,primary=false,onNavigate}:{source:ReturnType<typeof itemInspectModel>['sources'][number];primary?:boolean;onNavigate?:(destination:WorkingTowardDestination)=>void}){
  const {gt,gl,language}=useGameplayText();

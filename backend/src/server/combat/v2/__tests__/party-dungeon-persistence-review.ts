@@ -41,7 +41,8 @@ const frozen=ids.map((classId,i)=>({
 const input:CombatInput={seed:'PARTY_BINDING_QA',players:actors,enemies:[enemy],maxDurationMs:1000};
 const args={runId:'RUN_1',nodeId:'NODE_1',encounterRevision:2,stateRevision:3,
  contentVersion:'content_v1',balanceVersion:'balance_v1',seed:input.seed,
- readyCheck:check,frozenRoster:frozen,combatInput:input};
+ readyCheck:check,frozenRoster:frozen,
+ actorCharacterIds:Object.fromEntries(actors.map((actor,i)=>[actor.id,'CHAR_'+i])),combatInput:input};
 const first=reviewPartyV2RunBinding(args),second=reviewPartyV2RunBinding(args);
 assert.deepEqual(first,second);
 assert.equal(first.binding.members.length,4);
@@ -61,8 +62,11 @@ assert.throws(()=>reviewPartyV2RunBinding({...args,frozenRoster:frozen.map((x,i)
  ({...x,snapshotHash:'b'.repeat(64)} as FrozenLoadoutSnapshot))}),/roster_snapshot_mismatch/);
 assert.throws(()=>reviewPartyV2RunBinding({...args,frozenRoster:frozen.map((x,i)=>i?x:
  ({...x,accountId:'ACCOUNT_1'} as FrozenLoadoutSnapshot))}),/roster_snapshot_mismatch/);
-assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,
- players:[actors[1],actors[0],actors[2],actors[3]]}}),/class_actor_mismatch|roster_snapshot_mismatch/);
+const reorderedInput={...input,players:[actors[1],actors[0],actors[2],actors[3]]};
+const reordered=reviewPartyV2RunBinding({...args,combatInput:reorderedInput});
+assert.deepEqual(reordered.binding.members.map(m=>m.characterId),['CHAR_1','CHAR_0','CHAR_2','CHAR_3'],
+ 'combat actor ordering may change without weakening actor-to-character provenance');
+assert.notEqual(reordered.binding.combatInputDigest,first.binding.combatInputDigest);
 assert.throws(()=>reviewPartyV2RunBinding({...args,frozenRoster:frozen.map((x,i)=>i===2?
  ({...x,classId:'Wayfinder'} as FrozenLoadoutSnapshot):x)}),/class_actor_mismatch/);
 assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,enemyDamageProfile:'qmode-v1'}}),/invalid_scope/);

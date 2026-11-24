@@ -132,6 +132,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
       - name: Measure six equal-stat real-engine curse and interrupt counterplay pairs
         run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
+      - name: Validate 18 Synchronizations and all dungeon and flexible four-player class compositions
+        run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

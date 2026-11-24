@@ -148,6 +148,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/counterplay-equal-stat-pairs.js
       - name: Validate 18 Synchronizations and all dungeon and flexible four-player class compositions
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
+      - name: Guard Synchronization diminishing scale and nominal link budget
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-scale-policy.js
       - name: Validate informational Synchronization lobby and recruitment projection
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization-projection.js
       - name: Validate synchronization authority and real private engine modifiers

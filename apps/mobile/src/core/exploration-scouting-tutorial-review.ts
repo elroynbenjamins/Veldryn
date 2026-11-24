@@ -2,7 +2,7 @@
  * The tutorial is a projection of authoritative evidence, not a progression command. */
 import {firstSessionTutorialStep,type FirstSessionTutorialHost,type FirstSessionTutorialStep} from './first-session-tutorial';
 import {COMPANION_TOUR_STEPS} from './companion-tutorial';
-import {SCOUT_ROUTES,scoutingAvailability,type ScoutState,type ScoutReceipt} from './exploration-scouting-review';
+import {SCOUT_ROUTES,scoutingAvailability,scoutingPrerequisiteMet,type ScoutState,type ScoutReceipt} from './exploration-scouting-review';
 
 export const SCOUT_TUTORIAL_RELEASED=false as const;
 export const SCOUT_TUTORIAL_VERSION=2;
@@ -23,12 +23,12 @@ export function scoutingGuide(input:{state:ScoutState;receipts:readonly ScoutRec
   return step('scouting2_wait','Your scout is out exploring','Scouting continues while you gather, craft, fight or leave the screen.','Come back when the timer finishes.','View scouting','scouting-active',active.routeId);
  }
  if(receipts.some(r=>r.accountId===state.accountId&&r.status==='active'))return; // Another character owns the account slot; no duplicate dispatch hint.
- if(input.returningPlayer&&ownKnown.length>0&&!seen.has('scouting2_returning'))return step('scouting2_returning','Exploration has changed','Your mapped routes and Exploration XP are preserved. Companion Expeditions are moving into Scouting.','Review existing discoveries; old assignments retain their original claims.','Open Exploration','scouting-overview');
- if(ownKnown.length===0&&!seen.has('scouting2_intro'))return step('scouting2_intro','Meet your first scout','Scouting finds routes while your character continues other activities. A free local guide is available for basic discovery and practice.','Open Skills and select Exploration.','Open Exploration','scouting-overview');
- const next=SCOUT_ROUTES.find(r=>r.released&&!ownKnown.includes(r.legacyId)&&scoutingAvailability(state,r,'route')==='available');
+ if(input.returningPlayer&&(ownKnown.length>0||(state.retainedPrerequisiteRouteIds?.length??0)>0)&&!seen.has('scouting2_returning'))return step('scouting2_returning','Exploration has changed','Your mapped routes and Exploration XP are preserved. Companion Expeditions are moving into Scouting.','Review existing discoveries; old assignments retain their original claims.','Open Exploration','scouting-overview');
+ if(ownKnown.length===0&&!(state.retainedPrerequisiteRouteIds?.length)&&!seen.has('scouting2_intro'))return step('scouting2_intro','Meet your first scout','Scouting finds routes while your character continues other activities. A free local guide is available for basic discovery and practice.','Open Skills and select Exploration.','Open Exploration','scouting-overview');
+ const next=SCOUT_ROUTES.find(r=>r.released&&!scoutingPrerequisiteMet(state,r.legacyId)&&scoutingAvailability(state,r,'route')==='available');
  if(next)return step(ownKnown.length===0?'scouting2_dispatch':'scouting2_next',ownKnown.length===0?'Send your first scout':'Discover the next route','Choose a spare companion or the free guide. Route discoveries are guaranteed.','Review the time and dispatch your scout.','Choose scout','scouting-dispatch',next.id);
  const practice=SCOUT_ROUTES.filter(r=>r.released&&scoutingAvailability(state,r,'practice')==='available').sort((a,b)=>b.xp/b.seconds-a.xp/a.seconds)[0];
- const future=SCOUT_ROUTES.some(r=>r.released&&!ownKnown.includes(r.legacyId));
+ const future=SCOUT_ROUTES.some(r=>r.released&&!scoutingPrerequisiteMet(state,r.legacyId));
  if(future&&practice)return step('scouting2_practice','Train Exploration','Repeat a mapped route to earn Exploration XP. The free guide can train even before companions unlock.','Choose a short practice mission to reach the next requirement.','Start practice','scouting-practice',practice.id);
  if(ownedCompanionCount>0&&!seen.has('scouting2_owned'))return step('scouting2_owned','Send your own companions','Idle companions can scout faster and later take longer surveys. Equipped or busy companions cannot be assigned.','Compare team bonuses before dispatch.','Choose companions','scouting-team');
  return;

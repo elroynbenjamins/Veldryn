@@ -52,3 +52,12 @@ const r=reserveScout({state,authority,receipts:[],routeId:frontier.id,kind:'rout
 assert.equal(scoutClaimPreview(r,state,r.endsAt).newDiscovery,'SCOUT_FROSTMARCH');
 assert.equal(scoutClaimPreview(r,state,r.endsAt).travelUnlocked,false);
 console.log('PASS legacy scouting cutover: travel and areas, independent characters, historical access, idempotent XP/route preservation, unreleased and boss guards');
+
+import {scoutingGuide} from '../src/core/exploration-scouting-tutorial-review';
+const oldGuide=scoutingGuide({state:retained,receipts:[],now,ownedCompanionCount:0,returningPlayer:true,acknowledged:['scouting2_returning']});
+assert.equal(oldGuide?.id,'scouting2_practice');
+assert.ok(oldGuide?.routeId);
+const guideRoute=SCOUT_ROUTES.find(x=>x.id===oldGuide?.routeId)!;
+assert.equal(scoutingAvailability(retained,guideRoute,'practice'),'available');
+const veteranNext=scoutingGuide({state:{...retained,explorationLevel:12},receipts:[],now,ownedCompanionCount:0,returningPlayer:true,acknowledged:['scouting2_returning']});
+assert.ok(veteranNext?.routeId&&!retained.retainedPrerequisiteRouteIds?.includes(veteranNext.routeId.replace('scout2:','')));

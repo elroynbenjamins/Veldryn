@@ -43,7 +43,8 @@ export function scoutingAvailability(state:ScoutState,route:ScoutRoute,kind:Scou
  if(state.explorationLevel<route.requiredExplorationLevel)return 'exploration_level';
  const known=state.discoveredRouteIds.includes(route.legacyId);
  if(kind==='route'&&known)return 'already_discovered';
- if(kind!=='route'&&!known)return 'discover_first';
+ if(kind==='practice'&&!scoutingPrerequisiteMet(state,route.legacyId))return 'discover_first';
+ if(kind==='survey'&&!known)return 'discover_first';
  if(!known&&route.prerequisite&&!scoutingPrerequisiteMet(state,route.prerequisite))return 'prerequisite';
  // Frontier route discovery may be performed remotely once the route chain opens.
  // Independent gathering/crafting access and combat story gates are separate policy.

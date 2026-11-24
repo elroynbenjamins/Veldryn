@@ -275,6 +275,15 @@ function make(classId:ClassIdV2,specIndex:0|1,
  assert.equal(JSON.stringify(qa.source.items),original);
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar('gem:stat_might:g5'),policy),/unreconciled_stat_gem/);
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar('gem:stat_vitality:g5'),{...policy,maxFinalHp:1}),/combined_stat_cap/);
+ // Every verification boundary must reject source/policy changes before projection.
+ for(const mutateAt of [1,2,3]){
+  const mutablePolicy={...policy};
+  let reads=0;
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,verifyPersisted:()=>{
+   if(++reads===mutateAt)mutablePolicy.maxFinalHp+=1;
+   return true;
+  }},sidecar('gem:stat_keen:g5'),mutablePolicy),/mutated_source/);
+ }
  let verifies=0;
  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,verifyPersisted:()=>++verifies<3},sidecar('gem:stat_keen:g5'),policy),/unverified_combined_snapshot/);
 }

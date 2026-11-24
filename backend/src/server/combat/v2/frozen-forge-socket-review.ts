@@ -25,22 +25,37 @@ export function reviewFrozenForgeSocketsV2(
 ){
  if(!policy||!policy.version||!finite(policy.maxFinalHp)||policy.maxFinalHp<=0||
    !finite(policy.maxFinalDefense))fail('invalid_policy');
- const compiled=compileRealFrozenForgeActorV2(actor,build,source);
+ // Pin the whole review request across all three independent callbacks.
+ // Do not include the verifier function itself in the canonical digest.
+ const snapshot=()=>{const {verifyPersisted: _verify,...data}=source;
+  return enemyV2SnapshotDigest({actor,build,source:data,sidecar,policy});};
+ const original=snapshot();
+ const verify=source.verifyPersisted;
+ if(typeof verify!=='function')fail('invalid_verifier');
+ const guardedSource={...source,verifyPersisted:(digest:string,revision:number)=>{
+  if(snapshot()!==original||source.verifyPersisted!==verify)fail('mutated_source');
+  const accepted=verify.call(source,digest,revision)===true;
+  if(snapshot()!==original||source.verifyPersisted!==verify)fail('mutated_source');
+  return accepted;
+ }};
+ const compiled=compileRealFrozenForgeActorV2(actor,build,guardedSource);
  const ids=[...compiled.evidence.equippedInstanceIds].sort();
- const gems=reviewPermanentGemSourcesV2({...source,sidecar,equippedInstanceIds:ids});
+ const gems=reviewPermanentGemSourcesV2({...guardedSource,sidecar,equippedInstanceIds:ids});
  // Both independent verifiers read the same source object/revision. Bind the
  // two complete digests and the policy into one additional readback proof.
  const digest=enemyV2SnapshotDigest({source:'QA_FORGE_SOCKET_COMBINED_V1',
   accountId:source.accountId,characterId:source.characterId,actorId:actor.id,
   revision:source.ledgerRevision,worn:ids,forge:compiled.evidence.receiptDigest,
   gems:gems.receiptDigest,policy});
- if(source.verifyPersisted(digest,source.ledgerRevision)!==true)fail('unverified_combined_snapshot');
+ if(guardedSource.verifyPersisted(digest,source.ledgerRevision)!==true)fail('unverified_combined_snapshot');
  const supported=new Set(['maxHp:percent','armor:percent','critRate:percentage_point','accuracy:percentage_point']);
  const unsupported=gems.statSources.filter(s=>!supported.has(s.stat+':'+s.unit));
  if(unsupported.length)fail('unreconciled_stat_gem');
  const base=compiled.evidence.stages.afterFrozenBase;
  const prior=compiled.actor.stats;
- const raw=(id:string)=>compiled.evidence.affixSources.filter(s=>s.id===id).reduce((n,s)=>n+s.value,0);
+ const rawTotals=new Map<string,number>();
+ for(const row of compiled.evidence.affixSources)rawTotals.set(row.id,(rawTotals.get(row.id)??0)+row.value);
+ const raw=(id:string)=>rawTotals.get(id)??0;
  const g=(key:string)=>gems.totals[key]??0;
  const stats:CombatStats={...prior};
  // Reconstruct affected stats from the pre-affix base and summed RAW rolls,

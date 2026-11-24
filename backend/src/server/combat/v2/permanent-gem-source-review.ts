@@ -41,21 +41,23 @@ export function reviewPermanentGemSourcesV2(source:PermanentGemReviewSourceV2){
  const worn=readEquipmentV2VirtualCustody(source.items,source.reservations,source.custodyReceipts)
   .filter(x=>x.location==='equipped'&&x.holderCharacterId===source.characterId)
   .map(x=>x.instanceId).sort();
- if(worn.length!==source.equippedInstanceIds.length||
-   worn.some((x,i)=>x!==[...source.equippedInstanceIds].sort()[i]))
+ const expectedWorn=[...source.equippedInstanceIds].sort();
+ if(worn.length!==expectedWorn.length||worn.some((x,i)=>x!==expectedWorn[i]))
   fail('worn_copy_set_mismatch');
- const digest=enemyV2SnapshotDigest({accountId:source.accountId,characterId:source.characterId,
+ const snapshotDigest=()=>enemyV2SnapshotDigest({accountId:source.accountId,characterId:source.characterId,
   ledgerRevision:source.ledgerRevision,items:source.items,jobs:source.jobs,
   awards:source.awards,claims:source.claims,reservations:source.reservations,
-  custodyReceipts:source.custodyReceipts,sidecar:source.sidecar,equippedInstanceIds:worn});
- if(source.verifyPersisted(digest,source.ledgerRevision)!==true)
+  custodyReceipts:source.custodyReceipts,sidecar:source.sidecar,equippedInstanceIds:[...source.equippedInstanceIds].sort()});
+ const digest=snapshotDigest();
+ if(source.verifyPersisted(digest,source.ledgerRevision)!==true||snapshotDigest()!==digest)
   fail('unverified_persisted_snapshot');
  const statSources:{instanceId:string;gemId:string;stat:GemDefinition['stat'];
   unit:GemDefinition['unit'];grade:GemGrade;rollPercent:number;fraction:number}[]=[];
  const effectSources:{instanceId:string;gemId:string;familyId:string;grade:GemGrade;
   rollPercent:number;runtimeEnabled:false}[]=[];
+ const slots=new Map(source.sidecar.slots.map(row=>[row.instanceId,row]));
  for(const instanceId of worn){
-  const row=source.sidecar.slots.find(x=>x.instanceId===instanceId);
+  const row=slots.get(instanceId);
   if(!row)continue;
   for(const kind of ['stat','effect'] as const){
    const gem=row[kind];if(!gem)continue;

@@ -1,3 +1,4 @@
+import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase} from '../src/core/profile-cosmetic-motion-v2';
 import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -25,3 +26,27 @@ ok(kinds.get('draconic')?.has('ember'),'Draconic Dominion uses embers');
 ok(kinds.get('abyssal')?.has('firefly'),'Abyssal Majesty uses slow bioluminescent motes');
 ok(kinds.get('paradox')?.has('arcane')&&kinds.get('paradox')?.has('snowflake'),'Paradox Eternal mixes fractured arcane and crystalline motes');
 console.log('PASS: eight native cosmetic runtimes retain unique particles, placement and bounded motion');
+
+ // Real authored tracks and glow periods must have identical endpoints on the native clock.
+for(const row of PROFILE_COSMETIC_RUNTIME){
+ for(const t of row.tracks){
+  for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+   const a=sampleCosmeticTrack(t,0,w,h),b=sampleCosmeticTrack(t,1,w,h);
+   for(const key of ['x','y','width','height','opacity','rotation'] as const) equal(a[key],b[key],row.collection+' closes particle '+key);
+  }
+ }
+ for(const g of row.glows){
+  equal(cosmeticGlowOpacity(row.motionProfile,0,g.periodMs,g.phaseMs,g.peakOpacity),cosmeticGlowOpacity(row.motionProfile,1,g.periodMs,g.phaseMs,g.peakOpacity),row.collection+' closes glow');
+  equal(cosmeticGlowOpacity(row.motionProfile,0,g.periodMs,g.phaseMs,g.peakOpacity,true),cosmeticGlowOpacity(row.motionProfile,1,g.periodMs,g.phaseMs,g.peakOpacity,true),row.collection+' closes lantern glow');
+ }
+}
+for(const cycles of [.75,.9,1,1.25,1.4,3.75,5]){
+ let prior=0;
+ for(let i=1;i<=120;i++){
+  const p=periodicCosmeticPhase(i/120,cycles);
+  const delta=(p-prior+1)%1;
+  ok(delta>0&&delta<.1,'authored tempo remains forward and bounded');
+  prior=p;
+ }
+}
+console.log('PASS: particle and glow loop endpoints match across all collections and viewport sizes');

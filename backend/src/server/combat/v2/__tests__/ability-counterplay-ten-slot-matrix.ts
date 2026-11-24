@@ -8,7 +8,7 @@
 import {strict as assert} from 'node:assert';
 import type {CombatEvent,CombatStats,AbilityDefinition,CombatantDefinition,CombatInput} from '../../types';
 import {simulateCombat} from '../../engine';
-import {reviewCandidatePowerStagesV1,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
+import {reviewCandidatePowerStagesV1,reviewCandidatePowerExtensionsV2,QA_CANDIDATE_POWER_REFERENCE_V1} from '../candidate-power-review';
 import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
 import {reviewCompanionContributionV2} from '../companion-contribution-review';
 import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -194,6 +194,12 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       const stats={...owner.stats};
       for(const key of Object.keys(stats) as (keyof CombatStats)[])
        stats[key]+=projection.permanentStatDelta[key];
+      const effects=owner.combatV2?.equipmentEffects;
+      assert.ok(effects,'Compiled gear must expose its advanced effect channels');
+      const power=reviewCandidatePowerExtensionsV2(stages,role,candidateReference,
+       {accuracyPp:effects.accuracyPp,evasionPp:effects.evasionPp},stats);
+      assert.equal(power.base.partialScore+power.hitPointContribution+power.companionPassiveContribution,power.total);
+      assert.equal(power.activeAssistPriced,false);
       const passiveOnly=replay({...owner,stats});
       const fullActor={...owner,stats,abilities:[...owner.abilities,...projection.activeAssists]};
       const full=replay(fullActor);
@@ -202,6 +208,8 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       const passive=observeRoleCalibrationV2(passiveOnly,identity),combined=observeRoleCalibrationV2(full,identity);
       companionSensitivity.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,
        companionId,off:off.values,passive:passive.values,full:combined.values,
+       candidatePower:{base:power.base.partialScore,hitPointContribution:power.hitPointContribution,
+        companionPassiveContribution:power.companionPassiveContribution,total:power.total,cpApproved:false},
        offVictory:off.victory,passiveVictory:passive.victory,fullVictory:combined.victory,
        offDowned:off.downed,fullDowned:combined.downed,
        assistEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});

@@ -23,6 +23,7 @@ import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
+import {AscendantBlessingPicker} from './AscendantBlessingPicker';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
@@ -150,6 +151,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
       onPress={()=>equip(row)}>{artwork(row,Math.round(tileWidth*.72))}</WardrobeTile>)}
    </View>}
   </>:null}
+  {chip==='pet'?<AscendantBlessingPicker state={state} slot="pet" onChange={onChange}/>:chip==='scene'?<AscendantBlessingPicker state={state} slot="background" onChange={onChange}/>:null}
 
   <ProfileUnlockSheet row={sheet} reduceMotion={state.settings.reduceMotion||!active} tryingOn={!!sheet&&tryOn?.id===sheet.id&&tryOn?.kind===sheet.kind}
    artwork={sheet?artwork(sheet,70):null} onClose={()=>setSheet(null)}

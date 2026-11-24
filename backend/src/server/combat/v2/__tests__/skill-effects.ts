@@ -735,3 +735,42 @@ const cheapFinish=simulateCombat({...tacticInput,players:[finishingChip,tacticAc
  maxDurationMs:100});
 assert.ok(cheapFinish.events.some(e=>e.type==='damage'&&e.actorId===tacticActor.id&&e.abilityId===markId&&e.atMs===0),
  'nearly defeated nonboss uses nominal inexpensive hit instead of burst');
+
+// Party coordination: two support actors can share information about a
+// real pending cast without locking out emergency recovery.
+const coordinationSupport=(classId:'DAWNKEEPER'|'STONECALLER',name:string,id:string,power:number)=>{
+ const actor=launchPlayer(CLASS_NAMES_V2[classId],50);
+ const s=SKILL_IDENTITIES_V2.find(s=>s.classId===classId&&s.name===name)!;
+ const built=compileServerSkillBuildV2(true,{actor,verified:{classId,level:50,ownedInstanceIds:new Set()},
+  selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId===classId)!.id,equipment:{},
+    activeSkills:[{skillId:s.id,variantId:s.variants[0].id}],talentRanks:{},signaturePassiveIds:[],capstoneId:null},
+  ownedItemsById:{},setsById:{}});
+ return {...built,id,stats:{...built.stats,maxHp:1000,healingPower:power},basicAttackCoeff:0};
+};
+const pendingDawn=coordinationSupport('DAWNKEEPER','Dawn Mend','CO_DAWN',500);
+const instantStone=coordinationSupport('STONECALLER','River Stone','CO_STONE',100);
+const patientA=triageAlly('CO_A'),patientB=triageAlly('CO_B');
+const healCoordInput={seed:'party-heal-coordination',players:[pendingDawn,instantStone,patientA,patientB],enemies:[enemy],
+ maxDurationMs:500,tickMs:100,initialPlayerState:{
+ [pendingDawn.id]:triageCarry(1000),[instantStone.id]:triageCarry(1000),
+ [patientA.id]:triageCarry(200),[patientB.id]:triageCarry(250)}};
+const splitRecovery=simulateCombat(healCoordInput);
+assert.ok(splitRecovery.events.some(e=>e.type==='cast_start'&&e.actorId===pendingDawn.id&&e.targetId===patientA.id));
+assert.ok(splitRecovery.events.some(e=>e.type==='heal'&&e.actorId===instantStone.id&&e.targetId===patientB.id&&e.atMs===0),
+ 'second support prioritizes other critical patient with adequate pending healing');
+assert.ok(splitRecovery.events.some(e=>e.type==='heal'&&e.actorId===pendingDawn.id&&e.targetId===patientA.id&&e.atMs===500),
+ 'pending cast delivers to its selected patient');
+assert.deepEqual(splitRecovery,simulateCombat(healCoordInput));
+const loneCritical=simulateCombat({...healCoordInput,initialPlayerState:{...healCoordInput.initialPlayerState,
+ [patientB.id]:triageCarry(1000)}});
+assert.ok(loneCritical.events.some(e=>e.type==='heal'&&e.actorId===instantStone.id&&e.targetId===patientA.id&&e.atMs===0),
+ 'sole critical patient must never be denied an instant heal');
+const weakDawn={...pendingDawn,stats:{...pendingDawn.stats,healingPower:20}};
+assert.ok(simulateCombat({...healCoordInput,players:[weakDawn,instantStone,patientA,patientB]}).events.some(e=>
+ e.type==='heal'&&e.actorId===instantStone.id&&e.targetId===patientA.id&&e.atMs===0),
+ 'insufficient pending heal does not divert urgent recovery');
+const moderate=simulateCombat({...healCoordInput,initialPlayerState:{...healCoordInput.initialPlayerState,
+ [patientA.id]:triageCarry(400),[patientB.id]:triageCarry(1000)}});
+assert.ok(!moderate.events.some(e=>e.type==='heal'&&e.actorId===instantStone.id&&e.atMs===0),
+ 'adequately covered moderate patient may preserve instant cooldown');
+console.log('PASS: pending healing coverage, alternate critical patient and safe fallback');

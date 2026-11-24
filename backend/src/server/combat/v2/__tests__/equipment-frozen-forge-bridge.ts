@@ -1636,3 +1636,54 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
  writeFileSync(process.env.EQ2_V21_MULTISLOT_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_MULTISLOT_FIXED_DIFFICULTY',actualOwnedCandidateCopies:false,
   conditionalEffectsApplied:false,releaseApproved:false,rows}));
 }
+
+
+if(process.env.EQ2_V21_PARTY_PATH){
+ const rows:unknown[]=[];
+ const teams:readonly (readonly ClassIdV2[])[]=[
+  ['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'],
+  ['BASTION','HEXWEAVER','KNIFE_DANCER','STONECALLER'],
+  ['DREADGUARD','RAVAGER','HEXWEAVER','DAWNKEEPER'],
+ ];
+ const regions=[{id:'asterfall',tier:2,level:25},{id:'sunscar',tier:3,level:40},{id:'frostmarch',tier:4,level:60}] as const;
+ for(const region of regions)for(const [teamIndex,team] of teams.entries())for(const specIndex of [0,1] as const){
+  const sources=team.map(c=>makeV21Loadout(c,specIndex,region.tier,region.level));
+  const allIds=sources.flatMap(s=>s.ids);
+  assert.equal(new Set(allIds).size,allIds.length,'party must not share source copy');
+  const compiled=sources.map(s=>compileRealFrozenForgeActorV2(s.actor,s.build,s.source));
+  for(const band of ['accessible','pressure'] as const){
+   // Generic controlled party workload; NOT authored regional solo boss
+   // authority, since that authority explicitly permits only one actor.
+   const mult=region.tier-1;
+   const enemy:CombatantDefinition={...boss,id:'QA_V21_PARTY_PRESSURE_'+region.id,boss:true,level:region.level,
+    stats:{...boss.stats,maxHp:(band==='accessible'?50000:150000)*mult,attackPower:(band==='accessible'?220:440)*mult}};
+   const seed=['V21_PARTY',region.id,teamIndex,specIndex,band].join('_');
+   const raw:CombatInput={seed,players:sources.map(s=>s.actor),enemies:[enemy],maxDurationMs:120000};
+   const initial=simulateRealFrozenForgeCombatV2(raw,sources.map(s=>s.build),sources.map(s=>s.source),true);
+   const input:CombatInput={...raw,players:compiled.map(x=>x.actor),enemies:initial.combat.enemies.map(e=>e.definition)};
+   const before=simulateCombat(input);
+   assert.deepEqual(before,initial.combat,'party counterfactual must reproduce original source baseline');
+   const metrics=(r:typeof before)=>({victory:r.victory,reason:r.reason,durationMs:r.durationMs,
+    damage:r.players.reduce((n,p)=>n+p.damageDone,0),healing:r.players.reduce((n,p)=>n+p.healingDone,0),
+    damageTaken:r.players.reduce((n,p)=>n+p.damageTaken,0),surviving:r.players.filter(p=>p.alive).length,
+    enemyHp:r.enemies[0].hp,players:r.players.map(p=>({id:p.definition.id,role:p.definition.role,hp:p.hp,maxHp:p.definition.stats.maxHp,
+     damage:p.damageDone,healing:p.healingDone,damageTaken:p.damageTaken,interrupts:p.interrupts}))});
+   for(const role of ['tank','damage','support'] as const){
+    // Both damage members remain present; perturb only the first member of
+    // the named role so comparisons represent one hypothetical set bonus.
+    const selected=compiled.findIndex(p=>p.actor.role===role);
+    assert.ok(selected>=0);
+    const effect=v19PermanentEffects[region.id][role];
+    const after=simulateCombat({...input,players:compiled.map((x,i)=>i===selected?v19ApplyPermanentSensitivity(x.actor,effect):x.actor)});
+    assert.deepEqual(simulateCombat(input),before,'party counterfactual cannot mutate baseline');
+    rows.push({region:region.id,targetTier:region.tier,targetLevel:region.level,teamIndex,classes:team,specIndex,band,seed,role,
+     selectedClass:team[selected],channel:effect.channel,pct:effect.pct,
+     sourceCoverage:sources.map(s=>({equippedCopies:s.ids.length,missing:s.missing,downgraded:s.downgraded,tiers:s.tiers})),
+     baseline:metrics(before),candidate:metrics(after)});
+   }
+  }
+ }
+ assert.equal(rows.length,108);
+ writeFileSync(process.env.EQ2_V21_PARTY_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_PARTY_CONTROLLED_PRESSURE',
+  actualOwnedCandidateCopies:false,conditionalEffectsApplied:false,releaseApproved:false,rows}));
+}

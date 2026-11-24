@@ -18,7 +18,7 @@ function ReviewBody({theme,setTheme}:{theme:UiThemeId;setTheme:(id:UiThemeId)=>v
   return {...base,account:{...base.account,unlockedProfileBorderIds:borders,unlockedProfileEffectIds:effects}};
  },[mode]);
  const button=(id:string,label:string,selected:boolean,onPress:()=>void)=><Pressable key={id} accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={[s.button,{borderColor:selected?C.selectionLine:C.line,backgroundColor:selected?C.selection:C.panel}]}><Text style={{color:C.text,fontWeight:'800',fontSize:11}}>{label}</Text></Pressable>;
- return <SafeAreaView style={{flex:1,backgroundColor:C.bg}}><ScrollView contentContainerStyle={s.root}>
+ return <SafeAreaView style={{flex:1,backgroundColor:C.bg}}><ScrollView showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.root}>
   <Text accessibilityRole="header" style={{color:C.text,fontSize:20,fontWeight:'900'}}>COSMETICS STORE · QA</Text>
   <Text style={{color:C.muted,fontSize:11,lineHeight:17}}>Developer-only catalog review. No prices, checkout, Google Play products, grants or server writes.</Text>
   <Text style={{color:C.text,fontSize:12,fontWeight:'800'}}>Ownership fixture</Text>

@@ -1,0 +1,45 @@
+name: Equipment 2.0 private conditional boundaries
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/v2/equipment-private-hit-qa-v22.ts'
+      - 'backend/src/server/combat/v2/enemy-engine-authority.ts'
+      - 'backend/src/server/combat/types.ts'
+      - 'backend/src/server/combat/v2/__tests__/equipment-private-conditional-*.ts'
+      - 'backend/tsconfig.equipment-private-conditional-boundaries.json'
+      - 'tools/eq2-review/t1-t5/*v2[2-7]*'
+      - 'docs/2-0/eq2-set-trait-authoring-review-v17.json'
+      - 'docs/2-0/eq2-normalized-effects-review-v18.json'
+      - '.github/workflows/equipment-v2-private-conditional-boundaries.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adapter-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install frozen backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Strict compile actual private adapter and digest authority
+        run: pnpm --dir backend exec tsc -p tsconfig.equipment-private-conditional-boundaries.json
+      - name: Execute independent conditional boundaries before full Forge combat
+        run: node backend/dist-equipment-conditional-boundaries/server/combat/v2/__tests__/equipment-private-conditional-isolated.js
+      - name: Check all conditional source audits and synthetic report guards
+        if: ${{ !cancelled() }}
+        run: |
+          node --test tools/eq2-review/t1-t5/current-hit-review-v22.test.mjs tools/eq2-review/t1-t5/one-use-charge-review-v23.test.mjs tools/eq2-review/t1-t5/incoming-defense-review-v24.test.mjs tools/eq2-review/t1-t5/timed-stat-review-v25.test.mjs tools/eq2-review/t1-t5/independent-shield-review-v26.test.mjs
+      - name: Verify Edge private-import isolation tests (not generated bundle parity)
+        if: ${{ !cancelled() }}
+        run: node --test tools/tests/combat-v2-edge-isolation.test.mjs

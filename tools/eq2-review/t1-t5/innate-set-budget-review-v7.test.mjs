@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {capChannel} from './universal-affix-overlap-review-v4.mjs';
+import {capChannel,previewUniversalRoll} from './universal-affix-overlap-review-v4.mjs';
 const read=p=>JSON.parse(readFileSync(new URL('../../../docs/2-0/'+p,import.meta.url),'utf8'));
 const d=read('eq2-innate-and-set-budget-review-v7.json'),c=read('eq2-t1-t5-canonical-membership-reconciliation-v2.json'),a=read('eq2-universal-affix-overlap-review-v4.json');
 const items=new Map(c.entries.map(x=>[x.itemId,x])),sets=new Map(c.sets.map(x=>[x.setId,x])),channels=new Map(a.stats.map(x=>[x.channel,x]));
@@ -35,4 +35,26 @@ test('34 numerical source set records and 68 thresholds preserved without activa
  let n=0;
  for(const s of d.sets){assert.deepEqual(s.bonuses.map(b=>b.pieces),sets.get(s.setId).reconciliation.thresholds);assert.equal(s.effectsApproved,false);assert.equal(s.mayApply,false);n+=s.bonuses.length;}
  assert.equal(n,68);assert.equal(d.summary.setsStillOutsideThisNumericSourceAudit,61);
+});
+
+import {inspectInnateAndRandomLoadoutV2} from './innate-set-budget-review-v7.mjs';
+test('every premium candidate joins exact random and innate sources once',()=>{
+ for(const entry of d.entries){
+  const row=previewUniversalRoll(entry.itemId,()=>0);
+  const report=inspectInnateAndRandomLoadoutV2([row]);
+  assert.equal(report.sourceRows.length,entry.innates.length);
+  assert.equal(report.unresolved.length,entry.innates.filter(x=>!x.canonicalChannel).length);
+  assert.equal(report.complete,report.unresolved.length===0);
+  for(const channel of report.channels){
+   const expected=entry.innates.filter(x=>x.canonicalChannel===channel.channel).reduce((n,x)=>n+x.centipercent,0);
+   assert.equal(channel.innateCentipercent,expected);
+   assert.equal(channel.rawCentipercent,channel.randomCentipercent+expected);
+   assert.equal(channel.effectiveCentipercent,capChannel(channel.channel,channel.rawCentipercent));
+  }
+  assert.equal(report.mayApplyEffects,false);
+  assert.equal(report.cpApproved,false);
+  assert.throws(()=>inspectInnateAndRandomLoadoutV2([{...row,innateStats:entry.innates}]),/unapproved_innate_input/);
+ }
+ const row=previewUniversalRoll(d.entries[0].itemId,()=>0);
+ assert.throws(()=>inspectInnateAndRandomLoadoutV2([row,row]),/duplicate_slot_or_item/);
 });

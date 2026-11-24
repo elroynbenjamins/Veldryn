@@ -34,6 +34,11 @@ on:
       - 'apps/mobile/src/core/exploration-scouting-achievements-review.ts'
       - 'apps/mobile/src/i18n/exploration-scouting-review.ts'
       - 'apps/mobile/tests/exploration-scouting-cutover-localization-achievements-review.ts'
+      - 'backend/src/server/exploration/**'
+      - 'backend/tsconfig.exploration-scouting.json'
+      - 'backend/supabase/release-gates/exploration_scouting_2_release_check.sql'
+      - 'tools/verify-exploration-scouting-2-release-gate.mjs'
+      - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'
@@ -59,6 +64,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --dir ../../backend install --frozen-lockfile
       - run: pnpm exec tsc -p tsconfig.exploration-scouting-review.json --outDir .core-build
+      - run: pnpm --dir ../../backend exec tsc -p tsconfig.exploration-scouting.json
+      - run: node ../../backend/.scouting-review-build/server/exploration/__tests__/scouting-application.js
+      - run: node ../../tools/verify-exploration-scouting-2-release-gate.mjs
       - run: node .core-build/apps/mobile/tests/exploration-scouting-review.js
       - run: node .core-build/apps/mobile/tests/exploration-scouting-tutorial-review.js
 

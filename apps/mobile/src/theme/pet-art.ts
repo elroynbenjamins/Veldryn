@@ -1,4 +1,5 @@
 import type {ImageSourcePropType} from 'react-native';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
 import {masterPetSourceById} from './master-roster-assets';
 import {eventPetSourceById} from './event-collectible-assets-active';
 import {dungeonShopPetMediumArtSource,dungeonShopPetPortraitArtSource} from './dungeon-shop-pet-art';
@@ -15,6 +16,7 @@ const guildPetSourceById=new Map<string,ImageSourcePropType>([
  * for the separate annual event collection.
  */
 export function petArtSource(id:string):ImageSourcePropType|undefined{
+  if(id===CELESTIAL_IDS.pet)return getEnabledCelestialAssets()?.petRegular;
   return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
     ??guildPetSourceById.get(id)
@@ -83,6 +85,7 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
 const EVENT_PET_PORTRAIT_IDS=new Set(['EVT_PET_013','EVT_PET_014']);
 
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{
+ if(id===CELESTIAL_IDS.pet)return getEnabledCelestialAssets()?.petPortrait;
  return masterPetPortraitSourceById.get(id)
    ??(EVENT_PET_PORTRAIT_IDS.has(id)?eventPetSourceById.get(id):undefined)
    ??guildPetPortraitSourceById.get(id)

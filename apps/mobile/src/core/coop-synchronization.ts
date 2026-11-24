@@ -9,10 +9,17 @@ export interface CoopSynchronizationLinkView{
  classNames:[string,string];
  bonuses:CoopSynchronizationBonusView[];
 }
+export interface CoopSynchronizationCapView{
+ statKey:string;
+ label:string;
+ rawValue:string;
+ effectiveValue:string;
+}
 export interface CoopSynchronizationView{
  activeCount:number;
  scalePercent:number;
  links:CoopSynchronizationLinkView[];
+ cappedStats:CoopSynchronizationCapView[];
  partyWide:boolean;
  personalCpDelta:0;
  requiresProgression:false;
@@ -29,7 +36,8 @@ export function assertCoopSynchronizationPresentation(view:CoopSynchronizationVi
   view.personalCpDelta!==0||view.requiresProgression!==false||
   view.canGateEntry!==false||view.canFilterRecruitment!==false||
   view.visibleOnRecruitmentBoard!==false||view.canRankCandidates!==false||
-  !Array.isArray(view.links)||view.links.length!==view.activeCount)
+  !Array.isArray(view.links)||view.links.length!==view.activeCount||
+  !Array.isArray(view.cappedStats))
   throw new Error('invalid_coop_synchronization_view');
  return view;
 }

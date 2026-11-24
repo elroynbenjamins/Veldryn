@@ -8,9 +8,12 @@ import type {GuildPveEncounter} from '../core/guild-pve-encounters';
  * membership means no cached board, and mutations remain server-authoritative.
  */
 const bossReads=new ShortLivedReadCache<GuildPveEncounter[]>(25_000);
-export async function loadGuildPveBoard(force=false):Promise<GuildPveEncounter[]>{
+export async function loadGuildPveBoard(force=false,characterId?:string):Promise<GuildPveEncounter[]>{
  const membership=await myGuild();
  if(!membership){bossReads.clear();return [];}
- return bossReads.read(membership.account_id+':'+membership.guild_id,()=>guildPveBoard(),force);
+ return bossReads.read(membership.account_id+':'+membership.guild_id+':'+(characterId??'unknown'),()=>guildPveBoard(),force);
 }
 export function invalidateGuildPveBoard(){bossReads.clear();}
+
+/** One opportunistic warm read; entry still requires a fresh membership check. */
+export async function prefetchGuildPveBoard(characterId:string){await loadGuildPveBoard(false,characterId);}

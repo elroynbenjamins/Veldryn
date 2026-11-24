@@ -8,7 +8,7 @@ type Props={source:ImageSourcePropType;clock:Animated.Value;theme:PoseTheme;widt
 export function UltraLuxePetPoseSprite({source,clock,theme,width,height}:Props){
  const a=ULTRA_LUXE_POSE_ATLASES[theme],ratio=Math.min(width/a.frameWidth,height/a.frameHeight);
  const w=a.frameWidth*ratio,h=a.frameHeight*ratio;
- const phase=useMemo(()=>theme==='draconic'?Animated.modulo(Animated.multiply(clock,8),1):clock,[clock,theme]);
+ const phase=useMemo(()=>Animated.modulo(Animated.multiply(clock,ULTRA_LUXE_POSE_ATLASES[theme].cycles),1),[clock,theme]);
  const timeline=TIMELINES[theme];
  const x=phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).column*w),extrapolate:'clamp'});
  const y=phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).row*h),extrapolate:'clamp'});

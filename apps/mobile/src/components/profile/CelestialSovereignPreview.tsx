@@ -15,7 +15,7 @@ export type CelestialPreviewAssets={
  background:ImageSourcePropType;
  border:ImageSourcePropType;
  petShowcase:ImageSourcePropType;
- poseAtlas?:ImageSourcePropType;
+ smoothPoseAtlas?:ImageSourcePropType;
  orrery:ImageSourcePropType;
  star:ImageSourcePropType;
  corona:ImageSourcePropType;
@@ -62,6 +62,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const box=(b:{x:number;y:number;width:number;height:number})=>pos(b.x,b.y,b.width,b.height);
  const pulse=signatureEnergy(clock);
  const idle=petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial');
+ const matchingLift=clock.interpolate({inputRange:[0,1/12,1/6,1/4,1/3,5/12,.5,7/12,2/3,.75,5/6,11/12,1],outputRange:[0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0]});
  const orbit=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']});
  return <View style={styles.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
@@ -75,8 +76,8 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
     </Animated.View>
     <Animated.Image source={assets.corona} resizeMode="contain" style={[pos(130,26,80,48),{opacity:pulse}]}/>
     {petMode==='matching'?<>
-     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:idle.lift}]}]}>
-      {assets.poseAtlas?<Animated.View style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}><UltraLuxePetPoseSprite source={assets.poseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
+     <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:assets.smoothPoseAtlas?matchingLift:idle.lift}]}]}>
+      {assets.smoothPoseAtlas?<Animated.View style={box(CELESTIAL_PET_BOX.matching)}><UltraLuxePetPoseSprite source={assets.smoothPoseAtlas} clock={clock} theme="celestial" width={CELESTIAL_PET_BOX.matching.width*scale} height={CELESTIAL_PET_BOX.matching.height*scale}/></Animated.View>:<Animated.Image source={assets.petShowcase} resizeMode="contain" style={[box(CELESTIAL_PET_BOX.matching),{transform:[{rotate:idle.tilt},{scaleX:idle.scaleX},{scaleY:idle.scaleY}]}]}/>}
       <UltraLuxePetAura clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
       <Animated.Image source={assets.star} resizeMode="contain" style={[pos(258,80,16,16),{opacity:Animated.add(idle.glow,Animated.multiply(pulse,.35))}]}/>
      </Animated.View>

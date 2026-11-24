@@ -14,3 +14,14 @@ export function winterHearthUnlockedStock(state:Pick<GameState,'inventory'|'sett
 export function winterHearthMaxDonation(stock:number,weeklyRemaining:number,goalRemaining:number):number{
  return [stock,weeklyRemaining,goalRemaining].every(Number.isSafeInteger)?Math.max(0,Math.min(stock,weeklyRemaining,goalRemaining,2500)):0;
 }
+
+/** Quick choices are quantities, not a change to the server weekly caps. */
+export function winterHearthQuickDonation(track:WinterHearthTrack,choice:'preset'|'Half'|'Max',maximum:number):number{
+ if(!Number.isSafeInteger(maximum)||maximum<1)return 0;
+ const cap=Math.min(maximum,track==='logs'?2500:250);
+ return choice==='Max'?cap:choice==='Half'?Math.max(1,Math.floor(cap/2)):Math.min(cap,track==='logs'?250:50);
+}
+export function winterHearthValidQuantity(text:string,maximum:number):boolean{
+ const quantity=Number(text);
+ return /^[1-9][0-9]*$/.test(text)&&Number.isSafeInteger(quantity)&&Number.isSafeInteger(maximum)&&quantity<=maximum;
+}

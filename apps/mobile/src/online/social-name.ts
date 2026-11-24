@@ -20,6 +20,14 @@ export async function setAccountSocialName(name:string):Promise<AccountSocialNam
  if(error)throw error;
  return data as AccountSocialName;
 }
+/** Availability is advisory; the write RPC still wins if another player claims first. */
+export async function checkAccountSocialNameAvailability(name:string):Promise<boolean>{
+ const {data,error}=await client().rpc('account_social_name_availability_v1',{p_name:name.trim()});
+ if(error)throw error;
+ if(typeof data!=='boolean')throw new Error('SOCIAL_NAME_AVAILABILITY_UNAVAILABLE');
+ return data;
+}
+
 /** Mirrors the backend's 2–20 letter-only identity contract for immediate UI feedback.
  * The server remains authoritative for collision and moderation checks. */
 const VALID_SOCIAL_NAME=/^[A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+(?:[ '-][A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+)*$/u;

@@ -37,7 +37,7 @@ import {resolveVerifiedEquipmentBaseV2,
 import {applyVerifiedSetBonusesV2,
   type ApprovedSetPolicyV2,type ResolvedSetEffectV2} from './equipment-set-effects';
 import {assertApprovedEquipmentScalingV2,type ApprovedRarityLadderV2} from './equipment-scaling-policy';
-import {evaluatePowerCompositionV2,
+import {reviewPowerAttributionV2,
   type ApprovedPowerCompositionPolicyV2,type PowerCompositionDiagnosticV2} from './power-composition';
 import {
  reviewPartyV2RunBinding,partySyncScopeFromRunBindingV2,
@@ -127,6 +127,7 @@ export interface EquipmentEncounterEvidenceV2 {
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
  readonly composition?:PowerCompositionDiagnosticV2;
+ readonly powerAttribution?:ReturnType<typeof reviewPowerAttributionV2>;
 }
 /** Trusted server-only storage dependency. Callbacks and snapshots must never
  * be constructed from incoming client JSON or forwarded by a public route. */
@@ -206,16 +207,15 @@ function compileEquippedActor(
   afterAffixes:{...affixes.actor.stats},
  };
  const statContributions=finalizePersonalStatsV2(statStages,runtime.basePolicy,runtime.setsPolicy);
+ const powerAttribution=runtime.compositionPolicy?
+  reviewPowerAttributionV2(statStages,base.sources.length,runtime.compositionPolicy):undefined;
  return {
   actor:affixes.actor,
   evidence:{actorId:actor.id,classPolicyVersion:runtime.classBaselinePolicy.version,
     statStages,statContributions,
     baseSources:base.sources,
     setEffects:set.applied,affixSources:affixes.sources,
-    ...(runtime.compositionPolicy?{
-      composition:evaluatePowerCompositionV2(base.classLevelStats,affixes.actor.stats,
-        base.sources.length,runtime.compositionPolicy),
-    }:{}),},
+    ...(powerAttribution?{composition:powerAttribution.composition,powerAttribution}:{}),},
  };
 }
 /** One assembly path for fresh and persisted encounters. Array order of

@@ -1,3 +1,5 @@
+import {ultraLuxeVisualTier} from '../core/ultra-luxe-set-visuals';
+import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {verifiedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
 import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
@@ -23,7 +25,7 @@ import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
-import {PlayerBadgeShowcase} from './PlayerBadges';
+import {PlayerBadgeShowcase,useBadgeClock} from './PlayerBadges';
 import {ProfileGuildAffiliation} from './ProfileGuildAffiliation';
 import {CelestialSovereignPreview} from './profile/CelestialSovereignPreview';
 import {CELESTIAL_IDS,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
@@ -32,6 +34,10 @@ import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from 
 export function PublicProfileScene({profile,height=205,reduceMotion=false,showGuild=true,active=false}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean;showGuild?:boolean;active?:boolean}){
  const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const badgeNow=useBadgeClock(profile.playerBadges);
+ const displayedBadges=[...playerBadgeIds(profile.playerBadges,badgeNow),...profileBadgeIds(profile.playerBadges,badgeNow)];
+ const verifiedTitleId=verifiedUltraLuxeTitleColor(profile.title,profile.ultraLuxeTitleId)?profile.ultraLuxeTitleId:undefined;
+ const visualSelection={background:profile.backgroundId,border:profile.borderId,pet:profile.petId,verifiedTitleId,displayedBadges};
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const border=profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
@@ -71,7 +77,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  </View>;
  const celestial=height>=205&&celestialBackground&&celestialBorder?celestialAssets:undefined;
  if(draconic&&draconicBackground&&draconicBorder&&height>=205){
- return <DraconicDominionPreview assets={draconic.scene} equippedPetId={profile.petId} alternatePetSource={pet} petAccessibilityLabel={profile.petId===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
+ return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={profile.petId} alternatePetSource={pet} petAccessibilityLabel={profile.petId===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
@@ -82,7 +88,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} showcase/>:undefined}/>;
  }
  if(!celestial)return standard;
- return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
+ return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.celestialIdentity}>
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>

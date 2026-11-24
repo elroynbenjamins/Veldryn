@@ -46,7 +46,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  </>;
 }
 /** A cached identity stops being trustworthy at validUntilMs, so re-render exactly then. */
-function useBadgeClock(identity?:PlayerBadgeIdentity){
+export function useBadgeClock(identity?:PlayerBadgeIdentity){
  const [now,setNow]=useState(Date.now());
  useEffect(()=>{setNow(Date.now());if(!identity)return;const timer=setTimeout(()=>setNow(Date.now()),Math.max(0,Math.min(2147483647,identity.validUntilMs-Date.now()+1)));return()=>clearTimeout(timer);},[identity]);
  return Math.max(now,Date.now());

@@ -105,3 +105,13 @@ export function UltraLuxePetAura({clock,scale:k,theme,particle}:Common){
   })}
  </Decorative>;
 }
+
+/** Full five-piece visual reward. Extra crown motes only; never covers identity or guild. */
+export function UltraLuxeAscendantFlourish({clock,scale:k,theme,particle}:Common){
+ const energy=signatureEnergy(clock);
+ const spread=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,3*k,11*k,6*k,0]});
+ return <Decorative>
+  {[[136,13],[203,13],[30,181],[309,181]].map(([x,y],i)=><Animated.Image key={i} source={particle} resizeMode="contain" style={[pos(k,x,y,9,9),{opacity:energy,transform:[{translateX:Animated.multiply(spread,i%2?1:-1)},{translateY:Animated.multiply(spread,i<2?.35:-.35)}]}]}/>)}
+  <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,133,0,74,32),{tintColor:light(theme),opacity:Animated.multiply(energy,.7)}]}/>
+ </Decorative>;
+}

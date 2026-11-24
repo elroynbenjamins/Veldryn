@@ -1,6 +1,6 @@
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {CELESTIAL_STAGE,CELESTIAL_PET_BOX,CELESTIAL_IDENTITY_BOX,celestialPetMode,celestialStageSupported} from '../../core/celestial-showcase-layout';
@@ -30,10 +30,11 @@ type Props={
  identity:ReactNode;
  guild?:ReactNode;
  fallback:ReactNode;
+ fullSet?:boolean;
  active?:boolean;
  reduceMotion?:boolean;
 };
-export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,guild,fallback,active=false,reduceMotion=false}:Props){
+export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const clock=useRef(new Animated.Value(0)).current;
  const [width,setWidth]=useState(0);
  const [foreground,setForeground]=useState(AppState.currentState==='active');
@@ -92,6 +93,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
     <Image source={assets.border} resizeMode="stretch" style={styles.fillImage}/>
     <UltraLuxeRail clock={clock} scale={scale} theme="celestial" particle={assets.star}/>
+    {fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={scale} theme="celestial" particle={assets.star}/>:null}
    </View>
   </View>}
  </View>;

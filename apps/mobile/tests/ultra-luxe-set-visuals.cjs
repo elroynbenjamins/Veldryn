@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),ts=require('typescript');
+const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../src/core/ultra-luxe-set-visuals.ts'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const mod={exports:{}};new Function('exports','module',code)(mod.exports,mod);
+const {ultraLuxeVisualTier}=mod.exports;
+const set={background:'b',border:'f',pet:'p',title:'t',badge:'g'};
+const matching={background:'b',border:'f',pet:'p',verifiedTitleId:'t',displayedBadges:['g']};
+assert.equal(ultraLuxeVisualTier(set,matching),'ascendant');
+assert.equal(ultraLuxeVisualTier(set,{...matching,verifiedTitleId:undefined}),'awakened');
+assert.equal(ultraLuxeVisualTier(set,{...matching,displayedBadges:[]}),'awakened');
+assert.equal(ultraLuxeVisualTier(set,{...matching,pet:'other'}),'paired');
+assert.equal(ultraLuxeVisualTier(set,{...matching,border:'other'}),'individual');
+assert.equal(ultraLuxeVisualTier(set,{...matching,background:'other'}),'individual');
+console.log('Full-set visual tier, mixed pieces and verified identity gating passed.');

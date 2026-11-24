@@ -1,6 +1,6 @@
 import {UltraLuxePetPoseSprite} from './UltraLuxePetPoseSprite';
 import {ULTRA_LUXE_CYCLE_MS} from '../../core/ultra-luxe-motion';
-import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
+import {UltraLuxeEnvironment,UltraLuxeRail,UltraLuxePetAura,UltraLuxeAscendantFlourish,signatureEnergy,petIdleMotion} from './UltraLuxeMotion';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWindowDimensions,type ImageSourcePropType} from 'react-native';
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
@@ -9,7 +9,7 @@ export type DraconicSceneAssets={
  background:ImageSourcePropType;border:ImageSourcePropType;dragon:ImageSourcePropType;
  poseAtlas?:ImageSourcePropType;flames:ImageSourcePropType;ember:ImageSourcePropType;fallbackGlow:ImageSourcePropType;
 };
-type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;active?:boolean;reduceMotion?:boolean};
+type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;fullSet?:boolean;active?:boolean;reduceMotion?:boolean};
 
 function useEmberClock(active:boolean,reduceMotion:boolean){
  const clock=useRef(new Animated.Value(0)).current;
@@ -29,7 +29,7 @@ function useEmberClock(active:boolean,reduceMotion:boolean){
  },[active,reduceMotion,systemReduced,foreground,clock]);
  return clock;
 }
-export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,active=false,reduceMotion=false}:Props){
+export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,fullSet=false,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();
  const supported=draconicStageSupported(width,fontScale),clock=useEmberClock(active&&supported,reduceMotion);
  const k=width/S.width;
@@ -64,6 +64,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
    <UltraLuxeRail clock={clock} scale={k} theme="draconic" particle={assets.ember}/>
+    {fullSet?<UltraLuxeAscendantFlourish clock={clock} scale={k} theme="draconic" particle={assets.ember}/>:null}
   </View>
  </View>}
  </View>;

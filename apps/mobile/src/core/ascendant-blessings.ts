@@ -1,3 +1,4 @@
+import {ASCENDANT_BLESSING_PARITY_APPROVED,ASCENDANT_PROGRESSION_BLESSINGS_RELEASED} from './release-flags';
 /** Ascendant progression blessings are intentionally separate from legacy collectible bonuses.
  * The paid visual collection must not silently inherit ownedBps/activeBps or stack by ownership.
  * Authoritative ownership and free-equivalent parity are required before activation.
@@ -9,7 +10,7 @@ export const ASCENDANT_BLESSING_CHOICES:readonly AscendantBlessing[]=['gathering
 export const ASCENDANT_PET_BLESSING_BPS=500 as const;
 export const ASCENDANT_BACKGROUND_BLESSING_BPS=300 as const;
 /** Hard launch gate. Do not enable until gameplay-earned equivalent bonuses and settlement order are approved. */
-export const ASCENDANT_PROGRESSION_BLESSINGS_ENABLED=false as const;
+export const ASCENDANT_PROGRESSION_BLESSINGS_ENABLED=ASCENDANT_PROGRESSION_BLESSINGS_RELEASED&&ASCENDANT_BLESSING_PARITY_APPROVED;
 
 export interface AscendantBlessingSelection{
  blessing?:AscendantBlessing|null;

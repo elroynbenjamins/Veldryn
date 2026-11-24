@@ -4,6 +4,7 @@ on:
     paths:
       - 'backend/supabase/review/material-retirement-atomic-pg17.sql'
       - 'apps/mobile/tests/material-purpose-audit.ts'
+      - 'tools/preview-echo-bat-wing-source-closure.mjs'
       - 'tools/material-retirement-review.mjs'
       - 'tools/audit-material-retirement-references.mjs'
       - '.github/workflows/material-retirement-review.yml'
@@ -20,6 +21,8 @@ jobs:
           node-version: 22
       - name: Validate read-only compensation fixture
         run: node tools/material-retirement-review.mjs
+      - name: Preview exact drop closure without editing sources
+        run: node tools/preview-echo-bat-wing-source-closure.mjs
       - name: Enumerate full checkout candidate references
         run: node tools/audit-material-retirement-references.mjs
       - uses: pnpm/action-setup@v4

@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,ImageBackground,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,AppState,ImageBackground,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -41,7 +41,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false};},[]);
  useEffect(()=>{let alive=true;setPendingReady(false);void readPendingWinterHearthDonation(accountId).then(row=>{if(alive){setPending(row);setPendingReady(true)}}).catch(()=>{if(alive)setFeedback('Saved donation could not be read. Donations are paused.');});return()=>{alive=false};},[accountId]);
  const generation=useRef(0),[now,setNow]=useState(Date.now());
- useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(id);},[]);
+ useEffect(()=>{const tick=()=>{if(AppState.currentState==='active')setNow(Date.now())};const id=setInterval(tick,30_000);const sub=AppState.addEventListener('change',tick);return()=>{clearInterval(id);sub.remove()};},[]);
  const remainingHours=Math.max(0,Math.ceil((endsAtMs-now)/3600000));
  const remainingLabel=remainingHours>=24?Math.floor(remainingHours/24)+'d '+remainingHours%24+'h':remainingHours+'h';
  const reload=useCallback(async()=>{
@@ -50,7 +50,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
   catch{if(generation.current===key)setError('Unable to refresh guild event progress.');}
   finally{if(generation.current===key)setLoading(false);}
  },[]);
- useEffect(()=>{void reload();return()=>{generation.current++;};},[reload,scope]);
+ useEffect(()=>{setSnapshot(null);void reload();const sub=AppState.addEventListener('change',status=>{if(status==='active')void reload()});return()=>{generation.current++;sub.remove();};},[reload,scope]);
  const fmt=(n:number)=>n.toLocaleString(language);
  const logs=snapshot?.logs??0,lights=snapshot?.lights??0;
  const stage=snapshot?.milestonePercent??0;
@@ -60,7 +60,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  const next=stages.find(row=>row.percent>stage);
  const available=(id:string)=>winterHearthUnlockedStock(state,id);
  const maxFor=(id:string)=>{const track=winterHearthDonationTrack(id);return track?winterHearthMaxDonation(available(id),track==='logs'?(snapshot?.memberLogsRemaining??0):(snapshot?.memberLightsRemaining??0),track==='logs'?25000-logs:2500-lights):0;};
- const disabled=busy||gameplayBusy||!pendingReady||!!pending||inventoryStale||!snapshot?.active||!snapshot.weekStartUtc||now>=endsAtMs||!state.character;
+ const disabled=loading||!!error||busy||gameplayBusy||!pendingReady||!!pending||inventoryStale||!snapshot?.active||!snapshot.weekStartUtc||now>=endsAtMs||!state.character;
  const max=maxFor(selected),amount=Number(quantity),valid=/^[1-9][0-9]*$/.test(quantity)&&Number.isSafeInteger(amount)&&amount<=max;
  const itemName=(id:string)=>localizedItemName(language,id);
  const openDonation=(track:WinterHearthTrack)=>{if(disabled)return;const first=WINTER_HEARTH_DONATION_IDS.find(id=>winterHearthDonationTrack(id)===track&&maxFor(id)>0)??'';setSelected(first);setQuantity('1');setDonationTrack(track);setFeedback('');};
@@ -74,7 +74,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
    if(mounted.current){setPending(null);setDonationTrack(null);setInventoryStale(true);setFeedback(receipt.alreadyProcessed?'Saved donation confirmed.':('Donated '+fmt(receipt.quantity)+' '+itemName(receipt.itemId)+(receipt.newMilestones.length?' · '+receipt.newMilestones.join('%, ')+'% milestone reached!':'')));}
    await Promise.all([refreshInventory(),reload()]);
   }catch(reason){
-   if(mounted.current){setFeedback(reason instanceof Error?reason.message:'Donation confirmation unavailable.');try{setPending(await readPendingWinterHearthDonation(accountId));setPendingReady(true);}catch{setPendingReady(false);}setDonationTrack(null);setInventoryStale(true);}
+   if(mounted.current){setFeedback(reason instanceof Error?reason.message:'Donation confirmation unavailable.');try{const saved=await readPendingWinterHearthDonation(accountId);if(mounted.current){setPending(saved);setPendingReady(true);}}catch{if(mounted.current)setPendingReady(false);}setDonationTrack(null);setInventoryStale(true);}
    await Promise.all([refreshInventory(),reload()]);
   }finally{writeLock.current=false;if(mounted.current)setBusy(false);}
  };
@@ -84,12 +84,14 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  return <View style={[s.screen,{backgroundColor:C.bg}]}>
   <View style={[s.header,{borderBottomColor:C.line,backgroundColor:C.panel}]}><GameButton compact tone="secondary" title={gl('← Guild Home')} onPress={onClose}/><Text style={[s.headerText,{color:C.accent}]}>{gl('Frostfall 2026')}</Text></View>
   <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-   <ImageBackground source={winterHearthMarketSource(sceneStage)} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text><Text style={s.heroCopy}>{snapshot?.active&&remainingHours>0?remainingLabel+' · '+gl('remaining'):snapshot?.enabled&&!snapshot.active?gl('Donations closed'):gl('December 3–26')}</Text></View></ImageBackground>
-   {loading?<Panel><ActivityIndicator color={C.accent}/><Text style={smallStyle}>{gl('Loading guild progress…')}</Text></Panel>:error?<Panel><Text style={smallStyle}>{gl(error)}</Text><GameButton compact title={gl('Retry')} onPress={reload}/></Panel>:!snapshot?.inGuild||!snapshot.enabled?<Panel><Text style={titleStyle}>{gl('Winter Hearth is not available.')}</Text><GameButton tone="secondary" compact title={gl('Refresh')} onPress={reload}/></Panel>:<>
-    <BoardTabs compact label={gl('Guild event sections')} items={[{id:'Market',label:gl('Market')},{id:'Rewards',label:gl('Rewards')}] as const} value={page} onChange={setPage}/>
+   <ImageBackground source={winterHearthMarketSource(sceneStage)} fadeDuration={0} resizeMode="cover" style={s.hero} imageStyle={s.heroImage}><View style={s.shade}/><View style={s.heroText}><Text style={s.kicker}>{gl('GUILD CHRISTMAS MARKET')}</Text><Text style={s.heroTitle}>{gl('Winter Hearth')}</Text><Text style={s.heroCopy}>{gl('Build a winter market together.')}</Text><Text style={s.heroCopy}>{snapshot?.active&&remainingHours>0?remainingLabel+' · '+gl('remaining'):snapshot?.enabled&&!snapshot.active?gl('Donations closed'):gl('December 3–26')}</Text></View></ImageBackground>
     {feedback?<Panel accentColor={C.lineStrong}><Text accessibilityRole="alert" style={smallStyle}>{gl(feedback)}</Text></Panel>:null}
-    {pending?<Panel accentColor={C.warning}><Text style={titleStyle}>{gl('Saved donation')}</Text><Text style={smallStyle}>{fmt(pending.quantity)} · {itemName(pending.itemId)}</Text><Text style={smallStyle}>{gl('Retry the original request before making a new donation. It will not be charged twice.')}</Text><GameButton title={gl('Retry saved donation')} disabled={busy||gameplayBusy} loading={busy} onPress={()=>send(pending)}/></Panel>:null}
+    {pending?<Panel accentColor={C.warning}><Text style={titleStyle}>{gl('Saved donation')}</Text><Text style={smallStyle}>{fmt(pending.quantity)} · {itemName(pending.itemId)}</Text><Text style={smallStyle}>{gl('Retry the original request before making a new donation. It will not be charged twice.')}</Text><GameButton title={gl('Retry saved donation')} disabled={busy||gameplayBusy||!pendingReady} loading={busy} onPress={()=>send(pending)}/></Panel>:null}
     {inventoryStale?<GameButton compact tone="secondary" title={gl('Refresh inventory')} disabled={busy||gameplayBusy} onPress={refreshInventory}/>:null}
+   {error?<Panel accentColor={C.warning}><Text accessibilityRole="alert" style={smallStyle}>{gl(error)}</Text><GameButton compact title={gl('Retry')} disabled={loading||busy} onPress={reload}/></Panel>:null}
+   {loading&&!snapshot?<Panel><ActivityIndicator color={C.accent}/><Text style={smallStyle}>{gl('Loading guild progress…')}</Text></Panel>:!snapshot?.inGuild||!snapshot.enabled?<Panel><Text style={titleStyle}>{gl('Winter Hearth is not available.')}</Text><GameButton tone="secondary" compact title={gl('Refresh')} onPress={reload}/></Panel>:<>
+    {loading?<View style={s.row}><ActivityIndicator size="small" color={C.accent}/><Text style={smallStyle}>{gl('Loading guild progress…')}</Text></View>:null}
+    <BoardTabs compact label={gl('Guild event sections')} items={[{id:'Market',label:gl('Market')},{id:'Rewards',label:gl('Rewards')}] as const} value={page} onChange={setPage}/>
     {page==='Market'?<>
      <Panel accentColor={C.lineStrong}><View style={s.row}><View style={s.flex}><Text style={smallStyle}>{gl('Market construction')}</Text><Text style={[titleStyle,{fontSize:19}]}>{gl(stageTitle(stage))}</Text></View><Text style={{fontSize:27,fontWeight:'900',color:C.accent,fontVariant:['tabular-nums']}}>{progress}%</Text></View>
      <View style={s.stageRow}>{[0,25,50,75,100].map(p=><View key={p} style={s.stageCell}><View style={[s.stageDot,{backgroundColor:p<=stage?C.accent:C.panel2,borderColor:p<=stage?C.accent:C.lineStrong}]}/><Text style={{fontSize:10,fontWeight:'700',color:p<=stage?C.accent:C.muted}}>{p}%</Text></View>)}</View>
@@ -105,7 +107,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
     </>:null}
     <Panel><Text style={titleStyle}>{gl('Market milestones')}</Text>{stages.map(row=><Pressable key={row.percent} accessibilityRole="button" accessibilityState={{expanded:expanded===row.percent}} onPress={()=>setExpanded(p=>p===row.percent?null:row.percent)} style={[s.milestone,{borderColor:stage>=row.percent?C.accent:next?.percent===row.percent?C.warning:C.line,backgroundColor:C.panel2}]}><View style={s.row}><Text style={{fontSize:15,fontWeight:'900',color:stage>=row.percent?C.accent:C.text}}>{row.percent}%</Text><View style={s.flex}><Text style={titleStyle}>{gl(row.name)}</Text><Text style={smallStyle}>{fmt(row.gold)} {gl('Guild Gold')} · {gl(row.buff)}</Text></View><Text style={{color:C.muted}}>{expanded===row.percent?'−':'+'}</Text></View>{expanded===row.percent?<View style={s.detail}><Text style={smallStyle}>{fmt(row.percent*250)} {gl('Logs')} · {fmt(row.percent*25)} {gl('Christmas Lights')}</Text>{row.cosmetics.map(name=><Text key={name} style={{color:C.accent,fontSize:12,fontWeight:'700'}}>{gl(name)}</Text>)}<Text style={smallStyle}>{gl(stage>=row.percent?'Milestone reached':'Not yet reached')}</Text></View>:null}</Pressable>)}</Panel>
     <Panel><Text style={titleStyle}>{gl('Permanent guild cosmetics')}</Text><Text style={smallStyle}>{gl('Exclusive guild-owned rewards. Ownership and equipment are verified separately by the server.')}</Text>{stages.flatMap(row=>row.cosmetics.map(name=><View key={name} style={[s.reward,{borderColor:C.line}]}><Text style={[titleStyle,{flex:1,fontSize:13}]}>{gl(name)}</Text><Text style={{color:stage>=row.percent?C.accent:C.muted,fontSize:12,fontWeight:'700'}}>{row.percent}%</Text></View>))}</Panel>
-    <GameButton compact tone="secondary" title={gl('Refresh progress')} onPress={reload}/>
+    <GameButton compact tone="secondary" title={gl('Refresh progress')} disabled={loading||busy} loading={loading} onPress={reload}/>
    </>}
   </ScrollView>
   <GameModalSurface visible={donationTrack!==null} onClose={()=>{if(!busy)setDonationTrack(null)}} dismissOnBackdrop={!busy} reduceMotion={state.settings.reduceMotion}>

@@ -57,7 +57,7 @@ const jsx=(type,props,key)=>({type,props,key});
 const flatten=value=>Array.isArray(value)?Object.assign({},...value.map(flatten)):value||{};
 function load(source,deps){
  const sandbox={exports:{},require:name=>{if(!(name in deps))throw Error('Missing mock: '+name);return deps[name];}};
- vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText,sandbox);
+ vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,sandbox);
  return sandbox.exports;
 }
 const mentions=load(read('core/chat-mentions.ts'),{});

@@ -1,0 +1,22 @@
+name: Material retirement review
+on:
+  pull_request:
+    paths:
+      - 'tools/material-retirement-review.mjs'
+      - 'tools/audit-material-retirement-references.mjs'
+      - '.github/workflows/material-retirement-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate read-only compensation fixture
+        run: node tools/material-retirement-review.mjs
+      - name: Enumerate full checkout candidate references
+        run: node tools/audit-material-retirement-references.mjs

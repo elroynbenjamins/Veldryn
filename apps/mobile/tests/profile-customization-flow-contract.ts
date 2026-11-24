@@ -40,6 +40,10 @@ ok(look.includes('onDirtyChange?:(dirty:boolean)=>void')&&look.includes('onPrevi
 const chips=fs.readFileSync('src/components/profile/ProfileWardrobeChips.tsx','utf8');
 ok(look.includes('profileWardrobe(state,WARDROBE_ASSETS)')&&screen.includes('profileWardrobe(state,WARDROBE_ASSETS)'),'The wardrobe model must drive both the chips and the grid');
 ok(chips.includes('row.owned')&&chips.includes('row.total'),'Category chips must carry their owned/total unlock counts');
+const wardrobe=fs.readFileSync('src/core/profile-wardrobe.ts','utf8');
+ok(wardrobe.includes("['icon','scene','frame','effect','pet','title']")&&wardrobe.includes("effect:'Effects'"),'Effects must be a first-class wardrobe family between Frames and Pets');
+ok(look.includes("chip==='effect'?live.effect")&&look.includes('cosmeticArtByEffect'),'Effect selection must use its own equipped slot and themed static artwork');
+ok(stage.includes('character.profileEffectId')&&stage.includes('<ProfileSceneEffect'),'The pinned stage must preview the selected showcase effect independently from the border');
 const pager=fs.readFileSync('src/components/OptionPager.tsx','utf8');
 ok(chips.includes('<OptionPager')&&chips.includes("{key:'badge'"),'Every cosmetic category, Badges included, must stay reachable from the pinned header');
 ok(pager.includes('onPanResponderRelease')&&pager.includes('accessibilityRole="adjustable"')&&pager.includes('s.dotTarget'),'A category must be reachable by arrow, by drag and by its own dot, and the control must announce itself as adjustable');
@@ -58,6 +62,7 @@ ok(stage.includes('ProfileFrameOverlay')&&!stage.includes('minCorner'),'The stag
 ok(stage.includes('!!frame&&s.identityFramed')&&stage.includes('!!frame&&s.surfaceFramed'),'A framed stage must tuck its art and identity inside the frame instead of being struck through by it');
 ok(showcase.includes('<PlayerBadges identity={badges.identity}')&&stage.includes('<PlayerBadges identity={badges.identity}'),'Earned badges must show beside the name on the profile, on the stage and on the showcase card');
 ok(preview.includes('playerBadges:badges.identity'),'The audience preview must hand its own badges to the public scene, which has no published identity to read offline');
+ok(preview.includes('effectId:character.profileEffectId??null'),'Audience preview must project the character-scoped effect choice');
 
 // The Character screen keeps its own inline editor, so its contract still holds.
 ok(appearance.includes("['All','Starter','Class','Combat','Event']")&&!appearance.includes("['All','Starter','Class','Companion','Combat','Event']"),'Profile icon filters must not expose the retired Companion tab');

@@ -22,10 +22,20 @@ equal(eventTitle.destination,'Events','event title routes to Events');
 ok(eventTitle.label.includes('Veilbreak'),'event title identifies its release event');
 ok(eventTitle.detail.includes('800'),'event title shows the exact Veil Reputation threshold');
 
+const effectSource=profileRewardSource(state,'effect','effect_gloamward_wisps');
+equal(effectSource.destination,'Store','profile effects route to the future Cosmetics surface');
+equal(effectSource.name,'Arcane Wisps','effect source keeps its approved player-facing name');
+ok(effectSource.detail.includes('Account-wide'),'effect source explains account-wide ownership');
+
 const guildBorder=profileRewardSource(state,'border','guild-border-silver');
 equal(guildBorder.destination,'Guild','guild border routes to Guild');
 equal(guildBorder.label,'Guild Token Shop','guild border identifies its shop source');
 equal(guildBorder.name,'Fellowship Silver','guild border keeps its player-facing display name');
+
+const effectUnlockState={...state,account:{...state.account,unlockedProfileEffectIds:['effect_gloamward_wisps']}};
+const effectUnlocks=newlyUnlockedProfileRewards(state,effectUnlockState);
+equal(effectUnlocks.length,1,'new account-wide profile effect ownership creates one unlock notice');
+ok(effectUnlocks[0].kind==='effect'&&effectUnlocks[0].name==='Arcane Wisps','effect unlock notice preserves its approved identity');
 
 const eventUnlockState={...state,account:{...state.account,
  unlockedTitleIds:['title_veil_watcher'],

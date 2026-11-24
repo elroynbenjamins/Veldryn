@@ -24,6 +24,8 @@
     "src/server/combat/v2/__tests__/equipment-forge-set-balance-proposal.ts",
     "src/server/combat/v2/__tests__/equipment-universal-forge-affix-preview.ts",
     "src/server/combat/v2/equipment-forge-set-boss-opportunity-review.ts",
+    "src/server/combat/v2/equipment-original-forge-boss-threeway-review.ts",
+    "src/server/equipment/equipment-crafting-v2-universal-mint-gate-review.ts",
     "src/server/combat/v2/equipment-online-readback-review.ts",
     "src/server/combat/v2/equipment-forge-set-worn-readiness.ts",
     "src/server/combat/v2/equipment-online-cas-recheck.ts"

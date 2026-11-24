@@ -294,8 +294,8 @@ export interface TrustedPersistedPartyExecutionV2{
 /**
  * Hidden persisted four-player execution rehearsal.
  * Uses the current co-op ready-check/loadout provenance plus exact-copy EQ2
- * receipts. Enemy/Boss 2.0 persisted party-kit authority is NOT implemented:
- * enemies still pass through the generic private Enemy bridge.
+ * receipts. When supplied, party-mode Enemy/Boss 2.0 receipts are verified
+ * against the same finalized run digest as traits and Synchronization.
  */
 export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  input:CombatInput,

@@ -116,6 +116,11 @@ ok(storeArt.includes('vip:PLAYER_BADGE_ARTWORK.vip')&&storeArt.includes('vip_plu
 ok(!badgeArt.includes('vipMark')&&!badgeArt.includes("const vip=id==="),'old text-only VIP badge fallback is removed');
 ok(badgeArt.includes('export function PlayerBadges({identity,size=22'),'worn badges remain legible at compact 22dp');
 ok(badgeArt.includes('export function PlayerBadgeShowcase')&&badgeArt.includes('profileBadgeIds(identity,useBadgeClock(identity))'),'the profile shelf is its own component over the profile projection');
+ok(badgeArt.includes("variant='framed'")&&badgeArt.includes("bareShowcase:{paddingVertical:2,paddingHorizontal:0}"),'bare Ultra Luxe shelf does not alter the ordinary framed default');
+for(const file of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx']){
+ const scene=read('src/'+file);
+ ok((scene.match(/variant="bare"/g)??[]).length===2,'both Ultra Luxe renderers use bare badge shelves in '+file);
+}
 for(const [path,marker] of [['components/PublicProfileScene.tsx','profile.playerBadges'],['components/profile/ProfileStage.tsx','badges.identity'],['components/profile/ProfileShowcasePanel.tsx','badges.identity']] as const)
  ok(read('src/'+path).includes('<PlayerBadgeShowcase identity={'+marker),'the profile badge shelf is shown on '+path);
 

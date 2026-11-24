@@ -77,7 +77,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <Text numberOfLines={1} style={s.draconicTitle}>{profile.title}</Text>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()} CP</Text>:null}
   </View>}
-  badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12}/>}
+  badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12} variant="bare"/>}
   guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} compact/>:undefined}/>;
  }
  if(!celestial)return standard;
@@ -87,7 +87,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
    <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>
    <Text numberOfLines={1} style={s.celestialTitle}>{profile.title}</Text>
    <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
-   <PlayerBadgeShowcase identity={profile.playerBadges} size={13}/>
+   <PlayerBadgeShowcase identity={profile.playerBadges} size={13} variant="bare"/>
   </View>}
   guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild}/>:undefined}/>;
 }

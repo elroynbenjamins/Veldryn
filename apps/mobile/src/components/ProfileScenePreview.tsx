@@ -73,7 +73,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
    <Text numberOfLines={1} style={s.draconicTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
    <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
-  </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12}/>}/>;
+  </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12} variant="bare"/>}/>;
  }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
@@ -82,7 +82,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
    <Text numberOfLines={1} style={s.celestialTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
    <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
-   <PlayerBadgeShowcase identity={badges.identity} size={13}/>
+   <PlayerBadgeShowcase identity={badges.identity} size={13} variant="bare"/>
   </View>}/>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

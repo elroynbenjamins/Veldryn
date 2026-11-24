@@ -59,11 +59,11 @@ export function PlayerBadges({identity,size=22,showLabels=false}:{identity?:Play
 }
 /** The profile: up to three badges of the player's choosing, beside the automatic staff mark.
  * A profile has room for a collection; a chat line does not. */
-export function PlayerBadgeShowcase({identity,size=17,style}:{identity?:PlayerBadgeIdentity;size?:number;style?:StyleProp<ViewStyle>}){
+export function PlayerBadgeShowcase({identity,size=17,style,variant='framed'}:{identity?:PlayerBadgeIdentity;size?:number;style?:StyleProp<ViewStyle>;variant?:'framed'|'bare'}){
  const C=useGameTheme();
  const ids=profileBadgeIds(identity,useBadgeClock(identity));
  if(!ids.length)return null;
- return <View style={[s.showcase,{borderColor:C.line,backgroundColor:C.dark?'rgba(3,4,5,.52)':'rgba(255,255,255,.58)'},style]}>
+ return <View style={[s.showcaseRow,variant==='framed'?[s.showcase,{borderColor:C.line,backgroundColor:C.dark?'rgba(3,4,5,.52)':'rgba(255,255,255,.58)'}]:s.bareShowcase,style]}>
   {ids.map(id=><PlayerBadge key={id} id={id} size={size} interactive/>)}
  </View>;
 }
@@ -78,5 +78,7 @@ const s=StyleSheet.create({
  infoTitle:{fontSize:13,fontWeight:'900'},
  infoDescription:{fontSize:11,lineHeight:15},
 
- showcase:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
+ showcaseRow:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5},
+ showcase:{paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
+ bareShowcase:{paddingVertical:2,paddingHorizontal:0},
 });

@@ -6,7 +6,10 @@
  * authorizes items, production persistence, rewards or market circulation.
  */
 import {strict as assert} from 'node:assert';
-import type {CombatEvent,CombatStats,AbilityDefinition} from '../../types';
+import type {CombatEvent,CombatStats,AbilityDefinition,CombatantDefinition,CombatInput} from '../../types';
+import {simulateCombat} from '../../engine';
+import {issueEnemyV2EngineAuthority} from '../enemy-engine-authority';
+import {reviewCompanionContributionV2} from '../companion-contribution-review';
 import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
 import type {ClassIdV2} from '../build-contract';
 import {selectReviewSkillLoadoutV2,
@@ -27,6 +30,8 @@ const evidenceByScenario=new Map<string,string>();
 let runs=0,gearTraitTriggers=0,nonbaselineLoadouts=0,confirmedActiveCasts=0;
 let bossOpportunityEvents=0;
 const traitSensitivity:unknown[]=[];
+const companionSensitivity:unknown[]=[];
+const companionIds=['UNIT_001','UNIT_002','UNIT_003','UNIT_005'] as const;
 const number=(n:number)=>Math.round(n*100)/100;
 function fraction(hp:number,maxHp:number){
  return number(Math.max(0,Math.min(100,(hp/maxHp)*100)));
@@ -149,6 +154,46 @@ for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){
       specializationId:spec.id,actorId};
      const off=observeRoleCalibrationV2(without.combat,identity);
      const on=observeRoleCalibrationV2(first.combat,identity);
+     // QA-only counterfactuals from the same fully compiled, sidecar-OFF
+     // character and verified authored enemy definitions. Never issue a
+     // companion effect authority to a public runtime.
+     const owner=without.combat.players[0].definition;
+     const snapshot=x.trustedKit.snapshot;
+     const preparedEnemies=without.combat.enemies.map(e=>e.definition);
+     const replay=(candidate:CombatantDefinition)=>{
+      const replayInput:CombatInput={...input,players:[candidate],enemies:preparedEnemies};
+      const authority=issueEnemyV2EngineAuthority({
+       source:'server-persisted-v2',version:2,ruleset:snapshot.ruleset,mode:'solo',
+       encounterId:snapshot.encounterId,revision:snapshot.revision,seed:snapshot.seed,
+       playerIds:[owner.id],enemyIds:snapshot.enemyIds,bossIds:snapshot.bossIds,
+      },replayInput,(_scope,digest)=>x.trustedKit.verifyPersisted(snapshot,digest));
+      return simulateCombat(replayInput,authority);
+     };
+     assert.deepEqual(replay(owner),without.combat,'Companion calibration baseline must replay exactly');
+     for(const companionId of companionIds){
+      const projection=reviewCompanionContributionV2(owner,{
+       accountId:x.signedPort.accountId,characterId:x.runtime.characterId,actorId:owner.id,
+       revision:1,selectedCompanionId:companionId,ownedCompanionIds:[companionId],busyCompanionIds:[],
+       progress:{companionId,level:10,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false},
+       verifyPersisted:(digest,rev)=>/^[a-f0-9]{64}$/.test(digest)&&rev===1,
+      });
+      assert.equal(projection.activeAssists.length,1);
+      const stats={...owner.stats};
+      for(const key of Object.keys(stats) as (keyof CombatStats)[])
+       stats[key]+=projection.permanentStatDelta[key];
+      const passiveOnly=replay({...owner,stats});
+      const fullActor={...owner,stats,abilities:[...owner.abilities,...projection.activeAssists]};
+      const full=replay(fullActor);
+      assert.equal(full.players.length,1,'An assist must not create another player slot');
+      assert.deepEqual(full.players[0].definition.stats,passiveOnly.players[0].definition.stats);
+      const passive=observeRoleCalibrationV2(passiveOnly,identity),combined=observeRoleCalibrationV2(full,identity);
+      companionSensitivity.push({scenarioId,classId,specializationId:spec.id,bossId:boss.id,
+       companionId,off:off.values,passive:passive.values,full:combined.values,
+       offVictory:off.victory,passiveVictory:passive.victory,fullVictory:combined.victory,
+       offDowned:off.downed,fullDowned:combined.downed,
+       assistEvents:full.events.filter(e=>e.abilityId===projection.activeAssists[0].id).length});
+     }
+
      traitSensitivity.push({scenarioId,classId,role:CLASS_ROLES_V2[classId],
       specializationId:spec.id,bossId:boss.id,off:off.values,on:on.values,
       offVictory:off.victory,onVictory:on.victory,
@@ -218,4 +263,12 @@ console.log('EXACT_COPY_TRAIT_AND_NEW_AFFIX_MARGINAL_REVIEW_NOT_CP '+JSON.string
  pairs:traitSensitivity.length,rows:traitSensitivity,
  scope:'SOLO_SAME_BUILD_SIDE_CAR_OFF_ON_SYNTHETIC_GEAR',
  independentPerTraitWeight:false,companionWeightApproved:false,cpApproved:false,releaseEnabled:false,
+}));
+
+assert.equal(companionSensitivity.length,108*4);
+console.log('COMPANION_PASSIVE_AND_ASSIST_MARGINAL_REVIEW_NOT_CP '+JSON.stringify({
+ triplets:companionSensitivity.length,rows:companionSensitivity,
+ scope:'SOLO_SAME_COMPILED_ACTOR_ENEMY_AND_SEED_SIDECAR_OFF',
+ testedCompanionIds:companionIds,companionLevel:10,
+ rosterComplete:false,partySupportCalibration:false,cpApproved:false,releaseEnabled:false,
 }));

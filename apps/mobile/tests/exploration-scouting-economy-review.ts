@@ -6,7 +6,7 @@ const state:ScoutState={accountId:'a',characterId:'c',explorationLevel:5,explora
 const owned={UNIT_001:{companionId:'UNIT_001',level:10,xp:0,ascensionTier:0 as const,bondLevel:1,bondXp:0,bondTraitUnlocked:false},UNIT_002:{companionId:'UNIT_002',level:10,xp:0,ascensionTier:0 as const,bondLevel:1,bondXp:0,bondTraitUnlocked:false}};
 const authority:ScoutAuthority={owned,legacyAssignments:[],equipped:new Set(),trialLocked:new Set(),unavailable:new Set()};
 const input={state,authority,receipts:[],missionId:'MISSION_SCOUT_2H',companionIds:['UNIT_001'],pensLevel:1,now:1000};
-const q=scoutingMissionQuote(input);assert.ok(q.ok);if(!q.ok)throw Error(q.reason);
+const q=scoutingMissionQuote(input);assert.ok(q.ok);
 assert.equal(q.stamina,50);assert.equal(q.healingHpRequired,500);
 const balances={gold:300,materials:{TRAVEL_RATION:40}};
 assert.ok(scoutingProvisionQuote(q,balances,[{itemId:'TRAVEL_RATION',quantity:34}]).ok);

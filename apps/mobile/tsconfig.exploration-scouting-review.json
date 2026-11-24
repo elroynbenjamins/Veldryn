@@ -7,7 +7,8 @@
     "tests/exploration-scouting-cutover-review.ts",
     "tests/exploration-scouting-economy-review.ts",
     "tests/exploration-scouting-board-review.ts",
-    "src/components/ExplorationScoutingBoardReview.tsx"
+    "src/components/ExplorationScoutingBoardReview.tsx",
+    "tests/exploration-account-settlement-review.ts"
   ],
   "exclude": []
 }

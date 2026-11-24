@@ -12,7 +12,7 @@ export function ExplorationScoutingBoardReview({board}:{board:ScoutingBoardRevie
  const matches=(id:string)=>region==='all'||region===id;
  const card={backgroundColor:C.panel,borderColor:C.line};
  return <View style={s.root}>
-  <View style={[s.card,card]}><Text style={[s.title,{color:C.text}]}>Exploration · Level {board.level}</Text><Text style={{color:C.muted}}>{board.xp.toLocaleString()} total XP · Gathering +{Math.round(board.gatheringBonus*100)}% · Scouting +{Math.round(board.speedBonus*100)}%</Text>
+  <View style={[s.card,card]}><Text style={[s.title,{color:C.text}]}>Exploration · Account Lv. {board.level}</Text><Text style={{color:C.muted}}>{board.xp.toLocaleString()} total XP · Gathering +{Math.round(board.gatheringBonus*100)}% · Scouting +{Math.round(board.speedBonus*100)}%</Text>
    <Text style={{color:C.text}}>Scouting Camp {board.camp.active}/{board.camp.capacity} · Training {board.camp.xpSlotBusy?'busy':'available'}</Text><Text style={{color:C.muted}}>Review only · dispatch and rewards disabled</Text></View>
   <View style={s.row}>{tabs.map(t=><Pressable key={t} accessibilityRole="tab" accessibilityState={{selected:t===tab}} onPress={()=>setTab(t)} style={[s.tab,{borderColor:C.line,backgroundColor:t===tab?C.selection:C.panel}]}><Text style={{color:C.text,fontWeight:'700'}}>{t}</Text></Pressable>)}</View>
   {tab!=='Reports'?<View style={s.row}>{regions.map(r=><Pressable key={r} accessibilityRole="button" accessibilityState={{selected:r===region}} onPress={()=>setRegion(r)} style={[s.tab,{borderColor:C.line,backgroundColor:r===region?C.selection:C.panel}]}><Text style={{color:C.text}}>{r==='all'?'All regions':r.replace(/_/g,' ')}</Text></Pressable>)}</View>:null}

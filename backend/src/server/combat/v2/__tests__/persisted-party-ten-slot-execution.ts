@@ -9,6 +9,8 @@ import {
  simulateUnifiedEquipmentCombatV2,simulateUnifiedEquipmentPersistedPartyCombatV2,
 } from '../unified-equipment-encounter';
 import {bosses,profiles,setup} from './ten-slot-boss-fixture';
+import {preparePartyEnemyKitsV2,type PersistedEnemyKitV2} from '../enemy-kit-composer';
+import {ENEMY_V2_RULESET} from '../../enemy-v2-prototype';
 
 const ids:ClassIdV2[]=['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'];
 const boss=bosses[2];
@@ -19,6 +21,16 @@ const runtime=fixtures.map(x=>x.runtime);
 const traitPorts=fixtures.map(x=>x.signedPort);
 const seed='QA_PERSISTED_10S_PARTY';
 const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],maxDurationMs:7000,tickMs:100};
+const enemyKitFor=(kitSeed:string)=>{
+ const candidate=preparePartyEnemyKitsV2(input.enemies,{
+  ruleset:ENEMY_V2_RULESET,serverSeed:kitSeed,
+  encounterId:'QA_PARTY_KIT_'+kitSeed,region:boss.region,
+  equipmentTier:boss.tier,eliteEnemyIds:[],
+ });
+ const snapshot:PersistedEnemyKitV2={...candidate,source:'server-persisted-v2',revision:1};
+ return {snapshot,verifyPersisted:(_row:PersistedEnemyKitV2,digest:string)=>
+  /^[0-9a-f]{64}$/.test(digest)};
+};
 
 const roster:ReadyRosterMember[]=ids.map((classId,i)=>({
  accountId:traitPorts[i].accountId,characterId:runtime[i].characterId,
@@ -36,7 +48,7 @@ const frozenRoster=ids.map((classId,i)=>({
 const party={
  runId:'RUN_10S',nodeId:'NODE_10S',encounterRevision:3,stateRevision:7,
  contentVersion:'content_v2',balanceVersion:'balance_v2',
- readyCheck,frozenRoster,traitPorts,
+ readyCheck,frozenRoster,traitPorts,enemyKit:enemyKitFor(seed),
  verifyPersisted:(binding:PartyV2RunBindingReview,
   _sources:readonly VerifiedV2EquipmentEffectSource[],digest:string)=>
    binding.runId==='RUN_10S'&&digest===binding.combatInputDigest,
@@ -54,6 +66,8 @@ assert.equal(first.synchronizationReview?.active.length,3);
 assert.equal(first.partyPersistenceReview?.binding.partyId,'PARTY_10S');
 assert.equal(first.partyPersistenceReview?.binding.rosterRevision,5);
 assert.equal(first.partyPersistenceReview?.canAuthorizeCombat,false);
+assert.ok(first.enemyMechanicLabels.some(label=>label.includes('Sunfall')),
+ 'party-mode persisted boss kit should supply the authored Sunfall mechanic');
 assert.ok(first.combat.events.some(e=>e.type==='equipment_trait_trigger'),
  'persisted four-player exact-copy traits should execute in the hidden wrapper');
 assert.deepEqual(first.combat.players.map(p=>p.definition.stats),
@@ -64,7 +78,7 @@ const carried=Object.fromEntries(players.map(p=>[p.id,{
  hp:Math.max(1,p.stats.maxHp-50),downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0,
 } satisfies PersistentActorState]));
 const carriedInput={...input,seed:'QA_PERSISTED_10S_PARTY_CARRIED',initialPlayerState:carried};
-const carriedParty={...party,verifyPersisted:(
+const carriedParty={...party,enemyKit:enemyKitFor(carriedInput.seed),verifyPersisted:(
  binding:PartyV2RunBindingReview,_sources:readonly VerifiedV2EquipmentEffectSource[],
  digest:string,
  )=>binding.runId==='RUN_10S'&&digest===binding.combatInputDigest};
@@ -83,6 +97,9 @@ assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
   ({...x,accountId:traitPorts[1].accountId}))},true),
  /party_source_binding_mismatch/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,enemyKit:fixtures[0].trustedKit},true),
+ /invalid_stored_kit/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
  input,builds,runtime,{...party,verifyPersisted:()=>false},true),
  /party_persisted_ledger_not_verified|unverified_scope/);
 assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
@@ -92,4 +109,4 @@ console.log(JSON.stringify({kind:'PERSISTED_PARTY_10S_TRAITS_SYNC_REHEARSAL_NOT_
  players:4,gearCopies:40,setThresholds:12,ordinaryAffixSources:36,
  synchronizationLinks:first.synchronizationReview?.active.length,
  traitEvents:first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length,
- persistentState:'BOUND_TO_RUN_DIGEST',authoredPartyEnemyKit:'NOT_IMPLEMENTED'}));
+ persistentState:'BOUND_TO_RUN_DIGEST',authoredPartyEnemyKit:'BOUND_AND_EXECUTED'}));

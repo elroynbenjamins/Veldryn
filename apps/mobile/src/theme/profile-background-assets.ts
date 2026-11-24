@@ -1,4 +1,6 @@
 import {ImageSourcePropType} from 'react-native';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
+const celestial=getEnabledCelestialAssets();
 
 export interface ProfileBackgroundPreview{
   id:string;
@@ -19,6 +21,7 @@ export const PROFILE_BACKGROUND_PREVIEWS:readonly ProfileBackgroundPreview[]=[
   {id:'dungeon:asterfall:rootbound-sanctuary',name:'Rootbound Sanctuary',source:require('../../assets/profile-backgrounds/dungeon-asterfall-rootbound-sanctuary.webp'),status:'export_prepared',unlockBinding:null},
   {id:'dungeon:sunscar:buried-observatory',name:'Buried Observatory',source:require('../../assets/profile-backgrounds/dungeon-sunscar-buried-observatory.webp'),status:'export_prepared',unlockBinding:null},
   {id:'dungeon:frostmarch:shiverlake-reflections',name:'Shiverlake Reflections',source:require('../../assets/profile-backgrounds/dungeon-frostmarch-shiverlake-reflections.webp'),status:'export_prepared',unlockBinding:null},
+  ...(celestial?[{id:CELESTIAL_IDS.background,name:'Astral Sanctum',source:celestial.scene.background,status:'export_prepared' as const,unlockBinding:null}]:[]),
 ] as const;
 
 export const profileBackgroundPreviewById=new Map(PROFILE_BACKGROUND_PREVIEWS.map(background=>[background.id,background]));

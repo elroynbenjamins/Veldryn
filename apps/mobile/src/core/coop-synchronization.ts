@@ -18,6 +18,8 @@ export interface CoopSynchronizationView{
  requiresProgression:false;
  canGateEntry:false;
  canFilterRecruitment:false;
+ visibleOnRecruitmentBoard:false;
+ canRankCandidates:false;
 }
 
 /** Presentation contract only. Never derive queue eligibility from this view. */
@@ -26,6 +28,7 @@ export function assertCoopSynchronizationPresentation(view:CoopSynchronizationVi
   !Number.isFinite(view.scalePercent)||view.scalePercent<0||view.scalePercent>100||
   view.personalCpDelta!==0||view.requiresProgression!==false||
   view.canGateEntry!==false||view.canFilterRecruitment!==false||
+  view.visibleOnRecruitmentBoard!==false||view.canRankCandidates!==false||
   !Array.isArray(view.links)||view.links.length!==view.activeCount)
   throw new Error('invalid_coop_synchronization_view');
  return view;

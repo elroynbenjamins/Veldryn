@@ -54,6 +54,11 @@ export interface PartyMemberSummary {
 }
 
 export interface PersistentPartySummary {
+  /** Stable short display name, optional for Parties created before this feature. */
+  shortName?:string|null;
+  /** Timestamp of first claim or most recent change, supplied by the server. */
+  nameChangedAt?:string|null;
+  nameNextChangeAt?:string|null;
   activityLevel?:PartyActivityLevel;
   language?:PartyLanguage;
   minimumLevel?:number;

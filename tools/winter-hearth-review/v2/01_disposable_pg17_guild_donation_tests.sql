@@ -165,6 +165,9 @@ BEGIN
     RAISE EXCEPTION 'WINTER_HEARTH_NOT_EXACTLY_%_MILESTONES',v_w;
   END IF;
 
+  IF (SELECT count(*) FROM winter_hearth_review.guild_cosmetic_unlocks WHERE guild_id='11111111-1111-4111-8111-111111111111')<>CASE v_w WHEN 1 THEN 0 WHEN 2 THEN 1 WHEN 3 THEN 2 ELSE 4 END THEN
+   RAISE EXCEPTION 'WRONG_COSMETIC_COUNT_AT_WEEK_%',v_w;
+  END IF;
   IF v_w=1 THEN
    -- Account A has already used their full weekly log allowance in guild A.
    -- The same account cannot immediately refill its cap in guild B.
@@ -212,7 +215,7 @@ BEGIN
  IF (SELECT treasury_gold FROM winter_hearth_review.guild_market
      WHERE guild_id='11111111-1111-4111-8111-111111111111')<>110000
  OR (SELECT COUNT(*) FROM winter_hearth_review.guild_cosmetic_unlocks
-     WHERE guild_id='11111111-1111-4111-8111-111111111111')<>1 THEN
+     WHERE guild_id='11111111-1111-4111-8111-111111111111')<>4 THEN
   RAISE EXCEPTION 'WINTER_HEARTH_LEFT_GUILD_SHOULD_NOT_REVOKE_REWARD';
  END IF;
 END $$;
@@ -243,4 +246,4 @@ SELECT winter_hearth_review.assert_reject('immutable_donation',
  WHERE guild_id='11111111-1111-4111-8111-111111111111'$q$,
  'WINTER_HEARTH_IMMUTABLE_REWARD_RECEIPT');
 
-SELECT 'PASS disposable PG17 Winter Hearth: 20 authentic donations, four UTC weeks, both-track goals, 110k Guild Gold once, guild-switched account caps, permanent guild color, invalid/cancelled/fake/no-member denied, no production writes' AS result;
+SELECT 'PASS disposable PG17 Winter Hearth: 20 authentic donations, four UTC weeks, both-track goals, 110k Guild Gold once, guild-switched account caps, four permanent guild cosmetics, invalid/cancelled/fake/no-member denied, no production writes' AS result;

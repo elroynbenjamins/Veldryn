@@ -29,3 +29,10 @@ Scope: Gloamward, Frostbound Chime, Amberglass Loop and Briarbound. No redesign 
 - Static effect thumbnails use the measured rectangular preview surface, cache sampled positions, remain clipped and create no animation graph.
 - Regression coverage includes missing measurements, exact viewport boundaries, partial visibility, overscroll, invalid input, and the full standard-set glow envelope at five sizes.
 - Native QA: scroll until the entire card is out of view and back repeatedly; verify no hidden animation, no unexpected visual flash on entry, and no clipping of labels or glow leakage. Inspect all four themes and compact thumbnails. Other scroll containers must explicitly opt into visibility wiring; this is not global viewport virtualization. Approved asset archive and native CPU/memory/frame-time measurements are still outstanding.
+
+## Final code polish: animation re-entry and layer isolation
+- Native animation re-entry uses a 180 ms opacity fade on the existing overlay container; the main loop and entry transition stop together. The phase intentionally restarts rather than preserving exact elapsed animation time. Reduced Motion bypasses the fade.
+- Stable memo boundaries isolate cosmetic rendering from unrelated profile updates. Imported sprite glow layers use only the union of clipped sprite pieces, skip empty pieces, and share one opacity per glow; procedural fallback retains its bounded small glow views.
+- Public, personal and collapsed/expanded wardrobe stages resolve backdrop aperture calibration against the displayed fallback artwork ID, not the cosmetic entitlement ID. Imported art continues to use its own ID.
+- Verify fast background/resume, repeated scroll entry/exit, Reduced Motion toggles, rotation/resizing, and Gloamward top edge on device. Compare frame time and memory against the earlier build; no measured performance improvement is asserted until profiling.
+- V3 approved archive was not available from the accessible project/library search; do not substitute or fabricate final artwork. Full CI and native screenshot/performance acceptance remain blocking merge approval.

@@ -3,7 +3,8 @@
   "include": [
     "tests/exploration-scouting-review.ts",
     "tests/exploration-scouting-tutorial-review.ts",
-    "tests/exploration-scouting-missions-review.ts"
+    "tests/exploration-scouting-missions-review.ts",
+    "tests/exploration-scouting-cutover-review.ts"
   ],
   "exclude": []
 }

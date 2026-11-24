@@ -25,7 +25,7 @@ export const SCOUT_ROUTES:readonly ScoutRoute[]=[...EXPLORATION_ROUTES.map(r=>({
   return {...r,id:'scout2:'+r.legacyId,zoneId:area.regionId,name:'Survey '+area.name,legacyCharacterLevel:area.minLevel,released:true};
  })
 ];
-export type ScoutState={accountId:string;characterId:string;explorationLevel:number;explorationXp:number;discoveredRouteIds:readonly string[];visitedZoneIds:readonly string[]};
+export type ScoutState={accountId:string;characterId:string;explorationLevel:number;explorationXp:number;discoveredRouteIds:readonly string[];visitedZoneIds:readonly string[];retainedPrerequisiteRouteIds?:readonly string[]};
 export type ScoutReceipt={accountId:string;characterId:string;requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];loanedGuide:boolean;startedAt:number;endsAt:number;xp:number;policyVersion:string;status:'active'|'claimed';discovery:boolean};
 export type ScoutAuthority={owned:Record<string,OwnedCompanionSnapshot>;legacyAssignments:CompanionAssignment[];equipped:ReadonlySet<string>;trialLocked:ReadonlySet<string>;unavailable:ReadonlySet<string>};
 const fail=(why:string):never=>{throw Error(why)};
@@ -33,16 +33,18 @@ const regionOrigin=(zone:string)=>zone==='SUNSCAR'?'REG_SUNSCAR':zone==='FROSTMA
 /** Historical progress is never reset. Discoveries are evidence, not grants to unreleased travel or combat. */
 export function scoutingMigrationPreview(state:ScoutState){
  return {explorationXp:state.explorationXp,explorationLevel:state.explorationLevel,
-  discoveredRouteIds:[...new Set(state.discoveredRouteIds)],visitedZoneIds:[...new Set(state.visitedZoneIds)],
+  discoveredRouteIds:[...new Set(state.discoveredRouteIds)],visitedZoneIds:[...new Set(state.visitedZoneIds)],retainedPrerequisiteRouteIds:[...new Set(state.retainedPrerequisiteRouteIds??[])],
   gatheringBonus:explorationGatheringSpeedBonus(state.explorationLevel),scoutingSpeed:explorationScoutingSpeedMultiplier(state.explorationLevel)};
 }
+/** Previously accessible routes may satisfy prerequisites without inventing completed discoveries. */
+export const scoutingPrerequisiteMet=(state:ScoutState,id:string)=>state.discoveredRouteIds.includes(id)||(state.retainedPrerequisiteRouteIds??[]).includes(id);
 export function scoutingAvailability(state:ScoutState,route:ScoutRoute,kind:ScoutKind){
  if(!route.released)return 'unreleased';
  if(state.explorationLevel<route.requiredExplorationLevel)return 'exploration_level';
  const known=state.discoveredRouteIds.includes(route.legacyId);
  if(kind==='route'&&known)return 'already_discovered';
  if(kind!=='route'&&!known)return 'discover_first';
- if(!known&&route.prerequisite&&!state.discoveredRouteIds.includes(route.prerequisite))return 'prerequisite';
+ if(!known&&route.prerequisite&&!scoutingPrerequisiteMet(state,route.prerequisite))return 'prerequisite';
  // Frontier route discovery may be performed remotely once the route chain opens.
  // Independent gathering/crafting access and combat story gates are separate policy.
  return 'available';

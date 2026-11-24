@@ -22,6 +22,10 @@ export type SyncStatV2=
  'armor_penetration_pct'|'haste_pct'|'evasion_rating_pct'|
  'damage_vs_shielded_pct'|'low_hp_damage_pct'|'interrupt_recovery_pct'|'penetration_pct';
 type Bonus=readonly [SyncStatV2,number]; // 100 bps = 1%; pp keys are absolute points.
+export type SyncValueKindV2='percent'|'percentage_points';
+export function partySynchronizationStatValueKindV2(stat:SyncStatV2):SyncValueKindV2{
+ return stat==='crit_chance_pp'?'percentage_points':'percent';
+}
 interface Pair {
  readonly id:string;readonly name:string;
  readonly classes:readonly [ClassIdV2,ClassIdV2];

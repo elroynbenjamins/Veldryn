@@ -1584,6 +1584,7 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
  const rows:unknown[]=[];
  const v22Rows:unknown[]=[];
  const v23Rows:unknown[]=[];
+ const v24Rows:unknown[]=[];
  const cache=new Map<string,ReturnType<typeof makeV21Loadout>>();
  const qa=(classId:ClassIdV2,specIndex:0|1,tier:1|2|3|4,level:number)=>{
   const key=[classId,specIndex,tier,level].join(':');
@@ -1666,6 +1667,26 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
          baseline:metrics(before),candidate:metrics(changed),perId,extraHpDamage:consumed.reduce((n,e)=>n+(e.amount??0),0)});
        }
       }
+      if(process.env.EQ2_V24_DEFENSE_PATH&&classId==='IRONWARDEN'&&profile.region!=='asterfall'){
+       const idsList:readonly (readonly Eq2PrivateHitIdV22[])[]=profile.region==='sunscar'?
+        [['eq2_dungeon_observatory_t4_helioguard:4']]:
+        [['eq2_combo_t5_stonewinter_frame:2'],['eq2_dungeon_shiverlake_t5_rimevanguard:4'],['eq2_combo_t5_stonewinter_frame:2','eq2_dungeon_shiverlake_t5_rimevanguard:4']];
+       for(const ids of idsList){
+        const token=issueEq2PrivateHitQaV22(baselineInput,compiled.actor.id,ids,d=>/^[0-9a-f]{64}$/.test(d));
+        const runCandidate=()=>simulateCombat(baselineInput,issueEnemyV2EngineAuthority(scope,baselineInput,
+         (_s,d)=>/^[0-9a-f]{64}$/.test(d)),undefined,undefined,token);
+        const changed=runCandidate();
+        assert.deepEqual(changed,runCandidate(),'V24 defensive state must reset on replay');
+        const earned=changed.events.filter(e=>e.type==='equipment_trait_trigger'&&e.detail==='private_qa_defense_earned');
+        const applied=changed.events.filter(e=>e.type==='equipment_trait_trigger'&&e.detail==='private_qa_incoming_reduction');
+        const perId=ids.map(id=>({id,earned:earned.filter(e=>e.abilityId==='V2_QA_DEFENSE_EARN:'+id).length,
+         applied:applied.filter(e=>e.abilityId==='V2_QA_DEFENSE:'+id).length}));
+        assert.ok(perId.every(x=>x.id==='eq2_dungeon_shiverlake_t5_rimevanguard:4'||x.earned>=x.applied));
+        assert.deepEqual(run(baselineInput),before,'V24 defense state cannot mutate original source');
+        v24Rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,ids,equippedCopies:loadout.ids.length,
+         baseline:metrics(before),candidate:metrics(changed),perId,preventedHpDamage:applied.reduce((n,e)=>n+(e.amount??0),0)});
+       }
+      }
       rows.push({bossId:profile.id,region:profile.region,classId,specIndex,strategy,band,seed,targetTier:profile.forgeTier,
        targetLevel:profile.level,equippedCopies:loadout.ids.length,missing:loadout.missing,tiers:loadout.tiers,downgraded:loadout.downgraded,
        channel:effect.channel,pct:effect.pct,baseline:metrics(before),candidate:metrics(after)});
@@ -1686,6 +1707,11 @@ if(process.env.EQ2_V21_MULTISLOT_PATH){
   assert.equal(v23Rows.length,96);
   writeFileSync(process.env.EQ2_V23_CHARGE_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_ONE_USE_CHARGE_COUNTERFACTUAL',
    actualOwnedCandidateCopies:false,releaseApproved:false,rows:v23Rows}));
+ }
+ if(process.env.EQ2_V24_DEFENSE_PATH){
+  assert.equal(v24Rows.length,96);
+  writeFileSync(process.env.EQ2_V24_DEFENSE_PATH,JSON.stringify({scope:'QA_ORIGINAL_FORGE_INCOMING_DEFENSE_COUNTERFACTUAL',
+   actualOwnedCandidateCopies:false,releaseApproved:false,rows:v24Rows}));
  }
 }
 
@@ -1807,4 +1833,37 @@ if(process.env.EQ2_V21_PARTY_PATH){
  const noLoss=runtime([follow]);const blocked=hit(1000);noLoss.beforeDirectHit(blocked);assert.deepEqual(noLoss.afterDirectHit(blocked,0),[]);
  assert.equal(noLoss.beforeDirectHit(hit(2000,'BASIC')).bonusPct,0);
  console.log('PASS: V23 one-use charge earning, expiry, same-tick exclusion, cooldown, target streak, missed-hit reset and duplicate receipt negatives');
+}
+
+// V24 defensive hit phase and strongest-only temporary reduction tests.
+{
+ const fixture=make('IRONWARDEN',0,'supported',4);
+ const compiled=compileRealFrozenForgeActorV2(fixture.actor,fixture.build,fixture.source);
+ const input:CombatInput={seed:'QA_V24_DEFENSE_BOUNDARY',players:[compiled.actor],enemies:[boss]};
+ const helio='eq2_dungeon_observatory_t4_helioguard:4' as const,stone='eq2_combo_t5_stonewinter_frame:2' as const,rime='eq2_dungeon_shiverlake_t5_rimevanguard:4' as const;
+ const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,compiled.actor.id,ids,()=>true))!;
+ const hit=(now:number)=>({now,actorId:boss.id,targetId:compiled.actor.id,abilityId:'BASIC',originalEnemyAbility:true,
+  direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:500,targetMaxHp:1000,shield:0,raw:100});
+ const r=runtime([helio,stone,rime]),start=hit(1000);
+ assert.deepEqual(r.afterIncomingHit(start,100),[]);
+ assert.equal(r.beforeIncomingHit(start).raw,100);assert.deepEqual(r.afterIncomingHit(start,70),[helio,stone,rime]);
+ assert.deepEqual(r.afterIncomingHit(start,70),[]);
+ assert.equal(r.beforeIncomingHit(hit(1000)).reductionPct,0);
+ for(const change of [{nontrue:false},{originalEnemyAbility:false},{abilityId:'V2_PROC'},{targetId:'OTHER'}])
+  assert.equal(r.beforeIncomingHit({...hit(2000),...change}).reductionPct,0);
+ assert.equal(r.beforeIncomingHit({...hit(2000),direct:false}).reductionPct,6);
+ const overlap=hit(2100);assert.equal(r.beforeIncomingHit(overlap).reductionPct,6);assert.equal(r.beforeIncomingHit(overlap).reductionPct,0);
+ assert.equal(r.beforeIncomingHit(hit(6000)).reductionPct,5);
+ assert.equal(r.beforeIncomingHit(hit(6100)).reductionPct,4);
+ assert.equal(r.beforeIncomingHit(hit(6200)).reductionPct,0);
+ const weak=runtime([helio]);const small=hit(1000);weak.beforeIncomingHit(small);assert.deepEqual(weak.afterIncomingHit(small,59),[]);
+ const exact=hit(2000);weak.beforeIncomingHit(exact);assert.deepEqual(weak.afterIncomingHit(exact,60),[helio]);
+ assert.equal(weak.beforeIncomingHit({...hit(2500),shield:100}).reductionPct,0);
+ assert.equal(weak.beforeIncomingHit({...hit(2600),direct:false}).reductionPct,0);
+ assert.equal(weak.beforeIncomingHit(hit(8000)).reductionPct,0);
+ const fatal=runtime([rime]),dead={...hit(1000),targetHp:70};
+ fatal.beforeIncomingHit(dead);assert.deepEqual(fatal.afterIncomingHit(dead,70),[]);
+ const periodic={...hit(2000),direct:false};fatal.beforeIncomingHit(periodic);assert.deepEqual(fatal.afterIncomingHit(periodic,100),[]);
+ assert.throws(()=>issueEq2PrivateHitQaV22(input,compiled.actor.id,['eq2_t5_avalanche:4'],()=>true),/fixture_scope/);
+ console.log('PASS: V24 actual HP thresholds, incoming pre/post receipts, strongest-only mitigation, one-use versus timed, expiry and unauthorized damage exclusions');
 }

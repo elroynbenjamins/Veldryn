@@ -26,6 +26,10 @@ assert.equal(roster.players[0].total_character_level,65);
 assert.equal(roster.players[1].total_character_level,null,'legacy response must not mislabel active character level as total');
 for(const bad of [0,-1,1.5,NaN,Infinity,'65'])assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'Name',level:25,total_character_level:bad}]}).players[0].total_character_level,null);
 assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'Name',level:25,total_character_level:25}]}).players[0].total_character_level,25);
+assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'Name',level:25,total_character_level:24}]}).players[0].total_character_level,null,'impossible account total stays unknown');
+assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'Name',level:Infinity,total_character_level:25}]}).players[0].level,1);
+assert.equal(parse({count:1,players:[{account_id:'',sender_name:'Name',level:1}]}).players.length,0);
+assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'Name',level:25,total_character_level:65},{account_id:'a',sender_name:'Duplicate',level:25,total_character_level:65}]}).players.length,1,'duplicate account rows cannot produce duplicate list keys');
 assert.equal(parse({count:1,players:[{account_id:'a',sender_name:'  ',level:2}]}).players.length,0);
 assert.throws(()=>parse({count:'2',players:[]}),/Invalid online player response/);
 assert.throws(()=>parse(null),/Invalid online player response/);
@@ -73,6 +77,9 @@ assert.match(accountMigration,/revoke all on function public\.online_player_rost
 assert.match(accountMigration,/grant execute on function public\.online_player_roster_v2\(\) to authenticated;/);
 assert.ok(!accountMigration.includes('create or replace function public.online_player_roster_v1()'));
 assert.ok(panel.includes("st('Total character level')")&&!panel.includes('classLabel(')&&!panel.includes('item.level'),'roster presents account total, not active class or level');
+assert.ok(panel.includes('numberOfLines={2} style={s.playerName}')&&panel.includes("flexWrap:'wrap'")&&panel.includes('style={s.playerLevel}'),'long names, translated labels and total values retain readable space');
+assert.ok(panel.includes("[name,levelLabel+': '+level,relationship].filter(Boolean).join(', ')")&&panel.includes("st(' (You)')"),'accessible identity includes self and relationship context');
+assert.ok(panel.includes('setSelected(null);setSearch(\'\');setFilter(\'all\')'),'clear viewer-specific selection on account switch');
 for(const file of ['src/i18n/social.ts','src/i18n/social-early-coverage.ts'])assert.ok(read(file).includes('"Total character level":'));
 
 console.log('PASS: 30-minute activity roster RPC, backward compatibility, UI labels, translations and presence cadence');

@@ -12,7 +12,7 @@ type Props={
  count:number|null;players:OnlinePlayer[];loading:boolean;error:string;
  onRefresh:()=>void;onClose:()=>void;reduceMotion?:boolean;
 };
-const classLabel=(id:string)=>id? id.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Adventurer';
+const totalLevelText=(level:number|null)=>level===null?'—':String(level);
 
 export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,onClose,reduceMotion=false}:Props){
  const st=useSocialText(),C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -59,9 +59,9 @@ export function ChatOnlinePlayersPanel({count,players,loading,error,onRefresh,on
     showsVerticalScrollIndicator={false}
     showsHorizontalScrollIndicator={false}
     contentContainerStyle={displayed.length===0?s.emptyList:s.list}
-    renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={item.sender_name+', level '+item.level} accessibilityHint={st('View player profile and social actions')} onPress={()=>{Keyboard.dismiss();setSelected({account_id:item.account_id,sender_name:item.sender_name});}} style={({pressed})=>[s.player,pressed&&s.pressed]}>
+    renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={`${item.sender_name}, ${st('Total character level')}: ${totalLevelText(item.total_character_level)}`} accessibilityHint={st('View player profile and social actions')} onPress={()=>{Keyboard.dismiss();setSelected({account_id:item.account_id,sender_name:item.sender_name});}} style={({pressed})=>[s.player,pressed&&s.pressed]}>
      <View style={s.statusDot}/>
-     <View style={s.identity}><Text numberOfLines={1} style={s.playerName}>{item.sender_name}{item.account_id===session?.user.id?st(' (You)'):''}</Text><Text numberOfLines={1} style={s.playerMeta}>{st('Lv.')} {item.level} · {classLabel(item.class_id)}</Text></View>
+     <View style={s.identity}><Text numberOfLines={1} style={s.playerName}>{item.sender_name}{item.account_id===session?.user.id?st(' (You)'):''}</Text><Text numberOfLines={1} style={s.playerMeta}>{st('Total character level')}: {totalLevelText(item.total_character_level)}</Text></View>
      {item.is_friend?<Text style={s.relationship}>{st('Friend')}</Text>:item.is_guildmate?<Text style={s.relationship}>{st('Guild')}</Text>:null}
      <Text style={s.chevron}>›</Text>
     </Pressable>}

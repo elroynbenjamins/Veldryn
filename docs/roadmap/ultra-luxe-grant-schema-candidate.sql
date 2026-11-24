@@ -167,6 +167,83 @@ grant execute on function private.ultra_luxe_project_hero_v1(jsonb,jsonb),privat
 revoke all on function public.load_online_game_ultra_luxe_v1(uuid),public.read_online_game_receipt_ultra_luxe_v1(uuid,text),public.commit_online_game_ultra_luxe_v1(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid) from public,anon,authenticated;
 grant execute on function public.load_online_game_ultra_luxe_v1(uuid),public.read_online_game_receipt_ultra_luxe_v1(uuid,text),public.commit_online_game_ultra_luxe_v1(uuid,bigint,bigint,text,text,jsonb,jsonb,jsonb,uuid) to service_role;
 
+-- Public profile filtering happens AFTER the existing authenticated visibility and block gates.
+-- No collection ownership list is exposed to another player.
+create function private.ultra_luxe_project_public_v1(p_account_id uuid,p_profile jsonb)
+returns jsonb language plpgsql stable security invoker set search_path='' as $public_profile$
+declare
+ g jsonb; hero jsonb; projected jsonb; allowed_ids text[]:=array[]::text[]; showcase jsonb;
+ field text; output_field text;
+begin
+ if auth.uid() is null then raise exception 'AUTH_REQUIRED';end if;
+ if jsonb_typeof(p_profile) is distinct from 'object' then return p_profile;end if;
+ g:=public.ultra_luxe_grants_server_v1(p_account_id);
+ hero:=jsonb_build_object('classId',p_profile#>>'{character,classId}',
+  'profileTitle',p_profile->>'title','profileBackgroundId',p_profile->>'backgroundId',
+  'profileBorderId',p_profile->>'borderId','selectedCosmeticPetId',p_profile->>'petId',
+  'profileIconId',p_profile#>>'{character,profileIconId}');
+ projected:=private.ultra_luxe_project_hero_v1(hero,g);
+ foreach field in array array['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] loop
+  output_field:=case field when 'profileTitle' then 'title' when 'profileBackgroundId' then 'backgroundId' when 'profileBorderId' then 'borderId' else 'petId' end;
+  if projected->field is distinct from hero->field then
+   p_profile:=jsonb_set(p_profile,array[output_field],coalesce(projected->field,'null'::jsonb));
+  end if;
+ end loop;
+ if projected->'profileIconId' is distinct from hero->'profileIconId' then
+  p_profile:=jsonb_set(p_profile,'{character,profileIconId}',coalesce(projected->'profileIconId','null'::jsonb));
+ end if;
+ p_profile:=p_profile-'ultraLuxeTitleId';
+ if g ? 'ascendant-celestial-sovereign' and p_profile->>'title'='Sovereign of the Stars' then
+  p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-celestial-title');
+ elsif g ? 'ascendant-draconic-dominion' and p_profile->>'title'='Dragon Sovereign' then
+  p_profile:=p_profile||jsonb_build_object('ultraLuxeTitleId','ascendant-draconic-title');
+ end if;
+ if g ? 'ascendant-celestial-sovereign' then allowed_ids:=allowed_ids||array['ascendant-celestial-astral-sanctum','ascendant-celestial-crown-of-the-cosmos','ascendant-celestial-aetherion','ascendant-celestial-crown-icon'];end if;
+ if g ? 'ascendant-draconic-dominion' then allowed_ids:=allowed_ids||array['ascendant-draconic-dominion-of-ash','ascendant-draconic-throne-of-embers','ascendant-draconic-vharaxis','ascendant-draconic-ruby-icon'];end if;
+ if jsonb_typeof(p_profile->'collectionShowcase')='array' then
+  select coalesce(jsonb_agg(value order by ord),'[]'::jsonb) into showcase
+  from jsonb_array_elements(p_profile->'collectionShowcase') with ordinality t(value,ord)
+  where coalesce(left(value->>'id',10),'') not in ('ascendant-','ascendant_') or value->>'id'=any(allowed_ids);
+  p_profile:=jsonb_set(p_profile,'{collectionShowcase}',showcase);
+ end if;
+ if left(p_profile->>'effectId',10) in ('ascendant-','ascendant_') then p_profile:=jsonb_set(p_profile,'{effectId}','null'::jsonb);end if;
+ return p_profile;
+end $public_profile$;
+revoke all on function private.ultra_luxe_project_public_v1(uuid,jsonb) from public,anon,authenticated;
+grant execute on function private.ultra_luxe_project_public_v1(uuid,jsonb) to service_role;
+
+-- Guarded edits of the existing definer entrypoints, preserving their original ACLs,
+-- visibility, character ownership and block checks. Fail on function shape drift.
+do $patch_public$
+declare v_def text; v_old text; v_new text; v_tail text; v_sig regprocedure;
+begin
+ foreach v_sig in array array['public.profile_public_v43(uuid)'::regprocedure,'public.profile_character_public_v1(uuid,uuid)'::regprocedure] loop
+  v_def:=replace(pg_get_functiondef(v_sig),chr(13),'');
+  if position('private.ultra_luxe_project_public_v1(p_target_account_id,' in v_def)>0 then continue;end if;
+  if v_sig='public.profile_public_v43(uuid)'::regprocedure then
+   if position('auth.uid()' in v_def)=0 or position('public.player_blocks' in v_def)=0 or position('if not v_allowed then return null' in v_def)=0 then raise exception 'ULTRA_LUXE_PROFILE_PRIVACY_DRIFT';end if;
+   v_old:='return jsonb_build_object(';
+   v_new:='return private.ultra_luxe_project_public_v1(p_target_account_id,jsonb_build_object(';
+  else
+   if position('v_base:=public.profile_public_v43(p_target_account_id)' in v_def)=0 or position('if v_base is null then return null' in v_def)=0 or position('c.account_id=p_target_account_id' in v_def)=0 then raise exception 'ULTRA_LUXE_CHARACTER_PRIVACY_DRIFT';end if;
+   v_old:='return v_base || jsonb_build_object(';
+   v_new:='return private.ultra_luxe_project_public_v1(p_target_account_id,v_base || jsonb_build_object(';
+  end if;
+  if length(v_def)-length(replace(v_def,v_old,''))<>length(v_old) then raise exception 'ULTRA_LUXE_PROFILE_RETURN_DRIFT';end if;
+  v_tail:=substring(v_def from $rx$\);[[:space:]]*end[[:space:]]*\$function\$[[:space:]]*$rx$);
+  if v_tail is null then raise exception 'ULTRA_LUXE_PROFILE_TAIL_DRIFT';end if;
+  v_def:=replace(v_def,v_old,v_new);
+  v_def:=left(v_def,length(v_def)-length(v_tail))||')'||v_tail;
+  -- The legacy base response did not project profile icons in all server versions.
+  if v_sig='public.profile_public_v43(uuid)'::regprocedure and position('''profileIconId''' in substring(v_def from position(v_new in v_def)))=0 then
+   v_old:='''selectedSkinId'',coalesce(v_character->>''selectedSkinId'',''starting''))';
+   if position(v_old in v_def)=0 then raise exception 'ULTRA_LUXE_LEGACY_ICON_DRIFT';end if;
+   v_def:=replace(v_def,v_old,'''profileIconId'',coalesce(nullif(v_character->>''profileIconId'',''''),''class:''||coalesce(v_character->>''classId'',''IRONWARDEN'')), '||v_old);
+  end if;
+  execute v_def;
+ end loop;
+end $patch_public$;
+
 commit;
 -- Before migration: verify service_role permissions (including auth.users read),
 -- RLS/execute privileges, no-op audit behavior, pair serialization, revocation,

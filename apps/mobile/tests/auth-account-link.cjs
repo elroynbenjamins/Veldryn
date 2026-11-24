@@ -11,9 +11,10 @@ const verified=()=>({...guest(),email:'aster@example.test',is_anonymous:false,em
 const token=user=>`header.${Buffer.from(JSON.stringify({is_anonymous:Boolean(user.is_anonymous),email:user.email||''})).toString('base64url')}.signature`;
 const sessionFor=user=>({access_token:token(user),refresh_token:'test-refresh',user:copy(user)});
 function fixture(initial=guest()){
- const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googleTokenSignIns:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null};
+ const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,googleTokenSignIns:0,googlePickerCalls:0,identityReads:0,identityFailure:null,linkFailure:null,onGoogleIdentity:null,readFailure:null,writeFailure:null,refreshFailure:null,sessionReadFailure:null,guestSignIns:0};
  const auth={
-  getSession:async()=>({data:{session:f.session},error:null}),
+  getSession:async()=>({data:{session:f.session},error:f.sessionReadFailure}),
+  signInAnonymously:async()=>{f.guestSignIns++;f.session=sessionFor(guest());return {data:{user:f.session.user},error:null};},
   getUser:async()=>({data:{user:copy(f.server)},error:f.readFailure}),
   updateUser:async(attributes,options)=>{
    f.writes.push(copy({attributes,options}));
@@ -62,6 +63,16 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  await assert.rejects(()=>storage.getItem('session'),/Unable to restore your account/);
  await storage.removeItem('session');
  assert.equal(await storage.getItem('session'),null);checks++;
+
+ const guestEntry=fixture();
+ assert.equal((await guestEntry.api.signInAsGuest()).id,'guest-a');
+ assert.equal(guestEntry.guestSignIns,0,'existing guest reused');
+ guestEntry.session=null;guestEntry.sessionReadFailure=Error('storage unavailable');
+ await assert.rejects(()=>guestEntry.api.signInAsGuest(),/storage unavailable/);
+ assert.equal(guestEntry.guestSignIns,0,'a session read error must not create an account');
+ guestEntry.sessionReadFailure=null;
+ await Promise.all([guestEntry.api.signInAsGuest(),guestEntry.api.signInAsGuest()]);
+ assert.equal(guestEntry.guestSignIns,1,'concurrent explicit guest requests create at most one session');checks++;
 
  const f=fixture();
  await f.api.upgradeGuestAccount(' Aster@Example.Test ',' Aster ','guest-a');

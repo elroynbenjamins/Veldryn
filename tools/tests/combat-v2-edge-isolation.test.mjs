@@ -17,7 +17,7 @@ assert.throws(()=>resolve({path:'./v2/unexpected-new-runtime',importer:engine}),
 for(const path of [
  './v2/resource-runtime','./v2/capstone-runtime','./v2/reactive-passive-runtime',
  './v2/enemy-engine-authority','./v2/equipment-trait-engine-authority',
- './v2/equipment-trait-engine-runtime','./enemy-v2-status-rules',
+ './v2/equipment-trait-engine-runtime','./v2/party-sync-authority','./enemy-v2-status-rules',
 ]){
  const redirected=resolve({path,importer:engine});
  assert.equal(redirected?.namespace,'live-edge-v2-disabled');
@@ -45,6 +45,10 @@ for(const path of [
   assert.throws(()=>m.authorizeEquipmentV2TraitEngine({players:[{}]},{forged:true}),
    /not_available_in_live/);
  }
+ if(path==='./v2/party-sync-authority'){
+  assert.equal(m.authorizePartySyncV2({},undefined).size,0);
+  assert.throws(()=>m.authorizePartySyncV2({},{forged:true}),/not_available_in_live/);
+ }
  if(path==='./v2/equipment-trait-engine-runtime')
   assert.throws(()=>new m.EquipmentTraitRuntimeV2(new Map()),/not_available_in_live/);
  if(path==='./v2/reactive-passive-runtime')
@@ -64,6 +68,7 @@ for(const secret of [
  'backend/src/server/combat/v2/equipment-trait-engine-authority.ts',
  'backend/src/server/combat/v2/equipment-trait-engine-runtime.ts',
  'backend/src/server/combat/v2/solo-encounter-persistence.ts',
+ 'backend/src/server/combat/v2/party-sync-authority.ts',
  'backend/src/server/combat/enemy-v2-status-rules.ts',
 ]){
  assert.throws(()=>assertLegacyEdgeIsolation(fake(secret),'gameplay'),
@@ -71,7 +76,7 @@ for(const secret of [
 }
 for(const leak of ['issueEnemyV2EngineAuthority','combat_v2_solo_test',
  'enemy-v2-prototype-1','SoloEncounterPersistenceServiceV2',
- 'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2']){
+ 'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2','issuePartySyncAuthorityV2','party_sync_authority_']){
  assert.throws(()=>assertLegacyEdgeIsolation(fake('backend/online/edge.ts',leak),'gameplay'),
  /private_token_in_bundle/);
 }

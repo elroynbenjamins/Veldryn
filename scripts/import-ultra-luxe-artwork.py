@@ -12,6 +12,11 @@ import zipfile
 ARCHIVE_SHA = "c97d2a27f3aff2ad82d16a7762d8436fcfc730bc7f1ff2f07cbaa994cb3220b9"
 PREFIX = "apps/mobile/assets/ascendant/"
 REGISTRY = "apps/mobile/src/theme/draconic-integration-assets.ts"
+# Only this exact reviewed old blob may be replaced by the v3 approved art.
+REVIEWED_REPLACEMENTS = {PREFIX + "celestial/celestial_pet_showcase.webp": "3dbf0d69a6bc2b921dc8e8fb4860d1ae9893a0a8"}
+
+def git_blob_sha(data):
+    return hashlib.sha1(b"blob " + str(len(data)).encode("ascii") + b"\0" + data).hexdigest()
 
 def sha(data):
     return hashlib.sha256(data).hexdigest()
@@ -68,10 +73,13 @@ def install(root, files, registry):
         target = root / name
         if not target.resolve().is_relative_to(root):
             raise ValueError(f"Asset path escapes checkout: {name}")
-        if target.exists() and target.read_bytes() != data:
-            raise ValueError(f"Existing artwork differs; inspect before replacing: {name}")
-        if not target.exists():
-            pending[target] = data
+        if target.exists():
+            existing = target.read_bytes()
+            if existing == data:
+                continue
+            if git_blob_sha(existing) != REVIEWED_REPLACEMENTS.get(name):
+                raise ValueError(f"Existing artwork differs; inspect before replacing: {name}")
+        pending[target] = data
 
     draconic = root / REGISTRY
     current = draconic.read_text(encoding="utf-8")
@@ -81,7 +89,11 @@ def install(root, files, registry):
         pending[draconic] = registry.encode("utf-8")
     celestial = root / "apps/mobile/src/theme/celestial-integration-assets.ts"
     frame = root / "apps/mobile/src/theme/profile-border-assets.ts"
+    badge = root / "apps/mobile/src/components/player-badge-artwork.ts"
     edits = [
+        (badge,
+         " ascendant_sovereign_of_stars:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),",
+         " ascendant_sovereign_of_stars:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),\n ascendant_dragon_sovereign:require('../../assets/ascendant/draconic/dragon_sovereign_64.webp'),"),
         (celestial,
          " petShowcase:require('../../assets/ascendant/celestial/celestial_pet_showcase.webp'),",
          " petShowcase:require('../../assets/ascendant/celestial/celestial_pet_showcase.webp'),\n smoothPoseAtlas:require('../../assets/ascendant/celestial/aetherion_smooth_pose_atlas.webp'),"),

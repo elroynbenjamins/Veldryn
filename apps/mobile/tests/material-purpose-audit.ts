@@ -29,6 +29,10 @@ const rows=materials.map(item=>{
  const plannedGuildUses=GUILD_CONSTRUCTION_BLUEPRINTS.filter(row=>row.materials.some(material=>material.itemId===item.id)).map(row=>row.id);
  return {id:item.id,name:item.name,value:item.value,specialUses,plannedGuildUses,recipeConsumers:recipes.length,recipeExamples:recipes.slice(0,3).map(recipe=>recipe.id),recipeProducers:outputs.length,monsterSources:monsters.map(monster=>monster.id),gatheringSources:gathering.length,companionUses};
 });
+const retiredNoSource=rows.filter(row=>row.id==='ECHO_BAT_WING');
+if(retiredNoSource.length!==1)throw Error('Retired Echo Bat Wing catalog identity missing');
+const retiredWing=retiredNoSource[0];
+if(retiredWing.recipeConsumers!==0||retiredWing.recipeProducers!==0||retiredWing.monsterSources.length!==0||retiredWing.gatheringSources!==0||retiredWing.companionUses.length!==0||retiredWing.specialUses.length!==0||retiredWing.plannedGuildUses.length!==0)throw Error('Retired Echo Bat Wing still has a resolved producer or consumer');
 const candidates=rows.filter(row=>row.recipeConsumers===0&&row.companionUses.length===0&&(row.monsterSources.length>0||row.gatheringSources>0||row.recipeProducers>0));
 const protectedSpecial=candidates.filter(row=>row.specialUses.length>0||row.plannedGuildUses.length>0);
 const unresolved=candidates.filter(row=>row.specialUses.length===0&&row.plannedGuildUses.length===0);
@@ -38,5 +42,5 @@ if(!protectedSpecial.some(row=>row.id==='GUILD_REINFORCED_TIMBER'&&row.plannedGu
 if(!protectedSpecial.some(row=>row.id.startsWith('raw_gem:')&&row.specialUses.length>0))throw Error('Raw gem refinement evidence missing');
 const core=rows.find(row=>row.id==='RUNEBOUND_CORE');
 if(!core?.companionUses.some(use=>use.includes('Runebound Sentry'))||!core.companionUses.some(use=>use.includes('Expedition Pens')))throw Error('Protected core consumer evidence missing');
-console.log(JSON.stringify({resolvedMaterials:rows.length,initialFlags:rows.filter(row=>initialIds.has(row.id)),otherScreeningCandidates:candidates.filter(row=>!initialIds.has(row.id)),screeningCandidateCount:candidates.length,protectedSpecialCount:protectedSpecial.length,unresolvedCount:unresolved.length,unresolved},null,2));
+console.log(JSON.stringify({resolvedMaterials:rows.length,initialFlags:rows.filter(row=>initialIds.has(row.id)),otherScreeningCandidates:candidates.filter(row=>!initialIds.has(row.id)),screeningCandidateCount:candidates.length,protectedSpecialCount:protectedSpecial.length,unresolvedCount:unresolved.length,unresolved,retiredNoSource},null,2));
 console.log('REVIEW ONLY: enhancement, quests, guild, events, shop, storage, aliases, release gates and hidden 2.0 require independent checks. No retirement approved.');

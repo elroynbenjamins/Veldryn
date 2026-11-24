@@ -6,6 +6,7 @@ const root=path.join(__dirname,'../assets/ascendant/celestial');
 const files=[
  'celestial_background_wide.webp',
  'celestial_border.webp',
+ 'celestial_border_standard.webp',
  'celestial_pet_showcase.webp',
  'celestial_orrery.webp',
  'celestial_star.webp',
@@ -28,9 +29,13 @@ for(const name of files){
 }
 assert(total<256*1024,`Celestial runtime pack exceeds 256 KiB budget: ${total} bytes`);
 const registry=fs.readFileSync(path.join(__dirname,'../src/theme/celestial-integration-assets.ts'),'utf8');
+const borderRegistry=fs.readFileSync(path.join(__dirname,'../src/theme/profile-border-assets.ts'),'utf8');
 for(const name of files.filter(name=>!name.endsWith('_32.webp'))){
- assert(registry.includes(name),`Runtime asset is not statically referenced: ${name}`);
+ const source=name==='celestial_border_standard.webp'?borderRegistry:registry;
+ assert(source.includes(name),`Runtime asset is not statically referenced: ${name}`);
 }
+assert(registry.includes("celestial_border.webp"),'Ascendant stage must keep its custom 340x205 border');
+assert(borderRegistry.includes("celestial_border_standard.webp"),'ordinary profile frame must use the 16:9 border export');
 const flags=fs.readFileSync(path.join(__dirname,'../src/core/release-flags.ts'),'utf8');
 assert.match(flags,/ASCENDANT_CELESTIAL_VISUALS_RELEASED=false/,'Celestial release flag must remain closed in this integration PR');
 console.log(`Celestial assets: ${files.length} WebPs, ${total} bytes, release gate closed.`);

@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
-import {contract,v17} from './normalized-effect-review-v18.mjs';
+import {contract} from './normalized-effect-review-v18.mjs';
+const v17=JSON.parse(readFileSync(new URL('../../../docs/2-0/eq2-set-trait-authoring-review-v17.json',import.meta.url),'utf8'));
 const ids={asterfall:'EQ2_DUNGEON_ROOTBOUND_T2_WEAPON_RAVAGER',sunscar:'EQ2_DUNGEON_OBSERVATORY_T4_WEAPON_RAVAGER',frostmarch:'EQ2_DUNGEON_SHIVERLAKE_T5_WEAPON_RAVAGER'};
 const regions={BOSS_EXP_ROOT:'asterfall',BOSS_EXP_BELL:'asterfall',BOSS_EXP_SOLAR:'sunscar',BOSS_EXP_SPHINX:'sunscar',BOSS_EXP_BELLBEAST:'frostmarch',BOSS_EXP_CANTOR:'frostmarch'};
 const avalanche='eq2_t5_avalanche:6';

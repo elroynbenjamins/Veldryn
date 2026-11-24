@@ -37,7 +37,7 @@ const validKind=(kind:unknown):kind is CoopSynchronizationValueKind=>
 const validBps=(value:unknown):value is number=>
  typeof value==='number'&&Number.isSafeInteger(value)&&value>0;
 const nonempty=(value:unknown):value is string=>typeof value==='string'&&!!value.trim();
-const invalid=():never=>{throw new Error('invalid_coop_synchronization_view');};
+function invalid():never{throw new Error('invalid_coop_synchronization_view');}
 
 /** Pure presentation aggregation. Combined caps replace raw totals exactly once. */
 export function coopSynchronizationEffectiveTotals(view:CoopSynchronizationView):CoopSynchronizationBonusView[]{

@@ -2,8 +2,8 @@
 import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
-import type {ReturnTypeOfMissionSetup} from '../core/exploration-scouting-ui-review';
-type Setup=ReturnTypeOfMissionSetup;
+import type {scoutingMissionSetupReview} from '../core/exploration-scouting-ui-review';
+type Setup=ReturnType<typeof scoutingMissionSetupReview>;
 export function ExplorationScoutingAssignmentReview({setup}:{setup:Setup}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(),[]),[showAll,setShowAll]=useState(false);
  const shown=showAll?setup.candidates:setup.candidates.slice(0,6);
@@ -27,5 +27,4 @@ export function ExplorationScoutingAssignmentReview({setup}:{setup:Setup}){
   </View>
  </View>;
 }
-export type ReturnTypeOfMissionSetup=ReturnType<typeof import('../core/exploration-scouting-ui-review').scoutingMissionSetupReview>;
 function makeStyles(){return StyleSheet.create({root:{gap:10},card:{borderWidth:1,borderRadius:10,padding:12,gap:5},rowCard:{minHeight:58,borderWidth:1,borderRadius:10,padding:10,flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},right:{alignItems:'flex-end',gap:2},title:{fontSize:18,fontWeight:'800'},section:{fontSize:14,fontWeight:'800'},name:{fontWeight:'700'},button:{minHeight:44,borderWidth:1,borderRadius:8,alignItems:'center',justifyContent:'center',paddingHorizontal:12}});}

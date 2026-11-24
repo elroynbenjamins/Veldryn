@@ -11,6 +11,8 @@ import type {ReadyCheckRecord} from '../../coop/ready-checks';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
 import {CLASS_NAMES_V2,} from './skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from './build-contract';
+import {PARTY_SYNCHRONIZATION_RULESET_V2} from './party-synchronization';
+import type {PartySyncScopeV2} from './party-sync-authority';
 
 export const PARTY_V2_RUN_BINDING_POLICY='party-v2-run-binding-review-1' as const;
 export interface PartyV2RunBindingMember{
@@ -125,4 +127,25 @@ export function reviewPartyV2RunBinding(input:{
  };
  return {binding:Object.freeze(binding),releaseEnabled:false,canAuthorizeCombat:false,
   canGrantRewards:false,canPersistState:false};
+}
+
+
+/** Derives a non-client Synchronization scope only from the reviewed committed
+ * roster binding. The caller must still independently verify the persisted
+ * binding/digest before issuePartySyncAuthorityV2 may issue an opaque token. */
+export function partySyncScopeFromRunBindingV2(
+ result:PartyV2RunBindingResult,
+):PartySyncScopeV2{
+ const b=result.binding;
+ if(result.releaseEnabled||result.canAuthorizeCombat||result.canGrantRewards||
+   result.canPersistState||b.policy!==PARTY_V2_RUN_BINDING_POLICY)
+  fail('unsafe_binding_result');
+ return {
+  ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,
+  encounterId:b.runId,partyId:b.partyId,revision:b.encounterRevision,
+  seed:b.seed,mode:'dungeon',
+  persistedRun:{runId:b.runId,nodeId:b.nodeId,readyCheckId:b.readyCheckId,
+   rosterRevision:b.rosterRevision,stateRevision:b.stateRevision},
+  members:b.members.map(m=>({actorId:m.actorId,characterId:m.characterId,classId:m.classId})),
+ };
 }

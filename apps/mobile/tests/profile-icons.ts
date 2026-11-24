@@ -18,7 +18,7 @@ check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'curren
 check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
 const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};
 check(profileIconCollection(cosmeticPortraitOwned).some(row=>row.id==='cosmetic:gloamward:portrait-seer'),'owned unreleased portrait may be represented for migration/ops visibility');
-check(!canUseProfileIcon(cosmeticPortraitOwned,'cosmetic:gloamward:portrait-seer'),'portrait cannot be selected until its approved artwork is installed');
+check(canUseProfileIcon(cosmeticPortraitOwned,'cosmetic:gloamward:portrait-seer'),'owned cosmetic-set portrait is selectable after approved atlas artwork is installed');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 check(!canUseProfileIcon(state,'guild:stormwatch-crest'),'guild icon is locked until purchased');
 check(canUseProfileIcon({...state,account:{...state.account,unlockedProfileIconIds:['guild:stormwatch-crest']}},'guild:stormwatch-crest'),'purchased guild icon becomes usable');

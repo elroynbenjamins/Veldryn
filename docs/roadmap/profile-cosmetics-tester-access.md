@@ -6,4 +6,4 @@ The four standard sets remain future Cosmetics Store products and are sold as co
 
 Production verification on 2026-11-24 confirmed the entitled test account owns all standard borders/effects/eight portrait IDs and all four Ascendant borders/effects/backgrounds/pets/badges. Public profile projection exposes `effectId` and a server-derived `cosmeticsPreview` boolean so other clients on this branch can render the tester's unreleased cosmetics without globally releasing them.
 
-Final binary Ascendant art and the eight approved standard portrait binaries can replace tester fallback art without changing ownership IDs or saves.
+The eight approved standard portrait concepts are now bundled in a shared production atlas and use their reserved ownership IDs. Final Ascendant border/background/pet/badge binary art can replace the premium tester fallbacks without changing ownership IDs or saves.

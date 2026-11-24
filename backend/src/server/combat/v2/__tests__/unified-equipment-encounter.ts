@@ -1,6 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {reviewCompanionContributionV2,type CompanionContributionSourceV2} from '../companion-contribution-review';
 import {launchPlayer} from '../../content/launch-combat';
+import {reviewCandidatePowerV1,CANDIDATE_POWER_WEIGHTS_V1,type CandidatePowerReferenceV1} from '../candidate-power-review';
 import type {CombatStats} from '../../types';
 import {compileServerSkillBuildV2,simulateCombatWithSkillsV2,type VerifiedSkillBuildV2} from '../skill-effects';
 import {SKILL_IDENTITIES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
@@ -397,4 +398,30 @@ assert.deepEqual(
  simulateUnifiedEquipmentCombatV2(input,[build],[explicitRaw],true),
  enabled,'Explicit authored raw bases must retain exactly-once scaling');
 
+
+const candidateReference:CandidatePowerReferenceV1={
+ version:'QA_L25_LAUNCH_REFERENCE_V1',anchor:1000,enemyAccuracy:1600,enemyEvasion:100,
+ accuracyScale:1400,mitigationConstant:1200,roles:{
+  tank:launchPlayer('Ironwarden',25).stats,damage:launchPlayer('Ravager',25).stats,
+  support:launchPlayer('Dawnkeeper',25).stats,
+ },
+};
+for(const role of ['tank','damage','support'] as const){
+ const stats=candidateReference.roles[role],base=reviewCandidatePowerV1(stats,role,candidateReference);
+ assert.equal(base.partialScore,1000);
+ assert.ok(Math.abs(Object.values(CANDIDATE_POWER_WEIGHTS_V1[role]).reduce((n,x)=>n+x,0)-1)<1e-9);
+ for(const key of keys){
+  const upgraded=reviewCandidatePowerV1({...stats,[key]:stats[key]*1.1},role,candidateReference);
+  assert.ok(upgraded.unroundedScore>=base.unroundedScore,'monotonic '+role+':'+key);
+ }
+ assert.equal(base.cpApproved,false);
+ assert.equal(base.canGateContent,false);
+ assert.equal(base.equalCPVerified,false);
+}
+const fullCandidate=reviewCandidatePowerV1(resolved.stats,'tank',candidateReference);
+const classCandidate=reviewCandidatePowerV1(evidence.statStages.classOnly,'tank',candidateReference);
+assert.ok(fullCandidate.unroundedScore>classCandidate.unroundedScore);
+assert.deepEqual(fullCandidate,reviewCandidatePowerV1(resolved.stats,'tank',candidateReference));
+assert.throws(()=>reviewCandidatePowerV1({...resolved.stats,critChance:NaN},'tank',candidateReference),/invalid_stats/);
+assert.throws(()=>reviewCandidatePowerV1(resolved.stats,'tank',{...candidateReference,accuracyScale:0}),/invalid_reference/);
 console.log('PASS: strict server gear ordering, provenance, no legacy double-counting, deterministic replays');

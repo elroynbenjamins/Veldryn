@@ -23,3 +23,13 @@ real results are available. Existing focused regressions and CI preserved.
 
 Execution pending: connector CI runs queued; local GitHub DNS inaccessible.
 No main merge, release activation, deployment, SQL or public UI changes.
+
+Review output includes solo-class and boss-level aggregates, victory and
+survivor changes, mean normalized HP deltas, and flagged losses (>15 pp HP
+or >15% damage reduction, any victory or survivor loss). These are review
+flags, not hard balance approvals: offense can legitimately trade for
+survival. Absorbed damage counts only player targets. Identical seeds
+permit deterministic paired runs, not identical random draws once tactical
+selection changes the action path. The existing synthetic enemy fixture
+has a limited pressure budget; real regional danger bands and longer runs
+remain required before approval. No coefficients adjusted without results.

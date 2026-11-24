@@ -16,15 +16,17 @@ const damage=classes.filter(c=>CLASS_ROLES_V2[c]==='damage');
 const supports=classes.filter(c=>CLASS_ROLES_V2[c]==='support');
 function metrics(r:CombatResult){
  const sum=(f:(p:CombatResult['players'][number])=>number)=>r.players.reduce((n,p)=>n+f(p),0);
+ const playerIds=new Set(r.players.map(p=>p.definition.id));
  const gain=r.events.filter(e=>e.type==='resource_gain').reduce((n,e)=>n+(e.resourceAfter??0)-(e.resourceBefore??0),0);
  const spend=r.events.filter(e=>e.type==='resource_spend').reduce((n,e)=>n+(e.resourceBefore??0)-(e.resourceAfter??0),0);
  return {damage:sum(p=>p.damageDone),healing:sum(p=>p.healingDone),hpFraction:sum(p=>p.hp/Math.max(1,p.definition.stats.maxHp))/r.players.length,
   alive:sum(p=>Number(p.alive)),interrupts:sum(p=>p.interrupts),gain,spend,
-  absorbed:r.events.reduce((n,e)=>n+(e.absorbed??0),0),duration:r.durationMs,victory:Number(r.victory)};
+  absorbed:r.events.filter(e=>e.targetId&&playerIds.has(e.targetId)).reduce((n,e)=>n+(e.absorbed??0),0),duration:r.durationMs,victory:Number(r.victory)};
 }
 type Metrics=ReturnType<typeof metrics>;
 type Result=ReturnType<typeof simulateUnifiedEquipmentCombatV2>;
-let cases=0,changed=0;const rows:unknown[]=[];
+type MatchedRow={label:string;base:Metrics;next:Metrics;changed:boolean};
+let cases=0,changed=0;const rows:MatchedRow[]=[];
 function pair(label:string,standard:Result,tactical:Result,replay:Result){
  assert.deepEqual(tactical,replay,label+' deterministic replay');
  assert.deepEqual(standard.equipmentEvidence,tactical.equipmentEvidence,label+' unchanged gear');
@@ -82,13 +84,27 @@ const legacy=setup('WAYFINDER',0,bosses[0],profiles[0]).input;
 assert.deepEqual(simulateCombat(legacy),simulateCombat(legacy,undefined,undefined,undefined,'authored-priority'));
 // Emit diagnostics, not an arbitrary win-rate guarantee. Per-case results
 // allow calibration of tradeoffs and investigation of negative outliers.
-const typed=rows as {label:string;base:Metrics;next:Metrics;changed:boolean}[];
-const groups=['solo','party'].map(kind=>{
- const subset=typed.filter(r=>r.label.startsWith(kind+'|'));
+function summarize(kind:string,subset:MatchedRow[]){
+ assert.ok(subset.length);
  const total=(field:keyof Metrics,which:'base'|'next')=>subset.reduce((n,r)=>n+r[which][field],0);
  const keys=Object.keys(subset[0].base) as (keyof Metrics)[];
  return {kind,cases:subset.length,changed:subset.filter(r=>r.changed).length,
+  victoryGains:subset.filter(r=>r.next.victory>r.base.victory).length,
+  victoryLosses:subset.filter(r=>r.next.victory<r.base.victory).length,
+  survivalGains:subset.filter(r=>r.next.alive>r.base.alive).length,
+  survivalLosses:subset.filter(r=>r.next.alive<r.base.alive).length,
+  meanHpDelta:subset.reduce((n,r)=>n+r.next.hpFraction-r.base.hpFraction,0)/subset.length,
   totals:Object.fromEntries(keys.map(k=>[k,{standard:total(k,'base'),tactical:total(k,'next')}]))};
-});
-console.log(JSON.stringify({kind:'MATCHED_TACTICAL_AI_DIAGNOSTIC_NOT_RELEASE_BALANCE',cases,changed,groups}));
-for(const row of typed)console.log(JSON.stringify({kind:'MATCHED_TACTICAL_AI_CASE',...row}));
+}
+const groups=['solo','party'].map(kind=>summarize(kind,rows.filter(r=>r.label.startsWith(kind+'|'))));
+const perClass=classes.map(c=>summarize(c,rows.filter(r=>r.label.startsWith('solo|'+c+'|'))));
+const perBoss=bosses.map(b=>summarize(b.id,rows.filter(r=>r.label.split('|').includes(b.id))));
+const regressions=rows.filter(r=>r.next.victory<r.base.victory||r.next.alive<r.base.alive||
+ r.next.hpFraction<r.base.hpFraction-.15||
+ (r.base.damage>0&&r.next.damage<r.base.damage*.85))
+ .sort((a,b)=>(a.next.victory-a.base.victory)-(b.next.victory-b.base.victory)||
+ (a.next.alive-a.base.alive)-(b.next.alive-b.base.alive)||
+ (a.next.hpFraction-a.base.hpFraction)-(b.next.hpFraction-b.base.hpFraction));
+console.log(JSON.stringify({kind:'MATCHED_TACTICAL_AI_DIAGNOSTIC_NOT_RELEASE_BALANCE',cases,changed,groups,perClass,perBoss,
+ flaggedRegressions:regressions.length,reviewFirst:regressions.slice(0,20).map(r=>r.label)}));
+for(const row of rows)console.log(JSON.stringify({kind:'MATCHED_TACTICAL_AI_CASE',...row}));

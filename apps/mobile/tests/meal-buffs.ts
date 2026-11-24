@@ -35,6 +35,7 @@ for(const [recipeId,itemId,level,gold] of [
  ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,384],
 ] as const){
  const recipe=recipeDef(recipeId);
+ if(!recipe)throw new Error('Missing recipe: '+recipeId);
  ok(recipe.level===level&&recipe.gold===gold&&recipe.skillId==='cooking',recipeId+' exact unlock and final Gold');
  ok(recipe.output.itemId===itemId&&recipe.output.quantity===1&&recipe.repeatableTraining,recipeId+' repeatable meal output');
  ok(itemDef(itemId).type==='food'&&!!itemDef(itemId).heal,itemId+' valid healing food');

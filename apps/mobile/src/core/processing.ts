@@ -6,7 +6,7 @@ import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
-import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable} from './winter-hearth-2026';
+import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable,WINTER_HEARTH_2026_END_MS} from './winter-hearth-2026';
 
 // One processing start reserves the complete AFK run, capped by its normal AFK window.
 export const MAX_PROCESSING_BATCHES=10_000;
@@ -22,6 +22,7 @@ export interface ProcessingBatchState{
   outputPerBatch:ItemStack;
   cycleSeconds:number;
   xpPerBatch:number;
+  seasonEndsAtMs?:number;
 }
 
 function storedQuantity(stacks:readonly ItemStack[],itemId:string){
@@ -70,7 +71,7 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
   const bonuses=characterPermanentMultipliers(state),pace=professionActionPace(state,recipe,'batch');
   const processing:ProcessingBatchState={version:1,recipeId:recipe.id,skillId:recipe.skillId as ProcessingSkillId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
-    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction};
+    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction,...(isWinterHearthLightRecipe(recipe.id)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,state.account.liveEvent!.endsAtMs)}:{})};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
@@ -131,5 +132,5 @@ export function normalizeProcessingBatch(value:unknown,targetId:string):Processi
     p.outputPerBatch?.itemId===recipe.output.itemId&&integer(p.outputPerBatch?.quantity,1,10000)&&inputsValid;
   if(!valid)throw new Error('Invalid reserved processing batch. Keep the save backup; do not reset or discard the reservation.');
   return {version:1,recipeId:targetId,skillId:recipe!.skillId as ProcessingSkillId,totalBatches:p!.totalBatches,remainingBatches:p!.remainingBatches,
-    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch};
+    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch,...(isWinterHearthLightRecipe(targetId)&&Number.isFinite(p!.seasonEndsAtMs)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,p!.seasonEndsAtMs!)}:{})};
 }

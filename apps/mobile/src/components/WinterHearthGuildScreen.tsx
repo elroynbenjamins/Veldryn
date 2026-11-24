@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,AppState,ImageBackground,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,AppState,Image,ImageBackground,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -8,6 +8,8 @@ import {WINTER_HEARTH_DONATION_IDS,winterHearthDonationTrack,winterHearthUnlocke
 import {readPendingWinterHearthDonation,submitWinterHearthDonation,type PendingWinterHearthDonation} from '../online/winter-hearth-pending-donation';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {BoardTabs} from './BoardTabs';
+import {guildBackgroundSources} from '../theme/card-background-assets';
+import {GuildBannerArtwork,GuildFrameSwatch} from './GuildHeraldry';
 import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
 import {eventTheme} from '../theme/event-palette';
 import {winterHearthMarketSource,warmNextWinterHearthMarket} from '../theme/winter-hearth-market-assets';
@@ -23,6 +25,12 @@ const stages=[
  {percent:50,gold:20000,name:'Festive stalls',buff:'+6% Skill XP',cosmetics:["Winter's Aurora · Background"]},
  {percent:75,gold:30000,name:'Festival of Lights',buff:'+6% Combat XP',cosmetics:['Frostfall Standard · Banner']},
  {percent:100,gold:50000,name:'Grand Winter Market',buff:'All three bonuses +10%',cosmetics:['Frozen Majesty · Border','Frostfall Aurora · Name Color']},
+] as const;
+const cosmeticPreviews=[
+ {percent:50,name:"Winter's Aurora · Background",kind:'background'},
+ {percent:75,name:'Frostfall Standard · Banner',kind:'banner'},
+ {percent:100,name:'Frozen Majesty · Border',kind:'border'},
+ {percent:100,name:'Frostfall Aurora · Name Color',kind:'color'},
 ] as const;
 const stageTitle=(p:number)=>stages.find(row=>row.percent===p)?.name??'Snow-covered grounds';
 const clamp=(n:number)=>Math.max(0,Math.min(100,n));
@@ -57,6 +65,9 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
  const sceneStage=winterHearthStageFromProgress(logs,lights);
  useEffect(()=>{if(!snapshot?.enabled)return;const timer=setTimeout(()=>warmNextWinterHearthMarket(sceneStage),250);return()=>clearTimeout(timer);},[sceneStage,snapshot?.enabled]);
  const progress=clamp(Math.floor(Math.min(logs/25000,lights/2500)*100));
+ const weekKey=new Date(now-(new Date(now).getUTCDay()+6)%7*86400000).toISOString().slice(0,10);
+ const previousWeek=useRef(weekKey);
+ useEffect(()=>{if(previousWeek.current!==weekKey){previousWeek.current=weekKey;void reload();}},[weekKey,reload]);
  const next=stages.find(row=>row.percent>stage);
  const available=(id:string)=>winterHearthUnlockedStock(state,id);
  const maxFor=(id:string)=>{const track=winterHearthDonationTrack(id);return track?winterHearthMaxDonation(available(id),track==='logs'?(snapshot?.memberLogsRemaining??0):(snapshot?.memberLightsRemaining??0),track==='logs'?25000-logs:2500-lights):0;};
@@ -107,7 +118,7 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
      <Panel><Text style={titleStyle}>{gl('Active guild bonuses')}</Text><View style={s.buffs}>{[[snapshot.gatheringSpeedBps??0,'Gathering Speed'],[snapshot.skillXpBps??0,'Skill XP'],[snapshot.combatXpBps??0,'Combat XP']].map(([bps,label])=><View key={String(label)} style={[s.buff,{backgroundColor:C.panel2,borderColor:C.line}]}><Text style={{fontSize:18,fontWeight:'900',color:Number(bps)>0?C.good:C.muted}}>+{Number(bps)/100}%</Text><Text style={[smallStyle,{textAlign:'center',fontSize:11}]}>{gl(String(label))}</Text></View>)}</View><Text style={smallStyle}>{gl('Temporary bonuses expire December 27 at 00:00 UTC.')}</Text></Panel>
     </>:null}
     <Panel><Text style={titleStyle}>{gl('Market milestones')}</Text>{stages.map(row=><Pressable key={row.percent} accessibilityRole="button" accessibilityState={{expanded:expanded===row.percent}} onPress={()=>setExpanded(p=>p===row.percent?null:row.percent)} style={[s.milestone,{borderColor:stage>=row.percent?C.accent:next?.percent===row.percent?C.warning:C.line,backgroundColor:C.panel2}]}><View style={s.row}><Text style={{fontSize:15,fontWeight:'900',color:stage>=row.percent?C.accent:C.text}}>{row.percent}%</Text><View style={s.flex}><Text style={titleStyle}>{gl(row.name)}</Text><Text style={smallStyle}>{fmt(row.gold)} {gl('Guild Gold')} · {gl(row.buff)}</Text></View><Text style={{color:C.muted}}>{expanded===row.percent?'−':'+'}</Text></View>{expanded===row.percent?<View style={s.detail}><Text style={smallStyle}>{fmt(row.percent*250)} {gl('Logs')} · {fmt(row.percent*25)} {gl('Christmas Lights')}</Text>{row.cosmetics.map(name=><Text key={name} style={{color:C.accent,fontSize:12,fontWeight:'700'}}>{gl(name)}</Text>)}<Text style={smallStyle}>{gl(stage>=row.percent?'Milestone reached':'Not yet reached')}</Text></View>:null}</Pressable>)}</Panel>
-    <Panel><Text style={titleStyle}>{gl('Permanent guild cosmetics')}</Text><Text style={smallStyle}>{gl('Exclusive guild-owned rewards. Ownership and equipment are verified separately by the server.')}</Text>{stages.flatMap(row=>row.cosmetics.map(name=><View key={name} style={[s.reward,{borderColor:C.line}]}><Text style={[titleStyle,{flex:1,fontSize:13}]}>{gl(name)}</Text><Text style={{color:stage>=row.percent?C.accent:C.muted,fontSize:12,fontWeight:'700'}}>{row.percent}%</Text></View>))}</Panel>
+    <Panel><Text style={titleStyle}>{gl('Permanent guild cosmetics')}</Text><Text style={smallStyle}>{gl('Exclusive guild-owned rewards. Equip earned rewards in Guild Appearance.')}</Text>{cosmeticPreviews.map(row=><View key={row.kind} style={[s.reward,{borderColor:C.line}]}><View style={[s.rewardArt,{backgroundColor:C.panel2,borderColor:C.line}]}>{row.kind==='background'?<Image accessible={false} source={guildBackgroundSources.get('background_frostfall_winter_aurora_2026')?.wide} resizeMode="cover" fadeDuration={0} style={StyleSheet.absoluteFill}/>:row.kind==='banner'?<GuildBannerArtwork height={48} bannerId="banner_frostfall_standard_2026"/>:row.kind==='border'?<GuildFrameSwatch frameId="border_frostfall_frozen_majesty_2026" size={54}/>:<Text style={{fontSize:22,fontWeight:'900',color:'#9fe9dc'}}>Aa</Text>}</View><View style={s.flex}><Text style={[titleStyle,{fontSize:13}]}>{gl(row.name)}</Text><Text style={smallStyle}>{gl(stage>=row.percent?'Milestone reached':'Milestone required')} · {row.percent}%</Text></View></View>)}</Panel>
     <GameButton compact tone="secondary" title={gl('Refresh progress')} disabled={loading||busy} loading={loading} onPress={reload}/>
    </>}
   </ScrollView>
@@ -125,4 +136,4 @@ function WinterHearthContent({onClose,onOpenCrafting,scope,endsAtMs,state,accoun
   </GameModalSurface>
  </View>;
 }
-const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{minHeight:175,aspectRatio:16/9,backgroundColor:'#101d32',borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(8,23,43,.23)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,flexWrap:'wrap'},flex:{flex:1,minWidth:0},input:{borderWidth:1,borderRadius:6,padding:10,fontSize:17,textAlign:'center'},donationRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});
+const s=StyleSheet.create({screen:{flex:1,minHeight:0},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingHorizontal:12,paddingVertical:8,borderBottomWidth:1,gap:8},headerText:{fontSize:13,fontWeight:'800',flexShrink:1},content:{padding:12,gap:10,paddingBottom:30},hero:{minHeight:175,aspectRatio:16/9,backgroundColor:'#101d32',borderRadius:10,overflow:'hidden',justifyContent:'flex-end'},heroImage:{opacity:.9},shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(8,23,43,.23)'},heroText:{padding:12,gap:3},kicker:{color:'#b9e9fa',fontSize:10,fontWeight:'800',letterSpacing:1.3},heroTitle:{fontSize:27,fontWeight:'900',color:'#f4fbff'},heroCopy:{fontSize:12,color:'#e2effa'},row:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:9,flexWrap:'wrap'},flex:{flex:1,minWidth:0},input:{borderWidth:1,borderRadius:6,padding:10,fontSize:17,textAlign:'center'},donationRow:{flexDirection:'row',gap:7,flexWrap:'wrap'},trackWrap:{gap:5},track:{height:10,borderWidth:1,borderRadius:3,overflow:'hidden'},fill:{height:'100%'},stageRow:{flexDirection:'row',justifyContent:'space-between',gap:3,marginVertical:4},stageCell:{flex:1,alignItems:'center',gap:4},stageDot:{width:11,height:11,borderWidth:1,borderRadius:3},buffs:{flexDirection:'row',gap:5},buff:{flex:1,minWidth:0,borderWidth:1,borderRadius:6,padding:7,alignItems:'center',gap:4},recipe:{borderWidth:1,borderRadius:6,padding:8,gap:5},milestone:{borderWidth:1,borderRadius:6,padding:9,gap:6},detail:{paddingTop:5,gap:4},rewardArt:{width:68,height:56,overflow:'hidden',borderWidth:1,borderRadius:5,alignItems:'center',justifyContent:'center'},reward:{flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,paddingTop:8}});

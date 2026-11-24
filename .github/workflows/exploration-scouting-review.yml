@@ -39,6 +39,8 @@ on:
       - 'backend/supabase/release-gates/exploration_scouting_2_release_check.sql'
       - 'tools/verify-exploration-scouting-2-release-gate.mjs'
       - 'apps/mobile/src/components/CombatCompanionPanel.tsx'
+      - 'apps/mobile/src/online/scouting-client.ts'
+      - 'backend/src/server/exploration/scouting-http-application.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'

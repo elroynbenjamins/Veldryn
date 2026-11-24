@@ -1,6 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {parseScoutingClaimBody,parseScoutingDispatchBody} from '../scouting-api-contracts';
 import {ScoutingApplicationService} from '../scouting-application';
+import {ScoutingHttpApplication} from '../scouting-http-application';
 import type {ScoutingRepository} from '../scouting-persistence';
 import type {ScoutingClaimResult,ScoutingDispatchResult,ScoutingMigrationResult,ScoutingSnapshotProjection} from '../scouting-types';
 const snapshot:ScoutingSnapshotProjection={account:{accountId:'a',xp:100,level:2,creditedDiscoveryIds:[],retainedSlots:2},character:{characterId:'c',retainedRegionIds:['GREENFIELDS'],retainedAreaIds:[],discoveredRouteIds:[]},assignments:[],camp:{level:1,capacity:1,active:0},legacyReports:0};
@@ -23,8 +24,9 @@ assert.throws(()=>parseScoutingDispatchBody({requestId:'request_03',kind:'survey
 assert.throws(()=>parseScoutingDispatchBody({requestId:'request_04',kind:'practice',routeId:'r',companionIds:[],trainingMinutes:7}),/INVALID_TRAINING_DURATION/);
 assert.throws(()=>parseScoutingDispatchBody({requestId:'request_05',kind:'camp',missionId:'m',companionIds:['x','x'],earnExplorationXp:false,food:[]}),/INVALID_COMPANION_TEAM/);
 assert.deepEqual(parseScoutingClaimBody({requestId:'request_06',assignmentId:'CA_1'}),{requestId:'request_06',assignmentId:'CA_1'});
-const memory=new Memory(),service=new ScoutingApplicationService(memory);
+const memory=new Memory(),service=new ScoutingApplicationService(memory),http=new ScoutingHttpApplication(service,()=>1234);
 void Promise.all([
  service.snapshot('a','c'),service.dispatch('a','c',{requestId:'request_07',kind:'route',routeId:'r',companionIds:[]},0),
  service.claim('a','c',{requestId:'request_08',assignmentId:'CA_1'},1),service.migrateAccount('a',2)
-]).then(()=>{assert.deepEqual(memory.calls.sort(),['claim','dispatch','migrate','snapshot']);assert.throws(()=>service.dispatch('','','x',-1));console.log('scouting server application PASS')});
+ ,http.get('a','c'),http.dispatch('a','c',{requestId:'request_09',kind:'practice',routeId:'r',companionIds:[],trainingMinutes:5}),http.claim('a','c',{requestId:'request_10',assignmentId:'CA_1'})
+]).then(()=>{assert.deepEqual(memory.calls.sort(),['claim','claim','dispatch','dispatch','migrate','snapshot','snapshot']);assert.throws(()=>service.dispatch('','','x',-1));console.log('scouting server application PASS')});

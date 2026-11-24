@@ -1,3 +1,5 @@
+import {winterHearthDonationTrack,winterHearthUnlockedStock,winterHearthMaxDonation,WINTER_HEARTH_LOG_IDS} from '../src/core/winter-hearth-donations';
+import type {GameState} from '../src/core/types';
 import {validateWinterHearthBonusWindows,winterHearthBonusesAt,winterHearthXpFactorForActionTimes} from '../src/core/winter-hearth-bonus-windows';
 import {ITEMS} from '../src/content/items';
 import {RECIPES} from '../src/content/skills';
@@ -39,3 +41,12 @@ try{validateWinterHearthBonusWindows([{percent:100,startsAt:'2026-12-20T00:00:00
 ok(forgedRejected,'Impossible +25% Guild bonus must be rejected, not clamped into a payout.');
 
 console.log('winter hearth 2026 source-gated crafting and bonus tests passed');
+
+const stock={inventory:{capacity:20,stacks:[{itemId:'GREENWOOD_LOG',quantity:100},{itemId:'GREENWOOD_LOG',quantity:50},{itemId:'IRONWOOD_LOG',quantity:40,locked:true},{itemId:'CROWNWOOD_LOG',quantity:30},{itemId:WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID,quantity:90}]},settings:{lockedItemIds:['CROWNWOOD_LOG']}} as Pick<GameState,'inventory'|'settings'>;
+ok(WINTER_HEARTH_LOG_IDS.length===6&&WINTER_HEARTH_LOG_IDS.every(id=>winterHearthDonationTrack(id)==='logs'),'Six approved wood IDs share one donation track.');
+ok(winterHearthDonationTrack('FROSTFALL_WISP_GLOW_2026')===null,'Retired seasonal item is never donatable.');
+ok(winterHearthUnlockedStock(stock,'GREENWOOD_LOG')===150,'Unlocked stacks combine.');
+ok(winterHearthUnlockedStock(stock,'IRONWOOD_LOG')===0&&winterHearthUnlockedStock(stock,'CROWNWOOD_LOG')===0,'Both stack and item locks block donations.');
+ok(winterHearthUnlockedStock(stock,WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID)===90,'Crafted lights can be donated.');
+ok(winterHearthMaxDonation(150,100,80)===80&&winterHearthMaxDonation(150,10,80)===10,'Guild and weekly limits constrain available stock.');
+ok(winterHearthMaxDonation(150,100,0)===0&&winterHearthMaxDonation(150,-1,80)===0&&winterHearthMaxDonation(NaN,100,80)===0,'Full goals and invalid limits fail closed.');

@@ -19,5 +19,5 @@ export function sourceAudit(){
   if(!m||m.trigger!==trigger||m[field]!==threshold||m.outputs.length!==1||o.channel!=='shield'||o.unit!=='percent_target_max_hp'||o.target!=='self'||o.value!==value||o.durationSeconds!==6||m.internalCooldownSeconds!==cd)fail(id);
   rows.push({id:id+':'+pieces,value,cd,trigger,threshold,duration:6});
  }
- return {sourceIds:rows.length,mechanicFamilies:6,triggerForms:3,rows,reviewOnly:true,releaseApproved:false};
+ return {sourceIds:rows.length,cooldownFamilies:5,triggerForms:3,rows,reviewOnly:true,releaseApproved:false};
 }

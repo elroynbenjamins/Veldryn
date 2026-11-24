@@ -30,3 +30,6 @@ export const EQUIPMENT_RESALE_UPLIFT_RELEASED=false;
 
 /** Account-wide Social Name and independent 3-hero showcases require production RPC/migration + Android approval. */
 export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
+
+/** Ascendant I artwork and renderer are integrated for QA only. Keep hidden until entitlement, native QA and non-P2W blessing parity are approved. */
+export const ASCENDANT_CELESTIAL_VISUALS_RELEASED=false;

@@ -244,6 +244,106 @@ begin
  end loop;
 end $patch_public$;
 
+-- Verified private name selection: only preset IDs, never client color stops.
+create table private.ultra_luxe_name_selection_v1(
+ account_id uuid primary key references auth.users(id) on delete cascade,
+ preset_id text not null check(preset_id in ('ascendant-celestial-name','ascendant-draconic-name'))
+);
+alter table private.ultra_luxe_name_selection_v1 enable row level security;
+revoke all on private.ultra_luxe_name_selection_v1 from public,anon,authenticated;
+create function private.ultra_luxe_owned_names_v1(p_account_id uuid) returns text[]
+language sql stable security invoker set search_path='' as $names$
+ select coalesce(array_agg(case collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' else 'ascendant-draconic-name' end order by collection_id),array[]::text[])
+ from private.ultra_luxe_collection_grants_v1 where account_id=p_account_id and revoked_at is null
+$names$;
+create function private.ultra_luxe_selected_name_v1(p_account_id uuid) returns text
+language sql stable security invoker set search_path='' as $selected$
+ select preset_id from private.ultra_luxe_name_selection_v1 where account_id=p_account_id and preset_id=any(private.ultra_luxe_owned_names_v1(p_account_id))
+$selected$;
+create function private.ultra_luxe_name_style_v1(p_account_id uuid) returns jsonb
+language sql stable security invoker set search_path='' as $style$
+ select case private.ultra_luxe_selected_name_v1(p_account_id)
+ when 'ascendant-celestial-name' then '{"mode":"gradient","gradientColors":["#F3C86F","#FFF4D9","#D6E8FF"],"animation":"flow","ultraLuxePresetId":"ascendant-celestial-name"}'::jsonb
+ when 'ascendant-draconic-name' then '{"mode":"gradient","gradientColors":["#FF9460","#FFE0A1","#EE6651"],"animation":"flow","ultraLuxePresetId":"ascendant-draconic-name"}'::jsonb else null end
+$style$;
+revoke all on function private.ultra_luxe_owned_names_v1(uuid),private.ultra_luxe_selected_name_v1(uuid),private.ultra_luxe_name_style_v1(uuid) from public,anon,authenticated;
+
+create function public.ultra_luxe_name_self_v1() returns jsonb
+language plpgsql stable security definer set search_path='' as $self$
+declare uid uuid:=auth.uid();
+begin
+ if uid is null then raise exception 'AUTH_REQUIRED';end if;
+ return jsonb_build_object('accountId',uid,'ownedIds',private.ultra_luxe_owned_names_v1(uid),'selectedId',private.ultra_luxe_selected_name_v1(uid));
+end $self$;
+create function public.ultra_luxe_name_select_v1(p_preset_id text default null) returns jsonb
+language plpgsql security definer set search_path='' as $select$
+declare uid uuid:=auth.uid();
+begin
+ if uid is null then raise exception 'AUTH_REQUIRED';end if;
+ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('ultra-luxe-account:'||uid::text,0));
+ if p_preset_id is null then
+  delete from private.ultra_luxe_name_selection_v1 where account_id=uid;
+ else
+  if not (p_preset_id=any(private.ultra_luxe_owned_names_v1(uid))) then raise exception 'ULTRA_LUXE_NAME_NOT_OWNED';end if;
+  insert into private.ultra_luxe_name_selection_v1(account_id,preset_id) values(uid,p_preset_id)
+  on conflict(account_id) do update set preset_id=excluded.preset_id;
+ end if;
+ return public.ultra_luxe_name_self_v1();
+end $select$;
+revoke all on function public.ultra_luxe_name_self_v1(),public.ultra_luxe_name_select_v1(text) from public,anon,authenticated;
+grant execute on function public.ultra_luxe_name_self_v1(),public.ultra_luxe_name_select_v1(text) to authenticated;
+
+-- Reuse the existing badge authority and canonical IDs. Independent historical
+-- manual badge grants remain valid; the new collection entitlement adds no row
+-- to the legacy grant table and does not auto-equip a badge.
+do $badge_patch$
+declare d text; old text:=' ) unlocked;'; new text:=$union$
+  union
+  select case collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' else 'ascendant_dragon_sovereign' end,6
+  from private.ultra_luxe_collection_grants_v1 where account_id=p_account_id and revoked_at is null
+ ) unlocked;$union$;
+begin
+ d:=replace(pg_get_functiondef('private.player_badge_unlocks_v1(uuid)'::regprocedure),chr(13),'');
+ if position('private.ultra_luxe_collection_grants_v1' in d)=0 then
+  if length(d)-length(replace(d,old,''))<>length(old) then raise exception 'ULTRA_LUXE_BADGE_UNLOCK_DRIFT';end if;
+  execute replace(d,old,new);
+ end if;
+end $badge_patch$;
+
+-- Keep legacy VIP+/Supporter preference unchanged; selected private name wins
+-- only while its grant is active. Existing v2 reads use this same name source.
+do $social_patch$
+declare d text; old text:=$old$g.tag_color_id,
+    case$old$; new text:=$new$g.tag_color_id,
+    coalesce(private.ultra_luxe_name_style_v1(ids.account_id),case$new$;
+begin
+ d:=replace(pg_get_functiondef('public.guild_identities(uuid[])'::regprocedure),chr(13),'');
+ if position('private.ultra_luxe_name_style_v1' in d)=0 then
+  if position('where auth.uid() is not null' in d)=0 or length(d)-length(replace(d,old,''))<>length(old) or position(E'    end\n  from unnest' in d)=0 then raise exception 'ULTRA_LUXE_SOCIAL_DRIFT';end if;
+  d:=replace(d,old,new);d:=replace(d,E'    end\n  from unnest',E'    end)\n  from unnest');execute d;
+ end if;
+end $social_patch$;
+
+-- Do not let a revoked preset auto-activate on later regrant.
+create function private.ultra_luxe_revoke_selection_v1() returns trigger
+language plpgsql security definer set search_path='' as $revoke$
+declare badge text; preset text;
+begin
+ if old.revoked_at is null and new.revoked_at is not null then
+  badge:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant_sovereign_of_stars' else 'ascendant_dragon_sovereign' end;
+  preset:=case new.collection_id when 'ascendant-celestial-sovereign' then 'ascendant-celestial-name' else 'ascendant-draconic-name' end;
+  delete from private.ultra_luxe_name_selection_v1 where account_id=new.account_id and preset_id=preset;
+  if not exists(select 1 from private.player_collectible_badges_v1 where account_id=new.account_id and badge_id=badge) then
+   update private.player_badge_preferences_v1 set equipped_badge_id=case when equipped_badge_id=badge then 'none' else equipped_badge_id end,
+    featured_badge_ids=array_remove(featured_badge_ids,badge),profile_badge_ids=array_remove(profile_badge_ids,badge)
+   where account_id=new.account_id and (equipped_badge_id=badge or badge=any(featured_badge_ids) or badge=any(profile_badge_ids));
+  end if;
+ end if;
+ return new;
+end $revoke$;
+revoke all on function private.ultra_luxe_revoke_selection_v1() from public,anon,authenticated;
+create trigger ultra_luxe_revoke_selection_v1 after update of revoked_at on private.ultra_luxe_collection_grants_v1 for each row execute function private.ultra_luxe_revoke_selection_v1();
+
 commit;
 -- Before migration: verify service_role permissions (including auth.users read),
 -- RLS/execute privileges, no-op audit behavior, pair serialization, revocation,

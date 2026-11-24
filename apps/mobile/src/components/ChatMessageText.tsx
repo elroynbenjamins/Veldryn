@@ -29,7 +29,7 @@ export function ChatMessageText({body,mentionName,compact=false,numberOfLines,st
  // Preserve larger caller line heights and protect line-limited previews from clipping.
  const baseStyle=[s.body,compact&&s.compact,style];
  const minEmoteLine=preview?(compact?s.previewEmoteLineCompact:s.previewEmoteLine):(compact?s.emoteLineCompact:s.emoteLine);
- const artworkClearance=hasArtwork?{lineHeight:Math.max(StyleSheet.flatten(baseStyle).lineHeight??0,minEmoteLine.lineHeight)}:undefined;
+ const artworkClearance=hasArtwork?{lineHeight:Math.max(StyleSheet.flatten(baseStyle)?.lineHeight??0,minEmoteLine.lineHeight)}:undefined;
  return <Text numberOfLines={numberOfLines} style={[...baseStyle,artworkClearance]}>{content}</Text>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({body:{...typography.body,color:C.text,fontSize:16,lineHeight:28},compact:{fontSize:15,lineHeight:25},emoteImage:{width:36,height:36},emoteImageCompact:{width:32,height:32},emoteLine:{lineHeight:40},emoteLineCompact:{lineHeight:36},previewEmoteImage:{width:24,height:24},previewEmoteImageCompact:{width:21,height:21},previewEmoteLine:{lineHeight:26},previewEmoteLineCompact:{lineHeight:23},emoteFallback:{color:C.accent,fontWeight:'900',backgroundColor:C.infoSurface,borderRadius:radii.sm,paddingHorizontal:4},mention:{color:C.info,fontWeight:'900'},selfMention:{color:C.warning,fontWeight:'900',backgroundColor:C.warningSurface}});}

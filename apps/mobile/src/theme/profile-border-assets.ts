@@ -13,6 +13,6 @@ export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['dungeon:asterfall:briarbound-frame',require('../../assets/profile-borders/dungeon-asterfall-briarbound-frame.webp')],
   ['dungeon:sunscar:amberglass-loop',require('../../assets/profile-borders/dungeon-sunscar-amberglass-loop.webp')],
   ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
-  ...(celestial?[[CELESTIAL_IDS.border,celestial.scene.border] as [string,ImageSourcePropType]]:[]),
+  ...(celestial?[[CELESTIAL_IDS.border,require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);

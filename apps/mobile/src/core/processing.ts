@@ -6,6 +6,7 @@ import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
+import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable} from './winter-hearth-2026';
 
 // One processing start reserves the complete AFK run, capped by its normal AFK window.
 export const MAX_PROCESSING_BATCHES=10_000;
@@ -58,6 +59,7 @@ export function processingAvailability(state:GameState,recipeId:string,batches=1
 /** Reserves every chosen batch up front. Outputs and skill XP arrive only as timed cycles complete. */
 export function startProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number):GameState{
   if(!Number.isFinite(nowMs)||nowMs<0)throw new Error('Invalid processing time.');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   const status=processingAvailability(state,recipeId,batches);if(!status.ready)throw new Error(status.reason);
   const recipe=status.recipe!;
   let inventory=state.inventory.stacks,bank=state.bank.stacks;

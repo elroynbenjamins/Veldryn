@@ -9,7 +9,6 @@ export const WINTER_HEARTH_START_MS = Date.parse('2026-12-03T00:00:00.000Z');
 export const WINTER_HEARTH_END_MS = Date.parse('2026-12-27T00:00:00.000Z');
 export const WINTER_HEARTH_COLOR_ID = 'name_frostfall_aurora_2026';
 export const WINTER_HEARTH_LIGHT_ID = 'FROSTFALL_CHRISTMAS_LIGHTS_2026';
-export const WINTER_HEARTH_WISP_ID = 'FROSTFALL_WISP_GLOW_2026';
 export const WINTER_HEARTH_LOG_IDS = Object.freeze([
   'GREENWOOD_LOG',
   'IRONWOOD_LOG',
@@ -21,18 +20,16 @@ export const WINTER_HEARTH_LOG_IDS = Object.freeze([
 const LOG_SET = new Set(WINTER_HEARTH_LOG_IDS);
 export const WINTER_HEARTH_GOALS = Object.freeze({ logs: 25000, lights: 2500 });
 export const WINTER_HEARTH_WEEKLY_CAPS = Object.freeze({ logs: 2500, lights: 250 });
-export const WINTER_HEARTH_LIGHT_RECIPE = Object.freeze({
-  id: 'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026',
-  skillId: 'smithing',
-  level: 4,
-  inputs: Object.freeze([
-    Object.freeze({ itemId: 'COPPER_ORE', quantity: 4 }),
-    Object.freeze({ itemId: 'GREENWOOD_LOG', quantity: 2 }),
-    Object.freeze({ itemId: WINTER_HEARTH_WISP_ID, quantity: 1 }),
-  ]),
-  output: Object.freeze({ itemId: WINTER_HEARTH_LIGHT_ID, quantity: 5 }),
-  seconds: 40, gold: 30, xp: 35,
+const lightRecipe=(skillId,primary,id)=>Object.freeze({
+ id,skillId,level:4,
+ inputs:Object.freeze([{itemId:primary,quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}].map(Object.freeze)),
+ output:Object.freeze({itemId:WINTER_HEARTH_LIGHT_ID,quantity:5}),seconds:40,gold:30,xp:35,
 });
+export const WINTER_HEARTH_LIGHT_RECIPES=Object.freeze({
+ smithing:lightRecipe('smithing','COPPER_ORE','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026'),
+ tailoring:lightRecipe('tailoring','MOSS_FIBER','CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026'),
+});
+export const WINTER_HEARTH_LIGHT_RECIPE=WINTER_HEARTH_LIGHT_RECIPES.smithing;
 export const WINTER_HEARTH_MILESTONES = Object.freeze([
   Object.freeze({ percent: 25, logs: 6250, lights: 625, guildGold: 10000, gatheringSpeedBps: 400, skillXpBps: 0, combatXpBps: 0, permanentColor: false }),
   Object.freeze({ percent: 50, logs: 12500, lights: 1250, guildGold: 20000, gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 0, permanentColor: false }),

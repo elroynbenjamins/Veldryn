@@ -1,4 +1,4 @@
-import {assertProfileCosmeticGrantDefinition,type ProfileCosmeticGrantState,applyProfileCosmeticGrant} from '../../shared/profile-cosmetic-commerce';
+import {assertProfileCosmeticGrantDefinition} from '../../shared/profile-cosmetic-commerce';
 
 /** No route or Google Play product is mounted while false. */
 export const PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=false;
@@ -6,14 +6,19 @@ export const PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE=false;
 export interface ProfileCosmeticGrantReceipt{
  accountId:string;sku:string;idempotencyKey:string;source:'verified_google_play'|'ops_comp';
 }
+export interface ProfileCosmeticGrantResult{
+ applied:boolean;replayed:boolean;sku:string;addedBorderId:string|null;addedEffectId:string|null;revision:number;
+}
 export interface ProfileCosmeticGrantRepository{
- loadAccountCosmetics(accountId:string):Promise<ProfileCosmeticGrantState>;
- commitAccountCosmetics(input:{accountId:string;state:ProfileCosmeticGrantState;sku:string;idempotencyKey:string;source:ProfileCosmeticGrantReceipt['source']}):Promise<{applied:boolean}>;
+ grantVerified(input:ProfileCosmeticGrantReceipt):Promise<ProfileCosmeticGrantResult>;
 }
 
 /**
  * Prepared server contract only. Fail closed until the commerce ledger migration,
  * verified Play SKUs and rollback/device QA are approved.
+ *
+ * Atomicity, idempotency and game-state revision updates belong to the database
+ * repository/RPC, not to this service layer.
  */
 export class ProfileCosmeticGrantService{
  constructor(private repo:ProfileCosmeticGrantRepository){}
@@ -21,11 +26,6 @@ export class ProfileCosmeticGrantService{
   if(!PROFILE_COSMETIC_COMMERCE_GRANTS_LIVE)throw new Error('PROFILE_COSMETIC_COMMERCE_DISABLED');
   if(!receipt.accountId||!receipt.idempotencyKey)throw new Error('INVALID_PROFILE_COSMETIC_RECEIPT');
   assertProfileCosmeticGrantDefinition(receipt.sku);
-  const current=await this.repo.loadAccountCosmetics(receipt.accountId);
-  const planned=applyProfileCosmeticGrant(current,receipt.sku);
-  const committed=await this.repo.commitAccountCosmetics({
-   accountId:receipt.accountId,state:planned.state,sku:receipt.sku,idempotencyKey:receipt.idempotencyKey,source:receipt.source,
-  });
-  return {...planned,applied:committed.applied};
+  return this.repo.grantVerified(receipt);
  }
 }

@@ -3,9 +3,9 @@ import {AccessibilityInfo,Animated,AppState,Easing,Image,StyleSheet,View,useWind
 import {DRACONIC_BOXES as B,DRACONIC_STAGE as S,draconicPetMode,draconicStageSupported} from '../../core/draconic-showcase-layout';
 
 export type DraconicSceneAssets={
- background:ImageSourcePropType;border:ImageSourcePropType;dragon:ImageSourcePropType;altar:ImageSourcePropType;flames:ImageSourcePropType;ember:ImageSourcePropType;fallbackGlow:ImageSourcePropType;
+ background:ImageSourcePropType;border:ImageSourcePropType;dragon:ImageSourcePropType;flames:ImageSourcePropType;ember:ImageSourcePropType;fallbackGlow:ImageSourcePropType;
 };
-type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;guild?:ReactNode;fallback:ReactNode;active?:boolean;reduceMotion?:boolean};
+type Props={assets:DraconicSceneAssets;equippedPetId?:string|null;alternatePetSource?:ImageSourcePropType;petAccessibilityLabel?:string;portrait:ReactNode;identity:ReactNode;badges?:ReactNode;guild?:ReactNode;fallback:ReactNode;active?:boolean;reduceMotion?:boolean};
 
 function useEmberClock(active:boolean,reduceMotion:boolean){
  const clock=useRef(new Animated.Value(0)).current;
@@ -25,7 +25,7 @@ function useEmberClock(active:boolean,reduceMotion:boolean){
  },[active,reduceMotion,systemReduced,foreground,clock]);
  return clock;
 }
-export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,guild,fallback,active=false,reduceMotion=false}:Props){
+export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource,petAccessibilityLabel,portrait,identity,badges,guild,fallback,active=false,reduceMotion=false}:Props){
  const [width,setWidth]=useState(0),{fontScale}=useWindowDimensions();
  const supported=draconicStageSupported(width,fontScale),clock=useEmberClock(active&&supported,reduceMotion);
  const k=width/S.width;
@@ -35,7 +35,8 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const pulse=clock.interpolate({inputRange:[0,.68,.8,.86,.94,1],outputRange:[0,0,.85,1,.4,0]});
  const flicker=clock.interpolate({inputRange:[0,.2,.4,.6,.8,1],outputRange:[.2,.65,.35,.8,.4,.2]});
  const rise=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,-16*k,0]});
- const breathe=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[1,1.025,1,1.025,1]});
+ const float=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:[0,-3*k,0,-3*k,0]});
+ const ringGlow=clock.interpolate({inputRange:[0,.68,.86,1],outputRange:[.72,.72,1,.72]});
  const sweep=clock.interpolate({inputRange:[0,.5,1],outputRange:[0,260*k,0]});
  return <View style={s.outer} onLayout={e=>setWidth(e.nativeEvent.layout.width)}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
@@ -44,15 +45,18 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
    <Animated.View style={[s.heat,{opacity:Animated.multiply(pulse,.18)}]}/>
    {[{x:33,y:112},{x:75,y:146},{x:134,y:63},{x:149,y:119},{x:291,y:55},{x:305,y:146}].map((p,i)=><Animated.Image key={i} source={assets.ember} resizeMode="contain" style={[pos(p.x,p.y,8,8),{opacity:flicker,transform:[{translateY:rise}]}]}/>)}
    {mode==='matching'?<>
-    <Image source={assets.altar} resizeMode="contain" style={box(B.altar)}/>
-    <Animated.Image source={assets.dragon} resizeMode="contain" style={[box(B.dragon),{transform:[{scale:breathe}]}]}/>
-    <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse}]}/>
+    <Animated.View style={[StyleSheet.absoluteFill,{transform:[{translateY:float}]}]}>
+     <Animated.Image source={assets.fallbackGlow} resizeMode="stretch" style={[box(B.ring),{opacity:ringGlow}]}/>
+     <Image source={assets.dragon} resizeMode="contain" style={box(B.dragon)}/>
+     <Animated.Image source={assets.flames} resizeMode="contain" style={[box(B.flames),{opacity:pulse}]}/>
+    </Animated.View>
    </>:mode==='alternate'&&alternatePetSource?<><Image source={assets.fallbackGlow} resizeMode="contain" style={box(B.glow)}/><Image source={alternatePetSource} resizeMode="contain" style={box(B.alternate)}/></>:null}
   </View>
   {mode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(mode==='matching'?B.dragon:B.alternate)}/>:null}
   <View style={[box(B.plate),s.plate]}/>
   <View style={[box(B.portrait),s.portrait]}>{portrait}</View>
-  <View style={box(B.identity)}>{identity}</View>
+  <View style={[box(B.identity),s.protected]}>{identity}</View>
+  {badges?<View style={[box(B.badges),s.badges]}>{badges}</View>:null}
   {guild?<View style={[box(B.guild),s.guild]}>{guild}</View>:null}
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
    <Image source={assets.border} resizeMode="stretch" style={s.fill}/>
@@ -77,6 +81,8 @@ const s=StyleSheet.create({
  heat:{...StyleSheet.absoluteFillObject,backgroundColor:'#f65d12'},
  plate:{backgroundColor:'#200e17',borderColor:'#b16a34',borderWidth:1,borderRadius:6},
  portrait:{backgroundColor:'#200e17',borderColor:'#c78c46',borderWidth:1,borderRadius:5},
+ protected:{overflow:'hidden'},
+ badges:{justifyContent:'center',alignItems:'center'},
  guild:{backgroundColor:'#41151a',borderColor:'#b16a34',borderWidth:1,borderRadius:4,alignItems:'center',justifyContent:'center'},
  ember:{position:'absolute',width:12,height:12},
 });

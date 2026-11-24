@@ -72,13 +72,13 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  if(draconic&&draconicBackground&&draconicBorder&&height>=205){
  return <DraconicDominionPreview assets={draconic.scene} equippedPetId={profile.petId} alternatePetSource={pet} petAccessibilityLabel={profile.petId===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
-  identity={<View style={s.celestialIdentity}>
-   <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.celestialName}/>
-   <Text numberOfLines={1} style={s.celestialTitle}>{profile.title}</Text>
-   <View style={s.celestialMetaRow}><Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.celestialPower}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
-   <PlayerBadgeShowcase identity={profile.playerBadges} size={11}/>
+  identity={<View style={s.draconicIdentity}>
+   <GuildTaggedPlayerName accountId={profile.accountId} badges={profile.playerBadges} name={profile.character.name||profile.displayName} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.draconicName} badgeSize={11}/>
+   <Text numberOfLines={1} style={s.draconicTitle}>{profile.title}</Text>
+   <View style={s.draconicMetaRow}><Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:profile.character.level})} · {className}</Text>{profile.combatPower!==undefined?<Text numberOfLines={1} style={s.draconicMeta}>{profile.combatPower.toLocaleString()}</Text>:null}</View>
   </View>}
-  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild}/>:undefined}/>;
+  badges={<PlayerBadgeShowcase identity={profile.playerBadges} size={12}/>}
+  guild={showGuild&&guild?<ProfileGuildAffiliation guild={guild} compact/>:undefined}/>;
  }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={profile.petId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={pet} petAccessibilityLabel={profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
@@ -93,6 +93,11 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  ...profileShowcaseStyles(C),
+ draconicIdentity:{flex:1,minWidth:0,overflow:'hidden'},
+ draconicName:{fontSize:11,lineHeight:12,includeFontPadding:false,color:'#fff0d6',fontWeight:'800',flexShrink:1,minWidth:0},
+ draconicTitle:{fontSize:9,lineHeight:10,includeFontPadding:false,color:'#ffb76b'},
+ draconicMeta:{fontSize:8,lineHeight:10,includeFontPadding:false,color:'#f6d4b9',flexShrink:1,minWidth:0},
+ draconicMetaRow:{flexDirection:'row',gap:3,alignItems:'baseline'},
  celestialIdentity:{flex:1,minWidth:0,overflow:'hidden'},
  celestialName:{fontSize:12,lineHeight:15,color:'#fff0c8',fontWeight:'800'},
  celestialTitle:{fontSize:10,lineHeight:12,color:'#efd69b'},

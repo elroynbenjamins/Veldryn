@@ -69,12 +69,11 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  if(draconic&&draconicBackground&&draconicBorder){
  return <DraconicDominionPreview assets={draconic.scene} equippedPetId={character.selectedCosmeticPetId} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
-  identity={<View style={s.celestialIdentity}>
-   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
-   <Text numberOfLines={1} style={s.celestialTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
-   <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
-   <PlayerBadgeShowcase identity={badges.identity} size={11}/>
-  </View>}/>;
+  identity={<View style={s.draconicIdentity}>
+   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
+   <Text numberOfLines={1} style={s.draconicTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+  </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12}/>}/>;
  }
  if(!celestial)return standard;
  return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
@@ -88,6 +87,11 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  ...profileShowcaseStyles(C),
+ draconicIdentity:{flex:1,minWidth:0,overflow:'hidden'},
+ draconicName:{fontSize:11,lineHeight:12,includeFontPadding:false,color:'#fff0d6',fontWeight:'800',flexShrink:1,minWidth:0},
+ draconicTitle:{fontSize:9,lineHeight:10,includeFontPadding:false,color:'#ffb76b'},
+ draconicMeta:{fontSize:8,lineHeight:10,includeFontPadding:false,color:'#f6d4b9',flexShrink:1,minWidth:0},
+ draconicMetaRow:{flexDirection:'row',gap:3,alignItems:'baseline'},
  celestialIdentity:{flex:1,minWidth:0,overflow:'hidden'},
  celestialName:{fontSize:12,lineHeight:15,color:'#fff0c8',fontWeight:'800',flexShrink:1,minWidth:0},
  celestialTitle:{fontSize:10,lineHeight:12,color:'#efd69b'},

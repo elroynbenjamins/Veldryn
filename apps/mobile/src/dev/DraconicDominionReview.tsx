@@ -6,6 +6,7 @@ import {DraconicDominionPreview,DraconicStandardEffects} from '../components/pro
 import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
 import {getDraconicAssets} from '../theme/draconic-integration-assets';
 import {petArtSource} from '../theme/pet-art';
+import {PlayerBadgeShowcase} from '../components/PlayerBadges';
 import {ProfileIcon} from '../components/ProfileIcon';
 
 function Review(){
@@ -19,8 +20,9 @@ function Review(){
   {cases.map(({label,pet})=><View key={label} style={s.section}>
    <Text style={s.label}>{label}</Text>
    <DraconicDominionPreview assets={bundle.scene} equippedPetId={pet} alternatePetSource={pet===alternate?petArtSource(alternate):undefined} active
-    portrait={<ProfileIcon classId="BASTION" size={43}/>}
-    identity={<View><Text numberOfLines={1} style={s.name}>Aster Nightfall</Text><Text style={s.meta}>Dragon Sovereign</Text><Text numberOfLines={1} style={s.meta}>Lv. 50 · Bastion · 142,580</Text><Image source={bundle.badge} style={s.badge}/></View>}
+    portrait={<ProfileIcon classId="BASTION" size={39} style={{width:'100%',height:'100%'}}/>}
+    identity={<View><Text numberOfLines={1} style={s.name}>Aster Nightfall</Text><Text style={s.meta}>Dragon Sovereign</Text><Text numberOfLines={1} style={s.meta}>Lv. 50 · Bastion · 142,580</Text></View>}
+    badges={<PlayerBadgeShowcase identity={{staff:null,supporter:false,featured:['founder','veteran','ascendant_celestial_sovereign'],validUntilMs:Date.now()+3600000}} size={12}/>}
     guild={<Text style={s.meta}>Sovereign</Text>} fallback={<Text style={s.label}>Standard layout fallback</Text>}/>
   </View>)}
   <Text style={s.label}>Independent background effects</Text>

@@ -9,12 +9,12 @@ import {PlayerBadges} from './PlayerBadges';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import {useIdentityBadges} from '../online/PlayerBadgeProvider';
 
-export function GuildTaggedPlayerName({name,guildTag,tagColorId,nameStyle,reduceMotion=false,style,numberOfLines,badges,accountId,plainTag=false}:{badges?:PlayerBadgeIdentity;accountId?:string;name:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference;reduceMotion?:boolean;style?:StyleProp<TextStyle>;numberOfLines?:number;plainTag?:boolean}){
+export function GuildTaggedPlayerName({name,guildTag,tagColorId,nameStyle,reduceMotion=false,style,numberOfLines,badges,accountId,plainTag=false,badgeSize}:{badges?:PlayerBadgeIdentity;accountId?:string;name:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference;reduceMotion?:boolean;style?:StyleProp<TextStyle>;numberOfLines?:number;plainTag?:boolean;badgeSize?:number}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const identity=useIdentityBadges(accountId,badges);
  const normalized=guildTag?normalizeGuildTag(guildTag):undefined;
  const tagColor=guildTagColor(tagColorId??undefined);
- return <View style={s.row}>{normalized?<Text numberOfLines={1} style={[s.tag,{color:tagColor,borderColor:tagColor},plainTag&&s.plainTag]}>[{normalized}]</Text>:null}<PlayerStyledName name={name} nameStyle={nameStyle} reduceMotion={reduceMotion} numberOfLines={numberOfLines??1} style={[s.name,style]}/><PlayerBadges identity={identity}/></View>;
+ return <View style={s.row}>{normalized?<Text numberOfLines={1} style={[s.tag,{color:tagColor,borderColor:tagColor},plainTag&&s.plainTag]}>[{normalized}]</Text>:null}<PlayerStyledName name={name} nameStyle={nameStyle} reduceMotion={reduceMotion} numberOfLines={numberOfLines??1} style={[s.name,style]}/><PlayerBadges identity={identity} size={badgeSize}/></View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:5,minWidth:0,flexShrink:1},

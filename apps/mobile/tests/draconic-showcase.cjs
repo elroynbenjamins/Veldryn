@@ -17,6 +17,11 @@ for(const box of Object.values(B)){assert(box.x>=10&&box.y>=10&&box.x+box.w<=S.w
 assert(B.dragon.x+B.dragon.w<B.identity.x);
 assert(B.alternate.x+B.alternate.w<B.identity.x);
 assert(B.portrait.y+B.portrait.h<=B.identity.y);
+assert(B.portrait.x+B.portrait.w<B.badges.x);
+assert(B.badges.y+B.badges.h<B.identity.y);
+assert(B.guild.y+B.guild.h<=165);
+assert(B.ring.x+B.ring.w<B.plate.x);
+assert(!('altar' in B));
 assert(B.identity.y+B.identity.h<=B.guild.y);
 assert(draconicStageSupported(340,1));assert(!draconicStageSupported(299,1));assert(!draconicStageSupported(340,1.3));
 const account={unlockedProfileBackgroundIds:[I.background],unlockedProfileBorderIds:[I.border],unlockedCosmeticPetIds:[I.pet]};

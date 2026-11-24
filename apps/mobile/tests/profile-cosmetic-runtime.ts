@@ -1,4 +1,5 @@
-import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase} from '../src/core/profile-cosmetic-motion-v2';
+import {profileSceneBorderZones,profileSceneGlowBounds} from '../src/core/profile-frame-layout';
+import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase,cosmeticViewportVisible} from '../src/core/profile-cosmetic-motion-v2';
 import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -61,5 +62,26 @@ ok(motionSource.includes('const staticItems=useMemo')&&motionSource.includes('()
 ok(motionSource.includes('const glows=useMemo'),'procedural glow interpolation is memoized');
 const collapsed=stageSource.slice(stageSource.indexOf('if(collapsed)return'),stageSource.indexOf('return <View style={s.root}>'));
 ok(collapsed.includes('active reduceMotion')&&!collapsed.includes('reduceMotion={state.settings.reduceMotion}/>:effectRuntime'),'collapsed strip uses static effects');
-ok(audienceSource.includes('cosmeticsActive={visible}')&&publicSource.includes('active={cosmeticsActive&&(review?.active??true)}'),'hidden audience preview stops cosmetics');
+ok(audienceSource.includes('cosmeticsActive={visible&&cosmeticViewport.visible}')&&publicSource.includes('active={cosmeticsActive&&(review?.active??true)}'),'hidden audience preview stops cosmetics');
 console.log('PASS: cosmetic idle and static rendering contract');
+
+for(const [top,height,scroll,viewport,expected] of [
+ [0,0,0,200,false],[0,180,0,0,false],[0,180,0,200,true],
+ [0,180,179,200,true],[0,180,180,200,false],[250,180,0,250,false],
+ [250,180,1,250,true],[250,180,430,100,false],[-20,180,0,200,true],
+ [0,180,-30,200,true],[0,180,NaN,200,false],
+] as const)equal(cosmeticViewportVisible(top,height,scroll,viewport),expected,'scroll viewport intersection');
+for(const row of standard){
+ for(const [width,height] of [[104,72],[260,174],[340,205],[480,270],[640,360]]){
+  const zones=profileSceneBorderZones(width,height);
+  for(const g of row.glows){
+   const box=profileSceneGlowBounds(width,height,g.x,g.y,g.size);
+   ok(!!box,row.collection+' glow fits border stencil');
+   if(!box)continue;
+   ok(zones.some(z=>box.x>=z.x-.001&&box.y>=z.y-.001&&box.x+box.width<=z.x+z.width+.001&&box.y+box.height<=z.y+z.height+.001),row.collection+' glow remains fully inside border zone');
+  }
+ }
+}
+ok(motionSource.includes('if(next!==last.current)')&&audienceSource.includes('onScroll={cosmeticViewport.onScroll}'),'scroll visibility only updates on crossings');
+ok(motionSource.includes('profileSceneGlowBounds(size.width,size.height'),'procedural glows use the safe frame stencil');
+console.log('PASS: standard cosmetic glow clipping and scroll viewport boundary regressions');

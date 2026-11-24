@@ -253,7 +253,7 @@ export function simulateUnifiedEquipmentCombatV2(
  return {
   combat:simulateCombat(finalInput,undefined,undefined,syncAuthority),
   ...(syncRehearsal?{synchronizationRehearsal:{releaseEnabled:false as const,
-    unsupported:['resource_regen_pct','harmful_effect_resist_pct','stagger_strength_pct']}}:{}),
+    unsupported:[]}}:{}),
   enemyMechanicLabels:enemies.mechanicLabels,
   equipmentEvidence:evidence,
   ...(synchronizationReview?{synchronizationReview}:{}),

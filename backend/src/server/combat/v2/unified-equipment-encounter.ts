@@ -67,17 +67,62 @@ export interface TrustedEquipmentRuntimeV2 {
  /** Optional until canonical CP weights are approved; no invented shares. */
  readonly compositionPolicy?:ApprovedPowerCompositionPolicyV2;
 }
+interface PersonalStatStagesV2{
+ readonly classOnly:CombatStats;
+ readonly afterSkills:CombatStats;
+ readonly afterItemBase:CombatStats;
+ readonly afterSets:CombatStats;
+ readonly afterAffixes:CombatStats;
+}
+interface PersonalStatContributionsV2{
+ readonly classOnly:CombatStats;
+ readonly skills:CombatStats;
+ readonly itemBase:CombatStats;
+ readonly sets:CombatStats;
+ readonly affixes:CombatStats;
+}
+const personalStatKeys:readonly (keyof CombatStats)[]=[
+ 'maxHp','attackPower','healingPower','defense','accuracy','evasion',
+ 'critChance','critMultiplier','haste',
+];
+/** Preserve the existing stage rounding and multiplicative semantics. Both
+ * base and set policies describe FINAL ceilings; neither may be bypassed
+ * by a later stage. This is a rejection boundary, not a new stat cap curve. */
+function finalizePersonalStatsV2(
+ stages:PersonalStatStagesV2,
+ basePolicy:ApprovedEquipmentBasePolicyV2,
+ setsPolicy:ApprovedSetPolicyV2,
+):PersonalStatContributionsV2{
+ for(const key of personalStatKeys){
+  const baseLimit=basePolicy.ceilings[key],setLimit=setsPolicy.ceilings[key];
+  if(!Number.isFinite(baseLimit)||baseLimit<=0||
+     !Number.isFinite(setLimit)||setLimit<=0)
+   throw Error('combat_v2_missing_final_personal_stat_ceiling:'+key);
+  const actual=stages.afterAffixes[key];
+  if(!Number.isFinite(actual)||actual<0||
+    (key==='maxHp'&&actual<=0)||(key==='critMultiplier'&&actual<1))
+   throw Error('combat_v2_invalid_final_personal_stat:'+key);
+  if(actual>Math.min(baseLimit,setLimit))
+   throw Error('combat_v2_final_personal_stat_exceeds_ceiling:'+key);
+ }
+ // Deltas are ordered/marginal, so cross-stage multipliers and historical
+ // rounding are attributed exactly once to the stage that applied them.
+ const delta=(before:CombatStats,after:CombatStats):CombatStats=>
+  Object.fromEntries(personalStatKeys.map(key=>[key,after[key]-before[key]])) as unknown as CombatStats;
+ return {classOnly:{...stages.classOnly},
+  skills:delta(stages.classOnly,stages.afterSkills),
+  itemBase:delta(stages.afterSkills,stages.afterItemBase),
+  sets:delta(stages.afterItemBase,stages.afterSets),
+  affixes:delta(stages.afterSets,stages.afterAffixes)};
+}
 export interface EquipmentEncounterEvidenceV2 {
  readonly actorId:string;
  /** QA-only source trace. Not public CP, player stat UI, or untrusted input. */
  readonly classPolicyVersion:string;
- readonly statStages:Readonly<{
-   classOnly:CombatStats;
-   afterSkills:CombatStats;
-   afterItemBase:CombatStats;
-   afterSets:CombatStats;
-   afterAffixes:CombatStats;
- }>;
+ readonly statStages:Readonly<PersonalStatStagesV2>;
+ /** Marginal deltas at the existing stage order, not independently priced CP.
+  * Encounter effects, advanced affixes and unimplemented sources are separate. */
+ readonly statContributions:Readonly<PersonalStatContributionsV2>;
  readonly baseSources:readonly BaseEquipmentSourceV2[];
  readonly setEffects:readonly ResolvedSetEffectV2[];
  readonly affixSources:readonly AppliedEquipmentAffixV2[];
@@ -155,14 +200,16 @@ function compileEquippedActor(
  const set=applyVerifiedSetBonusesV2(base.actor,checked,runtime.setsPolicy,true);
  const affixes=compileTrustedEquipmentAffixesV2(
   set.actor,ids.map(id=>runtime.affixesByInstanceId[id]),runtime.affixPolicy,true);
+ const statStages:PersonalStatStagesV2={
+  classOnly:{...classOnly.stats},afterSkills:{...skills.stats},
+  afterItemBase:{...base.actor.stats},afterSets:{...set.actor.stats},
+  afterAffixes:{...affixes.actor.stats},
+ };
+ const statContributions=finalizePersonalStatsV2(statStages,runtime.basePolicy,runtime.setsPolicy);
  return {
   actor:affixes.actor,
   evidence:{actorId:actor.id,classPolicyVersion:runtime.classBaselinePolicy.version,
-    statStages:{
-     classOnly:{...classOnly.stats},afterSkills:{...skills.stats},
-     afterItemBase:{...base.actor.stats},afterSets:{...set.actor.stats},
-     afterAffixes:{...affixes.actor.stats},
-    },
+    statStages,statContributions,
     baseSources:base.sources,
     setEffects:set.applied,affixSources:affixes.sources,
     ...(runtime.compositionPolicy?{

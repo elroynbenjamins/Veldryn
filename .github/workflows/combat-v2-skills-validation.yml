@@ -51,6 +51,11 @@ on:
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
+# Only supersede older revisions of the same PR. Manual and push runs remain independent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   contract:
     name: Server skills, variants and legacy combat parity
@@ -94,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2|issuePersistedPartyEquipmentV2TraitAuthority|reviewPartyV2RunBinding|PARTY_V2_RUN_BINDING_POLICY|issuePersistedPartyEnemyV2EngineAuthority|preparePartyEnemyKitsV2|projectPartySynchronizationLobbyV2|previewPartySynchronizationCandidateV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2|issuePersistedPartyEquipmentV2TraitAuthority|reviewPartyV2RunBinding|PARTY_V2_RUN_BINDING_POLICY|issuePersistedPartyEnemyV2EngineAuthority|preparePartyEnemyKitsV2|projectPartySynchronizationLobbyV2|previewPartySynchronizationCandidateV2|preparePartyRecoverySnapshotV2|reviewStoredPartyRecoveryV2|loadPartyRecoverySnapshotV2|reserveStagedPartyEncounterV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi

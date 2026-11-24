@@ -326,12 +326,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       originalEnemyAbility:abilityId==='BASIC'||(source.definition.abilities.some(a=>a.id===abilityId)&&
         !(source.definition.phases??[]).some(p=>p.id===abilityId)),
       direct:eventType==='damage',physical:effect.damageType==='physical',nontrue:effect.damageType!==undefined&&effect.damageType!=='true',
-      sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield,raw
+      sourceAlive:source.alive,targetAlive:target.alive,targetHp:target.hp,targetMaxHp:target.definition.stats.maxHp,shield:target.shield+eq2PrivateHit.shieldAvailable(target.definition.id,now),raw
     }:undefined;
     if(eq2PrivateHit&&eq2Incoming){
       const adjusted=eq2PrivateHit.beforeIncomingHit(eq2Incoming);
       if(adjusted.activated.length){
-        const prevented=Math.max(0,Math.min(target.hp,Math.max(0,raw-target.shield))-Math.min(target.hp,Math.max(0,adjusted.raw-target.shield)));
+        const prevented=Math.max(0,Math.min(target.hp,Math.max(0,raw-eq2Incoming.shield))-Math.min(target.hp,Math.max(0,adjusted.raw-eq2Incoming.shield)));
         raw=adjusted.raw;
         events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
           abilityId:'V2_QA_DEFENSE:'+adjusted.activated.join('+'),amount:Number(prevented.toFixed(2)),detail:'private_qa_incoming_reduction'});
@@ -341,13 +341,30 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     // Direct true damage retains its legacy shield interaction.
     const bypassShield=eventType==='dot_tick'&&effect.damageType==='true';
     const absorbed=bypassShield?0:Math.min(target.shield,raw); target.shield-=absorbed;
+    // The ordinary shield pool/reflect ledger is untouched by equipment
+    // shield consumption. Only residual nontrue original enemy damage qualifies.
+    const eq2Absorption=eq2PrivateHit&&eq2Incoming?eq2PrivateHit.absorbShield(eq2Incoming,Math.max(0,raw-absorbed)):undefined;
+    if(eq2Absorption){
+      events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
+        abilityId:'V2_QA_SHIELD:'+eq2Absorption.id,amount:eq2Absorption.amount,detail:'private_qa_shield_absorbed'});
+      if(eq2Absorption.broken)events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
+        abilityId:'V2_QA_SHIELD:'+eq2Absorption.id,detail:'private_qa_shield_depleted'});
+    }
+    const residual=raw-absorbed-(eq2Absorption?.amount??0);
     const dealt=Math.max(0,source.combatV2&&eventType==='damage'
-      ?Math.min(target.hp,raw-absorbed):raw-absorbed);
+      ?Math.min(target.hp,residual):residual);
     target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     if(eq2PrivateHit&&eq2Incoming){
       for(const id of eq2PrivateHit.afterIncomingHit(eq2Incoming,Math.max(0,eq2Incoming.targetHp-target.hp)))
         events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:source.definition.id,
           abilityId:'V2_QA_DEFENSE_EARN:'+id,detail:'private_qa_defense_earned'});
+      const grant=eq2PrivateHit.afterShieldHit(eq2Incoming,Math.max(0,eq2Incoming.targetHp-target.hp));
+      if(grant){
+        if(grant.replaced)events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,
+          abilityId:'V2_QA_SHIELD:'+grant.replaced.id,amount:grant.replaced.remaining,detail:'private_qa_shield_replaced'});
+        events.push({atMs:now,type:'equipment_trait_trigger',actorId:target.definition.id,targetId:target.definition.id,
+          abilityId:'V2_QA_SHIELD:'+grant.id,amount:grant.amount,expiresAtMs:grant.expiresAt,detail:'private_qa_shield_granted'});
+      }
     }
     if(eq2PrivateHit&&eq2Event){
       for(const id of eq2PrivateHit.afterDirectHit(eq2Event,dealt))
@@ -659,6 +676,9 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
     return active.pct/100;
   };
   for(let now=0; now<=maxMs; now+=tick){
+    const expiredEq2Shield=eq2PrivateHit?.expireShield(now);
+    if(expiredEq2Shield)events.push({atMs:now,type:'equipment_trait_trigger',actorId:expiredEq2Shield.ownerId,
+      abilityId:'V2_QA_SHIELD:'+expiredEq2Shield.id,amount:expiredEq2Shield.remaining,detail:'private_qa_shield_expired'});
     if(v2Encounter)for(const actor of players){
       const v2=actor.combatV2;if(!actor.alive||!v2)continue;
       const due=v2.scheduledTotemAt.filter(at=>at<=now);

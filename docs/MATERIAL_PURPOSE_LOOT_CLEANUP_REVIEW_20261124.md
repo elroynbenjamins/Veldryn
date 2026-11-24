@@ -180,5 +180,5 @@ Production cutover completed after explicit approval.
 - Production transaction then committed atomically: gift catalogue closure + stock retirement + carried/Bank Gold credits + durable receipt + claimed-history notice.
 - Final production postflight: remaining_quantity=0, open_gift_catalog_rows=0, pending_inbox_rewards=0, receipt_count=5, retired_quantity=850, credited_gold=68,000, notice_count=5, unexpected_state_references=0, claimable_notice_count=0, wallet_mismatches=0, database_reconciliation_ready=true.
 - Compensation split: 143 inventory Wings -> 11,440 carried Gold; 707 bank Wings -> 56,560 Bank Gold.
-- Final live grant-surface audit returned no Echo Bat Wing / ITEM_0077 references.
+- Final live grant-surface audit returned no active or pending Echo Bat Wing / ITEM_0077 grant sources; the only remaining references are the 5 claimed compensation history notices.
 - Historical item catalogue identity and seen-item history remain intentionally readable. Durable `material_retirement_v1` receipts prevent accidental double compensation or silent reissuance.

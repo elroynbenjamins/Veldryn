@@ -10,9 +10,10 @@ const retired=new Set(catalogue.retired.items.flatMap(x=>x.retiredRecipeIds));
 const refined=new Set([...old.processingReview.map(x=>x.output),'froststeelIngots','frostwoodPlanks','frostweaveCloth','hardenedFrostleather']);
 const advanced=new Set(['frostmailLinks','smokeglassPlates','bloodtemperedSteel']);
 const binders=new Set(['VERDANT_BINDING_RESIN','IRONWOOD_BINDING_RESIN','SUNSCAR_DUNE_BINDER','GLASSBOUND_BINDER','bindingResin']);
-const combat=new Set(['EQ2_GLASSBOUND_PLATE','AMBERGLASS','EQ2_BOAR_TUSK','EQ2_GLASSBOUND_SHARD','EQ2_GLASSHEART_FRAGMENT','EQ2_MIRAGEFANG_CORE','EQ2_RIVERSTONE','EQ2_SUNSCAR_SCALE','EQ2_THORNSTONE','EQ2_TROLL_SINEW','IRONWOOD_FANG','rimeboneShards','iceveinSigils','shardhearts','dawnspireCores','fortressCores','temperedHearts']);
+const combat=new Set(['EQ2_GLASSBOUND_PLATE','EQ2_BOAR_TUSK','EQ2_GLASSHEART_FRAGMENT','EQ2_MIRAGEFANG_CORE','EQ2_SUNSCAR_SCALE','EQ2_TROLL_SINEW','IRONWOOD_FANG','rimeboneShards','iceveinSigils','shardhearts','dawnspireCores','fortressCores','temperedHearts']);
+const otherPreserved=new Set(['AMBERGLASS','EQ2_GLASSBOUND_SHARD','EQ2_RIVERSTONE','EQ2_THORNSTONE']);
 const noAuthority={reviewOnly:true,mayCraft:false,mayMint:false,mayTrade:false,releaseApproved:false};
-function classify(id){if(refined.has(id))return 'refined';if(advanced.has(id))return 'advanced';if(binders.has(id))return 'binder';if(combat.has(id))return 'preserved_source';throw Error('eq2_component_economy_unknown_input:'+id);}
+function classify(id){if(refined.has(id))return 'refined';if(advanced.has(id))return 'advanced';if(binders.has(id))return 'binder';if(combat.has(id))return 'preserved_source';if(otherPreserved.has(id))return 'preserved_other';throw Error('eq2_component_economy_unknown_input:'+id);}
 function normalizeT5(item,route,r){
  const pieceId=item.itemId??item.id;
  if(typeof pieceId!=='string'||!pieceId)throw Error('eq2_component_economy_missing_piece_id');
@@ -49,7 +50,7 @@ export function summarizeComponentEconomy(){
  const rows=proposeComponentEconomy();
  return {routes:rows.length,items:new Set(rows.map(x=>x.itemId)).size,byTier:[1,2,3,4,5].map(tier=>{
   const r=rows.filter(x=>x.tier===tier),sum=k=>r.reduce((n,x)=>n+x[k],0);
-  const byKind=Object.fromEntries(['refined','advanced','binder','preserved_source'].map(kind=>[kind,r.flatMap(x=>x.inputs).filter(x=>x.kind===kind).reduce((n,x)=>({previous:n.previous+x.previous,candidate:n.candidate+x.candidate}),{previous:0,candidate:0})]));
+  const byKind=Object.fromEntries(['refined','advanced','binder','preserved_source','preserved_other'].map(kind=>[kind,r.flatMap(x=>x.inputs).filter(x=>x.kind===kind).reduce((n,x)=>({previous:n.previous+x.previous,candidate:n.candidate+x.candidate}),{previous:0,candidate:0})]));
   return {tier,routes:r.length,previousGold:sum('previousGold'),candidateGold:sum('candidateGold'),byKind};
  }),...noAuthority};
 }

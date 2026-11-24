@@ -1,0 +1,19 @@
+# Class Synchronization — hidden 2.0 review foundation (24 Nov 2026)
+
+Owner-approved direction: instant, party-wide class affinity/tactical bonuses; all nine base classes have four partners (18 unique pairs). No levels, XP, affinity grind, relationship or guild membership requirements. Both specializations of each base class qualify. No CP effects or matchmaking admission restrictions.
+
+## Implemented
+- Versioned, server-side pure catalogue and resolver, unique class pair detection, stable ordering, no duplicate stacking.
+- Actual participating character identities must be supplied by a trusted encounter boundary; input roster capped at four and duplicate character IDs/unknown classes rejected. Guild PvE uses a four-member participating subgroup, not an entire guild. Solo and individual World Boss attempts have no effect.
+- 1/2/3/4/5/6 active links scale all bonuses to 100/100/80/65/55/50%. Integer basis points and deterministic floor. Provisional synchronization-only caps: +4 percentage points critical chance, 6% damage reduction, 10% for other identical modifier channels. Global engine caps are separate.
+- Private unified Equipment/Skills compiler optionally exposes a review plan from the verified build classes and owned equipment runtime character IDs, after compilation. No changes to combat outcomes, equipment evidence, personal CP or default callers. This is not yet authenticated membership proof. Both releaseEnabled and canAuthorizeCombat are false.
+- Dedicated catalogue, malformed inputs, duplicate classes, replay, all 36 legal dungeon class compositions, all 495 unordered four-class multisets (including duplicates), and real four-player compile review parity tests wired into hidden CI.
+
+## Required before activation
+1. Reconcile with Skills counterplay #1700 and shared 2.0 release branch. Bind to a server-loaded encounter/party roster and versioned membership, class, encounter, seed and ruleset snapshot. For an ongoing encounter freeze the roster at start; refresh at the next encounter boundary after substitutions. Prevent spectators, companions, nonparticipating members and forged or stale identities from counting. Preserve deterministic dungeon replay, persistent HP/cooldowns, group reward authority, and matchmaking role rules.
+2. Implement each typed channel in the common 2.0 engine, after base/gear/skills, before appropriate final clamps; keep outgoing and incoming effects distinct. Percentage vs percentage-point semantics must be explicitly matched to existing combat units. In particular armor/ward, haste/accuracy/evasion, penetration, resource regeneration and harmful-effect resistance/stagger require engine reconciliation. Do not convert missing effects into generic damage.
+3. Conditional effects: execute only target HP <25%, low-HP damage only source HP <50%, debuffed/shielded target checked at hit resolution; lifesteal scales existing legitimate lifesteal only; do not grant a new proc or double apply DoT, shield or healing. No global guarantees that an extra link always improves actual encounter performance: dilution can reduce a specific stat, and all combat benefits depend on matchup.
+4. Model mixed/same-affinity parties, compare equal CP and matched seeded encounters, verify all caps with gear/passives, and tune provisional numbers without making synchronization mandatory. No assumption that nominal total bonus implies effective DPS.
+5. Design and obtain owner approval of mobile lobby/recruitment preview, active bonus summary and accessible/localized descriptions. Show all applicable links and effective scaled/capped totals; do not make links a recruitment filter or queue prerequisite.
+
+No runtime integration of bonuses, live routes, DB migration, production/staging writes, UI changes, main merge, deploy or release flag changes. This is an unmounted review-only foundation.

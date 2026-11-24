@@ -15,6 +15,9 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+ 'Same meal extends duration up to {hours}h.':["Та же еда продлевает действие до {hours} ч.","Aynı yemek süreyi {hours} saate kadar uzatır."],
+ 'After eating: {minutes} min':["После еды: {minutes} мин.","Yedikten sonra: {minutes} dk."],
+ 'Meal duration full':["Максимальная длительность еды","Yemek süresi dolu"],
   // Compact tool and inspection display in the newer two locales.
   "BASE STATS": ["ОСНОВНЫЕ ХАРАКТЕРИСТИКИ","TEMEL ÖZELLİKLER"],
   "Equipment base stats": ["Основные характеристики снаряжения","Ekipmanın temel özellikleri"],

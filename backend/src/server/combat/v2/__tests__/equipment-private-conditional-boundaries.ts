@@ -238,3 +238,62 @@ export function runPrivateConditionalBoundaries(ravager:CombatantDefinition,iron
  }
 
 }
+
+
+/** Same tests run with typed small QA fixtures and original Forge compiled actors. */
+export function runPrivateSupportBoundaries(healer:CombatantDefinition,stonecaller:CombatantDefinition,tank:CombatantDefinition,damage:CombatantDefinition,boss:CombatantDefinition){
+ const input:CombatInput={seed:'QA_V28_SUPPORT_BOUNDARY',players:[healer,tank,damage,stonecaller],enemies:[boss]};
+ const bright='eq2_t4_brightweave:4' as const,sanctuary='eq2_rare_t5_dawnspire:4' as const,
+  refuge='eq2_t5_dawnweave:4' as const,life='eq2_dungeon_rootbound_t2_lifebloom:4' as const,
+  comfort='eq2_combo_t5_dawnmender_chain:2' as const;
+ const runtime=(ids:readonly Eq2PrivateHitIdV22[],owner=healer.id)=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,owner,ids,()=>true))!;
+ const heal=(now:number,target:CombatantDefinition=tank)=>({now,actorId:healer.id,targetId:target.id,abilityId:'AUTHORED_HEAL',
+  originalClassHeal:true,direct:true,sourceAlive:true,targetAlive:true,targetHpBefore:target.stats.maxHp/2,
+  targetMaxHp:target.stats.maxHp,actualHeal:target.stats.maxHp/4});
+ const hit=(now:number,target:CombatantDefinition,raw:number)=>({now,actorId:boss.id,targetId:target.id,abilityId:'BASIC',originalEnemyAbility:true,
+  direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:target.stats.maxHp/2,targetMaxHp:target.stats.maxHp,shield:0,raw});
+ const r=runtime([bright,sanctuary,life]),first=heal(1000);
+ for(const change of [{actorId:damage.id},{targetId:'OUTSIDER'},{targetMaxHp:first.targetMaxHp+1},{sourceAlive:false},{targetAlive:false},
+  {originalClassHeal:false},{direct:false},{actualHeal:0},{targetHpBefore:first.targetMaxHp},{actualHeal:first.targetMaxHp},{abilityId:'V2_PROC'},{abilityId:'GEM_HEAL'}])
+  assert.deepEqual(r.afterSupportHeal({...first,...change}),[]);
+ const grants=r.afterSupportHeal(first);
+ assert.deepEqual(grants,[{channel:'shield',id:sanctuary,amount:tank.stats.maxHp*5/100,expiresAt:7000},{channel:'defense',id:life,pct:3,expiresAt:7000}]);
+ assert.deepEqual(r.afterSupportHeal(first),[]);
+ assert.equal(r.shieldAvailable(tank.id,1000),0);
+ assert.equal(r.shieldAvailable(tank.id,1001),tank.stats.maxHp*5/100);
+ assert.equal(r.shieldAvailable(damage.id,1001),0);
+ assert.equal(r.timedStat(tank.id,1001,'defense').pct,3);
+ assert.equal(r.timedStat(healer.id,1001,'defense').pct,0);
+ // Separate family can proc on another target; used family cannot.
+ const second=r.afterSupportHeal(heal(1000,damage));
+ assert.deepEqual(second,[{channel:'shield',id:bright,amount:damage.stats.maxHp*3.3/100,expiresAt:7000}]);
+ assert.deepEqual(r.afterSupportHeal(heal(1001,stonecaller)),[]);
+ assert.equal(r.shieldAvailable(damage.id,1001),damage.stats.maxHp*3.3/100);
+ const part=hit(1100,tank,tank.stats.maxHp*.01);
+ r.beforeIncomingHit(part);
+ assert.equal(r.absorbShield(part,tank.stats.maxHp*.01)?.id,sanctuary);
+ assert.equal(r.absorbShield(part,tank.stats.maxHp*.01),undefined);
+ assert.ok(Math.abs(r.shieldAvailable(tank.id,1100)-tank.stats.maxHp*.04)<1e-7);
+ assert.equal(r.shieldAvailable(damage.id,1100),damage.stats.maxHp*3.3/100);
+ const trueHit={...hit(1200,tank,100),nontrue:false};r.beforeIncomingHit(trueHit);assert.equal(r.absorbShield(trueHit,100),undefined);
+ const legacy=hit(1300,tank,100);r.beforeIncomingHit(legacy);assert.equal(r.absorbShield(legacy,0),undefined);
+ assert.equal(r.timedStat(tank.id,6999,'defense').pct,3);
+ assert.equal(r.timedStat(tank.id,7000,'defense').pct,0);
+ assert.equal(r.expireShield(7000)?.ownerId,tank.id);
+ assert.equal(r.expireShield(7000)?.ownerId,damage.id);
+ assert.equal(r.expireShield(7000),undefined);
+ assert.deepEqual(r.afterSupportHeal(heal(20999,damage)),[]);
+ const self=r.afterSupportHeal(heal(21000,healer));
+ assert.deepEqual(self,[{channel:'shield',id:sanctuary,amount:healer.stats.maxHp*5/100,expiresAt:27000},{channel:'defense',id:life,pct:3,expiresAt:27000}]);
+ const s=runtime([refuge,comfort],stonecaller.id);
+ const fromStone={...heal(1000,tank),actorId:stonecaller.id};
+ assert.deepEqual(s.afterSupportHeal(fromStone),[{channel:'shield',id:refuge,amount:tank.stats.maxHp*3/100,expiresAt:7000},{channel:'defense',id:comfort,pct:3,expiresAt:7000}]);
+ assert.deepEqual(s.afterSupportHeal(heal(1000)),[]);
+ assert.throws(()=>runtime([bright,'eq2_t1_brightweave:4']),/fixture_scope/);
+ assert.throws(()=>runtime([bright,'eq2_t5_rimewatch:4']),/fixture_scope/);
+ assert.throws(()=>runtime([bright],tank.id),/fixture_scope/);
+ const token=issueEq2PrivateHitQaV22(input,healer.id,[bright],()=>true);
+ assert.throws(()=>authorizeEq2PrivateHitQaV22({...input,players:input.players.slice(0,3)},token),/invalid_authority/);
+ assert.throws(()=>issueEq2PrivateHitQaV22({...input,players:[...input.players,tank]},healer.id,[bright],()=>true),/fixture_scope/);
+ console.log('PASS: V28 support exact healed target, real missing HP, two independent recipient shields, owner cooldown, recipient defense, self/Stonecaller, expiry and party scope negatives');
+}

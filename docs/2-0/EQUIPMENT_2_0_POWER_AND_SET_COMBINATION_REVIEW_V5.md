@@ -26,7 +26,7 @@ Check exact same-tier set IDs and source member slots. Each set's structural thr
 | T4 | 204/210 | 1177/1330 | 22/162 |
 | T5 | 317/325 | 2266/2600 | 49/240 |
 
-Independent source-mask calculation. Of 897 same-tier pairings, 878 can fit two distinct 2-piece thresholds; of 5,656 triples, 5,030 fit three 2-piece thresholds. These counts do not establish gameplay viability or approved effects. Full-set pairs are restricted to combined size <=8 before checking slot conflicts. A 6+4 full combination is impossible with these eight slots. Separate set coefficients and integrated cap/counterplay benchmarks remain D5/D9.
+Independent source-mask calculation. Of 898 same-tier pairings, 878 can fit two distinct 2-piece thresholds; of 5,656 triples, 5,030 fit three 2-piece thresholds. These counts do not establish gameplay viability or approved effects. Full-set pairs are restricted to combined size <=8 before checking slot conflicts. A 6+4 full combination is impossible with these eight slots. Separate set coefficients and integrated cap/counterplay benchmarks remain D5/D9.
 
 ## Next gates
 

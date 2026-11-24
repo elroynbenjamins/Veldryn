@@ -67,5 +67,11 @@ export function useOnlineGame(){
   finally{if(nameStyleSaving.current===repo)nameStyleSaving.current=null;if(active.current===repo)setBusy(false);}
  };
  const refreshSnapshot=useCallback(async()=>{await refresh();},[refresh]);
- return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshCommerce,execute,saveNameStyle};
+ // After an external guild inventory mutation, do not reuse a read started before the receipt.
+ const refreshAfterExternalWrite=useCallback(async()=>{
+  if(refreshInFlight.current?.repo===repo)await refreshInFlight.current.promise;
+  if(!repo||active.current!==repo||commandSaving.current===repo)throw new Error('Gameplay state is changing. Refresh again.');
+  const next=await refresh();if(!next||active.current!==repo||await repo.hasPending())throw new Error('Inventory refresh was not confirmed.');
+ },[repo,refresh]);
+ return {snapshot:snapshot?.accountId===accountId? snapshot:null,loading,busy,error,pending,foregroundRevision,refresh:refreshSnapshot,refreshAfterExternalWrite,refreshCommerce,execute,saveNameStyle};
 }

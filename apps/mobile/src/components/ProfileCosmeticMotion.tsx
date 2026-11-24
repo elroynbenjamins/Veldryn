@@ -3,6 +3,7 @@ import {Animated,AppState,Easing,Image,StyleSheet,View,type ImageSourcePropType}
 import {profileFrameSegments,profileSceneFrameSegments} from '../core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
 import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
+import type {ProfileCosmeticRuntime,ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
 const SW=768,SH=432;
 type Segment=ReturnType<typeof profileFrameSegments>[number];
 type Rect=readonly [number,number,number,number];
@@ -50,4 +51,30 @@ export function ProfileSceneEffect({art,active,reduceMotion=false}:{art:Cosmetic
  return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{overflow:'hidden'}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
  {size.width>0&&size.height>0&&items.map(p=><Animated.Image key={p.i} source={p.source} fadeDuration={0} resizeMode="contain" style={{position:'absolute',left:0,top:0,width:p.width,height:p.height,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}/>)}
  </View>;
+}
+
+function ParticleShape({kind,accent,soft,size}:{kind:ProfileParticleKind;accent:string;soft:string;size:number}){
+ const bar={position:'absolute' as const,left:'46%' as const,top:'6%' as const,width:'8%' as const,height:'88%' as const,borderRadius:99,backgroundColor:accent};
+ if(kind==='snowflake')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={bar}/><View style={[bar,{transform:[{rotate:'60deg'}]}]}/><View style={[bar,{transform:[{rotate:'120deg'}]}]}/><View style={{width:size*.22,height:size*.22,borderRadius:99,backgroundColor:'#FFFFFF'}}/></View>;
+ if(kind==='leaf')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{width:size*.70,height:size*.42,borderTopLeftRadius:size*.5,borderBottomRightRadius:size*.5,borderTopRightRadius:size*.18,borderBottomLeftRadius:size*.18,backgroundColor:accent,transform:[{rotate:'-28deg'}]}}/><View style={{position:'absolute',width:size*.62,height:1.2,backgroundColor:soft,transform:[{rotate:'-28deg'}]}}/></View>;
+ if(kind==='ember')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{width:size*.55,height:size*.55,borderRadius:size*.18,backgroundColor:accent,transform:[{rotate:'45deg'}]}}/><View style={{position:'absolute',bottom:0,width:size*.18,height:size*.42,borderRadius:99,backgroundColor:soft}}/></View>;
+ if(kind==='firefly')return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size,height:size,borderRadius:99,backgroundColor:soft,opacity:.20}}/><View style={{width:size*.34,height:size*.34,borderRadius:99,backgroundColor:accent}}/></View>;
+ return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><View style={{position:'absolute',width:size*.78,height:size*.12,borderRadius:99,backgroundColor:soft}}/><View style={{position:'absolute',width:size*.12,height:size*.78,borderRadius:99,backgroundColor:soft}}/><View style={{width:size*.42,height:size*.42,backgroundColor:accent,transform:[{rotate:'45deg'}]}}/></View>;
+}
+export function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+ const [size,setSize]=useState({width:0,height:0}),clock=useClock(active&&!reduceMotion,12000);
+ return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
+  {size.width>0&&runtime.glows.map((g,i)=>{const opacity=reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))});const d=Math.min(g.size,Math.max(4,size.width*.035));return <Animated.View key={i} style={{position:'absolute',left:g.x*size.width-d/2,top:g.y*size.height-d/2,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
+ </View>;
+}
+export function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
+ const [size,setSize]=useState({width:0,height:0}),enabled=active&&!reduceMotion,clock=useClock(enabled,runtime.effectPeriodMs);
+ const items=useMemo(()=>runtime.tracks.map((t,i)=>{const samples=steps.map(f=>sampleCosmeticTrack(t,f,size.width,size.height));const interp=(key:'x'|'y'|'opacity')=>clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p[key])});const rotation=clock.interpolate({inputRange:steps,outputRange:samples.map(p=>p.rotation+'deg')});return {i,t,width:samples[0].width,opacity:interp('opacity'),x:interp('x'),y:interp('y'),rotation,staticSample:samples[Math.floor(samples.length*.38)]};}),[clock,runtime,size.width,size.height]);
+ return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{overflow:'hidden'}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
+  {size.width>0&&items.map(p=>reduceMotion?<View key={p.i} style={{position:'absolute',left:p.staticSample.x,top:p.staticSample.y,opacity:p.staticSample.opacity*.55}}><ParticleShape kind={p.t.particle} accent={runtime.accent} soft={runtime.softAccent} size={p.width}/></View>:enabled?<Animated.View key={p.i} style={{position:'absolute',left:0,top:0,width:p.width,height:p.width,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}><ParticleShape kind={p.t.particle} accent={runtime.accent} soft={runtime.softAccent} size={p.width}/></Animated.View>:null)}
+ </View>;
+}
+export function ProfileEffectThumbnail({runtime,size=64}:{runtime:ProfileCosmeticRuntime;size?:number}){
+ const sample=runtime.tracks.slice(0,4);
+ return <View style={{width:'100%',height:'100%',overflow:'hidden',backgroundColor:'rgba(0,0,0,.12)'}}>{sample.map((t,i)=>{const p=sampleCosmeticTrack(t,.32+i*.11,size,size);return <View key={i} style={{position:'absolute',left:p.x,top:p.y,opacity:.7}}><ParticleShape kind={t.particle} accent={runtime.accent} soft={runtime.softAccent} size={Math.max(7,p.width)}/></View>})}</View>;
 }

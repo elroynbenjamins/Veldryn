@@ -25,6 +25,8 @@ import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {PROFILE_EFFECTS} from '../../core/profile-effects';
 import {cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
+import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
@@ -121,8 +123,8 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
    return scene?<Image source={scene.source} resizeMode="cover" style={s.fill}/>:base?<View style={s.fill}><RegionArtwork regionId={base.region}/></View>:null}
   if(row.kind==='frame'){const source=profileBorderSourceById.get(row.id);
    return source?<View style={s.fill}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={source}/></View>:<View style={s.blank}><Text style={s.blankMark}>◇</Text></View>}
-  if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id);
-   return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
+  if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
+   return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
   if(row.kind==='pet'){const source=petArtSource(row.id);
    return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{profileT(language,"Solo")}</Text></View>}
   return null;

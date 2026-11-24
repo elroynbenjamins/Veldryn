@@ -15,6 +15,7 @@ const ALLOWED=new Set([
  './v2/enemy-engine-authority',
  './v2/equipment-trait-engine-authority',
  './v2/equipment-trait-engine-runtime',
+ './v2/party-sync-authority',
  './enemy-v2-status-rules',
 ]);
 const DISABLED='throw Error("combat_v2_not_available_in_live_edge_bundle");';
@@ -49,6 +50,12 @@ export function authorizeEnemyV2EngineExecution(input,authority){
 `,
  './v2/equipment-trait-engine-authority':`
 export function authorizeEquipmentV2TraitEngine(_input,authority){
+ if(authority!==undefined) ${DISABLED}
+ return new Map();
+}
+`,
+ './v2/party-sync-authority':`
+export function authorizePartySyncV2(_input,authority){
  if(authority!==undefined) ${DISABLED}
  return new Map();
 }
@@ -97,6 +104,7 @@ export function assertLegacyEdgeIsolation(result,outputName){
   'enemy-v2-prototype-1','issueEnemyV2EngineAuthority',
   'prepareSoloEnemyKitsV2','SoloEncounterPersistenceServiceV2',
   'issueEquipmentV2TraitAuthority','compileExactEquipmentTraitSourceV2',
+  'issuePartySyncAuthorityV2','party_sync_authority_',
  ]){
   if(js.includes(forbidden))
    throw Error('combat_v2_edge_private_token_in_bundle:'+outputName+':'+forbidden);

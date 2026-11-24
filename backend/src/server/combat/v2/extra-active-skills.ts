@@ -10,6 +10,8 @@ export interface AdditionalVariantV2 {
  cooldownDelta?:number;cooldownMult?:number;target?:AbilityDefinition['target'];
  adds?:readonly AbilityEffect[];replaces?:readonly AbilityEffect[];
  priorityDelta?:number;
+ healBelowHpPct?:number;healBonus?:number;
+ shieldBelowHpPct?:number;shieldBonus?:number;
 }
 export interface AdditionalSkillV2 {
  classId:string;name:string;cooldownMs:number;target:AbilityDefinition['target'];
@@ -1528,6 +1530,8 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
     "variants": [
       {
         "heal": 1.35,
+        "healBelowHpPct": 0.30,
+        "healBonus": 0.20,
         "replaces": [
           {
             "kind": "heal",
@@ -1681,7 +1685,9 @@ export const ADDITIONAL_SKILLS_V2:readonly AdditionalSkillV2[]=[
         "shield": 1.35
       },
       {
-        "shield": 1.1
+        "shield": 1.1,
+        "shieldBelowHpPct": 0.30,
+        "shieldBonus": 0.25
       },
       {
         "shield": 0.9,

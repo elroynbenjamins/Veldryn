@@ -17,7 +17,7 @@ assert.throws(()=>resolve({path:'./v2/unexpected-new-runtime',importer:engine}),
 for(const path of [
  './v2/resource-runtime','./v2/capstone-runtime','./v2/reactive-passive-runtime',
  './v2/enemy-engine-authority','./v2/equipment-trait-engine-authority',
- './v2/equipment-trait-engine-runtime','./v2/party-sync-authority','./enemy-v2-status-rules',
+ './v2/equipment-trait-engine-runtime','./v2/party-sync-authority','./v2/tactical-ai','./enemy-v2-status-rules',
 ]){
  const redirected=resolve({path,importer:engine});
  assert.equal(redirected?.namespace,'live-edge-v2-disabled');
@@ -55,6 +55,15 @@ for(const path of [
   assert.throws(()=>m.triggerReactivePassiveV2(),/not_available_in_live/);
  if(path==='./v2/capstone-runtime')
   assert.throws(()=>m.triggerCapstoneV2(),/not_available_in_live/);
+ if(path==='./v2/tactical-ai'){
+  for(const name of ['supportV2','tankV2','damageV2']){
+   assert.equal(m[name]({}),false);
+   assert.throws(()=>m[name]({combatV2:{}}),/not_available_in_live/);
+  }
+  assert.equal(m.CRITICAL_SUPPORT_HP_V2,.30);
+  for(const name of ["emergencySupportRankV2","supportTargetsV2","incomingBossPressureV2","predictiveShieldTargetsV2","ordinaryHealSufficientV2","tankProtectionDecisionV2","damageTacticsV2","pureSingleHealV2","coordinatedHealV2","redundantPureShieldV2","sequenceDamageActionV2"])
+   assert.throws(()=>m[name](),/not_available_in_live/);
+ }
  if(path==='./enemy-v2-status-rules')
   assert.throws(()=>m.applyEnemyV2Periodic(),/not_available_in_live/);
 }
@@ -69,6 +78,7 @@ for(const secret of [
  'backend/src/server/combat/v2/equipment-trait-engine-runtime.ts',
  'backend/src/server/combat/v2/solo-encounter-persistence.ts',
  'backend/src/server/combat/v2/party-sync-authority.ts',
+ 'backend/src/server/combat/v2/tactical-ai.ts',
  'backend/src/server/combat/enemy-v2-status-rules.ts',
 ]){
  assert.throws(()=>assertLegacyEdgeIsolation(fake(secret),'gameplay'),

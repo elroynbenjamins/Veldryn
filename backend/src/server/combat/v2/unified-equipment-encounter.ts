@@ -266,6 +266,7 @@ export function simulateUnifiedEquipmentCombatV2(
  traitPort?:TrustedEquipmentTraitReceiptPortV2,
  synchronizationReviewMode?:SyncModeV2,
  syncRehearsal?:TrustedPartySyncRehearsalV2,
+ reviewAiPolicy:'tactical'|'authored-priority'='tactical',
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled){
   if(syncRehearsal||synchronizationReviewMode!==undefined)throw Error('combat_v2_sync_requires_complete_v2');
@@ -315,7 +316,7 @@ export function simulateUnifiedEquipmentCombatV2(
     compileExactEquipmentTraitSourceV2(builds[0],runtime[0],traitPort),
    ],traitPort.verifyPersisted):undefined;
   return {
-    combat:simulateCombat(finalInput,authority,traitAuthority),
+    combat:simulateCombat(finalInput,authority,traitAuthority,undefined,reviewAiPolicy),
     enemyMechanicLabels:proof.preview.flatMap(p=>[
       ...p.abilityNames.map(name=>p.enemyId+': '+name),
       ...p.phaseNames.map(name=>p.enemyId+': '+name),
@@ -333,7 +334,7 @@ export function simulateUnifiedEquipmentCombatV2(
   throw Error('combat_v2_sync_rehearsal_roster_mismatch');
  const syncAuthority=syncRehearsal?issuePartySyncAuthorityV2(syncRehearsal.scope,finalInput,syncRehearsal.verifyPersisted):undefined;
  return {
-  combat:simulateCombat(finalInput,undefined,undefined,syncAuthority),
+  combat:simulateCombat(finalInput,undefined,undefined,syncAuthority,reviewAiPolicy),
   ...(syncRehearsal?{synchronizationRehearsal:{releaseEnabled:false as const,
     unsupported:[]}}:{}),
   enemyMechanicLabels:enemies.mechanicLabels,
@@ -371,6 +372,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  party:TrustedPersistedPartyExecutionV2,
  serverEnabled=false,
  synchronizationEnabled=true,
+ reviewAiPolicy:'tactical'|'authored-priority'='tactical',
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled)throw Error('combat_v2_persisted_party_disabled');
  if(!party||typeof party.verifyPersisted!=='function'||input.players.length!==4||
@@ -446,7 +448,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
    enemyV2SnapshotDigest(kit.snapshot)===kitDigest);
  const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
  return {
-  combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority),
+  combat:simulateCombat(finalInput,enemyAuthority,traitAuthority,syncAuthority,reviewAiPolicy),
   enemyMechanicLabels,
   equipmentEvidence:evidence,
   synchronizationReview,

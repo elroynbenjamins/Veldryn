@@ -51,6 +51,11 @@ on:
       - '.github/workflows/combat-v2-skills-validation.yml'
   workflow_dispatch:
 
+# Only supersede older revisions of the same PR. Manual and push runs remain independent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   contract:
     name: Server skills, variants and legacy combat parity
@@ -94,7 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2|issuePersistedPartyEquipmentV2TraitAuthority|reviewPartyV2RunBinding|PARTY_V2_RUN_BINDING_POLICY|issuePersistedPartyEnemyV2EngineAuthority|preparePartyEnemyKitsV2|projectPartySynchronizationLobbyV2|previewPartySynchronizationCandidateV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
+          if grep -R -E 'issueEnemyV2EngineAuthority|prepareSoloEnemyKitsV2|verifyPersistedEnemyKitsV2|SoloEncounterPersistenceServiceV2|serviceRoleSoloSnapshotStorageV2|SoloRewardSettlementServiceV2|transactionalSoloRewardStoreV2|disposableQaSoloRewardWritersV2|analyzeSyntheticBalanceV2|issuePartySyncAuthorityV2|TrustedPartySyncRehearsalV2|issuePersistedPartyEquipmentV2TraitAuthority|reviewPartyV2RunBinding|PARTY_V2_RUN_BINDING_POLICY|issuePersistedPartyEnemyV2EngineAuthority|preparePartyEnemyKitsV2|projectPartySynchronizationLobbyV2|previewPartySynchronizationCandidateV2|preparePartyRecoverySnapshotV2|reviewStoredPartyRecoveryV2|loadPartyRecoverySnapshotV2|reserveStagedPartyEncounterV2' backend/online backend/supabase/functions apps/mobile/src --include='*.ts' --include='*.tsx'; then
             echo 'Unreleased Enemy 2.0 authority is referenced by a public runtime'
             exit 1
           fi
@@ -128,6 +133,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/class-identity-v2.js
       - name: Capture deterministic 18-spec balance baseline
         run: node backend/dist/server/combat/v2/__tests__/specialization-matrix.js
+      - name: Validate allocation-free state queries and per-decision memoization
+        run: node backend/dist/server/combat/v2/__tests__/combat-state-query.js
       - name: Validate Combat 2.0 executable skills
         run: node backend/dist/server/combat/v2/__tests__/skill-effects.js
       - name: Review 18-specialization equal-CP generic, targeted and alternative ability counters
@@ -316,3 +323,40 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/balance-diagnostics.js
       - name: Run 540 synthetic class-spec-tier-gear-enemy fixtures
         run: node backend/dist/server/combat/v2/__tests__/full-cross-tier-balance-matrix.js
+
+  tactical_ai_diagnostics:
+    name: Matched tactical AI and persisted-party pressure diagnostics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - name: Compile hidden combat diagnostics
+        id: compile
+        run: pnpm --dir backend build
+      - name: Compare tactical and standard AI in 864 matched ten-slot encounters
+        run: |
+          set -o pipefail
+          mkdir -p tactical-ai-diagnostics
+          node backend/dist/server/combat/v2/__tests__/tactical-ai-matched-matrix.js | tee tactical-ai-diagnostics/matched.jsonl
+      - name: Rehearse 216 persisted-party pressure scenarios
+        if: ${{ !cancelled() && steps.compile.outcome == 'success' }}
+        run: |
+          set -o pipefail
+          mkdir -p tactical-ai-diagnostics
+          node backend/dist/server/combat/v2/__tests__/tactical-ai-pressure-matrix.js | tee tactical-ai-diagnostics/pressure.jsonl
+      - name: Retain tactical AI diagnostics
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactical-ai-diagnostics
+          path: tactical-ai-diagnostics/
+          if-no-files-found: ignore
+          retention-days: 14

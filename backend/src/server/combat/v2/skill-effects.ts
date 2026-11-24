@@ -83,6 +83,7 @@ type VariantRecipe={
   adds?:readonly AbilityEffect[];replaces?:readonly AbilityEffect[];
   priorityDelta?:number;
   healBelowHpPct?:number;healBonus?:number;
+  shieldBelowHpPct?:number;shieldBonus?:number;
 };
 const ward=(value:number,durationMs=4000):AbilityEffect=>({kind:'buff',target:'self',tag:'damage_taken',value:-value,durationMs});
 const weakening=(value:number,durationMs=5000):AbilityEffect=>({kind:'debuff',tag:'damage_done',value:-value,durationMs});
@@ -210,6 +211,10 @@ function applyRecipe(base:AbilityDefinition,recipe:VariantRecipe,mods:MutableMod
     if(primary&&e.kind==='heal'&&recipe.healBelowHpPct!==undefined){
       n.healBelowHpPct=finite(recipe.healBelowHpPct,0,.75);
       n.healBonus=finite(recipe.healBonus??0,0,.4);
+    }
+    if(primary&&e.kind==='shield'&&recipe.shieldBelowHpPct!==undefined){
+      n.shieldBelowHpPct=finite(recipe.shieldBelowHpPct,0,.75);
+      n.shieldBonus=finite(recipe.shieldBonus??0,0,.4);
     }
     if(e.kind==='taunt')n.value=round((e.value??100)*(1+finite(mods.threat,0,.7)));
     return n;

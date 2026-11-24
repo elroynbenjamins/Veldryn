@@ -1,4 +1,4 @@
-import {assertCoopSynchronizationPresentation} from '../src/core/coop-synchronization';
+import {assertCoopSynchronizationPresentation,formatCoopSynchronizationValue} from '../src/core/coop-synchronization';
 
 function throws(work:()=>unknown,needle:string){
  let error='';try{work();}catch(value){error=String(value);}
@@ -10,9 +10,9 @@ const good=assertCoopSynchronizationPresentation({
  visibleOnRecruitmentBoard:false,canRankCandidates:false,
  links:[
   {id:'radiant_covenant',name:'Radiant Covenant',classNames:['Bastion','Dawnkeeper'],
-   bonuses:[{statKey:'damage_reduction_pct',label:'Damage reduction',value:'+3%'}]},
+   bonuses:[{statKey:'damage_reduction_pct',label:'Damage reduction',bps:300,valueKind:'percent'}]},
   {id:'sanctified_hunt',name:'Sanctified Hunt',classNames:['Bastion','Wayfinder'],
-   bonuses:[{statKey:'accuracy_pct',label:'Accuracy',value:'+4%'}]},
+   bonuses:[{statKey:'accuracy_pct',label:'Accuracy',bps:400,valueKind:'percent'}]},
  ],
 });
 if(good.personalCpDelta!==0||good.canGateEntry||good.canFilterRecruitment||good.requiresProgression||good.visibleOnRecruitmentBoard||good.canRankCandidates)
@@ -34,3 +34,10 @@ throws(()=>assertCoopSynchronizationPresentation({...good,activeCount:3}),
 throws(()=>assertCoopSynchronizationPresentation({...good,cappedStats:null as never}),
  'invalid_coop_synchronization_view');
 console.log('PASS mobile Synchronization view is presentation-only, no CP/progression/queue gating');
+
+if(formatCoopSynchronizationValue(240,'percent')!=='+2.4%')
+ throw new Error('basis-point percent formatting changed');
+if(formatCoopSynchronizationValue(200,'percentage_points')!=='+2 pp')
+ throw new Error('percentage-point formatting changed');
+if(formatCoopSynchronizationValue(55,'percent')!=='+0.55%')
+ throw new Error('fractional basis-point formatting changed');

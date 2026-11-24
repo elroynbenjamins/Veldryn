@@ -76,3 +76,27 @@ The projection accepts no friendship, guild, relationship, XP or history inputs,
 
 ## Provenance hardening
 The persisted run binding no longer assumes ready-check roster array order matches combat actor order. The hidden wrapper supplies an explicit server-derived actor → character mapping from the already verified Equipment runtime. Ready-check rows and frozen loadouts are then joined by character identity, while the final member list follows compiled actor order. Foreign, duplicate or incomplete mappings fail closed.
+
+
+## Fairness, cap pressure and display-value follow-up
+Additional review guards now protect the design goal that Synchronization should add variety without creating an obvious mandatory class.
+
+### Strict dungeon role fairness
+All 36 legal 1 Tank / 2 distinct Damage / 1 Support compositions are exhaustively audited. Under the current 18-edge graph the expected link-count distribution is:
+- 10 compositions with 2 active links
+- 19 compositions with 3 active links
+- 7 compositions with 4 active links
+- no legal strict dungeon composition reaches 5 or 6 links
+
+The fairness guard compares the average equivalent-link budget for every class when that class appears in a legal dungeon composition. The allowed spread is <= 0.10 equivalent links. This protects against a future catalogue edit that keeps degree=4 on paper but makes one class materially better under actual role restrictions.
+
+### Synchronization-only cap pressure
+The resolver now exposes `cappedStats` rather than silently truncating stacked bonuses. The 495 four-class multiset audit requires **zero capped stats in every strict dungeon roster**. Under the current draft catalogue, exactly one flexible-only composition creates cap pressure: Bastion + Dawnkeeper + Dreadguard + Ironwarden combines Radiant Covenant, Sacred Bulwark and Twilight Accord for 10.4% raw healing received, which is explicitly shown as 10.0% effective under the provisional Synchronization-only ceiling (0.4% discarded). No bonus percentages were changed in this pass.
+
+### Presentation semantics
+Server projections now carry numeric basis points and an explicit value kind (`percent` vs `percentage_points`) rather than preformatted text. The mobile review layer formats these locally; e.g. 240 bps => +2.4%, while 200 bps of critical chance => +2 pp. Combined-cap state is also exposed so the lobby can explain raw versus effective totals.
+
+Candidate-specific Synchronization remains forbidden from recruitment candidate cards, sorting/ranking, LFG filtering and queue priority. Active links are intended for post-formation lobby/combat information only.
+
+### Identity binding hardening
+The persisted four-player wrapper no longer relies on array ordering for builds, Equipment runtime or exact-copy trait receipt ports. Builds/gear are joined by actor ID and trait receipt ports by verified character ID. Regression coverage shuffles all three input arrays and requires an identical deterministic encounter result.

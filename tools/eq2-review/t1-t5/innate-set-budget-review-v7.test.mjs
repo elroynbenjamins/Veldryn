@@ -39,14 +39,18 @@ test('34 numerical source set records and 68 thresholds preserved without activa
 
 import {inspectInnateAndRandomLoadoutV2} from './innate-set-budget-review-v7.mjs';
 test('every premium candidate joins exact random and innate sources once',()=>{
+ let aliasCount=0,unresolvedCount=0;
+ const candidateChannel=x=>x.canonicalChannel??(x.stat==='crit_chance_pp'&&x.unit==='percentage_points'?'crit_rate_pp':null);
  for(const entry of d.entries){
   const row=previewUniversalRoll(entry.itemId,()=>0);
   const report=inspectInnateAndRandomLoadoutV2([row]);
   assert.equal(report.sourceRows.length,entry.innates.length);
-  assert.equal(report.unresolved.length,entry.innates.filter(x=>!x.canonicalChannel).length);
+  assert.equal(report.unresolved.length,entry.innates.filter(x=>!candidateChannel(x)).length);
+  aliasCount+=report.sourceRows.filter(x=>x.candidateAlias).length;
+  unresolvedCount+=report.unresolved.length;
   assert.equal(report.complete,report.unresolved.length===0);
   for(const channel of report.channels){
-   const expected=entry.innates.filter(x=>x.canonicalChannel===channel.channel).reduce((n,x)=>n+x.centipercent,0);
+   const expected=entry.innates.filter(x=>candidateChannel(x)===channel.channel).reduce((n,x)=>n+x.centipercent,0);
    assert.equal(channel.innateCentipercent,expected);
    assert.equal(channel.rawCentipercent,channel.randomCentipercent+expected);
    assert.equal(channel.effectiveCentipercent,capChannel(channel.channel,channel.rawCentipercent));
@@ -55,6 +59,7 @@ test('every premium candidate joins exact random and innate sources once',()=>{
   assert.equal(report.cpApproved,false);
   assert.throws(()=>inspectInnateAndRandomLoadoutV2([{...row,innateStats:entry.innates}]),/unapproved_innate_input/);
  }
+ assert.equal(aliasCount,3);assert.equal(unresolvedCount,25);
  const row=previewUniversalRoll(d.entries[0].itemId,()=>0);
  assert.throws(()=>inspectInnateAndRandomLoadoutV2([row,row]),/duplicate_slot_or_item/);
 });

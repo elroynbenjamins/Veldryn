@@ -41,23 +41,27 @@ export function WeeklyGuildRaidTheaterReview(props:{visible:boolean;onClose:()=>
  const seek=(elapsed:number)=>{setPlaying(false);setClock({elapsed:Math.min(duration,Math.max(0,elapsed)),previous:null})};
  const cue=frame?.cue;
  const impact:CombatImpactKind|undefined=cue?.type==='damage'||cue?.type==='dot_tick'?(cue.critical?'critical':'damage'):cue?.type==='heal'||cue?.type==='hot_tick'?'heal':cue?.type==='shield'?'shield':cue?.type==='interrupt'?'interrupt':cue?.type==='phase'?'phase':cue?.type==='cast_start'?'cast':undefined;
+ const showImpact=Boolean(impact&&cue&&visible&&active&&playing&&!reduceMotion);
+ const heroImpact=Boolean(cue&&source&&cue.targetId===source.presentation.hero.id);
+ const impactNode=(target:'hero'|'boss')=>showImpact&&cue&&impact&&(target==='hero'?heroImpact:!heroImpact)?<CombatImpactBurst eventId={receipt.nonce+':'+cue.atMs+':'+cue.type+':'+(cue.abilityId??'')} kind={impact} size={target==='hero'?38:58}/>:null;
  const bar=(name:string,hp:number,max:number,color:string,approx:boolean)=><View style={s.barBlock}>
   <View style={s.row}><Text style={[s.label,{color:C.text}]}>{name}</Text><Text style={[s.small,{color:C.muted}]}>{approx?'~':''}{number(hp)} / {number(max)}</Text></View>
   <View accessibilityRole="progressbar" accessibilityLabel={name} accessibilityValue={{min:0,max:100,now:Math.round(hp/max*100)}} style={[s.track,{backgroundColor:C.panel2}]}><View style={{width:`${hp/max*100}%` as `${number}%`,height:'100%',backgroundColor:color}}/></View>
  </View>;
  const button=(label:string,fn:()=>void,disabled=false)=><Pressable accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={fn} style={[s.button,{backgroundColor:C.panel2,borderColor:C.line,opacity:disabled?.45:1}]}><Text style={[s.label,{color:C.text}]}>{label}</Text></Pressable>;
  return <CombatTheaterModal visible={visible} onClose={props.onClose} title={source?.presentation.boss.name??receipt.identity?.bossName??'Weekly Guild Boss'} eyebrow="REVIEW ONLY · WEEKLY RAID" subtitle={source?'Settled personal battle replay':'Awaiting authoritative settlement'} tone="guild" compactHeader reduceMotion={reduceMotion}>
-  {!source||!frame?<View style={[s.panel,{backgroundColor:C.panel,borderColor:C.line}]}><Image source={props.bossArt} style={s.boss} resizeMode="contain" accessible={false}/><Text style={[s.label,{color:C.text}]}>{pending.status==='resolving'?'Resolving attempt…':pending.remainingMs===null?'Attempt in progress':time(pending.remainingMs)+' remaining'}</Text><Text style={[s.small,{color:C.muted}]}>You can leave. The server continues this attempt; reopen to check progress or view the result.</Text>{button('Leave battle',props.onClose)}</View>:<>
+  {!source||!frame?<View style={[s.panel,{backgroundColor:C.panel,borderColor:C.line}]}><ImageBackground source={props.stageArt} style={s.arena} imageStyle={{opacity:.64}} resizeMode="cover"><View style={s.shade}/><View style={s.bossSide}><Image source={props.bossArt} style={s.boss} resizeMode="contain" accessible={false}/></View></ImageBackground><Text style={[s.label,{color:C.text,textAlign:"center"}]}>{pending.status==='resolving'?'Resolving attempt…':pending.remainingMs===null?'Attempt in progress':time(pending.remainingMs)+' remaining'}</Text><Text style={[s.small,{color:C.muted}]}>You can leave. The server continues this attempt; reopen to check progress or view the result.</Text>{button('Leave battle',props.onClose)}</View>:<>
    <View style={s.row}><Text style={[s.label,{color:C.muted}]}>PERSONAL BATTLE · REPLAY</Text><Text style={[s.label,{color:C.warning}]}>{time(frame.elapsedMs)} / {time(duration)}</Text></View>
    {bar('Boss · personal battle HP',frame.bossHp,source.presentation.boss.maxHp,C.bad,frame.approximateHp)}
    <ImageBackground source={props.stageArt} style={s.arena} imageStyle={{opacity:.64}} resizeMode="cover">
     <View style={s.shade}/>
-    <View style={s.bossSide}><Image source={props.bossArt} style={s.boss} resizeMode="contain" accessible={false}/>{frame.cast?<Text numberOfLines={1} style={[s.cast,{color:C.warning,backgroundColor:C.panel}]}>{frame.cast.name} · casting</Text>:null}</View>
-    {frame.phase?<Text style={[s.phase,{color:C.warning}]}>{frame.phase}</Text>:null}
-    <View style={[s.heroSide,{backgroundColor:C.panel,borderColor:C.line}]}>{heroArt?<Image source={heroArt} style={s.hero} resizeMode="contain" accessible={false}/>:null}<View style={{flex:1,minWidth:0}}><Text numberOfLines={1} style={[s.label,{color:C.text}]}>{source.presentation.hero.name}</Text><Text numberOfLines={1} style={[s.small,{color:cue?.source==='Companion'?C.special:C.muted}]}>{frame.log.find(e=>e.source!=='Boss')?.label??'Ready'}</Text></View>{props.companionArt?<Image source={props.companionArt} style={s.companion} resizeMode="contain" accessible={false}/>:null}</View>
-    {impact&&cue&&visible&&active&&playing&&!reduceMotion?<CombatImpactBurst eventId={receipt.nonce+':'+cue.atMs+':'+cue.type+':'+(cue.abilityId??'')} kind={impact} size={58}/>:null}
+    <View style={s.bossSide}><Image source={props.bossArt} style={s.boss} resizeMode="contain" accessible={false}/>{impactNode('boss')}</View>
    </ImageBackground>
-   {bar(source.presentation.hero.name,frame.heroHp,source.presentation.hero.maxHp,C.good,frame.approximateHp)}
+   <View style={s.bossStatus}>
+    {frame.cast?<Text numberOfLines={1} style={[s.cast,{color:C.warning,backgroundColor:C.panel}]}>{frame.cast.name} · casting</Text>:null}
+    {frame.phase?<Text numberOfLines={1} style={[s.phase,{color:C.warning}]}>{frame.phase}</Text>:null}
+   </View>
+   <View style={[s.heroSide,{backgroundColor:C.panel,borderColor:C.line}]}><View style={s.heroPortrait}>{heroArt?<Image source={heroArt} style={s.hero} resizeMode="contain" accessible={false}/>:null}{impactNode('hero')}</View><View style={{flex:1,minWidth:0,gap:4}}>{bar(source.presentation.hero.name,frame.heroHp,source.presentation.hero.maxHp,C.good,frame.approximateHp)}<Text numberOfLines={1} style={[s.small,{color:cue?.source==='Companion'?C.special:C.muted}]}>{frame.log.find(e=>e.source!=='Boss')?.label??'Ready'}</Text></View>{props.companionArt?<Image source={props.companionArt} style={s.companion} resizeMode="contain" accessible={false}/>:null}</View>
    <Text style={[s.small,{color:C.muted}]}>Replay HP is approximate until the exact final server snapshot. Shared guild HP is separate.</Text>
    <View style={s.controls}>{button('−15s',()=>seek(clock.elapsed-15000))}{button(frame.state==='complete'?'Replay':playing?'Pause':'Play',()=>{if(frame.state==='complete')setClock({elapsed:0,previous:null});setPlaying(frame.state==='complete'||!playing)})}{vipPlus?button(effectiveSpeed+'×',()=>setSpeed(v=>v===1?2:1)):null}{button('+15s',()=>seek(clock.elapsed+15000))}{button('Summary',()=>seek(duration))}{button('Leave',props.onClose)}</View>
    <View style={[s.panel,{backgroundColor:C.panel,borderColor:C.line}]}>
@@ -76,8 +80,8 @@ export function WeeklyGuildRaidTheaterReview(props:{visible:boolean;onClose:()=>
 const s=StyleSheet.create({
  row:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},
  barBlock:{gap:5},track:{height:10,borderRadius:5,overflow:'hidden'},label:{fontSize:12,fontWeight:'800'},small:{fontSize:11,lineHeight:16},
- arena:{height:260,borderRadius:14,overflow:'hidden',justifyContent:'space-between',alignItems:'center',padding:8},
- shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,8,13,.35)'},bossSide:{alignItems:'center',height:142},boss:{width:150,height:120},cast:{paddingHorizontal:7,paddingVertical:3,borderRadius:4,fontSize:11,fontWeight:'800'},phase:{fontSize:11,fontWeight:'800'},
+ arena:{height:208,borderRadius:14,overflow:'hidden',justifyContent:'center',alignItems:'center',padding:8},
+ shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,8,13,.35)'},bossSide:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center'},boss:{width:'82%',maxWidth:216,height:'100%'},bossStatus:{minHeight:42,justifyContent:'center',alignItems:'center',gap:2},heroPortrait:{width:48,height:48,alignItems:'center',justifyContent:'center'},cast:{paddingHorizontal:7,paddingVertical:3,borderRadius:4,fontSize:11,fontWeight:'800'},phase:{fontSize:11,fontWeight:'800'},
  heroSide:{flexDirection:'row',alignItems:'center',alignSelf:'stretch',borderWidth:1,borderRadius:10,padding:6,gap:8},hero:{width:48,height:48},companion:{width:26,height:26},
  controls:{flexDirection:'row',flexWrap:'wrap',gap:6},button:{borderWidth:1,borderRadius:8,paddingHorizontal:10,minHeight:44,justifyContent:'center'},
  panel:{borderWidth:1,borderRadius:12,padding:12,gap:8},metric:{paddingTop:6,borderTopWidth:1},total:{fontSize:26,fontWeight:'900'},

@@ -19,3 +19,15 @@ export function winterHearthStageFromProgress(logs:number,lights:number):WinterH
  for(const p of [100,75,50,25] as const)if(logs>=p*250&&lights>=p*25)return p;
  return 0;
 }
+
+/** Strictly exclude cycles finishing at or after the saved seasonal deadline.
+ * The current runtime may shorten, but never extend, the original reservation.
+ * A missing runtime after the season cannot erase legitimately earned cycles.
+ */
+export function winterHearthCraftSettlementWindow(input:{lastClaimAtMs:number;nowMs:number;offlineCapSeconds:number;savedEndMs?:number;runtimeEndMs?:number;released:boolean}){
+ const {lastClaimAtMs,nowMs,offlineCapSeconds,savedEndMs,runtimeEndMs,released}=input;
+ const endsAtMs=Math.min(WINTER_HEARTH_2026_END_MS,Number.isFinite(savedEndMs)?savedEndMs!:Infinity,Number.isFinite(runtimeEndMs)?runtimeEndMs!:Infinity);
+ const expired=!released||nowMs>=endsAtMs;
+ const settledAtMs=!released?lastClaimAtMs:Math.max(lastClaimAtMs,Math.min(nowMs,endsAtMs-1));
+ return {expired,elapsedSeconds:Math.max(0,Math.min(offlineCapSeconds,(settledAtMs-lastClaimAtMs)/1000))};
+}

@@ -138,6 +138,8 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-sync-authority.js
       - name: Validate synchronization resource, harmful-effect and interrupt mechanics
         run: node backend/dist/server/combat/v2/__tests__/party-sync-mechanics.js
+      - name: Guard Synchronization stacking with Equipment 2.0 and engine caps
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-stacking-guards.js
       - name: Run 36 dungeon compositions across six pressure profiles plus 495 flexible party combat cases
         run: node backend/dist/server/combat/v2/__tests__/party-sync-balance-matrix.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence

@@ -1,5 +1,5 @@
 import {strict as assert} from 'node:assert';
-import {dungeonDepthMultipliers,dungeonEncounterDepthMultipliers,DUNGEON_BOSS_ENDURANCE_VERSION} from '../dungeon-depth-scaling';
+import {dungeonDepthMultipliers,dungeonEncounterDepthMultipliers,dungeonBossTimeLimitMs,DUNGEON_BOSS_ENDURANCE_VERSION} from '../dungeon-depth-scaling';
 import {availableDungeonCombatMarks,projectedDungeonCombatMarks} from '../dungeon-combat-marks-cap';
 import {REGIONAL_DUNGEON_BALANCE_VERSION} from '../regional-power-balance';
 import {launchPlayer} from '../../combat/content/launch-combat';
@@ -28,6 +28,15 @@ for(let depth=1;depth<=43;depth++){
 }
 assert.ok(bossAt(36).hp<2.15&&bossAt(36).defense<1.24,'final boss durability bounded');
 assert.throws(()=>bossAt(44));
+const checkpoints=[8,15,22,29,36,43];
+assert.deepEqual(checkpoints.map(depth=>dungeonBossTimeLimitMs(depth,true,true,bossV)),[180_000,210_000,240_000,260_000,280_000,300_000]);
+for(let depth=1;depth<=43;depth++){
+ assert.equal(dungeonBossTimeLimitMs(depth,true,false,bossV),undefined,'regular rooms keep default limit');
+ assert.equal(dungeonBossTimeLimitMs(depth,true,true),undefined,'saved runs keep default limit');
+ assert.equal(dungeonBossTimeLimitMs(depth,false,true,bossV),undefined,'non-Endurance keeps default limit');
+ if(!checkpoints.includes(depth))assert.equal(dungeonBossTimeLimitMs(depth,true,true,bossV),undefined);
+}
+
 
 assert.equal(projectedDungeonCombatMarks(['elite','elite','elite','elite','elite','elite']),25);
 assert.equal(projectedDungeonCombatMarks(['battle','battle','battle','battle','battle','battle','battle','battle','battle']),25);

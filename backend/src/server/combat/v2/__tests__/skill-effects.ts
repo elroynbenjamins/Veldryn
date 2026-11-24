@@ -492,8 +492,8 @@ const aoeForecast=simulateCombat({...forecastInput,enemies:[forecastBoss('all_en
 assert.equal(firstShield(aoeForecast)?.abilityId,groupShield,'group shield covers multiple threatened allies');
 assert.equal(aoeForecast.events.filter(e=>e.type==='shield'&&e.abilityId===groupShield&&e.atMs===100).length,3);
 assert.deepEqual(aoeForecast,simulateCombat({...forecastInput,enemies:[forecastBoss('all_enemies',500)]}));
-// Group shield is an ordinary always-eligible skill in the source catalogue;
-// suppress it until later in these controls to isolate predictive promotion.
+// Keep offense ready in the controls so ordinary always-eligible group
+// shielding cannot be mistaken for predictive promotion.
 const forecastControl=(boss:CombatantDefinition,lockShield=false)=>{
  const actor={...predictiveActor,abilities:predictiveActor.abilities.map(a=>({...a,
    // Keep an always-ready higher-priority offensive rotation.
@@ -509,3 +509,40 @@ assert.equal(firstShield(forecastControl(forecastBoss('all_enemies',500),true)),
 const nonBoss={...forecastBoss('all_enemies',500),boss:false};
 assert.equal(firstShield(forecastControl(nonBoss)),undefined,'nonboss attacks do not activate predictive policy');
 console.log('PASS: visible boss forecast, group protection, target certainty and cooldown guards');
+
+// Existing sufficient shielding should remove forecast pressure.
+const preShieldTank:CombatantDefinition={...forecastTank,abilities:[{
+ id:'PR_PRE_SHIELD',name:'Test existing shield',target:'self',castTimeMs:0,cooldownMs:999999,
+ priority:100,effects:[{kind:'shield',flat:1000}]}]};
+const continuousOffense={...predictiveActor,abilities:predictiveActor.abilities.map(a=>({...a,
+ cooldownMs:a.id===offense?100:a.cooldownMs}))};
+const covered=simulateCombat({...forecastInput,players:[continuousOffense,preShieldTank,forecastOther],
+ maxDurationMs:300});
+assert.equal(firstShield(covered),undefined,'already-covered telegraph must not consume another support shield');
+
+// Actual authored Stonecaller recovery: preserve a group cooldown if one
+// patient can be returned above 45% using an equally fast ordinary heal.
+const conserveNames=['River Stone','Resonance Burst','Earthen Grasp'];
+const conserveBuild:VerifiedSkillBuildV2={...predictiveBuild,selected:{...predictiveBuild.selected,
+ activeSkills:conserveNames.map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='STONECALLER'&&s.name===name)!;
+ return {skillId:s.id,variantId:s.variants[name==='Resonance Burst'?2:0].id};})}};
+const conserveCompiled=compileServerSkillBuildV2(true,conserveBuild);
+const conserveActor={...conserveCompiled,id:'PR_SUPPORT',stats:{...conserveCompiled.stats,maxHp:1000,healingPower:400},
+ abilities:conserveCompiled.abilities.map(a=>({...a,priority:a.name==='Resonance Burst'?200:100})),
+ basicAttackCoeff:0};
+const ordinaryId=conserveActor.abilities.find(a=>a.name==='River Stone')!.id;
+const groupHealId=conserveActor.abilities.find(a=>a.name==='Resonance Burst')!.id;
+const conserveInput={...forecastInput,players:[conserveActor,forecastTank,forecastOther],enemies:[enemy],
+ maxDurationMs:100,tickMs:100,initialPlayerState:{
+  [conserveActor.id]:triageCarry(1000),[forecastTank.id]:triageCarry(200),[forecastOther.id]:triageCarry(1000)}};
+const firstRecovery=(r:typeof singleForecast)=>r.events.find(e=>e.type==='heal'&&e.actorId===conserveActor.id);
+assert.equal(firstRecovery(simulateCombat(conserveInput))?.abilityId,ordinaryId,'single patient: conserve group recovery');
+assert.equal(firstRecovery(simulateCombat({...conserveInput,initialPlayerState:{...conserveInput.initialPlayerState,
+ [forecastOther.id]:triageCarry(200)}}))?.abilityId,groupHealId,'multiple critical patients: keep group recovery');
+const weakHealer={...conserveActor,stats:{...conserveActor.stats,healingPower:30}};
+assert.equal(firstRecovery(simulateCombat({...conserveInput,players:[weakHealer,forecastTank,forecastOther]}))?.abilityId,
+ groupHealId,'ordinary heal too weak: retain group recovery');
+assert.equal(firstRecovery(simulateCombat({...conserveInput,initialPlayerState:{...conserveInput.initialPlayerState,
+ [conserveActor.id]:triageCarry(1000,false,{[ordinaryId]:10000})}}))?.abilityId,
+ groupHealId,'ordinary cooldown: retain group recovery');
+console.log('PASS: existing shield coverage and nominal single-target healing conservation');

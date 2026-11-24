@@ -167,7 +167,9 @@ function incomingBossPressureV2(now:number,allies:CombatantState[],foes:Combatan
   const totals=new Map<CombatantState,number>();
   for(const boss of foes){
     const cast=boss.casting;
-    if(!boss.alive||!boss.definition.boss||!cast||cast.completesAt<=now||
+    // Players act before enemies in the existing actor loop. A due cast
+    // still exists and may resolve later in this very tick.
+    if(!boss.alive||!boss.definition.boss||!cast||cast.completesAt<now||
       cast.completesAt-now>SUPPORT_FORECAST_WINDOW_MS_V2)continue;
     const ability=boss.definition.abilities.find(a=>a.id===cast.abilityId);
     const anchor=live.find(a=>a.definition.id===cast.targetId);
@@ -237,7 +239,7 @@ function tankProtectionDecisionV2(actor:CombatantState,ordered:AbilityDefinition
   const critical=living(allies).filter(a=>hpPct(a)<CRITICAL_SUPPORT_HP_V2);
   if(!pressure.length&&!critical.length)return;
   const dangerous=foes.filter(b=>b.alive&&b.definition.boss&&b.casting&&
-    b.casting.completesAt>now&&b.definition.abilities.some(a=>a.id===b.casting!.abilityId&&a.interruptible)&&
+    b.casting.completesAt>=now&&b.definition.abilities.some(a=>a.id===b.casting!.abilityId&&a.interruptible)&&
     incomingBossPressureV2(now,allies,[b],mitigationConstant).length>0)
     .sort((a,b)=>a.casting!.completesAt-b.casting!.completesAt||a.definition.id.localeCompare(b.definition.id));
   let best:TankDecisionV2|undefined;
@@ -307,7 +309,7 @@ function damageTacticsV2(actor:CombatantState,ordered:AbilityDefinition[],
   const opensVulnerability=(a:AbilityDefinition)=>a.effects.some(e=>e.kind==='debuff'&&
     (!e.target||e.target===a.target)&&e.tag==='damage_taken'&&(e.value??0)>0&&
     (e.durationMs??5000)>=1000);
-  const dangerous=live.filter(e=>e.definition.boss&&e.casting&&e.casting.completesAt>now&&
+  const dangerous=live.filter(e=>e.definition.boss&&e.casting&&e.casting.completesAt>=now&&
     e.definition.abilities.some(a=>a.id===e.casting!.abilityId&&a.interruptible)&&
     incomingBossPressureV2(now,allies,[e],mitigationConstant).length>0)
     .sort((a,b)=>a.casting!.completesAt-b.casting!.completesAt||a.definition.id.localeCompare(b.definition.id));

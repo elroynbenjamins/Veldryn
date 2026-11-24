@@ -874,3 +874,25 @@ assert.ok(debuffSeqRun.events.some(e=>e.type==='status_apply'&&e.abilityId===seq
 assert.ok(debuffSeqRun.events.some(e=>e.type==='damage'&&e.abilityId===debuffAltId&&e.atMs===100),
  'identical active own debuff favors another ready action');
 console.log('PASS: active burst window and exact-source debuff sequencing');
+
+// Due-tick forecast: player actions run before enemy cast completion.
+// Make offensive fallback continuously ready so the shield/interrupt
+// cannot pass merely from ordinary priority after a long cooldown.
+const dueTickBoss=forecastBoss('current_target',500,100);
+const dueShieldRun=forecastControl(dueTickBoss);
+assert.ok(dueShieldRun.events.some(e=>e.type==='shield'&&e.actorId===predictiveActor.id&&
+ e.abilityId===singleShield&&e.targetId===forecastTank.id&&e.atMs===100),
+ 'last-tick visible cast must remain eligible for preventive protection');
+const dueShieldIndex=dueShieldRun.events.findIndex(e=>e.type==='shield'&&e.actorId===predictiveActor.id&&e.atMs===100);
+const dueDamageIndex=dueShieldRun.events.findIndex(e=>e.type==='damage'&&e.abilityId==='PR_TELEGRAPH'&&e.atMs===100);
+assert.ok(dueDamageIndex>dueShieldIndex&&dueShieldIndex>=0,'same-tick shield precedes enemy resolution');
+const dueInterruptBoss={...dueTickBoss,abilities:dueTickBoss.abilities.map(a=>({...a,interruptible:true}))};
+const dueTank={...coverTank,abilities:coverTank.abilities.map(a=>({...a,
+ cooldownMs:a.name==='Bastion Challenge'?100:a.cooldownMs}))};
+const dueInterruptRun=simulateCombat({seed:'due-tick-interrupt',players:[dueTank,coverAlly],
+ enemies:[dueInterruptBoss],maxDurationMs:200,tickMs:100});
+assert.ok(dueInterruptRun.events.some(e=>e.type==='interrupt'&&e.actorId===dueTank.id&&
+ e.abilityId===coverInterrupt&&e.atMs===100),'due-tick dangerous cast must remain eligible for interruption');
+assert.ok(!dueInterruptRun.events.some(e=>e.type==='cast_complete'&&e.abilityId==='PR_TELEGRAPH'),
+ 'successful last-tick interrupt prevents cast resolution');
+console.log('PASS: same-tick defensive response before enemy cast resolution');

@@ -1,0 +1,131 @@
+{
+  "schema": "eq2-consolidated-review-index-v8",
+  "status": "HIDDEN_REVIEW_ONLY",
+  "releaseActivation": false,
+  "canonicalApproval": "docs/2-0/EQUIPMENT_2_0_CANONICAL_APPROVAL_RECORD_20261124.md",
+  "currentContracts": {
+    "catalogue": "docs/2-0/eq2-t1-t5-canonical-membership-reconciliation-v2.json",
+    "rolls": "docs/2-0/eq2-universal-affix-overlap-review-v4.json",
+    "power": "docs/2-0/eq2-equipment-power-review-v5.json",
+    "hand": "tools/eq2-review/t1-t5/hand-budget-review-v6.mjs",
+    "premium": "docs/2-0/eq2-innate-and-set-budget-review-v7.json",
+    "economy": "tools/eq2-review/t1-t5/hand-economy-review-v8.mjs"
+  },
+  "sources": [
+    {
+      "pr": "#1686",
+      "commit": "f491ccaa79824c0b44366c72d2967e81155056ac",
+      "path": "docs/equipment-2-0/t5-catalogue-expansion-review-v4.json",
+      "blobSha": "38defcd1b31b348e0a27d38b83b5421f1b4e5e52"
+    },
+    {
+      "pr": "#1686",
+      "commit": "f491ccaa79824c0b44366c72d2967e81155056ac",
+      "path": "docs/equipment-2-0/regional-dungeon-boss-tradeable-premium-gear-review-v4.json",
+      "blobSha": "b464e55c28f6007578c465e01d26e67db415e77a"
+    },
+    {
+      "pr": "#1686",
+      "commit": "f491ccaa79824c0b44366c72d2967e81155056ac",
+      "path": "docs/equipment-2-0/regional-dungeon-boss-loot-and-market-review-v5.json",
+      "blobSha": "2964cc2c1cc2ebc0da34b2862fa28bb4bc1b28b0"
+    },
+    {
+      "pr": "#1598",
+      "commit": "6416159f7fdd7c759496a10f5fca8eaedb89f4ab",
+      "path": "docs/equipment-2-0/t4-replacement-set-catalogue-review-v1.json",
+      "blobSha": "7d431245fe07549fb29802b2e7f7117c600308b9"
+    },
+    {
+      "pr": "#1598",
+      "commit": "6416159f7fdd7c759496a10f5fca8eaedb89f4ab",
+      "path": "docs/equipment-2-0/t5-rare-set-catalogue-review-v1.json",
+      "blobSha": "d918a45319405903e9f9e74d2c0809dbaebf8a8f"
+    },
+    {
+      "pr": "#1549",
+      "commit": "3da1a180211b0781fad10d573059486813b0f26b",
+      "path": "docs/equipment-2-0/t1-t4-economy-generated-recipes-v1.json",
+      "blobSha": "0f0a6430e726fb6e76a866d4b73f4a7ee1fd786f"
+    },
+    {
+      "pr": "#1598",
+      "commit": "6416159f7fdd7c759496a10f5fca8eaedb89f4ab",
+      "path": "docs/equipment-2-0/t1-t4-48-set-unified-recipe-review-v3.json",
+      "blobSha": "0c8b9f0c0209ea3bf075664e37d864b64cc9a792"
+    },
+    {
+      "pr": "#1458",
+      "commit": "24c2cf9f2acdca76f3e0bd7fd8fd2e0c2633c03b",
+      "path": "backend/src/server/equipment/equipment-crafting-v2-weapon-families.ts",
+      "blobSha": "d3ecb753ab19c7379f53d3e05a502dfdd039f60a"
+    }
+  ],
+  "ancestryCheckedAt": "b2701f745a5b0e0ded34622919037197d2adbeb9",
+  "ancestry": [
+    {
+      "pr": 1713,
+      "status": "ancestor",
+      "ahead": 39,
+      "behind": 0
+    },
+    {
+      "pr": 1635,
+      "status": "ancestor",
+      "ahead": 178,
+      "behind": 0
+    },
+    {
+      "pr": 1704,
+      "status": "diverged",
+      "ahead": 92,
+      "behind": 109
+    },
+    {
+      "pr": 1598,
+      "status": "diverged",
+      "ahead": 183,
+      "behind": 4
+    },
+    {
+      "pr": 1686,
+      "status": "diverged",
+      "ahead": 92,
+      "behind": 59
+    },
+    {
+      "pr": 1549,
+      "status": "diverged",
+      "ahead": 615,
+      "behind": 819
+    },
+    {
+      "pr": 1458,
+      "status": "diverged",
+      "ahead": 615,
+      "behind": 667
+    },
+    {
+      "pr": 1665,
+      "status": "diverged",
+      "ahead": 92,
+      "behind": 13
+    }
+  ],
+  "rules": [
+    "Current contracts govern review only; old source blobs are evidence, never alternative runtime catalogues.",
+    "Do not revive retired T4 IDs, rewrite original Forge copies, or use older economy ingredient aliases instead of reconciled V3 routes.",
+    "Do not assume class signature fixture hand count is the complete cross-class weapon compatibility policy. Existing family allowlist is retained; four Hewing Axe templates and other branch-local identities need explicit source registration/scope reconciliation before roster expands.",
+    "T7 boss records remain future source evidence and must not join current T1–T5 roster.",
+    "No whole-history merge of diverged branches; no closed/deleted refs until remaining source and CI review."
+  ],
+  "open": [
+    "D1-D10",
+    "Lane rarity/quality and assembly policy",
+    "Exact replacement material cost recipes",
+    "Numerical set and trait semantics",
+    "Full CP and legal shared-weapon-family builds",
+    "Production source/custody/market authorization",
+    "Broad mobile/regression CI failures"
+  ]
+}

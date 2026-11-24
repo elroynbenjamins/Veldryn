@@ -9,7 +9,7 @@ import type {CombatInput} from '../types';
 import type {FrozenLoadoutSnapshot} from '../../coop/loadout-snapshots';
 import type {ReadyCheckRecord} from '../../coop/ready-checks';
 import {enemyV2SnapshotDigest} from './enemy-engine-authority';
-import {CLASS_NAMES_V2,} from './skill-catalog';
+import {CLASS_NAMES_V2} from './skill-catalog';
 import {CLASS_ROLES_V2,type ClassIdV2} from './build-contract';
 import {PARTY_SYNCHRONIZATION_RULESET_V2} from './party-synchronization';
 import type {PartySyncScopeV2} from './party-sync-authority';
@@ -98,7 +98,9 @@ export function reviewPartyV2RunBinding(input:{
     ready.loadoutId!==frozen.loadoutId||ready.loadoutRevision!==frozen.revision||
     ready.loadoutSnapshotHash!==frozen.snapshotHash||
     !validId(ready.accountId)||!validId(ready.characterId)||
-    !validId(ready.loadoutId)||!validId(ready.loadoutSnapshotHash)||
+    !validId(ready.loadoutId)||!/^[0-9a-f]{64}$/.test(ready.loadoutSnapshotHash)||
+    !Number.isSafeInteger(ready.loadoutRevision)||ready.loadoutRevision<1||
+    frozen.readiness?.role!==ready.role||
     accounts.has(ready.accountId)||characters.has(ready.characterId)||
     !validId(actor.id)||actors.has(actor.id)||actor.team!=='players'||
     actor.combatV2?.version!==2||ready.role!==actor.role)
@@ -122,8 +124,20 @@ export function reviewPartyV2RunBinding(input:{
   fail('invalid_dungeon_roles');
  if(combatInput.initialPlayerState){
   const stateIds=Object.keys(combatInput.initialPlayerState).sort();
-  if(stateIds.length!==4||stateIds.some((id,i)=>id!==[...actors].sort()[i]))
+  const expected=[...actors].sort();
+  if(stateIds.length!==4||stateIds.some((id,i)=>id!==expected[i]))
    fail('persistent_state_roster_mismatch');
+  for(const actor of combatInput.players){
+   const state=combatInput.initialPlayerState[actor.id];
+   if(!state||!Number.isFinite(state.hp)||state.hp<0||state.hp>actor.stats.maxHp||
+      typeof state.downed!=='boolean'||state.downed!==(state.hp===0)||
+      !Number.isFinite(state.basicAttackRemainingMs)||state.basicAttackRemainingMs<0||
+      !state.cooldownRemainingMs||typeof state.cooldownRemainingMs!=='object'||
+      Array.isArray(state.cooldownRemainingMs)||
+      Object.entries(state.cooldownRemainingMs).some(([id,ms])=>
+       !actor.abilities.some(ability=>ability.id===id)||!Number.isFinite(ms)||ms<0))
+    fail('invalid_persistent_state');
+  }
  }
  const binding:PartyV2RunBindingReview={
   source:'server-persisted-party-v2-review',policy:PARTY_V2_RUN_BINDING_POLICY,

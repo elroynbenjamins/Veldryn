@@ -10,7 +10,10 @@
 import {simulateCombat} from '../engine';
 import {issuePartySyncAuthorityV2,type PartySyncScopeV2} from './party-sync-authority';
 import {planPartySynchronizationV2,type SyncPlanV2,type SyncModeV2} from './party-synchronization';
-import {issueEquipmentV2TraitAuthority} from './equipment-trait-engine-authority';
+import {
+ issueEquipmentV2TraitAuthority,issuePersistedPartyEquipmentV2TraitAuthority,
+ type VerifiedV2EquipmentEffectSource,
+} from './equipment-trait-engine-authority';
 import {
  compileExactEquipmentTraitSourceV2,type TrustedEquipmentTraitReceiptPortV2,
 } from './equipment-trait-exact-copy-adapter';
@@ -31,6 +34,12 @@ import {applyVerifiedSetBonusesV2,
 import {assertApprovedEquipmentScalingV2,type ApprovedRarityLadderV2} from './equipment-scaling-policy';
 import {evaluatePowerCompositionV2,
   type ApprovedPowerCompositionPolicyV2,type PowerCompositionDiagnosticV2} from './power-composition';
+import {
+ reviewPartyV2RunBinding,partySyncScopeFromRunBindingV2,
+ type PartyV2RunBindingResult,
+} from './party-dungeon-persistence-review';
+import type {FrozenLoadoutSnapshot} from '../../coop/loadout-snapshots';
+import type {ReadyCheckRecord} from '../../coop/ready-checks';
 import {compileTrustedEquipmentAffixesV2,
   type TrustedEquipmentItemAffixesV2,type ServerAffixPolicyV2,
   type AppliedEquipmentAffixV2} from './equipment-affixes';
@@ -87,6 +96,7 @@ export interface UnifiedEquipmentEncounterResultV2 {
  /** Explicit review opt-in: composition evidence only, never a combat buff. */
  readonly synchronizationReview?:SyncPlanV2;
  readonly synchronizationRehearsal?:{readonly releaseEnabled:false;readonly unsupported:readonly string[]};
+ readonly partyPersistenceReview?:PartyV2RunBindingResult;
 }
 function compileEquippedActor(
  actor:CombatantDefinition,
@@ -257,5 +267,82 @@ export function simulateUnifiedEquipmentCombatV2(
   enemyMechanicLabels:enemies.mechanicLabels,
   equipmentEvidence:evidence,
   ...(synchronizationReview?{synchronizationReview}:{}),
+ };
+}
+
+
+export interface TrustedPersistedPartyExecutionV2{
+ readonly runId:string;
+ readonly nodeId:string;
+ readonly encounterRevision:number;
+ readonly stateRevision:number;
+ readonly contentVersion:string;
+ readonly balanceVersion:string;
+ readonly readyCheck:ReadyCheckRecord;
+ readonly frozenRoster:readonly FrozenLoadoutSnapshot[];
+ readonly traitPorts:readonly TrustedEquipmentTraitReceiptPortV2[];
+ readonly verifyPersisted:(binding:PartyV2RunBindingResult['binding'],
+  sources:readonly VerifiedV2EquipmentEffectSource[],combatInputDigest:string)=>boolean;
+}
+
+/**
+ * Hidden persisted four-player execution rehearsal.
+ * Uses the current co-op ready-check/loadout provenance plus exact-copy EQ2
+ * receipts. Enemy/Boss 2.0 persisted party-kit authority is NOT implemented:
+ * enemies still pass through the generic private Enemy bridge.
+ */
+export function simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input:CombatInput,
+ builds:readonly VerifiedSkillBuildV2[],
+ runtime:readonly TrustedEquipmentRuntimeV2[],
+ party:TrustedPersistedPartyExecutionV2,
+ serverEnabled=false,
+):UnifiedEquipmentEncounterResultV2{
+ if(!serverEnabled)throw Error('combat_v2_persisted_party_disabled');
+ if(!party||typeof party.verifyPersisted!=='function'||input.players.length!==4||
+   builds.length!==4||runtime.length!==4||party.traitPorts.length!==4||
+   input.enemyDamageProfile!==undefined)
+  throw Error('combat_v2_invalid_persisted_party_scope');
+ const byId=new Map<string,VerifiedSkillBuildV2>();
+ const gearById=new Map<string,TrustedEquipmentRuntimeV2>();
+ for(const build of builds){
+  if(byId.has(build.actor.id))throw Error('combat_v2_duplicate_build_actor');
+  byId.set(build.actor.id,build);
+ }
+ for(const gear of runtime){
+  if(gearById.has(gear.actorId))throw Error('combat_v2_duplicate_equipment_actor');
+  gearById.set(gear.actorId,gear);
+ }
+ const evidence:EquipmentEncounterEvidenceV2[]=[];
+ const players=input.players.map(actor=>{
+  const build=byId.get(actor.id),gear=gearById.get(actor.id);
+  if(!build||!gear)throw Error('combat_v2_missing_equipped_build_actor');
+  const compiled=compileEquippedActor(actor,build,gear);
+  evidence.push(compiled.evidence);
+  return compiled.actor;
+ });
+ const enemies=compileEnemiesForCombatV2(input.enemies,true);
+ const finalInput:CombatInput={...input,players,enemies:[...enemies.enemies]};
+ const persistence=reviewPartyV2RunBinding({
+  runId:party.runId,nodeId:party.nodeId,encounterRevision:party.encounterRevision,
+  stateRevision:party.stateRevision,contentVersion:party.contentVersion,
+  balanceVersion:party.balanceVersion,seed:finalInput.seed,
+  readyCheck:party.readyCheck,frozenRoster:party.frozenRoster,combatInput:finalInput,
+ });
+ const scope=partySyncScopeFromRunBindingV2(persistence);
+ const sources=builds.map((build,i)=>
+  compileExactEquipmentTraitSourceV2(build,runtime[i],party.traitPorts[i]));
+ const verified=(digest:string)=>party.verifyPersisted(persistence.binding,sources,digest);
+ const traitAuthority=issuePersistedPartyEquipmentV2TraitAuthority(
+  finalInput,sources,persistence.binding,(_binding,_sources,digest)=>verified(digest));
+ const syncAuthority=issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>verified(digest));
+ const synchronizationReview=planPartySynchronizationV2('dungeon',scope.members);
+ return {
+  combat:simulateCombat(finalInput,undefined,traitAuthority,syncAuthority),
+  enemyMechanicLabels:enemies.mechanicLabels,
+  equipmentEvidence:evidence,
+  synchronizationReview,
+  synchronizationRehearsal:{releaseEnabled:false,unsupported:[]},
+  partyPersistenceReview:persistence,
  };
 }

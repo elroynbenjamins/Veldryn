@@ -30,6 +30,8 @@ assert.deepEqual(preview.newlyActivatedLinkIds,['marked_for_death']);
 assert.equal(preview.queueEligibilityIndependentOfSynchronization,true);
 assert.equal(preview.canGateEntry,false);
 assert.equal(preview.canFilterRecruitment,false);
+assert.equal(preview.visibleOnRecruitmentBoard,false);
+assert.equal(preview.canRankCandidates,false);
 assert.equal(preview.personalCpDelta,0);
 
 const random=projectPartySynchronizationLobbyV2('party_event',[
@@ -47,7 +49,9 @@ assert.deepEqual(
 const catalogue=projectPartySynchronizationCatalogueV2();
 assert.equal(catalogue.length,18);
 assert.equal(new Set(catalogue.map(x=>x.id)).size,18);
-assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&x.requiresProgression===false));
+assert.ok(catalogue.every(x=>x.canFilterRecruitment===false&&
+ x.visibleOnRecruitmentBoard===false&&x.canRankCandidates===false&&
+ x.requiresProgression===false));
 assert.throws(()=>previewPartySynchronizationCandidateV2('dungeon',[
  p('1','BASTION'),p('2','DAWNKEEPER'),p('3','WAYFINDER'),p('4','HEXWEAVER'),
 ],p('5','RAVAGER')),/party_full/);

@@ -70,3 +70,22 @@ export function profileSceneFrameSegments(width:number,height:number,sourceAspec
   return [{...p,key:p.key+':'+i,x,y,width:right-x,height:bottom-y,imageLeft:p.imageLeft-(x-p.x),imageTop:p.imageTop-(y-p.y)}];
  }));
 }
+
+/** Keep the whole procedural glow inside the same perimeter stencil as the border.
+ * Project its authored center to the nearest zone that can contain its full diameter. */
+export function profileSceneGlowBounds(width:number,height:number,x:number,y:number,diameter:number){
+ if(!Number.isFinite(x)||!Number.isFinite(y)||!Number.isFinite(diameter)||diameter<=0)return null;
+ const zones=profileSceneBorderZones(width,height);
+ if(!zones.length)return null;
+ const d=Math.min(diameter,Math.max(...zones.map(z=>Math.min(z.width,z.height))));
+ const cx=x*width,cy=y*height;
+ let best:FrameRect|null=null,bestDistance=Infinity;
+ for(const z of zones){
+  if(z.width<d||z.height<d)continue;
+  const left=Math.max(z.x,Math.min(z.x+z.width-d,cx-d/2));
+  const top=Math.max(z.y,Math.min(z.y+z.height-d,cy-d/2));
+  const distance=(left+d/2-cx)**2+(top+d/2-cy)**2;
+  if(distance<bestDistance){best={x:left,y:top,width:d,height:d};bestDistance=distance;}
+ }
+ return best;
+}

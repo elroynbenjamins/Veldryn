@@ -31,6 +31,8 @@ on:
       - 'backend/src/server/combat/v2/__tests__/equipment-universal-forge-affix-preview.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-forge-set-balance-proposal.ts'
       - 'backend/src/server/combat/v2/equipment-frozen-forge-bridge.ts'
+      - 'backend/src/server/combat/v2/frozen-forge-socket-review.ts'
+      - 'backend/src/server/combat/v2/permanent-gem-source-review.ts'
       - 'backend/src/server/combat/v2/equipment-original-forge-authored-boss.ts'
       - 'backend/src/server/combat/v2/__tests__/equipment-frozen-forge-bridge.ts'
       - 'backend/src/server/combat/v2/equipment-expanded-launch-registry.ts'

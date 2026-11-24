@@ -3,6 +3,8 @@
  * Strictly QA mock custody verification; NOT real authenticated DB or live.
  */
 import {strict as assert} from 'node:assert';
+import {reviewFrozenForgeSocketsV2} from '../frozen-forge-socket-review';
+import type {V2GemSidecarState} from '../../../equipment/equipment-crafting-v2-gem-sidecar-types';
 import {writeFileSync} from 'node:fs';
 import {launchPlayer} from '../../content/launch-combat';
 import type {CombatantDefinition,CombatInput,CombatStats} from '../../types';
@@ -236,6 +238,54 @@ function make(classId:ClassIdV2,specIndex:0|1,
  };
  return {actor,build,source,mint,exact,claim,start,job,award,custody,
   reservation,equipReceipt};
+}
+// Real pinned Forge copies plus synthetic, replay-valid installed socket receipts.
+// No character or item mutation, and no release or combat authority.
+{
+ const qa=make('IRONWARDEN',0);
+ const base=compileRealFrozenForgeActorV2(qa.actor,qa.build,qa.source);
+ const policy={version:'QA_SOCKET_CAPS_V1',maxFinalHp:1e8,maxFinalDefense:1e8};
+ const empty=reviewFrozenForgeSocketsV2(qa.actor,qa.build,qa.source,{slots:[],receipts:[]},policy);
+ assert.deepEqual(empty.stats,base.actor.stats);
+ assert.deepEqual(empty.advanced,base.actor.combatV2?.equipmentEffects);
+ const original=JSON.stringify(qa.source.items);
+ const source={...qa.source,ledgerRevision:7,verifyPersisted:(digest:string,rev:number)=>rev===7&&/^[0-9a-f]{64}$/.test(digest)};
+ const sidecar=(gemId:string):V2GemSidecarState=>({
+  slots:[{instanceId:qa.mint.id,stat:{gemId,rollPercent:120}}],
+  receipts:[{requestId:'QA_SOCKET_RECEIPT',fingerprint:'gem:'+qa.mint.id+':'+gemId,
+   instanceId:qa.mint.id,socket:'stat',gemId,source:'gem_pouch',
+   rollPercent:120,burnedGemId:null,version:7}],
+ });
+ const raw=(id:string)=>base.evidence.affixSources.filter(x=>x.id===id).reduce((n,x)=>n+x.value,0);
+ const before=base.evidence.stages.afterFrozenBase;
+ const round5=(x:number)=>Math.round(x*1e5)/1e5;
+ for(const family of ['vitality','iron','keen','precision']){
+  const s=sidecar('gem:stat_'+family+':g5');
+  const out=reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,s,policy);
+  assert.equal(out.gemSources.length,1);
+  const bonus=out.gemSources[0].fraction;
+  if(family==='vitality')assert.equal(out.stats.maxHp,round5(before.maxHp*(1+raw('max_hp_pct')+bonus)));
+  if(family==='iron')assert.equal(out.stats.defense,round5(before.defense*(1+raw('defense_pct')+bonus)));
+  if(family==='keen')assert.equal(out.stats.critChance,round5(before.critChance+raw('crit_rate_pp')+bonus));
+  if(family==='precision')assert.equal(out.advanced.accuracyPp,round5(raw('accuracy_pp')+bonus));
+  assert.equal(out.canExecuteCombat,false);
+  assert.equal(out.cpApproved,false);
+  assert.deepEqual(out,reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,s,policy));
+ }
+ assert.equal(JSON.stringify(qa.source.items),original);
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar('gem:stat_might:g5'),policy),/unreconciled_stat_gem/);
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,source,sidecar('gem:stat_vitality:g5'),{...policy,maxFinalHp:1}),/combined_stat_cap/);
+ // Every verification boundary must reject source/policy changes before projection.
+ for(const mutateAt of [1,2,3]){
+  const mutablePolicy={...policy};
+  let reads=0;
+  assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,verifyPersisted:()=>{
+   if(++reads===mutateAt)mutablePolicy.maxFinalHp+=1;
+   return true;
+  }},sidecar('gem:stat_keen:g5'),mutablePolicy),/mutated_source/);
+ }
+ let verifies=0;
+ assert.throws(()=>reviewFrozenForgeSocketsV2(qa.actor,qa.build,{...source,verifyPersisted:()=>++verifies<3},sidecar('gem:stat_keen:g5'),policy),/unverified_combined_snapshot/);
 }
 let checked=0,actualFrozenPositive=0,mappedAffixes=0;
 for(const classId of Object.keys(CLASS_NAMES_V2) as ClassIdV2[]){

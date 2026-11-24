@@ -42,6 +42,7 @@ jobs:
         run: |
           node --test tools/frostfall-winter-hearth-2026-rules.test.mjs
           node --test tools/winter-hearth-review/v2/wisp-craft-supply-review.test.mjs
+          node --test tools/winter-hearth-review/v2/actual-crafting-source.test.mjs
   disposable-guild-donations:
     name: PG17 Winter Hearth donation ledger and Guild Gold review
     runs-on: ubuntu-latest

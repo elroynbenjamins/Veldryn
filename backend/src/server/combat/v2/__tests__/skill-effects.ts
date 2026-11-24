@@ -774,3 +774,27 @@ const moderate=simulateCombat({...healCoordInput,initialPlayerState:{...healCoor
 assert.ok(!moderate.events.some(e=>e.type==='heal'&&e.actorId===instantStone.id&&e.atMs===0),
  'adequately covered moderate patient may preserve instant cooldown');
 console.log('PASS: pending healing coverage, alternate critical patient and safe fallback');
+
+// Two protective tanks cannot spend an interrupt on a cast already stopped.
+const secondCover={...coverTank,id:'COVER_SECOND'};
+const duplicateInterrupt=simulateCombat({seed:'coordination-interrupt',
+ players:[coverTank,secondCover],enemies:[cancelBoss],maxDurationMs:200,tickMs:100});
+assert.equal(duplicateInterrupt.events.filter(e=>e.type==='interrupt').length,1);
+assert.ok(duplicateInterrupt.events.some(e=>e.type==='interrupt'&&e.actorId===coverTank.id));
+assert.ok(!duplicateInterrupt.events.some(e=>e.actorId===secondCover.id&&e.abilityId===coverInterrupt),
+ 'second tank does not consume an interrupt after the first cancels');
+const groupProtectSkill=coverSkills.find(s=>s.name==='Bulwark Pulse')!;
+const groupProtectCompiled=compileServerSkillBuildV2(true,{...coverBuild,
+ selected:{...coverBuild.selected,activeSkills:[{skillId:groupProtectSkill.id,variantId:groupProtectSkill.variants[1].id}]}});
+const firstProtector={...groupProtectCompiled,id:'CO_FIRST_SHIELD',stats:{...groupProtectCompiled.stats,maxHp:1000,healingPower:1000}};
+const secondProtector={...firstProtector,id:'CO_SECOND_SHIELD'};
+const redundantDefense=simulateCombat({seed:'coordination-shields',players:[firstProtector,secondProtector],
+ enemies:[enemy],maxDurationMs:100,tickMs:100});
+assert.ok(redundantDefense.events.some(e=>e.type==='shield'&&e.actorId===firstProtector.id));
+assert.ok(!redundantDefense.events.some(e=>e.type==='shield'&&e.actorId===secondProtector.id),
+ 'pure group shield preserved when all healthy allies already sufficiently shielded');
+const legacyProtector={...secondProtector,combatV2:undefined,tags:[]};
+assert.ok(simulateCombat({seed:'coordination-shields',players:[firstProtector,legacyProtector],enemies:[enemy],
+ maxDurationMs:100,tickMs:100}).events.some(e=>e.type==='shield'&&e.actorId===legacyProtector.id),
+ 'legacy protection rotation unchanged');
+console.log('PASS: duplicate interrupt avoidance and redundant pure shield conservation');

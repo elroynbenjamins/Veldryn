@@ -1,5 +1,7 @@
 -- Add account Social Name and combined character combat level to the existing v2 roster.
 -- Preserve the legacy active-character level/class fields for old clients.
+-- Disambiguate visible legacy-name collisions with a display-only stable account tag;
+-- never modify chosen Social Names, stored names, membership or counts.
 -- Aggregate only the bounded page, not every recently active account.
 -- Keep v1 (7m, "Online") untouched for older released clients.
 -- Reuse authenticated server-authoritative foreground/client heartbeats.
@@ -19,7 +21,8 @@ as $function$
   group by p.account_id
  ), eligible as (
   select r.account_id,
-    coalesce(nullif(profile.social_name,''),nullif(profile.display_name,''),nullif(c.name,''),'Adventurer') as sender_name,
+    coalesce(nullif(profile.social_name,''),nullif(profile.display_name,''),nullif(c.name,''),'Adventurer') as base_name,
+    nullif(profile.social_name,'') is not null as has_social_name,
     greatest(1,c.level) as level,
     c.class_id,
     exists (
@@ -42,8 +45,14 @@ as $function$
      where (b.blocker_id=v.account_id and b.blocked_id=r.account_id)
         or (b.blocker_id=r.account_id and b.blocked_id=v.account_id)
     )
+ ), named as (
+  select eligible.*,
+   case when not has_social_name and count(*) over (partition by lower(base_name))>1
+     then base_name||' #'||right(md5(account_id::text),8)
+     else base_name end as sender_name
+  from eligible
  ), page as (
-  select * from eligible
+  select * from named
   order by is_friend desc,is_guildmate desc,lower(sender_name),account_id
   limit 250
  )

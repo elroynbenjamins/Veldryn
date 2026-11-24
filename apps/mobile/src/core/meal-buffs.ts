@@ -6,6 +6,8 @@ export interface ActiveMealBuff {itemId:string;remainingSeconds:number;}
 /** Improved 2x meal rates; one explicitly activated meal at a time, separate from Supply boosts. */
 export const MEAL_BONUSES:readonly MealBonusDefinition[]=[
  {itemId:'IRONWOOD_STEW',kind:'gathering_speed',percent:4,durationHours:3,label:'+4% Gathering speed'},
+ {itemId:'CROWNWOOD_FISHERMANS_PIE',kind:'crafting_speed',percent:4,durationHours:3,label:'+4% Crafting speed'},
+ {itemId:'SUNSCAR_SPICED_PLATTER',kind:'combat_xp',percent:6,durationHours:3,label:'+6% Combat XP'},
  {itemId:'GLASSFIN_FEAST',kind:'gathering_speed',percent:6,durationHours:4,label:'+6% Gathering speed'},
  {itemId:'FROSTED_ICEFIN',kind:'crafting_speed',percent:6,durationHours:4,label:'+6% Crafting speed'},
  {itemId:'CHARRED_EMBERFIN',kind:'combat_xp',percent:8,durationHours:4,label:'+8% Combat XP'},

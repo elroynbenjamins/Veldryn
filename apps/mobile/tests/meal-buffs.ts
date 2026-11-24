@@ -3,9 +3,12 @@ import {transitionActivity} from '../src/core/playability';
 import {executeGameCommand} from '../src/core/game-commands';
 import {mealBonusDef,MEAL_BONUSES,eatMealForBonus,normalizeMealBuff,commitMealActivityTime} from '../src/core/meal-buffs';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
-import {processingRecipeDef,processingRunCapacity} from '../src/core/processing';
+import {processingRecipeDef,processingRunCapacity,startProcessingBatch} from '../src/core/processing';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
+import {recipeDef} from '../src/content/skills';
+import {itemDef} from '../src/content/items';
+import {localizedItemName} from '../src/i18n/starter-item-names';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 function throws(fn:()=>unknown,message:string){let rejected=false;try{fn()}catch{rejected=true;}ok(rejected,message);}
@@ -19,12 +22,32 @@ const fresh=()=>{
 };
 const expected=[
  ['IRONWOOD_STEW',4,3,'gathering_speed'],
+ ['CROWNWOOD_FISHERMANS_PIE',4,3,'crafting_speed'],
+ ['SUNSCAR_SPICED_PLATTER',6,3,'combat_xp'],
  ['GLASSFIN_FEAST',6,4,'gathering_speed'],
  ['FROSTED_ICEFIN',6,4,'crafting_speed'],
  ['CHARRED_EMBERFIN',8,4,'combat_xp'],
  ['ASHLANDS_EMBER_STEW',10,4,'noncombat_speed'],
 ] as const;
-ok(MEAL_BONUSES.length===5,'exactly five special meal buffs');
+ok(MEAL_BONUSES.length===7,'exactly seven special meal buffs');
+for(const [recipeId,itemId,level,gold] of [
+ ['COOK_CROWNWOOD_FISHERMANS_PIE','CROWNWOOD_FISHERMANS_PIE',23,240],
+ ['COOK_SUNSCAR_SPICED_PLATTER','SUNSCAR_SPICED_PLATTER',30,384],
+] as const){
+ const recipe=recipeDef(recipeId);
+ ok(recipe.level===level&&recipe.gold===gold&&recipe.skillId==='cooking',recipeId+' exact unlock and final Gold');
+ ok(recipe.output.itemId===itemId&&recipe.output.quantity===1&&recipe.repeatableTraining,recipeId+' repeatable meal output');
+ ok(itemDef(itemId).type==='food'&&!!itemDef(itemId).heal,itemId+' valid healing food');
+ for(const input of recipe.inputs)ok(itemDef(input.itemId).id===input.itemId,'valid recipe ingredient');
+ const stocked=fresh();
+ stocked.inventory.stacks=recipe.inputs.map(input=>({...input,quantity:input.quantity*3}));
+ stocked.skills=stocked.skills.map(row=>row.skillId==='cooking'?{...row,level:level-1}:row);
+ throws(()=>startProcessingBatch(stocked,recipeId,1,now),recipeId+' cannot craft below unlock');
+ stocked.skills=stocked.skills.map(row=>row.skillId==='cooking'?{...row,level}:row);
+ const run=startProcessingBatch(stocked,recipeId,1,now);
+ ok(run.activity?.processing?.outputPerBatch.itemId===itemId,recipeId+' uses normal reserved cooking run');
+ for(const lang of ['en','de','es','nl','it','fr','ru','tr'] as const)ok(!!localizedItemName(lang,itemId),itemId+' localized name '+lang);
+}
 for(const [id,percent,hours,kind] of expected){
  const def=mealBonusDef(id);
  if(!def)throw new Error('Missing special meal definition: '+id);

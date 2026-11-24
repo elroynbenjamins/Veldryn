@@ -192,4 +192,49 @@ export function runPrivateConditionalBoundaries(ravager:CombatantDefinition,iron
  assert.throws(()=>runtime(['eq2_t1_citadel:4',tower]),/fixture_scope/);
  console.log('PASS: V26 independent shield grant, exact HP threshold, named depletion, legacy residual, true damage, same-tick, replacement, expiry, threshold crossing and fatal-hit guards');
 }
+ // V27: Weather the Break must be tied to the actual named Rimeguard pool.
+ {
+  const input:CombatInput={seed:'QA_V27_SHIELD_BREAK',players:[ironwarden],enemies:[boss]};
+  const rime='eq2_t5_rimewatch:4' as const,weather='eq2_t5_rimewatch:6' as const,heart='eq2_dungeon_rootbound_t2_heartward:4' as const,tower='eq2_rare_t5_citadel:4' as const;
+  const runtime=(ids:readonly Eq2PrivateHitIdV22[])=>authorizeEq2PrivateHitQaV22(input,issueEq2PrivateHitQaV22(input,ironwarden.id,ids,()=>true))!;
+  const hit=(now:number,raw=100)=>({now,actorId:boss.id,targetId:ironwarden.id,abilityId:'BASIC',originalEnemyAbility:true,
+   direct:true,physical:true,nontrue:true,sourceAlive:true,targetAlive:true,targetHp:400,targetMaxHp:1000,shield:0,raw});
+  const grant=(r:ReturnType<typeof runtime>,e:ReturnType<typeof hit>,loss:number)=>{
+   r.beforeIncomingHit(e);r.absorbShield(e,loss);r.afterIncomingHit(e,loss);return r.afterShieldHit(e,loss);
+  };
+  assert.throws(()=>runtime([weather]),/fixture_scope/);
+  const r=runtime([rime,weather]);
+  assert.equal(grant(r,hit(1000),1)?.id,rime);
+  const partial=hit(1100,10);r.beforeIncomingHit(partial);assert.deepEqual(r.absorbShield(partial,10),{id:rime,amount:10,broken:false});
+  assert.deepEqual(r.afterIncomingHit(partial,0),[]);
+  const exact=hit(1200,30);r.beforeIncomingHit(exact);assert.deepEqual(r.absorbShield(exact,30),{id:rime,amount:30,broken:true});
+  assert.deepEqual(r.afterIncomingHit(exact,0),[weather],'exact depletion may have zero HP loss');
+  assert.deepEqual(r.afterIncomingHit(exact,0),[]);
+  assert.equal(r.beforeIncomingHit(hit(1200)).reductionPct,0);
+  assert.equal(r.beforeIncomingHit(hit(1201)).reductionPct,6);
+  assert.equal(r.beforeIncomingHit({...hit(1300),nontrue:false}).reductionPct,0);
+  assert.equal(r.beforeIncomingHit(hit(5200)).reductionPct,0);
+  const expiry=runtime([rime,weather]);grant(expiry,hit(1000),1);assert.equal(expiry.expireShield(7000)?.id,rime);
+  const late=hit(7000);expiry.beforeIncomingHit(late);expiry.absorbShield(late,100);assert.deepEqual(expiry.afterIncomingHit(late,100),[]);
+  const periodic=runtime([rime,weather]);grant(periodic,hit(1000),1);
+  const dot={...hit(1100,40),direct:false};periodic.beforeIncomingHit(dot);assert.equal(periodic.absorbShield(dot,40)?.broken,true);
+  assert.deepEqual(periodic.afterIncomingHit(dot,0),[]);assert.equal(periodic.beforeIncomingHit(hit(1200)).reductionPct,0);
+  const wrong=runtime([rime,weather,heart]);assert.equal(grant(wrong,{...hit(1000),targetHp:600},60)?.id,heart);
+  const other=hit(1100,40);wrong.beforeIncomingHit(other);assert.equal(wrong.absorbShield(other,40)?.id,heart);
+  assert.deepEqual(wrong.afterIncomingHit(other,0),[]);assert.equal(wrong.beforeIncomingHit(hit(1200)).reductionPct,0);
+  const replaced=runtime([rime,weather,tower]);grant(replaced,hit(1000),1);
+  assert.equal(grant(replaced,hit(1000),80)?.replaced?.id,rime);
+  const newPool=hit(1100,60);replaced.beforeIncomingHit(newPool);assert.equal(replaced.absorbShield(newPool,60)?.id,tower);
+  assert.deepEqual(replaced.afterIncomingHit(newPool,0),[]);
+  const fatal=runtime([rime,weather]);grant(fatal,hit(1000),1);
+  const dead={...hit(1100,100),targetHp:60};fatal.beforeIncomingHit(dead);fatal.absorbShield(dead,100);
+  assert.deepEqual(fatal.afterIncomingHit(dead,60),[]);
+  const cd=runtime([rime,weather]);grant(cd,hit(1000),1);
+  const firstBreak=hit(1100,40);cd.beforeIncomingHit(firstBreak);cd.absorbShield(firstBreak,40);assert.deepEqual(cd.afterIncomingHit(firstBreak,0),[weather]);
+  assert.equal(grant(cd,hit(25000),1)?.id,rime);
+  const secondBreak=hit(25100,40);cd.beforeIncomingHit(secondBreak);cd.absorbShield(secondBreak,40);assert.deepEqual(cd.afterIncomingHit(secondBreak,0),[]);
+  assert.equal(cd.beforeIncomingHit(hit(25101)).reductionPct,0);
+  console.log('PASS: V27 named Rimeguard-only direct depletion, zero-HP-loss trigger, cooldown, exact expiry, wrong source, DoT, fatal and replacement negatives');
+ }
+
 }

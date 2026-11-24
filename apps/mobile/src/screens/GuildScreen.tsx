@@ -79,7 +79,7 @@ const GUILD_BANK_RESOURCES=[
  {itemId:'TORN_OATHCLOTH',label:'Torn Oathcloth'},
 ] as const;
 const GUILD_PROJECT_COST={MOSS_FIBER:200,GREENWOOD_LOG:120,IRONWOOD_LOG:60,ASTER_IRON_INGOT:20};
-export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange,onEventPageChange,onOpenEventCrafting}:{onEventPageChange?:(open:boolean)=>void;onOpenEventCrafting?:(skill:'smithing'|'tailoring')=>void;initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
+export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onOpenChat,onRecruitment,online=false,membershipRevision=0,onTokenRewardsChanged,initialPve=false,onInitialPveHandled,initialNavigation,onNavigationChange,onEventPageChange,onOpenEventCrafting,eventGameplayBusy=false,onRefreshEventInventory}:{eventGameplayBusy?:boolean;onRefreshEventInventory?:()=>Promise<void>;onEventPageChange?:(open:boolean)=>void;onOpenEventCrafting?:(skill:'smithing'|'tailoring')=>void;initialNavigation?:GuildNavigationState;onNavigationChange?:(state:GuildNavigationState)=>void;onOpenChat?:()=>void;onRecruitment?:()=>void;onTokenRewardsChanged?:()=>void|Promise<unknown>;online?:boolean;membershipRevision?:number;state:GameState;onChange:(next:GameState)=>void;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number;initialPve?:boolean;onInitialPveHandled?:()=>void}){
  const st=useSocialText();
   const {gl}=useGameplayText();
   const language=useGameLanguage();
@@ -106,7 +106,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    onNavigationChange?.({section:safeSection,activityView,hallSection,progressTab});
   },[online,onlineSection,activityView,hallSection,progressTab,onNavigationChange]);
   const [guildMembership,setGuildMembership]=useState<'loading'|'member'|'none'|'error'>(online?'loading':'member');
-  const [winterHearthOpen,setWinterHearthOpen]=useState(false);
+  const [winterHearthOpen,setWinterHearthOpen]=useState(false),[eventGuildId,setEventGuildId]=useState('');
   const winterHearthAvailable=WINTER_HEARTH_GUILD_RELEASED&&online&&guildMembership==='member'&&state.account.liveEvent?.eventId===WINTER_HEARTH_2026_ID&&state.account.liveEvent.enabled===true;
   const winterHearthVisible=winterHearthOpen&&winterHearthAvailable;
   useEffect(()=>{onEventPageChange?.(winterHearthVisible);return()=>onEventPageChange?.(false);},[winterHearthVisible,onEventPageChange]);
@@ -128,13 +128,13 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    const headerGuide=online&&(['Activities','Progress','PvE','Roster','Hall','Manage','Appearance'] as const).some(value=>value===onlineSection)?<SectionGuide scope={session?.user.id??''} area="guild" section={guideSection} guide={localizedGuildDetailedGuide(language,guideSection)??guildGuide} placement="header" translate={value=>guildTutorialText(language,value)}/>:null;
   const reloadGuildMembership=()=>{
    setGuildMembership('loading');setGuildLoadError('');
-   void myGuild().then(membership=>{setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
+   void myGuild().then(membership=>{setEventGuildId(membership?.guild_id??'');setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')})
     .catch(reason=>{setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')});
   };
   useEffect(()=>{
    if(!online)return;
    let mounted=true;
-   void myGuild().then(membership=>{if(mounted){setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
+   void myGuild().then(membership=>{if(mounted){setEventGuildId(membership?.guild_id??'');setGuildRole(membership?.role??null);setGuildMembership(membership?'member':'none')}})
     .catch(reason=>{if(mounted){setGuildLoadError(reason instanceof Error?reason.message:'Unable to check Guild membership.');setGuildMembership('error')}});
    return()=>{mounted=false};
   },[online,membershipRevision]);
@@ -167,7 +167,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    else setOnlineSection('Home');
    guildScroll.current?.scrollTo({y:0,animated:false});
   };
-  if(winterHearthVisible)return <WinterHearthGuildScreen endsAtMs={Math.min(state.account.liveEvent?.endsAtMs??WINTER_HEARTH_2026_END_MS,WINTER_HEARTH_2026_END_MS)} scope={String(session?.user.id??'')+':'+membershipRevision} onClose={()=>setWinterHearthOpen(false)} onOpenCrafting={onOpenEventCrafting}/>;
+  if(winterHearthVisible&&session?.user.id&&eventGuildId&&onRefreshEventInventory)return <WinterHearthGuildScreen key={session.user.id+':'+eventGuildId+':'+state.character?.id} state={state} accountId={session.user.id} guildId={eventGuildId} gameplayBusy={eventGameplayBusy} onRefreshInventory={onRefreshEventInventory} endsAtMs={Math.min(state.account.liveEvent?.endsAtMs??WINTER_HEARTH_2026_END_MS,WINTER_HEARTH_2026_END_MS)} scope={String(session?.user.id??'')+':'+membershipRevision} onClose={()=>setWinterHearthOpen(false)} onOpenCrafting={onOpenEventCrafting}/>;
   if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} voteReminder={weeklyVotePending} onChange={next=>{setOnlineSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}}/><ScrollView ref={guildScroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <GuildTutorial role={guildRole} autoStart={guildTourJustJoined} home={onlineSection==='Home'}
       destination={tutorialDestination} onNavigate={navigateGuildTutorial}

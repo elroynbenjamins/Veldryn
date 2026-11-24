@@ -136,6 +136,10 @@ jobs:
         run: node backend/dist/server/combat/v2/__tests__/party-synchronization.js
       - name: Validate synchronization authority and real private engine modifiers
         run: node backend/dist/server/combat/v2/__tests__/party-sync-authority.js
+      - name: Validate synchronization resource, harmful-effect and interrupt mechanics
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-mechanics.js
+      - name: Run 36 dungeon compositions across six pressure profiles plus 495 flexible party combat cases
+        run: node backend/dist/server/combat/v2/__tests__/party-sync-balance-matrix.js
       - name: Validate complete four-player class/gear compilation, separate counterplay and blocked party trait/persistence
         run: node backend/dist/server/combat/v2/__tests__/four-player-equipment-counterplay.js
       - name: Verify real boss cast telegraphs, timed interrupts and safe status-clearing replay

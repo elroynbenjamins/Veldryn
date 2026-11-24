@@ -303,6 +303,7 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  runtime:readonly TrustedEquipmentRuntimeV2[],
  party:TrustedPersistedPartyExecutionV2,
  serverEnabled=false,
+ synchronizationEnabled=true,
 ):UnifiedEquipmentEncounterResultV2{
  if(!serverEnabled)throw Error('combat_v2_persisted_party_disabled');
  if(!party||typeof party.verifyPersisted!=='function'||input.players.length!==4||
@@ -358,7 +359,8 @@ export function simulateUnifiedEquipmentPersistedPartyCombatV2(
  const verified=(digest:string)=>party.verifyPersisted(persistence.binding,sources,digest);
  const traitAuthority=issuePersistedPartyEquipmentV2TraitAuthority(
   finalInput,sources,persistence.binding,(_binding,_sources,digest)=>verified(digest));
- const syncAuthority=issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>verified(digest));
+ const syncAuthority=synchronizationEnabled?
+  issuePartySyncAuthorityV2(scope,finalInput,(_scope,digest)=>verified(digest)):undefined;
  const enemyAuthority=partyEnemySnapshot?issuePersistedPartyEnemyV2EngineAuthority(
   finalInput,persistence.binding,partyEnemySnapshot.enemyIds,partyEnemySnapshot.bossIds,
   (_binding,digest)=>verified(digest)&&

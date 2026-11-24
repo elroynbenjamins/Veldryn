@@ -9,7 +9,8 @@
     "tests/exploration-scouting-board-review.ts",
     "src/components/ExplorationScoutingBoardReview.tsx",
     "tests/exploration-account-settlement-review.ts",
-    "tests/exploration-scouting-balance-review.ts"
+    "tests/exploration-scouting-balance-review.ts",
+    "tests/exploration-scouting-duration-review.ts"
   ],
   "exclude": []
 }

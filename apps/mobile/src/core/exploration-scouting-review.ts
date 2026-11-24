@@ -9,6 +9,15 @@ import type {CompanionAssignment,OwnedCompanionSnapshot} from '../../../../backe
 export const EXPLORATION_2_RELEASED=false as const;
 export const SCOUT_POLICY_VERSION='exploration-2-review-v1';
 export type ScoutKind='route'|'practice'|'survey';
+export const SCOUT_TRAINING_MINUTES=[5,15,30,60,120,240,480] as const;
+export type ScoutTrainingMinutes=typeof SCOUT_TRAINING_MINUTES[number];
+export function scoutingTrainingMinutes(kind:ScoutKind,minutes?:number){
+ if(kind==='route'){if(minutes!==undefined)throw Error('invalid_duration');return undefined;}
+ const value=minutes??(kind==='practice'?5:120);
+ if(!(SCOUT_TRAINING_MINUTES as readonly number[]).includes(value))throw Error('invalid_duration');
+ // Short practice remains free, including overnight guide training; survey requires a companion.
+ return value as ScoutTrainingMinutes;
+}
 export type ScoutRoute={id:string;legacyId:string;zoneId:string;name:string;areaId?:string;requiredExplorationLevel:number;legacyCharacterLevel:number;prerequisite?:string;targetRegion?:string;monsterId?:string;seconds:number;xp:number;released:boolean};
 export const SCOUT_ROUTES:readonly ScoutRoute[]=[...EXPLORATION_ROUTES.map(r=>({
  id:'scout2:'+r.id,legacyId:r.id,zoneId:r.zoneId,name:r.name,areaId:r.areaId??(r.id==='SCOUT_FROSTMARCH'?'ZONE_011':undefined),requiredExplorationLevel:r.requiredExplorationLevel,legacyCharacterLevel:r.requiredLevel,
@@ -26,7 +35,7 @@ export const SCOUT_ROUTES:readonly ScoutRoute[]=[...EXPLORATION_ROUTES.map(r=>({
  })
 ];
 export type ScoutState={accountId:string;characterId:string;explorationLevel:number;explorationXp:number;discoveredRouteIds:readonly string[];visitedZoneIds:readonly string[];retainedPrerequisiteRouteIds?:readonly string[]};
-export type ScoutReceipt={accountId:string;characterId:string;requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];loanedGuide:boolean;startedAt:number;endsAt:number;xp:number;policyVersion:string;status:'active'|'claimed';discovery:boolean};
+export type ScoutReceipt={accountId:string;characterId:string;requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];loanedGuide:boolean;trainingMinutes?:ScoutTrainingMinutes;startedAt:number;endsAt:number;xp:number;policyVersion:string;status:'active'|'claimed';discovery:boolean};
 export type ScoutCampAssignment={accountId:string;characterId:string;assignmentId:string;missionId:string;companionIds:readonly string[];endsAt:number;status:'active'|'claimed';explorationXp:number};
 export type ScoutAuthority={owned:Record<string,OwnedCompanionSnapshot>;legacyAssignments:CompanionAssignment[];campAssignments?:readonly ScoutCampAssignment[];equipped:ReadonlySet<string>;trialLocked:ReadonlySet<string>;unavailable:ReadonlySet<string>};
 const fail=(why:string):never=>{throw Error(why)};
@@ -73,11 +82,12 @@ export function scoutingTeamBonus(route:ScoutRoute,ids:readonly string[],authori
 }
 /** Immutable account-scoped reservation. Production needs transactional custody
  * shared with existing expeditions/trials/equip, and a trusted server clock. */
-export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;receipts:readonly ScoutReceipt[];routeId:string;kind:ScoutKind;companionIds:readonly string[];requestId:string;now:number}):ScoutReceipt{
+export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;receipts:readonly ScoutReceipt[];routeId:string;kind:ScoutKind;companionIds:readonly string[];requestId:string;now:number;trainingMinutes?:ScoutTrainingMinutes}):ScoutReceipt{
  const {state,authority,receipts,routeId,kind,companionIds,requestId,now}=input;
  if(!state.accountId||!state.characterId||!Number.isSafeInteger(now)||now<0||!/^[A-Za-z0-9_-]{8,128}$/.test(requestId)||!['route','practice','survey'].includes(kind))return fail('invalid_request');
+ const minutes=scoutingTrainingMinutes(kind,input.trainingMinutes);
  const previous=receipts.find(r=>r.accountId===state.accountId&&r.requestId===requestId);
- if(previous){if(previous.characterId!==state.characterId||previous.routeId!==routeId||previous.kind!==kind||JSON.stringify(previous.companionIds)!==JSON.stringify(companionIds))return fail('nonce_conflict');return previous;}
+ if(previous){if(previous.characterId!==state.characterId||previous.routeId!==routeId||previous.kind!==kind||scoutingTrainingMinutes(previous.kind,previous.trainingMinutes)!==minutes||JSON.stringify(previous.companionIds)!==JSON.stringify(companionIds))return fail('nonce_conflict');return previous;}
  if(receipts.some(r=>r.accountId===state.accountId&&r.status==='active')||(authority.campAssignments??[]).some(r=>r.accountId===state.accountId&&r.status==='active'&&r.explorationXp>0))return fail('scout_slot_busy');
  const route=SCOUT_ROUTES.find(r=>r.id===routeId);if(!route)return fail('unknown_route');
  const available=scoutingAvailability(state,route,kind);if(available!=='available')return fail(available);
@@ -91,12 +101,12 @@ export function reserveScout(input:{state:ScoutState;authority:ScoutAuthority;re
   if(busy.has(id)||authority.equipped.has(id)||authority.trialLocked.has(id)||authority.unavailable.has(id))return fail('companion_unavailable');
  }
  const bonus=scoutingTeamBonus(route,companionIds,authority),loanedGuide=companionIds.length===0;
- const baseMs=kind==='route'?route.seconds*1000:kind==='practice'?300000:2*3600000;
+ const baseMs=kind==='route'?route.seconds*1000:minutes!*60000;
  const duration=Math.max(30000,Math.round(baseMs*(loanedGuide?1.25:1)/(explorationScoutingSpeedMultiplier(state.explorationLevel)*(1+bonus))));
  // Survey XP uses the authored route rate, capped at one XP-earning team/account.
  // Parallel training economy and optional material payouts require calibration.
- const xp=kind==='route'?route.xp:Math.floor(route.xp/route.seconds*(kind==='practice'?300:7200));
- return {accountId:state.accountId,characterId:state.characterId,requestId,routeId,kind,companionIds:[...companionIds],loanedGuide,startedAt:now,endsAt:now+duration,xp,policyVersion:SCOUT_POLICY_VERSION,status:'active',discovery:kind==='route'};
+ const xp=kind==='route'?route.xp:Math.floor(route.xp/route.seconds*minutes!*60);
+ return {accountId:state.accountId,characterId:state.characterId,requestId,routeId,kind,companionIds:[...companionIds],loanedGuide,trainingMinutes:minutes,startedAt:now,endsAt:now+duration,xp,policyVersion:SCOUT_POLICY_VERSION,status:'active',discovery:kind==='route'};
 }
 export function scoutClaimPreview(receipt:ScoutReceipt,state:ScoutState,now:number){
  if(receipt.accountId!==state.accountId||receipt.characterId!==state.characterId)return fail('owner_mismatch');

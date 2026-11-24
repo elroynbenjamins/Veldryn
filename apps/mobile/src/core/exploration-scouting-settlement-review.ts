@@ -1,6 +1,6 @@
 /** In-memory reference transaction. No live RPC, database or real economy mutation.
  * All inputs except command selection are trusted, server-loaded fixture records. */
-import {reserveScout,scoutClaimPreview,type ScoutAuthority,type ScoutReceipt,type ScoutState,type ScoutKind,type ScoutCampAssignment} from './exploration-scouting-review';
+import {reserveScout,scoutClaimPreview,type ScoutAuthority,type ScoutReceipt,type ScoutState,type ScoutKind,type ScoutCampAssignment,type ScoutTrainingMinutes} from './exploration-scouting-review';
 import {scoutingMissionQuote} from './exploration-scouting-missions-review';
 import {scoutingProvisionQuote} from './exploration-scouting-economy-review';
 import {creditAccountExploration,projectAccountExploration,type AccountExploration} from './exploration-account-review';
@@ -18,7 +18,7 @@ function owned(ledger:ScoutLedger,accountId:string,characterId:string){
  return projectAccountExploration(state,ledger.account);
 }
 const auth=(l:ScoutLedger):ScoutAuthority=>({...l.authority,campAssignments:l.camps});
-export function dispatchTrainingReview(l:ScoutLedger,accountId:string,characterId:string,request:{requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[]},now:number){
+export function dispatchTrainingReview(l:ScoutLedger,accountId:string,characterId:string,request:{requestId:string;routeId:string;kind:ScoutKind;companionIds:readonly string[];trainingMinutes?:ScoutTrainingMinutes},now:number){
  const state=owned(l,accountId,characterId);
  if(l.camps.some(c=>c.requestId===request.requestId))return fail('nonce_conflict');
  const r=reserveScout({state,authority:auth(l),receipts:l.training,...request,now});

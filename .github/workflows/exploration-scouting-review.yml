@@ -20,6 +20,7 @@ on:
       - 'apps/mobile/src/core/exploration-scouting-balance-review.ts'
       - 'apps/mobile/src/core/exploration-discovery-review.ts'
       - 'apps/mobile/tests/exploration-scouting-balance-review.ts'
+      - 'apps/mobile/tests/exploration-scouting-duration-review.ts'
       - 'apps/mobile/tests/exploration-scouting-review.ts'
       - 'apps/mobile/tsconfig.exploration-scouting-review.json'
       - '.github/workflows/exploration-scouting-review.yml'
@@ -59,3 +60,5 @@ jobs:
       - run: node .core-build/apps/mobile/tests/exploration-account-settlement-review.js
 
       - run: node .core-build/apps/mobile/tests/exploration-scouting-balance-review.js
+
+      - run: node .core-build/apps/mobile/tests/exploration-scouting-duration-review.js

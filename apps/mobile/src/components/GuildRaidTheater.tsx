@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {useMusicOverride} from '../storage/audio';
-import {ActivityIndicator,Animated,Easing,Image,ImageBackground,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
+import {AccessibilityInfo,ActivityIndicator,Animated,AppState,Easing,Image,ImageBackground,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import type {GuildPveEncounter} from '../core/guild-pve-encounters';
 import {guildPvePresentation,guildPveView} from '../core/guild-pve-encounters';
 import type {GameState} from '../core/types';
@@ -23,39 +23,41 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
 }){
  const st=useSocialText(),C=useGameTheme();
  useMusicOverride('boss');
- const [now,setNow]=useState(Date.now()),[pulse,setPulse]=useState(0);
+ const [now,setNow]=useState(Date.now()),[pulse,setPulse]=useState(0),[foreground,setForeground]=useState(AppState.currentState==='active'),[systemReduceMotion,setSystemReduceMotion]=useState(false);
+ useEffect(()=>{const sub=AppState.addEventListener('change',status=>{setForeground(status==='active');if(status==='active')setNow(Date.now())});return()=>sub.remove()},[]);
+ useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setSystemReduceMotion(value)}).catch(()=>{});const sub=AccessibilityInfo.addEventListener('reduceMotionChanged',setSystemReduceMotion);return()=>{mounted=false;sub.remove()}},[]);
  const currentRefresh=useRef(onRefresh);currentRefresh.current=onRefresh;
  const pending=(row.pendingAttempts??0)>0;
  useEffect(()=>{
-  if(!pending)return;
+  if(!pending||!foreground)return;
   const interval=setInterval(()=>setNow(Date.now()),1000);
   return()=>clearInterval(interval);
- },[pending]);
+ },[pending,foreground]);
  const remaining=row.nextAttemptResolvesAt?Math.max(0,Math.ceil((Date.parse(row.nextAttemptResolvesAt)-now)/1000)):0;
  const overdue=pending&&remaining===0;
  useEffect(()=>{
-  if(!overdue)return;
+  if(!overdue||!foreground)return;
   const refresh=()=>{if(currentRefresh.current)void currentRefresh.current();};
   refresh();
   const timer=setInterval(refresh,12000);
   return()=>clearInterval(timer);
- },[overdue,row.id]);
- const reduceMotion=Boolean(state?.settings.reduceMotion);
+ },[overdue,row.id,foreground]);
+ const reduceMotion=Boolean(state?.settings.reduceMotion)||systemReduceMotion;
  const recoil=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   recoil.stopAnimation();recoil.setValue(0);
-  if(!pending||reduceMotion)return;
+  if(!pending||reduceMotion||!foreground)return;
   Animated.sequence([
    Animated.timing(recoil,{toValue:1,duration:85,easing:Easing.out(Easing.quad),useNativeDriver:true}),
    Animated.timing(recoil,{toValue:0,duration:230,easing:Easing.out(Easing.cubic),useNativeDriver:true}),
   ]).start();
   return()=>recoil.stopAnimation();
- },[pulse,pending,reduceMotion,recoil]);
+ },[pulse,pending,reduceMotion,recoil,foreground]);
  useEffect(()=>{
-  if(!pending||reduceMotion)return;
+  if(!pending||reduceMotion||!foreground)return;
   const timer=setInterval(()=>setPulse(value=>value+1),2800);
   return()=>clearInterval(timer);
- },[pending,reduceMotion]);
+ },[pending,reduceMotion,foreground]);
  const view=guildPveView(row,now),present=guildPvePresentation(row),accent=row.kind==='event'?C.special:C.accent;
  const n=(value:number)=>formatGameNumber(value,numberMode,language);
  const fx=dungeonCombatClassFx(state?.character?.classId);
@@ -63,12 +65,12 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
  const companionArt=companionId?companionArtSource(companionId):undefined;
  const companionTurn=Boolean(companionArt)&&pulse%3===2;
  const countDown=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`;
- return <CombatTheaterModal visible onClose={onClose} eyebrow={st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')} title={present.bossName} subtitle={st('3-minute attempt')} tone={row.kind==='event'?'event':'guild'} reduceMotion={reduceMotion}>
+ return <CombatTheaterModal visible onClose={onClose} eyebrow={st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')} title={present.bossName} subtitle={st('3-minute attempt')} compactHeader tone={row.kind==='event'?'event':'guild'} reduceMotion={reduceMotion}>
   <View style={s.content}>
    <ImageBackground source={stageArt} resizeMode="cover" style={s.arena} imageStyle={s.arenaArt}>
     <View style={s.shade}/>
     <Animated.Image source={bossArt} resizeMode="contain" style={[s.bossArt,{transform:[{translateX:recoil.interpolate({inputRange:[0,1],outputRange:[0,4]})},{scale:recoil.interpolate({inputRange:[0,1],outputRange:[1,.98]})}]}]} accessible={false}/>
-    {pending&&!reduceMotion?<View pointerEvents="none" style={s.effects}>
+    {pending&&!reduceMotion&&foreground?<View pointerEvents="none" style={s.effects}>
      <CombatAttackSprite eventId={`${row.id}:${pulse}:attack`} motion={companionTurn?'projectile':fx?.damageMotion??'lunge'} accent={companionTurn?'violet':fx?.damageAccent??'gold'} actionKind="damage" reduceMotion={false}/>
      <CombatImpactBurst eventId={`${row.id}:${pulse}:impact`} kind="damage" size={68} reduceMotion={false}/>
     </View>:null}
@@ -82,8 +84,8 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
     <View style={{height:'100%',width:`${Math.max(0,Math.min(100,100-view.percent))}%` as `${number}%`,backgroundColor:accent}}/>
    </View>
    <Text style={[s.hpTotal,{color:C.text}]}>{n(view.remaining)} / {n(row.maxHp)} HP</Text>
-   {pending?<View style={[s.status,{backgroundColor:C.panel2}]}><ActivityIndicator color={accent} size="small"/><Text accessibilityLiveRegion="polite" style={[s.statusText,{color:C.text}]}>{remaining>0?st('Raid in progress · {time}',{time:countDown}):st('Resolving attempt…')}</Text></View>:
-    row.lastAttemptDamage!=null?<View style={s.result}>
+   {pending?<View style={[s.status,{backgroundColor:C.panel2}]}><ActivityIndicator color={accent} size="small"/><Text style={[s.statusText,{color:C.text}]}>{remaining>0?st('Raid in progress · {time}',{time:countDown}):st('Resolving attempt…')}</Text></View>:
+    row.lastAttemptDamage!=null?<View style={s.result}><Text style={[s.meta,{color:C.muted,textAlign:'center'}]}>{st('Last attempt')}</Text>
      <Text style={[s.resultTotal,{color:accent}]}>{n(row.lastAttemptDamage)} {st('Damage')}</Text>
      <View style={[s.resultRow,{borderColor:C.line}]}><Text style={[s.meta,{color:C.muted}]}>{st('Character damage')}</Text><Text style={[s.name,{color:C.text}]}>{n(row.lastAttemptCharacterDamage??row.lastAttemptDamage)}</Text></View>
      <View style={[s.resultRow,{borderColor:C.line}]}><View style={s.flex}><Text style={[s.meta,{color:C.muted}]}>{st('Companion damage')}</Text><Text numberOfLines={1} style={[s.meta,{color:C.text}]}>{row.lastAttemptCompanionId?combatCompanionDef(row.lastAttemptCompanionId)?.name??row.lastAttemptCompanionId:st('No companion equipped')}</Text></View><Text style={[s.name,{color:C.text}]}>{n(row.lastAttemptCompanionDamage??0)}</Text></View>
@@ -93,10 +95,10 @@ export function GuildRaidTheater({row,state,language,numberMode,stageArt,bossArt
 }
 const s=StyleSheet.create({
  content:{gap:12,paddingBottom:16},
- arena:{height:214,alignItems:'center',justifyContent:'center',borderRadius:14,overflow:'hidden'},
+ arena:{height:250,alignItems:'center',justifyContent:'center',borderRadius:14,overflow:'hidden'},
  arenaArt:{opacity:.75},
  shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(5,8,13,.38)'},
- bossArt:{width:190,height:190},
+ bossArt:{width:218,height:218},
  effects:{...StyleSheet.absoluteFill,alignItems:'center',justifyContent:'center'},
  formation:{flexDirection:'row',alignItems:'center',gap:9},
  portrait:{width:46,height:46,borderRadius:12,borderWidth:1,alignItems:'center',justifyContent:'center'},

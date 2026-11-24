@@ -49,6 +49,7 @@ assert(borderRegistry.includes('celestial.scene.border')||borderRegistry.include
 assert(registry.includes('return BUNDLE'),'Celestial artwork must remain renderable for profiles of explicitly granted owners');
 // Every newly enabled static art reference must also pass structural validation.
 const assetRoot=path.join(root,'..');
+for(const name of ['celestial_crown','draconic_ruby'])verifyWebp(path.join(assetRoot,'shared',name+'.webp'),name,8*1024);
 for(const source of [registry,borderRegistry,draconicRegistry]){
  for(const match of source.matchAll(/require\(['"]\.\.\/\.\.\/assets\/ascendant\/([^'"]+\.webp)['"]\)/g)){
   const name=match[1];verifyWebp(path.join(assetRoot,name),name,name.includes('_smooth_pose_atlas')?512*1024:128*1024);

@@ -1,0 +1,22 @@
+# Equipment 2.0 V28 — support recipient shields and Defense
+
+24 November 2026. Hidden draft; V14 catalogue/economy, C12, D1–D10 remain unchanged.
+
+## Validation recovered independently
+V27 exact head 1ba40fd64b4c0e84349624e71ee21b6bf12efef2: V22–V27 shared boundary suite executed in an isolated JS runtime after explicit type-only erasure of fetched adapter, boundary and fixture source, with deterministic canonical JSON serialization substituted for the imported SHA-256 snapshot fingerprint. 144 assertions passed across six logged blocks. Repeated same approach at V28 head 42b579657255c4076584bb241ebbc461176e730d: 186 assertions passed (42 additional), seven logged blocks, no failure. This is useful runtime smoke evidence, NOT TypeScript compilation, actual digest verification, source-compiled Forge execution, full combat-engine integration, performance or release certification. Exact source was fetched from GitHub; no full local dependency checkout. V27 independent workflow 45404577448 was cancelled by the new workflow's same-PR concurrency replacement; expanded integration and catalogue remained queued. No measured combat matrix results. New CI source audit and boundary execution still required.
+
+## Eight exact support definitions
+Effective direct class heal restoring missing HP, applies to healed player recipient, six-second duration:
+| Source | Effect | ICD |
+|---|---|---|
+| Brightweave T1/T2/T3/T4 4p | shield 2.4/2.7/3/3.3% recipient max HP | 20s |
+| T5 Dawnspire Sanctuary Thread 4p | shield 5% recipient max HP | 20s |
+| T5 Dawnweave Soft Refuge 4p | shield 3% recipient max HP | 18s |
+| Rootbound Lifebloom 4p | +3% recipient Defense | 20s |
+| T5 Dawnmender Chain Comforting Thread 2p | +3% recipient Defense | 18s |
+
+Readback of committed runtime table vs V17/V18 source definitions matched all eight IDs, effect channels, recipient scope, units, values, durations, cooldowns and triggers. All source effects are review candidates; not final balancing. Brightweave tiers share cooldown family.
+
+Private support-only token scope: one QA Dawnkeeper or Stonecaller source actor (role/class/prefix checked), roster 1–4 unique QA Combat V2 players, exact snapshot digest and target max HP, no Qmode initial state or enemy damage profile. Offensive/self-defensive token modes remain solo, cannot mix support IDs with other modes. No real ownership, set completion or server grant implied. Support grants require the engine's original effective direct class heal, alive source and recipient, positive actual healed HP within pre-heal missing amount, registered target, correct max HP and unique receipt. No HoTs, full HP, generated/recursive or invalid targets. Self heal permitted where source does not prohibit it. Grant after HP restoration, no same-tick benefit, no retroactive effect. Per-healer family cooldown (not per target) prevents repeated AoE benefit from the same family. Separate per-target independent shield pool and Defense state; strongest eligible candidate per channel, no additive same-channel stacking, weaker candidates don't spend cooldown unless granted. Different eligible families may grant to different targets on separate heal events; shield + Defense may coexist. Existing class shield absorbs first, equipment pool residual only, true/generated damage excluded per prior QA rules; no legacy reflection/resource/gem side effects. Recipient shield expiration is drained independently and logged; target Defense enters normal mitigation formula. Full party gameplay and death/revive interactions not yet validated. This is a conservative QA stacking choice, not approved final policy.
+
+Added shared boundary cases with four typed fixtures and wired same suite to four original Forge actors (latter execution unconfirmed). 42 additional assertions in independent smoke covered correct recipient, healer and target authority, actual missing HP, two recipient pools, self/Stonecaller, cooldown, no same-tick benefit, expiry and invalid/mixed scope. Added source audit test and independent CI paths. 37/142 conditional definitions implemented privately, 105 remain. Further work: strict compile/current CI, actual matched support party and timed/shield benchmarks, then threshold heals, cleanse and atomic hybrid damage-or-healing charges; no CP, live ownership, market authorization, release or production/staging changes. Existing mobile/Edge blockers remain open.

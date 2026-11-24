@@ -8,3 +8,8 @@ Do not enable this projection with an untrusted client list. Next wire a service
 The SQL design is not a deployed migration. A staging transaction test and generated migration are still required.
 
 The accompanying `ultra-luxe-grant-schema-candidate.sql` prepares a service-only collection relation, idempotent grant/revoke, and an append-only audit record. It has not been executed or migration-tested. The existing profile command now rejects reserved private title text without the matching owned ID; ordinary custom text is unchanged. This is a deliberate reservation of the two exclusive title names, including case/whitespace variants.
+
+## Staging verification — rollback only
+The candidate grant schema and service-only versioned gameplay load/receipt/commit adapters were exercised on Veldryn staging, not production. The service role lacks auth.users SELECT; a narrowly scoped private account-existence helper replaced that dependency. Grant/revoke/regrant, duplicate no-ops, audit counts, privilege isolation, ownership projection, roster cleanup, grant-aware load and stale-grant commit rejection passed. Both fixture transactions rolled back; grant tables remain absent.
+
+The gateway supports an explicit server-only ultraLuxeGrantAuthority option (default false); grant-aware RPCs must be installed before enabling it. Missing grant projections fail closed on that route. Receipt replay uses the current grant set, and the commit adapter locks against grant/revoke and rejects changed grants. No live configuration or deployment was changed. Public profile and badge/name-style read/write integration still requires separate work; do not activate any collection before those contracts are verified.

@@ -11,7 +11,9 @@ on:
       - 'apps/mobile/src/core/winter-hearth-*'
       - 'apps/mobile/src/components/WinterHearthGuildScreen.tsx'
       - 'apps/mobile/src/online/winter-hearth-*'
-      - 'apps/mobile/tests/winter-hearth-2026.ts'
+      - 'apps/mobile/tests/winter-hearth*.ts'
+      - 'apps/mobile/src/core/processing.ts'
+      - 'apps/mobile/src/core/game.ts'
       - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
       - '.github/workflows/winter-hearth-guild-review.yml'
   pull_request:
@@ -22,7 +24,9 @@ on:
       - 'apps/mobile/src/core/winter-hearth-*'
       - 'apps/mobile/src/components/WinterHearthGuildScreen.tsx'
       - 'apps/mobile/src/online/winter-hearth-*'
-      - 'apps/mobile/tests/winter-hearth-2026.ts'
+      - 'apps/mobile/tests/winter-hearth*.ts'
+      - 'apps/mobile/src/core/processing.ts'
+      - 'apps/mobile/src/core/game.ts'
       - 'docs/roadmap/frostfall-winter-hearth-2026-guild-market.md'
       - '.github/workflows/winter-hearth-guild-review.yml'
 
@@ -113,3 +117,36 @@ jobs:
         run: node tools/winter-hearth-review/v2/run-crafting-runtime.mjs
       - name: Confirm no tracked source or generated bundle changed
         run: git diff --exit-code
+
+  isolated-crafting:
+    name: Actual seasonal processing and expiry (isolated checkout)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Test release-disabled boundaries first
+        run: node tools/run-mobile-tests.mjs winter-hearth-2026
+      - name: Exercise actual recipe and refund path in disposable working copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=apps/mobile/src/core/release-flags.ts
+          grep -Fxq 'export const WINTER_HEARTH_GUILD_RELEASED=false;' "$flags"
+          trap 'git restore -- "$flags"' EXIT
+          sed -i 's/^export const WINTER_HEARTH_GUILD_RELEASED=false;$/export const WINTER_HEARTH_GUILD_RELEASED=true;/' "$flags"
+          node tools/run-mobile-tests.mjs winter-hearth-crafting-integration
+          git restore -- "$flags"
+          git diff --exit-code -- "$flags"

@@ -101,7 +101,12 @@ export function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}
   {items.map(p=><Animated.View key={p.i} style={{position:'absolute',left:0,top:0,width:p.width,height:p.width,opacity:p.opacity,transform:[{translateX:p.x},{translateY:p.y},{rotate:p.rotation}]}}><ParticleShape kind={p.t.particle} accent={runtime.accent} soft={runtime.softAccent} size={p.width}/></Animated.View>)}
  </View>;
 }
-export function ProfileEffectThumbnail({runtime,size=64}:{runtime:ProfileCosmeticRuntime;size?:number}){
- const sample=runtime.tracks.slice(0,4);
- return <View style={{width:'100%',height:'100%',overflow:'hidden',backgroundColor:'rgba(0,0,0,.12)'}}>{sample.map((t,i)=>{const p=sampleCosmeticTrack(t,.32+i*.11,size,size);return <View key={i} style={{position:'absolute',left:p.x,top:p.y,opacity:.7}}><ParticleShape kind={t.particle} accent={runtime.accent} soft={runtime.softAccent} size={Math.max(7,p.width)}/></View>})}</View>;
-}
+export const ProfileEffectThumbnail=memo(function ProfileEffectThumbnail({runtime,size=64}:{runtime:ProfileCosmeticRuntime;size?:number}){
+ const [measured,setMeasured]=useState<{width:number;height:number}|null>(null);
+ const width=measured?.width??size,height=measured?.height??size;
+ const particles=useMemo(()=>runtime.tracks.slice(0,4).map((t,i)=>{
+  const p=sampleCosmeticTrack(t,.32+i*.11,width,height),d=Math.min(width,height,Math.max(7,p.width));
+  return {t,p,d,x:Math.max(0,Math.min(width-d,p.x+(p.width-d)/2)),y:Math.max(0,Math.min(height-d,p.y+(p.height-d)/2))};
+ }),[runtime,width,height]);
+ return <View pointerEvents="none" accessible={false} onLayout={({nativeEvent:{layout}})=>setMeasured(old=>old?.width===layout.width&&old?.height===layout.height?old:{width:layout.width,height:layout.height})} style={{width:'100%',height:'100%',overflow:'hidden',backgroundColor:'rgba(0,0,0,.12)'}}>{particles.map(({t,d,x,y},i)=><View key={i} style={{position:'absolute',left:x,top:y,opacity:.7}}><ParticleShape kind={t.particle} accent={runtime.accent} soft={runtime.softAccent} size={d}/></View>)}</View>;
+});

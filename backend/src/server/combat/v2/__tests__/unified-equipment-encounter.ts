@@ -154,8 +154,13 @@ const attribution=reviewPowerAttributionV2(evidence.statStages,evidence.baseSour
 assert.equal(attribution.rows.length,5);
 assert.ok(Math.abs(attribution.rows.reduce((n,r)=>n+r.value,0)-attribution.partialWeightedTotal)<1e-6);
 assert.equal(attribution.partialWeightedTotal,attribution.composition.totalWeighted);
-assert.equal(attribution.composition.classLevelWeighted,evidence.statStages.afterSkills.attackPower);
+assert.equal(attribution.composition.classLevelWeighted,Math.round(evidence.statStages.afterSkills.attackPower*1e6)/1e6);
 assert.equal(attribution.canCompareEqualCP,false);
+const rated=simulateUnifiedEquipmentCombatV2(input,[build],[{...runtime,compositionPolicy:policy}],true);
+assert.deepEqual(rated.equipmentEvidence[0].powerAttribution,attribution);
+assert.deepEqual(rated.combat,enabled.combat,'Partial power diagnostic must not affect gameplay');
+assert.equal(evidence.powerAttribution,undefined);
+
 assert.ok(attribution.unpricedDomains.includes('companions'));
 assert.ok(attribution.unpricedDomains.includes('gems'));
 assert.throws(()=>reviewPowerAttributionV2({...evidence.statStages,afterSets:{...evidence.statStages.afterSets,defense:NaN}},2,policy),/invalid_attribution_stat/);

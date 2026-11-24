@@ -2,6 +2,8 @@ name: Equipment + Combat 2.0 expanded-set integration (private)
 on:
   pull_request:
     paths:
+      - 'tools/eq2-review/t1-t5/*v18*'
+      - 'docs/2-0/eq2-normalized-effects-review-v18.json'
       - 'backend/src/server/combat/v2/equipment-forge-set-identity-review.ts'
       - 'backend/src/server/combat/v2/equipment-forge-set-effect-authoring-review.ts'
       - 'backend/src/server/combat/v2/equipment-online-readback-review.ts'
@@ -85,8 +87,12 @@ jobs:
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-forge-set-identity-review.js
       - name: Prove original Forge Tenacity, direct ability damage and class-healing rolls hit only their intended engine events
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-mechanics.js
-      - name: Rehearse original Forge multi-slot custody, 324 Skills tactics and 216 genuine persisted regional boss engines
+      - name: Rehearse original Forge multi-slot custody and authored regional boss engines
+        env:
+          EQ2_V18_TRACE_PATH: /tmp/eq2-v18-trace.json
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-frozen-forge-bridge.js
+      - name: Classify V18 baseline and shadow opportunities without applying equipment effects
+        run: node tools/eq2-review/t1-t5/effect-trace-review-v18.mjs /tmp/eq2-v18-trace.json
       - name: Validate 48 launch set concepts, 204 item identities and 108 source-tagged bonus ideas
         run: node backend/dist-equipment-combat-v2-launch/server/combat/v2/__tests__/equipment-expanded-launch-registry.js
       - name: Enforce exact source-gapped 204 member plan and no legacy set hijacking

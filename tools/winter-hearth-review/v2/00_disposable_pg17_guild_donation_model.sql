@@ -67,7 +67,7 @@ CREATE TABLE winter_hearth_review.milestone_receipts (
 );
 CREATE TABLE winter_hearth_review.guild_cosmetic_unlocks (
  guild_id uuid NOT NULL,
- color_id text NOT NULL CHECK (color_id='name_frostfall_aurora_2026'),
+ color_id text NOT NULL CHECK (color_id IN ('background_frostfall_winter_aurora_2026','banner_frostfall_standard_2026','border_frostfall_frozen_majesty_2026','name_frostfall_aurora_2026')),
  source text NOT NULL DEFAULT '2026_winter_hearth_guild'
    CHECK (source='2026_winter_hearth_guild'),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
@@ -267,11 +267,11 @@ BEGIN
   UPDATE winter_hearth_review.guild_market
    SET treasury_gold=treasury_gold+v_credited_gold WHERE guild_id=p_guild;
  END IF;
- IF v_after_stage=100 THEN
-  INSERT INTO winter_hearth_review.guild_cosmetic_unlocks(guild_id,color_id)
-  VALUES (p_guild,'name_frostfall_aurora_2026')
-  ON CONFLICT DO NOTHING;
- END IF;
+ INSERT INTO winter_hearth_review.guild_cosmetic_unlocks(guild_id,color_id)
+ SELECT p_guild,r.cosmetic_id
+ FROM (VALUES (50,'background_frostfall_winter_aurora_2026'),(75,'banner_frostfall_standard_2026'),(100,'border_frostfall_frozen_majesty_2026'),(100,'name_frostfall_aurora_2026')) r(percent,cosmetic_id)
+ JOIN winter_hearth_review.milestone_receipts m ON m.guild_id=p_guild AND m.threshold_percent=r.percent
+ ON CONFLICT DO NOTHING;
  v_result:=pg_catalog.jsonb_build_object(
   'guild_id',p_guild,'item_id',p_item,'quantity',p_quantity,
   'track',v_track,'week_start_utc',v_week,'reached_percent',v_after_stage,

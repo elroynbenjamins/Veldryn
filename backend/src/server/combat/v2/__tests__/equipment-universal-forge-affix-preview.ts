@@ -98,6 +98,24 @@ assert.equal(UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.length,11);
 assert.equal(new Set(UNIVERSAL_FORGE_BONUS_STAT_POOL_V2).size,11);
 assert.ok(!UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.includes('potency'));
 assert.ok(uniqueStats.size>=7,'Review RNG should explore diverse independent stats');
+// Separately force every legal pool index through the CI-only deterministic
+// draw callback. A naturally sampled PRNG may miss a rare index; this proves
+// every one of the 11 implemented identities is actually REACHABLE without
+// requiring a class, slot or role. It is NEVER a mint RNG override.
+const reachPiece=sourceCases.find(p=>p.tier===1)!;
+const reachRecipe=byId.get(reachPiece.id)!;
+const forcedReachable=new Set<string>();
+for(let slotIndex=0;slotIndex<UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.length;slotIndex++){
+ const forced=previewClassIndependentOriginalForgeAffixesV2(
+  reachPiece.id,reachRecipe.id,(max:number)=>
+   max===UNIVERSAL_FORGE_BONUS_STAT_POOL_V2.length?slotIndex:max-1);
+ assert.equal(forced.bonusStats.length,1);
+ assert.equal(forced.bonusStats[0].stat,
+  UNIVERSAL_FORGE_BONUS_STAT_POOL_V2[slotIndex]);
+ forcedReachable.add(forced.bonusStats[0].stat);
+}
+assert.equal(forcedReachable.size,11,
+ 'All eleven source-mapped universal bonus identities must be reachable');
 // A class-specific INNATE authored weapon restriction remains intact in the
 // source manifest but has NO bearing on bonus rolls.
 const classRestricted=sourceCases.find(p=>Boolean(p.classRestriction));
@@ -125,5 +143,5 @@ for(const bad of [(_max:number)=>-1,(_max:number)=>1e8,
 console.log('PASS: '+snapshots+' non-mintable original Forge universal-affix previews, '+
  sourceVariants+' source pieces, '+crossRoleEqual+
  ' role-independent matching seeded roll triples, '+uniqueStats.size+
- ' supported random stat identities and '+denied+
+ ' organically sampled, '+forcedReachable.size+' proven reachable random stat identities and '+denied+
  ' forged/invalid RNG tests; original rarities/quality/innates unchanged, zero grants');

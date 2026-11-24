@@ -76,3 +76,46 @@ The projection accepts no friendship, guild, relationship, XP or history inputs,
 
 ## Provenance hardening
 The persisted run binding no longer assumes ready-check roster array order matches combat actor order. The hidden wrapper supplies an explicit server-derived actor → character mapping from the already verified Equipment runtime. Ready-check rows and frozen loadouts are then joined by character identity, while the final member list follows compiled actor order. Foreign, duplicate or incomplete mappings fail closed.
+
+
+## Fairness, cap pressure and display-value follow-up
+Additional review guards now protect the design goal that Synchronization should add variety without creating an obvious mandatory class.
+
+### Strict dungeon role fairness
+All 36 legal 1 Tank / 2 distinct Damage / 1 Support compositions are exhaustively audited. Under the current 18-edge graph the expected link-count distribution is:
+- 10 compositions with 2 active links
+- 19 compositions with 3 active links
+- 7 compositions with 4 active links
+- no legal strict dungeon composition reaches 5 or 6 links
+
+The fairness guard compares the average equivalent-link budget for every class when that class appears in a legal dungeon composition. The allowed spread is <= 0.10 equivalent links. This protects against a future catalogue edit that keeps degree=4 on paper but makes one class materially better under actual role restrictions.
+
+### Synchronization-only cap pressure
+The resolver now exposes `cappedStats` rather than silently truncating stacked bonuses. The 495 four-class multiset audit requires **zero capped stats in every strict dungeon roster**. Under the current draft catalogue, exactly one flexible-only composition creates cap pressure: Bastion + Dawnkeeper + Dreadguard + Ironwarden combines Radiant Covenant, Sacred Bulwark and Twilight Accord for 10.4% raw healing received, which is explicitly shown as 10.0% effective under the provisional Synchronization-only ceiling (0.4% discarded). No bonus percentages were changed in this pass.
+
+### Presentation semantics
+Server projections now carry numeric basis points and an explicit value kind (`percent` vs `percentage_points`) rather than preformatted text. The mobile review layer formats these locally; e.g. 240 bps => +2.4%, while 200 bps of critical chance => +2 pp. Combined-cap state is also exposed so the lobby can explain raw versus effective totals.
+
+Candidate-specific Synchronization remains forbidden from recruitment candidate cards, sorting/ranking, LFG filtering and queue priority. Active links are intended for post-formation lobby/combat information only.
+
+### Identity binding hardening
+The persisted four-player wrapper no longer relies on array ordering for builds, Equipment runtime or exact-copy trait receipt ports. Builds/gear are joined by actor ID and trait receipt ports by verified character ID. Regression coverage shuffles all three input arrays and requires an identical deterministic encounter result.
+
+
+## Compact mobile polish and independent catalogue verification
+- Independent enumeration of the current 18-edge catalogue confirms strict dungeon counts 10/19/7 for 2/3/4 links and a class-level average nominal budget spread of approximately 0.05556 (2.30000–2.35556). Flexible four-class multiset counts for 0/1/2/3/4/5/6 links are 78/173/133/78/28/5/0. Six links are a theoretical maximum reserved for future catalogues, not reachable today. The only capped composition remains the previously documented 10.4% to 10.0% healing-received case.
+- Gallery-only compact panel now shows link names, current strength and up to three combined effective bonus rows by default. Accessible expansion shows all effective totals and per-link detail; cap explanations remain visible even when collapsed. Empty state has no misleading full-strength bonus. No live lobby/recruitment mount, no release change.
+- Presentation validation rejects duplicate links/stats/caps, invalid numeric basis points, mismatched cap totals, inconsistent value kinds, and invalid empty-state scale. Aggregation replaces the raw combined value with its capped value exactly once. These derived values are display-only and must never authorize combat or modify CP.
+- Isolated strict TypeScript compile and representative presentation assertions passed on a local copy of the pure mobile contract. Full mobile/React Native build, gallery visual inspection, real persistence and combat matrices still require CI and review. No percentages or scale values changed.
+
+
+## Compact localized lobby review
+- Keep the collapsed panel to three effective bonus rows, a compact active count/strength header and one disclosure button. Move link names, individual bonuses and progression explanation to expanded details; place the additional-bonus count inside the disclosure. Retain explicit combined-cap explanations and no-CP/no-matchmaking copy.
+- Accessible disclosure has a 48-point minimum height, expanded state and localized label. Rows wrap long translated labels without truncating numeric values; tabular figures keep values aligned. Invalid optional presentation data renders an unavailable state rather than throwing into the parent lobby.
+- Prepare/validate combined bonus totals once per stable view with memoization; gallery view and locale-specific number formatters are memoized per language. No network calls, timers, art assets or matchmaking-side dependencies are added.
+- Localized 16 interface rows, all 23 stat labels and all 18 link names in EN/DE/ES/NL/IT/FR/RU/TR. Class display names retain their established proper names. Numeric values use the existing locale mapping and Intl formatting. Crit chance, armor penetration and general penetration display percentage points because their engine calculations add to the existing probability/bypass fraction, not multiply it. All combat values are unchanged.
+- Independently checked localization table keys against the actual server catalogue and verified eight nonempty entries and placeholder parity for each row (456 locale cells). Added mobile-core localization/formatting regression. This is a source-data check, not native visual or full TS/CI verification. Translation copy is draft pending in-game review. No live lobby mount, routes, deployment or feature flag change.
+
+
+## Review boundary correction (private, not a persistence implementation)
+The hidden party execution wrapper now requires a scoped enemy kit; it no longer falls back to an unverified generic kit. It invokes each character's individual exact-copy receipt verifier and the combined run verifier using frozen sources, then reuses the accepted digest for subsequent Synchronization/enemy issuance instead of rereading the combined verifier. The enemy issuer rejects callback-time changes to the compiled input, binding or enemy/boss membership, and the wrapper checks the kit digest before and after its callback. Tests cover missing kit, individual receipt rejection, enemy rejection and one combined verification per encounter. Explicitly typed invalid-state fixtures avoid inference of optional undefined cooldown entries under strict TypeScript. All of these remain synthetic review fixtures: callback agreement does not establish a real persisted transaction, and no room transition, reconnect, reward or database write is enabled. Full CI remains required.

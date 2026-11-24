@@ -75,6 +75,24 @@ const carried=Object.fromEntries(actors.map(a=>[a.id,{
  hp:a.stats.maxHp-100,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0,
 } satisfies PersistentActorState]));
 const persistedInput={...input,initialPlayerState:carried};
+const invalidStates:PersistentActorState[]=[
+ {hp:actors[0].stats.maxHp+1,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:1,downed:true,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:0,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0},
+ {hp:100,downed:false,cooldownRemainingMs:{FOREIGN_SKILL:100},basicAttackRemainingMs:0},
+ {hp:100,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:-1},
+];
+for(const invalidState of invalidStates){
+ assert.throws(()=>reviewPartyV2RunBinding({...args,combatInput:{...input,
+  initialPlayerState:{...carried,ACTOR_0:invalidState}}}),/invalid_persistent_state/);
+}
+assert.throws(()=>reviewPartyV2RunBinding({...args,
+ readyCheck:{...check,roster:roster.map((r,i)=>i?r:{...r,loadoutRevision:0})},
+ frozenRoster:frozen.map((r,i)=>i?r:{...r,revision:0})}),/roster_snapshot_mismatch/);
+assert.throws(()=>reviewPartyV2RunBinding({...args,
+ readyCheck:{...check,roster:roster.map((r,i)=>i?r:{...r,loadoutSnapshotHash:'invalid'})},
+ frozenRoster:frozen.map((r,i)=>i?r:{...r,snapshotHash:'invalid'})}),/roster_snapshot_mismatch/);
+
 const persisted=reviewPartyV2RunBinding({...args,combatInput:persistedInput});
 assert.notEqual(persisted.binding.combatInputDigest,first.binding.combatInputDigest,
  'persisted HP/cooldown state must be part of the immutable encounter digest');
@@ -99,6 +117,16 @@ const partyTraitToken=issuePersistedPartyEquipmentV2TraitAuthority(
  (binding,rows,digest)=>binding.runId==='RUN_1'&&rows.length===4&&
   digest===persisted.binding.combatInputDigest);
 assert.equal(authorizeEquipmentV2TraitEngine(persistedInput,partyTraitToken).size,4);
+assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,sources.map((row,i)=>i<2?{...row,ownedEquippedInstanceIds:['SHARED_COPY']}:row),
+ persisted.binding,()=>true),/duplicate_party_equipment_copy/);
+const mutableSources=sources.map(row=>({...row}));
+assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(
+ persistedInput,mutableSources,persisted.binding,()=>{
+  mutableSources[0].basicAttackDamagePct=19;
+  return true;
+ }),/party_persisted_ledger_not_verified/);
+
 assert.throws(()=>issueEquipmentV2TraitAuthority(persistedInput,sources,()=>true),
  /no_legacy_or_inflight_encounter/);
 assert.throws(()=>issuePersistedPartyEquipmentV2TraitAuthority(

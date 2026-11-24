@@ -31,7 +31,7 @@ type Totals=Readonly<Partial<Record<SyncStatV2,number>>>;
 interface Issued{readonly digest:string;readonly totals:Totals;readonly actorIds:readonly string[];}
 const issued=new WeakMap<object,Issued>();
 const validId=(x:unknown):x is string=>typeof x==='string'&&/^[A-Za-z0-9:_-]{1,128}$/.test(x);
-const reject=(s:string):never=>{throw Error('party_sync_authority_'+s);};
+function reject(s:string):never{throw Error('party_sync_authority_'+s);}
 const modes:readonly PartySyncModeV2[]=['dungeon','party_contract','party_event','guild_pve'];
 export function issuePartySyncAuthorityV2(scope:PartySyncScopeV2,input:CombatInput,
  verify:(scope:PartySyncScopeV2,digest:string)=>boolean):PartySyncAuthorityV2{

@@ -35,3 +35,9 @@ export const ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
 export const ASCENDANT_PROGRESSION_BLESSINGS_RELEASED=false;
 /** Separate non-P2W fuse: requires an approved gameplay-earned path to the same 5% pet and 3% background power. */
 export const ASCENDANT_BLESSING_PARITY_APPROVED=false;
+
+/** Animated profile collections are implemented for QA but stay hidden until binary art, public projection and native approval are complete. */
+export const PROFILE_ANIMATED_COSMETICS_RELEASED=false;
+
+/** Cosmetics catalog is authored but checkout/tab exposure stays hidden until commerce products, server grants, migration and native QA are approved. */
+export const PROFILE_COSMETICS_STORE_RELEASED=false;

@@ -8,7 +8,7 @@ import type {PlayerBadgeId} from '../core/player-badges';
  *
  * Keep static require paths so the artwork is available offline.
  */
-export const PLAYER_BADGE_ARTWORK:Record<PlayerBadgeId,ImageSourcePropType>={
+export const PLAYER_BADGE_ARTWORK:Partial<Record<PlayerBadgeId,ImageSourcePropType>>={
  admin:require('../../assets/player-badges-v1/admin.webp'),
  moderator:require('../../assets/player-badges-v1/moderator.webp'),
  supporter:require('../../assets/player-badges-v1/supporter.webp'),
@@ -23,4 +23,11 @@ export const PLAYER_BADGE_ARTWORK:Record<PlayerBadgeId,ImageSourcePropType>={
  ascendant_celestial_sovereign:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),
  vip:require('../../assets/store-membership-badges-v1/vip.png'),
  vip_plus:require('../../assets/store-membership-badges-v1/vip-plus.png'),
+};
+
+export const PLAYER_BADGE_FALLBACK_GLYPHS:Partial<Record<PlayerBadgeId,{glyph:string;accent:string}>>={
+ ascendant_sovereign_of_stars:{glyph:'✦',accent:'#F5D982'},
+ ascendant_dragon_sovereign:{glyph:'◆',accent:'#FF8A45'},
+ ascendant_monarch_of_deep:{glyph:'◉',accent:'#6CF2EB'},
+ ascendant_beyond_existence:{glyph:'◇',accent:'#EDEBFF'},
 };

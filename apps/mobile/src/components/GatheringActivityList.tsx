@@ -23,17 +23,19 @@ import {DisclosureControl} from './DisclosureControl';
 const IRONWOOD_T2_BINDING_RECIPE=RECIPES.find(recipe=>recipe.id==='BREW_IRONWOOD_BINDING_RESIN');
 
 /** A normal gathering skill is deliberately one tap: select a resource and begin. */
-export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,areaId,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;areaId?:string;showInstruction?:boolean}){
+export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,startingGatherId,onGather,onNavigate,currentRegionOnly=false,areaId,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;startingGatherId?:string|null;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;areaId?:string;showInstruction?:boolean}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [expandedDropId,setExpandedDropId]=useState<string|null>(null);
  const [doableOnly,setDoableOnly]=useState(false);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];
  // Use one availability rule for every profession and both gathering screens.
- const entries=[...GATHERING,...HERB_NODES]
+ const entries=useMemo(()=>[...GATHERING,...HERB_NODES]
   .filter(activity=>activity.skillId===skillId&&(!currentRegionOnly||activity.zoneId===region.id)&&(!areaId||activity.zoneId!==region.id||activity.areaId===areaId))
   .map(activity=>gatheringNodeAvailability(state,activity,skillLevel))
-  .sort((a,b)=>a.rank-b.rank||Number(b.activity.id===preferredActionId)-Number(a.activity.id===preferredActionId)||a.activity.unlockLevel-b.activity.unlockLevel);
+  .sort((a,b)=>a.rank-b.rank||Number(b.activity.id===preferredActionId)-Number(a.activity.id===preferredActionId)||a.activity.unlockLevel-b.activity.unlockLevel)
+  .map(entry=>({...entry,cycleSeconds:entry.readyHere&&!entry.active?Math.ceil(gatheringBalanceProjection(state,entry.activity,0).cycleSeconds):0})),
+  [state,skillId,skillLevel,currentRegionOnly,region.id,areaId,preferredActionId]);
  const readyCount=entries.filter(entry=>entry.readyHere||entry.active).length;
  const travelCount=entries.filter(entry=>entry.travelReady).length;
  const lockedCount=entries.length-readyCount-travelCount;
@@ -53,9 +55,9 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
     <Text style={s.filterText}>{doableOnly?gt('Show all'):gt('Doable only')}</Text>
    </Pressable>
   </View>:null}
-  {visibleEntries.map(({activity,zone,area,inCurrentRegion,skillReady,areaReady,zoneStatus,active,status,readyHere,travelReady,zoneLockReason})=>{
-   const view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
-   const canTap=!active&&(readyHere||(travelReady&&!!onNavigate)||(status==='skill-locked'&&inCurrentRegion&&!!onNavigate));
+  {visibleEntries.map(({activity,cycleSeconds,zone,area,inCurrentRegion,skillReady,areaReady,zoneStatus,active,status,readyHere,travelReady,zoneLockReason})=>{
+   const starting=startingGatherId===activity.id;
+   const canTap=!active&&!(readyHere&&startingGatherId)&&(readyHere||(travelReady&&!!onNavigate)||(status==='skill-locked'&&inCurrentRegion&&!!onNavigate));
    const start=()=>{
     if(active)return;
     if(readyHere){onGather(activity.id);return;}
@@ -72,7 +74,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
    const drops=expanded?gatheringDropPreview(activity,state):[];
    const activityName=gl(activity.name),resourceName=localizedItemName(language,activity.itemId),regionName=gl(zone?.name??activity.zoneId);
    const locked=!readyHere&&!travelReady&&!active;
-   const statusLabel=active?gt('ACTIVE'):readyHere?gt('READY NOW'):travelReady?gt('CAN TRAVEL')
+   const statusLabel=starting?gt('Starting…'):active?gt('ACTIVE'):readyHere?gt('READY NOW'):travelReady?gt('CAN TRAVEL')
     :status==='upcoming'?gt('COMING SOON'):status==='zone-locked'?gt('ZONE LOCKED')
     :status==='area-locked'?gt('AREA LOCKED'):gt('SKILL LOCKED');
    const missingRequirements:string[]=[];
@@ -80,7 +82,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
    if(!areaReady)missingRequirements.push(gt('Character Lv {level} ({area})',{level:area?.minLevel??1,area:gl(area?.name??regionName)}));
    if(zoneStatus==='locked')missingRequirements.push(zoneLockReason??gt('Region not unlocked'));
    const detail=active?gt('Gathering now')
-    :readyHere?gt('Have: {count} {resource} · {seconds}s',{count:formatGameNumber(available,state.settings.numberMode,language),resource:resourceName,seconds:Math.ceil(view.cycleSeconds)})
+    :readyHere?gt('Have: {count} {resource} · {seconds}s',{count:formatGameNumber(stock(activity.itemId),state.settings.numberMode,language),resource:resourceName,seconds:cycleSeconds})
     :travelReady?gt('Ready to gather after travel')
     :status==='upcoming'?gt('Region in development')
     :missingRequirements.join(' · ');
@@ -91,7 +93,7 @@ export function GatheringActivityList({state,skillId,skillLevel,preferredActionI
    return <View key={activity.id} style={[s.card,readyHere&&s.cardReady,travelReady&&s.cardTravel,active&&s.cardActive]}>
     <View style={s.cardRow}>
      <Pressable accessibilityRole="button" accessibilityLabel={actionLabel}
-      accessibilityState={{disabled:!canTap,selected:active}}
+      accessibilityState={{disabled:!canTap,busy:starting,selected:active}}
       disabled={!canTap} onPress={start}
       style={({pressed})=>[s.activityTap,locked&&s.cardLocked,pressed&&canTap&&s.pressed]}>
       <ResourceArtwork itemId={activity.itemId} size={34}/>

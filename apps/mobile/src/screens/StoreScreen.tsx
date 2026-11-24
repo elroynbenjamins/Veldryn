@@ -4,7 +4,8 @@ import {GooglePlayCommercePanel} from '../components/GooglePlayCommercePanel';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {BoardTabs} from '../components/BoardTabs';
-import {StoreCollectionsPreview} from '../components/StoreCollectionsPreview';
+import {StoreCosmeticsCatalog} from '../components/StoreCosmeticsCatalog';
+import {PROFILE_COSMETICS_STORE_RELEASED} from '../core/release-flags';
 import type {GameState} from '../core/types';
 import {accountText} from '../i18n/account';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -17,9 +18,9 @@ type Props={
  onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
  onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
 };
-type StoreSection='Memberships'|'Collections';
-// Keep the concept implemented, but hide the unfinished Collections tab until release.
-const STORE_COLLECTIONS_VISIBLE=false;
+type StoreSection='Memberships'|'Cosmetics';
+// Fully authored below, but never player-visible until its dedicated release gate is approved.
+const STORE_COSMETICS_VISIBLE=PROFILE_COSMETICS_STORE_RELEASED;
 
 /** Store remains independent of Settings. Billing stays mounted when switching
  * categories so purchase and restoration callbacks are never lost. */
@@ -51,7 +52,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
    <Text style={s.heroDescription}>{a('Permanent upgrades and optional Supporter benefits.')}</Text>
    <Text style={s.heroFooter}>{a('NO PAID PREMIUM CURRENCY · NO PAID PVP POWER')}</Text>
   </View>
-  {STORE_COLLECTIONS_VISIBLE?<BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Collections',label:'Collections · Concept'}] as const} value={section} onChange={changeSection}/>:null}
+  {STORE_COSMETICS_VISIBLE?<BoardTabs compact label="Store categories" items={[{id:'Memberships',label:'Memberships'},{id:'Cosmetics',label:'Cosmetics'}] as const} value={section} onChange={changeSection}/>:null}
   <View style={section==='Memberships'?s.visible:s.hidden}>
    <GooglePlayCommercePanel state={state} onChange={onChange} online={online} onRefreshCommerce={onRefreshCommerce}/>
    <Panel>
@@ -70,7 +71,7 @@ export function StoreScreen({state,onChange,online=false,onRefreshCommerce,onRed
     </View>:null}
    </Panel>
   </View>
-  {STORE_COLLECTIONS_VISIBLE&&section==='Collections'?<StoreCollectionsPreview/>:null}
+  {STORE_COSMETICS_VISIBLE&&section==='Cosmetics'?<StoreCosmeticsCatalog state={state}/>:null}
  </ScrollView>;
 }
 function styles(C:ThemeColors){return StyleSheet.create({

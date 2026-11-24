@@ -1,3 +1,4 @@
+import {CELESTIAL_COLLECTION,CELESTIAL_IDS,isCelestialBackground,isCelestialBorder,releasedCelestialPetWardrobeDefinition} from './ascendant-cosmetics';
 import {ownedUltraLuxeTitles} from './ultra-luxe-titles';
 import {DRACONIC_IDS,DRACONIC_COLLECTION} from './draconic-showcase-layout';
 import {ownsUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
@@ -9,15 +10,17 @@ import {profileRewardSource,type ProfileCustomizationDestination} from './profil
 import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 import {collectibleJournal} from './collectibles';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
-import {CELESTIAL_COLLECTION,CELESTIAL_IDS,isCelestialBackground,isCelestialBorder,releasedCelestialPetWardrobeDefinition} from './ascendant-cosmetics';
+import {canUseProfileEffect} from './profile-effects';
+import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
+import {PREMIUM_PROFILE_COSMETICS} from './profile-premium-cosmetics';
 
 /** One flat wardrobe model so the Look tab renders every cosmetic family the same way:
  * a chip with an owned/total count and a grid of tiles that carry their own unlock source. */
-export type WardrobeKind='icon'|'scene'|'frame'|'pet'|'title';
-export const WARDROBE_KINDS:readonly WardrobeKind[]=['icon','scene','frame','pet','title'];
-export const WARDROBE_LABELS:Record<WardrobeKind,string>={icon:'Icons',scene:'Scenes',frame:'Frames',pet:'Pets',title:'Titles'};
+export type WardrobeKind='icon'|'scene'|'frame'|'effect'|'pet'|'title';
+export const WARDROBE_KINDS:readonly WardrobeKind[]=['icon','scene','frame','effect','pet','title'];
+export const WARDROBE_LABELS:Record<WardrobeKind,string>={icon:'Icons',scene:'Scenes',frame:'Frames',effect:'Effects',pet:'Pets',title:'Titles'};
 /** Locked artwork prints this tag, so a tile explains itself before it is tapped. */
-const DESTINATION_TAGS:Record<ProfileCustomizationDestination,string>={Events:'EVENT',Guild:'GUILD',Character:'LEVEL',Collections:'COLLECTION'};
+const DESTINATION_TAGS:Record<ProfileCustomizationDestination,string>={Events:'EVENT',Guild:'GUILD',Character:'LEVEL',Collections:'COLLECTION',Store:'STORE'};
 
 export interface WardrobeRow{
  kind:WardrobeKind;id:string;name:string;group:string;
@@ -33,9 +36,9 @@ export interface WardrobeProgress{owned:number;total:number;percent:number}
 export function wardrobeLockTag(destination:ProfileCustomizationDestination|undefined){return destination?DESTINATION_TAGS[destination]:'LOCKED'}
 
 /** Scene and frame names/ids live in the art registry; core stays image-free and testable. */
-export interface WardrobeAssets{scenes:readonly {id:string;name:string}[];frames:readonly string[]}
+export interface WardrobeAssets{scenes:readonly {id:string;name:string}[];frames:readonly string[];effects?:readonly {id:string;name:string}[]}
 
-function lockFields(state:GameState,kind:'background'|'border'|'title',id:string):Partial<WardrobeRow>{
+function lockFields(state:GameState,kind:'background'|'border'|'effect'|'title',id:string):Partial<WardrobeRow>{
  const source=profileRewardSource(state,kind,id);
  return {lockTag:wardrobeLockTag(source.destination),sourceLabel:source.label,sourceDetail:source.detail,destination:source.destination,actionLabel:source.actionLabel};
 }
@@ -62,8 +65,15 @@ function frameRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
    return {kind:'frame' as const,id,name:id===DRACONIC_IDS.border?DRACONIC_COLLECTION.borderName:isCelestialBorder(id)?CELESTIAL_COLLECTION.borderName:source.name,group:(isCelestialBorder(id)||id===DRACONIC_IDS.border)?'Ascendant':source.destination==='Guild'?'Guild':id.startsWith('dungeon:')?'Dungeon':'Event',unlocked,equipped:equipped===id,...(unlocked?{}:lockFields(state,'border',id))};})];
 }
 
+function effectRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
+ const equipped=state.character?.profileEffectId??'';
+ return [{kind:'effect' as const,id:'',name:'No effect',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
+  ...(assets.effects??[]).map(item=>{const unlocked=canUseProfileEffect(state,item.id);return {kind:'effect' as const,id:item.id,name:item.name,group:'Cosmetics',unlocked,equipped:equipped===item.id,...(unlocked?{}:lockFields(state,'effect',item.id))};})];
+}
+
 function petRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  const equipped=state.character?.selectedCosmeticPetId??'';
+ const premium=PREMIUM_PROFILE_COSMETICS.filter(row=>state.account.unlockedCosmeticPetIds?.includes(row.petId)).map(row=>({kind:'pet' as const,id:row.petId,name:row.petName,group:'Ascendant',unlocked:true,equipped:equipped===row.petId}));
  const rows=collectibleJournal(state).filter(row=>row.kind==='pet'&&(row.owned||row.collectionGroup==='event'))
   .sort((a,b)=>Number(b.owned)-Number(a.owned)||a.name.localeCompare(b.name));
  const celestial=releasedCelestialPetWardrobeDefinition(state);
@@ -71,6 +81,7 @@ function petRows(state:GameState,assets:WardrobeAssets):WardrobeRow[]{
  return [{kind:'pet' as const,id:'',name:'No Pet',group:'Starter',unlocked:true,equipped:!equipped,clear:true},
   ...(draconic?[{kind:'pet' as const,id:DRACONIC_IDS.pet,name:DRACONIC_COLLECTION.petName,group:'Ascendant',unlocked:true,equipped:equipped===DRACONIC_IDS.pet}]:[]),
   ...(celestial?[{kind:'pet' as const,id:CELESTIAL_IDS.pet,name:celestial.name,group:celestial.group,unlocked:true,equipped:equipped===CELESTIAL_IDS.pet}]:[]),
+  ...premium,
   ...rows.map(row=>({kind:'pet' as const,id:row.id,name:row.name,group:row.collectionGroup==='event'?'Event':'Collection',unlocked:row.owned,equipped:equipped===row.id,
    ...(row.owned?{}:{lockTag:'COLLECTION',sourceLabel:'Collections',sourceDetail:'Unlock this Pet through its collection source.',destination:'Collections' as ProfileCustomizationDestination,actionLabel:'Open Collections'})}))];
 }
@@ -90,9 +101,10 @@ function titleRows(state:GameState):WardrobeRow[]{
  return [...privateTitles,...journal,...base,...events];
 }
 
-export function profileWardrobe(state:GameState,assets:WardrobeAssets):WardrobeCategory[]{
- const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),pet:petRows(state,assets),title:titleRows(state)};
- return WARDROBE_KINDS.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
+export function profileWardrobe(state:GameState,assets:WardrobeAssets,options?:{includeUnreleasedEffects?:boolean}):WardrobeCategory[]{
+ const byKind:Record<WardrobeKind,WardrobeRow[]>={icon:iconRows(state),scene:sceneRows(state,assets),frame:frameRows(state,assets),effect:effectRows(state,assets),pet:petRows(state,assets),title:titleRows(state)};
+ const kinds=profileAnimatedCosmeticsEnabled(state)||options?.includeUnreleasedEffects?WARDROBE_KINDS:WARDROBE_KINDS.filter(kind=>kind!=='effect');
+ return kinds.map(kind=>{const rows=byKind[kind],counted=rows.filter(row=>!row.clear);
   return {kind,label:WARDROBE_LABELS[kind],rows,owned:counted.filter(row=>row.unlocked).length,total:counted.length};});
 }
 
@@ -102,22 +114,23 @@ export function wardrobeProgress(categories:readonly WardrobeCategory[]):Wardrob
 }
 
 /** The equipped cosmetic of each family, used by the stage and by undo. */
-export interface WardrobeEquipped{icon:string;scene:string;frame:string;pet:string;title:string}
+export interface WardrobeEquipped{icon:string;scene:string;frame:string;effect:string;pet:string;title:string}
 export function wardrobeEquipped(state:GameState):WardrobeEquipped{
  const character=state.character;
  return {icon:character?.profileIconId??`class:${character?.classId??'IRONWARDEN'}`,scene:character?.profileBackgroundId??'asterfall-night',
-  frame:character?.profileBorderId??'',pet:character?.selectedCosmeticPetId??'',title:character?.profileTitle??'New Adventurer'};
+  frame:character?.profileBorderId??'',effect:character?.profileEffectId??'',pet:character?.selectedCosmeticPetId??'',title:character?.profileTitle??'New Adventurer'};
 }
 export function applyWardrobeEquipped(state:GameState,equipped:WardrobeEquipped):GameState{
  if(!state.character)return state;
  return {...state,character:{...state.character,profileIconId:equipped.icon,profileBackgroundId:equipped.scene,
-  profileBorderId:equipped.frame||undefined,selectedCosmeticPetId:equipped.pet||undefined,profileTitle:equipped.title}};
+  profileBorderId:equipped.frame||undefined,profileEffectId:equipped.effect||undefined,selectedCosmeticPetId:equipped.pet||undefined,profileTitle:equipped.title}};
 }
 /** A wardrobe tap writes exactly one family, so the other four keep their saved value. */
 export function wardrobeSelection(equipped:WardrobeEquipped,row:{kind:WardrobeKind;id:string;name:string}):WardrobeEquipped{
  return row.kind==='icon'?{...equipped,icon:row.id}
   :row.kind==='scene'?{...equipped,scene:row.id}
   :row.kind==='frame'?{...equipped,frame:row.id}
+  :row.kind==='effect'?{...equipped,effect:row.id}
   :row.kind==='pet'?{...equipped,pet:row.id}
   :{...equipped,title:row.name};
 }

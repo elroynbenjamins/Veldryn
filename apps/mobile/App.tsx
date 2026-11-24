@@ -766,7 +766,7 @@ function VeldrynApp(){
       if(JSON.stringify(candidate)===JSON.stringify(current))return;
       if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:settingsForOnlineCommand(candidate.settings)}});return;}
       if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
-      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] as const;
+      const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'] as const;
       if(current.character&&candidate.character){const patch=Object.fromEntries(profileKeys.map(key=>[key,candidate.character![key]]));
         if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){await perform({type:'profile',args:Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,value??null]))});return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;
@@ -787,10 +787,10 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(candi
   async function exportSave(){if(!state){showAlert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){showAlert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
   async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=normalizeProfileIcon(migrateRetiredStoryRewards(parseSaveBackup(raw),Date.now()));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);showAlert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null,before?:GameState|null,after?:GameState|null){const progressionMoments=rewardProgressionMoments(before,after);if(rewardHasProgress(reward)||progressionMoments.length)setCollected({reward,activity,progressionMoments})}
-  function changeActivity(next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
+  async function changeActivity(next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
     if(!state)return;
-    if(serverGameplayEnabled){void perform(next?{type:'start',args:{kind:next.kind,id:next.id,...(next.tacticId?{tacticId:next.tacticId}: {}),...(next.goalId?{goalId:next.goalId}: {})}}:{type:'stop'},!next);return;}
-    try{const result=transitionActivity(state,Date.now(),next);commit(result.state)}
+    if(serverGameplayEnabled){await perform(next?{type:'start',args:{kind:next.kind,id:next.id,...(next.tacticId?{tacticId:next.tacticId}: {}),...(next.goalId?{goalId:next.goalId}: {})}}:{type:'stop'},!next);return;}
+    try{const result=transitionActivity(state,Date.now(),next);await commit(result.state)}
     catch(error){showAlert('Cannot change activity',error instanceof Error?error.message:'Please try again.')}
   }
   function mutateActionQueue(command:GameCommand,openHome=false){

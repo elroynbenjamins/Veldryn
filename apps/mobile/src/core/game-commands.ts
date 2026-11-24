@@ -5,6 +5,8 @@ import {migrateRetiredStoryRewards} from './retired-story-rewards';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
 import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
+import {canUseProfileEffect} from './profile-effects';
+import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -67,7 +69,7 @@ const fields:Record<string,readonly string[]>={
  bank_sell:['id','quantity'],bank_salvage:['id'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['location','ids'],bulk_salvage:['location','ids'],storage:['location'],gem_pouch_upgrade:[],gem_pouch_sell:['itemId','quantity'],gem_pouch_bulk_sell:['ids'],gem_pouch_bulk_dismantle:['ids'],overflow:[],
  equip_tool:['id','instanceId'],unequip_tool:['id'],tool_vault_save:['id','instanceId'],tool_vault_activate:['skillId','tier'],tool_vault_withdraw:['skillId','tier'],tool_move:['instanceId','to'],tool_sell:['instanceId'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId','choiceType'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_preference_bulk:['ids','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id','choiceId'],monthly_quest_milestone:['month','threshold','characterId','skillId'],settings:['settings'],inventory_preference:['id','kind','enabled'],inventory_preference_bulk:['ids','kind','enabled'],inventory_seen_all:[],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','profileEffectId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind','companionId'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
@@ -536,6 +538,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
+   if(patch.profileEffectId&&!profileAnimatedCosmeticsEnabled(state)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
+   if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
    state={...state,character:{...state.character,...patch}};break;
   }

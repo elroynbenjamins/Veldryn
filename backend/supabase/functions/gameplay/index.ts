@@ -44502,7 +44502,7 @@ var MONSTERS_RAW = [
   { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }] },
   { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.017, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
-  { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
+  { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }] },
   { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
   { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
@@ -60621,7 +60621,10 @@ function canonical(value) {
   if (Array.isArray(value)) return "[" + value.map(canonical).join(",") + "]";
   return "{" + Object.keys(value).sort().map((key) => JSON.stringify(key) + ":" + canonical(value[key])).join(",") + "}";
 }
-function gameplayHandler(services2) {
+function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
+  const accountId = await services2.authenticate(token);
+  return accountId ? { accountId, adminQa: false } : null;
+}) {
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (!["GET", "POST"].includes(request.method)) return json({ error: "method_not_allowed" }, 405);
@@ -60635,9 +60638,9 @@ function gameplayHandler(services2) {
     try {
       const bearer = request.headers.get("authorization")?.match(/^Bearer (\S+)$/i)?.[1];
       if (!bearer) return json({ error: "auth_required" }, 401);
-      const accountId = await services2.authenticate(bearer);
-      if (!accountId) return json({ error: "invalid_session" }, 401);
-      const adminQa = await services2.adminQa?.(bearer) ?? false;
+      const player = await authenticatePlayer2(bearer);
+      if (!player) return json({ error: "invalid_session" }, 401);
+      const { accountId, adminQa } = player;
       if (request.method === "GET") {
         try {
           await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: "foreground" });
@@ -62096,20 +62099,16 @@ var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");
 if (!url || !serviceKey || !anonKey) throw new Error("server_configuration_missing");
+async function authenticatePlayer(token) {
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+  if (!response.ok) return null;
+  const user = await response.json();
+  if (typeof user?.id !== "string" || !user.id) return null;
+  const meta = user.app_metadata;
+  return { accountId: user.id, adminQa: meta?.admin_qa === true || Array.isArray(meta?.roles) && meta.roles.includes("admin_qa") };
+}
 var services = {
-  authenticate: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return null;
-    const user = await response.json();
-    return typeof user.id === "string" ? user.id : null;
-  },
-  adminQa: async (token) => {
-    const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-    if (!response.ok) return false;
-    const user = await response.json();
-    const meta = user?.app_metadata ?? {};
-    return meta.admin_qa === true || Array.isArray(meta.roles) && meta.roles.includes("admin_qa");
-  },
+  authenticate: async (token) => (await authenticatePlayer(token))?.accountId ?? null,
   rpc: async (name, args) => {
     const response = await fetch(`${url}/rest/v1/rpc/${name}`, { method: "POST", headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" }, body: JSON.stringify(args) });
     const body = await response.json();
@@ -62123,7 +62122,7 @@ var services = {
   randomId: () => crypto.randomUUID(),
   randomRoll: () => crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296
 };
-var gameplay = gameplayHandler(services);
+var gameplay = gameplayHandler(services, authenticatePlayer);
 var regionalCombat = regionalCombatHandlerV1(services);
 var guildShopServices = {
   authenticate: services.authenticate,

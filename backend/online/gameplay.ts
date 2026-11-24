@@ -13,7 +13,6 @@ import {gemCombineRecipeV1,gemRefineRecipeV1} from '../../apps/mobile/src/core/g
 
 export interface GameplayServices{
  authenticate(token:string):Promise<string|null>;
- adminQa?(token:string):Promise<boolean>;
  /** Only enable after the verified grant-aware RPC migration is installed. Server configuration, not client input. */
  ultraLuxeGrantAuthority?:boolean;
  rpc<T>(name:string,args:Record<string,unknown>):Promise<T>;
@@ -26,7 +25,11 @@ const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,
 const hash=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(b=>b.toString(16).padStart(2,'0')).join('');
 function canonical(value:unknown):string{if(value===null||typeof value!=='object')return JSON.stringify(value);if(Array.isArray(value))return '['+value.map(canonical).join(',')+']';return '{'+Object.keys(value).sort().map(key=>JSON.stringify(key)+':'+canonical((value as Record<string,unknown>)[key])).join(',')+'}';}
 
-export function gameplayHandler(services:GameplayServices){
+type AuthenticatePlayer=(token:string)=>Promise<{accountId:string;adminQa:boolean}|null>;
+export function gameplayHandler(services:GameplayServices,authenticatePlayer:AuthenticatePlayer=async token=>{
+ const accountId=await services.authenticate(token);
+ return accountId?{accountId,adminQa:false}:null;
+}){
  const privateGrants=services.ultraLuxeGrantAuthority===true;
  const receiptRpc=privateGrants?'read_online_game_receipt_ultra_luxe_v1':'read_online_game_receipt_server_v1';
  const loadRpc=privateGrants?'load_online_game_ultra_luxe_v1':'load_online_game_server_v1';
@@ -41,8 +44,8 @@ export function gameplayHandler(services:GameplayServices){
  try{
   const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!bearer)return json({error:'auth_required'},401);
-  const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
-  const adminQa=await services.adminQa?.(bearer)??false;
+  const player=await authenticatePlayer(bearer);if(!player)return json({error:'invalid_session'},401);
+  const {accountId,adminQa}=player;
   if(request.method==='GET'){try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'foreground'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}}
   let body:Record<string,unknown>|undefined,command:ReturnType<typeof validateGameCommand>|undefined,requestHash:string|undefined;
   if(request.method==='POST'){

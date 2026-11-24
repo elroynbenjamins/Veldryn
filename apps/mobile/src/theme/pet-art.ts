@@ -6,6 +6,12 @@ import {masterPetSourceById} from './master-roster-assets';
 import {eventPetSourceById} from './event-collectible-assets-active';
 import {dungeonShopPetMediumArtSource,dungeonShopPetPortraitArtSource} from './dungeon-shop-pet-art';
 
+const premiumPetFallbackIdById=new Map<string,string>([
+ ['premium:celestial-sovereign:aetherion-starborn','EVT_PET_009'],
+ ['premium:draconic-dominion:vharaxis-eternal-flame','PET_036'],
+ ['premium:abyssal-majesty:nhalzuun-abyssborn','PET_039'],
+ ['premium:paradox-eternal:aeon-timeless','PET_016'],
+]);
 const guildPetSourceById=new Map<string,ImageSourcePropType>([
  ['GUILD_PET_001',require('../../assets/guild-token-shop/pets/GUILD_PET_001_Stormwatch_Fox.webp')],
  ['GUILD_PET_002',require('../../assets/guild-token-shop/pets/GUILD_PET_002_Oathwood_Wyrmling.webp')],
@@ -20,10 +26,12 @@ const guildPetSourceById=new Map<string,ImageSourcePropType>([
 export function petArtSource(id:string):ImageSourcePropType|undefined{
   if(id===DRACONIC_IDS.pet)return getDraconicAssets()?.petRegular;
   if(id===CELESTIAL_IDS.pet)return getEnabledCelestialAssets()?.petRegular;
+  const fallback=premiumPetFallbackIdById.get(id);
   return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
     ??guildPetSourceById.get(id)
-    ??dungeonShopPetMediumArtSource(id);
+    ??dungeonShopPetMediumArtSource(id)
+    ??(fallback?(masterPetSourceById.get(fallback)??eventPetSourceById.get(fallback)):undefined);
 }
 
 /**

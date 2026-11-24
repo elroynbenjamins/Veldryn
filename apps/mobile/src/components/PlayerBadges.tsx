@@ -7,7 +7,7 @@ import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadg
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {recentScreenText} from '../i18n/recent-screens';
-import {PLAYER_BADGE_ARTWORK} from './player-badge-artwork';
+import {PLAYER_BADGE_ARTWORK,PLAYER_BADGE_FALLBACK_GLYPHS} from './player-badge-artwork';
 
 /**
  * The compact badge stays the same size in every name row. Its optional press target
@@ -20,10 +20,11 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
  const motion=useUltraLuxeIdentityMotion();
  const art=(artSize:number,animate=false)=>{
-  if(animate&&motion&&isUltraLuxeBadge(id)){
+  const source=PLAYER_BADGE_ARTWORK[id];
+  if(animate&&motion&&isUltraLuxeBadge(id)&&source){
    const opacity=motion.clock.interpolate({inputRange:[0,.125,.25,.375,.5,14/24,16/24,19/24,.875,1],outputRange:[.85,1,.85,1,.85,.93,1,.92,1,.85]});
    const scale=motion.clock.interpolate({inputRange:[0,14/24,16/24,19/24,1],outputRange:[1,1,motion.fullSet?1.1:1.04,1,1]});
-   return <Animated.Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
+   return <Animated.Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
   }
   return <Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
  };

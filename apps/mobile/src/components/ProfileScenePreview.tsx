@@ -25,6 +25,12 @@ import {COLLECTIBLES} from '../content/collectibles';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
 import {PlayerStyledName} from './PlayerStyledName';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
+import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileSceneEffect} from './ProfileCosmeticMotion';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
+import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../theme/profile-cosmetic-runtime-v1';
+import {profileAnimatedCosmeticsEnabled} from '../core/profile-cosmetic-access';
+import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
+import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {PlayerBadges,PlayerBadgeShowcase,useBadgeClock} from './PlayerBadges';
@@ -45,7 +51,8 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),animated=profileAnimatedCosmeticsEnabled(state),borderArt=animated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderRuntime=animated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined,borderSource=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(character.profileBorderId??''));
+ const anchors=profileSceneContentAnchors(borderSource?8:0);
  const celestialAssets=getEnabledCelestialAssets();
  const celestialBackground=!!celestialAssets&&backgroundId===CELESTIAL_IDS.background;
  const celestialBorder=!!celestialAssets&&character.profileBorderId===CELESTIAL_IDS.border;
@@ -55,10 +62,13 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
+   <ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={borderSource} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
    <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
    {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
-   {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}<View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
+   {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={active} reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+   </ProfileBorderBackdrop><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
     <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
     <Text numberOfLines={1} style={[s.title,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,C.dark)??(C.dark?C.accentSoft:C.text)}]}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
@@ -66,10 +76,11 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
     {compact?null:<PlayerBadgeShowcase identity={badges.identity} size={15}/>}
    </View>
    <CharacterPortrait state={state} style={[s.character,compact&&s.compactCharacter]}/>
-   {petSource&&<View style={s.petBadge}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}
+   {petSource&&<View style={[s.petBadge,{right:anchors.side,bottom:anchors.bottom}]}><Image source={petSource} accessibilityLabel={pet?.name??petCollectible?.name??profileT(language,"Pet preview")} resizeMode="contain" style={s.petImage}/></View>}
   </View>
   </View>
-  {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}
+  {borderSource?<ProfileFrameOverlay source={borderSource} sceneSafe/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={active} reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
@@ -110,6 +121,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  scene:{width:'100%',minHeight:190,alignItems:'center',overflow:'hidden',backgroundColor:C.stage},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
  compactCharacter:{left:12,top:24,width:64,height:64},compactIdentity:{left:88,right:12},compactName:{fontSize:16,lineHeight:22},
- petBadge:{position:'absolute',right:22,bottom:20,zIndex:3},petImage:{width:56,height:56},
+ petBadge:{position:'absolute',zIndex:3},petImage:{width:56,height:56},
  nameRow:{flexDirection:'row',alignItems:'center',gap:5},
 });}

@@ -18,6 +18,12 @@ import {CardBackground} from '../CardBackground';
 import {PlayerBadges,PlayerBadgeShowcase} from '../PlayerBadges';
 import {PlayerStyledName} from '../PlayerStyledName';
 import {ProfileFrameOverlay} from '../ProfileFrameOverlay';
+import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileSceneEffect} from '../ProfileCosmeticMotion';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
+import {profileAnimatedCosmeticsEnabled} from '../../core/profile-cosmetic-access';
+import {ProfileBorderBackdrop} from '../ProfileBorderBackdrop';
+import {profileSceneContentAnchors} from '../../core/profile-frame-layout';
 import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 
@@ -32,28 +38,35 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  if(!character)return null;
  const backgroundId=character.profileBackgroundId??'asterfall-night';
  const scene=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===backgroundId);
- const frame=profileBorderSourceById.get(character.profileBorderId??''),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const animated=profileAnimatedCosmeticsEnabled(state);
+ const borderArt=animated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined;
+ const borderRuntime=animated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined;
+ const frame=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(character.profileBorderId??'')),pet=petArtSource(character.selectedCosmeticPetId??'');
+ const anchors=profileSceneContentAnchors(frame?8:1,true);
  const className=CLASSES.find(row=>row.id===character.classId)?.name??character.classId;
  const title=character.profileTitle??profileT(language,"New Adventurer");
  const art=scene?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:scene.source,square:scene.source}}/>:base?<RegionArtwork regionId={base.region}/>:null;
 
  if(collapsed)return <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Expand the profile stage")} onPress={onToggle} style={({pressed})=>[s.strip,pressed&&s.pressed]}>
-  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}>{art}<View style={s.stripScrim}/></View>
+  <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
    <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
    <Text numberOfLines={1} style={[s.stripMeta,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
-  {frame?<ProfileFrameOverlay source={frame}/>:null}
+  {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
  </Pressable>;
 
  return <View style={s.root}>
   <View style={[s.surface,!!frame&&s.surfaceFramed]}>
+   <ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={8}>
    {art}
    <View style={s.scrim}/>
-   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,!!frame&&s.petFramed]}/>:null}
-   <View style={[s.identity,!!frame&&s.identityFramed]}>
+   {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
+   </ProfileBorderBackdrop>
+   {pet?<Image accessibilityLabel={profileT(language,"Pet preview")} source={pet} resizeMode="contain" style={[s.pet,{right:anchors.side,bottom:anchors.bottom}]}/>:null}
+   <View style={[s.identity,!!frame&&s.identityFramed,!!pet&&{right:anchors.guildRightWithPet}]}>
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>
      <View style={s.nameRow}>
@@ -66,7 +79,8 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
     </View>
    </View>
   </View>
-  {frame?<ProfileFrameOverlay source={frame}/>:null}
+  {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
   <View style={[s.tools,!!frame&&s.toolsFramed]}>
    {onAudiencePreview?<Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Preview as others see me")} onPress={onAudiencePreview} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>◎</Text></Pressable>:null}
    <Pressable accessibilityRole="button" accessibilityLabel={profileT(language,"Collapse the profile stage")} onPress={onToggle} style={({pressed})=>[s.tool,pressed&&s.pressed]}><Text style={s.toolMark}>▴</Text></Pressable>
@@ -84,8 +98,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  tool:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:radii.sm,borderWidth:1,borderColor:C.dark?'rgba(185,192,198,.44)':'rgba(40,46,52,.28)',backgroundColor:C.dark?'rgba(3,4,5,.62)':'rgba(255,255,255,.72)'},
  toolMark:{fontSize:15,lineHeight:18,color:C.text,fontWeight:'800'},
  pressed:{opacity:.72},
- pet:{position:'absolute',right:14,bottom:12,width:58,height:58,zIndex:3},
- petFramed:{right:26,bottom:24},
+ pet:{position:'absolute',width:58,height:58,zIndex:3},
  identity:{position:'absolute',left:12,right:12,bottom:10,flexDirection:'row',alignItems:'flex-end',gap:10,zIndex:2},
  identityFramed:{left:24,right:24,bottom:22},
  avatar:{width:62,height:62,borderRadius:radii.lg,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.42)':'rgba(255,255,255,.52)'},

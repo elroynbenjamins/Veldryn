@@ -1892,6 +1892,12 @@ for(const [english,pair] of Object.entries(toolDetailsEarlyLocales)){
 }
 export const gameplayTranslate=createTranslator<GameplayKey>(gameplayCatalogs);
 
+const plainKeysByLowercase=new Map<string,GameplayKey>();
+for(const key of Object.keys(rows) as GameplayKey[]){
+ if(key.includes('{'))continue;
+ const lower=key.toLowerCase();
+ if(!plainKeysByLowercase.has(lower))plainKeysByLowercase.set(lower,key);
+}
 const templates=(Object.keys(rows) as GameplayKey[]).filter(key=>key.includes('{')).map(key=>{
   const names:string[]=[];
   const escaped=key.replace(/[.*+?^$()|[\]\\]/g,'\\$&');
@@ -1905,7 +1911,7 @@ export function localizeGameplay(language:Language,value:string|undefined):strin
   const equipmentMetadata=equipmentMaterialMetadataText(language,value);
   if(equipmentMetadata!==undefined)return equipmentMetadata;
   if(Object.prototype.hasOwnProperty.call(rows,value))return gameplayTranslate(language,value as GameplayKey);
-  const key=(Object.keys(rows) as GameplayKey[]).find(entry=>!entry.includes('{')&&entry.toLowerCase()===value.toLowerCase());
+  const key=plainKeysByLowercase.get(value.toLowerCase());
   if(key){const translated=gameplayTranslate(language,key);return value===value.toUpperCase()?translated.toLocaleUpperCase(language):translated;}
   // German source labels take priority over generic interpolated templates.
   if(language==='de'){const translated=germanCoverageText(value);if(translated!==undefined)return translated;}

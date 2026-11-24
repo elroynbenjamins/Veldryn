@@ -25,11 +25,16 @@ import {ProfileIcon} from '../ProfileIcon';
 import {RegionArtwork} from '../RegionArtwork';
 import {ProfileUnlockSheet} from './ProfileUnlockSheet';
 import {AscendantBlessingPicker} from './AscendantBlessingPicker';
+import {PROFILE_ALL_EFFECTS,profileAnimatedBorderDefinition} from '../../core/profile-effects';
+import {cosmeticArtByBorder,cosmeticArtByEffect} from '../../theme/profile-cosmetic-art-v1';
+import {profileCosmeticRuntimeByEffect} from '../../theme/profile-cosmetic-runtime-v1';
+import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
  scenes:[...BASE_PROFILE_BACKGROUNDS.map(row=>({id:row.id,name:row.name})),...PROFILE_BACKGROUND_PREVIEWS.map(row=>({id:row.id,name:row.name}))],
- frames:[...profileBorderSourceById.keys()],
+ frames:[...profileBorderSourceById.keys(),...PROFILE_ALL_EFFECTS.map(row=>row.borderId)],
+ effects:PROFILE_ALL_EFFECTS.map(row=>({id:row.id,name:row.name})),
 };
 /** Badges have their own owned-state provider, so they ride beside the wardrobe chips. */
 export type ChipKind=WardrobeKind|'badge';
@@ -118,14 +123,16 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(row.kind==='icon')return <ProfileIcon id={row.id} classId={character.classId} size={size}/>;
   if(row.kind==='scene'){const scene=profileBackgroundPreviewById.get(row.id),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===row.id);
    return scene?<Image source={scene.source} resizeMode="cover" style={s.fill}/>:base?<View style={s.fill}><RegionArtwork regionId={base.region}/></View>:null}
-  if(row.kind==='frame'){const source=profileBorderSourceById.get(row.id);
+  if(row.kind==='frame'){const animated=profileAnimatedBorderDefinition(row.id),source=cosmeticArtByBorder.get(row.id)?.border??profileBorderSourceById.get(row.id)??(animated?profileBorderSourceById.get(animated.fallbackBorderId):undefined);
    return source?<View style={s.fill}><RegionArtwork regionId="KINGS_ROAD" muted/><ProfileFrameOverlay source={source}/></View>:<View style={s.blank}><Text style={s.blankMark}>◇</Text></View>}
+  if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
+   return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
   if(row.kind==='pet'){const source=petArtSource(row.id);
    return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{profileT(language,"Solo")}</Text></View>}
   return null;
  };
  const tileWidth=gridWidth>0?Math.floor((gridWidth-2*8)/3):104;
- const selectedId=chip==='icon'?live.icon:chip==='scene'?live.scene:chip==='frame'?live.frame:chip==='pet'?live.pet:'';
+ const selectedId=chip==='icon'?live.icon:chip==='scene'?live.scene:chip==='frame'?live.frame:chip==='effect'?live.effect:chip==='pet'?live.pet:'';
 
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
@@ -190,7 +197,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  fill:{width:'100%',height:'100%'},
  petImage:{width:'86%',height:'86%'},
  blank:{width:'100%',height:'100%',alignItems:'center',justifyContent:'center',backgroundColor:C.panel},
- blankMark:{...typography.bodyStrong,color:C.muted},
+ blankMark:{...typography.bodyStrong,color:C.muted},effectMark:{fontSize:22,lineHeight:26,color:C.accent,fontWeight:'900'},
  tick:{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:99,alignItems:'center',justifyContent:'center',backgroundColor:C.selectionLine},
  tickMark:{fontSize:10,lineHeight:12,color:C.bg,fontWeight:'900'},
  source:{position:'absolute',left:3,right:3,bottom:3,paddingVertical:2,borderRadius:4,borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface},

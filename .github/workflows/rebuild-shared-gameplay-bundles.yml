@@ -27,6 +27,8 @@ on:
       - 'apps/mobile/tests/exploration-balance.ts'
       - 'apps/mobile/src/core/gem-progression-v1.ts'
       - 'backend/src/server/equipment/gems/gem-acquisition-v1.ts'
+      - 'backend/src/server/equipment/equipment-recipe-materials-v33.ts'
+      - 'backend/src/server/equipment/equipment-v33-recipe-materials.test.ts'
       - 'apps/mobile/tests/gem-progression-v1.ts'
       - 'backend/online/guild-shop-read.ts'
       - 'backend/online/tests/guild-shop-read.ts'
@@ -91,6 +93,10 @@ jobs:
           pnpm --dir apps/mobile install --frozen-lockfile
       - name: Verify the two-path equipment and Exploration balance regressions
         run: node tools/run-mobile-tests.mjs equipment-two-path-balance exploration-balance equipment-salvage-recovery gathering-tools monster-drop-balance material-retirement-offline material-purpose-audit
+      - name: Verify current V33 recipes cannot use retired Echo Bat Wing aliases
+        run: |
+          pnpm --dir backend exec esbuild src/server/equipment/equipment-v33-recipe-materials.test.ts --bundle --platform=node --format=esm --outfile=/tmp/equipment-v33-retirement-test.mjs
+          node /tmp/equipment-v33-retirement-test.mjs
       - name: Rebuild canonical generated bundles and commit them on top of current main
         shell: bash
         run: |

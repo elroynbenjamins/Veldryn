@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 
 // Read-only checkout audit; never touches databases, secrets, or runtime state.
 // Exact literal hits are evidence to classify, not automatic retirement clearance.
-const pattern='ECHO_BAT_WING|Echo[ _-]Bat[ _-]Wing';
+const pattern='ECHO_BAT_WING|Echo[ _-]Bat[ _-]Wing|ITEM_0077|Echo[ _-]Membrane|echo_membrane';
 let paths=[];
 try {
  paths=execFileSync('git',['grep','-Iil','-E',pattern,'--','apps/mobile/src','backend','packages'],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
@@ -26,3 +26,13 @@ for(const path of paths){
 }
 console.log('Total: '+total+' exact references in '+paths.length+' files. Classify producers, consumers, aliases, generated duplicates and metadata before approving retirement.');
 if(!paths.some(p=>p==='backend/supabase/functions/gameplay/index.ts'))console.log('No exact literal in gameplay bundle; inspect indirect and generated mappings separately.');
+
+// Distinguish older recipe archives from current authored V33 data by exact JSON values.
+for(const version of [27,29,30,33]){
+ const path='backend/data/equipment_exact_recipes_v'+version+'.json';
+ const catalog=JSON.parse(readFileSync(path,'utf8'));
+ const recipes=Array.isArray(catalog.recipes)?catalog.recipes:[];
+ if(!recipes.length)throw Error('Recipe schema unverified for '+path);
+ const matches=recipes.filter(recipe=>new RegExp(pattern,'i').test(JSON.stringify(recipe)));
+ console.log('RECIPE CATALOG V'+version+': '+matches.length+'/'+recipes.length+' matching recipes, examples: '+matches.slice(0,5).map(recipe=>recipe.pieceId??recipe.id??'unknown').join(', '));
+}

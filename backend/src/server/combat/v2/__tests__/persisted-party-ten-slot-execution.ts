@@ -1,0 +1,92 @@
+import {strict as assert} from 'node:assert';
+import type {CombatInput,PersistentActorState} from '../../types';
+import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
+import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
+import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
+import {
+ simulateUnifiedEquipmentCombatV2,simulateUnifiedEquipmentPersistedPartyCombatV2,
+} from '../unified-equipment-encounter';
+import {bosses,profiles,setup} from './ten-slot-boss-fixture';
+
+const ids:ClassIdV2[]=['IRONWARDEN','WAYFINDER','HEXWEAVER','STONECALLER'];
+const boss=bosses[2];
+const fixtures=ids.map(classId=>setup(classId,0,boss,profiles[1]));
+const players=fixtures.map(x=>x.actor);
+const builds=fixtures.map(x=>x.build);
+const runtime=fixtures.map(x=>x.runtime);
+const traitPorts=fixtures.map(x=>x.signedPort);
+const seed='QA_PERSISTED_10S_PARTY';
+const input:CombatInput={seed,players,enemies:[fixtures[0].input.enemies[0]],maxDurationMs:7000,tickMs:100};
+
+const roster:ReadyRosterMember[]=ids.map((classId,i)=>({
+ accountId:traitPorts[i].accountId,characterId:runtime[i].characterId,
+ ticketId:'TICKET_'+i,role:CLASS_ROLES_V2[classId],originalEnqueuedAtMs:1,
+ loadoutId:'LOADOUT_'+i,loadoutRevision:11,loadoutSnapshotHash:'c'.repeat(63)+i,
+}));
+const readyCheck:ReadyCheckRecord={id:'READY_10S',partyId:'PARTY_10S',rosterRevision:5,
+ roster,accepts:Object.fromEntries(roster.map(r=>[r.accountId,true])),
+ status:'committed',openedAtMs:1,closesAtMs:1000};
+const frozenRoster=ids.map((classId,i)=>({
+ accountId:roster[i].accountId,characterId:roster[i].characterId,
+ classId:classId,loadoutId:roster[i].loadoutId,revision:roster[i].loadoutRevision,
+ snapshotHash:roster[i].loadoutSnapshotHash,readiness:{role:CLASS_ROLES_V2[classId]},
+} as unknown as FrozenLoadoutSnapshot));
+const party={
+ runId:'RUN_10S',nodeId:'NODE_10S',encounterRevision:3,stateRevision:7,
+ contentVersion:'content_v2',balanceVersion:'balance_v2',
+ readyCheck,frozenRoster,traitPorts,
+ verifyPersisted:(binding:Parameters<typeof simulateUnifiedEquipmentPersistedPartyCombatV2>[3]['verifyPersisted'] extends (...a:infer A)=>unknown?A[0]:never,
+  _sources:unknown[],digest:string)=>binding.runId==='RUN_10S'&&
+   digest===binding.combatInputDigest,
+};
+
+const baseline=simulateUnifiedEquipmentCombatV2(input,builds,runtime,true);
+const first=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
+const repeat=simulateUnifiedEquipmentPersistedPartyCombatV2(input,builds,runtime,party,true);
+assert.deepEqual(first,repeat);
+assert.deepEqual(first.equipmentEvidence,baseline.equipmentEvidence);
+assert.equal(first.equipmentEvidence.length,4);
+assert.ok(first.equipmentEvidence.every(e=>
+ e.baseSources.length===10&&e.setEffects.length===3&&e.affixSources.length===9));
+assert.equal(first.synchronizationReview?.active.length,3);
+assert.equal(first.partyPersistenceReview?.binding.partyId,'PARTY_10S');
+assert.equal(first.partyPersistenceReview?.binding.rosterRevision,5);
+assert.equal(first.partyPersistenceReview?.canAuthorizeCombat,false);
+assert.ok(first.combat.events.some(e=>e.type==='equipment_trait_trigger'),
+ 'persisted four-player exact-copy traits should execute in the hidden wrapper');
+assert.deepEqual(first.combat.players.map(p=>p.definition.stats),
+ baseline.combat.players.map(p=>p.definition.stats),
+ 'party authorities must not rewrite compiled personal stats');
+
+const carried=Object.fromEntries(players.map(p=>[p.id,{
+ hp:Math.max(1,p.stats.maxHp-50),downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0,
+} satisfies PersistentActorState]));
+const carriedInput={...input,seed:'QA_PERSISTED_10S_PARTY_CARRIED',initialPlayerState:carried};
+const carriedParty={...party,verifyPersisted:(
+ binding:Parameters<typeof party.verifyPersisted>[0],_sources:unknown[],digest:string,
+ )=>binding.runId==='RUN_10S'&&digest===binding.combatInputDigest};
+const carriedFirst=simulateUnifiedEquipmentPersistedPartyCombatV2(
+ carriedInput,builds,runtime,carriedParty,true);
+assert.deepEqual(carriedFirst,simulateUnifiedEquipmentPersistedPartyCombatV2(
+ carriedInput,builds,runtime,carriedParty,true));
+assert.equal(carriedFirst.partyPersistenceReview?.binding.stateRevision,7);
+
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,frozenRoster:frozenRoster.map((x,i)=>i?x:
+  ({...x,snapshotHash:'d'.repeat(64)} as FrozenLoadoutSnapshot))},true),
+ /roster_snapshot_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,traitPorts:traitPorts.map((x,i)=>i?x:
+  ({...x,accountId:traitPorts[1].accountId}))},true),
+ /party_source_binding_mismatch/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,{...party,verifyPersisted:()=>false},true),
+ /party_persisted_ledger_not_verified|unverified_scope/);
+assert.throws(()=>simulateUnifiedEquipmentPersistedPartyCombatV2(
+ input,builds,runtime,party,false),/persisted_party_disabled/);
+
+console.log(JSON.stringify({kind:'PERSISTED_PARTY_10S_TRAITS_SYNC_REHEARSAL_NOT_LIVE',
+ players:4,gearCopies:40,setThresholds:12,ordinaryAffixSources:36,
+ synchronizationLinks:first.synchronizationReview?.active.length,
+ traitEvents:first.combat.events.filter(e=>e.type==='equipment_trait_trigger').length,
+ persistentState:'BOUND_TO_RUN_DIGEST',authoredPartyEnemyKit:'NOT_IMPLEMENTED'}));

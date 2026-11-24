@@ -1,0 +1,32 @@
+name: Weekly Guild Boss shared engine review
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/combat/weekly-guild-boss-review.ts'
+      - 'apps/mobile/tests/weekly-guild-boss-review.ts'
+      - 'apps/mobile/tsconfig.weekly-guild-boss-review.json'
+      - '.github/workflows/weekly-guild-boss-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir ../../backend install --frozen-lockfile
+      - run: pnpm exec tsc -p tsconfig.weekly-guild-boss-review.json --outDir .core-build
+      - run: node .core-build/apps/mobile/tests/weekly-guild-boss-review.js

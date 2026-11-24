@@ -22,8 +22,10 @@ import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
 import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
+import {CelestialSovereignPreview} from './profile/CelestialSovereignPreview';
+import {CELESTIAL_IDS,celestialVisualSelection,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
 
-export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgroundId:string}){
+export function ProfileScenePreview({state,backgroundId,active=false}:{state:GameState;backgroundId:string;active?:boolean}){
  const language=useGameLanguage();
  const [previewWidth,setPreviewWidth]=useState(320),compact=previewWidth<300;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
@@ -32,7 +34,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
  const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
- return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
+ const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
    {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
@@ -49,9 +51,23 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource}/>:null}
  </View>;
+ const celestial=celestialVisualSelection(backgroundId,character.profileBorderId)?getEnabledCelestialAssets():undefined;
+ if(!celestial)return standard;
+ return <CelestialSovereignPreview assets={celestial.scene} equippedPetId={character.selectedCosmeticPetId} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+  portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.celestialIdentity}>
+   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
+   <Text numberOfLines={1} style={s.celestialTitle}>{character.profileTitle??profileT(language,'New Adventurer')}</Text>
+   <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+   <PlayerBadgeShowcase identity={badges.identity} size={13}/>
+  </View>}/>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  ...profileShowcaseStyles(C),
+ celestialIdentity:{flex:1,minWidth:0,overflow:'hidden'},
+ celestialName:{fontSize:12,lineHeight:15,color:'#fff0c8',fontWeight:'800',flexShrink:1,minWidth:0},
+ celestialTitle:{fontSize:10,lineHeight:12,color:'#efd69b'},
+ celestialMeta:{fontSize:9,lineHeight:12,color:'#d6e0f4'},
  frame:{width:'100%',maxWidth:480,alignSelf:'center',position:'relative'},
  surface:{borderRadius:14,overflow:'hidden',backgroundColor:C.panel},
  framedSurface:{margin:8,borderRadius:4},

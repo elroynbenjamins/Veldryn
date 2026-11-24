@@ -117,7 +117,25 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
   let runReactive:(actor:CombatantState,kind:ReactiveTriggerV2,now:number,target?:CombatantState,ctx?:ReactiveContextV2)=>void=()=>{};
   const resource=(actor:CombatantState,kind:Parameters<typeof awardCombatResourceV2>[1],now:number,id:string)=>{
     const event=awardCombatResourceV2(actor,kind,now,id);
-    if(event){events.push(event);runCapstone(actor,'gain',now);runReactive(actor,'gain',now);}
+    if(event){
+      events.push(event);runCapstone(actor,'gain',now);runReactive(actor,'gain',now);
+      // Class resources are discrete stacks, not a mana bar. Synchronization
+      // therefore accumulates deterministic fractional gain credit and grants
+      // an extra stack only when the credit reaches a full 100%.
+      const bonusBps=Math.round(sync(actor,'resource_generation_pct')*10000);
+      if(bonusBps>0&&actor.combatV2){
+        const key='party_sync_resource_credit_bps';
+        actor.combatV2.procCounters[key]=(actor.combatV2.procCounters[key]??0)+bonusBps;
+        if(actor.combatV2.procCounters[key]>=10000&&actor.combatV2.stacks<actor.combatV2.maxStacks){
+          const before=actor.combatV2.stacks;
+          actor.combatV2.procCounters[key]-=10000;
+          actor.combatV2.stacks++;
+          events.push({atMs:now,type:'resource_gain',actorId:actor.definition.id,abilityId:id,
+            resource:actor.combatV2.resource,resourceBefore:before,resourceAfter:actor.combatV2.stacks,
+            detail:'party_sync_bonus'});
+        }
+      }
+    }
   };
   const spend=(actor:CombatantState,ability:AbilityDefinition,now:number)=>{
     const queued=consumeQueuedCombatBonusV2(actor,ability);
@@ -457,8 +475,11 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
       const hexBonus=isHex&&v2Encounter?
         clamp(source.definition.combatV2?.equipmentEffects?.hexPotencyPct??0,0,1):0;
       const expiresAt=now+(effect.durationMs??3000);
+      const harmfulResist=effect.kind==='dot'&&source.definition.team==='enemies'&&target.definition.team==='players'
+        ?sync(target,'harmful_effect_resist_pct'):0;
       const periodic:CombatantState['periodic'][number]={sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,
-        coeff:(effect.coeff??0)*(1+hexBonus),flat:(effect.flat??0)*(1+hexBonus),
+        coeff:(effect.coeff??0)*(1+hexBonus)*(1-harmfulResist),
+        flat:(effect.flat??0)*(1+hexBonus)*(1-harmfulResist),
         damageType:effect.damageType,tag:effect.tag??effect.damageType??effect.kind,
         nextTickAt:now+(effect.tickMs??1000),expiresAt,tickMs:effect.tickMs??1000,
         ...(source.combatV2&&abilityId.includes(':v2:')?{v2AppliedAtMs:now}:{})};
@@ -493,7 +514,12 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
         runReactive(source,'cleanse',now,target);
       return;
     }
-    if(effect.kind==='interrupt'){ if(target.casting){ const interruptedAbilityId=target.casting.abilityId,def=target.definition.abilities.find(a=>a.id===interruptedAbilityId); if(def?.interruptible){target.casting=undefined;source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId,interruptedAbilityId});if(source.definition.team==='players'){
+    if(effect.kind==='interrupt'){ if(target.casting){ const interruptedAbilityId=target.casting.abilityId,def=target.definition.abilities.find(a=>a.id===interruptedAbilityId); if(def?.interruptible){
+      target.casting=undefined;
+      const recovery=sync(source,'interrupt_recovery_pct');
+      if(recovery>0)target.cooldownReadyAt[interruptedAbilityId]=
+        Math.max(target.cooldownReadyAt[interruptedAbilityId]??now,now)+Math.round(def.cooldownMs*recovery);
+      source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId,interruptedAbilityId});if(source.definition.team==='players'){
         resource(source,'interrupt',now,abilityId);
         if(!abilityId.startsWith('V2_')){
           runCapstone(source,'interrupt',now,target);
@@ -515,7 +541,10 @@ export function simulateCombat(input: CombatInput, enemyV2Authority?:EnemyV2Engi
           m.v2SourceAbilityId!==classSkillId||m.sourceId!==source.definition.id||
           m.kind!==effect.kind||m.tag!==tag||m.createdAt===now);
       }
-      const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,value:effect.value??0,expiresAt,createdAt:now,kind:effect.kind,
+      const harmfulResist=effect.kind==='debuff'&&source.definition.team==='enemies'&&target.definition.team==='players'
+        ?sync(target,'harmful_effect_resist_pct'):0;
+      const modifierEntry:CombatantState['modifiers'][number]={sourceId:source.definition.id,tag,
+        value:(effect.value??0)*(1-harmfulResist),expiresAt,createdAt:now,kind:effect.kind,
         ...(capstoneId?{v2CapstoneId:capstoneId}:{}),
         ...(classSkillId?{v2SourceAbilityId:classSkillId}:{})};
       if(enemyV2Effects&&source.definition.team==='enemies')

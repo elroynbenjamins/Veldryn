@@ -34,16 +34,30 @@ const timedSpecs=Object.freeze({
  'eq2_t4_bastionmail:4':{channel:'defense',pct:4,window:5000,cd:14000,trigger:'mitigated',threshold:0,family:'braced_formation'},
  'eq2_combo_t5_runeforge_link:2':{channel:'haste',pct:2,window:6000,cd:18000,trigger:'hit_or_heal',threshold:0,family:'runeforge_momentum'},
 } as const);
+// Source-authored self shields only. Hybrid Bellwake and ally/cleanse
+// shields require their other outputs/target provenance before execution.
+const shieldSpecs=Object.freeze({
+ 'eq2_t1_citadel:4':{pct:3.2,threshold:.06,window:6000,cd:24000,trigger:'loss',family:'citadel_shield'},
+ 'eq2_t2_citadel:4':{pct:3.6,threshold:.06,window:6000,cd:24000,trigger:'loss',family:'citadel_shield'},
+ 'eq2_t3_citadel:4':{pct:4,threshold:.06,window:6000,cd:24000,trigger:'loss',family:'citadel_shield'},
+ 'EQ2_SET_GLASSBOUND_BULWARK:4':{pct:4.5,threshold:.06,window:6000,cd:22000,trigger:'loss',family:'glassbound_bulwark'},
+ 'eq2_dungeon_rootbound_t2_heartward:4':{pct:4,threshold:.06,window:6000,cd:22000,trigger:'loss',family:'heartward'},
+ 'eq2_rare_t5_citadel:4':{pct:6,threshold:.08,window:6000,cd:18000,trigger:'loss',family:'citadel_shield'},
+ 'eq2_t4_bastionmail:6':{pct:5,threshold:.35,window:6000,cd:35000,trigger:'cross_below',family:'hold_the_line'},
+ 'eq2_t5_rimewatch:4':{pct:4,threshold:.50,window:6000,cd:24000,trigger:'below_before',family:'rimeguard'},
+} as const);
+type ShieldId=keyof typeof shieldSpecs;
 type TimedId=keyof typeof timedSpecs;
 type DefensiveId=keyof typeof defensiveSpecs;
 type CurrentId=keyof typeof specs;
 type ChargeId=keyof typeof chargeSpecs;
-export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId;
+export type Eq2PrivateHitIdV22=CurrentId|ChargeId|DefensiveId|TimedId|ShieldId;
 const isCurrent=(id:unknown):id is CurrentId=>typeof id==='string'&&Object.hasOwn(specs,id);
 const isCharge=(id:unknown):id is ChargeId=>typeof id==='string'&&Object.hasOwn(chargeSpecs,id);
 const isDefensive=(id:unknown):id is DefensiveId=>typeof id==='string'&&Object.hasOwn(defensiveSpecs,id);
 const isTimed=(id:unknown):id is TimedId=>typeof id==='string'&&Object.hasOwn(timedSpecs,id);
-const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:timedSpecs[id as TimedId].family;
+const isShield=(id:unknown):id is ShieldId=>typeof id==='string'&&Object.hasOwn(shieldSpecs,id);
+const family=(id:Eq2PrivateHitIdV22)=>isCurrent(id)?specs[id].family:isCharge(id)?chargeSpecs[id].family:isDefensive(id)?defensiveSpecs[id].family:isTimed(id)?timedSpecs[id].family:shieldSpecs[id as ShieldId].family;
 type Scope={digest:string;actorId:string;ids:readonly Eq2PrivateHitIdV22[]};
 const issued=new WeakMap<object,Scope>();
 const fail=(x:string):never=>{throw Error('eq2_private_hit_v22_'+x);};
@@ -53,14 +67,14 @@ export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:rea
  const supplied:unknown=ids;
  if(!Array.isArray(supplied))return fail('fixture_scope');
  const rawIds:readonly unknown[]=supplied;
- const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id);
+ const allowedId=(id:unknown):id is Eq2PrivateHitIdV22=>isCurrent(id)||isCharge(id)||isDefensive(id)||isTimed(id)||isShield(id);
  const exactIds=rawIds.filter(allowedId);
  if(exactIds.length!==rawIds.length||exactIds.length<1||exactIds.length>4||
     new Set(exactIds.map(family)).size!==exactIds.length)return fail('fixture_scope');
  const actor=input.players.find(x=>x.id===actorId);
  if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||
  !((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||
- (actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&exactIds.every(id=>isDefensive(id)||isTimed(id)))||
+ (actor.id.startsWith('QA_EQ2_IRONWARDEN_')&&exactIds.every(id=>isDefensive(id)||isTimed(id)||isShield(id)))||
  (actor.id.startsWith('QA_EQ2_DAWNKEEPER_')&&exactIds.every(id=>id==='eq2_combo_t5_runeforge_link:2')))||
  input.players.length!==1||input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined)return fail('fixture_scope');
  const digest=enemyV2SnapshotDigest(input);
@@ -82,6 +96,10 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
  const scope=typeof authority==='object'&&authority!==null?issued.get(authority):undefined;
  if(!scope||scope.digest!==enemyV2SnapshotDigest(input))return fail('invalid_authority');
  const cooldown=new Map<string,number>();
+ let shieldState:{id:ShieldId;ownerId:string;earnedAt:number;expiresAt:number;remaining:number}|undefined;
+ const shieldAbsorbed=new WeakSet<Eq2PrivateIncomingEventV24>();
+ const shieldGranted=new WeakSet<Eq2PrivateIncomingEventV24>();
+ const shieldAvailable=(ownerId:string,now:number)=>shieldState&&shieldState.ownerId===ownerId&&now>shieldState.earnedAt&&now<shieldState.expiresAt?shieldState.remaining:0;
  const timedState=new Map<TimedId,{earnedAt:number;expiresAt:number}>();
  const healReceipts=new WeakSet<object>();
  const earnTimed=(id:TimedId,now:number)=>{
@@ -118,6 +136,46 @@ export function authorizeEq2PrivateHitQaV22(input:CombatInput,authority?:Eq2Priv
   e.targetMaxHp>0&&e.targetHp>0&&e.targetHp<=e.targetMaxHp&&e.raw>e.shield;
  const classHit=(e:Eq2PrivateHitEventV22)=>e.originalClassAbility&&e.abilityId!=='BASIC';
  return {
+  shieldAvailable,
+  expireShield(now:number){
+   if(shieldState&&now>=shieldState.expiresAt){const expired={...shieldState};shieldState=undefined;return expired;}
+   return undefined;
+  },
+  absorbShield(e:Eq2PrivateIncomingEventV24,unabsorbed:number){
+   if(!incomingBefore.has(e)||shieldAbsorbed.has(e)||!eligibleIncoming(e)||!Number.isFinite(unabsorbed)||unabsorbed<=0)return undefined;
+   shieldAbsorbed.add(e);
+   if(!shieldState||!shieldAvailable(e.targetId,e.now))return undefined;
+   const amount=Math.min(unabsorbed,shieldState.remaining),id=shieldState.id;
+   shieldState.remaining-=amount;
+   const broken=shieldState.remaining<=0;
+   if(broken)shieldState=undefined;
+   return {id,amount,broken};
+  },
+  afterShieldHit(e:Eq2PrivateIncomingEventV24,actualHpLoss:number){
+   if(!incomingAfter.has(e)||shieldGranted.has(e))return undefined;
+   shieldGranted.add(e);
+   if(!eligibleIncoming(e)||!e.direct||!Number.isFinite(actualHpLoss)||actualHpLoss<=0||actualHpLoss>=e.targetHp)return undefined;
+   if(shieldState&&e.now>=shieldState.expiresAt)shieldState=undefined;
+   const afterHp=e.targetHp-actualHpLoss;
+   const candidates=scope.ids.filter(isShield).filter(id=>{
+    const s=shieldSpecs[id];
+    if(e.now<(cooldown.get(s.family)??0)||shieldState?.id===id)return false;
+    if(s.trigger==='loss')return actualHpLoss/e.targetMaxHp>=s.threshold;
+    if(s.trigger==='cross_below')return e.targetHp/e.targetMaxHp>=s.threshold&&afterHp/e.targetMaxHp<s.threshold;
+    return e.targetHp/e.targetMaxHp<s.threshold;
+   }).sort((a,b)=>shieldSpecs[b].pct-shieldSpecs[a].pct||a.localeCompare(b));
+   const id=candidates[0];
+   if(!id)return undefined;
+   const s=shieldSpecs[id],amount=e.targetMaxHp*s.pct/100;
+   // One equipment-only shield slot. Never add to or consume the existing
+   // class/gem shield pool. Stronger remaining pool wins; only a real grant
+   // spends its cooldown. A replacement is not a shield break.
+   if(shieldState&&amount<=shieldState.remaining)return undefined;
+   const replaced=shieldState?{id:shieldState.id,remaining:shieldState.remaining}:undefined;
+   shieldState={id,ownerId:e.targetId,earnedAt:e.now,expiresAt:e.now+s.window,remaining:amount};
+   cooldown.set(s.family,e.now+s.cd);
+   return {id,amount,expiresAt:shieldState.expiresAt,replaced};
+  },
   timedStat(actorId:string,now:number,channel:'defense'|'haste'){return timedValue(actorId,now,channel);},
   afterEffectiveHeal(e:{now:number;actorId:string;targetId:string;abilityId:string;originalClassHeal:boolean;actualHeal:number}):readonly TimedId[]{
    if(healReceipts.has(e)||e.actorId!==scope.actorId||!e.originalClassHeal||/^(V2_|GEM_|COMPANION_)/.test(e.abilityId)||

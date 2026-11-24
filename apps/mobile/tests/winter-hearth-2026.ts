@@ -69,3 +69,15 @@ ok(winterHearthReceiptMatches({...donationReceipt,alreadyProcessed:true},request
 for(const invalid of [{...donationReceipt,guildId:'another-guild'},{...donationReceipt,quantity:51},{...donationReceipt,weekStartUtc:'2026-12-14'},{...donationReceipt,lights:1249},{...donationReceipt,logs:12501.5},{...donationReceipt,newMilestones:[50,50],newGuildGold:40000},{...donationReceipt,newGuildGold:20001},{...donationReceipt,newPermanentColor:true},{...donationReceipt,alreadyProcessed:'false'}])ok(!winterHearthReceiptMatches(invalid,request),'Malformed or mismatched receipt retains saved request');
 ok(winterHearthReceiptMatches({...donationReceipt,logs:25000,lights:2500,newMilestones:[100],newGuildGold:50000,newPermanentColor:true},request),'Final threshold includes permanent name color');
 console.log('PASS donation receipt, replay and exact milestone entitlement validation');
+
+import {winterHearthCraftSettlementWindow,WINTER_HEARTH_2026_END_MS} from '../src/core/winter-hearth-2026';
+const finish=WINTER_HEARTH_2026_END_MS;
+const windowAt=(nowMs:number,extra:Partial<Parameters<typeof winterHearthCraftSettlementWindow>[0]>={})=>winterHearthCraftSettlementWindow({lastClaimAtMs:finish-80000,nowMs,offlineCapSeconds:3600,released:true,...extra});
+ok(windowAt(finish-1).elapsedSeconds===79.999&&!windowAt(finish-1).expired,'Last eligible millisecond is inside season');
+ok(windowAt(finish).expired&&windowAt(finish+86400000).elapsedSeconds===79.999,'Expiry excludes exact boundary and all later cycles');
+ok(windowAt(finish,{savedEndMs:finish-40000}).elapsedSeconds===39.999,'Saved earlier deadline is never extended');
+ok(windowAt(finish,{runtimeEndMs:finish-40000}).elapsedSeconds===39.999,'Runtime can shorten deadline');
+ok(windowAt(finish,{released:false}).elapsedSeconds===0,'Hidden build cannot mint seasonal outputs');
+ok(windowAt(finish,{lastClaimAtMs:finish+1000}).elapsedSeconds===0,'Late settlement cannot create negative time');
+ok(winterHearthXpFactorForActionTimes(milestoneWindows,[finish-1,finish],'skill')===1.05,'Offline skill XP splits exactly at expiry');
+ok(winterHearthXpFactorForActionTimes(milestoneWindows,[finish-1,finish],'combat')===1.05,'Offline combat XP splits exactly at expiry');

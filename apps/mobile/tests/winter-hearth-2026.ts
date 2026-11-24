@@ -54,3 +54,9 @@ ok(winterHearthMaxDonation(150,100,0)===0&&winterHearthMaxDonation(150,-1,80)===
 import {winterHearthStageFromProgress} from '../src/core/winter-hearth-2026';
 for(const p of [25,50,75,100] as const){ok(winterHearthStageFromProgress(p*250,p*25)===p,'Joint threshold selects exact scene');ok(winterHearthStageFromProgress(p*250-1,p*25)<p&&winterHearthStageFromProgress(p*250,p*25-1)<p,'Neither resource track alone advances the scene');}
 ok(winterHearthStageFromProgress(NaN,2500)===0,'Invalid progress uses initial scene');
+
+import {winterHearthQuickDonation,winterHearthValidQuantity} from '../src/core/winter-hearth-donations';
+for(const track of ['logs','lights'] as const){const preset=track==='logs'?250:50,cap=track==='logs'?2500:250;ok(winterHearthQuickDonation(track,'preset',cap)===preset,'Approved shortcut');ok(winterHearthQuickDonation(track,'preset',3)===3,'Shortcut clamps to remaining stock');ok(winterHearthQuickDonation(track,'Max',99999)===cap,'Maximum remains capped');ok(winterHearthQuickDonation(track,'Half',1)===1,'One remaining can be donated');ok(winterHearthQuickDonation(track,'Max',0)===0,'Full track cannot be donated to');}
+for(const bad of ['','0','-1','1.5','1e2',' 1','2501','NaN'])ok(!winterHearthValidQuantity(bad,2500),'Reject invalid/over-cap quantity');
+ok(winterHearthValidQuantity('250',2500)&&winterHearthValidQuantity('50',250),'Approved quantities valid');
+console.log('PASS Winter Hearth quantity presets and boundary validation');

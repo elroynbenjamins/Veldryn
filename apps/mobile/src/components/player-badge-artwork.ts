@@ -20,6 +20,7 @@ export const PLAYER_BADGE_ARTWORK:Record<PlayerBadgeId,ImageSourcePropType>={
  guild_leader:require('../../assets/player-badges-v1/guild_leader.webp'),
  community_champion:require('../../assets/player-badges-v1/community_champion.webp'),
  event_champion:require('../../assets/player-badges-v1/event_champion.webp'),
+ ascendant_celestial_sovereign:require('../../assets/ascendant/celestial/sovereign_badge_64.webp'),
  vip:require('../../assets/store-membership-badges-v1/vip.png'),
  vip_plus:require('../../assets/store-membership-badges-v1/vip-plus.png'),
 };

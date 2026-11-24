@@ -44,6 +44,10 @@ import {reviewOriginalForgeSetBossOpportunitiesV2}
 import {reviewOriginalForgeBossThreeWayV2,
  type OriginalForgeBossThreewayInputV2}
  from '../equipment-original-forge-boss-threeway-review';
+import {reviewOriginalForgeToUniversalBonusGateV2}
+ from '../../../equipment/equipment-crafting-v2-universal-mint-gate-review';
+import {previewClassIndependentOriginalForgeAffixesV2}
+ from '../../../equipment/equipment-crafting-v2-universal-affix-preview';
 import {
  PLANNED_T1_T4_SETS_V2,PLANNED_T1_T4_MEMBERS_V2,
 } from '../equipment-expanded-launch-registry';
@@ -911,6 +915,55 @@ assert.ok(realForgeSkillDiffering>0,
 // to the Skills branch's read-only shape inspector. These rows are generated
 // from one real pinned Forge roll and its complete original QA ledger; the
 // cross-branch inspector does not authenticate ownership or permit combat.
+// Protect the true old Forge minted source from the next version's
+// class-free proposed bonus rolls. A preview cannot be grandfathered into
+// a claimed Forge item, listed, resold or granted as new combat gear.
+let universalGatePositive=0,universalGateNegative=0;
+for(const tier of [1,2,3,4] as const){
+ const actual=make('IRONWARDEN',0,'supported',tier);
+ const draft=previewClassIndependentOriginalForgeAffixesV2(
+  actual.exact.pieceId,actual.roll.recipeId,(max:number)=>max-1);
+ const gate=reviewOriginalForgeToUniversalBonusGateV2(actual.mint,draft);
+ assert.equal(gate.sourceItemIsOriginalForge,true);
+ assert.equal(gate.originalCopyCanBeRebrandedUniversal,false);
+ assert.equal(gate.canMintUniversalFromPreview,false);
+ assert.equal(gate.canListUniversalPreviewOnMarket,false);
+ assert.equal(gate.canSellOrResellLegacy,false);
+ assert.equal(gate.canGrantRewards,false);
+ assert.equal(gate.canAuthorizeCombat,false);
+ assert.equal(gate.releaseApproved,false);
+ assert.equal(gate.requiresNewClaimAndCustodyVersion,true);
+ universalGatePositive++;
+ assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
+  actual.mint,{...draft,canMint:true} as typeof draft),
+  /unissued_proposal_attests_false_mint_authority/);universalGateNegative++;
+ assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
+  actual.mint,{...draft,originalRecipeId:'FAKE_RECIPE'} as typeof draft),
+  /unissued_proposal_attests_false_mint_authority/);universalGateNegative++;
+ assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
+  actual.mint,{...draft,bonusStats:[
+   {...draft.bonusStats[0],stat:'potency'}]} as typeof draft),
+  /proposal_roll_identity_unapproved|proposal_roll_count_invalid/);
+ universalGateNegative++;
+ assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
+  {...actual.mint,outcome:{...actual.mint.outcome,
+   rulesVersion:'eq2-universal-class-independent-bonus-proposal-v1' as
+    typeof actual.mint.outcome.rulesVersion}},draft),
+  /original_mint_not_source_verified/);universalGateNegative++;
+ assert.throws(()=>reviewOriginalForgeToUniversalBonusGateV2(
+  {...actual.mint,exactItem:{...actual.mint.exactItem,baseStats:{
+   ...actual.mint.exactItem.baseStats,
+   defense:actual.mint.exactItem.baseStats.defense+1,
+  }}},draft),/original_mint_not_source_verified/);
+ universalGateNegative++;
+}
+assert.equal(universalGatePositive,4);
+assert.equal(universalGateNegative,20);
+console.log('PASS: '+universalGatePositive+
+ ' authenticated-shape original Forge mint-vs-universal review cases, '+
+ universalGateNegative+' version/copy/preview/market tamper negatives; '+
+ 'all original copies unchanged, all universal drafts UNISSUABLE');
+// ----------------------------------------------------------------------
 const originalAudit=make('IRONWARDEN',0,'supported',2);
 const originalCompiled=compileRealFrozenForgeActorV2(
  originalAudit.actor,originalAudit.build,originalAudit.source);

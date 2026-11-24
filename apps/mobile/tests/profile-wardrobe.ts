@@ -51,7 +51,13 @@ equal(wardrobeLockTag(undefined),'LOCKED','an unknown source still prints a tag'
 const frames=categories.find(row=>row.kind==='frame')!;
 const clear=frames.rows.find(row=>row.clear)!;
 ok(clear.unlocked&&clear.equipped,'no-frame is the equipped default');
-equal(frames.total,assets.frames.length,'the clear choice is excluded from the frame total');
+equal(frames.total,2,'unreleased standard frames and the clear choice are excluded from the public total');
+ok(frames.rows.filter(row=>!row.clear).every(row=>row.id==='frame_gloamward'||row.id==='guild-border-silver'),'unowned unreleased frames never become visible through a preview asset list');
+const grantedFrame='cosmetic:gloamward:arcane-frame';
+const grantedState={...state,account:{...state.account,unlockedProfileBorderIds:[grantedFrame]}};
+const grantedFrames=profileWardrobe(grantedState,assets).find(row=>row.kind==='frame')!;
+ok(grantedFrames.rows.some(row=>row.id===grantedFrame&&row.unlocked),'verified owned standard frame becomes visible');
+equal(grantedFrames.total,3,'owned frame contributes once and the clear choice never counts');
 const effects=categories.find(row=>row.kind==='effect')!;
 equal(effects.total,assets.effects.length,'the clear choice is excluded from the effect total');
 ok(effects.rows.find(row=>row.clear)?.equipped,'no-effect is the equipped default');

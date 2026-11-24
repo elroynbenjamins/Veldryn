@@ -18,9 +18,9 @@ export type SyncStatV2=
  'dot_strength_pct'|'lifesteal_strength_pct'|'damage_vs_debuffed_pct'|
  'armor_pct'|'ward_strength_pct'|'crit_chance_pp'|'crit_damage_pct'|
  'accuracy_pct'|'physical_damage_pct'|'execute_damage_pct'|
- 'healing_done_pct'|'resource_regen_pct'|'harmful_effect_resist_pct'|
+ 'healing_done_pct'|'resource_generation_pct'|'harmful_effect_resist_pct'|
  'armor_penetration_pct'|'haste_pct'|'evasion_rating_pct'|
- 'damage_vs_shielded_pct'|'low_hp_damage_pct'|'stagger_strength_pct'|'penetration_pct';
+ 'damage_vs_shielded_pct'|'low_hp_damage_pct'|'interrupt_recovery_pct'|'penetration_pct';
 type Bonus=readonly [SyncStatV2,number]; // 100 bps = 1%; pp keys are absolute points.
 interface Pair {
  readonly id:string;readonly name:string;
@@ -35,7 +35,7 @@ const CATALOG:readonly Pair[]=[
  pair('runebound_pact','Runebound Pact','IRONWARDEN','STONECALLER',['armor_pct',500],['ward_strength_pct',500],['shield_strength_pct',300]),
  pair('predators_instinct',"Predator's Instinct",'WAYFINDER','KNIFE_DANCER',['crit_chance_pp',200],['crit_damage_pct',500],['accuracy_pct',300]),
  pair('bloodbound_fury','Bloodbound Fury','DREADGUARD','RAVAGER',['physical_damage_pct',300],['execute_damage_pct',500],['lifesteal_strength_pct',300]),
- pair('mystic_harmony','Mystic Harmony','DAWNKEEPER','STONECALLER',['healing_done_pct',500],['resource_regen_pct',300],['harmful_effect_resist_pct',500]),
+ pair('mystic_harmony','Mystic Harmony','DAWNKEEPER','STONECALLER',['healing_done_pct',500],['resource_generation_pct',1000],['harmful_effect_resist_pct',500]),
  pair('steel_vanguard','Steel Vanguard','IRONWARDEN','RAVAGER',['armor_penetration_pct',400],['physical_damage_pct',300]),
  pair('guardians_vigil',"Guardian's Vigil",'IRONWARDEN','WAYFINDER',['accuracy_pct',400],['damage_reduction_pct',300]),
  pair('sacred_bulwark','Sacred Bulwark','IRONWARDEN','DAWNKEEPER',['armor_pct',400],['healing_received_pct',400]),
@@ -45,7 +45,7 @@ const CATALOG:readonly Pair[]=[
  pair('twilight_accord','Twilight Accord','DREADGUARD','DAWNKEEPER',['healing_received_pct',400],['low_hp_damage_pct',300]),
  pair('crimson_veil','Crimson Veil','DREADGUARD','KNIFE_DANCER',['crit_damage_pct',500],['lifesteal_strength_pct',300]),
  pair('marked_for_death','Marked for Death','WAYFINDER','HEXWEAVER',['damage_vs_debuffed_pct',400],['accuracy_pct',300]),
- pair('shattering_force','Shattering Force','RAVAGER','STONECALLER',['armor_penetration_pct',500],['stagger_strength_pct',300]),
+ pair('shattering_force','Shattering Force','RAVAGER','STONECALLER',['armor_penetration_pct',500],['interrupt_recovery_pct',300]),
  pair('ruinous_assault','Ruinous Assault','RAVAGER','HEXWEAVER',['penetration_pct',400],['damage_vs_debuffed_pct',300]),
  pair('phantom_curse','Phantom Curse','HEXWEAVER','KNIFE_DANCER',['dot_strength_pct',400],['haste_pct',300]),
 ];

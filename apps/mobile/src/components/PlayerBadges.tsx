@@ -5,7 +5,7 @@ import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadg
 import {useGameTheme} from '../theme/ThemeContext';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {recentScreenText} from '../i18n/recent-screens';
-import {PLAYER_BADGE_ARTWORK} from './player-badge-artwork';
+import {PLAYER_BADGE_ARTWORK,PLAYER_BADGE_FALLBACK_GLYPHS} from './player-badge-artwork';
 
 /**
  * The compact badge stays the same size in every name row. Its optional press target
@@ -16,7 +16,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const detail=recentScreenText(language,PLAYER_BADGE_DESCRIPTIONS[id]);
  const {width:screenWidth,height:screenHeight}=useWindowDimensions(),insets=useSafeAreaInsets();
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
- const art=(artSize:number)=><Image accessible={false} source={PLAYER_BADGE_ARTWORK[id]} resizeMode="contain" style={{width:artSize,height:artSize}}/>;
+ const art=(artSize:number)=>{const source=PLAYER_BADGE_ARTWORK[id],fallback=PLAYER_BADGE_FALLBACK_GLYPHS[id];return source?<Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize}}/>:<View accessible={false} style={{width:artSize,height:artSize,borderRadius:Math.max(4,artSize*.22),alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:fallback?.accent??C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.8)'}}><Text style={{fontSize:Math.round(artSize*.58),lineHeight:Math.round(artSize*.68),fontWeight:'900',color:fallback?.accent??C.accent}}>{fallback?.glyph??'◇'}</Text></View>};
  const content=<>{art(size)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;
  const open=(pageX:number,pageY:number)=>{

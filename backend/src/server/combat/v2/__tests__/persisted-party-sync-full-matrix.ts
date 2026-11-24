@@ -13,7 +13,8 @@ import {strict as assert} from 'node:assert';
 import type {CombatInput,CombatResult} from '../../types';
 import type {FrozenLoadoutSnapshot} from '../../../coop/loadout-snapshots';
 import type {ReadyCheckRecord,ReadyRosterMember} from '../../../coop/ready-checks';
-import {CLASS_NAMES_V2} from '../skill-catalog';
+import {CLASS_NAMES_V2,SPECIALIZATIONS_V2} from '../skill-catalog';
+import {observeRoleCalibrationV2,summarizeRoleCalibrationV2,type RoleCalibrationObservationV2} from '../role-power-calibration-review';
 import {CLASS_ROLES_V2,type ClassIdV2} from '../build-contract';
 import {listPartySynchronizationsV2} from '../party-synchronization';
 import {
@@ -45,6 +46,7 @@ const bucket=():Bucket=>({cases:0,sumDamageRatio:0,minDamageRatio:Infinity,maxDa
 const byLinks=new Map<number,Bucket>(),byBoss=new Map<string,Bucket>();
 const pairCounts=new Map<string,number>();
 let cases=0,overall=bucket(),maxLinks=0;
+const roleObservations:RoleCalibrationObservationV2[]=[];
 
 function add(row:Bucket,base:CombatResult,sync:CombatResult,damageRatio:number,healingRatio:number){
  row.cases++;row.sumDamageRatio+=damageRatio;row.sumHealingRatio+=healingRatio;
@@ -107,6 +109,14 @@ for(const specIndex of [0,1] as const)
 
     const base=simulateUnifiedEquipmentPersistedPartyCombatV2(
       input,builds,runtime,party,true,false);
+    // Personal calibration uses only the synchronized-OFF baseline. Reuse
+    // actual engine results rather than adding another expensive simulation.
+    for(const [i,classId] of ids.entries()){
+      const spec=SPECIALIZATIONS_V2.filter(s=>s.classId===classId)[specIndex];
+      roleObservations.push(observeRoleCalibrationV2(base.combat,{
+        caseId,bossId:boss.id,classId,specializationId:spec.id,actorId:players[i].id,
+      }));
+    }
     const sync=simulateUnifiedEquipmentPersistedPartyCombatV2(
       input,builds,runtime,party,true,true);
     assert.deepEqual(sync,simulateUnifiedEquipmentPersistedPartyCombatV2(
@@ -180,3 +190,13 @@ console.log(JSON.stringify({
  absentPairsInStrictDungeonRoleMatrix:absentPairs,
  caveat:'same-build relative uplift; synthetic review gear budgets are not final equal-CP certification',
 }));
+
+const roleReport=summarizeRoleCalibrationV2(roleObservations);
+assert.equal(roleReport.observations,432*4);
+assert.equal(roleReport.cells.length,18*6);
+assert.ok(roleReport.cells.every(x=>x.peerClassSpecs===(x.role==='tank'?6:x.role==='damage'?8:4)));
+assert.equal(roleReport.cells.reduce((n,x)=>n+x.cases,0),1728);
+assert.equal(roleReport.cpApproved,false);
+assert.deepEqual(roleReport,summarizeRoleCalibrationV2([...roleObservations].reverse()));
+assert.throws(()=>summarizeRoleCalibrationV2([...roleObservations,roleObservations[0]]),/duplicate_or_invalid_observation/);
+console.log('ROLE_POWER_CALIBRATION_NOT_CP '+JSON.stringify(roleReport));

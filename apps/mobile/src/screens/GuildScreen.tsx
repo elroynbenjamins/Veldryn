@@ -47,7 +47,7 @@ import {ResourceArtwork} from '../components/ResourceArtwork';
 import {GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityBonuses} from '../core/guild-activity';
 import {guildXpThresholdForLevelV1} from '../core/guild-progression-v1';
 import {WINTER_HEARTH_GUILD_RELEASED} from '../core/release-flags';
-import {WINTER_HEARTH_2026_ID} from '../core/winter-hearth-2026';
+import {WINTER_HEARTH_2026_ID,WINTER_HEARTH_2026_END_MS} from '../core/winter-hearth-2026';
 import {WinterHearthGuildScreen} from '../components/WinterHearthGuildScreen';
 
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
@@ -112,6 +112,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
   useEffect(()=>{onEventPageChange?.(winterHearthVisible);return()=>onEventPageChange?.(false);},[winterHearthVisible,onEventPageChange]);
   useEffect(()=>{if(!winterHearthAvailable)setWinterHearthOpen(false);},[winterHearthAvailable]);
   useEffect(()=>{setWinterHearthOpen(false);},[session?.user.id,membershipRevision,state.character?.id]);
+  useEffect(()=>{if(initialPve)setWinterHearthOpen(false);},[initialPve]);
   const [guildTourJustJoined,setGuildTourJustJoined]=useState(false);
   const [weeklyVotePending,setWeeklyVotePending]=useState(false);
   const [guideLibraryOpen,setGuideLibraryOpen]=useState(false);
@@ -166,7 +167,7 @@ export function GuildScreen({state,onChange,onlineManagement,onlineBoard,onlineP
    else setOnlineSection('Home');
    guildScroll.current?.scrollTo({y:0,animated:false});
   };
-  if(winterHearthVisible)return <WinterHearthGuildScreen scope={String(session?.user.id??'')+':'+membershipRevision} onClose={()=>setWinterHearthOpen(false)} onOpenCrafting={onOpenEventCrafting}/>;
+  if(winterHearthVisible)return <WinterHearthGuildScreen endsAtMs={Math.min(state.account.liveEvent?.endsAtMs??WINTER_HEARTH_2026_END_MS,WINTER_HEARTH_2026_END_MS)} scope={String(session?.user.id??'')+':'+membershipRevision} onClose={()=>setWinterHearthOpen(false)} onOpenCrafting={onOpenEventCrafting}/>;
   if(online)return <View style={{flex:1,minHeight:0}}><GuildNavigation value={onlineSection} voteReminder={weeklyVotePending} onChange={next=>{setOnlineSection(next);guildScroll.current?.scrollTo({y:0,animated:false})}}/><ScrollView ref={guildScroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <GuildTutorial role={guildRole} autoStart={guildTourJustJoined} home={onlineSection==='Home'}
       destination={tutorialDestination} onNavigate={navigateGuildTutorial}

@@ -715,12 +715,12 @@ const interruptBase=launchPlayer('Hexweaver',50);
 const interruptLoadout:VerifiedSkillBuildV2={actor:interruptBase,
  verified:{classId:'HEXWEAVER',level:50,ownedInstanceIds:new Set()},
  selected:{specializationId:SPECIALIZATIONS_V2.find(s=>s.classId==='HEXWEAVER')!.id,equipment:{},
- activeSkills:['Null Script','Black Thread'].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='HEXWEAVER'&&s.name===name)!;
+ activeSkills:['Null Script','Curse of Frailty'].map(name=>{const s=SKILL_IDENTITIES_V2.find(s=>s.classId==='HEXWEAVER'&&s.name===name)!;
  return {skillId:s.id,variantId:s.variants[0].id};}),talentRanks:{},signaturePassiveIds:[],capstoneId:null},
  ownedItemsById:{},setsById:{}};
 const interruptDps0=compileServerSkillBuildV2(true,interruptLoadout);
 const interruptDps={...interruptDps0,id:'DPS_INTERRUPT',stats:{...interruptDps0.stats,maxHp:1000},
- abilities:interruptDps0.abilities.map(a=>({...a,priority:a.name==='Black Thread'?200:100,cooldownMs:a.name==='Black Thread'?100:a.cooldownMs}))};
+ abilities:interruptDps0.abilities.map(a=>({...a,priority:a.name==='Curse of Frailty'?200:100,cooldownMs:a.name==='Curse of Frailty'?100:a.cooldownMs}))};
 const interruptBoss=forecastBoss('all_enemies',500);
 const interruptDpsRun=simulateCombat({seed:'dps-interrupt',players:[interruptDps],enemies:[{
  ...interruptBoss,abilities:interruptBoss.abilities.map(a=>({...a,interruptible:true}))}],
@@ -728,3 +728,10 @@ const interruptDpsRun=simulateCombat({seed:'dps-interrupt',players:[interruptDps
 assert.ok(interruptDpsRun.events.some(e=>e.type==='interrupt'&&e.actorId===interruptDps.id&&e.atMs===100),
  'damage role interrupts visible dangerous cast before ordinary rotation');
 console.log('PASS: all four DPS classes, party vulnerability and dangerous interrupt coverage');
+
+const finishingChip:CombatantDefinition={...chipper,abilities:chipper.abilities.map(a=>({...a,
+ effects:[{kind:'damage',flat:115,damageType:'true'}]}))};
+const cheapFinish=simulateCombat({...tacticInput,players:[finishingChip,tacticActor],enemies:[executeTarget],
+ maxDurationMs:100});
+assert.ok(cheapFinish.events.some(e=>e.type==='damage'&&e.actorId===tacticActor.id&&e.abilityId===markId&&e.atMs===0),
+ 'nearly defeated nonboss uses nominal inexpensive hit instead of burst');

@@ -41,7 +41,7 @@ function Card({label,petId,petSource}:{label:string;petId?:string;petSource?:Ret
 function Review(){
  const C=useGameTheme();
  return <SafeAreaView style={[s.root,{backgroundColor:C.bg}]}>
-  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <Text style={[s.kicker,{color:C.warning}]}>NATIVE QA · ASCENDANT I</Text>
    <Text accessibilityRole="header" style={[s.heading,{color:C.text}]}>Celestial Sovereign</Text>
    <Text style={[s.copy,{color:C.muted}]}>Real committed runtime artwork. Global release gate remains disabled.</Text>

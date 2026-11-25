@@ -18,10 +18,9 @@ begin
  foreach p in array array[25,50,75,100] loop
   insert into public.guild_winter_hearth_2026_milestones(guild_id,percent,guild_gold) values(g,p,case p when 25 then 10000 when 50 then 20000 when 75 then 30000 else 50000 end);
  end loop;
- begin
-  perform public.update_guild_appearance_with_frostfall_v1('banner_frostfall_standard_2026','classic','name_ivory','tag_silver','classic','Together.','plain');
-  raise exception 'unexpected success';
- exception when others then if sqlerrm<>'GUILD_EVENT_COSMETIC_LOCKED_OR_WRONG_SLOT' then raise;end if;end;
+ if (select count(*) from public.guild_cosmetic_unlocks where guild_id=g and source_ref='EVT_ANNUAL_012_2026')<>4 then raise exception 'milestone ownership not granted';end if;
+ -- Approved release metadata plus earned ownership now permits non-Hall Frostfall slots.
+ perform public.update_guild_appearance_with_frostfall_v1('banner_frostfall_standard_2026','classic','name_ivory','tag_silver','classic','Together.','plain');
  -- Existing hall progression remains authoritative for colors.
  begin
   perform public.update_guild_appearance_with_frostfall_v1('world_tree_green','classic','name_frostfall_aurora_2026','tag_silver','classic','Together.','plain');

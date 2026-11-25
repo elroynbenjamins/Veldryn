@@ -86,7 +86,7 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
     <View style={[s.pill,dirty&&s.pillDirty]}><Text style={[s.pillText,dirty&&s.pillTextDirty]}>
      {dirty?profileT(language,"UNSAVED CHANGES"):profileT(language,'Collection {percent}%',{percent:progress.percent})}</Text></View>
    </View>
-   <ProfileStage state={previewState} collapsed={collapsed} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
+   <ProfileStage state={previewState} collapsed={collapsed} active={!previewOpen} onToggle={()=>setExpandOverride(collapsed)} onAudiencePreview={()=>setPreviewOpen(true)}/>
    <View accessibilityRole="tablist" style={s.tabs}>
     {TABS.map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>openTab(value)}
       style={({pressed})=>[s.tab,tab===value&&s.tabOn,pressed&&s.pressed]}>

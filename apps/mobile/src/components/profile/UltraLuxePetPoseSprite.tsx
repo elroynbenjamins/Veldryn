@@ -1,11 +1,11 @@
-import {useMemo} from 'react';
+import {memo,useMemo} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
 import {ULTRA_LUXE_POSE_ATLASES,poseAtlasTimeline,poseAtlasCell,type PoseTheme} from '../../core/ultra-luxe-pet-poses';
 const TIMELINES={celestial:poseAtlasTimeline('celestial'),draconic:poseAtlasTimeline('draconic')};
 type Props={source:ImageSourcePropType;clock:Animated.Value;theme:PoseTheme;width:number;height:number};
 /** One decoded atlas, clipped to a single pose; native transforms only.
  * The caller owns the scene lifecycle, accessibility and reduced-motion behavior. */
-export function UltraLuxePetPoseSprite({source,clock,theme,width,height}:Props){
+function UltraLuxePetPoseSpriteLayer({source,clock,theme,width,height}:Props){
  const a=ULTRA_LUXE_POSE_ATLASES[theme],ratio=Math.min(width/a.frameWidth,height/a.frameHeight);
  const w=a.frameWidth*ratio,h=a.frameHeight*ratio;
  const phase=useMemo(()=>Animated.modulo(Animated.multiply(clock,ULTRA_LUXE_POSE_ATLASES[theme].cycles),1),[clock,theme]);
@@ -24,3 +24,5 @@ export function UltraLuxePetPoseSprite({source,clock,theme,width,height}:Props){
  </View>;
 }
 const s=StyleSheet.create({atlas:{position:'absolute',left:0,top:0}});
+
+export const UltraLuxePetPoseSprite=memo(UltraLuxePetPoseSpriteLayer);

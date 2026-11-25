@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Veldryn original game audio: deterministic retro synthesis.
 
-Renders every sound effect and music loop from code (no samples, no third-party
-audio), so the whole set is original, license-free and reproducible:
+Renders sound effects and fallback music from deterministic synthesis. Selected
+production recordings are separate, locked assets; five use TimGM6mb. See
+ docs/roadmap/selected-music-sample-rights-evidence.md for provenance.
 
-    python3 tools/audio/generate-game-audio.py            # writes apps/mobile/assets/audio
+    python3 tools/audio/generate-game-audio.py --only sfx # preserves selected music
     python3 tools/audio/generate-game-audio.py --only sfx # effects only
 
 Requires numpy and ffmpeg (libmp3lame). Output: mono MP3, effects 22.05 kHz / 64 kbps,

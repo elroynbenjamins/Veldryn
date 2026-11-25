@@ -15,12 +15,12 @@ for(const [kind,rows] of [['sfx',manifest.sfx],['music',manifest.music]] as cons
   assert.ok(assetMap.includes("require('../../assets/audio/"+kind+'/'+name+".mp3')"),'Asset map misses '+file);
   const size=fs.statSync(file).size;
   if(kind==='sfx'){sfxBytes+=size;assert.ok(size<80_000,'Effect too large: '+name+' '+size);assert.ok(rows[name].seconds<=(name.startsWith('rarity_')?3.5:3),'Effect too long: '+name);}
-  else{musicBytes+=size;assert.ok(size<700_000,'Music loop too large: '+name+' '+size);assert.ok(rows[name].seconds>=20,'Music loop too short to avoid fatigue: '+name);}
+  else{musicBytes+=size;assert.ok(size<1_500_000,'Music loop too large: '+name+' '+size);assert.ok(rows[name].seconds>=20,'Music loop too short to avoid fatigue: '+name);}
  }
  assert.equal(fs.readdirSync('assets/audio/'+kind).filter(f=>f.endsWith('.mp3')).length,Object.keys(rows).length,'Untracked '+kind+' files');
 }
 assert.ok(sfxBytes<600_000,'Effects budget exceeded: '+sfxBytes);
-assert.ok(musicBytes<4_000_000,'Music budget exceeded: '+musicBytes);
+assert.ok(musicBytes<7_000_000,'Music budget exceeded: '+musicBytes);
 for(const required of ['ui_tap','reward_collect','level_up','rare_drop','unlock','hit','crit','heal','shield','interrupt','phase','cast','down','victory','defeat','craft_complete','upgrade_success','upgrade_fail','mine_hit','chop_hit','fish_splash','gather_yield','boss_entrance','boss_telegraph','boss_special','guard_break','role_moment','world_hp_drop','killing_blow','honor','tonic'])
  assert.ok(required in manifest.sfx,'Missing required effect '+required);
 for(const track of ['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
@@ -31,6 +31,18 @@ for(const [track,selection] of Object.entries({town:'Lanterns at Hearth',asterfa
  assert.equal(manifest.music[track]?.rights_status,'original-synthesis-no-third-party-samples',
    'Unexpected sample provenance for '+track);
 }
+
+// Preserve the exact selected recordings and documented permission status.
+for(const [track,selection] of Object.entries({
+ sunscar:'Evening Oasis V3',frostmarch:'Soft Snowfall V2',
+ dungeon:'Midnight Machinery V9 — extended original instruments',
+ boss:'Break the Sigil V9 — extended original instruments',
+ world_boss:'Eclipse Protocol V9 — extended original instruments',
+})){
+ assert.equal(manifest.music[track]?.selection,selection,'Wrong approved soundtrack for '+track);
+ assert.equal(manifest.music[track]?.rights_status,'creator-permission-received-owner-approved','Unexpected sample permission status for '+track);
+}
+for(const track of ['dungeon','boss','world_boss'])assert.ok(manifest.music[track].seconds>=95,'Extended battle track is unexpectedly short: '+track);
 
 // Every combat impact kind has a sound.
 const burst=fs.readFileSync('src/components/CombatImpactBurst.tsx','utf8');

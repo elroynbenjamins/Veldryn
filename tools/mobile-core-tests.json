@@ -407,6 +407,7 @@
   "tests/auth-account-link.cjs",
   "tests/google-play-games-status.cjs",
   "../../tools/validate-chat-lifecycle.cjs",
+  "tests/chat-self-active-profile.cjs",
   "../../tools/validate-coop-profile-icons.cjs",
   "../../tools/validate-account-entry.cjs",
   "../../tools/validate-app-build.mjs",

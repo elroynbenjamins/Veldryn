@@ -116,7 +116,9 @@ const markers={
  ],
  codex:[
   'summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}',
-  '{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>',
+  'title:companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)',
+  '{title}</Text>',
+  'frostfallCompanionAbilityArt(model.def.id,slot)',
   'companionTrialAbilityName(language,phase.name)',
   'phase.effects.map(effect=>companionContent(language,effect))',
  ],

@@ -1,0 +1,52 @@
+name: Frostfall ability Edge reconciliation
+on:
+  push:
+    branches: ['feat/frostfall-ability-icons-copy-polish']
+    paths:
+      - '.github/workflows/frostfall-ability-edge-reconcile.yml'
+      - 'apps/mobile/src/content/event-companions-v2.ts'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: frostfall-ability-edge-reconcile
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    if: github.ref == 'refs/heads/feat/frostfall-ability-icons-copy-polish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Rebuild and verify canonical bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit only generated bundles to the isolated candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='feat/frostfall-ability-icons-copy-polish'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          test -z "$unexpected"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'build(edge): regenerate Frostfall companion description bundles'
+          git fetch origin "$branch"
+          test "$(git rev-parse "origin/$branch")" = "$GITHUB_SHA"
+          git push origin "HEAD:$branch"

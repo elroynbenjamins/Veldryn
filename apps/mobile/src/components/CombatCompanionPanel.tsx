@@ -39,6 +39,7 @@ import {sanctuaryClaimReceipt,type SanctuaryClaimKind,type SanctuaryClaimReceipt
 import {CombatTheaterModal} from './CombatTheaterModal';
 import {CompanionProgressMoment,isCompanionProgressMoment} from './CompanionProgressMoment';
 import {companionArtSource} from '../theme/companion-art';
+import {frostfallCompanionAbilityArt} from '../theme/frostfall-companion-ability-art';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {CompanionHero,CompanionDisclosure,CompanionTeamPortraits,companionRarityBorder} from './CompanionPresentation';
@@ -265,10 +266,11 @@ const selectedIndex=Math.max(0,roster.findIndex(def=>def.id===selection)),select
       </View>}
     </CompanionDisclosure>
     {model&&selectedCodexEntry?.state!=='unknown'?<CompanionDisclosure key={'abilities:'+selection} title={t('Abilities & Traits')} summary={companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}>
-      <Text style={s.name}>{companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name)}</Text>
-      <Text style={s.body}>{t("{value0} · {value1}s cooldown", {value0: companionContent(language,model.def.activeAbility.description), value1: selectedAbilityCooldown})}</Text>
-      <Text style={s.name}>{t('Passive ability')}</Text><Text style={s.body}>{companionContent(language,model.def.passiveAbility.description)}</Text>
-      <Text style={s.name}>{t('Bond trait')}</Text><Text style={s.body}>{t("Bond 10: {value0}", {value0: companionContent(language,model.def.bondTrait.description)})}</Text>
+      {([
+        {slot:'active',title:companionCombatAbilityName(language,model.def.id,model.def.activeAbility.name),body:t("{value0} · {value1}s cooldown",{value0:companionContent(language,model.def.activeAbility.description),value1:selectedAbilityCooldown})},
+        {slot:'passive',title:t('Passive ability'),body:companionContent(language,model.def.passiveAbility.description)},
+        {slot:'bond',title:t('Bond trait'),body:t("Bond 10: {value0}",{value0:companionContent(language,model.def.bondTrait.description)})},
+      ] as const).map(({slot,title,body})=>{const art=frostfallCompanionAbilityArt(model.def.id,slot);return art?<View key={slot} style={s.frostfallAbilityRow}><Image source={art} accessible={false} resizeMode="contain" style={s.frostfallAbilityIcon}/><View style={s.flex}><Text style={s.name}>{title}</Text><Text style={s.body}>{body}</Text></View></View>:<React.Fragment key={slot}><Text style={s.name}>{title}</Text><Text style={s.body}>{body}</Text></React.Fragment>})}
     </CompanionDisclosure>:null}
     </ScrollView></GameModalSurface>
 
@@ -374,6 +376,7 @@ const selectedIndex=Math.max(0,roster.findIndex(def=>def.id===selection)),select
   </View>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
+ frostfallAbilityRow:{flexDirection:'row',alignItems:'center',gap:8},frostfallAbilityIcon:{width:32,height:32,flexShrink:0},
  root:{gap:12},sanctuaryIntro:{gap:3},claimGrid:{gap:8},claimCard:{flexDirection:'row',alignItems:'center',gap:10,minWidth:0,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},claimDetails:{flex:1,minWidth:0,gap:3},claimMeta:{alignItems:'flex-end',justifyContent:'center',maxWidth:118,flexShrink:0,gap:2},claimCountdown:{...typography.bodyStrong,color:C.text,textAlign:'right'},claimHint:{...typography.caption,color:C.muted,textAlign:'right'},supplyLine:{flexDirection:'row',alignItems:'center',gap:9},activeCompanion:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.accent,borderRadius:12,backgroundColor:C.panel},activeCompanionArt:{width:62,height:62},trialHeader:{flexDirection:'row',alignItems:'center',gap:8},trialIconAction:{minWidth:44,minHeight:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},trialTeam:{flexDirection:'row',alignItems:'center',gap:10,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,minHeight:74},trialTeamReady:{borderColor:C.good},trialMiniTeam:{flexDirection:'row',gap:4,alignItems:'center'},trialMiniSlot:{width:39,height:46,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:7,backgroundColor:C.panel,overflow:'hidden'},trialMiniArt:{width:35,height:33},trialMiniRole:{fontSize:9,fontWeight:'900',color:C.accent,lineHeight:11},trialArrow:{fontSize:24,lineHeight:27,color:C.muted},trialNext:{gap:4},trialMore:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md},trialMoreText:{...typography.caption,color:C.muted,flex:1},trialExpanded:{gap:10},resourceBar:{flexDirection:'row',flexWrap:'nowrap',alignItems:'center',justifyContent:'space-between',gap:6},navigation:{flexDirection:'row',padding:4,borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel2},navigationTab:{flex:1,minWidth:0,minHeight:54,alignItems:'center',justifyContent:'center',gap:4,paddingVertical:7,borderBottomWidth:2,borderBottomColor:'transparent'},navigationSelected:{borderBottomColor:C.accent,backgroundColor:C.selection,borderRadius:10},navigationText:{fontSize:10,lineHeight:14,color:C.muted,textAlign:'center'},navigationTextSelected:{color:C.text,fontWeight:'700'},rosterGrid:{flexDirection:'row',flexWrap:'wrap',gap:10},rosterTile:{width:'48%',flexGrow:1,minWidth:0,padding:12,gap:6,borderWidth:1,borderRadius:12,backgroundColor:C.panel},tileName:{fontSize:13,lineHeight:18,fontWeight:'700',color:C.text},heroAssist:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:6,paddingTop:12,borderTopWidth:1,borderTopColor:C.line},ascent:{gap:8},floorRow:{flexDirection:'row',alignItems:'center',gap:10,padding:12,backgroundColor:C.panel2,borderRadius:10},floorNumber:{fontSize:18,fontWeight:'700',color:C.accent,width:32},floorCopy:{flex:1,color:C.text,fontSize:13},
 
  quartersCard:{padding:11,gap:10,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},

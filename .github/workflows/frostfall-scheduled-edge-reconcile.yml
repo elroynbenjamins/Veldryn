@@ -4,6 +4,8 @@ on:
     branches: ['feat/frostfall-scheduled-reward-visibility']
     paths:
       - '.github/workflows/frostfall-scheduled-edge-reconcile.yml'
+      - 'apps/mobile/src/core/live-events.ts'
+      - 'apps/mobile/src/content/event-companions-v2.ts'
   workflow_dispatch:
 permissions:
   contents: write

@@ -1,5 +1,5 @@
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
-import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals} from '../core/ultra-luxe-set-visuals';
+import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals,ultraLuxeSceneEffectCompatible} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {verifiedUltraLuxeTitleColor} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
@@ -104,8 +104,8 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={reduceMotion}/>:null}
  </View>;
- const celestial=!review&&height>=205&&visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
- if(!review&&draconic&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border&&height>=205){
+ const celestial=!review&&height>=205&&ultraLuxeSceneEffectCompatible(profile.effectId,'premium:celestial-sovereign:celestial-alignment')&&visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
+ if(!review&&draconic&&ultraLuxeSceneEffectCompatible(profile.effectId,'premium:draconic-dominion:awakening-of-the-dragon')&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border&&height>=205){
  return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={pet} petAccessibilityLabel={visualSelection.pet===DRACONIC_IDS.pet?'Vharaxis, the Eternal Flame':profileT(language,'Pet preview')} active={active} reduceMotion={reduceMotion} fallback={standard}
   portrait={<CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} profileIconId={profile.character.profileIconId} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>

@@ -1,5 +1,6 @@
 import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-icons';
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
+import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../apps/mobile/src/core/ultra-luxe-grants';
 import {newGame} from '../../apps/mobile/src/core/game';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
@@ -13,11 +14,13 @@ import {gemCombineRecipeV1,gemRefineRecipeV1} from '../../apps/mobile/src/core/g
 
 export interface GameplayServices{
  authenticate(token:string):Promise<string|null>;
+ /** Only enable after the verified grant-aware RPC migration is installed. Server configuration, not client input. */
+ ultraLuxeGrantAuthority?:boolean;
  rpc<T>(name:string,args:Record<string,unknown>):Promise<T>;
  randomId():string;randomRoll():number;
 }
 export class GameplayError extends Error{constructor(message:string,readonly status=400){super(message);}}
-interface LoadedGame {state:GameState|null;version:number;serverNow:number;characterId:string|null;walletGold:number|null;guildMember:boolean;liveEvent?:GameState['account']['liveEvent'];communityProgress:Record<string,number>}
+interface LoadedGame {ultraLuxeCollectionIds?:unknown;state:GameState|null;version:number;serverNow:number;characterId:string|null;walletGold:number|null;guildMember:boolean;liveEvent?:GameState['account']['liveEvent'];communityProgress:Record<string,number>}
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 const hash=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -27,7 +30,11 @@ type AuthenticatePlayer=(token:string)=>Promise<{accountId:string;adminQa:boolea
 export function gameplayHandler(services:GameplayServices,authenticatePlayer:AuthenticatePlayer=async token=>{
  const accountId=await services.authenticate(token);
  return accountId?{accountId,adminQa:false}:null;
-}){return async(request:Request):Promise<Response>=>{
+}){
+ const privateGrants=services.ultraLuxeGrantAuthority===true;
+ const receiptRpc=privateGrants?'read_online_game_receipt_ultra_luxe_v1':'read_online_game_receipt_server_v1';
+ const loadRpc=privateGrants?'load_online_game_ultra_luxe_v1':'load_online_game_server_v1';
+ return async(request:Request):Promise<Response>=>{
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
  if(!['GET','POST'].includes(request.method))return json({error:'method_not_allowed'},405);
  const startedAt=Date.now();let telemetryCommandType:string|undefined;
@@ -50,13 +57,14 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
    if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
    requestHash=await hash(canonical(command));
    try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:command.type.startsWith('event_')?'event_action':'gameplay_action'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}
-   const prior=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
+   const prior=await services.rpc<{response:unknown;requestHash:string}|null>(receiptRpc,{p_account_id:accountId,p_request_id:body.requestId});
    if(prior){if(prior.requestHash!==requestHash){await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}await recordOutcome('replayed');return json(prior.response);}
   }
-  const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
+  const loaded=await services.rpc<LoadedGame>(loadRpc,{p_account_id:accountId});
   // A stored legacy claim must be frozen using trusted server data BEFORE the
   // old account projection is migrated to the currently active character.
-  const storedState=rebaseCombatGameState(loaded.state??newGame(loaded.serverNow));
+  if(privateGrants&&!Array.isArray(loaded.ultraLuxeCollectionIds))throw new Error('ultra_luxe_grant_projection_missing');
+  const storedState=rebaseCombatGameState(privateGrants?withVerifiedUltraLuxeGrants(loaded.state??newGame(loaded.serverNow),loaded.ultraLuxeCollectionIds):loaded.state??newGame(loaded.serverNow));
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
@@ -79,7 +87,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});
   if(body.expectedVersion!==loaded.version){
    // Another request may commit this key between the first receipt read and state read.
-   const committed=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
+   const committed=await services.rpc<{response:unknown;requestHash:string}|null>(receiptRpc,{p_account_id:accountId,p_request_id:body.requestId});
    if(committed){if(committed.requestHash===requestHash){await recordOutcome('replayed');return json(committed.response);}await recordOutcome('conflict');return json({error:'idempotency_key_conflict'},409);}
    await recordOutcome('conflict');return json({error:'stale_state',state,version:loaded.version,serverNow:loaded.serverNow,accountId},409);
   }
@@ -117,8 +125,8 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
    ...(projectSegments.some(({activity})=>activity.kind==='alchemy'||activity.kind==='processing')?[]:contributions.filter(event=>event.kind==='crafting'&&event.units>0).map(event=>({kind:'crafting',units:Math.min(100,event.units)}))),
   ];
   const response={guildProjectEffort,guildPveEffort,state:restoreCumulativeMonsterUnlocks(result.state),version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
-  const commitRpc='commit_online_game_guild_pve_v1';
-  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  const commitRpc=privateGrants?'commit_online_game_ultra_luxe_v1':'commit_online_game_guild_pve_v1';
+  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(privateGrants?{p_expected_grants:[...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort()}:{}),...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   await recordOutcome('committed');
   return json(committed);

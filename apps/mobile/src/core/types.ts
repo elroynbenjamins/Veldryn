@@ -65,6 +65,9 @@ export interface CharacterState {
   equippedHealingPotionId?:string;
   bodyPresentation?:BodyPresentation;
   craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; profileEffectId?:string; selectedCosmeticPetId?:string;
+  /** Per-character preference; inert unless an eligible owned Ascendant cosmetic is equipped and the progression gate is released. */
+  ascendantPetBlessing?:import('./ascendant-blessings').AscendantBlessing;
+  ascendantBackgroundBlessing?:import('./ascendant-blessings').AscendantBlessing;
   /** Permanently collected pets that provide permanent boosts. */
   ownedPetIds?: string[];
   /** Permanently bought boosts that provide permanent boosts. */

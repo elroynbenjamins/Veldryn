@@ -3,6 +3,7 @@ import * as game from './game';
 import {migrateRetiredStoryRewards} from './retired-story-rewards';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
+import {canUsePrivateTitleText} from './ultra-luxe-grants';
 import {selectProfileIcon,canUseProfileIcon,reconcileAccountProfileIcon} from './profile-icons';
 import {canUseProfileEffect} from './profile-effects';
 import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
@@ -534,6 +535,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const patch:Record<string,string|undefined>={};
    for(const [key,input] of Object.entries(a)){if(input!==null&&(typeof input!=='string'||input.length>80))throw new Error('invalid_profile');patch[key]=input===null?undefined:input as string;}
    if(patch.profileTitle!==undefined&&patch.profileTitle.length>32)throw new Error('invalid_profile_title');
+   if(!canUsePrivateTitleText(state,patch.profileTitle))throw new Error('cosmetic_not_owned');
    if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');

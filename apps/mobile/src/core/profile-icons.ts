@@ -1,3 +1,4 @@
+import {ownedUltraLuxeIcons} from './ultra-luxe-prestige';
 import {CLASSES} from '../content/classes';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {DUNGEON_SHOP_PROFILE_ICONS_V1} from '../content/dungeon-shop-collectibles-v1';
@@ -66,7 +67,8 @@ export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const known=new Set<string>(portraits.map(row=>row.id));
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...CLASSES.flatMap(c=>event.milestones(c.id).map(row=>row.reward)),...event.shop.map(row=>row.reward),...event.communityMilestones.flatMap(row=>row.reward?[row.reward]:[]),...event.discoveries.map(row=>row.reward)]);
  const events=[...new Map(rewards.filter(row=>row.kind==='profile_icon'&&!known.has(row.id)).map(row=>[row.id,row])).values()];
- return [...base,...portraits,...events.map(row=>({id:row.id,name:row.name,group:'Event',source:'Earned festival reward.',unlocked:owned.has(row.id),artworkReady:EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id),selected:selected===row.id}))];
+ const privateIcons=ownedUltraLuxeIcons(state).map(row=>({...row,group:'Ascendant',source:'Private account grant.',unlocked:true,artworkReady:true,selected:selected===row.id}));
+ return [...base,...privateIcons,...portraits,...events.map(row=>({id:row.id,name:row.name,group:'Event',source:'Earned festival reward.',unlocked:owned.has(row.id),artworkReady:EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id),selected:selected===row.id}))];
 }
 export function canUseProfileIcon(state:GameState,id:string){return PROFILE_ICON_CATALOG.some(row=>row.id===id&&row.group==='Starter')||profileIconCollection(state).some(row=>row.id===id&&row.unlocked);}
 export function selectProfileIcon(state:GameState,id:string):GameState{
@@ -86,7 +88,10 @@ export function normalizeProfileIcon(state:GameState):GameState{
  * gameplay path free of repeated gallery/catalog construction. */
 export function reconcileAccountProfileIcon(state:GameState):GameState{
  if(!state.character)return state;
- return state.account.profileIconId?mirrorProfileIcon(state,state.account.profileIconId):normalizeProfileIcon(state);
+ const id=state.account.profileIconId;
+ // A private grant can be revoked between requests. Never restore a stripped portrait.
+ if(id?.startsWith('ascendant-')&&!ownedUltraLuxeIcons(state).some(row=>row.id===id))return normalizeProfileIcon(state);
+ return id?mirrorProfileIcon(state,id):normalizeProfileIcon(state);
 }
 export function newlyUnlockedProfileIcons(before:GameState|null,after:GameState){
  if(!before)return [];

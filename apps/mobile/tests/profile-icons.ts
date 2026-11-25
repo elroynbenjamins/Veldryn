@@ -82,3 +82,15 @@ check(titleOnly.account.profileIconId==='starter:runic-scholar','unrelated title
 rejects(()=>executeGameCommand(switched,{type:'profile',args:{profileIconId:'class:DAWNKEEPER'}},1000));
 const unseededOnline={...multi,character:{...alt,id:'00000000-0000-0000-0000-000000000002'},otherCharacters:[{...multi.otherCharacters[0],character:{...first,id:'00000000-0000-0000-0000-000000000001'}}]};
 check(normalizeProfileIcon(unseededOnline).account.profileIconId===undefined,'online legacy multi-roster cannot guess first-created UUID');
+
+for(const id of ['ascendant-celestial-crown-icon','ascendant-draconic-ruby-icon']){
+ check(!profileIconCollection(state).some(row=>row.id===id),'private icon invisible before grant');
+ rejects(()=>selectProfileIcon(state,id));
+ const granted={...state,account:{...state.account,unlockedProfileIconIds:[id]}};
+ check(profileIconCollection(granted).find(row=>row.id===id)?.artworkReady,'granted icon has bundled artwork');
+ const privateSelection=selectProfileIcon(granted,id);
+ check(normalizeProfileIcon(privateSelection).character?.profileIconId===id,'granted icon survives icon normalization');
+ check(normalizeProfileIcon({...privateSelection,account:{...privateSelection.account,unlockedProfileIconIds:[]}}).character?.profileIconId==='class:IRONWARDEN','revocation restores class portrait');
+ check(JSON.stringify(effectiveStats(privateSelection))===before,'private icon grants no power');
+}
+console.log('Profile icon selection, ownership, commands and zero-bonus checks passed');

@@ -20,6 +20,12 @@ export function profileCosmeticReleased(state:GameState,kind:'background'|'borde
   if(kind==='background'&&BASE_PROFILE_BACKGROUNDS.some(item=>item.id===id))return true;
   if(kind==='border'&&GUILD_TOKEN_PROFILE_BORDERS.has(id))return true;
   if(canUseProfileCosmetic(state,kind,id))return true;
+  // Frostfall's unreleased frame must not leak into the wardrobe before the
+  // authoritative live event opens; owned copies remain available permanently.
+  if(kind==='border'&&id==='frame_frostfall_aurora_bellframe'){
+    const event=state.account.liveEvent;
+    return !!state.character&&!!event?.enabled&&/^EVT_ANNUAL_012_\d{4}$/.test(event.eventId)&&nowMs>=event.startsAtMs&&nowMs<(event.graceEndsAtMs??event.endsAtMs+2*86400_000);
+  }
   if(!state.character)return false;
   const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[
     ...event.milestones(state.character!.classId).map(row=>row.reward),

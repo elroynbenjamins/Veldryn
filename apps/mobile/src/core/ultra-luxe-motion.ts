@@ -89,3 +89,17 @@ export const PET_REACTION_TRAJECTORIES={
  draconic:[{x:-12,y:8,dx:-7,dy:-29},{x:0,y:3,dx:4,dy:-35},{x:12,y:8,dx:10,dy:-22}],
 } as const;
 export const PET_REACTION_GLOW={celestial:{scale:1.32,opacity:.82},draconic:{scale:1.38,opacity:.88}} as const;
+
+/** Smooth, periodic lift for the existing atlas; no abrupt triangle-wave reversals. */
+export const CELESTIAL_ATLAS_LIFT=PET_IDLE_PHASE.map(t=>t===1?0:-1.5*(1-Math.cos(t*Math.PI*12))/2);
+/** Frame glows remain inside the stage while the smaller motes follow the authored edge. */
+export const RAIL_GLOW_RADIUS=17;
+export function railGlowPoint(point:readonly [number,number]):readonly [number,number]{
+ const r=RAIL_GLOW_RADIUS;
+ return [Math.max(r,Math.min(340-r,point[0])),Math.max(r,Math.min(205-r,point[1]))];
+}
+/** Ornament positions avoid the protected identity and guild plates. */
+export const FRAME_ORNAMENTS={
+ celestial:[[20,16],[310,16],[164,186]],
+ draconic:[[13,91],[315,91],[164,184]],
+} as const;

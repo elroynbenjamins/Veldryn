@@ -61,4 +61,14 @@ check(profileIconCollection(state).find(row=>row.id==='event:frostfall-2026-snow
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');
+for(const id of ['ascendant-celestial-crown-icon','ascendant-draconic-ruby-icon']){
+ check(!profileIconCollection(state).some(row=>row.id===id),'private icon invisible before grant');
+ rejects(()=>selectProfileIcon(state,id));
+ const granted={...state,account:{...state.account,unlockedProfileIconIds:[id]}};
+ check(profileIconCollection(granted).find(row=>row.id===id)?.artworkReady,'granted icon has bundled artwork');
+ const privateSelection=selectProfileIcon(granted,id);
+ check(normalizeProfileIcon(privateSelection).character?.profileIconId===id,'granted icon survives icon normalization');
+ check(normalizeProfileIcon({...privateSelection,account:{...privateSelection.account,unlockedProfileIconIds:[]}}).character?.profileIconId==='class:IRONWARDEN','revocation restores class portrait');
+ check(JSON.stringify(effectiveStats(privateSelection))===before,'private icon grants no power');
+}
 console.log('Profile icon selection, ownership, commands and zero-bonus checks passed');

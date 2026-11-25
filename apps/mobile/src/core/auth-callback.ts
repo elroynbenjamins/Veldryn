@@ -31,8 +31,8 @@ export function chunkedAuthStorage(storage:Storage):Storage{
  const keys=(key:string,row:{authChunks:number;generation:string})=>Array.from({length:row.authChunks},(_,i)=>`${key}.${row.generation}.${i}`);
  const enqueue=(fn:()=>Promise<void>)=>{const operation=pending.then(fn);pending=operation.catch(()=>{});return operation;};
  return {
-  async getItem(key){await pending;const raw=await storage.getItem(key),row=manifest(raw);if(!row)return raw;const parts=await Promise.all(keys(key,row).map(part=>storage.getItem(part)));return parts.some(part=>part===null)?null:parts.join('');},
-  setItem:(key,value)=>enqueue(async()=>{const old=manifest(await storage.getItem(key));const parts=value.match(/[\s\S]{1,1700}/g)??[''];const row={authChunks:parts.length,generation:`${Date.now()}-${Math.random().toString(36).slice(2)}`};await Promise.all(keys(key,row).map((part,i)=>storage.setItem(part,parts[i])));await storage.setItem(key,JSON.stringify(row));if(old)await Promise.all(keys(key,old).map(part=>storage.removeItem(part)));}),
-  removeItem:key=>enqueue(async()=>{const old=manifest(await storage.getItem(key));await storage.removeItem(key);if(old)await Promise.all(keys(key,old).map(part=>storage.removeItem(part)));}),
+  async getItem(key){await pending;const raw=await storage.getItem(key),row=manifest(raw);if(!row)return raw;const parts=await Promise.all(keys(key,row).map(part=>storage.getItem(part)));if(parts.some(part=>part===null))throw new Error('Unable to restore your account.');return parts.join('');},
+  setItem:(key,value)=>enqueue(async()=>{const old=manifest(await storage.getItem(key));const parts=value.match(/[\s\S]{1,1700}/g)??[''];const row={authChunks:parts.length,generation:`${Date.now()}-${Math.random().toString(36).slice(2)}`};await Promise.all(keys(key,row).map((part,i)=>storage.setItem(part,parts[i])));await storage.setItem(key,JSON.stringify(row));if(old)await Promise.allSettled(keys(key,old).map(part=>storage.removeItem(part)));}),
+  removeItem:key=>enqueue(async()=>{const old=manifest(await storage.getItem(key));await storage.removeItem(key);if(old)await Promise.allSettled(keys(key,old).map(part=>storage.removeItem(part)));}),
  };
 }

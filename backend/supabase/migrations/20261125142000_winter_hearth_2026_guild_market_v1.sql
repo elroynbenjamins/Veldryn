@@ -32,6 +32,8 @@ create table if not exists public.guild_winter_hearth_2026_donations (
  created_at timestamptz not null default now(),
  primary key (account_id,request_key)
 );
+create index if not exists guild_winter_hearth_2026_donations_guild_idx
+ on public.guild_winter_hearth_2026_donations(guild_id);
 create table if not exists public.guild_winter_hearth_2026_milestones (
  guild_id uuid not null references public.guild_winter_hearth_2026_projects(guild_id) on delete cascade,
  percent integer not null check (percent in (25,50,75,100)),

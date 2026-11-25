@@ -35,13 +35,15 @@ for(let i=0;i<ids.length;i++){
  const owner={id:'frostfall_test_owner',classId:'WAYFINDER',stats:{maxHp:1000,haste:.1,defense:100},abilities:[],tags:[],basicAttackMs:1800,basicAttackCoeff:1} as unknown as Parameters<typeof applyCharacterCompanionAssist>[0];
  const assisted=applyCharacterCompanionAssist(owner,progress);
  const soloEffects=solo.abilities[0].effects,assistEffects=assisted.abilities[0].effects;
+ check(mobile!.passiveAbility.value===(id==='EVT_UNIT_009'?1-server!.identity!.activeCooldownMultiplier!:id==='EVT_UNIT_012'?server!.identity!.hasteBonus!:server!.identity!.defenseMultiplier!-1)||Math.abs(mobile!.passiveAbility.value-(id==='EVT_UNIT_009'?1-server!.identity!.activeCooldownMultiplier!:id==='EVT_UNIT_012'?server!.identity!.hasteBonus!:server!.identity!.defenseMultiplier!-1))<1e-9,`Passive display value matches server identity: ${id}`);
+ check(Math.abs(mobile!.bondTrait.effect.value-((id==='EVT_UNIT_009'?server!.identity!.bond!.activeHealMultiplier!:id==='EVT_UNIT_012'?server!.identity!.bond!.activeDamageMultiplier!:server!.identity!.bond!.activeShieldMultiplier!)-1))<1e-9,`Bond display value matches server identity: ${id}`);
  check(assisted.abilities.length===1,`Exactly one assist, not an extra party member: ${id}`);
  if(id==='EVT_UNIT_009'){
   check(soloEffects.some(e=>e.kind==='heal')&&soloEffects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'), 'Herald heals and mitigates in Companion Trials');
   check(assistEffects.some(e=>e.kind==='heal')&&assistEffects.some(e=>e.kind==='buff'&&e.tag==='damage_taken'), 'Herald really heals and mitigates in character combat');
  }else if(id==='EVT_UNIT_012'){
-  check(soloEffects.some(e=>e.kind==='damage')&&soloEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Lynx provides damage and short vulnerability in Trials');
-  check(assistEffects.some(e=>e.kind==='damage')&&assistEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Lynx provides damage and short vulnerability in character combat');
+  check(soloEffects.some(e=>e.kind==='damage')&&soloEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Wolverine provides damage and short vulnerability in Trials');
+  check(assistEffects.some(e=>e.kind==='damage')&&assistEffects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken'), 'Wolverine provides damage and short vulnerability in character combat');
  }else{
   check(soloEffects.some(e=>e.kind==='shield'&&(e.shieldReflectPct??0)>0), 'Ram reflects absorbed shield damage in Trials');
   check(assistEffects.some(e=>e.kind==='shield'&&(e.shieldReflectPct??0)>0), 'Ram reflects absorbed shield damage in character combat');

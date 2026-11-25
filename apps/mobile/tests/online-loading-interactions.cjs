@@ -106,12 +106,12 @@ function wiring(){
  // Foreground refresh can finish with a durable pending command. That must
  // never leave a full-screen touch shield waiting for a claim that cannot run.
  assert.ok(!app.includes('onlineForegroundSettlementRef'),'Online foreground refresh cannot latch offline settlement UI');
- assert.ok(app.includes('if(serverGameplayEnabled)return;settlingRef.current=true;setOfflineSettling(true)'),'Only local foreground settlement starts the blocking UI before calculation');
+ assert.ok(/useEffect\(\(\)=>\{if\(serverGameplayEnabled\)return;\s*const subscription=AppState\.addEventListener\('change',nextStatus=>\{[^\n]*settlingRef\.current=true;setOfflineSettling\(true\)/.test(app),'Only local mode registers the foreground settlement listener');
  assert.ok(app.includes('{!serverGameplayEnabled&&offlineSettling&&<View style={s.offlineLoadingOverlay}>'),'Full-screen settlement is local-only');
  assert.ok(app.includes('{serverGameplayEnabled&&(offlineSettling||(online.busy&&!quietCraftSaving))?<View pointerEvents="none"'),'Online settlement status never intercepts touches');
  assert.ok(app.includes('online.loading||online.busy||online.pending||onlineStartupSettlementAccountRef.current===arrivalKey'),'Automatic settlement still waits for existing commands');
  assert.ok(app.includes('disabled={online.busy} onPress={()=>perform()}'),'Pending command stays explicitly retryable');
- assert.ok(app.includes('finally{if(welcomeBack)setOfflineSettling(false);}') ,'Actual claim status clears on success or failure');
+ assert.ok(app.includes('finally{if(welcomeBack)setOfflineSettling(false);}'),'Actual claim status clears on success or failure');
 
 }
 (async()=>{await buttons();await commandBusy();await combatSwapOptimism();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

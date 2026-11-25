@@ -959,7 +959,7 @@ async function notificationLifecycle() {
     let view,friendReads=0,attentionReads=0,holdGuild=false,failFriends=false;
     const unread={alpha:3,bravo:9},pending=[];
     h.mocks.set(path.join(app,'src/online/social'),{
-      friendRequests:async()=>{friendReads++;if(failFriends)throw new Error('Temporary connection failure');return[{direction:'incoming'}];},
+      incomingFriendRequestCount:async()=>{friendReads++;if(failFriends)throw new Error('Temporary connection failure');return 1;},
       socialInvitations:async()=>({guild:[],party:[]}),
       socialChatAttention:async()=>{attentionReads++;return{guild:{unread:unread[h.auth.session.user.id],mentions:0},party:{unread:0,mentions:0}};},
       myGuild:()=>{if(!holdGuild)return Promise.resolve(null);const request=deferred();pending.push(request);return request.promise;},
@@ -969,7 +969,7 @@ async function notificationLifecycle() {
     function Probe(){view=useSocialNotificationCounts();return null;}
     const render=()=>React.createElement(Probe);
     await act(async()=>{tree=create(render());});
-    assert.equal(view.counts.guildChatUnread,3);assert.equal(friendReads,1);
+    assert.equal(view.counts.guildChatUnread,3);assert.equal(view.counts.friendRequests,1);assert.equal(friendReads,1);
     const originalCounts=view.counts,refreshAlpha=view.refresh;
     await act(async()=>{h.auth.session={user:{id:'alpha'},access_token:'renewed-token'};tree.update(render());});
     assert.strictEqual(view.counts,originalCounts,'same-account token renewal preserves notification counts');
@@ -980,8 +980,13 @@ async function notificationLifecycle() {
     assert.equal(friendReads,2);assert.equal(pending.length,1);
     await h.tick(30000);
     assert.equal(friendReads,2,'scheduled poll cannot overlap an existing notification request');
+    assert.equal(h.timers.size,0,'no polling timer is scheduled while the read is pending');
     holdGuild=false;await act(async()=>{pending.shift().resolve(null);});
     assert.equal(friendReads,2,'scheduled polls do not queue redundant forced rereads');
+    assert.equal(h.timers.size,1,'completion schedules exactly one next poll');
+    const nextPoll=[...h.timers.values()][0];
+    assert.equal(nextPoll.interval,false,'notification polling uses a one-shot timer');
+    assert.equal(nextPoll.due,Date.now()+30000,'next poll is measured from completed read');
 
     holdGuild=true;let first,second,third;
     await act(async()=>{first=view.refresh();});

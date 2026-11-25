@@ -227,6 +227,8 @@ export async function guildContribute(kind:'project'|'boss',amount:number){const
 export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withGuildIdentities((data??[]) as FriendSearchResult[]);}
 export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendEntry[]);}
 export async function friendRequests(){const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendRequest[]);}
+/** Badge polling only needs a count, not public profile or guild identity enrichment. */
+export async function incomingFriendRequestCount():Promise<number>{const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return ((data??[]) as FriendRequest[]).filter(request=>request.direction==='incoming').length;}
 /** Load social lists once, then resolve public cosmetics in one bounded batch.
  * Membership and block decisions still come from the existing server RPCs.
  * Blocked players are not included in the public cosmetic lookup.

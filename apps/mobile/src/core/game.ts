@@ -1723,32 +1723,31 @@ export function activateGatheringToolReserve(state:GameState,skillId:GatheringSk
  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
  return setGatheringToolSlots(settled,skillId,tier,reserve,current);
 }
-/** Explicitly release only the reserve copy to Inventory. The active tool and
- * effects remain untouched. Full Inventory safely rejects without mutation. */
-export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4):GameState{
+/** Release only the reserve copy to the chosen storage; active effects stay untouched. */
+export function withdrawGatheringToolReserve(state:GameState,skillId:GatheringSkillId,tier:1|2|3|4,to:'inventory'|'bank'='inventory'):GameState{
  if(!state.character)throw new Error('Character required');
  const reserve=reserveGatheringToolSlot(state,skillId,tier);
  if(!reserve)throw new Error('No saved reserve in this tier');
- const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
- if(added.overflow.length)throw new Error('Inventory is full');
- return setGatheringToolSlots({...state,inventory:{...state.inventory,stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
+ const added=addBounded(state[to].stacks,entitlementStorageCapacity(state,to),[{itemId:reserve.itemId,quantity:1,...(reserve.instanceId?{instanceId:reserve.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Inventory is full');
+ return setGatheringToolSlots({...state,[to]:{...state[to],stacks:added.stacks}},skillId,tier,activeGatheringToolSlot(state,skillId,tier),undefined);
 }
 /** Removing an active copy promotes the reserve, if one exists, then returns
- * only the removed physical copy to Inventory. */
-export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string):GameState{
+ * only the removed physical copy to the chosen storage. */
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId,nowMs=Date.now(),itemId?:string,to:'inventory'|'bank'='inventory'):GameState{
  if(!state.character)return state;
  const equipped=equippedGatheringTools(state,skillId);
  const selected=itemId?equipped.find(row=>row.id===itemId):equipped[equipped.length-1];
  if(!selected)return state;
  const tier=selected.tier;
  if(reserveGatheringToolSlot(state,skillId,tier))
-  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier);
+  return withdrawGatheringToolReserve(activateGatheringToolReserve(state,skillId,tier,nowMs),skillId,tier,to);
  const current=activeGatheringToolSlot(state,skillId,tier);
  if(!current)return state;
  const settled=state.activity?.kind===skillId?claimActivity(state,nowMs).state:state;
- const added=addBounded(settled.inventory.stacks,entitlementStorageCapacity(settled,'inventory'),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
- if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
- return setGatheringToolSlots({...settled,inventory:{...settled.inventory,stacks:added.stacks}},skillId,tier,undefined,undefined);
+ const added=addBounded(settled[to].stacks,entitlementStorageCapacity(settled,to),[{itemId:current.itemId,quantity:1,...(current.instanceId?{instanceId:current.instanceId}:{})}]);
+ if(added.overflow.length)throw new Error(to==='bank'?'Bank is full':'Free one Inventory slot before unequipping this tool');
+ return setGatheringToolSlots({...settled,[to]:{...settled[to],stacks:added.stacks}},skillId,tier,undefined,undefined);
 }
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now(),sequence=0):GameState{
   if(!state.character)throw new Error('No character');

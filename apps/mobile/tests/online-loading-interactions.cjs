@@ -88,13 +88,13 @@ async function combatSwapOptimism(){
 }
 
 async function socialBadgeParallelAndRecovery(){
- let latest,account='a',mode='first',reward=deferred(),applications=deferred(),started=[];
+ let latest,account='a',mode='first',reward=deferred(),applications=deferred(),friend=deferred(),started=[];
  let membership={account_id:'a',guild_id:'g',role:'leader'};
  const {useSocialNotificationCounts}=load('src/online/useSocialNotificationCounts.ts',{
   'react-native':native,
   './AuthSessionProvider':{useAuthSession:()=>({session:account?{user:{id:account}}:null})},
   './social':{
-   incomingFriendRequestCount:async()=>{if(mode==='failure')throw Error('offline');return 2;},
+   incomingFriendRequestCount:async()=>{if(mode==='failure')throw Error('offline');return mode==='first'?friend.promise:2;},
    socialInvitations:async()=>{if(mode==='failure')throw Error('offline');return {guild:[1],party:[1,2]};},
    socialChatAttention:async()=>({guild:{unread:3,mentions:1},party:{unread:0,mentions:0}}),
    myGuild:async()=>{if(mode==='failure')throw Error('offline');return mode==='left'?null:membership;},
@@ -105,8 +105,8 @@ async function socialBadgeParallelAndRecovery(){
  function Harness(){latest=useSocialNotificationCounts();return null;}
  let renderer;
  await act(async()=>{renderer=create(React.createElement(Harness));});
- assert.deepEqual(started,['rewards','applications'],'Independent guild badge reads must both start before either resolves');
- await act(async()=>{reward.resolve(4);applications.resolve([1,2,3]);});
+ assert.deepEqual(started,['rewards','applications'],'Guild badge reads must start before either guild read or the independent friend request resolves');
+ await act(async()=>{friend.resolve(2);reward.resolve(4);applications.resolve([1,2,3]);});
  assert.equal(latest.counts.guildProjectRewards,4);
  assert.equal(latest.counts.guildApplications,3);
  assert.equal(latest.counts.guild,4);

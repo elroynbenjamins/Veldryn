@@ -442,6 +442,19 @@ var RELEASED_EVENT_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_007", "EVT
 var FROSTFALL_COMPANION_IDS = /* @__PURE__ */ new Set(["EVT_UNIT_009", "EVT_UNIT_012", "EVT_UNIT_013"]);
 var RELEASED_EVENT_COMPANIONS = EVENT_COMPANIONS.filter((companion) => RELEASED_EVENT_COMPANION_IDS.has(companion.id) || FROSTFALL_REWARDS_RELEASED && FROSTFALL_COMPANION_IDS.has(companion.id));
 
+// ../apps/mobile/src/core/frostfall-reward-visibility.ts
+var FROSTFALL_2026_EVENT_ID = "EVT_ANNUAL_012_2026";
+function frostfallRewardsDiscoverable(account, nowMs) {
+  const event = account.liveEvent;
+  if (!event?.enabled || event.eventId !== FROSTFALL_2026_EVENT_ID || !Number.isFinite(nowMs)) return false;
+  const { startsAtMs, endsAtMs } = event, grace = event.graceEndsAtMs ?? endsAtMs + 2 * 864e5;
+  return Number.isFinite(startsAtMs) && Number.isFinite(endsAtMs) && Number.isFinite(grace) && startsAtMs < endsAtMs && endsAtMs <= grace && nowMs >= startsAtMs && nowMs < grace;
+}
+function frostfallRewardVisible(account, id, kind, nowMs) {
+  const owned = kind === "companion" ? account.unlockedCombatCompanionIds : account.unlockedCosmeticPetIds;
+  return !!owned?.includes(id) || frostfallRewardsDiscoverable(account, nowMs);
+}
+
 // ../apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
   standard: { maxLevel: 20, targetPowerMultiplier: 1, levelCostMultiplier: 1, xpRequiredMultiplier: 1, label: "Standard" },
@@ -45941,9 +45954,13 @@ function accountEntitlementBenefits(state) {
 }
 
 // ../apps/mobile/src/core/collectibles.ts
+function collectibleCatalogForState(state, nowMs = Date.now()) {
+  const frostfallIds = new Set(FROSTFALL_PETS.map((row) => row.id));
+  return [...COLLECTIBLES.filter((row) => !frostfallIds.has(row.id)), ...FROSTFALL_PETS.filter((row) => frostfallRewardVisible(state.account, row.id, "pet", nowMs))];
+}
 var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
 var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
-function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
+function collectionBonusBreakdown(state, catalog2 = collectibleCatalogForState(state)) {
   const rows2 = /* @__PURE__ */ new Map();
   for (const row of catalog2) {
     const owned = ids(state, row.kind).includes(row.id), active3 = selected(state, row.kind) === row.id;

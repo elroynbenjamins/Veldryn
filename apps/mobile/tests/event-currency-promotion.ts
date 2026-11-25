@@ -90,7 +90,7 @@ assert.equal(promotedEventCurrency(frostId,100,holiday.christmasStartsAtMs),150)
 assert.equal(promotedEventCurrency(frostId,100,holiday.endsAtMs-1),150);
 assert.equal(promotedEventCurrency(frostId,100,holiday.endsAtMs),75);
 assert.equal(eventCurrencyBaseBps(frostId,holiday.christmasStartsAtMs),-2500,'Fixed payouts keep the normal baseline');
-const frostState=createCharacter(newGame(frostStart),'IRONWARDEN','Frostfall Holiday Test');
+const frostState=createCharacter(newGame(frostStart),'IRONWARDEN','Frostfall Holiday');
 frostState.account.liveEvent={eventId:frostId,enabled:true,startsAtMs:frostStart,endsAtMs:holiday.endsAtMs,graceEndsAtMs:holiday.endsAtMs+2*86400_000};
 assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.christmasStartsAtMs),5000);
 assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.endsAtMs),0);

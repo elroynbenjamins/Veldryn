@@ -33,7 +33,7 @@ import {ProfileEffectThumbnail} from '../ProfileCosmeticMotion';
 /** Image ids/names only; the wardrobe model itself stays free of asset requires. */
 export const WARDROBE_ASSETS:WardrobeAssets={
  scenes:[...BASE_PROFILE_BACKGROUNDS.map(row=>({id:row.id,name:row.name})),...PROFILE_BACKGROUND_PREVIEWS.map(row=>({id:row.id,name:row.name}))],
- frames:[...profileBorderSourceById.keys(),...PROFILE_ALL_EFFECTS.map(row=>row.borderId)],
+ frames:[...new Set([...profileBorderSourceById.keys(),...PROFILE_ALL_EFFECTS.map(row=>row.borderId)])],
  effects:PROFILE_ALL_EFFECTS.map(row=>({id:row.id,name:row.name})),
 };
 /** Badges have their own owned-state provider, so they ride beside the wardrobe chips. */
@@ -135,7 +135,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
   if(row.kind==='effect'){const art=cosmeticArtByEffect.get(row.id),runtime=profileCosmeticRuntimeByEffect.get(row.id);
    return art?<Image source={art.staticEffect} resizeMode="stretch" style={s.fill}/>:runtime?<ProfileEffectThumbnail runtime={runtime}/>:<View style={s.blank}><Text style={s.effectMark}>✦</Text></View>}
   if(row.kind==='pet'){const source=petArtSource(row.id);
-   return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{profileT(language,"Solo")}</Text></View>}
+   return source?<Image source={source} resizeMode="contain" style={s.petImage}/>:<View style={s.blank}><Text style={s.blankMark}>{row.clear?profileT(language,"Solo"):"—"}</Text></View>}
   return null;
  };
  const tileWidth=gridWidth>0?Math.floor((gridWidth-2*8)/3):104;

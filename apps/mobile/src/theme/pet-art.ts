@@ -7,8 +7,6 @@ import {eventPetSourceById} from './event-collectible-assets-active';
 import {dungeonShopPetMediumArtSource,dungeonShopPetPortraitArtSource} from './dungeon-shop-pet-art';
 
 const premiumPetFallbackIdById=new Map<string,string>([
- ['premium:celestial-sovereign:aetherion-starborn','EVT_PET_009'],
- ['premium:draconic-dominion:vharaxis-eternal-flame','PET_036'],
  ['premium:abyssal-majesty:nhalzuun-abyssborn','PET_039'],
  ['premium:paradox-eternal:aeon-timeless','PET_016'],
 ]);
@@ -24,8 +22,8 @@ const guildPetSourceById=new Map<string,ImageSourcePropType>([
  * for the separate annual event collection.
  */
 export function petArtSource(id:string):ImageSourcePropType|undefined{
-  if(id===DRACONIC_IDS.pet)return getDraconicAssets()?.petRegular;
-  if(id===CELESTIAL_IDS.pet)return getEnabledCelestialAssets()?.petRegular;
+  if((id===DRACONIC_IDS.pet||id==='premium:draconic-dominion:vharaxis-eternal-flame'))return getDraconicAssets()?.petRegular;
+  if((id===CELESTIAL_IDS.pet||id==='premium:celestial-sovereign:aetherion-starborn'))return getEnabledCelestialAssets()?.petRegular;
   const fallback=premiumPetFallbackIdById.get(id);
   return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
@@ -96,8 +94,8 @@ const masterPetPortraitSourceById=new Map<string,ImageSourcePropType>([
 const EVENT_PET_PORTRAIT_IDS=new Set(['EVT_PET_013','EVT_PET_014']);
 
 export function petDetailArtSource(id:string):ImageSourcePropType|undefined{
- if(id===DRACONIC_IDS.pet)return getDraconicAssets()?.petPortrait;
- if(id===CELESTIAL_IDS.pet)return getEnabledCelestialAssets()?.petPortrait;
+ if((id===DRACONIC_IDS.pet||id==='premium:draconic-dominion:vharaxis-eternal-flame'))return getDraconicAssets()?.petPortrait;
+ if((id===CELESTIAL_IDS.pet||id==='premium:celestial-sovereign:aetherion-starborn'))return getEnabledCelestialAssets()?.petPortrait;
  return masterPetPortraitSourceById.get(id)
    ??(EVENT_PET_PORTRAIT_IDS.has(id)?eventPetSourceById.get(id):undefined)
    ??guildPetPortraitSourceById.get(id)

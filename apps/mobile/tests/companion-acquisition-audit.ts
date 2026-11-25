@@ -67,7 +67,7 @@ for(const classId of classIds){
  ok(companionRequirementProgress(eligible,shadeRequirement).complete,classId+' must display completed mastery');
 }
 // Previously acquired account-wide companions stay owned after the rule change.
-const legacyOwner=createCharacter(newGame(0),'IRONWARDEN','Legacy Owner');
+const legacyOwner=createCharacter(newGame(0),'IRONWARDEN','Legacy Hero');
 const legacyOwned={...legacyOwner,account:{...legacyOwner.account,unlockedCombatCompanionIds:['UNIT_007']}};
 ok(reconcileCombatCompanionUnlocks(legacyOwned,1000).account.unlockedCombatCompanionIds?.includes('UNIT_007'),'Previously acquired Gloamknife Shade must remain owned');
 

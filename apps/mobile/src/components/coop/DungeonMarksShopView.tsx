@@ -121,7 +121,7 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
    const statusSource=pending===item.id?'Processing purchase':owned?'Owned'
     :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
     :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
-    :item.status==='crafting_tier_locked'?'Region locked':item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
+    :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);

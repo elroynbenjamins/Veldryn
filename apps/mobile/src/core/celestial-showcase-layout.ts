@@ -1,8 +1,10 @@
 /** Geometry contract for the reviewed Celestial showcase. No entitlement or stat logic. */
 export const CELESTIAL_STAGE={width:340,height:205,minWidth:300,maxWidth:480,maxFontScale:1.2} as const;
-const identityPlate={x:36,y:74,width:198,height:70} as const;
+const identityPlate={x:36,y:74,width:198,height:75} as const;
 export const CELESTIAL_IDENTITY_BOX={
  plate:identityPlate,
+ portrait:{x:4,y:5,width:56,height:56},
+ identity:{x:66,y:5,width:126,height:65},
  guild:{x:identityPlate.x,y:151,width:identityPlate.width,height:18},
 } as const;
 export const CELESTIAL_PET_BOX={
@@ -18,5 +20,7 @@ export function celestialPetMode(equippedPetId:string|null|undefined,matchingPet
  return hasAlternateArt?'alternate':'none';
 }
 export function celestialStageSupported(width:number,fontScale:number){
- return Number.isFinite(width)&&width>=CELESTIAL_STAGE.minWidth&&width<=CELESTIAL_STAGE.maxWidth&&Number.isFinite(fontScale)&&fontScale>0&&fontScale<=CELESTIAL_STAGE.maxFontScale;
+ return Number.isFinite(width)&&width>=CELESTIAL_STAGE.minWidth&&width<=CELESTIAL_STAGE.maxWidth&&Number.isFinite(fontScale)&&fontScale>0&&fontScale<=CELESTIAL_STAGE.maxFontScale
+  // Three text lines plus a fixed-size featured-badge shelf must fit together.
+  &&39*fontScale+17<=CELESTIAL_IDENTITY_BOX.identity.height*width/CELESTIAL_STAGE.width;
 }

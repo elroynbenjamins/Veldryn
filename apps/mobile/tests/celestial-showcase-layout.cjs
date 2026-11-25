@@ -28,3 +28,10 @@ assert.equal(I.guild.width,I.plate.width);
 assert(I.guild.y>=I.plate.y+I.plate.height);
 assert(I.guild.y+I.guild.height<=S.height-24);
 console.log('Celestial pet selection, safe geometry and responsive fallback assertions passed.');
+
+assert(I.identity.x>=I.portrait.x+I.portrait.width);
+assert(I.identity.x+I.identity.width<=I.plate.width);
+assert(I.identity.y+I.identity.height<=I.plate.height);
+assert(!celestialStageSupported(300,1.2),'use readable ordinary layout when text and featured badges cannot fit');
+assert(celestialStageSupported(340,1.2));
+assert(I.guild.y>I.plate.y+I.plate.height);

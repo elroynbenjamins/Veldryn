@@ -44,7 +44,7 @@ export function DraconicDominionPreview({assets,equippedPetId,alternatePetSource
  const idle=useMemo(()=>petIdleMotion(clock,k,mode==='alternate'?'alternate':'draconic'),[clock,k,mode]);
  // Atlas already animates local body parts; do not layer rocking/stretching over it.
  const mirroredBody=assets.smoothPoseAtlas?[{scaleX:-1}]:[{rotate:idle.tilt},{scaleX:Animated.multiply(idle.scaleX,-1)},{scaleY:idle.scaleY}];
- const ringGlow=clock.interpolate({inputRange:[0,8/24,14/24,16/24,19/24,1],outputRange:[.72,.72,.9,1,.85,.72]});
+ const ringGlow=useMemo(()=>Animated.add(.72,Animated.multiply(pulse,.28)),[pulse]);
  return <View style={s.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
  {!supported?fallback:<View style={[s.card,{height:S.height*k}]}>
   <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>

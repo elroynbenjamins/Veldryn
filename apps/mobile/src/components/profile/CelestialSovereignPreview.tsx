@@ -66,7 +66,7 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
  const pulse=useMemo(()=>signatureEnergy(clock),[clock]);
  const idle=useMemo(()=>petIdleMotion(clock,scale,petMode==='alternate'?'alternate':'celestial'),[clock,scale,petMode]);
  const matchingLift=clock.interpolate({inputRange:[0,1/12,1/6,1/4,1/3,5/12,.5,7/12,2/3,.75,5/6,11/12,1],outputRange:[0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0,-1.5*scale,0]});
- const orbit=clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']});
+ const orbit=useMemo(()=>clock.interpolate({inputRange:[0,.25,.5,.75,1],outputRange:['0deg','180deg','360deg','540deg','720deg']}),[clock]);
  return <View style={styles.outer} onLayout={e=>{const next=e.nativeEvent.layout.width;setWidth(old=>Math.abs(old-next)<.5?old:next);}}>
   {!supported?fallback:<View style={[styles.card,{height:CELESTIAL_STAGE.height*scale}]}>
    <View pointerEvents="none" accessible={false} importantForAccessibility="no-hide-descendants" style={StyleSheet.absoluteFill}>
@@ -93,8 +93,8 @@ export function CelestialSovereignPreview({assets,equippedPetId,matchingPetId,al
    {reactionEnabled?<Pressable accessibilityRole="button" accessibilityLabel={petAccessibilityLabel??'Aetherion'} onPress={trigger} style={box(CELESTIAL_PET_BOX.matching)}/>:petMode!=='none'&&petAccessibilityLabel?<View accessible accessibilityLabel={petAccessibilityLabel} pointerEvents="none" style={box(CELESTIAL_PET_BOX[petMode])}/>:null}
    <UltraLuxeIdentityMotionProvider clock={clock} fullSet={fullSet} active={running}>
    <View style={[box(CELESTIAL_IDENTITY_BOX.plate),styles.identityPlate]}>
-    <View style={pos(4,5,56,56)}>{portrait}</View>
-    <View style={pos(66,5,126,60)}>{identity}</View>
+    <View style={box(CELESTIAL_IDENTITY_BOX.portrait)}>{portrait}</View>
+    <View style={box(CELESTIAL_IDENTITY_BOX.identity)}>{identity}</View>
    </View>
    </UltraLuxeIdentityMotionProvider>
    {guild!=null?<View style={[box(CELESTIAL_IDENTITY_BOX.guild),styles.guildPlate]}>{guild}</View>:null}

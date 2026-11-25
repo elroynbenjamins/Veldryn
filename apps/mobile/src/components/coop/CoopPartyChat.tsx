@@ -40,8 +40,8 @@ function CoopPartyMessageRow({message}:{message:CoopChatMessage}){
    <Text style={[s.message,s.sender]}>{message.senderName}:</Text>
    <ChatTranslateAction controller={translation}/>
   </View>
-  <ChatTranslationMessage controller={translation} compact style={s.message}/>
+  <ChatTranslationMessage controller={translation} compact style={s.messageBody}/>
  </View>;
 }
 
-const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({messageHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:28},copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{maxHeight:220},messageList:{gap:coopSpacing.xs},message:{...coopTypography.body,color:coopColors.text},sender:{color:coopColors.cyan,fontWeight:'900'},error:{...coopTypography.meta,color:coopColors.danger}});
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({messageHeader:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',minHeight:28},copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{maxHeight:220},messageList:{gap:coopSpacing.xs},message:{...coopTypography.body,color:coopColors.text},messageBody:{...coopTypography.body,color:coopColors.text,fontSize:18,lineHeight:26},sender:{color:coopColors.cyan,fontWeight:'900'},error:{...coopTypography.meta,color:coopColors.danger}});

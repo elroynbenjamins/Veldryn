@@ -14,7 +14,7 @@ function Review(){
  if(!bundle)return <SafeAreaView style={s.root}><Text style={s.label}>Draconic artwork import required.</Text></SafeAreaView>;
  const alternate='DUNGEON_PET_ASTERFALL_001';
  const cases=[{label:'Matching Vharaxis',pet:DRACONIC_IDS.pet},{label:'Alternate pet',pet:alternate},{label:'No pet',pet:undefined}];
- return <SafeAreaView style={s.root}><ScrollView contentContainerStyle={s.content}>
+ return <SafeAreaView style={s.root}><ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <Text style={s.heading}>Draconic Dominion · Private QA</Text>
   <View style={s.icons}><Image source={bundle.petRegular} style={s.icon}/><Image source={bundle.badge} style={s.icon}/></View>
   {cases.map(({label,pet})=><View key={label} style={s.section}>

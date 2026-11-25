@@ -15,6 +15,8 @@ export const showcaseClassIcons:Record<ClassId,ImageSourcePropType>={
 };
 
 export const profilePortraitIcons:Record<string,ImageSourcePropType>={
+ 'ascendant-celestial-crown-icon':require('../../assets/ascendant/shared/celestial_crown.webp'),
+ 'ascendant-draconic-ruby-icon':require('../../assets/ascendant/shared/draconic_ruby.webp'),
  'starter:hooded-ranger':require('../../assets/profile-icons-v1/hooded-ranger.webp'),
  'starter:armored-sentinel':require('../../assets/profile-icons-v1/armored-sentinel.webp'),
  'starter:masked-spellcaster':require('../../assets/profile-icons-v1/masked-spellcaster.webp'),

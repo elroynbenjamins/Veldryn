@@ -1,0 +1,51 @@
+name: Account icon integrated bundle reconciliation
+on:
+  push:
+    branches: ['chatgpt/account-wide-profile-icon-first-character']
+    paths: ['.github/workflows/account-profile-icon-reconcile-review.yml']
+permissions:
+  contents: write
+concurrency:
+  group: account-icon-integrated-reconcile
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/account-wide-profile-icon-first-character
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install dependencies
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Regenerate canonical Edge bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit generated outputs and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=chatgpt/account-wide-profile-icon-first-character
+          test "$(git branch --show-current)" = "$branch"
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          test -z "$unexpected"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm .github/workflows/account-profile-icon-reconcile-review.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'build(edge): regenerate integrated account icon and Ultra Luxe bundles'
+          git fetch origin "$branch"
+          test "$(git rev-parse HEAD^)" = "$(git rev-parse "origin/$branch")"
+          git push origin "HEAD:$branch"

@@ -1,7 +1,8 @@
 import type {CombatCompanionRarity,CompanionAbilityDefinition,CompanionDefinition,CompanionEffectDefinition,CompanionSanctuaryUpgrade} from '../core/combat-companion-types';
 import {EVENT_COMPANIONS} from './event-companions-v2';
 import {GUILD_COMBAT_COMPANIONS} from './guild-companions-v1';
-import {RELEASED_EVENT_COMPANIONS} from './event-companions-active';
+import {RELEASED_EVENT_COMPANIONS,FROSTFALL_COMPANION_IDS} from './event-companions-active';
+import {frostfallRewardVisible,type FrostfallVisibilityAccount} from '../core/frostfall-reward-visibility';
 import {EVENTS_RELEASED} from '../core/release-flags';
 
 /**
@@ -155,3 +156,8 @@ export const ALL_COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANION
 /** Player-facing roster excludes event companions until live events are released. */
 export const COMBAT_COMPANIONS:CompanionDefinition[]=EVENTS_RELEASED?[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS,...RELEASED_EVENT_COMPANIONS]:[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...GUILD_COMBAT_COMPANIONS];
 export const combatCompanionDef=(id:string)=>ALL_COMBAT_COMPANIONS.find(entry=>entry.id===id);
+
+/** Per-account roster. A seasonal window may reveal definitions; earned companions remain visible offline and after closure. */
+export function visibleCombatCompanions(account:FrostfallVisibilityAccount,nowMs=Date.now()):CompanionDefinition[]{
+ return ALL_COMBAT_COMPANIONS.filter(def=>FROSTFALL_COMPANION_IDS.has(def.id)?frostfallRewardVisible(account,def.id,'companion',nowMs):COMBAT_COMPANIONS.some(row=>row.id===def.id));
+}

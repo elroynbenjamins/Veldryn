@@ -3,7 +3,7 @@ import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
 import {type ThemeColors} from '../theme/theme';
 import {companionArtSource} from '../theme/companion-art';
-import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {combatCompanionDef} from '../content/combat-companions';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {companionLabel,companionTranslator} from '../i18n/companions';
 import {UiIcon} from './UiIcon';
@@ -13,7 +13,7 @@ export function companionRarityBorder(rarity:string,dark:boolean){return ({stand
 
 /** Shared phone presentation; progression and commands stay with the owning panel. */
 export function CompanionHero({id,title,eyebrow,meta,hidden=false,children}:PropsWithChildren<{id?:string;title:string;eyebrow:string;meta?:string;hidden?:boolean}>){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),art=id&&!hidden?companionArtSource(id):undefined,def=COMBAT_COMPANIONS.find(row=>row.id===id);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),art=id&&!hidden?companionArtSource(id):undefined,def=combatCompanionDef(id??'');
  return <View style={[s.hero,{borderWidth:1,borderColor:def&&!hidden?companionRarityBorder(def.rarity,C.dark):C.line}]}><Text style={s.eyebrow}>{eyebrow}</Text><View style={s.stage}><View style={s.halo}/><View style={s.plinth}/>{art?<Image source={art} accessibilityLabel={title} resizeMode="contain" style={s.art}/>:<UiIcon name={hidden?'search':'companions'} size={64}/>}</View><Text accessibilityRole="header" style={s.title}>{title}</Text>{meta?<Text style={s.meta}>{meta}</Text>:null}{children}</View>;
 }
 
@@ -24,7 +24,7 @@ export function CompanionDisclosure({title,summary,icon='next',defaultOpen=false
 
 export function CompanionTeamPortraits({ids,levels,slots=0}:{ids:string[];levels?:Record<string,{level:number}>;slots?:number}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),language=useGameLanguage(),t=companionTranslator(language);
- return <View style={s.team}>{ids.map(id=>{const def=COMBAT_COMPANIONS.find(row=>row.id===id),art=companionArtSource(id);if(!def)return null;return <View key={id} style={[s.member,{borderWidth:1,borderColor:companionRarityBorder(def.rarity,C.dark)}]}>{art?<Image source={art} resizeMode="contain" style={s.teamArt}/>:<UiIcon name="companions" size={42}/>}<Text style={s.memberName}>{def.name}</Text><Text style={s.meta}>{companionLabel(language,def.role)}{levels?.[id]?` · ${t('Lv {value0}',{value0:levels[id].level})}`:''}</Text></View>})}{Array.from({length:Math.max(0,slots-ids.length)},(_,index)=><View key={"empty:"+index} style={[s.member,{borderWidth:1,borderStyle:"dashed",borderColor:C.line,minHeight:100,justifyContent:"center"}]}><UiIcon name="companions" size={28}/><Text style={s.meta}>{t("Empty slot")}</Text></View>)}</View>;
+ return <View style={s.team}>{ids.map(id=>{const def=combatCompanionDef(id??''),art=companionArtSource(id);if(!def)return null;return <View key={id} style={[s.member,{borderWidth:1,borderColor:companionRarityBorder(def.rarity,C.dark)}]}>{art?<Image source={art} resizeMode="contain" style={s.teamArt}/>:<UiIcon name="companions" size={42}/>}<Text style={s.memberName}>{def.name}</Text><Text style={s.meta}>{companionLabel(language,def.role)}{levels?.[id]?` · ${t('Lv {value0}',{value0:levels[id].level})}`:''}</Text></View>})}{Array.from({length:Math.max(0,slots-ids.length)},(_,index)=><View key={"empty:"+index} style={[s.member,{borderWidth:1,borderStyle:"dashed",borderColor:C.line,minHeight:100,justifyContent:"center"}]}><UiIcon name="companions" size={28}/><Text style={s.meta}>{t("Empty slot")}</Text></View>)}</View>;
 }
 
 const styles=(C:ThemeColors)=>StyleSheet.create({

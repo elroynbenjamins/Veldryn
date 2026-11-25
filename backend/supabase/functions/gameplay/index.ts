@@ -43926,7 +43926,7 @@ var ASTERFALL_COMPANIONS = [
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Strikes and briefly exposes the enemy to additional incoming damage.", 20, "Priority target", "damage", 1.2, 6e-3, { secondaryValue: 0.035, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.035, "Barkbreaker: Briar Charge makes a struck enemy more vulnerable for 5 seconds."), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.04, "Bond 10 further increases Briar Charge damage."), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Interrupts an interruptible enemy cast; deals damage in companion-only combat.", 24, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("haste", 0.015, "Flicker Sense: a small owner Haste bonus remains useful even when enemies cannot be interrupted."), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.06, "Bond 10 shortens the Lantern Snuff cooldown."), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Creates a protective barrier and briefly reduces incoming damage.", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.03, "Oathkeeper: the active vow briefly reinforces the owner after shielding."), bondTrait: trait("BOND_006", "Renewed Vow", "shield", 0.05, "Bond 10 improves the strength of every Vow shield."), ascensionMaterialId: "OATHGLASS_SHARD" },
-  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("achievement", "Reach Knife Dancer class skill total 80", "KNIFE_DANCER_SKILL_TOTAL", 80)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "A decisive strike with bonus damage below 30% enemy HP.", 20, "Priority target", "damage", 1.45, 5e-3, { secondaryValue: 0.1 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: Gloamstep is particularly effective against wounded targets.", "target_hp_below_30"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.05, "Bond 10 adds another finishing bonus to Gloamstep."), ascensionMaterialId: "GLOAM_DUST" },
+  { id: "UNIT_007", name: "Gloamknife Shade", description: "Fast rare-target cleanup and execute pressure.", archetype: "Assassin", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Gloam Mite Mastery 20", "GLOAM_MITE", 20)], baseStats: { hp: 155, power: 29, defense: 10, attackSpeed: 1.7 }, activeAbility: ability("UABL_007", "Gloamstep", "A decisive strike with bonus damage below 30% enemy HP.", 20, "Priority target", "damage", 1.45, 5e-3, { secondaryValue: 0.1 }), passiveAbility: passive("execute", 0.1, "Veiled Edge: Gloamstep is particularly effective against wounded targets.", "target_hp_below_30"), bondTrait: trait("BOND_007", "Final Shadow", "execute", 0.05, "Bond 10 adds another finishing bonus to Gloamstep."), ascensionMaterialId: "GLOAM_DUST" },
   { id: "UNIT_008", name: "Dawnwing", description: "Long-form group sustain.", archetype: "Support", role: "support", rarity: "elite", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Faith 30", "faith", 30)], baseStats: { hp: 180, power: 14, defense: 14, attackSpeed: 2.3 }, activeAbility: ability("UABL_008", "Dawn Pinion", "Protects a low-HP ally and removes damaging periodic effects.", 24, "Lowest-HP ally", "shield", 0.04, 1e-3), passiveAbility: passive("cleanse", 1, "Warm Light: Dawn Pinion can remove damage-over-time effects from its protected ally."), bondTrait: trait("BOND_008", "Second Dawn", "shield", 0.06, "Bond 10 strengthens Dawn Pinion shielding."), ascensionMaterialId: "OATHGLASS_FRAGMENT" },
   { id: "UNIT_009", name: "Echo Stalker", description: "Coordinated damage companion that rewards debuffs.", archetype: "Hunter", role: "damage", rarity: "elite", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Echo Bat Mastery 20", "ECHO_BAT", 20)], baseStats: { hp: 175, power: 27, defense: 13, attackSpeed: 1.9 }, activeAbility: ability("UABL_009", "Echo Rend", "Hits a priority enemy and deals extra damage if it is already debuffed; briefly exposes the target.", 20, "Priority target", "damage", 1.25, 6e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("damage", 0.03, "Echo Hunter: Echo Rend exposes its target to a short burst window."), bondTrait: trait("BOND_009", "Resonant Hunt", "damage", 0.035, "Bond 10 further strengthens Echo Rend."), ascensionMaterialId: "ECHO_QUARTZ" },
   { id: "UNIT_010", name: "Forge Automaton", description: "Slow armor-pressure artillery companion.", archetype: "Artillery", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("achievement", "Craft 500 equipment pieces", "EQUIPMENT_CRAFTS", 500), req("skill_level", "Reach Smithing 30", "smithing", 30)], baseStats: { hp: 205, power: 26, defense: 20, attackSpeed: 2.9 }, activeAbility: ability("UABL_010", "Siege Bolt", "A powerful, deliberate hit that exposes its target for 7 seconds.", 20, "Priority target", "damage", 1.35, 5e-3, { secondaryValue: 0.035, durationSeconds: 7 }), passiveAbility: passive("damage", 0.035, "Calibrated Shot: Siege Bolt creates a longer enemy vulnerability window."), bondTrait: trait("BOND_010", "Perfect Calibration", "damage", 0.05, "Bond 10 increases Siege Bolt damage."), ascensionMaterialId: "FALLEN_RIVET" },
@@ -43998,121 +43998,6 @@ var REGIONAL_COMPANIONS = [
 var ALL_COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...EVENT_COMPANIONS];
 var COMBAT_COMPANIONS = EVENTS_RELEASED ? [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS, ...RELEASED_EVENT_COMPANIONS] : [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...GUILD_COMBAT_COMPANIONS];
 var combatCompanionDef = (id) => ALL_COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
-
-// ../apps/mobile/src/content/class-skills.ts
-var skill = (id, name, theme) => ({ id, name, theme });
-var guard = skill("guardcraft", "Guardcraft", "Physical protection");
-var ward = skill("warding", "Warding", "Damage warding");
-var CLASS_SKILLS = {
-  IRONWARDEN: [guard, ward],
-  BASTION: [guard, ward],
-  DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
-  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
-  WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
-  RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
-  HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
-  KNIFE_DANCER: [skill("blade_rhythm", "Blade Rhythm", "Attack rhythm"), skill("precision", "Precision", "Accuracy and evasion")],
-  STONECALLER: [skill("resonance", "Resonance", "Support and recovery"), skill("geomancy", "Geomancy", "Protection and resilience")]
-};
-var classSkillsFor = (id) => CLASS_SKILLS[id];
-
-// ../apps/mobile/src/core/class-skills.ts
-init_meal_buffs();
-init_progression();
-var MAX_CLASS_SKILL_XP = classCombatSkillTotalXpAtLevel(100);
-var CLASS_DRILL_BASE_XP = 24;
-var normalizeTrainingFocus = (v) => v === "primary" || v === "secondary" ? v : "balanced";
-function normalizeClassSkills(id, raw2) {
-  const rows2 = Array.isArray(raw2) ? raw2 : [];
-  return classSkillsFor(id).map((d) => {
-    const entry2 = rows2.find((r) => r?.skillId === d.id);
-    const xp = typeof entry2?.xp === "number" && Number.isFinite(entry2.xp) ? Math.max(0, Math.min(MAX_CLASS_SKILL_XP, Math.floor(entry2.xp))) : 0;
-    return { skillId: d.id, xp, level: classCombatSkillLevelFromXp(xp) };
-  });
-}
-var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
-function awardCombatClassXp(c, kills, perKill, firstFocus) {
-  kills = Number.isFinite(kills) ? Math.floor(kills) : 0;
-  if (kills <= 0 || !Number.isFinite(perKill) || perKill <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
-  const first = awardClassSkillXp(c, perKill, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
-  const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
-  return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
-}
-function normalizeClassDrills(raw2) {
-  if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
-  return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
-}
-function trainingFocusShares(focus) {
-  return focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
-}
-function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
-  const shares = trainingFocusShares(focus), remainders = { ...c.classSkillRemainders ?? {} };
-  if (!Number.isFinite(pool)) pool = 0;
-  const awards = [];
-  const classSkills = characterClassSkills(c).map((s, i) => {
-    const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
-    const amount = Math.max(0, pool) * shares[i] + prior;
-    const whole = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole);
-    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole);
-    awards.push({ skillId: s.skillId, xp: gain });
-    return { ...s, xp: s.xp + gain, level: classCombatSkillLevelFromXp(s.xp + gain) };
-  });
-  return { character: { ...c, classSkills, classSkillRemainders: remainders }, awards };
-}
-function characterClassEffects(c) {
-  const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
-  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
-  switch (c.classId) {
-    case "IRONWARDEN":
-      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
-    case "BASTION":
-      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
-    case "DREADGUARD":
-      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
-    case "DAWNKEEPER":
-      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
-    case "WAYFINDER":
-      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
-    case "RAVAGER":
-      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
-    case "HEXWEAVER":
-      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
-    case "KNIFE_DANCER":
-      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
-    case "STONECALLER":
-      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
-  }
-  return base;
-}
-function settleClassDrills(state, now, capSeconds) {
-  const c = state.character, drill = normalizeClassDrills(c?.classTraining);
-  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
-  if (!c || !drill || !Number.isFinite(now) || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
-  const rawSpeed = mealSpeedFactor(c, "noncombat");
-  const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 1;
-  const elapsed = Math.min(Math.max(0, Number.isFinite(capSeconds) ? capSeconds : 0) * 1e3, now - drill.lastClaimAtMs);
-  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
-  let character = c;
-  const awards = {};
-  const apply = (count, focus2) => {
-    if (!count) return;
-    const earned = awardClassSkillXp(character, drill.xpPerDrill * count, focus2);
-    character = earned.character;
-    for (const a of earned.awards) awards[a.skillId] = (awards[a.skillId] ?? 0) + a.xp;
-  };
-  const focus = normalizeTrainingFocus(c.trainingFocus);
-  let completed = characterClassSkills(c).every((s) => s.level === 100) ? 0 : Math.min(1, actions);
-  apply(completed, drill.focus);
-  const shares = trainingFocusShares(focus);
-  const remainingToCap = Math.max(...characterClassSkills(character).map((s, i) => Math.max(0, Math.ceil((MAX_CLASS_SKILL_XP - s.xp - (character.classSkillRemainders?.[s.skillId] ?? 0)) / (drill.xpPerDrill * shares[i])))));
-  const rest = Math.min(Math.max(0, actions - completed), remainingToCap);
-  apply(rest, focus);
-  completed += rest;
-  const capped = characterClassSkills(character).every((s) => s.level === 100);
-  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
-  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
-  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
-}
 
 // ../apps/mobile/src/core/companion-mastery.ts
 var COMPANION_MASTERY_MAX_STAT_BONUS = 0.05;
@@ -45190,7 +45075,6 @@ function isCombatCompanionMastered(def, progress) {
 function companionUnlockRequirementMet(state, requirement) {
   const target2 = requirement.target ?? requirement.description, amount = Math.max(1, requirement.amount ?? 1);
   const characters = [state.character, ...(state.otherCharacters ?? []).map((row) => row.character)].filter((row) => !!row);
-  if (target2 === "KNIFE_DANCER_SKILL_TOTAL") return characters.some((character) => character.classId === "KNIFE_DANCER" && normalizeClassSkills("KNIFE_DANCER", character.classSkills).reduce((sum, s) => sum + s.level, 0) >= amount);
   if (requirement.type === "monster_mastery") return characters.some((character) => monsterMasteryRankFromKills(normalizeMonsterMastery(character.monsterMasteryPoints)[target2] ?? 0) >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (target2 === "ASTERFALL_MASTERY_20_ALL") return characters.some((character) => Object.values(normalizeMonsterMastery(character.monsterMasteryPoints)).filter((n) => monsterMasteryRankFromKills(n) >= 20).length >= amount) || (state.account.companionUnlockProgress?.[target2] ?? 0) >= amount;
   if (requirement.type === "meta" && target2.startsWith("COMPANION_BOND:")) {
@@ -49943,6 +49827,23 @@ function professionActionPace(state, recipe2, mode) {
   return { cycleSeconds, xpPerAction, affinity, mastery, speed };
 }
 
+// ../apps/mobile/src/content/class-skills.ts
+var skill = (id, name, theme) => ({ id, name, theme });
+var guard = skill("guardcraft", "Guardcraft", "Physical protection");
+var ward = skill("warding", "Warding", "Damage warding");
+var CLASS_SKILLS = {
+  IRONWARDEN: [guard, ward],
+  BASTION: [guard, ward],
+  DREADGUARD: [skill("might", "Might", "Weapon power"), ward],
+  DAWNKEEPER: [skill("restoration", "Restoration", "Healing and recovery"), skill("sanctity", "Sanctity", "Sanctified protection")],
+  WAYFINDER: [skill("marksmanship", "Marksmanship", "Ranged power"), skill("tracking", "Tracking", "Hunting precision")],
+  RAVAGER: [skill("might", "Might", "Weapon power"), skill("breaking", "Breaking", "Armor pressure")],
+  HEXWEAVER: [skill("spellcraft", "Spellcraft", "Magical power"), skill("hexcraft", "Hexcraft", "Hex potency")],
+  KNIFE_DANCER: [skill("blade_rhythm", "Blade Rhythm", "Attack rhythm"), skill("precision", "Precision", "Accuracy and evasion")],
+  STONECALLER: [skill("resonance", "Resonance", "Support and recovery"), skill("geomancy", "Geomancy", "Protection and resilience")]
+};
+var classSkillsFor = (id) => CLASS_SKILLS[id];
+
 // ../apps/mobile/src/core/regional-class-counter.ts
 var MATCHUPS = {
   DUSTVEIL_RUNNER: [{ classId: "WAYFINDER", outputMultiplier: 1.06 }],
@@ -52800,6 +52701,104 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
     tenacity: stats4.tenacity,
     stats: stats4
   };
+}
+
+// ../apps/mobile/src/core/class-skills.ts
+init_meal_buffs();
+init_progression();
+var MAX_CLASS_SKILL_XP = classCombatSkillTotalXpAtLevel(100);
+var CLASS_DRILL_BASE_XP = 24;
+var normalizeTrainingFocus = (v) => v === "primary" || v === "secondary" ? v : "balanced";
+function normalizeClassSkills(id, raw2) {
+  const rows2 = Array.isArray(raw2) ? raw2 : [];
+  return classSkillsFor(id).map((d) => {
+    const entry2 = rows2.find((r) => r?.skillId === d.id);
+    const xp = typeof entry2?.xp === "number" && Number.isFinite(entry2.xp) ? Math.max(0, Math.min(MAX_CLASS_SKILL_XP, Math.floor(entry2.xp))) : 0;
+    return { skillId: d.id, xp, level: classCombatSkillLevelFromXp(xp) };
+  });
+}
+var characterClassSkills = (c) => normalizeClassSkills(c.classId, c.classSkills);
+function awardCombatClassXp(c, kills, perKill, firstFocus) {
+  kills = Number.isFinite(kills) ? Math.floor(kills) : 0;
+  if (kills <= 0 || !Number.isFinite(perKill) || perKill <= 0) return { character: c, awards: characterClassSkills(c).map((s) => ({ skillId: s.skillId, xp: 0 })) };
+  const first = awardClassSkillXp(c, perKill, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
+  const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
+  return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
+}
+function normalizeClassDrills(raw2) {
+  if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
+  return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
+}
+function trainingFocusShares(focus) {
+  return focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5];
+}
+function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
+  const shares = trainingFocusShares(focus), remainders = { ...c.classSkillRemainders ?? {} };
+  if (!Number.isFinite(pool)) pool = 0;
+  const awards = [];
+  const classSkills = characterClassSkills(c).map((s, i) => {
+    const prior = Number.isFinite(remainders[s.skillId]) ? Math.max(0, Math.min(0.999999, remainders[s.skillId])) : 0;
+    const amount = Math.max(0, pool) * shares[i] + prior;
+    const whole = Math.floor(amount + 1e-9), gain = Math.min(MAX_CLASS_SKILL_XP - s.xp, whole);
+    remainders[s.skillId] = s.xp + gain >= MAX_CLASS_SKILL_XP ? 0 : Math.max(0, amount - whole);
+    awards.push({ skillId: s.skillId, xp: gain });
+    return { ...s, xp: s.xp + gain, level: classCombatSkillLevelFromXp(s.xp + gain) };
+  });
+  return { character: { ...c, classSkills, classSkillRemainders: remainders }, awards };
+}
+function characterClassEffects(c) {
+  const [a, b] = characterClassSkills(c).map((s) => (s.level - 1) / 99);
+  const base = { attack: 1, hp: 1, defense: 1, accuracy: 0, evasion: 0, haste: 0, ward: 0, penetration: 0, potency: 0, classHealing: 1 };
+  switch (c.classId) {
+    case "IRONWARDEN":
+      return { ...base, defense: 1 + 0.08 * a, ward: 0.05 * b };
+    case "BASTION":
+      return { ...base, defense: 1 + 0.1 * a, ward: 0.06 * b };
+    case "DREADGUARD":
+      return { ...base, attack: 1 + 0.07 * a, ward: 0.05 * b };
+    case "DAWNKEEPER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.1 * a, hp: 1 + 0.06 * b, ward: 0.04 * b };
+    case "WAYFINDER":
+      return { ...base, attack: 1 + 0.07 * a, accuracy: 0.04 * b, haste: 0.02 * b };
+    case "RAVAGER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, penetration: 0.05 * b };
+    case "HEXWEAVER":
+      return { ...base, attack: 1 + 0.07 * a + 0.02 * b, potency: 0.05 * b };
+    case "KNIFE_DANCER":
+      return { ...base, attack: 1 + 0.03 * a, haste: 0.04 * a, accuracy: 0.03 * b, evasion: 0.06 * b };
+    case "STONECALLER":
+      return { ...base, attack: 1 + 0.04 * a, classHealing: 1 + 0.08 * a, defense: 1 + 0.08 * b, ward: 0.03 * b };
+  }
+  return base;
+}
+function settleClassDrills(state, now, capSeconds) {
+  const c = state.character, drill = normalizeClassDrills(c?.classTraining);
+  const empty2 = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
+  if (!c || !drill || !Number.isFinite(now) || now <= drill.lastClaimAtMs) return { state, reward: empty2 };
+  const rawSpeed = mealSpeedFactor(c, "noncombat");
+  const speed = Number.isFinite(rawSpeed) && rawSpeed > 0 ? rawSpeed : 1;
+  const elapsed = Math.min(Math.max(0, Number.isFinite(capSeconds) ? capSeconds : 0) * 1e3, now - drill.lastClaimAtMs);
+  const total = elapsed * speed + drill.progressMs, actions = Math.floor(total / 6e4);
+  let character = c;
+  const awards = {};
+  const apply = (count, focus2) => {
+    if (!count) return;
+    const earned = awardClassSkillXp(character, drill.xpPerDrill * count, focus2);
+    character = earned.character;
+    for (const a of earned.awards) awards[a.skillId] = (awards[a.skillId] ?? 0) + a.xp;
+  };
+  const focus = normalizeTrainingFocus(c.trainingFocus);
+  let completed = characterClassSkills(c).every((s) => s.level === 100) ? 0 : Math.min(1, actions);
+  apply(completed, drill.focus);
+  const shares = trainingFocusShares(focus);
+  const remainingToCap = Math.max(...characterClassSkills(character).map((s, i) => Math.max(0, Math.ceil((MAX_CLASS_SKILL_XP - s.xp - (character.classSkillRemainders?.[s.skillId] ?? 0)) / (drill.xpPerDrill * shares[i])))));
+  const rest = Math.min(Math.max(0, actions - completed), remainingToCap);
+  apply(rest, focus);
+  completed += rest;
+  const capped = characterClassSkills(character).every((s) => s.level === 100);
+  character = { ...character, classTraining: capped ? void 0 : { ...drill, lastClaimAtMs: now, progressMs: Math.floor(total % 6e4), focus: actions ? normalizeTrainingFocus(c.trainingFocus) : drill.focus } };
+  const qualified = capped ? Math.max(0, Math.min(elapsed, (completed * 6e4 - drill.progressMs) / speed)) : elapsed;
+  return { state: { ...state, character }, reward: { ...empty2, elapsedSeconds: Math.floor(elapsed / 1e3), qualifyingActivitySeconds: Math.floor(qualified / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
 // ../apps/mobile/src/core/game.ts

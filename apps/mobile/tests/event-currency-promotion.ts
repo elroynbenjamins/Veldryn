@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict') as {equal:(actual:unknown,expected:unknown,message?:string)=>void;deepEqual:(actual:unknown,expected:unknown,message?:string)=>void;throws:(operation:()=>unknown,pattern:RegExp)=>void};
 import type {GameState} from '../src/core/types';
 import {createCharacter,newGame} from '../src/core/game';
-import {FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,VEILBREAK_CURRENCY_PROMOTION as promotion,eventCurrencyPromotionBps,promotedEventCurrency} from '../src/content/event-currency-promotion';
+import {FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS,VEILBREAK_CURRENCY_PROMOTION as promotion,eventCurrencyPromotionBps,eventCurrencyBaseBps,frostfallHolidayMultiplierBps,FROSTFALL_HOLIDAY_PROMOTION,promotedEventCurrency} from '../src/content/event-currency-promotion';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {MERCHANT_GUILD_FESTIVAL_EVENT} from '../src/content/annual-events-v4';
 import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
@@ -74,3 +74,29 @@ guildRewarded=claimEventWeeklyObjective(guildReady,guildChallenge.objective.id,g
 assert.equal(eventCurrencyBalance(guildRewarded,guildId),712);
 assert.equal(eventShopOffers(guildState,guildNow).find(offer=>offer.id==='master_merchant')?.cost,1800,'Future shop prices stay unchanged');
 console.log('PASS: current Veilbreak +50% preserved; November, December and 2027+ annual festivals earn 25% less common currency without changing prestige or shop costs');
+
+const frostId=FROSTFALL_EVENT.id, frostStart=Date.UTC(2026,11,3), holiday=FROSTFALL_HOLIDAY_PROMOTION;
+assert.equal(holiday.catchupEnabled,false);
+assert.equal(frostfallHolidayMultiplierBps(frostId,holiday.catchupStartsAtMs-1,true),10000);
+assert.equal(frostfallHolidayMultiplierBps(frostId,holiday.catchupStartsAtMs,true),12500);
+assert.equal(frostfallHolidayMultiplierBps(frostId,holiday.christmasStartsAtMs-1,true),12500);
+assert.equal(frostfallHolidayMultiplierBps(frostId,holiday.christmasStartsAtMs,true),20000,'Christmas replaces catch-up rather than stacking');
+assert.equal(frostfallHolidayMultiplierBps(frostId,holiday.endsAtMs,true),10000);
+assert.equal(frostfallHolidayMultiplierBps('EVT_ANNUAL_012_2027',holiday.christmasStartsAtMs,true),10000);
+assert.equal(frostfallHolidayMultiplierBps(frostId,NaN,true),10000);
+assert.equal(promotedEventCurrency(frostId,100,holiday.catchupStartsAtMs),75,'Catch-up is off by default');
+assert.equal(promotedEventCurrency(frostId,100,holiday.christmasStartsAtMs-1),75);
+assert.equal(promotedEventCurrency(frostId,100,holiday.christmasStartsAtMs),150);
+assert.equal(promotedEventCurrency(frostId,100,holiday.endsAtMs-1),150);
+assert.equal(promotedEventCurrency(frostId,100,holiday.endsAtMs),75);
+assert.equal(eventCurrencyBaseBps(frostId,holiday.christmasStartsAtMs),-2500,'Fixed payouts keep the normal baseline');
+const frostState=createCharacter(newGame(frostStart),'IRONWARDEN','Frostfall Holiday Test');
+frostState.account.liveEvent={eventId:frostId,enabled:true,startsAtMs:frostStart,endsAtMs:holiday.endsAtMs,graceEndsAtMs:holiday.endsAtMs+2*86400_000};
+assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.christmasStartsAtMs),5000);
+assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.endsAtMs),0);
+assert.equal(eventEffectiveDropRate(frostState,frostId,'combat',holiday.christmasStartsAtMs),FROSTFALL_EVENT.dropRates.combat*1.5);
+const christmasGift=eventDailyGift(frostState,holiday.christmasStartsAtMs)!;
+assert.equal(christmasGift.gift.rewardCurrency,Math.floor(FROSTFALL_EVENT.dailyGifts.find(g=>g.day===christmasGift.giftDay)!.rewardCurrency*.75));
+const splitDrops=timedEventRewards(frostState,'gathering',[holiday.christmasStartsAtMs-1,holiday.christmasStartsAtMs,holiday.endsAtMs]).eventDrops!;
+assert.deepEqual(splitDrops.map(d=>d.units),[1,1],'Offline work splits at Christmas and ignores the exclusive end');
+console.log('PASS: Frostfall holiday UTC windows, nonstacking and fixed rewards');

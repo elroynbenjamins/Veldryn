@@ -180,7 +180,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
      <Text style={s.rowName}>{set.name}</Text>
      <View style={s.quickChoices}>
       {set.choices.map(choice=>{
-       const equipped=quickSetEquipped(live,choice);
+       const equipped=quickSetEquipped(selection,choice);
        return <Pressable key={choice.id} accessibilityRole="button" accessibilityLabel={set.name+', '+choice.name+', '+profileT(language,equipped?"Equipped":"Equip set")}
         accessibilityState={{selected:equipped,disabled:equipped}} disabled={equipped} onPress={()=>equipSet(set.id,choice.id,set.name)}
         style={({pressed})=>[s.quickChoice,equipped&&s.tileOn,pressed&&s.pressed]}>

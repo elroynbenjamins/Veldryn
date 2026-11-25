@@ -44,7 +44,7 @@ assert(fx.includes('pointerEvents="none"')&&fx.includes('importantForAccessibili
 for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
  const s=read('components/profile/'+name+'.tsx');
  assert(s.includes('duration:ULTRA_LUXE_CYCLE_MS')&&s.includes('useNativeDriver:true'));
- assert(s.includes('loop.stop()')&&s.includes('reduceMotion')&&s.includes('foreground'));
+ assert(s.includes('loop.stop()')&&s.includes('useCosmeticMotionPolicy(')&&!s.includes('AppState.addEventListener')&&!s.includes('AccessibilityInfo.addEventListener'));
  const environment=s.indexOf('<UltraLuxeEnvironment'),pet=s.indexOf(name.startsWith('Celestial')?"{petMode==='matching'":"{mode==='matching'"),aura=s.indexOf('<UltraLuxePetAura');
  assert(environment>=0&&environment<pet&&pet<aura,'environment is independent; matching aura follows pet condition');
  assert(s.includes('<UltraLuxeRail'));
@@ -154,3 +154,39 @@ assert(celScene.includes('hitSlop={{top:10*scale')&&dragonScene.includes('hitSlo
 assert(fx.includes('path.map(railGlowPoint)')&&fx.includes('FRAME_ORNAMENTS[theme]'));
 assert(read('components/profile/UltraLuxePetPoseSprite.tsx').includes('memo(UltraLuxePetPoseSpriteLayer)'));
 console.log('Smooth atlas lift, grounded ring, frame glow bounds and stable sprite rendering passed.');
+
+async function sharedMotionLifecycle(){
+ const callbacks={},reads=[],counts={app:0,motion:0,removed:0};
+ const fakeNative={
+  Platform:{OS:'android'},
+  AppState:{currentState:'active',addEventListener:(_event,fn)=>{counts.app++;callbacks.app=fn;return {remove:()=>counts.removed++};}},
+  AccessibilityInfo:{addEventListener:(_event,fn)=>{counts.motion++;callbacks.motion=fn;return {remove:()=>counts.removed++};},isReduceMotionEnabled:()=>new Promise(resolve=>reads.push(resolve))},
+ };
+ let pendingSubscribe;
+ const fakeReact={useSyncExternalStore:(subscribe,getSnapshot)=>{pendingSubscribe=subscribe;return getSnapshot();}};
+ const motion={exports:{}};
+ new Function('exports','module','require',ts.transpileModule(read('components/anim/motion.ts'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText)(motion.exports,motion,name=>name==='react'?fakeReact:name==='react-native'?fakeNative:{});
+ const {useCosmeticMotionPolicy:policy}=motion.exports;
+ assert.equal(policy(false).running,false);
+ const offInactive=pendingSubscribe(()=>{});assert.equal(counts.app,0);offInactive();
+ assert.equal(policy(true,true).running,false);
+ const offReduced=pendingSubscribe(()=>{});assert.equal(counts.motion,0);offReduced();
+ assert.equal(policy(true).running,false,'Do not animate before the OS preference is known');
+ const offA=pendingSubscribe(()=>{});policy(true);const offB=pendingSubscribe(()=>{});
+ assert.equal(counts.app,1);assert.equal(counts.motion,1);assert.equal(reads.length,1);
+ callbacks.motion(true);reads[0](false);await Promise.resolve();
+ assert.equal(policy(true).running,false,'A late initial read cannot override a newer reduced-motion event');
+ callbacks.motion(false);assert.equal(policy(true).running,true);
+ fakeNative.AppState.currentState='background';callbacks.app('background');assert.equal(policy(true).running,false);
+ fakeNative.AppState.currentState='active';callbacks.app('active');assert.equal(policy(true).running,true);
+ offA();assert.equal(counts.removed,0);offB();assert.equal(counts.removed,2);
+ assert.equal(policy(true).running,false,'A new subscription cannot animate from a stale preference');
+ const offC=pendingSubscribe(()=>{});const oldCallback=callbacks.motion;offC();
+ policy(true);const offD=pendingSubscribe(()=>{});oldCallback(false);reads[1](false);await Promise.resolve();
+ assert.equal(policy(true).running,false,'An old subscription cannot enable a new stage');
+ reads[2](false);await Promise.resolve();assert.equal(policy(true).running,true);
+ offD();assert.equal(counts.removed,6);
+ assert(read('components/anim/motion.ts').includes('useNativeDriver:LOOP_NATIVE_DRIVER,isInteraction:false'));
+ console.log('Shared motion policy, subscription cleanup, foreground and preference race checks passed.');
+}
+sharedMotionLifecycle().catch(error=>{console.error(error);process.exitCode=1;});

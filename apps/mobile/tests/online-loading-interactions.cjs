@@ -87,6 +87,37 @@ async function combatSwapOptimism(){
  await act(async()=>renderer.unmount());
 }
 
+function rewardPreviewClock(){
+ const {activityRewardPreviewClock:clock}=load('src/components/activity-preview-clock.ts',{});
+ const combat={kind:'combat',lastClaimAtMs:1000};
+ assert.deepEqual([6000,8000,10000,12000,14000,16000].map(now=>clock(now,combat)),[5000,5000,10000,10000,10000,15000]);
+ assert.equal(clock(12000,{kind:'mining',lastClaimAtMs:11900}),11900,'New claims must not sample before their checkpoint');
+ assert.equal(clock(12000,{kind:'combat',lastClaimAtMs:13000}),12000,'Never sample in the future if server time leads the display clock');
+ for(const kind of ['woodcutting','fishing','herbalism','exploration'])assert.equal(clock(12000,{kind,lastClaimAtMs:0}),10000);
+ for(const kind of ['faith','alchemy','processing'])assert.equal(clock(12000,{kind,lastClaimAtMs:0}),12000,'Timed special activities retain their exact clock');
+ assert.equal(clock(12000,combat,true),12000,'Class training retains its original clock');
+ assert.equal(clock(12000),12000);
+ const app=fs.readFileSync(path.join(__dirname,'../App.tsx'),'utf8');
+ assert.ok(app.includes('previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]'),'The expensive root replay uses the sampled clock and invalidates on a new state');
+ assert.ok(app.includes('nowMs={now} reward={preview}'),'The top bar still receives the original live clock');
+}
+async function foregroundHuntReplay(){
+ let starts=0,stops=0,projections=0,latestA,latestB;
+ const {useLiveHuntProjection}=load('src/components/useLiveHuntProjection.ts',{
+  '../core/game':{activeCombatHitProjection:(_state,clock)=>{projections++;return {cursor:{atMs:clock}}}},
+  '../online/foreground-tasks':{runWhileForeground:(_task,interval)=>{assert.equal(interval,750);starts++;return ()=>{stops++}}},
+ });
+ const state={character:{id:'a'},activity:{kind:'combat'}};
+ function A(){latestA=useLiveHuntProjection(state,true);return null;}
+ function B(){latestB=useLiveHuntProjection(state,true);return null;}
+ let one,two;
+ await act(async()=>{one=create(React.createElement(A));two=create(React.createElement(B))});
+ assert.equal(starts,1,'One shared foreground clock serves both hunt surfaces');
+ assert.equal(projections,1,'Both surfaces share one initial projection');
+ assert.equal(latestA,latestB);
+ await act(async()=>one.unmount());assert.equal(stops,0);
+ await act(async()=>two.unmount());assert.equal(stops,1,'Last subscriber disposes the foreground clock');
+}
 function wiring(){
  const files=[];function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,entry.name);if(entry.isDirectory())walk(file);else if(file.endsWith('.tsx'))files.push(file);}}
  walk(path.join(__dirname,'../src'));files.push(path.join(__dirname,'../App.tsx'));
@@ -104,4 +135,4 @@ function wiring(){
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
 }
-(async()=>{await buttons();await commandBusy();await combatSwapOptimism();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();rewardPreviewClock();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

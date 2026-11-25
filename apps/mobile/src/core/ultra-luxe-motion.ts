@@ -19,8 +19,8 @@ export const SIGNATURE_CURVE_ENERGY:readonly number[]=curveEnergy;
 /** Identity stays legible and fixed in its slot; only subtle light at alignment. */
 export const SIGNATURE_TITLE_OPACITY=SIGNATURE_CURVE_ENERGY.map(e=>.96+.04*e);
 export const SIGNATURE_BADGE_OPACITY=SIGNATURE_CURVE_ENERGY.map(e=>.92+.08*e);
-export const SIGNATURE_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.06*e);
-export const SIGNATURE_PARTIAL_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.03*e);
+export const SIGNATURE_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.09*e);
+export const SIGNATURE_PARTIAL_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.04*e);
 export const RAIL_PATH=[[26,12],[170,12],[314,12],[326,95],[314,190],[170,193],[26,190],[12,95],[26,12]] as const;
 export const LOOP_PHASE=[0,.125,.25,.375,.5,.625,.75,.875,1] as const;
 export const ORBIT_X=[-1,-.707,0,.707,1,.707,0,-.707,-1] as const;
@@ -81,3 +81,11 @@ export function awakeningCurve(theme:keyof typeof AWAKENING_ENERGY){
  return {phase,energy};
 }
 export const AWAKENING_CURVES={celestial:awakeningCurve('celestial'),draconic:awakeningCurve('draconic')};
+
+/** Pet taps use bounded themed offsets in the existing pet-side safe zone.
+ * Aetherion sends a symmetric constellation fan; Vharaxis sends rising embers. */
+export const PET_REACTION_TRAJECTORIES={
+ celestial:[{x:-12,y:2,dx:-12,dy:-18},{x:0,y:-8,dx:0,dy:-25},{x:12,y:2,dx:12,dy:-18}],
+ draconic:[{x:-12,y:8,dx:-7,dy:-29},{x:0,y:3,dx:4,dy:-35},{x:12,y:8,dx:10,dy:-22}],
+} as const;
+export const PET_REACTION_GLOW={celestial:{scale:1.32,opacity:.82},draconic:{scale:1.38,opacity:.88}} as const;

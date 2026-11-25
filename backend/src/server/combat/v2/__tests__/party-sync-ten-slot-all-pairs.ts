@@ -64,13 +64,50 @@ for(const specIndex of [0,1] as const)
   }
 
 assert.equal(cases,18*2*6);
+// Mystic Harmony is a conditional support link: short low-pressure bruiser
+// encounters may have no heal, harmful status or ten resource gains. Keep
+// the original observations intact and separately exercise a genuine engine
+// harmful-status window using the same compiled ten-slot support builds.
+const mysticClasses=['DAWNKEEPER','STONECALLER'] as const;
+const mysticFixtures=mysticClasses.map(c=>setup(c,0,bosses[0],profiles[1]));
+const mysticBuilds=mysticFixtures.map(f=>f.build);
+const mysticRuntime=mysticFixtures.map(f=>f.runtime);
+const mysticPlayers=mysticFixtures.map(f=>f.actor);
+const mysticEnemy=mysticFixtures[0].input.enemies[0];
+const mysticInput:CombatInput={seed:'QA_MYSTIC_HARMFUL_PRESSURE',
+ players:mysticPlayers,enemies:[{...mysticEnemy,abilities:[{
+  id:'QA_MYSTIC_PRESSURE',name:'QA Mystic Pressure',cooldownMs:99999,
+  castTimeMs:0,target:'all_enemies',priority:100,effects:[
+   {kind:'debuff',tag:'damage_done',value:-.20,durationMs:3000},
+  ],
+ }]}],maxDurationMs:1100,tickMs:100};
+const mysticScope:TrustedPartySyncRehearsalV2['scope']={
+ ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,encounterId:'QA_MYSTIC_PRESSURE_ENC',
+ partyId:'QA_MYSTIC_PARTY',revision:1,seed:mysticInput.seed,mode:'party_event',
+ members:mysticClasses.map((classId,i)=>({classId,actorId:mysticPlayers[i].id,
+  characterId:mysticRuntime[i].characterId})),
+};
+const mysticBase=simulateUnifiedEquipmentCombatV2(mysticInput,mysticBuilds,mysticRuntime,true);
+const runMystic=()=>simulateUnifiedEquipmentCombatV2(mysticInput,mysticBuilds,mysticRuntime,true,
+ undefined,undefined,'party_event',{scope:mysticScope,verifyPersisted:()=>true});
+const mysticSync=runMystic();
+assert.deepEqual(mysticSync,runMystic());
+assert.deepEqual(mysticSync.equipmentEvidence,mysticBase.equipmentEvidence);
+assert.equal(mysticSync.synchronizationReview?.active[0].id,'mystic_harmony');
+for(let i=0;i<mysticPlayers.length;i++){
+ const prior=mysticBase.combat.players[i].modifiers.find(m=>m.kind==='debuff'&&m.tag==='damage_done');
+ const next=mysticSync.combat.players[i].modifiers.find(m=>m.kind==='debuff'&&m.tag==='damage_done');
+ assert.equal(prior?.value,-.20);
+ assert.ok(next&&Math.abs(next.value-(-.19))<1e-9,'Mystic Harmony must reduce actual harmful potency');
+}
 for(const link of links)
- assert.ok((changedByPair.get(link.id)??0)>0,
+ if(link.id!=='mystic_harmony')assert.ok((changedByPair.get(link.id)??0)>0,
   'real ten-slot pair never affected any authored boss encounter: '+link.id);
 
 console.log(JSON.stringify({
  kind:'PARTY_SYNC_ALL_18_REAL_BUILD_PAIR_COVERAGE',
  cases,pairs:18,bosses:6,specializationBands:2,
+ supplementalMysticPressureCases:1,mysticHarmfulPotencyVerified:true,
  pairsWithObservedCombatEffect:[...changedByPair.values()].filter(n=>n>0).length,
  byPair:Object.fromEntries(links.map(link=>{
   const ratios=ratiosByPair.get(link.id)??[1];
@@ -81,5 +118,5 @@ console.log(JSON.stringify({
    maxDamageRatio:Number(Math.max(...ratios).toFixed(4)),
   }];
  })),
- caveat:'flexible party_event review fixture; exact-copy persisted party traits are covered separately',
+ caveat:'flexible party_event review fixture; changedCases covers original low-pressure matrix only; Mystic Harmony has a separate synthetic harmful-pressure case; persisted party traits covered separately',
 }));

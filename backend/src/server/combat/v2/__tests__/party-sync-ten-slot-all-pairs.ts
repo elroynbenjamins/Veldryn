@@ -29,7 +29,7 @@ for(const specIndex of [0,1] as const)
    const players=fixtures.map(x=>x.actor);
    const input:CombatInput={seed:'SYNC_PAIR_'+link.id+'_'+specIndex+'_'+boss.id,
     players,enemies:[fixtures[0].input.enemies[0]],maxDurationMs:9000,tickMs:100};
-   const scope={
+   const scope:TrustedPartySyncRehearsalV2['scope']={
     ruleset:PARTY_SYNCHRONIZATION_RULESET_V2,
     encounterId:'SYNC_PAIR_ENC_'+cases,partyId:'SYNC_PAIR_PARTY',
     revision:1,seed:input.seed,mode:'party_event' as const,

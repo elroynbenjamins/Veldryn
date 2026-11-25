@@ -5,6 +5,8 @@ on:
     branches: ['feat/frostfall-winter-hearth-reconcile-20261125']
     paths:
       - '.github/workflows/winter-hearth-current-edge-reconcile.yml'
+      - 'apps/mobile/src/**'
+      - 'backend/online/**'
   workflow_dispatch:
 permissions:
   contents: write

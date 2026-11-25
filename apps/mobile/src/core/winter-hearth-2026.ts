@@ -13,8 +13,8 @@ export function winterHearthContentVisible(state:Pick<GameState,'account'>):bool
 }
 export function winterHearthLightRecipeAvailable(state:GameState,nowMs:number):boolean{
  const event=state.account.liveEvent;
- return winterHearthContentVisible(state)&&
-  Number.isFinite(nowMs)&&nowMs>=Math.max(event.startsAtMs,WINTER_HEARTH_2026_START_MS)&&nowMs<Math.min(event.endsAtMs,WINTER_HEARTH_2026_END_MS);
+ if(!event||!winterHearthContentVisible(state))return false;
+ return Number.isFinite(nowMs)&&nowMs>=Math.max(event.startsAtMs,WINTER_HEARTH_2026_START_MS)&&nowMs<Math.min(event.endsAtMs,WINTER_HEARTH_2026_END_MS);
 }
 
 export type WinterHearthStage=0|25|50|75|100;

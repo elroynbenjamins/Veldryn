@@ -1,0 +1,119 @@
+# Temporary candidate-only reconciliation; never deploy or write to main.
+name: Ultra Luxe reconcile current main
+on:
+  push:
+    branches: ['chatgpt/ascendant-collection-design-review']
+    paths: ['.github/workflows/ultra-luxe-reconcile-main.yml']
+permissions:
+  contents: write
+concurrency:
+  group: ultra-luxe-candidate-edge-reconcile
+  cancel-in-progress: false
+jobs:
+  reconcile:
+    if: github.ref == 'refs/heads/chatgpt/ascendant-collection-design-review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Merge the inspected main snapshot without dropping either branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          main=7d2df83697fb5d16f2e15c56f6620660b287c671
+          base=1313ab21eaeb14b5f59283c485ee2f19dac37173
+          git fetch origin main
+          test "$(git rev-parse origin/main)" = "$main"
+          test "$(git merge-base HEAD "$main")" = "$base"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if ! git merge --no-ff --no-commit "$main"; then
+            test -f .git/MERGE_HEAD
+          fi
+          python3 - <<'PY'
+          import subprocess, pathlib
+          def git(*args): return subprocess.check_output(['git',*args],text=True)
+          main='7d2df83697fb5d16f2e15c56f6620660b287c671'
+          base='1313ab21eaeb14b5f59283c485ee2f19dac37173'
+          bg='apps/mobile/src/theme/profile-background-assets.ts'
+          wardrobe='apps/mobile/tests/profile-wardrobe.ts'
+          generated={'backend/supabase/functions/gameplay/index.ts','backend/supabase/functions/coop/index.ts'}
+          allowed={bg,wardrobe,*generated}
+          conflicts=set(git('diff','--name-only','--diff-filter=U').splitlines())
+          assert conflicts <= allowed, f'Unexpected conflict(s): {conflicts-allowed}'
+          # Resolve only the two reviewed source overlaps, preserving the
+          # dedicated candidate assets and the precise main fallback changes.
+          old=git('show',base+':'+bg).splitlines()
+          current=git('show',main+':'+bg).splitlines()
+          draft=git('show','HEAD:'+bg)
+          removed=[line for line in old if line not in current]
+          added=[line for line in current if line not in old]
+          assert len(removed)==len(added)==3
+          for previous in removed:
+              key=previous.split("',name:")[0]
+              replacement=[line for line in added if line.startswith(key+"',name:")]
+              assert len(replacement)==1 and draft.count(previous)==1
+              draft=draft.replace(previous,replacement[0],1)
+          pathlib.Path(bg).write_text(draft)
+          # Main owns the latest tester-frame assertions; retain the draft's
+          # independent optional effects fix.
+          test=git('show',main+':'+wardrobe)
+          old_assert="equal(effects.total,assets.effects.length,'the clear choice is excluded from the effect total');"
+          new_assert="equal(effects.total,assets.effects?.length??0,'the clear choice is excluded from the effect total');"
+          assert test.count(old_assert)==1 and new_assert in git('show','HEAD:'+wardrobe)
+          pathlib.Path(wardrobe).write_text(test.replace(old_assert,new_assert,1))
+          for path in sorted(generated & conflicts):
+              subprocess.check_call(['git','checkout','--ours','--',path])
+          subprocess.check_call(['git','add','--',bg,wardrobe,*sorted(generated)])
+          assert not git('diff','--name-only','--diff-filter=U').strip()
+          # All main-only paths must be byte-for-byte preserved.
+          draft_paths=set(git('diff','--name-only',base,'HEAD').splitlines())
+          main_paths=set(git('diff','--name-only',base,main).splitlines())
+          for path in sorted(main_paths-draft_paths):
+              assert git('rev-parse',':'+path).strip()==git('rev-parse',main+':'+path).strip(),path
+          print('Reviewed conflicts resolved; all main-only files verified.')
+          PY
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - name: Install locked dependencies and regenerate canonical Edge bundles
+        run: |
+          pnpm --dir backend install --frozen-lockfile
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit verified reconciliation only to candidate branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=chatgpt/ascendant-collection-design-review
+          unexpected=$(git diff --name-only | grep -Ev '^backend/supabase/functions/(gameplay|coop)/index\.ts$' || true)
+          test -z "$unexpected"
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm .github/workflows/ultra-luxe-reconcile-main.yml .github/workflows/ultra-luxe-reconcile-generated-edge.yml
+          git diff --cached --check
+          git fetch origin "$branch" main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$branch")"
+          test "$(git rev-parse origin/main)" = 7d2df83697fb5d16f2e15c56f6620660b287c671
+          git commit -m 'Reconcile Ultra Luxe candidate with main and regenerate Edge bundles'
+          git merge-base --is-ancestor 7d2df83697fb5d16f2e15c56f6620660b287c671 HEAD
+          git push origin "HEAD:$branch"
+          git rev-parse HEAD
+      - name: Validate both Ultra Luxe sets and wardrobe
+        working-directory: apps/mobile
+        run: |
+          set -e
+          for test in celestial-showcase-layout ascendant-blessings ascendant-blessing-state ascendant-celestial-assets ultra-luxe-private-visibility draconic-showcase ultra-luxe-titles ultra-luxe-motion ultra-luxe-pet-poses ultra-luxe-set-visuals ultra-luxe-prestige ultra-luxe-grants; do
+            node "tests/$test.cjs"
+          done
+          node ../../tools/run-mobile-tests.mjs profile-wardrobe
+          pnpm typecheck
+          pnpm typecheck:core

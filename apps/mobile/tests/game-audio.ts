@@ -1,6 +1,7 @@
 import {assert} from './test-assert';
+import {dungeonMusicFor,dungeonBossMusicFor,worldBossMusicFor} from '../src/core/encounter-music';
 import {backgroundMusicFor} from '../src/core/music-context';
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,MUSIC_CONTEXTS} from '../src/core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,MUSIC_CONTEXTS,MUSIC_TRACKS} from '../src/core/audio-preferences';
 import {highestRarity,rarityRevealDelayMs,rarityRevealSound} from '../src/core/rarity-reveal-sound';
 const fs=require('fs') as {readFileSync(path:string,encoding:'utf8'):string;statSync(path:string):{size:number};existsSync(path:string):boolean;readdirSync(path:string):string[]};
 
@@ -20,10 +21,10 @@ for(const [kind,rows] of [['sfx',manifest.sfx],['music',manifest.music]] as cons
  assert.equal(fs.readdirSync('assets/audio/'+kind).filter(f=>f.endsWith('.mp3')).length,Object.keys(rows).length,'Untracked '+kind+' files');
 }
 assert.ok(sfxBytes<600_000,'Effects budget exceeded: '+sfxBytes);
-assert.ok(musicBytes<7_000_000,'Music budget exceeded: '+musicBytes);
+assert.ok(musicBytes<10_500_000,'Music budget exceeded: '+musicBytes);
 for(const required of ['ui_tap','reward_collect','level_up','rare_drop','unlock','hit','crit','heal','shield','interrupt','phase','cast','down','victory','defeat','craft_complete','upgrade_success','upgrade_fail','mine_hit','chop_hit','fish_splash','gather_yield','boss_entrance','boss_telegraph','boss_special','guard_break','role_moment','world_hp_drop','killing_blow','honor','tonic'])
  assert.ok(required in manifest.sfx,'Missing required effect '+required);
-for(const track of ['asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
+for(const track of MUSIC_TRACKS)assert.ok(track in manifest.music,'Missing music '+track);
 
 // Asterfall is the selected original-synthesis track.
 for(const [track,selection] of Object.entries({asterfall:'First Light'})){
@@ -44,6 +45,29 @@ for(const [track,selection] of Object.entries({
 }
 for(const track of ['dungeon','boss','world_boss'])assert.ok(manifest.music[track].seconds>=95,'Extended battle track is unexpectedly short: '+track);
 
+// Exact encounter defaults, legacy preferences, and manual remaps are independent.
+assert.equal(MUSIC_TRACKS.length,13);
+assert.equal(dungeonMusicFor('EXP_001'),'dungeon');
+assert.equal(dungeonMusicFor('EXP_003'),'dungeon_A');
+assert.equal(dungeonMusicFor('EXP_005'),'dungeon_B');
+assert.equal(dungeonMusicFor('EVENT_FROSTFALL_AURORA_HOLLOW'),'frostfall_dungeon');
+assert.equal(dungeonBossMusicFor('EVENT_FROSTFALL_AURORA_HOLLOW','BOSS_EXP_ROOT'),'frostfall_dungeon');
+assert.equal(dungeonBossMusicFor('EXP_001','BOSS_EXP_BELL'),'boss_A');
+assert.equal(dungeonBossMusicFor('EXP_003',undefined,'The Buried Heliarch'),'boss_B');
+assert.equal(dungeonBossMusicFor('EXP_005','BOSS_EXP_CANTOR'),'boss');
+assert.equal(worldBossMusicFor('hollowroot'),'world_boss');
+assert.equal(worldBossMusicFor('sunscar'),'world_boss_A');
+assert.equal(worldBossMusicFor('frostmarch'),'world_boss_B');
+assert.equal(worldBossMusicFor('unknown'),'world_boss');
+assert.equal(resolvePreferredMusicTrack('dungeon',DEFAULT_AUDIO_PREFERENCES,'dungeon_A'),'dungeon_A');
+const alternate=parseAudioPreferences('{"musicContexts":{"dungeon":{"enabled":true,"track":"boss_B"},"boss":{"enabled":false,"track":null}}}');
+assert.equal(resolvePreferredMusicTrack('dungeon',alternate,'dungeon_A'),'boss_B');
+assert.equal(resolvePreferredMusicTrack('boss',alternate,'boss_A'),null);
+assert.deepEqual(parseAudioPreferences(JSON.stringify(alternate)),alternate);
+for(const [id,selection] of Object.entries({boss_A:'Shatter the Crown',boss_B:'No Retreat',dungeon_A:'Iron Cathedral',dungeon_B:'Clockwork Descent',frostfall_dungeon:'Bells of the Frozen Citadel',world_boss_A:'Heavenfall Engine',world_boss_B:'Last Light of Eternity'})){
+ assert.equal(manifest.music[id]?.selection,selection);
+ assert.equal(manifest.music[id]?.rights_status,'creator-permission-received-owner-approved');
+}
 // Every combat impact kind has a sound.
 const burst=fs.readFileSync('src/components/CombatImpactBurst.tsx','utf8');
 for(const kind of ['damage','critical','heal','shield','interrupt','phase','cast','down'])

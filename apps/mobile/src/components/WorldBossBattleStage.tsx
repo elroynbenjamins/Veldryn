@@ -9,6 +9,7 @@ import {WORLD_BOSS_REPLAY_POLICY,worldBossReplayCues,type WorldBossReplayBeat,ty
  type WorldBossReplayPartyMember,type WorldBossHonor} from '../core/world-boss-replay-presentation';
 import {playHaptic} from '../storage/haptics';
 import {playSound,useMusicOverride} from '../storage/audio';
+import {worldBossMusicFor} from '../core/encounter-music';
 import {useGameTheme} from '../theme/ThemeContext';
 import {SCENE_BACKGROUNDS,type PixelBiome} from '../theme/pixel-scene-assets';
 import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
@@ -40,7 +41,7 @@ export function WorldBossBattleStage({input,language,reduceMotion,bossArt,onClos
  const cues=useMemo(()=>worldBossReplayCues({...input,reduceMotion}),[input,reduceMotion]);
  const boss=worldBossPresentationFor(input.bossId)!;
  const [index,setIndex]=useState(0);
- useMusicOverride('world_boss');
+ useMusicOverride('world_boss',worldBossMusicFor(input.bossId));
  const [foreground,setForeground]=useState(AppState.currentState==='active');
  useEffect(()=>{const sub=AppState.addEventListener('change',next=>setForeground(next==='active'));return()=>sub.remove();},[]);
  // Advance one beat at a time. Backgrounding pauses the fight so nothing is missed.

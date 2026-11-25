@@ -116,8 +116,15 @@ assert.equal(replay.commit,null);
 assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging(input(first.state,'physical-store-02',13)),
  /v2_physical_copy_already_delivered/,
  'A second request must never double-materialize a claimed copy');
-assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging(input(claimed.state,'physical-stale-01',13)),
- /stale_v2_physical_version/);
+// The expected command version must differ from the loaded authoritative version.
+// Two matching version fields cannot model a stale command; the separate CAS
+// race above covers a candidate built from a stale server snapshot.
+assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging({
+ ...input(claimed.state,'physical-stale-01',12),expectedVersion:13,
+}),/stale_v2_physical_version/);
+assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging({
+ ...input(claimed.state,'physical-stale-02',12),expectedVersion:11,
+}),/stale_v2_physical_version/);
 assert.throws(()=>simulateEquipmentV2PhysicalDeliveryStaging({
  ...input(claimed.state),stagingFixture:'invalid' as never,
 }),/v2_staging_fixture_required/);

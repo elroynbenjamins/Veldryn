@@ -91,8 +91,12 @@ export function issueEq2PrivateHitQaV22(input:CombatInput,actorId:string,ids:rea
  if(!actor||actor.combatV2?.version!==2||actor.team!=='players'||
  input.enemyDamageProfile!==undefined||input.initialPlayerState!==undefined)return fail('fixture_scope');
  if(supportOnly){
-  if(actor.role!=='support'||!['DAWNKEEPER','STONECALLER'].includes(actor.classId??'')||
-   !actor.id.startsWith('QA_EQ2_'+actor.classId+'_')||input.players.length<1||input.players.length>4||
+  // Verified V2 actors retain the launch display-name class identity, while
+  // isolated QA fixtures use the canonical enum. Accept only exact aliases.
+  const supportClass=actor.classId==='DAWNKEEPER'||actor.classId==='Dawnkeeper'?'DAWNKEEPER':
+   actor.classId==='STONECALLER'||actor.classId==='Stonecaller'?'STONECALLER':null;
+  if(actor.role!=='support'||!supportClass||
+   !actor.id.startsWith('QA_EQ2_'+supportClass+'_')||input.players.length<1||input.players.length>4||
    playerMaxHp.size!==input.players.length||input.players.some(p=>p.team!=='players'||p.combatV2?.version!==2||
    !p.id.startsWith('QA_EQ2_')||!Number.isFinite(p.stats.maxHp)||p.stats.maxHp<=0))return fail('fixture_scope');
  }else if(input.players.length!==1||!((actor.id.startsWith('QA_EQ2_RAVAGER_')&&exactIds.every(id=>isCurrent(id)||isCharge(id)||id==='eq2_combo_t5_runeforge_link:2'))||

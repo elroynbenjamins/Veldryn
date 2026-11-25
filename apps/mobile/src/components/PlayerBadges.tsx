@@ -1,5 +1,6 @@
 import {useUltraLuxeIdentityMotion} from './profile/UltraLuxeIdentityMotion';
 import {isUltraLuxeBadge} from '../core/ultra-luxe-cosmetics';
+import {SIGNATURE_CURVE_PHASE,SIGNATURE_BADGE_OPACITY,SIGNATURE_BADGE_SCALE,SIGNATURE_PARTIAL_BADGE_SCALE} from '../core/ultra-luxe-motion';
 import {useEffect,useState} from 'react';
 import {Animated,Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -22,8 +23,8 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const art=(artSize:number,animate=false)=>{
   const source=PLAYER_BADGE_ARTWORK[id];
   if(animate&&motion&&isUltraLuxeBadge(id)&&source){
-   const opacity=motion.clock.interpolate({inputRange:[0,.125,.25,.375,.5,14/24,16/24,19/24,.875,1],outputRange:[.85,1,.85,1,.85,.93,1,.92,1,.85]});
-   const scale=motion.clock.interpolate({inputRange:[0,14/24,16/24,19/24,1],outputRange:[1,1,motion.fullSet?1.1:1.04,1,1]});
+   const opacity=motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:SIGNATURE_BADGE_OPACITY});
+   const scale=motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:motion.fullSet?SIGNATURE_BADGE_SCALE:SIGNATURE_PARTIAL_BADGE_SCALE});
    return <Animated.Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
   }
   const fallback=PLAYER_BADGE_FALLBACK_GLYPHS[id];return source?<Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize}}/>:<View accessible={false} style={{width:artSize,height:artSize,borderRadius:Math.max(4,artSize*.22),alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:fallback?.accent??C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.8)'}}><Text style={{fontSize:Math.round(artSize*.58),lineHeight:Math.round(artSize*.68),fontWeight:'900',color:fallback?.accent??C.accent}}>{fallback?.glyph??'◇'}</Text></View>;

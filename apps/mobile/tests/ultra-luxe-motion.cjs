@@ -72,3 +72,16 @@ for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
 }
 assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('active?{clock,fullSet}:null'));
 console.log('Inactive and reduced-motion layers remain static; verified identity motion is disabled.');
+
+const {SIGNATURE_CURVE_PHASE:cp,SIGNATURE_CURVE_ENERGY:ce,SIGNATURE_TITLE_OPACITY:to,SIGNATURE_BADGE_OPACITY:bo,SIGNATURE_BADGE_SCALE:bs,SIGNATURE_PARTIAL_BADGE_SCALE:ps}=mod.exports;
+assert.equal(cp.length,21);assert.equal(cp.length,ce.length);
+for(let i=0;i<SIGNATURE_PHASE.length;i++){assert.equal(cp[i*4],SIGNATURE_PHASE[i]);assert.equal(ce[i*4],SIGNATURE_ENERGY[i]);}
+for(let i=1;i<cp.length;i++){assert(cp[i]>cp[i-1]);assert(ce[i]>=0&&ce[i]<=1);}
+for(const [curve,min,max] of [[to,.96,1],[bo,.92,1],[bs,1,1.06],[ps,1,1.03]]){
+ assert.equal(curve.length,cp.length);assert.equal(curve[0],curve.at(-1));
+ assert(curve.every(v=>v>=min-1e-10&&v<=max+1e-10));assert(Math.abs(curve[12]-max)<1e-10);
+}
+for(const layer of ['UltraLuxeEnvironment','UltraLuxeRail','UltraLuxePetAura','UltraLuxeAscendantFlourish'])assert(fx.includes('export const '+layer+'=memo('));
+assert(read('components/profile/UltraLuxeIdentityMotion.tsx').includes('outputRange:SIGNATURE_TITLE_OPACITY'));
+assert(read('components/PlayerBadges.tsx').includes('outputRange:SIGNATURE_BADGE_OPACITY'));
+console.log('Eased native signature, synchronized readable title/badge and memoized layers passed.');

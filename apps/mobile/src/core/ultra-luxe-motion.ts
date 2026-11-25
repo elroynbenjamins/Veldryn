@@ -2,6 +2,25 @@
 export const ULTRA_LUXE_CYCLE_MS=24000;
 export const SIGNATURE_PHASE=[0,8/24,14/24,16/24,19/24,1] as const;
 export const SIGNATURE_ENERGY=[0,0,.55,1,.48,0] as const;
+/** Pre-sampled smoothstep between the approved choreography anchors. Native
+ * interpolation only: no JS callbacks, overshoot or hard cuts at the peak. */
+const curvePhase:number[]=[SIGNATURE_PHASE[0]],curveEnergy:number[]=[SIGNATURE_ENERGY[0]];
+for(let i=1;i<SIGNATURE_PHASE.length;i++){
+ const start=SIGNATURE_PHASE[i-1],end=SIGNATURE_PHASE[i];
+ const from=SIGNATURE_ENERGY[i-1],to=SIGNATURE_ENERGY[i];
+ for(let j=1;j<=4;j++){
+  const t=j/4,ease=t*t*(3-2*t);
+  curvePhase.push(j===4?end:start+(end-start)*t);
+  curveEnergy.push(j===4?to:from+(to-from)*ease);
+ }
+}
+export const SIGNATURE_CURVE_PHASE:readonly number[]=curvePhase;
+export const SIGNATURE_CURVE_ENERGY:readonly number[]=curveEnergy;
+/** Identity stays legible and fixed in its slot; only subtle light at alignment. */
+export const SIGNATURE_TITLE_OPACITY=SIGNATURE_CURVE_ENERGY.map(e=>.96+.04*e);
+export const SIGNATURE_BADGE_OPACITY=SIGNATURE_CURVE_ENERGY.map(e=>.92+.08*e);
+export const SIGNATURE_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.06*e);
+export const SIGNATURE_PARTIAL_BADGE_SCALE=SIGNATURE_CURVE_ENERGY.map(e=>1+.03*e);
 export const RAIL_PATH=[[26,12],[170,12],[314,12],[326,95],[314,190],[170,193],[26,190],[12,95],[26,12]] as const;
 export const LOOP_PHASE=[0,.125,.25,.375,.5,.625,.75,.875,1] as const;
 export const ORBIT_X=[-1,-.707,0,.707,1,.707,0,-.707,-1] as const;

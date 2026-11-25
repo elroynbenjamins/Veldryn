@@ -1,13 +1,13 @@
-import type {ReactNode} from 'react';
+import {memo,type ReactNode} from 'react';
 import {Animated,StyleSheet,View,type ImageSourcePropType} from 'react-native';
-import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,type PetIdleKind} from '../../core/ultra-luxe-motion';
+import {FX_POINTS,RAIL_PATH,LOOP_PHASE,ORBIT_X,ORBIT_Y,SIGNATURE_PHASE,SIGNATURE_CURVE_PHASE,SIGNATURE_CURVE_ENERGY,shiftClosed,PET_IDLE_PHASE,PET_IDLE_POSES,type PetIdleKind} from '../../core/ultra-luxe-motion';
 const GLOW=require('../../../assets/ascendant/shared/soft_glow.webp') as ImageSourcePropType;
 const HAZE=require('../../../assets/ascendant/shared/drifting_haze.webp') as ImageSourcePropType;
 const light=(theme:'celestial'|'draconic')=>theme==='celestial'?'#ffdf9b':'#ff6928';
 type Clock=Animated.Value;
 type Common={clock:Clock;scale:number;theme:'celestial'|'draconic';particle:ImageSourcePropType};
 const pos=(k:number,x:number,y:number,w:number,h:number)=>({position:'absolute' as const,left:x*k,top:y*k,width:w*k,height:h*k});
-export function signatureEnergy(clock:Clock){return clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[...SIGNATURE_ENERGY]});}
+export function signatureEnergy(clock:Clock){return clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:[...SIGNATURE_CURVE_ENERGY]});}
 /** Reuse the scene clock: no JS frame updates or independent pet timers. */
 export function petIdleMotion(clock:Clock,k:number,kind:PetIdleKind){
  const frames=PET_IDLE_POSES[kind], inputRange=PET_IDLE_PHASE;
@@ -39,7 +39,7 @@ function SignatureAwakening({clock,scale:k,theme,particle}:Common){
 }
 
 /** Environment is mounted behind the identity plates, in all pet modes. */
-export function UltraLuxeEnvironment({clock,scale:k,theme,particle}:Common){
+function UltraLuxeEnvironmentLayer({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',energy=signatureEnergy(clock);
  const swell=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[.85,.85,1.2,1.5,1.12,.85]});
  const drift=clock.interpolate({inputRange:[0,.5,1],outputRange:[-5*k,5*k,-5*k]});
@@ -78,7 +78,7 @@ function DraconicHeatChannels({clock,scale:k}:{clock:Clock;scale:number}){
 }
 
 /** Closed perimeter paths and crest illumination, not over the readable identity area. */
-export function UltraLuxeRail({clock,scale:k,theme,particle}:Common){
+function UltraLuxeRailLayer({clock,scale:k,theme,particle}:Common){
  const energy=signatureEnergy(clock);
  return <Decorative>
   {[0,4].map(offset=>{
@@ -92,7 +92,7 @@ export function UltraLuxeRail({clock,scale:k,theme,particle}:Common){
  </Decorative>;
 }
 /** Matching pet only, synchronized with the same native clock. */
-export function UltraLuxePetAura({clock,scale:k,theme,particle}:Common){
+function UltraLuxePetAuraLayer({clock,scale:k,theme,particle}:Common){
  const celestial=theme==='celestial',cx=celestial?279:266,cy=147,rx=celestial?27:33,ry=celestial?8:6;
  const energy=signatureEnergy(clock);
  return <Decorative>
@@ -107,7 +107,7 @@ export function UltraLuxePetAura({clock,scale:k,theme,particle}:Common){
 }
 
 /** Full five-piece visual reward. Extra crown motes only; never covers identity or guild. */
-export function UltraLuxeAscendantFlourish({clock,scale:k,theme,particle}:Common){
+function UltraLuxeAscendantFlourishLayer({clock,scale:k,theme,particle}:Common){
  const energy=signatureEnergy(clock);
  const spread=clock.interpolate({inputRange:[...SIGNATURE_PHASE],outputRange:[0,0,3*k,11*k,6*k,0]});
  return <Decorative>
@@ -115,3 +115,9 @@ export function UltraLuxeAscendantFlourish({clock,scale:k,theme,particle}:Common
   <Animated.Image source={GLOW} resizeMode="stretch" style={[pos(k,133,0,74,32),{tintColor:light(theme),opacity:Animated.multiply(energy,.7)}]}/>
  </Decorative>;
 }
+
+// Stable clock, geometry and texture inputs avoid rebuilding native interpolation graphs.
+export const UltraLuxeEnvironment=memo(UltraLuxeEnvironmentLayer);
+export const UltraLuxeRail=memo(UltraLuxeRailLayer);
+export const UltraLuxePetAura=memo(UltraLuxePetAuraLayer);
+export const UltraLuxeAscendantFlourish=memo(UltraLuxeAscendantFlourishLayer);

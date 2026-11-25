@@ -79,7 +79,7 @@ begin
  where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-activate');
  perform cron.unschedule('veldryn-frostfall-2026-close')
  where exists(select 1 from cron.job where jobname='veldryn-frostfall-2026-close');
-end $;
+end $$;
 
 revoke all on function private.activate_frostfall_2026_v1() from public,anon,authenticated;
 revoke all on function private.close_frostfall_2026_v1() from public,anon,authenticated;

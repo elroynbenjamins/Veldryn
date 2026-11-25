@@ -1041,6 +1041,57 @@ async function notificationLifecycle() {
 }
 
 
+
+async function badgePollingLifecycle(){
+  const h=makeHarness();let tree;
+  try{
+    let view,selfReads=0,identityReads=0;
+    const reads=[];
+    const prefs={showSupporter:true,supporterAvailable:false,vipAvailable:false,vipPlusAvailable:false,supporterTierMonths:0,supporterTotalDays:0,equippedBadgeId:null};
+    h.mocks.set(path.join(app,'src/online/player-badges'),{
+      loadPlayerBadgePreferences:()=>{selfReads++;const d=deferred();reads.push(d);return d.promise;},
+      updatePlayerBadgePreferences:async()=>prefs,updateProfileBadges:async()=>prefs,updatePlayerEquippedBadge:async()=>prefs
+    });
+    h.mocks.set(path.join(app,'src/online/social'),{guildIdentities:async(ids)=>{identityReads++;return new Map(ids.map(id=>[id,{account_id:id}]));}});
+    h.mocks.set(path.join(app,'src/online/player-identity-cache'),{invalidatePlayerIdentity:()=>{},peekPlayerIdentity:()=>undefined,playerIdentityDetailsNeedRefresh:()=>false,playerIdentityNeedsRefresh:()=>false,subscribePlayerIdentityChanges:()=>()=>{}});
+    const {PlayerBadgeProvider,usePlayerBadges,useIdentityIcon}=h.load(path.join(app,'src/online/PlayerBadgeProvider'));
+    function Watcher(){useIdentityIcon('sender');return null;}
+    function Probe({count}){view=usePlayerBadges();return React.createElement(React.Fragment,null,...Array.from({length:count},(_,i)=>React.createElement(Watcher,{key:i})))}
+    const render=count=>React.createElement(PlayerBadgeProvider,null,React.createElement(Probe,{count}));
+    await act(async()=>{tree=create(render(1));});
+    assert.equal(selfReads,1);
+    await h.tick(60000);
+    assert.equal(selfReads,1,'Periodic badge poll cannot overlap its in-flight read');
+    assert.equal(identityReads,1);
+    const initialRead=reads.shift();
+    let manual;
+    await act(async()=>{manual=view.refresh();});
+    assert.equal(selfReads,2,'Explicit refresh must start a fresh read after a possible external entitlement write');
+    await act(async()=>{initialRead.resolve({...prefs,vipAvailable:true});});
+    assert.equal(view.vipAvailable,false,'Superseded read cannot publish entitlements');
+    await act(async()=>{reads.shift().resolve(prefs);await manual;});
+    await act(async()=>{tree.update(render(3));});await h.tick(50);
+    assert.equal(identityReads,1,'Adding more chat rows with the same sender does not restart the identity batch');
+    await act(async()=>{tree.update(render(1));});await h.tick(50);
+    assert.equal(identityReads,1,'Removing duplicate watchers keeps the unique sender subscription stable');
+    const oldRefresh=view.refresh;
+    await act(async()=>{void oldRefresh();});
+    const oldRead=reads.shift();
+    await act(async()=>{h.auth.session={user:{id:'bravo'}};tree.update(render(1));});
+    assert.equal(view.accountId,'bravo');
+    assert.equal(view.loading,true);
+    const afterSwitch=selfReads;
+    await act(async()=>{void oldRefresh();oldRead.resolve({...prefs,vipAvailable:true});});
+    assert.equal(selfReads,afterSwitch,'A stale callback cannot request badges for a new account');
+    assert.equal(view.vipAvailable,false,'Old account results cannot publish entitlements');
+    await act(async()=>{reads.shift().resolve(prefs);});
+    assert.equal(view.loading,false);
+    await act(async()=>{tree.unmount();});tree=null;
+    assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    console.log('PASS badge polling: own-read coalescing, unique sender watches and account isolation');
+  }finally{if(tree)await act(async()=>tree.unmount());h.restore();}
+}
+
 async function main() {
   await feedLifecycle();
   await initialNullState();
@@ -1060,5 +1111,6 @@ async function main() {
   await privateChannelVisibility();
   await partyLifecycle();
   await notificationLifecycle();
+  await badgePollingLifecycle();
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

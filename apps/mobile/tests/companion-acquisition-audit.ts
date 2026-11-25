@@ -60,7 +60,7 @@ for(const [req,label] of [[shadeRequirement,'Gloam Mite Mastery'],[trollRequirem
 }
 // Every class can earn Gloamknife Shade through Gloam Mite mastery alone.
 for(const classId of classIds){
- const state=createCharacter(newGame(0),classId,'Class-neutral recruit');
+ const state=createCharacter(newGame(0),classId,'Neutral recruit');
  ok(!companionUnlockRequirementMet(state,shadeRequirement),classId+' must not unlock Gloamknife Shade before mastery');
  const eligible={...state,character:{...state.character!,monsterMasteryPoints:{GLOAM_MITE:monsterMasteryKillsForRank(20)}}};
  ok(companionUnlockRequirementMet(eligible,shadeRequirement),classId+' must unlock Gloamknife Shade with mastery');

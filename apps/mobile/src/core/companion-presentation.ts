@@ -5,7 +5,6 @@ import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
 import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
-import {characterClassSkills} from './class-skills';
 import {monsterMastery,monsterMasteryRankFromKills,monsterMasteryKillsForRank} from './monster-mastery';
 
 export function companionMaterialName(id:string){return ITEMS.find(item=>item.id===id)?.name??id.toLowerCase().replace(/_/g,' ').replace(/^./,s=>s.toUpperCase());}
@@ -44,7 +43,6 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  const target=req.target??req.description,total=Math.max(1,req.amount??1);
  let current=state.account.companionUnlockProgress?.[target]??0;
  const rosterCharacters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)].filter((row):row is NonNullable<GameState['character']>=>!!row);
- if(target==='KNIFE_DANCER_SKILL_TOTAL')current=Math.max(0,...rosterCharacters.filter(character=>character.classId==='KNIFE_DANCER').map(character=>characterClassSkills(character).reduce((sum,s)=>sum+s.level,0)));
 
  if(req.type==='monster_mastery'&&MONSTERS.some(m=>m.id===target))current=Math.max(current,monsterMastery(state,target).rank,...rosterCharacters.map(character=>monsterMasteryRankFromKills(character.monsterMasteryPoints?.[target]??0)));
 

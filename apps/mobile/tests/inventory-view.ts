@@ -1,6 +1,8 @@
 import {rebasedCombatLevelFromLegacyLevel as rebaseLevel} from '../src/core/progression';
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem,sellBankItem} from '../src/core/game';
-import {indexInventoryGearCopies} from '../src/core/inventory-gear-lookup';
+import {indexInventoryGearCopies,inventoryInspectedGearLocations} from '../src/core/inventory-gear-lookup';
+import type {CraftedGearOwnershipAudit} from '../src/core/crafted-gear-ownership';
+import {validateGatheringToolRoll} from '../src/core/gathering-tool-rolls';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,foodHealingAmount,inventoryFavoriteIds,inventoryLockedIds,inventoryNewItemIds,shouldAcknowledgeInventoryOnExit,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,toggleInventoryLock,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings,settingsForOnlineCommand} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkSalvageSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
@@ -186,4 +188,23 @@ const indexedMs=Date.now()-fastStart;
 ok(naiveChecksum===indexedChecksum,'Indexed gear lookup preserves all 1,500 synthetic item outcomes');
 ok(JSON.stringify(copies)===copyBefore,'Building gear index cannot modify persisted equipment records');
 console.log('PROFILE inventory gear lookup: 6001 records, 1500 lookups; linear scan '+scanMs+'ms, index build '+buildMs+'ms, indexed reads '+indexedMs+'ms (CI host only).');
+// The shared inspection audit must not expose another character's carried copy,
+// a different item, an equipped copy, or any location from an inconsistent audit.
+const ownership:CraftedGearOwnershipAudit={linked:[
+ {instanceId:'own',itemId:'gear',place:'inventory',holderCharacterId:'hero'},
+ {instanceId:'other',itemId:'gear',place:'inventory',holderCharacterId:'alt'},
+ {instanceId:'bank',itemId:'gear',place:'bank'},
+ {instanceId:'worn',itemId:'gear',place:'equipped',holderCharacterId:'hero'},
+ {instanceId:'different',itemId:'other-gear',place:'inventory',holderCharacterId:'hero'},
+],unlocatedInstanceIds:['legacy'],unmarkedPhysicalCopies:1,problems:[],consistent:true};
+const ownershipBefore=JSON.stringify(ownership);
+ok(inventoryInspectedGearLocations(ownership,'gear','inventory','hero').map(row=>row.instanceId).join(',')==='own','Inspection returns only the active character\'s verified carried copy');
+ok(inventoryInspectedGearLocations(ownership,'gear','bank','hero').map(row=>row.instanceId).join(',')==='bank','Shared bank inspection is independent of active character');
+ok(inventoryInspectedGearLocations({...ownership,problems:['conflict']},'gear','inventory','hero').length===0,'Inspection fails closed on any ownership conflict');
+ok(inventoryInspectedGearLocations(ownership,null,'bank','hero').length===0,'No inspected item yields no copy candidates');
+ok(JSON.stringify(ownership)===ownershipBefore,'Inspection projection does not mutate the ownership audit');
+const toolRows=[{id:'tool',itemId:'first'},{id:'tool',itemId:'second'},{id:'other-tool',itemId:'third'}];
+const toolIndex=indexInventoryGearCopies(toolRows);
+ok(toolIndex.get('tool')===toolRows.find(row=>row.id==='tool'),'Tool record indexing preserves first-match behavior on duplicate IDs');
+ok(validateGatheringToolRoll(toolIndex.get('tool'),'second')===undefined,'Invalid or mismatched tool records remain unverified');
 console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, Quick Inspect gear decisions and availability, capacity status, sorting, transfer preflight and healing previews');

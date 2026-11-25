@@ -67,8 +67,6 @@ jobs:
         run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
         run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs && node tests/chat-dock-responsive.cjs
-      - name: Verify hidden World Boss, Party Event and Market UI routes
-        run: pnpm test:feature-hubs
       - name: Validate compact recruitment quick-post and Crafting persistence
         run: |
           pnpm exec tsc -p tsconfig.core.json --outDir .core-build
@@ -76,6 +74,10 @@ jobs:
           node .core-build/apps/mobile/tests/social-recruitment-ui-contract.js
       - name: Validate compact gathering tool rows and vault safety
         run: node tests/compact-gathering-tools-redesign-ui.cjs
+      - name: Verify hidden World Boss, Party Event and Market UI routes
+        run: pnpm test:feature-hubs
+      - name: Validate Ascendant showcase geometry and closed blessing gate
+        run: node tests/celestial-showcase-layout.cjs && node tests/ascendant-blessings.cjs && node tests/ascendant-blessing-state.cjs && node tests/ascendant-celestial-assets.cjs && node tests/ultra-luxe-private-visibility.cjs && node tests/draconic-showcase.cjs && node tests/ultra-luxe-titles.cjs && node tests/ultra-luxe-motion.cjs && node tests/ultra-luxe-pet-poses.cjs && node tests/ultra-luxe-set-visuals.cjs && node tests/ultra-luxe-prestige.cjs && node tests/ultra-luxe-grants.cjs
       - name: Typecheck app
         run: pnpm typecheck
       - name: Validate focused Home layout and queue/reward safety

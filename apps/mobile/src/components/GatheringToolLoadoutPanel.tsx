@@ -188,7 +188,7 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
        <View style={s.copyHead}><Text style={s.copyLabel}>{gt('ACTIVE TOOL')}</Text><Text style={[s.copyBadge,active&&s.copyBadgeActive]}>{active?gt('ACTIVE'):gt('EMPTY')}</Text></View>
        {active?<><Text style={s.good}>{copyLabel(activeCopy)}</Text>
         <Text style={s.sub}>{gt('This copy currently contributes to gathering.')}</Text>
-        <View style={s.copyActions}><View style={s.action}><GameButton title={gt('Move to Inventory')} tone="secondary" onPress={()=>dispatch('unequip_tool',{id:active.id})}/></View></View>
+        <View style={s.copyActions}><View style={s.action}><GameButton compact title={gt('Move to Inventory')} tone="secondary" onPress={()=>dispatch('unequip_tool',{id:active.id})}/></View><View style={s.action}><GameButton compact title={gt('To Bank')} tone="secondary" onPress={()=>dispatch('unequip_tool',{id:active.id,to:'bank'})}/></View></View>
        </>:<Text style={s.emptyHint}>{gt('Choose an inventory copy below to equip this tier.')}</Text>}
       </View>
       <View style={s.copy}>
@@ -197,7 +197,8 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
         <Text style={s.sub}>{gt('Stored safely; grants no bonus until activated.')}</Text>
         <View style={s.copyActions}>
          <View style={s.action}><GameButton title={gt('Activate')} selected tone="primary" onPress={()=>dispatch('tool_vault_activate',{skillId,tier:selected.tier})} disabled={!canEquip}/></View>
-         <View style={s.action}><GameButton title={gt('Move to Inventory')} tone="secondary" onPress={()=>dispatch('tool_vault_withdraw',{skillId,tier:selected.tier})}/></View>
+         <View style={s.action}><GameButton compact title={gt('Move to Inventory')} tone="secondary" onPress={()=>dispatch('tool_vault_withdraw',{skillId,tier:selected.tier})}/></View>
+         <View style={s.action}><GameButton compact title={gt('To Bank')} tone="secondary" onPress={()=>dispatch('tool_vault_withdraw',{skillId,tier:selected.tier,to:'bank'})}/></View>
         </View>
        </>:<Text style={s.emptyHint}>{gt('Save a second copy here to switch without using Inventory.')}</Text>}
       </View>

@@ -11,7 +11,7 @@ import {COLLECTIBLE_PLAYER_BADGE_IDS} from '../src/core/player-badges';
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
-let state=createCharacter(newGame(0),'IRONWARDEN','Cosmetic Tester');
+let state=createCharacter(newGame(0),'IRONWARDEN','Cosmetics Tester');
 ok(!profileCosmeticsTester(state),'fresh accounts are not cosmetics testers');
 ok(!profileAnimatedCosmeticsEnabled(state),'unreleased animations stay disabled for normal accounts');
 state={...state,account:{...state.account,entitlements:{...(state.account.entitlements??{}),[PROFILE_COSMETICS_TESTER_ENTITLEMENT]:true}}};

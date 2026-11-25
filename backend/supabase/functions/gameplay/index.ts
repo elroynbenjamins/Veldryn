@@ -304,6 +304,55 @@ var init_faith2 = __esm({
   }
 });
 
+// ../apps/mobile/src/core/ultra-luxe-grants.ts
+var ULTRA_LUXE_GRANT_COLLECTIONS = [
+  { id: "ascendant-celestial-sovereign", background: "ascendant-celestial-astral-sanctum", border: "ascendant-celestial-crown-of-the-cosmos", pet: "ascendant-celestial-aetherion", icon: "ascendant-celestial-crown-icon", title: "ascendant-celestial-title", titleName: "Sovereign of the Stars", badge: "ascendant_sovereign_of_stars", nameStyle: "ascendant-celestial-name" },
+  { id: "ascendant-draconic-dominion", background: "ascendant-draconic-dominion-of-ash", border: "ascendant-draconic-throne-of-embers", pet: "ascendant-draconic-vharaxis", icon: "ascendant-draconic-ruby-icon", title: "ascendant-draconic-title", titleName: "Dragon Sovereign", badge: "ascendant_dragon_sovereign", nameStyle: "ascendant-draconic-name" }
+];
+function ultraLuxeGrantProjection(raw2) {
+  const ids2 = new Set(Array.isArray(raw2) ? raw2.filter((id) => typeof id === "string") : []);
+  const rows2 = ULTRA_LUXE_GRANT_COLLECTIONS.filter((row) => ids2.has(row.id));
+  return { collectionIds: rows2.map((row) => row.id), backgrounds: rows2.map((row) => row.background), borders: rows2.map((row) => row.border), pets: rows2.map((row) => row.pet), icons: rows2.map((row) => row.icon), titles: rows2.map((row) => row.title), badges: rows2.map((row) => row.badge), nameStyles: rows2.map((row) => row.nameStyle) };
+}
+var privateId = (id) => id.startsWith("ascendant-") || id.startsWith("ascendant_");
+function replacePrivate(existing, verified) {
+  return [.../* @__PURE__ */ new Set([...(existing ?? []).filter((id) => !privateId(id)), ...verified])];
+}
+function allowed(id, owned) {
+  return !id || !privateId(id) || owned.includes(id);
+}
+function withVerifiedUltraLuxeGrants(state, raw2) {
+  const grants = ultraLuxeGrantProjection(raw2);
+  const sanitize = (c) => {
+    const title2 = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === c.profileTitle?.trim().toLowerCase());
+    return {
+      ...c,
+      profileBackgroundId: allowed(c.profileBackgroundId, grants.backgrounds) ? c.profileBackgroundId : "asterfall-night",
+      profileBorderId: allowed(c.profileBorderId, grants.borders) ? c.profileBorderId : void 0,
+      selectedCosmeticPetId: allowed(c.selectedCosmeticPetId, grants.pets) ? c.selectedCosmeticPetId : void 0,
+      profileIconId: allowed(c.profileIconId, grants.icons) ? c.profileIconId : "class:" + c.classId,
+      profileTitle: title2 && !grants.titles.includes(title2.title) ? "New Adventurer" : c.profileTitle
+    };
+  };
+  return {
+    ...state,
+    account: {
+      ...state.account,
+      unlockedProfileBackgroundIds: replacePrivate(state.account.unlockedProfileBackgroundIds, grants.backgrounds),
+      unlockedProfileBorderIds: replacePrivate(state.account.unlockedProfileBorderIds, grants.borders),
+      unlockedCosmeticPetIds: replacePrivate(state.account.unlockedCosmeticPetIds, grants.pets),
+      unlockedProfileIconIds: replacePrivate(state.account.unlockedProfileIconIds, grants.icons),
+      unlockedTitleIds: replacePrivate(state.account.unlockedTitleIds, grants.titles)
+    },
+    character: state.character ? sanitize(state.character) : state.character,
+    ...state.otherCharacters ? { otherCharacters: state.otherCharacters.map((row) => ({ ...row, character: sanitize(row.character) })) } : {}
+  };
+}
+function canUsePrivateTitleText(state, title2) {
+  const reserved = ULTRA_LUXE_GRANT_COLLECTIONS.find((row) => row.titleName.toLowerCase() === title2?.trim().toLowerCase());
+  return !reserved || (state.account.unlockedTitleIds?.includes(reserved.title) ?? false);
+}
+
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
@@ -50986,7 +51035,7 @@ var QUICK_NAV_DESTINATIONS = [
   "Empty"
 ];
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Quests", "Dungeon", "Companions", "Guild", "Settings"];
-var allowed = new Set(QUICK_NAV_DESTINATIONS);
+var allowed2 = new Set(QUICK_NAV_DESTINATIONS);
 
 // ../apps/mobile/src/core/account-roster.ts
 init_progression();
@@ -52768,6 +52817,16 @@ function profileAnimatedCosmeticsEnabled(state) {
   return PROFILE_ANIMATED_COSMETICS_RELEASED || profileCosmeticsTester(state);
 }
 
+// ../apps/mobile/src/core/ultra-luxe-prestige.ts
+var ULTRA_LUXE_ICONS = [
+  { id: "ascendant-celestial-crown-icon", name: "Crown of the Cosmos" },
+  { id: "ascendant-draconic-ruby-icon", name: "Crest of Eternal Embers" }
+];
+function ownedUltraLuxeIcons(state) {
+  const owned = new Set(state.account.unlockedProfileIconIds ?? []);
+  return ULTRA_LUXE_ICONS.filter((row) => owned.has(row.id));
+}
+
 // ../apps/mobile/src/core/profile-icons.ts
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
   "event:veilbreak-2026-lantern-warden",
@@ -52803,7 +52862,8 @@ function profileIconCollection(state) {
   const known2 = new Set(portraits.map((row) => row.id));
   const rewards = LIVE_EVENT_CATALOG.flatMap((event) => [...CLASSES.flatMap((c) => event.milestones(c.id).map((row) => row.reward)), ...event.shop.map((row) => row.reward), ...event.communityMilestones.flatMap((row) => row.reward ? [row.reward] : []), ...event.discoveries.map((row) => row.reward)]);
   const events = [...new Map(rewards.filter((row) => row.kind === "profile_icon" && !known2.has(row.id)).map((row) => [row.id, row])).values()];
-  return [...base, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
+  const privateIcons = ownedUltraLuxeIcons(state).map((row) => ({ ...row, group: "Ascendant", source: "Private account grant.", unlocked: true, artworkReady: true, selected: selected2 === row.id }));
+  return [...base, ...privateIcons, ...portraits, ...events.map((row) => ({ id: row.id, name: row.name, group: "Event", source: "Earned festival reward.", unlocked: owned.has(row.id), artworkReady: EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id), selected: selected2 === row.id }))];
 }
 function canUseProfileIcon(state, id) {
   return PROFILE_ICON_CATALOG.some((row) => row.id === id && row.group === "Starter") || profileIconCollection(state).some((row) => row.id === id && row.unlocked);
@@ -56036,28 +56096,28 @@ function activateGatheringToolReserve(state, skillId, tier, nowMs = Date.now()) 
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
   return setGatheringToolSlots(settled, skillId, tier, reserve, current);
 }
-function withdrawGatheringToolReserve(state, skillId, tier) {
+function withdrawGatheringToolReserve(state, skillId, tier, to = "inventory") {
   if (!state.character) throw new Error("Character required");
   const reserve = reserveGatheringToolSlot(state, skillId, tier);
   if (!reserve) throw new Error("No saved reserve in this tier");
-  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Inventory is full");
-  return setGatheringToolSlots({ ...state, inventory: { ...state.inventory, stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
+  const added = addBounded(state[to].stacks, entitlementStorageCapacity(state, to), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Inventory is full");
+  return setGatheringToolSlots({ ...state, [to]: { ...state[to], stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
 }
-function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId) {
+function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId, to = "inventory") {
   if (!state.character) return state;
   const equipped = equippedGatheringTools(state, skillId);
   const selected2 = itemId ? equipped.find((row) => row.id === itemId) : equipped[equipped.length - 1];
   if (!selected2) return state;
   const tier = selected2.tier;
   if (reserveGatheringToolSlot(state, skillId, tier))
-    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier);
+    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier, to);
   const current = activeGatheringToolSlot(state, skillId, tier);
   if (!current) return state;
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
-  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Free one Inventory slot before unequipping this tool");
-  return setGatheringToolSlots({ ...settled, inventory: { ...settled.inventory, stacks: added.stacks } }, skillId, tier, void 0, void 0);
+  const added = addBounded(settled[to].stacks, entitlementStorageCapacity(settled, to), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Free one Inventory slot before unequipping this tool");
+  return setGatheringToolSlots({ ...settled, [to]: { ...settled[to], stacks: added.stacks } }, skillId, tier, void 0, void 0);
 }
 function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (!state.character) throw new Error("No character");
@@ -56337,7 +56397,7 @@ var PREMIUM_PROFILE_COSMETICS = [
   { id: "celestial-sovereign", name: "Celestial Sovereign", tier: "ascendant", borderId: "premium:celestial-sovereign:crown-of-cosmos", borderName: "Crown of the Cosmos", fallbackBorderId: "guild-border-royal", effectId: "premium:celestial-sovereign:celestial-alignment", effectName: "Celestial Alignment", backgroundId: "premium:celestial-sovereign:astral-sanctum", backgroundName: "Astral Sanctum", fallbackBackgroundId: "bg_frostfall", petId: "premium:celestial-sovereign:aetherion-starborn", petName: "Aetherion, the Starborn", fallbackPetId: "EVT_PET_009", badgeId: "ascendant_sovereign_of_stars", badgeName: "Sovereign of the Stars", accent: "#F5D982", softAccent: "#7181C8" },
   { id: "draconic-dominion", name: "Draconic Dominion", tier: "ascendant", borderId: "premium:draconic-dominion:throne-of-embers", borderName: "Throne of Embers", fallbackBorderId: "dungeon:sunscar:amberglass-loop", effectId: "premium:draconic-dominion:awakening-of-the-dragon", effectName: "Awakening of the Dragon", backgroundId: "premium:draconic-dominion:dominion-of-ash", backgroundName: "Dominion of Ash", fallbackBackgroundId: "dungeon:sunscar:buried-observatory", petId: "premium:draconic-dominion:vharaxis-eternal-flame", petName: "Vharaxis, the Eternal Flame", fallbackPetId: "PET_036", badgeId: "ascendant_dragon_sovereign", badgeName: "Dragon Sovereign", accent: "#FF8A45", softAccent: "#9E332D" },
   { id: "abyssal-majesty", name: "Abyssal Majesty", tier: "ascendant", borderId: "premium:abyssal-majesty:crown-of-the-depths", borderName: "Crown of the Depths", fallbackBorderId: "frame_gloamward", effectId: "premium:abyssal-majesty:call-of-the-deep", effectName: "Call of the Deep", backgroundId: "premium:abyssal-majesty:forgotten-abyss", backgroundName: "The Forgotten Abyss", fallbackBackgroundId: "bg_veilbreak", petId: "premium:abyssal-majesty:nhalzuun-abyssborn", petName: "Nhal'Zuun, the Abyssborn", fallbackPetId: "PET_039", badgeId: "ascendant_monarch_of_deep", badgeName: "Monarch of the Deep", accent: "#6CF2EB", softAccent: "#176F83" },
-  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "bg_kingdom_approach", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
+  { id: "paradox-eternal", name: "Paradox Eternal", tier: "ascendant", borderId: "premium:paradox-eternal:fractured-eternity", borderName: "Fractured Eternity", fallbackBorderId: "guild-border-silver", effectId: "premium:paradox-eternal:reality-rewritten", effectName: "Reality Rewritten", backgroundId: "premium:paradox-eternal:beyond-the-veil", backgroundName: "Beyond the Veil", fallbackBackgroundId: "dungeon:frostmarch:shiverlake-reflections", petId: "premium:paradox-eternal:aeon-timeless", petName: "Aeon, the Timeless", fallbackPetId: "PET_016", badgeId: "ascendant_beyond_existence", badgeName: "Beyond Existence", accent: "#EDEBFF", softAccent: "#8E71C9" }
 ];
 var premiumProfileByBorder = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.borderId, row]));
 var premiumProfileByEffect = new Map(PREMIUM_PROFILE_COSMETICS.map((row) => [row.effectId, row]));
@@ -59693,6 +59753,8 @@ function reconcileWorkingTowardGeneratedRules(state) {
 
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
+var TOOL_INSTANCE_ID_MAX = 200;
+var INVENTORY_SELECTION_ID_MAX = TOOL_INSTANCE_ID_MAX + "copy:".length;
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -59793,10 +59855,10 @@ var fields = {
   gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id", "instanceId"],
-  unequip_tool: ["id"],
+  unequip_tool: ["id", "to"],
   tool_vault_save: ["id", "instanceId"],
   tool_vault_activate: ["skillId", "tier"],
-  tool_vault_withdraw: ["skillId", "tier"],
+  tool_vault_withdraw: ["skillId", "tier", "to"],
   tool_move: ["instanceId", "to"],
   tool_sell: ["instanceId"],
   equip_set: [],
@@ -59880,18 +59942,18 @@ function validateGameCommand(value) {
   if (row.type === "bulk_transfer") {
     const bulk = args;
     oneOf(bulk.location, ["inventory", "bank"]);
-    stringArray(bulk, "ids");
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
   }
   if (row.type === "inventory_preference_bulk") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 190);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     oneOf(bulk.kind, ["lock", "favorite"]);
     if (typeof bulk.enabled !== "boolean") throw new Error("invalid_inventory_preference");
   }
   if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
   if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 180);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     if (bulk.location !== void 0) oneOf(bulk.location, ["inventory", "bank"]);
   }
   return { type: row.type, args };
@@ -60405,15 +60467,15 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "deposit_materials":
       state = depositAllMaterials(state);
       break;
-    // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+    // Exact copy selections use the same receipt ID and prefix limit as validation.
     case "bulk_transfer":
-      state = bulkTransferSelected(state, stringArray(a, "ids", 100, 185), oneOf(a.location, ["inventory", "bank"]));
+      state = bulkTransferSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
-      state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSellSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "bulk_salvage":
-      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
@@ -60440,30 +60502,32 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = claimOverflowToBank(state);
       break;
     case "equip_tool":
-      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200));
+      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "tool_vault_save":
-      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200), now);
+      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX), now);
       message = "Tool saved to its reserve slot";
       break;
     case "tool_vault_activate":
       state = activateGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), now);
       message = "Saved tool activated";
       break;
-    case "tool_vault_withdraw":
-      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4));
-      message = "Saved tool moved to Inventory";
+    case "tool_vault_withdraw": {
+      const to = oneOf(a.to ?? "inventory", ["inventory", "bank"]);
+      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), to);
+      message = to === "bank" ? "Saved tool moved to Bank" : "Saved tool moved to Inventory";
       break;
+    }
     case "tool_move":
-      state = moveGatheringToolCopy(state, text(a, "instanceId", 200), oneOf(a.to, ["inventory", "bank"]));
+      state = moveGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX), oneOf(a.to, ["inventory", "bank"]));
       break;
     case "tool_sell":
-      state = sellGatheringToolCopy(state, text(a, "instanceId", 200));
+      state = sellGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "unequip_tool": {
       const toolId = text(a, "id"), tool2 = gatheringToolDef(toolId);
       if (!tool2) throw new Error("Not a gathering tool");
-      state = unequipGatheringTool(state, tool2.skillId, now, toolId);
+      state = unequipGatheringTool(state, tool2.skillId, now, toolId, oneOf(a.to ?? "inventory", ["inventory", "bank"]));
       break;
     }
     case "equip_set":
@@ -60582,7 +60646,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "inventory_preference_bulk": {
-      const ids2 = stringArray(a, "ids", 100, 190), kind = oneOf(a.kind, ["lock", "favorite"]);
+      const ids2 = stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), kind = oneOf(a.kind, ["lock", "favorite"]);
       if (typeof a.enabled !== "boolean") throw new Error("invalid_inventory_preference");
       state = applyBulkInventoryProtection(state, ids2, kind, a.enabled);
       message = `${ids2.length} item stacks ${a.enabled ? "protected" : "unprotected"}`;
@@ -60602,6 +60666,7 @@ function executeGameCommand(previous, value, now, options = {}) {
         patch[key] = input === null ? void 0 : input;
       }
       if (patch.profileTitle !== void 0 && patch.profileTitle.length > 32) throw new Error("invalid_profile_title");
+      if (!canUsePrivateTitleText(state, patch.profileTitle)) throw new Error("cosmetic_not_owned");
       if (patch.profileIconId && !canUseProfileIcon(state, patch.profileIconId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBackgroundId && !["asterfall-night", "ironwood-dawn", "silverbrook-mist", "oathglass-hall", ...state.account.unlockedProfileBackgroundIds ?? []].includes(patch.profileBackgroundId)) throw new Error("cosmetic_not_owned");
       if (patch.profileBorderId && !state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId)) throw new Error("cosmetic_not_owned");
@@ -60680,6 +60745,9 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
   const accountId = await services2.authenticate(token);
   return accountId ? { accountId, adminQa: false } : null;
 }) {
+  const privateGrants = services2.ultraLuxeGrantAuthority === true;
+  const receiptRpc = privateGrants ? "read_online_game_receipt_ultra_luxe_v1" : "read_online_game_receipt_server_v1";
+  const loadRpc = privateGrants ? "load_online_game_ultra_luxe_v1" : "load_online_game_server_v1";
   return async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (!["GET", "POST"].includes(request.method)) return json({ error: "method_not_allowed" }, 405);
@@ -60725,7 +60793,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           await services2.rpc("record_player_activity_server_v1", { p_account_id: accountId, p_kind: command.type.startsWith("event_") ? "event_action" : "gameplay_action" });
         } catch {
         }
-        const prior = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const prior = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
         if (prior) {
           if (prior.requestHash !== requestHash) {
             await recordOutcome("conflict");
@@ -60735,8 +60803,9 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
           return json(prior.response);
         }
       }
-      const loaded = await services2.rpc("load_online_game_server_v1", { p_account_id: accountId });
-      const storedState = rebaseCombatGameState(loaded.state ?? newGame(loaded.serverNow));
+      const loaded = await services2.rpc(loadRpc, { p_account_id: accountId });
+      if (privateGrants && !Array.isArray(loaded.ultraLuxeCollectionIds)) throw new Error("ultra_luxe_grant_projection_missing");
+      const storedState = rebaseCombatGameState(privateGrants ? withVerifiedUltraLuxeGrants(loaded.state ?? newGame(loaded.serverNow), loaded.ultraLuxeCollectionIds) : loaded.state ?? newGame(loaded.serverNow));
       const trustedState = request.method === "POST" ? snapshotEarnedLegacySeasonalClaims(storedState, loaded.serverNow) : storedState;
       const state = restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
       state.account.longTermAccountScopeId = accountId;
@@ -60754,7 +60823,7 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       }
       if (!body || !command) return json({ state, version: loaded.version, serverNow: loaded.serverNow, accountId });
       if (body.expectedVersion !== loaded.version) {
-        const committed2 = await services2.rpc("read_online_game_receipt_server_v1", { p_account_id: accountId, p_request_id: body.requestId });
+        const committed2 = await services2.rpc(receiptRpc, { p_account_id: accountId, p_request_id: body.requestId });
         if (committed2) {
           if (committed2.requestHash === requestHash) {
             await recordOutcome("replayed");
@@ -60805,8 +60874,8 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
         ...projectSegments.some(({ activity }) => activity.kind === "alchemy" || activity.kind === "processing") ? [] : contributions.filter((event) => event.kind === "crafting" && event.units > 0).map((event) => ({ kind: "crafting", units: Math.min(100, event.units) }))
       ];
       const response = { guildProjectEffort, guildPveEffort, state: restoreCumulativeMonsterUnlocks(result.state), version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
-      const commitRpc = "commit_online_game_guild_pve_v1";
-      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      const commitRpc = privateGrants ? "commit_online_game_ultra_luxe_v1" : "commit_online_game_guild_pve_v1";
+      const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...privateGrants ? { p_expected_grants: [...ultraLuxeGrantProjection(loaded.ultraLuxeCollectionIds).collectionIds].sort() } : {}, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
       try {
         await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
       } catch {

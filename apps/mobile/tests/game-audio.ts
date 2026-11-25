@@ -23,10 +23,10 @@ assert.ok(sfxBytes<600_000,'Effects budget exceeded: '+sfxBytes);
 assert.ok(musicBytes<7_000_000,'Music budget exceeded: '+musicBytes);
 for(const required of ['ui_tap','reward_collect','level_up','rare_drop','unlock','hit','crit','heal','shield','interrupt','phase','cast','down','victory','defeat','craft_complete','upgrade_success','upgrade_fail','mine_hit','chop_hit','fish_splash','gather_yield','boss_entrance','boss_telegraph','boss_special','guard_break','role_moment','world_hp_drop','killing_blow','honor','tonic'])
  assert.ok(required in manifest.sfx,'Missing required effect '+required);
-for(const track of ['town','asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
+for(const track of ['asterfall','sunscar','frostmarch','dungeon','boss','world_boss'])assert.ok(track in manifest.music,'Missing music '+track);
 
-// Two selected tracks were composed/rendered using original synthesis only.
-for(const [track,selection] of Object.entries({town:'Lanterns at Hearth',asterfall:'First Light'})){
+// Asterfall is the selected original-synthesis track.
+for(const [track,selection] of Object.entries({asterfall:'First Light'})){
  assert.equal(manifest.music[track]?.selection,selection,'Wrong approved soundtrack for '+track);
  assert.equal(manifest.music[track]?.rights_status,'original-synthesis-no-third-party-samples',
    'Unexpected sample provenance for '+track);
@@ -65,19 +65,23 @@ assert.deepEqual(parseAudioPreferences(null),DEFAULT_AUDIO_PREFERENCES);
 assert.deepEqual(parseAudioPreferences('{"music":0,"effects":3}'),{music:0,effects:3,musicContexts:{}},'Existing v1 volume settings migrate');
 for(const bad of ['{"music":7}','not json','null','[]'])assert.deepEqual(parseAudioPreferences(bad),DEFAULT_AUDIO_PREFERENCES,'Corrupt audio prefs fall back: '+bad);
 assert.equal(AUDIO_LEVEL_VOLUME[0],0);assert.ok(AUDIO_LEVEL_VOLUME[3]<=1);
-assert.equal(MUSIC_CONTEXTS.length,7,'Every existing theme has a configurable context');
+assert.equal(MUSIC_CONTEXTS.length,6,'Every existing theme has a configurable context');
 const customized=parseAudioPreferences(JSON.stringify({
  music:2,effects:1,musicContexts:{
   sunscar:{enabled:false,track:'boss'},
   dungeon:{enabled:true,track:'frostmarch'},
-  town:{enabled:true,track:'town'},
+  town:{enabled:false,track:'town'},
+  asterfall:{enabled:true,track:'town'},
   unknown:{enabled:false,track:'town'},
   frostmarch:{enabled:true,track:'invalid'},
  }
 }));
 assert.equal(resolvePreferredMusicTrack('sunscar',customized),null,'Muted region stays silent');
 assert.equal(resolvePreferredMusicTrack('dungeon',customized),'frostmarch','Dungeon can play another theme');
-assert.equal(resolvePreferredMusicTrack('town',customized),'town');
+assert.equal(resolvePreferredMusicTrack('asterfall',customized),'asterfall','Retired Town remap falls back to the current region');
+assert.ok(!('town' in customized.musicContexts),'Retired Town context is discarded');
+assert.ok(!('asterfall' in customized.musicContexts),'Retired enabled remap is removed');
+assert.ok(!('town' in manifest.music),'Retired Town asset must not be bundled');
 assert.equal(resolvePreferredMusicTrack('boss',customized),'boss','Untouched activity uses default');
 assert.equal(resolvePreferredMusicTrack(null,customized),null,'No scene stays silent');
 assert.ok(!('unknown' in customized.musicContexts),'Unknown contexts are rejected');

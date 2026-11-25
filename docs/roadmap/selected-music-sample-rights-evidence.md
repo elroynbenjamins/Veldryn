@@ -8,7 +8,7 @@ The maintainer explicitly approved use of the existing recordings as-is on 25 No
 
 ## Attribution
 
-Five Veldryn original MIDI compositions rendered using TimGM6mb SoundFont — Tim Brechbill (2004), David Bolton (2010), and contributing sample authors; original bank distributed under GPL-2.0. See [upstream license and notices](https://github.com/arbruijn/TimGM6mb/blob/master/COPYING.txt). The two original-synthesis compositions do not use the bank. This acknowledgment does not relicense Veldryn or the recordings.
+Five Veldryn original MIDI compositions rendered using TimGM6mb SoundFont — Tim Brechbill (2004), David Bolton (2010), and contributing sample authors; original bank distributed under GPL-2.0. See [upstream license and notices](https://github.com/arbruijn/TimGM6mb/blob/master/COPYING.txt). The two historical original-synthesis compositions do not use the bank; Town is now retired and only Asterfall remains bundled. This acknowledgment does not relicense Veldryn or the recordings.
 
 ## Source recording inventory
 

@@ -30,6 +30,7 @@ export function useSocialNotificationCounts(){
   const {session}=useAuthSession(),accountId=session?.user.id;
   const [counts,setCounts]=useState<SocialNotificationCounts>(ZERO);
   const activeAccount=useRef(accountId),countsAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null);
+  const confirmedGuild=useRef<string|null>(null);
   activeAccount.current=accountId;
   const refresh=useCallback((force=true)=>{
     if(activeAccount.current!==accountId)return Promise.resolve();
@@ -47,7 +48,7 @@ export function useSocialNotificationCounts(){
         myGuild().catch(()=>undefined),
       ]);
       // Do not start dependent reads after the owning account has changed.
-      if(inFlight.current!==request||activeAccount.current!==accountId)return;
+      if(inFlight.current!==request||activeAccount.current!==accountId||(mine&&mine.account_id!==accountId))return;
       // These independent guild reads used to be serialized. Unknown results
       // retain the last confirmed badge, while confirmed non-membership clears it.
       const [guildProjectRewards,guildApplicationsCount]=await Promise.all([
@@ -60,8 +61,10 @@ export function useSocialNotificationCounts(){
       if(chat)chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
       if(inFlight.current!==request||activeAccount.current!==accountId)return;
       countsAccount.current=accountId;
+      const guildChanged=mine!==undefined&&confirmedGuild.current!==(mine?.guild_id??null);
+      if(mine!==undefined)confirmedGuild.current=mine?.guild_id??null;
       setCounts(current=>{
-        const applications=guildApplicationsCount??current.guildApplications;
+        const applications=guildApplicationsCount??(guildChanged?0:current.guildApplications);
         const guildInviteCount=guildInvites??current.guildInvites,partyInviteCount=partyInvites??current.partyInvites;
         const guild=applications+guildInviteCount,party=partyInviteCount;
         const guildChatUnread=chatAttention?.guildUnread??current.guildChatUnread,guildChatMentions=chatAttention?.guildMentions??current.guildChatMentions;
@@ -69,7 +72,7 @@ export function useSocialNotificationCounts(){
         const partyChatUnread=chatAttention?.partyUnread??current.partyChatUnread,partyChatMentions=chatAttention?.partyMentions??current.partyChatMentions;
         const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
-        const next={...current,friendRequests:incoming??current.friendRequests,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:applications,guildInvites:guildInviteCount,guildProjectRewards:guildProjectRewards??current.guildProjectRewards,party,partyInvites:partyInviteCount};
+        const next={...current,friendRequests:incoming??current.friendRequests,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:applications,guildInvites:guildInviteCount,guildProjectRewards:guildProjectRewards??(guildChanged?0:current.guildProjectRewards),party,partyInvites:partyInviteCount};
         return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.guildProjectRewards+next.party+next.events};
       });
     }catch{
@@ -82,7 +85,7 @@ export function useSocialNotificationCounts(){
     request.promise=promise;return promise;
   },[accountId]);
   useEffect(()=>{
-    inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);
+    inFlight.current=null;confirmedGuild.current=null;countsAccount.current=accountId;setCounts(ZERO);
     let previous=AppState.currentState,stopped=false,generation=0;
     let timer:ReturnType<typeof setTimeout>|undefined;
     const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};

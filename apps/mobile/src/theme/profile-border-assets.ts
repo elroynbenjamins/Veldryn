@@ -19,5 +19,7 @@ export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['dungeon:frostmarch:frostbound-chime',require('../../assets/profile-borders/dungeon-frostmarch-frostbound-chime.webp')],
   ...(celestial?[[CELESTIAL_IDS.border,require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
   ...(draconic?[[DRACONIC_IDS.border,draconic.standardBorder] as [string,ImageSourcePropType]]:[]),
+  ...(celestial?[[ 'premium:celestial-sovereign:crown-of-cosmos',require('../../assets/ascendant/celestial/celestial_border_standard.webp') as ImageSourcePropType] as [string,ImageSourcePropType]]:[]),
+  ...(draconic?[[ 'premium:draconic-dominion:throne-of-embers',draconic.standardBorder] as [string,ImageSourcePropType]]:[]),
   ...EVENT_DECORATIONS.map(({borderId,border}):[string,ImageSourcePropType]=>[borderId,border]),
 ]);

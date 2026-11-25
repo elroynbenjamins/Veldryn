@@ -13,9 +13,24 @@ const Context=createContext<BadgeContext>({...empty,setVisible:async()=>{},setPr
 export function PlayerBadgeProvider({children}:{children:ReactNode}){
  const accountId=useAuthSession().session?.user.id??'';
  const [state,setState]=useState<Omit<BadgeState,'setVisible'|'setProfileBadges'|'setEquipped'|'refresh'>>(empty),generation=useRef(0),saving=useRef(0);
+ const activeAccount=useRef(accountId);activeAccount.current=accountId;
+ const selfRead=useRef<{accountId:string;version:number;promise:Promise<void>}|null>(null);
  const watched=useRef(new Map<string,number>()),[watchVersion,setWatchVersion]=useState(0);
  const [remote,setRemote]=useState<{accountId:string;identities:Map<string,PlayerBadgeIdentity|undefined>;icons:Map<string,SocialProfileIcon>}>({accountId:'',identities:new Map(),icons:new Map()});
- const watch=useCallback((id:string)=>{watched.current.set(id,(watched.current.get(id)??0)+1);setWatchVersion(value=>value+1);return()=>{const count=(watched.current.get(id)??1)-1;if(count)watched.current.set(id,count);else watched.current.delete(id);setWatchVersion(value=>value+1);};},[]);
+ // Several visible chat rows may watch the same sender. Only changes to the
+ // unique ID set should restart the remote identity read/batch lifecycle.
+ const watch=useCallback((id:string)=>{
+  const count=watched.current.get(id)??0;
+  watched.current.set(id,count+1);
+  if(!count)setWatchVersion(value=>value+1);
+  let released=false;
+  return()=>{
+   if(released)return;released=true;
+   const remaining=(watched.current.get(id)??1)-1;
+   if(remaining>0)watched.current.set(id,remaining);
+   else{watched.current.delete(id);setWatchVersion(value=>value+1);}
+  };
+ },[]);
  useEffect(()=>{
   let alive=true,request=0;
   const showCached=(changedId:string)=>{
@@ -57,18 +72,31 @@ export function PlayerBadgeProvider({children}:{children:ReactNode}){
   });
   return()=>{alive=false;request++;clearTimeout(batch);clearInterval(timer);foreground.remove();unsubscribe();};
  },[accountId,watchVersion]);
- const refresh=useCallback(async()=>{
-  if(saving.current)return;
+ const refresh=useCallback(()=>{
+  if(activeAccount.current!==accountId||saving.current)return Promise.resolve();
+  if(!accountId){setState(empty);return Promise.resolve();}
+  const existing=selfRead.current;
+  if(existing?.accountId===accountId&&existing.version===generation.current)return existing.promise;
   const version=++generation.current;
-  if(!accountId){setState(empty);return;}
-  try{const data=await loadPlayerBadgePreferences();if(version===generation.current)setState({...data,accountId,loading:false,busy:false,error:''});}
-  catch(e){if(version===generation.current)setState({...empty,accountId,error:e instanceof Error?e.message:'Could not load badges.'});}
+  const current=()=>version===generation.current&&activeAccount.current===accountId;
+  const promise=(async()=>{
+   try{
+    const data=await loadPlayerBadgePreferences();
+    if(current()){
+     const next={...data,accountId,loading:false,busy:false,error:''};
+     // Badge payloads contain only small normalized preferences and ID arrays.
+     setState(previous=>JSON.stringify(previous)===JSON.stringify(next)?previous:next);
+    }
+   }catch(e){if(current())setState({...empty,accountId,error:e instanceof Error?e.message:'Could not load badges.'});}
+  })().finally(()=>{if(selfRead.current?.version===version)selfRead.current=null;});
+  selfRead.current={accountId,version,promise};
+  return promise;
  },[accountId]);
  useEffect(()=>{
-  saving.current=0;setState({...empty,accountId,loading:!!accountId});void refresh();
+  saving.current=0;selfRead.current=null;setState({...empty,accountId,loading:!!accountId});void refresh();
   const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},60000);
   const foreground=AppState.addEventListener('change',next=>{if(next==='active')void refresh();else{generation.current++;setState(value=>({...value,identity:undefined}));}});
-  return()=>{generation.current++;clearInterval(timer);foreground.remove();};
+  return()=>{generation.current++;selfRead.current=null;clearInterval(timer);foreground.remove();};
  },[accountId,refresh]);
  const setVisible=useCallback(async(visible:boolean)=>{
   if(!accountId||saving.current)return;

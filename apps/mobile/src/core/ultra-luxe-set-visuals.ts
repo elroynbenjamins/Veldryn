@@ -22,3 +22,9 @@ export function resolveTesterUltraLuxeVisuals(actual:Equipped,allowed:Readonly<R
  const resolve=(kind:VisualPiece,id:string|null|undefined)=>allowed[kind]&&id?TESTER_RENDER_ALIASES[kind].get(id)??id:id;
  return {...actual,background:resolve('background',actual.background),border:resolve('border',actual.border),pet:resolve('pet',actual.pet)};
 }
+
+/** An independently equipped effect must not be swallowed by a dedicated scene.
+ * The scene/frame pair keeps its ambient identity when no effect is selected. */
+export function ultraLuxeSceneEffectCompatible(effect:string|null|undefined,matchingEffect:string){
+ return !effect||effect===matchingEffect;
+}

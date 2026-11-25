@@ -1,3 +1,11 @@
+import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
+import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
+import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals} from '../core/ultra-luxe-set-visuals';
+import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
+import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
+import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
+import {DRACONIC_IDS} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from '../theme/draconic-integration-assets';
 import {profileT} from '../i18n/profile';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo,useState} from 'react';
@@ -21,34 +29,59 @@ import {ProfileFrameOverlay} from './ProfileFrameOverlay';
 import {AnimatedProfileBorderGlows,ProceduralProfileBorderGlows,ProceduralProfileSceneEffect,ProfileSceneEffect} from './ProfileCosmeticMotion';
 import {cosmeticArtByBorder,cosmeticArtByEffect} from '../theme/profile-cosmetic-art-v1';
 import {profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../theme/profile-cosmetic-runtime-v1';
-import {profileAnimatedCosmeticsEnabled} from '../core/profile-cosmetic-access';
+import {profileAnimatedCosmeticsEnabled,profileCosmeticsTester} from '../core/profile-cosmetic-access';
 import {ProfileBorderBackdrop} from './ProfileBorderBackdrop';
 import {profileSceneContentAnchors} from '../core/profile-frame-layout';
 import {CardBackground} from './CardBackground';
 import {personalBackgroundVariants} from '../theme/card-background-assets';
-import {PlayerBadges,PlayerBadgeShowcase} from './PlayerBadges';
+import {PlayerBadges,PlayerBadgeShowcase,useBadgeClock} from './PlayerBadges';
 import {usePlayerBadges} from '../online/PlayerBadgeProvider';
+import {CelestialSovereignPreview} from './profile/CelestialSovereignPreview';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from '../theme/celestial-integration-assets';
+import {CelestialStandardBackgroundEffects,CelestialStandardBorderEffects} from './profile/CelestialStandardEffects';
 
-export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgroundId:string}){
+export function ProfileScenePreview({state,backgroundId,active=false}:{state:GameState;backgroundId:string;active?:boolean}){
  const language=useGameLanguage();
+ const privateName=useUltraLuxeNameSelection(active&&ownedUltraLuxeTitles(state).length>0).style;
  const [previewWidth,setPreviewWidth]=useState(320),compact=previewWidth<300;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
- const character=state.character!,background=profileBackgroundPreviewById.get(backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===backgroundId);
+ const character=state.character!,base=BASE_PROFILE_BACKGROUNDS.find(item=>item.id===backgroundId);
+ const badgeNow=useBadgeClock(badges.identity);
+ const displayedBadges=[...playerBadgeIds(badges.identity,badgeNow),...profileBadgeIds(badges.identity,badgeNow)];
+ const verifiedTitleId=ownedUltraLuxeTitles(state).find(t=>t.name===character.profileTitle)?.id;
+ const tester=profileCosmeticsTester(state);
+ const visualSelection=resolveTesterUltraLuxeVisuals({background:backgroundId,border:character.profileBorderId,pet:character.selectedCosmeticPetId,verifiedTitleId,displayedBadges},{
+  background:tester&&(state.account.unlockedProfileBackgroundIds?.includes(backgroundId)??false),
+  border:tester&&(state.account.unlockedProfileBorderIds?.includes(character.profileBorderId??'')??false),
+  pet:tester&&(state.account.unlockedCosmeticPetIds?.includes(character.selectedCosmeticPetId??'')??false),
+ });
+ const renderBackgroundId=visualSelection.background??backgroundId;
+ const renderBorderId=visualSelection.border??character.profileBorderId??'';
+ const renderPetId=visualSelection.pet??character.selectedCosmeticPetId??'';
+ const background=profileBackgroundPreviewById.get(renderBackgroundId)??profileBackgroundPreviewById.get(backgroundId);
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(character.selectedCosmeticPetId??''),animated=profileAnimatedCosmeticsEnabled(state),borderArt=animated?cosmeticArtByBorder.get(character.profileBorderId??''):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderRuntime=animated?profileCosmeticRuntimeByBorder.get(character.profileBorderId??''):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined,borderSource=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(character.profileBorderId??''));
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(renderPetId)??petArtSource(character.selectedCosmeticPetId??''),animated=profileAnimatedCosmeticsEnabled(state),borderArt=animated?cosmeticArtByBorder.get(renderBorderId):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderRuntime=animated?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined,borderSource=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(renderBorderId));
  const anchors=profileSceneContentAnchors(borderSource?8:0);
- return <View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
+ const celestialAssets=getEnabledCelestialAssets();
+ const celestialBackground=!!celestialAssets&&renderBackgroundId===CELESTIAL_IDS.background;
+ const celestialBorder=!!celestialAssets&&renderBorderId===CELESTIAL_IDS.border;
+ const draconic=getDraconicAssets();
+ const draconicBackground=!!draconic&&renderBackgroundId===DRACONIC_IDS.background;
+ const draconicBorder=!!draconic&&renderBorderId===DRACONIC_IDS.border;
+ const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
-   <ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={borderSource} existingInset={8}>
-   {background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
+   <ProfileBorderBackdrop borderId={borderArt?renderBorderId:(borderRuntime?.fallbackBorderId??renderBorderId)} source={borderSource} existingInset={8}>
+   {background?<CardBackground sources={personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
    <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
-   {effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
+   {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+   {celestialBackground?<CelestialStandardBackgroundEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+   {effectArt?<ProfileSceneEffect art={effectArt} active={active} reduceMotion={state.settings.reduceMotion}/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
    </ProfileBorderBackdrop><View style={[s.identityPlate,compact?s.identityStackCompact:s.identityStack,compact&&s.compactIdentity]}>
-    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
-    <Text numberOfLines={1} style={s.title}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
+    <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={[s.name,compact&&s.compactName]}/><PlayerBadges identity={badges.identity}/></View>
+    <Text numberOfLines={1} style={[s.title,{color:ownedUltraLuxeTitleColor(state,character.profileTitle,C.dark)??(C.dark?C.accentSoft:C.text)}]}>{character.profileTitle??profileT(language,"New Adventurer")}</Text>
     <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
     <View style={s.identityFill}/>
     {compact?null:<PlayerBadgeShowcase identity={badges.identity} size={15}/>}
@@ -58,11 +91,41 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
   </View>
   </View>
   {borderSource?<ProfileFrameOverlay source={borderSource} sceneSafe/>:null}
-  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active reduceMotion={state.settings.reduceMotion}/>:null}
+  {borderArt?<AnimatedProfileBorderGlows art={borderArt} active={active} reduceMotion={state.settings.reduceMotion}/>:borderRuntime?<ProceduralProfileBorderGlows runtime={borderRuntime} active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+  {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
+  {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
+ const celestial=visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
+ if(draconic&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border){
+ return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+  portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.draconicIdentity}>
+   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.draconicName}/><PlayerBadges identity={badges.identity} size={12}/></View>
+   <UltraLuxeTitleText title={character.profileTitle??profileT(language,'New Adventurer')} verified={!!verifiedTitleId} color={ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#ffb76b'} style={s.draconicTitle}/>
+   <Text numberOfLines={1} style={s.draconicMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+  </View>} badges={<PlayerBadgeShowcase identity={badges.identity} size={12} variant="bare"/>}/>;
+ }
+ if(!celestial)return standard;
+ return <CelestialSovereignPreview fullSet={ultraLuxeVisualTier({...CELESTIAL_IDS,title:'ascendant-celestial-title'},visualSelection)==='ascendant'} assets={celestial.scene} equippedPetId={visualSelection.pet} matchingPetId={CELESTIAL_IDS.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
+  portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
+  identity={<View style={s.celestialIdentity}>
+   <View style={s.nameRow}><PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.celestialName}/><PlayerBadges identity={badges.identity} size={12}/></View>
+   <UltraLuxeTitleText title={character.profileTitle??profileT(language,'New Adventurer')} verified={!!verifiedTitleId} color={ownedUltraLuxeTitleColor(state,character.profileTitle,true)??'#efd69b'} style={s.celestialTitle}/>
+   <Text numberOfLines={1} style={s.celestialMeta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}</Text>
+   <PlayerBadgeShowcase identity={badges.identity} size={13} variant="bare"/>
+  </View>}/>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  ...profileShowcaseStyles(C),
+ draconicIdentity:{flex:1,minWidth:0,overflow:'hidden'},
+ draconicName:{fontSize:11,lineHeight:12,includeFontPadding:false,color:'#fff0d6',fontWeight:'800',flexShrink:1,minWidth:0},
+ draconicTitle:{fontSize:9,lineHeight:10,includeFontPadding:false,color:'#ffb76b'},
+ draconicMeta:{fontSize:8,lineHeight:10,includeFontPadding:false,color:'#f6d4b9',flexShrink:1,minWidth:0},
+ draconicMetaRow:{flexDirection:'row',gap:3,alignItems:'baseline'},
+ celestialIdentity:{flex:1,minWidth:0,overflow:'hidden'},
+ celestialName:{fontSize:12,lineHeight:15,color:'#fff0c8',fontWeight:'800',flexShrink:1,minWidth:0,includeFontPadding:false},
+ celestialTitle:{fontSize:10,lineHeight:12,color:'#efd69b',includeFontPadding:false},
+ celestialMeta:{fontSize:9,lineHeight:12,color:'#d6e0f4',includeFontPadding:false},
  frame:{width:'100%',maxWidth:480,alignSelf:'center',position:'relative'},
  surface:{borderRadius:14,overflow:'hidden',backgroundColor:C.panel},
  framedSurface:{margin:8,borderRadius:4},

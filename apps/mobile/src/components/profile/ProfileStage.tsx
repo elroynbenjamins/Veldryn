@@ -1,3 +1,5 @@
+import {useUltraLuxeNameSelection} from '../../online/useUltraLuxeNameSelection';
+import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../../core/ultra-luxe-titles';
 import {profileT} from '../../i18n/profile';
 import {useGameLanguage} from '../../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
@@ -32,6 +34,7 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
  state:GameState;collapsed:boolean;onToggle:()=>void;onAudiencePreview?:()=>void;trailing?:string;
 }){
  const language=useGameLanguage();
+ const privateName=useUltraLuxeNameSelection(ownedUltraLuxeTitles(state).length>0).style;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),badges=usePlayerBadges();
  const character=state.character;
  if(!character)return null;
@@ -50,8 +53,8 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
   <View style={[s.stripArt,!!frame&&s.stripArtFramed]}><ProfileBorderBackdrop borderId={borderArt?character.profileBorderId:(borderRuntime?.fallbackBorderId??character.profileBorderId)} source={frame} existingInset={5}>{art}<View style={s.stripScrim}/>{effectArt?<ProfileSceneEffect art={effectArt} active reduceMotion/>:effectRuntime?<ProceduralProfileSceneEffect runtime={effectRuntime} active reduceMotion/>:null}</ProfileBorderBackdrop></View>
   <ProfileIcon id={character.profileIconId} classId={character.classId} size={38} style={[s.stripIcon,!!frame&&s.stripIconFramed]}/>
   <View style={s.stripCopy}>
-   <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
-   <Text numberOfLines={1} style={s.stripMeta}>{title}</Text>
+   <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.stripName}/>
+   <Text numberOfLines={1} style={[s.stripMeta,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
   </View>
   <View style={s.chip}><Text style={s.chipText}>{profileT(language,"Expand")} ▾</Text></View>
   {frame?<ProfileFrameOverlay source={frame} sceneSafe/>:null}
@@ -69,10 +72,10 @@ export function ProfileStage({state,collapsed,onToggle,onAudiencePreview,trailin
     <ProfileIcon id={character.profileIconId} classId={character.classId} size={62} style={s.avatar}/>
     <View style={s.copy}>
      <View style={s.nameRow}>
-      <PlayerStyledName name={character.name} nameStyle={effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
+      <PlayerStyledName name={character.name} nameStyle={privateName??effectivePlayerNameStyle(state)} reduceMotion={state.settings.reduceMotion} numberOfLines={1} style={s.name}/>
       <PlayerBadges identity={badges.identity}/>
      </View>
-     <Text numberOfLines={1} style={s.title}>{title}</Text>
+     <Text numberOfLines={1} style={[s.title,ownedUltraLuxeTitleColor(state,title,C.dark)?{color:ownedUltraLuxeTitleColor(state,title,C.dark)}:undefined]}>{title}</Text>
      <Text numberOfLines={1} style={s.meta}>{profileT(language,'Lv. {level}',{level:character.level})} · {className}{trailing?' · '+trailing:''}</Text>
      <PlayerBadgeShowcase identity={badges.identity} size={15} style={s.badgeShelf}/>
     </View>

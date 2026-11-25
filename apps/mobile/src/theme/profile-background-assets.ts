@@ -1,4 +1,9 @@
+import {DRACONIC_IDS,DRACONIC_COLLECTION} from '../core/draconic-showcase-layout';
+import {getDraconicAssets} from './draconic-integration-assets';
+const draconic=getDraconicAssets();
 import {ImageSourcePropType} from 'react-native';
+import {CELESTIAL_IDS,getEnabledCelestialAssets} from './celestial-integration-assets';
+const celestial=getEnabledCelestialAssets();
 
 export interface ProfileBackgroundPreview{
   id:string;
@@ -19,6 +24,8 @@ export const PROFILE_BACKGROUND_PREVIEWS:readonly ProfileBackgroundPreview[]=[
   {id:'dungeon:asterfall:rootbound-sanctuary',name:'Rootbound Sanctuary',source:require('../../assets/profile-backgrounds/dungeon-asterfall-rootbound-sanctuary.webp'),status:'export_prepared',unlockBinding:null},
   {id:'dungeon:sunscar:buried-observatory',name:'Buried Observatory',source:require('../../assets/profile-backgrounds/dungeon-sunscar-buried-observatory.webp'),status:'export_prepared',unlockBinding:null},
   {id:'dungeon:frostmarch:shiverlake-reflections',name:'Shiverlake Reflections',source:require('../../assets/profile-backgrounds/dungeon-frostmarch-shiverlake-reflections.webp'),status:'export_prepared',unlockBinding:null},
+  ...(celestial?[{id:CELESTIAL_IDS.background,name:'Astral Sanctum',source:celestial.scene.background,status:'export_prepared' as const,unlockBinding:null}]:[]),
+  ...(draconic?[{id:DRACONIC_IDS.background,name:DRACONIC_COLLECTION.backgroundName,source:draconic.scene.background,status:'export_prepared' as const,unlockBinding:null}]:[]),
   {id:'premium:celestial-sovereign:astral-sanctum',name:'Astral Sanctum · Test Fallback',source:require('../../assets/profile-backgrounds/bg_frostfall.webp'),status:'export_prepared',unlockBinding:null},
   {id:'premium:draconic-dominion:dominion-of-ash',name:'Dominion of Ash · Test Fallback',source:require('../../assets/profile-backgrounds/dungeon-sunscar-buried-observatory.webp'),status:'export_prepared',unlockBinding:null},
   {id:'premium:abyssal-majesty:forgotten-abyss',name:'The Forgotten Abyss · Test Fallback',source:require('../../assets/profile-backgrounds/bg_veilbreak.webp'),status:'export_prepared',unlockBinding:null},

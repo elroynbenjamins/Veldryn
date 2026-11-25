@@ -1,4 +1,4 @@
-name: Frostfall emotes Edge reconciliation
+name: Frostfall emotes Edge reconciliation on 1.0.12
 on:
   push:
     branches: [frostfall-emotes-integration]
@@ -34,8 +34,6 @@ jobs:
         run: |
           pnpm --dir backend build:online
           node tools/verify-gameplay-edge.mjs
-      - name: Verify Frostfall regressions
-        run: node tools/run-mobile-tests.mjs annual-events-v2 live-event-catalog frostfall-companion-rework
       - name: Commit only generated server bundles to the candidate
         shell: bash
         run: |

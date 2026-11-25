@@ -34,7 +34,7 @@ test('mute/restore preserves all region choices and both channels independently'
 });
 test('choosing a master level while muted changes the next remembered level',()=>{
  const {audioAfterMuteToggle,rememberAudibleAudioLevels}=pureAudio();
- const previous={music:3,effects:1,musicContexts:{town:{enabled:false,track:null}}};
+ const previous={music:3,effects:1,musicContexts:{asterfall:{enabled:false,track:null}}};
  let remembered=rememberAudibleAudioLevels({music:2,effects:2,musicContexts:{}},previous);
  const muted=audioAfterMuteToggle(previous,remembered,'music');
  const chosen={...muted,music:1};
@@ -49,7 +49,7 @@ test('Settings uses the single scrollable per-region Music panel',()=>{
  assert.match(component,/REGIONS\.map\(regionRow\)/);
  assert.match(component,/const REGIONS:readonly MusicContextId\[\]=\['asterfall','sunscar','frostmarch'\]/);
  assert.doesNotMatch(component,/const REGIONS:[^;]*\['town'/);
- assert.match(component,/MUSIC_CONTEXTS\.filter\(track=>track!==['"]town['"]\)/);
+ assert.match(component,/const MUSIC_CHOICES=MUSIC_CONTEXTS;/);
  assert.match(component,/ACTIVITIES\.map\(regionRow\)/);
  assert.match(component,/minHeight:44/);
  assert.match(component,/accessibilityRole="switch"/);

@@ -27,6 +27,7 @@ function start(){
   let preferenceChanged=false;
   subscriptions=[
     AppState.addEventListener('change',status=>{
+      if(generation!==subscriptionGeneration)return;
       const next=status==='active';
       if(next!==appActive){appActive=next;emit();}
     }),
@@ -48,6 +49,8 @@ function subscribe(listener:()=>void){
 }
 const snapshot=()=>(appActive?1:0)|(systemReduceMotion?2:0)|(preferenceKnown?4:0);
 const serverSnapshot=()=>1;
+const foregroundSnapshot=()=>appActive?1:0;
+const ordinaryMotionSnapshot=()=>snapshot()&3;
 const inactiveSubscribe=(_listener:()=>void)=>()=>{};
 
 /**
@@ -65,12 +68,12 @@ export function track(progress:Progress,config:{inputRange:number[];outputRange:
 
 /** True while the app is in the foreground. */
 export function useAppActive():boolean{
-  return (useSyncExternalStore(subscribe,snapshot,serverSnapshot)&1)===1;
+  return useSyncExternalStore(subscribe,foregroundSnapshot,serverSnapshot)===1;
 }
 
 /** Whether decorative motion should run right now. */
 export function useMotionEnabled(reduceMotion=false,active=true):boolean{
-  const state=useSyncExternalStore(active&&!reduceMotion?subscribe:inactiveSubscribe,snapshot,serverSnapshot);
+  const state=useSyncExternalStore(active&&!reduceMotion?subscribe:inactiveSubscribe,ordinaryMotionSnapshot,serverSnapshot);
   return active&&!reduceMotion&&(state&1)===1&&(state&2)===0;
 }
 

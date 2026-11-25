@@ -38,6 +38,7 @@ function start(){
 }
 function stop(){
   subscriptionGeneration++;
+  preferenceKnown=false;
   for(const subscription of subscriptions)subscription.remove();
   subscriptions=[];
 }

@@ -155,6 +155,11 @@ ok(framePurchased.account.eventCurrencyBalanceById?.[frostId]===3000,'Frame cost
 ok(canUseProfileCosmetic(framePurchased,'border',bellframeId),'Frame ownership is stored on the account');
 ok(profileCosmeticReleased(framePurchased,'border',bellframeId,bellframeGrace),'Earned frame persists after the festival');
 ok(!profileCosmeticReleased(frameState,'border',bellframeId,bellframeGrace),'Unowned frame is hidden after the grace period');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart-1),'Unowned Frostfall background hidden before launch');
+ok(profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeStart),'Unowned Frostfall background becomes discoverable at launch');
+ok(!profileCosmeticReleased(frameState,'background','bg_frostfall',bellframeGrace),'Unowned Frostfall background hidden after grace');
+const backgroundOwner={...frameState,account:{...frameState.account,liveEvent:undefined,unlockedProfileBackgroundIds:['bg_frostfall']}};
+ok(profileCosmeticReleased(backgroundOwner,'background','bg_frostfall',bellframeGrace)&&canUseProfileCosmetic(backgroundOwner,'background','bg_frostfall'),'Owned Frostfall background remains available after closure');
 let frameReplayBlocked=false;try{purchaseEventOffer(framePurchased,bellframeOffer,bellframeEnd)}catch{frameReplayBlocked=true}
 ok(frameReplayBlocked,'One-time frame purchase cannot spend currency twice');
 let frameLateBlocked=false;try{purchaseEventOffer(frameState,bellframeOffer,bellframeGrace)}catch{frameLateBlocked=true}

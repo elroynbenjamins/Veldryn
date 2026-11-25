@@ -150,3 +150,20 @@ const rebasedLook={...newLook,...wardrobeChanges(originalLook,backgroundEdit)};
 equal(rebasedLook.icon,newLook.icon,'stale background edit cannot replace account icon');
 equal(rebasedLook.scene,'bg_veilbreak','requested background edit survives rebase');
 equal(wardrobeChanges(newLook,originalLook).icon,originalLook.icon,'explicit undo still restores previous icon');
+
+
+// Seasonal wardrobe rows are revealed only by the matching enabled event window.
+const frostStart=Date.UTC(2026,11,3),frostEnd=Date.UTC(2026,11,27),frostGrace=Date.UTC(2026,11,29);
+const frostRuntime={eventId:'EVT_ANNUAL_012_2026',enabled:true,startsAtMs:frostStart,endsAtMs:frostEnd,graceEndsAtMs:frostGrace};
+const frostState={...state,account:{...state.account,liveEvent:frostRuntime}};
+const frostAssets:WardrobeAssets={...assets,scenes:[...assets.scenes,{id:'bg_frostfall',name:'Aurora Winter Sky'}],frames:[...assets.frames,'frame_frostfall_aurora_bellframe']};
+const seasonalIds=['bg_frostfall','frame_frostfall_aurora_bellframe','title_frostfall_guest','title_winter_light','title_hearth_guest','title_bellringer','title_aurora_walker'];
+for(const [nowMs,reveal] of [[frostStart-1,false],[frostStart,true],[frostEnd,true],[frostGrace-1,true],[frostGrace,false]] as const){
+ const rows=profileWardrobe(frostState,frostAssets,{nowMs}).flatMap(group=>group.rows);
+ for(const id of seasonalIds)equal(rows.some(row=>row.id===id),reveal,'Frostfall visibility '+id+' at '+nowMs);
+}
+const frostOwned={...frostState,account:{...frostState.account,liveEvent:undefined,unlockedProfileBackgroundIds:['bg_frostfall'],unlockedProfileBorderIds:['frame_frostfall_aurora_bellframe'],unlockedTitleIds:['title_frostfall_guest']}};
+const afterFrost=profileWardrobe(frostOwned,frostAssets,{nowMs:frostGrace}).flatMap(group=>group.rows);
+for(const id of seasonalIds.slice(0,3))ok(afterFrost.some(row=>row.id===id&&row.unlocked),'Earned Frostfall wardrobe item persists '+id);
+ok(!afterFrost.some(row=>row.id==='title_winter_light'),'Unearned title remains hidden after closure');
+console.log('PASS: Frostfall scenes, frames and titles follow event boundaries and permanent ownership');

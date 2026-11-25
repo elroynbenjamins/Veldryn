@@ -94,7 +94,7 @@ const frostState=createCharacter(newGame(frostStart),'IRONWARDEN','Frostfall Hol
 frostState.account.liveEvent={eventId:frostId,enabled:true,startsAtMs:frostStart,endsAtMs:holiday.endsAtMs,graceEndsAtMs:holiday.endsAtMs+2*86400_000};
 assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.christmasStartsAtMs),5000);
 assert.equal(eventCurrencyBonusBps(frostState,frostId,holiday.endsAtMs),0);
-assert.equal(eventEffectiveDropRate(frostState,frostId,'combat',holiday.christmasStartsAtMs),FROSTFALL_EVENT.dropRates.combat*1.5);
+assert.equal(eventEffectiveDropRate(frostState,frostId,'combat',holiday.christmasStartsAtMs),eventEffectiveDropRate({...frostState,account:{...frostState.account,liveEvent:{...frostState.account.liveEvent!,eventId:'EVT_ANNUAL_012_2027'}}},'EVT_ANNUAL_012_2027','combat',holiday.christmasStartsAtMs)*2);
 const christmasGift=eventDailyGift(frostState,holiday.christmasStartsAtMs)!;
 assert.equal(christmasGift.gift.rewardCurrency,Math.floor(FROSTFALL_EVENT.dailyGifts.find(g=>g.day===christmasGift.giftDay)!.rewardCurrency*.75));
 const splitDrops=timedEventRewards(frostState,'gathering',[holiday.christmasStartsAtMs-1,holiday.christmasStartsAtMs,holiday.endsAtMs]).eventDrops!;

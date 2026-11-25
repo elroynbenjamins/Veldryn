@@ -1,0 +1,47 @@
+name: Frostfall 1767 temporary Edge rebuild
+on:
+  push:
+    branches: [review/frostfall-guild-reward-parity-20261125]
+    paths: ['.github/workflows/frostfall-1767-edge-rebuild.yml']
+permissions:
+  contents: write
+concurrency:
+  group: frostfall-1767-edge-rebuild
+  cancel-in-progress: false
+jobs:
+  regenerate:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/review/frostfall-guild-reward-parity-20261125'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reconcile main without overwriting review changes
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git merge --no-edit origin/main
+      - name: Install locked dependencies
+        run: |
+          pnpm --dir apps/mobile install --frozen-lockfile
+          pnpm --dir backend install --frozen-lockfile
+      - name: Regenerate and verify canonical bundles
+        run: |
+          pnpm --dir backend build:online
+          node tools/verify-gameplay-edge.mjs
+      - name: Commit only generated artifacts and remove temporary workflow
+        run: |
+          set -euo pipefail
+          git add backend/supabase/functions/gameplay/index.ts backend/supabase/functions/coop/index.ts
+          git rm .github/workflows/frostfall-1767-edge-rebuild.yml
+          git diff --cached --stat
+          git commit -m 'build(edge): regenerate Frostfall gameplay and coop bundles; remove temporary workflow'
+          git push origin HEAD:refs/heads/review/frostfall-guild-reward-parity-20261125

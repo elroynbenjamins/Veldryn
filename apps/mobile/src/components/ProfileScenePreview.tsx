@@ -1,6 +1,6 @@
 import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
 import {UltraLuxeTitleText} from './profile/UltraLuxeIdentityMotion';
-import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals} from '../core/ultra-luxe-set-visuals';
+import {ultraLuxeVisualTier,resolveTesterUltraLuxeVisuals,ultraLuxeSceneEffectCompatible} from '../core/ultra-luxe-set-visuals';
 import {playerBadgeIds,profileBadgeIds} from '../core/player-badges';
 import {ownedUltraLuxeTitleColor,ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
 import {DraconicDominionPreview,DraconicStandardEffects} from './profile/DraconicDominionPreview';
@@ -95,8 +95,8 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
   {draconicBorder&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="border" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
   {celestialBorder?<CelestialStandardBorderEffects active={active} reduceMotion={state.settings.reduceMotion}/>:null}
  </View>;
- const celestial=visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
- if(draconic&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border){
+ const celestial=ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:celestial-sovereign:celestial-alignment')&&visualSelection.background===CELESTIAL_IDS.background&&visualSelection.border===CELESTIAL_IDS.border?celestialAssets:undefined;
+ if(draconic&&ultraLuxeSceneEffectCompatible(character.profileEffectId,'premium:draconic-dominion:awakening-of-the-dragon')&&visualSelection.background===DRACONIC_IDS.background&&visualSelection.border===DRACONIC_IDS.border){
  return <DraconicDominionPreview fullSet={ultraLuxeVisualTier({...DRACONIC_IDS,title:'ascendant-draconic-title'},visualSelection)==='ascendant'} assets={draconic.scene} equippedPetId={visualSelection.pet} alternatePetSource={petSource} petAccessibilityLabel={pet?.name??petCollectible?.name??profileT(language,'Pet preview')} active={active} reduceMotion={state.settings.reduceMotion} fallback={standard}
   portrait={<CharacterPortrait state={state} compact style={{width:'100%',height:'100%'}}/>}
   identity={<View style={s.draconicIdentity}>

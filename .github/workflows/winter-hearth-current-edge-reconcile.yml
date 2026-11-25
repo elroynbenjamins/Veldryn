@@ -1,4 +1,5 @@
 name: Winter Hearth current Edge reconciliation
+# Exact-head rebuild trigger after current-main reconciliation.
 on:
   push:
     branches: ['feat/frostfall-winter-hearth-reconcile-20261125']

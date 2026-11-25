@@ -38,6 +38,8 @@ function makeHarness(initialState = 'active') {
     removeChannel(channel) {removed.push(channel); return Promise.resolve('ok');}
   };
   const mocks = new Map([
+    // Audio playback has its own tests; this offline UI harness must not load native audio or binary MP3 assets.
+    [path.join(app, 'src/storage/audio'), {playSound: () => {}, useMusicOverride: () => {}, useRarityRevealSound: () => {}, useAudioPreferences: () => [{music:2,effects:2,musicContexts:{}}, () => {}], toggleAudioMute: () => 0, playMusicPreview: () => {}, stopMusicPreview: () => {}}],
     ['react', React],
     ['react-native', {AppState}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => auth}],

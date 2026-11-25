@@ -56096,28 +56096,28 @@ function activateGatheringToolReserve(state, skillId, tier, nowMs = Date.now()) 
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
   return setGatheringToolSlots(settled, skillId, tier, reserve, current);
 }
-function withdrawGatheringToolReserve(state, skillId, tier) {
+function withdrawGatheringToolReserve(state, skillId, tier, to = "inventory") {
   if (!state.character) throw new Error("Character required");
   const reserve = reserveGatheringToolSlot(state, skillId, tier);
   if (!reserve) throw new Error("No saved reserve in this tier");
-  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Inventory is full");
-  return setGatheringToolSlots({ ...state, inventory: { ...state.inventory, stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
+  const added = addBounded(state[to].stacks, entitlementStorageCapacity(state, to), [{ itemId: reserve.itemId, quantity: 1, ...reserve.instanceId ? { instanceId: reserve.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Inventory is full");
+  return setGatheringToolSlots({ ...state, [to]: { ...state[to], stacks: added.stacks } }, skillId, tier, activeGatheringToolSlot(state, skillId, tier), void 0);
 }
-function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId) {
+function unequipGatheringTool(state, skillId, nowMs = Date.now(), itemId, to = "inventory") {
   if (!state.character) return state;
   const equipped = equippedGatheringTools(state, skillId);
   const selected2 = itemId ? equipped.find((row) => row.id === itemId) : equipped[equipped.length - 1];
   if (!selected2) return state;
   const tier = selected2.tier;
   if (reserveGatheringToolSlot(state, skillId, tier))
-    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier);
+    return withdrawGatheringToolReserve(activateGatheringToolReserve(state, skillId, tier, nowMs), skillId, tier, to);
   const current = activeGatheringToolSlot(state, skillId, tier);
   if (!current) return state;
   const settled = state.activity?.kind === skillId ? claimActivity(state, nowMs).state : state;
-  const added = addBounded(settled.inventory.stacks, entitlementStorageCapacity(settled, "inventory"), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
-  if (added.overflow.length) throw new Error("Free one Inventory slot before unequipping this tool");
-  return setGatheringToolSlots({ ...settled, inventory: { ...settled.inventory, stacks: added.stacks } }, skillId, tier, void 0, void 0);
+  const added = addBounded(settled[to].stacks, entitlementStorageCapacity(settled, to), [{ itemId: current.itemId, quantity: 1, ...current.instanceId ? { instanceId: current.instanceId } : {} }]);
+  if (added.overflow.length) throw new Error(to === "bank" ? "Bank is full" : "Free one Inventory slot before unequipping this tool");
+  return setGatheringToolSlots({ ...settled, [to]: { ...settled[to], stacks: added.stacks } }, skillId, tier, void 0, void 0);
 }
 function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (!state.character) throw new Error("No character");
@@ -59753,6 +59753,8 @@ function reconcileWorkingTowardGeneratedRules(state) {
 
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
+var TOOL_INSTANCE_ID_MAX = 200;
+var INVENTORY_SELECTION_ID_MAX = TOOL_INSTANCE_ID_MAX + "copy:".length;
 var fields = {
   class_training: [],
   class_focus: ["focus"],
@@ -59853,10 +59855,10 @@ var fields = {
   gem_pouch_bulk_dismantle: ["ids"],
   overflow: [],
   equip_tool: ["id", "instanceId"],
-  unequip_tool: ["id"],
+  unequip_tool: ["id", "to"],
   tool_vault_save: ["id", "instanceId"],
   tool_vault_activate: ["skillId", "tier"],
-  tool_vault_withdraw: ["skillId", "tier"],
+  tool_vault_withdraw: ["skillId", "tier", "to"],
   tool_move: ["instanceId", "to"],
   tool_sell: ["instanceId"],
   equip_set: [],
@@ -59940,18 +59942,18 @@ function validateGameCommand(value) {
   if (row.type === "bulk_transfer") {
     const bulk = args;
     oneOf(bulk.location, ["inventory", "bank"]);
-    stringArray(bulk, "ids");
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
   }
   if (row.type === "inventory_preference_bulk") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 190);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     oneOf(bulk.kind, ["lock", "favorite"]);
     if (typeof bulk.enabled !== "boolean") throw new Error("invalid_inventory_preference");
   }
   if (row.type === "gem_pouch_bulk_sell" || row.type === "gem_pouch_bulk_dismantle") stringArray(args, "ids", 100, 120);
   if (row.type === "bulk_sell" || row.type === "bulk_salvage") {
     const bulk = args;
-    stringArray(bulk, "ids", 100, 180);
+    stringArray(bulk, "ids", 100, INVENTORY_SELECTION_ID_MAX);
     if (bulk.location !== void 0) oneOf(bulk.location, ["inventory", "bank"]);
   }
   return { type: row.type, args };
@@ -60465,15 +60467,15 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "deposit_materials":
       state = depositAllMaterials(state);
       break;
-    // A copy:<instanceId> selector may be 185 characters (180-char validated instance ID + prefix).
+    // Exact copy selections use the same receipt ID and prefix limit as validation.
     case "bulk_transfer":
-      state = bulkTransferSelected(state, stringArray(a, "ids", 100, 185), oneOf(a.location, ["inventory", "bank"]));
+      state = bulkTransferSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location, ["inventory", "bank"]));
       break;
     case "bulk_sell":
-      state = bulkSellSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSellSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "bulk_salvage":
-      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, 180), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
+      state = bulkSalvageSelected(state, stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), oneOf(a.location ?? "inventory", ["inventory", "bank"]));
       break;
     case "storage":
       state = upgradeStorage(state, oneOf(a.location, ["inventory", "bank"]));
@@ -60500,30 +60502,32 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = claimOverflowToBank(state);
       break;
     case "equip_tool":
-      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200));
+      state = equipGatheringTool(state, text(a, "id"), now, a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "tool_vault_save":
-      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", 200), now);
+      state = saveGatheringToolReserve(state, text(a, "id"), a.instanceId === void 0 ? void 0 : text(a, "instanceId", TOOL_INSTANCE_ID_MAX), now);
       message = "Tool saved to its reserve slot";
       break;
     case "tool_vault_activate":
       state = activateGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), now);
       message = "Saved tool activated";
       break;
-    case "tool_vault_withdraw":
-      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4));
-      message = "Saved tool moved to Inventory";
+    case "tool_vault_withdraw": {
+      const to = oneOf(a.to ?? "inventory", ["inventory", "bank"]);
+      state = withdrawGatheringToolReserve(state, oneOf(a.skillId, ["mining", "woodcutting", "fishing"]), integer(a, "tier", 1, 4), to);
+      message = to === "bank" ? "Saved tool moved to Bank" : "Saved tool moved to Inventory";
       break;
+    }
     case "tool_move":
-      state = moveGatheringToolCopy(state, text(a, "instanceId", 200), oneOf(a.to, ["inventory", "bank"]));
+      state = moveGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX), oneOf(a.to, ["inventory", "bank"]));
       break;
     case "tool_sell":
-      state = sellGatheringToolCopy(state, text(a, "instanceId", 200));
+      state = sellGatheringToolCopy(state, text(a, "instanceId", TOOL_INSTANCE_ID_MAX));
       break;
     case "unequip_tool": {
       const toolId = text(a, "id"), tool2 = gatheringToolDef(toolId);
       if (!tool2) throw new Error("Not a gathering tool");
-      state = unequipGatheringTool(state, tool2.skillId, now, toolId);
+      state = unequipGatheringTool(state, tool2.skillId, now, toolId, oneOf(a.to ?? "inventory", ["inventory", "bank"]));
       break;
     }
     case "equip_set":
@@ -60642,7 +60646,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "inventory_preference_bulk": {
-      const ids2 = stringArray(a, "ids", 100, 190), kind = oneOf(a.kind, ["lock", "favorite"]);
+      const ids2 = stringArray(a, "ids", 100, INVENTORY_SELECTION_ID_MAX), kind = oneOf(a.kind, ["lock", "favorite"]);
       if (typeof a.enabled !== "boolean") throw new Error("invalid_inventory_preference");
       state = applyBulkInventoryProtection(state, ids2, kind, a.enabled);
       message = `${ids2.length} item stacks ${a.enabled ? "protected" : "unprotected"}`;

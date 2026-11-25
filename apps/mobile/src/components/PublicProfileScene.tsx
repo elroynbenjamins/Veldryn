@@ -14,7 +14,7 @@ import type {PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {CharacterPortraitSelection} from './CharacterVisual';
 import {RegionArtwork} from './RegionArtwork';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
-import {profileBorderSourceById} from '../theme/profile-border-assets';
+import {profileBorderSourceById,resolveProfileBorderArtworkId} from '../theme/profile-border-assets';
 import {petArtSource} from '../theme/pet-art';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {CLASSES} from '../content/classes';
@@ -62,7 +62,8 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const borderRuntime=review?.borderRuntime??(!review&&animated&&renderBorderId?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined),effectRuntime=review?.effectRuntime??(!review&&animated&&profile.effectId?profileCosmeticRuntimeByEffect.get(profile.effectId):undefined);
  const reviewBorderId=review?.borderRuntime?.borderId;
  const runtimeFallbackBorderId=review?.borderRuntime?.fallbackBorderId??borderRuntime?.fallbackBorderId;
- const border=review?(borderArt?.border??(runtimeFallbackBorderId?profileBorderSourceById.get(runtimeFallbackBorderId):undefined)):borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):renderBorderId?profileBorderSourceById.get(renderBorderId):undefined),pet=renderPetId?(petArtSource(renderPetId)??(profile.petId?petArtSource(profile.petId):undefined)):undefined;
+ const borderArtworkId=resolveProfileBorderArtworkId(review?reviewBorderId:renderBorderId,runtimeFallbackBorderId);
+ const border=borderArt?.border??profileBorderSourceById.get(borderArtworkId),pet=renderPetId?(petArtSource(renderPetId)??(profile.petId?petArtSource(profile.petId):undefined)):undefined;
  const anchors=profileSceneContentAnchors(border?8:0);
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const className=CLASSES.find(row=>row.id===classId)!.name;
@@ -76,7 +77,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false,showGu
  const standard=<View accessibilityLabel={profileT(language,'{name} profile scene',{name:profile.character.name})} style={s.card}>
   <View style={[s.surface,!!border&&s.framedSurface]}>
   <View style={[s.scene,{height}]}>
-   <ProfileBorderBackdrop borderId={borderArt?(review?reviewBorderId:renderBorderId):(runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId))} source={border} existingInset={8}>
+   <ProfileBorderBackdrop borderId={borderArt?(review?reviewBorderId:renderBorderId):borderArtworkId} source={border} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}
    <View style={s.shade}/>
    {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={reduceMotion}/>:null}

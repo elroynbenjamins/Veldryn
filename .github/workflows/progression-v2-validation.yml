@@ -1,0 +1,74 @@
+name: Progression 2.0 isolated contracts
+on:
+  pull_request:
+    paths:
+      - 'backend/src/server/progression/v2/**'
+      - 'backend/tsconfig.progression-v2.json'
+      - 'backend/package.json'
+      - 'backend/tests/progression-v2-pg17-disposable.sh'
+      - 'backend/tests/progression-v2-online-commit-pg17-disposable.sh'
+      - 'docs/operations/sql-drafts/20261122_progression_v2_character_xp_REVIEW_ONLY.sql'
+      - '.github/workflows/progression-v2-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  preview-progression-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck and exercise isolated V2 progression policy
+        run: pnpm test:progression-v2
+
+  disposable-pg17-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: progression_v2_local_only
+          POSTGRES_DB: progression_v2_disposable
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d progression_v2_disposable"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure local PostgreSQL client exists
+        run: command -v psql || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+      - name: Verify global career XP receipt uniqueness and rollback on disposable PG17
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: progression_v2_disposable
+          PGPASSWORD: progression_v2_local_only
+        run: bash tests/progression-v2-pg17-disposable.sh
+      - name: Verify complete online state commit, career proof and XP atomicity
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: progression_v2_disposable
+          PGPASSWORD: progression_v2_local_only
+        run: bash tests/progression-v2-online-commit-pg17-disposable.sh

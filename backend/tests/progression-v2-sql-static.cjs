@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+
+const file=path.resolve(__dirname,'../../docs/operations/sql-drafts/20261122_progression_v2_character_xp_REVIEW_ONLY.sql');
+const sql=fs.readFileSync(file,'utf8');
+assert.match(sql,/REVIEW ONLY[\s\S]*do NOT apply to staging or production/i,'draft must be unmistakably review-only');
+assert.match(sql,/create table private\.character_career_progress_v2/i,'new bank must be private and character-scoped');
+assert.match(sql,/character_id uuid primary key references public\.characters\(id\)/i,'new XP bank must belong to verified character');
+assert.match(sql,/create table private\.character_career_awards_v2/i,'new ledger must be private');
+assert.match(sql,/primary key \(source_kind,source_id\)/i,'one source must award at most once globally across alts');
+assert.match(sql,/create index character_career_awards_v2_character_created_idx/i,'receipt history needs character-scope indexing');
+assert.match(sql,/create table private\.online_career_reward_sources_v2/i,'only authoritative game commit may persist immutable source proofs');
+assert.match(sql,/unique \(account_id,request_id,segment_index\)/i,'each game command segment has one canonical proof');
+assert.match(sql,/completed_at timestamptz not null default clock_timestamp\(\)/i,'DB assigns proof completion time');
+assert.equal((sql.match(/enable row level security/gi)||[]).length,3,'all three private tables require RLS');
+assert.doesNotMatch(sql,/^\s*(?:grant|create\s+(?:or\s+replace\s+)?function|create\s+policy|alter\s+table\s+public\.characters|update\s+public\.characters|update\s+public\.character_skills)\b/im,'draft must never grant client access, implement RPCs or rewrite legacy XP');
+assert.doesNotMatch(sql,/^\s*insert\s+into\s+/im,'draft must not mint any XP');
+console.log('PASS: review-only V2 SQL schema is private, non-mutating to legacy and globally receipt-keyed');

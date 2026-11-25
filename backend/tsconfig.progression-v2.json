@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-progression-v2"
+  },
+  "include": [
+    "src/server/progression/v2/**/*.ts"
+  ]
+}

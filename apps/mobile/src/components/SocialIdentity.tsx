@@ -1,6 +1,6 @@
 import {useIdentityIcon} from '../online/PlayerBadgeProvider';
-import {profileIconSource} from './ProfileIcon';
-import {profileIconArtwork} from '../theme/profile-icon-assets';
+import {ProfileIcon,profileIconSource} from './ProfileIcon';
+import {profileIconArtwork,profileCosmeticPortraitAtlasCell} from '../theme/profile-icon-assets';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {visualText} from '../i18n/visuals';
 import {useMemo} from 'react';
@@ -21,9 +21,11 @@ export function IdentityArtwork({name,accountId,profileIconId,className,portrait
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const identity=useIdentityIcon(guild||profileIconId!==undefined?undefined:accountId),classId=resolveIdentityClass(identity?.class_id??className);
- const selectedIcon=profileIconArtwork((profileIconId!==undefined?profileIconId:identity?.profile_icon_id)??undefined);
+ const iconId=(profileIconId!==undefined?profileIconId:identity?.profile_icon_id)??undefined;
+ const selectedIcon=profileIconArtwork(iconId);
+ const atlas=!portrait&&!guild&&!!profileCosmeticPortraitAtlasCell(iconId);
  const source=portrait??(guild?uiIcons.guild:selectedIcon??(classId?profileIconSource(undefined,classId):uiIcons.account));
- return <View accessibilityLabel={tr('{name} identity icon',{name})} style={[s.avatar,{width:size,height:size,borderRadius:Math.max(radii.sm,Math.round(size*.24))}]}><Image accessible={false} source={source} resizeMode="contain" style={{width:size-6,height:size-6}}/></View>;
+ return <View accessibilityLabel={tr('{name} identity icon',{name})} style={[s.avatar,{width:size,height:size,borderRadius:Math.max(radii.sm,Math.round(size*.24))}]}>{atlas?<ProfileIcon id={iconId} classId={classId??'IRONWARDEN'} size={size-6}/>:<Image accessible={false} source={source} resizeMode="contain" style={{width:size-6,height:size-6}}/>}</View>;
 }
 export function RoleBadge({role}:{role:PartyRole}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);

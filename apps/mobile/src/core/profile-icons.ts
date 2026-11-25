@@ -82,6 +82,12 @@ export function normalizeProfileIcon(state:GameState):GameState{
  const id=accountProfileIconId(state);
  return mirrorProfileIcon(state,canUseProfileIcon(state,id)?id:`class:${first?.classId??state.character.classId}`);
 }
+/** Persisted account choices were validated at selection/backfill. Keep the hot
+ * gameplay path free of repeated gallery/catalog construction. */
+export function reconcileAccountProfileIcon(state:GameState):GameState{
+ if(!state.character)return state;
+ return state.account.profileIconId?mirrorProfileIcon(state,state.account.profileIconId):normalizeProfileIcon(state);
+}
 export function newlyUnlockedProfileIcons(before:GameState|null,after:GameState){
  if(!before)return [];
  const owned=new Set(profileIconCollection(before).filter(row=>row.unlocked).map(row=>row.id));

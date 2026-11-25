@@ -7,8 +7,8 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
-  "Account-wide": ["Kontoweit","Para toda la cuenta","Accountbreed","Per tutto l'account","À l’échelle du compte","Для всей учётной записи","Hesap genelinde"],
-  "Your account character class.": ["Klasse eines deiner Charaktere.","Clase de un personaje de tu cuenta.","Klasse van een personage op je account.","Classe di un personaggio del tuo account.","Classe d’un personnage de votre compte.","Класс одного из ваших персонажей.","Hesabındaki bir karakterin sınıfı."],
+  "Account-wide": ["Kontoweit","Para toda la cuenta","Accountbreed","Per tutto l'account","À l’échelle du compte"],
+  "Your account character class.": ["Klasse eines deiner Charaktere.","Clase de un personaje de tu cuenta.","Klasse van een personage op je account.","Classe di un personaggio del tuo account.","Classe d’un personnage de votre compte."],
   "Largest craft result": ["Größtes Herstellungsergebnis","Mayor resultado de fabricación","Grootste vervaardigingsresultaat","Maggior risultato di creazione","Plus grand résultat de fabrication"],
   "Complete Beyond the Green and break the Fallen Knight’s oath.": ["Schließe Beyond the Green ab und brich den Eid des Gefallenen Ritters.","Completa Beyond the Green y rompe el juramento del Caballero Caído.","Voltooi Beyond the Green en verbreek de eed van de Gevallen Ridder.","Completa Beyond the Green e infrangi il giuramento del Cavaliere Caduto.","Terminez Beyond the Green et brisez le serment du Chevalier déchu."],
   // Equipped gear detail viewer.

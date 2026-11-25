@@ -114,11 +114,28 @@ export const partySocialRepository:PartySocialRepository={
  refreshRecruitment:async(id,days)=>card(await rpc<RecruitmentRow>('refresh_recruitment_post',{p_post_id:id,p_duration_days:days??null})),
  closeRecruitment:async id=>{await rpc('close_recruitment_post_v16',{p_post_id:id});},
 };
+async function partyIdentityForVerifiedAccount(c:ReturnType<typeof client>,accountId:string){
+ const profile=await c.from('player_profiles').select('active_character_id').eq('account_id',accountId).maybeSingle();if(profile.error)throw profile.error;
+ if(profile.data?.active_character_id)return {accountId,characterId:profile.data.active_character_id as string};
+ const characters=await c.from('characters').select('id').eq('account_id',accountId).order('created_at').limit(1);if(characters.error)throw characters.error;
+ return {accountId,characterId:(profile.data?.active_character_id??characters.data?.[0]?.id??null) as string|null};
+}
 export async function partySocialIdentity(){const c=client();const {data:{session},error}=await c.auth.getSession();if(error)throw error;const user=session?.user;if(!user)return null;
- const profile=await c.from('player_profiles').select('active_character_id').eq('account_id',user.id).maybeSingle();if(profile.error)throw profile.error;
- if(profile.data?.active_character_id)return {accountId:user.id,characterId:profile.data.active_character_id as string};
- const characters=await c.from('characters').select('id').eq('account_id',user.id).order('created_at').limit(1);if(characters.error)throw characters.error;
- return {accountId:user.id,characterId:(profile.data?.active_character_id??characters.data?.[0]?.id??null) as string|null};}
+ return partyIdentityForVerifiedAccount(c,user.id);
+}
+/** Independent read-only projections may overlap only after verifying the
+ * expected signed-in account. Wait for both to settle before allowing another
+ * provider refresh, even if one read failed. Never publish across a session change. */
+export async function partySocialProjection(expectedAccountId:string){
+ const c=client();
+ const verify=async()=>{const {data:{session},error}=await c.auth.getSession();if(error)throw error;if(!expectedAccountId||session?.user.id!==expectedAccountId)throw new Error('Account session changed while refreshing social details.');};
+ await verify();
+ const [identity,snapshot]=await Promise.allSettled([partyIdentityForVerifiedAccount(c,expectedAccountId),partySocialSnapshot()]);
+ await verify();
+ if(identity.status==='rejected')throw identity.reason;
+ if(snapshot.status==='rejected')throw snapshot.reason;
+ return {identity:identity.value,snapshot:snapshot.value};
+}
 export async function ownRecruitmentPosts(){const identity=await partySocialIdentity();if(!identity)return [];const {data,error}=await client().from('recruitment_posts').select('*').eq('owner_account_id',identity.accountId).order('created_at',{ascending:false}).limit(20);if(error)throw error;return cardsWithGuildIdentity(data as RecruitmentRow[]);}
 export async function partyRankings():Promise<PartyRanking[]>{
  try{return await rpc<PartyRanking[]>('party_rankings_board_v17');}

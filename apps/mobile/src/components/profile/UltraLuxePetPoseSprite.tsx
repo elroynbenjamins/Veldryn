@@ -9,9 +9,14 @@ export function UltraLuxePetPoseSprite({source,clock,theme,width,height}:Props){
  const a=ULTRA_LUXE_POSE_ATLASES[theme],ratio=Math.min(width/a.frameWidth,height/a.frameHeight);
  const w=a.frameWidth*ratio,h=a.frameHeight*ratio;
  const phase=useMemo(()=>Animated.modulo(Animated.multiply(clock,ULTRA_LUXE_POSE_ATLASES[theme].cycles),1),[clock,theme]);
- const timeline=TIMELINES[theme];
- const x=phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).column*w),extrapolate:'clamp'});
- const y=phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).row*h),extrapolate:'clamp'});
+ // Keep native interpolation nodes stable across unrelated profile rerenders.
+ const [x,y]=useMemo(()=>{
+  const timeline=TIMELINES[theme];
+  return [
+   phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).column*w),extrapolate:'clamp'}),
+   phase.interpolate({inputRange:timeline.inputRange,outputRange:timeline.frames.map(f=>-poseAtlasCell(f,theme).row*h),extrapolate:'clamp'}),
+  ] as const;
+ },[phase,theme,w,h]);
  return <View pointerEvents="none" accessible={false} style={{width,height,alignItems:'center',justifyContent:'center'}}>
   <View style={{width:w,height:h,overflow:'hidden'}}>
    <Animated.Image source={source} resizeMode="stretch" fadeDuration={0} style={[s.atlas,{width:w*a.columns,height:h*a.rows,transform:[{translateX:x},{translateY:y}]}]}/>

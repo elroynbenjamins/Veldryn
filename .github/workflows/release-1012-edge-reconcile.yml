@@ -1,4 +1,4 @@
-name: Consolidated 1.0.12 Edge reconciliation
+name: Consolidated 1.0.12 Edge reconciliation including account portraits
 on:
   push:
     branches: [release/1-0-11-consolidation-20261124]

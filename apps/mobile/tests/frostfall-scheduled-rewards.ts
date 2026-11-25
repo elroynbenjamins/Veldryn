@@ -7,7 +7,7 @@ import type {GameState} from '../src/core/types';
 const check=(v:unknown,message:string)=>{if(!v)throw new Error(message);};
 const start=Date.UTC(2026,11,3),end=Date.UTC(2026,11,27),grace=Date.UTC(2026,11,29);
 const runtime={eventId:FROSTFALL_2026_EVENT_ID,enabled:true,startsAtMs:start,endsAtMs:end,graceEndsAtMs:grace};
-const base=createCharacter(newGame(start-1),'IRONWARDEN','Frostfall lifecycle QA');
+const base=createCharacter(newGame(start-1),'IRONWARDEN','Frostfall QA');
 const state:GameState={...base,account:{...base.account,liveEvent:runtime}};
 const ids=['EVT_UNIT_009','EVT_UNIT_012','EVT_UNIT_013'],pets=FROSTFALL_PETS.map(row=>row.id);
 for(const [now,open] of [[start-1,false],[start,true],[end-1,true],[end,true],[grace-1,true],[grace,false]] as const){

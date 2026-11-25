@@ -1,6 +1,6 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence,companionSanctuaryUpgradeCost} from '../src/core/combat-companions';
+import {combatCompanionUiModel,combatCompanionUiModels,unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence,companionSanctuaryUpgradeCost} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
 import {companionAttentionSummary,companionAttentionLabels} from '../src/core/companion-attention';
 import {buildNavigationBadges,buildQuickNavigationBadges} from '../src/core/navigation-notifications';
@@ -37,6 +37,15 @@ ok(bondDisplay.current===270&&bondDisplay.required===630&&bondDisplay.remaining=
 ok(companionBondProgress(10,7560).maxed&&companionBondProgress(10,7560).percent===100,'max Bond progress is complete');
 
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.account.companionHousingTiers=Object.fromEntries(ids.map(id=>[id,3]));s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
+// Batch projection must match individual UI reads, including legacy/missing data
+// and the input order; no ownership, progress or material mutation is allowed.
+for(const batchState of [fixture(),createCharacter(newGame(now),'IRONWARDEN','Empty Roster')]){
+ const requested=['UNIT_003','UNKNOWN_COMPANION','UNIT_001','UNIT_001','UNIT_002'];
+ const before=JSON.stringify(batchState);
+ ok(JSON.stringify(combatCompanionUiModels(batchState,requested))===JSON.stringify(requested.map(id=>combatCompanionUiModel(batchState,id))),'batched companion UI models preserve single-model semantics and request order');
+ ok(JSON.stringify(combatCompanionUiModels(batchState,[]))==='[]','empty projection has no models');
+ ok(JSON.stringify(batchState)===before,'companion batch is read-only');
+}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
   // Match the current food healing and mission duration instead of hardcoding ration quantities.
  const mission=type==='companion_assignment_start'?companionMission(String(args?.id??'')):undefined;

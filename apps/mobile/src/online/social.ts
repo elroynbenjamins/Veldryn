@@ -1,3 +1,4 @@
+import {isFrostfallGuildCosmetic} from '../core/guild-customization';
 import {supabase} from './supabase';
 import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
@@ -207,20 +208,24 @@ export async function guildAppearanceEntitlements(){
  if(constructed.error&&constructed.error.code!=='PGRST202'&&constructed.error.code!=='42883')
   throw constructed.error;
  const row=base.data?.[0];
+ const eventCosmeticIds=(row?.event_cosmetic_ids??[]) as string[];
+ const seasonal=eventCosmeticIds.some(isFrostfallGuildCosmetic)?await client.rpc('guild_frostfall_cosmetic_releases_v1'):null;
+ const releasedEventCosmeticIds=seasonal&&!seasonal.error&&Array.isArray(seasonal.data)?seasonal.data.filter((id:unknown):id is string=>typeof id==='string'&&isFrostfallGuildCosmetic(id)):[];
  const rewardRows=(Array.isArray(constructed.data)?constructed.data:[]) as
   Array<{unlock_id:string;cosmetic_kind:string;owned:boolean;released:boolean}>;
  return {
   guildLevel:Number(row?.guild_level??1),
   bannerGalleryTier:Number(row?.banner_gallery_tier??0),
   pveAchievementIds:(row?.pve_achievement_ids??[]) as string[],
-  eventCosmeticIds:(row?.event_cosmetic_ids??[]) as string[],
+  eventCosmeticIds,releasedEventCosmeticIds,
   revealedEventColorIds:(row?.revealed_event_color_ids??[]) as string[],
   constructionUnlockIds:rewardRows.filter(reward=>reward.owned).map(reward=>reward.unlock_id),
   constructionReleasedIds:rewardRows.filter(reward=>reward.released).map(reward=>reward.unlock_id),
  } satisfies GuildAppearanceEntitlements;
 }
 export async function updateGuildAppearance(input:{backgroundId:GuildBackgroundId;bannerId:GuildBannerId;borderId:GuildFrameId;nameColorId:GuildNameColorId;tagColorId:GuildTagColorId;nameplateId:GuildNameplateId;motto:string}){const client=requireClient();const usesConstruction=input.bannerId==='guild_banner_stormwatch'||input.borderId==='guild_frame_verdant';
- let {data,error}=await client.rpc(usesConstruction?'update_guild_appearance_with_construction_v1':'update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
+ const usesFrostfall=[input.backgroundId,input.bannerId,input.borderId,input.nameColorId].some(isFrostfallGuildCosmetic);
+ let {data,error}=await client.rpc(usesFrostfall?'update_guild_appearance_with_frostfall_v1':usesConstruction?'update_guild_appearance_with_construction_v1':'update_guild_appearance_with_background_v3',{p_background_id:input.backgroundId,p_banner_id:input.bannerId,p_border_id:input.borderId,p_name_color_id:input.nameColorId,p_tag_color_id:input.tagColorId,p_nameplate_id:input.nameplateId,p_motto:input.motto});if(error)throw error;if(!data?.[0])throw new Error('Guild appearance update was not confirmed.');return data[0] as {background_id?:GuildBackgroundId;guild_id:string;banner_id:GuildBannerId;border_id:GuildFrameId;name_color_id:GuildNameColorId;tag_color_id:GuildTagColorId;nameplate_id:GuildNameplateId;motto:string;revision:number}|undefined;}
 export type GuildWeeklyState={guild_id:string;project_progress:number;project_goal:number;boss_hp:number;boss_max_hp:number};
 export async function guildWeeklyState(){const client=requireClient();const {data,error}=await client.rpc('guild_weekly_state');if(error)throw error;return (data?.[0]??null) as GuildWeeklyState|null;}
 export async function guildContribute(kind:'project'|'boss',amount:number){const client=requireClient();const {data,error}=await client.rpc('guild_contribute',{p_kind:kind,p_amount:amount});if(error)throw error;return (data?.[0]??null) as {project_progress:number;boss_hp:number}|null;}

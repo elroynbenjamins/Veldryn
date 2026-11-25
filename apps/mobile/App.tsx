@@ -223,7 +223,6 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   useEffect(()=>{gameAlerts.configure({themeId:displayedThemeId,language:state?.settings.language??recoveryLanguage,reduceMotion:state?.settings.reduceMotion??false});},[displayedThemeId,state?.settings.language,state?.settings.reduceMotion,recoveryLanguage]);
   const [tab,setCurrentTab]=useState<Tab>('Home');
-  useDungeonWeeklyReminder(auth.session?.user.id,()=>setCurrentTab('Coop'));
   const [transitionKind,setTransitionKind]=useState<ScreenTransitionKind>('none');
   const systemReduceMotion=useSystemReduceMotion();
   const tabRef=useRef(tab);tabRef.current=tab;
@@ -394,6 +393,8 @@ function VeldrynApp(){
     return()=>{active=false};
   },[optionalUpdateSeenKey]);
   const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;
+  // Optional reminder registration must not compete with startup gameplay/auth reads.
+  useDungeonWeeklyReminder(loadOptionalContent&&ready&&!auth.recovering?auth.session?.user.id:undefined,()=>setCurrentTab('Coop'));
   useEffect(()=>{
     if(!loadOptionalContent&&!showWhatsNew)return;
     return runWhileForeground(isCurrent=>{

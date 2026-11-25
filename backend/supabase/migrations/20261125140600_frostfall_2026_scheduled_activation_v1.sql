@@ -23,7 +23,7 @@ begin
  end if;
  update public.live_events
  set enabled=true,
-     config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),
+     config=jsonb_set(jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),'{winterHearthGuildEnabled}','true'::jsonb,true),
      updated_at=clock_timestamp()
  where event_id='EVT_ANNUAL_012_2026'
    and enabled=false
@@ -51,7 +51,7 @@ begin
  if clock_timestamp()<'2026-12-29 00:00:00+00'::timestamptz then return false;end if;
  update public.live_events
  set enabled=false,
-     config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),
+     config=jsonb_set(jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),'{winterHearthGuildEnabled}','false'::jsonb,true),
      updated_at=clock_timestamp()
  where event_id='EVT_ANNUAL_012_2026'
    and enabled=true
@@ -72,7 +72,7 @@ as $$
 begin
  update public.live_events
  set enabled=false,
-     config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),
+     config=jsonb_set(jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','false'::jsonb,true),'{winterHearthGuildEnabled}','false'::jsonb,true),
      updated_at=clock_timestamp()
  where event_id='EVT_ANNUAL_012_2026';
  perform cron.unschedule('veldryn-frostfall-2026-activate')
@@ -88,7 +88,7 @@ grant execute on function private.stop_frostfall_2026_v1() to service_role;
 
 -- Arming is distinct from enabling. The runtime stays disabled until Dec 3 UTC.
 update public.live_events
-set config=jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','true'::jsonb,true),
+set config=jsonb_set(jsonb_set(coalesce(config,'{}'::jsonb),'{autoActivationArmed}','true'::jsonb,true),'{winterHearthGuildEnabled}','false'::jsonb,true),
     updated_at=clock_timestamp()
 where event_id='EVT_ANNUAL_012_2026'
   and enabled=false

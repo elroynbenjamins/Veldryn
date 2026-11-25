@@ -1,10 +1,10 @@
-import {canUsePrivateTitleText} from './ultra-luxe-grants';
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
 import {migrateRetiredStoryRewards} from './retired-story-rewards';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
-import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
+import {canUsePrivateTitleText} from './ultra-luxe-grants';
+import {selectProfileIcon,canUseProfileIcon,reconcileAccountProfileIcon} from './profile-icons';
 import {canUseProfileEffect} from './profile-effects';
 import {profileAnimatedCosmeticsEnabled} from './profile-cosmetic-access';
 import {transitionActivity} from './playability';
@@ -175,7 +175,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // granting account-bound titles, including on a quest-only command.
  if(options.accountId)state.account.longTermAccountScopeId=options.accountId;
  // Reconcile retired story rewards within the same authoritative command write.
- state=migrateRetiredStoryRewards(state,now);
+ state=reconcileAccountProfileIcon(migrateRetiredStoryRewards(state,now));
  // Advance all running Forge slots exactly once before a command can replace
  // or activate a Supply tier. In particular, never give past work a fresh
  // Crafting Speed boost. Alchemy/processing retains priority if concurrently
@@ -545,7 +545,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(patch.profileEffectId&&!profileAnimatedCosmeticsEnabled(state)&&patch.profileEffectId!==state.character.profileEffectId)throw new Error('feature_not_released');
    if(patch.profileEffectId&&!canUseProfileEffect(state,patch.profileEffectId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
-   state={...state,character:{...state.character,...patch}};break;
+   // An explicit validated icon write changes the account. Other cosmetics remain character-scoped.
+   const icon=patch.profileIconId;delete patch.profileIconId;
+   state={...state,character:{...state.character,...patch}};
+   if(icon)state=selectProfileIcon(state,icon);
+   break;
   }
   case 'event_daily':state=events.claimEventDailyGift(state,now);break;
   case 'event_cache':state=events.claimEventRepeatCache(state,now);break;
@@ -566,7 +570,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Includes loot added by combat, quests, co-op and old save actions.
  // Re-evaluate milestones earned by this command (fishing, mastery, bosses,
  // crafting or quests), not just those completed before it started.
- state=recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now)));
+ state=reconcileAccountProfileIcon(recordAccountProgress(reconcileAccountCollections(refreshCompanions(migrateGemPouch(state),now))));
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

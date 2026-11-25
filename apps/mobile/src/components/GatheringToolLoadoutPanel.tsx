@@ -16,6 +16,7 @@ import {useGameplayText} from '../i18n/gameplay';
 import {localizedItemName} from '../i18n/starter-item-names';
 import {GatheringToolArtwork} from './GatheringToolArtwork';
 import {GameButton} from './GameButton';
+import {DisclosureMark} from './DisclosureControl';
 import {ToolRecipeInlinePanel} from './ToolRecipeInlinePanel';
 
 type Tab='saved'|'bonuses'|'recipe';
@@ -35,8 +36,12 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  info:{fontSize:12,color:C.info},
  good:{fontSize:12,color:C.good,fontWeight:'800'},
  title:{fontSize:16,color:C.text,fontWeight:'800',flexShrink:1},
- tiers:{flexDirection:'row',gap:6},
- tier:{flex:1,minWidth:0,minHeight:102,borderWidth:1,borderColor:C.lineStrong,borderRadius:9,backgroundColor:C.panel2,paddingVertical:8,paddingHorizontal:2,alignItems:'center',justifyContent:'center',gap:4},
+ tiers:{gap:6},
+ tier:{minWidth:0,minHeight:72,borderWidth:1,borderColor:C.lineStrong,borderRadius:9,backgroundColor:C.panel2,paddingVertical:8,paddingHorizontal:9,flexDirection:'row',alignItems:'center',gap:8},
+ tierCopy:{flex:1,minWidth:0,gap:3},
+ tierSummary:{fontSize:11,color:C.info,flexShrink:1},
+ metrics:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ metric:{flexGrow:1,flexBasis:88,minWidth:0,gap:3,padding:8,backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:8},
  tierSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
  tierLabel:{fontSize:11,color:C.text,fontWeight:'900'},
  tierCount:{fontSize:10,color:C.muted,fontWeight:'700',textAlign:'center'},
@@ -99,7 +104,7 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
  const effects=gatheringToolEffects(state,skillId),totals=gatheringToolTotalBreakdown(effects);
  const storedCount=tools.reduce((sum,tool)=>sum+(equipped.some(entry=>entry.tier===tool.tier)?1:0)+(reservedGatheringTool(state,skillId,tool.tier)?1:0),0);
  const dispatch=(type:string,args:Record<string,unknown>)=>{void onCommand({type,args});};
- const selectTier=(tier:Tier)=>{setOpened(current=>current===tier?null:tier);setTab('saved');setTotalsOpen(false);};
+ const selectTier=(tier:Tier)=>{setOpened(current=>current===tier?null:tier);setTab('saved');};
  const selected=opened===null?undefined:tools.find(tool=>tool.tier===opened);
  const active=selected?equipped.find(row=>row.tier===selected.tier):undefined;
  const activeCopy=selected?equippedGatheringToolRoll(state,skillId,selected.tier):undefined;
@@ -135,19 +140,29 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
    </View>
    <Text style={s.sub}>T1–T4</Text>
   </View>
+  <View style={s.metrics}>
+   <View style={s.metric}><Text style={s.eyebrow}>{gt('ACTION TIME')}</Text><Text style={[s.totalNumber,{color:effects.count?C.good:C.warning}]}>{effects.count?'−'+gatheringToolPercent(totals.effectivePercent)+'%':'+15%'}</Text><Text style={s.sub}>{effects.count?gt('Shorter gathering actions'):gt('Slower without tools')}</Text></View>
+   <View style={s.metric}><Text style={s.eyebrow}>{gt('RARE FINDS')}</Text><Text style={[s.totalNumber,{color:C.info}]}>+{gatheringToolPercent(totals.rarityChanceRelativePercent)}%</Text><Text style={s.sub}>{gt('relative chance')}</Text></View>
+   <View style={s.metric}><Text style={s.eyebrow}>{gl(skillId)} XP</Text><Text style={s.totalNumber}>+{gatheringToolPercent(totals.skillXpRelativePercent)}%</Text></View>
+  </View>
   <View style={s.tiers}>
    {tools.map(tool=>{
     const isActive=equipped.some(entry=>entry.tier===tool.tier);
     const hasReserve=!!reservedGatheringTool(state,skillId,tool.tier);
     const count=Number(isActive)+Number(hasReserve);
+    const copy=isActive?equippedGatheringToolRoll(state,skillId,tool.tier):undefined;
+    const contribution=isActive?gatheringToolContribution(tool,copy):undefined;
     return <Pressable key={tool.id} accessibilityRole="button"
       accessibilityLabel={'Tier '+tool.tier+' · '+localizedItemName(language,tool.id)+' · '+count+' of 2 '+gt('saved copies')}
       accessibilityState={{expanded:opened===tool.tier}}
       onPress={()=>selectTier(tool.tier)}
       style={({pressed})=>[s.tier,opened===tool.tier&&s.tierSelected,pressed&&{opacity:.75}]}>
-      <Text style={s.tierLabel}>T{tool.tier}</Text>
       <GatheringToolArtwork itemId={tool.id} size={small?38:42}/>
-      <Text style={[s.tierCount,isActive&&s.tierActive]}>{count}/2 {gt('saved')}</Text>
+      <View style={s.tierCopy}>
+       <Text style={s.tierLabel}>T{tool.tier} · {localizedItemName(language,tool.id)}</Text>
+       <Text style={[s.tierCount,isActive&&s.tierActive]}>{count}/2 {gt('saved')} · {isActive?gt('ACTIVE'):gt('Not equipped')}</Text>
+       {contribution?<Text style={s.tierSummary}>{'−'+gatheringToolPercent(contribution.adjustedBasePercent)+'% '+gt('tier time')}{copy?' · '+gatheringToolBonusLabel(copy):''}</Text>:null}
+      </View><DisclosureMark expanded={opened===tool.tier}/>
      </Pressable>;
    })}
   </View>
@@ -210,19 +225,14 @@ export function GatheringToolLoadoutPanel({state,skillId,onCommand,onInventory,o
      </View>:null}
     {tab==='recipe'?<ToolRecipeInlinePanel state={state} tool={selected} blueprintDestination={blueprintDestination}
       onNavigate={onNavigateCraftingSource} onOpenSmithing={openSmithing}/>:null}
+   </View>:null}
     <Pressable accessibilityRole="button" accessibilityState={{expanded:totalsOpen}} onPress={()=>setTotalsOpen(v=>!v)} style={s.showTotals}>
-     <Text style={s.showTotalsText}>{totalsOpen?gt('Hide combined bonuses')+' ⌃':gt('Show combined bonuses')+' ⌄'}</Text>
+     <Text style={s.showTotalsText}>{gt('How tool bonuses work')} {totalsOpen?'⌃':'⌄'}</Text>
     </Pressable>
     {totalsOpen?<View style={s.totals}>
       <Text style={s.eyebrow}>{gt('COMBINED EQUIPPED BONUSES')}</Text>
-      <View style={s.totalValues}>
-       <View style={s.total}><Text style={[s.totalNumber,{color:C.good}]}>{effects.count?gatheringToolPercent(totals.effectivePercent)+'%':'−15%'}</Text><Text style={s.totalCaption}>{effects.count?gt('Faster gathering'):gt('Slower gathering')}</Text></View>
-       <View style={s.total}><Text style={[s.totalNumber,{color:C.info}]}>+{gatheringToolPercent(totals.rarityChanceRelativePercent)}%</Text><Text style={s.totalCaption}>{gt('Rare finds')}</Text></View>
-       <View style={s.total}><Text style={s.totalNumber}>+{gatheringToolPercent(totals.skillXpRelativePercent)}%</Text><Text style={s.totalCaption}>{gl(skillId)} XP</Text></View>
-      </View>
       <Text style={s.note}>{gt('Tier contributions')}: {gatheringToolPercent(totals.rawTierPercent)}% · {gt('Speed rolls')}: +{gatheringToolPercent(totals.speedRollGainPoints)} {gt('points')} · {gt('Effective')}: {gatheringToolPercent(totals.effectivePercent)}%.</Text>
       <Text style={s.note}>{gt('Only active copies count. Skill XP rolls stack additively within this skill, capped at +60%. Gathering speed is capped at 80%.')}</Text>
      </View>:null}
-   </View>:null}
  </View>;
 }

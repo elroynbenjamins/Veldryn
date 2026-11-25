@@ -2,6 +2,19 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
+  "Party language and minimum level follow your Party settings.": ["Язык и минимальный уровень соответствуют настройкам группы.","Dil ve minimum seviye parti ayarlarını takip eder."],
+  "Tell others what you're looking for...": ["Расскажи другим, кого ты ищешь…","Diğerlerine ne aradığını anlat…"],
+  "Automatically expires after 24 hours": ["Автоматически истекает через 24 часа","24 saat sonra otomatik olarak sona erer"],
+  "Looking for active adventurers": ["Ищем активных искателей приключений","Aktif maceracılar aranıyor"],
+  "Automatically expires after 3 days": ["Автоматически истекает через 3 дня","3 gün sonra otomatik olarak sona erer"],
+  "Main interest": ["Основной интерес","Ana ilgi alanı"],
+  "Expected activity": ["Ожидаемая активность","Beklenen etkinlik"],
+  "Mixed": ["Смешанный","Karma"],
+  "Occasional play, no pressure.": ["Играет время от времени, без давления.","Ara sıra, baskı olmadan oynar."],
+  "Plays several times a week.": ["Играет несколько раз в неделю.","Haftada birkaç kez oynar."],
+  "Plays most days.": ["Играет почти каждый день.","Çoğu gün oynar."],
+  "Very dedicated, frequent play.": ["Очень увлечён, играет часто.","Çok özverili, sık oynar."],
+  "Publish advert": ["Опубликовать объявление","İlanı yayınla"],
   "Guild Tokens": ["Жетоны гильдии","Lonca Jetonları"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Название группы","Parti adı"],

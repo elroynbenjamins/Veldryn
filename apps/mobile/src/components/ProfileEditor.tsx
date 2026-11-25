@@ -6,7 +6,7 @@ import {GameTextInput} from './GameTextInput';
 import {profileIconCollection,canUseProfileIcon} from '../core/profile-icons';
 import {dungeonShopOfferName} from '../i18n/dungeon-shop';
 import {useAuthSession} from '../online/AuthSessionProvider';
-import {invalidatePlayerIdentity,publishOwnProfileIcon} from '../online/player-identity-cache';
+import {invalidatePlayerIdentity} from '../online/player-identity-cache';
 import {ProfileIcon} from './ProfileIcon';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -79,7 +79,7 @@ export function ProfileEditor({state,onChange,onCommand,onSaveNameStyle,active=t
  const kind=tab==='Icons'?'profile_icon':tab==='Backgrounds'?'background':tab==='Borders'?'border':'pet',id=tab==='Icons'?icon:tab==='Backgrounds'?background:tab==='Borders'?border:pet;
  const usable=kind==='profile_icon'?canUseProfileIcon(state,id):canUseProfileCosmetic(state,kind,id);
  const applied=tab==='Icons'?icon===(character.profileIconId??`class:${character.classId}`):tab==='Backgrounds'?background===(character.profileBackgroundId??'asterfall-night'):tab==='Borders'?border===(character.profileBorderId??''):pet===(character.selectedCosmeticPetId??'');
- const apply=async()=>{if(!usable)return;const patch=kind==='profile_icon'?{profileIconId:id}:kind==='background'?{profileBackgroundId:id}:kind==='border'?{profileBorderId:id||undefined}:{selectedCosmeticPetId:id||undefined};await onChange({...state,character:{...character,...patch}});if(accountId){if(kind==='profile_icon')publishOwnProfileIcon(accountId,id,character.classId);else invalidatePlayerIdentity(accountId);}};
+ const apply=async()=>{if(!usable)return;const patch=kind==='profile_icon'?{profileIconId:id}:kind==='background'?{profileBackgroundId:id}:kind==='border'?{profileBorderId:id||undefined}:{selectedCosmeticPetId:id||undefined};await onChange({...state,character:{...character,...patch}});};
  const previewing=icon!==(character.profileIconId??`class:${character.classId}`)||title.trim()!==(character.profileTitle??'New Adventurer')||background!==(character.profileBackgroundId??'asterfall-night')||border!==(character.profileBorderId??'')||pet!==(character.selectedCosmeticPetId??'')||nameInputDirty||JSON.stringify(normalizePlayerNameStyle(nameStyle))!==savedNameStyleKey;
  useEffect(()=>{onDirtyChange?.(previewing)},[previewing,onDirtyChange]);
  useEffect(()=>{onPreviewStateChange?.(preview)},[state,icon,title,background,border,pet,nameStyle,onPreviewStateChange]);

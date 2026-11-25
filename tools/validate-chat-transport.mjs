@@ -72,6 +72,7 @@ const client={
    const messages=[...guildRows].sort((a,b)=>b.created_at.localeCompare(a.created_at)||b.id.localeCompare(a.id)).slice(0,Math.max(1,Math.min(args.p_limit??50,100))).reverse();
    return {data:{guild:{id:'guild-a',name:'Guild A'},messages,serverTime:new Date(60_000).toISOString()},error:null};
   }
+  if(name==='chat_sender_names_v1')return identityFails?{data:null,error:{code:'503',message:'name service unavailable'}}:{data:args.p_account_ids.map(account_id=>({account_id,sender_name:'Current Social Name'})),error:null};
   if(name==='guild_identities_v3')return identityFails?{data:null,error:{code:'503',message:'identity service temporarily unavailable'}}:{data:[{account_id:'reader',guild_tag:'TAG'}],error:null};
   throw new Error(`Unexpected RPC: ${name}`);
  },
@@ -89,7 +90,9 @@ const identityCache=load('apps/mobile/src/online/player-identity-cache.ts',{
  '../core/player-identity-cache-policy':identityCachePolicy,
 });
 const socialListProjection=load('apps/mobile/src/core/social-list-projection.ts',{});
-const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave});
+const socialNameGate={ACCOUNT_SOCIAL_IDENTITY_RELEASED:false};
+const senderProjection=load('apps/mobile/src/core/chat-sender-projection.ts',{});
+const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'./social-identity-client-gate':socialNameGate,'../core/chat-sender-projection':senderProjection,'./chat-history':chatHistory,'./player-identity-cache':identityCache,'../core/social-list-projection':socialListProjection,'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave});
 const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./chat-history':chatHistory,'./social':social,'../core/party-social':{},'../core/feature-unlocks':{PARTY_UNLOCK_LEVEL:10}});
 
 assert.equal(chatHistory.CHAT_RECENT_MESSAGE_LIMIT,25);
@@ -124,6 +127,13 @@ assert.equal(guildRequests.length,4);
 assert.ok(guildRequests.every(args=>args.p_limit===50),'Guild must explicitly request its 50-message default, overriding the server default');
 assert.deepEqual((await social.guildChatState(7)).messages.map(row=>row.id),['050','051','052','053','054','055','056'],'An explicit Guild limit remains supported');
 assert.equal(guildRequests.at(-1).p_limit,7);
+assert.ok(!rpcCalls.some(call=>call.name==='chat_sender_names_v1'),'Disabled gate preserves legacy transport');
+socialNameGate.ACCOUNT_SOCIAL_IDENTITY_RELEASED=true;
+for(const read of [()=>social.worldMessages('world-1'),()=>party.partyChatMessages('party-a'),async()=>(await social.guildChatState()).messages]){
+ assert.ok((await read()).every(row=>row.sender_name==='Current Social Name'),'Enabled gate projects current names on historical messages');
+ identityFails=true;assert.equal((await read()).at(-1).sender_name,'Authoritative name','Failed name lookup preserves the stored sender');identityFails=false;
+}
+socialNameGate.ACCOUNT_SOCIAL_IDENTITY_RELEASED=false;
 
 const beforeRetry=rows.length,retryKey=social.worldChatCommandKey();
 loseWorldResponse=true;

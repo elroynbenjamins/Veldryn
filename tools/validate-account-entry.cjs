@@ -69,6 +69,8 @@ function makeHarness({user = null, recovering = false} = {}) {
     inspectGoogleAccountConnection: async id => auth.session?.user.id===id ? {status:auth.session.user.identities?.some(identity=>identity.provider==='google')?'linked':'not_linked'} : {status:'error',message:'Account changed.'},
   };
   const mocks = new Map([
+    // Audio playback has its own tests; this offline UI harness must not load native audio or binary MP3 assets.
+    [path.join(app, 'src/storage/audio'), {playSound: () => {}, useMusicOverride: () => {}, useRarityRevealSound: () => {}, useAudioPreferences: () => [{music:2,effects:2,musicContexts:{}}, () => {}], toggleAudioMute: () => 0, playMusicPreview: () => {}, stopMusicPreview: () => {}}],
     ['react', React], ['react-native', native],
     ['react-native-safe-area-context', {SafeAreaProvider: ({children}) => React.createElement(React.Fragment, null, children),useSafeAreaInsets: () => ({top: 0, right: 0, bottom: 0, left: 0})}],
     [path.join(app, 'src/online/AuthSessionProvider'), {useAuthSession: () => ({...auth})}],

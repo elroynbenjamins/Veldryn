@@ -1,6 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {
- applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeLockTag,wardrobeProgress,wardrobeSelection,
+ applyWardrobeEquipped,profileWardrobe,wardrobeEquipped,wardrobeLockTag,wardrobeProgress,wardrobeSelection,wardrobeChanges,
  WARDROBE_KINDS,type WardrobeAssets,
 } from '../src/core/profile-wardrobe';
 import {isHexColor,NAME_COLOR_PALETTE,nameColorPaletteMatch,normalizeHexColor} from '../src/core/player-name-style';
@@ -142,3 +142,11 @@ const autoStage=profileFrameSegments(358,168)[0],lightStage=profileFrameSegments
 ok(lightStage.height<autoStage.height*.6,'an explicit corner still overrides the self-sized one');
 
 console.log('PASS: wardrobe chips, locked sources, one-family selection, colour picker and frame geometry');
+
+const originalLook={icon:'starter:hooded-ranger',scene:'asterfall-night',frame:'',effect:'',pet:'',title:'Adventurer'};
+const newLook={...originalLook,icon:'starter:runic-scholar'};
+const backgroundEdit={...originalLook,scene:'bg_veilbreak'};
+const rebasedLook={...newLook,...wardrobeChanges(originalLook,backgroundEdit)};
+equal(rebasedLook.icon,newLook.icon,'stale background edit cannot replace account icon');
+equal(rebasedLook.scene,'bg_veilbreak','requested background edit survives rebase');
+equal(wardrobeChanges(newLook,originalLook).icon,originalLook.icon,'explicit undo still restores previous icon');

@@ -66,7 +66,14 @@ jobs:
       - name: Validate pixel audio settings and reversible mute
         run: pnpm test:audio-settings
       - name: Verify expanded chat tabs, keyboard clearance and floating emotes
-        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs
+        run: node tests/chat-channel-dropdown-ui-contract.cjs && node tests/chat-overlay-layout.cjs && node tests/chat-online-player-roster.cjs && node tests/chat-dock-responsive.cjs
+      - name: Validate compact recruitment quick-post and Crafting persistence
+        run: |
+          pnpm exec tsc -p tsconfig.core.json --outDir .core-build
+          node .core-build/apps/mobile/tests/party-social-v16.js
+          node .core-build/apps/mobile/tests/social-recruitment-ui-contract.js
+      - name: Validate compact gathering tool rows and vault safety
+        run: node tests/compact-gathering-tools-redesign-ui.cjs
       - name: Verify hidden World Boss, Party Event and Market UI routes
         run: pnpm test:feature-hubs
       - name: Validate Ascendant showcase geometry and closed blessing gate

@@ -33,7 +33,7 @@ const gems=fs.readFileSync('src/components/GemCodexModal.tsx','utf8');
 ok(skills.includes('FINAL STRETCH')&&skills.includes('ALMOST THERE'),'skill detail must tell players when the next level is close');
 ok(skills.includes('progressAnticipation(p.current,p.need'),'Skills hub cards must use the same anticipation model');
 ok(forge.includes('FINISHING SOON')&&forge.includes('ALMOST DONE'),'Forge must distinguish finishing-soon from almost-done jobs');
-ok(forge.includes('forgeAnticipation(job.remainingSeconds,job.durationSeconds)'),'Forge cues must derive from job timing rather than fixed UI state');
+ok(forge.includes('const remainingSeconds=Math.max(0,Math.ceil((job.completesAtMs-now)/1000))')&&forge.includes('forgeAnticipation(remainingSeconds,job.durationSeconds)'),'Forge cues must derive from the live countdown and projected job completion, not fixed UI state');
 ok(quests.includes('NEXT PROGRESS COMPLETES IT')&&quests.includes('ALMOST COMPLETE'),'contracts must make final progress legible');
 ok(encounters.includes('MASTERY MILESTONE CLOSE')&&encounters.includes('NEXT KILL UNLOCKS'),'monster Mastery must anticipate meaningful threshold unlocks');
 ok(encounters.includes('masteryMilestone.label'),'Mastery cue must describe what the milestone unlocks');

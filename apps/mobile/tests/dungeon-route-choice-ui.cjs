@@ -10,6 +10,16 @@ assert(!presentation.includes("event:{name:'Event room'"),'Retired resource-only
 assert(overview.includes('<DungeonRouteChoices options={run.options} combatMarksRemaining={Math.max(0,(run.combatMarksCap??25)-(run.combatMarksEarned??0))} mode={run.mode} phase={run.phase} busy={busy||(needsBoon&&!selectedBoonId)} onChoose={onChoose?chooseRoom:undefined} myVotedNodeId={myVotedNodeId} selfVoter={selfVoter}/>'),'Dungeon run wraps one-tap choices to show a battle-entry transition while retaining player vote identity');
 assert(!overview.includes('run.options.map(option=><FantasyPanel'),'Old per-room text panels are removed');
 assert(choices.includes('onPress={()=>onChoose?.(option.nodeId)}'),'Room tap uses the existing authoritative choose/vote callback');
+
+const bossOrderExpression=choices.match(/const orderedOptions=useMemo\(\(\)=>(\[\.\.\.options\]\.sort\(.+\)),\[options\]\);/);
+assert(bossOrderExpression,'Dungeon route cards prioritize boss rooms without mutating server options');
+assert(choices.includes('{orderedOptions.map((option,optionIndex)=>{'),'The prioritized boss-first list is rendered, not the raw server order');
+const orderRoutes=new Function('options',`return ${bossOrderExpression[1]};`);
+const originalRoutes=[{kind:'battle',nodeId:'battle-1'},{kind:'shrine',nodeId:'boon-1'},{kind:'boss',nodeId:'boss-1'},{kind:'elite',nodeId:'elite-1'}];
+assert.deepEqual(orderRoutes(originalRoutes).map(option=>option.nodeId),['boss-1','battle-1','boon-1','elite-1'],'Boss appears first while the other choices retain their relative order');
+assert.deepEqual(originalRoutes.map(option=>option.nodeId),['battle-1','boon-1','boss-1','elite-1'],'The UI must not mutate server-provided route order');
+assert.deepEqual(orderRoutes([{kind:'camp',nodeId:'camp-1'},{kind:'boss',nodeId:'boss-2'},{kind:'boss',nodeId:'boss-3'}]).map(option=>option.nodeId),['boss-2','boss-3','camp-1'],'Multiple boss choices stay first and stable');
+assert(choices.includes("bossCard:{borderColor:C.gold,borderWidth:2")&&choices.includes("option.kind==='boss'?<Text style={[s.actionCue,s.bossAction]}>"),'Boss cards have a stronger outline and a separate prominent action line');
 assert(choices.includes("phase==='awaiting_choice'&&!busy"),'Busy and non-choice phases cannot submit votes');
 assert(choices.includes("canChoose&&!option.hidden"),'Hidden rooms cannot be picked');
 assert(choices.includes("mode==='qmode'?ui('Choose room'):ui('Vote')"),'Solo and Live use the correct action');

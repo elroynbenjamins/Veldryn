@@ -65,3 +65,21 @@ for(const [filename,id] of assets){
  console.log('PASS',id,filename,JSON.stringify(check));
 }
 console.log('PASS: Frostfall companion PNG assets are registered, transparent, correctly sized and unclipped');
+
+// Dedicated ability icons are compact indexed PNGs, separate from portrait art.
+const abilityNames=["rimeshard_mark","aurora_pursuit","shattering_trail","hearthguard_aegis","woolen_bulwark","hearthbound_vow","frostbell_cycle","winter_cadence","grand_bell"];
+const abilityRegistry=fs.readFileSync(path.resolve(__dirname,'../src/theme/frostfall-companion-ability-art.ts'),'utf8');
+const abilityHashes=new Set();
+for(const name of abilityNames){
+ const filename=name+'.png',png=fs.readFileSync(path.join(base,'../abilities',filename));
+ assert.ok(abilityRegistry.includes('/abilities/'+filename),'Ability asset registration: '+name);
+ assert.ok(png.subarray(0,8).equals(signature),'Ability PNG signature: '+name);
+ assert.equal(png.readUInt32BE(16),96);assert.equal(png.readUInt32BE(20),96);
+ assert.equal(png[24],4);assert.equal(png[25],3);
+ assert.ok(png.length<4096,'Compact ability icon: '+name);
+ const chunks=[];let alpha;for(let p=8;p+12<=png.length;){const n=png.readUInt32BE(p),type=png.toString('ascii',p+4,p+8);assert.ok(p+n+12<=png.length,'Complete chunk '+name);const data=png.subarray(p+8,p+8+n);if(type==='tRNS')alpha=data;if(type==='IDAT')chunks.push(data);p+=12+n;if(type==='IEND')break;}
+ assert.ok(alpha&&alpha.includes(0),'Transparent icon: '+name);assert.equal(zlib.inflateSync(Buffer.concat(chunks)).length,96*49,'Decodable 4-bit PNG: '+name);
+ abilityHashes.add(require('node:crypto').createHash('sha256').update(png).digest('hex'));
+}
+assert.equal(abilityHashes.size,9,'All nine ability icons are distinct');
+console.log('PASS: Frostfall ability icons are registered, transparent, compact and distinct');

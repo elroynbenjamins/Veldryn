@@ -1,0 +1,74 @@
+# One-time branch-only artwork import. Remove after verified import; never deploy.
+name: Ultra Luxe approved V3 artwork import
+on:
+  push:
+    branches: ['chatgpt/ascendant-collection-design-review']
+    paths:
+      - '.github/workflows/ultra-luxe-import-approved-art.yml'
+      - 'ultra_luxe_verified_artwork_v3.zip'
+permissions:
+  contents: write
+concurrency:
+  group: ultra-luxe-approved-v3-import
+  cancel-in-progress: false
+jobs:
+  import:
+    if: github.ref == 'refs/heads/chatgpt/ascendant-collection-design-review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Verify and install exact owner-approved archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object ultra_luxe_verified_artwork_v3.zip)" = f7c59d62454abe8088a153f43c0138c1cdb58938
+          python3 scripts/import-ultra-luxe-artwork.py ultra_luxe_verified_artwork_v3.zip --install
+          node apps/mobile/tests/ascendant-celestial-assets.cjs
+          python3 - <<'PY'
+          import hashlib, json, pathlib, zipfile
+          with zipfile.ZipFile('ultra_luxe_verified_artwork_v3.zip') as z:
+              manifest=json.loads(z.read('asset-manifest.json'))
+              assert len(manifest)==30
+              for row in manifest:
+                  data=pathlib.Path(row['path']).read_bytes()
+                  assert len(data)==row['bytes']
+                  assert hashlib.sha256(data).hexdigest()==row['sha256']
+              registry='apps/mobile/src/theme/draconic-integration-assets.ts'
+              assert pathlib.Path(registry).read_bytes()==z.read(registry)
+          print('All 30 installed textures and Draconic registry match the approved archive.')
+          PY
+      - name: Stage only approved textures and registry edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add apps/mobile/assets/ascendant/celestial apps/mobile/assets/ascendant/draconic apps/mobile/assets/ascendant/shared
+          git add apps/mobile/src/theme/draconic-integration-assets.ts apps/mobile/src/theme/celestial-integration-assets.ts apps/mobile/src/theme/profile-border-assets.ts apps/mobile/src/components/player-badge-artwork.ts
+          git rm ultra_luxe_verified_artwork_v3.zip
+          python3 - <<'PY'
+          import json, subprocess, zipfile, io
+          archive=subprocess.check_output(['git','show','HEAD:ultra_luxe_verified_artwork_v3.zip'])
+          with zipfile.ZipFile(io.BytesIO(archive)) as z:
+              allowed={r['path'] for r in json.loads(z.read('asset-manifest.json'))}
+          allowed.update(['apps/mobile/src/theme/draconic-integration-assets.ts','apps/mobile/src/theme/celestial-integration-assets.ts','apps/mobile/src/theme/profile-border-assets.ts','apps/mobile/src/components/player-badge-artwork.ts','ultra_luxe_verified_artwork_v3.zip'])
+          changed=set(subprocess.check_output(['git','diff','--cached','--name-only'],text=True).splitlines())
+          assert changed <= allowed, f'Unexpected staged changes: {changed-allowed}'
+          assert 'ultra_luxe_verified_artwork_v3.zip' in changed
+          assert not subprocess.check_output(['git','diff','--name-only']).strip()
+          assert not subprocess.check_output(['git','ls-files','--others','--exclude-standard']).strip()
+          PY
+          git diff --cached --stat
+      - name: Commit to isolated candidate branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch=chatgpt/ascendant-collection-design-review
+          git fetch origin "$branch"
+          test "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$branch")"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Import verified Celestial and Draconic V3 artwork'
+          git push origin "HEAD:$branch"

@@ -114,3 +114,9 @@ test('roster keeps server-confirmed selection, shows pending switch and prevents
   assert.ok(renderer.root.findAllByType('View').some(node=>node.props.accessibilityLabel==='Currently playing: stone'));
  }finally{if(renderer)await act(async()=>renderer.unmount());}
 });
+
+test('optional reminder registration waits for startup readiness and does not bypass version checks',()=>{
+ const app=read('App.tsx');
+ assert.match(app,/const loadOptionalContent=!startupBlocking&&!startupOverlayVisible&&!versionGateOwnsScreen;/);
+ assert.match(app,/useDungeonWeeklyReminder\(loadOptionalContent&&ready&&!auth\.recovering\?auth\.session\?\.user\.id:undefined/);
+});

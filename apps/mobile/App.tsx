@@ -939,8 +939,9 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
   const activityPreview=useMemo(()=>state?.character?previewActivityReward(state,now):undefined,[state,now]);
   // Shell projections depend on the save and presentation clock, not tab, chat,
   // modal or cosmetic-preview changes. Keep the existing time-sensitive cadence.
+  const shellAttentionReady=versionGateChecked&&!versionGateOwnsScreen&&ready&&(!serverGameplayEnabled||(!auth.loading&&!online.loading&&!!auth.session&&!auth.recovering&&!!online.snapshot));
   const shellAttention=useMemo(()=>{
-    if(!state?.character)return null;
+    if(!shellAttentionReady||!state?.character)return null;
     const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
     const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
     const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
@@ -951,7 +952,7 @@ const next=normalizeProfileIcon(migrateGemPouch(migrateRetiredStoryRewards(expli
     const overflowStackCount=state.overflow.stacks.filter(stack=>stack.quantity>0).length;
     const lockedAccountDestinations=Object.fromEntries((['DailySupplies','AccountBonuses','Companions','Friends','Recruitment','MasteryHall','Guild','Rankings'] as MoreDestination[]).flatMap(destination=>{const reason=earlyFeatureLockReason(state,destination);return reason?[[destination,reason]]:[]})) as Partial<Record<MoreDestination,string>>;
     return {companionsUnlocked,dailySuppliesUnlocked,contractsUnlocked,friendsUnlocked,socialUnlocked,guildUnlocked,companionAttention,dailySuppliesReady,forgeReadyCount,questClaims,overflowStackCount,lockedAccountDestinations};
-  },[state,now]);
+  },[state,now,shellAttentionReady]);
   const renderApp=()=>{
   if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;

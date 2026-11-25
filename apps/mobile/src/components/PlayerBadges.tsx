@@ -1,5 +1,8 @@
+import {useUltraLuxeIdentityMotion} from './profile/UltraLuxeIdentityMotion';
+import {isUltraLuxeBadge} from '../core/ultra-luxe-cosmetics';
+import {SIGNATURE_CURVE_PHASE,SIGNATURE_BADGE_OPACITY,SIGNATURE_BADGE_SCALE,SIGNATURE_PARTIAL_BADGE_SCALE} from '../core/ultra-luxe-motion';
 import {useEffect,useState} from 'react';
-import {Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
+import {Animated,Image,Modal,Platform,Pressable,StyleSheet,Text,View,useWindowDimensions,type StyleProp,type ViewStyle} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {PLAYER_BADGE_LABELS,PLAYER_BADGE_DESCRIPTIONS,playerBadgeIds,profileBadgeIds,type PlayerBadgeIdentity,type PlayerBadgeId} from '../core/player-badges';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -16,8 +19,17 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  const detail=recentScreenText(language,PLAYER_BADGE_DESCRIPTIONS[id]);
  const {width:screenWidth,height:screenHeight}=useWindowDimensions(),insets=useSafeAreaInsets();
  const [anchor,setAnchor]=useState<{left:number;top:number}|null>(null);
- const art=(artSize:number)=>{const source=PLAYER_BADGE_ARTWORK[id],fallback=PLAYER_BADGE_FALLBACK_GLYPHS[id];return source?<Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize}}/>:<View accessible={false} style={{width:artSize,height:artSize,borderRadius:Math.max(4,artSize*.22),alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:fallback?.accent??C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.8)'}}><Text style={{fontSize:Math.round(artSize*.58),lineHeight:Math.round(artSize*.68),fontWeight:'900',color:fallback?.accent??C.accent}}>{fallback?.glyph??'◇'}</Text></View>};
- const content=<>{art(size)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
+ const motion=useUltraLuxeIdentityMotion();
+ const art=(artSize:number,animate=false)=>{
+  const source=PLAYER_BADGE_ARTWORK[id];
+  if(animate&&motion&&isUltraLuxeBadge(id)&&source){
+   const opacity=motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:SIGNATURE_BADGE_OPACITY});
+   const scale=motion.clock.interpolate({inputRange:[...SIGNATURE_CURVE_PHASE],outputRange:motion.fullSet?SIGNATURE_BADGE_SCALE:SIGNATURE_PARTIAL_BADGE_SCALE});
+   return <Animated.Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize,opacity,transform:[{scale}]}}/>;
+  }
+  const fallback=PLAYER_BADGE_FALLBACK_GLYPHS[id];return source?<Image accessible={false} source={source} resizeMode="contain" style={{width:artSize,height:artSize}}/>:<View accessible={false} style={{width:artSize,height:artSize,borderRadius:Math.max(4,artSize*.22),alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:fallback?.accent??C.lineStrong,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.8)'}}><Text style={{fontSize:Math.round(artSize*.58),lineHeight:Math.round(artSize*.68),fontWeight:'900',color:fallback?.accent??C.accent}}>{fallback?.glyph??'◇'}</Text></View>;
+ };
+ const content=<>{art(size,true)}{showLabel?<Text style={{color:C.text,fontSize:12,lineHeight:18}}>{label}</Text>:null}</>;
  if(!interactive)return <View accessible accessibilityRole="image" accessibilityLabel={label} {...(Platform.OS==='web'?{title:label}:{})} style={s.badge}>{content}</View>;
  const open=(pageX:number,pageY:number)=>{
   const bubbleWidth=Math.min(248,Math.max(180,screenWidth-24));
@@ -46,7 +58,7 @@ export function PlayerBadge({id,size=20,showLabel=false,interactive=false}:{id:P
  </>;
 }
 /** A cached identity stops being trustworthy at validUntilMs, so re-render exactly then. */
-function useBadgeClock(identity?:PlayerBadgeIdentity){
+export function useBadgeClock(identity?:PlayerBadgeIdentity){
  const [now,setNow]=useState(Date.now());
  useEffect(()=>{setNow(Date.now());if(!identity)return;const timer=setTimeout(()=>setNow(Date.now()),Math.max(0,Math.min(2147483647,identity.validUntilMs-Date.now()+1)));return()=>clearTimeout(timer);},[identity]);
  return Math.max(now,Date.now());
@@ -59,11 +71,11 @@ export function PlayerBadges({identity,size=22,showLabels=false}:{identity?:Play
 }
 /** The profile: up to three badges of the player's choosing, beside the automatic staff mark.
  * A profile has room for a collection; a chat line does not. */
-export function PlayerBadgeShowcase({identity,size=17,style}:{identity?:PlayerBadgeIdentity;size?:number;style?:StyleProp<ViewStyle>}){
+export function PlayerBadgeShowcase({identity,size=17,style,variant='framed'}:{identity?:PlayerBadgeIdentity;size?:number;style?:StyleProp<ViewStyle>;variant?:'framed'|'bare'}){
  const C=useGameTheme();
  const ids=profileBadgeIds(identity,useBadgeClock(identity));
  if(!ids.length)return null;
- return <View style={[s.showcase,{borderColor:C.line,backgroundColor:C.dark?'rgba(3,4,5,.52)':'rgba(255,255,255,.58)'},style]}>
+ return <View style={[s.showcaseRow,variant==='framed'?[s.showcase,{borderColor:C.line,backgroundColor:C.dark?'rgba(3,4,5,.52)':'rgba(255,255,255,.58)'}]:s.bareShowcase,style]}>
   {ids.map(id=><PlayerBadge key={id} id={id} size={size} interactive/>)}
  </View>;
 }
@@ -78,5 +90,7 @@ const s=StyleSheet.create({
  infoTitle:{fontSize:13,fontWeight:'900'},
  infoDescription:{fontSize:11,lineHeight:15},
 
- showcase:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
+ showcaseRow:{flexDirection:'row',alignItems:'center',alignSelf:'flex-start',gap:5},
+ showcase:{paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99},
+ bareShowcase:{paddingVertical:2,paddingHorizontal:0},
 });

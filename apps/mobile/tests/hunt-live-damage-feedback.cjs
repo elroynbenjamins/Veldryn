@@ -44,3 +44,22 @@ assert.ok(hunt.includes("lastHit?.actor==='player'&&!lastHit.missed?"));
 assert.ok(stage.includes("const enemyFeedback=recentHit?.missed?missFloat:enemyImpact"));
 
 console.log('PASS live hunt hit feedback, actor gating, zero damage and interrupted animation reset');
+
+const bar=read('ActiveActivityBar.tsx');
+const shared=read('useLiveHuntProjection.ts');
+const combatBar=bar.slice(bar.indexOf('function CombatActivityBar('),bar.indexOf('function RunningActivityBar('));
+const timedBar=bar.slice(bar.indexOf('function RunningActivityBar('),bar.indexOf('function makeStyles('));
+assert.ok(bar.includes('useLiveHuntProjection(props.state,'));
+assert.ok(hunt.includes('useLiveHuntProjection(state,active)'));
+assert.ok(shared.includes('new WeakMap<GameState'));
+assert.ok(shared.includes('activeCombatHitProjection(state,clock,snapshot.fight?.cursor)'));
+assert.ok(shared.includes('clearInterval(timer)'));
+assert.ok(combatBar.includes('fight.enemyHp/Math.max(1,fight.enemyMaxHp)'));
+assert.ok(combatBar.includes('fight&&!fight.searching?'));
+assert.ok(combatBar.includes('projectedKills??combatKills'));
+assert.ok(!combatBar.includes('cycleRemaining'));
+assert.ok(!combatBar.includes('elapsed('));
+assert.ok(!bar.includes('Next kill {seconds}s'));
+assert.ok(timedBar.includes('cycleRemaining'));
+assert.ok(timedBar.includes('elapsed(activity.startedAtMs,displayNowMs)'));
+console.log('PASS shared damage-based activity bar, search state, kill count and timed activities');

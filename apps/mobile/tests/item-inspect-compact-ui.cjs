@@ -34,6 +34,14 @@ assert(sheet.includes('disposalActions?<View style={s.footerDisposal}')&&sheet.i
 assert(!sheet.includes('actionsOpen')&&!sheet.includes('footerActionScroll'),'No equipment action may be hidden behind a More actions disclosure');
 assert(sheet.includes('compactHeader=width<390||fontScale>=1.25')&&controls.includes('button:{width:40,height:44'),'Header must accommodate compact phones and accessible target heights');
 
+// Stackable resources must inherit the toolbar amount and use one clamped value for both actions.
+assert(inventory.includes('setInspectQuantity(stack.instanceId?1:transferAmount(stack.quantity,quantity))'),'Opening a stack must inherit the selected amount, including All, without changing exact-copy actions');
+assert(inventory.includes('const inspectAmount=transferAmount(inspectStock,inspectQuantity??1)'),'Clamp the selected amount to live stock');
+const materialQuick=inventory.slice(inventory.indexOf("const inspectQuickActions=inspected?.type==='material'"),inventory.indexOf("inspected?.type==='gear'?<View style={s.inspectQuickActions}>"));
+assert(materialQuick.includes('keyboardType="number-pad" selectTextOnFocus')&&materialQuick.includes('String(inspectAmount)'),'Quantity must be directly editable and show exact units');
+assert(materialQuick.includes('disabled={inventoryBusyLabel!==null||!inspectAmountValid}')&&materialQuick.includes('!inspectAmountValid||inspectLocked||inspectFavorite||goalProtection.has(inspected.id)'),'Blank amounts must disable transfers and sales without bypassing protection');
+assert(materialQuick.includes('amount=inspectAmount')&&materialQuick.includes('quantity:inspectAmount')&&materialQuick.includes('itemVendorSellGold(inspected)*inspectAmount'),'Transfer, sale confirmation and gold preview must share the same clamped amount');
+
 const quickStart=inventory.indexOf("inspected?.type==='gear'?<View style={s.inspectQuickActions}>");
 assert(quickStart>=0,'Equipment must expose quick actions outside the secondary actions drawer');
 const quick=inventory.slice(quickStart,inventory.indexOf('const inspectActions',quickStart));

@@ -2,7 +2,6 @@ import type {SocialMessageKey} from './social';
 
 /** Player-facing Russian/Turkish Social, Guild and Dungeon copy. Unknown keys retain English fallback. */
 export const socialEarlyRows={
-  // Compact recruitment quick-post localization.
   "Party language and minimum level follow your Party settings.": ["Язык и минимальный уровень соответствуют настройкам группы.","Dil ve minimum seviye parti ayarlarını takip eder."],
   "Tell others what you're looking for...": ["Расскажи другим, кого ты ищешь…","Diğerlerine ne aradığını anlat…"],
   "Automatically expires after 24 hours": ["Автоматически истекает через 24 часа","24 saat sonra otomatik olarak sona erer"],
@@ -16,7 +15,7 @@ export const socialEarlyRows={
   "Plays most days.": ["Играет почти каждый день.","Çoğu gün oynar."],
   "Very dedicated, frequent play.": ["Очень увлечён, играет часто.","Çok özverili, sık oynar."],
   "Publish advert": ["Опубликовать объявление","İlanı yayınla"],
-  "Guild Tokens": ["Жетоны гильдии","Lonca jetonları"],
+  "Guild Tokens": ["Жетоны гильдии","Lonca Jetonları"],
   // Short Party identity, six-month name cooldown and ranking-ready labels.
   "Party name": ["Название группы","Parti adı"],
   "Choose Party name": ["Выбрать название группы","Parti adı seç"],
@@ -59,6 +58,7 @@ export const socialEarlyRows={
   // Online roster additions.
   "VELDRYN COMMUNITY": ["СООБЩЕСТВО VELDRYN","VELDRYN TOPLULUĞU"],
   "Online players": ["Игроки в сети","Çevrimiçi oyuncular"],
+  "Total character level": ["Суммарный уровень персонажей","Toplam karakter seviyesi"],
   "Active (30m)": ["Активны (30 мин)","Etkin (30 dk)"],
   "Active in Last 30 Minutes": ["Активны за последние 30 минут","Son 30 dakikada aktif"],
   "View players active in the last 30 minutes": ["Посмотреть игроков, активных за последние 30 минут","Son 30 dakikada aktif oyuncuları gör"],

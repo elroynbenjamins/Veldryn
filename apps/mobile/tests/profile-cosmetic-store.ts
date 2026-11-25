@@ -26,7 +26,7 @@ for(const collection of PROFILE_COSMETIC_STORE_COLLECTIONS){
  equal(collection.set.effectId,collection.effect.itemId,collection.name+' set includes its effect');
  equal(collection.set.iconIds.join('|'),collection.portraits.map(row=>row.id).join('|'),collection.name+' set includes both portraits');
 }
-let state=createCharacter(newGame(0),'IRONWARDEN','Cosmetics Test');
+let state=createCharacter(newGame(0),'IRONWARDEN','Cosmetic Catalog');
 const first=PROFILE_COSMETIC_STORE_COLLECTIONS[0];
 let owned=profileCosmeticCollectionOwnership(state,first);
 equal(owned.ownedPieces,0,'fresh account owns zero of four contents');

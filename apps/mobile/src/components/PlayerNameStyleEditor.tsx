@@ -5,6 +5,10 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {NameColorPicker} from './NameColorPicker';
 import {PlayerStyledName} from './PlayerStyledName';
+import {ownedUltraLuxeTitles} from '../core/ultra-luxe-titles';
+import {useUltraLuxeNameSelection} from '../online/useUltraLuxeNameSelection';
+import {UltraLuxeNameStylePicker} from './profile/UltraLuxeNameStylePicker';
+import type {UltraLuxeNamePresetId} from '../core/ultra-luxe-prestige';
 import {SettingToggle} from './SettingToggle';
 import type {GameState} from '../core/types';
 import {
@@ -24,11 +28,14 @@ function colorFields(draft:PlayerNameStylePreference,fallback:string|undefined):
   c:stored.gradientColors?.[2]??stored.gradientColors?.[1]??SUPPORTER_NAME_PRESETS[0].colors[2]};
 }
 
-export function PlayerNameStyleEditor({state,previewName,draft,onDraftChange,onSaveNameStyle,onInputDirtyChange,resetVersion=0,active=true}:{
+export function PlayerNameStyleEditor({state,previewName,draft,onDraftChange,onSaveNameStyle,onInputDirtyChange,resetVersion=0,active=true,prestige}:{
  state:GameState;previewName?:string;draft:PlayerNameStylePreference;onDraftChange:(style:PlayerNameStylePreference)=>void;
  onSaveNameStyle:SavePlayerNameStyle;onInputDirtyChange?:(dirty:boolean)=>void;resetVersion?:number;active?:boolean;
+ prestige?:{verifiedOwnedIds:readonly string[];selectedId?:string|null;saving?:boolean;onSelect:(id:UltraLuxeNamePresetId|null)=>void};
 }){
  const language=useGameLanguage();
+ const privateSelection=useUltraLuxeNameSelection(active&&ownedUltraLuxeTitles(state).length>0);
+ const privatePicker=prestige??privateSelection;
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),entitlements=playerNameStyleEntitlements(state);
  const fieldKey=JSON.stringify(colorFields(draft,state.account.vipPlusNameColor));
  const [fields,setFields]=useState<ColorFields>(()=>JSON.parse(fieldKey)),[saving,setSaving]=useState(false),[message,setMessage]=useState('');
@@ -60,6 +67,8 @@ export function PlayerNameStyleEditor({state,previewName,draft,onDraftChange,onS
   <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{profileT(language,"PLAYER NAME STYLE")}</Text><Text style={s.title}>{profileT(language,"Chat & social identity")}</Text></View><View style={[s.entitlement,entitlements.supporter&&s.supporter]}><Text style={[s.entitlementText,entitlements.supporter&&s.supporterText]}>{entitlements.supporter?'SUPPORTER':entitlements.vipPlus?'VIP+':profileT(language,"LOCKED")}</Text></View></View>
   <Text style={s.copy}>{profileT(language,"VIP+ permanently unlocks a solid RGB/HEX name color. Supporter stacks with VIP+ and unlocks multi-color gradients and slow motion styles while active.")}</Text>
   <View style={s.preview}><Text style={s.previewLabel}>{profileT(language,"LIVE PREVIEW")}</Text><PlayerStyledName name={playerName} nameStyle={draft} reduceMotion={state.settings.reduceMotion||!active} style={s.previewName}/></View>
+  <UltraLuxeNameStylePicker {...privatePicker} previewName={playerName} active={active} reduceMotion={state.settings.reduceMotion}/>
+  {privateSelection.error?<Text accessibilityRole="alert" style={s.message}>{profileText(language,privateSelection.error)}</Text>:null}
   <View style={s.section}>
    <Text style={s.sectionTitle}>{profileT(language,"VIP+ · SOLID RGB")}</Text>
    <Text style={s.meta}>{entitlements.vipPlus?profileT(language,"Permanent unlock active."):profileT(language,"Requires VIP+ for permanent use. Active Supporter can also use solid colors while subscribed.")}</Text>

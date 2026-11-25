@@ -49,7 +49,9 @@ test('compact Inventory controls remain reachable without changing full-size siz
  assert.ok(inventory.includes('compactInspector&&s.inspectStepCompact'));
  assert.ok(inventory.includes('stackInspectorActions&&s.inspectQuickButtonsStacked'));
  assert.ok(inventory.includes('inspectAmount>=inspectStock&&s.inspectStepDisabled'));
- assert.ok(inventory.includes('disabled={inspectAmount===inspectStock}'),'All cannot issue redundant changes');
+ assert.ok(inventory.includes('disabled={inspectAmountValid&&inspectAmount===inspectStock}'),'All is disabled only when a valid quantity already equals stock');
+ assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmountValid&&inspectAmount===inspectStock}}'),'All announces the same disabled state');
+ assert.ok(inventory.includes('onPress={()=>setInspectQuantity(inspectStock)}'),'All can restore a valid full-stock quantity from invalid input');
  assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmount<=1}}'),'decrement announces disabled state');
  assert.ok(inventory.includes('accessibilityState={{disabled:inspectAmount>=inspectStock}}'),'increment announces disabled state');
 });

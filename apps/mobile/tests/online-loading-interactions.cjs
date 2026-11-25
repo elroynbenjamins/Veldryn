@@ -2,9 +2,9 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const ts=require('typescript'),React=require('react'),{act,create}=require('react-test-renderer');
 globalThis.IS_REACT_ACT_ENVIRONMENT=true;
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return {promise,resolve,reject}};
-function load(file,dependencies){
+function load(file,dependencies,globals={}){
  const code=ts.transpileModule(fs.readFileSync(path.join(__dirname,'../',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
- const sandbox={exports:{},Error,Promise,console:{warn:()=>{}},require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
+ const sandbox={exports:{},Error,Promise,console:{warn:()=>{}},...globals,require:name=>dependencies[name]??(name==='react'?React:name==='react/jsx-runtime'?require(name):{})};
  vm.runInNewContext(code,sandbox);return sandbox.exports;
 }
 const native={Pressable:'Pressable',Text:'Text',ActivityIndicator:'ActivityIndicator',StyleSheet:{create:styles=>styles},AppState:{currentState:'active',addEventListener:()=>({remove(){}})}};
@@ -101,6 +101,27 @@ function rewardPreviewClock(){
  assert.ok(app.includes('previewActivityReward(state,activityPreviewMs):undefined,[state,activityPreviewMs]'),'The expensive root replay uses the sampled clock and invalidates on a new state');
  assert.ok(app.includes('nowMs={now} reward={preview}'),'The top bar still receives the original live clock');
 }
+function foregroundTaskLifecycle(){
+ let onStatus,removed=0,ticks=0,currentTick,sequence=0;
+ const timers=new Map();
+ const appState={currentState:'background',addEventListener:(event,listener)=>{
+  assert.equal(event,'change');onStatus=listener;return {remove:()=>{removed++}};
+ }};
+ const {runWhileForeground}=load('src/online/foreground-tasks.ts',{'react-native':{AppState:appState}},{
+  setInterval:(fn,ms)=>{assert.equal(ms,750);const id=++sequence;timers.set(id,fn);return id;},
+  clearInterval:id=>timers.delete(id),
+ });
+ const stop=runWhileForeground(isCurrent=>{assert.ok(isCurrent());currentTick=isCurrent;ticks++},750);
+ assert.equal(ticks,0,'Background mounting must not start a replay timer');
+ assert.equal(timers.size,0);
+ onStatus('active');assert.equal(ticks,1);assert.equal(timers.size,1);
+ onStatus('active');assert.equal(ticks,1,'Duplicate active events must not start another timer');
+ [...timers.values()][0]();assert.equal(ticks,2);
+ const previousVisit=currentTick;
+ onStatus('background');assert.equal(timers.size,0);assert.equal(previousVisit(),false);
+ onStatus('active');assert.equal(ticks,3);assert.equal(timers.size,1);assert.equal(previousVisit(),false);
+ stop();assert.equal(timers.size,0);assert.equal(removed,1);assert.equal(currentTick(),false);
+}
 async function foregroundHuntReplay(){
  let starts=0,stops=0,projections=0,latestA,latestB;
  const {useLiveHuntProjection}=load('src/components/useLiveHuntProjection.ts',{
@@ -135,4 +156,4 @@ function wiring(){
  assert.ok(!app.includes("showAlert('Online action'"),'Routine command failures use inline feedback');
  assert.ok(app.includes('message={onlineActionError}'),'Online failures remain visible inline');
 }
-(async()=>{await buttons();await commandBusy();await combatSwapOptimism();rewardPreviewClock();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await buttons();await commandBusy();await combatSwapOptimism();rewardPreviewClock();foregroundTaskLifecycle();await foregroundHuntReplay();wiring();console.log('PASS: online loading indicators, duplicate suppression, rejection recovery, overlapping-command busy state and non-blocking app feedback');})().catch(error=>{console.error(error);process.exitCode=1});

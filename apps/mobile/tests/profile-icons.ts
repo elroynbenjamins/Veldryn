@@ -2,6 +2,8 @@ import {createCharacter,newGame,effectiveStats} from '../src/core/game';
 import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons} from '../src/core/profile-icons';
 import {executeGameCommand} from '../src/core/game-commands';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {purchaseEventOffer} from '../src/core/live-events';
+import {FROSTFALL_EVENT} from '../src/content/annual-events-v2';
 import {collectionOwnershipSnapshotFromGameState} from '../src/core/collection-sets-v45';
 import {normalizeSave} from '../src/core/save-normalization';
 function check(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
@@ -13,7 +15,7 @@ const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfind
 check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
 check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
-check(profileIconCollection(state).length===15,'catalog includes a locked guild icon alongside class, starters, boss and three event icons');
+check(profileIconCollection(state).length===17,'catalog includes class, starters, boss, guild and five event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
 const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};
@@ -61,6 +63,21 @@ check(profileIconCollection(state).find(row=>row.id==='event:frostfall-2026-snow
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');
+// Frostfall seasonal portraits use ordinary authoritative event-shop ownership.
+const frostNow=Date.UTC(2026,11,10),frostEnd=Date.UTC(2026,11,27),frostGrace=Date.UTC(2026,11,29);
+const frostIds=['event:frostfall-2026-snowbell','event:frostfall-2026-maiden','event:frostfall-2026-adventurer'];
+const frostOffers=FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='profile_icon');
+check(frostOffers.length===3&&frostOffers.every(row=>row.cost===1400&&row.currency==='common'&&row.limit===1&&row.reward.rarity==='epic'),'Three equally priced Frostfall portraits');
+let winter={...state,account:{...state.account,liveEvent:{eventId:FROSTFALL_EVENT.id,enabled:true,startsAtMs:Date.UTC(2026,11,3),endsAtMs:frostEnd,graceEndsAtMs:frostGrace},eventCurrencyBalanceById:{[FROSTFALL_EVENT.id]:4200}}};
+for(const id of frostIds){check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Dedicated Frostfall art registered: '+id);rejects(()=>selectProfileIcon(winter,id));}
+let purchased:typeof state=winter;
+for(const offer of frostOffers){purchased=purchaseEventOffer(purchased,offer.id,frostNow);check(canUseProfileIcon(purchased,offer.reward.id),'Purchased Frostfall icon unlocked');check(normalizeSave(selectProfileIcon(purchased,offer.reward.id)).character!.profileIconId===offer.reward.id,'Purchased Frostfall icon survives normalization');rejects(()=>purchaseEventOffer(purchased,offer.id,frostNow));}
+check(purchased.account.eventCurrencyBalanceById?.[FROSTFALL_EVENT.id]===0,'Three Frostfall portraits cost 4,200 tokens total');
+check(frostIds.every(id=>purchased.account.unlockedProfileIconIds?.includes(id)),'Account owns all three Frostfall portraits');
+rejects(()=>purchaseEventOffer(winter,frostOffers[0].id,frostGrace));
+check(canUseProfileIcon({...purchased,account:{...purchased.account,liveEvent:undefined}},frostIds[0]),'Frostfall portrait ownership persists beyond season');
+check(purchaseEventOffer(winter,frostOffers[0].id,frostEnd).account.unlockedProfileIconIds?.includes(frostIds[0]),'Frostfall cosmetic purchase remains allowed in claim grace');
+
 for(const id of ['ascendant-celestial-crown-icon','ascendant-draconic-ruby-icon']){
  check(!profileIconCollection(state).some(row=>row.id===id),'private icon invisible before grant');
  rejects(()=>selectProfileIcon(state,id));

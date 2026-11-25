@@ -1,4 +1,4 @@
--- REVIEW DRAFT. Generate the actual migration with Supabase CLI after staging QA.
+-- Generated with the pinned Supabase CLI; staging rehearsal required before production.
 -- Requires coordinated gameplay Edge deployment. Never run against production
 -- merely to preview. Account state is the authoritative source; the old fields
 -- are compatibility mirrors for existing public-profile and coop projections.

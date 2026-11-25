@@ -92,7 +92,15 @@ ok(!frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall keeps
 ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
 equal(frost!.milestones('IRONWARDEN').filter(row=>row.reward.kind==='companion').length,3,'Frostfall has three permanent event companion roles');
-equal(frost!.shop.length,20,'Frostfall keeps its original 20 shop offers without removing existing stock');
+equal(frost!.shop.length,21,'Frostfall keeps its original 20 shop offers and adds Aurora Bellframe');
+const bellframe=frost!.shop.find(row=>row.id==='frostfall_aurora_bellframe');
+ok(bellframe,'Aurora Bellframe is available in the event shop');
+equal(bellframe!.reward.kind,'border','Aurora Bellframe is an account profile border');
+equal(bellframe!.reward.id,'frame_frostfall_aurora_bellframe','Stable border entitlement ID');
+equal(bellframe!.reward.rarity,'epic','Aurora Bellframe rarity');
+equal(bellframe!.currency,'common','Aurora Bellframe uses Frostbell Tokens');
+equal(bellframe!.cost,3000,'Approved frame price');
+equal(bellframe!.limit,1,'One permanent frame per account');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.points===6000&&row.reward.id==='EVT_UNIT_012'),'Frostfall awards Rimeshard Wolverine at 6000');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.points===8500&&row.reward.id==='EVT_UNIT_013'),'Frostfall awards Hearthguard Ram at 8500');
 

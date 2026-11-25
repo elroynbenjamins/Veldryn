@@ -63,6 +63,11 @@ export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...CROSS_PROFESSION_COMPONENT_RECIPES,
 ...ALCHEMY_RECIPES as Recipe[],
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
+  {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Craft Christmas Lights ×5',skillId:'smithing',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
+   inputs:[{itemId:'COPPER_ORE',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}} as Recipe,
+  {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026',name:'Craft Christmas Lights ×5',skillId:'tailoring',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
+   inputs:[{itemId:'MOSS_FIBER',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}} as Recipe,
 ...NOVICE_RECIPES,
 // Keep the full catalog authoritative for crafting, progression, and save
 // compatibility. Presentation layers apply their release gate separately.

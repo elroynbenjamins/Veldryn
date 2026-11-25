@@ -6,9 +6,10 @@ require.extensions['.ts']=(mod,file)=>mod._compile(ts.transpileModule(
  fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}
 ).outputText,file);
 const {SUPPORTED_LANGUAGES}=require('../src/i18n/languages.ts');
-const {itemDef}=require('../src/content/items.ts');
+const {itemDef,ITEMS}=require('../src/content/items.ts');
+const {WINTER_HEARTH_GUILD_RELEASED}=require('../src/core/release-flags.ts');
 const {NOVICE_ITEMS}=require('../src/content/novice-sets.ts');
-const {starterItemNames,allItemNames,localizedItemName}=require('../src/i18n/starter-item-names.ts');
+const {starterItemNames,allItemNames,localizedItemName,seasonalItemNames}=require('../src/i18n/starter-item-names.ts');
 const {expandedItemNamesA}=require('../src/i18n/expanded-item-names-a.ts');
 const {expandedItemNamesB}=require('../src/i18n/expanded-item-names-b.ts');
 const langs=['en','de','es','nl','it','fr','ru','tr'];
@@ -24,7 +25,15 @@ assert.ok(Object.keys(allItemNames).length>=111,'combined registry retains all b
 const content=fs.readFileSync(path.join(__dirname,'../src/content/items.ts'),'utf8');
 const base=[...content.matchAll(/\{id:'([^']+)',name:'([^']+)',type:'([^']+)'/g)];
 const names=new Map(base.map(x=>[x[1],x[2]]));
-assert.equal(names.size,111,'base catalog layout changed: update localization coverage');
+const seasonalId='FROSTFALL_CHRISTMAS_LIGHTS_2026';
+assert.equal(names.size,112,'base and authored seasonal catalog layout changed: update localization coverage');
+assert.deepEqual(Object.keys(seasonalItemNames),[seasonalId]);
+assert.equal(seasonalItemNames[seasonalId].en,names.get(seasonalId),'Seasonal English name matches the authored source');
+assert.deepEqual(Object.keys(seasonalItemNames[seasonalId]).sort(),langs.slice().sort());
+for(const lang of langs)assert.ok(seasonalItemNames[seasonalId][lang].trim());
+assert.equal(ITEMS.some(item=>item.id===seasonalId),WINTER_HEARTH_GUILD_RELEASED,'Seasonal localization does not release the item');
+if(WINTER_HEARTH_GUILD_RELEASED)for(const lang of langs)assert.equal(localizedItemName(lang,seasonalId),seasonalItemNames[seasonalId][lang]);
+names.delete(seasonalId);
 assert.deepEqual(Object.keys(baseNames).sort(),[...names.keys()].sort(),'no missing base item source IDs');
 for(const [id,entry] of Object.entries(baseNames)){
  assert.equal(entry.en,names.get(id),'source name changed for '+id);
@@ -47,4 +56,4 @@ for(const relative of ['components/ItemQuickInspect.tsx','screens/InventoryScree
  const ast=ts.createSourceFile(relative,screen,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  assert.equal(ast.parseDiagnostics.length,0,relative+' valid JSX');
 }
-console.log('PASS: all 111 base items have exact source-guarded names in all eight languages; non-cataloged unique equipment falls back');
+console.log('PASS: all 111 base items and the gated seasonal item have exact source-guarded names in all eight languages; non-cataloged unique equipment falls back');

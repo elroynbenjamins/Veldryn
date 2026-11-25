@@ -157,7 +157,10 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},
 
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS.map(item=>item.requiredLevel===undefined?item:{...item,requiredLevel:rebaseLevel(item.requiredLevel)}),...GUILD_COMPONENT_ITEMS,...CROSS_PROFESSION_COMPONENT_ITEMS,...EQUIPMENT_ITEMS_V33,
+ // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
+ {id:'FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Christmas Lights',type:'material',value:0,rarity:'rare',passive:'Seasonal lights donated to your guild Winter Hearth Christmas Market.'},
+];
 const itemsById=new Map(ITEMS.map(item=>[item.id,item]));
 if(itemsById.size!==ITEMS.length)throw new Error('Duplicate item IDs in the item catalog');
 export function itemDef(id:string){const x=itemsById.get(id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

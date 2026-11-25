@@ -21,7 +21,7 @@ check(ids.every(id=>!COMBAT_COMPANIONS.some(row=>row.id===id)&&!RELEASED_EVENT_C
 const milestones=FROSTFALL_EVENT.milestones('IRONWARDEN');
 const rewards=milestones.filter(row=>row.reward.kind==='companion');
 check(rewards.length===3&&JSON.stringify(rewards.map(row=>[row.points,row.reward.id]))===JSON.stringify([[6000,'EVT_UNIT_012'],[8500,'EVT_UNIT_013'],[10000,'EVT_UNIT_009']]),'Frostfall companion milestones are unique, ordered and preserve the 10k Herald');
-check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===25&&FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='emote').length===5,'Frostfall preserves 10k maximum reputation and the 20 existing offers plus four new emote offers and Aurora Bellframe');
+check(FROSTFALL_EVENT.maxProgress===10000&&FROSTFALL_EVENT.shop.length===27&&FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='emote').length===5&&FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='profile_icon').length===3,'Frostfall preserves 10k reputation, five emote offers and three seasonal profile icons');
 for(let i=0;i<ids.length;i++){
  const id=ids[i],mobile=EVENT_COMPANIONS.find(row=>row.id===id),server=companionServerDefinition(id);
  check(mobile&&server, `Event companion ${id} must exist on both mobile and server`);
@@ -51,7 +51,17 @@ for(let i=0;i<ids.length;i++){
 }
 // Simulate a server-authorized milestone snapshot without changing production flags.
 const now=Date.UTC(2026,11,10,12),initial=createCharacter(newGame(now),'IRONWARDEN','Frostfall QA');
-let state:GameState={...initial,account:{...initial.account,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
+const startsAtMs=Date.UTC(2026,11,3),endsAtMs=Date.UTC(2026,11,27),graceEndsAtMs=Date.UTC(2026,11,29);
+const runtime={eventId:FROSTFALL_EVENT.id,enabled:true,startsAtMs,endsAtMs,graceEndsAtMs};
+let state:GameState={...initial,account:{...initial.account,liveEvent:runtime,eventProgressById:{...initial.account.eventProgressById,[FROSTFALL_EVENT.id]:10000}}};
+// Single-claim endpoint must honor the seasonal window, even with earned reputation.
+for(const at of [startsAtMs-1,graceEndsAtMs]){
+ let denied=false;try{claimEventReward(state,ids[0],at);}catch{denied=true;}check(denied,'Milestone rejected outside event/grace at '+at);
+}
+for(const liveEvent of [undefined,{...runtime,enabled:false},{...runtime,eventId:'other'}]){
+ let denied=false;try{claimEventReward({...state,account:{...state.account,liveEvent}},ids[0],now);}catch{denied=true;}check(denied,'Milestone requires matching enabled runtime');
+}
+check(claimEventReward(state,ids[0],endsAtMs).account.unlockedCombatCompanionIds?.includes(ids[0]),'Previously earned milestone remains claimable during grace');
 for(const id of ids){
  const reward=rewards.find(row=>row.reward.id===id)?.reward;
  check(!!reward,`Authoritative reward exists for ${id}`);

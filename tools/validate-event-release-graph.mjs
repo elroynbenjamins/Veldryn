@@ -35,4 +35,12 @@ for (const source of activeModules) {
 }
 assert(!/startup_(winters_bell|firstlight)/.test(read('theme/startup-art.ts')), 'future startup art is reachable from production');
 
+const frostfallActivation = fs.readFileSync(path.join(root, 'backend/supabase/migrations/20261125140600_frostfall_2026_scheduled_activation_v1.sql'), 'utf8');
+assert(/autoActivationArmed[^\n]*true/.test(frostfallActivation), 'Frostfall launch migration must arm without pre-enabling the event');
+assert(/clock_timestamp\(\)>=starts_at[\s\S]*clock_timestamp\(\)<ends_at/.test(frostfallActivation), 'Frostfall activation must use the exact server-owned active window');
+assert(/2026-12-03 00:00:00\+00/.test(frostfallActivation) && /2026-12-27 00:00:00\+00/.test(frostfallActivation) && /2026-12-29 00:00:00\+00/.test(frostfallActivation), 'Frostfall activation dates drifted from the published schedule');
+assert(/cron\.unschedule\('veldryn-frostfall-2026-activate'\)/.test(frostfallActivation), 'activation job must self-remove after success');
+assert(/stop_frostfall_2026_v1[\s\S]*enabled=false[\s\S]*autoActivationArmed[^\n]*false/.test(frostfallActivation), 'emergency stop must disable and disarm Frostfall');
+assert(/close_frostfall_2026_v1[\s\S]*clock_timestamp\(\)>=grace_ends_at/.test(frostfallActivation), 'Frostfall must close only after the claim grace boundary');
+
 console.log('Event release graph OK: Veilbreak and scheduled Frostfall only; other unreleased annual packs remain blocked.');

@@ -8,6 +8,7 @@ import {recipeMatchesLocalizedSearch} from '../i18n/crafting-recipe-names';
 import {recipeAvailability} from '../core/playability';
 import {alchemyAvailability} from '../core/alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from '../core/processing';
+import {isWinterHearthLightRecipe,winterHearthContentVisible} from '../core/winter-hearth-2026';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {RecipeCard} from './RecipeCard';
@@ -39,9 +40,9 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const q=query.trim().toLowerCase();
  const recipes=useMemo(()=>{
   const key=skillId+':'+state.character?.classId,cached=recipeGroups.get(key);if(cached)return cached;
-  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
+  const group=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!isWinterHearthLightRecipe(recipe.id)||winterHearthContentVisible(state))&&(!recipe.classId||!!recipe.v33SetId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));
   recipeGroups.set(key,group);return group;
- },[skillId,state.character?.classId]);
+ },[skillId,state.character?.classId,state.account.liveEvent?.eventId,state.account.liveEvent?.enabled]);
  const stored=useMemo(()=>{
   const inventory=new Map<string,number>(),bank=new Map<string,number>();
   for(const row of state.inventory.stacks)inventory.set(row.itemId,(inventory.get(row.itemId)??0)+row.quantity);

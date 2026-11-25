@@ -2,6 +2,8 @@ import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-ic
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
 import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../apps/mobile/src/core/ultra-luxe-grants';
 import {newGame} from '../../apps/mobile/src/core/game';
+import {WINTER_HEARTH_GUILD_RELEASED} from '../../apps/mobile/src/core/release-flags';
+import {validateWinterHearthBonusWindows} from '../../apps/mobile/src/core/winter-hearth-bonus-windows';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {rebaseCombatGameState} from '../../apps/mobile/src/core/progression';
 import {ensurePersonalSeasonalState} from '../../apps/mobile/src/core/personal-seasonal-state';
@@ -84,6 +86,15 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   // are unreleased, so this is a no-op until the database owner releases them.
   state.guildSkillEffects=undefined;
   if(state.account.guildMember){try{state.guildSkillEffects=await services.rpc('guild_skill_effects_server_v1',{p_account_id:accountId});}catch{/* no bonus this resolution */}}
+  // Only a server projection can grant Winter Hearth bonuses. Clear every read so
+  // switching guilds or event shutdown cannot retain stale seasonal power.
+  state.winterHearthBonusWindows=undefined;
+  if(WINTER_HEARTH_GUILD_RELEASED&&state.account.guildMember){
+   try{
+    const windows=await services.rpc<unknown>('winter_hearth_2026_bonus_windows_server_v1',{p_account_id:accountId});
+    state.winterHearthBonusWindows=validateWinterHearthBonusWindows(windows);
+   }catch{/* Fail closed: no unverified XP or gathering-speed bonus. */}
+  }
   if(!body||!command)return json({state,version:loaded.version,serverNow:loaded.serverNow,accountId});
   if(body.expectedVersion!==loaded.version){
    // Another request may commit this key between the first receipt read and state read.

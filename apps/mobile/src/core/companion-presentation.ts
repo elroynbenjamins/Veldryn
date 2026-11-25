@@ -4,7 +4,7 @@ import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,combatCompanionDef,visibleCombatCompanions,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_STAGE_CAPS,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {monsterMastery,monsterMasteryRankFromKills,monsterMasteryKillsForRank} from './monster-mastery';
 
 export function companionMaterialName(id:string){return ITEMS.find(item=>item.id===id)?.name??id.toLowerCase().replace(/_/g,' ').replace(/^./,s=>s.toUpperCase());}
@@ -119,7 +119,7 @@ export function companionStarterMilestone(state:GameState){
  return {stage:'complete' as const,current:3,total:3,description:'All three starter roles recruited.'};
 }
 export function companionStarterTeamProgress(state:GameState){
- const owned=new Set(state.account.unlockedCombatCompanionIds??[]),roles=(['tank','damage','support'] as CombatCompanionRole[]).map(role=>({role,owned:COMBAT_COMPANIONS.some(def=>def.role===role&&owned.has(def.id))}));
+ const owned=new Set(state.account.unlockedCombatCompanionIds??[]),roles=(['tank','damage','support'] as CombatCompanionRole[]).map(role=>({role,owned:visibleCombatCompanions(state.account).some(def=>def.role===role&&owned.has(def.id))}));
  const missingRoles=roles.filter(row=>!row.owned).map(row=>row.role);
  const candidates=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'&&!owned.has(def.id)&&missingRoles.includes(def.role)).map(def=>({def,guidance:companionUnlockGuidance(state,def)})).sort((a,b)=>rarityPriority[a.def.rarity]-rarityPriority[b.def.rarity]||b.guidance.progress.ratio-a.guidance.progress.ratio||a.def.name.localeCompare(b.def.name));
  return {ready:missingRoles.length===0,roles,missingRoles,next:candidates[0]};
@@ -129,14 +129,14 @@ export function companionNextUnlockTargets(state:GameState,limit=3){
  return COMBAT_COMPANIONS.filter(def=>!owned.has(def.id)&&def.origin.type!=='event'&&def.unlockRequirements.length>0)
   .map(def=>({def,progress:companionUnlockCompletion(state,def)}))
   .sort((a,b)=>{
-    const ownedRoles=new Set((state.account.unlockedCombatCompanionIds??[]).map(id=>COMBAT_COMPANIONS.find(def=>def.id===id)?.role).filter(Boolean));
+    const ownedRoles=new Set((state.account.unlockedCombatCompanionIds??[]).map(id=>combatCompanionDef(id)?.role).filter(Boolean));
     const aRoleNeed=ownedRoles.has(a.def.role)?1:0,bRoleNeed=ownedRoles.has(b.def.role)?1:0;
     return aRoleNeed-bRoleNeed||rarityPriority[a.def.rarity]-rarityPriority[b.def.rarity]||b.progress.ratio-a.progress.ratio||b.progress.completeCount-a.progress.completeCount||a.def.name.localeCompare(b.def.name);
   })
   .slice(0,Math.max(0,limit));
 }
 export function companionMasteryGuidance(state:GameState,id:string){
- const def=COMBAT_COMPANIONS.find(row=>row.id===id),progress=state.account.combatCompanionProgress?.[id];if(!def||!progress)return undefined;
+ const def=combatCompanionDef(id),progress=state.account.combatCompanionProgress?.[id];if(!def||!progress)return undefined;
  const maxLevel=companionMaxLevel(def),requiredAscension=def.rarity==='standard'||def.rarity==='rare'?2:3,levelCap=companionCurrentLevelCap(def,progress),mastered=isCombatCompanionMastered(def,progress);
  let nextStep='Mastered';
  if(!mastered){
@@ -153,7 +153,7 @@ export function companionMasteryGuidance(state:GameState,id:string){
 export type CompanionRoadmapStatus='complete'|'ready'|'current'|'future';
 export interface CompanionRoadmapStep{id:string;label:string;detail:string;reward:string;status:CompanionRoadmapStatus}
 export function companionProgressionRoadmap(state:GameState,id:string){
- const def=COMBAT_COMPANIONS.find(row=>row.id===id);if(!def)return undefined;
+ const def=combatCompanionDef(id);if(!def)return undefined;
  const progress=state.account.combatCompanionProgress?.[id];
  if(!progress){
   const unlock=companionUnlockCompletion(state,def),guidance=companionUnlockGuidance(state,def);

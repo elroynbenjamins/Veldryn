@@ -1,6 +1,7 @@
 import type {GameState} from './types';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {isUltraLuxeProfileCosmetic} from './ultra-luxe-cosmetics';
+import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
 export const BASE_PROFILE_BACKGROUNDS=[
   {id:'asterfall-night',name:'Asterfall Night',region:'KINGS_ROAD'},
   {id:'ironwood-dawn',name:'Ironwood Dawn',region:'IRONWOOD'},
@@ -24,14 +25,10 @@ export function profileCosmeticReleased(state:GameState,kind:'background'|'borde
   // They enter the wardrobe only after an explicit account grant.
   if(isUltraLuxeProfileCosmetic(kind,id))return canUseProfileCosmetic(state,kind,id);
   if(canUseProfileCosmetic(state,kind,id))return true;
-  // Frostfall's unreleased frame must not leak into the wardrobe before the
-  // authoritative live event opens; owned copies remain available permanently.
-  if(kind==='border'&&id==='frame_frostfall_aurora_bellframe'){
-    const event=state.account.liveEvent;
-    return !!state.character&&!!event?.enabled&&/^EVT_ANNUAL_012_\d{4}$/.test(event.eventId)&&nowMs>=event.startsAtMs&&nowMs<(event.graceEndsAtMs??event.endsAtMs+2*86400_000);
-  }
   if(!state.character)return false;
-  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[
+  // The same server-window discovery rule applies to every Frostfall scene/frame.
+  // Ownership above deliberately survives expiry and a missing runtime.
+  const rewards=LIVE_EVENT_CATALOG.filter(event=>event.id!==FROSTFALL_2026_EVENT_ID||frostfallRewardsDiscoverable(state.account,nowMs)).flatMap(event=>[
     ...event.milestones(state.character!.classId).map(row=>row.reward),
     ...event.shop.map(row=>row.reward),
     ...event.communityMilestones.flatMap(row=>row.reward?[row.reward]:[]),

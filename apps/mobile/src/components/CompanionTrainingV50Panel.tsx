@@ -5,7 +5,7 @@ import {useMemo,useRef,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameCommand} from '../core/game-commands';
 import type {GameState} from '../core/types';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG} from '../content/combat-companions';
+import {visibleCombatCompanions,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_RARITY_CONFIG} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {assertCompanionIdle,companionAvailability,companionEconomy,companionView} from '../core/companion-runtime';
 import {combatCompanionUiModel,companionCurrentLevelCap,companionXpToNextLevel,sanitizeCombatCompanionState} from '../core/combat-companions';
@@ -37,6 +37,7 @@ const portraitIds=['IRONWOOD_WOLF','OATHBOUND_SQUIRE','FIELD_WISP','VENOM_WEAVER
 
 
 export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,initialSelection,onSelectionChange,showPicker=true,initialTab=null}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>;initialSelection?:string;onSelectionChange?:(id:string)=>void;showPicker?:boolean;initialTab?:'Bond'|null;onNavigateSource?:(source:CompanionMaterialSourceTarget)=>void}){
+ const roster=visibleCombatCompanions(state.account,now);
  const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
  const amount=(value:number)=>value.toLocaleString(language);
 
@@ -45,7 +46,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
  const [rosterOwnership,setRosterOwnership]=useState<'Owned'|'All'|'Locked'>('Owned'),[rosterRarity,setRosterRarity]=useState<'All'|'standard'|'rare'|'elite'|'prestige'>('All'),[rosterRole,setRosterRole]=useState<'All'|'tank'|'damage'|'support'>('All');
  const {height:windowHeight}=useWindowDimensions();
  const setSelection=(id:string)=>{setTab(null);setMessage('');setMessageError(false);setLocalSelection(id);onSelectionChange?.(id);};
- const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),economy=companionEconomy(state),progress=model?.progress;
+ const lock=useRef(false),view=companionView(state,now),model=roster.some(def=>def.id===selection)?combatCompanionUiModel(state,selection):undefined,economy=companionEconomy(state),progress=model?.progress;
  const equipped=state.character?.equippedCombatCompanionId;
  const selectedCooldownSeconds=tab==='Skills'&&model&&progress
   ?Math.round(buildOwnedCompanionCombatant({...progress,companionId:model.def.id},{mode:'character_assist'}).abilities[0].cooldownMs/100)/10
@@ -85,7 +86,7 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
   :ascension.blocker&&ascension.blocker!=='unavailable'?t('Materials Required')+' · '+(ascension.blocker==='material'?material(ascension.resource):ascension.blocker==='gold'?t('Gold'):ascension.blocker==='essence'?t('Essence'):t('Bondstones'))+' '+amount(ascension.owned??0)+' / '+amount(ascension.required??0):undefined;
  const openSource=(source:CompanionMaterialSourceTarget)=>{if(source.kind!=='info'){setTab(null);onNavigateSource?.(source)}};
  const ownedCount=Object.keys(view.owned).length;
- const rosterCompanions=COMBAT_COMPANIONS.filter(def=>view.codex.entries.find(entry=>entry.companionId===def.id)?.state!=='unknown')
+ const rosterCompanions=roster.filter(def=>view.codex.entries.find(entry=>entry.companionId===def.id)?.state!=='unknown')
    .filter(def=>(rosterOwnership==='All'||(rosterOwnership==='Owned' ? !!view.owned[def.id] : !view.owned[def.id]))&&(rosterRarity==='All'||def.rarity===rosterRarity)&&(rosterRole==='All'||def.role===rosterRole))
    .sort((a,b)=>Number(!!view.owned[b.id])-Number(!!view.owned[a.id])||Number(b.id===selection)-Number(a.id===selection)||Number(b.id===equipped)-Number(a.id===equipped)||a.name.localeCompare(b.name));
  return <View style={s.root}>
@@ -172,10 +173,10 @@ export function CompanionTrainingV50Panel({state,now,onCommand,onNavigateSource,
         </ScrollView>
       </View>
       <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={s.roster}>
-        {rosterCompanions.map(def=>{const owned=!!view.owned[def.id],selected=selection===def.id,originalIndex=COMBAT_COMPANIONS.findIndex(row=>row.id===def.id),portrait=MONSTERS.find(monster=>monster.id===portraitIds[originalIndex%portraitIds.length]),art=companionArtSource(def.id);return <Pressable key={def.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>setSelection(def.id)} style={[s.companionCard,{borderColor:companionRarityBorder(def.rarity,C.dark)},selected&&s.selected,!owned&&s.locked]}>{art?<Image source={art} resizeMode="contain" style={s.rosterArt}/>:portrait?<MonsterPortraitFrame monster={portrait} size={54} framed={false}/>:<Text style={s.glyph}>{roleGlyph[def.role]}</Text>}<Text numberOfLines={1} style={s.cardName}>{def.name}</Text><Text style={s.cardMeta}>{owned?t("Lv {value0}",{value0:view.owned[def.id].level}):t('Locked')} · {label(def.role)}</Text></Pressable>})}
+        {rosterCompanions.map(def=>{const owned=!!view.owned[def.id],selected=selection===def.id,originalIndex=roster.findIndex(row=>row.id===def.id),portrait=MONSTERS.find(monster=>monster.id===portraitIds[originalIndex%portraitIds.length]),art=companionArtSource(def.id);return <Pressable key={def.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>setSelection(def.id)} style={[s.companionCard,{borderColor:companionRarityBorder(def.rarity,C.dark)},selected&&s.selected,!owned&&s.locked]}>{art?<Image source={art} resizeMode="contain" style={s.rosterArt}/>:portrait?<MonsterPortraitFrame monster={portrait} size={54} framed={false}/>:<Text style={s.glyph}>{roleGlyph[def.role]}</Text>}<Text numberOfLines={1} style={s.cardName}>{def.name}</Text><Text style={s.cardMeta}>{owned?t("Lv {value0}",{value0:view.owned[def.id].level}):t('Locked')} · {label(def.role)}</Text></Pressable>})}
         {!rosterCompanions.length?<Text style={s.help}>{t('No companions match these filters.')}</Text>:null}
       </ScrollView>
-      <Text style={s.rosterCount}>{t("{value0}/{value1} companions owned",{value0:ownedCount,value1:COMBAT_COMPANIONS.length})}</Text>
+      <Text style={s.rosterCount}>{t("{value0}/{value1} companions owned",{value0:ownedCount,value1:roster.length})}</Text>
     </>:null}
     {model?.owned&&progress?<>   {tab==='Bond'?<CompanionBondProgressPanel
   mode="full" progress={progress} companionId={selection} claims={state.account.companionBondRewardClaims??[]}

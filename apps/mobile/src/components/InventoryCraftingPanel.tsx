@@ -4,6 +4,7 @@ import {Modal,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {RECIPES} from '../content/skills';
 import {recipeAvailability} from '../core/playability';
+import {isWinterHearthLightRecipe,winterHearthContentVisible} from '../core/winter-hearth-2026';
 import {RecipeCard} from './RecipeCard';
 import {SearchField} from './SearchField';
 import {GameButton} from './GameButton';
@@ -15,7 +16,7 @@ export function InventoryCraftingPanel({state,onCraft}:{state:GameState;onCraft:
  const {gt,gl,language}=useGameplayText();
  const [query,setQuery]=useState(''),[profession,setProfession]=useState<Profession>('all'),[craftableOnly,setCraftableOnly]=useState(false),[sort,setSort]=useState<Sort>('level'),[filtersOpen,setFiltersOpen]=useState(false),[limit,setLimit]=useState(20);
  const active=(profession==='all'?0:1)+(craftableOnly?1:0);
- const recipes=useMemo(()=>RECIPES.map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(({recipe,status})=>(profession==='all'||recipe.skillId===profession)&&(!craftableOnly||status.ready)&&(!query.trim()||(recipe.name+' '+recipe.output.itemId).toLowerCase().includes(query.trim().toLowerCase()))).sort((a,b)=>sort==='name'?a.recipe.name.localeCompare(b.recipe.name):a.recipe.level-b.recipe.level||a.recipe.name.localeCompare(b.recipe.name)),[state,profession,craftableOnly,query,sort]);
+ const recipes=useMemo(()=>RECIPES.filter(recipe=>!isWinterHearthLightRecipe(recipe.id)||winterHearthContentVisible(state)).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(({recipe,status})=>(profession==='all'||recipe.skillId===profession)&&(!craftableOnly||status.ready)&&(!query.trim()||(recipe.name+' '+recipe.output.itemId).toLowerCase().includes(query.trim().toLowerCase()))).sort((a,b)=>sort==='name'?a.recipe.name.localeCompare(b.recipe.name):a.recipe.level-b.recipe.level||a.recipe.name.localeCompare(b.recipe.name)),[state,profession,craftableOnly,query,sort]);
  return <View style={s.root}>
   <Text style={s.title}>{gt("Crafting")}</Text>
   <SearchField value={query} onChangeText={value=>{setQuery(value);setLimit(20)}} placeholder={gt("Search recipes…")} placeholderTextColor={C.muted}/>

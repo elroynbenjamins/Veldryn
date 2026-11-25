@@ -6,6 +6,7 @@ import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {totalXpAtLevel} from './progression';
+import {isWinterHearthLightRecipe,winterHearthLightRecipeAvailable,WINTER_HEARTH_2026_END_MS} from './winter-hearth-2026';
 import {mealBonusDef} from './meal-buffs';
 
 // One processing start reserves the complete AFK run, capped by its normal AFK window.
@@ -24,6 +25,7 @@ export interface ProcessingBatchState{
   fixedMealOutput?:true;
   cycleSeconds:number;
   xpPerBatch:number;
+  seasonEndsAtMs?:number;
 }
 
 function storedQuantity(stacks:readonly ItemStack[],itemId:string){
@@ -61,6 +63,7 @@ export function processingAvailability(state:GameState,recipeId:string,batches=1
 /** Reserves every chosen batch up front. Outputs and skill XP arrive only as timed cycles complete. */
 export function startProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number):GameState{
   if(!Number.isFinite(nowMs)||nowMs<0)throw new Error('Invalid processing time.');
+  if(isWinterHearthLightRecipe(recipeId)&&!winterHearthLightRecipeAvailable(state,nowMs))throw new Error('Winter Hearth crafting is closed.');
   const status=processingAvailability(state,recipeId,batches);if(!status.ready)throw new Error(status.reason);
   const recipe=status.recipe!;
   let inventory=state.inventory.stacks,bank=state.bank.stacks;
@@ -72,7 +75,7 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
   const processing:ProcessingBatchState={version:1,recipeId:recipe.id,skillId:recipe.skillId as ProcessingSkillId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
     ...(recipe.skillId==='cooking'&&mealBonusDef(recipe.output.itemId)?{fixedMealOutput:true as const}:{}),
-    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction};
+    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction,...(isWinterHearthLightRecipe(recipe.id)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,state.account.liveEvent!.endsAtMs)}:{})};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
@@ -134,5 +137,5 @@ export function normalizeProcessingBatch(value:unknown,targetId:string):Processi
     (p.fixedMealOutput===undefined||(p.fixedMealOutput===true&&recipe.skillId==='cooking'&&!!mealBonusDef(recipe.output.itemId)&&p.outputPerBatch.quantity===1));
   if(!valid)throw new Error('Invalid reserved processing batch. Keep the save backup; do not reset or discard the reservation.');
   return {version:1,recipeId:targetId,skillId:recipe!.skillId as ProcessingSkillId,totalBatches:p!.totalBatches,remainingBatches:p!.remainingBatches,
-    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},...(p!.fixedMealOutput?{fixedMealOutput:true as const}:{}),cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch};
+    inputsPerBatch:p!.inputsPerBatch.map(input=>({...input})),goldPerBatch:p!.goldPerBatch,outputPerBatch:{...p!.outputPerBatch},...(p!.fixedMealOutput?{fixedMealOutput:true as const}:{}),cycleSeconds:p!.cycleSeconds,xpPerBatch:p!.xpPerBatch,...(isWinterHearthLightRecipe(targetId)&&Number.isFinite(p!.seasonEndsAtMs)?{seasonEndsAtMs:Math.min(WINTER_HEARTH_2026_END_MS,p!.seasonEndsAtMs!)}:{})};
 }

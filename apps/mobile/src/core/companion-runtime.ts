@@ -3,7 +3,7 @@ import {awardCompanionMasteryXp,companionMasteryAward,companionMasteryCompanionX
 import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,sanitizeCombatCompanionState,classCompanionRole} from './combat-companions';
 import {companionHousingStatMultiplier,companionHousingTier,companionHousingTrainingXpMultiplier} from './companion-housing';
-import {COMBAT_COMPANIONS,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
+import {visibleCombatCompanions,COMPANION_BOND_ESSENCE_REWARDS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,SILVERBROOK_STARTER_FISHING_NODES} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {GATHERING,RECIPES} from '../content/skills';
@@ -214,7 +214,9 @@ export function refreshCompanions(state:GameState,now:number):GameState {
 }
 export function companionView(state:GameState,now:number){
   const owned=companionOwned(state),profile=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};
-  return {owned,trial:projectCompanionTrial(state.account.companionTrialProgress,now),codex:projectCompanionCodex(owned,profile),weekly:activeCompanionProvingGroundChallenges(now),proving:projectCompanionProvingGrounds(state.account.companionProvingGround,now),assignments:rolloverCompanionAssignmentStatuses(state.account.companionAssignments??[],now)};
+  const codex=projectCompanionCodex(owned,profile),visible=new Set(visibleCombatCompanions(state.account,now).map(def=>def.id));
+  const hiddenFrostfall=new Set(['EVT_UNIT_009','EVT_UNIT_012','EVT_UNIT_013'].filter(id=>!visible.has(id)));
+  return {owned,trial:projectCompanionTrial(state.account.companionTrialProgress,now),codex:{...codex,entries:codex.entries.filter(entry=>!hiddenFrostfall.has(entry.companionId))},weekly:activeCompanionProvingGroundChallenges(now),proving:projectCompanionProvingGrounds(state.account.companionProvingGround,now),assignments:rolloverCompanionAssignmentStatuses(state.account.companionAssignments??[],now)};
 }
 export function companionAvailability(state:GameState,id:string):{status:CompanionAvailabilityStatus;label:string}{
   if(!(state.account.unlockedCombatCompanionIds??[]).includes(id))return {status:'locked',label:'Locked'};

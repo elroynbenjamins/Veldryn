@@ -23,7 +23,7 @@ equal(AUTHORED_EVENT_CATALOG.length,8,'Eight shipped or future annual festivals 
 equal(new Set(AUTHORED_EVENT_CATALOG.map(event=>event.signature.title)).size,8,'Every annual event should have a distinct signature identity');
 ok(AUTHORED_EVENT_CATALOG.every(event=>event.signature.highlights.length>=2),'Every annual event should explain its signature loop');
 const communityEvents=AUTHORED_EVENT_CATALOG.filter(event=>event.communityEnabled===true).map(event=>event.name).sort();
-equal(communityEvents.join('|'),['Bloomwake','Frostfall Festival','Merchant & Guild Festival'].sort().join('|'),'Only future communal festivals should use shared progression');
+equal(communityEvents.join('|'),['Bloomwake','Merchant & Guild Festival'].sort().join('|'),'Frostfall uses guild-only Winter Hearth; only remaining communal festivals use shared progression');
 ok(AUTHORED_EVENT_CATALOG.flatMap(event=>[...event.milestones('IRONWARDEN'),...event.shop].map(entry=>entry.reward)).filter(reward=>reward.kind==='companion').every(reward=>reward.rarity==='epic'),'Event companions must remain Epic rewards until a higher event rank is intentionally introduced');
 
 
@@ -92,7 +92,8 @@ ok(!frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall keeps
 ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
 equal(frost!.milestones('IRONWARDEN').filter(row=>row.reward.kind==='companion').length,3,'Frostfall has three permanent event companion roles');
-equal(frost!.shop.length,25,'Frostfall keeps its original 20 offers, four additional emotes and Aurora Bellframe');
+equal(frost!.shop.length,27,'Frostfall keeps existing stock, five emote offers and three seasonal portraits');
+equal(frost!.shop.filter(row=>row.reward.kind==='profile_icon').length,3,'Frostfall has three seasonal profile icons');
 const bellframe=frost!.shop.find(row=>row.id==='frostfall_aurora_bellframe');
 ok(bellframe,'Aurora Bellframe is available in the event shop');
 equal(bellframe!.reward.kind,'border','Aurora Bellframe is an account profile border');

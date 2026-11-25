@@ -163,8 +163,9 @@ assert.ok(homeStage.includes('activeCombatHitProjection('),'Home encounter previ
 assert.ok(homeStage.includes('!motion.enabled||isLive'),'Home must not play cosmetic hits over live fight events');
 assert.ok(homeStage.includes('current={displayStat(fight?.enemyHp??view.enemyHp)}'),'Home displays authoritative projected enemy HP on the canonical x10 UI scale');
 const combatTab=fs.readFileSync('src/components/HuntingPreview.tsx','utf8');
-assert.ok(combatTab.includes('activeCombatHitProjection('),'Combat tab must use real hit projection');
-assert.ok(combatTab.includes('replayCursor.current'),'Combat tab must reuse incremental projections');
+const liveHunt=fs.readFileSync('src/components/useLiveHuntProjection.ts','utf8');
+assert.ok(combatTab.includes('useLiveHuntProjection(state,active)')&&liveHunt.includes('activeCombatHitProjection(state,clock'),'Combat tab must use real hit projection through the shared store');
+assert.ok(liveHunt.includes('activeCombatHitProjection(state,clock,snapshot.fight?.cursor)'),'Combat tab must reuse incremental projections');
 assert.ok(combatTab.includes('liveHuntNarration('),'Combat tab must show event-driven class and encounter narration');
 const homeAbilityCues=homeStage.includes('<HuntAbilityCues effects={recentSkillEffects}');
 const tabAbilityCues=combatTab.includes('<HuntAbilityCues effects={recentSkillEffects}');

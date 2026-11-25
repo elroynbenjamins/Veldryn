@@ -51,11 +51,12 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const character=state.character;
  const accountId=useAuthSession().session?.user.id??'';
  const [tryOn,setTryOn]=useState<WardrobeRow|null>(null),[sheet,setSheet]=useState<WardrobeRow|null>(null);
- const [gridWidth,setGridWidth]=useState(0);
+ const [gridWidth,setGridWidth]=useState(0),[quickOpen,setQuickOpen]=useState(false);
  const saved=useMemo(()=>wardrobeEquipped(state),[state]);
  const [selection,setSelection]=useState<WardrobeEquipped>(saved);
  const [customTitle,setCustomTitle]=useState(saved.title);
  const selectionRef=useRef(saved);
+ const scope=JSON.stringify([accountId,character?.id??null]),selectionScopeRef=useRef(scope);
  const accountRef=useRef(accountId),stateRef=useRef(state),pendingRef=useRef<{accountId:string;characterId:string;patch:Partial<WardrobeEquipped>}|null>(null),timerRef=useRef<ReturnType<typeof setTimeout>|null>(null);
  const onChangeRef=useRef(onChange),sentRef=useRef<string|null>(null),chainRef=useRef<Promise<void>>(Promise.resolve());
  stateRef.current=state;accountRef.current=accountId;onChangeRef.current=onChange;
@@ -95,12 +96,20 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  // A state that is still catching up with our own writes is not such a change.
  const savedKey=JSON.stringify(saved);
  useEffect(()=>{
+  if(selectionScopeRef.current!==scope){
+   selectionScopeRef.current=scope;
+   if(timerRef.current){clearTimeout(timerRef.current);timerRef.current=null;}
+   pendingRef.current=null;sentRef.current=null;
+   const next=JSON.parse(savedKey) as WardrobeEquipped;
+   selectionRef.current=next;setSelection(next);setCustomTitle(next.title);setTryOn(null);setSheet(null);setQuickOpen(false);
+   return;
+  }
   if(pendingRef.current)return;
   if(sentRef.current&&sentRef.current!==savedKey)return;
   sentRef.current=null;
   const next=JSON.parse(savedKey) as WardrobeEquipped;
   selectionRef.current=next;setSelection(next);
- },[savedKey]);
+ },[savedKey,scope]);
  useEffect(()=>{setCustomTitle(saved.title)},[saved.title]);
 
  const categories=useMemo(()=>profileWardrobe(state,WARDROBE_ASSETS),[state]);
@@ -125,7 +134,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  const equipSet=(setId:string,choiceId:string,name:string)=>{
   const owner=accountRef.current,characterId=stateRef.current.character?.id;
   const before=selectionRef.current,next=quickSetSelection(stateRef.current,before,setId,choiceId);
-  if(!characterId||!next||!Object.keys(wardrobeChanges(before,next)).length)return;
+  if(selectionScopeRef.current!==scope||!characterId||!next||!Object.keys(wardrobeChanges(before,next)).length)return;
   setTryOn(null);setSheet(null);setSelection(next);
   if(next.title!==before.title)setCustomTitle(next.title);
   queueCommit(next);
@@ -163,8 +172,10 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
  return <View style={s.root}>
   {chip==='badge'?<PlayerBadgeSettings/>:category?<>
    {chip==='frame'&&quickSets.length>0?<View style={s.quickSets}>
-    <Text accessibilityRole="header" style={s.label}>{profileT(language,"Quick set equip")}</Text>
-    <Text style={s.rowMeta}>{profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:quickOpen}} onPress={()=>setQuickOpen(v=>!v)} style={s.quickHeader}>
+     <Text style={s.label}>{profileT(language,"Quick set equip")} · {quickSets.length}</Text><Text style={s.useMark}>{quickOpen?'⌃':'⌄'}</Text>
+    </Pressable>
+    {quickOpen?<><Text style={s.rowMeta}>{profileT(language,"Equip owned matching pieces on this character. Badges stay unchanged.")}</Text>
     {quickSets.map(set=><View key={set.id} style={[s.quickRow,{borderColor:set.accent}]}>
      <Text style={s.rowName}>{set.name}</Text>
      <View style={s.quickChoices}>
@@ -178,7 +189,7 @@ export function ProfileLookPanel({state,chip,onChange,onNavigateSource,onPreview
        </Pressable>;
       })}
      </View>
-    </View>)}
+    </View>)}</>:null}
    </View>:null}
    {chip==='icon'?<Text style={s.label}>{profileText(language,'Account-wide')}</Text>:null}
    {chip==='title'?<View style={s.titleList}>
@@ -233,6 +244,7 @@ const WardrobeTile=memo(function WardrobeTile({row,width,equipped,tryingOn,onPre
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  quickSets:{gap:7,padding:9,borderRadius:radii.md,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},
+ quickHeader:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  quickRow:{gap:6,padding:8,borderRadius:radii.sm,borderWidth:1,backgroundColor:C.panel},
  quickChoices:{flexDirection:'row',flexWrap:'wrap',gap:6},
  quickChoice:{flexGrow:1,minWidth:100,minHeight:44,padding:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,justifyContent:'center',alignItems:'center',gap:3},

@@ -7,7 +7,6 @@ import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
 import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
 import {increasedCraftingGoldCost} from './crafting-gold-cost';
-import {WINTER_HEARTH_GUILD_RELEASED} from '../core/release-flags';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;areaId?:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 // Starting-region mining keeps early enchanting materials accessible before Old Mines unlocks at rebased Character Level 13.
@@ -64,12 +63,11 @@ export const RECIPES:Recipe[]=[
 ...(GUILD_COMPONENT_CRAFTING_RELEASED?GUILD_COMPONENT_RECIPES:[]),
 ...CROSS_PROFESSION_COMPONENT_RECIPES,
 ...ALCHEMY_RECIPES as Recipe[],
-  ...(WINTER_HEARTH_GUILD_RELEASED?[
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
   {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026',name:'Craft Christmas Lights ×5',skillId:'smithing',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
    inputs:[{itemId:'COPPER_ORE',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}},
   {id:'CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026',name:'Craft Christmas Lights ×5',skillId:'tailoring',level:4,xp:35,gold:30,seconds:40,repeatableTraining:true,
    inputs:[{itemId:'MOSS_FIBER',quantity:8},{itemId:'DEWLEAF',quantity:4},{itemId:'WISP_DUST',quantity:1}],output:{itemId:'FROSTFALL_CHRISTMAS_LIGHTS_2026',quantity:5}},
- ] as Recipe[]:[]),
 ...NOVICE_RECIPES,
 // Keep the full catalog authoritative for crafting, progression, and save
 // compatibility. Presentation layers apply their release gate separately.

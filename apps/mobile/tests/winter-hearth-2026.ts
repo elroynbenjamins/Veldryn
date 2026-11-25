@@ -4,15 +4,18 @@ import {validateWinterHearthBonusWindows,winterHearthBonusesAt,winterHearthXpFac
 import {ITEMS} from '../src/content/items';
 import {RECIPES} from '../src/content/skills';
 import {WINTER_HEARTH_GUILD_RELEASED,FROSTFALL_REWARDS_RELEASED} from '../src/core/release-flags';
-import {WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID,WINTER_HEARTH_LIGHT_RECIPE_IDS,isWinterHearthLightRecipe} from '../src/core/winter-hearth-2026';
+import {WINTER_HEARTH_2026_ID,WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID,WINTER_HEARTH_LIGHT_RECIPE_IDS,isWinterHearthLightRecipe,winterHearthContentVisible} from '../src/core/winter-hearth-2026';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
 
-ok(!WINTER_HEARTH_GUILD_RELEASED&&!FROSTFALL_REWARDS_RELEASED,
+ok(WINTER_HEARTH_GUILD_RELEASED&&!FROSTFALL_REWARDS_RELEASED,
  'Frostfall guild bonuses and items must remain release-gated.');
-ok(!ITEMS.some(item=>item.id==='FROSTFALL_WISP_GLOW_2026'||item.id===WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID),'No new seasonal drop or hidden lights in the live catalog.');
+ok(!ITEMS.some(item=>item.id==='FROSTFALL_WISP_GLOW_2026')&&ITEMS.some(item=>item.id===WINTER_HEARTH_CHRISTMAS_LIGHTS_ITEM_ID),'Only the approved Christmas Lights definition ships.');
 ok(WINTER_HEARTH_LIGHT_RECIPE_IDS.length===2&&WINTER_HEARTH_LIGHT_RECIPE_IDS.every(isWinterHearthLightRecipe),'Both profession routes use the same seasonal recipe guard.');
-ok(!RECIPES.some(recipe=>isWinterHearthLightRecipe(recipe.id)),'Both seasonal recipes remain hidden until release.');
+ok(WINTER_HEARTH_LIGHT_RECIPE_IDS.every(id=>RECIPES.some(recipe=>recipe.id===id)),'Both seasonal recipes ship for save compatibility.');
+const noRuntime={account:{liveEvent:undefined}} as Pick<GameState,'account'>;
+const liveRuntime={account:{liveEvent:{eventId:WINTER_HEARTH_2026_ID,enabled:true,startsAtMs:Date.parse('2026-12-03T00:00:00Z'),endsAtMs:Date.parse('2026-12-27T00:00:00Z')}}} as Pick<GameState,'account'>;
+ok(!winterHearthContentVisible(noRuntime)&&winterHearthContentVisible(liveRuntime),'Client discovery follows the authoritative server runtime, not the calendar alone.');
 
 const milestoneWindows=validateWinterHearthBonusWindows([
  {percent:25,startsAt:'2026-12-04T00:00:00Z',endsAt:'2026-12-27T00:00:00Z',gatheringSpeedBps:400,skillXpBps:0,combatXpBps:0},

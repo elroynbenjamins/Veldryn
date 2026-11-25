@@ -120,7 +120,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   dropRates:{combat:.17,gathering:1.2,crafting:30,boss:250},
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_frostfall_guest',name:'Frostfall Guest',rarity:'common'}},
-    {points:1000,reward:{kind:'emote',id:'emote_snowbell_ring',name:'Snowbell Ring',rarity:'rare'}},
+    {points:1000,reward:{kind:'emote',id:'emote_snowbell_ring',name:'Frostbell Cheer',rarity:'rare'}},
     {points:4000,reward:{kind:'pet',id:'EVT_PET_015',name:'Snowbell Pup',rarity:'common'}},
     // Three distinct Elite roles. Account-wide and permanent after the event.
     // Keep the existing final 10k Frostbell milestone ID stable.
@@ -142,7 +142,11 @@ export const FROSTFALL_EVENT:LiveEventDef={
   ],
   shop:[
     // Existing IDs and permanent rewards are preserved.
-    {id:'frostfall_wave',reward:{kind:'emote',id:'emote_frostfall_wave',name:'Frostfall Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
+    {id:'frostfall_wave',reward:{kind:'emote',id:'emote_frostfall_wave',name:'Frozen Shock',rarity:'rare'},currency:'common',cost:900,limit:1},
+    {id:'frostfall_frostbell_cheer',reward:{kind:'emote',id:'emote_snowbell_ring',name:'Frostbell Cheer',rarity:'rare'},currency:'common',cost:900,limit:1},
+    {id:'frostfall_aurora_hug',reward:{kind:'emote',id:'emote_aurora_chime',name:'Aurora Hug',rarity:'epic'},currency:'common',cost:1250,limit:1},
+    {id:'frostfall_cozy_hearth',reward:{kind:'emote',id:'emote_cozy_hearth',name:'Cozy Hearth',rarity:'rare'},currency:'common',cost:1100,limit:1},
+    {id:'frostfall_snowball_attack',reward:{kind:'emote',id:'emote_snowball_attack',name:'Snowball Attack',rarity:'rare'},currency:'common',cost:1100,limit:1},
     {id:'hearth_guest_title',reward:{kind:'title',id:'title_hearth_guest',name:'Hearth Guest',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'bellringer_title',reward:{kind:'title',id:'title_bellringer',name:'Bellringer',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:4,limit:1},
@@ -182,6 +186,6 @@ export const FROSTFALL_EVENT:LiveEventDef={
   discoveries:[
     {id:'snowbell_fragment',name:'Snowbell Fragment',description:'A tiny frozen bell-clapper found after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_snowbell_seeker',name:'Snowbell Seeker',rarity:'rare'}},
     {id:'gift_ribbon_scrap',name:'Enchanted Ribbon Scrap',description:'A festive ribbon hidden among gathered supplies.',source:'gathering',chance:.015,required:5,reward:{kind:'title',id:'title_ribbon_finder',name:'Ribbon Finder',rarity:'rare'}},
-    {id:'aurora_bell_shard',name:'Aurora Bell Shard',description:'A resonant shard carried by eligible event bosses.',source:'boss',chance:.25,required:1,reward:{kind:'emote',id:'emote_aurora_chime',name:'Aurora Chime',rarity:'epic'}},
+    {id:'aurora_bell_shard',name:'Aurora Bell Shard',description:'A resonant shard carried by eligible event bosses.',source:'boss',chance:.25,required:1,reward:{kind:'emote',id:'emote_aurora_chime',name:'Aurora Hug',rarity:'epic'}},
   ],
 };

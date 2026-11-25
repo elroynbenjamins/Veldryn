@@ -92,7 +92,7 @@ ok(!frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall keeps
 ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
 equal(frost!.milestones('IRONWARDEN').filter(row=>row.reward.kind==='companion').length,3,'Frostfall has three permanent event companion roles');
-equal(frost!.shop.length,21,'Frostfall keeps its original 20 shop offers and adds Aurora Bellframe');
+equal(frost!.shop.length,25,'Frostfall keeps its original 20 offers, four additional emotes and Aurora Bellframe');
 const bellframe=frost!.shop.find(row=>row.id==='frostfall_aurora_bellframe');
 ok(bellframe,'Aurora Bellframe is available in the event shop');
 equal(bellframe!.reward.kind,'border','Aurora Bellframe is an account profile border');

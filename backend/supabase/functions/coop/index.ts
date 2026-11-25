@@ -43882,7 +43882,7 @@ var FROSTFALL_EVENT2 = {
   dropRates: { combat: 0.17, gathering: 1.2, crafting: 30, boss: 250 },
   milestones: () => [
     { points: 400, reward: { kind: "title", id: "title_frostfall_guest", name: "Frostfall Guest", rarity: "common" } },
-    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Snowbell Ring", rarity: "rare" } },
+    { points: 1e3, reward: { kind: "emote", id: "emote_snowbell_ring", name: "Frostbell Cheer", rarity: "rare" } },
     { points: 4e3, reward: { kind: "pet", id: "EVT_PET_015", name: "Snowbell Pup", rarity: "common" } },
     // Three distinct Elite roles. Account-wide and permanent after the event.
     // Keep the existing final 10k Frostbell milestone ID stable.
@@ -43904,12 +43904,15 @@ var FROSTFALL_EVENT2 = {
   ],
   shop: [
     // Existing IDs and permanent rewards are preserved.
-    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frostfall Wave", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "frostfall_wave", reward: { kind: "emote", id: "emote_frostfall_wave", name: "Frozen Shock", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "frostfall_frostbell_cheer", reward: { kind: "emote", id: "emote_snowbell_ring", name: "Frostbell Cheer", rarity: "rare" }, currency: "common", cost: 900, limit: 1 },
+    { id: "frostfall_aurora_hug", reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Hug", rarity: "epic" }, currency: "common", cost: 1250, limit: 1 },
+    { id: "frostfall_cozy_hearth", reward: { kind: "emote", id: "emote_cozy_hearth", name: "Cozy Hearth", rarity: "rare" }, currency: "common", cost: 1100, limit: 1 },
+    { id: "frostfall_snowball_attack", reward: { kind: "emote", id: "emote_snowball_attack", name: "Snowball Attack", rarity: "rare" }, currency: "common", cost: 1100, limit: 1 },
     { id: "hearth_guest_title", reward: { kind: "title", id: "title_hearth_guest", name: "Hearth Guest", rarity: "rare" }, currency: "common", cost: 1200, limit: 1 },
     { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
     { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
     { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
-    { id: "frostfall_aurora_bellframe", reward: { kind: "border", id: "frame_frostfall_aurora_bellframe", name: "Aurora Bellframe", rarity: "epic" }, currency: "common", cost: 3e3, limit: 1 },
     { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
     { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
     { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
@@ -43947,7 +43950,7 @@ var FROSTFALL_EVENT2 = {
   discoveries: [
     { id: "snowbell_fragment", name: "Snowbell Fragment", description: "A tiny frozen bell-clapper found after ordinary combat.", source: "combat", chance: 3e-3, required: 5, reward: { kind: "title", id: "title_snowbell_seeker", name: "Snowbell Seeker", rarity: "rare" } },
     { id: "gift_ribbon_scrap", name: "Enchanted Ribbon Scrap", description: "A festive ribbon hidden among gathered supplies.", source: "gathering", chance: 0.015, required: 5, reward: { kind: "title", id: "title_ribbon_finder", name: "Ribbon Finder", rarity: "rare" } },
-    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Chime", rarity: "epic" } }
+    { id: "aurora_bell_shard", name: "Aurora Bell Shard", description: "A resonant shard carried by eligible event bosses.", source: "boss", chance: 0.25, required: 1, reward: { kind: "emote", id: "emote_aurora_chime", name: "Aurora Hug", rarity: "epic" } }
   ]
 };
 
@@ -45654,30 +45657,12 @@ var VEILBREAK_CURRENCY_PROMOTION = {
 var FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS = -2500;
 var FUTURE_2026_EVENT_IDS = /* @__PURE__ */ new Set(["EVT_ANNUAL_011_2026", "EVT_ANNUAL_012_2026"]);
 var FUTURE_ANNUAL_EVENT_ID = /^EVT_ANNUAL_\d{3}_(\d{4})$/;
-var FROSTFALL_HOLIDAY_PROMOTION = {
-  eventId: "EVT_ANNUAL_012_2026",
-  catchupStartsAtMs: Date.parse("2026-12-20T00:00:00Z"),
-  christmasStartsAtMs: Date.parse("2026-12-24T00:00:00Z"),
-  endsAtMs: Date.parse("2026-12-27T00:00:00Z"),
-  catchupEnabled: false
-};
-function frostfallHolidayMultiplierBps(eventId, earnedAtMs, catchupEnabled = FROSTFALL_HOLIDAY_PROMOTION.catchupEnabled) {
-  const p = FROSTFALL_HOLIDAY_PROMOTION;
-  if (eventId !== p.eventId || !Number.isFinite(earnedAtMs) || earnedAtMs >= p.endsAtMs) return 1e4;
-  if (earnedAtMs >= p.christmasStartsAtMs) return 2e4;
-  if (catchupEnabled && earnedAtMs >= p.catchupStartsAtMs) return 12500;
-  return 1e4;
-}
-function eventCurrencyBaseBps(eventId, earnedAtMs) {
+function eventCurrencyPromotionBps(eventId, earnedAtMs) {
   const promotion = VEILBREAK_CURRENCY_PROMOTION;
   if (eventId === promotion.eventId && earnedAtMs >= promotion.startsAtMs && earnedAtMs < promotion.endsAtMs) return promotion.bonusBps;
   if (FUTURE_2026_EVENT_IDS.has(eventId)) return FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS;
   const year = FUTURE_ANNUAL_EVENT_ID.exec(eventId)?.[1];
   return year && Number(year) >= 2027 ? FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS : 0;
-}
-function eventCurrencyPromotionBps(eventId, earnedAtMs) {
-  const base = eventCurrencyBaseBps(eventId, earnedAtMs);
-  return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
 }
 function promotedEventCurrency(eventId, quantity, earnedAtMs) {
   return Math.floor(Math.max(0, quantity) * (1e4 + eventCurrencyPromotionBps(eventId, earnedAtMs)) / 1e4);
@@ -49772,6 +49757,41 @@ var emotes_default = [
     label: "Gloam Facepalm",
     category: "pets",
     file: "../../../assets/events/veilbreak/emote_gloam_facepalm_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_snowbell_ring",
+    label: "Frostbell Cheer",
+    category: "pets",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frostbell_cheer_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_frostfall_wave",
+    label: "Frozen Shock",
+    category: "male",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_frozen_shock_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_aurora_chime",
+    label: "Aurora Hug",
+    category: "pets",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_aurora_hug_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_cozy_hearth",
+    label: "Cozy Hearth",
+    category: "female",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_cozy_hearth_runtime.webp",
+    defaultAvailable: false
+  },
+  {
+    id: "emote_snowball_attack",
+    label: "Snowball Attack",
+    category: "male",
+    file: "../../../assets/events/frostfall/frostfall_emotes_runtime/emote_snowball_attack_runtime.webp",
     defaultAvailable: false
   }
 ];

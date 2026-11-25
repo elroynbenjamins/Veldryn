@@ -1,6 +1,6 @@
 import React,{createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
-import {partySocialIdentity,partySocialSnapshot,type PartySocialSnapshot} from './party-social';
+import {partySocialProjection,type PartySocialSnapshot} from './party-social';
 import {supabase} from './supabase';
 import {useAuthSession} from './AuthSessionProvider';
 
@@ -25,9 +25,8 @@ export function PartySocialProvider({children}:{children:React.ReactNode}){
    do{
     request.refreshAgain=false;
    try{
-    const identity=await partySocialIdentity();
-    if(identity?.accountId!==accountId)throw new Error('Account session changed while refreshing social details.');
-    const snapshot=await partySocialSnapshot();
+    const {identity,snapshot}=await partySocialProjection(accountId);
+    if(identity.accountId!==accountId)throw new Error('Account session changed while refreshing social details.');
     if(current===generation.current&&activeAccount.current===accountId)setState({...snapshot,accountId,characterId:identity.characterId,error:'',loading:false});
    }catch(error){
     // A refresh failure or token renewal is not evidence that the player left a party.

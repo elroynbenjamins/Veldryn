@@ -1,10 +1,11 @@
 {
   "name": "veldryn-offline-prototype",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "private": true,
   "main": "index.js",
   "scripts": {
     "test:skill-navigator": "node tests/skill-navigator-compact-ui.cjs",
+    "test:chat-self-profile": "node tests/chat-self-active-profile.cjs",
     "test:character-roster": "node tests/character-roster-compact-ui.cjs",
     "test:rewards-inbox-ledger": "node tests/rewards-inbox-ledger-ui.cjs",
     "test:feature-hubs": "node tests/feature-hub-preview-ui.cjs && node tests/world-boss-readonly-snapshot.cjs && node tests/party-event-readonly-snapshot.cjs && node tests/market-preview-quote.cjs && node tests/market-preview-filter.cjs",

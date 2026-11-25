@@ -1,6 +1,6 @@
 import {
  COLLECTIBLE_PLAYER_BADGE_IDS,SUPPORTER_BADGE_IDS,VIP_BADGE_IDS,MAX_EQUIPPED_PLAYER_BADGES,MAX_FEATURED_PLAYER_BADGES,
- normalizePlayerBadges,playerBadgeIds,profileBadgeIds,validatedFeaturedBadges,supporterTierMonths,
+ normalizePlayerBadges,playerBadgeIds,profileBadgeIds,validatedFeaturedBadges,supporterTierMonths,visibleCollectiblePlayerBadgeIds,
  canEquipSupporterBadge,PLAYER_BADGE_DESCRIPTIONS,PLAYER_BADGE_LABELS,type PlayerBadgeIdentity,
 } from '../src/core/player-badges';
 function ok(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -12,7 +12,12 @@ ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','legacy Suppo
 ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
 ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
 ok(MAX_EQUIPPED_PLAYER_BADGES===1,'one elective badge by design');
-ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===9,'five earned badges and four Ascendant badges exist');
+ok(COLLECTIBLE_PLAYER_BADGE_IDS.length===9,'five ordinary and four private earned badge IDs exist');
+ok(visibleCollectiblePlayerBadgeIds().length===5&&!visibleCollectiblePlayerBadgeIds().includes('ascendant_sovereign_of_stars'),'unowned ultra-luxe badge is absent from player-facing badge settings');
+ok(visibleCollectiblePlayerBadgeIds(['ascendant_sovereign_of_stars']).includes('ascendant_sovereign_of_stars'),'granted ultra-luxe badge becomes visible only to its owner');
+for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_'))){ok(!visibleCollectiblePlayerBadgeIds().includes(id),'private badge hidden without grant '+id);ok(visibleCollectiblePlayerBadgeIds([id]).includes(id),'verified ownership exposes exactly that badge '+id);}
+ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'ascendant_sovereign_of_stars',extras:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders publicly when equipped');
+ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['ascendant_sovereign_of_stars'],validUntilMs:2000}),now).join(',')==='ascendant_sovereign_of_stars','verified granted Celestial badge renders on its owner profile');
 ok(!COLLECTIBLE_PLAYER_BADGE_IDS.some(id=>String(id)==='beta_tester'),'retired Beta Tester badge is not available');
 ok(playerBadgeIds(normalizePlayerBadges({staff:null,supporter:false,equippedBadgeId:'beta_tester',validUntilMs:2000}),now).length===0,'stale equipped Beta Tester badge does not render');
 ok(profileBadgeIds(normalizePlayerBadges({staff:null,supporter:false,featured:['beta_tester','founder'],validUntilMs:2000}),now).join(',')==='founder','stale Beta Tester badge is removed from profile showcase');
@@ -89,7 +94,7 @@ ok(profile.includes("'Badges'|'Name Style'")&&profile.includes("tab==='Badges'&&
 ok(!profile.includes("<PlayerBadgeSettings/>\n   <PlayerNameStyleEditor"),'badge chooser was removed from Name Style');
 const chips=read('src/components/profile/ProfileWardrobeChips.tsx'),look=read('src/components/profile/ProfileLookPanel.tsx');
 ok(chips.includes("profileT(language,\"Badges\")")&&look.includes('<PlayerBadgeSettings/>'),'Customize Profile reaches the badge chooser from its own category chips');
-ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('COLLECTIBLE_PLAYER_BADGE_IDS.map'),'new gallery includes collectible badges and four supporter tiers');
+ok(settings.includes('SUPPORTER_BADGE_IDS.map')&&settings.includes('visibleCollectiblePlayerBadgeIds(ownedExtras)')&&settings.includes('collectibleIds.map'),'badge gallery lists only released collectibles plus four supporter tiers');
 ok(settings.includes('badges.setEquipped(equipped===id?null:id)'),'single tap replaces or unequips badge');
 ok(settings.includes("Staff badges appear automatically"),'staff identity is explained');
 // One gallery, two destinations: the name row takes one badge, the profile takes three.
@@ -104,14 +109,20 @@ ok(settings.includes('<PlayerBadgeShowcase identity={badges.identity}'),'the pro
 const art=read('src/components/player-badge-artwork.ts');
 for(const id of ['supporter','supporter_3m','supporter_6m','supporter_12m','admin','moderator',...COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>!id.startsWith('ascendant_'))])
  ok(art.includes(`player-badges-v1/${id}.webp`),'approved badge artwork bundled '+id);
+for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_')))ok(art.includes(id+':{glyph:'),'Ascendant fallback is registered '+id);
+ok(art.includes("assets/ascendant/celestial/sovereign_badge_64.webp"),'hidden Celestial badge uses its dedicated Ascendant artwork');
 ok(art.includes('store-membership-badges-v1/vip.png')&&art.includes('store-membership-badges-v1/vip-plus.png'),'VIP badges use the same approved icons as Store');
 const badgeArt=read('src/components/PlayerBadges.tsx'),storeArt=read('src/components/CommerceProductBadge.tsx');
-for(const id of COLLECTIBLE_PLAYER_BADGE_IDS.filter(id=>id.startsWith('ascendant_')))ok(art.includes(id+':{glyph:'),'Ascendant fallback is registered '+id);
-ok(badgeArt.includes('source=PLAYER_BADGE_ARTWORK[id]')&&badgeArt.includes('source={source}')&&badgeArt.includes("from './player-badge-artwork'"),'chat and profile badges render shared artwork rather than generated text marks');
+ok(badgeArt.includes('const source=PLAYER_BADGE_ARTWORK[id]')&&badgeArt.includes('source={source}')&&badgeArt.includes('PLAYER_BADGE_FALLBACK_GLYPHS[id]')&&badgeArt.includes("from './player-badge-artwork'"),'chat and profile badges render shared artwork rather than generated text marks');
 ok(storeArt.includes('vip:PLAYER_BADGE_ARTWORK.vip')&&storeArt.includes('vip_plus:PLAYER_BADGE_ARTWORK.vip_plus')&&storeArt.includes('supporter_monthly:PLAYER_BADGE_ARTWORK.supporter'),'all commerce membership icons come from the same catalogue');
 ok(!badgeArt.includes('vipMark')&&!badgeArt.includes("const vip=id==="),'old text-only VIP badge fallback is removed');
 ok(badgeArt.includes('export function PlayerBadges({identity,size=22'),'worn badges remain legible at compact 22dp');
 ok(badgeArt.includes('export function PlayerBadgeShowcase')&&badgeArt.includes('profileBadgeIds(identity,useBadgeClock(identity))'),'the profile shelf is its own component over the profile projection');
+ok(badgeArt.includes("variant='framed'")&&badgeArt.includes("bareShowcase:{paddingVertical:2,paddingHorizontal:0}"),'bare Ultra Luxe shelf does not alter the ordinary framed default');
+for(const file of ['components/PublicProfileScene.tsx','components/ProfileScenePreview.tsx']){
+ const scene=read('src/'+file);
+ ok((scene.match(/variant="bare"/g)??[]).length===2,'both Ultra Luxe renderers use bare badge shelves in '+file);
+}
 for(const [path,marker] of [['components/PublicProfileScene.tsx','profile.playerBadges'],['components/profile/ProfileStage.tsx','badges.identity'],['components/profile/ProfileShowcasePanel.tsx','badges.identity']] as const)
  ok(read('src/'+path).includes('<PlayerBadgeShowcase identity={'+marker),'the profile badge shelf is shown on '+path);
 

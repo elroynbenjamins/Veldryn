@@ -18,7 +18,9 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
  useEffect(()=>{
   if(!enabled||!runId)return;
   const id=runId;
-  let stopped=false,inFlight=false,queued=false,realtimeConnected=false;
+  let stopped=false,inFlight=false,queued=false,realtimeConnected=false,coalescing=false,failures=0;
+  const CHANGE_COALESCE_MS=350;
+  const retryDelay=()=>{const base=coopSyncIntervalMs(mode,urgency,realtimeConnected);const cap=urgency==='decision'?4000:Math.max(base,15000);return Math.min(cap,base*2**Math.min(failures,4));};
   let timer:ReturnType<typeof setTimeout>|undefined;
   const clearTimer=()=>{if(timer!==undefined){clearTimeout(timer);timer=undefined;}};
   const schedule=(delay:number)=>{clearTimer();if(!stopped)timer=setTimeout(()=>void update(),delay);};
@@ -27,22 +29,24 @@ export function useCoopRunSync({runId,mode,urgency,enabled,refresh,setError}:{
    if(inFlight){queued=true;return;}
    clearTimer();
    inFlight=true;
-   try{await refresh(id);if(!stopped)setError('');}
-   catch(reason){if(!stopped)setError(coopErrorMessage(reason));}
+   coalescing=false;
+   queued=false;
+   try{await refresh(id);failures=0;if(!stopped)setError('');}
+   catch(reason){failures++;if(!stopped)setError(coopErrorMessage(reason));}
    finally{
     inFlight=false;
-    if(!stopped){const repeat=queued;queued=false;schedule(repeat?0:coopSyncIntervalMs(mode,urgency,realtimeConnected));}
+    if(!stopped){const repeat=queued;queued=false;coalescing=!failures&&repeat;schedule(failures?retryDelay():repeat?CHANGE_COALESCE_MS:coopSyncIntervalMs(mode,urgency,realtimeConnected));}
    }
   };
   void update();
   const channel=supabase?.channel('coop-snapshot-'+id)
-   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'coop_run_client_snapshots',filter:'run_id=eq.'+id},()=>void update())
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'coop_run_client_snapshots',filter:'run_id=eq.'+id},()=>{if(stopped||coalescing||(failures>0&&!inFlight))return;if(inFlight){queued=true;return;}void update();})
    .subscribe(status=>{
     if(stopped)return;
     const connected=status==='SUBSCRIBED';
     if(connected===realtimeConnected)return;
     realtimeConnected=connected;
-    if(!inFlight)schedule(coopSyncIntervalMs(mode,urgency,realtimeConnected));
+    if(!inFlight&&!failures&&!coalescing)schedule(coopSyncIntervalMs(mode,urgency,realtimeConnected));
    });
   return()=>{stopped=true;clearTimer();if(channel)void supabase?.removeChannel(channel);};
  },[runId,mode,urgency,enabled,refresh,setError]);

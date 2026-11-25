@@ -1,5 +1,5 @@
 import {createCharacter,newGame,effectiveStats} from '../src/core/game';
-import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons} from '../src/core/profile-icons';
+import {EVENT_PROFILE_ICON_ARTWORK_IDS,profileIconCollection,selectProfileIcon,normalizeProfileIcon,canUseProfileIcon,newlyUnlockedProfileIcons,accountProfileIconId} from '../src/core/profile-icons';
 import {executeGameCommand} from '../src/core/game-commands';
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {purchaseEventOffer} from '../src/core/live-events';
@@ -77,6 +77,28 @@ check(frostIds.every(id=>purchased.account.unlockedProfileIconIds?.includes(id))
 rejects(()=>purchaseEventOffer(winter,frostOffers[0].id,frostGrace));
 check(canUseProfileIcon({...purchased,account:{...purchased.account,liveEvent:undefined}},frostIds[0]),'Frostfall portrait ownership persists beyond season');
 check(purchaseEventOffer(winter,frostOffers[0].id,frostEnd).account.unlockedProfileIconIds?.includes(frostIds[0]),'Frostfall cosmetic purchase remains allowed in claim grace');
+
+console.log('Profile icon selection, ownership, commands and zero-bonus checks passed');
+
+
+// Account profile identity: first-created local hero wins regardless of active/roster order.
+const first={...state.character!,id:'LOCAL_CHAR_1',profileIconId:'starter:hooded-ranger'};
+const alt={...otherClassCharacter.character!,id:'LOCAL_CHAR_2',profileIconId:'starter:runic-scholar'};
+const multi={...state,character:alt,otherCharacters:[{character:first,inventory:state.inventory,overflow:state.overflow,activity:null,skills:state.skills,quests:state.quests,currentRegionId:state.currentRegionId}],account:{...state.account}};
+const migrated=normalizeProfileIcon(multi);
+check(accountProfileIconId(migrated)==='starter:hooded-ranger','first-created character icon seeds account, not active alt');
+check(migrated.character!.profileIconId==='starter:hooded-ranger'&&migrated.otherCharacters![0].character.profileIconId==='starter:hooded-ranger','all character projections use shared icon');
+const changed=executeGameCommand(migrated,{type:'profile',args:{profileIconId:'starter:runic-scholar'}},1000).state;
+check(changed.account.profileIconId==='starter:runic-scholar','validated profile command writes account icon');
+check(changed.otherCharacters![0].character.profileIconId==='starter:runic-scholar','icon change mirrors other character');
+const switched=executeGameCommand(changed,{type:'roster_switch',args:{id:'LOCAL_CHAR_1'}},1000).state;
+check(switched.character!.profileIconId==='starter:runic-scholar','character switch preserves account icon');
+check(normalizeSave(switched).account.profileIconId==='starter:runic-scholar','shared icon survives save normalization');
+const titleOnly=executeGameCommand(switched,{type:'profile',args:{profileTitle:'Adventurer'}},1000).state;
+check(titleOnly.account.profileIconId==='starter:runic-scholar','unrelated title write preserves icon');
+rejects(()=>executeGameCommand(switched,{type:'profile',args:{profileIconId:'class:DAWNKEEPER'}},1000));
+const unseededOnline={...multi,character:{...alt,id:'00000000-0000-0000-0000-000000000002'},otherCharacters:[{...multi.otherCharacters[0],character:{...first,id:'00000000-0000-0000-0000-000000000001'}}]};
+check(normalizeProfileIcon(unseededOnline).account.profileIconId===undefined,'online legacy multi-roster cannot guess first-created UUID');
 
 for(const id of ['ascendant-celestial-crown-icon','ascendant-draconic-ruby-icon']){
  check(!profileIconCollection(state).some(row=>row.id===id),'private icon invisible before grant');

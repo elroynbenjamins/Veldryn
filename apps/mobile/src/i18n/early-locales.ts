@@ -15,6 +15,8 @@ import {RUSSIAN_RELEASE_POLISH_ROWS} from './russian-release-polish';
 
 // Extended RU/TR copy; missing phrases deliberately fall back to English.
 export const EARLY_LOCALE_ROWS={
+  "Your account character class.": ["Класс одного из ваших персонажей.","Hesabındaki bir karakterin sınıfı."],
+  "Account-wide": ["Для всей учётной записи","Hesap genelinde"],
   "Ascendant name styles": ["Стили имени Вознесённых","Yüceliş isim stilleri"],
   "Restore standard name style": ["Восстановить стандартный стиль имени","Standart isim stilini geri yükle"],
   // Compact tool and inspection display in the newer two locales.
@@ -30,6 +32,9 @@ export const EARLY_LOCALE_ROWS={
   "Gathering Speed": ["Скорость сбора","Toplama Hızı"],
   "Gathering Rarity Chance": ["Шанс редкой добычи","Toplama Nadirlik Şansı"],
   "Legacy tool · No bonus stat roll": ["Старый инструмент · Без дополнительной характеристики","Eski alet · Ek özellik yok"],
+  'Same meal extends duration up to {hours}h.':["Та же еда продлевает действие до {hours} ч.","Aynı yemek süreyi {hours} saate kadar uzatır."],
+  'After eating: {minutes} min':["После еды: {minutes} мин.","Yedikten sonra: {minutes} dk."],
+  'Meal duration full':["Максимальная длительность еды","Yemek süresi dolu"],
   "Tool roll record unavailable · no bonus is assumed.": ["Данные инструмента недоступны · Бонус не учитывается.","Alet kaydı yok · Bonus varsayılmıyor."],
   "Each tier contributes gathering speed. Rolled speed bonuses apply separately to remaining action time, subject to the gathering speed cap.": ["Каждый уровень повышает скорость сбора. Дополнительные бонусы действуют на оставшееся время, с учётом предела скорости.","Her kademe toplama hızını artırır. Ek hız bonusları kalan süreyi azaltır ve hız sınırına tabidir."],
   "GATHERING TOOLS": ["ИНСТРУМЕНТЫ СБОРА","TOPLAMA ALETLERİ"],

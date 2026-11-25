@@ -151,6 +151,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'bellringer_title',reward:{kind:'title',id:'title_bellringer',name:'Bellringer',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:4,limit:1},
     {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:10,limit:1},
+    {id:'frostfall_aurora_bellframe',reward:{kind:'border',id:'frame_frostfall_aurora_bellframe',name:'Aurora Bellframe',rarity:'epic'},currency:'common',cost:3000,limit:1},
     {id:'frostfall_background',reward:{kind:'background',id:'bg_frostfall',name:'Aurora Winter Sky',rarity:'epic'},currency:'common',cost:2200,limit:1},
     {id:'frostfall_snowbell_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-snowbell',name:'Frostfall Snowman',rarity:'epic'},currency:'common',cost:1400,limit:1},
     {id:'frostfall_maiden_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-maiden',name:'Frostfall Maiden',rarity:'epic'},currency:'common',cost:1400,limit:1},

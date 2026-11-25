@@ -1,3 +1,5 @@
+import {useMusicOverride} from '../../storage/audio';
+import {dungeonMusicFor,dungeonBossMusicFor} from '../../core/encounter-music';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useGameplayText} from '../../i18n/gameplay';
@@ -181,6 +183,14 @@ export function CoopRunOverview({language,run,combatMarks,myVotedNodeId,selfVote
   // Never play the previous room's lastCombat while the new fight is pending.
   const awaitingCombatPlayback=inCombat&&(run.mode==='qmode'?!!run.selectedNodeId&&run.lastCombat?.nodeId!==run.selectedNodeId:!run.pendingCombat?.cues.length);
   const combatName=enteringCombat?(entryCombatKind==='boss'?st('FINAL BOSS'):st('DUNGEON COMBAT')):dungeonEnemyDisplayName(run.bossMechanic?.telegraph?.bossName??(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss)?.name??st('DUNGEON COMBAT'));
+  // Do not derive music from elapsed time, phases, or unrelated stale replay data.
+  const pendingPresentation=enteringCombat||awaitingCombatPlayback;
+  const activeBoss=pendingPresentation?undefined:(run.pendingCombat??run.lastCombat)?.combatants?.find(member=>member.boss);
+  const bossEncounter=theaterOpen&&(pendingPresentation?(entryCombatKind??run.selectedNodeKind)==='boss':Boolean(activeBoss));
+  const bossIdentity=activeBoss?.name??entryCombatEnemies.find(member=>member.boss)?.name??run.bossMechanic?.telegraph?.bossName;
+  useMusicOverride(bossEncounter?'boss':'dungeon',bossEncounter
+    ?dungeonBossMusicFor(run.expeditionId,activeBoss?.id,bossIdentity)
+    :dungeonMusicFor(run.expeditionId,run.region));
   const closeTheater=()=>{setTheaterOpen(false);if(terminal)setRewardOpen(true);};
   const showBattleAction=battlePresentationReady&&!inCombat&&Boolean(run.lastCombat);
   const marksBreakdown=terminal&&!seasonal?dungeonRunMarksBreakdown(rewards,run,combatMarks,rewardBudget,liveFellowshipRemaining):undefined;

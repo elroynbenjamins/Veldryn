@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import {useAuthSession} from './AuthSessionProvider';
 import {createOnlineGameRepository,serverGameplayEnabled} from './gameplay';
 import {supabase} from './supabase';
+import {fetchActiveEventRuntime} from './live-events';
 import type {GameCommand} from '../core/game-commands';
 import type {OnlineSnapshot} from '../core/online-game-repository';
 import {saveAndRefreshPlayerNameStyle} from '../core/player-name-style-save';
@@ -46,6 +47,38 @@ export function useOnlineGame(){
   const sub=AppState.addEventListener('change',next=>{foreground=next==='active';if(foreground)heartbeat();});
   return()=>{clearInterval(timer);sub.remove();};
  },[accountId]);
+ // Poll the lightweight public event window only while foregrounded. Refresh the
+ // authoritative account snapshot when its schedule or lifecycle changes;
+ // never inject a public RPC response into a saved account snapshot.
+ useEffect(()=>{
+  if(!repo||!supabase)return;
+  let disposed=false,inFlight=false;
+  const poll=async()=>{
+   if(disposed||inFlight||AppState.currentState!=='active'||active.current!==repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+   inFlight=true;
+   try{
+    const current=repo.snapshot;
+    if(!current)return;
+    const runtime=await fetchActiveEventRuntime();
+    if(disposed||active.current!==repo||commandSaving.current===repo||nameStyleSaving.current===repo)return;
+    const previous=repo.snapshot;
+    if(!previous)return;
+    const stored=previous.state.account.liveEvent;
+    const key=(r:typeof stored)=>r?JSON.stringify([r.eventId,r.enabled,r.startsAtMs,r.endsAtMs,r.graceEndsAtMs??null,r.priority??null,r.modules??[]]):'';
+    const now=Date.now();
+    const boundaryCrossed=!!runtime&&[runtime.startsAtMs,runtime.endsAtMs,runtime.graceEndsAtMs].some(at=>typeof at==='number'&&previous.serverNow<at&&at<=now);
+    // The gameplay service may retain an expired runtime for historical
+    // claims. Ignore that expected difference after its grace window closes.
+    const expired=!!stored&&now>=(stored.graceEndsAtMs??stored.endsAtMs);
+    if((key(runtime)!==key(stored)&&!(runtime===undefined&&expired))||boundaryCrossed)await refresh();
+   }catch{/* Retry on next foreground tick; never clear ownership on a network error. */}
+   finally{inFlight=false;}
+  };
+  void poll();
+  const timer=setInterval(()=>void poll(),120_000);
+  const sub=AppState.addEventListener('change',next=>{if(next==='active')void poll();});
+  return()=>{disposed=true;clearInterval(timer);sub.remove();};
+ },[repo,refresh]);
  const execute=async(command?:GameCommand)=>{if(!repo)throw new Error('Sign in before playing online.');if(nameStyleSaving.current===repo)throw new Error('Your name style is still saving. Please wait.');if(commandSaving.current===repo)throw new Error('A gameplay action is already being saved.');// Reserve the per-account command slot synchronously; the repository serializes and safely replays durable actions.
  commandSaving.current=repo;setBusy(true);setError('');
  // Preview only a validated weapon swap while a hunt is running. This is NOT

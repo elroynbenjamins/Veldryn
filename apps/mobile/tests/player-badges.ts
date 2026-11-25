@@ -84,8 +84,11 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const oldSql=read('../../backend/supabase/migrations/20260927131912_player_identity_badges.sql');
 ok(!oldSql.includes('raw_user_meta_data')&&!oldSql.includes('user_metadata'),'original badge ownership is not taken from user metadata');
 ok(oldSql.includes("role='owner'")&&oldSql.includes('private.commerce_entitlements_v1(p_account_id)'),'legacy staff and Supporter derived server-side');
-for(const path of ['OnlineWorldChat','OnlinePartyChat','GuildChat','ChatDock','PublicProfileScene','CompactPlayerIdentity','OnlineGuildManagement','PartyHubPanel','RecruitmentListing'])
+for(const path of ['OnlineWorldChat','OnlinePartyChat','GuildChat','PublicProfileScene','CompactPlayerIdentity','OnlineGuildManagement','PartyHubPanel','RecruitmentListing'])
  ok(read(`src/components/${path}.tsx`).includes('badges='),'badge identity projects to '+path);
+// Compact dock intentionally omits decorative badges; expanded chat retains them.
+const compactDock=read('src/components/ChatDock.tsx');
+ok(compactDock.includes('<PlayerStyledName')&&compactDock.includes('reduceMotion')&&compactDock.includes('numberOfLines={1}')&&!compactDock.includes('badges='),'compact chat preview keeps styled identity without decorative badges or ticker animation');
 for(const path of ['FriendsScreen','RankingsScreen'])
  ok(read(`src/screens/${path}.tsx`).includes('badges='),'public badge identity projects to '+path);
 

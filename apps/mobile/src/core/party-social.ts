@@ -19,6 +19,18 @@ export type PartyFocus = 'combat' | 'skilling' | 'mixed';
 export type RecruitmentFocus = PartyFocus | 'any';
 export type RecruitmentPostType = 'looking_for_guild' | 'guild_recruiting' | 'looking_for_party' | 'party_recruiting';
 export type RecruitmentActivityLevel = 'casual' | 'regular' | 'active' | 'hardcore';
+/** Crafting is encoded as a structured tag for compatibility with the existing DB focus enum. */
+export type RecruitmentMainInterest = 'combat' | 'skilling' | 'crafting' | 'mixed';
+export const RECRUITMENT_CRAFTING_INTEREST_TAG = 'interest:crafting';
+export function recruitmentMainInterest(card: Pick<RecruitmentCardView,'focus'|'playstyleTags'>):RecruitmentMainInterest {
+ if(card.focus==='skilling'&&card.playstyleTags.includes(RECRUITMENT_CRAFTING_INTEREST_TAG))return 'crafting';
+ return card.focus==='any'?'mixed':card.focus;
+}
+export function recruitmentStoredInterest(interest:RecruitmentMainInterest,tags:readonly string[]=[]){
+ const playstyleTags=tags.filter(tag=>tag!==RECRUITMENT_CRAFTING_INTEREST_TAG);
+ return {focus:interest==='crafting'?'skilling' as const:interest,
+  playstyleTags:interest==='crafting'?[...playstyleTags,RECRUITMENT_CRAFTING_INTEREST_TAG]:playstyleTags};
+}
 export type RecruitmentActivityKind = 'dungeon' | 'boss' | 'quest' | 'skilling' | 'exploration' | 'pvp' | 'party_event' | 'other';
 export type RecruitmentGoal = 'learn' | 'clear' | 'farm' | 'speedrun' | 'achievement' | 'casual';
 export type RecruitmentStartMode = 'now' | 'next_hour' | 'scheduled' | 'recurring';
@@ -235,7 +247,7 @@ export function recruitmentStructuredTags(card: Pick<RecruitmentCardView,'activi
     requiredRoleCounts: roleCounts,
  };
 }
-export function recruitmentVisibleTags(tags: readonly string[]) { return tags.filter(tag => !/^(kind|goal|start|session|at|voice|experience|roles|need:):/.test(tag)); }
+export function recruitmentVisibleTags(tags: readonly string[]) { return tags.filter(tag => !/^(kind|goal|start|session|at|voice|experience|roles|interest|need):/.test(tag)); }
 
 export function recruitmentContextLabels(card:RecruitmentCardView){
  const labels:string[]=[];

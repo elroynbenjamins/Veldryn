@@ -12,7 +12,7 @@ import {MUSIC_TRACK_ASSETS,SOUND_EFFECT_ASSETS,type MusicTrackId,type SoundEffec
  * - Respects the phone's silent mode, never records, never plays in the background,
  *   and mixes with other apps' audio.
  */
-import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences,type AudioChannel} from '../core/audio-preferences';
+import {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences,resolvePreferredMusicTrack,rememberAudibleAudioLevels,audioAfterMuteToggle,type AudioPreferences,type AudioChannel,type MusicContextId} from '../core/audio-preferences';
 import type {ItemRarity} from '../core/item-rarity';
 import {rarityRevealDelayMs,rarityRevealSound} from '../core/rarity-reveal-sound';
 export {AUDIO_LEVEL_VOLUME,DEFAULT_AUDIO_PREFERENCES,parseAudioPreferences};
@@ -150,12 +150,12 @@ function applyTrack(track:MusicTrackId|null):void{
 }
 
 // Screens push a temporary track (a boss fight over the region theme) and pop it on exit.
-let baseTrack:MusicTrackId|null=null,nextOverrideId=1;
-const overrides:{id:number;track:MusicTrackId}[]=[];
+let baseTrack:MusicContextId|null=null,nextOverrideId=1;
+const overrides:{id:number;context:MusicContextId;track:MusicTrackId}[]=[];
 let previewTrack:MusicTrackId|null=null,previewTimer:ReturnType<typeof setTimeout>|undefined;
 function resolveTrack(){
- const context=overrides.length?overrides[overrides.length-1].track:baseTrack;
- applyTrack(previewTrack??resolvePreferredMusicTrack(context,prefs));
+ const active=overrides[overrides.length-1];
+ applyTrack(previewTrack??resolvePreferredMusicTrack(active?.context??baseTrack,prefs,active?.track));
 }
 /** Audition any packaged theme for a few seconds, regardless of the area's mute state. */
 export function playMusicPreview(track:MusicTrackId):void{
@@ -172,14 +172,14 @@ export function stopMusicPreview():void{
  if(previewTrack!==null){previewTrack=null;resolveTrack();}
 }
 /** The app's background music for the current place (region theme, town). */
-export function setBaseMusic(track:MusicTrackId|null):void{baseTrack=track;resolveTrack();}
+export function setBaseMusic(track:MusicContextId|null):void{baseTrack=track;resolveTrack();}
 /** While mounted, play `track` over the base music; restores the previous track on unmount. */
-export function useMusicOverride(track:MusicTrackId|null|undefined):void{
+export function useMusicOverride(context:MusicContextId|null|undefined,encounterDefault?:MusicTrackId):void{
  useEffect(()=>{
-  if(!track)return;
-  const entry={id:nextOverrideId++,track};overrides.push(entry);resolveTrack();
+  if(!context)return;
+  const entry={id:nextOverrideId++,context,track:encounterDefault??context};overrides.push(entry);resolveTrack();
   return()=>{const i=overrides.findIndex(o=>o.id===entry.id);if(i>=0)overrides.splice(i,1);resolveTrack();};
- },[track]);
+ },[context,encounterDefault]);
 }
 
 // Pause music in the background and resume it on return. Subscribed only while a

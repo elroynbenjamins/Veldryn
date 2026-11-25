@@ -16,7 +16,7 @@ assert.equal(POTIONS.length,12,'twelve potions expected');
 assert.equal(ALCHEMY_EQUIPMENT_INFUSIONS.length,8,'eight infusion materials expected');
 assert.equal(Object.keys(alchemyItemNames).length,20,'exact source-authored item coverage');
 assert.deepEqual(Object.keys(alchemyItemNames).sort(),source.map(x=>x.id).sort());
-assert.equal(Object.keys(allItemNames).length,130+Object.keys(seasonalItemNames).length,'extends original 110 base and 20 alchemy names without overwriting them; seasonal names are independent');
+assert.equal(Object.keys(allItemNames).length,131+Object.keys(seasonalItemNames).length,'extends original 111 base and 20 alchemy names without overwriting them; seasonal names are independent');
 assert.ok(Object.keys(alchemyItemNames).every(id=>!Object.hasOwn(seasonalItemNames,id)),'Seasonal names must not overwrite alchemy names');
 for(const def of source){
  const row=alchemyItemNames[def.id];

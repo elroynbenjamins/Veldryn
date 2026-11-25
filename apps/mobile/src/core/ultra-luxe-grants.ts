@@ -33,6 +33,7 @@ export function withVerifiedUltraLuxeGrants(state:GameState,raw:unknown):GameSta
   };
  };
  return {...state,account:{...state.account,
+  profileIconId:allowed(state.account.profileIconId,grants.icons)?state.account.profileIconId:state.character?'class:'+state.character.classId:undefined,
   unlockedProfileBackgroundIds:replacePrivate(state.account.unlockedProfileBackgroundIds,grants.backgrounds),
   unlockedProfileBorderIds:replacePrivate(state.account.unlockedProfileBorderIds,grants.borders),
   unlockedCosmeticPetIds:replacePrivate(state.account.unlockedCosmeticPetIds,grants.pets),

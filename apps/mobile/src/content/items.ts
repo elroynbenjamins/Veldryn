@@ -66,6 +66,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:34,readiness:4,value:25},
 {id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:44,readiness:5,value:34},
 {id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:77,readiness:7,value:62},
+{id:'SUNSCAR_SPICED_PLATTER',name:'Sunscar Spiced Platter',type:'food',heal:123,readiness:11,value:175,rarity:'uncommon'},
 
 {id:'COPPER_ORE',name:'Copper Ore',type:'material',value:5},
 

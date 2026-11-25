@@ -1,6 +1,8 @@
 import {isFrostfallGuildCosmetic} from '../core/guild-customization';
 import {supabase} from './supabase';
-import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,type CachedPlayerIdentity} from './player-identity-cache';
+import {ACCOUNT_SOCIAL_IDENTITY_RELEASED} from './social-identity-client-gate';
+import {projectChatSenderNames,type CurrentChatSenderName} from '../core/chat-sender-projection';
+import {currentPlayerIdentityViewer,ensurePlayerIdentityViewer,peekPlayerIdentity,playerIdentityDetailsNeedRefresh,playerIdentityNeedsRefresh,storePlayerIdentities,playerIdentityIconWriteVersion,type CachedPlayerIdentity} from './player-identity-cache';
 import {CHAT_RECENT_MESSAGE_LIMIT,GUILD_CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {socialListIdentityIds,withSocialListIdentities} from '../core/social-list-projection';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
@@ -80,10 +82,11 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
   for(let i=0;i<missing.length;i+=100){
    const batch=missing.slice(i,i+100);
    const query=(async()=>{
-    const args={p_account_ids:batch};
+    const args={p_account_ids:batch},iconWriteVersion=playerIdentityIconWriteVersion();
+    let hasIcon=includeIcon;
     let result=await client.rpc(includeIcon?'guild_identities_v3':'guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities_v2',args);
-    if(result.error?.code==='PGRST202')result=await client.rpc('guild_identities',args);
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities_v2',args);}
+    if(result.error?.code==='PGRST202'){hasIcon=false;result=await client.rpc('guild_identities',args);}
     if(result.error)throw result.error;
     if(currentPlayerIdentityViewer()!==viewer)return;
     const found=new Map<string,CachedPlayerIdentity>();
@@ -94,7 +97,7 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
       player_name_style:row.player_name_style??null,player_badges:normalizePlayerBadges(row.player_badges),
      });
     }
-    storePlayerIdentities(found,Date.now(),includeIcon);
+    storePlayerIdentities(found,Date.now(),hasIcon,iconWriteVersion);
    })();
    for(const id of batch)pendingIdentityQueries.set(viewer+':'+id,query);
    void query.finally(()=>{for(const id of batch){if(pendingIdentityQueries.get(viewer+':'+id)===query)pendingIdentityQueries.delete(viewer+':'+id);}}).catch(()=>{});
@@ -110,7 +113,27 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
 }
 async function withGuildIdentities<T extends {account_id:string|null}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id).filter((id):id is string=>typeof id==='string'&&id.length>0));return rows.map(row=>({...row,...(row.account_id?identities.get(row.account_id):undefined)}));}
 /** Cosmetic identity lookup failure must not hide already-authorized messages. */
-export async function withChatIdentities<T extends {account_id:string|null}>(rows:T[]):Promise<T[]>{try{return await withGuildIdentities(rows);}catch{return rows;}}
+export async function withChatIdentities<T extends {account_id:string|null;sender_name:string}>(rows:T[]):Promise<T[]>{
+ const decorated=await withGuildIdentities(rows).catch(()=>rows);
+ // The chat_messages.sender_name field is a write-time snapshot. Resolve
+ // current account identities on every feed refresh, including old messages.
+ // Older builds must not call this new RPC until Social Names are enabled.
+ if(!ACCOUNT_SOCIAL_IDENTITY_RELEASED||!decorated.length)return decorated;
+ const ids=[...new Set(decorated.map(row=>row.account_id).filter((id):id is string=>!!id))];
+ if(!ids.length)return decorated;
+ try{
+  const current:CurrentChatSenderName[]=[];
+  for(let i=0;i<ids.length;i+=100){
+   const {data,error}=await requireClient().rpc('chat_sender_names_v1',{p_account_ids:ids.slice(i,i+100)});
+   if(error)throw error;
+   current.push(...((data??[]) as CurrentChatSenderName[]));
+  }
+  return projectChatSenderNames(decorated,current);
+ }catch{
+  // Name projection must never hide messages already authorized by chat RLS.
+  return decorated;
+ }
+}
 export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(CHAT_RECENT_MESSAGE_LIMIT);if(error)throw error;return withChatIdentities(((data??[]) as WorldMessage[]).reverse());}
 export function worldChatCommandKey(){return `world-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
 export async function postWorldMessage(channelId:string,body:string,senderName:string,idempotencyKey:string){const client=requireClient();const clean=body.trim();if(!clean)throw new Error('Write a message first.');const {data,error}=await client.rpc('send_world_chat_v2',{p_channel_id:channelId,p_body:clean,p_sender_name:senderName.slice(0,20)||'Adventurer',p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}

@@ -1,3 +1,4 @@
+import {reconcileAccountProfileIcon} from '../../apps/mobile/src/core/profile-icons';
 import {executeGameCommand,validateGameCommand} from '../../apps/mobile/src/core/game-commands';
 import {withVerifiedUltraLuxeGrants,ultraLuxeGrantProjection} from '../../apps/mobile/src/core/ultra-luxe-grants';
 import {newGame} from '../../apps/mobile/src/core/game';
@@ -69,7 +70,7 @@ export function gameplayHandler(services:GameplayServices,authenticatePlayer:Aut
   const trustedState=request.method==='POST'
     ?snapshotEarnedLegacySeasonalClaims(storedState,loaded.serverNow)
     :storedState;
-  const state=restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState));
+  const state=reconcileAccountProfileIcon(restoreCumulativeMonsterUnlocks(ensurePersonalSeasonalState(trustedState)));
   state.account.longTermAccountScopeId=accountId;
   state.account.guildMember=loaded.guildMember;
   // Retain an already-ended event's server-issued timestamps for one-time

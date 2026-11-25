@@ -153,16 +153,19 @@ function activeMealBonus(character) {
   const buff = character?.activeMealBuff;
   return buff && buff.remainingSeconds > 0 ? mealBonusDef(buff.itemId) : void 0;
 }
-var MEAL_BONUSES;
+var MAX_MEAL_BUFF_HOURS, MAX_MEAL_BUFF_SECONDS, MEAL_BONUSES;
 var init_meal_buffs = __esm({
   "../apps/mobile/src/core/meal-buffs.ts"() {
     "use strict";
+    MAX_MEAL_BUFF_HOURS = 24;
+    MAX_MEAL_BUFF_SECONDS = MAX_MEAL_BUFF_HOURS * 3600;
     MEAL_BONUSES = [
       { itemId: "IRONWOOD_STEW", kind: "gathering_speed", percent: 4, durationHours: 3, label: "+4% Gathering speed" },
+      { itemId: "SUNSCAR_SPICED_PLATTER", kind: "combat_xp", percent: 6, durationHours: 3, label: "+6% Combat XP" },
       { itemId: "GLASSFIN_FEAST", kind: "gathering_speed", percent: 6, durationHours: 4, label: "+6% Gathering speed" },
       { itemId: "FROSTED_ICEFIN", kind: "crafting_speed", percent: 6, durationHours: 4, label: "+6% Crafting speed" },
       { itemId: "CHARRED_EMBERFIN", kind: "combat_xp", percent: 8, durationHours: 4, label: "+8% Combat XP" },
-      { itemId: "ASHLANDS_EMBER_STEW", kind: "noncombat_speed", percent: 10, durationHours: 4, label: "+10% Non-combat skill speed" }
+      { itemId: "ASHLANDS_EMBER_STEW", kind: "crafting_speed", percent: 8, durationHours: 4, label: "+8% Crafting speed" }
     ];
   }
 });
@@ -42868,6 +42871,7 @@ var BASE_ITEMS = [
   { id: "ROASTED_ROOTSTREAM_TROUT", name: "Roasted Rootstream Trout", type: "food", heal: 34, readiness: 4, value: 25 },
   { id: "SEARED_RIVER_EEL", name: "Seared River Eel", type: "food", heal: 44, readiness: 5, value: 34 },
   { id: "IRONWOOD_STEW", name: "Ironwood Hunter Stew", type: "food", heal: 77, readiness: 7, value: 62 },
+  { id: "SUNSCAR_SPICED_PLATTER", name: "Sunscar Spiced Platter", type: "food", heal: 123, readiness: 11, value: 175, rarity: "uncommon" },
   { id: "COPPER_ORE", name: "Copper Ore", type: "material", value: 5 },
   { id: "OATHSTONE_ORE", name: "Oathstone Ore", type: "material", value: 32 },
   { id: "CROWNWOOD_LOG", name: "Crownwood Log", type: "material", value: 30 },
@@ -42951,14 +42955,7 @@ var BASE_ITEMS = [
   // Retired quest item: preserve only to read historical saved inventories safely; never drop or grant.
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [
-  ...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }),
-  ...GUILD_COMPONENT_ITEMS,
-  ...CROSS_PROFESSION_COMPONENT_ITEMS,
-  ...EQUIPMENT_ITEMS_V33,
-  // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
-  { id: "FROSTFALL_CHRISTMAS_LIGHTS_2026", name: "Christmas Lights", type: "material", value: 0, rarity: "rare", passive: "Seasonal lights donated to your guild Winter Hearth Christmas Market." }
-];
+var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -43467,31 +43464,6 @@ var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...CROSS_PROFESSION_COMPONENT_RECIPES,
   ...ALCHEMY_RECIPES,
-  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
-  {
-    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026",
-    name: "Craft Christmas Lights \xD75",
-    skillId: "smithing",
-    level: 4,
-    xp: 35,
-    gold: 30,
-    seconds: 40,
-    repeatableTraining: true,
-    inputs: [{ itemId: "COPPER_ORE", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
-    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
-  },
-  {
-    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026",
-    name: "Craft Christmas Lights \xD75",
-    skillId: "tailoring",
-    level: 4,
-    xp: 35,
-    gold: 30,
-    seconds: 40,
-    repeatableTraining: true,
-    inputs: [{ itemId: "MOSS_FIBER", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
-    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
-  },
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
   // compatibility. Presentation layers apply their release gate separately.
@@ -43509,17 +43481,18 @@ var RECIPES = [
     { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
     { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
     { id: "COOK_SILVERFIN", name: "Cook Silverfin", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
-    { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 145, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
+    { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout", skillId: "cooking", level: 7, xp: 150, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
     { id: "COOK_RIVER_EEL", name: "Sear River Eel", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
     { id: "COOK_OATHSCALE", name: "Roast Oathscale", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
-    { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
+    { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach", skillId: "cooking", level: 16, xp: 250, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
     { id: "COOK_CROWN_CARP", name: "Roast Crown Carp", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
-    { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
-    { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
+    { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 110, gold: 140, seconds: 66, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 6 }, { itemId: "THORN_SAP", quantity: 3 }, { itemId: "IRONWOOD_LOG", quantity: 3 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+    { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 6 }, { itemId: "CINDER_HEART", quantity: 3 }, { itemId: "CINDERWOOD_LOG", quantity: 3 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 1 } },
     { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
-    { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
-    { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
-    { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
+    { id: "COOK_SUNSCAR_SPICED_PLATTER", name: "Sunscar Spiced Platter", skillId: "cooking", level: 30, xp: 330, gold: 320, seconds: 150, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 12 }, { itemId: "SUNSCALE", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 3 }], output: { itemId: "SUNSCAR_SPICED_PLATTER", quantity: 1 } },
+    { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 9 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "DUNEWOOD", quantity: 3 }], output: { itemId: "GLASSFIN_FEAST", quantity: 1 } },
+    { id: "COOK_ICEFISH", name: "Frosted Icefin", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 9 }, { itemId: "WINTERMINT", quantity: 3 }, { itemId: "WHITEPINE_LOG", quantity: 3 }], output: { itemId: "FROSTED_ICEFIN", quantity: 1 } },
+    { id: "COOK_EMBERFIN", name: "Char Emberfin", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 9 }, { itemId: "ASHEN_MYRRH", quantity: 3 }, { itemId: "CINDERWOOD_LOG", quantity: 3 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 1 } }
   ].map((recipe2) => ({ ...recipe2, gold: increasedCraftingGoldCost(recipe2.gold) }))
 ].map((recipe2) => recipe2.characterLevel === void 0 || REBASED_CHARACTER_LEVEL_RECIPES.has(recipe2.id) ? recipe2 : { ...recipe2, characterLevel: rebasedCombatLevelFromLegacyLevel(recipe2.characterLevel) });
 var recipesById = new Map(RECIPES.map((recipe2) => [recipe2.id, recipe2]));
@@ -43841,12 +43814,12 @@ var FROSTFALL_EVENT2 = {
   // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
   claimGraceDays: 2,
   visualKey: "frostfall",
-  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build your Guild Christmas Market", description: "Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.", highlights: ["Guild Christmas Market construction", "Two winter supply tracks and Guild milestones", "Aurora Hollow seasonal expedition"] },
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Prepare a winter celebration across Asterfall", description: "Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.", highlights: ["Personal winter festival milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
   ui: {
     prepareTitle: "Prepare for Frostfall",
     dailyGiftTitle: "Today\u2019s Frostfall Gift",
     cacheName: "Frostfall Cache",
-    communityName: "Winter Hearth \xB7 Guild Christmas Market",
+    communityName: "Winter Hearth",
     projectTitle: "Festival preparation",
     projectNoun: "festival focus",
     contractsTitle: "DAILY FROSTFALL CONTRACTS",
@@ -43889,10 +43862,9 @@ var FROSTFALL_EVENT2 = {
     { id: "bellringer_title", reward: { kind: "title", id: "title_bellringer", name: "Bellringer", rarity: "epic" }, currency: "common", cost: 1800, limit: 1 },
     { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
     { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
+    { id: "frostfall_aurora_bellframe", reward: { kind: "border", id: "frame_frostfall_aurora_bellframe", name: "Aurora Bellframe", rarity: "epic" }, currency: "common", cost: 3e3, limit: 1 },
     { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
-    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "Frostfall Snowman", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
-    { id: "frostfall_maiden_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-maiden", name: "Frostfall Maiden", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
-    { id: "frostfall_adventurer_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-adventurer", name: "Frostfall Adventurer", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
     { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
     { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
     { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
@@ -43917,8 +43889,7 @@ var FROSTFALL_EVENT2 = {
     { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
   ],
   dailyGifts: [...gifts2],
-  communityEnabled: false,
-  // Superseded by the guild-only Winter Hearth market; shared event track stays disabled.
+  communityEnabled: true,
   communityGoal: 1e5,
   communityMilestones: [
     { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
@@ -45636,12 +45607,30 @@ var VEILBREAK_CURRENCY_PROMOTION = {
 var FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS = -2500;
 var FUTURE_2026_EVENT_IDS = /* @__PURE__ */ new Set(["EVT_ANNUAL_011_2026", "EVT_ANNUAL_012_2026"]);
 var FUTURE_ANNUAL_EVENT_ID = /^EVT_ANNUAL_\d{3}_(\d{4})$/;
-function eventCurrencyPromotionBps(eventId, earnedAtMs) {
+var FROSTFALL_HOLIDAY_PROMOTION = {
+  eventId: "EVT_ANNUAL_012_2026",
+  catchupStartsAtMs: Date.parse("2026-12-20T00:00:00Z"),
+  christmasStartsAtMs: Date.parse("2026-12-24T00:00:00Z"),
+  endsAtMs: Date.parse("2026-12-27T00:00:00Z"),
+  catchupEnabled: false
+};
+function frostfallHolidayMultiplierBps(eventId, earnedAtMs, catchupEnabled = FROSTFALL_HOLIDAY_PROMOTION.catchupEnabled) {
+  const p = FROSTFALL_HOLIDAY_PROMOTION;
+  if (eventId !== p.eventId || !Number.isFinite(earnedAtMs) || earnedAtMs >= p.endsAtMs) return 1e4;
+  if (earnedAtMs >= p.christmasStartsAtMs) return 2e4;
+  if (catchupEnabled && earnedAtMs >= p.catchupStartsAtMs) return 12500;
+  return 1e4;
+}
+function eventCurrencyBaseBps(eventId, earnedAtMs) {
   const promotion = VEILBREAK_CURRENCY_PROMOTION;
   if (eventId === promotion.eventId && earnedAtMs >= promotion.startsAtMs && earnedAtMs < promotion.endsAtMs) return promotion.bonusBps;
   if (FUTURE_2026_EVENT_IDS.has(eventId)) return FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS;
   const year = FUTURE_ANNUAL_EVENT_ID.exec(eventId)?.[1];
   return year && Number(year) >= 2027 ? FUTURE_EVENT_CURRENCY_ADJUSTMENT_BPS : 0;
+}
+function eventCurrencyPromotionBps(eventId, earnedAtMs) {
+  const base = eventCurrencyBaseBps(eventId, earnedAtMs);
+  return Math.round((1e4 + base) * frostfallHolidayMultiplierBps(eventId, earnedAtMs) / 1e4) - 1e4;
 }
 function promotedEventCurrency(eventId, quantity, earnedAtMs) {
   return Math.floor(Math.max(0, quantity) * (1e4 + eventCurrencyPromotionBps(eventId, earnedAtMs)) / 1e4);
@@ -45649,17 +45638,6 @@ function promotedEventCurrency(eventId, quantity, earnedAtMs) {
 
 // ../apps/mobile/src/core/live-events.ts
 init_faith2();
-
-// ../apps/mobile/src/core/winter-hearth-2026.ts
-var WINTER_HEARTH_2026_START_MS = Date.parse("2026-12-03T00:00:00.000Z");
-var WINTER_HEARTH_2026_END_MS = Date.parse("2026-12-27T00:00:00.000Z");
-
-// ../apps/mobile/src/core/winter-hearth-bonus-windows.ts
-var ZERO = Object.freeze({
-  gatheringSpeedBps: 0,
-  skillXpBps: 0,
-  combatXpBps: 0
-});
 
 // ../apps/mobile/src/content/event-collectible-content-active.ts
 var FROSTFALL_PETS = [
@@ -46433,6 +46411,7 @@ function preparationEffects(_preparation) {
 
 // ../apps/mobile/src/core/processing.ts
 init_progression();
+init_meal_buffs();
 
 // ../apps/mobile/src/core/game.ts
 init_meal_buffs();
@@ -51148,14 +51127,14 @@ var REGIONAL_DUNGEON_BALANCE = Object.freeze({
 });
 var LEGACY_ROOTBOUND_ATTACK_MULTIPLIER = 2.9;
 var ROOTBOUND_TIER_ATTACK = [1.2, 0.95, 0.94];
-function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId) {
+function regionalPowerMultipliers(expeditionId, tier, enabled, encounterId, rootboundT3CalibrationVersion) {
   if (!enabled || ![1, 2, 3].includes(tier)) return void 0;
   const row = REGIONAL_DUNGEON_BALANCE[expeditionId];
   if (!row) return void 0;
   const rootbound = expeditionId === "EXP_001" && (encounterId?.startsWith("ROOT") || encounterId === "BOSS_EXP_ROOT");
   const rootAttack = encounterId === "BOSS_EXP_ROOT" && tier === 2 ? 0.92 : encounterId === "BOSS_EXP_ROOT" && tier === 3 ? 0.88 : ROOTBOUND_TIER_ATTACK[tier - 1];
   const rootCorrection = rootbound ? rootAttack / LEGACY_ROOTBOUND_ATTACK_MULTIPLIER : 1;
-  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
+  const bossCorrection = expeditionId === "EXP_001" && encounterId === "BOSS_EXP_ROOT" ? tier === 3 ? rootboundT3CalibrationVersion === 1 ? 0.975 : 0.95 : tier === 2 ? 0.98 : 1 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SOLAR" ? tier === 3 ? 0.759 : tier === 2 ? 0.768 : 0.77 : expeditionId === "EXP_003" && encounterId === "BOSS_EXP_SPHINX" ? tier === 3 ? 1.017 : tier === 2 ? 1.015 : 1 : expeditionId === "EXP_001" && encounterId === "BOSS_EXP_BELL" ? tier === 3 ? 1.025 : tier === 2 ? 1.03 : 1 : 1;
   const bossTierThree = tier === 3 && encounterId?.startsWith("BOSS_");
   const bossHpAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.965 : expeditionId === "EXP_003" ? 0.98 : 1 : 1;
   const bossDefenseAdjustment = bossTierThree ? expeditionId === "EXP_001" ? 0.985 : expeditionId === "EXP_003" ? 0.99 : 1 : 1;
@@ -51368,7 +51347,7 @@ var QModeService = class {
       applyRoomArtifact(run, selectedArtifact);
     } else if (input.boonId) throw new Error("invalid_boon_choice");
     const isCombat = selected2.kind === "battle" || selected2.kind === "elite" || selected2.kind === "boss";
-    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId);
+    const regional2 = regionalPowerMultipliers(run.expeditionId, run.tier, run.regionalBalanceVersion === 1, selected2.contentId, run.rootboundT3CalibrationVersion);
     const encounterDepth = run.enduranceRouteVersion === 1 && selected2.kind === "boss" ? Math.max(1, selected2.depth - DUNGEON_ENDURANCE.checkpointInterval) : selected2.depth;
     const depth = dungeonEncounterDepthMultipliers(encounterDepth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
     const maxDurationMs = dungeonBossTimeLimitMs(selected2.depth, run.enduranceRouteVersion === 1, selected2.kind === "boss", run.bossEnduranceVersion);
@@ -51399,7 +51378,7 @@ var QModeService = class {
   createRun(input) {
     const endurance = input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION;
     const graph2 = generateCoopRouteGraph(this.serverSecret, input.expeditionId, input.runId, input.contentVersion, input.balanceVersion, endurance ? "endurance" : "legacy");
-    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1, bossEnduranceVersion: DUNGEON_BOSS_ENDURANCE_VERSION } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
+    const run = { id: input.runId, requestId: input.requestId, controllerAccountId: input.controllerAccountId, expeditionId: input.expeditionId, tier: input.tier, rewardBaseMarks: currentDungeonBaseMarks(input.expeditionId), graph: graph2, currentNodeId: graph2.entryNodeId, phase: "awaiting_choice", players: input.players, persistentState: initialPersistentRunState(input.players), ...endurance ? { enduranceRouteVersion: 1, bossEnduranceVersion: DUNGEON_BOSS_ENDURANCE_VERSION } : {}, tierScalingVersion: 2, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION ? { regionalBalanceVersion: 1 } : {}, ...input.balanceVersion === REGIONAL_DUNGEON_BALANCE_VERSION && input.qmodePressureVersion === 1 && input.expeditionId === "EXP_001" && input.tier === 3 ? { rootboundT3CalibrationVersion: 1 } : {}, qmodePressureVersion: input.qmodePressureVersion, echoSourceAccountIds: input.echoSourceAccountIds, npcCharacterIds: input.npcCharacterIds ?? [] };
     this.repository.save(run);
     return structuredClone(run);
   }

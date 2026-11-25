@@ -49,7 +49,7 @@ test('Settings uses the single scrollable per-region Music panel',()=>{
  assert.match(component,/REGIONS\.map\(regionRow\)/);
  assert.match(component,/const REGIONS:readonly MusicContextId\[\]=\['asterfall','sunscar','frostmarch'\]/);
  assert.doesNotMatch(component,/const REGIONS:[^;]*\['town'/);
- assert.match(component,/const MUSIC_CHOICES=MUSIC_CONTEXTS;/);
+ assert.match(component,/const MUSIC_CHOICES=MUSIC_TRACKS;/);
  assert.match(component,/ACTIVITIES\.map\(regionRow\)/);
  assert.match(component,/minHeight:44/);
  assert.match(component,/accessibilityRole="switch"/);

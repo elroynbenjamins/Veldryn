@@ -104,11 +104,11 @@ function releaseEffectPlayers(){
 function watchEffects(){
  if(!effectSubscription)effectSubscription=AppState.addEventListener('change',state=>{if(state!=='active')releaseEffectPlayers();});
 }
-function trimIdleEffects(now:number){
- if(effectPlayers.size<EFFECT_CACHE_TARGET)return;
+function trimIdleEffects(now:number,target:number){
+ if(effectPlayers.size<=target)return;
  const candidates=[...effectPlayers.keys()].sort((a,b)=>(lastPlayed.get(a)??0)-(lastPlayed.get(b)??0));
  for(const id of candidates){
-  if(effectPlayers.size<EFFECT_CACHE_TARGET)break;
+  if(effectPlayers.size<=target)break;
   const player=effectPlayers.get(id)!;
   if(now-(lastPlayed.get(id)??0)<EFFECT_IDLE_MS)continue;
   // A delayed native decoder may still be playing despite the elapsed guard.
@@ -126,11 +126,17 @@ export function playSound(id:SoundEffectId,gain=1):void{
  try{
   ensureMode(m);
   let player=effectPlayers.get(id);
-  if(!player){trimIdleEffects(now);player=m.createAudioPlayer(SOUND_EFFECT_ASSETS[id].source);effectPlayers.set(id,player);watchEffects();}
+  trimIdleEffects(now,player?EFFECT_CACHE_TARGET:EFFECT_CACHE_TARGET-1);
+  if(!player){player=m.createAudioPlayer(SOUND_EFFECT_ASSETS[id].source);effectPlayers.set(id,player);watchEffects();}
   player.volume=Math.max(0,Math.min(1,AUDIO_LEVEL_VOLUME[prefs.effects]*SOUND_EFFECT_ASSETS[id].volume*gain));
   void Promise.resolve(player.seekTo(0)).catch(()=>{});
   player.play();
- }catch{/* unsupported device or missing native module */}
+ }catch{
+  const failed=effectPlayers.get(id);
+  if(failed){effectPlayers.delete(id);releasePlayer(failed);}
+  lastPlayed.delete(id);
+  if(!effectPlayers.size){effectSubscription?.remove();effectSubscription=undefined;}
+ }
 }
 
 // ------------------------------------------------------------------ music

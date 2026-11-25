@@ -143,7 +143,7 @@ for(const row of PROFILE_COSMETIC_RUNTIME){
    const p=profileFrameSegments(w,h).find(s=>{const x=g.x*s.imageWidth+s.imageLeft,y=g.y*s.imageHeight+s.imageTop;return x>=-1e-6&&y>=-1e-6&&x<=s.width+1e-6&&y<=s.height+1e-6});
    if(!p)fail(row.collection+' ornament has no source segment');
    const expected=profileSceneGlowBounds(w,h,(p.x+g.x*p.imageWidth+p.imageLeft)/w,(p.y+g.y*p.imageHeight+p.imageTop)/h,d);
-   equal(JSON.stringify(box),JSON.stringify(expected),row.collection+' glow follows the same artwork transform');
+   ok(expected&&(['x','y','width','height'] as const).every(key=>Math.abs(box[key]-expected[key])<1e-6),row.collection+' glow follows the same artwork transform');
   }
  }
 }

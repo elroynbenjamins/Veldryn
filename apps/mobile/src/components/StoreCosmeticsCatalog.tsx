@@ -3,7 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {PROFILE_COSMETIC_STORE_COLLECTIONS,profileCosmeticCollectionOwnership,type ProfileCosmeticCollectionId} from '../content/profile-cosmetic-store';
 import {profileCosmeticRuntimeByEffect} from '../theme/profile-cosmetic-runtime-v1';
-import {profileBorderSourceById} from '../theme/profile-border-assets';
+import {profileBorderSourceById,resolveProfileBorderArtworkId} from '../theme/profile-border-assets';
 import {useGameTheme} from '../theme/ThemeContext';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {ProfileFrameOverlay} from './ProfileFrameOverlay';
@@ -16,7 +16,7 @@ export function StoreCosmeticsCatalog({state}:{state:GameState}){
  const collection=PROFILE_COSMETIC_STORE_COLLECTIONS.find(row=>row.id===selected)??PROFILE_COSMETIC_STORE_COLLECTIONS[0];
  const owned=profileCosmeticCollectionOwnership(state,collection);
  const runtime=profileCosmeticRuntimeByEffect.get(collection.effect.itemId);
- const borderSource=runtime?profileBorderSourceById.get(runtime.fallbackBorderId):undefined;
+ const borderSource=runtime?profileBorderSourceById.get(resolveProfileBorderArtworkId(runtime.borderId,runtime.fallbackBorderId)):undefined;
  const status=(value:boolean)=>value?'OWNED':'INCLUDED';
  return <View style={s.root}>
   <View style={s.between}><View style={s.flex}><Text accessibilityRole="header" style={s.title}>Profile Cosmetics</Text><Text style={s.copy}>Standard cosmetic sets · Account-wide ownership · Per-character equipment</Text></View><Text style={s.disabled}>CHECKOUT OFF</Text></View>

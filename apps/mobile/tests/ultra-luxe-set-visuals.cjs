@@ -74,3 +74,15 @@ for(const name of ['CelestialSovereignPreview','DraconicDominionPreview']){
 }
 assert(read('profile/CelestialSovereignPreview.tsx').includes('const matchingLift=useMemo(()=>clock.interpolate('));
 console.log('Dedicated wardrobe stage, mixed effects, lifecycle and texture stability passed.');
+
+for(const name of ['ProfileScenePreview','PublicProfileScene']){
+ const source=read(name+'.tsx');
+ assert(source.includes('borderArt?.border??directBorder??'));
+ assert(source.includes('borderId={borderArt||directBorder?'));
+ for(const flag of ['celestialBackground','celestialBorder','draconicBackground','draconicBorder'])assert(source.includes('{active&&'+flag),'inactive preview must not mount '+flag);
+ assert(source.includes('reduceMotion={!active||'),'inactive profile names stay static');
+}
+assert(stage.includes('reduceMotion numberOfLines={1} style={s.stripName}'));
+const ambient=read('profile/CelestialStandardEffects.tsx');
+assert(ambient.includes('outputRange:[0,Math.max(0,width-42),0]'),'ordinary celestial rail must return without a jump');
+console.log('Direct artwork, inactive scene cleanup and closed ordinary border motion passed.');

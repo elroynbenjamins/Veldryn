@@ -154,6 +154,8 @@ export interface GameState {
   /** Transient, server-injected authoritative Guild Skill bonuses for one
    * resolution. Not persisted; absent means no bonus (skills unreleased). */
   guildSkillEffects?:import('./guild-skill-effects').GuildSkillEffects;
+  /** Transient authoritative Frostfall guild milestone history. Never saved or trusted from client input. */
+  winterHearthBonusWindows?:import('./winter-hearth-bonus-windows').WinterHearthBonusWindow[];
   quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
   account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];gemPouch?:InventoryState;gemPouchMigrationDone?:boolean;craftedGearInstances?:CraftedGearInstance[];craftedGatheringToolInstances?:import('./gathering-tool-rolls').CraftedGatheringTool[];craftedGearAutoSellMode?:import('./crafted-gear-retention').CraftedGearAutoSellMode;forgeMastery1050Earned?:boolean;unlockedCharacterSlots?:number;earnedAfkRegionIds?:Array<'SUNSCAR'|'FROSTMARCH'|'ASHLANDS'>;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBackgroundId?:import('./guild-customization').GuildBackgroundId;guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   unlockedGuildCosmeticIds?:string[];

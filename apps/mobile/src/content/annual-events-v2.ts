@@ -103,12 +103,12 @@ export const FROSTFALL_EVENT:LiveEventDef={
   // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
   claimGraceDays:2,
   visualKey:'frostfall',
-  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Prepare a winter celebration across Asterfall',description:'Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.',highlights:['Personal winter festival milestones','Gift-and-aurora collectible chase','Aurora Hollow seasonal expedition']},
+  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Build your Guild Christmas Market',description:'Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.',highlights:['Guild Christmas Market construction','Two winter supply tracks and Guild milestones','Aurora Hollow seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Frostfall',
     dailyGiftTitle:'Today’s Frostfall Gift',
     cacheName:'Frostfall Cache',
-    communityName:'Winter Hearth',
+    communityName:'Winter Hearth · Guild Christmas Market',
     projectTitle:'Festival preparation',
     projectNoun:'festival focus',
     contractsTitle:'DAILY FROSTFALL CONTRACTS',
@@ -152,7 +152,9 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:4,limit:1},
     {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:10,limit:1},
     {id:'frostfall_background',reward:{kind:'background',id:'bg_frostfall',name:'Aurora Winter Sky',rarity:'epic'},currency:'common',cost:2200,limit:1},
-    {id:'frostfall_snowbell_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-snowbell',name:'2026 Snowbell Crest',rarity:'epic'},currency:'common',cost:1400,limit:1},
+    {id:'frostfall_snowbell_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-snowbell',name:'Frostfall Snowman',rarity:'epic'},currency:'common',cost:1400,limit:1},
+    {id:'frostfall_maiden_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-maiden',name:'Frostfall Maiden',rarity:'epic'},currency:'common',cost:1400,limit:1},
+    {id:'frostfall_adventurer_icon',reward:{kind:'profile_icon',id:'event:frostfall-2026-adventurer',name:'Frostfall Adventurer',rarity:'epic'},currency:'common',cost:1400,limit:1},
     {id:'frostmint_skill',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:skill',name:'Frostmint',rarity:'common',quantity:1},currency:'common',cost:250,limit:5},
     {id:'frostmint_battle',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:combat',name:'Frostmint · Battle',rarity:'common',quantity:1},currency:'common',cost:300,limit:5},
     {id:'frostmint_bond',reward:{kind:'candy',id:'EVT_ANNUAL_012_2026:candy:companion',name:'Frostmint · Bond',rarity:'common',quantity:1},currency:'common',cost:350,limit:5},
@@ -174,7 +176,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'winter_champions',name:'Winter Champions',description:'Challenge powerful threats before they reach the celebrations.',bonusLabel:'+20% boss Frostbell Tokens',dropMultipliers:{boss:1.2}},
   ],
   dailyGifts:[...gifts],
-  communityEnabled:true,
+  communityEnabled:false, // Superseded by the guild-only Winter Hearth market; shared event track stays disabled.
   communityGoal:100000,
   communityMilestones:[
     {percent:25,rewardCurrency:200,rewardPrestige:0},

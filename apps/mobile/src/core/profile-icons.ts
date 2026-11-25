@@ -14,6 +14,8 @@ export const EVENT_PROFILE_ICON_ARTWORK_IDS=new Set([
  'event:veilbreak-2026-lantern-warden',
  'event:veilbreak-2026-pumpkin-moon',
  'event:frostfall-2026-snowbell',
+ 'event:frostfall-2026-maiden',
+ 'event:frostfall-2026-adventurer',
 ]);
 
 export const PROFILE_ICON_CATALOG:readonly ProfileIconCatalogRow[] = [

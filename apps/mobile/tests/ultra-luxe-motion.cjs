@@ -77,7 +77,7 @@ const {SIGNATURE_CURVE_PHASE:cp,SIGNATURE_CURVE_ENERGY:ce,SIGNATURE_TITLE_OPACIT
 assert.equal(cp.length,21);assert.equal(cp.length,ce.length);
 for(let i=0;i<SIGNATURE_PHASE.length;i++){assert.equal(cp[i*4],SIGNATURE_PHASE[i]);assert.equal(ce[i*4],SIGNATURE_ENERGY[i]);}
 for(let i=1;i<cp.length;i++){assert(cp[i]>cp[i-1]);assert(ce[i]>=0&&ce[i]<=1);}
-for(const [curve,min,max] of [[to,.96,1],[bo,.92,1],[bs,1,1.06],[ps,1,1.03]]){
+for(const [curve,min,max] of [[to,.96,1],[bo,.92,1],[bs,1,1.09],[ps,1,1.04]]){
  assert.equal(curve.length,cp.length);assert.equal(curve[0],curve.at(-1));
  assert(curve.every(v=>v>=min-1e-10&&v<=max+1e-10));assert(Math.abs(curve[12]-max)<1e-10);
 }
@@ -110,3 +110,25 @@ for(const [name,theme] of [['CelestialSovereignPreview','celestial'],['DraconicD
  assert.equal((s.match(/Animated.loop\(/g)||[]).length,1,'one ambient native clock per preview');
 }
 console.log('Distinct awakening envelopes, early signature, smooth closed loop and bounded matching-pet lift passed.');
+
+const {PET_REACTION_TRAJECTORIES,PET_REACTION_GLOW}=mod.exports;
+for(const theme of ['celestial','draconic']){
+ const tracks=PET_REACTION_TRAJECTORIES[theme],cx=theme==='celestial'?279:266,cy=theme==='celestial'?99:108;
+ assert.equal(tracks.length,3);
+ for(const p of tracks){
+  for(const progress of [0,.25,.5,.75,1]){
+   const x=cx+p.x+p.dx*progress,y=cy+p.y+p.dy*progress;
+   assert(x-4>=234&&x+4<=330&&y-4>=24&&y+4<=175,'reaction must stay in pet-side artwork zone');
+  }
+ }
+ assert(PET_REACTION_GLOW[theme].opacity<=1&&PET_REACTION_GLOW[theme].scale<=1.4);
+}
+assert.notDeepEqual(PET_REACTION_TRAJECTORIES.celestial,PET_REACTION_TRAJECTORIES.draconic);
+assert(reaction.includes('PET_REACTION_TRAJECTORIES[theme]')&&reaction.includes('memo(UltraLuxePetReactionLayer)'));
+assert(reaction.includes('tracks.map((p,i)')&&!reaction.includes('Animated.loop('));
+const badgeSource=read('components/PlayerBadges.tsx');
+assert(badgeSource.includes('const badgeMotion=useMemo(')&&badgeSource.includes('opacity:halo'));
+assert(badgeSource.includes('width:artSize,height:artSize,alignItems:'));
+assert(fx.includes("theme==='celestial'?RAIL_PATH:[...RAIL_PATH].reverse()"));
+assert(fx.includes('Animated.multiply(pulse(clock,offset),.55),Animated.multiply(energy,.45)'));
+console.log('Identity geometry, distinct pet reactions and synchronized rail energy passed.');

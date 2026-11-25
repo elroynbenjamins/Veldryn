@@ -89,7 +89,7 @@ async function combatSwapOptimism(){
 
 async function socialBadgeParallelAndRecovery(){
  let latest,account='a',mode='first',reward=deferred(),applications=deferred(),started=[];
- const membership={account_id:'a',guild_id:'g',role:'leader'};
+ let membership={account_id:'a',guild_id:'g',role:'leader'};
  const {useSocialNotificationCounts}=load('src/online/useSocialNotificationCounts.ts',{
   'react-native':native,
   './AuthSessionProvider':{useAuthSession:()=>({session:account?{user:{id:account}}:null})},
@@ -98,9 +98,9 @@ async function socialBadgeParallelAndRecovery(){
    socialInvitations:async()=>{if(mode==='failure')throw Error('offline');return {guild:[1],party:[1,2]};},
    socialChatAttention:async()=>({guild:{unread:3,mentions:1},party:{unread:0,mentions:0}}),
    myGuild:async()=>{if(mode==='failure')throw Error('offline');return mode==='left'?null:membership;},
-   guildApplications:()=>{started.push('applications');return applications.promise;},
+   guildApplications:()=>{started.push('applications');return mode==='newGuildFailure'?Promise.reject(Error('offline')):applications.promise;},
   },
-  './guild-projects-v18':{claimableOnlineGuildProjectRewardCount:()=>{started.push('rewards');return reward.promise;}},
+  './guild-projects-v18':{claimableOnlineGuildProjectRewardCount:()=>{started.push('rewards');return mode==='newGuildFailure'?Promise.reject(Error('offline')):reward.promise;}},
  });
  function Harness(){latest=useSocialNotificationCounts();return null;}
  let renderer;
@@ -118,6 +118,10 @@ async function socialBadgeParallelAndRecovery(){
  assert.equal(latest.counts.guildApplications,3);
  assert.equal(latest.counts.friendRequests,2);
  assert.equal(latest.counts.partyInvites,2);
+ membership={...membership,guild_id:'g2'};mode='newGuildFailure';
+ await act(async()=>{await latest.refresh();});
+ assert.equal(latest.counts.guildProjectRewards,0,'A new guild cannot inherit the former guild reward count');
+ assert.equal(latest.counts.guildApplications,0);
  mode='left';
  await act(async()=>{await latest.refresh();});
  assert.equal(latest.counts.guildProjectRewards,0,'Confirmed non-membership clears guild-specific badges');

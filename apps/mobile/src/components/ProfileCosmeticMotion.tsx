@@ -1,9 +1,9 @@
 import {memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,AppState,Easing,Image,StyleSheet,View,type ImageSourcePropType,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
-import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds} from '../core/profile-frame-layout';
+import {profileFrameSegments,profileSceneFrameSegments,profileSceneGlowBounds,profileSceneArtworkGlowBounds} from '../core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,cosmeticViewportVisible,MOTION_STEPS as steps} from '../core/profile-cosmetic-motion-v2';
 import type {CosmeticArt} from '../theme/profile-cosmetic-art-v1';
-import type {ProfileCosmeticRuntime,ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
+import {usesArtworkGlowAnchors,type ProfileCosmeticRuntime,type ProfileParticleKind} from '../theme/profile-cosmetic-runtime-v1';
 const SW=768,SH=432;
 type Segment=ReturnType<typeof profileFrameSegments>[number];
 type Rect=readonly [number,number,number,number];
@@ -102,10 +102,15 @@ const ParticleShape=memo(function ParticleShape({kind,accent,soft,size}:{kind:Pr
 });
 export const ProceduralProfileBorderGlows=memo(function ProceduralProfileBorderGlows({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){
  const [size,setSize]=useState({width:0,height:0}),{clock,entryOpacity}=useClock(active&&!reduceMotion&&size.width>0&&size.height>0,12000);
- const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>({g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:profileSceneGlowBounds(size.width,size.height,g.x,g.y,Math.min(g.size,Math.max(4,size.width*.035)))})),[active,reduceMotion,clock,runtime,size.width,size.height]);
+ const artworkAnchors=usesArtworkGlowAnchors(runtime.motionProfile);
+ const glows=useMemo(()=>!active||!size.width||!size.height?[]:runtime.glows.map(g=>{
+  const diameter=Math.min(g.size,Math.max(4,size.width*.035));
+  return {g,opacity:reduceMotion?g.peakOpacity*.28:clock.interpolate({inputRange:steps,outputRange:steps.map(f=>cosmeticGlowOpacity(runtime.motionProfile,f,g.periodMs,g.phaseMs,g.peakOpacity))}),bounds:artworkAnchors?profileSceneArtworkGlowBounds(size.width,size.height,g.x,g.y,diameter):profileSceneGlowBounds(size.width,size.height,g.x,g.y,diameter)};
+ }),[active,reduceMotion,clock,runtime,size.width,size.height,artworkAnchors]);
+ const crystal=runtime.motionProfile==='gloamward'||runtime.motionProfile==='frostbound';
  if(!active)return null;
  return <Animated.View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,{zIndex:11,opacity:reduceMotion?1:entryOpacity}]} onLayout={({nativeEvent:{layout}})=>setSize(old=>old.width===layout.width&&old.height===layout.height?old:{width:layout.width,height:layout.height})}>
-  {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:99,backgroundColor:runtime.accent}}/></Animated.View>})}
+  {glows.map(({opacity,bounds},i)=>{if(!bounds)return null;const d=bounds.width;return <Animated.View key={i} style={{position:'absolute',left:bounds.x,top:bounds.y,width:d,height:d,borderRadius:99,opacity,backgroundColor:artworkAnchors?runtime.softAccent+'66':runtime.softAccent,alignItems:'center',justifyContent:'center'}}><View style={{width:d*.46,height:d*.46,borderRadius:crystal?1:99,backgroundColor:runtime.accent,transform:crystal?[{rotate:'45deg'}]:undefined}}/></Animated.View>})}
  </Animated.View>;
 });
 export const ProceduralProfileSceneEffect=memo(function ProceduralProfileSceneEffect({runtime,active,reduceMotion=false}:{runtime:ProfileCosmeticRuntime;active:boolean;reduceMotion?:boolean}){

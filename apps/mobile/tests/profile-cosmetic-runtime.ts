@@ -1,6 +1,6 @@
-import {profileSceneBorderZones,profileSceneGlowBounds} from '../src/core/profile-frame-layout';
+import {profileSceneBorderZones,profileSceneGlowBounds,profileSceneArtworkGlowBounds,profileFrameSegments} from '../src/core/profile-frame-layout';
 import {sampleCosmeticTrack,cosmeticGlowOpacity,periodicCosmeticPhase,cosmeticViewportVisible} from '../src/core/profile-cosmetic-motion-v2';
-import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect} from '../src/theme/profile-cosmetic-runtime-v1';
+import {PROFILE_COSMETIC_RUNTIME,profileCosmeticRuntimeByBorder,profileCosmeticRuntimeByEffect,usesArtworkGlowAnchors} from '../src/theme/profile-cosmetic-runtime-v1';
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
@@ -94,3 +94,59 @@ ok(motionSource.includes('if(!pieces.length)return []')&&motionSource.includes('
 const selfSource=fs.readFileSync('src/components/ProfileScenePreview.tsx','utf8');
 ok(publicSource.includes('runtimeFallbackBorderId??(review?reviewBorderId:renderBorderId)')&&selfSource.includes('borderRuntime?.fallbackBorderId??renderBorderId')&&stageSource.includes('borderRuntime?.fallbackBorderId??character.profileBorderId'),'fallback artwork uses its actual aperture calibration in all three scene renderers');
 console.log('PASS: cosmetic re-entry, memo boundaries, clipped compositing and fallback aperture contract');
+
+
+ // Standard animation visibility budget: no new moving nodes, bigger bounded sprites,
+ // stronger sustained glows and unchanged loop/viewport behavior.
+const oldPulsePowers={gloamward:4,frostbound:6,amberglass:2,briarbound:1} as const;
+for(const row of standard){
+ const oldPower=oldPulsePowers[row.motionProfile as keyof typeof oldPulsePowers];
+ equal(row.tracks.length,5,row.collection+' preserves particle count');
+ equal(row.glows.length,8,row.collection+' preserves border light count');
+ ok(row.tracks.every(t=>t.opacity>=.35&&t.opacity<=.78&&t.maxDp<=18),row.collection+' keeps authored particle opacity and size bounded');
+ for(const g of row.glows){
+  equal(g.peakOpacity,.86,row.collection+' has brighter border accents');
+  let before=0,after=0;
+  for(let i=0;i<=120;i++){
+   const clock=i/120;
+   const phase=periodicCosmeticPhase(clock,12000/g.periodMs,g.phaseMs/g.periodMs);
+   before+=.72*(Math.sin(Math.PI*phase)**2)**oldPower;
+   const value=cosmeticGlowOpacity(row.motionProfile,clock,g.periodMs,g.phaseMs,g.peakOpacity);
+   ok(value>=0&&value<=g.peakOpacity,row.collection+' glow remains bounded');
+   after+=value;
+  }
+  ok(after>before*1.15,row.collection+' increases average glow visibility');
+ }
+ for(const t of row.tracks){
+  for(const [w,h] of [[104,72],[260,174],[340,205],[480,270]]){
+   for(let i=0;i<=120;i++){
+    const p=sampleCosmeticTrack(t,i/120,w,h);
+    ok(p.x>=-1e-6&&p.y>=-1e-6&&p.x+p.width<=w+1e-6&&p.y+p.height<=h+1e-6,row.collection+' larger particles stay inside scene');
+   }
+  }
+ }
+}
+console.log('PASS: standard cosmetic visibility improves without adding animation nodes or exceeding scene bounds');
+
+ // Each authored ornament maps through the actual responsive frame segments.
+for(const row of PROFILE_COSMETIC_RUNTIME){
+ equal(usesArtworkGlowAnchors(row.motionProfile),standard.includes(row),row.collection+' keeps premium anchor behavior unchanged');
+ if(!usesArtworkGlowAnchors(row.motionProfile))continue;
+ for(const [w,h] of [[104,72],[260,174],[340,205],[480,270],[640,360]]){
+  const zones=profileSceneBorderZones(w,h);
+  for(const g of row.glows){
+   const d=Math.min(g.size,Math.max(4,w*.035));
+   const box=profileSceneArtworkGlowBounds(w,h,g.x,g.y,d);
+   ok(box,row.collection+' ornament maps to a frame segment');
+   if(!box)continue;
+   ok(zones.some(z=>box.x>=z.x-.001&&box.y>=z.y-.001&&box.x+box.width<=z.x+z.width+.001&&box.y+box.height<=z.y+z.height+.001),row.collection+' mapped ornament stays in perimeter');
+   const p=profileFrameSegments(w,h).find(s=>{const x=g.x*s.imageWidth+s.imageLeft,y=g.y*s.imageHeight+s.imageTop;return x>=-1e-6&&y>=-1e-6&&x<=s.width+1e-6&&y<=s.height+1e-6});
+   if(!p)fail(row.collection+' ornament has no source segment');
+   const expected=profileSceneGlowBounds(w,h,(p.x+g.x*p.imageWidth+p.imageLeft)/w,(p.y+g.y*p.imageHeight+p.imageTop)/h,d);
+   ok(expected&&(['x','y','width','height'] as const).every(key=>Math.abs(box[key]-expected[key])<1e-6),row.collection+' glow follows the same artwork transform');
+  }
+ }
+}
+equal(profileSceneArtworkGlowBounds(340,205,.5,.5,8),null,'transparent interior cannot host border glows');
+equal(profileSceneArtworkGlowBounds(340,205,-.1,.1,8),null,'out-of-source coordinates rejected');
+console.log('PASS: standard frame ornament anchors follow responsive art and preserve safe clipping');

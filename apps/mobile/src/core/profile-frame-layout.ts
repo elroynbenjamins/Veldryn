@@ -89,3 +89,18 @@ export function profileSceneGlowBounds(width:number,height:number,x:number,y:num
  }
  return best;
 }
+
+/** Map authored 16:9 artwork coordinates through the same segmented transform
+ * as the actual frame, then enforce the shared safe perimeter envelope. */
+export function profileSceneArtworkGlowBounds(width:number,height:number,x:number,y:number,diameter:number,sourceAspect=16/9){
+ if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||x>1||y<0||y>1)return null;
+ const segments=profileFrameSegments(width,height,sourceAspect);
+ for(const p of segments){
+  const dx=x*p.imageWidth+p.imageLeft,dy=y*p.imageHeight+p.imageTop;
+  if(dx>=-1e-6&&dy>=-1e-6&&dx<=p.width+1e-6&&dy<=p.height+1e-6){
+   return profileSceneGlowBounds(width,height,(p.x+dx)/width,(p.y+dy)/height,diameter);
+  }
+ }
+ // The artwork point is in its transparent interior, not on a frame segment.
+ return null;
+}

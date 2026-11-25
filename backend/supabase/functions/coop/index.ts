@@ -49773,6 +49773,8 @@ var gatherDefs2 = [...GATHERING, ...HERB_NODES];
 
 // ../apps/mobile/src/core/game-commands.ts
 init_meal_buffs();
+var TOOL_INSTANCE_ID_MAX = 200;
+var INVENTORY_SELECTION_ID_MAX = TOOL_INSTANCE_ID_MAX + "copy:".length;
 
 // online/gameplay.ts
 init_progression();

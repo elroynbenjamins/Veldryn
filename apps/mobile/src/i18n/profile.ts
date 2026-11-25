@@ -7,6 +7,8 @@ import {createTranslator} from './translator';
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
 export const profileTranslationRows = {
+  "Quick set equip": ["Set schnell anlegen","Equipar conjunto rápido","Set snel uitrusten","Equipaggia set rapido","Équipement rapide d’ensemble"],
+  "Equip owned matching pieces on this character. Badges stay unchanged.": ["Lege passende freigeschaltete Teile für diesen Charakter an. Abzeichen bleiben unverändert.","Equipa las piezas del conjunto que posees en este personaje. Las insignias no cambian.","Rust passende ontgrendelde onderdelen uit op dit personage. Badges blijven ongewijzigd.","Equipaggia i pezzi abbinati posseduti su questo personaggio. I distintivi restano invariati.","Équipez les pièces assorties possédées sur ce personnage. Les insignes restent inchangés."],
   "Account-wide": ["Kontoweit","Para toda la cuenta","Accountbreed","Per tutto l'account","À l’échelle du compte"],
   "Your account character class.": ["Klasse eines deiner Charaktere.","Clase de un personaje de tu cuenta.","Klasse van een personage op je account.","Classe di un personaggio del tuo account.","Classe d’un personnage de votre compte."],
   "Ascendant name styles": ["Aszendenten-Namensstile","Estilos de nombre ascendentes","Ascendant-naamstijlen","Stili del nome Ascendente","Styles de nom Ascendant"],

@@ -42951,7 +42951,14 @@ var BASE_ITEMS = [
   // Retired quest item: preserve only to read historical saved inventories safely; never drop or grant.
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [
+  ...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }),
+  ...GUILD_COMPONENT_ITEMS,
+  ...CROSS_PROFESSION_COMPONENT_ITEMS,
+  ...EQUIPMENT_ITEMS_V33,
+  // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
+  { id: "FROSTFALL_CHRISTMAS_LIGHTS_2026", name: "Christmas Lights", type: "material", value: 0, rarity: "rare", passive: "Seasonal lights donated to your guild Winter Hearth Christmas Market." }
+];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -43460,6 +43467,31 @@ var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...CROSS_PROFESSION_COMPONENT_RECIPES,
   ...ALCHEMY_RECIPES,
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "smithing",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "COPPER_ORE", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "tailoring",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "MOSS_FIBER", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
   // compatibility. Presentation layers apply their release gate separately.
@@ -43809,12 +43841,12 @@ var FROSTFALL_EVENT2 = {
   // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
   claimGraceDays: 2,
   visualKey: "frostfall",
-  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Prepare a winter celebration across Asterfall", description: "Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.", highlights: ["Personal winter festival milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build your Guild Christmas Market", description: "Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.", highlights: ["Guild Christmas Market construction", "Two winter supply tracks and Guild milestones", "Aurora Hollow seasonal expedition"] },
   ui: {
     prepareTitle: "Prepare for Frostfall",
     dailyGiftTitle: "Today\u2019s Frostfall Gift",
     cacheName: "Frostfall Cache",
-    communityName: "Winter Hearth",
+    communityName: "Winter Hearth \xB7 Guild Christmas Market",
     projectTitle: "Festival preparation",
     projectNoun: "festival focus",
     contractsTitle: "DAILY FROSTFALL CONTRACTS",
@@ -43858,7 +43890,9 @@ var FROSTFALL_EVENT2 = {
     { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
     { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
     { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
-    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "Frostfall Snowman", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_maiden_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-maiden", name: "Frostfall Maiden", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_adventurer_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-adventurer", name: "Frostfall Adventurer", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
     { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
     { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
     { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
@@ -43883,7 +43917,8 @@ var FROSTFALL_EVENT2 = {
     { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
   ],
   dailyGifts: [...gifts2],
-  communityEnabled: true,
+  communityEnabled: false,
+  // Superseded by the guild-only Winter Hearth market; shared event track stays disabled.
   communityGoal: 1e5,
   communityMilestones: [
     { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
@@ -45614,6 +45649,17 @@ function promotedEventCurrency(eventId, quantity, earnedAtMs) {
 
 // ../apps/mobile/src/core/live-events.ts
 init_faith2();
+
+// ../apps/mobile/src/core/winter-hearth-2026.ts
+var WINTER_HEARTH_2026_START_MS = Date.parse("2026-12-03T00:00:00.000Z");
+var WINTER_HEARTH_2026_END_MS = Date.parse("2026-12-27T00:00:00.000Z");
+
+// ../apps/mobile/src/core/winter-hearth-bonus-windows.ts
+var ZERO = Object.freeze({
+  gatheringSpeedBps: 0,
+  skillXpBps: 0,
+  combatXpBps: 0
+});
 
 // ../apps/mobile/src/content/event-collectible-content-active.ts
 var FROSTFALL_PETS = [

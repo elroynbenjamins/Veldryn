@@ -356,6 +356,7 @@ function canUsePrivateTitleText(state, title2) {
 // ../apps/mobile/src/core/release-flags.ts
 var EVENTS_RELEASED = true;
 var FROSTFALL_REWARDS_RELEASED = false;
+var WINTER_HEARTH_GUILD_RELEASED = true;
 var EVENT_COMMUNITY_ENABLED = false;
 var DUNGEON_MARKS_SHOP_RELEASED = false;
 var EQUIPMENT_RESALE_UPLIFT_RELEASED = false;
@@ -42645,6 +42646,31 @@ var RECIPES = [
   ...GUILD_COMPONENT_CRAFTING_RELEASED ? GUILD_COMPONENT_RECIPES : [],
   ...CROSS_PROFESSION_COMPONENT_RECIPES,
   ...ALCHEMY_RECIPES,
+  // Seasonal definitions stay parseable across event closure; recipe browsers hide them until the server runtime is live.
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "smithing",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "COPPER_ORE", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
+  {
+    id: "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026",
+    name: "Craft Christmas Lights \xD75",
+    skillId: "tailoring",
+    level: 4,
+    xp: 35,
+    gold: 30,
+    seconds: 40,
+    repeatableTraining: true,
+    inputs: [{ itemId: "MOSS_FIBER", quantity: 8 }, { itemId: "DEWLEAF", quantity: 4 }, { itemId: "WISP_DUST", quantity: 1 }],
+    output: { itemId: "FROSTFALL_CHRISTMAS_LIGHTS_2026", quantity: 5 }
+  },
   ...NOVICE_RECIPES,
   // Keep the full catalog authoritative for crafting, progression, and save
   // compatibility. Presentation layers apply their release gate separately.
@@ -43629,12 +43655,12 @@ var FROSTFALL_EVENT2 = {
   // Dec 27–28, 2026 is claim-only; the published server grace timestamp remains authoritative.
   claimGraceDays: 2,
   visualKey: "frostfall",
-  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Prepare a winter celebration across Asterfall", description: "Frostfall combines a personal gift-and-collection chase with winter-themed activities. Earn Frostbell Tokens for your own collection and explore the Aurora Hollow expedition.", highlights: ["Personal winter festival milestones", "Gift-and-aurora collectible chase", "Aurora Hollow seasonal expedition"] },
+  signature: { kind: "community", label: "SIGNATURE \xB7 WINTER HEARTH", title: "Build your Guild Christmas Market", description: "Work together in your Guild to donate 25,000 logs and 2,500 Christmas Lights, unlock temporary winter bonuses, and earn permanent Frostfall 2026 Guild cosmetics. Personal festival rewards and Aurora Hollow remain separate.", highlights: ["Guild Christmas Market construction", "Two winter supply tracks and Guild milestones", "Aurora Hollow seasonal expedition"] },
   ui: {
     prepareTitle: "Prepare for Frostfall",
     dailyGiftTitle: "Today\u2019s Frostfall Gift",
     cacheName: "Frostfall Cache",
-    communityName: "Winter Hearth",
+    communityName: "Winter Hearth \xB7 Guild Christmas Market",
     projectTitle: "Festival preparation",
     projectNoun: "festival focus",
     contractsTitle: "DAILY FROSTFALL CONTRACTS",
@@ -43678,7 +43704,9 @@ var FROSTFALL_EVENT2 = {
     { id: "aurora_walker_title", reward: { kind: "title", id: "title_aurora_walker", name: "Aurora Walker", rarity: "epic" }, currency: "prestige", cost: 4, limit: 1 },
     { id: "frostfall_aurora_fox", reward: { kind: "pet", id: "EVT_PET_017", name: "Aurora Fox", rarity: "mythic" }, currency: "prestige", cost: 10, limit: 1 },
     { id: "frostfall_background", reward: { kind: "background", id: "bg_frostfall", name: "Aurora Winter Sky", rarity: "epic" }, currency: "common", cost: 2200, limit: 1 },
-    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "2026 Snowbell Crest", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_snowbell_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-snowbell", name: "Frostfall Snowman", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_maiden_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-maiden", name: "Frostfall Maiden", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
+    { id: "frostfall_adventurer_icon", reward: { kind: "profile_icon", id: "event:frostfall-2026-adventurer", name: "Frostfall Adventurer", rarity: "epic" }, currency: "common", cost: 1400, limit: 1 },
     { id: "frostmint_skill", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:skill", name: "Frostmint", rarity: "common", quantity: 1 }, currency: "common", cost: 250, limit: 5 },
     { id: "frostmint_battle", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:combat", name: "Frostmint \xB7 Battle", rarity: "common", quantity: 1 }, currency: "common", cost: 300, limit: 5 },
     { id: "frostmint_bond", reward: { kind: "candy", id: "EVT_ANNUAL_012_2026:candy:companion", name: "Frostmint \xB7 Bond", rarity: "common", quantity: 1 }, currency: "common", cost: 350, limit: 5 },
@@ -43703,7 +43731,8 @@ var FROSTFALL_EVENT2 = {
     { id: "winter_champions", name: "Winter Champions", description: "Challenge powerful threats before they reach the celebrations.", bonusLabel: "+20% boss Frostbell Tokens", dropMultipliers: { boss: 1.2 } }
   ],
   dailyGifts: [...gifts2],
-  communityEnabled: true,
+  communityEnabled: false,
+  // Superseded by the guild-only Winter Hearth market; shared event track stays disabled.
   communityGoal: 1e5,
   communityMilestones: [
     { percent: 25, rewardCurrency: 200, rewardPrestige: 0 },
@@ -44418,7 +44447,14 @@ var BASE_ITEMS = [
   // Retired quest item: preserve only to read historical saved inventories safely; never drop or grant.
   { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
 ];
-var ITEMS = [...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }), ...GUILD_COMPONENT_ITEMS, ...CROSS_PROFESSION_COMPONENT_ITEMS, ...EQUIPMENT_ITEMS_V33];
+var ITEMS = [
+  ...BASE_ITEMS.map((item) => item.requiredLevel === void 0 ? item : { ...item, requiredLevel: rebasedCombatLevelFromLegacyLevel(item.requiredLevel) }),
+  ...GUILD_COMPONENT_ITEMS,
+  ...CROSS_PROFESSION_COMPONENT_ITEMS,
+  ...EQUIPMENT_ITEMS_V33,
+  // Keep the seasonal item definition available for save/settlement compatibility; presentation and writes are server-window gated.
+  { id: "FROSTFALL_CHRISTMAS_LIGHTS_2026", name: "Christmas Lights", type: "material", value: 0, rarity: "rare", passive: "Seasonal lights donated to your guild Winter Hearth Christmas Market." }
+];
 var itemsById = new Map(ITEMS.map((item) => [item.id, item]));
 if (itemsById.size !== ITEMS.length) throw new Error("Duplicate item IDs in the item catalog");
 function itemDef(id) {
@@ -49013,6 +49049,124 @@ function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
   return { ...rewarded, account: { ...rewarded.account, eventCommunityClaimIds: [...rewarded.account.eventCommunityClaimIds ?? [], `${event.definition.id}:${percent}`].slice(-80) } };
 }
 
+// ../apps/mobile/src/core/winter-hearth-2026.ts
+var WINTER_HEARTH_2026_ID = "EVT_ANNUAL_012_2026";
+var WINTER_HEARTH_2026_START_MS = Date.parse("2026-12-03T00:00:00.000Z");
+var WINTER_HEARTH_2026_END_MS = Date.parse("2026-12-27T00:00:00.000Z");
+var WINTER_HEARTH_LIGHT_RECIPE_IDS = ["CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_2026", "CRAFT_FROSTFALL_CHRISTMAS_LIGHTS_TAILORING_2026"];
+function isWinterHearthLightRecipe(id) {
+  return WINTER_HEARTH_LIGHT_RECIPE_IDS.some((recipe2) => recipe2 === id);
+}
+function winterHearthContentVisible(state) {
+  const event = state.account.liveEvent;
+  return WINTER_HEARTH_GUILD_RELEASED && event?.enabled === true && event.eventId === WINTER_HEARTH_2026_ID;
+}
+function winterHearthLightRecipeAvailable(state, nowMs) {
+  const event = state.account.liveEvent;
+  if (!event || !winterHearthContentVisible(state)) return false;
+  return Number.isFinite(nowMs) && nowMs >= Math.max(event.startsAtMs, WINTER_HEARTH_2026_START_MS) && nowMs < Math.min(event.endsAtMs, WINTER_HEARTH_2026_END_MS);
+}
+function winterHearthCraftSettlementWindow(input) {
+  const { lastClaimAtMs, nowMs, offlineCapSeconds: offlineCapSeconds2, savedEndMs, runtimeEndMs, released } = input;
+  const endsAtMs = Math.min(WINTER_HEARTH_2026_END_MS, Number.isFinite(savedEndMs) ? savedEndMs : Infinity, Number.isFinite(runtimeEndMs) ? runtimeEndMs : Infinity);
+  const expired = !released || nowMs >= endsAtMs;
+  const settledAtMs = !released ? lastClaimAtMs : Math.max(lastClaimAtMs, Math.min(nowMs, endsAtMs - 1));
+  return { expired, elapsedSeconds: Math.max(0, Math.min(offlineCapSeconds2, (settledAtMs - lastClaimAtMs) / 1e3)) };
+}
+
+// ../apps/mobile/src/core/winter-hearth-bonus-windows.ts
+var ZERO = Object.freeze({
+  gatheringSpeedBps: 0,
+  skillXpBps: 0,
+  combatXpBps: 0
+});
+var EXACT = {
+  25: { gatheringSpeedBps: 400, skillXpBps: 0, combatXpBps: 0 },
+  50: { gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 0 },
+  75: { gatheringSpeedBps: 400, skillXpBps: 600, combatXpBps: 600 },
+  100: { gatheringSpeedBps: 1e3, skillXpBps: 1e3, combatXpBps: 1e3 }
+};
+function validateWinterHearthBonusWindows(value) {
+  if (!Array.isArray(value) || value.length > 4) throw new Error("Invalid Winter Hearth bonus projection.");
+  const seen = /* @__PURE__ */ new Set(), out = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") throw new Error("Invalid Winter Hearth bonus window.");
+    const row = item;
+    const percent = Number(row.percent), expected = EXACT[percent];
+    if (!expected || seen.has(percent) || typeof row.startsAt !== "string" || typeof row.endsAt !== "string" || !Number.isFinite(Date.parse(row.startsAt)) || !Number.isFinite(Date.parse(row.endsAt)) || Date.parse(row.startsAt) < Date.parse("2026-12-03T00:00:00Z") || Date.parse(row.endsAt) > Date.parse("2026-12-27T00:00:00Z") || Date.parse(row.startsAt) >= Date.parse(row.endsAt) || row.gatheringSpeedBps !== expected.gatheringSpeedBps || row.skillXpBps !== expected.skillXpBps || row.combatXpBps !== expected.combatXpBps)
+      throw new Error("Untrusted Winter Hearth milestone effect.");
+    seen.add(percent);
+    out.push({
+      percent,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      ...expected
+    });
+  }
+  return out.sort((a, b) => a.percent - b.percent);
+}
+function winterHearthBonusesAt(windows, atMs) {
+  if (!Number.isFinite(atMs)) return ZERO;
+  let result = ZERO, stage = 0;
+  for (const window of windows) {
+    if (atMs >= Date.parse(window.startsAt) && atMs < Date.parse(window.endsAt) && window.percent > stage) {
+      stage = window.percent;
+      result = EXACT[stage] ?? ZERO;
+    }
+  }
+  return result;
+}
+function winterHearthXpFactorForActionTimes(windows, times, kind) {
+  if (times.length === 0) return 1;
+  let sum = 0;
+  for (const at of times) {
+    const bonus = winterHearthBonusesAt(windows, at);
+    sum += kind === "skill" ? bonus.skillXpBps : bonus.combatXpBps;
+  }
+  return 1 + sum / (times.length * 1e4);
+}
+function winterHearthGatheringTimeline(input, windows) {
+  if (!windows.length) return combatTimeline({
+    ...input,
+    preparationEncounters: 0,
+    preparedCycleSeconds: input.cycleSeconds
+  });
+  const end = input.startsAtMs + Math.max(0, input.elapsedSeconds) * 1e3;
+  const points = [input.startsAtMs, end];
+  const add = (point) => {
+    if (Number.isFinite(point) && point > input.startsAtMs && point < end) points.push(point);
+  };
+  for (const win of windows) {
+    add(Date.parse(win.startsAt));
+    add(Date.parse(win.endsAt));
+  }
+  if (input.candy) {
+    add(input.candy.startsAtMs);
+    add(input.candy.endsAtMs);
+  }
+  const boundaries = [...new Set(points)].sort((a, b) => a - b);
+  let progress = Math.max(0, Math.min(0.999999999, input.progressFraction));
+  const encounters = [];
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const start = boundaries[i], stop = boundaries[i + 1];
+    if (stop <= start) continue;
+    const bps = winterHearthBonusesAt(windows, start).gatheringSpeedBps;
+    const candy = !!input.candy && start >= input.candy.startsAtMs && start < input.candy.endsAtMs;
+    const effectiveCycle = input.cycleSeconds / (1 + bps / 1e4) / (candy ? 1.1 : 1);
+    const part = combatTimeline({
+      startsAtMs: start,
+      elapsedSeconds: (stop - start) / 1e3,
+      progressFraction: progress,
+      preparationEncounters: 0,
+      cycleSeconds: effectiveCycle,
+      preparedCycleSeconds: effectiveCycle
+    });
+    encounters.push(...part.encounters.map((row) => ({ ...row, candy })));
+    progress = part.nextProgressFraction;
+  }
+  return { encounters, nextProgressFraction: progress, segments: [] };
+}
+
 // ../apps/mobile/src/content/event-collectible-content-active.ts
 var FROSTFALL_PETS = [
   { id: "EVT_PET_015", kind: "pet", name: "Snowbell Pup", bonusFamilyId: "EVT_PET_015", target: "fishingSpeed", ownedBps: 50, activeBps: 200, collectionGroup: "event", source: "Frostfall Festival \xB7 December", event: "frostfall_festival", rarity: "Common", buff: "+2% Fishing Speed", description: "A fluffy winter pup with a bell collar and scarf." },
@@ -50273,6 +50427,7 @@ function processingAvailability(state, recipeId, batches = 1, allowActivityRepla
 }
 function startProcessingBatch(state, recipeId, batches, nowMs) {
   if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("Invalid processing time.");
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(state, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   const status = processingAvailability(state, recipeId, batches);
   if (!status.ready) throw new Error(status.reason);
   const recipe2 = status.recipe;
@@ -50293,7 +50448,8 @@ function startProcessingBatch(state, recipeId, batches, nowMs) {
     goldPerBatch: recipe2.gold,
     outputPerBatch: { ...recipe2.output },
     cycleSeconds: pace.cycleSeconds,
-    xpPerBatch: pace.xpPerAction
+    xpPerBatch: pace.xpPerAction,
+    ...isWinterHearthLightRecipe(recipe2.id) ? { seasonEndsAtMs: Math.min(WINTER_HEARTH_2026_END_MS, state.account.liveEvent.endsAtMs) } : {}
   };
   return {
     ...state,
@@ -52840,7 +52996,9 @@ function ownedUltraLuxeIcons(state) {
 var EVENT_PROFILE_ICON_ARTWORK_IDS = /* @__PURE__ */ new Set([
   "event:veilbreak-2026-lantern-warden",
   "event:veilbreak-2026-pumpkin-moon",
-  "event:frostfall-2026-snowbell"
+  "event:frostfall-2026-snowbell",
+  "event:frostfall-2026-maiden",
+  "event:frostfall-2026-adventurer"
 ]);
 var PROFILE_ICON_CATALOG = [
   { id: "starter:hooded-ranger", name: "Hooded Ranger", group: "Starter", source: "Available from the start." },
@@ -54546,6 +54704,7 @@ function beginAlchemyBatch(state, recipeId, nowMs, batches) {
 }
 function beginProcessingBatch(state, recipeId, nowMs, batches) {
   const ready = finishClassDrills(state, nowMs);
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(ready, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   if (batches === void 0) return startProcessingUntilLimited(ready, recipeId, nowMs, offlineCapSeconds(ready));
   const capacity = processingRunCapacity(ready, recipeId, offlineCapSeconds(ready));
   if (!Number.isSafeInteger(batches) || batches < 1 || batches > capacity.availableBatches) throw new Error("Selected processing count exceeds available materials, Gold or AFK time.");
@@ -55195,11 +55354,14 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
       const actions2 = Math.floor(totalSeconds / routeSeconds);
       const nextProgressFraction = actions2 > 0 ? totalSeconds % routeSeconds / routeSeconds : totalSeconds / routeSeconds;
       let boostedActions = 0;
+      const actionTimes = [];
       for (let i = 1; i <= actions2; i++) {
         const at = state.activity.lastClaimAtMs + (i * routeSeconds - bankedSeconds) * 1e3;
+        actionTimes.push(at);
         if (candy && at > candy.startsAtMs && at <= candy.endsAtMs) boostedActions++;
       }
-      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
+      const winterXp = WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], actionTimes, "skill") : 1;
+      return { xp: Math.floor((actions2 + 0.1 * boostedActions) * route.xp * characterPermanentMultipliers(state).skillXpMultiplier * winterXp), gold: 0, items: [], kills: actions2, elapsedSeconds: elapsed, nextProgressFraction, explorationDiscoveries: actions2 && route.unlockMonsterId ? [route.unlockMonsterId] : [] };
     }
     const g = [...GATHERING, ...HERB_NODES].find((x) => x.id === state.activity.targetId);
     if (!g) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
@@ -55209,7 +55371,21 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const specialtySpeed = g.skillId === "fishing" ? multipliers.fishingSpeedMultiplier : g.skillId === "herbalism" ? multipliers.herbalismSpeedMultiplier : 1;
     const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (multipliers.gatheringSpeedMultiplier * specialtySpeed * mastery2.speed * affinity.speedMultiplier * dailySupplySpeedMultiplier(state, "gathering_speed", elapsed));
     const elapsedMs = Math.min(offlineCapSeconds(state) * 1e3, Math.max(0, effectiveNowMs - state.activity.lastClaimAtMs));
-    const timeline = combatTimeline({ startsAtMs: state.activity.lastClaimAtMs, elapsedSeconds: elapsedMs / 1e3, progressFraction: state.activity.progressFraction ?? 0, preparationEncounters: 0, cycleSeconds: effectiveActionSeconds, preparedCycleSeconds: effectiveActionSeconds, candy: eventCandyWindow(state, "skill") });
+    const timeline = WINTER_HEARTH_GUILD_RELEASED && state.winterHearthBonusWindows?.length ? winterHearthGatheringTimeline({
+      startsAtMs: state.activity.lastClaimAtMs,
+      elapsedSeconds: elapsedMs / 1e3,
+      progressFraction: state.activity.progressFraction ?? 0,
+      cycleSeconds: effectiveActionSeconds,
+      candy: eventCandyWindow(state, "skill")
+    }, state.winterHearthBonusWindows) : combatTimeline({
+      startsAtMs: state.activity.lastClaimAtMs,
+      elapsedSeconds: elapsedMs / 1e3,
+      progressFraction: state.activity.progressFraction ?? 0,
+      preparationEncounters: 0,
+      cycleSeconds: effectiveActionSeconds,
+      preparedCycleSeconds: effectiveActionSeconds,
+      candy: eventCandyWindow(state, "skill")
+    });
     const actions = timeline.encounters.length, candyActions = timeline.encounters.filter((row) => row.candy).length;
     const candyXpMultiplier = actions ? 1 + 0.1 * candyActions / actions : 1;
     const seed = `${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
@@ -55219,7 +55395,7 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const quantity2 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
     const xpKey = affinityXpRemainderKey(state.character.id, g.skillId);
-    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier * gatheringToolSkillXpMultiplier(state, g.skillId), state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
+    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier * candyXpMultiplier * gatheringToolSkillXpMultiplier(state, g.skillId) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], timeline.encounters.map((row) => row.atMs), "skill") : 1), state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
     const xp = gain.xp;
     const items2 = quantity2 ? [{ itemId: g.itemId, quantity: quantity2 }] : [];
     if (g.skillId === "mining") {
@@ -55278,7 +55454,8 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   }
   const combatXpScale = characterCombatXpScale(m.level, m.boss);
   const rewardItems = items, champion = championBonus(Math.floor(m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
-  const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
+  const winterCombatXp = WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], sim.completed.map((row) => row.atMs), "combat") : 1;
+  const baseXpPerKill = m.xp * combatXpScale * effect2.xpMultiplier * multipliers.characterXpMultiplier * combatCandy * winterCombatXp, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier, sessionKills = state.activity.sessionKills ?? 0;
   const xpFractionKey = "combat:base-xp-fraction", goldFractionKey = "combat:base-gold-fraction";
   const storedFraction = (key) => {
     const value = state.rewardRemainders?.[key];
@@ -55394,6 +55571,17 @@ function idleRuleSettlementWindow(state, nowMs) {
   }
   return { settleAtMs, shouldStop: true, safety: final.evaluation.safety, combatRecovery: final.combatRecovery, reason: final.evaluation.reason ?? "Configured Idle Rule target reached." };
 }
+function processingSettlementWindow(state, nowMs) {
+  const activity = state.activity, processing = activity.processing;
+  if (!isWinterHearthLightRecipe(processing.recipeId)) return { expired: false, elapsedSeconds: Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - activity.lastClaimAtMs) / 1e3)) };
+  const runtime = state.account.liveEvent;
+  return winterHearthCraftSettlementWindow({ lastClaimAtMs: activity.lastClaimAtMs, nowMs, offlineCapSeconds: offlineCapSeconds(state), savedEndMs: processing.seasonEndsAtMs, runtimeEndMs: runtime?.eventId === WINTER_HEARTH_2026_ID ? runtime.endsAtMs : void 0, released: WINTER_HEARTH_GUILD_RELEASED });
+}
+function processingTimedPreview(state, nowMs) {
+  const window = processingSettlementWindow(state, nowMs), elapsed = window.elapsedSeconds;
+  const raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed);
+  return { window, raw: { ...raw2, xp: Math.floor((raw2.xp ?? 0) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], raw2.craftingCompletedAtMs ?? [], "skill") : 1)), ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) } };
+}
 function previewActivityReward(state, nowMs) {
   if (state.character?.classTraining) return settleClassDrills(state, nowMs, offlineCapSeconds(state)).reward;
   if (state.activity?.kind === "faith") {
@@ -55405,9 +55593,9 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (state.activity?.kind === "processing") {
-    const source = state.activity;
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), base = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) };
-    return previewDailySupplyTimedReward(state, base, "crafting").reward;
+    const { window, raw: raw2 } = processingTimedPreview(state, nowMs);
+    const reward4 = previewDailySupplyTimedReward(state, raw2, "crafting").reward;
+    return window.expired ? { ...reward4, stoppedReason: "Winter Hearth crafting ended. Unfinished reservations are refunded." } : reward4;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
   const idleWindow = idleRuleSettlementWindow(state, nowMs), reward3 = previewStandardActivityRewardWithSupplies(state, idleWindow.settleAtMs).reward;
@@ -55574,7 +55762,7 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "alchemy") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewAlchemyReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, xp: Math.floor((raw2.xp ?? 0) * (WINTER_HEARTH_GUILD_RELEASED ? winterHearthXpFactorForActionTimes(state.winterHearthBonusWindows ?? [], raw2.craftingCompletedAtMs ?? [], "skill") : 1)), ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, brew = state.activity.brew;
     const routed2 = routeRewards(state, reward4.items, nowMs);
     const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward4.xp ?? 0))) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, brew: { ...brew, remainingBatches: reward4.nextBrewRemaining } } : null };
@@ -55587,16 +55775,17 @@ function claimActivitySegmentRaw(state, nowMs) {
   if (state.activity?.kind === "processing") {
     const source = state.activity;
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), raw2 = dailySupplyAdjustTimedCraftReward(state, previewProcessingReward(state, dailySupplyCraftWorkSeconds(state, elapsed)), elapsed), baseReward = { ...raw2, ...timedEventRewards(state, "crafting", raw2.craftingCompletedAtMs ?? []) }, boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward4 = boost.reward, processing = state.activity.processing;
-    const routed2 = routeRewards(state, reward4.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
+    const { window, raw: raw2 } = processingTimedPreview(state, nowMs), boost = previewDailySupplyTimedReward(state, raw2, "crafting"), reward4 = window.expired ? { ...boost.reward, stoppedReason: "Winter Hearth crafting ended. Unfinished reservations are refunded." } : boost.reward, processing = state.activity.processing;
+    const unfinished = reward4.nextProcessingRemaining ?? 0, refund = window.expired && unfinished > 0 ? processingRefund({ ...processing, remainingBatches: unfinished }) : null;
+    const routed2 = routeRewards(state, [...reward4.items, ...refund?.items ?? []], nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward4.xp ?? 0);
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
-    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward4.nextRewardRemainders, activity: reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
+    const nextBase2 = { ...state, ...routed2, skills: skills2, ...refund && state.character ? { character: { ...state.character, gold: state.character.gold + refund.gold } } : {}, rewardRemainders: reward4.nextRewardRemainders, activity: !window.expired && reward4.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward4.nextProgressFraction, processing: { ...processing, remainingBatches: reward4.nextProcessingRemaining } } : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward4.craftingActions ?? 0;
     let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, skillId: processing.skillId, startedAtMs: state.activity.lastClaimAtMs }], reward4, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
     progressed2 = applyEventDiscoveries(applyEventDrops(progressed2, reward4.eventDrops ?? []), reward4.eventDiscoveries ?? []);
     progressed2 = refreshQuests(progressed2);
     const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
-    const queuedState2 = !reward4.nextProcessingRemaining && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
+    const queuedState2 = (!reward4.nextProcessingRemaining || window.expired) && (source.queueManaged || state.character?.activityQueue?.length) ? startFinishedQueuedActivity(finalState2, nowMs) : finalState2;
     return { state: queuedState2, reward: withCompanionUnlocks(reward4, state, queuedState2) };
   }
   if (!state.character || !state.activity) {
@@ -56133,6 +56322,7 @@ function craftRecipe(state, recipeId, nowMs = Date.now(), sequence = 0) {
   if (recipeId.startsWith("BREW_")) throw new Error("Timed alchemy recipes must be started as a batch.");
   const r = recipeDef(recipeId);
   if (!r) throw new Error("Unknown recipe");
+  if (isWinterHearthLightRecipe(recipeId) && !winterHearthLightRecipeAvailable(state, nowMs)) throw new Error("Winter Hearth crafting is closed.");
   if (r.classId && r.classId !== state.character.classId && !r.v33SetId) throw new Error("This recipe belongs to another class");
   if (state.character.level < (r.characterLevel ?? 1)) throw new Error(`Requires character level ${r.characterLevel}`);
   if (r.requiresCraftedItemId && !state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId)) throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
@@ -60862,6 +61052,14 @@ function gameplayHandler(services2, authenticatePlayer2 = async (token) => {
       if (state.account.guildMember) {
         try {
           state.guildSkillEffects = await services2.rpc("guild_skill_effects_server_v1", { p_account_id: accountId });
+        } catch {
+        }
+      }
+      state.winterHearthBonusWindows = void 0;
+      if (WINTER_HEARTH_GUILD_RELEASED && state.account.guildMember) {
+        try {
+          const windows = await services2.rpc("winter_hearth_2026_bonus_windows_server_v1", { p_account_id: accountId });
+          state.winterHearthBonusWindows = validateWinterHearthBonusWindows(windows);
         } catch {
         }
       }

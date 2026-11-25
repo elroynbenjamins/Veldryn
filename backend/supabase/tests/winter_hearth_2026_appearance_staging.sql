@@ -9,7 +9,7 @@ begin
  perform set_config('request.jwt.claim.sub',a::text,true);
  perform set_config('request.jwt.claims',jsonb_build_object('sub',a,'role','authenticated','is_anonymous',false)::text,true);
  select public.guild_frostfall_cosmetic_releases_v1() into ids;
- if cardinality(ids)<>0 then raise exception 'release gate not off';end if;
+ if cardinality(ids)<>4 then raise exception 'approved Frostfall release metadata missing';end if;
  begin
   perform public.update_guild_appearance_with_frostfall_v1('banner_frostfall_standard_2026','classic','name_ivory','tag_silver','classic','Together.','plain');
   raise exception 'unexpected success';
@@ -22,7 +22,6 @@ begin
   perform public.update_guild_appearance_with_frostfall_v1('banner_frostfall_standard_2026','classic','name_ivory','tag_silver','classic','Together.','plain');
   raise exception 'unexpected success';
  exception when others then if sqlerrm<>'GUILD_EVENT_COSMETIC_LOCKED_OR_WRONG_SLOT' then raise;end if;end;
- update private.guild_event_cosmetic_catalog set released=true where event_id='EVT_ANNUAL_012_2026';
  -- Existing hall progression remains authoritative for colors.
  begin
   perform public.update_guild_appearance_with_frostfall_v1('world_tree_green','classic','name_frostfall_aurora_2026','tag_silver','classic','Together.','plain');
@@ -55,5 +54,5 @@ begin
   raise exception 'unexpected success';
  exception when others then if sqlerrm<>'GUILD_EVENT_COSMETIC_LOCKED_OR_WRONG_SLOT' then raise;end if;end;
 end $qa$;
-select 'PASS: release, ownership, all slots, Hall gate, role, wrong guild/slot, unequip, projection and revision' as result;
+select 'PASS: approved release metadata, ownership, all slots, Hall gate, role, wrong guild/slot, unequip, projection and revision' as result;
 rollback;

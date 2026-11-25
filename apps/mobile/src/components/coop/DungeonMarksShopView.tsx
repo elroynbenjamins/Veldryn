@@ -116,16 +116,17 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
   {snapshot&&!snapshot.shopEnabled?<Text style={s.meta}>{t('Dungeon Shop is being prepared. Purchases are unavailable.')}</Text>:null}
   {items.map(item=>{
    const expanded=selected===item.id;
-   const offerEligible=!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
-   const statusSource=pending===item.id?'Processing purchase':item.owned||item.status==='already_owned'?'Owned'
+   const owned=!!item.owned||item.status==='already_owned';
+   const offerEligible=!owned&&!!snapshot?.shopEnabled&&item.status==='eligible'&&!!onPurchase;
+   const statusSource=pending===item.id?'Processing purchase':owned?'Owned'
     :!snapshot?.shopEnabled?'Not available yet':item.status==='eligible'?(onPurchase?'Available':'Preview only')
     :item.status==='insufficient_marks'?'Need more Marks':item.status==='region_locked'?'Region locked'
-    :item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
+    :item.status==='crafting_tier_locked'?'Region locked':item.status==='weekly_limit'?'Weekly limit reached':'Coming soon';
    const offerStatus=t(statusSource);
    const localizedName=dungeonShopOfferName(language,item.id,item.name);
    const localizedMarks=formatLocalizedNumber(language,item.marks);
    const bonusDetails=dungeonShopOfferBonusDetails(language,item.summary);
-   const previewOnly=!snapshot?.shopEnabled||item.status==='unreleased';
+   const previewOnly=!owned&&(!snapshot?.shopEnabled||item.status==='unreleased');
    // Shop rows use 256px art; expanded pet details always prefer the 512px portrait.
    const previewArt=dungeonShopPetOfferPortraitArt(item.id)??dungeonShopPetOfferArt(item.id)??dungeonShopCosmeticOfferArt(item.id);
    const canPurchase=offerEligible&&!busy&&!pending&&!refreshing;
@@ -155,9 +156,9 @@ export function DungeonMarksShopView({snapshot,onPurchase,onRefresh,busy=false}:
      </View>:<Text style={s.description}>{dungeonShopOfferSummary(language,item.summary)}</Text>}
      {item.remainingThisUtcWeek!==undefined&&item.remainingThisUtcWeek!==null?
       <Text style={s.meta}>{t('{count} purchases left this UTC week',{count:formatLocalizedNumber(language,item.remainingThisUtcWeek)})}</Text>:null}
-     {item.status==='already_owned'||item.owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
-     {previewOnly&&!item.owned?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
-      :item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
+     {owned?<Text style={s.owned}>{t('Owned permanently')}</Text>:null}
+     {previewOnly?<Text style={s.previewNote}>{t('Not yet released — no Marks can be spent on this offer.')}</Text>
+      :!owned&&item.lockReason?<Text style={s.meta}>{dungeonShopLockReason(language,item.lockReason)}</Text>:null}
      {offerEligible?<GameButton title={pending===item.id?t('Processing…'):t('Confirm purchase · {marks} Marks',{marks:localizedMarks})} loading={pending===item.id} disabled={!canPurchase} onPress={()=>void purchase(item.id)}/>:null}
      {!canPurchase&&item.status==='insufficient_marks'?<Text style={s.meta}>{t('Not enough Expedition Marks.')}</Text>:null}
     </View>:null}

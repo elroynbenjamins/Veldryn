@@ -291,6 +291,7 @@
   ".core-build/apps/mobile/tests/starter-companion-choice.js",
   ".core-build/apps/mobile/tests/companion-reward-acquisition.js",
   ".core-build/apps/mobile/tests/frostfall-companion-rework.js",
+  ".core-build/apps/mobile/tests/frostfall-scheduled-rewards.js",
   ".core-build/apps/mobile/tests/companion-unlock-presentation.js",
   ".core-build/apps/mobile/tests/companion-bondstone-cadence.js",
   ".core-build/apps/mobile/tests/companion-economy-targets.js",

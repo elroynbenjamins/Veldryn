@@ -15,7 +15,7 @@ const otherClassCharacter=createCharacter(newGame(1000),'WAYFINDER','New Wayfind
 check(otherClassCharacter.character!.profileIconId==='class:WAYFINDER','another class starts with its own portrait');
 check(newlyUnlockedProfileIcons(newGame(1000),otherClassCharacter).length===0,'another class starter icon is not announced');
 check(newlyUnlockedProfileIcons(state,otherClassCharacter).length===0,'changing active class does not announce a free class portrait');
-check(profileIconCollection(state).length===17,'catalog includes class, starters, boss, guild and five event icons');
+check(profileIconCollection(state).length===14,'catalog includes class, starters, boss, guild and two released Veilbreak event icons');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===10,'current class emblem and nine starter portraits available');
 check(!profileIconCollection(state).some(row=>row.group==='Cosmetics'),'unreleased cosmetic-set portraits stay out of the normal collection');
 const cosmeticPortraitOwned={...state,account:{...state.account,unlockedProfileIconIds:['cosmetic:gloamward:portrait-seer']}};
@@ -59,7 +59,7 @@ for(const id of ['event:veilbreak-2026-lantern-warden','event:veilbreak-2026-pum
  check(profileIconCollection({...state,account:{...state.account,unlockedProfileIconIds:[id]}}).find(row=>row.id===id)?.artworkReady,'Veilbreak event profile icon reports its artwork as ready');
 }
 check(EVENT_PROFILE_ICON_ARTWORK_IDS.has('event:frostfall-2026-snowbell'),'Frostfall icon must have runtime artwork before launch');
-check(profileIconCollection(state).find(row=>row.id==='event:frostfall-2026-snowbell')?.artworkReady,'Frostfall shop icon must render as artwork ready');
+check(!profileIconCollection(state).some(row=>row.id.startsWith('event:frostfall-2026-')),'Unearned Frostfall portraits stay hidden without the authoritative runtime');
 check(JSON.stringify(effectiveStats(eventSelected))===before,'event icon grants no bonus');
 check(collectionOwnershipSnapshotFromGameState(earned).ownedKeys['profile_icon:'+eventIcon.id],'event icon tracked in collections');
 check(normalizeProfileIcon({...state,character:{...state.character!,profileIconId:'unknown'}}).character!.profileIconId==='class:IRONWARDEN','invalid icon falls back to class');
@@ -69,7 +69,10 @@ const frostIds=['event:frostfall-2026-snowbell','event:frostfall-2026-maiden','e
 const frostOffers=FROSTFALL_EVENT.shop.filter(row=>row.reward.kind==='profile_icon');
 check(frostOffers.length===3&&frostOffers.every(row=>row.cost===1400&&row.currency==='common'&&row.limit===1&&row.reward.rarity==='epic'),'Three equally priced Frostfall portraits');
 let winter={...state,account:{...state.account,liveEvent:{eventId:FROSTFALL_EVENT.id,enabled:true,startsAtMs:Date.UTC(2026,11,3),endsAtMs:frostEnd,graceEndsAtMs:frostGrace},eventCurrencyBalanceById:{[FROSTFALL_EVENT.id]:4200}}};
-for(const id of frostIds){check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Dedicated Frostfall art registered: '+id);rejects(()=>selectProfileIcon(winter,id));}
+for(const id of frostIds){check(EVENT_PROFILE_ICON_ARTWORK_IDS.has(id),'Dedicated Frostfall art registered: '+id);rejects(()=>selectProfileIcon(winter,id));
+ check(!profileIconCollection(winter,Date.UTC(2026,11,3)-1).some(row=>row.id===id),'Frostfall portrait stays hidden before start');
+ check(profileIconCollection(winter,frostNow).some(row=>row.id===id&&row.artworkReady&&!row.unlocked),'Frostfall portrait becomes visible but locked during the live event');
+ check(!profileIconCollection(winter,frostGrace).some(row=>row.id===id),'Unearned portrait hides after claim grace');}
 let purchased:typeof state=winter;
 for(const offer of frostOffers){purchased=purchaseEventOffer(purchased,offer.id,frostNow);check(canUseProfileIcon(purchased,offer.reward.id),'Purchased Frostfall icon unlocked');check(normalizeSave(selectProfileIcon(purchased,offer.reward.id)).character!.profileIconId===offer.reward.id,'Purchased Frostfall icon survives normalization');rejects(()=>purchaseEventOffer(purchased,offer.id,frostNow));}
 check(purchased.account.eventCurrencyBalanceById?.[FROSTFALL_EVENT.id]===0,'Three Frostfall portraits cost 4,200 tokens total');

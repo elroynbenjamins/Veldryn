@@ -6,6 +6,7 @@ import {DUNGEON_MARKS_SHOP_RELEASED,PROFILE_COSMETICS_STORE_RELEASED} from './re
 import {PROFILE_COSMETIC_PORTRAITS} from './profile-cosmetic-icons';
 import {profileCosmeticsTester} from './profile-cosmetic-access';
 import type {GameState} from './types';
+import {frostfallRewardsDiscoverable,FROSTFALL_2026_EVENT_ID} from './frostfall-reward-visibility';
 
 type ProfileIconCatalogRow={id:string;name:string;group:string;source:string;monsterId?:string;bossId?:string;artworkReady?:boolean};
 
@@ -55,7 +56,7 @@ function mirrorProfileIcon(state:GameState,id:string):GameState{
   character:active?{...active,profileIconId:id}:null,
   ...(others?{otherCharacters:others.map(row=>row.character.profileIconId===id?row:{...row,character:{...row.character,profileIconId:id}})}:{})};
 }
-export function profileIconCollection(state:GameState):ProfileIconEntry[]{
+export function profileIconCollection(state:GameState,nowMs=Date.now()):ProfileIconEntry[]{
  const selected=accountProfileIconId(state);
  const rosterClasses=new Set([state.character?.classId??'IRONWARDEN',...(state.otherCharacters??[]).map(row=>row.character.classId)]);
  const base=CLASSES.filter(row=>rosterClasses.has(row.id)||selected===`class:${row.id}`).map(row=>({id:`class:${row.id}`,name:row.name,group:'Class',source:'Your account character class.',unlocked:true,artworkReady:true,selected:selected===`class:${row.id}`}));
@@ -68,7 +69,9 @@ export function profileIconCollection(state:GameState):ProfileIconEntry[]{
   ||(row.bossId!==undefined&&state.defeatedBossIds.includes(row.bossId))}});
  const known=new Set<string>(portraits.map(row=>row.id));
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...CLASSES.flatMap(c=>event.milestones(c.id).map(row=>row.reward)),...event.shop.map(row=>row.reward),...event.communityMilestones.flatMap(row=>row.reward?[row.reward]:[]),...event.discoveries.map(row=>row.reward)]);
- const events=[...new Map(rewards.filter(row=>row.kind==='profile_icon'&&!known.has(row.id)).map(row=>[row.id,row])).values()];
+ const frostfallIds=new Set(LIVE_EVENT_CATALOG.filter(event=>event.id===FROSTFALL_2026_EVENT_ID).flatMap(event=>[...CLASSES.flatMap(c=>event.milestones(c.id).map(row=>row.reward)),...event.shop.map(row=>row.reward),...event.communityMilestones.flatMap(row=>row.reward?[row.reward]:[]),...event.discoveries.map(row=>row.reward)]).filter(row=>row.kind==='profile_icon').map(row=>row.id));
+ const revealFrostfall=frostfallRewardsDiscoverable(state.account,nowMs);
+ const events=[...new Map(rewards.filter(row=>row.kind==='profile_icon'&&!known.has(row.id)&&(!frostfallIds.has(row.id)||owned.has(row.id)||revealFrostfall)).map(row=>[row.id,row])).values()];
  const privateIcons=ownedUltraLuxeIcons(state).map(row=>({...row,group:'Ascendant',source:'Private account grant.',unlocked:true,artworkReady:true,selected:selected===row.id}));
  return [...base,...privateIcons,...portraits,...events.map(row=>({id:row.id,name:row.name,group:'Event',source:'Earned festival reward.',unlocked:owned.has(row.id),artworkReady:EVENT_PROFILE_ICON_ARTWORK_IDS.has(row.id),selected:selected===row.id}))];
 }

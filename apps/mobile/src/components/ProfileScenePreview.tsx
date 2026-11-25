@@ -14,7 +14,7 @@ import {CLASSES} from '../content/classes';
 import type {GameState} from '../core/types';
 import {CharacterPortrait} from './CharacterVisual';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
-import {profileBorderSourceById} from '../theme/profile-border-assets';
+import {profileBorderSourceById,resolveProfileBorderArtworkId} from '../theme/profile-border-assets';
 import {petArtSource} from '../theme/pet-art';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {RegionArtwork} from './RegionArtwork';
@@ -62,7 +62,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(renderPetId)??petArtSource(character.selectedCosmeticPetId??''),animated=profileAnimatedCosmeticsEnabled(state),borderArt=animated?cosmeticArtByBorder.get(renderBorderId):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderRuntime=animated?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined,borderSource=borderArt?.border??(borderRuntime?profileBorderSourceById.get(borderRuntime.fallbackBorderId):profileBorderSourceById.get(renderBorderId));
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petCollectible=COLLECTIBLES.find(row=>row.id===character.selectedCosmeticPetId&&row.kind==='pet'),petSource=petArtSource(renderPetId)??petArtSource(character.selectedCosmeticPetId??''),animated=profileAnimatedCosmeticsEnabled(state),borderArt=animated?cosmeticArtByBorder.get(renderBorderId):undefined,effectArt=animated?cosmeticArtByEffect.get(character.profileEffectId??''):undefined,borderRuntime=animated?profileCosmeticRuntimeByBorder.get(renderBorderId):undefined,effectRuntime=animated?profileCosmeticRuntimeByEffect.get(character.profileEffectId??''):undefined,borderArtworkId=resolveProfileBorderArtworkId(renderBorderId,borderRuntime?.fallbackBorderId),borderSource=borderArt?.border??profileBorderSourceById.get(borderArtworkId);
  const anchors=profileSceneContentAnchors(borderSource?8:0);
  const celestialAssets=getEnabledCelestialAssets();
  const celestialBackground=!!celestialAssets&&renderBackgroundId===CELESTIAL_IDS.background;
@@ -73,7 +73,7 @@ export function ProfileScenePreview({state,backgroundId,active=false}:{state:Gam
  const standard=<View onLayout={event=>setPreviewWidth(event.nativeEvent.layout.width)} accessibilityLabel={profileT(language,"{name}'s profile preview with {background}",{name:character.name,background:background?.name??base?.name??''})} style={s.frame}>
   <View style={[s.surface,!!borderSource&&s.framedSurface]}>
   <View style={s.scene}>
-   <ProfileBorderBackdrop borderId={borderArt?renderBorderId:(borderRuntime?.fallbackBorderId??renderBorderId)} source={borderSource} existingInset={8}>
+   <ProfileBorderBackdrop borderId={borderArt?renderBorderId:borderArtworkId} source={borderSource} existingInset={8}>
    {background?<CardBackground sources={personalBackgroundVariants.get(renderBackgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}
    <View style={{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'}}/>
    {draconicBackground&&draconic?<DraconicStandardEffects ember={draconic.scene.ember} kind="background" active={active} reduceMotion={state.settings.reduceMotion}/>:null}
